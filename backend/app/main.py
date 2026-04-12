@@ -1,8 +1,43 @@
+import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
 
 from app.core.config import settings
 from app.api.v1.router import api_router
+from app.db.base import Base
+from app.db.session import engine, AsyncSessionLocal
+from app.db.seed import seed_admin
+from sqlalchemy import text
+import app.models  # noqa: F401 – ensure all models are registered
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+logger = logging.getLogger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    logger.info("Starting %s v%s", settings.PROJECT_NAME, settings.VERSION)
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        logger.info("Database tables verified/created successfully")
+    except Exception:
+        logger.exception("FATAL: could not connect to database or create tables")
+        raise
+
+    async with AsyncSessionLocal() as db:
+        await seed_admin(db)
+        logger.info("Seed completed")
+
+    yield
+
+    logger.info("Shutting down %s", settings.PROJECT_NAME)
+
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -10,6 +45,7 @@ app = FastAPI(
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
     docs_url="/docs",
     redoc_url="/redoc",
+    lifespan=lifespan,
 )
 
 app.add_middleware(
@@ -21,6 +57,18 @@ app.add_middleware(
 )
 
 app.include_router(api_router, prefix=settings.API_V1_STR)
+
+
+@app.get("/health")
+async def health():
+    try:
+        async with AsyncSessionLocal() as db:
+            await db.execute(text("SELECT 1"))
+        db_status = "connected"
+    except Exception as e:
+        logger.warning("Health check: database unavailable – %s", e)
+        db_status = "unavailable"
+    return {"status": "ok", "database": db_status}
 
 
 @app.get("/")
