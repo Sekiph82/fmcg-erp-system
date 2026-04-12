@@ -1,16 +1,16 @@
 code,name,contact_person,email,phone,address,city,country,tax_id,payment_terms_days,is_active,preferred_payment_method,mpesa_phone_number
-SUP001,BrightAgro Supplies Ltd,James Kamau,james@brightagro.co.ke,+254711000001,Mombasa Road Ind. Area,Nairobi,Kenya,A001234567B,30,true,MPESA,+254711000001
+SUP001,BrightAgro Supplies Ltd,James Kamau,james@brightagro.co.ke,+254711000001,Mombasa Road Ind. Area,Nairobi,Kenya,A001234567B,30,true,mpesa,+254711000001
 SUP002,Pristine Packaging Co.,Amina Hassan,amina@pristinepkg.co.ke,+254722000002,Industrial Area Block 5,Nairobi,Kenya,A002345678C,45,true,bank,
-SUP003,Golden Fields Farm,Peter Ochieng,peter@goldenfields.co.ke,+254733000003,Eldoret Highway Km 12,Eldoret,Kenya,A003456789D,14,true,MPESA,+254733000003
+SUP003,Golden Fields Farm,Peter Ochieng,peter@goldenfields.co.ke,+254733000003,Eldoret Highway Km 12,Eldoret,Kenya,A003456789D,14,true,mpesa,+254733000003
 SUP004,SunRise Sugar Mills,Fatuma Ali,fatuma@sunrisesugar.co.ke,+254700000004,Kibos Road,Kisumu,Kenya,A004567890E,60,true,bank,
-SUP005,ClearPure Water Ltd,David Mwangi,david@clearpure.co.ke,+254711000005,Athi River Ind. Zone,Nairobi,Kenya,A005678901F,30,true,MPESA,+254711000005
+SUP005,ClearPure Water Ltd,David Mwangi,david@clearpure.co.ke,+254711000005,Athi River Ind. Zone,Nairobi,Kenya,A005678901F,30,true,mpesa,+254711000005
 SUP006,AfroPack Solutions,Grace Njeri,grace@afropack.co.ke,+254722000006,Ruiru Ind. Park,Ruiru,Kenya,A006789012G,30,true,bank,
-SUP007,EastAfrica Flavours,Ibrahim Waweru,ibrahim@eaflavours.co.ke,+254733000007,Upper Hill,Nairobi,Kenya,A007890123H,45,true,MPESA,+254733000007
-SUP008,Maize Masters Ltd,Ruth Achieng,ruth@maizemasters.co.ke,+254700000008,Nakuru Road,Nakuru,Kenya,A008901234I,21,true,MPESA,+254700000008
+SUP007,EastAfrica Flavours,Ibrahim Waweru,ibrahim@eaflavours.co.ke,+254733000007,Upper Hill,Nairobi,Kenya,A007890123H,45,true,mpesa,+254733000007
+SUP008,Maize Masters Ltd,Ruth Achieng,ruth@maizemasters.co.ke,+254700000008,Nakuru Road,Nakuru,Kenya,A008901234I,21,true,mpesa,+254700000008
 SUP009,ProChem Industrial,Samuel Mutua,samuel@prochem.co.ke,+254711000009,Baba Dogo Rd,Nairobi,Kenya,A009012345J,30,true,bank,
 SUP010,Highlands Salt Co.,Mary Wangari,mary@highlandssalt.co.ke,+254722000010,Magadi Road,Nairobi,Kenya,A010123456K,30,true,cash,
 SUP011,Nairobi Carton Works,Ali Osman,ali@nairobicarton.co.ke,+254733000011,Enterprise Road,Nairobi,Kenya,A011234567L,45,true,bank,
-SUP012,TropiFresh Fruits,Caroline Adhiambo,caroline@tropifresh.co.ke,+254700000012,Thika Road Km 15,Thika,Kenya,A012345678M,14,true,MPESA,+254700000012
+SUP012,TropiFresh Fruits,Caroline Adhiambo,caroline@tropifresh.co.ke,+254700000012,Thika Road Km 15,Thika,Kenya,A012345678M,14,true,mpesa,+254700000012
 SUP013,SteelFlex Cans Ltd,Hassan Mwenda,hassan@steelflexcans.co.ke,+254711000013,Industrial Area,Mombasa,Kenya,A013456789N,45,true,bank,
-SUP014,GreenLeaf Herbs,Joyce Njuguna,joyce@greenleafherbs.co.ke,+254722000014,Limuru Road,Kiambu,Kenya,A014567890O,21,true,MPESA,+254722000014
+SUP014,GreenLeaf Herbs,Joyce Njuguna,joyce@greenleafherbs.co.ke,+254722000014,Limuru Road,Kiambu,Kenya,A014567890O,21,true,mpesa,+254722000014
 SUP015,PrimePlast Containers,Kevin Otieno,kevin@primeplast.co.ke,+254733000015,Mombasa Road,Nairobi,Kenya,A015678901P,30,true,bank,
