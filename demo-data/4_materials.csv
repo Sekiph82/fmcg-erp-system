@@ -1,16 +1,41 @@
 code,name,description,material_type,uom,weight_kg,reorder_point,standard_cost,lead_time_days,is_active,supplier_code
-MAT001,Fresh Tomato Paste,Concentrated tomato paste 28-30 Brix,RAW,KG,,500,45.00,7,true,SUP001
-MAT002,White Sugar (Bulk),Refined white cane sugar,RAW,KG,,1000,82.00,14,true,SUP004
-MAT003,Sunflower Crude Oil,Crude sunflower oil for refining,RAW,L,,2000,120.00,21,true,SUP001
-MAT004,Wheat Grain,Grade 1 hard wheat grain,RAW,KG,,3000,35.00,14,true,SUP008
-MAT005,Sodium Chloride (Salt),Food grade iodized salt,RAW,KG,,500,15.00,10,true,SUP010
-MAT006,Citric Acid,Food grade citric acid monohydrate,RAW,KG,,100,280.00,21,true,SUP009
-MAT007,Mango Pulp,Alphonso mango pulp aseptic pack,RAW,KG,,300,95.00,14,true,SUP012
-MAT008,Passion Fruit Concentrate,Passion fruit juice concentrate,RAW,KG,,200,185.00,21,true,SUP012
-MAT009,Pineapple Juice Concentrate,Single strength pineapple concentrate,RAW,KG,,250,175.00,21,true,SUP012
-MAT010,Glass Bottle 500ml,Flint glass bottle for sauce,PACKAGING,PCS,,5000,12.50,30,true,SUP013
-MAT011,Glass Bottle 250ml,Flint glass bottle for sauce,PACKAGING,PCS,,8000,8.00,30,true,SUP013
-MAT012,PET Bottle 1L,Clear PET bottle for oil & juice,PACKAGING,PCS,,4000,9.50,21,true,SUP015
-MAT013,Tetra Pak 1L,Aseptic Tetra Pak carton 1L,PACKAGING,PCS,,3000,22.00,45,true,SUP006
-MAT014,Printed Label Tomato Sauce,Self-adhesive label for 500ml sauce,PACKAGING,PCS,,10000,1.20,21,true,SUP002
-MAT015,Master Carton 12-pack,Corrugated export carton 12 units,PACKAGING,PCS,,2000,18.00,14,true,SUP011
+MAT001,LABSA (Linear Alkylbenzene Sulfonic Acid),Primary anionic surfactant for powder detergents,RAW,KG,,5000,180.00,21,true,SUP001
+MAT002,SLES 70% (Sodium Laureth Sulfate),Primary anionic surfactant for liquid detergents,RAW,KG,,3000,220.00,21,true,SUP001
+MAT003,CAPB 30% (Cocamidopropyl Betaine),Amphoteric co-surfactant for personal care and liquids,RAW,KG,,1500,280.00,30,true,SUP001
+MAT004,Soda Ash (Sodium Carbonate),Alkaline builder for powder detergents,RAW,KG,,8000,28.00,14,true,SUP003
+MAT005,STPP (Sodium Tripolyphosphate),Phosphate builder and water softener for powders,RAW,KG,,5000,65.00,21,true,SUP003
+MAT006,Sodium Percarbonate,Oxygen-releasing bleaching agent for whitening powders,RAW,KG,,2000,95.00,21,true,SUP001
+MAT007,Citric Acid Monohydrate,Descaling and pH-adjusting acid food grade,RAW,KG,,2000,120.00,14,true,SUP014
+MAT008,Sodium Hypochlorite 12%,Active chlorine bleaching solution,RAW,L,,5000,35.00,7,true,SUP012
+MAT009,Benzalkonium Chloride 80% (QUAT),Quaternary ammonium sanitizer active ingredient,RAW,KG,,500,850.00,30,true,SUP007
+MAT010,Fragrance Floral Bouquet,Floral scent blend for fabric softeners and cleaners,RAW,KG,,300,1200.00,30,true,SUP004
+MAT011,Fragrance Lemon Fresh,Lemon scent blend for dishwashing and cleaners,RAW,KG,,300,1100.00,30,true,SUP004
+MAT012,Fragrance Orange Zest,Orange scent blend for dishwashing products,RAW,KG,,200,1100.00,30,true,SUP004
+MAT013,Fragrance Baby Mild,Hypoallergenic mild fragrance for baby products,RAW,KG,,200,1400.00,30,true,SUP004
+MAT014,Enzyme Blend (Protease-Amylase),Multi-enzyme blend for biological detergents,RAW,KG,,500,2200.00,45,true,SUP005
+MAT015,Optical Brightener CBS-X,Fluorescent whitening agent for white detergents,RAW,KG,,200,3500.00,45,true,SUP011
+MAT016,Kathon CG Preservative,Broad-spectrum liquid preservative (CMIT/MIT),RAW,KG,,100,4800.00,30,true,SUP011
+MAT017,Glycerin USP Grade,Pharmaceutical-grade glycerin humectant,RAW,KG,,500,185.00,21,true,SUP001
+MAT018,Sodium Lauryl Sulfate (SLS),Surfactant and foaming agent for toothpaste,RAW,KG,,300,240.00,21,true,SUP001
+MAT019,Calcium Carbonate Precipitated,Mild abrasive and carrier for toothpaste and cream cleaner,RAW,KG,,1000,32.00,14,true,SUP014
+MAT020,Chlorhexidine Gluconate 20%,Antiseptic active for medical wipes,RAW,KG,,200,1800.00,30,true,SUP007
+MAT021,Ethanol 96% Technical,Ethyl alcohol for hand sanitizer,RAW,L,,2000,145.00,7,true,SUP015
+MAT022,Spunlace Nonwoven 80gsm,Nonwoven fabric base for all wet wipe types,RAW,KG,,2000,380.00,21,true,SUP008
+MAT023,Aloe Vera Extract Powder,Soothing ingredient for baby and personal care,RAW,KG,,100,2800.00,45,true,SUP011
+MAT024,Sodium Gluconate,Chelating agent and descaling enhancer,RAW,KG,,500,145.00,21,true,SUP014
+MAT025,Isopropyl Alcohol (IPA) 99%,Solvent and disinfectant for cleaners and sanitizers,RAW,L,,1000,130.00,7,true,SUP015
+MAT026,HDPE Bottle 1L Natural,High-density polyethylene bottle 1L with cap,PACKAGING,PCS,,20000,9.50,21,true,SUP002
+MAT027,HDPE Bottle 500ml Natural,High-density polyethylene bottle 500ml with cap,PACKAGING,PCS,,15000,6.50,21,true,SUP002
+MAT028,HDPE Bottle 250ml Natural,High-density polyethylene bottle 250ml with cap,PACKAGING,PCS,,10000,4.80,21,true,SUP002
+MAT029,HDPE Drum 20L Blue,High-density polyethylene drum 20L with lid,PACKAGING,PCS,,500,185.00,30,true,SUP002
+MAT030,HDPE Drum 10L Blue,High-density polyethylene drum 10L with lid,PACKAGING,PCS,,500,110.00,30,true,SUP002
+MAT031,Sachet Laminate Film Roll,Multi-layer BOPP/PE laminate for sachet filling,PACKAGING,KG,,500,620.00,21,true,SUP006
+MAT032,Stand-Up Pouch 1kg Kraft,Kraft paper stand-up pouch with zipper 1kg,PACKAGING,PCS,,5000,18.00,21,true,SUP006
+MAT033,Kraft Bag 10kg with Handle,Multi-wall kraft paper bag 10kg capacity,PACKAGING,PCS,,1000,42.00,21,true,SUP006
+MAT034,Aluminium Tube 75g,Aluminium squeeze tube 75g for toothpaste,PACKAGING,PCS,,5000,8.50,30,true,SUP013
+MAT035,Trigger Spray Head 28/410,Trigger spray pump head for 500ml and 300ml bottles,PACKAGING,PCS,,10000,3.20,21,true,SUP002
+MAT036,Master Carton Brown,Corrugated export carton for finished goods,PACKAGING,PCS,,3000,16.00,14,true,SUP010
+MAT037,Self-Adhesive Label A (Large),Printed product label for 1L and 500ml bottles,PACKAGING,PCS,,20000,1.80,14,true,SUP009
+MAT038,Self-Adhesive Label B (Small),Printed product label for 250ml and sachets,PACKAGING,PCS,,30000,1.20,14,true,SUP009
+MAT039,HDPE Bottle 750ml Natural,High-density polyethylene bottle 750ml with cap,PACKAGING,PCS,,8000,7.80,21,true,SUP002
+MAT040,HDPE Bottle 150ml Natural,High-density polyethylene bottle 150ml with cap,PACKAGING,PCS,,8000,3.90,21,true,SUP002

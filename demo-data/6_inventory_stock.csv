@@ -1,16 +1,92 @@
 product_sku,warehouse_code,quantity,unit_cost,lot_number,expiry_date,reference,notes
-SKU001,WH001,2400,85.00,LOT-2025-001,2026-03-31,INIT-2025-001,Opening stock tomato sauce 500ml
-SKU002,WH001,4800,48.00,LOT-2025-002,2026-03-31,INIT-2025-002,Opening stock tomato sauce 250ml
-SKU003,WH001,1800,78.00,LOT-2025-003,2026-09-30,INIT-2025-003,Opening stock tomato ketchup
-SKU004,WH001,1200,95.00,LOT-2025-004,2025-09-30,INIT-2025-004,Opening stock mango juice 1L
-SKU005,WH001,3600,42.00,LOT-2025-005,2025-07-31,INIT-2025-005,Opening stock passion fruit juice
-SKU006,WH001,1080,92.00,LOT-2025-006,2025-09-30,INIT-2025-006,Opening stock pineapple juice 1L
-SKU007,WH001,960,155.00,LOT-2025-007,2027-03-31,INIT-2025-007,Opening stock sunflower oil 1L
-SKU008,WH001,480,295.00,LOT-2025-008,2027-03-31,INIT-2025-008,Opening stock sunflower oil 2L
-SKU009,WH001,2000,130.00,LOT-2025-009,2025-09-30,INIT-2025-009,Opening stock wheat flour 2kg
-SKU010,WH001,3500,68.00,LOT-2025-010,2025-09-30,INIT-2025-010,Opening stock wheat flour 1kg
-SKU011,WH001,5000,18.00,LOT-2025-011,2028-01-01,INIT-2025-011,Opening stock table salt 500g
-SKU012,WH001,4000,85.00,LOT-2025-012,2027-01-01,INIT-2025-012,Opening stock sugar 1kg
-SKU013,WH001,2400,42.00,LOT-2025-013,2025-12-31,INIT-2025-013,Opening stock digestive biscuits
-SKU014,WH001,1200,95.00,LOT-2025-014,2027-03-31,INIT-2025-014,Opening stock shower gel 250ml
-SKU015,WH001,1800,88.00,LOT-2025-015,2027-03-31,INIT-2025-015,Opening stock liquid soap 500ml
+HH-001,WH014,85000,6.00,LOT-2025-001,2027-04-01,INIT-2025-001,Opening stock hand-wash powder sachet
+HH-002,WH003,8000,130.00,LOT-2025-002,2027-04-01,INIT-2025-002,Opening stock hand-wash powder 1kg
+HH-003,WH003,600,1200.00,LOT-2025-003,2027-04-01,INIT-2025-003,Opening stock hand-wash powder 10kg bag
+HH-004,WH014,60000,10.00,LOT-2025-004,2027-04-01,INIT-2025-004,Opening stock machine powder whites sachet
+HH-005,WH003,6000,145.00,LOT-2025-005,2027-04-01,INIT-2025-005,Opening stock machine powder whites 1kg
+HH-006,WH003,400,1350.00,LOT-2025-006,2027-04-01,INIT-2025-006,Opening stock machine powder whites 10kg
+HH-007,WH014,60000,10.00,LOT-2025-007,2027-04-01,INIT-2025-007,Opening stock machine powder colors sachet
+HH-008,WH003,6000,140.00,LOT-2025-008,2027-04-01,INIT-2025-008,Opening stock machine powder colors 1kg
+HH-009,WH003,400,1300.00,LOT-2025-009,2027-04-01,INIT-2025-009,Opening stock machine powder colors 10kg
+HH-010,WH014,50000,8.00,LOT-2025-010,2027-04-01,INIT-2025-010,Opening stock oxygen whitening sachet
+HH-011,WH003,4000,165.00,LOT-2025-011,2027-04-01,INIT-2025-011,Opening stock oxygen whitening 1kg
+HH-012,WH003,300,1550.00,LOT-2025-012,2027-04-01,INIT-2025-012,Opening stock oxygen whitening 10kg
+HH-013,WH014,45000,7.00,LOT-2025-013,2027-04-01,INIT-2025-013,Opening stock anti-limescale powder sachet
+HH-014,WH003,3000,135.00,LOT-2025-014,2027-04-01,INIT-2025-014,Opening stock anti-limescale powder 1kg
+HH-015,WH003,200,1250.00,LOT-2025-015,2027-04-01,INIT-2025-015,Opening stock anti-limescale powder 10kg
+HH-016,WH002,4000,120.00,LOT-2025-016,2027-04-01,INIT-2025-016,Opening stock liquid detergent colors 1L
+HH-017,WH014,80000,10.00,LOT-2025-017,2027-04-01,INIT-2025-017,Opening stock liquid detergent colors sachet
+HH-018,WH002,4000,125.00,LOT-2025-018,2027-04-01,INIT-2025-018,Opening stock liquid detergent whites 1L
+HH-019,WH014,80000,12.00,LOT-2025-019,2027-04-01,INIT-2025-019,Opening stock liquid detergent whites sachet
+HH-020,WH002,3000,135.00,LOT-2025-020,2027-04-01,INIT-2025-020,Opening stock liquid detergent baby 1L
+HH-021,WH014,60000,12.00,LOT-2025-021,2027-04-01,INIT-2025-021,Opening stock liquid detergent baby sachet
+HH-022,WH002,3500,95.00,LOT-2025-022,2027-04-01,INIT-2025-022,Opening stock fabric softener floral 1L
+HH-023,WH002,3000,100.00,LOT-2025-023,2027-04-01,INIT-2025-023,Opening stock fabric softener sensitive 1L
+HH-024,WH014,100000,8.00,LOT-2025-024,2027-04-01,INIT-2025-024,Opening stock fabric softener sachet
+HH-025,WH010,150,2200.00,LOT-2025-025,2026-04-01,INIT-2025-025,Opening stock bleach regular 20L drum
+HH-026,WH002,2000,95.00,LOT-2025-026,2026-04-01,INIT-2025-026,Opening stock bleach concentrated 1L
+HH-027,WH002,4500,85.00,LOT-2025-027,2027-04-01,INIT-2025-027,Opening stock dishwashing lemon 1L
+HH-028,WH014,120000,5.00,LOT-2025-028,2027-04-01,INIT-2025-028,Opening stock dishwashing lemon sachet
+HH-029,WH002,4000,85.00,LOT-2025-029,2027-04-01,INIT-2025-029,Opening stock dishwashing orange 1L
+HH-030,WH002,3000,100.00,LOT-2025-030,2027-04-01,INIT-2025-030,Opening stock dishwashing antibacterial 1L
+HH-031,WH014,60000,8.00,LOT-2025-031,2027-04-01,INIT-2025-031,Opening stock multi-purpose cleaner sachet
+HH-032,WH002,3000,90.00,LOT-2025-032,2027-04-01,INIT-2025-032,Opening stock multi-purpose cleaner 1L
+HH-033,WH002,2500,80.00,LOT-2025-033,2027-04-01,INIT-2025-033,Opening stock liquid black soap 1L
+HH-034,WH002,1500,110.00,LOT-2025-034,2027-04-01,INIT-2025-034,Opening stock degreaser 1L
+HH-035,WH002,1500,105.00,LOT-2025-035,2027-04-01,INIT-2025-035,Opening stock limescale remover 1L
+HH-036,WH002,3500,88.00,LOT-2025-036,2027-04-01,INIT-2025-036,Opening stock liquid hand soap 500ml
+HH-037,WH014,150000,2.00,LOT-2025-037,2027-04-01,INIT-2025-037,Opening stock liquid hand soap sachet
+HH-038,WH014,60000,7.00,LOT-2025-038,2027-04-01,INIT-2025-038,Opening stock glass cleaner sachet
+HH-039,WH002,2500,82.00,LOT-2025-039,2027-04-01,INIT-2025-039,Opening stock glass cleaner 500ml
+HH-040,WH002,3000,88.00,LOT-2025-040,2027-04-01,INIT-2025-040,Opening stock floor cleaner 1L
+HH-041,WH014,60000,8.00,LOT-2025-041,2027-04-01,INIT-2025-041,Opening stock floor cleaner sachet
+HH-042,WH002,2500,105.00,LOT-2025-042,2027-04-01,INIT-2025-042,Opening stock toilet bowl cleaner 750ml
+HH-043,WH014,40000,12.00,LOT-2025-043,2027-04-01,INIT-2025-043,Opening stock toilet bowl cleaner sachet
+HH-044,WH002,2000,90.00,LOT-2025-044,2027-04-01,INIT-2025-044,Opening stock cream cleaner 500g
+HH-045,WH014,40000,12.00,LOT-2025-045,2027-04-01,INIT-2025-045,Opening stock liquid stain remover sachet
+HH-046,WH002,2000,95.00,LOT-2025-046,2027-04-01,INIT-2025-046,Opening stock liquid stain remover 500ml
+HH-047,WH002,2500,100.00,LOT-2025-047,2027-04-01,INIT-2025-047,Opening stock disinfectant trigger spray 500ml
+HH-048,WH014,40000,12.00,LOT-2025-048,2027-04-01,INIT-2025-048,Opening stock tile bathroom cleaner sachet
+HH-049,WH002,2000,90.00,LOT-2025-049,2027-04-01,INIT-2025-049,Opening stock tile bathroom cleaner 500ml
+HH-050,WH002,1500,85.00,LOT-2025-050,2027-04-01,INIT-2025-050,Opening stock air freshener 300ml trigger
+HH-051,WH014,15000,8.00,LOT-2025-051,2027-04-01,INIT-2025-051,Opening stock car shampoo sachet
+HH-052,WH002,1200,90.00,LOT-2025-052,2027-04-01,INIT-2025-052,Opening stock car shampoo 500ml
+HH-053,WH002,1200,88.00,LOT-2025-053,2027-04-01,INIT-2025-053,Opening stock interior cleaner 500ml
+HH-054,WH002,2500,110.00,LOT-2025-054,2027-04-01,INIT-2025-054,Opening stock QAC surface sanitizer 500ml
+HH-055,WH010,80,3800.00,LOT-2025-055,2027-04-01,INIT-2025-055,Opening stock QAC surface sanitizer 20L drum
+HH-056,WH002,3000,75.00,LOT-2025-056,2027-04-01,INIT-2025-056,Opening stock alcohol-free hand rub 250ml
+HH-057,WH010,100,2600.00,LOT-2025-057,2027-04-01,INIT-2025-057,Opening stock alcohol-free hand rub 10L drum
+HH-058,WH002,2000,100.00,LOT-2025-058,2027-04-01,INIT-2025-058,Opening stock laundry sanitizer additive 500ml
+HH-059,WH010,60,1900.00,LOT-2025-059,2027-04-01,INIT-2025-059,Opening stock laundry sanitizer additive 10L drum
+HH-060,WH001,8000,45.00,LOT-2025-060,2027-04-01,INIT-2025-060,Opening stock antibacterial wipes 64-pack
+HH-061,WH001,5000,72.00,LOT-2025-061,2027-04-01,INIT-2025-061,Opening stock antibacterial wipes 100-pack
+HH-062,WH010,80,2800.00,LOT-2025-062,2026-04-01,INIT-2025-062,Opening stock industrial bleach 20L drum
+HH-063,WH010,60,3200.00,LOT-2025-063,2027-04-01,INIT-2025-063,Opening stock industrial fabric softener 20L drum
+HH-064,WH010,60,3000.00,LOT-2025-064,2027-04-01,INIT-2025-064,Opening stock industrial dishwashing 20L drum
+HH-065,WH010,60,4200.00,LOT-2025-065,2027-04-01,INIT-2025-065,Opening stock industrial disinfectant 20L drum
+PC-001,WH001,2000,55.00,LOT-2025-066,2028-04-01,INIT-2025-066,Opening stock whitening toothpaste 75g
+PC-002,WH001,2500,75.00,LOT-2025-067,2027-04-01,INIT-2025-067,Opening stock shampoo regular 250ml
+PC-003,WH014,60000,4.00,LOT-2025-068,2027-04-01,INIT-2025-068,Opening stock shampoo regular sachet
+PC-004,WH001,2000,80.00,LOT-2025-069,2027-04-01,INIT-2025-069,Opening stock shampoo baby 250ml
+PC-005,WH014,40000,5.00,LOT-2025-070,2027-04-01,INIT-2025-070,Opening stock shampoo baby sachet
+PC-006,WH001,2500,72.00,LOT-2025-071,2027-04-01,INIT-2025-071,Opening stock shower gel 250ml
+PC-007,WH014,60000,4.00,LOT-2025-072,2027-04-01,INIT-2025-072,Opening stock shower gel sachet
+PC-008,WH010,50,3500.00,LOT-2025-073,2027-04-01,INIT-2025-073,Opening stock shower gel institutional 20L drum
+PC-009,WH001,3000,110.00,LOT-2025-074,2027-04-01,INIT-2025-074,Opening stock hand sanitizer 500ml
+PC-010,WH001,2000,78.00,LOT-2025-075,2027-04-01,INIT-2025-075,Opening stock hair conditioner 250ml
+PC-011,WH014,30000,5.00,LOT-2025-076,2027-04-01,INIT-2025-076,Opening stock hair conditioner sachet
+PC-012,WH010,40,3600.00,LOT-2025-077,2027-04-01,INIT-2025-077,Opening stock hair conditioner institutional 20L drum
+PC-013,WH014,80000,3.00,LOT-2025-078,2028-04-01,INIT-2025-078,Opening stock toothpaste 6g sachet
+PC-014,WH014,20000,5.00,LOT-2025-079,2027-04-01,INIT-2025-079,Opening stock facial cleansing gel sachet
+PC-015,WH001,1200,58.00,LOT-2025-080,2027-04-01,INIT-2025-080,Opening stock facial cleansing gel 150ml
+PC-016,WH014,20000,6.00,LOT-2025-081,2027-04-01,INIT-2025-081,Opening stock moisturizing cream sachet
+PC-017,WH001,1200,62.00,LOT-2025-082,2027-04-01,INIT-2025-082,Opening stock moisturizing cream 150ml
+PC-018,WH001,1000,42.00,LOT-2025-083,2027-04-01,INIT-2025-083,Opening stock shaving cream 100ml
+PC-019,WH014,20000,7.00,LOT-2025-084,2027-04-01,INIT-2025-084,Opening stock body lotion sachet
+PC-020,WH001,1500,78.00,LOT-2025-085,2027-04-01,INIT-2025-085,Opening stock body lotion 250ml
+PC-021,WH001,2000,48.00,LOT-2025-086,2027-04-01,INIT-2025-086,Opening stock medical wipes 50-pack
+PC-022,WH001,1200,88.00,LOT-2025-087,2027-04-01,INIT-2025-087,Opening stock medical wipes 100-pack
+PC-023,WH001,3000,38.00,LOT-2025-088,2027-04-01,INIT-2025-088,Opening stock flushable toilet wipes 50-pack
+PC-024,WH001,2000,58.00,LOT-2025-089,2027-04-01,INIT-2025-089,Opening stock flushable toilet wipes 80-pack
+PC-025,WH001,5000,35.00,LOT-2025-090,2027-04-01,INIT-2025-090,Opening stock baby wipes 48-pack
+PC-026,WH001,3500,52.00,LOT-2025-091,2027-04-01,INIT-2025-091,Opening stock baby wipes 72-pack

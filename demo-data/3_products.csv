@@ -1,16 +1,92 @@
 sku,barcode,name,description,category,uom,units_per_carton,weight_kg,shelf_life_days,reorder_point,standard_cost,selling_price,is_active
-SKU001,6001001000011,Tomato Sauce 500ml,Premium tomato sauce in glass bottle,FOOD,PCS,12,0.65,365,500,85.00,150.00,true
-SKU002,6001001000028,Tomato Sauce 250ml,Premium tomato sauce in glass bottle,FOOD,PCS,24,0.35,365,800,48.00,90.00,true
-SKU003,6001002000018,Tomato Ketchup 500ml,Smooth tomato ketchup squeezable bottle,FOOD,PCS,12,0.60,540,400,78.00,135.00,true
-SKU004,6001003000015,Mango Juice 1L,100% natural mango juice Tetra Pak,BEVERAGE,PCS,12,1.10,180,300,95.00,175.00,true
-SKU005,6001003000022,Passion Fruit Juice 500ml,Fresh passion fruit drink,BEVERAGE,PCS,24,0.55,120,600,42.00,80.00,true
-SKU006,6001004000012,Pineapple Juice 1L,Pure pineapple juice Tetra Pak,BEVERAGE,PCS,12,1.10,180,250,92.00,170.00,true
-SKU007,6001005000019,Sunflower Cooking Oil 1L,Refined sunflower oil PET bottle,FOOD,PCS,12,0.95,730,400,155.00,260.00,true
-SKU008,6001005000026,Sunflower Cooking Oil 2L,Refined sunflower oil PET bottle,FOOD,PCS,6,1.90,730,200,295.00,495.00,true
-SKU009,6001006000016,Wheat Flour 2kg,Fortified wheat flour paper bag,FOOD,PCS,10,2.05,180,1000,130.00,210.00,true
-SKU010,6001006000023,Wheat Flour 1kg,Fortified wheat flour paper bag,FOOD,PCS,20,1.05,180,1500,68.00,115.00,true
-SKU011,6001007000013,Table Salt 500g,Iodized table salt poly pack,FOOD,PCS,24,0.52,1095,2000,18.00,40.00,true
-SKU012,6001008000010,Sugar 1kg,Refined white sugar poly pack,FOOD,PCS,20,1.02,730,1200,85.00,140.00,true
-SKU013,6001009000017,Digestive Biscuits 200g,Whole wheat digestive biscuits,FOOD,PCS,24,0.22,270,500,42.00,75.00,true
-SKU014,6001010000014,Shower Gel 250ml,Moisturising body wash,PERSONAL_CARE,PCS,12,0.28,730,300,95.00,185.00,true
-SKU015,6001011000011,Liquid Soap 500ml,Anti-bacterial liquid hand soap,PERSONAL_CARE,PCS,12,0.55,730,400,88.00,165.00,true
+HH-001,8690001000001,Hand-Wash Powder 20g Sachet,Hand-wash laundry powder in single-use sachet,HOUSEHOLD,PCS,100,0.022,730,10000,6.00,15.00,true
+HH-002,8690001000002,Hand-Wash Powder 1kg Pouch,Hand-wash laundry powder in resealable pouch,HOUSEHOLD,PCS,10,1.05,730,2000,130.00,295.00,true
+HH-003,8690001000003,Hand-Wash Powder 10kg Bag,Hand-wash laundry powder bulk kraft bag,HOUSEHOLD,PCS,1,10.50,730,200,1200.00,2700.00,true
+HH-004,8690001000004,Machine Powder Whites 40g Sachet,Machine washing powder for whites single-use sachet,HOUSEHOLD,PCS,50,0.045,730,8000,10.00,25.00,true
+HH-005,8690001000005,Machine Powder Whites 1kg Pouch,Machine washing powder for whites 1kg pouch,HOUSEHOLD,PCS,10,1.05,730,1500,145.00,325.00,true
+HH-006,8690001000006,Machine Powder Whites 10kg Bag,Machine washing powder for whites bulk bag,HOUSEHOLD,PCS,1,10.50,730,150,1350.00,2950.00,true
+HH-007,8690001000007,Machine Powder Colors 40g Sachet,Machine washing powder for colors single-use sachet,HOUSEHOLD,PCS,50,0.045,730,8000,10.00,25.00,true
+HH-008,8690001000008,Machine Powder Colors 1kg Pouch,Machine washing powder for colors 1kg pouch,HOUSEHOLD,PCS,10,1.05,730,1500,140.00,315.00,true
+HH-009,8690001000009,Machine Powder Colors 10kg Bag,Machine washing powder for colors bulk bag,HOUSEHOLD,PCS,1,10.50,730,150,1300.00,2900.00,true
+HH-010,8690001000010,Oxygen Whitening Powder 20g Sachet,Oxygen-based whitening booster sachet,HOUSEHOLD,PCS,100,0.022,730,8000,8.00,20.00,true
+HH-011,8690001000011,Oxygen Whitening Powder 1kg Pouch,Oxygen-based whitening booster 1kg pouch,HOUSEHOLD,PCS,10,1.05,730,1000,165.00,370.00,true
+HH-012,8690001000012,Oxygen Whitening Powder 10kg Bag,Oxygen-based whitening booster bulk bag,HOUSEHOLD,PCS,1,10.50,730,100,1550.00,3400.00,true
+HH-013,8690001000013,Anti-Limescale Powder 25g Sachet,Descaling powder for washing machines sachet,HOUSEHOLD,PCS,100,0.028,730,6000,7.00,18.00,true
+HH-014,8690001000014,Anti-Limescale Powder 1kg Pouch,Descaling powder for washing machines 1kg,HOUSEHOLD,PCS,10,1.05,730,800,135.00,300.00,true
+HH-015,8690001000015,Anti-Limescale Powder 10kg Bag,Descaling powder for washing machines bulk,HOUSEHOLD,PCS,1,10.50,730,80,1250.00,2750.00,true
+HH-016,8690001000016,Liquid Detergent Colors 1L Bottle,Concentrated liquid laundry detergent for colors,HOUSEHOLD,PCS,12,1.15,730,1000,120.00,275.00,true
+HH-017,8690001000017,Liquid Detergent Colors 40ml Sachet,Concentrated liquid laundry detergent for colors sachet,HOUSEHOLD,PCS,100,0.045,730,10000,10.00,25.00,true
+HH-018,8690001000018,Liquid Detergent Whites 1L Bottle,Concentrated liquid laundry detergent for whites,HOUSEHOLD,PCS,12,1.15,730,1000,125.00,280.00,true
+HH-019,8690001000019,Liquid Detergent Whites 50ml Sachet,Concentrated liquid laundry detergent for whites sachet,HOUSEHOLD,PCS,100,0.055,730,10000,12.00,30.00,true
+HH-020,8690001000020,Liquid Detergent Baby 1L Bottle,Gentle liquid laundry detergent for baby clothes,HOUSEHOLD,PCS,12,1.15,730,800,135.00,310.00,true
+HH-021,8690001000021,Liquid Detergent Baby 40ml Sachet,Gentle liquid laundry detergent for baby clothes sachet,HOUSEHOLD,PCS,100,0.045,730,8000,12.00,28.00,true
+HH-022,8690001000022,Fabric Softener Floral 1L Bottle,Floral-scented fabric softener and conditioner,HOUSEHOLD,PCS,12,1.10,730,1000,95.00,220.00,true
+HH-023,8690001000023,Fabric Softener Sensitive 1L Bottle,Hypoallergenic fabric softener for sensitive skin,HOUSEHOLD,PCS,12,1.10,730,800,100.00,235.00,true
+HH-024,8690001000024,Fabric Softener All 30ml Sachet,Fabric softener single-use sachet all variants,HOUSEHOLD,PCS,100,0.033,730,12000,8.00,20.00,true
+HH-025,8690001000025,Bleach Regular 20L Drum,Regular sodium hypochlorite bleach 5% drum,HOUSEHOLD,PCS,1,22.00,365,50,2200.00,4800.00,true
+HH-026,8690001000026,Bleach Concentrated 1L Bottle,Concentrated sodium hypochlorite bleach 10%,HOUSEHOLD,PCS,12,1.20,365,500,95.00,215.00,true
+HH-027,8690001000027,Dishwashing Lemon 1L Bottle,Lemon-scented dishwashing liquid 1L,HOUSEHOLD,PCS,12,1.10,730,1200,85.00,195.00,true
+HH-028,8690001000028,Dishwashing Lemon 15ml Sachet,Lemon-scented dishwashing liquid sachet,HOUSEHOLD,PCS,200,0.017,730,15000,5.00,12.00,true
+HH-029,8690001000029,Dishwashing Orange 1L Bottle,Orange-scented dishwashing liquid 1L,HOUSEHOLD,PCS,12,1.10,730,1000,85.00,195.00,true
+HH-030,8690001000030,Dishwashing Antibacterial 1L Bottle,Antibacterial dishwashing liquid with QUAT,HOUSEHOLD,PCS,12,1.10,730,800,100.00,230.00,true
+HH-031,8690001000031,Multi-Purpose Cleaner 30ml Sachet,Multi-surface cleaner concentrate sachet,HOUSEHOLD,PCS,100,0.033,730,8000,8.00,20.00,true
+HH-032,8690001000032,Multi-Purpose Cleaner 1L Bottle,Multi-surface cleaner ready-to-use 1L,HOUSEHOLD,PCS,12,1.10,730,800,90.00,205.00,true
+HH-033,8690001000033,Liquid Black Soap 1L Bottle,Traditional liquid black soap all-purpose cleaner,HOUSEHOLD,PCS,12,1.10,730,600,80.00,185.00,true
+HH-034,8690001000034,Degreaser 1L Bottle,Heavy-duty degreaser for kitchen and industry,HOUSEHOLD,PCS,12,1.10,730,400,110.00,250.00,true
+HH-035,8690001000035,Limescale Remover 1L Bottle,Acidic limescale and calcium remover,HOUSEHOLD,PCS,12,1.15,730,400,105.00,240.00,true
+HH-036,8690001000036,Liquid Hand Soap 500ml Bottle,Moisturizing liquid hand soap 500ml pump,HOUSEHOLD,PCS,12,0.58,730,1000,88.00,200.00,true
+HH-037,8690001000037,Liquid Hand Soap 5ml Sachet,Liquid hand soap single-use sachet,HOUSEHOLD,PCS,200,0.007,730,20000,2.00,6.00,true
+HH-038,8690001000038,Glass Cleaner 20ml Sachet,Streak-free glass and window cleaner sachet,HOUSEHOLD,PCS,100,0.023,730,8000,7.00,18.00,true
+HH-039,8690001000039,Glass Cleaner 500ml Bottle,Streak-free glass and window cleaner 500ml trigger,HOUSEHOLD,PCS,12,0.58,730,600,82.00,190.00,true
+HH-040,8690001000040,Floor Cleaner 1L Bottle,Concentrated floor cleaner with disinfectant,HOUSEHOLD,PCS,12,1.10,730,800,88.00,200.00,true
+HH-041,8690001000041,Floor Cleaner 30ml Sachet,Concentrated floor cleaner sachet,HOUSEHOLD,PCS,100,0.033,730,8000,8.00,20.00,true
+HH-042,8690001000042,Toilet Bowl Cleaner Gel 750ml Bottle,Thick gel toilet bowl cleaner with limescale remover,HOUSEHOLD,PCS,12,0.85,730,600,105.00,240.00,true
+HH-043,8690001000043,Toilet Bowl Cleaner Gel 50ml Sachet,Thick gel toilet bowl cleaner sachet,HOUSEHOLD,PCS,50,0.055,730,5000,12.00,30.00,true
+HH-044,8690001000044,Cream Cleaner 500g Bottle,Abrasive cream cleaner for stubborn stains,HOUSEHOLD,PCS,12,0.58,730,500,90.00,205.00,true
+HH-045,8690001000045,Liquid Stain Remover 50ml Sachet,Pre-wash liquid stain remover sachet,HOUSEHOLD,PCS,100,0.055,730,6000,12.00,30.00,true
+HH-046,8690001000046,Liquid Stain Remover 500ml Bottle,Pre-wash liquid stain remover 500ml,HOUSEHOLD,PCS,12,0.58,730,500,95.00,215.00,true
+HH-047,8690001000047,Disinfectant Trigger Spray 500ml Bottle,Ready-to-use disinfectant spray 500ml,HOUSEHOLD,PCS,12,0.58,730,600,100.00,230.00,true
+HH-048,8690001000048,Tile Bathroom Cleaner 50ml Sachet,Tile and bathroom descaling cleaner sachet,HOUSEHOLD,PCS,100,0.055,730,6000,12.00,28.00,true
+HH-049,8690001000049,Tile Bathroom Cleaner 500ml Bottle,Tile and bathroom descaling cleaner 500ml,HOUSEHOLD,PCS,12,0.58,730,500,90.00,205.00,true
+HH-050,8690001000050,Air Freshener Water-Based 300ml Trigger Spray,Water-based air freshener non-aerosol trigger spray,HOUSEHOLD,PCS,12,0.37,730,400,85.00,195.00,true
+HH-051,8690001000051,Car Shampoo pH Neutral 30ml Sachet,pH neutral car shampoo single-use sachet,HOUSEHOLD,PCS,100,0.033,730,3000,8.00,22.00,true
+HH-052,8690001000052,Car Shampoo pH Neutral 500ml Bottle,pH neutral car shampoo 500ml bottle,HOUSEHOLD,PCS,12,0.58,730,300,90.00,205.00,true
+HH-053,8690001000053,Interior Cleaner Water-Based 500ml Bottle,Water-based interior surface cleaner 500ml,HOUSEHOLD,PCS,12,0.58,730,300,88.00,200.00,true
+HH-054,8690001000054,QAC Surface Sanitizer 500ml Bottle,Quaternary ammonium compound surface sanitizer 500ml,HOUSEHOLD,PCS,12,0.58,730,600,110.00,255.00,true
+HH-055,8690001000055,QAC Surface Sanitizer 20L Drum,Quaternary ammonium compound surface sanitizer drum,HOUSEHOLD,PCS,1,22.00,730,30,3800.00,8500.00,true
+HH-056,8690001000056,Alcohol-Free Hand Rub 250ml Bottle,Alcohol-free benzalkonium chloride hand sanitizer,HOUSEHOLD,PCS,24,0.30,730,800,75.00,175.00,true
+HH-057,8690001000057,Alcohol-Free Hand Rub 10L Drum,Alcohol-free hand rub bulk drum for dispensers,HOUSEHOLD,PCS,1,11.00,730,40,2600.00,5800.00,true
+HH-058,8690001000058,Laundry Sanitizer Additive 500ml Bottle,Laundry sanitizer additive for machine washing,HOUSEHOLD,PCS,12,0.58,730,500,100.00,230.00,true
+HH-059,8690001000059,Laundry Sanitizer Additive 10L Drum,Laundry sanitizer additive bulk drum,HOUSEHOLD,PCS,1,11.00,730,25,1900.00,4200.00,true
+HH-060,8690001000060,Antibacterial Surface Wet Wipes 64 pieces,Antibacterial ready-to-use surface wipes 64-pack,HOUSEHOLD,PCS,24,0.18,730,2000,45.00,110.00,true
+HH-061,8690001000061,Antibacterial Surface Wet Wipes 100 pieces,Antibacterial ready-to-use surface wipes 100-pack,HOUSEHOLD,PCS,12,0.30,730,1500,72.00,170.00,true
+HH-062,8690001000062,Industrial Bleach 20L Drum,Industrial-grade sodium hypochlorite bleach drum,HOUSEHOLD,PCS,1,22.00,365,30,2800.00,6200.00,true
+HH-063,8690001000063,Industrial Fabric Softener 20L Drum,Industrial fabric softener concentrate drum,HOUSEHOLD,PCS,1,22.00,730,20,3200.00,7000.00,true
+HH-064,8690001000064,Industrial Dishwashing 20L Drum,Industrial dishwashing detergent concentrate drum,HOUSEHOLD,PCS,1,22.00,730,20,3000.00,6600.00,true
+HH-065,8690001000065,Industrial Disinfectant 20L Drum,Industrial broad-spectrum disinfectant drum,HOUSEHOLD,PCS,1,22.00,730,20,4200.00,9200.00,true
+PC-001,8690001000066,Whitening Toothpaste 75g Tube,Fluoride whitening toothpaste 75g aluminium tube,PERSONAL_CARE,PCS,24,0.09,1095,500,55.00,130.00,true
+PC-002,8690001000067,Shampoo Regular 250ml Bottle,Daily use shampoo for normal hair 250ml,PERSONAL_CARE,PCS,24,0.30,730,600,75.00,175.00,true
+PC-003,8690001000068,Shampoo Regular 8ml Sachet,Daily use shampoo single-use sachet,PERSONAL_CARE,PCS,200,0.010,730,15000,4.00,10.00,true
+PC-004,8690001000069,Shampoo Baby 250ml Bottle,Gentle tear-free baby shampoo 250ml,PERSONAL_CARE,PCS,24,0.30,730,500,80.00,188.00,true
+PC-005,8690001000070,Shampoo Baby 8ml Sachet,Gentle tear-free baby shampoo single-use sachet,PERSONAL_CARE,PCS,200,0.010,730,10000,5.00,12.00,true
+PC-006,8690001000071,Shower Gel 250ml Bottle,Moisturizing shower gel 250ml,PERSONAL_CARE,PCS,24,0.30,730,600,72.00,168.00,true
+PC-007,8690001000072,Shower Gel 8ml Sachet,Moisturizing shower gel single-use sachet,PERSONAL_CARE,PCS,200,0.010,730,15000,4.00,10.00,true
+PC-008,8690001000073,Shower Gel Institutional 20L Drum,Bulk shower gel for hotels and institutions,PERSONAL_CARE,PCS,1,22.00,730,15,3500.00,7800.00,true
+PC-009,8690001000074,Hand Sanitizer 500ml Bottle,Ethanol-based hand sanitizer 70% 500ml,PERSONAL_CARE,PCS,12,0.58,730,800,110.00,255.00,true
+PC-010,8690001000075,Hair Conditioner 250ml Bottle,Moisturizing hair conditioner 250ml,PERSONAL_CARE,PCS,24,0.30,730,500,78.00,180.00,true
+PC-011,8690001000076,Hair Conditioner 10ml Sachet,Moisturizing hair conditioner single-use sachet,PERSONAL_CARE,PCS,200,0.012,730,8000,5.00,12.00,true
+PC-012,8690001000077,Hair Conditioner Institutional 20L Drum,Bulk hair conditioner for hotels and salons,PERSONAL_CARE,PCS,1,22.00,730,10,3600.00,8000.00,true
+PC-013,8690001000078,Toothpaste 6g Sachet,Fluoride toothpaste single-use sachet,PERSONAL_CARE,PCS,200,0.007,1095,10000,3.00,8.00,true
+PC-014,8690001000079,Facial Cleansing Gel 10ml Sachet,Gentle facial cleansing gel single-use sachet,PERSONAL_CARE,PCS,200,0.012,730,5000,5.00,14.00,true
+PC-015,8690001000080,Facial Cleansing Gel 150ml Bottle,Gentle facial cleansing gel 150ml bottle,PERSONAL_CARE,PCS,24,0.19,730,300,58.00,138.00,true
+PC-016,8690001000081,Moisturizing Cream 10ml Sachet,Daily moisturizing face and body cream sachet,PERSONAL_CARE,PCS,200,0.012,730,5000,6.00,16.00,true
+PC-017,8690001000082,Moisturizing Cream 150ml Bottle,Daily moisturizing face and body cream 150ml,PERSONAL_CARE,PCS,24,0.19,730,300,62.00,148.00,true
+PC-018,8690001000083,Shaving Cream 100ml Bottle,Smooth shaving cream with moisturizers 100ml,PERSONAL_CARE,PCS,24,0.13,730,200,42.00,98.00,true
+PC-019,8690001000084,Body Lotion 20ml Sachet,Nourishing body lotion single-use sachet,PERSONAL_CARE,PCS,200,0.023,730,5000,7.00,18.00,true
+PC-020,8690001000085,Body Lotion 250ml Bottle,Nourishing body lotion 250ml,PERSONAL_CARE,PCS,24,0.30,730,400,78.00,180.00,true
+PC-021,8690001000086,Medical Wipes Chlorhexidine 50 pieces,Chlorhexidine gluconate medical grade wipes 50-pack,PERSONAL_CARE,PCS,24,0.15,730,500,48.00,115.00,true
+PC-022,8690001000087,Medical Wipes Chlorhexidine 100 pieces,Chlorhexidine gluconate medical grade wipes 100-pack,PERSONAL_CARE,PCS,12,0.30,730,300,88.00,205.00,true
+PC-023,8690001000088,Flushable Toilet Wipes 50 pieces,Flushable and biodegradable toilet wipes 50-pack,PERSONAL_CARE,PCS,24,0.15,730,800,38.00,90.00,true
+PC-024,8690001000089,Flushable Toilet Wipes 80 pieces,Flushable and biodegradable toilet wipes 80-pack,PERSONAL_CARE,PCS,12,0.23,730,600,58.00,135.00,true
+PC-025,8690001000090,Baby Wipes 48 pieces,Ultra-soft alcohol-free baby wipes 48-pack,PERSONAL_CARE,PCS,24,0.14,730,1500,35.00,82.00,true
+PC-026,8690001000091,Baby Wipes 72 pieces,Ultra-soft alcohol-free baby wipes 72-pack,PERSONAL_CARE,PCS,12,0.21,730,1000,52.00,122.00,true

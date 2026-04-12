@@ -1,16 +1,16 @@
 code,name,warehouse_type,address,city,country,capacity_sqm,is_active
-WH001,Main Finished Goods Store,FINISHED_GOODS,Mombasa Road Industrial Area,Nairobi,Kenya,8000,true
-WH002,Raw Materials Store A,RAW_MATERIAL,Mombasa Road Industrial Area,Nairobi,Kenya,5000,true
-WH003,Raw Materials Store B,RAW_MATERIAL,Mombasa Road Industrial Area,Nairobi,Kenya,3000,true
-WH004,Packaging Materials Store,RAW_MATERIAL,Enterprise Road,Nairobi,Kenya,2500,true
-WH005,Mombasa Distribution Hub,FINISHED_GOODS,Mombasa Port Area,Mombasa,Kenya,4000,true
-WH006,Kisumu Regional Depot,FINISHED_GOODS,Kisumu Industrial,Kisumu,Kenya,2000,true
-WH007,Nakuru Depot,FINISHED_GOODS,Nakuru Industrial Area,Nakuru,Kenya,1500,true
-WH008,Transit Hold Area,TRANSIT,Mombasa Road,Nairobi,Kenya,1000,true
-WH009,Returns & Damaged Goods,RETURNS,Industrial Area,Nairobi,Kenya,500,true
-WH010,Cold Room Store,FINISHED_GOODS,Mombasa Road Industrial Area,Nairobi,Kenya,800,true
-WH011,Eldoret Distribution Centre,FINISHED_GOODS,Eldoret Industrial,Eldoret,Kenya,1200,true
-WH012,Thika Road Depot,FINISHED_GOODS,Thika Road Km 15,Nairobi,Kenya,900,true
-WH013,Bonded Warehouse,TRANSIT,KPA Area,Mombasa,Kenya,2000,true
-WH014,Spares & Consumables Store,RAW_MATERIAL,Factory Premises,Nairobi,Kenya,600,true
-WH015,Quarantine Store,RETURNS,Factory Premises,Nairobi,Kenya,400,true
+WH001,Finished Goods Main Store,FINISHED_GOODS,Mombasa Road Industrial Area,Nairobi,Kenya,10000,true
+WH002,Liquid Products Store,FINISHED_GOODS,Mombasa Road Industrial Area,Nairobi,Kenya,4000,true
+WH003,Powder Products Store,FINISHED_GOODS,Mombasa Road Industrial Area,Nairobi,Kenya,3000,true
+WH004,Raw Chemicals Store A,RAW_MATERIAL,Mombasa Road Industrial Area,Nairobi,Kenya,5000,true
+WH005,Raw Chemicals Store B,RAW_MATERIAL,Mombasa Road Industrial Area,Nairobi,Kenya,3000,true
+WH006,Packaging Materials Store,RAW_MATERIAL,Enterprise Road,Nairobi,Kenya,2500,true
+WH007,Hazardous Materials Store,RAW_MATERIAL,Factory Premises,Nairobi,Kenya,800,true
+WH008,Mombasa Distribution Hub,FINISHED_GOODS,Mombasa Port Area,Mombasa,Kenya,5000,true
+WH009,Kisumu Regional Depot,FINISHED_GOODS,Kisumu Industrial,Kisumu,Kenya,2000,true
+WH010,Institutional Products Store,FINISHED_GOODS,Mombasa Road Industrial Area,Nairobi,Kenya,2000,true
+WH011,Transit Hold Area,TRANSIT,Mombasa Road,Nairobi,Kenya,1000,true
+WH012,Returns and Rejects Store,RETURNS,Factory Premises,Nairobi,Kenya,500,true
+WH013,Quarantine Store,RETURNS,Factory Premises,Nairobi,Kenya,400,true
+WH014,Sachet and Pouch Store,FINISHED_GOODS,Mombasa Road Industrial Area,Nairobi,Kenya,1500,true
+WH015,Export Bonded Warehouse,TRANSIT,KPA Area,Mombasa,Kenya,3000,true

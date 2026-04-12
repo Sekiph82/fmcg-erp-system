@@ -1,16 +1,16 @@
 employee_code,full_name,department,role,phone,email,hire_date,status,payment_method,mpesa_number,bank_account,salary_grade
-EMP001,Daniel Kamau Njoroge,Production,Production Manager,+254711001001,d.kamau@brightfoods.co.ke,2020-03-01,ACTIVE,BANK,,KCB-1234567890,G7
-EMP002,Mercy Atieno Odhiambo,Quality Assurance,QA Manager,+254722001002,m.atieno@brightfoods.co.ke,2019-06-15,ACTIVE,BANK,,Equity-0987654321,G7
-EMP003,Brian Mwenda Gitonga,Warehouse,Warehouse Supervisor,+254733001003,b.mwenda@brightfoods.co.ke,2021-01-10,ACTIVE,MPESA,+254733001003,,G5
-EMP004,Linet Wanjiku Kariuki,Finance,Accounts Payable Clerk,+254700001004,l.wanjiku@brightfoods.co.ke,2022-05-02,ACTIVE,MPESA,+254700001004,,G4
-EMP005,Joseph Otieno Aloo,Sales,Sales Representative,+254711001005,j.otieno@brightfoods.co.ke,2021-08-16,ACTIVE,MPESA,+254711001005,,G4
-EMP006,Tabitha Njeri Mwangi,Human Resources,HR Officer,+254722001006,t.njeri@brightfoods.co.ke,2020-11-01,ACTIVE,BANK,,NCBA-1122334455,G5
-EMP007,Francis Mutua Kioko,Production,Line Operator,+254733001007,,2022-02-14,ACTIVE,MPESA,+254733001007,,G2
-EMP008,Agnes Chemutai Bett,Production,Line Operator,+254700001008,,2022-02-14,ACTIVE,MPESA,+254700001008,,G2
-EMP009,George Omondi Owino,Logistics,Driver,+254711001009,,2021-04-01,ACTIVE,MPESA,+254711001009,,G3
-EMP010,Purity Waithera Ndungu,Quality Assurance,QC Analyst,+254722001010,p.waithera@brightfoods.co.ke,2023-01-09,ACTIVE,MPESA,+254722001010,,G3
-EMP011,Kelvin Kipkoech Rono,Maintenance,Maintenance Technician,+254733001011,,2020-07-20,ACTIVE,MPESA,+254733001011,,G4
-EMP012,Esther Akinyi Ouma,Sales,Sales Representative,+254700001012,e.akinyi@brightfoods.co.ke,2022-09-05,ACTIVE,MPESA,+254700001012,,G4
-EMP013,Michael Wekesa Barasa,Procurement,Procurement Officer,+254711001013,m.wekesa@brightfoods.co.ke,2021-03-22,ACTIVE,BANK,,Stanbic-5566778899,G5
-EMP014,Rose Chebet Koech,Finance,Finance Manager,+254722001014,r.chebet@brightfoods.co.ke,2018-09-01,ACTIVE,BANK,,KCB-6677889900,G8
-EMP015,Victor Musyoka Mutisya,IT,IT Support Officer,+254733001015,v.musyoka@brightfoods.co.ke,2023-03-13,ACTIVE,MPESA,+254733001015,,G4
+EMP001,Mehmet Yilmaz,Production,Plant Manager,+905321100001,m.yilmaz@company.com,2018-06-01,ACTIVE,BANK,,Garanti-1234567890,G9
+EMP002,Fatima Nur Celik,Quality Assurance,QA Manager,+905332100002,f.celik@company.com,2019-03-15,ACTIVE,BANK,,Ziraat-0987654321,G8
+EMP003,Daniel Kamau,Production,Production Supervisor,+254711100003,d.kamau@company.com,2020-09-01,ACTIVE,MPESA,+254711100003,,G6
+EMP004,Grace Wanjiru,Laboratory,Senior Lab Chemist,+254722100004,g.wanjiru@company.com,2021-02-10,ACTIVE,BANK,,KCB-1122334455,G6
+EMP005,Ibrahim Hassan,Sales,Sales Manager,+905343100005,i.hassan@company.com,2019-07-01,ACTIVE,BANK,,Akbank-2233445566,G8
+EMP006,Rose Achieng,Finance,Finance Manager,+254700100006,r.achieng@company.com,2018-11-01,ACTIVE,BANK,,Equity-3344556677,G8
+EMP007,Ali Demir,Maintenance,Maintenance Engineer,+905354100007,a.demir@company.com,2020-04-15,ACTIVE,BANK,,Vakif-4455667788,G6
+EMP008,Mary Njuguna,Human Resources,HR Manager,+254711100008,m.njuguna@company.com,2021-01-05,ACTIVE,MPESA,+254711100008,,G7
+EMP009,Kemal Arslan,Production,Filling Line Operator,+905365100009,,2022-03-01,ACTIVE,BANK,,Halkbank-5566778899,G3
+EMP010,Purity Otieno,Quality Assurance,QC Analyst,+254722100010,p.otieno@company.com,2022-06-20,ACTIVE,MPESA,+254722100010,,G4
+EMP011,Samuel Mwenda,Warehouse,Warehouse Supervisor,+254733100011,s.mwenda@company.com,2021-05-10,ACTIVE,MPESA,+254733100011,,G5
+EMP012,Amina Yusuf,Sales,Sales Representative,+254700100012,a.yusuf@company.com,2022-09-01,ACTIVE,MPESA,+254700100012,,G4
+EMP013,Peter Omondi,Procurement,Procurement Officer,+254711100013,p.omondi@company.com,2021-08-16,ACTIVE,BANK,,NCBA-6677889900,G5
+EMP014,Selin Kaya,Research & Development,Product Formulation Chemist,+905376100014,s.kaya@company.com,2020-10-01,ACTIVE,BANK,,Isbank-7788990011,G7
+EMP015,Kevin Wekesa,Logistics,Logistics Coordinator,+254722100015,k.wekesa@company.com,2022-01-17,ACTIVE,MPESA,+254722100015,,G4

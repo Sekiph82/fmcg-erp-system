@@ -1,16 +1,26 @@
 name,description,parameter_type,unit,min_value,max_value,expected_value,is_critical,applicable_types
-pH Level,Acidity/alkalinity of product or raw material,NUMERIC,pH,3.5,4.5,,true,ALL
-Brix (Total Soluble Solids),Sugar content measured by refractometer,NUMERIC,°Brix,28.0,32.0,,true,ALL
-Moisture Content,Percentage water content by weight,NUMERIC,%,0,14.0,,true,ALL
-Microbial Count (TVC),Total viable count of microorganisms,NUMERIC,CFU/g,0,100,,true,ALL
-Yeast & Mould Count,Total yeast and mould organisms,NUMERIC,CFU/g,0,10,,true,ALL
-Net Weight Check,Actual product net weight verification,NUMERIC,g,,,,false,ALL
-Viscosity,Flow resistance of liquid products,NUMERIC,cP,800,1200,,false,ALL
-Titratable Acidity,Acid content expressed as citric acid,NUMERIC,%,0.30,0.60,,false,ALL
-Colour (Visual),Colour grade checked against standard,PASS_FAIL,,,,Matches standard colour chart,true,ALL
-Seal Integrity,Hermetic seal check on bottles and packs,PASS_FAIL,,,,No leaks no cracks seal is complete,true,ALL
-Label Check,Correct label applied and legible,PASS_FAIL,,,,Label correct and securely applied,false,ALL
-Foreign Matter,Absence of physical contaminants,PASS_FAIL,,,,No foreign matter detected,true,ALL
-Free Fatty Acid (FFA),FFA level in edible oils,NUMERIC,%,0,0.10,,true,ALL
-Peroxide Value,Oxidation indicator for edible oils,NUMERIC,meq/kg,0,5.0,,true,ALL
-Iodine Content (Salt),Iodine fortification level in salt,NUMERIC,ppm,15,40,,true,ALL
+pH Value,Acidity or alkalinity of product measured by pH meter,NUMERIC,pH,,,,,false,ALL
+Active Surfactant Content,Total active detergent content by titration,NUMERIC,%,,,,,true,ALL
+Viscosity at 25C,Flow resistance of liquid products at 25 degrees Celsius,NUMERIC,cP,,,,,false,ALL
+Total Active Chlorine,Active chlorine concentration in bleach products,NUMERIC,%,,,,,true,ALL
+Foam Volume Test,Foam generation test using Ross-Miles method,NUMERIC,mL,,,,,false,ALL
+Microbial Count TVC,Total viable count of aerobic microorganisms,NUMERIC,CFU/g,0,100,,true,ALL
+Yeast and Mould Count,Total yeast and mould organisms per gram,NUMERIC,CFU/g,0,10,,true,ALL
+Absence of Pathogens,Absence of E. coli Salmonella and Staphylococcus aureus,PASS_FAIL,,,,Not detected in 25g or 25ml,true,ALL
+Net Weight Check,Actual product net weight or volume verification against label claim,NUMERIC,g,,,,,false,ALL
+Seal Integrity,Hermetic seal integrity check on all primary packaging,PASS_FAIL,,,,No leaks no visible defects seal is complete,true,ALL
+Label Correctness,Correct label applied with all required regulatory information,PASS_FAIL,,,,Correct label properly applied and legible,false,ALL
+Colour and Appearance,Visual assessment of colour and homogeneity against reference standard,PASS_FAIL,,,,Matches approved reference sample,false,ALL
+Foreign Matter,Absence of physical contaminants in product,PASS_FAIL,,,,No foreign matter detected,true,ALL
+Free Alkalinity,Free alkali content in alkaline cleaning products,NUMERIC,%,,,,,false,ALL
+Titratable Acidity,Acid content in acidic descaling and limescale remover products,NUMERIC,%,,,,,false,ALL
+Benzalkonium Chloride Assay,Active QUAT concentration in sanitizer and disinfectant products,NUMERIC,%,,,,,true,ALL
+Ethanol Content,Ethyl alcohol concentration in hand sanitizer,NUMERIC,%,60,80,,true,ALL
+Fluoride Content,Fluoride ion concentration in toothpaste formulations,NUMERIC,ppm,1000,1500,,true,ALL
+Preservative Efficacy Test,Challenge test for preservation against key microorganisms,PASS_FAIL,,,,Passes PET to ISO 11930 criteria,true,ALL
+Fragrance Intensity,Subjective fragrance assessment against reference standard,PASS_FAIL,,,,Matches approved reference fragrance level,false,ALL
+Bulk Density Powder,Bulk density of powder products for fill weight accuracy,NUMERIC,g/L,,,,,false,ALL
+Dispensing Test Sachet,Sachet tear strength and complete content dispensing test,PASS_FAIL,,,,Tears cleanly content fully discharged,false,ALL
+Wipe Wetness Check,Moisture content of wet wipes within specification,NUMERIC,%,80,95,,false,ALL
+Chlorhexidine Assay,Active chlorhexidine gluconate concentration in medical wipes,NUMERIC,%,0.45,0.55,,true,ALL
+Trigger Spray Output,Volume dispensed per pump stroke for spray products,NUMERIC,mL/stroke,1.0,2.0,,false,ALL
