@@ -6,6 +6,7 @@ from app.api.v1.endpoints import (
     maintenance, logistics, tax_regulatory, dashboard, integrations,
     distributors, field_sales, delivery, returns_mgmt, pricing,
     hr, documents, analytics, bulk_import, marketing, ai,
+    production_advanced,
 )
 
 api_router = APIRouter()
@@ -51,3 +52,5 @@ api_router.include_router(bulk_import.router, prefix="/bulk-import", tags=["bulk
 api_router.include_router(marketing.router, prefix="/marketing", tags=["marketing"])
 # ── AI & Intelligence ──────────────────────────────────────────────────────────
 api_router.include_router(ai.router, prefix="/ai", tags=["ai"])
+# ── Advanced Production Module ────────────────────────────────────────────────
+api_router.include_router(production_advanced.router, prefix="/production-adv", tags=["production-advanced"])

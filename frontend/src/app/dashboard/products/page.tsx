@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { productsApi, ProductCreate, ProductCategory, UnitOfMeasure } from "@/lib/products";
+import { productsApi, Product, ProductCreate, ProductCategory, UnitOfMeasure } from "@/lib/products";
 import { extractApiError } from "@/lib/inventory";
 import { Table } from "@/components/ui/Table";
 import { Badge } from "@/components/ui/Badge";
@@ -31,6 +31,17 @@ const UOMS: { value: string; label: string }[] = [
 
 const empty: ProductCreate = { sku: "", name: "", category: "FOOD", uom: "PCS", units_per_carton: 1, reorder_point: 0, is_active: true };
 
+const DELETE_BLOCKERS = [
+  { module: "Inventory", detail: "Stock entries, stock lots, and stock movement records for this product." },
+  { module: "Sales", detail: "Sales order lines, invoice lines, and delivery lines referencing this product." },
+  { module: "Production", detail: "Production plan lines, production orders, and output records for this product." },
+  { module: "Recipe", detail: "All recipe versions that have this product as their output." },
+  { module: "Procurement", detail: "Purchase order lines, goods receipt lines, and supplier quotes for this product." },
+  { module: "Returns", detail: "All customer/supplier return records referencing this product." },
+  { module: "Warehouse (WMS)", detail: "Warehouse movement records tied to this product." },
+  { module: "Finance – Product Cost", detail: "Cost entries (standard cost per period) for this product." },
+];
+
 export default function ProductsPage() {
   const qc = useQueryClient();
   const { toasts, toast, dismiss } = useToast();
@@ -38,6 +49,9 @@ export default function ProductsPage() {
   const [form, setForm] = useState<ProductCreate>(empty);
   const [search, setSearch] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteBlockedProduct, setDeleteBlockedProduct] = useState<Product | null>(null);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [editForm, setEditForm] = useState<Partial<ProductCreate>>({});
 
   const { data: products = [], isLoading } = useQuery({
     queryKey: ["products"],
@@ -55,6 +69,17 @@ export default function ProductsPage() {
     onError: (err) => toast("error", "Failed to create product", extractApiError(err)),
   });
 
+  const update = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<ProductCreate> }) =>
+      productsApi.update(id, data),
+    onSuccess: (p) => {
+      qc.invalidateQueries({ queryKey: ["products"] });
+      setEditingProduct(null);
+      toast("success", "Product updated", `${p.name} saved successfully.`);
+    },
+    onError: (err) => toast("error", "Failed to update product", extractApiError(err)),
+  });
+
   const deleteMutation = useMutation({
     mutationFn: (id: string) => productsApi.delete(id),
     onSuccess: () => {
@@ -62,10 +87,30 @@ export default function ProductsPage() {
       toast("success", "Product deleted", "Product removed successfully.");
       setDeletingId(null);
     },
-    onError: (err) => toast("error", "Failed to delete product", extractApiError(err)),
+    onError: (err: unknown) => {
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      const blocked = products.find((p) => p.id === deletingId) ?? null;
+      if (status === 500 || status === 409 || status === 422) {
+        setDeleteBlockedProduct(blocked);
+        setDeletingId(null);
+      } else {
+        toast("error", "Failed to delete product", extractApiError(err));
+      }
+    },
   });
 
   const set = (key: keyof ProductCreate, value: unknown) => setForm((f) => ({ ...f, [key]: value }));
+  const setEdit = (key: keyof ProductCreate, value: unknown) => setEditForm((f) => ({ ...f, [key]: value }));
+
+  const openEdit = (p: Product) => {
+    setEditingProduct(p);
+    setEditForm({
+      sku: p.sku, name: p.name, category: p.category, uom: p.uom,
+      units_per_carton: p.units_per_carton, reorder_point: p.reorder_point,
+      selling_price: p.selling_price, standard_cost: p.standard_cost,
+      shelf_life_days: p.shelf_life_days, is_active: p.is_active,
+    });
+  };
 
   const filtered = products.filter(
     (p) => p.name.toLowerCase().includes(search.toLowerCase()) || p.sku.toLowerCase().includes(search.toLowerCase())
@@ -110,12 +155,20 @@ export default function ProductsPage() {
             {
               header: "",
               accessor: (r) => (
-                <button
-                  onClick={() => setDeletingId(r.id)}
-                  className="text-xs text-red-500 hover:text-red-700 hover:underline"
-                >
-                  Delete
-                </button>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => openEdit(r)}
+                    className="text-xs text-indigo-600 hover:text-indigo-800 hover:underline"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => setDeletingId(r.id)}
+                    className="text-xs text-red-500 hover:text-red-700 hover:underline"
+                  >
+                    Delete
+                  </button>
+                </div>
               ),
             },
           ]}
@@ -172,6 +225,101 @@ export default function ProductsPage() {
             Delete
           </Button>
         </div>
+      </Modal>
+
+      {/* Delete Blocked — explain what must be cleared first */}
+      <Modal
+        open={!!deleteBlockedProduct}
+        onClose={() => setDeleteBlockedProduct(null)}
+        title="Cannot Delete Product"
+      >
+        <div className="space-y-4">
+          <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3">
+            <p className="text-sm font-semibold text-red-800">
+              &quot;{deleteBlockedProduct?.name}&quot; ({deleteBlockedProduct?.sku}) is referenced by other records.
+            </p>
+            <p className="text-xs text-red-600 mt-1">
+              The database blocked this deletion to protect existing data. You must remove all linked records below before this product can be deleted.
+            </p>
+          </div>
+
+          <div>
+            <p className="text-sm font-semibold text-gray-800 mb-2">Complete these steps in order:</p>
+            <ol className="space-y-2">
+              {DELETE_BLOCKERS.map((b, i) => (
+                <li key={b.module} className="flex gap-3 text-sm">
+                  <span className="flex-shrink-0 flex items-center justify-center w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 font-bold text-xs mt-0.5">
+                    {i + 1}
+                  </span>
+                  <span>
+                    <span className="font-semibold text-gray-900">{b.module}:&nbsp;</span>
+                    <span className="text-gray-600">{b.detail}</span>
+                  </span>
+                </li>
+              ))}
+            </ol>
+          </div>
+
+          <div className="rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-xs text-amber-800">
+            <strong>Tip:</strong> If this product was only created for testing and has no real transactions, you can delete the records directly from the database. After all linked records are removed, try deleting this product again.
+          </div>
+
+          <div className="flex justify-end pt-1">
+            <Button variant="secondary" onClick={() => setDeleteBlockedProduct(null)}>Close</Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Edit Product Modal */}
+      <Modal open={!!editingProduct} onClose={() => setEditingProduct(null)} title={`Edit Product — ${editingProduct?.sku}`}>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (editingProduct) update.mutate({ id: editingProduct.id, data: editForm });
+          }}
+          className="space-y-4"
+        >
+          <div className="grid grid-cols-2 gap-4">
+            <Input label="SKU *" value={editForm.sku ?? ""} onChange={(e) => setEdit("sku", e.target.value)} required />
+            <Input label="Name *" value={editForm.name ?? ""} onChange={(e) => setEdit("name", e.target.value)} required />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <Select label="Category" options={CATEGORIES} value={editForm.category ?? "FOOD"}
+              onChange={(e) => setEdit("category", e.target.value as ProductCategory)} />
+            <Select label="Unit of Measure" options={UOMS} value={editForm.uom ?? "PCS"}
+              onChange={(e) => setEdit("uom", e.target.value as UnitOfMeasure)} />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <Input label="Selling Price (Rp)" type="number" step="0.01"
+              value={editForm.selling_price ?? ""}
+              onChange={(e) => setEdit("selling_price", parseFloat(e.target.value) || undefined)} />
+            <Input label="Standard Cost (Rp)" type="number" step="0.01"
+              value={editForm.standard_cost ?? ""}
+              onChange={(e) => setEdit("standard_cost", parseFloat(e.target.value) || undefined)} />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <Input label="Reorder Point" type="number"
+              value={editForm.reorder_point ?? 0}
+              onChange={(e) => setEdit("reorder_point", parseFloat(e.target.value) || 0)} />
+            <Input label="Shelf Life (days)" type="number"
+              value={editForm.shelf_life_days ?? ""}
+              onChange={(e) => setEdit("shelf_life_days", parseInt(e.target.value) || undefined)} />
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              id="edit-is-active"
+              type="checkbox"
+              checked={editForm.is_active ?? true}
+              onChange={(e) => setEdit("is_active", e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+            />
+            <label htmlFor="edit-is-active" className="text-sm text-gray-700">Active product</label>
+          </div>
+          <div className="flex justify-end gap-3 pt-2">
+            <Button variant="secondary" type="button" onClick={() => setEditingProduct(null)}>Cancel</Button>
+            <Button type="submit" loading={update.isPending}>Save Changes</Button>
+          </div>
+        </form>
       </Modal>
     </div>
   );
