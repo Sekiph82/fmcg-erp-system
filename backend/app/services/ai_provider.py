@@ -166,6 +166,49 @@ class OpenAIProvider(BaseAIProvider):
             raise
 
 
+# ── Google Gemini ─────────────────────────────────────────────────────────────
+
+class GeminiProvider(BaseAIProvider):
+    def __init__(self):
+        try:
+            import google.generativeai as genai
+            genai.configure(api_key=settings.GEMINI_API_KEY)
+            self._genai = genai
+            self._model_name = settings.GEMINI_MODEL
+        except ImportError:
+            raise RuntimeError("google-generativeai package not installed. Run: pip install google-generativeai")
+
+    async def generate_text(self, prompt: str, system: Optional[str] = None) -> AIResponse:
+        import asyncio
+        t0 = time.monotonic()
+        full_prompt = f"{system}\n\n{prompt}" if system else prompt
+        model = self._genai.GenerativeModel(self._model_name)
+        try:
+            response = await asyncio.get_event_loop().run_in_executor(
+                None, lambda: model.generate_content(
+                    full_prompt,
+                    generation_config=self._genai.GenerationConfig(
+                        max_output_tokens=settings.AI_MAX_TOKENS,
+                        temperature=settings.AI_TEMPERATURE,
+                    ),
+                )
+            )
+            latency = int((time.monotonic() - t0) * 1000)
+            text = response.text or ""
+            usage = getattr(response, "usage_metadata", None)
+            return AIResponse(
+                text=text,
+                provider="gemini",
+                model=self._model_name,
+                prompt_tokens=getattr(usage, "prompt_token_count", 0) if usage else 0,
+                completion_tokens=getattr(usage, "candidates_token_count", 0) if usage else 0,
+                latency_ms=latency,
+            )
+        except Exception as e:
+            log.error("Gemini API error: %s", e)
+            raise
+
+
 # ── Mock provider (no API key needed) ────────────────────────────────────────
 
 MOCK_FORMULATION = {
@@ -317,23 +360,58 @@ _instance: Optional[BaseAIProvider] = None
 
 
 def get_ai_provider() -> BaseAIProvider:
+    """
+    Return the active AI provider.
+
+    Selection logic:
+    1. If AI_PROVIDER is explicitly set (not "auto") AND its API key is present → use it.
+    2. Otherwise auto-detect: whichever key is present wins.
+       Priority: Anthropic → OpenAI → Gemini → Mock.
+    """
     global _instance
     if _instance is None:
         provider = settings.AI_PROVIDER.lower()
+
+        # ── Explicit provider requested ───────────────────────────────────────
         if provider == "anthropic":
-            if not settings.ANTHROPIC_API_KEY:
-                log.warning("ANTHROPIC_API_KEY not set — falling back to mock provider")
-                _instance = MockProvider()
-            else:
+            if settings.ANTHROPIC_API_KEY:
                 _instance = AnthropicProvider()
-        elif provider == "openai":
-            if not settings.OPENAI_API_KEY:
-                log.warning("OPENAI_API_KEY not set — falling back to mock provider")
-                _instance = MockProvider()
             else:
+                log.warning("AI_PROVIDER=anthropic but ANTHROPIC_API_KEY is not set — auto-detecting")
+                provider = "auto"
+
+        if provider == "openai" and _instance is None:
+            if settings.OPENAI_API_KEY:
                 _instance = OpenAIProvider()
-        else:
+            else:
+                log.warning("AI_PROVIDER=openai but OPENAI_API_KEY is not set — auto-detecting")
+                provider = "auto"
+
+        if provider == "gemini" and _instance is None:
+            if settings.GEMINI_API_KEY:
+                _instance = GeminiProvider()
+            else:
+                log.warning("AI_PROVIDER=gemini but GEMINI_API_KEY is not set — auto-detecting")
+                provider = "auto"
+
+        if provider == "mock" and _instance is None:
             _instance = MockProvider()
+
+        # ── Auto-detect: use whichever key is present ─────────────────────────
+        if _instance is None:
+            if settings.ANTHROPIC_API_KEY:
+                log.info("Auto-detected AI provider: Anthropic (Claude)")
+                _instance = AnthropicProvider()
+            elif settings.OPENAI_API_KEY:
+                log.info("Auto-detected AI provider: OpenAI")
+                _instance = OpenAIProvider()
+            elif settings.GEMINI_API_KEY:
+                log.info("Auto-detected AI provider: Google Gemini")
+                _instance = GeminiProvider()
+            else:
+                log.warning("No AI API key found — using mock provider")
+                _instance = MockProvider()
+
     return _instance
 
 

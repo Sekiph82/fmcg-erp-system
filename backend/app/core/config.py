@@ -47,11 +47,15 @@ class Settings(BaseSettings):
                     and self.MPESA_SHORTCODE and self.MPESA_PASSKEY)
 
     # ── AI Provider ───────────────────────────────────────────────────────────
-    AI_PROVIDER: str = "anthropic"           # "anthropic" | "openai" | "mock"
+    # Set AI_PROVIDER to preferred provider. If that provider's key is missing,
+    # the system auto-detects whichever key is present (anthropic → openai → gemini).
+    AI_PROVIDER: str = "auto"               # "auto" | "anthropic" | "openai" | "gemini" | "mock"
     ANTHROPIC_API_KEY: str = ""
     ANTHROPIC_MODEL: str = "claude-sonnet-4-6"
     OPENAI_API_KEY: str = ""
     OPENAI_MODEL: str = "gpt-4o"
+    GEMINI_API_KEY: str = ""
+    GEMINI_MODEL: str = "gemini-1.5-pro"
     AI_MAX_TOKENS: int = 4096
     AI_TEMPERATURE: float = 0.3             # lower = more deterministic for structured outputs
 
@@ -61,6 +65,10 @@ class Settings(BaseSettings):
             return bool(self.ANTHROPIC_API_KEY)
         if self.AI_PROVIDER == "openai":
             return bool(self.OPENAI_API_KEY)
+        if self.AI_PROVIDER == "gemini":
+            return bool(self.GEMINI_API_KEY)
+        if self.AI_PROVIDER == "auto":
+            return bool(self.ANTHROPIC_API_KEY or self.OPENAI_API_KEY or self.GEMINI_API_KEY)
         return self.AI_PROVIDER == "mock"
 
     def parse_cors(self, v: str) -> List[str]:
