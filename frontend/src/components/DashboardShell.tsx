@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { Sidebar } from "./Sidebar";
+import { useUnsavedChangesContext } from "@/context/UnsavedChangesContext";
 
 interface DashboardShellProps {
   children: React.ReactNode;
@@ -9,9 +11,50 @@ interface DashboardShellProps {
 
 export function DashboardShell({ children }: DashboardShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { isDirty, confirmLeave } = useUnsavedChangesContext();
+  const router = useRouter();
+  const originalPushRef = useRef<typeof window.history.pushState | null>(null);
 
   const openMobile = useCallback(() => setMobileOpen(true), []);
   const closeMobile = useCallback(() => setMobileOpen(false), []);
+
+  // ── Browser close / refresh / tab close ─────────────────────────────────────
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (!isDirty) return;
+      e.preventDefault();
+      e.returnValue = ""; // triggers browser's native "Leave site?" dialog
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isDirty]);
+
+  // ── In-app navigation (Next.js SPA route changes) ────────────────────────────
+  useEffect(() => {
+    if (!isDirty) {
+      // Restore original pushState if we patched it
+      if (originalPushRef.current) {
+        window.history.pushState = originalPushRef.current;
+        originalPushRef.current = null;
+      }
+      return;
+    }
+
+    const original = window.history.pushState.bind(window.history);
+    originalPushRef.current = original;
+
+    window.history.pushState = async function (state, title, url) {
+      const ok = await confirmLeave();
+      if (ok) original(state, title, url);
+    };
+
+    return () => {
+      if (originalPushRef.current) {
+        window.history.pushState = originalPushRef.current;
+        originalPushRef.current = null;
+      }
+    };
+  }, [isDirty, confirmLeave]);
 
   return (
     <div className="flex h-screen bg-[#f1f3f6] overflow-hidden">
