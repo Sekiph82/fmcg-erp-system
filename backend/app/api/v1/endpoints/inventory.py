@@ -53,6 +53,24 @@ async def update_lot(lot_id: uuid.UUID, data: LotUpdate, db: AsyncSession = Depe
     return obj
 
 
+@router.delete("/lots/{lot_id}", status_code=204,
+               dependencies=[Depends(require_permission("inventory", "edit"))])
+async def delete_lot(lot_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    from fastapi import Response
+    from sqlalchemy import select as sqsel
+    from app.models.inventory import Stock
+    obj = await crud.get_lot(db, lot_id)
+    if not obj:
+        raise HTTPException(status_code=404, detail="Lot not found")
+    # Remove any stock records linked to this lot
+    stocks = (await db.execute(sqsel(Stock).where(Stock.lot_id == lot_id))).scalars().all()
+    for s in stocks:
+        await db.delete(s)
+    await db.delete(obj)
+    await db.commit()
+    return Response(status_code=204)
+
+
 # ── Stock ──────────────────────────────────────────────────────────────────────
 
 @router.get("/stock", response_model=List[StockRead],

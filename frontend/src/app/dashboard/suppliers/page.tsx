@@ -16,6 +16,7 @@ export default function SuppliersPage() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<SupplierCreate>(empty);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const { data: suppliers = [], isLoading } = useQuery({
     queryKey: ["suppliers"],
@@ -27,7 +28,14 @@ export default function SuppliersPage() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["suppliers"] }); setOpen(false); setForm(empty); },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => suppliersApi.delete(id),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["suppliers"] }); setDeletingId(null); },
+  });
+
   const set = (key: keyof SupplierCreate, value: unknown) => setForm((f) => ({ ...f, [key]: value }));
+
+  const deletingSupplier = suppliers.find((s) => s.id === deletingId);
 
   return (
     <div>
@@ -58,10 +66,22 @@ export default function SuppliersPage() {
             { header: "Country", accessor: (r) => r.country ?? "—" },
             { header: "Payment Terms", accessor: (r) => `${r.payment_terms_days} days` },
             { header: "Status", accessor: (r) => <Badge label={r.is_active ? "Active" : "Inactive"} variant={r.is_active ? "green" : "red"} /> },
+            {
+              header: "",
+              accessor: (r) => (
+                <button
+                  onClick={() => setDeletingId(r.id)}
+                  className="text-xs text-red-500 hover:text-red-700 hover:underline"
+                >
+                  Delete
+                </button>
+              ),
+            },
           ]}
         />
       )}
 
+      {/* Add Supplier Modal */}
       <Modal open={open} onClose={() => setOpen(false)} title="Add Supplier">
         <form onSubmit={(e) => { e.preventDefault(); create.mutate(form); }} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
@@ -84,6 +104,26 @@ export default function SuppliersPage() {
             <Button type="submit" loading={create.isPending}>Create</Button>
           </div>
         </form>
+      </Modal>
+
+      {/* Delete Confirm Modal */}
+      <Modal open={!!deletingId} onClose={() => setDeletingId(null)} title="Delete Supplier">
+        <p className="text-sm text-gray-600 mb-4">
+          Are you sure you want to delete{" "}
+          <span className="font-semibold text-gray-900">{deletingSupplier?.name}</span>?
+          This action cannot be undone.
+        </p>
+        {deleteMutation.error && <p className="text-sm text-red-600 mb-3">Failed to delete supplier.</p>}
+        <div className="flex justify-end gap-3">
+          <Button variant="secondary" onClick={() => setDeletingId(null)}>Cancel</Button>
+          <Button
+            variant="danger"
+            loading={deleteMutation.isPending}
+            onClick={() => deletingId && deleteMutation.mutate(deletingId)}
+          >
+            Delete
+          </Button>
+        </div>
       </Modal>
     </div>
   );

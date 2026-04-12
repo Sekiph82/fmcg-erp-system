@@ -7,6 +7,7 @@ from app.db.session import get_db
 from app.core.deps import get_current_user
 from app.crud import master as crud
 from app.schemas.master import MaterialCreate, MaterialUpdate, MaterialRead
+from fastapi import Response
 
 router = APIRouter()
 
@@ -43,3 +44,14 @@ async def update_material(material_id: uuid.UUID, data: MaterialUpdate,
     obj = await crud.update_material(db, obj, data)
     await db.commit()
     return obj
+
+
+@router.delete("/{material_id}", status_code=204)
+async def delete_material(material_id: uuid.UUID, db: AsyncSession = Depends(get_db),
+                          _=Depends(get_current_user)):
+    obj = await crud.get_material(db, material_id)
+    if not obj:
+        raise HTTPException(status_code=404, detail="Material not found")
+    await crud.delete_material(db, obj)
+    await db.commit()
+    return Response(status_code=204)

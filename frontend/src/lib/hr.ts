@@ -179,4 +179,7 @@ export const hrApi = {
     apiClient.post<PayrollPeriod>(`${base}/payroll/periods/${id}/approve`).then((r) => r.data),
   exportPayrollPeriod: (id: string) =>
     apiClient.get<Record<string, unknown>[]>(`${base}/payroll/periods/${id}/export`).then((r) => r.data),
+
+  deleteEmployee: (id: string) =>
+    apiClient.delete(`${base}/employees/${id}`),
 };

@@ -51,4 +51,8 @@ export const warehousesApi = {
     const res = await apiClient.patch<Warehouse>(`/api/v1/warehouses/${id}`, data);
     return res.data;
   },
+
+  async delete(id: string): Promise<void> {
+    await apiClient.delete(`/api/v1/warehouses/${id}`);
+  },
 };

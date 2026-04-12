@@ -6,6 +6,8 @@ import { hrApi, Employee, EmployeeStatus } from "@/lib/hr";
 import { ImportModal } from "@/components/import/ImportModal";
 import { RequirePermission } from "@/components/PermissionGuard";
 import { Badge } from "@/components/ui/Badge";
+import { Modal } from "@/components/ui/Modal";
+import { Button } from "@/components/ui/Button";
 
 const STATUS_VARIANT: Record<EmployeeStatus, "green" | "gray" | "yellow" | "red"> = {
   ACTIVE: "green",
@@ -109,6 +111,7 @@ function EmployeesContent() {
   const [status, setStatus] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Employee | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const { data: employees = [], isLoading } = useQuery({
     queryKey: ["hr-employees", dept, status, search],
@@ -124,6 +127,13 @@ function EmployeesContent() {
     mutationFn: ({ id, data }: { id: string; data: Record<string, unknown> }) => hrApi.updateEmployee(id, data),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["hr-employees"] }); setEditing(null); },
   });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => hrApi.deleteEmployee(id),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["hr-employees"] }); setDeletingId(null); },
+  });
+
+  const deletingEmployee = employees.find((e) => e.id === deletingId);
 
   const departments = Array.from(new Set(employees.map((e) => e.department))).sort();
 
@@ -204,12 +214,20 @@ function EmployeesContent() {
                     <Badge label={emp.status} variant={STATUS_VARIANT[emp.status]} />
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <button
-                      onClick={() => setEditing(emp as unknown as Employee)}
-                      className="text-xs text-indigo-600 hover:underline"
-                    >
-                      Edit
-                    </button>
+                    <div className="flex justify-end gap-3">
+                      <button
+                        onClick={() => setEditing(emp as unknown as Employee)}
+                        className="text-xs text-indigo-600 hover:underline"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => setDeletingId(emp.id)}
+                        className="text-xs text-red-500 hover:text-red-700 hover:underline"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -217,6 +235,26 @@ function EmployeesContent() {
           </table>
         )}
       </div>
+      {/* Delete Confirm Modal */}
+      <Modal open={!!deletingId} onClose={() => setDeletingId(null)} title="Delete Employee">
+        <p className="text-sm text-gray-600 mb-4">
+          Are you sure you want to delete{" "}
+          <span className="font-semibold text-gray-900">{deletingEmployee?.full_name}</span>{" "}
+          <span className="font-mono text-xs text-gray-500">({deletingEmployee?.employee_code})</span>?
+          This action cannot be undone.
+        </p>
+        {deleteMutation.error && <p className="text-sm text-red-600 mb-3">Failed to delete employee.</p>}
+        <div className="flex justify-end gap-3">
+          <Button variant="secondary" onClick={() => setDeletingId(null)}>Cancel</Button>
+          <Button
+            variant="danger"
+            loading={deleteMutation.isPending}
+            onClick={() => deletingId && deleteMutation.mutate(deletingId)}
+          >
+            Delete
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 }

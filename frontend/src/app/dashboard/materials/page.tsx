@@ -6,6 +6,8 @@ import { materialsApi, Material, MaterialCreate, MaterialType, UnitOfMeasure } f
 import { ImportModal } from "@/components/import/ImportModal";
 import { RequirePermission } from "@/components/PermissionGuard";
 import { Badge } from "@/components/ui/Badge";
+import { Modal } from "@/components/ui/Modal";
+import { Button } from "@/components/ui/Button";
 
 const TYPE_LABELS: Record<MaterialType, string> = {
   RAW:          "Raw",
@@ -125,6 +127,7 @@ function MaterialsContent() {
   const [typeFilter, setTypeFilter] = useState<MaterialType | "">("");
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Material | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const { data: materials = [], isLoading } = useQuery({
     queryKey: ["materials"],
@@ -141,6 +144,13 @@ function MaterialsContent() {
       materialsApi.update(id, data),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["materials"] }); setEditing(null); },
   });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => materialsApi.delete(id),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["materials"] }); setDeletingId(null); },
+  });
+
+  const deletingMaterial = materials.find((m) => m.id === deletingId);
 
   const filtered = materials.filter((m) => {
     const matchSearch = !search
@@ -287,12 +297,20 @@ function MaterialsContent() {
                       : <span className="text-xs text-gray-400">Inactive</span>}
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <button
-                      onClick={() => { setEditing(m); setShowForm(false); }}
-                      className="text-xs text-indigo-600 hover:underline"
-                    >
-                      Edit
-                    </button>
+                    <div className="flex justify-end gap-3">
+                      <button
+                        onClick={() => { setEditing(m); setShowForm(false); }}
+                        className="text-xs text-indigo-600 hover:underline"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => setDeletingId(m.id)}
+                        className="text-xs text-red-500 hover:text-red-700 hover:underline"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -300,6 +318,27 @@ function MaterialsContent() {
           </table>
         )}
       </div>
+
+      {/* Delete Confirm Modal */}
+      <Modal open={!!deletingId} onClose={() => setDeletingId(null)} title="Delete Material">
+        <p className="text-sm text-gray-600 mb-4">
+          Are you sure you want to delete{" "}
+          <span className="font-semibold text-gray-900">{deletingMaterial?.name}</span>{" "}
+          <span className="font-mono text-xs text-gray-500">({deletingMaterial?.code})</span>?
+          This action cannot be undone.
+        </p>
+        {deleteMutation.error && <p className="text-sm text-red-600 mb-3">Failed to delete material.</p>}
+        <div className="flex justify-end gap-3">
+          <Button variant="secondary" onClick={() => setDeletingId(null)}>Cancel</Button>
+          <Button
+            variant="danger"
+            loading={deleteMutation.isPending}
+            onClick={() => deletingId && deleteMutation.mutate(deletingId)}
+          >
+            Delete
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 }

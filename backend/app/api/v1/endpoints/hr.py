@@ -98,6 +98,18 @@ async def update_employee(
     return emp
 
 
+@router.delete("/employees/{employee_id}", status_code=204,
+               dependencies=[Depends(require_permission("hr", "edit"))])
+async def delete_employee(employee_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    from fastapi import Response
+    emp = await db.get(Employee, employee_id)
+    if not emp:
+        raise HTTPException(404, "Employee not found")
+    await db.delete(emp)
+    await db.commit()
+    return Response(status_code=204)
+
+
 # ── Shift Templates ───────────────────────────────────────────────────────────
 
 @router.get("/shifts/templates/", response_model=List[ShiftTemplateRead],

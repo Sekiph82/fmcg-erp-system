@@ -42,6 +42,7 @@ export default function RecipesPage() {
   const [form, setForm] = useState<RecipeCreate>(empty);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<RecipeStatus | "">("");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const { data: recipes = [], isLoading } = useQuery({
     queryKey: ["recipes", statusFilter],
@@ -69,6 +70,18 @@ export default function RecipesPage() {
     },
     onError: (err) => toast("error", "Failed to create recipe", extractApiError(err)),
   });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => recipesApi.deleteRecipe(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["recipes"] });
+      toast("success", "Recipe deleted", "Draft recipe removed.");
+      setDeletingId(null);
+    },
+    onError: (err) => toast("error", "Failed to delete recipe", extractApiError(err)),
+  });
+
+  const deletingRecipe = recipes.find((r) => r.id === deletingId);
 
   const set = (key: keyof RecipeCreate, value: unknown) =>
     setForm((f) => ({ ...f, [key]: value }));
@@ -169,17 +182,47 @@ export default function RecipesPage() {
             {
               header: "",
               accessor: (r) => (
-                <Button
-                  variant="secondary"
-                  onClick={() => router.push(`/dashboard/recipes/${r.id}`)}
-                >
-                  View
-                </Button>
+                <div className="flex items-center justify-end gap-2">
+                  <Button
+                    variant="secondary"
+                    onClick={() => router.push(`/dashboard/recipes/${r.id}`)}
+                  >
+                    View
+                  </Button>
+                  {r.status === "DRAFT" && (
+                    <button
+                      onClick={() => setDeletingId(r.id)}
+                      className="text-xs text-red-500 hover:text-red-700 hover:underline"
+                    >
+                      Delete
+                    </button>
+                  )}
+                </div>
               ),
             },
           ]}
         />
       )}
+
+      {/* Delete Confirm Modal */}
+      <Modal open={!!deletingId} onClose={() => setDeletingId(null)} title="Delete Recipe">
+        <p className="text-sm text-gray-600 mb-4">
+          Are you sure you want to delete the DRAFT recipe{" "}
+          <span className="font-semibold text-gray-900">{deletingRecipe?.name}</span>{" "}
+          <span className="font-mono text-xs text-gray-500">(v{deletingRecipe?.version})</span>?
+          This action cannot be undone.
+        </p>
+        <div className="flex justify-end gap-3">
+          <Button variant="secondary" onClick={() => setDeletingId(null)}>Cancel</Button>
+          <Button
+            variant="danger"
+            loading={deleteMutation.isPending}
+            onClick={() => deletingId && deleteMutation.mutate(deletingId)}
+          >
+            Delete
+          </Button>
+        </div>
+      </Modal>
 
       <Modal
         open={open}

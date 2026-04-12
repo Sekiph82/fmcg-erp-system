@@ -37,6 +37,7 @@ export default function ProductsPage() {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<ProductCreate>(empty);
   const [search, setSearch] = useState("");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const { data: products = [], isLoading } = useQuery({
     queryKey: ["products"],
@@ -54,11 +55,23 @@ export default function ProductsPage() {
     onError: (err) => toast("error", "Failed to create product", extractApiError(err)),
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => productsApi.delete(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["products"] });
+      toast("success", "Product deleted", "Product removed successfully.");
+      setDeletingId(null);
+    },
+    onError: (err) => toast("error", "Failed to delete product", extractApiError(err)),
+  });
+
   const set = (key: keyof ProductCreate, value: unknown) => setForm((f) => ({ ...f, [key]: value }));
 
   const filtered = products.filter(
     (p) => p.name.toLowerCase().includes(search.toLowerCase()) || p.sku.toLowerCase().includes(search.toLowerCase())
   );
+
+  const deletingProduct = products.find((p) => p.id === deletingId);
 
   return (
     <div>
@@ -94,10 +107,22 @@ export default function ProductsPage() {
             { header: "Reorder Point", accessor: (r) => Number(r.reorder_point).toLocaleString() },
             { header: "Selling Price", accessor: (r) => r.selling_price ? `Rp ${Number(r.selling_price).toLocaleString()}` : "—" },
             { header: "Status", accessor: (r) => <Badge label={r.is_active ? "Active" : "Inactive"} variant={r.is_active ? "green" : "red"} /> },
+            {
+              header: "",
+              accessor: (r) => (
+                <button
+                  onClick={() => setDeletingId(r.id)}
+                  className="text-xs text-red-500 hover:text-red-700 hover:underline"
+                >
+                  Delete
+                </button>
+              ),
+            },
           ]}
         />
       )}
 
+      {/* Add Product Modal */}
       <Modal open={open} onClose={() => { setOpen(false); setForm(empty); }} title="Add Product">
         <form onSubmit={(e) => { e.preventDefault(); create.mutate(form); }} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
@@ -127,6 +152,26 @@ export default function ProductsPage() {
             <Button type="submit" loading={create.isPending}>Create Product</Button>
           </div>
         </form>
+      </Modal>
+
+      {/* Delete Confirm Modal */}
+      <Modal open={!!deletingId} onClose={() => setDeletingId(null)} title="Delete Product">
+        <p className="text-sm text-gray-600 mb-4">
+          Are you sure you want to delete{" "}
+          <span className="font-semibold text-gray-900">{deletingProduct?.name}</span>{" "}
+          <span className="font-mono text-xs text-gray-500">({deletingProduct?.sku})</span>?
+          This action cannot be undone.
+        </p>
+        <div className="flex justify-end gap-3">
+          <Button variant="secondary" onClick={() => setDeletingId(null)}>Cancel</Button>
+          <Button
+            variant="danger"
+            loading={deleteMutation.isPending}
+            onClick={() => deletingId && deleteMutation.mutate(deletingId)}
+          >
+            Delete
+          </Button>
+        </div>
       </Modal>
     </div>
   );

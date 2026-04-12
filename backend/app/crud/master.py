@@ -119,3 +119,22 @@ async def update_warehouse(db: AsyncSession, obj: Warehouse, data: WarehouseUpda
     await db.flush()
     await db.refresh(obj)
     return obj
+
+
+# ── Delete helpers ─────────────────────────────────────────────────────────────
+
+async def delete_supplier(db: AsyncSession, obj: Supplier) -> None:
+    await db.delete(obj)
+    await db.flush()
+
+async def delete_product(db: AsyncSession, obj: Product) -> None:
+    await db.delete(obj)
+    await db.flush()
+
+async def delete_material(db: AsyncSession, obj: Material) -> None:
+    await db.delete(obj)
+    await db.flush()
+
+async def delete_warehouse(db: AsyncSession, obj: Warehouse) -> None:
+    await db.delete(obj)
+    await db.flush()

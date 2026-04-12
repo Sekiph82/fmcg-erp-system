@@ -140,4 +140,8 @@ export const inventoryApi = {
     const res = await apiClient.get("/api/v1/inventory/lots");
     return res.data;
   },
+
+  async deleteLot(id: string): Promise<void> {
+    await apiClient.delete(`/api/v1/inventory/lots/${id}`);
+  },
 };

@@ -48,6 +48,7 @@ export default function QCParametersPage() {
   const qc = useQueryClient();
   const { toasts, toast, dismiss } = useToast();
   const [open, setOpen] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [form, setForm] = useState({
     name: "", parameter_type: "NUMERIC" as ParameterType, unit: "",
     min_value: "", max_value: "", expected_value: "",
@@ -79,6 +80,18 @@ export default function QCParametersPage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["qc-parameters"] }),
     onError: (e) => toast("error", "Failed", extractApiError(e)),
   });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => qualityApi.deleteParameter(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["qc-parameters"] });
+      toast("success", "Parameter deleted", "");
+      setDeletingId(null);
+    },
+    onError: (e) => toast("error", "Failed to delete", extractApiError(e)),
+  });
+
+  const deletingParam = parameters.find((p) => p.id === deletingId);
 
   const fillTemplate = (t: typeof TEMPLATES[0]) => {
     setForm((f) => ({
@@ -142,14 +155,39 @@ export default function QCParametersPage() {
             {
               header: "",
               accessor: (p) => (
-                <button className="text-xs text-gray-400 hover:text-gray-600" onClick={() => toggleActive.mutate({ id: p.id, is_active: p.is_active })}>
-                  {p.is_active ? "Deactivate" : "Activate"}
-                </button>
+                <div className="flex items-center justify-end gap-3">
+                  <button className="text-xs text-gray-400 hover:text-gray-600" onClick={() => toggleActive.mutate({ id: p.id, is_active: p.is_active })}>
+                    {p.is_active ? "Deactivate" : "Activate"}
+                  </button>
+                  <button className="text-xs text-red-500 hover:text-red-700 hover:underline" onClick={() => setDeletingId(p.id)}>
+                    Delete
+                  </button>
+                </div>
               ),
             },
           ]}
         />
       )}
+
+      {/* Delete Confirm Modal */}
+      <Modal open={!!deletingId} onClose={() => setDeletingId(null)} title="Delete QC Parameter">
+        <p className="text-sm text-gray-600 mb-4">
+          Are you sure you want to delete the parameter{" "}
+          <span className="font-semibold text-gray-900">{deletingParam?.name}</span>?
+          This action cannot be undone.
+        </p>
+        {deleteMutation.error && <p className="text-sm text-red-600 mb-3">Failed to delete parameter.</p>}
+        <div className="flex justify-end gap-3">
+          <Button variant="secondary" onClick={() => setDeletingId(null)}>Cancel</Button>
+          <Button
+            variant="danger"
+            loading={deleteMutation.isPending}
+            onClick={() => deletingId && deleteMutation.mutate(deletingId)}
+          >
+            Delete
+          </Button>
+        </div>
+      </Modal>
 
       <Modal open={open} onClose={() => setOpen(false)} title="New QC Parameter">
         <div className="space-y-4">

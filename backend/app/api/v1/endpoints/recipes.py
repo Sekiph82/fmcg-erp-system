@@ -102,6 +102,24 @@ async def update_recipe(
     return RecipeRead.model_validate(obj)
 
 
+# ── Delete recipe header ──────────────────────────────────────────────────────
+
+@router.delete("/{recipe_id}", status_code=204)
+async def delete_recipe(
+    recipe_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(get_current_user),
+):
+    from fastapi import Response
+    obj = await crud.get_recipe(db, recipe_id)
+    if not obj:
+        raise HTTPException(status_code=404, detail="Recipe not found")
+    _assert_draft(obj)
+    await db.delete(obj)
+    await db.commit()
+    return Response(status_code=204)
+
+
 # ── Approval workflow ─────────────────────────────────────────────────────────
 
 @router.post("/{recipe_id}/approve", response_model=RecipeRead)

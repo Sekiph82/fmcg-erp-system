@@ -53,4 +53,8 @@ export const materialsApi = {
     const res = await apiClient.patch<Material>(`/api/v1/materials/${id}`, data);
     return res.data;
   },
+
+  async delete(id: string): Promise<void> {
+    await apiClient.delete(`/api/v1/materials/${id}`);
+  },
 };

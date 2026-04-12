@@ -7,6 +7,7 @@ from app.db.session import get_db
 from app.core.deps import get_current_user
 from app.crud import master as crud
 from app.schemas.master import ProductCreate, ProductUpdate, ProductRead
+from fastapi import Response
 
 router = APIRouter()
 
@@ -43,3 +44,14 @@ async def update_product(product_id: uuid.UUID, data: ProductUpdate,
     obj = await crud.update_product(db, obj, data)
     await db.commit()
     return obj
+
+
+@router.delete("/{product_id}", status_code=204)
+async def delete_product(product_id: uuid.UUID, db: AsyncSession = Depends(get_db),
+                         _=Depends(get_current_user)):
+    obj = await crud.get_product(db, product_id)
+    if not obj:
+        raise HTTPException(status_code=404, detail="Product not found")
+    await crud.delete_product(db, obj)
+    await db.commit()
+    return Response(status_code=204)

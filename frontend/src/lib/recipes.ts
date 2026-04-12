@@ -146,4 +146,8 @@ export const recipesApi = {
   async deleteProcessParam(recipeId: string, paramId: string): Promise<void> {
     await apiClient.delete(`/api/v1/recipes/${recipeId}/process-parameters/${paramId}`);
   },
+
+  async deleteRecipe(id: string): Promise<void> {
+    await apiClient.delete(`/api/v1/recipes/${id}`);
+  },
 };

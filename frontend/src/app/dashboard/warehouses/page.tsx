@@ -35,6 +35,7 @@ export default function WarehousesPage() {
   const { toasts, toast, dismiss } = useToast();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<WarehouseCreate>(empty);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const { data: warehouses = [], isLoading } = useQuery({
     queryKey: ["warehouses"],
@@ -52,7 +53,19 @@ export default function WarehousesPage() {
     onError: (err) => toast("error", "Failed to create warehouse", extractApiError(err)),
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => warehousesApi.delete(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["warehouses"] });
+      toast("success", "Warehouse deleted", "Warehouse removed successfully.");
+      setDeletingId(null);
+    },
+    onError: (err) => toast("error", "Failed to delete warehouse", extractApiError(err)),
+  });
+
   const set = (key: keyof WarehouseCreate, value: unknown) => setForm((f) => ({ ...f, [key]: value }));
+
+  const deletingWarehouse = warehouses.find((w) => w.id === deletingId);
 
   return (
     <div>
@@ -84,10 +97,22 @@ export default function WarehousesPage() {
             { header: "Country", accessor: (r) => r.country ?? "—" },
             { header: "Capacity (m²)", accessor: (r) => r.capacity_sqm ? Number(r.capacity_sqm).toLocaleString() : "—" },
             { header: "Status", accessor: (r) => <Badge label={r.is_active ? "Active" : "Inactive"} variant={r.is_active ? "green" : "red"} /> },
+            {
+              header: "",
+              accessor: (r) => (
+                <button
+                  onClick={() => setDeletingId(r.id)}
+                  className="text-xs text-red-500 hover:text-red-700 hover:underline"
+                >
+                  Delete
+                </button>
+              ),
+            },
           ]}
         />
       )}
 
+      {/* Add Warehouse Modal */}
       <Modal open={open} onClose={() => { setOpen(false); setForm(empty); }} title="Add Warehouse">
         <form onSubmit={(e) => { e.preventDefault(); create.mutate(form); }} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
@@ -106,6 +131,26 @@ export default function WarehousesPage() {
             <Button type="submit" loading={create.isPending}>Create Warehouse</Button>
           </div>
         </form>
+      </Modal>
+
+      {/* Delete Confirm Modal */}
+      <Modal open={!!deletingId} onClose={() => setDeletingId(null)} title="Delete Warehouse">
+        <p className="text-sm text-gray-600 mb-4">
+          Are you sure you want to delete{" "}
+          <span className="font-semibold text-gray-900">{deletingWarehouse?.name}</span>{" "}
+          <span className="font-mono text-xs text-gray-500">({deletingWarehouse?.code})</span>?
+          This action cannot be undone.
+        </p>
+        <div className="flex justify-end gap-3">
+          <Button variant="secondary" onClick={() => setDeletingId(null)}>Cancel</Button>
+          <Button
+            variant="danger"
+            loading={deleteMutation.isPending}
+            onClick={() => deletingId && deleteMutation.mutate(deletingId)}
+          >
+            Delete
+          </Button>
+        </div>
       </Modal>
     </div>
   );

@@ -69,6 +69,21 @@ async def update_parameter(
     return p
 
 
+@router.delete("/parameters/{param_id}", status_code=204)
+async def delete_parameter(
+    param_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    from fastapi import Response
+    p = await crud.get_parameter(db, param_id)
+    if not p:
+        raise HTTPException(404, "Parameter not found")
+    await db.delete(p)
+    await db.commit()
+    return Response(status_code=204)
+
+
 # ── QC Inspections ────────────────────────────────────────────────────────────
 
 @router.get("/inspections/", response_model=List[QCInspectionRead])

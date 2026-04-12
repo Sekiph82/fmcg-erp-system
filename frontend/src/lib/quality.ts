@@ -135,6 +135,9 @@ export const qualityApi = {
     const res = await apiClient.patch<QCParameter>(`/api/v1/quality/parameters/${id}`, data);
     return res.data;
   },
+  async deleteParameter(id: string): Promise<void> {
+    await apiClient.delete(`/api/v1/quality/parameters/${id}`);
+  },
 
   // Inspections
   async listInspections(params?: {
