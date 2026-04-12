@@ -17,22 +17,68 @@ echo ============================================================
 echo.
 
 :: ============================================================
-:: 1. CHECK DOCKER
+:: 1. START DOCKER IF NOT RUNNING
 :: ============================================================
 echo [1/5] Checking Docker...
 
 docker info >nul 2>&1
 if errorlevel 1 (
+    echo  Docker is not running. Starting Docker Desktop automatically...
     echo.
-    echo  ERROR: Docker is not running or not installed.
+
+    :: --- Try to find and launch Docker Desktop ---
+    set DOCKER_EXE=
+    if exist "C:\Program Files\Docker\Docker\Docker Desktop.exe" (
+        set DOCKER_EXE=C:\Program Files\Docker\Docker\Docker Desktop.exe
+    ) else if exist "%LOCALAPPDATA%\Docker\Docker Desktop.exe" (
+        set DOCKER_EXE=%LOCALAPPDATA%\Docker\Docker Desktop.exe
+    ) else if exist "%ProgramFiles(x86)%\Docker\Docker\Docker Desktop.exe" (
+        set DOCKER_EXE=%ProgramFiles(x86)%\Docker\Docker\Docker Desktop.exe
+    )
+
+    if "!DOCKER_EXE!"=="" (
+        echo  ERROR: Docker Desktop not found on this machine.
+        echo.
+        echo  Please install Docker Desktop from:
+        echo  https://www.docker.com/products/docker-desktop
+        echo.
+        pause
+        exit /b 1
+    )
+
+    start "" "!DOCKER_EXE!"
+    echo  Docker Desktop is starting. Waiting for engine to be ready...
+    echo  (This may take up to 60 seconds on first launch)
     echo.
-    echo  Please start Docker Desktop and try again.
-    echo  Download: https://www.docker.com/products/docker-desktop
+
+    :: --- Wait up to 90 seconds for Docker engine to respond ---
+    set DOCKER_READY=0
+    for /l %%i in (1,1,45) do (
+        if !DOCKER_READY!==0 (
+            docker info >nul 2>&1
+            if not errorlevel 1 (
+                set DOCKER_READY=1
+            ) else (
+                <nul set /p "=."
+                timeout /t 2 /nobreak >nul
+            )
+        )
+    )
+
+    if !DOCKER_READY!==0 (
+        echo.
+        echo  ERROR: Docker engine did not start within 90 seconds.
+        echo  Please open Docker Desktop manually and wait for it to finish
+        echo  loading, then run this script again.
+        echo.
+        pause
+        exit /b 1
+    )
     echo.
-    pause
-    exit /b 1
+    echo  Docker is ready.
+) else (
+    echo  Docker is already running.
 )
-echo        Docker is running.
 
 :: ============================================================
 :: 2. CHECK ENV FILE
