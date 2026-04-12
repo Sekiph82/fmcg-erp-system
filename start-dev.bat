@@ -215,7 +215,23 @@ echo  Database : localhost:5432
 echo ============================================================
 echo.
 
-start "" "http://localhost:3000/login"
+:: Open in Chrome — check all common install locations
+set CHROME_EXE=
+if exist "C:\Program Files\Google\Chrome\Application\chrome.exe" (
+    set "CHROME_EXE=C:\Program Files\Google\Chrome\Application\chrome.exe"
+) else if exist "C:\Program Files (x86)\Google\Chrome\Application\chrome.exe" (
+    set "CHROME_EXE=C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"
+) else if exist "%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe" (
+    set "CHROME_EXE=%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe"
+)
+
+if "!CHROME_EXE!"=="" (
+    echo  WARNING: Google Chrome not found. Opening in default browser instead.
+    start "" "http://localhost:3000/login"
+) else (
+    echo  Opening Google Chrome...
+    start "" "!CHROME_EXE!" "http://localhost:3000/login"
+)
 
 echo.
 echo  Running containers:
