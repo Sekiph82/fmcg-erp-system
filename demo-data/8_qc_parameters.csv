@@ -1,0 +1,16 @@
+name,description,parameter_type,unit,min_value,max_value,expected_value,is_critical,applicable_types
+pH Level,Acidity/alkalinity of product or raw material,NUMERIC,pH,3.5,4.5,,true,ALL
+Brix (Total Soluble Solids),Sugar content measured by refractometer,NUMERIC,°Brix,28.0,32.0,,true,ALL
+Moisture Content,Percentage water content by weight,NUMERIC,%,0,14.0,,true,ALL
+Microbial Count (TVC),Total viable count of microorganisms,NUMERIC,CFU/g,0,100,,true,ALL
+Yeast & Mould Count,Total yeast and mould organisms,NUMERIC,CFU/g,0,10,,true,ALL
+Net Weight Check,Actual product net weight verification,NUMERIC,g,,,,false,ALL
+Viscosity,Flow resistance of liquid products,NUMERIC,cP,800,1200,,false,ALL
+Titratable Acidity,Acid content expressed as citric acid,NUMERIC,%,0.30,0.60,,false,ALL
+Colour (Visual),Colour grade checked against standard,PASS_FAIL,,,,Matches standard colour chart,true,ALL
+Seal Integrity,Hermetic seal check on bottles and packs,PASS_FAIL,,,,No leaks no cracks seal is complete,true,ALL
+Label Check,Correct label applied and legible,PASS_FAIL,,,,Label correct and securely applied,false,ALL
+Foreign Matter,Absence of physical contaminants,PASS_FAIL,,,,No foreign matter detected,true,ALL
+Free Fatty Acid (FFA),FFA level in edible oils,NUMERIC,%,0,0.10,,true,ALL
+Peroxide Value,Oxidation indicator for edible oils,NUMERIC,meq/kg,0,5.0,,true,ALL
+Iodine Content (Salt),Iodine fortification level in salt,NUMERIC,ppm,15,40,,true,ALL

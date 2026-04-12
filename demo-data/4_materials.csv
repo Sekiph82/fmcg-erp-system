@@ -1,0 +1,16 @@
+code,name,description,material_type,uom,weight_kg,reorder_point,standard_cost,lead_time_days,is_active,supplier_code
+MAT001,Fresh Tomato Paste,Concentrated tomato paste 28-30 Brix,RAW,KG,,500,45.00,7,true,SUP001
+MAT002,White Sugar (Bulk),Refined white cane sugar,RAW,KG,,1000,82.00,14,true,SUP004
+MAT003,Sunflower Crude Oil,Crude sunflower oil for refining,RAW,L,,2000,120.00,21,true,SUP001
+MAT004,Wheat Grain,Grade 1 hard wheat grain,RAW,KG,,3000,35.00,14,true,SUP008
+MAT005,Sodium Chloride (Salt),Food grade iodized salt,RAW,KG,,500,15.00,10,true,SUP010
+MAT006,Citric Acid,Food grade citric acid monohydrate,RAW,KG,,100,280.00,21,true,SUP009
+MAT007,Mango Pulp,Alphonso mango pulp aseptic pack,RAW,KG,,300,95.00,14,true,SUP012
+MAT008,Passion Fruit Concentrate,Passion fruit juice concentrate,RAW,KG,,200,185.00,21,true,SUP012
+MAT009,Pineapple Juice Concentrate,Single strength pineapple concentrate,RAW,KG,,250,175.00,21,true,SUP012
+MAT010,Glass Bottle 500ml,Flint glass bottle for sauce,PACKAGING,PCS,,5000,12.50,30,true,SUP013
+MAT011,Glass Bottle 250ml,Flint glass bottle for sauce,PACKAGING,PCS,,8000,8.00,30,true,SUP013
+MAT012,PET Bottle 1L,Clear PET bottle for oil & juice,PACKAGING,PCS,,4000,9.50,21,true,SUP015
+MAT013,Tetra Pak 1L,Aseptic Tetra Pak carton 1L,PACKAGING,PCS,,3000,22.00,45,true,SUP006
+MAT014,Printed Label Tomato Sauce,Self-adhesive label for 500ml sauce,PACKAGING,PCS,,10000,1.20,21,true,SUP002
+MAT015,Master Carton 12-pack,Corrugated export carton 12 units,PACKAGING,PCS,,2000,18.00,14,true,SUP011

@@ -1,0 +1,16 @@
+employee_code,full_name,department,role,phone,email,hire_date,status,payment_method,mpesa_number,bank_account,salary_grade
+EMP001,Daniel Kamau Njoroge,Production,Production Manager,+254711001001,d.kamau@brightfoods.co.ke,2020-03-01,ACTIVE,BANK,,KCB-1234567890,G7
+EMP002,Mercy Atieno Odhiambo,Quality Assurance,QA Manager,+254722001002,m.atieno@brightfoods.co.ke,2019-06-15,ACTIVE,BANK,,Equity-0987654321,G7
+EMP003,Brian Mwenda Gitonga,Warehouse,Warehouse Supervisor,+254733001003,b.mwenda@brightfoods.co.ke,2021-01-10,ACTIVE,MPESA,+254733001003,,G5
+EMP004,Linet Wanjiku Kariuki,Finance,Accounts Payable Clerk,+254700001004,l.wanjiku@brightfoods.co.ke,2022-05-02,ACTIVE,MPESA,+254700001004,,G4
+EMP005,Joseph Otieno Aloo,Sales,Sales Representative,+254711001005,j.otieno@brightfoods.co.ke,2021-08-16,ACTIVE,MPESA,+254711001005,,G4
+EMP006,Tabitha Njeri Mwangi,Human Resources,HR Officer,+254722001006,t.njeri@brightfoods.co.ke,2020-11-01,ACTIVE,BANK,,NCBA-1122334455,G5
+EMP007,Francis Mutua Kioko,Production,Line Operator,+254733001007,,2022-02-14,ACTIVE,MPESA,+254733001007,,G2
+EMP008,Agnes Chemutai Bett,Production,Line Operator,+254700001008,,2022-02-14,ACTIVE,MPESA,+254700001008,,G2
+EMP009,George Omondi Owino,Logistics,Driver,+254711001009,,2021-04-01,ACTIVE,MPESA,+254711001009,,G3
+EMP010,Purity Waithera Ndungu,Quality Assurance,QC Analyst,+254722001010,p.waithera@brightfoods.co.ke,2023-01-09,ACTIVE,MPESA,+254722001010,,G3
+EMP011,Kelvin Kipkoech Rono,Maintenance,Maintenance Technician,+254733001011,,2020-07-20,ACTIVE,MPESA,+254733001011,,G4
+EMP012,Esther Akinyi Ouma,Sales,Sales Representative,+254700001012,e.akinyi@brightfoods.co.ke,2022-09-05,ACTIVE,MPESA,+254700001012,,G4
+EMP013,Michael Wekesa Barasa,Procurement,Procurement Officer,+254711001013,m.wekesa@brightfoods.co.ke,2021-03-22,ACTIVE,BANK,,Stanbic-5566778899,G5
+EMP014,Rose Chebet Koech,Finance,Finance Manager,+254722001014,r.chebet@brightfoods.co.ke,2018-09-01,ACTIVE,BANK,,KCB-6677889900,G8
+EMP015,Victor Musyoka Mutisya,IT,IT Support Officer,+254733001015,v.musyoka@brightfoods.co.ke,2023-03-13,ACTIVE,MPESA,+254733001015,,G4

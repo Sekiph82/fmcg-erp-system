@@ -1,0 +1,16 @@
+sku,barcode,name,description,category,uom,units_per_carton,weight_kg,shelf_life_days,reorder_point,standard_cost,selling_price,is_active
+SKU001,6001001000011,Tomato Sauce 500ml,Premium tomato sauce in glass bottle,FOOD,PCS,12,0.65,365,500,85.00,150.00,true
+SKU002,6001001000028,Tomato Sauce 250ml,Premium tomato sauce in glass bottle,FOOD,PCS,24,0.35,365,800,48.00,90.00,true
+SKU003,6001002000018,Tomato Ketchup 500ml,Smooth tomato ketchup squeezable bottle,FOOD,PCS,12,0.60,540,400,78.00,135.00,true
+SKU004,6001003000015,Mango Juice 1L,100% natural mango juice Tetra Pak,BEVERAGE,PCS,12,1.10,180,300,95.00,175.00,true
+SKU005,6001003000022,Passion Fruit Juice 500ml,Fresh passion fruit drink,BEVERAGE,PCS,24,0.55,120,600,42.00,80.00,true
+SKU006,6001004000012,Pineapple Juice 1L,Pure pineapple juice Tetra Pak,BEVERAGE,PCS,12,1.10,180,250,92.00,170.00,true
+SKU007,6001005000019,Sunflower Cooking Oil 1L,Refined sunflower oil PET bottle,FOOD,PCS,12,0.95,730,400,155.00,260.00,true
+SKU008,6001005000026,Sunflower Cooking Oil 2L,Refined sunflower oil PET bottle,FOOD,PCS,6,1.90,730,200,295.00,495.00,true
+SKU009,6001006000016,Wheat Flour 2kg,Fortified wheat flour paper bag,FOOD,PCS,10,2.05,180,1000,130.00,210.00,true
+SKU010,6001006000023,Wheat Flour 1kg,Fortified wheat flour paper bag,FOOD,PCS,20,1.05,180,1500,68.00,115.00,true
+SKU011,6001007000013,Table Salt 500g,Iodized table salt poly pack,FOOD,PCS,24,0.52,1095,2000,18.00,40.00,true
+SKU012,6001008000010,Sugar 1kg,Refined white sugar poly pack,FOOD,PCS,20,1.02,730,1200,85.00,140.00,true
+SKU013,6001009000017,Digestive Biscuits 200g,Whole wheat digestive biscuits,FOOD,PCS,24,0.22,270,500,42.00,75.00,true
+SKU014,6001010000014,Shower Gel 250ml,Moisturising body wash,PERSONAL_CARE,PCS,12,0.28,730,300,95.00,185.00,true
+SKU015,6001011000011,Liquid Soap 500ml,Anti-bacterial liquid hand soap,PERSONAL_CARE,PCS,12,0.55,730,400,88.00,165.00,true
