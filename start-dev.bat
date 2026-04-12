@@ -20,6 +20,23 @@ echo ============================================================
 echo.
 
 :: ============================================================
+:: 0. PULL LATEST CODE FROM GITHUB (if git repo is set up)
+:: ============================================================
+if exist ".git\" (
+    git --version >nul 2>&1
+    if not errorlevel 1 (
+        echo  Pulling latest code from GitHub...
+        git pull origin main --ff-only >nul 2>&1
+        if errorlevel 1 (
+            echo  WARNING: Could not pull from GitHub. Continuing with local code.
+        ) else (
+            echo  Code is up to date.
+        )
+        echo.
+    )
+)
+
+:: ============================================================
 :: 1. START DOCKER IF NOT RUNNING
 :: ============================================================
 echo [1/5] Checking Docker...
