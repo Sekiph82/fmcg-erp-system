@@ -1,0 +1,155 @@
+name: Codex Apply Changes
+
+on:
+  workflow_dispatch:
+    inputs:
+      task:
+        description: "What should Codex implement?"
+        required: true
+        type: string
+
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  codex-apply:
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (
+        github.event_name == 'issue_comment' &&
+        github.event.issue.pull_request &&
+        startsWith(github.event.comment.body, '/codex apply')
+      )
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Build task text
+        id: task
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TASK_INPUT="${{ github.event.inputs.task }}"
+          else
+            TASK_INPUT="${{ github.event.comment.body }}"
+            TASK_INPUT="${TASK_INPUT#"/codex apply"}"
+            TASK_INPUT="$(echo "$TASK_INPUT" | xargs)"
+          fi
+
+          {
+            echo "task<<EOF"
+            echo "$TASK_INPUT"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Prepare prompt file
+        shell: bash
+        run: |
+          mkdir -p .github/codex/runtime
+          python3 - <<'PY'
+          from pathlib import Path
+          base = Path(".github/codex/prompts/utilities_apply.md").read_text()
+          task = """${{ steps.task.outputs.task }}"""
+          Path(".github/codex/runtime/prompt.md").write_text(base.replace("{{TASK}}", task))
+          PY
+
+      - name: Run Codex
+        id: run_codex
+        uses: openai/codex-action@v1
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          prompt-file: .github/codex/runtime/prompt.md
+          output-file: codex-output.md
+          sandbox: workspace-write
+          safety-strategy: drop-sudo
+          codex-args: '["--full-auto"]'
+
+      - name: Detect changes
+        id: changes
+        shell: bash
+        run: |
+          if git diff --quiet && git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create branch name
+        if: steps.changes.outputs.changed == 'true'
+        id: branch
+        shell: bash
+        run: |
+          TS=$(date +%Y%m%d-%H%M%S)
+          echo "name=codex/auto-$TS" >> "$GITHUB_OUTPUT"
+
+      - name: Commit and push changes
+        if: steps.changes.outputs.changed == 'true'
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "${{ steps.branch.outputs.name }}"
+          git add -A
+          git commit -m "Codex: apply automated changes"
+          git push origin "${{ steps.branch.outputs.name }}"
+
+      - name: Open pull request
+        if: steps.changes.outputs.changed == 'true'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const task = `${{ steps.task.outputs.task }}`;
+            const head = `${{ steps.branch.outputs.name }}`;
+            const base = context.payload.repository.default_branch;
+
+            const prs = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: "open",
+              head: `${context.repo.owner}:${head}`,
+              base
+            });
+
+            if (prs.data.length === 0) {
+              await github.rest.pulls.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: `Codex: ${task.slice(0, 60) || "Automated changes"}`,
+                head,
+                base,
+                body: [
+                  "Automated Codex patch.",
+                  "",
+                  `Task: ${task}`,
+                  "",
+                  "Please review before merging."
+                ].join("\n")
+              });
+            }
+
+      - name: Comment result back on PR
+        if: github.event_name == 'issue_comment'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const changed = `${{ steps.changes.outputs.changed }}` === 'true';
+            const msg = changed
+              ? `Codex completed the task and pushed changes to branch \`${{ steps.branch.outputs.name }}\`. A pull request was created or updated.`
+              : `Codex ran successfully but produced no file changes.`;
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: msg
+            });
