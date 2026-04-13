@@ -1,19 +1,30 @@
-name: Codex Apply Changes
+name: Codex Auto Apply
 
 on:
+  push:
+    branches:
+      - dev
+    paths-ignore:
+      - "docs/**"
+      - "**/*.md"
+
   workflow_dispatch:
     inputs:
       task:
-        description: "What should Codex implement?"
-        required: true
+        description: "Optional manual task override"
+        required: false
         type: string
 
 permissions:
   contents: write
   pull-requests: write
 
+concurrency:
+  group: codex-auto-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  codex-apply:
+  codex-auto:
     runs-on: ubuntu-latest
 
     steps:
@@ -22,6 +33,22 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Build task
+        id: task
+        shell: bash
+        run: |
+          if [ -n "${{ github.event.inputs.task }}" ]; then
+            TASK="${{ github.event.inputs.task }}"
+          else
+            TASK="Inspect the latest changes on branch ${GITHUB_REF_NAME} and continue implementing the Utilities Module incrementally using existing project conventions. Focus on the next logical unfinished part. Preserve architecture, avoid unrelated refactors, and produce reviewable changes."
+          fi
+
+          {
+            echo "task<<EOF"
+            echo "$TASK"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Write runtime prompt
         shell: bash
         run: |
@@ -29,13 +56,18 @@ jobs:
           cat > .github/codex/runtime/prompt.md <<EOF
           You are modifying this ERP/MES repository.
 
-          Follow the repository rules in AGENTS.md.
+          Follow AGENTS.md strictly.
           Reuse existing architecture and conventions.
           Do not rewrite unrelated modules.
           Make focused, production-safe changes only.
 
+          Before coding:
+          - inspect the current repository state
+          - inspect recent changed files from the triggering push if relevant
+          - identify the next logical unfinished Utilities Module task
+
           Task:
-          ${{ github.event.inputs.task }}
+          ${{ steps.task.outputs.task }}
           EOF
 
       - name: Run Codex
@@ -63,7 +95,8 @@ jobs:
         id: branch
         shell: bash
         run: |
-          echo "name=codex/$(date +%Y%m%d-%H%M%S)" >> "$GITHUB_OUTPUT"
+          TS=$(date +%Y%m%d-%H%M%S)
+          echo "name=codex/auto-${TS}" >> "$GITHUB_OUTPUT"
 
       - name: Commit changes
         if: steps.changes.outputs.changed == 'true'
@@ -73,7 +106,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout -b "${{ steps.branch.outputs.name }}"
           git add -A
-          git commit -m "Codex: ${{ github.event.inputs.task }}"
+          git commit -m "Codex: automated utilities module continuation"
 
       - name: Push branch
         if: steps.changes.outputs.changed == 'true'
@@ -88,27 +121,25 @@ jobs:
           github-token: ${{ github.token }}
           script: |
             const head = '${{ steps.branch.outputs.name }}';
-            const base = context.payload.repository.default_branch;
-            const title = `Codex: ${{ github.event.inputs.task }}`.slice(0, 240);
+            const base = 'dev';
 
             await github.rest.pulls.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              title,
+              title: 'Codex: automated Utilities Module continuation',
               head,
               base,
               body: [
-                "Automated Codex patch.",
-                "",
-                `Task: ${{ github.event.inputs.task }}`,
-                "",
-                "Please review before merging."
-              ].join("\n")
+                'Automated Codex patch triggered by push to `dev`.',
+                '',
+                `Source push SHA: ${context.sha}`,
+                '',
+                'Please review before merging.'
+              ].join('\n')
             });
 
-      - name: Fail if no changes
+      - name: Finish with no-op notice
         if: steps.changes.outputs.changed != 'true'
         shell: bash
         run: |
-          echo "Codex completed but did not produce file changes."
-          exit 1
+          echo "Codex ran successfully but produced no file changes."
