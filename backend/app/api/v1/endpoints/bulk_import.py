@@ -44,6 +44,20 @@ from app.models.hr import Employee
 from app.models.inventory import Stock, StockMovement, MovementType, StockType
 from app.models.recipe import Recipe
 from app.models.quality import QCParameter
+from app.models.utility_management import (
+    UtilityAssetCategory as _UtilityAssetCategory,
+    UtilityAsset as _UtilityAsset,
+    UtilityDevice as _UtilityDevice,
+    UtilityTransaction as _UtilityTransaction,
+    UtilityType as _UtilityType,
+    SourceMethod as _SourceMethod,
+    DataQuality as _DataQuality,
+    SoftWaterRecord as _SoftWaterRecord,
+    BoilerSteamRecord as _BoilerSteamRecord,
+    BoilerStatus as _BoilerStatus,
+    CompressorRecord as _CompressorRecord,
+    CompressorStatus as _CompressorStatus,
+)
 
 from app.schemas.master import (
     ProductCreate, MaterialCreate, SupplierCreate, WarehouseCreate,
@@ -353,6 +367,310 @@ class RecipeAdapter(BaseImportAdapter):
         db.add(obj)
         await db.flush()
         return obj
+
+
+# ── Recipe BOM Items adapter ──────────────────────────────────────────────────
+
+class _RecipeItemImport(BaseModel):
+    """
+    CSV schema for bulk-importing BOM / Formulation Items into a recipe.
+    Links to the recipe via product_sku + version (recipe must exist as DRAFT).
+    Upsert behaviour: if a row with the same recipe + line_no already exists,
+    it is updated; otherwise a new row is inserted.
+    """
+    product_sku:       str
+    version:           str
+    line_no:           int
+    material_code:     str               # resolved → material_id
+    quantity:          Decimal
+    unit:              str
+    loss_percent:      Optional[Decimal] = None   # → loss_percentage (0 if blank)
+    optional:          Optional[bool]    = False   # → is_optional
+    alternative_group: Optional[str]    = None
+    notes:             Optional[str]    = None
+
+
+class RecipeItemAdapter(BaseImportAdapter):
+    """
+    Bulk-import BOM lines for existing DRAFT recipes.
+
+    Update behaviour:
+      - If a RecipeItem with the same recipe + line_no already exists → UPDATE it.
+      - If not → INSERT a new row.
+      - To replace ALL lines for a recipe, delete existing lines manually before
+        importing (or import with overlapping line_no values to overwrite).
+
+    Permission: production.import
+    """
+    module          = "recipe_items"
+    perm_module     = "production"
+    schema_class    = _RecipeItemImport
+    unique_key      = ["product_sku", "version", "line_no"]
+    field_overrides : dict = {}
+    example_row     = {
+        "product_sku": "HH-001",      "version": "v1.0",
+        "line_no": "1",               "material_code": "MAT001",
+        "quantity": "120",            "unit": "KG",
+        "loss_percent": "2",          "optional": "false",
+        "alternative_group": "",      "notes": "Primary surfactant",
+    }
+
+    async def resolve_relations(
+        self, row: dict, db: AsyncSession
+    ) -> tuple[dict, list[str]]:
+        from app.models.recipe import RecipeStatus
+
+        errors: list[str] = []
+        sku = row.pop("product_sku", None)
+        ver = row.get("version")
+
+        if not sku:
+            errors.append("product_sku is required")
+            return row, errors
+
+        # 1. Look up finished product
+        r = await db.execute(select(Product).where(Product.sku == sku))
+        prod = r.scalar_one_or_none()
+        if prod is None:
+            errors.append(f"Finished product SKU '{sku}' not found")
+            return row, errors
+
+        # 2. Look up recipe (must exist and be DRAFT)
+        r2 = await db.execute(
+            select(Recipe).where(
+                Recipe.product_id == prod.id,
+                Recipe.version == ver,
+            )
+        )
+        recipe = r2.scalar_one_or_none()
+        if recipe is None:
+            errors.append(
+                f"Recipe for product '{sku}' version '{ver}' not found"
+                " — import recipe headers first"
+            )
+            return row, errors
+        if recipe.status != RecipeStatus.DRAFT:
+            errors.append(
+                f"Recipe '{sku}' v{ver} has status {recipe.status}"
+                " — only DRAFT recipes can be modified"
+            )
+            return row, errors
+        row["recipe_id"] = recipe.id
+
+        # 3. Look up material
+        mat_code = row.pop("material_code", None)
+        if not mat_code:
+            errors.append("material_code is required")
+            return row, errors
+        r3 = await db.execute(select(Material).where(Material.code == mat_code))
+        mat = r3.scalar_one_or_none()
+        if mat is None:
+            errors.append(f"Material code '{mat_code}' not found")
+        else:
+            row["material_id"] = mat.id
+
+        # 4. Business rule: quantity > 0
+        qty = row.get("quantity")
+        if qty is not None and qty <= 0:
+            errors.append("quantity must be greater than zero")
+
+        return row, errors
+
+    async def exists_in_db(self, row: dict, db: AsyncSession) -> bool:
+        # Always return False so the engine does not reject the row.
+        # Upsert (update-or-insert) logic lives in insert().
+        return False
+
+    async def insert(self, data: dict, db: AsyncSession) -> Any:
+        from app.models.recipe import RecipeItem
+        from sqlalchemy import and_
+
+        recipe_id = data["recipe_id"]
+        line_no   = data["line_no"]
+
+        # Check for an existing item with the same recipe + line_no
+        r = await db.execute(
+            select(RecipeItem).where(
+                and_(
+                    RecipeItem.recipe_id == recipe_id,
+                    RecipeItem.line_no   == line_no,
+                )
+            )
+        )
+        item = r.scalar_one_or_none()
+
+        loss_pct    = data.get("loss_percent")
+        is_optional = data.get("optional")
+
+        if item:
+            # UPDATE existing row
+            item.material_id       = data["material_id"]
+            item.quantity          = data["quantity"]
+            item.unit              = data["unit"]
+            item.loss_percentage   = loss_pct    if loss_pct    is not None else 0
+            item.is_optional       = is_optional if is_optional is not None else False
+            item.alternative_group = data.get("alternative_group") or None
+            item.notes             = data.get("notes") or None
+        else:
+            # INSERT new row
+            item = RecipeItem(
+                recipe_id=recipe_id,
+                material_id=data["material_id"],
+                line_no=line_no,
+                quantity=data["quantity"],
+                unit=data["unit"],
+                loss_percentage=loss_pct    if loss_pct    is not None else 0,
+                is_optional    =is_optional if is_optional is not None else False,
+                alternative_group=data.get("alternative_group") or None,
+                notes            =data.get("notes") or None,
+            )
+            db.add(item)
+
+        await db.flush()
+        return item
+
+
+# ── Recipe Process Steps adapter ──────────────────────────────────────────────
+
+class _RecipeStepImport(BaseModel):
+    """
+    CSV schema for bulk-importing Process Parameters (steps) into a recipe.
+    Links to the recipe via product_sku + version (recipe must exist as DRAFT).
+    Upsert behaviour: if a row with the same recipe + step_no already exists,
+    it is updated; otherwise a new row is inserted.
+    """
+    product_sku:   str
+    version:       str
+    step_no:       int
+    step_name:     str
+    temperature_c: Optional[Decimal] = None   # → target_temperature
+    target_ph:     Optional[Decimal] = None
+    viscosity_cp:  Optional[Decimal] = None   # → target_viscosity
+    mix_time_min:  Optional[int]     = None   # → mixing_time_minutes
+    rpm:           Optional[int]     = None
+    notes:         Optional[str]     = None
+
+
+class RecipeStepAdapter(BaseImportAdapter):
+    """
+    Bulk-import process steps for existing DRAFT recipes.
+
+    Update behaviour:
+      - If a ProcessParameter with the same recipe + step_no already exists → UPDATE it.
+      - If not → INSERT a new row.
+
+    Permission: production.import
+    """
+    module          = "recipe_steps"
+    perm_module     = "production"
+    schema_class    = _RecipeStepImport
+    unique_key      = ["product_sku", "version", "step_no"]
+    field_overrides : dict = {}
+    example_row     = {
+        "product_sku": "HH-001",    "version": "v1.0",
+        "step_no": "1",             "step_name": "Dry Premix",
+        "temperature_c": "",        "target_ph": "",
+        "viscosity_cp": "",         "mix_time_min": "15",
+        "rpm": "120",               "notes": "Blend powder base",
+    }
+
+    async def resolve_relations(
+        self, row: dict, db: AsyncSession
+    ) -> tuple[dict, list[str]]:
+        from app.models.recipe import RecipeStatus
+
+        errors: list[str] = []
+        sku = row.pop("product_sku", None)
+        ver = row.get("version")
+
+        if not sku:
+            errors.append("product_sku is required")
+            return row, errors
+
+        # 1. Look up finished product
+        r = await db.execute(select(Product).where(Product.sku == sku))
+        prod = r.scalar_one_or_none()
+        if prod is None:
+            errors.append(f"Finished product SKU '{sku}' not found")
+            return row, errors
+
+        # 2. Look up recipe (must exist and be DRAFT)
+        r2 = await db.execute(
+            select(Recipe).where(
+                Recipe.product_id == prod.id,
+                Recipe.version == ver,
+            )
+        )
+        recipe = r2.scalar_one_or_none()
+        if recipe is None:
+            errors.append(
+                f"Recipe for product '{sku}' version '{ver}' not found"
+                " — import recipe headers first"
+            )
+            return row, errors
+        if recipe.status != RecipeStatus.DRAFT:
+            errors.append(
+                f"Recipe '{sku}' v{ver} has status {recipe.status}"
+                " — only DRAFT recipes can be modified"
+            )
+            return row, errors
+        row["recipe_id"] = recipe.id
+
+        # 3. Business rule: step_name must not be blank (already enforced by
+        #    Pydantic required field, but this gives a friendlier message)
+        if not row.get("step_name", "").strip():
+            errors.append("step_name is required and cannot be blank")
+
+        return row, errors
+
+    async def exists_in_db(self, row: dict, db: AsyncSession) -> bool:
+        # Always return False so the engine does not reject the row.
+        # Upsert (update-or-insert) logic lives in insert().
+        return False
+
+    async def insert(self, data: dict, db: AsyncSession) -> Any:
+        from app.models.recipe import ProcessParameter
+        from sqlalchemy import and_
+
+        recipe_id = data["recipe_id"]
+        step_no   = data["step_no"]
+
+        r = await db.execute(
+            select(ProcessParameter).where(
+                and_(
+                    ProcessParameter.recipe_id == recipe_id,
+                    ProcessParameter.step_no   == step_no,
+                )
+            )
+        )
+        param = r.scalar_one_or_none()
+
+        if param:
+            # UPDATE existing step
+            param.step_name          = data["step_name"]
+            param.target_temperature = data.get("temperature_c")
+            param.target_ph          = data.get("target_ph")
+            param.target_viscosity   = data.get("viscosity_cp")
+            param.mixing_time_minutes = data.get("mix_time_min")
+            param.rpm                = data.get("rpm")
+            param.notes              = data.get("notes") or None
+        else:
+            # INSERT new step
+            param = ProcessParameter(
+                recipe_id=recipe_id,
+                step_no=step_no,
+                step_name=data["step_name"],
+                target_temperature=data.get("temperature_c"),
+                target_ph         =data.get("target_ph"),
+                target_viscosity  =data.get("viscosity_cp"),
+                mixing_time_minutes=data.get("mix_time_min"),
+                rpm               =data.get("rpm"),
+                notes             =data.get("notes") or None,
+            )
+            db.add(param)
+
+        await db.flush()
+        return param
 
 
 class QCParameterAdapter(BaseImportAdapter):
@@ -960,6 +1278,1078 @@ class OEEImportAdapter(BaseImportAdapter):
         return obj
 
 
+# ── Utility Management Adapters ───────────────────────────────────────────────
+
+class _UtilityAssetCategoryImport(BaseModel):
+    code: str
+    name: str
+    utility_type: str
+    default_unit: Optional[str] = None
+    description: Optional[str] = None
+    is_active: bool = True
+
+
+class UtilityAssetCategoryAdapter(BaseImportAdapter):
+    module        = "utility_asset_categories"
+    perm_module   = "utility_management"
+    schema_class  = _UtilityAssetCategoryImport
+    unique_key    = ["code"]
+    field_overrides: dict = {}
+    example_row   = {
+        "code": "BOILER", "name": "Steam Boilers",
+        "utility_type": "STEAM", "default_unit": "kg/h",
+        "description": "High-pressure steam boilers", "is_active": "true",
+    }
+
+    async def exists_in_db(self, row: dict, db: AsyncSession) -> bool:
+        r = await db.execute(
+            select(_UtilityAssetCategory).where(
+                _UtilityAssetCategory.code == (row.get("code") or "").upper()
+            )
+        )
+        return r.scalar_one_or_none() is not None
+
+    async def insert(self, data: dict, db: AsyncSession) -> Any:
+        data["code"] = (data.get("code") or "").upper()
+        obj = _UtilityAssetCategory(**{k: v for k, v in data.items() if v is not None})
+        db.add(obj)
+        await db.flush()
+        return obj
+
+
+class _UtilityAssetImport(BaseModel):
+    asset_no: str
+    name: str
+    category_code: str          # resolved → category_id
+    utility_type: str
+    subsystem: Optional[str] = None
+    location: Optional[str] = None
+    building_area: Optional[str] = None
+    department: Optional[str] = None
+    line_id: Optional[str] = None
+    machine_id: Optional[str] = None
+    manufacturer: Optional[str] = None
+    equipment_model: Optional[str] = None
+    serial_no: Optional[str] = None
+    install_date: Optional[date] = None
+    warranty_expiry: Optional[date] = None
+    rated_capacity: Optional[Decimal] = None
+    capacity_unit: Optional[str] = None
+    rated_power: Optional[Decimal] = None
+    rated_power_unit: Optional[str] = None
+    flow_capacity: Optional[Decimal] = None
+    pressure_capacity: Optional[Decimal] = None
+    temperature_range: Optional[str] = None
+    lifecycle_status: Optional[str] = None
+    criticality_level: Optional[str] = None
+    maintenance_strategy: Optional[str] = None
+    is_active: bool = True
+    notes: Optional[str] = None
+    status: str = "ACTIVE"
+
+
+class UtilityAssetAdapter(BaseImportAdapter):
+    module        = "utility_assets"
+    perm_module   = "utility_management"
+    schema_class  = _UtilityAssetImport
+    unique_key    = ["asset_no"]
+    field_overrides = {"category_id": "category_code"}
+    example_row   = {
+        "asset_no": "BLR-001", "name": "Boiler 1 — Main Steam",
+        "category_code": "BOILER", "utility_type": "STEAM",
+        "department": "Utilities", "building_area": "Boiler Room",
+        "rated_capacity": "2000", "capacity_unit": "kg/h",
+        "status": "ACTIVE", "criticality_level": "CRITICAL",
+    }
+
+    async def resolve_relations(self, row: dict, db: AsyncSession) -> tuple[dict, list[str]]:
+        errors: list[str] = []
+        code = row.pop("category_code", None)
+        if code:
+            r = await db.execute(
+                select(_UtilityAssetCategory).where(
+                    _UtilityAssetCategory.code == code.upper()
+                )
+            )
+            cat = r.scalar_one_or_none()
+            if cat is None:
+                errors.append(f"category_code '{code}' not found — import categories first")
+            else:
+                row["category_id"] = cat.id
+        else:
+            errors.append("category_code is required")
+        return row, errors
+
+    async def exists_in_db(self, row: dict, db: AsyncSession) -> bool:
+        r = await db.execute(
+            select(_UtilityAsset).where(
+                _UtilityAsset.asset_no == (row.get("asset_no") or "").upper()
+            )
+        )
+        return r.scalar_one_or_none() is not None
+
+    async def insert(self, data: dict, db: AsyncSession) -> Any:
+        data["asset_no"] = (data.get("asset_no") or "").upper()
+        # Map equipment_model → model column
+        if "equipment_model" in data:
+            data["model"] = data.pop("equipment_model")
+        obj = _UtilityAsset(**{k: v for k, v in data.items() if v is not None})
+        db.add(obj)
+        await db.flush()
+        return obj
+
+
+# ── Utility Device import ──────────────────────────────────────────────────────
+
+class _UtilityDeviceImport(BaseModel):
+    device_code:     str
+    name:            str
+    device_type:     str  # METER / SENSOR / LOGGER / CONTROLLER / ANALYSER
+    utility_type:    str
+    asset_no:        Optional[str] = None   # resolved → asset_id
+    department:      Optional[str] = None
+    building_area:   Optional[str] = None
+    location:        Optional[str] = None
+    related_line_id: Optional[str] = None
+    related_machine_id: Optional[str] = None
+    reading_type:    Optional[str] = None
+    reading_source:  Optional[str] = None
+    reading_frequency: Optional[str] = None
+    unit_of_measure: str = "units"
+    min_value:       Optional[Decimal] = None
+    max_value:       Optional[Decimal] = None
+    min_alarm_limit: Optional[Decimal] = None
+    max_alarm_limit: Optional[Decimal] = None
+    calibration_required: bool = False
+    calibration_frequency_days: Optional[int] = None
+    last_calibration_date: Optional[date] = None
+    next_calibration_date: Optional[date] = None
+    manufacturer:    Optional[str] = None
+    serial_no:       Optional[str] = None
+    is_active:       bool = True
+    notes:           Optional[str] = None
+
+
+class UtilityDeviceAdapter(BaseImportAdapter):
+    module        = "utility_devices"
+    perm_module   = "utility_management"
+    schema_class  = _UtilityDeviceImport
+    unique_key    = ["device_code"]
+    field_overrides = {"asset_id": "asset_no"}
+    example_row   = {
+        "device_code": "MTR-ELEC-001", "name": "Main Electricity Meter",
+        "device_type": "METER", "utility_type": "ELECTRICITY",
+        "reading_type": "CUMULATIVE", "unit_of_measure": "kWh",
+        "department": "Utilities", "building_area": "Main Substation",
+        "min_alarm_limit": "0", "max_alarm_limit": "5000",
+        "calibration_required": "true", "calibration_frequency_days": "365",
+    }
+
+    async def resolve_relations(self, row: dict, db: AsyncSession) -> tuple[dict, list[str]]:
+        errors: list[str] = []
+        asset_no = row.pop("asset_no", None)
+        if asset_no:
+            r = await db.execute(
+                select(_UtilityAsset).where(
+                    _UtilityAsset.asset_no == asset_no.upper()
+                )
+            )
+            asset = r.scalar_one_or_none()
+            if asset is None:
+                errors.append(f"asset_no '{asset_no}' not found")
+            else:
+                row["asset_id"] = asset.id
+        return row, errors
+
+    async def exists_in_db(self, row: dict, db: AsyncSession) -> bool:
+        r = await db.execute(
+            select(_UtilityDevice).where(
+                _UtilityDevice.device_code == (row.get("device_code") or "").upper()
+            )
+        )
+        return r.scalar_one_or_none() is not None
+
+    async def insert(self, data: dict, db: AsyncSession) -> Any:
+        data["device_code"] = (data.get("device_code") or "").upper()
+        obj = _UtilityDevice(**{k: v for k, v in data.items() if v is not None})
+        db.add(obj)
+        await db.flush()
+        return obj
+
+
+# ── Electricity Transaction import ────────────────────────────────────────────
+
+class _ElectricityTxImport(BaseModel):
+    """
+    CSV schema for bulk-importing electricity consumption records.
+    Maps directly to utility_transactions with utility_type=ELECTRICITY.
+    Cost is auto-computed if cost_rate and quantity are provided but total_cost is blank.
+    """
+    transaction_date: date
+    quantity:         Decimal                       # kWh consumed
+    uom:              str = "kWh"
+    department:       Optional[str] = None
+    building_area:    Optional[str] = None
+    production_line:  Optional[str] = None          # → production_line column
+    machine_ref:      Optional[str] = None          # → machine_ref column
+    shift_ref:        Optional[str] = None
+    batch_no:         Optional[str] = None
+    cost_rate:        Optional[Decimal] = None
+    total_cost:       Optional[Decimal] = None
+    currency_code:    str = "USD"
+    variance_from_standard: Optional[Decimal] = None
+    source_method:    str = "IMPORTED"
+    quality:          str = "GOOD"
+    is_estimated:     bool = False
+    is_anomaly:       bool = False
+    anomaly_note:     Optional[str] = None
+    notes:            Optional[str] = None
+    # Optional reference
+    reference_type:   Optional[str] = None          # e.g. MANUAL, METER_READING
+    reference_id:     Optional[str] = None
+
+
+class ElectricityTransactionAdapter(BaseImportAdapter):
+    """
+    Bulk-import electricity consumption records.
+
+    Each CSV row creates one utility_transaction with utility_type=ELECTRICITY.
+    transaction_no is auto-generated (TX-{date}-{5 digits}).
+    Cost is auto-computed when cost_rate × quantity present but total_cost blank.
+
+    Permission: utility_management.import
+    """
+    module          = "electricity_transactions"
+    perm_module     = "utility_management"
+    schema_class    = _ElectricityTxImport
+    unique_key: list = []          # no natural key; every row inserts
+    field_overrides: dict = {}
+    example_row     = {
+        "transaction_date": "2025-01-15",
+        "quantity": "1200.50",         "uom": "kWh",
+        "department": "Production",    "building_area": "Block A",
+        "production_line": "LINE-01",  "machine_ref": "MCH-001",
+        "shift_ref": "A",              "batch_no": "BATCH-2025-001",
+        "cost_rate": "0.12",           "total_cost": "",
+        "currency_code": "USD",        "source_method": "MANUAL",
+        "quality": "GOOD",             "is_estimated": "false",
+        "is_anomaly": "false",         "notes": "",
+    }
+
+    async def resolve_relations(
+        self, row: dict, db: AsyncSession
+    ) -> tuple[dict, list[str]]:
+        from decimal import Decimal as _D
+        errors: list[str] = []
+
+        # Auto-compute total_cost
+        qty  = row.get("quantity")
+        rate = row.get("cost_rate")
+        cost = row.get("total_cost")
+        if qty and rate and not cost:
+            row["total_cost"] = _D(str(qty)) * _D(str(rate))
+
+        # Validate source_method / quality enums
+        sm = row.get("source_method", "IMPORTED")
+        if sm not in {e.value for e in _SourceMethod}:
+            row["source_method"] = "IMPORTED"
+        dq = row.get("quality", "GOOD")
+        if dq not in {e.value for e in _DataQuality}:
+            row["quality"] = "GOOD"
+
+        return row, errors
+
+    async def exists_in_db(self, row: dict, db: AsyncSession) -> bool:
+        # We never skip electricity rows — every import row is a new event.
+        return False
+
+    async def insert(self, data: dict, db: AsyncSession) -> Any:
+        import random
+        from datetime import date as _date
+        d = data.get("transaction_date")
+        date_str = d.strftime("%Y%m%d") if isinstance(d, _date) else str(d)[:8].replace("-", "")
+        tx_no = f"TX-{date_str}-{random.randint(10000, 99999)}"
+        obj = _UtilityTransaction(
+            transaction_no=tx_no,
+            utility_type=_UtilityType.ELECTRICITY,
+            transaction_date=data.get("transaction_date"),
+            quantity=data.get("quantity"),
+            unit_of_measure=data.get("uom", "kWh"),
+            department=data.get("department"),
+            building_area=data.get("building_area"),
+            production_line=data.get("production_line"),
+            machine_ref=data.get("machine_ref"),
+            shift_ref=data.get("shift_ref"),
+            batch_no=data.get("batch_no"),
+            cost_rate=data.get("cost_rate"),
+            total_cost=data.get("total_cost"),
+            currency_code=data.get("currency_code", "USD"),
+            variance_from_standard=data.get("variance_from_standard"),
+            source_method=data.get("source_method", "IMPORTED"),
+            quality=data.get("quality", "GOOD"),
+            is_estimated=bool(data.get("is_estimated", False)),
+            is_anomaly=bool(data.get("is_anomaly", False)),
+            anomaly_note=data.get("anomaly_note"),
+            reference_type=data.get("reference_type"),
+            reference_id=data.get("reference_id"),
+            notes=data.get("notes"),
+        )
+        db.add(obj)
+        await db.flush()
+        return obj
+
+
+# ── Water Transaction adapter ─────────────────────────────────────────────────
+
+class _WaterTxImport(BaseModel):
+    """
+    CSV schema for bulk-importing water consumption records.
+    utility_type field determines which sub-type to import:
+      WATER | PROCESS_WATER | WASTEWATER
+    """
+    transaction_date: date
+    utility_type:     str = "WATER"       # WATER | PROCESS_WATER | WASTEWATER
+    quantity:         Decimal             # m³
+    uom:              str = "m3"
+    department:       Optional[str] = None
+    building_area:    Optional[str] = None
+    production_line:  Optional[str] = None
+    machine_ref:      Optional[str] = None
+    shift_ref:        Optional[str] = None
+    batch_no:         Optional[str] = None
+    cost_rate:        Optional[Decimal] = None
+    total_cost:       Optional[Decimal] = None
+    currency_code:    str = "USD"
+    source_method:    str = "IMPORTED"
+    quality:          str = "GOOD"
+    is_estimated:     bool = False
+    is_anomaly:       bool = False
+    anomaly_note:     Optional[str] = None
+    notes:            Optional[str] = None
+
+
+class WaterTransactionAdapter(BaseImportAdapter):
+    """
+    Bulk-import water consumption records.
+    Supports WATER, PROCESS_WATER, and WASTEWATER utility types.
+    """
+    module          = "water_transactions"
+    perm_module     = "utility_management"
+    schema_class    = _WaterTxImport
+    unique_key: list = []
+    field_overrides: dict = {}
+    example_row     = {
+        "transaction_date": "2025-01-15",
+        "utility_type": "WATER",       "quantity": "250.00",
+        "uom": "m3",                   "department": "Production",
+        "building_area": "Block A",    "production_line": "LINE-01",
+        "machine_ref": "",             "shift_ref": "A",
+        "batch_no": "",                "cost_rate": "1.20",
+        "total_cost": "",              "currency_code": "USD",
+        "source_method": "MANUAL",     "quality": "GOOD",
+        "is_estimated": "false",       "is_anomaly": "false",
+        "notes": "",
+    }
+
+    async def resolve_relations(
+        self, row: dict, db: AsyncSession
+    ) -> tuple[dict, list[str]]:
+        from decimal import Decimal as _D
+        errors: list[str] = []
+
+        # Validate utility type
+        valid_water = {"WATER", "PROCESS_WATER", "WASTEWATER"}
+        ut = (row.get("utility_type") or "WATER").upper()
+        if ut not in valid_water:
+            row["utility_type"] = "WATER"
+
+        # Auto-compute total_cost
+        qty  = row.get("quantity")
+        rate = row.get("cost_rate")
+        cost = row.get("total_cost")
+        if qty and rate and not cost:
+            row["total_cost"] = _D(str(qty)) * _D(str(rate))
+
+        # Validate enums
+        sm = row.get("source_method", "IMPORTED")
+        if sm not in {e.value for e in _SourceMethod}:
+            row["source_method"] = "IMPORTED"
+        dq = row.get("quality", "GOOD")
+        if dq not in {e.value for e in _DataQuality}:
+            row["quality"] = "GOOD"
+
+        return row, errors
+
+    async def exists_in_db(self, row: dict, db: AsyncSession) -> bool:
+        return False
+
+    async def insert(self, data: dict, db: AsyncSession) -> Any:
+        import random
+        from datetime import date as _date
+        d = data.get("transaction_date")
+        date_str = d.strftime("%Y%m%d") if isinstance(d, _date) else str(d)[:8].replace("-", "")
+        tx_no = f"WTX-{date_str}-{random.randint(10000, 99999)}"
+        ut_str = (data.get("utility_type") or "WATER").upper()
+        try:
+            ut = _UtilityType(ut_str)
+        except ValueError:
+            ut = _UtilityType.WATER
+        obj = _UtilityTransaction(
+            transaction_no=tx_no,
+            utility_type=ut,
+            transaction_date=data.get("transaction_date"),
+            quantity=data.get("quantity"),
+            unit_of_measure=data.get("uom", "m3"),
+            department=data.get("department"),
+            building_area=data.get("building_area"),
+            production_line=data.get("production_line"),
+            machine_ref=data.get("machine_ref"),
+            shift_ref=data.get("shift_ref"),
+            batch_no=data.get("batch_no"),
+            cost_rate=data.get("cost_rate"),
+            total_cost=data.get("total_cost"),
+            currency_code=data.get("currency_code", "USD"),
+            source_method=data.get("source_method", "IMPORTED"),
+            quality=data.get("quality", "GOOD"),
+            is_estimated=bool(data.get("is_estimated", False)),
+            is_anomaly=bool(data.get("is_anomaly", False)),
+            anomaly_note=data.get("anomaly_note"),
+            notes=data.get("notes"),
+        )
+        db.add(obj)
+        await db.flush()
+        return obj
+
+
+# ── Soft Water Record adapter ─────────────────────────────────────────────────
+
+class _SoftWaterImport(BaseModel):
+    """CSV schema for bulk-importing soft water operational records."""
+    record_datetime:            datetime
+    asset_no:                   str         # resolved → asset_id
+    volume_treated_m3:          Optional[Decimal] = None
+    raw_water_input_m3:         Optional[Decimal] = None
+    feed_water_hardness_ppm:    Optional[Decimal] = None
+    product_water_hardness_ppm: Optional[Decimal] = None
+    feed_water_tds_ppm:         Optional[Decimal] = None
+    product_water_tds_ppm:      Optional[Decimal] = None
+    conductivity_feed_uscm:     Optional[Decimal] = None
+    conductivity_product_uscm:  Optional[Decimal] = None
+    salt_consumed_kg:           Optional[Decimal] = None
+    regeneration_count:         Optional[int] = None
+    efficiency_pct:             Optional[Decimal] = None
+    downtime_minutes:           Optional[int] = None
+    maintenance_flag:           bool = False
+    destination_tag:            Optional[str] = None
+    department:                 Optional[str] = None
+    shift_ref:                  Optional[str] = None
+    source_method:              str = "IMPORTED"
+    is_anomaly:                 bool = False
+    notes:                      Optional[str] = None
+
+
+class SoftWaterRecordAdapter(BaseImportAdapter):
+    """
+    Bulk-import soft water operational records.
+    Links to UtilityAsset via asset_no.
+    """
+    module          = "soft_water_records"
+    perm_module     = "utility_management"
+    schema_class    = _SoftWaterImport
+    unique_key: list = []
+    field_overrides: dict = {}
+    example_row     = {
+        "record_datetime": "2025-01-15 08:00",
+        "asset_no": "SOFT-001",
+        "volume_treated_m3": "45.00",    "raw_water_input_m3": "48.50",
+        "feed_water_hardness_ppm": "280", "product_water_hardness_ppm": "12",
+        "feed_water_tds_ppm": "450",      "product_water_tds_ppm": "180",
+        "salt_consumed_kg": "25.00",      "regeneration_count": "1",
+        "efficiency_pct": "96.50",        "downtime_minutes": "0",
+        "maintenance_flag": "false",      "destination_tag": "Boiler Feed",
+        "department": "Utilities",        "shift_ref": "A",
+        "source_method": "MANUAL",        "is_anomaly": "false",
+        "notes": "",
+    }
+
+    async def resolve_relations(
+        self, row: dict, db: AsyncSession
+    ) -> tuple[dict, list[str]]:
+        errors: list[str] = []
+        asset_no = row.pop("asset_no", None)
+        if asset_no:
+            r = await db.execute(
+                select(_UtilityAsset).where(_UtilityAsset.asset_no == asset_no)
+            )
+            asset = r.scalar_one_or_none()
+            if asset is None:
+                errors.append(f"asset_no '{asset_no}' not found in utility_assets")
+            else:
+                row["asset_id"] = asset.id
+        else:
+            errors.append("asset_no is required")
+
+        sm = row.get("source_method", "IMPORTED")
+        if sm not in {e.value for e in _SourceMethod}:
+            row["source_method"] = "IMPORTED"
+
+        return row, errors
+
+    async def exists_in_db(self, row: dict, db: AsyncSession) -> bool:
+        return False
+
+    async def insert(self, data: dict, db: AsyncSession) -> Any:
+        import random
+        from app.models.utility_management import SoftWaterRecord as _SWR, SoftenerStatus
+        dt = data.get("record_datetime")
+        date_str = dt.strftime("%Y%m%d") if hasattr(dt, "strftime") else str(dt)[:10].replace("-", "")
+        rec_no = f"SW-{date_str}-{random.randint(10000, 99999)}"
+        sm_val = data.get("source_method", "IMPORTED")
+        try:
+            sm = _SourceMethod(sm_val)
+        except ValueError:
+            sm = _SourceMethod.IMPORTED
+        obj = _SWR(
+            record_no=rec_no,
+            asset_id=data.get("asset_id"),
+            record_datetime=data.get("record_datetime"),
+            volume_treated_m3=data.get("volume_treated_m3"),
+            raw_water_input_m3=data.get("raw_water_input_m3"),
+            feed_water_hardness_ppm=data.get("feed_water_hardness_ppm"),
+            product_water_hardness_ppm=data.get("product_water_hardness_ppm"),
+            feed_water_tds_ppm=data.get("feed_water_tds_ppm"),
+            product_water_tds_ppm=data.get("product_water_tds_ppm"),
+            conductivity_feed_uscm=data.get("conductivity_feed_uscm"),
+            conductivity_product_uscm=data.get("conductivity_product_uscm"),
+            salt_consumed_kg=data.get("salt_consumed_kg"),
+            regeneration_count=data.get("regeneration_count"),
+            efficiency_pct=data.get("efficiency_pct"),
+            downtime_minutes=data.get("downtime_minutes"),
+            maintenance_flag=bool(data.get("maintenance_flag", False)),
+            destination_tag=data.get("destination_tag"),
+            department=data.get("department"),
+            shift_ref=data.get("shift_ref"),
+            source_method=sm,
+            is_anomaly=bool(data.get("is_anomaly", False)),
+            notes=data.get("notes"),
+            status=SoftenerStatus.ONLINE,
+        )
+        db.add(obj)
+        await db.flush()
+        return obj
+
+
+# ── Boiler Record adapter ─────────────────────────────────────────────────────
+
+class _BoilerRecordImport(BaseModel):
+    """CSV schema for bulk-importing boiler steam operational records."""
+    record_datetime:         datetime
+    asset_no:                str           # resolved → asset_id
+    shift_ref:               Optional[str] = None
+    department:              Optional[str] = None
+    period_hours:            Optional[Decimal] = None
+    steam_pressure_bar:      Optional[Decimal] = None
+    steam_temp_c:            Optional[Decimal] = None
+    steam_flow_kgh:          Optional[Decimal] = None
+    steam_quality_pct:       Optional[Decimal] = None
+    steam_generated_kg:      Optional[Decimal] = None
+    feedwater_consumed_m3:   Optional[Decimal] = None
+    condensate_returned_m3:  Optional[Decimal] = None
+    feed_water_temp_c:       Optional[Decimal] = None
+    feed_water_flow_lpm:     Optional[Decimal] = None
+    feed_water_ph:           Optional[Decimal] = None
+    feed_water_tds_ppm:      Optional[Decimal] = None
+    blowdown_pct:            Optional[Decimal] = None
+    blowdown_volume_litres:  Optional[Decimal] = None
+    fuel_type:               Optional[str] = None
+    fuel_consumption:        Optional[Decimal] = None
+    fuel_unit:               Optional[str] = None
+    boiler_efficiency_pct:   Optional[Decimal] = None
+    flue_gas_temp_c:         Optional[Decimal] = None
+    o2_pct:                  Optional[Decimal] = None
+    co2_pct:                 Optional[Decimal] = None
+    co_ppm:                  Optional[Decimal] = None
+    boiler_tds_ppm:          Optional[Decimal] = None
+    boiler_ph:               Optional[Decimal] = None
+    boiler_hardness_ppm:     Optional[Decimal] = None
+    conductivity_uscm:       Optional[Decimal] = None
+    boiler_load_pct:         Optional[Decimal] = None
+    burner_runtime_hours:    Optional[Decimal] = None
+    start_stop_count:        Optional[int] = None
+    running_hours_cumulative: Optional[Decimal] = None
+    chemical_dosing_amount:  Optional[Decimal] = None
+    chemical_dosing_unit:    Optional[str] = None
+    downtime_minutes:        Optional[int] = None
+    downtime_reason:         Optional[str] = None
+    maintenance_flag:        bool = False
+    status:                  str = "RUNNING"
+    source_method:           str = "IMPORTED"
+    is_anomaly:              bool = False
+    anomaly_note:            Optional[str] = None
+    notes:                   Optional[str] = None
+
+
+class BoilerRecordAdapter(BaseImportAdapter):
+    """Bulk-import boiler steam operational records. Links asset via asset_no."""
+    module          = "boiler_records"
+    perm_module     = "utility_management"
+    schema_class    = _BoilerRecordImport
+    unique_key: list = []
+    field_overrides: dict = {}
+    example_row     = {
+        "record_datetime": "2025-01-15 06:00",
+        "asset_no": "BLR-001",
+        "shift_ref": "A",                    "department": "Utilities",
+        "period_hours": "8.00",              "steam_generated_kg": "24000",
+        "feedwater_consumed_m3": "25.50",    "condensate_returned_m3": "18.00",
+        "fuel_type": "NATURAL_GAS",          "fuel_consumption": "1800",
+        "fuel_unit": "m3",                   "boiler_efficiency_pct": "85.50",
+        "boiler_load_pct": "78.00",          "burner_runtime_hours": "7.50",
+        "steam_pressure_bar": "8.5",         "steam_temp_c": "175",
+        "blowdown_volume_litres": "120",     "downtime_minutes": "30",
+        "maintenance_flag": "false",         "status": "RUNNING",
+        "source_method": "MANUAL",           "is_anomaly": "false",
+        "notes": "",
+    }
+
+    async def resolve_relations(
+        self, row: dict, db: AsyncSession
+    ) -> tuple[dict, list[str]]:
+        errors: list[str] = []
+        asset_no = row.pop("asset_no", None)
+        if asset_no:
+            r = await db.execute(
+                select(_UtilityAsset).where(_UtilityAsset.asset_no == asset_no)
+            )
+            asset = r.scalar_one_or_none()
+            if asset is None:
+                errors.append(f"asset_no '{asset_no}' not found in utility_assets")
+            else:
+                row["asset_id"] = asset.id
+        else:
+            errors.append("asset_no is required")
+
+        if row.get("status") not in {e.value for e in _BoilerStatus}:
+            row["status"] = "RUNNING"
+        if row.get("source_method") not in {e.value for e in _SourceMethod}:
+            row["source_method"] = "IMPORTED"
+
+        return row, errors
+
+    async def exists_in_db(self, row: dict, db: AsyncSession) -> bool:
+        return False
+
+    async def insert(self, data: dict, db: AsyncSession) -> Any:
+        import random
+        dt = data.get("record_datetime")
+        date_str = dt.strftime("%Y%m%d") if hasattr(dt, "strftime") else str(dt)[:10].replace("-", "")
+        rec_no = f"BLR-{date_str}-{random.randint(10000, 99999)}"
+        try:
+            status = _BoilerStatus(data.get("status", "RUNNING"))
+        except ValueError:
+            status = _BoilerStatus.RUNNING
+        try:
+            source_method = _SourceMethod(data.get("source_method", "IMPORTED"))
+        except ValueError:
+            source_method = _SourceMethod.IMPORTED
+        obj = _BoilerSteamRecord(
+            record_no=rec_no,
+            asset_id=data.get("asset_id"),
+            record_datetime=data.get("record_datetime"),
+            shift_ref=data.get("shift_ref"),
+            department=data.get("department"),
+            period_hours=data.get("period_hours"),
+            steam_pressure_bar=data.get("steam_pressure_bar"),
+            steam_temp_c=data.get("steam_temp_c"),
+            steam_flow_kgh=data.get("steam_flow_kgh"),
+            steam_quality_pct=data.get("steam_quality_pct"),
+            steam_generated_kg=data.get("steam_generated_kg"),
+            feedwater_consumed_m3=data.get("feedwater_consumed_m3"),
+            condensate_returned_m3=data.get("condensate_returned_m3"),
+            feed_water_temp_c=data.get("feed_water_temp_c"),
+            feed_water_flow_lpm=data.get("feed_water_flow_lpm"),
+            feed_water_ph=data.get("feed_water_ph"),
+            feed_water_tds_ppm=data.get("feed_water_tds_ppm"),
+            blowdown_pct=data.get("blowdown_pct"),
+            blowdown_volume_litres=data.get("blowdown_volume_litres"),
+            fuel_type=data.get("fuel_type"),
+            fuel_consumption=data.get("fuel_consumption"),
+            fuel_unit=data.get("fuel_unit"),
+            boiler_efficiency_pct=data.get("boiler_efficiency_pct"),
+            flue_gas_temp_c=data.get("flue_gas_temp_c"),
+            o2_pct=data.get("o2_pct"),
+            co2_pct=data.get("co2_pct"),
+            co_ppm=data.get("co_ppm"),
+            boiler_tds_ppm=data.get("boiler_tds_ppm"),
+            boiler_ph=data.get("boiler_ph"),
+            boiler_hardness_ppm=data.get("boiler_hardness_ppm"),
+            conductivity_uscm=data.get("conductivity_uscm"),
+            boiler_load_pct=data.get("boiler_load_pct"),
+            burner_runtime_hours=data.get("burner_runtime_hours"),
+            start_stop_count=data.get("start_stop_count"),
+            running_hours_cumulative=data.get("running_hours_cumulative"),
+            chemical_dosing_amount=data.get("chemical_dosing_amount"),
+            chemical_dosing_unit=data.get("chemical_dosing_unit"),
+            downtime_minutes=data.get("downtime_minutes"),
+            downtime_reason=data.get("downtime_reason"),
+            maintenance_flag=bool(data.get("maintenance_flag", False)),
+            status=status,
+            source_method=source_method,
+            is_anomaly=bool(data.get("is_anomaly", False)),
+            anomaly_note=data.get("anomaly_note"),
+            notes=data.get("notes"),
+        )
+        db.add(obj)
+        await db.flush()
+        return obj
+
+
+# ── Steam Transaction adapter ─────────────────────────────────────────────────
+
+class _SteamTxImport(BaseModel):
+    """CSV schema for bulk-importing STEAM utility transactions."""
+    transaction_date:  date
+    quantity:          Decimal
+    uom:               str = "KG"
+    unit_cost:         Optional[Decimal] = None
+    total_cost:        Optional[Decimal] = None
+    currency_code:     str = "USD"
+    department:        Optional[str] = None
+    building_area:     Optional[str] = None
+    production_line:   Optional[str] = None
+    machine_ref:       Optional[str] = None
+    shift_ref:         Optional[str] = None
+    batch_no:          Optional[str] = None
+    source_method:     str = "IMPORTED"
+    quality:           str = "GOOD"
+    is_estimated:      bool = False
+    is_anomaly:        bool = False
+    anomaly_note:      Optional[str] = None
+    notes:             Optional[str] = None
+
+
+class SteamTransactionAdapter(BaseImportAdapter):
+    """Bulk-import STEAM utility transactions (cost allocation records)."""
+    module          = "steam_transactions"
+    perm_module     = "utility_management"
+    schema_class    = _SteamTxImport
+    unique_key: list = []
+    field_overrides: dict = {}
+    example_row     = {
+        "transaction_date": "2025-01-15",
+        "quantity": "24000",            "uom": "KG",
+        "unit_cost": "0.045",           "total_cost": "1080.00",
+        "currency_code": "USD",         "department": "Production",
+        "production_line": "LINE-01",   "machine_ref": "",
+        "shift_ref": "A",              "batch_no": "",
+        "source_method": "MANUAL",     "quality": "GOOD",
+        "is_estimated": "false",        "is_anomaly": "false",
+        "notes": "",
+    }
+
+    async def resolve_relations(
+        self, row: dict, db: AsyncSession
+    ) -> tuple[dict, list[str]]:
+        errors: list[str] = []
+        sm = row.get("source_method", "IMPORTED")
+        if sm not in {e.value for e in _SourceMethod}:
+            row["source_method"] = "IMPORTED"
+        q = row.get("quality", "GOOD")
+        if q not in {e.value for e in _DataQuality}:
+            row["quality"] = "GOOD"
+        return row, errors
+
+    async def exists_in_db(self, row: dict, db: AsyncSession) -> bool:
+        return False
+
+    async def insert(self, data: dict, db: AsyncSession) -> Any:
+        import random
+        td = data.get("transaction_date")
+        date_str = td.strftime("%Y%m%d") if hasattr(td, "strftime") else str(td).replace("-", "")
+        tx_no = f"STX-{date_str}-{random.randint(10000, 99999)}"
+        qty = data.get("quantity") or Decimal("0")
+        unit_cost = data.get("unit_cost")
+        total_cost = data.get("total_cost") or (qty * unit_cost if unit_cost else None)
+        try:
+            sm = _SourceMethod(data.get("source_method", "IMPORTED"))
+        except ValueError:
+            sm = _SourceMethod.IMPORTED
+        try:
+            dq = _DataQuality(data.get("quality", "GOOD"))
+        except ValueError:
+            dq = _DataQuality.GOOD
+        obj = _UtilityTransaction(
+            tx_no=tx_no,
+            utility_type=_UtilityType.STEAM,
+            transaction_date=data.get("transaction_date"),
+            quantity=qty,
+            uom=data.get("uom", "KG"),
+            unit_cost=unit_cost,
+            total_cost=total_cost,
+            currency_code=data.get("currency_code", "USD"),
+            department=data.get("department"),
+            building_area=data.get("building_area"),
+            production_line=data.get("production_line"),
+            machine_ref=data.get("machine_ref"),
+            shift_ref=data.get("shift_ref"),
+            batch_no=data.get("batch_no"),
+            source_method=sm,
+            quality=dq,
+            is_estimated=bool(data.get("is_estimated", False)),
+            is_anomaly=bool(data.get("is_anomaly", False)),
+            anomaly_note=data.get("anomaly_note"),
+            notes=data.get("notes"),
+        )
+        db.add(obj)
+        await db.flush()
+        return obj
+
+
+# ── Compressor Record adapter ─────────────────────────────────────────────────
+
+class _CompressorRecordImport(BaseModel):
+    """CSV schema for bulk-importing compressor operational records."""
+    record_datetime:           datetime
+    asset_no:                  str              # resolved → asset_id
+    shift_ref:                 Optional[str]    = None
+    department:                Optional[str]    = None
+    production_line:           Optional[str]    = None
+    period_hours:              Optional[Decimal] = None
+    air_generated_nm3:         Optional[Decimal] = None
+    air_unit:                  str              = "Nm3"
+    electricity_used_kwh:      Optional[Decimal] = None
+    runtime_hours:             Optional[Decimal] = None
+    load_time_hours:           Optional[Decimal] = None
+    unload_time_hours:         Optional[Decimal] = None
+    idle_time_hours:           Optional[Decimal] = None
+    discharge_pressure_bar:    Optional[Decimal] = None
+    system_pressure_bar:       Optional[Decimal] = None
+    receiver_tank_pressure_bar: Optional[Decimal] = None
+    line_pressure_bar:         Optional[Decimal] = None
+    filter_dp_bar:             Optional[Decimal] = None
+    dryer_status:              Optional[str]    = None
+    dryer_dew_point_c:         Optional[Decimal] = None
+    specific_energy_kwh_m3:    Optional[Decimal] = None
+    leak_test_done:            bool             = False
+    leak_estimation_pct:       Optional[Decimal] = None
+    leak_volume_nm3:           Optional[Decimal] = None
+    night_idle_kwh:            Optional[Decimal] = None
+    night_idle_nm3:            Optional[Decimal] = None
+    start_stop_count:          Optional[int]    = None
+    downtime_minutes:          Optional[int]    = None
+    downtime_reason:           Optional[str]    = None
+    maintenance_flag:          bool             = False
+    status:                    str              = "RUNNING"
+    source_method:             str              = "IMPORTED"
+    is_anomaly:                bool             = False
+    anomaly_note:              Optional[str]    = None
+    notes:                     Optional[str]    = None
+
+
+class CompressorRecordAdapter(BaseImportAdapter):
+    """Bulk-import compressor operational records. Links asset via asset_no."""
+    module          = "compressor_records"
+    perm_module     = "utility_management"
+    schema_class    = _CompressorRecordImport
+    unique_key: list = []
+    field_overrides: dict = {}
+    example_row     = {
+        "record_datetime": "2025-01-15 06:00",
+        "asset_no": "CPR-001",
+        "shift_ref": "A",               "department": "Utilities",
+        "period_hours": "8.00",         "air_generated_nm3": "9600",
+        "air_unit": "Nm3",              "electricity_used_kwh": "960",
+        "runtime_hours": "8.00",        "load_time_hours": "6.50",
+        "unload_time_hours": "0.80",    "idle_time_hours": "0.70",
+        "discharge_pressure_bar": "7.5","line_pressure_bar": "7.2",
+        "dryer_status": "ON",           "dryer_dew_point_c": "-20",
+        "filter_dp_bar": "0.05",        "leak_test_done": "false",
+        "leak_estimation_pct": "",      "night_idle_kwh": "",
+        "maintenance_flag": "false",    "status": "RUNNING",
+        "source_method": "MANUAL",      "is_anomaly": "false",
+        "notes": "",
+    }
+
+    async def resolve_relations(
+        self, row: dict, db: AsyncSession
+    ) -> tuple[dict, list[str]]:
+        errors: list[str] = []
+        asset_no = row.pop("asset_no", None)
+        if asset_no:
+            r = await db.execute(
+                select(_UtilityAsset).where(_UtilityAsset.asset_no == asset_no)
+            )
+            asset = r.scalar_one_or_none()
+            if asset is None:
+                errors.append(f"asset_no '{asset_no}' not found in utility_assets")
+            else:
+                row["asset_id"] = asset.id
+        else:
+            errors.append("asset_no is required")
+        if row.get("status") not in {e.value for e in _CompressorStatus}:
+            row["status"] = "RUNNING"
+        if row.get("source_method") not in {e.value for e in _SourceMethod}:
+            row["source_method"] = "IMPORTED"
+        return row, errors
+
+    async def exists_in_db(self, row: dict, db: AsyncSession) -> bool:
+        return False
+
+    async def insert(self, data: dict, db: AsyncSession) -> Any:
+        import random
+        dt = data.get("record_datetime")
+        date_str = dt.strftime("%Y%m%d") if hasattr(dt, "strftime") else str(dt)[:10].replace("-", "")
+        rec_no = f"CPR-{date_str}-{random.randint(10000, 99999)}"
+        try:
+            status = _CompressorStatus(data.get("status", "RUNNING"))
+        except ValueError:
+            status = _CompressorStatus.RUNNING
+        try:
+            sm = _SourceMethod(data.get("source_method", "IMPORTED"))
+        except ValueError:
+            sm = _SourceMethod.IMPORTED
+        obj = _CompressorRecord(
+            record_no=rec_no,
+            asset_id=data.get("asset_id"),
+            record_datetime=data.get("record_datetime"),
+            shift_ref=data.get("shift_ref"),
+            department=data.get("department"),
+            production_line=data.get("production_line"),
+            period_hours=data.get("period_hours"),
+            air_generated_nm3=data.get("air_generated_nm3"),
+            air_unit=data.get("air_unit", "Nm3"),
+            electricity_used_kwh=data.get("electricity_used_kwh"),
+            runtime_hours=data.get("runtime_hours"),
+            load_time_hours=data.get("load_time_hours"),
+            unload_time_hours=data.get("unload_time_hours"),
+            idle_time_hours=data.get("idle_time_hours"),
+            discharge_pressure_bar=data.get("discharge_pressure_bar"),
+            system_pressure_bar=data.get("system_pressure_bar"),
+            receiver_tank_pressure_bar=data.get("receiver_tank_pressure_bar"),
+            line_pressure_bar=data.get("line_pressure_bar"),
+            filter_dp_bar=data.get("filter_dp_bar"),
+            dryer_status=data.get("dryer_status"),
+            dryer_dew_point_c=data.get("dryer_dew_point_c"),
+            specific_energy_kwh_m3=data.get("specific_energy_kwh_m3"),
+            leak_test_done=bool(data.get("leak_test_done", False)),
+            leak_estimation_pct=data.get("leak_estimation_pct"),
+            leak_volume_nm3=data.get("leak_volume_nm3"),
+            night_idle_kwh=data.get("night_idle_kwh"),
+            night_idle_nm3=data.get("night_idle_nm3"),
+            start_stop_count=data.get("start_stop_count"),
+            downtime_minutes=data.get("downtime_minutes"),
+            downtime_reason=data.get("downtime_reason"),
+            maintenance_flag=bool(data.get("maintenance_flag", False)),
+            status=status,
+            source_method=sm,
+            is_anomaly=bool(data.get("is_anomaly", False)),
+            anomaly_note=data.get("anomaly_note"),
+            notes=data.get("notes"),
+        )
+        db.add(obj)
+        await db.flush()
+        return obj
+
+
+# ── Air Transaction adapter ───────────────────────────────────────────────────
+
+class _AirTxImport(BaseModel):
+    """CSV schema for bulk-importing COMPRESSED_AIR utility transactions."""
+    transaction_date:  date
+    quantity:          Decimal
+    uom:               str              = "Nm3"
+    unit_cost:         Optional[Decimal] = None
+    total_cost:        Optional[Decimal] = None
+    currency_code:     str              = "USD"
+    department:        Optional[str]    = None
+    building_area:     Optional[str]    = None
+    production_line:   Optional[str]    = None
+    machine_ref:       Optional[str]    = None
+    shift_ref:         Optional[str]    = None
+    batch_no:          Optional[str]    = None
+    source_method:     str              = "IMPORTED"
+    quality:           str              = "GOOD"
+    is_estimated:      bool             = False
+    is_anomaly:        bool             = False
+    anomaly_note:      Optional[str]    = None
+    notes:             Optional[str]    = None
+
+
+class AirTransactionAdapter(BaseImportAdapter):
+    """Bulk-import COMPRESSED_AIR utility transactions."""
+    module          = "air_transactions"
+    perm_module     = "utility_management"
+    schema_class    = _AirTxImport
+    unique_key: list = []
+    field_overrides: dict = {}
+    example_row     = {
+        "transaction_date": "2025-01-15",
+        "quantity": "9600",         "uom": "Nm3",
+        "unit_cost": "0.012",       "total_cost": "115.20",
+        "currency_code": "USD",     "department": "Production",
+        "production_line": "LINE-01","machine_ref": "",
+        "shift_ref": "A",           "batch_no": "",
+        "source_method": "MANUAL",  "quality": "GOOD",
+        "is_estimated": "false",    "is_anomaly": "false",
+        "notes": "",
+    }
+
+    async def resolve_relations(
+        self, row: dict, db: AsyncSession
+    ) -> tuple[dict, list[str]]:
+        errors: list[str] = []
+        if row.get("source_method") not in {e.value for e in _SourceMethod}:
+            row["source_method"] = "IMPORTED"
+        if row.get("quality") not in {e.value for e in _DataQuality}:
+            row["quality"] = "GOOD"
+        return row, errors
+
+    async def exists_in_db(self, row: dict, db: AsyncSession) -> bool:
+        return False
+
+    async def insert(self, data: dict, db: AsyncSession) -> Any:
+        import random
+        td = data.get("transaction_date")
+        date_str = td.strftime("%Y%m%d") if hasattr(td, "strftime") else str(td).replace("-", "")
+        tx_no = f"ATX-{date_str}-{random.randint(10000, 99999)}"
+        qty = data.get("quantity") or Decimal("0")
+        unit_cost = data.get("unit_cost")
+        total_cost = data.get("total_cost") or (qty * unit_cost if unit_cost else None)
+        try:
+            sm = _SourceMethod(data.get("source_method", "IMPORTED"))
+        except ValueError:
+            sm = _SourceMethod.IMPORTED
+        try:
+            dq = _DataQuality(data.get("quality", "GOOD"))
+        except ValueError:
+            dq = _DataQuality.GOOD
+        obj = _UtilityTransaction(
+            tx_no=tx_no,
+            utility_type=_UtilityType.COMPRESSED_AIR,
+            transaction_date=data.get("transaction_date"),
+            quantity=qty,
+            uom=data.get("uom", "Nm3"),
+            unit_cost=unit_cost,
+            total_cost=total_cost,
+            currency_code=data.get("currency_code", "USD"),
+            department=data.get("department"),
+            building_area=data.get("building_area"),
+            production_line=data.get("production_line"),
+            machine_ref=data.get("machine_ref"),
+            shift_ref=data.get("shift_ref"),
+            batch_no=data.get("batch_no"),
+            source_method=sm,
+            quality=dq,
+            is_estimated=bool(data.get("is_estimated", False)),
+            is_anomaly=bool(data.get("is_anomaly", False)),
+            anomaly_note=data.get("anomaly_note"),
+            notes=data.get("notes"),
+        )
+        db.add(obj)
+        await db.flush()
+        return obj
+
+
 # ── Adapter registry ──────────────────────────────────────────────────────────
 
 ADAPTERS: dict[str, BaseImportAdapter] = {
@@ -970,7 +2360,20 @@ ADAPTERS: dict[str, BaseImportAdapter] = {
     "employees":             EmployeeAdapter(),
     "inventory_stock":       InventoryStockAdapter(),
     "recipes":               RecipeAdapter(),
+    "recipe_items":          RecipeItemAdapter(),
+    "recipe_steps":          RecipeStepAdapter(),
     "qc_parameters":         QCParameterAdapter(),
+    # Utility Management
+    "utility_asset_categories":  UtilityAssetCategoryAdapter(),
+    "utility_assets":            UtilityAssetAdapter(),
+    "utility_devices":           UtilityDeviceAdapter(),
+    "electricity_transactions":  ElectricityTransactionAdapter(),
+    "water_transactions":        WaterTransactionAdapter(),
+    "soft_water_records":        SoftWaterRecordAdapter(),
+    "boiler_records":            BoilerRecordAdapter(),
+    "steam_transactions":        SteamTransactionAdapter(),
+    "compressor_records":        CompressorRecordAdapter(),
+    "air_transactions":          AirTransactionAdapter(),
     # Advanced Production
     "work_centers":          WorkCenterImportAdapter(),
     "routings":              RoutingImportAdapter(),

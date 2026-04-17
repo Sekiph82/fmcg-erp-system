@@ -1,0 +1,595 @@
+product_sku,version,line_no,material_code,quantity,unit,loss_percent,optional,alternative_group,notes
+HH-001,v1.0,1,MAT001,180,KG,2.00,false,,Primary surfactant LABSA
+HH-001,v1.0,2,MAT004,350,KG,1.00,false,,Alkaline builder
+HH-001,v1.0,3,MAT005,120,KG,1.00,false,,Phosphate builder and water softener
+HH-001,v1.0,4,MAT010,10,KG,0.50,false,,Floral fragrance
+HH-001,v1.0,5,MAT031,300,KG,2.00,false,,Sachet laminate film (20g format)
+HH-001,v1.0,6,MAT038,50000,PCS,1.00,false,,Printed sachet label B
+HH-001,v1.0,7,MAT036,200,PCS,0.50,false,,Export master carton
+HH-002,v1.0,1,MAT001,180,KG,2.00,false,,Primary surfactant LABSA
+HH-002,v1.0,2,MAT004,350,KG,1.00,false,,Alkaline builder
+HH-002,v1.0,3,MAT005,120,KG,1.00,false,,Phosphate builder and water softener
+HH-002,v1.0,4,MAT010,10,KG,0.50,false,,Floral fragrance
+HH-002,v1.0,5,MAT032,1000,PCS,0.50,false,,1kg kraft stand-up pouch
+HH-002,v1.0,6,MAT036,84,PCS,0.50,false,,Export master carton
+HH-003,v1.0,1,MAT001,180,KG,2.00,false,,Primary surfactant LABSA
+HH-003,v1.0,2,MAT004,350,KG,1.00,false,,Alkaline builder
+HH-003,v1.0,3,MAT005,120,KG,1.00,false,,Phosphate builder and water softener
+HH-003,v1.0,4,MAT010,10,KG,0.50,false,,Floral fragrance
+HH-003,v1.0,5,MAT033,100,PCS,0.50,false,,10kg kraft bag with handle
+HH-003,v1.0,6,MAT036,10,PCS,0.50,false,,Export master carton
+HH-004,v1.0,1,MAT001,150,KG,2.00,false,,Primary surfactant LABSA
+HH-004,v1.0,2,MAT004,300,KG,1.00,false,,Alkaline builder
+HH-004,v1.0,3,MAT005,100,KG,1.00,false,,Phosphate builder
+HH-004,v1.0,4,MAT006,80,KG,1.00,false,,Oxygen bleach booster
+HH-004,v1.0,5,MAT014,15,KG,1.00,false,,Protease-amylase enzyme blend
+HH-004,v1.0,6,MAT015,5,KG,0.50,false,,Optical brightener CBS-X
+HH-004,v1.0,7,MAT010,8,KG,0.50,false,,Floral fragrance
+HH-004,v1.0,8,MAT031,250,KG,2.00,false,,Sachet laminate film (40g format)
+HH-004,v1.0,9,MAT038,25000,PCS,1.00,false,,Printed sachet label B
+HH-004,v1.0,10,MAT036,100,PCS,0.50,false,,Export master carton
+HH-005,v1.0,1,MAT001,150,KG,2.00,false,,Primary surfactant LABSA
+HH-005,v1.0,2,MAT004,300,KG,1.00,false,,Alkaline builder
+HH-005,v1.0,3,MAT005,100,KG,1.00,false,,Phosphate builder
+HH-005,v1.0,4,MAT006,80,KG,1.00,false,,Oxygen bleach booster
+HH-005,v1.0,5,MAT014,15,KG,1.00,false,,Protease-amylase enzyme blend
+HH-005,v1.0,6,MAT015,5,KG,0.50,false,,Optical brightener CBS-X
+HH-005,v1.0,7,MAT010,8,KG,0.50,false,,Floral fragrance
+HH-005,v1.0,8,MAT032,1000,PCS,0.50,false,,1kg kraft stand-up pouch
+HH-005,v1.0,9,MAT036,84,PCS,0.50,false,,Export master carton
+HH-006,v1.0,1,MAT001,150,KG,2.00,false,,Primary surfactant LABSA
+HH-006,v1.0,2,MAT004,300,KG,1.00,false,,Alkaline builder
+HH-006,v1.0,3,MAT005,100,KG,1.00,false,,Phosphate builder
+HH-006,v1.0,4,MAT006,80,KG,1.00,false,,Oxygen bleach booster
+HH-006,v1.0,5,MAT014,15,KG,1.00,false,,Protease-amylase enzyme blend
+HH-006,v1.0,6,MAT015,5,KG,0.50,false,,Optical brightener CBS-X
+HH-006,v1.0,7,MAT010,8,KG,0.50,false,,Floral fragrance
+HH-006,v1.0,8,MAT033,100,PCS,0.50,false,,10kg kraft bag with handle
+HH-006,v1.0,9,MAT036,10,PCS,0.50,false,,Export master carton
+HH-007,v1.0,1,MAT001,150,KG,2.00,false,,Primary surfactant LABSA
+HH-007,v1.0,2,MAT004,300,KG,1.00,false,,Alkaline builder
+HH-007,v1.0,3,MAT005,100,KG,1.00,false,,Phosphate builder
+HH-007,v1.0,4,MAT006,80,KG,1.00,false,,Oxygen bleach booster
+HH-007,v1.0,5,MAT014,15,KG,1.00,false,,Protease-amylase enzyme blend
+HH-007,v1.0,6,MAT010,8,KG,0.50,false,,Floral fragrance (no OBA for colors)
+HH-007,v1.0,7,MAT031,250,KG,2.00,false,,Sachet laminate film (40g format)
+HH-007,v1.0,8,MAT038,25000,PCS,1.00,false,,Printed sachet label B
+HH-007,v1.0,9,MAT036,100,PCS,0.50,false,,Export master carton
+HH-008,v1.0,1,MAT001,150,KG,2.00,false,,Primary surfactant LABSA
+HH-008,v1.0,2,MAT004,300,KG,1.00,false,,Alkaline builder
+HH-008,v1.0,3,MAT005,100,KG,1.00,false,,Phosphate builder
+HH-008,v1.0,4,MAT006,80,KG,1.00,false,,Oxygen bleach booster
+HH-008,v1.0,5,MAT014,15,KG,1.00,false,,Protease-amylase enzyme blend
+HH-008,v1.0,6,MAT010,8,KG,0.50,false,,Floral fragrance
+HH-008,v1.0,7,MAT032,1000,PCS,0.50,false,,1kg kraft stand-up pouch
+HH-008,v1.0,8,MAT036,84,PCS,0.50,false,,Export master carton
+HH-009,v1.0,1,MAT001,150,KG,2.00,false,,Primary surfactant LABSA
+HH-009,v1.0,2,MAT004,300,KG,1.00,false,,Alkaline builder
+HH-009,v1.0,3,MAT005,100,KG,1.00,false,,Phosphate builder
+HH-009,v1.0,4,MAT006,80,KG,1.00,false,,Oxygen bleach booster
+HH-009,v1.0,5,MAT014,15,KG,1.00,false,,Protease-amylase enzyme blend
+HH-009,v1.0,6,MAT010,8,KG,0.50,false,,Floral fragrance
+HH-009,v1.0,7,MAT033,100,PCS,0.50,false,,10kg kraft bag with handle
+HH-009,v1.0,8,MAT036,10,PCS,0.50,false,,Export master carton
+HH-010,v1.0,1,MAT006,500,KG,1.00,false,,Sodium percarbonate active oxygen source
+HH-010,v1.0,2,MAT004,300,KG,1.00,false,,Soda ash carrier
+HH-010,v1.0,3,MAT007,100,KG,1.00,false,,Citric acid activation aid
+HH-010,v1.0,4,MAT024,50,KG,0.50,false,,Sodium gluconate chelant
+HH-010,v1.0,5,MAT031,300,KG,2.00,false,,Sachet laminate film (20g format)
+HH-010,v1.0,6,MAT038,50000,PCS,1.00,false,,Printed sachet label B
+HH-010,v1.0,7,MAT036,200,PCS,0.50,false,,Export master carton
+HH-011,v1.0,1,MAT006,500,KG,1.00,false,,Sodium percarbonate active oxygen source
+HH-011,v1.0,2,MAT004,300,KG,1.00,false,,Soda ash carrier
+HH-011,v1.0,3,MAT007,100,KG,1.00,false,,Citric acid activation aid
+HH-011,v1.0,4,MAT024,50,KG,0.50,false,,Sodium gluconate chelant
+HH-011,v1.0,5,MAT032,1000,PCS,0.50,false,,1kg kraft stand-up pouch
+HH-011,v1.0,6,MAT036,84,PCS,0.50,false,,Export master carton
+HH-012,v1.0,1,MAT006,500,KG,1.00,false,,Sodium percarbonate active oxygen source
+HH-012,v1.0,2,MAT004,300,KG,1.00,false,,Soda ash carrier
+HH-012,v1.0,3,MAT007,100,KG,1.00,false,,Citric acid activation aid
+HH-012,v1.0,4,MAT024,50,KG,0.50,false,,Sodium gluconate chelant
+HH-012,v1.0,5,MAT033,100,PCS,0.50,false,,10kg kraft bag with handle
+HH-012,v1.0,6,MAT036,10,PCS,0.50,false,,Export master carton
+HH-013,v1.0,1,MAT007,600,KG,1.00,false,,Citric acid primary descalant
+HH-013,v1.0,2,MAT024,200,KG,0.50,false,,Sodium gluconate chelating enhancer
+HH-013,v1.0,3,MAT004,100,KG,1.00,false,,Soda ash anti-caking
+HH-013,v1.0,4,MAT031,250,KG,2.00,false,,Sachet laminate film (25g format)
+HH-013,v1.0,5,MAT038,40000,PCS,1.00,false,,Printed sachet label B
+HH-013,v1.0,6,MAT036,160,PCS,0.50,false,,Export master carton
+HH-014,v1.0,1,MAT007,600,KG,1.00,false,,Citric acid primary descalant
+HH-014,v1.0,2,MAT024,200,KG,0.50,false,,Sodium gluconate chelating enhancer
+HH-014,v1.0,3,MAT004,100,KG,1.00,false,,Soda ash anti-caking
+HH-014,v1.0,4,MAT032,1000,PCS,0.50,false,,1kg kraft stand-up pouch
+HH-014,v1.0,5,MAT036,84,PCS,0.50,false,,Export master carton
+HH-015,v1.0,1,MAT007,600,KG,1.00,false,,Citric acid primary descalant
+HH-015,v1.0,2,MAT024,200,KG,0.50,false,,Sodium gluconate chelating enhancer
+HH-015,v1.0,3,MAT004,100,KG,1.00,false,,Soda ash anti-caking
+HH-015,v1.0,4,MAT033,100,PCS,0.50,false,,10kg kraft bag with handle
+HH-015,v1.0,5,MAT036,10,PCS,0.50,false,,Export master carton
+HH-016,v1.0,1,MAT002,200,KG,1.00,false,,SLES 70% primary anionic surfactant
+HH-016,v1.0,2,MAT003,50,KG,1.00,false,,CAPB 30% amphoteric co-surfactant
+HH-016,v1.0,3,MAT010,8,KG,0.50,false,,Floral fragrance
+HH-016,v1.0,4,MAT016,1,KG,0.50,false,,Kathon CG preservative
+HH-016,v1.0,5,MAT026,1000,PCS,0.50,false,,HDPE 1L bottle with cap
+HH-016,v1.0,6,MAT037,1000,PCS,0.50,false,,Label A - large format
+HH-016,v1.0,7,MAT036,84,PCS,0.50,false,,Export master carton
+HH-017,v1.0,1,MAT002,200,KG,1.00,false,,SLES 70% primary anionic surfactant
+HH-017,v1.0,2,MAT003,50,KG,1.00,false,,CAPB 30% amphoteric co-surfactant
+HH-017,v1.0,3,MAT010,8,KG,0.50,false,,Floral fragrance
+HH-017,v1.0,4,MAT016,1,KG,0.50,false,,Kathon CG preservative
+HH-017,v1.0,5,MAT031,200,KG,2.00,false,,Sachet laminate film (40ml format)
+HH-017,v1.0,6,MAT038,25000,PCS,1.00,false,,Printed sachet label B
+HH-017,v1.0,7,MAT036,100,PCS,0.50,false,,Export master carton
+HH-018,v1.0,1,MAT002,200,KG,1.00,false,,SLES 70% primary anionic surfactant
+HH-018,v1.0,2,MAT003,50,KG,1.00,false,,CAPB 30% amphoteric co-surfactant
+HH-018,v1.0,3,MAT015,3,KG,0.50,false,,Optical brightener CBS-X for whites
+HH-018,v1.0,4,MAT010,8,KG,0.50,false,,Floral fragrance
+HH-018,v1.0,5,MAT016,1,KG,0.50,false,,Kathon CG preservative
+HH-018,v1.0,6,MAT026,1000,PCS,0.50,false,,HDPE 1L bottle with cap
+HH-018,v1.0,7,MAT037,1000,PCS,0.50,false,,Label A - large format
+HH-018,v1.0,8,MAT036,84,PCS,0.50,false,,Export master carton
+HH-019,v1.0,1,MAT002,200,KG,1.00,false,,SLES 70% primary anionic surfactant
+HH-019,v1.0,2,MAT003,50,KG,1.00,false,,CAPB 30% amphoteric co-surfactant
+HH-019,v1.0,3,MAT015,3,KG,0.50,false,,Optical brightener CBS-X for whites
+HH-019,v1.0,4,MAT010,8,KG,0.50,false,,Floral fragrance
+HH-019,v1.0,5,MAT016,1,KG,0.50,false,,Kathon CG preservative
+HH-019,v1.0,6,MAT031,200,KG,2.00,false,,Sachet laminate film (50ml format)
+HH-019,v1.0,7,MAT038,20000,PCS,1.00,false,,Printed sachet label B
+HH-019,v1.0,8,MAT036,80,PCS,0.50,false,,Export master carton
+HH-020,v1.0,1,MAT002,120,KG,1.00,false,,SLES 70% mild concentration
+HH-020,v1.0,2,MAT003,100,KG,1.00,false,,CAPB 30% dominant gentle surfactant
+HH-020,v1.0,3,MAT013,5,KG,0.50,false,,Baby mild fragrance hypoallergenic
+HH-020,v1.0,4,MAT016,0.5,KG,0.50,false,,Kathon CG preservative reduced level
+HH-020,v1.0,5,MAT026,1000,PCS,0.50,false,,HDPE 1L bottle with cap
+HH-020,v1.0,6,MAT037,1000,PCS,0.50,false,,Label A - large format
+HH-020,v1.0,7,MAT036,84,PCS,0.50,false,,Export master carton
+HH-021,v1.0,1,MAT002,120,KG,1.00,false,,SLES 70% mild concentration
+HH-021,v1.0,2,MAT003,100,KG,1.00,false,,CAPB 30% dominant gentle surfactant
+HH-021,v1.0,3,MAT013,5,KG,0.50,false,,Baby mild fragrance hypoallergenic
+HH-021,v1.0,4,MAT016,0.5,KG,0.50,false,,Kathon CG preservative reduced level
+HH-021,v1.0,5,MAT031,200,KG,2.00,false,,Sachet laminate film (40ml format)
+HH-021,v1.0,6,MAT038,25000,PCS,1.00,false,,Printed sachet label B
+HH-021,v1.0,7,MAT036,100,PCS,0.50,false,,Export master carton
+HH-022,v1.0,1,MAT003,150,KG,1.00,false,,CAPB softening active
+HH-022,v1.0,2,MAT017,30,KG,0.50,false,,Glycerin humectant
+HH-022,v1.0,3,MAT010,15,KG,0.50,false,,Floral bouquet fragrance
+HH-022,v1.0,4,MAT016,1,KG,0.50,false,,Kathon CG preservative
+HH-022,v1.0,5,MAT026,1000,PCS,0.50,false,,HDPE 1L bottle with cap
+HH-022,v1.0,6,MAT037,1000,PCS,0.50,false,,Label A - large format
+HH-022,v1.0,7,MAT036,84,PCS,0.50,false,,Export master carton
+HH-023,v1.0,1,MAT003,150,KG,1.00,false,,CAPB softening active hypoallergenic
+HH-023,v1.0,2,MAT017,30,KG,0.50,false,,Glycerin humectant
+HH-023,v1.0,3,MAT013,10,KG,0.50,false,,Baby mild fragrance for sensitive
+HH-023,v1.0,4,MAT016,1,KG,0.50,false,,Kathon CG preservative
+HH-023,v1.0,5,MAT026,1000,PCS,0.50,false,,HDPE 1L bottle with cap
+HH-023,v1.0,6,MAT037,1000,PCS,0.50,false,,Label A - large format
+HH-023,v1.0,7,MAT036,84,PCS,0.50,false,,Export master carton
+HH-024,v1.0,1,MAT003,150,KG,1.00,false,,CAPB softening active
+HH-024,v1.0,2,MAT017,30,KG,0.50,false,,Glycerin humectant
+HH-024,v1.0,3,MAT010,15,KG,0.50,false,,Floral bouquet fragrance
+HH-024,v1.0,4,MAT016,1,KG,0.50,false,,Kathon CG preservative
+HH-024,v1.0,5,MAT031,150,KG,2.00,false,,Sachet laminate film (30ml format)
+HH-024,v1.0,6,MAT038,33333,PCS,1.00,false,,Printed sachet label B
+HH-024,v1.0,7,MAT036,133,PCS,0.50,false,,Export master carton
+HH-025,v1.0,1,MAT008,420,L,1.00,false,,NaOCl 12% diluted to 5% active chlorine
+HH-025,v1.0,2,MAT029,50,PCS,0.50,false,,HDPE 20L drum with lid
+HH-025,v1.0,3,MAT037,50,PCS,0.50,false,,Label A - large format drum
+HH-025,v1.0,4,MAT036,5,PCS,0.50,false,,Export master carton
+HH-026,v1.0,1,MAT008,835,L,1.00,false,,NaOCl 12% concentrated to 10% active chlorine
+HH-026,v1.0,2,MAT026,1000,PCS,0.50,false,,HDPE 1L bottle with cap
+HH-026,v1.0,3,MAT037,1000,PCS,0.50,false,,Label A - large format
+HH-026,v1.0,4,MAT036,84,PCS,0.50,false,,Export master carton
+HH-027,v1.0,1,MAT002,250,KG,1.00,false,,SLES 70% primary surfactant
+HH-027,v1.0,2,MAT003,60,KG,1.00,false,,CAPB 30% foam booster
+HH-027,v1.0,3,MAT011,10,KG,0.50,false,,Lemon fresh fragrance
+HH-027,v1.0,4,MAT016,1,KG,0.50,false,,Kathon CG preservative
+HH-027,v1.0,5,MAT026,1000,PCS,0.50,false,,HDPE 1L bottle with cap
+HH-027,v1.0,6,MAT037,1000,PCS,0.50,false,,Label A - large format
+HH-027,v1.0,7,MAT036,84,PCS,0.50,false,,Export master carton
+HH-028,v1.0,1,MAT002,250,KG,1.00,false,,SLES 70% primary surfactant
+HH-028,v1.0,2,MAT003,60,KG,1.00,false,,CAPB 30% foam booster
+HH-028,v1.0,3,MAT011,10,KG,0.50,false,,Lemon fresh fragrance
+HH-028,v1.0,4,MAT016,1,KG,0.50,false,,Kathon CG preservative
+HH-028,v1.0,5,MAT031,100,KG,2.00,false,,Sachet laminate film (15ml format)
+HH-028,v1.0,6,MAT038,66667,PCS,1.00,false,,Printed sachet label B
+HH-028,v1.0,7,MAT036,267,PCS,0.50,false,,Export master carton
+HH-029,v1.0,1,MAT002,250,KG,1.00,false,,SLES 70% primary surfactant
+HH-029,v1.0,2,MAT003,60,KG,1.00,false,,CAPB 30% foam booster
+HH-029,v1.0,3,MAT012,10,KG,0.50,false,,Orange zest fragrance
+HH-029,v1.0,4,MAT016,1,KG,0.50,false,,Kathon CG preservative
+HH-029,v1.0,5,MAT026,1000,PCS,0.50,false,,HDPE 1L bottle with cap
+HH-029,v1.0,6,MAT037,1000,PCS,0.50,false,,Label A - large format
+HH-029,v1.0,7,MAT036,84,PCS,0.50,false,,Export master carton
+HH-030,v1.0,1,MAT002,250,KG,1.00,false,,SLES 70% primary surfactant
+HH-030,v1.0,2,MAT003,60,KG,1.00,false,,CAPB 30% foam booster
+HH-030,v1.0,3,MAT009,5,KG,0.50,false,,BZK 80% antibacterial active
+HH-030,v1.0,4,MAT011,8,KG,0.50,false,,Lemon fresh fragrance
+HH-030,v1.0,5,MAT016,1,KG,0.50,false,,Kathon CG preservative
+HH-030,v1.0,6,MAT026,1000,PCS,0.50,false,,HDPE 1L bottle with cap
+HH-030,v1.0,7,MAT037,1000,PCS,0.50,false,,Label A - large format
+HH-030,v1.0,8,MAT036,84,PCS,0.50,false,,Export master carton
+HH-031,v1.0,1,MAT002,50,KG,1.00,false,,SLES 70% surfactant base
+HH-031,v1.0,2,MAT024,20,KG,0.50,false,,Sodium gluconate chelant
+HH-031,v1.0,3,MAT011,5,KG,0.50,false,,Lemon fresh fragrance
+HH-031,v1.0,4,MAT016,0.5,KG,0.50,false,,Kathon CG preservative
+HH-031,v1.0,5,MAT031,150,KG,2.00,false,,Sachet laminate film (30ml format)
+HH-031,v1.0,6,MAT038,33333,PCS,1.00,false,,Printed sachet label B
+HH-031,v1.0,7,MAT036,133,PCS,0.50,false,,Export master carton
+HH-032,v1.0,1,MAT002,50,KG,1.00,false,,SLES 70% surfactant base
+HH-032,v1.0,2,MAT024,20,KG,0.50,false,,Sodium gluconate chelant
+HH-032,v1.0,3,MAT011,5,KG,0.50,false,,Lemon fresh fragrance
+HH-032,v1.0,4,MAT016,0.5,KG,0.50,false,,Kathon CG preservative
+HH-032,v1.0,5,MAT026,1000,PCS,0.50,false,,HDPE 1L bottle with cap
+HH-032,v1.0,6,MAT037,1000,PCS,0.50,false,,Label A - large format
+HH-032,v1.0,7,MAT036,84,PCS,0.50,false,,Export master carton
+HH-033,v1.0,1,MAT002,200,KG,1.00,false,,SLES 70% soap base proxy
+HH-033,v1.0,2,MAT004,50,KG,1.00,false,,Soda ash alkalinity
+HH-033,v1.0,3,MAT024,20,KG,0.50,false,,Sodium gluconate chelant
+HH-033,v1.0,4,MAT016,1,KG,0.50,false,,Kathon CG preservative
+HH-033,v1.0,5,MAT026,1000,PCS,0.50,false,,HDPE 1L bottle with cap
+HH-033,v1.0,6,MAT037,1000,PCS,0.50,false,,Label A - large format
+HH-033,v1.0,7,MAT036,84,PCS,0.50,false,,Export master carton
+HH-034,v1.0,1,MAT004,100,KG,1.00,false,,Soda ash alkaline builder
+HH-034,v1.0,2,MAT002,50,KG,1.00,false,,SLES 70% emulsifying surfactant
+HH-034,v1.0,3,MAT024,30,KG,0.50,false,,Sodium gluconate chelant and sequestrant
+HH-034,v1.0,4,MAT016,0.5,KG,0.50,false,,Kathon CG preservative
+HH-034,v1.0,5,MAT026,1000,PCS,0.50,false,,HDPE 1L bottle with cap
+HH-034,v1.0,6,MAT037,1000,PCS,0.50,false,,Label A - large format
+HH-034,v1.0,7,MAT036,84,PCS,0.50,false,,Export master carton
+HH-035,v1.0,1,MAT007,150,KG,1.00,false,,Citric acid primary descalant
+HH-035,v1.0,2,MAT024,30,KG,0.50,false,,Sodium gluconate chelant
+HH-035,v1.0,3,MAT011,3,KG,0.50,false,,Lemon fragrance masking
+HH-035,v1.0,4,MAT016,0.5,KG,0.50,false,,Kathon CG preservative
+HH-035,v1.0,5,MAT026,1000,PCS,0.50,false,,HDPE 1L bottle with cap
+HH-035,v1.0,6,MAT037,1000,PCS,0.50,false,,Label A - large format
+HH-035,v1.0,7,MAT036,84,PCS,0.50,false,,Export master carton
+HH-036,v1.0,1,MAT002,180,KG,1.00,false,,SLES 70% primary surfactant
+HH-036,v1.0,2,MAT003,60,KG,1.00,false,,CAPB 30% conditioning co-surfactant
+HH-036,v1.0,3,MAT017,30,KG,0.50,false,,Glycerin moisturizing agent
+HH-036,v1.0,4,MAT010,10,KG,0.50,false,,Floral fragrance
+HH-036,v1.0,5,MAT016,1,KG,0.50,false,,Kathon CG preservative
+HH-036,v1.0,6,MAT027,2000,PCS,0.50,false,,HDPE 500ml bottle with pump cap
+HH-036,v1.0,7,MAT037,2000,PCS,0.50,false,,Label A - large format
+HH-036,v1.0,8,MAT036,84,PCS,0.50,false,,Export master carton
+HH-037,v1.0,1,MAT002,180,KG,1.00,false,,SLES 70% primary surfactant
+HH-037,v1.0,2,MAT003,60,KG,1.00,false,,CAPB 30% conditioning co-surfactant
+HH-037,v1.0,3,MAT017,30,KG,0.50,false,,Glycerin moisturizing agent
+HH-037,v1.0,4,MAT010,10,KG,0.50,false,,Floral fragrance
+HH-037,v1.0,5,MAT016,1,KG,0.50,false,,Kathon CG preservative
+HH-037,v1.0,6,MAT031,100,KG,2.00,false,,Sachet laminate film (5ml format)
+HH-037,v1.0,7,MAT038,200000,PCS,1.00,false,,Printed sachet label B
+HH-037,v1.0,8,MAT036,400,PCS,0.50,false,,Export master carton
+HH-038,v1.0,1,MAT025,300,L,1.00,false,,IPA 99% primary solvent
+HH-038,v1.0,2,MAT024,5,KG,0.50,false,,Sodium gluconate anti-streaking
+HH-038,v1.0,3,MAT031,100,KG,2.00,false,,Sachet laminate film (20ml format)
+HH-038,v1.0,4,MAT038,50000,PCS,1.00,false,,Printed sachet label B
+HH-038,v1.0,5,MAT036,200,PCS,0.50,false,,Export master carton
+HH-039,v1.0,1,MAT025,300,L,1.00,false,,IPA 99% primary solvent
+HH-039,v1.0,2,MAT024,5,KG,0.50,false,,Sodium gluconate anti-streaking
+HH-039,v1.0,3,MAT027,2000,PCS,0.50,false,,HDPE 500ml bottle body
+HH-039,v1.0,4,MAT035,2000,PCS,0.50,false,,Trigger spray head 28/410
+HH-039,v1.0,5,MAT037,2000,PCS,0.50,false,,Label A - large format
+HH-039,v1.0,6,MAT036,84,PCS,0.50,false,,Export master carton
+HH-040,v1.0,1,MAT002,30,KG,1.00,false,,SLES 70% surfactant
+HH-040,v1.0,2,MAT009,10,KG,0.50,false,,BZK 80% disinfecting active
+HH-040,v1.0,3,MAT010,5,KG,0.50,false,,Floral fragrance
+HH-040,v1.0,4,MAT016,0.5,KG,0.50,false,,Kathon CG preservative
+HH-040,v1.0,5,MAT026,1000,PCS,0.50,false,,HDPE 1L bottle with cap
+HH-040,v1.0,6,MAT037,1000,PCS,0.50,false,,Label A - large format
+HH-040,v1.0,7,MAT036,84,PCS,0.50,false,,Export master carton
+HH-041,v1.0,1,MAT002,30,KG,1.00,false,,SLES 70% surfactant
+HH-041,v1.0,2,MAT009,10,KG,0.50,false,,BZK 80% disinfecting active
+HH-041,v1.0,3,MAT010,5,KG,0.50,false,,Floral fragrance
+HH-041,v1.0,4,MAT016,0.5,KG,0.50,false,,Kathon CG preservative
+HH-041,v1.0,5,MAT031,150,KG,2.00,false,,Sachet laminate film (30ml format)
+HH-041,v1.0,6,MAT038,33333,PCS,1.00,false,,Printed sachet label B
+HH-041,v1.0,7,MAT036,133,PCS,0.50,false,,Export master carton
+HH-042,v1.0,1,MAT007,150,KG,1.00,false,,Citric acid descaling active
+HH-042,v1.0,2,MAT009,5,KG,0.50,false,,BZK 80% antibacterial boost
+HH-042,v1.0,3,MAT011,8,KG,0.50,false,,Lemon fragrance
+HH-042,v1.0,4,MAT016,0.5,KG,0.50,false,,Kathon CG preservative
+HH-042,v1.0,5,MAT039,1333,PCS,0.50,false,,HDPE 750ml bottle with cap
+HH-042,v1.0,6,MAT037,1333,PCS,0.50,false,,Label A - large format
+HH-042,v1.0,7,MAT036,56,PCS,0.50,false,,Export master carton
+HH-043,v1.0,1,MAT007,150,KG,1.00,false,,Citric acid descaling active
+HH-043,v1.0,2,MAT009,5,KG,0.50,false,,BZK 80% antibacterial boost
+HH-043,v1.0,3,MAT011,8,KG,0.50,false,,Lemon fragrance
+HH-043,v1.0,4,MAT016,0.5,KG,0.50,false,,Kathon CG preservative
+HH-043,v1.0,5,MAT031,200,KG,2.00,false,,Sachet laminate film (50ml format)
+HH-043,v1.0,6,MAT038,20000,PCS,1.00,false,,Printed sachet label B
+HH-043,v1.0,7,MAT036,80,PCS,0.50,false,,Export master carton
+HH-044,v1.0,1,MAT019,400,KG,1.00,false,,Precipitated calcium carbonate abrasive
+HH-044,v1.0,2,MAT002,30,KG,1.00,false,,SLES 70% surfactant carrier
+HH-044,v1.0,3,MAT011,8,KG,0.50,false,,Lemon fragrance
+HH-044,v1.0,4,MAT016,0.5,KG,0.50,false,,Kathon CG preservative
+HH-044,v1.0,5,MAT027,2000,PCS,0.50,false,,HDPE 500ml bottle
+HH-044,v1.0,6,MAT037,2000,PCS,0.50,false,,Label A - large format
+HH-044,v1.0,7,MAT036,84,PCS,0.50,false,,Export master carton
+HH-045,v1.0,1,MAT002,100,KG,1.00,false,,SLES 70% surfactant carrier
+HH-045,v1.0,2,MAT003,30,KG,1.00,false,,CAPB 30% foam booster
+HH-045,v1.0,3,MAT014,50,KG,1.00,false,,Protease-amylase enzyme blend active
+HH-045,v1.0,4,MAT016,1,KG,0.50,false,,Kathon CG preservative
+HH-045,v1.0,5,MAT031,200,KG,2.00,false,,Sachet laminate film (50ml format)
+HH-045,v1.0,6,MAT038,20000,PCS,1.00,false,,Printed sachet label B
+HH-045,v1.0,7,MAT036,80,PCS,0.50,false,,Export master carton
+HH-046,v1.0,1,MAT002,100,KG,1.00,false,,SLES 70% surfactant carrier
+HH-046,v1.0,2,MAT003,30,KG,1.00,false,,CAPB 30% foam booster
+HH-046,v1.0,3,MAT014,50,KG,1.00,false,,Protease-amylase enzyme blend active
+HH-046,v1.0,4,MAT016,1,KG,0.50,false,,Kathon CG preservative
+HH-046,v1.0,5,MAT027,2000,PCS,0.50,false,,HDPE 500ml bottle with cap
+HH-046,v1.0,6,MAT037,2000,PCS,0.50,false,,Label A - large format
+HH-046,v1.0,7,MAT036,84,PCS,0.50,false,,Export master carton
+HH-047,v1.0,1,MAT009,15,KG,0.50,false,,BZK 80% QUAT disinfecting active
+HH-047,v1.0,2,MAT025,50,L,1.00,false,,IPA 99% co-disinfectant
+HH-047,v1.0,3,MAT016,0.5,KG,0.50,false,,Kathon CG preservative
+HH-047,v1.0,4,MAT027,2000,PCS,0.50,false,,HDPE 500ml bottle body
+HH-047,v1.0,5,MAT035,2000,PCS,0.50,false,,Trigger spray head 28/410
+HH-047,v1.0,6,MAT037,2000,PCS,0.50,false,,Label A - large format
+HH-047,v1.0,7,MAT036,84,PCS,0.50,false,,Export master carton
+HH-048,v1.0,1,MAT007,100,KG,1.00,false,,Citric acid descaling active
+HH-048,v1.0,2,MAT011,5,KG,0.50,false,,Lemon fragrance
+HH-048,v1.0,3,MAT016,0.5,KG,0.50,false,,Kathon CG preservative
+HH-048,v1.0,4,MAT031,200,KG,2.00,false,,Sachet laminate film (50ml format)
+HH-048,v1.0,5,MAT038,20000,PCS,1.00,false,,Printed sachet label B
+HH-048,v1.0,6,MAT036,80,PCS,0.50,false,,Export master carton
+HH-049,v1.0,1,MAT007,100,KG,1.00,false,,Citric acid descaling active
+HH-049,v1.0,2,MAT011,5,KG,0.50,false,,Lemon fragrance
+HH-049,v1.0,3,MAT016,0.5,KG,0.50,false,,Kathon CG preservative
+HH-049,v1.0,4,MAT027,2000,PCS,0.50,false,,HDPE 500ml bottle with cap
+HH-049,v1.0,5,MAT037,2000,PCS,0.50,false,,Label A - large format
+HH-049,v1.0,6,MAT036,84,PCS,0.50,false,,Export master carton
+HH-050,v1.0,1,MAT010,30,KG,0.50,false,,Floral bouquet fragrance active
+HH-050,v1.0,2,MAT016,0.3,KG,0.50,false,,Kathon CG preservative
+HH-050,v1.0,3,MAT027,3333,PCS,0.50,false,,HDPE 500ml bottle (300ml fill)
+HH-050,v1.0,4,MAT035,3333,PCS,0.50,false,,Trigger spray head 28/410
+HH-050,v1.0,5,MAT037,3333,PCS,0.50,false,,Label A - large format
+HH-050,v1.0,6,MAT036,139,PCS,0.50,false,,Export master carton
+HH-051,v1.0,1,MAT002,100,KG,1.00,false,,SLES 70% shampoo surfactant
+HH-051,v1.0,2,MAT003,40,KG,1.00,false,,CAPB 30% foam booster
+HH-051,v1.0,3,MAT016,1,KG,0.50,false,,Kathon CG preservative
+HH-051,v1.0,4,MAT031,150,KG,2.00,false,,Sachet laminate film (30ml format)
+HH-051,v1.0,5,MAT038,33333,PCS,1.00,false,,Printed sachet label B
+HH-051,v1.0,6,MAT036,133,PCS,0.50,false,,Export master carton
+HH-052,v1.0,1,MAT002,100,KG,1.00,false,,SLES 70% shampoo surfactant
+HH-052,v1.0,2,MAT003,40,KG,1.00,false,,CAPB 30% foam booster
+HH-052,v1.0,3,MAT016,1,KG,0.50,false,,Kathon CG preservative
+HH-052,v1.0,4,MAT027,2000,PCS,0.50,false,,HDPE 500ml bottle with cap
+HH-052,v1.0,5,MAT037,2000,PCS,0.50,false,,Label A - large format
+HH-052,v1.0,6,MAT036,84,PCS,0.50,false,,Export master carton
+HH-053,v1.0,1,MAT002,30,KG,1.00,false,,SLES 70% surfactant
+HH-053,v1.0,2,MAT025,50,L,1.00,false,,IPA 99% solvent
+HH-053,v1.0,3,MAT016,0.5,KG,0.50,false,,Kathon CG preservative
+HH-053,v1.0,4,MAT027,2000,PCS,0.50,false,,HDPE 500ml bottle body
+HH-053,v1.0,5,MAT035,2000,PCS,0.50,false,,Trigger spray head 28/410
+HH-053,v1.0,6,MAT037,2000,PCS,0.50,false,,Label A - large format
+HH-053,v1.0,7,MAT036,84,PCS,0.50,false,,Export master carton
+HH-054,v1.0,1,MAT009,12,KG,0.50,false,,BZK 80% surface sanitizer active
+HH-054,v1.0,2,MAT016,0.3,KG,0.50,false,,Kathon CG preservative
+HH-054,v1.0,3,MAT027,2000,PCS,0.50,false,,HDPE 500ml bottle with cap
+HH-054,v1.0,4,MAT037,2000,PCS,0.50,false,,Label A - large format
+HH-054,v1.0,5,MAT036,84,PCS,0.50,false,,Export master carton
+HH-055,v1.0,1,MAT009,12,KG,0.50,false,,BZK 80% surface sanitizer active
+HH-055,v1.0,2,MAT016,0.3,KG,0.50,false,,Kathon CG preservative
+HH-055,v1.0,3,MAT029,50,PCS,0.50,false,,HDPE 20L drum with lid
+HH-055,v1.0,4,MAT037,50,PCS,0.50,false,,Label A - large format drum
+HH-055,v1.0,5,MAT036,5,PCS,0.50,false,,Export master carton
+HH-056,v1.0,1,MAT009,8,KG,0.50,false,,BZK 80% antimicrobial active
+HH-056,v1.0,2,MAT017,20,KG,0.50,false,,Glycerin skin conditioning
+HH-056,v1.0,3,MAT016,0.3,KG,0.50,false,,Kathon CG preservative
+HH-056,v1.0,4,MAT028,4000,PCS,0.50,false,,HDPE 250ml bottle with cap
+HH-056,v1.0,5,MAT038,4000,PCS,0.50,false,,Label B - small format
+HH-056,v1.0,6,MAT036,167,PCS,0.50,false,,Export master carton
+HH-057,v1.0,1,MAT009,8,KG,0.50,false,,BZK 80% antimicrobial active
+HH-057,v1.0,2,MAT017,20,KG,0.50,false,,Glycerin skin conditioning
+HH-057,v1.0,3,MAT016,0.3,KG,0.50,false,,Kathon CG preservative
+HH-057,v1.0,4,MAT030,100,PCS,0.50,false,,HDPE 10L drum with lid
+HH-057,v1.0,5,MAT037,100,PCS,0.50,false,,Label A - large format drum
+HH-057,v1.0,6,MAT036,10,PCS,0.50,false,,Export master carton
+HH-058,v1.0,1,MAT009,10,KG,0.50,false,,BZK 80% QUAT laundry sanitizer
+HH-058,v1.0,2,MAT003,30,KG,1.00,false,,CAPB 30% surfactant carrier
+HH-058,v1.0,3,MAT016,0.5,KG,0.50,false,,Kathon CG preservative
+HH-058,v1.0,4,MAT027,2000,PCS,0.50,false,,HDPE 500ml bottle with cap
+HH-058,v1.0,5,MAT037,2000,PCS,0.50,false,,Label A - large format
+HH-058,v1.0,6,MAT036,84,PCS,0.50,false,,Export master carton
+HH-059,v1.0,1,MAT009,10,KG,0.50,false,,BZK 80% QUAT laundry sanitizer
+HH-059,v1.0,2,MAT003,30,KG,1.00,false,,CAPB 30% surfactant carrier
+HH-059,v1.0,3,MAT016,0.5,KG,0.50,false,,Kathon CG preservative
+HH-059,v1.0,4,MAT030,100,PCS,0.50,false,,HDPE 10L drum with lid
+HH-059,v1.0,5,MAT037,100,PCS,0.50,false,,Label A - large format drum
+HH-059,v1.0,6,MAT036,10,PCS,0.50,false,,Export master carton
+HH-060,v1.0,1,MAT022,500,KG,1.00,false,,Spunlace nonwoven substrate 80gsm
+HH-060,v1.0,2,MAT009,15,KG,0.50,false,,BZK 80% QUAT impregnation solution
+HH-060,v1.0,3,MAT016,0.5,KG,0.50,false,,Kathon CG preservative
+HH-060,v1.0,4,MAT036,84,PCS,0.50,false,,Export master carton
+HH-061,v1.0,1,MAT022,500,KG,1.00,false,,Spunlace nonwoven substrate 80gsm
+HH-061,v1.0,2,MAT009,15,KG,0.50,false,,BZK 80% QUAT impregnation solution
+HH-061,v1.0,3,MAT016,0.5,KG,0.50,false,,Kathon CG preservative
+HH-061,v1.0,4,MAT036,60,PCS,0.50,false,,Export master carton
+HH-062,v1.0,1,MAT008,900,L,0.50,false,,NaOCl 12% industrial strength undiluted
+HH-062,v1.0,2,MAT029,50,PCS,0.50,false,,HDPE 20L drum with lid
+HH-062,v1.0,3,MAT037,50,PCS,0.50,false,,Label A - large format drum
+HH-062,v1.0,4,MAT036,5,PCS,0.50,false,,Export master carton
+HH-063,v1.0,1,MAT003,250,KG,1.00,false,,CAPB 30% industrial fabric softener base
+HH-063,v1.0,2,MAT010,20,KG,0.50,false,,Floral fragrance bulk
+HH-063,v1.0,3,MAT016,1.5,KG,0.50,false,,Kathon CG preservative
+HH-063,v1.0,4,MAT029,50,PCS,0.50,false,,HDPE 20L drum with lid
+HH-063,v1.0,5,MAT037,50,PCS,0.50,false,,Label A - large format drum
+HH-063,v1.0,6,MAT036,5,PCS,0.50,false,,Export master carton
+HH-064,v1.0,1,MAT002,300,KG,1.00,false,,SLES 70% industrial dishwash base
+HH-064,v1.0,2,MAT003,80,KG,1.00,false,,CAPB 30% foam booster
+HH-064,v1.0,3,MAT011,15,KG,0.50,false,,Lemon fragrance
+HH-064,v1.0,4,MAT016,1.5,KG,0.50,false,,Kathon CG preservative
+HH-064,v1.0,5,MAT029,50,PCS,0.50,false,,HDPE 20L drum with lid
+HH-064,v1.0,6,MAT037,50,PCS,0.50,false,,Label A - large format drum
+HH-064,v1.0,7,MAT036,5,PCS,0.50,false,,Export master carton
+HH-065,v1.0,1,MAT009,20,KG,0.50,false,,BZK 80% broad-spectrum QUAT
+HH-065,v1.0,2,MAT016,1,KG,0.50,false,,Kathon CG preservative
+HH-065,v1.0,3,MAT029,50,PCS,0.50,false,,HDPE 20L drum with lid
+HH-065,v1.0,4,MAT037,50,PCS,0.50,false,,Label A - large format drum
+HH-065,v1.0,5,MAT036,5,PCS,0.50,false,,Export master carton
+PC-001,v1.0,1,MAT019,300,KG,1.00,false,,Precipitated CaCO3 whitening abrasive
+PC-001,v1.0,2,MAT018,15,KG,1.00,false,,SLS surfactant and foaming agent
+PC-001,v1.0,3,MAT017,80,KG,0.50,false,,Glycerin humectant
+PC-001,v1.0,4,MAT016,1,KG,0.50,false,,Kathon CG preservative
+PC-001,v1.0,5,MAT034,13333,PCS,0.50,false,,Aluminium tube 75g
+PC-001,v1.0,6,MAT038,13333,PCS,0.50,false,,Label B - small format
+PC-001,v1.0,7,MAT036,100,PCS,0.50,false,,Export master carton
+PC-002,v1.0,1,MAT002,200,KG,1.00,false,,SLES 70% primary surfactant
+PC-002,v1.0,2,MAT003,50,KG,1.00,false,,CAPB 30% conditioning co-surfactant
+PC-002,v1.0,3,MAT017,20,KG,0.50,false,,Glycerin humectant
+PC-002,v1.0,4,MAT010,10,KG,0.50,false,,Floral fragrance
+PC-002,v1.0,5,MAT016,1,KG,0.50,false,,Kathon CG preservative
+PC-002,v1.0,6,MAT028,4000,PCS,0.50,false,,HDPE 250ml bottle with cap
+PC-002,v1.0,7,MAT038,4000,PCS,0.50,false,,Label B - small format
+PC-002,v1.0,8,MAT036,167,PCS,0.50,false,,Export master carton
+PC-003,v1.0,1,MAT002,200,KG,1.00,false,,SLES 70% primary surfactant
+PC-003,v1.0,2,MAT003,50,KG,1.00,false,,CAPB 30% conditioning co-surfactant
+PC-003,v1.0,3,MAT017,20,KG,0.50,false,,Glycerin humectant
+PC-003,v1.0,4,MAT010,10,KG,0.50,false,,Floral fragrance
+PC-003,v1.0,5,MAT016,1,KG,0.50,false,,Kathon CG preservative
+PC-003,v1.0,6,MAT031,100,KG,2.00,false,,Sachet laminate film (8ml format)
+PC-003,v1.0,7,MAT038,125000,PCS,1.00,false,,Printed sachet label B
+PC-003,v1.0,8,MAT036,500,PCS,0.50,false,,Export master carton
+PC-004,v1.0,1,MAT003,200,KG,1.00,false,,CAPB 30% gentle primary surfactant tear-free
+PC-004,v1.0,2,MAT017,30,KG,0.50,false,,Glycerin humectant
+PC-004,v1.0,3,MAT013,5,KG,0.50,false,,Baby mild fragrance hypoallergenic
+PC-004,v1.0,4,MAT016,0.5,KG,0.50,false,,Kathon CG preservative (low level)
+PC-004,v1.0,5,MAT028,4000,PCS,0.50,false,,HDPE 250ml bottle with cap
+PC-004,v1.0,6,MAT038,4000,PCS,0.50,false,,Label B - small format
+PC-004,v1.0,7,MAT036,167,PCS,0.50,false,,Export master carton
+PC-005,v1.0,1,MAT003,200,KG,1.00,false,,CAPB 30% gentle primary surfactant tear-free
+PC-005,v1.0,2,MAT017,30,KG,0.50,false,,Glycerin humectant
+PC-005,v1.0,3,MAT013,5,KG,0.50,false,,Baby mild fragrance hypoallergenic
+PC-005,v1.0,4,MAT016,0.5,KG,0.50,false,,Kathon CG preservative (low level)
+PC-005,v1.0,5,MAT031,100,KG,2.00,false,,Sachet laminate film (8ml format)
+PC-005,v1.0,6,MAT038,125000,PCS,1.00,false,,Printed sachet label B
+PC-005,v1.0,7,MAT036,500,PCS,0.50,false,,Export master carton
+PC-006,v1.0,1,MAT002,180,KG,1.00,false,,SLES 70% primary surfactant
+PC-006,v1.0,2,MAT003,60,KG,1.00,false,,CAPB 30% skin-mild co-surfactant
+PC-006,v1.0,3,MAT017,40,KG,0.50,false,,Glycerin moisturizer
+PC-006,v1.0,4,MAT010,10,KG,0.50,false,,Floral fragrance
+PC-006,v1.0,5,MAT016,1,KG,0.50,false,,Kathon CG preservative
+PC-006,v1.0,6,MAT028,4000,PCS,0.50,false,,HDPE 250ml bottle with cap
+PC-006,v1.0,7,MAT038,4000,PCS,0.50,false,,Label B - small format
+PC-006,v1.0,8,MAT036,167,PCS,0.50,false,,Export master carton
+PC-007,v1.0,1,MAT002,180,KG,1.00,false,,SLES 70% primary surfactant
+PC-007,v1.0,2,MAT003,60,KG,1.00,false,,CAPB 30% skin-mild co-surfactant
+PC-007,v1.0,3,MAT017,40,KG,0.50,false,,Glycerin moisturizer
+PC-007,v1.0,4,MAT010,10,KG,0.50,false,,Floral fragrance
+PC-007,v1.0,5,MAT016,1,KG,0.50,false,,Kathon CG preservative
+PC-007,v1.0,6,MAT031,100,KG,2.00,false,,Sachet laminate film (8ml format)
+PC-007,v1.0,7,MAT038,125000,PCS,1.00,false,,Printed sachet label B
+PC-007,v1.0,8,MAT036,500,PCS,0.50,false,,Export master carton
+PC-008,v1.0,1,MAT002,180,KG,1.00,false,,SLES 70% primary surfactant
+PC-008,v1.0,2,MAT003,60,KG,1.00,false,,CAPB 30% skin-mild co-surfactant
+PC-008,v1.0,3,MAT017,40,KG,0.50,false,,Glycerin moisturizer
+PC-008,v1.0,4,MAT010,10,KG,0.50,false,,Floral fragrance
+PC-008,v1.0,5,MAT016,1,KG,0.50,false,,Kathon CG preservative
+PC-008,v1.0,6,MAT029,50,PCS,0.50,false,,HDPE 20L drum with lid
+PC-008,v1.0,7,MAT037,50,PCS,0.50,false,,Label A - large format drum
+PC-008,v1.0,8,MAT036,5,PCS,0.50,false,,Export master carton
+PC-009,v1.0,1,MAT021,750,L,1.00,false,,Ethanol 96% diluted to 70% v/v
+PC-009,v1.0,2,MAT017,15,KG,0.50,false,,Glycerin skin conditioning agent
+PC-009,v1.0,3,MAT013,2,KG,0.50,true,,Optional mild fragrance
+PC-009,v1.0,4,MAT027,2000,PCS,0.50,false,,HDPE 500ml bottle with cap
+PC-009,v1.0,5,MAT037,2000,PCS,0.50,false,,Label A - large format
+PC-009,v1.0,6,MAT036,84,PCS,0.50,false,,Export master carton
+PC-010,v1.0,1,MAT003,100,KG,1.00,false,,CAPB 30% conditioning active
+PC-010,v1.0,2,MAT017,50,KG,0.50,false,,Glycerin humectant
+PC-010,v1.0,3,MAT010,8,KG,0.50,false,,Floral fragrance
+PC-010,v1.0,4,MAT016,1,KG,0.50,false,,Kathon CG preservative
+PC-010,v1.0,5,MAT028,4000,PCS,0.50,false,,HDPE 250ml bottle with cap
+PC-010,v1.0,6,MAT038,4000,PCS,0.50,false,,Label B - small format
+PC-010,v1.0,7,MAT036,167,PCS,0.50,false,,Export master carton
+PC-011,v1.0,1,MAT003,100,KG,1.00,false,,CAPB 30% conditioning active
+PC-011,v1.0,2,MAT017,50,KG,0.50,false,,Glycerin humectant
+PC-011,v1.0,3,MAT010,8,KG,0.50,false,,Floral fragrance
+PC-011,v1.0,4,MAT016,1,KG,0.50,false,,Kathon CG preservative
+PC-011,v1.0,5,MAT031,100,KG,2.00,false,,Sachet laminate film (10ml format)
+PC-011,v1.0,6,MAT038,100000,PCS,1.00,false,,Printed sachet label B
+PC-011,v1.0,7,MAT036,400,PCS,0.50,false,,Export master carton
+PC-012,v1.0,1,MAT003,100,KG,1.00,false,,CAPB 30% conditioning active
+PC-012,v1.0,2,MAT017,50,KG,0.50,false,,Glycerin humectant
+PC-012,v1.0,3,MAT010,8,KG,0.50,false,,Floral fragrance
+PC-012,v1.0,4,MAT016,1,KG,0.50,false,,Kathon CG preservative
+PC-012,v1.0,5,MAT029,50,PCS,0.50,false,,HDPE 20L drum with lid
+PC-012,v1.0,6,MAT037,50,PCS,0.50,false,,Label A - large format drum
+PC-012,v1.0,7,MAT036,5,PCS,0.50,false,,Export master carton
+PC-013,v1.0,1,MAT019,300,KG,1.00,false,,Precipitated CaCO3 abrasive
+PC-013,v1.0,2,MAT018,15,KG,1.00,false,,SLS surfactant foaming agent
+PC-013,v1.0,3,MAT017,80,KG,0.50,false,,Glycerin humectant
+PC-013,v1.0,4,MAT016,1,KG,0.50,false,,Kathon CG preservative
+PC-013,v1.0,5,MAT031,100,KG,2.00,false,,Sachet laminate film (6g format)
+PC-013,v1.0,6,MAT038,166667,PCS,1.00,false,,Printed sachet label B
+PC-013,v1.0,7,MAT036,417,PCS,0.50,false,,Export master carton
+PC-014,v1.0,1,MAT002,120,KG,1.00,false,,SLES 70% mild facial surfactant
+PC-014,v1.0,2,MAT003,80,KG,1.00,false,,CAPB 30% gentle co-surfactant
+PC-014,v1.0,3,MAT017,50,KG,0.50,false,,Glycerin humectant
+PC-014,v1.0,4,MAT016,1,KG,0.50,false,,Kathon CG preservative
+PC-014,v1.0,5,MAT031,100,KG,2.00,false,,Sachet laminate film (10ml format)
+PC-014,v1.0,6,MAT038,100000,PCS,1.00,false,,Printed sachet label B
+PC-014,v1.0,7,MAT036,400,PCS,0.50,false,,Export master carton
+PC-015,v1.0,1,MAT002,120,KG,1.00,false,,SLES 70% mild facial surfactant
+PC-015,v1.0,2,MAT003,80,KG,1.00,false,,CAPB 30% gentle co-surfactant
+PC-015,v1.0,3,MAT017,50,KG,0.50,false,,Glycerin humectant
+PC-015,v1.0,4,MAT016,1,KG,0.50,false,,Kathon CG preservative
+PC-015,v1.0,5,MAT040,6667,PCS,0.50,false,,HDPE 150ml bottle with cap
+PC-015,v1.0,6,MAT038,6667,PCS,0.50,false,,Label B - small format
+PC-015,v1.0,7,MAT036,278,PCS,0.50,false,,Export master carton
+PC-016,v1.0,1,MAT017,200,KG,0.50,false,,Glycerin primary humectant
+PC-016,v1.0,2,MAT023,20,KG,0.50,false,,Aloe vera extract soothing agent
+PC-016,v1.0,3,MAT010,8,KG,0.50,true,,Fragrance optional
+PC-016,v1.0,4,MAT016,1,KG,0.50,false,,Kathon CG preservative
+PC-016,v1.0,5,MAT031,100,KG,2.00,false,,Sachet laminate film (10ml format)
+PC-016,v1.0,6,MAT038,100000,PCS,1.00,false,,Printed sachet label B
+PC-016,v1.0,7,MAT036,400,PCS,0.50,false,,Export master carton
+PC-017,v1.0,1,MAT017,200,KG,0.50,false,,Glycerin primary humectant
+PC-017,v1.0,2,MAT023,20,KG,0.50,false,,Aloe vera extract soothing agent
+PC-017,v1.0,3,MAT010,8,KG,0.50,true,,Fragrance optional
+PC-017,v1.0,4,MAT016,1,KG,0.50,false,,Kathon CG preservative
+PC-017,v1.0,5,MAT040,6667,PCS,0.50,false,,HDPE 150ml bottle with cap
+PC-017,v1.0,6,MAT038,6667,PCS,0.50,false,,Label B - small format
+PC-017,v1.0,7,MAT036,278,PCS,0.50,false,,Export master carton
+PC-018,v1.0,1,MAT017,100,KG,0.50,false,,Glycerin humectant lubricant
+PC-018,v1.0,2,MAT019,50,KG,1.00,false,,CaCO3 texture stabilizer
+PC-018,v1.0,3,MAT018,20,KG,1.00,false,,SLS foaming surfactant
+PC-018,v1.0,4,MAT016,1,KG,0.50,false,,Kathon CG preservative
+PC-018,v1.0,5,MAT040,10000,PCS,0.50,false,,HDPE 150ml bottle (100ml fill)
+PC-018,v1.0,6,MAT038,10000,PCS,0.50,false,,Label B - small format
+PC-018,v1.0,7,MAT036,417,PCS,0.50,false,,Export master carton
+PC-019,v1.0,1,MAT017,200,KG,0.50,false,,Glycerin primary emollient
+PC-019,v1.0,2,MAT023,20,KG,0.50,false,,Aloe vera extract soothing
+PC-019,v1.0,3,MAT010,10,KG,0.50,false,,Floral fragrance
+PC-019,v1.0,4,MAT016,1,KG,0.50,false,,Kathon CG preservative
+PC-019,v1.0,5,MAT031,100,KG,2.00,false,,Sachet laminate film (20ml format)
+PC-019,v1.0,6,MAT038,50000,PCS,1.00,false,,Printed sachet label B
+PC-019,v1.0,7,MAT036,200,PCS,0.50,false,,Export master carton
+PC-020,v1.0,1,MAT017,200,KG,0.50,false,,Glycerin primary emollient
+PC-020,v1.0,2,MAT023,20,KG,0.50,false,,Aloe vera extract soothing
+PC-020,v1.0,3,MAT010,10,KG,0.50,false,,Floral fragrance
+PC-020,v1.0,4,MAT016,1,KG,0.50,false,,Kathon CG preservative
+PC-020,v1.0,5,MAT028,4000,PCS,0.50,false,,HDPE 250ml bottle with cap
+PC-020,v1.0,6,MAT038,4000,PCS,0.50,false,,Label B - small format
+PC-020,v1.0,7,MAT036,167,PCS,0.50,false,,Export master carton
+PC-021,v1.0,1,MAT022,500,KG,1.00,false,,Spunlace nonwoven substrate 80gsm
+PC-021,v1.0,2,MAT020,25,KG,0.50,false,,Chlorhexidine gluconate 20% antiseptic
+PC-021,v1.0,3,MAT016,0.3,KG,0.50,false,,Kathon CG preservative
+PC-021,v1.0,4,MAT036,100,PCS,0.50,false,,Export master carton
+PC-022,v1.0,1,MAT022,500,KG,1.00,false,,Spunlace nonwoven substrate 80gsm
+PC-022,v1.0,2,MAT020,25,KG,0.50,false,,Chlorhexidine gluconate 20% antiseptic
+PC-022,v1.0,3,MAT016,0.3,KG,0.50,false,,Kathon CG preservative
+PC-022,v1.0,4,MAT036,60,PCS,0.50,false,,Export master carton
+PC-023,v1.0,1,MAT022,500,KG,1.00,false,,Spunlace nonwoven substrate (viscose)
+PC-023,v1.0,2,MAT016,0.3,KG,0.50,false,,Kathon CG preservative (biodegradable grade)
+PC-023,v1.0,3,MAT036,100,PCS,0.50,false,,Export master carton
+PC-024,v1.0,1,MAT022,500,KG,1.00,false,,Spunlace nonwoven substrate (viscose)
+PC-024,v1.0,2,MAT016,0.3,KG,0.50,false,,Kathon CG preservative (biodegradable grade)
+PC-024,v1.0,3,MAT036,84,PCS,0.50,false,,Export master carton
+PC-025,v1.0,1,MAT022,500,KG,1.00,false,,Ultra-soft spunlace nonwoven substrate
+PC-025,v1.0,2,MAT023,15,KG,0.50,false,,Aloe vera extract soothing agent
+PC-025,v1.0,3,MAT013,3,KG,0.50,false,,Baby mild fragrance hypoallergenic
+PC-025,v1.0,4,MAT036,120,PCS,0.50,false,,Export master carton
+PC-026,v1.0,1,MAT022,500,KG,1.00,false,,Ultra-soft spunlace nonwoven substrate
+PC-026,v1.0,2,MAT023,15,KG,0.50,false,,Aloe vera extract soothing agent
+PC-026,v1.0,3,MAT013,3,KG,0.50,false,,Baby mild fragrance hypoallergenic
+PC-026,v1.0,4,MAT036,80,PCS,0.50,false,,Export master carton

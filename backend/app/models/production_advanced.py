@@ -126,10 +126,12 @@ class WorkCenter(Base, TimestampMixin):
     capacity_uom        = Column(String(20), nullable=True)            # e.g. "L", "KG", "units/hr"
     location            = Column(String(255), nullable=True)
     department          = Column(String(100), nullable=True)
-    setup_time_min      = Column(Integer, nullable=True, default=0)    # standard setup minutes
-    ideal_cycle_time_sec = Column(Numeric(10, 3), nullable=True)       # for OEE performance calc
-    status              = Column(Enum(WorkCenterStatus), nullable=False, default=WorkCenterStatus.ACTIVE)
-    notes               = Column(Text, nullable=True)
+    setup_time_min        = Column(Integer, nullable=True, default=0)    # standard setup minutes
+    ideal_cycle_time_sec  = Column(Numeric(10, 3), nullable=True)       # for OEE performance calc
+    labor_rate_per_hour   = Column(Numeric(14, 4), nullable=True)       # KES/hr operator labor
+    machine_cost_per_hour = Column(Numeric(14, 4), nullable=True)       # KES/hr machine cost
+    status                = Column(Enum(WorkCenterStatus), nullable=False, default=WorkCenterStatus.ACTIVE)
+    notes                 = Column(Text, nullable=True)
 
     # Relationships
     routing_steps  = relationship("RoutingStep", back_populates="work_center", cascade="all, delete-orphan")

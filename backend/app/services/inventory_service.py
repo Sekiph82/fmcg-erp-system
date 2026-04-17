@@ -290,6 +290,192 @@ async def stock_transfer(
     return movement
 
 
+# ── Adjust / Delete stock record ──────────────────────────────────────────────
+
+async def adjust_stock_record(
+    db: AsyncSession,
+    stock_id: uuid.UUID,
+    new_quantity: Decimal,
+    reason: str,
+    reference: Optional[str],
+    created_by_id: uuid.UUID,
+) -> StockMovement:
+    """
+    Adjust a Stock record to a new quantity by creating an ADJUSTMENT movement.
+    The delta can be positive (increase) or negative (decrease / write-off).
+    Raises 422 if the adjustment would take stock below zero.
+    """
+    from sqlalchemy.orm import selectinload
+
+    result = await db.execute(
+        select(Stock).options(
+            selectinload(Stock.product),
+            selectinload(Stock.warehouse),
+        ).where(Stock.id == stock_id).with_for_update()
+    )
+    stock = result.scalar_one_or_none()
+    if not stock:
+        raise HTTPException(status_code=404, detail="Stock record not found")
+
+    new_qty = Decimal(str(new_quantity))
+    if new_qty < 0:
+        raise HTTPException(status_code=422, detail="New quantity cannot be negative")
+
+    delta = new_qty - stock.quantity_on_hand
+
+    if delta == 0:
+        raise HTTPException(status_code=422, detail="New quantity is the same as current quantity — no adjustment needed")
+
+    warehouse = stock.warehouse
+    if not warehouse:
+        raise HTTPException(status_code=422, detail="Stock record has no linked warehouse")
+
+    ref = reference or f"ADJ-{stock_id}"
+    movement = StockMovement(
+        reference_number=ref,
+        movement_type=MovementType.ADJUSTMENT,
+        stock_type=stock.stock_type,
+        movement_date=date.today(),
+        product_id=stock.product_id,
+        material_id=stock.material_id,
+        lot_id=stock.lot_id,
+        source_warehouse_id=stock.warehouse_id if delta < 0 else None,
+        destination_warehouse_id=stock.warehouse_id if delta > 0 else None,
+        quantity=abs(delta),
+        notes=f"Stock adjustment: {reason}",
+        created_by_id=created_by_id,
+    )
+    db.add(movement)
+
+    stock.quantity_on_hand = new_qty
+    stock.quantity_available = stock.quantity_on_hand - stock.quantity_reserved
+
+    await db.flush()
+    await db.refresh(movement)
+    return movement
+
+
+async def delete_stock_record(
+    db: AsyncSession,
+    stock_id: uuid.UUID,
+    created_by_id: uuid.UUID,
+) -> None:
+    """
+    Delete a Stock record.
+    - Allowed only when quantity_on_hand == 0 (stock already cleared).
+    - Returns structured 409 if stock still has quantity.
+    """
+    result = await db.execute(select(Stock).where(Stock.id == stock_id).with_for_update())
+    stock = result.scalar_one_or_none()
+    if not stock:
+        raise HTTPException(status_code=404, detail="Stock record not found")
+
+    from sqlalchemy import func as sqfunc
+    movement_count = (await db.execute(
+        select(sqfunc.count()).select_from(StockMovement).where(
+            StockMovement.product_id == stock.product_id,
+            (StockMovement.source_warehouse_id == stock.warehouse_id) |
+            (StockMovement.destination_warehouse_id == stock.warehouse_id),
+        )
+    )).scalar_one()
+
+    if stock.quantity_on_hand != 0:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "INVENTORY_RECORD_NOT_EMPTY",
+                "message": (
+                    f"This stock record cannot be deleted because it still has "
+                    f"{stock.quantity_on_hand} units on hand. "
+                    "Adjust the stock to zero first."
+                ),
+                "details": {
+                    "stockId": str(stock_id),
+                    "quantityOnHand": float(stock.quantity_on_hand),
+                    "references": [
+                        {
+                            "module": "Stock Movements",
+                            "count": movement_count,
+                            "hint": "Issue or write off remaining stock first.",
+                        }
+                    ],
+                },
+            },
+        )
+
+    await db.delete(stock)
+    await db.flush()
+
+
+async def delete_movement_record(
+    db: AsyncSession,
+    movement_id: uuid.UUID,
+    created_by_id: uuid.UUID,
+) -> None:
+    """
+    Delete a StockMovement and reverse its effect on the Stock record.
+    - Finds the affected Stock row and applies the reverse delta.
+    - If reversing would push stock below zero, raises 409.
+    """
+    from sqlalchemy import and_
+
+    result = await db.execute(select(StockMovement).where(StockMovement.id == movement_id))
+    movement = result.scalar_one_or_none()
+    if not movement:
+        raise HTTPException(status_code=404, detail="Stock movement not found")
+
+    async def _reverse_stock(warehouse_id: Optional[uuid.UUID], delta: Decimal) -> None:
+        if not warehouse_id:
+            return
+        filters = [
+            Stock.warehouse_id == warehouse_id,
+            Stock.stock_type == movement.stock_type,
+        ]
+        if movement.stock_type == StockType.PRODUCT:
+            filters.append(Stock.product_id == movement.product_id)
+        else:
+            filters.append(Stock.material_id == movement.material_id)
+        if movement.lot_id:
+            filters.append(Stock.lot_id == movement.lot_id)
+
+        res = await db.execute(select(Stock).where(and_(*filters)).with_for_update())
+        stock = res.scalar_one_or_none()
+        if stock:
+            new_qty = stock.quantity_on_hand + delta
+            if new_qty < 0:
+                raise HTTPException(
+                    status_code=409,
+                    detail={
+                        "code": "MOVEMENT_REVERSAL_WOULD_CAUSE_NEGATIVE_STOCK",
+                        "message": (
+                            "Deleting this movement would bring stock below zero. "
+                            "Reverse or adjust dependent movements first."
+                        ),
+                        "details": {
+                            "movementId": str(movement_id),
+                            "hint": "Create a compensating movement or adjust stock manually.",
+                        },
+                    },
+                )
+            stock.quantity_on_hand = new_qty
+            stock.quantity_available = stock.quantity_on_hand - stock.quantity_reserved
+
+    # Reverse the stock delta (opposite of what _apply_stock_delta does)
+    if movement.movement_type in (MovementType.RECEIPT, MovementType.RETURN):
+        await _reverse_stock(movement.destination_warehouse_id, -movement.quantity)
+    elif movement.movement_type in (MovementType.ISSUE, MovementType.WRITE_OFF):
+        await _reverse_stock(movement.source_warehouse_id, movement.quantity)
+    elif movement.movement_type == MovementType.TRANSFER:
+        await _reverse_stock(movement.source_warehouse_id, movement.quantity)
+        await _reverse_stock(movement.destination_warehouse_id, -movement.quantity)
+    elif movement.movement_type == MovementType.ADJUSTMENT:
+        wh = movement.destination_warehouse_id or movement.source_warehouse_id
+        await _reverse_stock(wh, -movement.quantity)
+
+    await db.delete(movement)
+    await db.flush()
+
+
 # ── Enriched queries ───────────────────────────────────────────────────────────
 
 async def get_stock_summary(

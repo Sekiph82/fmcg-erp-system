@@ -97,6 +97,61 @@ from app.models.hr import (
     PaymentMethod, PayrollStatus,
 )
 
+# ── Production AI Intelligence ────────────────────────────────────────────────
+from app.models.production_ai import (
+    AgentType, AnomalySeverity, AnomalyType, SuggestionType, SuggestionStatus,
+    ProductionPrediction, ProductionAnomaly, ProductionSuggestion, ProductionAIMetrics,
+)
+
+# ── Production Advanced ───────────────────────────────────────────────────────
+from app.models.production_advanced import (
+    WorkCenter, WorkCenterType, WorkCenterStatus,
+    Routing, RoutingStep,
+    WorkOrder, WorkOrderStatus,
+    Shift, ProductionSchedule, ScheduleStatus, SchedulePriority,
+    TimeTracking, TimeTrackingCategory,
+    DowntimeEvent, DowntimeCategory,
+    AdvQCInspection, AdvQCResult, QCInspectionType, AdvQCStatus,
+    WasteRecord, WasteType, WasteCategory,
+    BatchLot, BatchLotStatus,
+    LaborLog, LaborActivityType,
+    OEERecord,
+)
+
+# ── Utility Management ────────────────────────────────────────────────────────
+from app.models.utility_management import (
+    # Enums
+    UtilityType, SourceMethod, DataQuality,
+    UtilityAssetStatus, LifecycleStatus, CriticalityLevel,
+    DeviceType, ReadingType, ReadingSource, ReadingFrequency, ValidatedStatus,
+    TariffType, TxReferenceType,
+    AlarmSeverity, AlarmStatus, AlarmOperator,
+    AllocationMethod, BillStatus,
+    SoftenerStatus, BoilerStatus, CompressorStatus,
+    TreatmentType, WastewaterProcess, ComplianceStatus,
+    ChemicalCategory, DosingMode,
+    # Master data
+    WaterTreatmentChemical,
+    UtilityAssetCategory,
+    UtilityAsset,
+    UtilityDevice,
+    UtilityTariff,
+    UtilityAlarmRule,
+    # Transactional / Operational
+    UtilityReading,
+    UtilityTransaction,
+    SoftWaterRecord,
+    BoilerSteamRecord,
+    CompressorRecord,
+    SolarRecord,
+    TreatmentChemicalRecord,
+    WastewaterRecord,
+    UtilityBill,
+    UtilityCostAllocation,
+    UtilityAlarmEvent,
+    MachineUtilityMapping,
+)
+
 __all__ = [
     # AI
     "AIRequest", "AIPrediction", "AIRecommendation", "AIFormulation", "AIScenario",
@@ -158,4 +213,24 @@ __all__ = [
     "SocialMediaActivity", "MktStore", "StorePerformance",
     "ProductChannelPerformance", "ChannelStock", "AdPerformance",
     "ReturnAnalytics", "OptimizerRun",
+    # Utility Management — enums
+    "UtilityType", "SourceMethod", "DataQuality",
+    "UtilityAssetStatus", "LifecycleStatus", "CriticalityLevel",
+    "DeviceType", "ReadingType", "ReadingSource", "ReadingFrequency", "ValidatedStatus",
+    "TariffType", "TxReferenceType",
+    "AlarmSeverity", "AlarmStatus", "AlarmOperator",
+    "AllocationMethod", "BillStatus",
+    "SoftenerStatus", "BoilerStatus", "CompressorStatus",
+    "TreatmentType", "WastewaterProcess", "ComplianceStatus",
+    "ChemicalCategory", "DosingMode",
+    # Utility Management — master
+    "WaterTreatmentChemical",
+    "UtilityAssetCategory", "UtilityAsset", "UtilityDevice",
+    "UtilityTariff", "UtilityAlarmRule",
+    # Utility Management — transactional
+    "UtilityReading", "UtilityTransaction",
+    "SoftWaterRecord", "BoilerSteamRecord", "CompressorRecord",
+    "SolarRecord", "TreatmentChemicalRecord", "WastewaterRecord",
+    "UtilityBill", "UtilityCostAllocation",
+    "UtilityAlarmEvent", "MachineUtilityMapping",
 ]

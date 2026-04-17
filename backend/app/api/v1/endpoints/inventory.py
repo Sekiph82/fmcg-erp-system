@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException
+import logging
+from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Optional
 import uuid
@@ -11,8 +12,12 @@ from app.schemas.inventory import (
     LotCreate, LotUpdate, LotRead,
     StockRead, StockSummaryRead,
     StockMovementCreate, StockMovementRead, MovementDetailRead,
+    StockMovementUpdate,
     StockEntryRequest, StockIssueRequest, StockTransferRequest,
+    StockAdjustRequest,
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -56,7 +61,6 @@ async def update_lot(lot_id: uuid.UUID, data: LotUpdate, db: AsyncSession = Depe
 @router.delete("/lots/{lot_id}", status_code=204,
                dependencies=[Depends(require_permission("inventory", "edit"))])
 async def delete_lot(lot_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
-    from fastapi import Response
     from sqlalchemy import select as sqsel
     from app.models.inventory import Stock
     obj = await crud.get_lot(db, lot_id)
@@ -87,6 +91,44 @@ async def list_stocks(
                                   material_id=material_id, skip=skip, limit=limit)
 
 
+@router.post("/stock/{stock_id}/adjust", response_model=StockMovementRead, status_code=201,
+             summary="Adjust stock to a new quantity via ADJUSTMENT movement")
+async def adjust_stock(
+    stock_id: uuid.UUID,
+    req: StockAdjustRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(require_permission("inventory", "edit")),
+):
+    """
+    Adjust a stock record to a new on-hand quantity.
+    Creates an ADJUSTMENT movement recording the delta and reason.
+    The adjustment can increase or decrease stock but never below zero.
+    """
+    movement = await svc.adjust_stock_record(
+        db, stock_id, req.new_quantity, req.reason, req.reference, current_user.id
+    )
+    await db.commit()
+    logger.info("Stock %s adjusted to %s by user %s", stock_id, req.new_quantity, current_user.id)
+    return movement
+
+
+@router.delete("/stock/{stock_id}", status_code=204,
+               summary="Delete a stock record (only if quantity is zero)")
+async def delete_stock(
+    stock_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(require_permission("inventory", "delete")),
+):
+    """
+    Delete a stock record. Blocked if quantity_on_hand != 0.
+    Use the adjust endpoint to zero out stock first.
+    """
+    await svc.delete_stock_record(db, stock_id, current_user.id)
+    await db.commit()
+    logger.info("Stock record %s deleted by user %s", stock_id, current_user.id)
+    return Response(status_code=204)
+
+
 # ── Movements ──────────────────────────────────────────────────────────────────
 
 @router.get("/movements", response_model=List[StockMovementRead],
@@ -111,6 +153,54 @@ async def create_movement(
     obj = await crud.create_movement(db, data, current_user.id)
     await db.commit()
     return obj
+
+
+@router.patch("/movements/{movement_id}", response_model=StockMovementRead,
+              summary="Edit movement notes or reference number")
+async def update_movement(
+    movement_id: uuid.UUID,
+    data: StockMovementUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(require_permission("stock_movement", "edit")),
+):
+    """
+    Update non-financial fields of a stock movement (notes and reference number only).
+    Quantity, type, and warehouse cannot be changed — use delete + recreate for that.
+    """
+    from sqlalchemy import select as sqsel
+    from app.models.inventory import StockMovement
+    result = await db.execute(sqsel(StockMovement).where(StockMovement.id == movement_id))
+    movement = result.scalar_one_or_none()
+    if not movement:
+        raise HTTPException(status_code=404, detail="Stock movement not found")
+
+    if data.reference_number is not None:
+        movement.reference_number = data.reference_number
+    if data.notes is not None:
+        movement.notes = data.notes
+
+    await db.flush()
+    await db.refresh(movement)
+    await db.commit()
+    logger.info("Movement %s updated by user %s", movement_id, current_user.id)
+    return movement
+
+
+@router.delete("/movements/{movement_id}", status_code=204,
+               summary="Delete a movement and reverse its stock impact")
+async def delete_movement(
+    movement_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(require_permission("stock_movement", "delete")),
+):
+    """
+    Delete a stock movement and reverse its effect on the Stock record.
+    Blocked if reversal would cause negative stock.
+    """
+    await svc.delete_movement_record(db, movement_id, current_user.id)
+    await db.commit()
+    logger.info("Movement %s deleted by user %s", movement_id, current_user.id)
+    return Response(status_code=204)
 
 
 # ── Business operation endpoints ───────────────────────────────────────────────

@@ -4,8 +4,10 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   inventoryApi,
+  StockSummary,
   StockEntryRequest, StockIssueRequest, StockTransferRequest,
-  extractApiError, isInsufficientStock,
+  extractApiError, extractStructuredError, isInsufficientStock,
+  InventoryDeleteBlockedError,
 } from "@/lib/inventory";
 import { productsApi } from "@/lib/products";
 import { warehousesApi } from "@/lib/warehouses";
@@ -14,16 +16,16 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
+import { Modal } from "@/components/ui/Modal";
 import { ToastContainer } from "@/components/ui/Toast";
 import { useToast } from "@/hooks/useToast";
-import { RequirePermission } from "@/components/PermissionGuard";
+import { RequirePermission, PermissionGuard } from "@/components/PermissionGuard";
 import { ImportModal } from "@/components/import/ImportModal";
 
 type Tab = "stock" | "entry" | "issue" | "transfer";
 
 const today = new Date().toISOString().split("T")[0];
 
-// ── Shared field component ─────────────────────────────────────────────────────
 function FormSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
@@ -33,7 +35,6 @@ function FormSection({ title, children }: { title: string; children: React.React
   );
 }
 
-// ── Tab bar ────────────────────────────────────────────────────────────────────
 const TABS: { key: Tab; label: string; color?: string }[] = [
   { key: "stock", label: "Current Stock" },
   { key: "entry", label: "Stock Entry (IN)", color: "text-green-700" },
@@ -45,6 +46,13 @@ function InventoryContent() {
   const qc = useQueryClient();
   const { toasts, toast, dismiss } = useToast();
   const [tab, setTab] = useState<Tab>("stock");
+
+  // ── Edit/Delete state ────────────────────────────────────────────────────────
+  const [adjustingStock, setAdjustingStock] = useState<StockSummary | null>(null);
+  const [adjustQty, setAdjustQty] = useState("");
+  const [adjustReason, setAdjustReason] = useState("");
+  const [deletingStockId, setDeletingStockId] = useState<string | null>(null);
+  const [deleteBlockedError, setDeleteBlockedError] = useState<InventoryDeleteBlockedError | null>(null);
 
   // ── Shared data ──────────────────────────────────────────────────────────────
   const { data: products = [] } = useQuery({ queryKey: ["products"], queryFn: () => productsApi.list(0, 200) });
@@ -122,6 +130,46 @@ function InventoryContent() {
     },
   });
 
+  // ── Adjust Stock (Edit) ──────────────────────────────────────────────────────
+  const adjustMut = useMutation({
+    mutationFn: ({ id, qty, reason }: { id: string; qty: number; reason: string }) =>
+      inventoryApi.adjustStock(id, { new_quantity: qty, reason }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["stock-summary"] });
+      setAdjustingStock(null);
+      setAdjustQty("");
+      setAdjustReason("");
+      toast("success", "Stock adjusted", "Adjustment movement created and inventory updated.");
+    },
+    onError: (err) => toast("error", "Adjustment failed", extractApiError(err)),
+  });
+
+  // ── Delete Stock ─────────────────────────────────────────────────────────────
+  const deletingStockRecord = summary.find((s) => s.id === deletingStockId);
+
+  const deleteStockMut = useMutation({
+    mutationFn: (id: string) => inventoryApi.deleteStock(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["stock-summary"] });
+      setDeletingStockId(null);
+      toast("success", "Stock record deleted", "The stock position has been removed.");
+    },
+    onError: (err: unknown) => {
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      if (status === 409) {
+        const structured = extractStructuredError(err) as InventoryDeleteBlockedError | null;
+        setDeletingStockId(null);
+        setDeleteBlockedError(structured);
+      } else if (status === 403) {
+        toast("error", "Permission denied", "You do not have permission to delete stock records.");
+        setDeletingStockId(null);
+      } else {
+        toast("error", "Delete failed", extractApiError(err));
+        setDeletingStockId(null);
+      }
+    },
+  });
+
   return (
     <div>
       <ToastContainer toasts={toasts} onDismiss={dismiss} />
@@ -186,6 +234,33 @@ function InventoryContent() {
                 accessor: (r) => <span className="text-emerald-700 font-medium">{Number(r.quantity_available).toLocaleString()}</span>,
               },
               { header: "Reserved", accessor: (r) => Number(r.quantity_reserved).toLocaleString() },
+              {
+                header: "Actions",
+                accessor: (r) => (
+                  <div className="flex items-center gap-2">
+                    <PermissionGuard permission="inventory.edit">
+                      <button
+                        onClick={() => {
+                          setAdjustingStock(r);
+                          setAdjustQty(String(Number(r.quantity_on_hand)));
+                          setAdjustReason("");
+                        }}
+                        className="text-xs text-indigo-600 hover:text-indigo-800 hover:underline"
+                      >
+                        Adjust
+                      </button>
+                    </PermissionGuard>
+                    <PermissionGuard permission="inventory.delete">
+                      <button
+                        onClick={() => setDeletingStockId(r.id)}
+                        className="text-xs text-red-500 hover:text-red-700 hover:underline"
+                      >
+                        Delete
+                      </button>
+                    </PermissionGuard>
+                  </div>
+                ),
+              },
             ]}
           />
         )
@@ -304,6 +379,137 @@ function InventoryContent() {
           </form>
         </FormSection>
       )}
+
+      {/* ── Adjust Stock Modal ── */}
+      <Modal
+        open={!!adjustingStock}
+        onClose={() => { setAdjustingStock(null); setAdjustQty(""); setAdjustReason(""); }}
+        title="Adjust Stock"
+      >
+        {adjustingStock && (
+          <div className="space-y-4">
+            <div className="rounded-lg bg-blue-50 border border-blue-200 px-4 py-3 text-sm text-blue-800">
+              <p className="font-semibold">{adjustingStock.product_name} ({adjustingStock.product_sku})</p>
+              <p className="text-xs mt-1">
+                Warehouse: {adjustingStock.warehouse_name} &nbsp;|&nbsp;
+                Current on-hand: <strong>{Number(adjustingStock.quantity_on_hand).toLocaleString()}</strong>
+              </p>
+              <p className="text-xs mt-1 text-blue-600">
+                This will create an ADJUSTMENT movement recording the change.
+              </p>
+            </div>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                const qty = parseFloat(adjustQty);
+                if (isNaN(qty) || qty < 0) return;
+                adjustMut.mutate({ id: adjustingStock.id, qty, reason: adjustReason });
+              }}
+              className="space-y-3"
+            >
+              <Input
+                label="New Quantity *"
+                type="number"
+                step="0.001"
+                min="0"
+                value={adjustQty}
+                onChange={(e) => setAdjustQty(e.target.value)}
+                required
+              />
+              <Input
+                label="Reason *"
+                placeholder="e.g. Physical count correction, damaged goods write-off…"
+                value={adjustReason}
+                onChange={(e) => setAdjustReason(e.target.value)}
+                required
+              />
+              {adjustQty !== "" && !isNaN(parseFloat(adjustQty)) && (
+                <div className="text-xs text-gray-500">
+                  Delta:{" "}
+                  <span className={parseFloat(adjustQty) - Number(adjustingStock.quantity_on_hand) >= 0 ? "text-green-700 font-semibold" : "text-red-700 font-semibold"}>
+                    {(parseFloat(adjustQty) - Number(adjustingStock.quantity_on_hand) >= 0 ? "+" : "") +
+                      (parseFloat(adjustQty) - Number(adjustingStock.quantity_on_hand)).toLocaleString()}
+                  </span>
+                </div>
+              )}
+              <div className="flex justify-end gap-3 pt-2">
+                <Button variant="secondary" type="button" onClick={() => { setAdjustingStock(null); setAdjustQty(""); setAdjustReason(""); }}>
+                  Cancel
+                </Button>
+                <Button type="submit" loading={adjustMut.isPending}>Apply Adjustment</Button>
+              </div>
+            </form>
+          </div>
+        )}
+      </Modal>
+
+      {/* ── Delete Stock Confirm ── */}
+      <Modal
+        open={!!deletingStockId}
+        onClose={() => setDeletingStockId(null)}
+        title="Delete Stock Record"
+      >
+        <div className="space-y-4">
+          {deletingStockRecord && (
+            <div className="rounded-lg bg-gray-50 border border-gray-200 px-4 py-3 text-sm">
+              <p><span className="font-semibold">Product:</span> {deletingStockRecord.product_name} ({deletingStockRecord.product_sku})</p>
+              <p><span className="font-semibold">Warehouse:</span> {deletingStockRecord.warehouse_name}</p>
+              <p><span className="font-semibold">On Hand:</span> {Number(deletingStockRecord.quantity_on_hand).toLocaleString()}</p>
+            </div>
+          )}
+          {deletingStockRecord && Number(deletingStockRecord.quantity_on_hand) !== 0 ? (
+            <div className="rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800">
+              <strong>Warning:</strong> This stock record still has{" "}
+              <strong>{Number(deletingStockRecord.quantity_on_hand).toLocaleString()}</strong> units on hand.
+              You must adjust the quantity to zero before deleting this record.
+            </div>
+          ) : (
+            <p className="text-sm text-gray-600">
+              This will permanently delete this stock position. This action cannot be undone.
+            </p>
+          )}
+          <div className="flex justify-end gap-3">
+            <Button variant="secondary" onClick={() => setDeletingStockId(null)}>Cancel</Button>
+            <Button
+              variant="danger"
+              loading={deleteStockMut.isPending}
+              onClick={() => deletingStockId && deleteStockMut.mutate(deletingStockId)}
+              disabled={!!deletingStockRecord && Number(deletingStockRecord.quantity_on_hand) !== 0}
+            >
+              Delete
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* ── Delete Blocked Error ── */}
+      <Modal
+        open={!!deleteBlockedError}
+        onClose={() => setDeleteBlockedError(null)}
+        title="Cannot Delete Stock Record"
+      >
+        {deleteBlockedError && (
+          <div className="space-y-4">
+            <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-800">
+              <p className="font-semibold">{deleteBlockedError.message}</p>
+            </div>
+            {deleteBlockedError.details?.references?.length > 0 && (
+              <ul className="space-y-2">
+                {deleteBlockedError.details.references.map((ref) => (
+                  <li key={ref.module} className="text-sm flex gap-2">
+                    <span className="font-semibold text-gray-800">{ref.module}</span>
+                    <span className="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">{ref.count}</span>
+                    <span className="text-gray-500 text-xs">{ref.hint}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <div className="flex justify-end">
+              <Button variant="secondary" onClick={() => setDeleteBlockedError(null)}>Close</Button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

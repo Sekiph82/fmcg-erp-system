@@ -108,9 +108,16 @@ export const NAV_CONFIG: NavEntry[] = [
       "M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"
     ),
     items: [
-      { label: "Production Plans",  href: "/dashboard/production",         permission: "production.view" },
-      { label: "Production Orders", href: "/dashboard/production/orders",  permission: "production.view" },
-      { label: "MES Reports",       href: "/dashboard/production/reports", permission: "production.view" },
+      { label: "Production Plans",  href: "/dashboard/production",                 permission: "production.view" },
+      { label: "Production Orders", href: "/dashboard/production/orders",          permission: "production.view" },
+      { label: "Work Centers",      href: "/dashboard/production/work-centers",    permission: "production.view" },
+      { label: "Scheduling",        href: "/dashboard/production/scheduling",      permission: "production.view" },
+      { label: "OEE Records",       href: "/dashboard/production/oee",             permission: "production.view" },
+      { label: "Waste & Yield",     href: "/dashboard/production/waste-yield",     permission: "production.view" },
+      { label: "Batch / Lots",      href: "/dashboard/production/batch-lots",      permission: "production.view" },
+      { label: "Costing",           href: "/dashboard/production/costing",         permission: "production.view" },
+      { label: "AI Intelligence",   href: "/dashboard/production/ai",              permission: "production.view" },
+      { label: "MES Reports",       href: "/dashboard/production/reports",         permission: "production.view" },
     ],
   },
 
@@ -257,6 +264,30 @@ export const NAV_CONFIG: NavEntry[] = [
   // ║       FIELD OPERATIONS       ║
   // ╚══════════════════════════════╝
   cluster("cluster-field", "Field Operations"),
+
+  {
+    type: "section",
+    id: "utility-management",
+    label: "Utility Management",
+    permission: "utility_management.view",
+    icon: md(
+      "M13 10V3L4 14h7v7l9-11h-7z"
+    ),
+    items: [
+      { label: "Asset Categories",   href: "/dashboard/utility-management/categories",    permission: "utility_management.view" },
+      { label: "Utility Assets",     href: "/dashboard/utility-management/assets",        permission: "utility_management.view" },
+      { label: "Meters & Sensors",   href: "/dashboard/utility-management/devices",       permission: "utility_management.view" },
+      { label: "Readings",           href: "/dashboard/utility-management/readings",      permission: "utility_management.view" },
+      { label: "Transactions",       href: "/dashboard/utility-management/transactions",  permission: "utility_management.view" },
+      { label: "Electricity",        href: "/dashboard/utility-management/electricity",   permission: "utility_management.view" },
+      { label: "Water",             href: "/dashboard/utility-management/water",          permission: "utility_management.view" },
+      { label: "Soft Water",        href: "/dashboard/utility-management/soft-water",     permission: "utility_management.view" },
+      { label: "Steam & Boiler",    href: "/dashboard/utility-management/steam",           permission: "utility_management.view" },
+      { label: "Compressed Air",   href: "/dashboard/utility-management/compressor",           permission: "utility_management.view" },
+      { label: "Solar Energy",     href: "/dashboard/utility-management/solar",                permission: "utility_management.view" },
+      { label: "Chemical Treatment", href: "/dashboard/utility-management/chemical-treatment",  permission: "utility_management.view" },
+    ],
+  },
 
   {
     type: "section",
@@ -416,6 +447,22 @@ export const NAV_CONFIG: NavEntry[] = [
       { label: "Documents",       href: "/dashboard/documents",     permission: "documents.view" },
       { label: "Import History",  href: "/dashboard/import-history",permission: "audit.view" },
       { label: "System Logs",     href: "/dashboard/logs",          permission: "audit.view" },
+    ],
+  },
+
+  {
+    type: "section",
+    id: "utilities",
+    label: "Utilities",
+    permission: "utilities.view",
+    icon: md(
+      "M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
+    ),
+    items: [
+      { label: "System Configs",   href: "/dashboard/utilities",               permission: "utilities.view" },
+      { label: "UOM Conversions",  href: "/dashboard/utilities?tab=uom",       permission: "utilities.view" },
+      { label: "Number Series",    href: "/dashboard/utilities?tab=series",    permission: "utilities.view" },
+      { label: "Currencies",       href: "/dashboard/utilities?tab=currencies",permission: "utilities.view" },
     ],
   },
 ];

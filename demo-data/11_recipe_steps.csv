@@ -1,0 +1,396 @@
+product_sku,version,step_no,step_name,temperature_c,target_ph,viscosity_cp,mix_time_min,rpm,notes
+HH-001,v1.0,1,Dry Premix – Fillers & Builder,,,,15,120,Blend sodium sulphate and sodium carbonate until homogeneous
+HH-001,v1.0,2,LABSA Slurry Addition,,,,10,80,Add LABSA paste slowly; avoid lumping
+HH-001,v1.0,3,Fragrance & Colour Blending,,,,8,60,Add fragrance and colorant; blend until uniform
+HH-001,v1.0,4,QC Sampling & Transfer to Filling,,7.5,,,5,40,Check appearance, pH and bulk density before filling
+HH-002,v1.0,1,Dry Premix – Fillers & Builder,,,,15,120,Blend sodium sulphate and sodium carbonate until homogeneous
+HH-002,v1.0,2,LABSA Slurry Addition,,,,10,80,Add LABSA paste slowly; avoid lumping
+HH-002,v1.0,3,Fragrance & Colour Blending,,,,8,60,Add fragrance and colorant; blend until uniform
+HH-002,v1.0,4,QC Sampling & Transfer to Filling,,7.5,,,5,40,Check appearance pH and bulk density before filling
+HH-003,v1.0,1,Dry Premix – Fillers & Builder,,,,15,120,Blend sodium sulphate and sodium carbonate until homogeneous
+HH-003,v1.0,2,LABSA Slurry Addition,,,,10,80,Add LABSA paste slowly; avoid lumping
+HH-003,v1.0,3,Fragrance & Colour Blending,,,,8,60,Add fragrance and colorant; blend until uniform
+HH-003,v1.0,4,QC Sampling & Transfer to Filling,,7.5,,,5,40,Check appearance pH and bulk density before filling
+HH-004,v1.0,1,Dry Premix – Base Salts,,,,15,120,Pre-blend sodium carbonate and sodium sulphate
+HH-004,v1.0,2,Enzyme & OBA Premix,,,,8,60,Pre-blend protease enzyme and optical brightener in separate container
+HH-004,v1.0,3,LABSA Slurry Addition,,,,10,80,Incorporate LABSA slurry into dry base
+HH-004,v1.0,4,Enzyme Blend Incorporation,,,,8,40,Add enzyme/OBA premix at low speed to preserve enzyme activity
+HH-004,v1.0,5,Fragrance & Final QC,,7.5,,,5,40,Add fragrance; check pH bulk density and enzyme activity
+HH-005,v1.0,1,Dry Premix – Base Salts,,,,15,120,Pre-blend sodium carbonate and sodium sulphate
+HH-005,v1.0,2,LABSA Slurry Addition,,,,10,80,Incorporate LABSA slurry into dry base
+HH-005,v1.0,3,Enzyme & OBA Premix,,,,8,60,Pre-blend protease enzyme and optical brightener
+HH-005,v1.0,4,Enzyme Blend Incorporation,,,,8,40,Add enzyme/OBA premix at low speed to preserve enzyme activity
+HH-005,v1.0,5,Fragrance & Final QC,,7.5,,,5,40,Add fragrance; check pH bulk density and enzyme activity
+HH-006,v1.0,1,Dry Premix – Base Salts,,,,15,120,Pre-blend sodium carbonate and sodium sulphate
+HH-006,v1.0,2,LABSA Slurry Addition,,,,10,80,Incorporate LABSA slurry into dry base
+HH-006,v1.0,3,Enzyme & OBA Premix,,,,8,60,Pre-blend protease enzyme and optical brightener
+HH-006,v1.0,4,Enzyme Blend Incorporation,,,,8,40,Add enzyme/OBA premix at low speed to preserve enzyme activity
+HH-006,v1.0,5,Fragrance & Final QC,,7.5,,,5,40,Add fragrance; check pH bulk density and enzyme activity
+HH-007,v1.0,1,Dry Premix – Base Salts,,,,15,120,Pre-blend sodium carbonate and sodium sulphate
+HH-007,v1.0,2,LABSA Slurry Addition,,,,10,80,Incorporate LABSA slurry into dry base
+HH-007,v1.0,3,Colour-Safe Enzyme Incorporation,,,,8,40,Add lipase/cellulase blend without OBA at low speed
+HH-007,v1.0,4,Fragrance & Final QC,,7.5,,,5,40,Add fragrance; verify no OBA present; check pH and bulk density
+HH-008,v1.0,1,Dry Premix – Base Salts,,,,15,120,Pre-blend sodium carbonate and sodium sulphate
+HH-008,v1.0,2,LABSA Slurry Addition,,,,10,80,Incorporate LABSA slurry into dry base
+HH-008,v1.0,3,Colour-Safe Enzyme Incorporation,,,,8,40,Add lipase/cellulase blend without OBA at low speed
+HH-008,v1.0,4,Fragrance & Final QC,,7.5,,,5,40,Add fragrance; verify no OBA present; check pH and bulk density
+HH-009,v1.0,1,Dry Premix – Base Salts,,,,15,120,Pre-blend sodium carbonate and sodium sulphate
+HH-009,v1.0,2,LABSA Slurry Addition,,,,10,80,Incorporate LABSA slurry into dry base
+HH-009,v1.0,3,Colour-Safe Enzyme Incorporation,,,,8,40,Add lipase/cellulase blend without OBA at low speed
+HH-009,v1.0,4,Fragrance & Final QC,,7.5,,,5,40,Add fragrance; verify no OBA present; check pH and bulk density
+HH-010,v1.0,1,Base Filler Premix,,,,10,120,Blend sodium sulphate and sodium carbonate in dry mixer
+HH-010,v1.0,2,Sodium Percarbonate Addition,,,,8,60,Add sodium percarbonate carefully; avoid heat and moisture
+HH-010,v1.0,3,TAED Activator & Fragrance Blend,,,,6,40,Incorporate TAED activator and fragrance at low speed
+HH-010,v1.0,4,QC Sampling & Transfer,,9.5,,,5,30,Check active oxygen content and pH before filling
+HH-011,v1.0,1,Base Filler Premix,,,,10,120,Blend sodium sulphate and sodium carbonate in dry mixer
+HH-011,v1.0,2,Sodium Percarbonate Addition,,,,8,60,Add sodium percarbonate carefully; avoid heat and moisture
+HH-011,v1.0,3,TAED Activator & Fragrance Blend,,,,6,40,Incorporate TAED activator and fragrance at low speed
+HH-011,v1.0,4,QC Sampling & Transfer,,9.5,,,5,30,Check active oxygen content and pH before filling
+HH-012,v1.0,1,Base Filler Premix,,,,10,120,Blend sodium sulphate and sodium carbonate in dry mixer
+HH-012,v1.0,2,Sodium Percarbonate Addition,,,,8,60,Add sodium percarbonate carefully; avoid heat and moisture
+HH-012,v1.0,3,TAED Activator & Fragrance Blend,,,,6,40,Incorporate TAED activator and fragrance at low speed
+HH-012,v1.0,4,QC Sampling & Transfer,,9.5,,,5,30,Check active oxygen content and pH before filling
+HH-013,v1.0,1,Citric Acid & Filler Premix,,,,12,120,Blend citric acid and sodium bicarbonate filler uniformly
+HH-013,v1.0,2,Sequestrant Addition,,,,8,80,Add EDTA or sodium gluconate for metal ion sequestration
+HH-013,v1.0,3,Fragrance Blending,,,,6,60,Add dry fragrance powder or microencapsulated fragrance
+HH-013,v1.0,4,QC Sampling & Transfer,,3.5,,,5,30,Check pH (aqueous solution) and particle size before filling
+HH-014,v1.0,1,Citric Acid & Filler Premix,,,,12,120,Blend citric acid and sodium bicarbonate filler uniformly
+HH-014,v1.0,2,Sequestrant Addition,,,,8,80,Add EDTA or sodium gluconate for metal ion sequestration
+HH-014,v1.0,3,Fragrance Blending,,,,6,60,Add dry fragrance powder or microencapsulated fragrance
+HH-014,v1.0,4,QC Sampling & Transfer,,3.5,,,5,30,Check pH (aqueous solution) and particle size before filling
+HH-015,v1.0,1,Citric Acid & Filler Premix,,,,12,120,Blend citric acid and sodium bicarbonate filler uniformly
+HH-015,v1.0,2,Sequestrant Addition,,,,8,80,Add EDTA or sodium gluconate for metal ion sequestration
+HH-015,v1.0,3,Fragrance Blending,,,,6,60,Add dry fragrance powder or microencapsulated fragrance
+HH-015,v1.0,4,QC Sampling & Transfer,,3.5,,,5,30,Check pH (aqueous solution) and particle size before filling
+HH-016,v1.0,1,Water Charging,25,7,,,50,Charge demineralised water into mixing vessel; confirm temperature
+HH-016,v1.0,2,SLES Addition & Dispersion,25,,,,200,Add SLES 70% paste slowly with agitation to prevent foaming
+HH-016,v1.0,3,CAPB & Co-surfactant Addition,25,,,,150,Incorporate CAPB; mix until clear
+HH-016,v1.0,4,pH Adjustment,25,7.0,,,100,Dose citric acid to achieve target pH 6.8–7.2
+HH-016,v1.0,5,Fragrance & Preservative Addition,25,7.0,2000,10,80,Add fragrance oil and preservative; check viscosity and appearance
+HH-017,v1.0,1,Water Charging,25,7,,,50,Charge demineralised water into mixing vessel
+HH-017,v1.0,2,SLES Addition & Dispersion,25,,,,200,Add SLES 70% paste slowly with agitation
+HH-017,v1.0,3,CAPB & Co-surfactant Addition,25,,,,150,Incorporate CAPB; mix until clear
+HH-017,v1.0,4,pH Adjustment,25,7.0,,,100,Dose citric acid to achieve target pH 6.8–7.2
+HH-017,v1.0,5,Fragrance & Preservative Addition,25,7.0,2000,10,80,Add fragrance oil and preservative; check viscosity and appearance
+HH-018,v1.0,1,Water Charging,25,7,,,50,Charge demineralised water into mixing vessel
+HH-018,v1.0,2,SLES Addition & Dispersion,25,,,,200,Add SLES 70% paste slowly with agitation
+HH-018,v1.0,3,OBA & CAPB Addition,25,,,,150,Incorporate OBA solution and CAPB; mix until clear
+HH-018,v1.0,4,pH Adjustment,25,7.0,,,100,Dose citric acid or NaOH to achieve target pH 7.0–7.5
+HH-018,v1.0,5,Fragrance & Preservative,25,7.0,2000,10,80,Add fragrance and preservative; verify OBA fluorescence
+HH-019,v1.0,1,Water Charging,25,7,,,50,Charge demineralised water into mixing vessel
+HH-019,v1.0,2,SLES Addition & Dispersion,25,,,,200,Add SLES 70% paste slowly
+HH-019,v1.0,3,OBA & CAPB Addition,25,,,,150,Incorporate OBA solution and CAPB
+HH-019,v1.0,4,pH Adjustment,25,7.0,,,100,Adjust pH to 7.0–7.5 with citric acid
+HH-019,v1.0,5,Fragrance & Preservative,25,7.0,2000,10,80,Add fragrance and preservative; verify OBA fluorescence
+HH-020,v1.0,1,Water Charging,25,7,,,50,Charge demineralised water; confirm purity (demineralised)
+HH-020,v1.0,2,SLES Addition,25,,,,150,Add SLES 70% at reduced rate; gentle mixing for baby product
+HH-020,v1.0,3,CAPB & Glycerin Addition,25,,,,100,Incorporate CAPB and glycerin; mix until clear
+HH-020,v1.0,4,pH Adjustment,25,6.5,,,80,Adjust pH to 6.5–7.0; milder than adult formulas
+HH-020,v1.0,5,Fragrance-Free Preservative Dosing,25,6.5,1500,8,60,Add baby-safe preservative; no fragrance; confirm mild pH
+HH-021,v1.0,1,Water Charging,25,7,,,50,Charge demineralised water
+HH-021,v1.0,2,SLES Addition,25,,,,150,Add SLES 70% at reduced rate; gentle mixing
+HH-021,v1.0,3,CAPB & Glycerin Addition,25,,,,100,Incorporate CAPB and glycerin; mix until clear
+HH-021,v1.0,4,pH Adjustment,25,6.5,,,80,Adjust pH to 6.5–7.0 for baby-safe formulation
+HH-021,v1.0,5,Fragrance-Free Preservative Dosing,25,6.5,1500,8,60,Add baby-safe preservative; confirm mild pH
+HH-022,v1.0,1,Water Phase Heating,60,,,20,100,Heat demineralised water to 60 °C
+HH-022,v1.0,2,Cationic Softener Addition,55,,,20,200,Add HTMAC or DEEDMAC to hot water with vigorous agitation
+HH-022,v1.0,3,Cooling & Emulsification,35,,,15,150,Cool batch to 35 °C with continued stirring; observe viscosity build
+HH-022,v1.0,4,Fragrance Addition,35,,,10,100,Incorporate floral fragrance oil; mix until homogeneous
+HH-022,v1.0,5,pH Adjustment & QC,30,3.5,800,5,60,Adjust pH to 3.5–4.5 with citric acid; check viscosity
+HH-023,v1.0,1,Water Phase Heating,60,,,20,100,Heat demineralised water to 60 °C
+HH-023,v1.0,2,Cationic Softener Addition,55,,,20,200,Add hypoallergenic cationic ester quat with vigorous agitation
+HH-023,v1.0,3,Cooling & Emulsification,35,,,15,150,Cool to 35 °C; no fragrance addition for sensitive variant
+HH-023,v1.0,4,pH Adjustment & QC,30,3.5,800,5,60,Adjust pH to 3.5–4.5 with citric acid; no fragrance; check viscosity
+HH-024,v1.0,1,Water Phase Heating,60,,,20,100,Heat demineralised water to 60 °C
+HH-024,v1.0,2,Cationic Softener Addition,55,,,20,200,Add HTMAC to hot water with vigorous agitation
+HH-024,v1.0,3,Cooling & Fragrance Addition,35,,,15,150,Cool to 35 °C; add fragrance concentrate for sachet format
+HH-024,v1.0,4,pH Adjustment & QC,30,3.5,1200,5,60,Adjust pH to 3.5–4.5; higher viscosity for concentrated sachet
+HH-025,v1.0,1,Water Charging,20,,,10,60,Charge cold demineralised water into SS vessel
+HH-025,v1.0,2,Sodium Hypochlorite Addition,20,,,10,80,Pump in NaOCl solution at controlled rate; avoid splashing
+HH-025,v1.0,3,pH Adjustment & QC,20,12.5,,,5,50,Verify pH 12.0–12.8 and available chlorine 5% by titration
+HH-026,v1.0,1,Water Charging,20,,,10,60,Charge cold demineralised water
+HH-026,v1.0,2,Concentrated NaOCl Addition,20,,,10,80,Add high-strength hypochlorite concentrate at controlled rate
+HH-026,v1.0,3,pH Adjustment & QC,20,12.5,,,5,50,Verify pH 12.0–12.8 and available chlorine 10% by titration
+HH-027,v1.0,1,Water Charging,25,7,,,50,Charge demineralised water into mixing vessel
+HH-027,v1.0,2,SLES Addition & Dispersion,25,,,,200,Add SLES paste slowly; mix until fully dissolved
+HH-027,v1.0,3,CAPB & Lauric Acid Addition,25,,,,150,Incorporate CAPB and lauric acid; mix to clarity
+HH-027,v1.0,4,Salt Thickening,25,,2000,10,100,Add NaCl solution gradually; monitor viscosity build
+HH-027,v1.0,5,Fragrance & Preservative,25,6.8,2500,8,80,Add lemon fragrance and preservative; check pH and viscosity
+HH-028,v1.0,1,Water Charging,25,7,,,50,Charge demineralised water
+HH-028,v1.0,2,SLES Addition & Dispersion,25,,,,200,Add SLES paste slowly
+HH-028,v1.0,3,CAPB Addition,25,,,,150,Incorporate CAPB; mix to clarity
+HH-028,v1.0,4,Salt Thickening,25,,2000,10,100,Add NaCl solution; monitor viscosity
+HH-028,v1.0,5,Fragrance & Preservative,25,6.8,2500,8,80,Add lemon fragrance and preservative; check pH and viscosity
+HH-029,v1.0,1,Water Charging,25,7,,,50,Charge demineralised water
+HH-029,v1.0,2,SLES Addition & Dispersion,25,,,,200,Add SLES paste slowly
+HH-029,v1.0,3,CAPB Addition,25,,,,150,Incorporate CAPB; mix to clarity
+HH-029,v1.0,4,Salt Thickening,25,,2000,10,100,Add NaCl solution; monitor viscosity
+HH-029,v1.0,5,Orange Fragrance & Preservative,25,6.8,2500,8,80,Add orange fragrance and preservative; check pH and viscosity
+HH-030,v1.0,1,Water Charging,25,7,,,50,Charge demineralised water
+HH-030,v1.0,2,SLES Addition & Dispersion,25,,,,200,Add SLES paste slowly; mix to dissolution
+HH-030,v1.0,3,CAPB & QUAT Addition,25,,,,150,Incorporate CAPB and benzalkonium chloride for antibacterial effect
+HH-030,v1.0,4,Salt Thickening,25,,2000,10,100,Add NaCl; monitor viscosity
+HH-030,v1.0,5,Fragrance & Preservative,25,6.5,2500,8,80,Add fragrance and preservative; verify QUAT level in QC
+HH-031,v1.0,1,Water Charging,25,,,15,100,Charge demineralised water into mixing vessel
+HH-031,v1.0,2,Surfactant & Builder Addition,25,,,,150,Add SLES and builder (sodium carbonate); mix to clarity
+HH-031,v1.0,3,pH Adjustment,25,9.5,,,5,100,Dose NaOH to reach pH 9.0–10.0
+HH-031,v1.0,4,Fragrance & Preservative,25,9.5,,8,80,Add fragrance; add preservative rated for alkaline pH
+HH-032,v1.0,1,Water Charging,25,,,15,100,Charge demineralised water into mixing vessel
+HH-032,v1.0,2,Surfactant & Builder Addition,25,,,,150,Add SLES and sodium carbonate builder; mix to clarity
+HH-032,v1.0,3,pH Adjustment,25,9.5,,,5,100,Dose NaOH to reach pH 9.0–10.0
+HH-032,v1.0,4,Fragrance & Preservative,25,9.5,,8,80,Add fragrance; add preservative rated for alkaline pH
+HH-033,v1.0,1,Potassium Hydroxide Solution Prep,40,,,10,80,Dissolve KOH flakes in warm water; caution – exothermic
+HH-033,v1.0,2,Fatty Acid Saponification,50,,,30,100,Slowly add palm/coconut fatty acid to KOH solution; mix to saponify
+HH-033,v1.0,3,Neutralisation & pH Check,40,9.0,,,15,80,Allow partial neutralisation; target pH 8.5–9.5
+HH-033,v1.0,4,Fragrance & QC,30,9.0,,10,60,Add fragrance; verify colour consistency; check pH and density
+HH-034,v1.0,1,Water Charging,25,,,10,100,Charge demineralised water
+HH-034,v1.0,2,Alkaline Builder Addition,25,12.0,,,10,150,Add sodium hydroxide and sodium carbonate; exothermic – monitor temp
+HH-034,v1.0,3,Surfactant & Solvent Addition,25,,,,150,Add SLES and appropriate solvent; mix to homogeneity
+HH-034,v1.0,4,Final pH Check & QC,25,11.5,,,5,80,Verify pH 11.0–12.0; check foam and degreasing performance
+HH-035,v1.0,1,Water Charging,25,,,10,100,Charge demineralised water
+HH-035,v1.0,2,Citric Acid Addition,25,2.5,,,10,150,Dissolve citric acid; caution – low pH; use PPE
+HH-035,v1.0,3,Surfactant & Sequestrant Addition,25,,,,100,Add non-ionic surfactant and EDTA for enhanced chelation
+HH-035,v1.0,4,Fragrance & QC,25,2.5,,,5,80,Add fragrance rated for acid pH; verify pH 2.0–3.0
+HH-036,v1.0,1,Water Charging,25,7,,,15,80,Charge demineralised water
+HH-036,v1.0,2,SLES Addition,25,,,,200,Add SLES 70% slowly; allow foam to settle between additions
+HH-036,v1.0,3,CAPB & Glycerin Addition,25,,,,150,Incorporate CAPB and glycerin; mix to clarity
+HH-036,v1.0,4,NaCl Thickening,25,,3000,10,80,Add NaCl solution; monitor viscosity to target 2500–3500 cP
+HH-036,v1.0,5,Fragrance & Preservative,25,5.5,3000,8,60,Add fragrance oil and preservative; adjust pH to 5.5–6.0
+HH-037,v1.0,1,Water Charging,25,7,,,15,80,Charge demineralised water
+HH-037,v1.0,2,SLES Addition,25,,,,200,Add SLES 70% slowly
+HH-037,v1.0,3,CAPB & Glycerin Addition,25,,,,150,Incorporate CAPB and glycerin; mix to clarity
+HH-037,v1.0,4,NaCl Thickening,25,,3000,10,80,Add NaCl solution; monitor viscosity
+HH-037,v1.0,5,Fragrance & Preservative,25,5.5,3000,8,60,Add fragrance oil and preservative; adjust pH to 5.5–6.0
+HH-038,v1.0,1,Water Charging,25,7,,,10,60,Charge demineralised water into clean SS vessel
+HH-038,v1.0,2,IPA Addition,25,,,,100,Add isopropyl alcohol slowly; ensure ventilation; flammable
+HH-038,v1.0,3,Non-ionic Surfactant Addition,25,,,,100,Add surfactant to prevent streaking; mix to clear solution
+HH-038,v1.0,4,QC & Transfer,25,7.0,,,5,60,Verify clarity and pH 6.5–7.5; transfer to filling at low shear
+HH-039,v1.0,1,Water Charging,25,7,,,10,60,Charge demineralised water
+HH-039,v1.0,2,IPA Addition,25,,,,100,Add IPA slowly under ventilation
+HH-039,v1.0,3,Non-ionic Surfactant Addition,25,,,,100,Add surfactant; mix to clear solution
+HH-039,v1.0,4,QC & Transfer,25,7.0,,,5,60,Verify clarity and pH; transfer to filling
+HH-040,v1.0,1,Water Charging,25,7,,,10,80,Charge demineralised water
+HH-040,v1.0,2,Surfactant & Disinfectant Addition,25,7.0,,,15,150,Add SLES/APG and quaternary ammonium compound; mix to clear
+HH-040,v1.0,3,Fragrance & Builder Addition,25,,,,100,Incorporate fragrance oil and sodium gluconate
+HH-040,v1.0,4,pH Adjustment & QC,25,7.0,,,5,80,Adjust pH to 6.8–7.5; neutral for all floor types
+HH-041,v1.0,1,Water Charging,25,7,,,10,80,Charge demineralised water
+HH-041,v1.0,2,Surfactant & Disinfectant Addition,25,7.0,,,15,150,Add SLES/APG and QUAT compound; mix to clear
+HH-041,v1.0,3,Fragrance Addition,25,,,,100,Incorporate fragrance oil
+HH-041,v1.0,4,pH Adjustment & QC,25,7.0,,,5,80,Adjust pH to 6.8–7.5; neutral for all floor types
+HH-042,v1.0,1,Water Charging,25,,,10,80,Charge demineralised water
+HH-042,v1.0,2,HEC Thickener Dispersion,25,,8000,20,200,Disperse hydroxyethyl cellulose slowly; avoid dry lumps
+HH-042,v1.0,3,Acid & Active Addition,25,1.5,,,10,100,Add HCl or citric acid; incorporate QUAT actives
+HH-042,v1.0,4,Fragrance & Colour,25,1.8,8000,8,60,Add acid-stable fragrance and colour; verify gel viscosity
+HH-043,v1.0,1,Water Charging,25,,,10,80,Charge demineralised water
+HH-043,v1.0,2,HEC Thickener Dispersion,25,,8000,20,200,Disperse HEC slowly to avoid lumps
+HH-043,v1.0,3,Acid & Active Addition,25,1.5,,,10,100,Add acid actives; incorporate QUAT
+HH-043,v1.0,4,Fragrance & Colour,25,1.8,8000,8,60,Add acid-stable fragrance and colour; verify viscosity
+HH-044,v1.0,1,Water Phase Preparation,25,,,10,80,Charge demineralised water and dissolve preservative
+HH-044,v1.0,2,Calcium Carbonate Addition,25,,,15,150,Add CaCO3 powder slowly with high-shear mixing to prevent settling
+HH-044,v1.0,3,Surfactant Incorporation,25,,,,120,Add SLES and non-ionic surfactant; mix until uniform
+HH-044,v1.0,4,Fragrance & pH Adjustment,25,9.0,,,10,100,Add fragrance; adjust pH to 8.5–9.5
+HH-044,v1.0,5,Viscosity Check & Transfer,25,9.0,15000,5,60,Verify viscosity 12000–18000 cP; transfer to filling
+HH-045,v1.0,1,Water Charging,25,7,,,10,80,Charge demineralised water
+HH-045,v1.0,2,SLES & CAPB Addition,25,,,,200,Add surfactants; mix to clear
+HH-045,v1.0,3,Enzyme Dosing,30,,,,100,Add protease and amylase enzymes at ≤30 °C to preserve activity
+HH-045,v1.0,4,pH Adjustment,30,7.5,,,5,80,Buffer pH to 7.0–8.0 for enzyme activity
+HH-045,v1.0,5,Fragrance & Preservative,30,7.5,,8,60,Add fragrance and enzyme-compatible preservative
+HH-046,v1.0,1,Water Charging,25,7,,,10,80,Charge demineralised water
+HH-046,v1.0,2,SLES & CAPB Addition,25,,,,200,Add surfactants; mix to clear
+HH-046,v1.0,3,Enzyme Dosing,30,,,,100,Add protease and amylase at ≤30 °C
+HH-046,v1.0,4,pH Adjustment,30,7.5,,,5,80,Buffer pH to 7.0–8.0 for enzyme activity
+HH-046,v1.0,5,Fragrance & Preservative,30,7.5,,8,60,Add fragrance and enzyme-compatible preservative
+HH-047,v1.0,1,Water Charging,25,7,,,10,80,Charge demineralised water
+HH-047,v1.0,2,QUAT Active Addition,25,,,,150,Add benzalkonium chloride solution; mix to homogeneity
+HH-047,v1.0,3,pH Adjustment,25,7.0,,,5,100,Adjust pH to 6.5–7.5 for optimal QUAT efficacy
+HH-047,v1.0,4,Fragrance & QC,25,7.0,,8,80,Add fragrance; verify QUAT level by titration; check clarity
+HH-048,v1.0,1,Water Charging,25,,,10,80,Charge demineralised water
+HH-048,v1.0,2,Acid Addition,25,2.0,,,10,150,Add citric acid and surfactant-grade HCl; use PPE
+HH-048,v1.0,3,Surfactant Addition,25,,,,100,Add non-ionic surfactant and wetting agent
+HH-048,v1.0,4,Fragrance & QC,25,2.0,,,5,80,Add acid-stable fragrance; verify pH 1.5–2.5
+HH-049,v1.0,1,Water Charging,25,,,10,80,Charge demineralised water
+HH-049,v1.0,2,Acid Addition,25,2.0,,,10,150,Add citric acid; use PPE; acid-resistant vessel required
+HH-049,v1.0,3,Surfactant Addition,25,,,,100,Add non-ionic surfactant
+HH-049,v1.0,4,Fragrance & QC,25,2.0,,,5,80,Add acid-stable fragrance; verify pH
+HH-050,v1.0,1,Fragrance Concentrate Premix,25,,,5,60,Weigh fragrance oils and solubiliser into clean premix tank
+HH-050,v1.0,2,Solubiliser Addition,25,,,10,100,Add PEG-40 hydrogenated castor oil; mix to clear solution
+HH-050,v1.0,3,Water Addition,25,,,15,80,Slowly add demineralised water; maintain clarity
+HH-050,v1.0,4,QC & Transfer,25,7.0,,,5,60,Verify clarity, pH and fragrance intensity; transfer to filling
+HH-051,v1.0,1,Water Charging,25,7,,,10,80,Charge demineralised water
+HH-051,v1.0,2,SLES Addition,25,,,,200,Add SLES 70% slowly with agitation
+HH-051,v1.0,3,CAPB & Gloss Additive,25,,,,150,Add CAPB and carnauba wax emulsion for shine effect
+HH-051,v1.0,4,pH Adjustment & QC,25,5.5,,,5,80,Adjust pH to 5.0–6.0; verify foam and gloss performance
+HH-052,v1.0,1,Water Charging,25,7,,,10,80,Charge demineralised water
+HH-052,v1.0,2,SLES Addition,25,,,,200,Add SLES 70% slowly
+HH-052,v1.0,3,CAPB & Gloss Additive,25,,,,150,Add CAPB and carnauba wax emulsion
+HH-052,v1.0,4,pH Adjustment & QC,25,5.5,,,5,80,Adjust pH to 5.0–6.0; verify foam and gloss
+HH-053,v1.0,1,Water Charging,25,,,10,80,Charge demineralised water
+HH-053,v1.0,2,IPA & Surfactant Addition,25,,,,150,Add IPA and non-ionic surfactant; ensure ventilation
+HH-053,v1.0,3,pH Adjustment,25,7.5,,,5,100,Adjust pH to 7.0–8.0 with citric acid or NaOH
+HH-053,v1.0,4,Fragrance & QC,25,7.5,,,8,80,Add mild fragrance; verify clarity and pH
+HH-054,v1.0,1,Water Charging,25,,,10,80,Charge demineralised water
+HH-054,v1.0,2,BZK/QUAT Active Addition,25,,,,150,Add benzalkonium chloride at specified concentration; mix well
+HH-054,v1.0,3,pH Adjustment & QC,25,7.0,,,5,80,Adjust pH to 6.5–7.5; verify active concentration by titration
+HH-055,v1.0,1,Water Charging,25,,,10,80,Charge demineralised water into large-format vessel
+HH-055,v1.0,2,BZK/QUAT Active Addition,25,,,,150,Add BZK concentrate; mix to homogeneity
+HH-055,v1.0,3,pH Adjustment & QC,25,7.0,,,5,80,Adjust pH to 6.5–7.5; QC sample before drum filling
+HH-056,v1.0,1,Water Charging,25,,,10,80,Charge demineralised water
+HH-056,v1.0,2,BZK Active Addition,25,,,,150,Add BZK at alcohol-free hand rub concentration; mix well
+HH-056,v1.0,3,Glycerin & Humectant Addition,25,,,,100,Incorporate glycerin and skin conditioner
+HH-056,v1.0,4,pH Adjustment & QC,25,5.5,,,5,80,Adjust pH to 5.0–6.0; check skin feel and active level
+HH-057,v1.0,1,Water Charging,25,,,10,80,Charge demineralised water into drum-scale vessel
+HH-057,v1.0,2,BZK Active Addition,25,,,,150,Add BZK at hand rub concentration
+HH-057,v1.0,3,Glycerin & Humectant Addition,25,,,,100,Incorporate glycerin
+HH-057,v1.0,4,pH Adjustment & QC,25,5.5,,,5,80,Adjust pH 5.0–6.0; QC before drum filling
+HH-058,v1.0,1,Water Charging,25,,,10,80,Charge demineralised water
+HH-058,v1.0,2,QUAT Active Addition,25,,,,150,Add quaternary ammonium laundry sanitizer active; mix to clear
+HH-058,v1.0,3,Fragrance Addition,25,,,,100,Incorporate fragrance oil compatible with wash conditions
+HH-058,v1.0,4,pH Adjustment & QC,25,5.5,,,5,80,Adjust pH to 5.0–6.0; check QUAT level and fragrance intensity
+HH-059,v1.0,1,Water Charging,25,,,10,80,Charge demineralised water into large vessel
+HH-059,v1.0,2,QUAT Active Addition,25,,,,150,Add QUAT laundry sanitizer active; mix to homogeneity
+HH-059,v1.0,3,Fragrance Addition,25,,,,100,Incorporate fragrance oil
+HH-059,v1.0,4,pH Adjustment & QC,25,5.5,,,5,80,Adjust pH; QC sample before drum filling
+HH-060,v1.0,1,QUAT Impregnation Solution Prep,25,7.0,,,15,150,Prepare BZK/QUAT solution in demineralised water; check active level
+HH-060,v1.0,2,Spunlace Substrate Impregnation,25,,,5,30,Feed substrate roll through impregnation bath at controlled saturation ratio
+HH-060,v1.0,3,Folding & Stacking,25,,,,,Machine-set fold pattern; stack 64 wipes per pack
+HH-060,v1.0,4,Packaging & Sealing,25,,,,, Heat-seal pack; verify seal integrity; label and date-code
+HH-061,v1.0,1,QUAT Impregnation Solution Prep,25,7.0,,,15,150,Prepare BZK/QUAT solution; check active level
+HH-061,v1.0,2,Spunlace Substrate Impregnation,25,,,5,30,Feed substrate through impregnation bath; 100-wipe saturation ratio
+HH-061,v1.0,3,Folding & Stacking,25,,,,,Stack 100 wipes per pack
+HH-061,v1.0,4,Packaging & Sealing,25,,,,, Heat-seal and label; date code
+HH-062,v1.0,1,Water Charging,20,,,10,60,Charge cold demineralised water into industrial vessel
+HH-062,v1.0,2,High-Strength NaOCl Addition,20,,,10,80,Pump industrial-grade NaOCl at controlled rate; splash guard required
+HH-062,v1.0,3,pH Adjustment & QC,20,12.5,,,5,50,Verify pH 12.0–12.8 and available chlorine 12% by titration
+HH-063,v1.0,1,Water Phase Heating,60,,,20,100,Heat demineralised water to 60 °C in industrial vessel
+HH-063,v1.0,2,Industrial Cationic Softener Addition,55,,,20,200,Add industrial-grade ester quat with vigorous agitation
+HH-063,v1.0,3,Cooling & Emulsification,35,,,15,150,Cool to 35 °C; observe viscosity build
+HH-063,v1.0,4,pH Adjustment & QC,30,3.5,800,5,60,Adjust pH 3.5–4.5; QC sample before drum filling
+HH-064,v1.0,1,Water Charging,25,7,,,50,Charge demineralised water
+HH-064,v1.0,2,SLES Addition & Dispersion,25,,,,200,Add SLES 70% paste; industrial quantity – controlled feed rate
+HH-064,v1.0,3,CAPB Addition,25,,,,150,Incorporate CAPB; mix to clarity
+HH-064,v1.0,4,Salt Thickening,25,,2000,10,100,Add NaCl solution to achieve viscosity target
+HH-064,v1.0,5,QC & Drum Filling,25,6.8,2500,5,80,Verify pH and viscosity; fill 20 L drums
+HH-065,v1.0,1,Water Charging,25,,,10,80,Charge demineralised water into industrial mixing tank
+HH-065,v1.0,2,QUAT Broad-Spectrum Active Addition,25,,,,150,Add QUAT concentrate (DDAC/BZK blend); mix to homogeneity
+HH-065,v1.0,3,pH Adjustment,25,7.0,,,5,100,Adjust pH to 6.5–7.5 for broad-spectrum efficacy
+HH-065,v1.0,4,QC & Drum Filling,25,7.0,,,5,80,Titrate QUAT level; approve batch; fill 20 L drums
+PC-001,v1.0,1,Humectant Premix,25,,,10,30,Pre-blend glycerin and sorbitol in premix vessel
+PC-001,v1.0,2,Calcium Carbonate Abrasive Addition,25,,,20,40,Add CaCO3 slowly to humectant base; high viscosity mix
+PC-001,v1.0,3,Binder & Thickener Incorporation,25,,80000,15,30,Add CMC or carrageenan; mix to smooth paste – low RPM critical
+PC-001,v1.0,4,Fluoride & Preservative Addition,25,,,,20,Add sodium fluoride and preservative; mix thoroughly at low shear
+PC-001,v1.0,5,Whitening Agent & Flavour,25,7.0,80000,10,20,Add hydrogen peroxide source or Perlite; incorporate mint flavour
+PC-002,v1.0,1,Water Charging,25,7,,,50,Charge demineralised water
+PC-002,v1.0,2,SLES Addition,25,,,,200,Add SLES 70% paste; mix to full dissolution
+PC-002,v1.0,3,CAPB & Panthenol Addition,25,,,,150,Incorporate CAPB and vitamin B5 (panthenol)
+PC-002,v1.0,4,NaCl Thickening,25,,4000,10,80,Add NaCl to reach viscosity 3500–4500 cP
+PC-002,v1.0,5,Fragrance & Preservative,25,5.5,4000,8,60,Add hair fragrance and preservative; pH 5.0–6.0
+PC-003,v1.0,1,Water Charging,25,7,,,50,Charge demineralised water
+PC-003,v1.0,2,SLES Addition,25,,,,200,Add SLES 70% slowly
+PC-003,v1.0,3,CAPB & Panthenol Addition,25,,,,150,Incorporate CAPB and panthenol
+PC-003,v1.0,4,NaCl Thickening,25,,4000,10,80,Add NaCl; monitor viscosity
+PC-003,v1.0,5,Fragrance & Preservative,25,5.5,4000,8,60,Add fragrance and preservative; pH 5.0–6.0
+PC-004,v1.0,1,Water Charging,25,7,,,50,Charge demineralised water; baby-grade purity required
+PC-004,v1.0,2,Mild Surfactant Addition,25,,,,150,Add CAPB as primary surfactant; gentle no-tear formulation
+PC-004,v1.0,3,Glycerin & Mild Conditioner,25,,,,100,Add glycerin and polyquaternium conditioner
+PC-004,v1.0,4,pH Adjustment,25,6.5,,,5,80,Adjust pH to 6.0–7.0; tear-free range
+PC-004,v1.0,5,Baby-Safe Preservative & QC,25,6.5,2000,8,60,Add baby-grade preservative; no fragrance; final QC
+PC-005,v1.0,1,Water Charging,25,7,,,50,Charge demineralised water; baby-grade purity
+PC-005,v1.0,2,Mild CAPB Surfactant Addition,25,,,,150,Add CAPB as primary; no-tear formulation
+PC-005,v1.0,3,Glycerin & Conditioner,25,,,,100,Add glycerin and mild conditioner
+PC-005,v1.0,4,pH Adjustment,25,6.5,,,5,80,Adjust pH to 6.0–7.0
+PC-005,v1.0,5,Baby-Safe Preservative & QC,25,6.5,2000,8,60,Add baby-grade preservative; no fragrance; final QC
+PC-006,v1.0,1,Water Charging,25,7,,,10,60,Charge demineralised water
+PC-006,v1.0,2,SLES Addition,25,,,,200,Add SLES 70% slowly
+PC-006,v1.0,3,CAPB & Glycerin Addition,25,,,,150,Incorporate CAPB and glycerin for moisturizing effect
+PC-006,v1.0,4,NaCl Thickening,25,,3000,10,80,Add NaCl to target viscosity
+PC-006,v1.0,5,Fragrance & Preservative,25,5.5,3000,8,60,Add shower gel fragrance and preservative; pH 5.0–6.0
+PC-007,v1.0,1,Water Charging,25,7,,,10,60,Charge demineralised water
+PC-007,v1.0,2,SLES Addition,25,,,,200,Add SLES 70% slowly
+PC-007,v1.0,3,CAPB & Glycerin Addition,25,,,,150,Incorporate CAPB and glycerin
+PC-007,v1.0,4,NaCl Thickening,25,,3000,10,80,Add NaCl; monitor viscosity
+PC-007,v1.0,5,Fragrance & Preservative,25,5.5,3000,8,60,Add fragrance and preservative; pH 5.0–6.0
+PC-008,v1.0,1,Water Charging,25,7,,,10,60,Charge demineralised water into bulk vessel
+PC-008,v1.0,2,SLES Addition,25,,,,200,Add SLES 70% slowly; industrial quantity
+PC-008,v1.0,3,CAPB & Glycerin Addition,25,,,,150,Incorporate CAPB and glycerin
+PC-008,v1.0,4,NaCl Thickening,25,,3000,10,80,Add NaCl; monitor viscosity
+PC-008,v1.0,5,QC & Drum Filling,25,5.5,3000,5,60,pH and viscosity QC; fill 20 L drums
+PC-009,v1.0,1,Ethanol Charging,25,,,5,60,Charge pharmaceutical-grade ethanol (70%) into SS vessel; ventilation required
+PC-009,v1.0,2,Glycerin & Carbomer Addition,25,,,15,100,Add glycerin and Carbomer 940; disperse fully before neutralisation
+PC-009,v1.0,3,Triethanolamine Neutralisation,25,6.5,2000,10,60,Add TEA dropwise to pH 6.0–7.0; gel structure forms
+PC-010,v1.0,1,Water Phase Heating,75,,,20,100,Heat demineralised water to 75 °C in jacketed vessel
+PC-010,v1.0,2,Cationic Conditioner Addition,70,,,20,200,Add CETAC or BTMS-50 to hot water; mix until dissolved
+PC-010,v1.0,3,Cooling to 40 °C,40,,6000,15,150,Reduce temperature with continued agitation; viscosity develops
+PC-010,v1.0,4,Glycerin & Panthenol Addition,35,,,10,100,Incorporate glycerin and panthenol at ≤40 °C
+PC-010,v1.0,5,Fragrance & Preservative,30,4.5,6000,8,60,Add hair fragrance and preservative; pH 4.0–5.0 for conditioner
+PC-011,v1.0,1,Water Phase Heating,75,,,20,100,Heat demineralised water to 75 °C
+PC-011,v1.0,2,Cationic Conditioner Addition,70,,,20,200,Add CETAC to hot water
+PC-011,v1.0,3,Cooling to 40 °C,40,,6000,15,150,Cool with stirring; viscosity develops
+PC-011,v1.0,4,Glycerin & Panthenol Addition,35,,,10,100,Add glycerin and panthenol
+PC-011,v1.0,5,Fragrance & Preservative,30,4.5,6000,8,60,Add fragrance and preservative; pH 4.0–5.0
+PC-012,v1.0,1,Water Phase Heating,75,,,20,100,Heat demineralised water to 75 °C in bulk vessel
+PC-012,v1.0,2,Cationic Conditioner Addition,70,,,20,200,Add CETAC at industrial scale
+PC-012,v1.0,3,Cooling to 40 °C,40,,6000,15,150,Cool with continuous agitation
+PC-012,v1.0,4,Glycerin Addition,35,,,10,100,Incorporate glycerin
+PC-012,v1.0,5,QC & Drum Filling,30,4.5,6000,5,60,pH and viscosity QC; fill 20 L drums
+PC-013,v1.0,1,Humectant Premix,25,,,10,30,Pre-blend glycerin and sorbitol
+PC-013,v1.0,2,CaCO3 Abrasive Addition,25,,,20,40,Add calcium carbonate to humectant base; form smooth paste
+PC-013,v1.0,3,Binder Incorporation,25,,80000,15,30,Add CMC binder; mix to smooth toothpaste texture
+PC-013,v1.0,4,Fluoride & Preservative,25,,,,20,Add sodium fluoride and preservative at low shear
+PC-013,v1.0,5,Mint Flavour & QC,25,7.0,80000,8,20,Add mint flavour; check viscosity and fluoride content; fill tubes
+PC-014,v1.0,1,Water Charging,25,7,,,10,60,Charge demineralised water
+PC-014,v1.0,2,Mild SLES & CAPB Addition,25,,,,150,Add surfactants at low concentration for gentle facial formula
+PC-014,v1.0,3,Glycerin & Aloe Vera Addition,25,,,,100,Incorporate glycerin and aloe vera extract
+PC-014,v1.0,4,Fragrance & Preservative,25,5.5,,8,80,Add mild fragrance and preservative; adjust pH to 5.0–6.0
+PC-015,v1.0,1,Water Charging,25,7,,,10,60,Charge demineralised water
+PC-015,v1.0,2,Mild SLES & CAPB Addition,25,,,,150,Add surfactants; mild concentration for facial use
+PC-015,v1.0,3,Glycerin & Aloe Vera Addition,25,,,,100,Incorporate glycerin and aloe vera
+PC-015,v1.0,4,Fragrance & Preservative,25,5.5,,8,80,Add mild fragrance and preservative; pH 5.0–6.0
+PC-016,v1.0,1,Water Phase Preparation,75,,,10,80,Heat water phase (water + glycerin + aloe vera + preservative) to 75 °C
+PC-016,v1.0,2,Oil Phase Preparation,75,,,10,60,Melt emulsifier and oils separately to 75 °C
+PC-016,v1.0,3,Emulsification,70,,5000,20,800,Add oil phase to water phase under high-shear; stable emulsion forms
+PC-016,v1.0,4,Cooling with Agitation,35,,5000,20,400,Cool to 35 °C under continued stirring; maintain emulsion stability
+PC-016,v1.0,5,Fragrance & Active Addition,30,5.5,5000,10,200,Add fragrance and skin actives at ≤35 °C; pH 5.0–6.0
+PC-017,v1.0,1,Water Phase Preparation,75,,,10,80,Heat water phase to 75 °C
+PC-017,v1.0,2,Oil Phase Preparation,75,,,10,60,Melt emulsifier and oils to 75 °C
+PC-017,v1.0,3,Emulsification,70,,5000,20,800,Add oil to water phase under high-shear
+PC-017,v1.0,4,Cooling with Agitation,35,,5000,20,400,Cool to 35 °C under stirring
+PC-017,v1.0,5,Fragrance & Active Addition,30,5.5,5000,10,200,Add fragrance and actives; pH 5.0–6.0
+PC-018,v1.0,1,Water Phase Heating,75,,,10,80,Heat water phase to 75 °C in jacketed vessel
+PC-018,v1.0,2,Stearate & Fatty Acid Addition,70,,,15,100,Add stearic acid and palm kernel oil to hot water phase; dissolve fully
+PC-018,v1.0,3,Saponification with KOH/TEA,70,8.5,,,20,80,Add potassium hydroxide or TEA to saponify fatty acids; monitor pH
+PC-018,v1.0,4,Cooling & Glycerin Addition,35,,,15,60,Cool to 35 °C; incorporate glycerin and skin emollients
+PC-018,v1.0,5,Fragrance & QC,30,8.0,,10,40,Add men's fragrance; verify foam density and pH
+PC-019,v1.0,1,Water Phase Preparation,75,,,10,80,Heat water phase with glycerin and aloe vera to 75 °C
+PC-019,v1.0,2,Oil Phase Preparation,75,,,10,60,Melt emulsifier and lightweight skin oils to 75 °C
+PC-019,v1.0,3,Emulsification,70,,3000,20,800,Add oil phase to water under high-shear; thin lotion emulsion
+PC-019,v1.0,4,Cooling,35,,3000,20,400,Cool to 35 °C under continued agitation
+PC-019,v1.0,5,Fragrance & Preservative,30,5.5,3000,10,200,Add lotion fragrance and preservative; pH 5.0–6.0
+PC-020,v1.0,1,Water Phase Preparation,75,,,10,80,Heat water phase to 75 °C
+PC-020,v1.0,2,Oil Phase Preparation,75,,,10,60,Melt emulsifier and skin oils to 75 °C
+PC-020,v1.0,3,Emulsification,70,,3000,20,800,Add oil to water under high-shear
+PC-020,v1.0,4,Cooling,35,,3000,20,400,Cool to 35 °C under agitation
+PC-020,v1.0,5,Fragrance & Preservative,30,5.5,3000,10,200,Add fragrance and preservative; pH 5.0–6.0
+PC-021,v1.0,1,CHG Solution Preparation,25,6.0,,,15,150,Prepare chlorhexidine gluconate 0.5% aqueous solution; verify concentration
+PC-021,v1.0,2,Substrate Impregnation,25,,,5,30,Saturate spunlace substrate at target wet weight ratio (350%)
+PC-021,v1.0,3,Folding & Stacking,25,,,,,Stack 50 wipes per pack; maintain sterile-area conditions
+PC-021,v1.0,4,Packaging & Sealing,25,,,,, Heat-seal foil pouch; verify seal; apply lot number and expiry
+PC-022,v1.0,1,CHG Solution Preparation,25,6.0,,,15,150,Prepare CHG 0.5% solution; verify active concentration
+PC-022,v1.0,2,Substrate Impregnation,25,,,5,30,Saturate spunlace at target wet weight ratio (350%)
+PC-022,v1.0,3,Folding & Stacking,25,,,,,Stack 100 wipes per pack
+PC-022,v1.0,4,Packaging & Sealing,25,,,,, Heat-seal pouch; verify seal; label and date-code
+PC-023,v1.0,1,Impregnation Solution Prep,25,7.0,,,15,150,Prepare mildly preserved aqueous solution for flushable wipes
+PC-023,v1.0,2,Biodegradable Substrate Impregnation,25,,,5,30,Impregnate viscose substrate; confirm flushability compliant with GD4
+PC-023,v1.0,3,Folding & Stacking,25,,,,,Stack 50 wipes per pack
+PC-023,v1.0,4,Packaging & Sealing,25,,,,, Seal in resealable pack; verify GD4 flushability compliance
+PC-024,v1.0,1,Impregnation Solution Prep,25,7.0,,,15,150,Prepare preserved aqueous solution
+PC-024,v1.0,2,Biodegradable Substrate Impregnation,25,,,5,30,Impregnate viscose substrate; 80-wipe saturation ratio
+PC-024,v1.0,3,Folding & Stacking,25,,,,,Stack 80 wipes per pack
+PC-024,v1.0,4,Packaging & Sealing,25,,,,, Seal in resealable pack; verify flushability
+PC-025,v1.0,1,Baby Impregnation Solution Prep,25,5.5,,,15,100,Prepare alcohol-free aloe vera solution with baby-safe preservative
+PC-025,v1.0,2,Ultra-Soft Substrate Impregnation,25,,,5,20,Saturate ultra-soft spunlace at gentle saturation ratio (400%)
+PC-025,v1.0,3,Folding & Stacking,25,,,,,Stack 48 wipes per pack; QC for softness and wetness
+PC-025,v1.0,4,Packaging & Sealing,25,,,,, Heat-seal resealable pack; apply lot number and expiry; allergen check
+PC-026,v1.0,1,Baby Impregnation Solution Prep,25,5.5,,,15,100,Prepare alcohol-free aloe vera solution with baby-safe preservative
+PC-026,v1.0,2,Ultra-Soft Substrate Impregnation,25,,,5,20,Saturate ultra-soft spunlace; 72-wipe saturation ratio
+PC-026,v1.0,3,Folding & Stacking,25,,,,,Stack 72 wipes per pack; QC for softness and wetness
+PC-026,v1.0,4,Packaging & Sealing,25,,,,, Heat-seal resealable pack; apply lot number and expiry; allergen check

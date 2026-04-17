@@ -1,16 +1,16 @@
 code,name,contact_person,email,phone,address,city,country,tax_id,payment_terms_days,is_active,preferred_payment_method,mpesa_phone_number
-SUP001,ChemSource International,Ali Yilmaz,ali@chemsource.com,+905321000001,Organize Sanayi Bolgesi Blok 4,Istanbul,Turkey,TR1234567890,30,true,bank,
-SUP002,PolyPack Containers Ltd,David Omondi,david@polypack.co.ke,+254711002001,Industrial Area Block 12,Nairobi,Kenya,A100234567B,45,true,MPESA,+254711002001
-SUP003,Solvay Chemicals,Ibrahim Celik,ibrahim@solvay-local.com,+905332000003,Kimya Vadisi,Kocaeli,Turkey,TR2345678901,60,true,bank,
-SUP004,Aromatic Fragrances Ltd,Grace Njeri,grace@aromaticfrag.co.ke,+254722002004,Westlands,Nairobi,Kenya,A200345678C,30,true,mpesa,+254722002004
-SUP005,Novozyme Biotech Agents,Samuel Mwenda,samuel@novozyme-ea.com,+254733002005,Upper Hill,Nairobi,Kenya,A300456789D,45,true,bank,
-SUP006,FlexiPack Films Co.,Fatima Hassan,fatima@flexipack.com,+905343000006,Ambalaj Sanayi Bolgesi,Bursa,Turkey,TR3456789012,30,true,bank,
-SUP007,QAT Specialty Chemicals,Peter Kimani,peter@qatchem.co.ke,+254700002007,Baba Dogo Rd,Nairobi,Kenya,A400567890E,45,true,mpesa,+254700002007
-SUP008,NonWoven Textiles EA,Mary Wangari,mary@nonwoventea.co.ke,+254711002008,Athi River EPZ,Nairobi,Kenya,A500678901F,30,true,bank,
-SUP009,PrintLabel Solutions,Kevin Mutua,kevin@printlabel.co.ke,+254722002009,Enterprise Road,Nairobi,Kenya,A600789012G,21,true,mpesa,+254722002009
-SUP010,KraftBox Cartons Ltd,Amina Oduya,amina@kraftbox.co.ke,+254733002010,Industrial Area,Mombasa,Kenya,A700890123H,30,true,bank,
-SUP011,Croda Specialty Chem,Mehmet Arslan,mehmet@croda-local.com,+905354000011,Kimya Park,Gebze,Turkey,TR4567890123,45,true,bank,
-SUP012,Chlor-Alkali Kenya Ltd,Rose Adhiambo,rose@chloralkali.co.ke,+254700002012,Athi River Ind.,Nairobi,Kenya,A800901234I,14,true,mpesa,+254700002012
-SUP013,AluminTube Packaging,Yusuf Demir,yusuf@alumintube.com,+905365000013,Metal Sanayi,Ankara,Turkey,TR5678901234,45,true,bank,
-SUP014,Jungbunzlauer EA,Caroline Koech,caroline@jblea.co.ke,+254711002014,Upperhill,Nairobi,Kenya,A900012345J,30,true,bank,
-SUP015,IsoAlcohol Distributors,Hassan Wekesa,hassan@isoalc.co.ke,+254722002015,Mombasa Road,Nairobi,Kenya,A001123456K,30,true,mpesa,+254722002015
+SUP001,ChemSource International,Ali Yilmaz,ali@chemsource.com,9.05321E+11,Organize Sanayi Bolgesi Blok 4,Istanbul,Turkey,TR1234567890,30,TRUE,bank,
+SUP002,PolyPack Containers Ltd,David Omondi,david@polypack.co.ke,2.54711E+11,Industrial Area Block 12,Nairobi,Kenya,A100234567B,45,TRUE,mpesa,2.54711E+11
+SUP003,Solvay Chemicals,Ibrahim Celik,ibrahim@solvay-local.com,9.05332E+11,Kimya Vadisi,Kocaeli,Turkey,TR2345678901,60,TRUE,bank,
+SUP004,Aromatic Fragrances Ltd,Grace Njeri,grace@aromaticfrag.co.ke,2.54722E+11,Westlands,Nairobi,Kenya,A200345678C,30,TRUE,mpesa,2.54722E+11
+SUP005,Novozyme Biotech Agents,Samuel Mwenda,samuel@novozyme-ea.com,2.54733E+11,Upper Hill,Nairobi,Kenya,A300456789D,45,TRUE,bank,
+SUP006,FlexiPack Films Co.,Fatima Hassan,fatima@flexipack.com,9.05343E+11,Ambalaj Sanayi Bolgesi,Bursa,Turkey,TR3456789012,30,TRUE,bank,
+SUP007,QAT Specialty Chemicals,Peter Kimani,peter@qatchem.co.ke,2.547E+11,Baba Dogo Rd,Nairobi,Kenya,A400567890E,45,TRUE,mpesa,2.547E+11
+SUP008,NonWoven Textiles EA,Mary Wangari,mary@nonwoventea.co.ke,2.54711E+11,Athi River EPZ,Nairobi,Kenya,A500678901F,30,TRUE,bank,
+SUP009,PrintLabel Solutions,Kevin Mutua,kevin@printlabel.co.ke,2.54722E+11,Enterprise Road,Nairobi,Kenya,A600789012G,21,TRUE,mpesa,2.54722E+11
+SUP010,KraftBox Cartons Ltd,Amina Oduya,amina@kraftbox.co.ke,2.54733E+11,Industrial Area,Mombasa,Kenya,A700890123H,30,TRUE,bank,
+SUP011,Croda Specialty Chem,Mehmet Arslan,mehmet@croda-local.com,9.05354E+11,Kimya Park,Gebze,Turkey,TR4567890123,45,TRUE,bank,
+SUP012,Chlor-Alkali Kenya Ltd,Rose Adhiambo,rose@chloralkali.co.ke,2.547E+11,Athi River Ind.,Nairobi,Kenya,A800901234I,14,TRUE,mpesa,2.547E+11
+SUP013,AluminTube Packaging,Yusuf Demir,yusuf@alumintube.com,9.05365E+11,Metal Sanayi,Ankara,Turkey,TR5678901234,45,TRUE,bank,
+SUP014,Jungbunzlauer EA,Caroline Koech,caroline@jblea.co.ke,2.54711E+11,Upperhill,Nairobi,Kenya,A900012345J,30,TRUE,bank,
+SUP015,IsoAlcohol Distributors,Hassan Wekesa,hassan@isoalc.co.ke,2.54722E+11,Mombasa Road,Nairobi,Kenya,A001123456K,30,TRUE,mpesa,2.54722E+11

@@ -6,7 +6,8 @@ from app.api.v1.endpoints import (
     maintenance, logistics, tax_regulatory, dashboard, integrations,
     distributors, field_sales, delivery, returns_mgmt, pricing,
     hr, documents, analytics, bulk_import, marketing, ai,
-    production_advanced,
+    production_advanced, production_costing, production_ai, utilities, utility_management, electricity,
+    water, soft_water, steam, compressor, solar, chemical_treatment,
 )
 
 api_router = APIRouter()
@@ -54,3 +55,25 @@ api_router.include_router(marketing.router, prefix="/marketing", tags=["marketin
 api_router.include_router(ai.router, prefix="/ai", tags=["ai"])
 # ── Advanced Production Module ────────────────────────────────────────────────
 api_router.include_router(production_advanced.router, prefix="/production-adv", tags=["production-advanced"])
+# ── Production Costing Engine ─────────────────────────────────────────────────
+api_router.include_router(production_costing.router, prefix="/production-cost", tags=["production-costing"])
+# ── Production AI Intelligence ────────────────────────────────────────────────
+api_router.include_router(production_ai.router, prefix="/production-ai", tags=["production-ai"])
+# ── Utilities ─────────────────────────────────────────────────────────────────
+api_router.include_router(utilities.router, prefix="/utilities", tags=["utilities"])
+# ── Utility Management (factory utility infrastructure) ───────────────────────
+api_router.include_router(utility_management.router, prefix="/utility-management", tags=["utility-management"])
+# ── Electricity Management ────────────────────────────────────────────────────
+api_router.include_router(electricity.router, prefix="/electricity", tags=["electricity"])
+# ── Water Management ──────────────────────────────────────────────────────────
+api_router.include_router(water.router, prefix="/water", tags=["water"])
+# ── Soft Water Management ─────────────────────────────────────────────────────
+api_router.include_router(soft_water.router, prefix="/soft-water", tags=["soft-water"])
+# ── Steam & Boiler Management ──────────────────────────────────────────────────
+api_router.include_router(steam.router, prefix="/steam", tags=["steam"])
+# ── Compressor & Compressed Air Management ────────────────────────────────────
+api_router.include_router(compressor.router, prefix="/compressor", tags=["compressor"])
+# ── Solar Energy Management ────────────────────────────────────────────────────
+api_router.include_router(solar.router, prefix="/solar", tags=["solar"])
+# ── Chemical Water Treatment ───────────────────────────────────────────────────
+api_router.include_router(chemical_treatment.router, prefix="/chemical-treatment", tags=["chemical-treatment"])

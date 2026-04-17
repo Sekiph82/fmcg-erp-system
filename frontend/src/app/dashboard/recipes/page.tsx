@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { ToastContainer } from "@/components/ui/Toast";
 import { useToast } from "@/hooks/useToast";
-import { ImportModal } from "@/components/import/ImportModal";
+import { RecipeBulkImportModal } from "@/components/import/RecipeBulkImportModal";
 
 const STATUS_FILTER_OPTIONS = [
   { value: "", label: "All Statuses" },
@@ -104,8 +104,7 @@ export default function RecipesPage() {
           <p className="text-sm text-gray-500 mt-1">{recipes.length} total</p>
         </div>
         <div className="flex items-center gap-2">
-          <ImportModal
-            module="recipes"
+          <RecipeBulkImportModal
             onSuccess={() => qc.invalidateQueries({ queryKey: ["recipes"] })}
           />
           <Button onClick={() => setOpen(true)}>+ New Recipe</Button>

@@ -147,14 +147,27 @@ export const importApi = {
 // ── Module display config (for UI labels / icons) ─────────────────────────────
 
 export const MODULE_LABELS: Record<string, string> = {
-  products:        "Products",
-  materials:       "Raw Materials",
-  suppliers:       "Suppliers",
-  warehouses:      "Warehouses",
-  employees:       "Employees",
-  inventory_stock: "Inventory Stock",
-  recipes:         "Recipes / BOM",
-  qc_parameters:   "QC Parameters",
+  products:                   "Products",
+  materials:                  "Raw Materials",
+  suppliers:                  "Suppliers",
+  warehouses:                 "Warehouses",
+  employees:                  "Employees",
+  inventory_stock:            "Inventory Stock",
+  recipes:                    "Recipe Headers",
+  recipe_items:               "Recipe BOM Items",
+  recipe_steps:               "Recipe Process Steps",
+  qc_parameters:              "QC Parameters",
+  utility_asset_categories:   "Utility Asset Categories",
+  utility_assets:             "Utility Assets",
+  utility_devices:            "Utility Meters & Sensors",
+  utility_transactions:       "Utility Transactions",
+  electricity_transactions:   "Electricity Consumption Records",
+  water_transactions:         "Water Consumption Records",
+  soft_water_records:         "Soft Water Operational Records",
+  boiler_records:             "Boiler Steam Operational Records",
+  steam_transactions:         "Steam Consumption Records",
+  compressor_records:         "Compressor & Air Operational Records",
+  air_transactions:           "Compressed Air Consumption Records",
 };
 
 export const STATUS_COLORS: Record<string, string> = {

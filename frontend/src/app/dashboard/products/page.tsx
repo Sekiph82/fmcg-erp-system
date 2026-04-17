@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { productsApi, Product, ProductCreate, ProductCategory, UnitOfMeasure } from "@/lib/products";
-import { extractApiError } from "@/lib/inventory";
+import { extractApiError, extractStructuredError, ProductInUseError } from "@/lib/inventory";
+import Link from "next/link";
 import { Table } from "@/components/ui/Table";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -50,6 +51,7 @@ export default function ProductsPage() {
   const [search, setSearch] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteBlockedProduct, setDeleteBlockedProduct] = useState<Product | null>(null);
+  const [deleteBlockedRefs, setDeleteBlockedRefs] = useState<ProductInUseError["details"]["references"]>([]);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [editForm, setEditForm] = useState<Partial<ProductCreate>>({});
 
@@ -90,8 +92,18 @@ export default function ProductsPage() {
     onError: (err: unknown) => {
       const status = (err as { response?: { status?: number } })?.response?.status;
       const blocked = products.find((p) => p.id === deletingId) ?? null;
-      if (status === 500 || status === 409 || status === 422) {
+      if (status === 409) {
+        const structured = extractStructuredError(err) as ProductInUseError | null;
         setDeleteBlockedProduct(blocked);
+        setDeleteBlockedRefs(structured?.details?.references ?? []);
+        setDeletingId(null);
+      } else if (status === 403) {
+        toast("error", "Permission denied", "You do not have permission to delete products.");
+        setDeletingId(null);
+      } else if (status === 500 || status === 422) {
+        // Fallback for unexpected server errors
+        setDeleteBlockedProduct(blocked);
+        setDeleteBlockedRefs([]);
         setDeletingId(null);
       } else {
         toast("error", "Failed to delete product", extractApiError(err));
@@ -230,42 +242,66 @@ export default function ProductsPage() {
       {/* Delete Blocked — explain what must be cleared first */}
       <Modal
         open={!!deleteBlockedProduct}
-        onClose={() => setDeleteBlockedProduct(null)}
+        onClose={() => { setDeleteBlockedProduct(null); setDeleteBlockedRefs([]); }}
         title="Cannot Delete Product"
       >
         <div className="space-y-4">
           <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3">
             <p className="text-sm font-semibold text-red-800">
-              &quot;{deleteBlockedProduct?.name}&quot; ({deleteBlockedProduct?.sku}) is referenced by other records.
+              &quot;{deleteBlockedProduct?.name}&quot; ({deleteBlockedProduct?.sku}) cannot be deleted.
             </p>
             <p className="text-xs text-red-600 mt-1">
-              The database blocked this deletion to protect existing data. You must remove all linked records below before this product can be deleted.
+              This product is referenced by existing records. Remove or clear all linked records before deleting.
             </p>
           </div>
 
-          <div>
-            <p className="text-sm font-semibold text-gray-800 mb-2">Complete these steps in order:</p>
-            <ol className="space-y-2">
-              {DELETE_BLOCKERS.map((b, i) => (
-                <li key={b.module} className="flex gap-3 text-sm">
-                  <span className="flex-shrink-0 flex items-center justify-center w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 font-bold text-xs mt-0.5">
-                    {i + 1}
-                  </span>
-                  <span>
-                    <span className="font-semibold text-gray-900">{b.module}:&nbsp;</span>
-                    <span className="text-gray-600">{b.detail}</span>
-                  </span>
-                </li>
-              ))}
-            </ol>
-          </div>
+          {deleteBlockedRefs.length > 0 ? (
+            <div>
+              <p className="text-sm font-semibold text-gray-800 mb-2">Blocking dependencies:</p>
+              <ol className="space-y-2">
+                {deleteBlockedRefs.map((ref, i) => (
+                  <li key={ref.module} className="flex gap-3 text-sm">
+                    <span className="flex-shrink-0 flex items-center justify-center w-5 h-5 rounded-full bg-red-100 text-red-700 font-bold text-xs mt-0.5">
+                      {i + 1}
+                    </span>
+                    <span>
+                      <span className="font-semibold text-gray-900">{ref.module}</span>
+                      <span className="ml-1 inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">{ref.count}</span>
+                      <span className="block text-xs text-gray-500 mt-0.5">{ref.hint}</span>
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          ) : (
+            <div>
+              <p className="text-sm font-semibold text-gray-800 mb-2">Common places to check:</p>
+              <ol className="space-y-2">
+                {DELETE_BLOCKERS.map((b, i) => (
+                  <li key={b.module} className="flex gap-3 text-sm">
+                    <span className="flex-shrink-0 flex items-center justify-center w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 font-bold text-xs mt-0.5">
+                      {i + 1}
+                    </span>
+                    <span>
+                      <span className="font-semibold text-gray-900">{b.module}:&nbsp;</span>
+                      <span className="text-gray-600">{b.detail}</span>
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          )}
 
-          <div className="rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-xs text-amber-800">
-            <strong>Tip:</strong> If this product was only created for testing and has no real transactions, you can delete the records directly from the database. After all linked records are removed, try deleting this product again.
+          <div className="rounded-lg bg-gray-50 border border-gray-200 px-4 py-3 text-xs text-gray-600">
+            <p className="font-semibold mb-1">Quick navigation:</p>
+            <div className="flex flex-wrap gap-2 mt-1">
+              <Link href="/dashboard/inventory" className="text-indigo-600 hover:underline" onClick={() => setDeleteBlockedProduct(null)}>→ Inventory</Link>
+              <Link href="/dashboard/movements" className="text-indigo-600 hover:underline" onClick={() => setDeleteBlockedProduct(null)}>→ Stock Movements</Link>
+            </div>
           </div>
 
           <div className="flex justify-end pt-1">
-            <Button variant="secondary" onClick={() => setDeleteBlockedProduct(null)}>Close</Button>
+            <Button variant="secondary" onClick={() => { setDeleteBlockedProduct(null); setDeleteBlockedRefs([]); }}>Close</Button>
           </div>
         </div>
       </Modal>

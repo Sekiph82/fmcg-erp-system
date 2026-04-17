@@ -143,8 +143,24 @@ class StockSummaryRead(BaseModel):
 
 
 class MovementDetailRead(StockMovementRead):
+    material_id: Optional[uuid.UUID] = None
     product_sku: Optional[str] = None
     product_name: Optional[str] = None
     source_warehouse_name: Optional[str] = None
     destination_warehouse_name: Optional[str] = None
     created_by_username: Optional[str] = None
+
+
+# ── New operation schemas ──────────────────────────────────────────────────────
+
+class StockAdjustRequest(BaseModel):
+    """Adjust a stock record by creating a balancing ADJUSTMENT movement."""
+    new_quantity: Decimal
+    reason: str
+    reference: Optional[str] = None
+
+
+class StockMovementUpdate(BaseModel):
+    """Allowed edits on a StockMovement (notes and reference only)."""
+    reference_number: Optional[str] = None
+    notes: Optional[str] = None

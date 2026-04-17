@@ -102,6 +102,17 @@ class ProductionOrder(Base, TimestampMixin):
     created_by = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     notes = Column(Text, nullable=True)
 
+    # ── Costing (populated by production_cost_service.compute_order_cost) ─────
+    total_material_cost    = Column(Numeric(18, 4), nullable=True)
+    total_labor_cost       = Column(Numeric(18, 4), nullable=True)
+    total_machine_cost     = Column(Numeric(18, 4), nullable=True)
+    total_energy_cost      = Column(Numeric(18, 4), nullable=True)
+    total_cost             = Column(Numeric(18, 4), nullable=True)
+    cost_per_unit          = Column(Numeric(18, 6), nullable=True)
+    standard_cost_per_unit = Column(Numeric(18, 6), nullable=True)
+    cost_variance_pct      = Column(Numeric(10, 4), nullable=True)
+    costing_finalized_at   = Column(DateTime(timezone=True), nullable=True)
+
     plan_line = relationship("ProductionPlanLine", back_populates="production_orders")
     product = relationship("Product", foreign_keys=[product_id])
     recipe = relationship("Recipe")

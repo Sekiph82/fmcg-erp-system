@@ -89,11 +89,15 @@ PERMISSIONS = [
     ("inventory",   "edit",   "Edit Inventory",        "Adjust stock levels",                      False),
     ("inventory",   "delete", "Delete Inventory",      "Remove stock entries",                     False),
     ("inventory",   "export", "Export Inventory",      "Export inventory reports",                 False),
+    # Stock Movements
+    ("stock_movement", "edit",   "Edit Stock Movements",   "Edit stock movement reference/notes",  False),
+    ("stock_movement", "delete", "Delete Stock Movements", "Delete and reverse stock movements",   False),
 
     # Products & Materials
     ("products",    "view",   "View Products",         "View product catalogue",                   True),
     ("products",    "create", "Create Products",       "Add new products",                         False),
     ("products",    "edit",   "Edit Products",         "Edit product details",                     False),
+    ("products",    "delete", "Delete Products",       "Permanently delete products",              False),
     ("materials",   "view",   "View Materials",        "View raw materials",                       True),
     ("materials",   "create", "Create Materials",      "Add raw materials",                        False),
     ("materials",   "edit",   "Edit Materials",        "Edit material details",                    False),
@@ -290,6 +294,11 @@ PERMISSIONS = [
     ("inventory",              "view_channel",    "View Channel Stock",          "View e-commerce channel stock allocations",False),
     # Integrations marketing sync
     ("integrations",           "marketing_sync",  "Marketing Sync",             "Trigger marketing integration syncs",      False),
+
+    # ── Utilities ─────────────────────────────────────────────────────────────
+    ("utilities",  "view",   "View Utilities",   "View system configs, UOM conversions, number series and currencies", False),
+    ("utilities",  "edit",   "Edit Utilities",   "Edit UOM conversions and exchange rates",                           False),
+    ("utilities",  "manage", "Manage Utilities", "Full admin — create/delete system configs, number series, currencies", False),
 ]
 
 
@@ -320,11 +329,17 @@ ROLE_DEFINITIONS = {
         "permissions": "*",  # all
     },
     "admin": {
-        "description": "User and role lifecycle management",
+        "description": "User and role lifecycle management — plus destructive ERP data operations",
         "permissions": [
             "users.view", "users.create", "users.edit",
             "roles.view", "roles.create", "roles.edit",
             "audit.view", "audit.export",
+            # Admin can delete products, inventory records, and stock movements
+            "products.delete",
+            "inventory.delete",
+            "stock_movement.edit", "stock_movement.delete",
+            # Admin can manage all utilities
+            "utilities.view", "utilities.edit", "utilities.manage",
             # Admin can import users and manage import templates for user onboarding
             *_import("users"),
         ],
@@ -362,7 +377,10 @@ ROLE_DEFINITIONS = {
         "permissions": [
             "production.view", "production.create", "production.edit", "production.approve",
             "procurement.view", "procurement.create", "procurement.edit", "procurement.approve",
-            "inventory.view", "inventory.create", "inventory.edit",
+            "inventory.view", "inventory.create", "inventory.edit", "inventory.delete",
+            "stock_movement.edit", "stock_movement.delete",
+            "products.delete",
+            "utilities.view", "utilities.edit",
             "logistics.view", "logistics.create", "logistics.edit",
             "quality.view", "quality.create", "quality.approve",
             "maintenance.view", "maintenance.create", "maintenance.edit",
@@ -409,6 +427,8 @@ ROLE_DEFINITIONS = {
             "users.view", "users.create", "users.edit",
             "roles.view", "roles.create", "roles.edit",
             "audit.view", "audit.export",
+            # CTO manages system utilities (configs, UOM, number series, currencies)
+            "utilities.view", "utilities.edit", "utilities.manage",
             # Read-only visibility across all operational modules
             "production.view", "procurement.view", "inventory.view",
             "logistics.view", "quality.view", "maintenance.view",
@@ -513,9 +533,10 @@ ROLE_DEFINITIONS = {
     "warehouse_operator": {
         "description": "Warehouse and inventory operations",
         "permissions": [
-            "inventory.view", "inventory.create", "inventory.edit",
+            "inventory.view", "inventory.create", "inventory.edit", "inventory.delete",
             "warehouses.view", "wms.view", "wms.create", "wms.edit",
             "products.view", "materials.view",
+            "stock_movement.edit",
             # Import: own module only
             *_import("inventory", "warehouses", "wms"),
         ],
