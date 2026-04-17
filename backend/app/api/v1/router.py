@@ -7,7 +7,8 @@ from app.api.v1.endpoints import (
     distributors, field_sales, delivery, returns_mgmt, pricing,
     hr, documents, analytics, bulk_import, marketing, ai,
     production_advanced, production_costing, production_ai, utilities, utility_management, electricity,
-    water, soft_water, steam, compressor, solar, chemical_treatment,
+    water, soft_water, steam, compressor, solar, chemical_treatment, wastewater, machine_utility,
+    utility_billing,
 )
 
 api_router = APIRouter()
@@ -77,3 +78,9 @@ api_router.include_router(compressor.router, prefix="/compressor", tags=["compre
 api_router.include_router(solar.router, prefix="/solar", tags=["solar"])
 # ── Chemical Water Treatment ───────────────────────────────────────────────────
 api_router.include_router(chemical_treatment.router, prefix="/chemical-treatment", tags=["chemical-treatment"])
+# ── Biological / Wastewater Treatment ─────────────────────────────────────────
+api_router.include_router(wastewater.router, prefix="/wastewater", tags=["wastewater"])
+# ── Machine Utility Consumption Mapping ────────────────────────────────────────
+api_router.include_router(machine_utility.router, prefix="/machine-utility", tags=["machine-utility"])
+# ── Utility Billing, Tariffs & Cost Allocation ─────────────────────────────────
+api_router.include_router(utility_billing.router, prefix="/billing", tags=["utility-billing"])

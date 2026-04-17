@@ -148,10 +148,24 @@ class AlarmOperator(str, enum.Enum):
 
 
 class AllocationMethod(str, enum.Enum):
-    METERED       = "METERED"       # Dedicated meter reading
-    PROPORTIONAL  = "PROPORTIONAL"  # Share by production volume
-    FIXED         = "FIXED"         # Fixed rate per period
-    CALCULATED    = "CALCULATED"    # Formula / algorithm
+    METERED               = "METERED"               # Dedicated meter reading
+    PROPORTIONAL          = "PROPORTIONAL"           # Share by production volume
+    FIXED                 = "FIXED"                  # Fixed rate per period
+    CALCULATED            = "CALCULATED"             # Formula / algorithm
+    RUNTIME               = "RUNTIME"                # Pro-rata by machine runtime hours
+    STANDARD_CONSUMPTION  = "STANDARD_CONSUMPTION"   # Standard rates × actual output
+    COST_CENTER           = "COST_CENTER"            # Cost-center key assignment
+
+
+class TargetType(str, enum.Enum):
+    DEPARTMENT       = "DEPARTMENT"
+    PRODUCTION_LINE  = "PRODUCTION_LINE"
+    MACHINE          = "MACHINE"
+    PRODUCT          = "PRODUCT"
+    PRODUCTION_ORDER = "PRODUCTION_ORDER"
+    BATCH            = "BATCH"
+    SUPPORT_AREA     = "SUPPORT_AREA"
+    OVERHEAD_POOL    = "OVERHEAD_POOL"
 
 
 class BillStatus(str, enum.Enum):
@@ -160,6 +174,8 @@ class BillStatus(str, enum.Enum):
     VERIFIED = "VERIFIED"
     PAID     = "PAID"
     DISPUTED = "DISPUTED"
+    OVERDUE  = "OVERDUE"
+    VOID     = "VOID"
 
 
 class SoftenerStatus(str, enum.Enum):
@@ -465,9 +481,12 @@ class UtilityTariff(Base, TimestampMixin):
     unit          = Column(String(30), nullable=False)    # e.g. kWh, m³, kg
     currency_code = Column(String(10), nullable=False, default="USD")
     base_rate     = Column(Numeric(14, 6), nullable=False)   # $/unit (flat or first block)
+    peak_rate     = Column(Numeric(14, 6), nullable=True)    # $/unit during peak hours
+    offpeak_rate  = Column(Numeric(14, 6), nullable=True)    # $/unit during off-peak hours
     demand_rate   = Column(Numeric(14, 6), nullable=True)    # $/kW for demand tariffs
     fixed_charge  = Column(Numeric(14, 4), nullable=True)    # fixed monthly/billing charge
     tax_rate_pct  = Column(Numeric(7, 4), nullable=True)     # VAT / levy %
+    tax_rule      = Column(String(255), nullable=True)       # human-readable tax rule description
 
     is_active = Column(Boolean, nullable=False, default=True)
     notes     = Column(Text, nullable=True)
@@ -1121,9 +1140,27 @@ class WastewaterRecord(Base, TimestampMixin):
     sludge_produced_kg     = Column(Numeric(12, 3), nullable=True)
     sludge_dewatered_pct   = Column(Numeric(7, 3), nullable=True)
 
-    # Energy
+    # Energy & aeration
     power_consumed_kwh     = Column(Numeric(14, 4), nullable=True)
     aeration_runtime_hours = Column(Numeric(10, 2), nullable=True)
+    blower_power_kw        = Column(Numeric(10, 3), nullable=True)   # instantaneous blower power
+
+    # Additional process parameters
+    conductivity_us_cm     = Column(Numeric(10, 3), nullable=True)   # µS/cm
+    temperature_c          = Column(Numeric(7, 2),  nullable=True)   # process temp °C
+
+    # Chemical dosing
+    nutrient_dose_kg       = Column(Numeric(12, 4), nullable=True)   # N/P nutrient addition
+    antifoam_dose_kg       = Column(Numeric(12, 4), nullable=True)   # antifoam agent
+
+    # Sludge management
+    sludge_volume_m3       = Column(Numeric(12, 3), nullable=True)   # wet sludge volume
+    sludge_disposal_qty_kg = Column(Numeric(14, 3), nullable=True)   # qty sent for disposal
+
+    # Compliance & regulatory
+    permit_limit_ref       = Column(String(100),    nullable=True)   # permit / consent reference
+    deviation_reason       = Column(Text,           nullable=True)   # reason for limit breach
+    corrective_action      = Column(Text,           nullable=True)   # action taken
 
     compliance_status = Column(SAEnum(ComplianceStatus), nullable=False, default=ComplianceStatus.COMPLIANT, index=True)
     source_method     = Column(SAEnum(SourceMethod), nullable=False, default=SourceMethod.MANUAL)
@@ -1154,7 +1191,9 @@ class UtilityBill(Base, TimestampMixin):
     utility_type = Column(SAEnum(UtilityType), nullable=False, index=True)
 
     supplier_id    = Column(UUID(as_uuid=True), ForeignKey("suppliers.id", ondelete="SET NULL"), nullable=True)
+    provider_name  = Column(String(255), nullable=True)    # denormalized supplier name
     tariff_id      = Column(UUID(as_uuid=True), ForeignKey("utility_tariffs.id", ondelete="SET NULL"), nullable=True)
+    tariff_code    = Column(String(50), nullable=True)     # denormalized tariff code
     bill_reference = Column(String(100), nullable=True)   # supplier's own invoice number
 
     billing_period_from = Column(Date, nullable=False)
@@ -1165,17 +1204,21 @@ class UtilityBill(Base, TimestampMixin):
     # Consumption
     consumption_quantity = Column(Numeric(18, 4), nullable=True)
     consumption_unit     = Column(String(30), nullable=True)
+    unit_rate            = Column(Numeric(14, 6), nullable=True)   # effective rate applied
 
     # Charges
-    base_charge    = Column(Numeric(14, 4), nullable=True)
-    energy_charge  = Column(Numeric(14, 4), nullable=True)
-    demand_charge  = Column(Numeric(14, 4), nullable=True)
-    tax_amount     = Column(Numeric(14, 4), nullable=True)
-    total_amount   = Column(Numeric(16, 4), nullable=False)
-    currency_code  = Column(String(10), nullable=False, default="USD")
+    base_charge      = Column(Numeric(14, 4), nullable=True)
+    energy_charge    = Column(Numeric(14, 4), nullable=True)
+    demand_charge    = Column(Numeric(14, 4), nullable=True)
+    fixed_charge     = Column(Numeric(14, 4), nullable=True)
+    surcharge_amount = Column(Numeric(14, 4), nullable=True)
+    tax_amount       = Column(Numeric(14, 4), nullable=True)
+    total_amount     = Column(Numeric(16, 4), nullable=False)
+    currency_code    = Column(String(10), nullable=False, default="USD")
 
     status       = Column(SAEnum(BillStatus), nullable=False, default=BillStatus.RECEIVED, index=True)
     payment_date = Column(Date, nullable=True)
+    document_ref = Column(String(255), nullable=True)     # uploaded document reference
 
     notes         = Column(Text, nullable=True)
     verified_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
@@ -1210,7 +1253,12 @@ class UtilityCostAllocation(Base, TimestampMixin):
 
     allocation_method = Column(SAEnum(AllocationMethod), nullable=False, default=AllocationMethod.METERED)
 
-    # Cost object dimensions
+    # Generic target (structured dimension)
+    target_type = Column(SAEnum(TargetType), nullable=True, index=True)
+    target_id   = Column(String(255), nullable=True, index=True)  # flexible ref (dept code, machine_ref, etc.)
+    target_name = Column(String(255), nullable=True)              # denormalized label
+
+    # Cost object dimensions (legacy / more specific)
     department      = Column(String(100), nullable=True, index=True)
     production_line = Column(String(100), nullable=True, index=True)
     building_area   = Column(String(100), nullable=True)
@@ -1222,9 +1270,12 @@ class UtilityCostAllocation(Base, TimestampMixin):
     product_id          = Column(UUID(as_uuid=True), ForeignKey("products.id", ondelete="SET NULL"), nullable=True)
 
     # Allocation basis
-    allocated_quantity = Column(Numeric(18, 4), nullable=True)
-    quantity_unit      = Column(String(30), nullable=True)
-    production_volume_kg = Column(Numeric(18, 3), nullable=True)  # denominator for per-ton calc
+    source_cost          = Column(Numeric(16, 4), nullable=True)   # total bill/period cost before split
+    allocation_basis     = Column(Numeric(18, 4), nullable=True)   # basis value (hours, %, m², kg)
+    allocation_basis_unit = Column(String(50), nullable=True)
+    allocated_quantity   = Column(Numeric(18, 4), nullable=True)
+    quantity_unit        = Column(String(30), nullable=True)
+    production_volume_kg = Column(Numeric(18, 3), nullable=True)   # denominator for per-ton calc
 
     # Costs
     total_cost       = Column(Numeric(16, 4), nullable=False)
@@ -1237,12 +1288,17 @@ class UtilityCostAllocation(Base, TimestampMixin):
     bill_id       = Column(UUID(as_uuid=True), ForeignKey("utility_bills.id", ondelete="SET NULL"), nullable=True)
     source_method = Column(SAEnum(SourceMethod), nullable=False, default=SourceMethod.CALCULATED)
 
+    # Approval
+    is_approved   = Column(Boolean, nullable=False, default=False)
+    approved_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+
     notes         = Column(Text, nullable=True)
     created_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
 
     production_order = relationship("ProductionOrder")
     product          = relationship("Product")
     bill             = relationship("UtilityBill", back_populates="allocations")
+    approved_by      = relationship("User", foreign_keys=[approved_by_id])
     created_by       = relationship("User", foreign_keys=[created_by_id])
 
 
@@ -1313,6 +1369,9 @@ class MachineUtilityMapping(Base, TimestampMixin):
     device_id    = Column(UUID(as_uuid=True), ForeignKey("utility_devices.id", ondelete="SET NULL"), nullable=True)
     asset_id     = Column(UUID(as_uuid=True), ForeignKey("utility_assets.id", ondelete="SET NULL"), nullable=True)
 
+    # Link to WorkCenter master (UUID FK — optional for backward compatibility)
+    work_center_id = Column(UUID(as_uuid=True), ForeignKey("work_centers.id", ondelete="SET NULL"), nullable=True, index=True)
+
     # If the machine shares a meter with others, this is its allocation share
     allocation_pct = Column(Numeric(7, 4), nullable=True)    # e.g. 35.5 → 35.5%
 
@@ -1325,6 +1384,93 @@ class MachineUtilityMapping(Base, TimestampMixin):
 
     created_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
 
-    device     = relationship("UtilityDevice", back_populates="machine_mappings")
-    asset      = relationship("UtilityAsset")
-    created_by = relationship("User", foreign_keys=[created_by_id])
+    device      = relationship("UtilityDevice", back_populates="machine_mappings")
+    asset       = relationship("UtilityAsset")
+    work_center = relationship("WorkCenter", foreign_keys=[work_center_id])
+    created_by  = relationship("User", foreign_keys=[created_by_id])
+    consumption_records = relationship("MachineConsumptionRecord", back_populates="mapping", cascade="all, delete-orphan")
+
+
+class MachineConsumptionRecord(Base, TimestampMixin):
+    """
+    Operational consumption record: actual utility usage per machine per date/shift.
+    Links to the MachineUtilityMapping master for config, and optionally to a
+    production order and batch for downstream cost attribution.
+
+    Downstream uses:
+      - machine electricity per runtime hour
+      - machine water/air per batch
+      - machine standby consumption
+      - machine utility cost per batch / product
+    """
+    __tablename__ = "machine_consumption_records"
+    __table_args__ = (
+        Index("ix_mach_cons_wc_date",   "work_center_id", "record_date"),
+        Index("ix_mach_cons_util_date",  "utility_type",  "record_date"),
+        Index("ix_mach_cons_dept_line",  "department",    "production_line"),
+    )
+
+    id        = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    record_no = Column(String(50), nullable=False, unique=True, index=True)
+
+    # Config reference (optional)
+    mapping_id = Column(UUID(as_uuid=True), ForeignKey("machine_utility_mappings.id", ondelete="SET NULL"), nullable=True, index=True)
+
+    # Machine identity (denormalized for fast queries without join)
+    work_center_id = Column(UUID(as_uuid=True), ForeignKey("work_centers.id", ondelete="RESTRICT"), nullable=False, index=True)
+    machine_ref    = Column(String(100), nullable=False, index=True)   # work_center_id code (denormalized)
+    machine_name   = Column(String(255), nullable=True)
+
+    # Utility
+    utility_type = Column(SAEnum(UtilityType), nullable=False, index=True)
+    device_id    = Column(UUID(as_uuid=True), ForeignKey("utility_devices.id", ondelete="SET NULL"), nullable=True)
+
+    # Period
+    record_date     = Column(Date, nullable=False, index=True)
+    shift_ref       = Column(String(50), nullable=True, index=True)
+    department      = Column(String(100), nullable=True, index=True)
+    production_line = Column(String(100), nullable=True, index=True)
+
+    # Source classification
+    source_method = Column(SAEnum(SourceMethod), nullable=False, default=SourceMethod.MANUAL)
+    is_estimated  = Column(Boolean, nullable=False, default=False)
+    is_standby    = Column(Boolean, nullable=False, default=False)   # standby / idle consumption flag
+
+    # Runtime (for per-hour KPIs)
+    runtime_hours = Column(Numeric(10, 3), nullable=True)
+
+    # Standard / nominal rate (from mapping or manually entered)
+    nominal_rate = Column(Numeric(14, 4), nullable=True)   # e.g. 15 kWh/h
+    nominal_unit = Column(String(30), nullable=True)       # e.g. kWh/h, m³/h, Nm³/h, kg/h
+
+    # Actual measured / estimated consumption
+    actual_consumption = Column(Numeric(14, 4), nullable=True)
+    actual_unit        = Column(String(30), nullable=True)    # e.g. kWh, m³, Nm³, kg
+
+    # Variance vs standard (computed or entered)
+    variance_pct = Column(Numeric(8, 3), nullable=True)   # (actual − expected) / expected × 100
+
+    # Production linkage (optional)
+    production_order_id = Column(UUID(as_uuid=True), ForeignKey("production_orders.id", ondelete="SET NULL"), nullable=True, index=True)
+    batch_no            = Column(String(100), nullable=True, index=True)   # denormalized batch code
+    batch_lot_id        = Column(UUID(as_uuid=True), ForeignKey("batch_lots.id", ondelete="SET NULL"), nullable=True, index=True)
+
+    # Cost attribution
+    cost_rate     = Column(Numeric(14, 6), nullable=True)   # cost per unit (e.g. $/kWh)
+    total_cost    = Column(Numeric(14, 4), nullable=True)   # actual_consumption × cost_rate
+    currency_code = Column(String(3),     nullable=True, default="USD")
+
+    # Quality / anomaly
+    is_anomaly   = Column(Boolean, nullable=False, default=False)
+    anomaly_note = Column(Text, nullable=True)
+    notes        = Column(Text, nullable=True)   # remarks
+
+    entered_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+
+    # Relationships
+    mapping          = relationship("MachineUtilityMapping", back_populates="consumption_records")
+    work_center      = relationship("WorkCenter", foreign_keys=[work_center_id])
+    device           = relationship("UtilityDevice", foreign_keys=[device_id])
+    production_order = relationship("ProductionOrder", foreign_keys=[production_order_id])
+    batch_lot        = relationship("BatchLot", foreign_keys=[batch_lot_id])
+    entered_by       = relationship("User", foreign_keys=[entered_by_id])

@@ -1,15 +1,15 @@
-# ─────────────────────────────────────────────────────────────────────────────
+# =============================================================================
 # git-auto-sync.ps1
 # Automatically stages, commits, and pushes all local changes to GitHub.
 # Designed to be run by Windows Task Scheduler on a schedule.
-# ─────────────────────────────────────────────────────────────────────────────
+# =============================================================================
 
 $RepoPath = "C:\Users\sekip\Desktop\fmcg-erp-system-main"
 $LogFile  = "$RepoPath\git-sync.log"
 $Branch   = "main"
 $Remote   = "origin"
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
+# -- Helpers ------------------------------------------------------------------
 
 function Write-Log {
     param([string]$Message, [string]$Level = "INFO")
@@ -25,9 +25,9 @@ function Invoke-Git {
     return $result
 }
 
-# ── Main ──────────────────────────────────────────────────────────────────────
+# -- Main ---------------------------------------------------------------------
 
-Write-Log "───────────────────────────────────────────"
+Write-Log "-------------------------------------------"
 Write-Log "Auto-sync started"
 
 # Go to repo
@@ -35,7 +35,7 @@ Set-Location $RepoPath
 
 # Check git is available
 if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
-    Write-Log "git not found in PATH — aborting" "ERROR"
+    Write-Log "git not found in PATH - aborting" "ERROR"
     exit 1
 }
 
@@ -47,18 +47,18 @@ Write-Log "Fetch: $fetchOut"
 # Check for upstream changes we don't have
 $behind = Invoke-Git "rev-list", "--count", "HEAD..${Remote}/${Branch}"
 if ($behind -gt 0) {
-    Write-Log "Local branch is $behind commit(s) behind remote — pulling first..."
+    Write-Log "Local branch is $behind commit(s) behind remote - pulling first..."
     $pullOut = Invoke-Git "pull", $Remote, $Branch, "--ff-only"
     Write-Log "Pull: $pullOut"
 }
 
-# Stage everything (respects .gitignore — .claude/ and git-sync.log are excluded)
+# Stage everything (respects .gitignore - .claude/ and git-sync.log are excluded)
 $stageOut = Invoke-Git "add", "-A"
 
 # Check if there is anything to commit
 $statusOut = Invoke-Git "status", "--porcelain"
 if ([string]::IsNullOrWhiteSpace($statusOut)) {
-    Write-Log "No changes to commit — working tree clean"
+    Write-Log "No changes to commit - working tree clean"
     Write-Log "Auto-sync finished (nothing to do)"
     exit 0
 }
@@ -83,4 +83,4 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Log "Push successful: $pushOut"
-Write-Log "Auto-sync finished — $changedFiles file(s) synced"
+Write-Log "Auto-sync finished - $changedFiles file(s) synced"
