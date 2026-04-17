@@ -32,3 +32,10 @@ postgres_data/
 .idea/
 *.swp
 *.swo
+
+# Claude Code internal files
+.claude/
+
+# Auto-sync logs
+git-sync.log
+git-auto-pull.bat
