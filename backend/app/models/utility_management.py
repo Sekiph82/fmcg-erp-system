@@ -659,6 +659,10 @@ class UtilityTransaction(Base, TimestampMixin):
     batch_no            = Column(String(100), nullable=True, index=True)  # spec: batch_id
     product_id          = Column(UUID(as_uuid=True), ForeignKey("products.id", ondelete="SET NULL"), nullable=True)
 
+    # Cross-module linkage
+    work_order_id = Column(UUID(as_uuid=True), ForeignKey("work_orders.id", ondelete="SET NULL"), nullable=True, index=True)
+    batch_lot_id  = Column(UUID(as_uuid=True), ForeignKey("batch_lots.id", ondelete="SET NULL"), nullable=True, index=True)
+
     # Consumption / quantity
     quantity        = Column(Numeric(18, 4), nullable=False)
     unit_of_measure = Column(String(30), nullable=False)
@@ -688,6 +692,8 @@ class UtilityTransaction(Base, TimestampMixin):
     product          = relationship("Product")
     tariff           = relationship("UtilityTariff", back_populates="transactions")
     created_by       = relationship("User", foreign_keys=[created_by_id])
+    work_order       = relationship("WorkOrder")
+    batch_lot        = relationship("BatchLot")
 
 
 class SoftWaterRecord(Base, TimestampMixin):
@@ -752,11 +758,15 @@ class SoftWaterRecord(Base, TimestampMixin):
     anomaly_note   = Column(Text, nullable=True)
     shift_ref      = Column(String(50), nullable=True)
 
-    entered_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
-    notes         = Column(Text, nullable=True)
+    entered_by_id    = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    salt_lot_id      = Column(UUID(as_uuid=True), ForeignKey("lots.id", ondelete="SET NULL"), nullable=True)
+    qc_inspection_id = Column(UUID(as_uuid=True), ForeignKey("qc_inspections.id", ondelete="SET NULL"), nullable=True)
+    notes            = Column(Text, nullable=True)
 
-    asset      = relationship("UtilityAsset", back_populates="soft_water_records")
-    entered_by = relationship("User", foreign_keys=[entered_by_id])
+    asset         = relationship("UtilityAsset", back_populates="soft_water_records")
+    entered_by    = relationship("User", foreign_keys=[entered_by_id])
+    salt_lot      = relationship("Lot")
+    qc_inspection = relationship("QCInspection")
 
 
 class BoilerSteamRecord(Base, TimestampMixin):
@@ -842,11 +852,13 @@ class BoilerSteamRecord(Base, TimestampMixin):
     anomaly_note  = Column(Text, nullable=True)
     shift_ref     = Column(String(50), nullable=True)
 
-    entered_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
-    notes         = Column(Text, nullable=True)
+    entered_by_id    = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    qc_inspection_id = Column(UUID(as_uuid=True), ForeignKey("qc_inspections.id", ondelete="SET NULL"), nullable=True)
+    notes            = Column(Text, nullable=True)
 
-    asset      = relationship("UtilityAsset", back_populates="boiler_records")
-    entered_by = relationship("User", foreign_keys=[entered_by_id])
+    asset         = relationship("UtilityAsset", back_populates="boiler_records")
+    entered_by    = relationship("User", foreign_keys=[entered_by_id])
+    qc_inspection = relationship("QCInspection")
 
 
 class CompressorRecord(Base, TimestampMixin):
@@ -1057,6 +1069,10 @@ class TreatmentChemicalRecord(Base, TimestampMixin):
     # Materials master (for inventory integration)
     material_id      = Column(UUID(as_uuid=True), ForeignKey("materials.id", ondelete="SET NULL"), nullable=True)
 
+    # Inventory integration FKs
+    inventory_lot_id      = Column(UUID(as_uuid=True), ForeignKey("lots.id", ondelete="SET NULL"), nullable=True)
+    inventory_movement_id = Column(UUID(as_uuid=True), ForeignKey("stock_movements.id", ondelete="SET NULL"), nullable=True)
+
     # KPI denominators
     water_treated_m3    = Column(Numeric(14, 3), nullable=True)   # m3 water treated this period
     steam_produced_ton  = Column(Numeric(14, 3), nullable=True)   # ton steam produced this period
@@ -1084,12 +1100,14 @@ class TreatmentChemicalRecord(Base, TimestampMixin):
     entered_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     notes         = Column(Text, nullable=True)
 
-    asset         = relationship("UtilityAsset", back_populates="treatment_records")
-    chemical      = relationship("WaterTreatmentChemical", back_populates="treatment_records")
-    material      = relationship("Material")
-    supplier      = relationship("Supplier")
-    related_meter = relationship("UtilityDevice", foreign_keys=[related_meter_id])
-    entered_by    = relationship("User", foreign_keys=[entered_by_id])
+    asset              = relationship("UtilityAsset", back_populates="treatment_records")
+    chemical           = relationship("WaterTreatmentChemical", back_populates="treatment_records")
+    material           = relationship("Material")
+    supplier           = relationship("Supplier")
+    related_meter      = relationship("UtilityDevice", foreign_keys=[related_meter_id])
+    entered_by         = relationship("User", foreign_keys=[entered_by_id])
+    inventory_lot      = relationship("Lot")
+    inventory_movement = relationship("StockMovement")
 
 
 class WastewaterRecord(Base, TimestampMixin):
@@ -1168,11 +1186,13 @@ class WastewaterRecord(Base, TimestampMixin):
     anomaly_note      = Column(Text, nullable=True)
     shift_ref         = Column(String(50), nullable=True)
 
-    entered_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
-    notes         = Column(Text, nullable=True)
+    entered_by_id    = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    qc_inspection_id = Column(UUID(as_uuid=True), ForeignKey("qc_inspections.id", ondelete="SET NULL"), nullable=True)
+    notes            = Column(Text, nullable=True)
 
-    asset      = relationship("UtilityAsset", back_populates="wastewater_records")
-    entered_by = relationship("User", foreign_keys=[entered_by_id])
+    asset         = relationship("UtilityAsset", back_populates="wastewater_records")
+    entered_by    = relationship("User", foreign_keys=[entered_by_id])
+    qc_inspection = relationship("QCInspection")
 
 
 class UtilityBill(Base, TimestampMixin):
@@ -1220,15 +1240,19 @@ class UtilityBill(Base, TimestampMixin):
     payment_date = Column(Date, nullable=True)
     document_ref = Column(String(255), nullable=True)     # uploaded document reference
 
-    notes         = Column(Text, nullable=True)
+    notes          = Column(Text, nullable=True)
     verified_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_by_id  = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
 
-    supplier     = relationship("Supplier")
-    tariff       = relationship("UtilityTariff", back_populates="bills")
-    verified_by  = relationship("User", foreign_keys=[verified_by_id])
-    created_by   = relationship("User", foreign_keys=[created_by_id])
-    allocations  = relationship("UtilityCostAllocation", back_populates="bill")
+    # Finance module linkage
+    journal_entry_id = Column(UUID(as_uuid=True), ForeignKey("journal_entries.id", ondelete="SET NULL"), nullable=True)
+
+    supplier      = relationship("Supplier")
+    tariff        = relationship("UtilityTariff", back_populates="bills")
+    verified_by   = relationship("User", foreign_keys=[verified_by_id])
+    created_by    = relationship("User", foreign_keys=[created_by_id])
+    allocations   = relationship("UtilityCostAllocation", back_populates="bill")
+    journal_entry = relationship("JournalEntry")
 
 
 class UtilityCostAllocation(Base, TimestampMixin):
@@ -1269,6 +1293,10 @@ class UtilityCostAllocation(Base, TimestampMixin):
     batch_no            = Column(String(100), nullable=True, index=True)
     product_id          = Column(UUID(as_uuid=True), ForeignKey("products.id", ondelete="SET NULL"), nullable=True)
 
+    # Cross-module linkage
+    batch_lot_id             = Column(UUID(as_uuid=True), ForeignKey("batch_lots.id", ondelete="SET NULL"), nullable=True, index=True)
+    production_cost_entry_id = Column(UUID(as_uuid=True), ForeignKey("production_cost_entries.id", ondelete="SET NULL"), nullable=True)
+
     # Allocation basis
     source_cost          = Column(Numeric(16, 4), nullable=True)   # total bill/period cost before split
     allocation_basis     = Column(Numeric(18, 4), nullable=True)   # basis value (hours, %, m², kg)
@@ -1295,11 +1323,13 @@ class UtilityCostAllocation(Base, TimestampMixin):
     notes         = Column(Text, nullable=True)
     created_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
 
-    production_order = relationship("ProductionOrder")
-    product          = relationship("Product")
-    bill             = relationship("UtilityBill", back_populates="allocations")
-    approved_by      = relationship("User", foreign_keys=[approved_by_id])
-    created_by       = relationship("User", foreign_keys=[created_by_id])
+    production_order      = relationship("ProductionOrder")
+    product               = relationship("Product")
+    bill                  = relationship("UtilityBill", back_populates="allocations")
+    approved_by           = relationship("User", foreign_keys=[approved_by_id])
+    created_by            = relationship("User", foreign_keys=[created_by_id])
+    batch_lot             = relationship("BatchLot")
+    production_cost_entry = relationship("ProductionCostEntry")
 
 
 class UtilityAlarmEvent(Base, TimestampMixin):
@@ -1337,13 +1367,20 @@ class UtilityAlarmEvent(Base, TimestampMixin):
 
     acknowledged_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     resolved_by_id     = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
-    notes              = Column(Text, nullable=True)
 
-    rule             = relationship("UtilityAlarmRule", back_populates="events")
-    device           = relationship("UtilityDevice", back_populates="alarm_events")
-    asset            = relationship("UtilityAsset", back_populates="alarm_events")
-    acknowledged_by  = relationship("User", foreign_keys=[acknowledged_by_id])
-    resolved_by      = relationship("User", foreign_keys=[resolved_by_id])
+    # Maintenance module linkage
+    maintenance_work_order_id = Column(UUID(as_uuid=True), ForeignKey("pm_work_orders.id", ondelete="SET NULL"), nullable=True)
+    breakdown_record_id       = Column(UUID(as_uuid=True), ForeignKey("breakdown_records.id", ondelete="SET NULL"), nullable=True)
+
+    notes = Column(Text, nullable=True)
+
+    rule                    = relationship("UtilityAlarmRule", back_populates="events")
+    device                  = relationship("UtilityDevice", back_populates="alarm_events")
+    asset                   = relationship("UtilityAsset", back_populates="alarm_events")
+    acknowledged_by         = relationship("User", foreign_keys=[acknowledged_by_id])
+    resolved_by             = relationship("User", foreign_keys=[resolved_by_id])
+    maintenance_work_order  = relationship("PMWorkOrder")
+    breakdown_record        = relationship("BreakdownRecord")
 
 
 class MachineUtilityMapping(Base, TimestampMixin):

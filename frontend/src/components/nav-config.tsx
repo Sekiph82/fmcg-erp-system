@@ -286,6 +286,10 @@ export const NAV_CONFIG: NavEntry[] = [
       { label: "Compressed Air",   href: "/dashboard/utility-management/compressor",           permission: "utility_management.view" },
       { label: "Solar Energy",     href: "/dashboard/utility-management/solar",                permission: "utility_management.view" },
       { label: "Chemical Treatment", href: "/dashboard/utility-management/chemical-treatment",  permission: "utility_management.view" },
+      { label: "Alarm Center",       href: "/dashboard/utility-management/alarm-center",         permission: "utility_management.view" },
+      { label: "KPI Center",         href: "/dashboard/utility-management/kpi-center",           permission: "utility_management.view" },
+      { label: "Reports & Analytics", href: "/dashboard/utility-management/reports",             permission: "utility_management.view" },
+      { label: "Integration Hub",    href: "/dashboard/utility-management/integration",          permission: "utility_management.view" },
     ],
   },
 

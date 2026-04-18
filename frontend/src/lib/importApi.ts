@@ -157,17 +157,30 @@ export const MODULE_LABELS: Record<string, string> = {
   recipe_items:               "Recipe BOM Items",
   recipe_steps:               "Recipe Process Steps",
   qc_parameters:              "QC Parameters",
+  // Utility Management — Master data
   utility_asset_categories:   "Utility Asset Categories",
   utility_assets:             "Utility Assets",
   utility_devices:            "Utility Meters & Sensors",
-  utility_transactions:       "Utility Transactions",
-  electricity_transactions:   "Electricity Consumption Records",
-  water_transactions:         "Water Consumption Records",
+  utility_tariffs:            "Utility Tariffs",
+  utility_alarm_rules:        "Utility Alarm Rules",
+  // Utility Management — Transactional
+  utility_transactions:       "Utility Transactions (Generic)",
+  utility_readings:           "Utility Meter Readings",
+  electricity_transactions:   "Electricity Transactions",
+  electricity_consumption:    "Electricity Consumption Records",
+  water_transactions:         "Water Transactions",
+  water_consumption:          "Water Consumption Records",
+  utility_bills:              "Utility Bills",
+  utility_allocations:        "Utility Cost Allocations",
+  // Utility Management — Operational records
   soft_water_records:         "Soft Water Operational Records",
   boiler_records:             "Boiler Steam Operational Records",
   steam_transactions:         "Steam Consumption Records",
-  compressor_records:         "Compressor & Air Operational Records",
+  compressor_records:         "Compressor Operational Records",
   air_transactions:           "Compressed Air Consumption Records",
+  solar_records:              "Solar PV Operational Records",
+  treatment_chemical_records: "Treatment Chemical Records",
+  wastewater_records:         "Wastewater Treatment Records",
 };
 
 export const STATUS_COLORS: Record<string, string> = {

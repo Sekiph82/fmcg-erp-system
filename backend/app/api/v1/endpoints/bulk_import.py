@@ -49,6 +49,11 @@ from app.models.utility_management import (
     UtilityAsset as _UtilityAsset,
     UtilityDevice as _UtilityDevice,
     UtilityTransaction as _UtilityTransaction,
+    UtilityReading as _UtilityReading,
+    UtilityTariff as _UtilityTariff,
+    UtilityBill as _UtilityBill,
+    UtilityCostAllocation as _UtilityCostAllocation,
+    UtilityAlarmRule as _UtilityAlarmRule,
     UtilityType as _UtilityType,
     SourceMethod as _SourceMethod,
     DataQuality as _DataQuality,
@@ -57,6 +62,18 @@ from app.models.utility_management import (
     BoilerStatus as _BoilerStatus,
     CompressorRecord as _CompressorRecord,
     CompressorStatus as _CompressorStatus,
+    SolarRecord as _SolarRecord,
+    TreatmentChemicalRecord as _TreatmentChemicalRecord,
+    WastewaterRecord as _WastewaterRecord,
+    WaterTreatmentChemical as _WaterTreatmentChemical,
+    BillStatus as _BillStatus,
+    AllocationMethod as _AllocationMethod,
+    AlarmOperator as _AlarmOperator,
+    AlarmSeverity as _AlarmSeverity,
+    WastewaterProcess as _WastewaterProcess,
+    ComplianceStatus as _ComplianceStatus,
+    TreatmentType as _TreatmentType,
+    DosingMode as _DosingMode,
 )
 
 from app.schemas.master import (
@@ -2350,6 +2367,1349 @@ class AirTransactionAdapter(BaseImportAdapter):
         return obj
 
 
+# ── Utility Reading adapter ───────────────────────────────────────────────────
+
+class _UtilityReadingImport(BaseModel):
+    """CSV schema for bulk-importing raw meter / sensor readings."""
+    device_code:      str                  # resolved → device_id
+    reading_datetime: datetime
+    raw_value:        Decimal
+    unit_of_measure:  Optional[str] = None
+    cumulative_value: Optional[Decimal] = None
+    asset_no:         Optional[str] = None   # resolved → asset_id (optional)
+    source_method:    str = "IMPORTED"
+    source_reference: Optional[str] = None
+    department:       Optional[str] = None
+    building_area:    Optional[str] = None
+    shift_ref:        Optional[str] = None
+    batch_id:         Optional[str] = None
+    notes:            Optional[str] = None
+
+
+class UtilityReadingAdapter(BaseImportAdapter):
+    """Bulk-import raw meter readings. Resolves device_code → device_id."""
+    module          = "utility_readings"
+    perm_module     = "utility_management"
+    schema_class    = _UtilityReadingImport
+    unique_key: list = []
+    field_overrides: dict = {}
+    example_row     = {
+        "device_code": "MTR-ELEC-001",
+        "reading_datetime": "2025-01-15 08:00",
+        "raw_value": "45230.50",
+        "unit_of_measure": "kWh",
+        "cumulative_value": "45230.50",
+        "asset_no": "ELEC-PANEL-01",
+        "source_method": "MANUAL",
+        "department": "Production",
+        "shift_ref": "A",
+        "notes": "",
+    }
+
+    async def resolve_relations(self, row: dict, db: AsyncSession) -> tuple[dict, list[str]]:
+        errors: list[str] = []
+        device_code = row.pop("device_code", None)
+        if device_code:
+            r = await db.execute(
+                select(_UtilityDevice).where(_UtilityDevice.device_code == device_code.upper())
+            )
+            dev = r.scalar_one_or_none()
+            if dev is None:
+                errors.append(f"device_code '{device_code}' not found in utility_devices")
+            else:
+                row["device_id"] = dev.id
+                if not row.get("unit_of_measure"):
+                    row["unit_of_measure"] = dev.unit_of_measure
+        else:
+            errors.append("device_code is required")
+
+        asset_no = row.pop("asset_no", None)
+        if asset_no:
+            r = await db.execute(
+                select(_UtilityAsset).where(_UtilityAsset.asset_no == asset_no.upper())
+            )
+            asset = r.scalar_one_or_none()
+            if asset is None:
+                errors.append(f"asset_no '{asset_no}' not found in utility_assets")
+            else:
+                row["asset_id"] = asset.id
+
+        if row.get("source_method") not in {e.value for e in _SourceMethod}:
+            row["source_method"] = "IMPORTED"
+        return row, errors
+
+    async def exists_in_db(self, row: dict, db: AsyncSession) -> bool:
+        return False
+
+    async def insert(self, data: dict, db: AsyncSession) -> Any:
+        import random
+        dt = data.get("reading_datetime")
+        date_str = dt.strftime("%Y%m%d") if hasattr(dt, "strftime") else str(dt)[:10].replace("-", "")
+        rec_no = f"RDG-{date_str}-{random.randint(10000, 99999)}"
+        try:
+            sm = _SourceMethod(data.get("source_method", "IMPORTED"))
+        except ValueError:
+            sm = _SourceMethod.IMPORTED
+        obj = _UtilityReading(
+            reading_no=rec_no,
+            device_id=data.get("device_id"),
+            asset_id=data.get("asset_id"),
+            reading_datetime=data.get("reading_datetime"),
+            raw_value=data.get("raw_value"),
+            unit_of_measure=data.get("unit_of_measure", "units"),
+            cumulative_value=data.get("cumulative_value"),
+            source_method=sm,
+            source_reference=data.get("source_reference"),
+            department=data.get("department"),
+            building_area=data.get("building_area"),
+            shift_ref=data.get("shift_ref"),
+            batch_id=data.get("batch_id"),
+            notes=data.get("notes"),
+        )
+        db.add(obj)
+        await db.flush()
+        return obj
+
+
+# ── Electricity Consumption adapter (alias for electricity_transactions) ───────
+
+class ElectricityConsumptionAdapter(BaseImportAdapter):
+    """
+    Bulk-import electricity consumption records (alias module name for CSV export).
+    Each row creates one utility_transaction with utility_type=ELECTRICITY.
+    """
+    module          = "electricity_consumption"
+    perm_module     = "utility_management"
+    schema_class    = _ElectricityTxImport
+    unique_key: list = []
+    field_overrides: dict = {}
+    example_row     = {
+        "transaction_date": "2025-01-15",
+        "quantity": "1200.50",         "uom": "kWh",
+        "department": "Production",    "building_area": "Block A",
+        "production_line": "LINE-01",  "machine_ref": "MCH-001",
+        "shift_ref": "A",              "batch_no": "BATCH-2025-001",
+        "cost_rate": "0.12",           "total_cost": "",
+        "currency_code": "USD",        "source_method": "MANUAL",
+        "quality": "GOOD",             "is_estimated": "false",
+        "is_anomaly": "false",         "notes": "",
+    }
+
+    async def resolve_relations(self, row: dict, db: AsyncSession) -> tuple[dict, list[str]]:
+        from decimal import Decimal as _D
+        errors: list[str] = []
+        qty  = row.get("quantity")
+        rate = row.get("cost_rate")
+        cost = row.get("total_cost")
+        if qty and rate and not cost:
+            row["total_cost"] = _D(str(qty)) * _D(str(rate))
+        if row.get("source_method") not in {e.value for e in _SourceMethod}:
+            row["source_method"] = "IMPORTED"
+        if row.get("quality") not in {e.value for e in _DataQuality}:
+            row["quality"] = "GOOD"
+        return row, errors
+
+    async def exists_in_db(self, row: dict, db: AsyncSession) -> bool:
+        return False
+
+    async def insert(self, data: dict, db: AsyncSession) -> Any:
+        import random
+        from datetime import date as _date
+        d = data.get("transaction_date")
+        date_str = d.strftime("%Y%m%d") if isinstance(d, _date) else str(d)[:8].replace("-", "")
+        tx_no = f"TX-{date_str}-{random.randint(10000, 99999)}"
+        obj = _UtilityTransaction(
+            transaction_no=tx_no,
+            utility_type=_UtilityType.ELECTRICITY,
+            transaction_date=data.get("transaction_date"),
+            quantity=data.get("quantity"),
+            unit_of_measure=data.get("uom", "kWh"),
+            department=data.get("department"),
+            building_area=data.get("building_area"),
+            production_line=data.get("production_line"),
+            machine_ref=data.get("machine_ref"),
+            shift_ref=data.get("shift_ref"),
+            batch_no=data.get("batch_no"),
+            cost_rate=data.get("cost_rate"),
+            total_cost=data.get("total_cost"),
+            currency_code=data.get("currency_code", "USD"),
+            variance_from_standard=data.get("variance_from_standard"),
+            source_method=data.get("source_method", "IMPORTED"),
+            quality=data.get("quality", "GOOD"),
+            is_estimated=bool(data.get("is_estimated", False)),
+            is_anomaly=bool(data.get("is_anomaly", False)),
+            anomaly_note=data.get("anomaly_note"),
+            reference_type=data.get("reference_type"),
+            reference_id=data.get("reference_id"),
+            notes=data.get("notes"),
+        )
+        db.add(obj)
+        await db.flush()
+        return obj
+
+
+# ── Water Consumption adapter (alias for water_transactions) ──────────────────
+
+class WaterConsumptionAdapter(BaseImportAdapter):
+    """
+    Bulk-import water consumption records (alias module name for CSV export).
+    Supports WATER, PROCESS_WATER, and WASTEWATER utility types.
+    """
+    module          = "water_consumption"
+    perm_module     = "utility_management"
+    schema_class    = _WaterTxImport
+    unique_key: list = []
+    field_overrides: dict = {}
+    example_row     = {
+        "transaction_date": "2025-01-15",
+        "utility_type": "WATER",       "quantity": "120.50",
+        "uom": "m3",                   "department": "Production",
+        "building_area": "Block A",    "shift_ref": "A",
+        "cost_rate": "0.80",           "total_cost": "",
+        "currency_code": "USD",        "source_method": "MANUAL",
+        "quality": "GOOD",             "is_estimated": "false",
+        "is_anomaly": "false",         "notes": "",
+    }
+
+    async def resolve_relations(self, row: dict, db: AsyncSession) -> tuple[dict, list[str]]:
+        from decimal import Decimal as _D
+        errors: list[str] = []
+        valid_types = {"WATER", "PROCESS_WATER", "WASTEWATER"}
+        ut = (row.get("utility_type") or "WATER").upper()
+        if ut not in valid_types:
+            errors.append(f"utility_type must be one of {sorted(valid_types)}")
+        else:
+            row["utility_type"] = ut
+        qty  = row.get("quantity")
+        rate = row.get("cost_rate")
+        cost = row.get("total_cost")
+        if qty and rate and not cost:
+            row["total_cost"] = _D(str(qty)) * _D(str(rate))
+        if row.get("source_method") not in {e.value for e in _SourceMethod}:
+            row["source_method"] = "IMPORTED"
+        if row.get("quality") not in {e.value for e in _DataQuality}:
+            row["quality"] = "GOOD"
+        return row, errors
+
+    async def exists_in_db(self, row: dict, db: AsyncSession) -> bool:
+        return False
+
+    async def insert(self, data: dict, db: AsyncSession) -> Any:
+        import random
+        from datetime import date as _date
+        d = data.get("transaction_date")
+        date_str = d.strftime("%Y%m%d") if isinstance(d, _date) else str(d)[:8].replace("-", "")
+        tx_no = f"WTX-{date_str}-{random.randint(10000, 99999)}"
+        ut_str = (data.get("utility_type") or "WATER").upper()
+        try:
+            ut = _UtilityType(ut_str)
+        except ValueError:
+            ut = _UtilityType.WATER
+        obj = _UtilityTransaction(
+            transaction_no=tx_no,
+            utility_type=ut,
+            transaction_date=data.get("transaction_date"),
+            quantity=data.get("quantity"),
+            unit_of_measure=data.get("uom", "m3"),
+            department=data.get("department"),
+            building_area=data.get("building_area"),
+            production_line=data.get("production_line"),
+            machine_ref=data.get("machine_ref"),
+            shift_ref=data.get("shift_ref"),
+            batch_no=data.get("batch_no"),
+            cost_rate=data.get("cost_rate"),
+            total_cost=data.get("total_cost"),
+            currency_code=data.get("currency_code", "USD"),
+            source_method=data.get("source_method", "IMPORTED"),
+            quality=data.get("quality", "GOOD"),
+            is_estimated=bool(data.get("is_estimated", False)),
+            is_anomaly=bool(data.get("is_anomaly", False)),
+            anomaly_note=data.get("anomaly_note"),
+            notes=data.get("notes"),
+        )
+        db.add(obj)
+        await db.flush()
+        return obj
+
+
+# ── Generic Utility Transaction adapter ───────────────────────────────────────
+
+class _GenericUtilityTxImport(BaseModel):
+    """CSV schema for importing any utility type into the unified transactions table."""
+    utility_type:     str               # any UtilityType value
+    transaction_date: date
+    quantity:         Decimal
+    uom:              str
+    device_code:      Optional[str] = None   # resolved → device_id
+    asset_no:         Optional[str] = None   # resolved → asset_id
+    tariff_code:      Optional[str] = None   # resolved → tariff_id
+    department:       Optional[str] = None
+    building_area:    Optional[str] = None
+    production_line:  Optional[str] = None
+    machine_ref:      Optional[str] = None
+    shift_ref:        Optional[str] = None
+    batch_no:         Optional[str] = None
+    cost_rate:        Optional[Decimal] = None
+    total_cost:       Optional[Decimal] = None
+    currency_code:    str = "USD"
+    variance_from_standard: Optional[Decimal] = None
+    reference_type:   Optional[str] = None
+    reference_id:     Optional[str] = None
+    source_method:    str = "IMPORTED"
+    quality:          str = "GOOD"
+    is_estimated:     bool = False
+    is_anomaly:       bool = False
+    anomaly_note:     Optional[str] = None
+    notes:            Optional[str] = None
+
+
+class UtilityTransactionImportAdapter(BaseImportAdapter):
+    """
+    Generic bulk-import for any utility type into utility_transactions.
+    Resolves optional device_code, asset_no, and tariff_code references.
+    Auto-computes total_cost when quantity × cost_rate present but total_cost is blank.
+    """
+    module          = "utility_transactions"
+    perm_module     = "utility_management"
+    schema_class    = _GenericUtilityTxImport
+    unique_key: list = []
+    field_overrides: dict = {}
+    example_row     = {
+        "utility_type": "ELECTRICITY",
+        "transaction_date": "2025-01-15",
+        "quantity": "1200.50",         "uom": "kWh",
+        "device_code": "MTR-ELEC-001", "asset_no": "ELEC-PANEL-01",
+        "tariff_code": "ELEC-FLAT-01", "department": "Production",
+        "building_area": "Block A",    "production_line": "LINE-01",
+        "shift_ref": "A",              "batch_no": "",
+        "cost_rate": "0.12",           "total_cost": "",
+        "currency_code": "USD",        "source_method": "MANUAL",
+        "quality": "GOOD",             "is_estimated": "false",
+        "is_anomaly": "false",         "notes": "",
+    }
+
+    async def resolve_relations(self, row: dict, db: AsyncSession) -> tuple[dict, list[str]]:
+        from decimal import Decimal as _D
+        errors: list[str] = []
+
+        ut_str = (row.get("utility_type") or "").upper()
+        valid_ut = {e.value for e in _UtilityType}
+        if ut_str not in valid_ut:
+            errors.append(f"utility_type '{ut_str}' is invalid; valid: {sorted(valid_ut)}")
+        else:
+            row["utility_type"] = ut_str
+
+        device_code = row.pop("device_code", None)
+        if device_code:
+            r = await db.execute(
+                select(_UtilityDevice).where(_UtilityDevice.device_code == device_code.upper())
+            )
+            dev = r.scalar_one_or_none()
+            if dev is None:
+                errors.append(f"device_code '{device_code}' not found")
+            else:
+                row["device_id"] = dev.id
+
+        asset_no = row.pop("asset_no", None)
+        if asset_no:
+            r = await db.execute(
+                select(_UtilityAsset).where(_UtilityAsset.asset_no == asset_no.upper())
+            )
+            asset = r.scalar_one_or_none()
+            if asset is None:
+                errors.append(f"asset_no '{asset_no}' not found")
+            else:
+                row["asset_id"] = asset.id
+
+        tariff_code = row.pop("tariff_code", None)
+        if tariff_code:
+            r = await db.execute(
+                select(_UtilityTariff).where(_UtilityTariff.tariff_code == tariff_code.upper())
+            )
+            tariff = r.scalar_one_or_none()
+            if tariff is None:
+                errors.append(f"tariff_code '{tariff_code}' not found — import tariffs first")
+            else:
+                row["tariff_id"] = tariff.id
+
+        qty  = row.get("quantity")
+        rate = row.get("cost_rate")
+        cost = row.get("total_cost")
+        if qty and rate and not cost:
+            row["total_cost"] = _D(str(qty)) * _D(str(rate))
+
+        if row.get("source_method") not in {e.value for e in _SourceMethod}:
+            row["source_method"] = "IMPORTED"
+        if row.get("quality") not in {e.value for e in _DataQuality}:
+            row["quality"] = "GOOD"
+
+        return row, errors
+
+    async def exists_in_db(self, row: dict, db: AsyncSession) -> bool:
+        return False
+
+    async def insert(self, data: dict, db: AsyncSession) -> Any:
+        import random
+        from datetime import date as _date
+        d = data.get("transaction_date")
+        date_str = d.strftime("%Y%m%d") if isinstance(d, _date) else str(d)[:8].replace("-", "")
+        tx_no = f"UTX-{date_str}-{random.randint(10000, 99999)}"
+        try:
+            ut = _UtilityType(data.get("utility_type", "ELECTRICITY"))
+        except ValueError:
+            ut = _UtilityType.ELECTRICITY
+        obj = _UtilityTransaction(
+            transaction_no=tx_no,
+            utility_type=ut,
+            transaction_date=data.get("transaction_date"),
+            quantity=data.get("quantity"),
+            unit_of_measure=data.get("uom"),
+            device_id=data.get("device_id"),
+            asset_id=data.get("asset_id"),
+            tariff_id=data.get("tariff_id"),
+            department=data.get("department"),
+            building_area=data.get("building_area"),
+            production_line=data.get("production_line"),
+            machine_ref=data.get("machine_ref"),
+            shift_ref=data.get("shift_ref"),
+            batch_no=data.get("batch_no"),
+            cost_rate=data.get("cost_rate"),
+            total_cost=data.get("total_cost"),
+            currency_code=data.get("currency_code", "USD"),
+            variance_from_standard=data.get("variance_from_standard"),
+            reference_type=data.get("reference_type"),
+            reference_id=data.get("reference_id"),
+            source_method=data.get("source_method", "IMPORTED"),
+            quality=data.get("quality", "GOOD"),
+            is_estimated=bool(data.get("is_estimated", False)),
+            is_anomaly=bool(data.get("is_anomaly", False)),
+            anomaly_note=data.get("anomaly_note"),
+            notes=data.get("notes"),
+        )
+        db.add(obj)
+        await db.flush()
+        return obj
+
+
+# ── Solar Record adapter ───────────────────────────────────────────────────────
+
+class _SolarRecordImport(BaseModel):
+    """CSV schema for bulk-importing solar PV operational records."""
+    asset_no:        str           # resolved → asset_id
+    record_datetime: datetime
+    irradiance_wm2:  Optional[Decimal] = None
+    panel_temp_c:    Optional[Decimal] = None
+    ambient_temp_c:  Optional[Decimal] = None
+    dc_voltage_v:    Optional[Decimal] = None
+    dc_current_a:    Optional[Decimal] = None
+    dc_power_kw:     Optional[Decimal] = None
+    ac_power_kw:     Optional[Decimal] = None
+    energy_generated_kwh:    Optional[Decimal] = None
+    grid_export_kwh:         Optional[Decimal] = None
+    self_consumption_kwh:    Optional[Decimal] = None
+    inverter_efficiency_pct: Optional[Decimal] = None
+    pr_ratio:                Optional[Decimal] = None
+    availability_pct:        Optional[Decimal] = None
+    capacity_factor_pct:     Optional[Decimal] = None
+    source_method:   str = "IOT"
+    is_anomaly:      bool = False
+    anomaly_note:    Optional[str] = None
+    notes:           Optional[str] = None
+
+
+class SolarRecordImportAdapter(BaseImportAdapter):
+    """Bulk-import solar PV operational records. Links asset via asset_no."""
+    module          = "solar_records"
+    perm_module     = "utility_management"
+    schema_class    = _SolarRecordImport
+    unique_key: list = []
+    field_overrides: dict = {}
+    example_row     = {
+        "asset_no": "SOLAR-PV-01",
+        "record_datetime": "2025-01-15 12:00",
+        "irradiance_wm2": "850.00",           "panel_temp_c": "42.5",
+        "ambient_temp_c": "28.0",             "dc_power_kw": "98.50",
+        "ac_power_kw": "95.20",               "energy_generated_kwh": "762.00",
+        "grid_export_kwh": "250.00",          "self_consumption_kwh": "512.00",
+        "inverter_efficiency_pct": "96.70",   "pr_ratio": "0.8200",
+        "availability_pct": "99.50",          "capacity_factor_pct": "23.50",
+        "source_method": "IOT",               "is_anomaly": "false",
+        "notes": "",
+    }
+
+    async def resolve_relations(self, row: dict, db: AsyncSession) -> tuple[dict, list[str]]:
+        errors: list[str] = []
+        asset_no = row.pop("asset_no", None)
+        if asset_no:
+            r = await db.execute(
+                select(_UtilityAsset).where(_UtilityAsset.asset_no == asset_no.upper())
+            )
+            asset = r.scalar_one_or_none()
+            if asset is None:
+                errors.append(f"asset_no '{asset_no}' not found in utility_assets")
+            else:
+                row["asset_id"] = asset.id
+        else:
+            errors.append("asset_no is required")
+        if row.get("source_method") not in {e.value for e in _SourceMethod}:
+            row["source_method"] = "IOT"
+        return row, errors
+
+    async def exists_in_db(self, row: dict, db: AsyncSession) -> bool:
+        return False
+
+    async def insert(self, data: dict, db: AsyncSession) -> Any:
+        import random
+        dt = data.get("record_datetime")
+        date_str = dt.strftime("%Y%m%d") if hasattr(dt, "strftime") else str(dt)[:10].replace("-", "")
+        rec_no = f"SLR-{date_str}-{random.randint(10000, 99999)}"
+        try:
+            sm = _SourceMethod(data.get("source_method", "IOT"))
+        except ValueError:
+            sm = _SourceMethod.IOT
+        obj = _SolarRecord(
+            record_no=rec_no,
+            asset_id=data.get("asset_id"),
+            record_datetime=data.get("record_datetime"),
+            irradiance_wm2=data.get("irradiance_wm2"),
+            panel_temp_c=data.get("panel_temp_c"),
+            ambient_temp_c=data.get("ambient_temp_c"),
+            dc_voltage_v=data.get("dc_voltage_v"),
+            dc_current_a=data.get("dc_current_a"),
+            dc_power_kw=data.get("dc_power_kw"),
+            ac_power_kw=data.get("ac_power_kw"),
+            energy_generated_kwh=data.get("energy_generated_kwh"),
+            grid_export_kwh=data.get("grid_export_kwh"),
+            self_consumption_kwh=data.get("self_consumption_kwh"),
+            inverter_efficiency_pct=data.get("inverter_efficiency_pct"),
+            pr_ratio=data.get("pr_ratio"),
+            availability_pct=data.get("availability_pct"),
+            capacity_factor_pct=data.get("capacity_factor_pct"),
+            source_method=sm,
+            is_anomaly=bool(data.get("is_anomaly", False)),
+            anomaly_note=data.get("anomaly_note"),
+            notes=data.get("notes"),
+        )
+        db.add(obj)
+        await db.flush()
+        return obj
+
+
+# ── Treatment Chemical Record adapter ─────────────────────────────────────────
+
+class _TreatmentChemicalImport(BaseModel):
+    """CSV schema for bulk-importing chemical water treatment dosing records."""
+    asset_no:          str           # resolved → asset_id
+    record_datetime:   datetime
+    treatment_type:    str           # TreatmentType enum
+    chemical_name:     str
+    quantity_dosed:    Decimal
+    unit:              str
+    chemical_code:     Optional[str] = None   # resolved → chemical_id (optional)
+    chemical_category: Optional[str] = None
+    treatment_area:    Optional[str] = None
+    dosing_point:      Optional[str] = None
+    supplier_code:     Optional[str] = None   # resolved → supplier_id (optional)
+    batch_lot_no:      Optional[str] = None
+    unit_cost:         Optional[Decimal] = None
+    stock_uom:         Optional[str] = None
+    dosing_uom:        Optional[str] = None
+    opening_stock:     Optional[Decimal] = None
+    received_qty:      Optional[Decimal] = None
+    consumed_qty:      Optional[Decimal] = None
+    closing_stock:     Optional[Decimal] = None
+    target_dose_ppm:   Optional[Decimal] = None
+    actual_dose_ppm:   Optional[Decimal] = None
+    water_volume_m3:   Optional[Decimal] = None
+    manual_or_auto_dose: Optional[str] = "MANUAL"
+    water_treated_m3:    Optional[Decimal] = None
+    steam_produced_ton:  Optional[Decimal] = None
+    feed_ph:               Optional[Decimal] = None
+    product_ph:            Optional[Decimal] = None
+    feed_turbidity_ntu:    Optional[Decimal] = None
+    product_turbidity_ntu: Optional[Decimal] = None
+    residual_chlorine_ppm: Optional[Decimal] = None
+    tds_feed_ppm:          Optional[Decimal] = None
+    tds_product_ppm:       Optional[Decimal] = None
+    source_method:   str = "MANUAL"
+    is_anomaly:      bool = False
+    anomaly_note:    Optional[str] = None
+    overdose_flag:   bool = False
+    underdose_flag:  bool = False
+    shift_ref:       Optional[str] = None
+    notes:           Optional[str] = None
+
+
+class TreatmentChemicalRecordAdapter(BaseImportAdapter):
+    """Bulk-import chemical water treatment dosing records."""
+    module          = "treatment_chemical_records"
+    perm_module     = "utility_management"
+    schema_class    = _TreatmentChemicalImport
+    unique_key: list = []
+    field_overrides: dict = {}
+    example_row     = {
+        "asset_no": "BLR-001",
+        "record_datetime": "2025-01-15 08:00",
+        "treatment_type": "SOFTENING",
+        "chemical_name": "Sodium Chloride",
+        "chemical_code": "NACL-001",
+        "quantity_dosed": "25.00",
+        "unit": "kg",
+        "chemical_category": "ANTISCALANT",
+        "treatment_area": "Boiler Feed",
+        "dosing_point": "Pump Skid A",
+        "unit_cost": "0.85",
+        "target_dose_ppm": "50.00",
+        "actual_dose_ppm": "48.50",
+        "water_volume_m3": "50.00",
+        "manual_or_auto_dose": "MANUAL",
+        "source_method": "MANUAL",
+        "is_anomaly": "false",
+        "shift_ref": "A",
+        "notes": "",
+    }
+
+    async def resolve_relations(self, row: dict, db: AsyncSession) -> tuple[dict, list[str]]:
+        errors: list[str] = []
+
+        asset_no = row.pop("asset_no", None)
+        if asset_no:
+            r = await db.execute(
+                select(_UtilityAsset).where(_UtilityAsset.asset_no == asset_no.upper())
+            )
+            asset = r.scalar_one_or_none()
+            if asset is None:
+                errors.append(f"asset_no '{asset_no}' not found in utility_assets")
+            else:
+                row["asset_id"] = asset.id
+        else:
+            errors.append("asset_no is required")
+
+        chemical_code = row.pop("chemical_code", None)
+        if chemical_code:
+            r = await db.execute(
+                select(_WaterTreatmentChemical).where(
+                    _WaterTreatmentChemical.chemical_code == chemical_code.upper()
+                )
+            )
+            chem = r.scalar_one_or_none()
+            if chem:
+                row["chemical_id"] = chem.id
+            else:
+                row["chemical_code"] = chemical_code
+
+        supplier_code = row.pop("supplier_code", None)
+        if supplier_code:
+            r = await db.execute(
+                select(Supplier).where(Supplier.code == supplier_code.upper())
+            )
+            sup = r.scalar_one_or_none()
+            if sup is None:
+                errors.append(f"supplier_code '{supplier_code}' not found")
+            else:
+                row["supplier_id"] = sup.id
+
+        tt = (row.get("treatment_type") or "").upper()
+        if tt not in {e.value for e in _TreatmentType}:
+            errors.append(
+                f"treatment_type '{tt}' is invalid; valid: "
+                f"{sorted(e.value for e in _TreatmentType)}"
+            )
+        else:
+            row["treatment_type"] = tt
+
+        dm = (row.get("manual_or_auto_dose") or "MANUAL").upper()
+        if dm not in {e.value for e in _DosingMode}:
+            row["manual_or_auto_dose"] = "MANUAL"
+        else:
+            row["manual_or_auto_dose"] = dm
+
+        if row.get("source_method") not in {e.value for e in _SourceMethod}:
+            row["source_method"] = "MANUAL"
+
+        tgt = row.get("target_dose_ppm")
+        act = row.get("actual_dose_ppm")
+        if tgt and act:
+            tgt_f, act_f = float(tgt), float(act)
+            if act_f > tgt_f * 1.20:
+                row["overdose_flag"] = True
+            elif act_f < tgt_f * 0.80:
+                row["underdose_flag"] = True
+
+        return row, errors
+
+    async def exists_in_db(self, row: dict, db: AsyncSession) -> bool:
+        return False
+
+    async def insert(self, data: dict, db: AsyncSession) -> Any:
+        import random
+        from datetime import date as _date
+        dt = data.get("record_datetime")
+        date_str = dt.strftime("%Y%m%d") if hasattr(dt, "strftime") else str(dt)[:10].replace("-", "")
+        rec_no = f"TCR-{date_str}-{random.randint(10000, 99999)}"
+        rec_date = dt.date() if hasattr(dt, "date") else None
+        try:
+            sm = _SourceMethod(data.get("source_method", "MANUAL"))
+        except ValueError:
+            sm = _SourceMethod.MANUAL
+        try:
+            tt = _TreatmentType(data.get("treatment_type", "OTHER"))
+        except ValueError:
+            tt = _TreatmentType.OTHER
+        try:
+            dm = _DosingMode(data.get("manual_or_auto_dose", "MANUAL"))
+        except ValueError:
+            dm = _DosingMode.MANUAL
+        obj = _TreatmentChemicalRecord(
+            record_no=rec_no,
+            asset_id=data.get("asset_id"),
+            record_datetime=data.get("record_datetime"),
+            date=rec_date,
+            treatment_type=tt,
+            chemical_id=data.get("chemical_id"),
+            chemical_code=data.get("chemical_code"),
+            chemical_name=data.get("chemical_name"),
+            chemical_category=data.get("chemical_category"),
+            treatment_area=data.get("treatment_area"),
+            dosing_point=data.get("dosing_point"),
+            supplier_id=data.get("supplier_id"),
+            batch_lot_no=data.get("batch_lot_no"),
+            unit_cost=data.get("unit_cost"),
+            stock_uom=data.get("stock_uom"),
+            dosing_uom=data.get("dosing_uom"),
+            opening_stock=data.get("opening_stock"),
+            received_qty=data.get("received_qty", Decimal("0")),
+            consumed_qty=data.get("consumed_qty", Decimal("0")),
+            closing_stock=data.get("closing_stock"),
+            quantity_dosed=data.get("quantity_dosed"),
+            unit=data.get("unit"),
+            target_dose_ppm=data.get("target_dose_ppm"),
+            actual_dose_ppm=data.get("actual_dose_ppm"),
+            water_volume_m3=data.get("water_volume_m3"),
+            manual_or_auto_dose=dm,
+            water_treated_m3=data.get("water_treated_m3"),
+            steam_produced_ton=data.get("steam_produced_ton"),
+            feed_ph=data.get("feed_ph"),
+            product_ph=data.get("product_ph"),
+            feed_turbidity_ntu=data.get("feed_turbidity_ntu"),
+            product_turbidity_ntu=data.get("product_turbidity_ntu"),
+            residual_chlorine_ppm=data.get("residual_chlorine_ppm"),
+            tds_feed_ppm=data.get("tds_feed_ppm"),
+            tds_product_ppm=data.get("tds_product_ppm"),
+            source_method=sm,
+            is_anomaly=bool(data.get("is_anomaly", False)),
+            anomaly_note=data.get("anomaly_note"),
+            overdose_flag=bool(data.get("overdose_flag", False)),
+            underdose_flag=bool(data.get("underdose_flag", False)),
+            shift_ref=data.get("shift_ref"),
+            notes=data.get("notes"),
+        )
+        db.add(obj)
+        await db.flush()
+        return obj
+
+
+# ── Wastewater Record adapter ─────────────────────────────────────────────────
+
+class _WastewaterRecordImport(BaseModel):
+    """CSV schema for bulk-importing wastewater treatment operational records."""
+    asset_no:          str           # resolved → asset_id
+    record_datetime:   datetime
+    process_stage:     str = "SECONDARY"   # PRIMARY/SECONDARY/TERTIARY/SLUDGE_HANDLING
+    shift_ref:         Optional[str] = None
+    influent_flow_m3h: Optional[Decimal] = None
+    effluent_flow_m3h: Optional[Decimal] = None
+    influent_cod_mgl:  Optional[Decimal] = None
+    effluent_cod_mgl:  Optional[Decimal] = None
+    influent_bod_mgl:  Optional[Decimal] = None
+    effluent_bod_mgl:  Optional[Decimal] = None
+    influent_tss_mgl:  Optional[Decimal] = None
+    effluent_tss_mgl:  Optional[Decimal] = None
+    influent_ph:       Optional[Decimal] = None
+    effluent_ph:       Optional[Decimal] = None
+    do_mgl:            Optional[Decimal] = None
+    mlss_mgl:          Optional[Decimal] = None
+    mlvss_mgl:         Optional[Decimal] = None
+    svi:               Optional[Decimal] = None
+    srt_days:          Optional[Decimal] = None
+    conductivity_us_cm:     Optional[Decimal] = None
+    temperature_c:          Optional[Decimal] = None
+    power_consumed_kwh:     Optional[Decimal] = None
+    aeration_runtime_hours: Optional[Decimal] = None
+    blower_power_kw:        Optional[Decimal] = None
+    nutrient_dose_kg:       Optional[Decimal] = None
+    antifoam_dose_kg:       Optional[Decimal] = None
+    sludge_produced_kg:     Optional[Decimal] = None
+    sludge_dewatered_pct:   Optional[Decimal] = None
+    sludge_volume_m3:       Optional[Decimal] = None
+    sludge_disposal_qty_kg: Optional[Decimal] = None
+    compliance_status:  str = "COMPLIANT"
+    permit_limit_ref:   Optional[str] = None
+    deviation_reason:   Optional[str] = None
+    corrective_action:  Optional[str] = None
+    source_method:      str = "MANUAL"
+    is_anomaly:         bool = False
+    anomaly_note:       Optional[str] = None
+    notes:              Optional[str] = None
+
+
+class WastewaterRecordAdapter(BaseImportAdapter):
+    """Bulk-import wastewater treatment operational records. Links asset via asset_no."""
+    module          = "wastewater_records"
+    perm_module     = "utility_management"
+    schema_class    = _WastewaterRecordImport
+    unique_key: list = []
+    field_overrides: dict = {}
+    example_row     = {
+        "asset_no": "WWTP-001",
+        "record_datetime": "2025-01-15 08:00",
+        "process_stage": "SECONDARY",
+        "shift_ref": "A",
+        "influent_flow_m3h": "120.00",   "effluent_flow_m3h": "115.00",
+        "influent_cod_mgl": "850.00",    "effluent_cod_mgl": "42.00",
+        "influent_bod_mgl": "380.00",    "effluent_bod_mgl": "12.00",
+        "influent_tss_mgl": "450.00",    "effluent_tss_mgl": "18.00",
+        "influent_ph": "7.20",           "effluent_ph": "7.50",
+        "do_mgl": "2.50",                "mlss_mgl": "3200.00",
+        "power_consumed_kwh": "185.00",  "aeration_runtime_hours": "8.00",
+        "sludge_produced_kg": "480.00",  "compliance_status": "COMPLIANT",
+        "source_method": "MANUAL",       "is_anomaly": "false",
+        "notes": "",
+    }
+
+    async def resolve_relations(self, row: dict, db: AsyncSession) -> tuple[dict, list[str]]:
+        errors: list[str] = []
+        asset_no = row.pop("asset_no", None)
+        if asset_no:
+            r = await db.execute(
+                select(_UtilityAsset).where(_UtilityAsset.asset_no == asset_no.upper())
+            )
+            asset = r.scalar_one_or_none()
+            if asset is None:
+                errors.append(f"asset_no '{asset_no}' not found in utility_assets")
+            else:
+                row["asset_id"] = asset.id
+        else:
+            errors.append("asset_no is required")
+
+        ps = (row.get("process_stage") or "SECONDARY").upper()
+        if ps not in {e.value for e in _WastewaterProcess}:
+            errors.append(f"process_stage '{ps}' is invalid; valid: {sorted(e.value for e in _WastewaterProcess)}")
+        else:
+            row["process_stage"] = ps
+
+        cs = (row.get("compliance_status") or "COMPLIANT").upper()
+        if cs not in {e.value for e in _ComplianceStatus}:
+            row["compliance_status"] = "COMPLIANT"
+        else:
+            row["compliance_status"] = cs
+
+        if row.get("source_method") not in {e.value for e in _SourceMethod}:
+            row["source_method"] = "MANUAL"
+        return row, errors
+
+    async def exists_in_db(self, row: dict, db: AsyncSession) -> bool:
+        return False
+
+    async def insert(self, data: dict, db: AsyncSession) -> Any:
+        import random
+        dt = data.get("record_datetime")
+        date_str = dt.strftime("%Y%m%d") if hasattr(dt, "strftime") else str(dt)[:10].replace("-", "")
+        rec_no = f"WW-{date_str}-{random.randint(10000, 99999)}"
+        try:
+            ps = _WastewaterProcess(data.get("process_stage", "SECONDARY"))
+        except ValueError:
+            ps = _WastewaterProcess.SECONDARY
+        try:
+            cs = _ComplianceStatus(data.get("compliance_status", "COMPLIANT"))
+        except ValueError:
+            cs = _ComplianceStatus.COMPLIANT
+        try:
+            sm = _SourceMethod(data.get("source_method", "MANUAL"))
+        except ValueError:
+            sm = _SourceMethod.MANUAL
+        obj = _WastewaterRecord(
+            record_no=rec_no,
+            asset_id=data.get("asset_id"),
+            record_datetime=data.get("record_datetime"),
+            process_stage=ps,
+            shift_ref=data.get("shift_ref"),
+            influent_flow_m3h=data.get("influent_flow_m3h"),
+            effluent_flow_m3h=data.get("effluent_flow_m3h"),
+            influent_cod_mgl=data.get("influent_cod_mgl"),
+            effluent_cod_mgl=data.get("effluent_cod_mgl"),
+            influent_bod_mgl=data.get("influent_bod_mgl"),
+            effluent_bod_mgl=data.get("effluent_bod_mgl"),
+            influent_tss_mgl=data.get("influent_tss_mgl"),
+            effluent_tss_mgl=data.get("effluent_tss_mgl"),
+            influent_ph=data.get("influent_ph"),
+            effluent_ph=data.get("effluent_ph"),
+            do_mgl=data.get("do_mgl"),
+            mlss_mgl=data.get("mlss_mgl"),
+            mlvss_mgl=data.get("mlvss_mgl"),
+            svi=data.get("svi"),
+            srt_days=data.get("srt_days"),
+            conductivity_us_cm=data.get("conductivity_us_cm"),
+            temperature_c=data.get("temperature_c"),
+            power_consumed_kwh=data.get("power_consumed_kwh"),
+            aeration_runtime_hours=data.get("aeration_runtime_hours"),
+            blower_power_kw=data.get("blower_power_kw"),
+            nutrient_dose_kg=data.get("nutrient_dose_kg"),
+            antifoam_dose_kg=data.get("antifoam_dose_kg"),
+            sludge_produced_kg=data.get("sludge_produced_kg"),
+            sludge_dewatered_pct=data.get("sludge_dewatered_pct"),
+            sludge_volume_m3=data.get("sludge_volume_m3"),
+            sludge_disposal_qty_kg=data.get("sludge_disposal_qty_kg"),
+            compliance_status=cs,
+            permit_limit_ref=data.get("permit_limit_ref"),
+            deviation_reason=data.get("deviation_reason"),
+            corrective_action=data.get("corrective_action"),
+            source_method=sm,
+            is_anomaly=bool(data.get("is_anomaly", False)),
+            anomaly_note=data.get("anomaly_note"),
+            notes=data.get("notes"),
+        )
+        db.add(obj)
+        await db.flush()
+        return obj
+
+
+# ── Utility Tariff adapter ────────────────────────────────────────────────────
+
+class _UtilityTariffImport(BaseModel):
+    """CSV schema for bulk-importing utility tariff / pricing structures."""
+    tariff_code:    str
+    name:           str
+    utility_type:   str
+    effective_from: date
+    unit:           str
+    base_rate:      Decimal
+    tariff_type:    str = "FLAT"
+    effective_to:   Optional[date] = None
+    supplier_code:  Optional[str] = None    # resolved → supplier_id
+    currency_code:  str = "USD"
+    peak_rate:      Optional[Decimal] = None
+    offpeak_rate:   Optional[Decimal] = None
+    demand_rate:    Optional[Decimal] = None
+    fixed_charge:   Optional[Decimal] = None
+    tax_rate_pct:   Optional[Decimal] = None
+    tax_rule:       Optional[str] = None
+    description:    Optional[str] = None
+    is_active:      bool = True
+    notes:          Optional[str] = None
+
+
+class UtilityTariffAdapter(BaseImportAdapter):
+    """Bulk-import utility tariff pricing structures. Unique key: tariff_code."""
+    module          = "utility_tariffs"
+    perm_module     = "utility_management"
+    schema_class    = _UtilityTariffImport
+    unique_key      = ["tariff_code"]
+    field_overrides: dict = {}
+    example_row     = {
+        "tariff_code": "ELEC-FLAT-01",
+        "name": "Electricity Flat Rate 2025",
+        "utility_type": "ELECTRICITY",
+        "tariff_type": "FLAT",
+        "effective_from": "2025-01-01",
+        "effective_to": "2025-12-31",
+        "unit": "kWh",
+        "currency_code": "USD",
+        "base_rate": "0.1200",
+        "peak_rate": "0.1800",
+        "offpeak_rate": "0.0800",
+        "fixed_charge": "250.00",
+        "tax_rate_pct": "16.00",
+        "tax_rule": "Standard VAT",
+        "supplier_code": "",
+        "is_active": "true",
+        "notes": "",
+    }
+
+    async def resolve_relations(self, row: dict, db: AsyncSession) -> tuple[dict, list[str]]:
+        errors: list[str] = []
+        ut = (row.get("utility_type") or "").upper()
+        if ut not in {e.value for e in _UtilityType}:
+            errors.append(f"utility_type '{ut}' is invalid; valid: {sorted(e.value for e in _UtilityType)}")
+        else:
+            row["utility_type"] = ut
+
+        tt = (row.get("tariff_type") or "FLAT").upper()
+        valid_tt = {"FLAT", "TIME_OF_USE", "DEMAND", "STEPPED"}
+        if tt not in valid_tt:
+            errors.append(f"tariff_type '{tt}' is invalid; valid: {sorted(valid_tt)}")
+        else:
+            row["tariff_type"] = tt
+
+        supplier_code = row.pop("supplier_code", None)
+        if supplier_code:
+            r = await db.execute(select(Supplier).where(Supplier.code == supplier_code.upper()))
+            sup = r.scalar_one_or_none()
+            if sup is None:
+                errors.append(f"supplier_code '{supplier_code}' not found")
+            else:
+                row["supplier_id"] = sup.id
+
+        row["tariff_code"] = (row.get("tariff_code") or "").upper()
+        return row, errors
+
+    async def exists_in_db(self, row: dict, db: AsyncSession) -> bool:
+        r = await db.execute(
+            select(_UtilityTariff).where(
+                _UtilityTariff.tariff_code == (row.get("tariff_code") or "").upper()
+            )
+        )
+        return r.scalar_one_or_none() is not None
+
+    async def insert(self, data: dict, db: AsyncSession) -> Any:
+        obj = _UtilityTariff(**{k: v for k, v in data.items() if v is not None})
+        db.add(obj)
+        await db.flush()
+        return obj
+
+
+# ── Utility Bill adapter ──────────────────────────────────────────────────────
+
+class _UtilityBillImport(BaseModel):
+    """CSV schema for bulk-importing utility supplier bills."""
+    bill_no:             str
+    utility_type:        str
+    billing_period_from: date
+    billing_period_to:   date
+    total_amount:        Decimal
+    provider_name:       Optional[str] = None
+    supplier_code:       Optional[str] = None   # resolved → supplier_id
+    tariff_code:         Optional[str] = None   # resolved → tariff_id
+    bill_reference:      Optional[str] = None
+    invoice_date:        Optional[date] = None
+    due_date:            Optional[date] = None
+    consumption_quantity: Optional[Decimal] = None
+    consumption_unit:    Optional[str] = None
+    unit_rate:           Optional[Decimal] = None
+    base_charge:         Optional[Decimal] = None
+    energy_charge:       Optional[Decimal] = None
+    demand_charge:       Optional[Decimal] = None
+    fixed_charge:        Optional[Decimal] = None
+    surcharge_amount:    Optional[Decimal] = None
+    tax_amount:          Optional[Decimal] = None
+    currency_code:       str = "USD"
+    status:              str = "RECEIVED"
+    payment_date:        Optional[date] = None
+    document_ref:        Optional[str] = None
+    notes:               Optional[str] = None
+
+
+class UtilityBillAdapter(BaseImportAdapter):
+    """Bulk-import utility bills. Unique key: bill_no."""
+    module          = "utility_bills"
+    perm_module     = "utility_management"
+    schema_class    = _UtilityBillImport
+    unique_key      = ["bill_no"]
+    field_overrides: dict = {}
+    example_row     = {
+        "bill_no": "BILL-2025-001",
+        "utility_type": "ELECTRICITY",
+        "provider_name": "Kenya Power",
+        "supplier_code": "",
+        "tariff_code": "ELEC-FLAT-01",
+        "bill_reference": "INV-KPC-12345",
+        "billing_period_from": "2025-01-01",
+        "billing_period_to": "2025-01-31",
+        "invoice_date": "2025-02-05",
+        "due_date": "2025-02-28",
+        "consumption_quantity": "48500.00",
+        "consumption_unit": "kWh",
+        "unit_rate": "0.1200",
+        "energy_charge": "5820.00",
+        "fixed_charge": "250.00",
+        "tax_amount": "981.60",
+        "total_amount": "7051.60",
+        "currency_code": "USD",
+        "status": "RECEIVED",
+        "notes": "",
+    }
+
+    async def resolve_relations(self, row: dict, db: AsyncSession) -> tuple[dict, list[str]]:
+        errors: list[str] = []
+        ut = (row.get("utility_type") or "").upper()
+        if ut not in {e.value for e in _UtilityType}:
+            errors.append(f"utility_type '{ut}' is invalid")
+        else:
+            row["utility_type"] = ut
+
+        status = (row.get("status") or "RECEIVED").upper()
+        if status not in {e.value for e in _BillStatus}:
+            row["status"] = "RECEIVED"
+        else:
+            row["status"] = status
+
+        supplier_code = row.pop("supplier_code", None)
+        if supplier_code:
+            r = await db.execute(select(Supplier).where(Supplier.code == supplier_code.upper()))
+            sup = r.scalar_one_or_none()
+            if sup is None:
+                errors.append(f"supplier_code '{supplier_code}' not found")
+            else:
+                row["supplier_id"] = sup.id
+
+        tariff_code = row.pop("tariff_code", None)
+        if tariff_code:
+            r = await db.execute(
+                select(_UtilityTariff).where(_UtilityTariff.tariff_code == tariff_code.upper())
+            )
+            tariff = r.scalar_one_or_none()
+            if tariff is None:
+                errors.append(f"tariff_code '{tariff_code}' not found — import tariffs first")
+            else:
+                row["tariff_id"] = tariff.id
+                row["tariff_code"] = tariff_code.upper()
+
+        return row, errors
+
+    async def exists_in_db(self, row: dict, db: AsyncSession) -> bool:
+        r = await db.execute(
+            select(_UtilityBill).where(_UtilityBill.bill_no == row.get("bill_no"))
+        )
+        return r.scalar_one_or_none() is not None
+
+    async def insert(self, data: dict, db: AsyncSession) -> Any:
+        obj = _UtilityBill(**{k: v for k, v in data.items() if v is not None})
+        db.add(obj)
+        await db.flush()
+        return obj
+
+
+# ── Utility Cost Allocation adapter ───────────────────────────────────────────
+
+class _UtilityAllocationImport(BaseModel):
+    """CSV schema for bulk-importing utility cost allocation records."""
+    allocation_no:       str
+    utility_type:        str
+    allocation_date:     date
+    total_cost:          Decimal
+    allocated_cost:      Decimal
+    period_start:        Optional[date] = None
+    period_end:          Optional[date] = None
+    allocation_method:   str = "METERED"
+    target_type:         Optional[str] = None
+    target_id:           Optional[str] = None
+    target_name:         Optional[str] = None
+    department:          Optional[str] = None
+    production_line:     Optional[str] = None
+    building_area:       Optional[str] = None
+    machine_ref:         Optional[str] = None
+    batch_no:            Optional[str] = None
+    bill_no:             Optional[str] = None   # resolved → bill_id
+    source_cost:         Optional[Decimal] = None
+    allocation_basis:    Optional[Decimal] = None
+    allocation_basis_unit: Optional[str] = None
+    allocated_quantity:  Optional[Decimal] = None
+    quantity_unit:       Optional[str] = None
+    production_volume_kg: Optional[Decimal] = None
+    currency_code:       str = "USD"
+    cost_per_unit:       Optional[Decimal] = None
+    cost_per_ton:        Optional[Decimal] = None
+    source_method:       str = "CALCULATED"
+    notes:               Optional[str] = None
+
+
+class UtilityCostAllocationAdapter(BaseImportAdapter):
+    """Bulk-import utility cost allocation records. Unique key: allocation_no."""
+    module          = "utility_allocations"
+    perm_module     = "utility_management"
+    schema_class    = _UtilityAllocationImport
+    unique_key      = ["allocation_no"]
+    field_overrides: dict = {}
+    example_row     = {
+        "allocation_no": "ALLOC-2025-001",
+        "utility_type": "ELECTRICITY",
+        "allocation_date": "2025-01-31",
+        "period_start": "2025-01-01",
+        "period_end": "2025-01-31",
+        "allocation_method": "METERED",
+        "target_type": "DEPARTMENT",
+        "target_id": "PRODUCTION",
+        "target_name": "Production Department",
+        "department": "Production",
+        "production_line": "LINE-01",
+        "bill_no": "BILL-2025-001",
+        "allocated_quantity": "28500.00",
+        "quantity_unit": "kWh",
+        "total_cost": "7051.60",
+        "allocated_cost": "4123.80",
+        "currency_code": "USD",
+        "cost_per_unit": "0.1447",
+        "production_volume_kg": "95000.00",
+        "cost_per_ton": "43.41",
+        "source_method": "METERED",
+        "notes": "",
+    }
+
+    async def resolve_relations(self, row: dict, db: AsyncSession) -> tuple[dict, list[str]]:
+        from decimal import Decimal as _D
+        errors: list[str] = []
+
+        ut = (row.get("utility_type") or "").upper()
+        if ut not in {e.value for e in _UtilityType}:
+            errors.append(f"utility_type '{ut}' is invalid")
+        else:
+            row["utility_type"] = ut
+
+        am = (row.get("allocation_method") or "METERED").upper()
+        if am not in {e.value for e in _AllocationMethod}:
+            errors.append(f"allocation_method '{am}' is invalid; valid: {sorted(e.value for e in _AllocationMethod)}")
+        else:
+            row["allocation_method"] = am
+
+        sm = (row.get("source_method") or "CALCULATED").upper()
+        if sm not in {e.value for e in _SourceMethod}:
+            row["source_method"] = "CALCULATED"
+        else:
+            row["source_method"] = sm
+
+        bill_no = row.pop("bill_no", None)
+        if bill_no:
+            r = await db.execute(select(_UtilityBill).where(_UtilityBill.bill_no == bill_no))
+            bill = r.scalar_one_or_none()
+            if bill is None:
+                errors.append(f"bill_no '{bill_no}' not found — import bills first")
+            else:
+                row["bill_id"] = bill.id
+
+        aq = row.get("allocated_quantity")
+        ac = row.get("allocated_cost")
+        pv = row.get("production_volume_kg")
+        if not row.get("cost_per_unit") and aq and ac and Decimal(str(aq)) > 0:
+            row["cost_per_unit"] = Decimal(str(ac)) / Decimal(str(aq))
+        if not row.get("cost_per_ton") and pv and ac and Decimal(str(pv)) > 0:
+            row["cost_per_ton"] = Decimal(str(ac)) / (Decimal(str(pv)) / 1000)
+
+        return row, errors
+
+    async def exists_in_db(self, row: dict, db: AsyncSession) -> bool:
+        r = await db.execute(
+            select(_UtilityCostAllocation).where(
+                _UtilityCostAllocation.allocation_no == row.get("allocation_no")
+            )
+        )
+        return r.scalar_one_or_none() is not None
+
+    async def insert(self, data: dict, db: AsyncSession) -> Any:
+        obj = _UtilityCostAllocation(**{k: v for k, v in data.items() if v is not None})
+        db.add(obj)
+        await db.flush()
+        return obj
+
+
+# ── Utility Alarm Rule adapter ────────────────────────────────────────────────
+
+class _UtilityAlarmRuleImport(BaseModel):
+    """CSV schema for bulk-importing utility alarm / threshold rules."""
+    rule_code:        str
+    name:             str
+    utility_type:     str
+    parameter:        str
+    operator:         str   # GT/LT/GTE/LTE/EQ/NEQ/DELTA_PCT
+    threshold_value:  Decimal
+    device_code:      Optional[str] = None   # resolved → device_id
+    asset_no:         Optional[str] = None   # resolved → asset_id
+    threshold_unit:   Optional[str] = None
+    severity:         str = "WARNING"
+    cooldown_minutes: int = 15
+    is_active:        bool = True
+    notification_emails:  Optional[str] = None
+    notification_channel: Optional[str] = None
+    description:      Optional[str] = None
+    notes:            Optional[str] = None
+
+
+class UtilityAlarmRuleAdapter(BaseImportAdapter):
+    """Bulk-import utility alarm threshold rules. Unique key: rule_code."""
+    module          = "utility_alarm_rules"
+    perm_module     = "utility_management"
+    schema_class    = _UtilityAlarmRuleImport
+    unique_key      = ["rule_code"]
+    field_overrides: dict = {}
+    example_row     = {
+        "rule_code": "ALM-ELEC-HI-001",
+        "name": "Main Electricity High Consumption Alert",
+        "utility_type": "ELECTRICITY",
+        "device_code": "MTR-ELEC-001",
+        "asset_no": "ELEC-PANEL-01",
+        "parameter": "power_kw",
+        "operator": "GT",
+        "threshold_value": "500.00",
+        "threshold_unit": "kW",
+        "severity": "WARNING",
+        "cooldown_minutes": "30",
+        "is_active": "true",
+        "notification_emails": "utilities@plant.com,manager@plant.com",
+        "notification_channel": "slack_utilities",
+        "description": "Alert when main power exceeds 500kW",
+        "notes": "",
+    }
+
+    async def resolve_relations(self, row: dict, db: AsyncSession) -> tuple[dict, list[str]]:
+        errors: list[str] = []
+
+        ut = (row.get("utility_type") or "").upper()
+        if ut not in {e.value for e in _UtilityType}:
+            errors.append(f"utility_type '{ut}' is invalid")
+        else:
+            row["utility_type"] = ut
+
+        op = (row.get("operator") or "").upper()
+        if op not in {e.value for e in _AlarmOperator}:
+            errors.append(f"operator '{op}' is invalid; valid: {sorted(e.value for e in _AlarmOperator)}")
+        else:
+            row["operator"] = op
+
+        sev = (row.get("severity") or "WARNING").upper()
+        if sev not in {e.value for e in _AlarmSeverity}:
+            row["severity"] = "WARNING"
+        else:
+            row["severity"] = sev
+
+        device_code = row.pop("device_code", None)
+        if device_code:
+            r = await db.execute(
+                select(_UtilityDevice).where(_UtilityDevice.device_code == device_code.upper())
+            )
+            dev = r.scalar_one_or_none()
+            if dev is None:
+                errors.append(f"device_code '{device_code}' not found in utility_devices")
+            else:
+                row["device_id"] = dev.id
+
+        asset_no = row.pop("asset_no", None)
+        if asset_no:
+            r = await db.execute(
+                select(_UtilityAsset).where(_UtilityAsset.asset_no == asset_no.upper())
+            )
+            asset = r.scalar_one_or_none()
+            if asset is None:
+                errors.append(f"asset_no '{asset_no}' not found in utility_assets")
+            else:
+                row["asset_id"] = asset.id
+
+        row["rule_code"] = (row.get("rule_code") or "").upper()
+        return row, errors
+
+    async def exists_in_db(self, row: dict, db: AsyncSession) -> bool:
+        r = await db.execute(
+            select(_UtilityAlarmRule).where(
+                _UtilityAlarmRule.rule_code == (row.get("rule_code") or "").upper()
+            )
+        )
+        return r.scalar_one_or_none() is not None
+
+    async def insert(self, data: dict, db: AsyncSession) -> Any:
+        obj = _UtilityAlarmRule(**{k: v for k, v in data.items() if v is not None})
+        db.add(obj)
+        await db.flush()
+        return obj
+
+
 # ── Adapter registry ──────────────────────────────────────────────────────────
 
 ADAPTERS: dict[str, BaseImportAdapter] = {
@@ -2363,17 +3723,30 @@ ADAPTERS: dict[str, BaseImportAdapter] = {
     "recipe_items":          RecipeItemAdapter(),
     "recipe_steps":          RecipeStepAdapter(),
     "qc_parameters":         QCParameterAdapter(),
-    # Utility Management
-    "utility_asset_categories":  UtilityAssetCategoryAdapter(),
-    "utility_assets":            UtilityAssetAdapter(),
-    "utility_devices":           UtilityDeviceAdapter(),
-    "electricity_transactions":  ElectricityTransactionAdapter(),
-    "water_transactions":        WaterTransactionAdapter(),
-    "soft_water_records":        SoftWaterRecordAdapter(),
-    "boiler_records":            BoilerRecordAdapter(),
-    "steam_transactions":        SteamTransactionAdapter(),
-    "compressor_records":        CompressorRecordAdapter(),
-    "air_transactions":          AirTransactionAdapter(),
+    # Utility Management — Master data
+    "utility_asset_categories":     UtilityAssetCategoryAdapter(),
+    "utility_assets":               UtilityAssetAdapter(),
+    "utility_devices":              UtilityDeviceAdapter(),
+    "utility_tariffs":              UtilityTariffAdapter(),
+    "utility_alarm_rules":          UtilityAlarmRuleAdapter(),
+    # Utility Management — Transactional (type-specific)
+    "electricity_transactions":     ElectricityTransactionAdapter(),
+    "electricity_consumption":      ElectricityConsumptionAdapter(),
+    "water_transactions":           WaterTransactionAdapter(),
+    "water_consumption":            WaterConsumptionAdapter(),
+    "utility_transactions":         UtilityTransactionImportAdapter(),
+    "utility_readings":             UtilityReadingAdapter(),
+    "utility_bills":                UtilityBillAdapter(),
+    "utility_allocations":          UtilityCostAllocationAdapter(),
+    # Utility Management — Operational records
+    "soft_water_records":           SoftWaterRecordAdapter(),
+    "boiler_records":               BoilerRecordAdapter(),
+    "steam_transactions":           SteamTransactionAdapter(),
+    "compressor_records":           CompressorRecordAdapter(),
+    "air_transactions":             AirTransactionAdapter(),
+    "solar_records":                SolarRecordImportAdapter(),
+    "treatment_chemical_records":   TreatmentChemicalRecordAdapter(),
+    "wastewater_records":           WastewaterRecordAdapter(),
     # Advanced Production
     "work_centers":          WorkCenterImportAdapter(),
     "routings":              RoutingImportAdapter(),

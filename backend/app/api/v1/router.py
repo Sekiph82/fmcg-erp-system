@@ -8,7 +8,7 @@ from app.api.v1.endpoints import (
     hr, documents, analytics, bulk_import, marketing, ai,
     production_advanced, production_costing, production_ai, utilities, utility_management, electricity,
     water, soft_water, steam, compressor, solar, chemical_treatment, wastewater, machine_utility,
-    utility_billing,
+    utility_billing, utility_integration, utilities_reports,
 )
 
 api_router = APIRouter()
@@ -84,3 +84,7 @@ api_router.include_router(wastewater.router, prefix="/wastewater", tags=["wastew
 api_router.include_router(machine_utility.router, prefix="/machine-utility", tags=["machine-utility"])
 # ── Utility Billing, Tariffs & Cost Allocation ─────────────────────────────────
 api_router.include_router(utility_billing.router, prefix="/billing", tags=["utility-billing"])
+# ── Utility Integration (cross-module orchestration) ─────────────────────────
+api_router.include_router(utility_integration.router, prefix="/utility-management", tags=["utility-integration"])
+# ── Utilities Reports & Analytics ─────────────────────────────────────────────
+api_router.include_router(utilities_reports.router, prefix="/utilities-reports", tags=["utilities-reports"])

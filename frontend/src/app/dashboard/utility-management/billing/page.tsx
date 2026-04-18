@@ -2,6 +2,7 @@
 
 import React, { useState, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { integrationApi } from "@/lib/utilityIntegration";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend, LineChart, Line,
@@ -78,6 +79,102 @@ function KpiCard({
 function fmt(n?: number | null, dp = 2) {
   if (n == null) return "—";
   return n.toLocaleString(undefined, { minimumFractionDigits: dp, maximumFractionDigits: dp });
+}
+
+// ── Post to GL Modal ──────────────────────────────────────────────────────────
+
+function PostToGLModal({
+  bill,
+  onClose,
+  onSuccess,
+}: {
+  bill: UtilityBill;
+  onClose: () => void;
+  onSuccess: (msg: string) => void;
+}) {
+  const qc = useQueryClient();
+  const [debitAccountId, setDebitAccountId] = useState("");
+  const [creditAccountId, setCreditAccountId] = useState("");
+
+  const mut = useMutation({
+    mutationFn: () =>
+      integrationApi.postBillToGL(bill.id, {
+        debit_account_id: debitAccountId,
+        credit_account_id: creditAccountId,
+      }),
+    onSuccess: (result) => {
+      qc.invalidateQueries({ queryKey: ["bills"] });
+      qc.invalidateQueries({ queryKey: ["billing-kpis"] });
+      onSuccess(`Bill posted to GL: ${result.entry_no}`);
+      onClose();
+    },
+  });
+
+  const inputCls =
+    "w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500";
+  const labelCls = "block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1";
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Post Bill to GL</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">
+            &times;
+          </button>
+        </div>
+        <div className="p-6 space-y-4">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Bill <strong>{bill.bill_no}</strong> — {bill.provider_name ?? bill.utility_type} &mdash;{" "}
+            <strong>
+              {bill.total_amount.toLocaleString(undefined, { minimumFractionDigits: 2 })} {bill.currency_code}
+            </strong>
+          </p>
+          <div>
+            <label className={labelCls}>Debit Account ID *</label>
+            <input
+              className={inputCls}
+              placeholder="UUID of the debit account"
+              value={debitAccountId}
+              onChange={e => setDebitAccountId(e.target.value)}
+              required
+            />
+          </div>
+          <div>
+            <label className={labelCls}>Credit Account ID *</label>
+            <input
+              className={inputCls}
+              placeholder="UUID of the credit account"
+              value={creditAccountId}
+              onChange={e => setCreditAccountId(e.target.value)}
+              required
+            />
+          </div>
+          {mut.isError && (
+            <p className="text-xs text-red-600 dark:text-red-400">
+              {mut.error instanceof Error ? mut.error.message : "Failed to post bill to GL."}
+            </p>
+          )}
+          <div className="flex justify-end gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => mut.mutate()}
+              disabled={mut.isPending || !debitAccountId.trim() || !creditAccountId.trim()}
+              className="px-4 py-2 text-sm rounded-lg bg-violet-600 hover:bg-violet-700 text-white disabled:opacity-50"
+            >
+              {mut.isPending ? "Posting…" : "Post to GL"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
@@ -830,6 +927,14 @@ export default function UtilityBillingPage() {
   const [tariffModal, setTariffModal]   = useState<{ open: boolean; item?: UtilityTariff | null }>({ open: false });
   const [allocModal, setAllocModal]     = useState<{ open: boolean; item?: UtilityAllocation | null }>({ open: false });
   const [engineModal, setEngineModal]   = useState(false);
+  const [glModal, setGlModal]           = useState<{ open: boolean; bill?: UtilityBill }>({ open: false });
+
+  // Toast
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  function showToast(message: string, type: "success" | "error" = "success") {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 4500);
+  }
 
   // ── Queries ───────────────────────────────────────────────────────────────
   const kpiQ = useQuery({
@@ -1110,7 +1215,21 @@ export default function UtilityBillingPage() {
                     <td className={tdCls}><StatusBadge status={b.status} /></td>
                     <td className={tdCls + " text-xs"}>{b.due_date ?? "—"}</td>
                     <td className={tdCls}>
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 items-center">
+                        {b.status === "VERIFIED" && (
+                          <button
+                            onClick={() => setGlModal({ open: true, bill: b })}
+                            title="Post to GL"
+                            className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 hover:bg-violet-200 dark:hover:bg-violet-800"
+                          >
+                            {/* Document / bank icon */}
+                            <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
+                                d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                            </svg>
+                            Post GL
+                          </button>
+                        )}
                         <button onClick={() => setBillModal({ open: true, item: b })}
                           className="text-xs text-blue-600 hover:underline">Edit</button>
                         <button onClick={() => { if (confirm("Delete this bill?")) deleteBillMut.mutate(b.id); }}
@@ -1339,6 +1458,20 @@ export default function UtilityBillingPage() {
           onClose={() => setEngineModal(false)}
           onRun={async req => { await engineMut.mutateAsync(req); }}
         />
+      )}
+      {glModal.open && glModal.bill && (
+        <PostToGLModal
+          bill={glModal.bill}
+          onClose={() => setGlModal({ open: false })}
+          onSuccess={msg => showToast(msg, "success")}
+        />
+      )}
+      {/* Toast */}
+      {toast && (
+        <div className={`fixed bottom-6 right-6 z-[100] flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg text-sm font-medium text-white ${toast.type === "success" ? "bg-green-600" : "bg-red-600"}`}>
+          <span>{toast.message}</span>
+          <button onClick={() => setToast(null)} className="font-bold text-white/80 hover:text-white">&times;</button>
+        </div>
       )}
     </div>
   );
