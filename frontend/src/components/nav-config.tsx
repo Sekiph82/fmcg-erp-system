@@ -413,6 +413,44 @@ export const NAV_CONFIG: NavEntry[] = [
     ],
   },
 
+  // ╔══════════════════════════════════╗
+  // ║   PLANNING & INTELLIGENCE        ║
+  // ╚══════════════════════════════════╝
+  cluster("cluster-planning", "Planning & Intelligence"),
+
+  {
+    type: "section",
+    id: "mrp",
+    label: "MRP & Forecasting",
+    permission: "production.view",
+    icon: md(
+      "M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"
+    ),
+    items: [
+      { label: "MRP Dashboard",      href: "/dashboard/mrp",              permission: "production.view" },
+      { label: "MRP Runs",           href: "/dashboard/mrp/run",          permission: "production.view" },
+      { label: "Suggestions",        href: "/dashboard/mrp/suggestions",  permission: "production.view" },
+      { label: "Demand Forecasting", href: "/dashboard/mrp/forecast",     permission: "production.view" },
+    ],
+  },
+
+  {
+    type: "section",
+    id: "mps",
+    label: "Master Production Scheduling",
+    permission: "production.view",
+    icon: md(
+      "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+    ),
+    items: [
+      { label: "MPS Dashboard",   href: "/dashboard/mps",                 permission: "production.view" },
+      { label: "Planning Board",  href: "/dashboard/mps/planning-board",  permission: "production.view" },
+      { label: "Capacity Heatmap",href: "/dashboard/mps/capacity",        permission: "production.view" },
+      { label: "Campaign View",   href: "/dashboard/mps/campaigns",       permission: "production.view" },
+      { label: "What-If Simulator", href: "/dashboard/mps/whatif",        permission: "production.view" },
+    ],
+  },
+
   // ╔══════════════════════════════╗
   // ║       PEOPLE & ADMIN         ║
   // ╚══════════════════════════════╝

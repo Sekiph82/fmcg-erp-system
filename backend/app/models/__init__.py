@@ -153,6 +153,22 @@ from app.models.utility_management import (
     MachineUtilityMapping,
 )
 
+# ── MRP & Demand Forecasting ──────────────────────────────────────────────────
+from app.models.mrp import (
+    ForecastModelType, PeriodType, ForecastStatus,
+    MRPRunStatus, MRPTrigger, SuggestionType, SuggestionStatus,
+    DemandForecast, DemandForecastLine,
+    MRPRun, MRPResult, MRPSuggestion,
+)
+
+# ── MPS (Master Production Scheduling) ───────────────────────────────────────
+from app.models.mps import (
+    MPSPlanningMode, MPSCapacityMode, MPSStatus, MPSFeasibilityStatus,
+    MPSAgentType, MPSRecType, MPSRecStatus, WhatIfStatus, MPSChangeType,
+    MPSPlan, MPSLine, MPSCampaign, MPSCapacitySlot,
+    MPSWhatIfScenario, MPSAIRecommendation,
+)
+
 __all__ = [
     # AI
     "AIRequest", "AIPrediction", "AIRecommendation", "AIFormulation", "AIScenario",
@@ -235,4 +251,14 @@ __all__ = [
     "SolarRecord", "TreatmentChemicalRecord", "WastewaterRecord",
     "UtilityBill", "UtilityCostAllocation",
     "UtilityAlarmEvent", "MachineUtilityMapping",
+    # MRP & Demand Forecasting
+    "ForecastModelType", "PeriodType", "ForecastStatus",
+    "MRPRunStatus", "MRPTrigger", "SuggestionType", "SuggestionStatus",
+    "DemandForecast", "DemandForecastLine",
+    "MRPRun", "MRPResult", "MRPSuggestion",
+    # MPS
+    "MPSPlanningMode", "MPSCapacityMode", "MPSStatus", "MPSFeasibilityStatus",
+    "MPSAgentType", "MPSRecType", "MPSRecStatus", "WhatIfStatus", "MPSChangeType",
+    "MPSPlan", "MPSLine", "MPSCampaign", "MPSCapacitySlot",
+    "MPSWhatIfScenario", "MPSAIRecommendation",
 ]

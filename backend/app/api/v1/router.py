@@ -9,6 +9,8 @@ from app.api.v1.endpoints import (
     production_advanced, production_costing, production_ai, utilities, utility_management, electricity,
     water, soft_water, steam, compressor, solar, chemical_treatment, wastewater, machine_utility,
     utility_billing, utility_integration, utilities_reports,
+    utility_alarm, utility_kpi,
+    mrp, mps,
 )
 
 api_router = APIRouter()
@@ -88,3 +90,11 @@ api_router.include_router(utility_billing.router, prefix="/billing", tags=["util
 api_router.include_router(utility_integration.router, prefix="/utility-management", tags=["utility-integration"])
 # ── Utilities Reports & Analytics ─────────────────────────────────────────────
 api_router.include_router(utilities_reports.router, prefix="/utilities-reports", tags=["utilities-reports"])
+# ── Utility Alarm & Anomaly Detection ─────────────────────────────────────────
+api_router.include_router(utility_alarm.router, prefix="/alarms", tags=["utility-alarms"])
+# ── Utility KPI Center ────────────────────────────────────────────────────────
+api_router.include_router(utility_kpi.router, prefix="/utility-kpi", tags=["utility-kpi"])
+# ── MRP & Demand Forecasting ──────────────────────────────────────────────────
+api_router.include_router(mrp.router, prefix="/mrp", tags=["mrp"])
+# ── MPS (Master Production Scheduling) ───────────────────────────────────────
+api_router.include_router(mps.router, prefix="/mps", tags=["mps"])

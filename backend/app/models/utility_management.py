@@ -147,6 +147,22 @@ class AlarmOperator(str, enum.Enum):
     DELTA_PCT = "DELTA_PCT"  # % change vs previous reading
 
 
+class AlarmDetectionType(str, enum.Enum):
+    THRESHOLD          = "THRESHOLD"
+    SUDDEN_JUMP        = "SUDDEN_JUMP"
+    ROLLING_DEVIATION  = "ROLLING_DEVIATION"
+    SHIFT_COMPARISON   = "SHIFT_COMPARISON"
+    VS_STANDARD        = "VS_STANDARD"
+
+
+class AlarmCategory(str, enum.Enum):
+    CONSUMPTION = "CONSUMPTION"
+    QUALITY     = "QUALITY"
+    EQUIPMENT   = "EQUIPMENT"
+    COMPLIANCE  = "COMPLIANCE"
+    COST        = "COST"
+
+
 class AllocationMethod(str, enum.Enum):
     METERED               = "METERED"               # Dedicated meter reading
     PROPORTIONAL          = "PROPORTIONAL"           # Share by production volume
@@ -522,6 +538,8 @@ class UtilityAlarmRule(Base, TimestampMixin):
     threshold_unit  = Column(String(30), nullable=True)
 
     severity          = Column(SAEnum(AlarmSeverity), nullable=False, default=AlarmSeverity.WARNING)
+    alarm_category    = Column(SAEnum(AlarmCategory), nullable=False, default=AlarmCategory.CONSUMPTION)
+    detection_type    = Column(SAEnum(AlarmDetectionType), nullable=False, default=AlarmDetectionType.THRESHOLD)
     cooldown_minutes  = Column(Integer, nullable=False, default=15)
     is_active         = Column(Boolean, nullable=False, default=True)
 
@@ -1367,6 +1385,7 @@ class UtilityAlarmEvent(Base, TimestampMixin):
 
     acknowledged_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     resolved_by_id     = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    assigned_to_id     = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
 
     # Maintenance module linkage
     maintenance_work_order_id = Column(UUID(as_uuid=True), ForeignKey("pm_work_orders.id", ondelete="SET NULL"), nullable=True)
@@ -1379,6 +1398,7 @@ class UtilityAlarmEvent(Base, TimestampMixin):
     asset                   = relationship("UtilityAsset", back_populates="alarm_events")
     acknowledged_by         = relationship("User", foreign_keys=[acknowledged_by_id])
     resolved_by             = relationship("User", foreign_keys=[resolved_by_id])
+    assigned_to             = relationship("User", foreign_keys=[assigned_to_id])
     maintenance_work_order  = relationship("PMWorkOrder")
     breakdown_record        = relationship("BreakdownRecord")
 

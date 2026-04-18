@@ -1,7 +1,107 @@
 # TASKS — FMCG ERP (Kenya) · Production Module
 
 ## Current Phase
-Phase 3 — AI Production Intelligence Layer ✅ COMPLETED
+Phase 5 — Master Production Scheduling (MPS) Engine ✅ COMPLETED
+
+---
+
+## Completed in This Run
+
+### Phase 4 — MRP Engine + Demand Forecasting ✅
+- [x] `backend/app/models/mrp.py` — DemandForecast, DemandForecastLine, MRPRun, MRPResult, MRPSuggestion
+- [x] `backend/app/schemas/mrp.py` — all Pydantic schemas
+- [x] `backend/app/services/forecast_service.py` — 5 forecast models + MAPE + spike detection
+- [x] `backend/app/services/mrp_service.py` — BOM explosion, net requirements, PR/PO creation
+- [x] `backend/app/api/v1/endpoints/mrp.py` — 17 routes at /api/v1/mrp/
+- [x] `frontend/src/lib/mrp.ts` — types + API client
+- [x] `frontend/src/app/dashboard/mrp/` — 4 pages: dashboard, run, suggestions, forecast
+
+### Phase 4b — Backend Startup Bugfixes ✅
+- [x] `pydantic-settings` not installed → installed via pip
+- [x] `AlarmDetectionType`, `AlarmCategory` missing from utility_management.py → added 5-value enum + AlarmCategory
+- [x] `UtilityAlarmRule` missing `alarm_category`, `detection_type` columns → added
+- [x] `UtilityAlarmEvent` missing `assigned_to_id`, `assigned_to` → added FK + relationship
+- [x] Broken git sync scripts (PS1 `$Args` reserved variable bug) → replaced with clean `sync-to-github.bat` + `setup-autosync.bat`
+- [x] router.py wired: `utility_alarm`, `utility_kpi`, `mrp` endpoints
+- [x] models/__init__.py wired: MRP + MPS model exports
+
+### Phase 5 — Master Production Scheduling (MPS) Engine ✅
+- [x] `backend/app/models/mps.py`
+  - `MPSPlan` — plan header (mode, status, capacity_mode, MRP linkage)
+  - `MPSLine` — per-product per-period production lines
+  - `MPSCampaign` — SKU campaign groupings (FMCG changeover optimization)
+  - `MPSCapacitySlot` — daily capacity utilization per work center
+  - `MPSWhatIfScenario` — what-if simulation (changes + computed impact)
+  - `MPSAIRecommendation` — AI optimizer + risk predictor outputs
+- [x] `backend/app/schemas/mps.py` — all request/response schemas
+- [x] `backend/app/services/mps_service.py`
+  - `create_mps_plan`, `list_mps_plans`, `get_mps_plan`
+  - `generate_mps_from_mrp` — import MRP results as weekly/monthly/daily lines
+  - `approve_mps_plan`, `release_mps_plan` — creates ProductionOrders
+  - `get_mps_dashboard` — KPI aggregation
+- [x] `backend/app/services/mps_capacity_service.py`
+  - `run_capacity_scheduling` — finite/infinite mode, distributes hours across working days
+  - `get_capacity_heatmap` — per-WC per-day utilization matrix
+  - `suggest_reschedule` — finds earliest available window for overloaded line
+- [x] `backend/app/services/mps_campaign_service.py`
+  - `run_campaign_grouping` — product code prefix clustering
+  - Sequence optimization (light→dark by code)
+  - Changeover time estimation from WC setup_time_min
+- [x] `backend/app/services/mps_whatif_service.py`
+  - `create_whatif_scenario` — applies changes to in-memory snapshots
+  - Computes service level, delay count, cost delta
+- [x] `backend/app/services/mps_ai_service.py`
+  - Agent 1 OPTIMIZER: sequence reordering, batch merge, campaign consolidation
+  - Agent 2 RISK PREDICTOR: capacity overload, late delivery, material shortage, urgent deadlines
+  - `run_all_ai_agents` — orchestrator
+  - `review_recommendation` — accept/reject workflow
+- [x] `backend/app/api/v1/endpoints/mps.py` — 20 routes at /api/v1/mps/
+- [x] `frontend/src/lib/mps.ts` — types, API client, color/label maps
+- [x] `frontend/src/app/dashboard/mps/page.tsx` — MPS Dashboard (KPIs, overload alerts, recent plans, quick nav)
+- [x] `frontend/src/app/dashboard/mps/planning-board/page.tsx` — Planning Board (lines table, override modal, approve/release)
+- [x] `frontend/src/app/dashboard/mps/capacity/page.tsx` — Capacity Heatmap (grid + overload panel + utilization bars)
+- [x] `frontend/src/app/dashboard/mps/campaigns/page.tsx` — Campaign View (sequence, SKU lists, efficiency metrics)
+- [x] `frontend/src/app/dashboard/mps/whatif/page.tsx` — What-If Simulator (scenario builder, change staging, impact display)
+- [x] Nav-config: "Planning & Intelligence" cluster with MRP + MPS sections
+
+---
+
+## Next Immediate Tasks
+
+### Phase 6 — Advanced Production Planning Suite + Capacity Engine
+- [ ] Finite scheduling with shift templates (multi-shift support)
+- [ ] Gantt chart visualization (timeline view per work center)
+- [ ] MPS → Production Order → Work Order → Shop Floor execution chain
+- [ ] Bottleneck detection and automatic line balancing
+- [ ] FMCG-specific: bulk-to-pack split (bulk production feeding multiple SKU fills)
+
+### Phase 7 — Procurement Integration (MRP → PR auto-creation)
+1. Material shortage event logging when `_issue_material()` raises INSUFFICIENT_MATERIAL
+2. `GET /production/material-shortages` endpoint
+3. Frontend alert banner on production order detail page
+4. Link MPS → MRP → PR auto-creation workflow
+
+### Phase 8 — Enhanced Reports
+1. Daily production summary (line output, efficiency, waste, downtime per shift)
+2. Line efficiency report (OEE by machine by shift, period comparison)
+3. Cost variance report (actual vs standard by product)
+4. MPS vs actual: planned vs delivered per period
+
+## Blockers
+- None — backend imports cleanly, all modules wired
+
+## Architecture Notes
+- MPS Plan → MPSLine links to MRPResult (via mrp_result_id)
+- MPSLine.work_center_id → WorkCenter (production_advanced)
+- Capacity: 8h/day default (Mon–Sat), throughput from WorkCenter.capacity (units/hr)
+- Campaign key: first 6 chars of product code → FMCG family grouping
+- What-If: in-memory snapshot computation (never touches live plan data)
+- AI agents: never auto-apply, always await planner accept/reject
+- DB migration needed: `alembic revision --autogenerate -m "mps_engine"` before first use
+
+---
+
+## Previously Completed Phases
 
 ---
 
