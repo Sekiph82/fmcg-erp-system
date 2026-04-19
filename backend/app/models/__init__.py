@@ -161,6 +161,33 @@ from app.models.mrp import (
     MRPRun, MRPResult, MRPSuggestion,
 )
 
+# ── Advanced BOM / Formula / Packaging BOM ────────────────────────────────────
+from app.models.bom import (
+    BOMType, BOMLifecycle, ComponentType, BasisType,
+    SubstitutionPolicy, ItemLinkType, LossCategory,
+    BOMAgentType, BOMRecStatus,
+    AdvancedBOM, AdvancedBOMLine,
+    BOMSubstituteGroup, BOMSubstitute,
+    BOMConversionProfile, BOMYieldConfig, BOMAIRec,
+)
+
+# ── Production Execution System ───────────────────────────────────────────────
+from app.models.production_execution import (
+    ProdExecStatus, WOExecStatus, ExecSourceType,
+    ExecMatStatus, ExecScrapCategory, ExecSplitMergeType,
+    ExecAIAgentType, ExecAIRecStatus,
+    ProdExecOrder, ExecWorkOrder, ExecOrderMaterial,
+    BatchGenealogy, ExecSplitMergeLog, ExecAIRec,
+)
+
+# ── Advanced Production Planning Suite ───────────────────────────────────────
+from app.models.planning import (
+    ScenarioStatus, ScenarioMode, OpQueueStatus, CapacitySlotType,
+    BottleneckSeverity, PlanningAgentType, PlanningRecStatus, SimulationStatus,
+    PlanningScenario, ResourceCalendar, OperationQueue, CapacityLoadSnapshot,
+    ChangeoverMatrix, PlanningBottleneck, PlanningAIRec, PlanningSimulation,
+)
+
 # ── MPS (Master Production Scheduling) ───────────────────────────────────────
 from app.models.mps import (
     MPSPlanningMode, MPSCapacityMode, MPSStatus, MPSFeasibilityStatus,
@@ -256,6 +283,24 @@ __all__ = [
     "MRPRunStatus", "MRPTrigger", "SuggestionType", "SuggestionStatus",
     "DemandForecast", "DemandForecastLine",
     "MRPRun", "MRPResult", "MRPSuggestion",
+    # Production Execution
+    "ProdExecStatus", "WOExecStatus", "ExecSourceType",
+    "ExecMatStatus", "ExecScrapCategory", "ExecSplitMergeType",
+    "ExecAIAgentType", "ExecAIRecStatus",
+    "ProdExecOrder", "ExecWorkOrder", "ExecOrderMaterial",
+    "BatchGenealogy", "ExecSplitMergeLog", "ExecAIRec",
+    # Advanced BOM
+    "BOMType", "BOMLifecycle", "ComponentType", "BasisType",
+    "SubstitutionPolicy", "ItemLinkType", "LossCategory",
+    "BOMAgentType", "BOMRecStatus",
+    "AdvancedBOM", "AdvancedBOMLine",
+    "BOMSubstituteGroup", "BOMSubstitute",
+    "BOMConversionProfile", "BOMYieldConfig", "BOMAIRec",
+    # Advanced Planning
+    "ScenarioStatus", "ScenarioMode", "OpQueueStatus", "CapacitySlotType",
+    "BottleneckSeverity", "PlanningAgentType", "PlanningRecStatus", "SimulationStatus",
+    "PlanningScenario", "ResourceCalendar", "OperationQueue", "CapacityLoadSnapshot",
+    "ChangeoverMatrix", "PlanningBottleneck", "PlanningAIRec", "PlanningSimulation",
     # MPS
     "MPSPlanningMode", "MPSCapacityMode", "MPSStatus", "MPSFeasibilityStatus",
     "MPSAgentType", "MPSRecType", "MPSRecStatus", "WhatIfStatus", "MPSChangeType",

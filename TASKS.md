@@ -1,11 +1,31 @@
 # TASKS — FMCG ERP (Kenya) · Production Module
 
 ## Current Phase
-Phase 5 — Master Production Scheduling (MPS) Engine ✅ COMPLETED
+Phase 6 — Advanced Production Planning Suite ✅ COMPLETED
 
 ---
 
 ## Completed in This Run
+
+### Phase 6 — Advanced Production Planning Suite ✅
+- [x] `backend/app/models/planning.py` — PlanningScenario, ResourceCalendar, OperationQueue, CapacityLoadSnapshot, ChangeoverMatrix, PlanningBottleneck, PlanningAIRec, PlanningSimulation (8 models, 8 enums)
+- [x] `backend/app/schemas/planning.py` — all Pydantic request/response schemas
+- [x] `backend/app/services/planning_scenario_service.py` — CRUD, activate/lock/archive, dashboard aggregation
+- [x] `backend/app/services/planning_capacity_service.py` — greedy finite scheduling engine (ATCS rule, working-day calendar, changeover lookup, slot_map → CapacityLoadSnapshot)
+- [x] `backend/app/services/planning_bottleneck_service.py` — detect/list/resolve bottlenecks (4 severity levels, recommendation text)
+- [x] `backend/app/services/planning_simulation_service.py` — create/compute/publish simulations (in-memory delta)
+- [x] `backend/app/services/planning_ai_service.py` — 3 agents: CAPACITY_OPTIMIZER, SEQUENCING_OPTIMIZER, DISRUPTION_PREDICTOR
+- [x] `backend/app/api/v1/endpoints/planning.py` — 22 routes at /api/v1/planning/
+- [x] `backend/app/api/v1/router.py` — wired planning router
+- [x] `backend/app/models/__init__.py` — all 8 planning models exported
+- [x] `frontend/src/lib/planning.ts` — types + API client + color/label maps
+- [x] `frontend/src/app/dashboard/planning/page.tsx` — Planning Dashboard (KPIs, scenario list, top bottlenecks, AI recs, create modal)
+- [x] `frontend/src/app/dashboard/planning/schedule/page.tsx` — Schedule Board (per-WC grouping, Gantt-style table, calculate trigger, op detail modal)
+- [x] `frontend/src/app/dashboard/planning/capacity/page.tsx` — Capacity Board (heatmap grid, overload alerts, utilization bars)
+- [x] `frontend/src/app/dashboard/planning/bottlenecks/page.tsx` — Bottleneck Explorer (severity cards, AI recs with accept/reject, resolve modal)
+- [x] `frontend/src/app/dashboard/planning/simulation/page.tsx` — Simulation Sandbox (op selector, staged changes, impact display, publish flow)
+- [x] `frontend/src/app/dashboard/planning/changeover/page.tsx` — Changeover Matrix (grid heatmap + flat list + add modal)
+- [x] `frontend/src/components/nav-config.tsx` — "Advanced Planning Suite" section added to Planning & Intelligence cluster
 
 ### Phase 4 — MRP Engine + Demand Forecasting ✅
 - [x] `backend/app/models/mrp.py` — DemandForecast, DemandForecastLine, MRPRun, MRPResult, MRPSuggestion
@@ -68,12 +88,13 @@ Phase 5 — Master Production Scheduling (MPS) Engine ✅ COMPLETED
 
 ## Next Immediate Tasks
 
-### Phase 6 — Advanced Production Planning Suite + Capacity Engine
-- [ ] Finite scheduling with shift templates (multi-shift support)
-- [ ] Gantt chart visualization (timeline view per work center)
-- [ ] MPS → Production Order → Work Order → Shop Floor execution chain
-- [ ] Bottleneck detection and automatic line balancing
-- [ ] FMCG-specific: bulk-to-pack split (bulk production feeding multiple SKU fills)
+### Phase 6 — Advanced Production Planning Suite ✅ COMPLETED
+(see Completed in This Run above)
+
+### Phase 7 — MPS → Shop Floor Execution Chain
+- [ ] Production Order → Work Order auto-creation on planning scenario publish
+- [ ] Shop floor execution: start/complete work orders from schedule board
+- [ ] Real-time progress tracking per OperationQueue entry
 
 ### Phase 7 — Procurement Integration (MRP → PR auto-creation)
 1. Material shortage event logging when `_issue_material()` raises INSUFFICIENT_MATERIAL
@@ -88,7 +109,11 @@ Phase 5 — Master Production Scheduling (MPS) Engine ✅ COMPLETED
 4. MPS vs actual: planned vs delivered per period
 
 ## Blockers
-- None — backend imports cleanly, all modules wired
+- None — `python -c "from app.main import app; print('OK')"` passes cleanly
+
+## DB Migrations Needed
+- `alembic revision --autogenerate -m "planning_suite"` — creates: planning_scenarios, resource_calendars, operation_queue, capacity_load_snapshots, changeover_matrix, planning_bottlenecks, planning_ai_recs, planning_simulations
+- Run after MPS migration: `alembic revision --autogenerate -m "mps_engine"` (if not yet done)
 
 ## Architecture Notes
 - MPS Plan → MPSLine links to MRPResult (via mrp_result_id)
