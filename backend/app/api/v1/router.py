@@ -10,7 +10,7 @@ from app.api.v1.endpoints import (
     water, soft_water, steam, compressor, solar, chemical_treatment, wastewater, machine_utility,
     utility_billing, utility_integration, utilities_reports,
     utility_alarm, utility_kpi,
-    mrp, mps, planning, bom, production_execution,
+    mrp, mps, planning, bom, production_execution, shop_floor,
 )
 
 api_router = APIRouter()
@@ -104,3 +104,5 @@ api_router.include_router(planning.router, prefix="/planning", tags=["planning"]
 api_router.include_router(bom.router, prefix="/bom", tags=["bom"])
 # ── Production Execution System ───────────────────────────────────────────────
 api_router.include_router(production_execution.router, prefix="/production-execution", tags=["production-execution"])
+# ── Shop Floor Execution System ───────────────────────────────────────────────
+api_router.include_router(shop_floor.router, prefix="/shop-floor", tags=["shop-floor"])

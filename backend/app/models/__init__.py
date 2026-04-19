@@ -171,6 +171,14 @@ from app.models.bom import (
     BOMConversionProfile, BOMYieldConfig, BOMAIRec,
 )
 
+# ── Shop Floor Execution System ───────────────────────────────────────────────
+from app.models.shop_floor import (
+    SFSessionStatus, WOEventType, SFDowntimeCat, SFImpactLevel,
+    OverrideType, SFAIAgentType, SFAIRecStatus, SFLiveStatus,
+    SFSession, WOActivityLog, SFDowntimeLog,
+    ShiftHandover, SupervisorOverride, SFAIRec,
+)
+
 # ── Production Execution System ───────────────────────────────────────────────
 from app.models.production_execution import (
     ProdExecStatus, WOExecStatus, ExecSourceType,
@@ -283,6 +291,11 @@ __all__ = [
     "MRPRunStatus", "MRPTrigger", "SuggestionType", "SuggestionStatus",
     "DemandForecast", "DemandForecastLine",
     "MRPRun", "MRPResult", "MRPSuggestion",
+    # Shop Floor
+    "SFSessionStatus", "WOEventType", "SFDowntimeCat", "SFImpactLevel",
+    "OverrideType", "SFAIAgentType", "SFAIRecStatus", "SFLiveStatus",
+    "SFSession", "WOActivityLog", "SFDowntimeLog",
+    "ShiftHandover", "SupervisorOverride", "SFAIRec",
     # Production Execution
     "ProdExecStatus", "WOExecStatus", "ExecSourceType",
     "ExecMatStatus", "ExecScrapCategory", "ExecSplitMergeType",

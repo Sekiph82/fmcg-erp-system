@@ -499,6 +499,24 @@ export const NAV_CONFIG: NavEntry[] = [
     ],
   },
 
+  {
+    type: "section",
+    id: "shop-floor",
+    label: "Shop Floor",
+    permission: "production.view",
+    icon: md(
+      "M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"
+    ),
+    items: [
+      { label: "SF Dashboard",      href: "/dashboard/shop-floor",             permission: "production.view" },
+      { label: "Operator Terminal", href: "/dashboard/shop-floor/terminal",   permission: "production.view" },
+      { label: "Supervisor Console",href: "/dashboard/shop-floor/supervisor", permission: "production.view" },
+      { label: "Queue Board",       href: "/dashboard/shop-floor/queue",      permission: "production.view" },
+      { label: "Downtime Board",    href: "/dashboard/shop-floor/downtime",   permission: "production.view" },
+      { label: "Shift Handover",    href: "/dashboard/shop-floor/handover",   permission: "production.view" },
+    ],
+  },
+
   // ╔══════════════════════════════╗
   // ║       PEOPLE & ADMIN         ║
   // ╚══════════════════════════════╝
