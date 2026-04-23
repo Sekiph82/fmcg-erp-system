@@ -11,6 +11,7 @@ from app.api.v1.endpoints import (
     utility_billing, utility_integration, utilities_reports,
     utility_alarm, utility_kpi,
     mrp, mps, planning, bom, production_execution, shop_floor,
+    material_flow, machine_operator,
 )
 
 api_router = APIRouter()
@@ -106,3 +107,7 @@ api_router.include_router(bom.router, prefix="/bom", tags=["bom"])
 api_router.include_router(production_execution.router, prefix="/production-execution", tags=["production-execution"])
 # ── Shop Floor Execution System ───────────────────────────────────────────────
 api_router.include_router(shop_floor.router, prefix="/shop-floor", tags=["shop-floor"])
+# ── Material Flow Engine ───────────────────────────────────────────────────────
+api_router.include_router(material_flow.router, prefix="/material-flow", tags=["material-flow"])
+# ── Machine + Operator Intelligence ───────────────────────────────────────────
+api_router.include_router(machine_operator.router, prefix="/machine-ops", tags=["machine-operator"])

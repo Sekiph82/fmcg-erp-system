@@ -204,6 +204,28 @@ from app.models.mps import (
     MPSWhatIfScenario, MPSAIRecommendation,
 )
 
+# ── Machine + Operator Intelligence ──────────────────────────────────────────
+from app.models.machine_operator import (
+    MachineStatus, MachineFamily, SkillLevel, CertStatus,
+    AssignmentType, RuntimeActivity, DowntimeClass, LaborActivity,
+    ReviewType, MOAIAgentType, MOAIRecStatus,
+    Machine, OperatorProfile, ProductionTeam, TeamMember,
+    OperatorSkillCert, WorkOrderAssignment, AssignmentHistory,
+    MachineRuntimeLog, LaborTimeLog, MachinePerformanceSnapshot,
+    DowntimeIntelligence, SupervisorReview, MOAIRecommendation,
+)
+
+# ── Material Flow Engine ──────────────────────────────────────────────────────
+from app.models.material_flow import (
+    FlowType, FlowStatus, FlowMode, StageType, QualityStatus,
+    MovementReason, ReservationStatus, TankStatus, ReconciliationStatus,
+    MFAIAgentType, MFAIRecStatus,
+    FlowStage, MaterialFlowTransaction, MaterialFlowLine,
+    MaterialReservation, MaterialReservationLine,
+    ProductionConsumption, PreparedLot, TankOccupancy,
+    BatchReconciliation, BatchReconciliationLine, MFAIRecommendation,
+)
+
 __all__ = [
     # AI
     "AIRequest", "AIPrediction", "AIRecommendation", "AIFormulation", "AIScenario",
@@ -319,4 +341,20 @@ __all__ = [
     "MPSAgentType", "MPSRecType", "MPSRecStatus", "WhatIfStatus", "MPSChangeType",
     "MPSPlan", "MPSLine", "MPSCampaign", "MPSCapacitySlot",
     "MPSWhatIfScenario", "MPSAIRecommendation",
+    # Machine + Operator Intelligence
+    "MachineStatus", "MachineFamily", "SkillLevel", "CertStatus",
+    "AssignmentType", "RuntimeActivity", "DowntimeClass", "LaborActivity",
+    "ReviewType", "MOAIAgentType", "MOAIRecStatus",
+    "Machine", "OperatorProfile", "ProductionTeam", "TeamMember",
+    "OperatorSkillCert", "WorkOrderAssignment", "AssignmentHistory",
+    "MachineRuntimeLog", "LaborTimeLog", "MachinePerformanceSnapshot",
+    "DowntimeIntelligence", "SupervisorReview", "MOAIRecommendation",
+    # Material Flow Engine
+    "FlowType", "FlowStatus", "FlowMode", "StageType", "QualityStatus",
+    "MovementReason", "ReservationStatus", "TankStatus", "ReconciliationStatus",
+    "MFAIAgentType", "MFAIRecStatus",
+    "FlowStage", "MaterialFlowTransaction", "MaterialFlowLine",
+    "MaterialReservation", "MaterialReservationLine",
+    "ProductionConsumption", "PreparedLot", "TankOccupancy",
+    "BatchReconciliation", "BatchReconciliationLine", "MFAIRecommendation",
 ]

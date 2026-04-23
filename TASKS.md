@@ -1,11 +1,116 @@
 # TASKS — FMCG ERP (Kenya) · Production Module
 
 ## Current Phase
-Phase 6 — Advanced Production Planning Suite ✅ COMPLETED
+Phase 8 — Machine + Operator Intelligence ✅ COMPLETED
 
 ---
 
 ## Completed in This Run
+
+### Phase 8 — Machine + Operator Intelligence ✅
+- [x] `backend/app/models/machine_operator.py` — 13 models, 13 enums:
+  - Machine (enriched master), OperatorProfile, ProductionTeam, TeamMember
+  - OperatorSkillCert, WorkOrderAssignment, AssignmentHistory
+  - MachineRuntimeLog, LaborTimeLog, MachinePerformanceSnapshot
+  - DowntimeIntelligence, SupervisorReview, MOAIRecommendation
+  - Enums: MachineStatus, MachineFamily(10), SkillLevel, CertStatus, AssignmentType, RuntimeActivity(9), DowntimeClass(16), LaborActivity(8), ReviewType, MOAIAgentType, MOAIRecStatus
+- [x] `backend/app/schemas/machine_operator.py` — all Pydantic v2 schemas + CostContribution + MODashboard
+- [x] `backend/app/services/machine_operator_service.py`:
+  - Machine / Operator / Team CRUD
+  - Skill/cert CRUD + auto cert status computation + batch refresh
+  - Assignment validation with cert/status checks + override support
+  - Work order assignment creation + history logging
+  - Machine runtime log (setup/run/cleanup/downtime segmented)
+  - Labor time log with auto-duration + overtime computation
+  - Performance snapshot computation (OEE = availability × performance × quality)
+  - Cost contribution per production order (machine + labor)
+  - Downtime intelligence + repeat-occurrence detection
+  - Supervisor review log
+  - 3 AI agents: PerformanceAnomaly, ProductivityOptimizer, CostVariance
+- [x] `backend/app/api/v1/endpoints/machine_operator.py` — 41 routes at /api/v1/machine-ops/
+- [x] `backend/app/api/v1/router.py` — wired machine_operator router
+- [x] `backend/app/models/__init__.py` — all 13 models + 13 enums exported
+- [x] `frontend/src/lib/machineOperator.ts` — types, API client, color/label maps
+- [x] `frontend/src/app/dashboard/machine-ops/page.tsx` — MO Dashboard (KPIs, OEE gauge, quick actions, downtime, AI recs)
+- [x] `frontend/src/app/dashboard/machine-ops/machines/page.tsx` — Machine Master (create, list, status change, detail panel)
+- [x] `frontend/src/app/dashboard/machine-ops/operators/page.tsx` — Operator Profiles (skill level breakdown, create)
+- [x] `frontend/src/app/dashboard/machine-ops/teams/page.tsx` — Team Master + member add
+- [x] `frontend/src/app/dashboard/machine-ops/runtime/page.tsx` — Runtime Logs (activity timeline, log modal)
+- [x] `frontend/src/app/dashboard/machine-ops/performance/page.tsx` — OEE/Performance (bar chart trend, compute trigger)
+- [x] `frontend/src/app/dashboard/machine-ops/downtime/page.tsx` — Downtime Board (horizontal bar chart, repeat/escalation flags, log modal)
+- [x] `frontend/src/app/dashboard/machine-ops/costing/page.tsx` — Cost Contribution (machine + labor breakdown + pie)
+- [x] `frontend/src/app/dashboard/machine-ops/certs/page.tsx` — Cert Expiry Monitor (alerts, refresh, create)
+- [x] `frontend/src/app/dashboard/machine-ops/assignment/page.tsx` — Assignment Board (validate → assign, cert override)
+- [x] `frontend/src/components/nav-config.tsx` — "Machine & Operator" cluster + 10 nav links
+
+**DB MIGRATION NEEDED:** `alembic revision --autogenerate -m "machine_operator_intelligence"` then `alembic upgrade head`
+
+---
+
+## Next Immediate Task: Prompt 9 — FEFO + Shelf-Life Control
+
+## Blockers
+- None — `python -c "from app.main import app; print('OK')"` passes cleanly
+
+---
+
+## Phase 7 — Material Flow Engine ✅ COMPLETED
+
+---
+
+## Completed in This Run
+
+### Phase 7 — Material Flow Engine ✅
+- [x] `backend/app/models/material_flow.py` — 10 models, 12 enums:
+  - FlowStage, MaterialFlowTransaction, MaterialFlowLine
+  - MaterialReservation, MaterialReservationLine
+  - ProductionConsumption, PreparedLot, TankOccupancy
+  - BatchReconciliation, BatchReconciliationLine, MFAIRecommendation
+  - Enums: FlowType(16), FlowStatus, FlowMode, StageType(19), QualityStatus, MovementReason, ReservationStatus, TankStatus, ReconciliationStatus, MFAIAgentType, MFAIRecStatus
+- [x] `backend/app/schemas/material_flow.py` — full Pydantic v2 request/response schemas
+- [x] `backend/app/services/material_flow_service.py` — all service functions:
+  - Stage CRUD
+  - Flow transaction create/list/get/confirm/reverse
+  - Reservation create/list/get/cancel
+  - Progressive consumption recording + variance computation
+  - Prepared lot + weigh recording
+  - Tank occupancy CRUD + status management
+  - Batch reconciliation compute/close + approval
+  - Flow history with filters
+  - Dashboard aggregation
+  - 3 AI agents: VarianceAnalyzer, FlowOptimizer, RiskMonitor
+- [x] `backend/app/api/v1/endpoints/material_flow.py` — 32 routes at /api/v1/material-flow/
+- [x] `backend/app/api/v1/router.py` — wired material_flow router
+- [x] `backend/app/models/__init__.py` — all 10 models + 11 enums exported
+- [x] `frontend/src/lib/materialFlow.ts` — types, API client, color/label maps
+- [x] `frontend/src/app/dashboard/material-flow/page.tsx` — MF Dashboard (8 KPIs, quick actions, recent flows, AI recs)
+- [x] `frontend/src/app/dashboard/material-flow/issue/page.tsx` — Issue to Production (multi-line, raw/pkg/consumable/weighing)
+- [x] `frontend/src/app/dashboard/material-flow/reservations/page.tsx` — Reservation Console (create, view, cancel)
+- [x] `frontend/src/app/dashboard/material-flow/wip-transfer/page.tsx` — WIP / Stage Transfer Screen
+- [x] `frontend/src/app/dashboard/material-flow/bulk-transfer/page.tsx` — Bulk Transfer + tank status sidebar
+- [x] `frontend/src/app/dashboard/material-flow/packaging/page.tsx` — Packaging Issue Screen (12 pkg types)
+- [x] `frontend/src/app/dashboard/material-flow/fg-receipt/page.tsx` — FG Receipt (quarantine default, stage selector)
+- [x] `frontend/src/app/dashboard/material-flow/returns/page.tsx` — Return / Reversal Screen (dual mode)
+- [x] `frontend/src/app/dashboard/material-flow/tanks/page.tsx` — Tank Occupancy View (card grid, fill bars, QC hold)
+- [x] `frontend/src/app/dashboard/material-flow/history/page.tsx` — Flow History Explorer (filter, drill-down)
+- [x] `frontend/src/app/dashboard/material-flow/reconciliation/page.tsx` — Batch Reconciliation (variance bars, close)
+- [x] `frontend/src/app/dashboard/material-flow/stages/page.tsx` — Stage Configuration Screen (19 stage types)
+- [x] `frontend/src/components/nav-config.tsx` — "Material Flow Engine" cluster + 12 nav links
+
+**DB MIGRATION NEEDED:** `alembic revision --autogenerate -m "material_flow_engine"` then `alembic upgrade head`
+
+---
+
+## Next Immediate Task: Prompt 8 — Machine + Operator Intelligence
+
+## Blockers
+- None — `python -c "from app.main import app; print('OK')"` passes cleanly
+
+---
+
+## Previously Completed Phases
+
+### Phase 6 — Advanced Production Planning Suite ✅
 
 ### Phase 6 — Advanced Production Planning Suite ✅
 - [x] `backend/app/models/planning.py` — PlanningScenario, ResourceCalendar, OperationQueue, CapacityLoadSnapshot, ChangeoverMatrix, PlanningBottleneck, PlanningAIRec, PlanningSimulation (8 models, 8 enums)

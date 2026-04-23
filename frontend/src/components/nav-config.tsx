@@ -517,6 +517,62 @@ export const NAV_CONFIG: NavEntry[] = [
     ],
   },
 
+  // ╔══════════════════════════════════╗
+  // ║  MACHINE + OPERATOR INTELLIGENCE ║
+  // ╚══════════════════════════════════╝
+  cluster("cluster-machine-ops", "Machine & Operator"),
+
+  {
+    type: "section",
+    id: "machine-ops",
+    label: "Machine + Operator Intelligence",
+    permission: "production.view",
+    icon: md(
+      "M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"
+    ),
+    items: [
+      { label: "MO Dashboard",       href: "/dashboard/machine-ops",                permission: "production.view" },
+      { label: "Machine Master",     href: "/dashboard/machine-ops/machines",        permission: "production.view" },
+      { label: "Operators",          href: "/dashboard/machine-ops/operators",       permission: "production.view" },
+      { label: "Teams",              href: "/dashboard/machine-ops/teams",           permission: "production.view" },
+      { label: "Runtime Logs",       href: "/dashboard/machine-ops/runtime",         permission: "production.view" },
+      { label: "OEE / Performance",  href: "/dashboard/machine-ops/performance",     permission: "production.view" },
+      { label: "Downtime Board",     href: "/dashboard/machine-ops/downtime",        permission: "production.view" },
+      { label: "Cost Contribution",  href: "/dashboard/machine-ops/costing",         permission: "production.view" },
+      { label: "Cert Monitor",       href: "/dashboard/machine-ops/certs",           permission: "production.view" },
+      { label: "Assignment Board",   href: "/dashboard/machine-ops/assignment",      permission: "production.view" },
+    ],
+  },
+
+  // ╔══════════════════════════════╗
+  // ║     MATERIAL FLOW ENGINE     ║
+  // ╚══════════════════════════════╝
+  cluster("cluster-material-flow", "Material Flow"),
+
+  {
+    type: "section",
+    id: "material-flow",
+    label: "Material Flow Engine",
+    permission: "production.view",
+    icon: md(
+      "M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+    ),
+    items: [
+      { label: "MF Dashboard",        href: "/dashboard/material-flow",                  permission: "production.view" },
+      { label: "Issue to Production", href: "/dashboard/material-flow/issue",             permission: "production.view" },
+      { label: "Reservations",        href: "/dashboard/material-flow/reservations",      permission: "production.view" },
+      { label: "WIP / Stage Transfer",href: "/dashboard/material-flow/wip-transfer",     permission: "production.view" },
+      { label: "Bulk Transfer",       href: "/dashboard/material-flow/bulk-transfer",     permission: "production.view" },
+      { label: "Packaging Issue",     href: "/dashboard/material-flow/packaging",         permission: "production.view" },
+      { label: "FG Receipt",          href: "/dashboard/material-flow/fg-receipt",        permission: "production.view" },
+      { label: "Returns & Reversals", href: "/dashboard/material-flow/returns",           permission: "production.view" },
+      { label: "Tank Occupancy",      href: "/dashboard/material-flow/tanks",             permission: "production.view" },
+      { label: "Flow History",        href: "/dashboard/material-flow/history",           permission: "production.view" },
+      { label: "Reconciliation",      href: "/dashboard/material-flow/reconciliation",    permission: "production.view" },
+      { label: "Stage Config",        href: "/dashboard/material-flow/stages",            permission: "production.view" },
+    ],
+  },
+
   // ╔══════════════════════════════╗
   // ║       PEOPLE & ADMIN         ║
   // ╚══════════════════════════════╝
