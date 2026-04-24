@@ -24,10 +24,11 @@ function Badge({ label, cls }: { label: string; cls: string }) {
 
 export default function MaterialFlowDashboard() {
   const qc = useQueryClient();
-  const { data, isLoading } = useQuery<MFDashboard>({
+  const { data, isLoading, isError, error } = useQuery<MFDashboard>({
     queryKey: ["mf-dashboard"],
     queryFn: () => mfApi.getDashboard().then((r) => r.data),
     refetchInterval: 30000,
+    retry: 1,
   });
 
   const runAI = useMutation({
@@ -42,6 +43,7 @@ export default function MaterialFlowDashboard() {
   });
 
   if (isLoading) return <div className="p-8 text-gray-500">Loading material flow dashboard…</div>;
+  if (isError) return <div className="p-8 text-red-500">Failed to load dashboard: {(error as Error)?.message ?? "Unknown error"}</div>;
   if (!data) return <div className="p-8 text-red-500">Failed to load Material Flow dashboard. Ensure the backend is running.</div>;
   const d = data;
 

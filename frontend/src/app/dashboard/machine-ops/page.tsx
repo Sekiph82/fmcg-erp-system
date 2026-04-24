@@ -36,10 +36,11 @@ function OEEGauge({ oee }: { oee: number }) {
 
 export default function MachineOpsDashboard() {
   const qc = useQueryClient();
-  const { data, isLoading } = useQuery<MODashboard>({
+  const { data, isLoading, isError, error } = useQuery<MODashboard>({
     queryKey: ["mo-dashboard"],
     queryFn: () => moApi.getDashboard().then((r) => r.data),
     refetchInterval: 30000,
+    retry: 1,
   });
 
   const runAI = useMutation({
@@ -53,6 +54,7 @@ export default function MachineOpsDashboard() {
   });
 
   if (isLoading) return <div className="p-8 text-gray-500">Loading Machine & Operator Intelligence…</div>;
+  if (isError) return <div className="p-8 text-red-500">Failed to load dashboard: {(error as Error)?.message ?? "Unknown error"}</div>;
   if (!data) return <div className="p-8 text-red-500">Failed to load Machine & Operator dashboard. Ensure the backend is running.</div>;
   const d = data;
   const oeeValue = d.avg_oee_today ? Number(d.avg_oee_today) : null;

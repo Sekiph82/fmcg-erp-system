@@ -395,7 +395,7 @@ class BatchReconciliation(Base, TimestampMixin):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     reconciliation_no = Column(String(50), unique=True, nullable=False, index=True)
     production_order_id = Column(UUID(as_uuid=True), ForeignKey("production_orders.id", ondelete="CASCADE"), nullable=False, index=True)
-    status = Column(Enum(ReconciliationStatus), nullable=False, default=ReconciliationStatus.OPEN)
+    status = Column(Enum(ReconciliationStatus, name="batchreconciliationstatus"), nullable=False, default=ReconciliationStatus.OPEN)
 
     total_issued = Column(Numeric(14, 3), nullable=False, default=0)
     total_consumed = Column(Numeric(14, 3), nullable=False, default=0)
