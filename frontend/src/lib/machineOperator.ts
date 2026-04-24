@@ -1,4 +1,4 @@
-import apiClient from "@/lib/api";
+import { apiClient } from "@/lib/api";
 
 export type MachineStatus = "ACTIVE" | "MAINTENANCE" | "INACTIVE" | "RETIRED";
 export type MachineFamily = "FILLING" | "MIXING" | "PACKAGING" | "LABELING" | "PALLETIZING" | "CONVEYOR" | "WEIGHING" | "INSPECTION" | "UTILITY" | "OTHER";
