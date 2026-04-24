@@ -11,7 +11,7 @@ from app.api.v1.endpoints import (
     utility_billing, utility_integration, utilities_reports,
     utility_alarm, utility_kpi,
     mrp, mps, planning, bom, production_execution, shop_floor,
-    material_flow, machine_operator,
+    material_flow, machine_operator, shelf_life, traceability,
 )
 
 api_router = APIRouter()
@@ -111,3 +111,7 @@ api_router.include_router(shop_floor.router, prefix="/shop-floor", tags=["shop-f
 api_router.include_router(material_flow.router, prefix="/material-flow", tags=["material-flow"])
 # ── Machine + Operator Intelligence ───────────────────────────────────────────
 api_router.include_router(machine_operator.router, prefix="/machine-ops", tags=["machine-operator"])
+# ── FEFO + Shelf-Life Control ──────────────────────────────────────────────────
+api_router.include_router(shelf_life.router, prefix="/shelf-life", tags=["shelf-life"])
+# ── Lot Traceability + Batch Recall Management ────────────────────────────────
+api_router.include_router(traceability.router, prefix="/traceability", tags=["traceability"])

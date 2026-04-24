@@ -215,6 +215,28 @@ from app.models.machine_operator import (
     DowntimeIntelligence, SupervisorReview, MOAIRecommendation,
 )
 
+# ── Lot Traceability + Batch Recall Management ───────────────────────────────
+from app.models.traceability import (
+    TraceEventType, TraceItemStage, GenealogyRelType,
+    RecallType, RecallTrigger, RecallSeverity, RecallStatus,
+    RecallActionType, RecallActionStatus, RecallRiskStatus,
+    TRRecAIAgentType, TRRecAIRecStatus,
+    TraceEvent, TraceEventLine, LotGenealogyLink,
+    RecallHeader, RecallScopeLine, RecallAction,
+    RecallCustomerImpact, RecallReturnRecord, TRRecAIRecommendation,
+)
+
+# ── FEFO + Shelf-Life Control ─────────────────────────────────────────────────
+from app.models.shelf_life import (
+    ShelfLifeStatus, PickingStrategy, ExpiryBlockPolicy, NearExpiryPolicy,
+    ShelfLifeCategory, RetestStatus, DispositionAction, DispositionStatus,
+    AlertType, AlertSeverity, SLAIAgentType, SLAIRecStatus, StrategyScope,
+    CustomerRuleType, FEFOContext,
+    ItemShelfLifeConfig, PickingStrategyConfig, CustomerShelfLifeRule,
+    LotShelfLifeProfile, RetestRequest, BulkHoldRecord, ShelfLifeAlert,
+    DispositionSuggestion, FEFOAuditLog, SLAIRecommendation,
+)
+
 # ── Material Flow Engine ──────────────────────────────────────────────────────
 from app.models.material_flow import (
     FlowType, FlowStatus, FlowMode, StageType, QualityStatus,
@@ -349,6 +371,22 @@ __all__ = [
     "OperatorSkillCert", "WorkOrderAssignment", "AssignmentHistory",
     "MachineRuntimeLog", "LaborTimeLog", "MachinePerformanceSnapshot",
     "DowntimeIntelligence", "SupervisorReview", "MOAIRecommendation",
+    # Lot Traceability + Batch Recall Management
+    "TraceEventType", "TraceItemStage", "GenealogyRelType",
+    "RecallType", "RecallTrigger", "RecallSeverity", "RecallStatus",
+    "RecallActionType", "RecallActionStatus", "RecallRiskStatus",
+    "TRRecAIAgentType", "TRRecAIRecStatus",
+    "TraceEvent", "TraceEventLine", "LotGenealogyLink",
+    "RecallHeader", "RecallScopeLine", "RecallAction",
+    "RecallCustomerImpact", "RecallReturnRecord", "TRRecAIRecommendation",
+    # FEFO + Shelf-Life Control
+    "ShelfLifeStatus", "PickingStrategy", "ExpiryBlockPolicy", "NearExpiryPolicy",
+    "ShelfLifeCategory", "RetestStatus", "DispositionAction", "DispositionStatus",
+    "AlertType", "AlertSeverity", "SLAIAgentType", "SLAIRecStatus", "StrategyScope",
+    "CustomerRuleType", "FEFOContext",
+    "ItemShelfLifeConfig", "PickingStrategyConfig", "CustomerShelfLifeRule",
+    "LotShelfLifeProfile", "RetestRequest", "BulkHoldRecord", "ShelfLifeAlert",
+    "DispositionSuggestion", "FEFOAuditLog", "SLAIRecommendation",
     # Material Flow Engine
     "FlowType", "FlowStatus", "FlowMode", "StageType", "QualityStatus",
     "MovementReason", "ReservationStatus", "TankStatus", "ReconciliationStatus",

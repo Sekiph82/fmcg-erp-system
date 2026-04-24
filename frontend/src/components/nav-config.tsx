@@ -544,6 +544,60 @@ export const NAV_CONFIG: NavEntry[] = [
     ],
   },
 
+  // ╔══════════════════════════════════════════╗
+  // ║  LOT TRACEABILITY + RECALL MANAGEMENT   ║
+  // ╚══════════════════════════════════════════╝
+  cluster("cluster-traceability", "Traceability & Recall"),
+
+  {
+    type: "section",
+    id: "traceability",
+    label: "Lot Traceability + Recall",
+    permission: "production.view",
+    icon: md(
+      "M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
+    ),
+    items: [
+      { label: "Trace Dashboard",      href: "/dashboard/traceability",                    permission: "production.view" },
+      { label: "Trace Search",         href: "/dashboard/traceability/search",             permission: "production.view" },
+      { label: "Backward Trace",       href: "/dashboard/traceability/backward",           permission: "production.view" },
+      { label: "Forward Trace",        href: "/dashboard/traceability/forward",            permission: "production.view" },
+      { label: "Genealogy Graph",      href: "/dashboard/traceability/genealogy",          permission: "production.view" },
+      { label: "Recall List",          href: "/dashboard/traceability/recalls",            permission: "production.view" },
+      { label: "Mock Recall Drill",    href: "/dashboard/traceability/mock-recall",        permission: "production.view" },
+      { label: "Regulatory Reports",   href: "/dashboard/traceability/regulatory",         permission: "production.view" },
+    ],
+  },
+
+  // ╔══════════════════════════════════════╗
+  // ║   FEFO + SHELF-LIFE CONTROL          ║
+  // ╚══════════════════════════════════════╝
+  cluster("cluster-shelf-life", "FEFO & Shelf-Life"),
+
+  {
+    type: "section",
+    id: "shelf-life",
+    label: "FEFO + Shelf-Life Control",
+    permission: "production.view",
+    icon: md(
+      "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+    ),
+    items: [
+      { label: "SL Dashboard",          href: "/dashboard/shelf-life",                       permission: "production.view" },
+      { label: "FEFO Config",            href: "/dashboard/shelf-life/fefo-config",           permission: "production.view" },
+      { label: "Lot Aging Explorer",     href: "/dashboard/shelf-life/lot-aging",             permission: "production.view" },
+      { label: "Near-Expiry Board",      href: "/dashboard/shelf-life/near-expiry",           permission: "production.view" },
+      { label: "Expired Stock Board",    href: "/dashboard/shelf-life/expired",               permission: "production.view" },
+      { label: "Retest Queue",           href: "/dashboard/shelf-life/retest-queue",          permission: "production.view" },
+      { label: "Shipment Validation",    href: "/dashboard/shelf-life/shipment-validation",   permission: "production.view" },
+      { label: "Production Validation",  href: "/dashboard/shelf-life/production-validation", permission: "production.view" },
+      { label: "FEFO Compliance Audit",  href: "/dashboard/shelf-life/compliance",            permission: "production.view" },
+      { label: "Disposition Console",    href: "/dashboard/shelf-life/disposition",           permission: "production.view" },
+      { label: "Customer SL Rules",      href: "/dashboard/shelf-life/customer-rules",        permission: "production.view" },
+      { label: "Bulk Hold Monitor",      href: "/dashboard/shelf-life/bulk-hold-monitor",     permission: "production.view" },
+    ],
+  },
+
   // ╔══════════════════════════════╗
   // ║     MATERIAL FLOW ENGINE     ║
   // ╚══════════════════════════════╝
