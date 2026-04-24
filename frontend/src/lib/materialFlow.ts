@@ -304,7 +304,7 @@ export const SEVERITY_COLORS: Record<string, string> = {
 
 // ── API Client ────────────────────────────────────────────────────────────────
 
-const BASE = "/material-flow";
+const BASE = "/api/v1/material-flow";
 
 export const mfApi = {
   getDashboard: () => apiClient.get<MFDashboard>(`${BASE}/dashboard`),

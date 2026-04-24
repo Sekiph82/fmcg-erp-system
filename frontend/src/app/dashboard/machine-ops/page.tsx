@@ -53,7 +53,8 @@ export default function MachineOpsDashboard() {
   });
 
   if (isLoading) return <div className="p-8 text-gray-500">Loading Machine & Operator Intelligence…</div>;
-  const d = data!;
+  if (!data) return <div className="p-8 text-red-500">Failed to load Machine & Operator dashboard. Ensure the backend is running.</div>;
+  const d = data;
   const oeeValue = d.avg_oee_today ? Number(d.avg_oee_today) : null;
 
   return (

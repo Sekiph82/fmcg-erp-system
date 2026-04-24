@@ -295,7 +295,7 @@ export const SEVERITY_COLORS: Record<string, string> = {
 
 // ── API Client ────────────────────────────────────────────────────────────────
 
-const BASE = "/machine-ops";
+const BASE = "/api/v1/machine-ops";
 
 export const moApi = {
   getDashboard: () => apiClient.get<MODashboard>(`${BASE}/dashboard`),

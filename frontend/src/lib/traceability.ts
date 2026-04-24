@@ -331,8 +331,14 @@ export interface RecallRegulatoryReport {
 
 // ── API Client ────────────────────────────────────────────────────────────────
 
+const _BACKEND = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
 async function req<T>(url: string, opts?: RequestInit): Promise<T> {
-  const r = await fetch(url, { headers: { "Content-Type": "application/json" }, ...opts });
+  const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
+  const r = await fetch(`${_BACKEND}${url}`, {
+    headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    ...opts,
+  });
   if (!r.ok) throw new Error(`${r.status}: ${await r.text()}`);
   return r.json() as Promise<T>;
 }

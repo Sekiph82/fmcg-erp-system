@@ -42,7 +42,8 @@ export default function MaterialFlowDashboard() {
   });
 
   if (isLoading) return <div className="p-8 text-gray-500">Loading material flow dashboard…</div>;
-  const d = data!;
+  if (!data) return <div className="p-8 text-red-500">Failed to load Material Flow dashboard. Ensure the backend is running.</div>;
+  const d = data;
 
   return (
     <div className="p-6 space-y-6">
