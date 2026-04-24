@@ -17,7 +17,18 @@ from app.models.procurement import (
     PurchaseRequisition, PRLine, PurchaseOrder, POLine,
     GoodsReceipt, GRNLine, ImportShipment, SupplierEvaluation, SupplierPayment,
 )
-from app.models.quality import QCParameter, QCInspection, QCTestResult
+from app.models.quality import (
+    QCParameter, QCInspection, QCTestResult,
+    QCType, QCStatus, QCDecision, ParameterType,
+    QCTemplate, QCTemplateParameter,
+    SamplingMethod, HazardType, RiskLevel,
+    DeviationStatus, CorrectiveActionStatus, ReleaseStatus,
+    QMSAIAgentType, QMSAIRecStatus,
+    HazardAnalysis, CriticalControlPoint, CCPMonitoringLog,
+    CorrectiveAction, CorrectiveActionStep,
+    QCDeviation, LotQualityStatus,
+    AllergenValidationRecord, QMSAIRecommendation,
+)
 
 # ── Distribution layer (must load before sales) ───────────────────────────────
 from app.models.distribution import Distributor, DistributorPricingTier
@@ -265,6 +276,11 @@ __all__ = [
     "PurchaseRequisition", "PRLine", "PurchaseOrder", "POLine",
     "GoodsReceipt", "GRNLine", "ImportShipment", "SupplierEvaluation", "SupplierPayment",
     "QCParameter", "QCInspection", "QCTestResult",
+    "QCTemplate", "QCTemplateParameter",
+    "HazardAnalysis", "CriticalControlPoint", "CCPMonitoringLog",
+    "CorrectiveAction", "CorrectiveActionStep",
+    "QCDeviation", "LotQualityStatus",
+    "AllergenValidationRecord", "QMSAIRecommendation",
     # Distribution
     "Distributor", "DistributorPricingTier",
     "SalesRep", "SalesRoute", "RouteStop", "DailyTarget", "VisitLog",

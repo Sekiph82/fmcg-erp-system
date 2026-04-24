@@ -12,6 +12,7 @@ from app.api.v1.endpoints import (
     utility_alarm, utility_kpi,
     mrp, mps, planning, bom, production_execution, shop_floor,
     material_flow, machine_operator, shelf_life, traceability,
+    qms,
 )
 
 api_router = APIRouter()
@@ -115,3 +116,5 @@ api_router.include_router(machine_operator.router, prefix="/machine-ops", tags=[
 api_router.include_router(shelf_life.router, prefix="/shelf-life", tags=["shelf-life"])
 # ── Lot Traceability + Batch Recall Management ────────────────────────────────
 api_router.include_router(traceability.router, prefix="/traceability", tags=["traceability"])
+# ── Quality Management System + HACCP ────────────────────────────────────────
+api_router.include_router(qms.router, prefix="/qms", tags=["qms"])

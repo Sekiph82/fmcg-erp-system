@@ -1,7 +1,85 @@
 # TASKS — FMCG ERP (Kenya) · Production Module
 
 ## Current Phase
-Phase 10 — Full Lot Traceability + Batch Recall Management ✅ COMPLETED
+Phase 11 — Quality Checkpoints + Release Logic + HACCP / Food Safety ✅ COMPLETED
+
+---
+
+## Phase 11 — Quality Checkpoints + Release Logic + HACCP / Food Safety ✅
+
+- [x] `backend/app/models/quality.py` — Extended with 9 new enums + 11 new models:
+  - New enums: SamplingMethod, HazardType, RiskLevel, DeviationStatus, CorrectiveActionStatus, ReleaseStatus, QMSAIAgentType, QMSAIRecStatus
+  - Extended QCType with RETEST; QCInspection extended with template_id, qc_sub_type, work_order_id, is_mandatory, blocks_progression, release_required, hold_flag
+  - QCTemplate + QCTemplateParameter — reusable inspection templates per item/stage/category
+  - HazardAnalysis — HACCP hazard records with likelihood × severity risk scoring
+  - CriticalControlPoint — CCP definitions with critical limits, monitoring, and corrective action
+  - CCPMonitoringLog — real-time monitoring entries with auto-violation detection
+  - CorrectiveAction + CorrectiveActionStep — CA workflow with step-by-step tracking
+  - QCDeviation — deviation records linked to inspections/lots/products
+  - LotQualityStatus — per-lot release gate controlling FEFO eligibility and shipment
+  - AllergenValidationRecord — allergen cleaning validation between production runs
+  - QMSAIRecommendation — 3 AI agent recommendations with review workflow
+- [x] `backend/app/schemas/qms.py` — Pydantic v2 schemas for all QMS models
+- [x] `backend/app/services/qms_service.py`:
+  - QC Template CRUD
+  - Sampling plan calculation (fixed/percentage/frequency/time-based)
+  - QC gate check — blocks progression if mandatory QC is pending or failed
+  - Lot hold and release with FEFO/shipment eligibility flags
+  - Lot quality status sync from inspection decision
+  - HACCP hazard analysis creation with risk score calculation
+  - CCP creation with auto-number
+  - CCP limit checking with violation detection
+  - CCP monitoring recording with auto corrective action creation on violation
+  - Auto corrective action creation from CCP violations (steps parsed from CA description)
+  - Deviation creation and auto-creation from failed inspections
+  - Allergen validation creation
+  - QMS dashboard aggregation (17 KPIs)
+  - AI Agent 1: Quality Risk Predictor — high failure rate lots, open deviations
+  - AI Agent 2: Deviation Analyzer — recurring type patterns, repeated CCP violations
+  - AI Agent 3: HACCP Assistant — missing CCPs for high-risk hazards, unmonitored CCPs, allergen CCP gaps
+- [x] `backend/app/api/v1/endpoints/qms.py` — 40+ routes at /api/v1/qms/:
+  - GET /qms/dashboard
+  - GET /qms/gate-check — lot progression gate check
+  - CRUD /qms/templates + /qms/templates/{id}
+  - CRUD /qms/haccp/hazards + /qms/haccp/hazards/{id}
+  - CRUD /qms/haccp/ccp + /qms/haccp/ccp/{id}
+  - GET /qms/haccp/ccp/{id}/logs, POST /qms/haccp/monitoring
+  - GET /qms/haccp/violations
+  - CRUD /qms/deviations + /qms/deviations/{id}
+  - CRUD /qms/corrective-actions + steps completion + verification
+  - GET/POST /qms/lot-status, /qms/lot-status/release, /qms/lot-status/hold
+  - CRUD /qms/allergen-validations
+  - GET/POST /qms/ai/recommendations + run endpoints (3 agents)
+  - Reports: /qms/reports/qc-summary, ccp-violations, deviations, lot-quality
+- [x] `backend/app/models/__init__.py` — all new models + enums exported
+- [x] `backend/app/api/v1/router.py` — /api/v1/qms wired
+- [x] `frontend/src/lib/qms.ts` — types, API client (35+ methods), color maps
+- [x] `frontend/src/app/dashboard/qms/page.tsx` — QMS Dashboard (5 KPI sections, quick nav)
+- [x] `frontend/src/app/dashboard/qms/inspections/page.tsx` — QC Inspection list with type/status filters
+- [x] `frontend/src/app/dashboard/qms/templates/page.tsx` — QC Template editor with parameter viewer
+- [x] `frontend/src/app/dashboard/qms/haccp/page.tsx` — HACCP Hazard Analysis with new record form
+- [x] `frontend/src/app/dashboard/qms/ccp/page.tsx` — CCP Monitoring Dashboard with live monitoring entry
+- [x] `frontend/src/app/dashboard/qms/deviations/page.tsx` — Deviation Management with resolve workflow
+- [x] `frontend/src/app/dashboard/qms/corrective-actions/page.tsx` — CA Tracker with step completion and verification
+- [x] `frontend/src/app/dashboard/qms/quarantine/page.tsx` — Quarantine/Hold Management with release modal
+- [x] `frontend/src/app/dashboard/qms/allergen/page.tsx` — Allergen Validation records
+- [x] `frontend/src/app/dashboard/qms/ai/page.tsx` — AI Quality Agents (run, review, accept/reject)
+- [x] `frontend/src/app/dashboard/qms/reports/page.tsx` — QMS Reports (4 report panels)
+- [x] `frontend/src/components/nav-config.tsx` — "QMS & HACCP" section with 11 nav links
+
+**DB MIGRATION NEEDED:** `alembic revision --autogenerate -m "qms_haccp_system"` then `alembic upgrade head`
+
+## Next Immediate Task: Prompt 12 — GS1 Barcode + Label Printing
+
+## In Progress
+- None — Prompt 11 complete
+
+## Blockers
+- None
+
+---
+
+## Phase 10 — Full Lot Traceability + Batch Recall Management ✅ COMPLETED
 
 ---
 

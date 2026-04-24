@@ -166,6 +166,29 @@ export const NAV_CONFIG: NavEntry[] = [
     ],
   },
 
+  {
+    type: "section",
+    id: "qms",
+    label: "QMS & HACCP",
+    permission: "quality.view",
+    icon: md(
+      "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
+    ),
+    items: [
+      { label: "QMS Dashboard",        href: "/dashboard/qms",                        permission: "quality.view" },
+      { label: "QC Inspections",        href: "/dashboard/qms/inspections",            permission: "quality.view" },
+      { label: "QC Templates",          href: "/dashboard/qms/templates",              permission: "quality.view" },
+      { label: "HACCP Analysis",        href: "/dashboard/qms/haccp",                  permission: "quality.view" },
+      { label: "CCP Monitoring",        href: "/dashboard/qms/ccp",                    permission: "quality.view" },
+      { label: "Deviations",            href: "/dashboard/qms/deviations",             permission: "quality.view" },
+      { label: "Corrective Actions",    href: "/dashboard/qms/corrective-actions",     permission: "quality.view" },
+      { label: "Quarantine / Hold",     href: "/dashboard/qms/quarantine",             permission: "quality.view" },
+      { label: "Allergen Validation",   href: "/dashboard/qms/allergen",               permission: "quality.view" },
+      { label: "QMS Reports",           href: "/dashboard/qms/reports",                permission: "quality.view" },
+      { label: "AI Quality Agents",     href: "/dashboard/qms/ai",                     permission: "quality.view" },
+    ],
+  },
+
   // ╔══════════════════════════════╗
   // ║       COMMERCIAL             ║
   // ╚══════════════════════════════╝
