@@ -13,11 +13,17 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-lg rounded-xl bg-white p-6 shadow-xl">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="glass-modal relative z-10 w-full max-w-lg p-6">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
+          <button
+            onClick={onClose}
+            className="glow-button-secondary !px-2 !py-1 text-lg leading-none"
+            aria-label="Close"
+          >
+            &times;
+          </button>
         </div>
         {children}
       </div>

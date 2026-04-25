@@ -19,14 +19,14 @@ interface KPICardProps {
 }
 
 const statusBorder: Record<KPIStatus, string> = {
-  ok: "border-l-emerald-500",
-  warning: "border-l-amber-500",
+  ok:       "border-l-emerald-500",
+  warning:  "border-l-amber-500",
   critical: "border-l-red-500",
 };
 
 const statusDot: Record<KPIStatus, string> = {
-  ok: "bg-emerald-500",
-  warning: "bg-amber-500",
+  ok:       "bg-emerald-500",
+  warning:  "bg-amber-500",
   critical: "bg-red-500",
 };
 
@@ -47,15 +47,15 @@ export function KPICard({
   const card = (
     <div
       className={`
-        relative flex flex-col justify-between gap-2 rounded-xl bg-white border border-gray-100
+        glow-card relative flex flex-col justify-between gap-2
         border-l-4 ${statusBorder[status]}
-        p-4 shadow-sm active:scale-[0.98] transition-transform
-        ${href ? "cursor-pointer hover:shadow-md" : ""}
+        p-4 active:scale-[0.98] transition-all
+        ${href ? "cursor-pointer" : ""}
       `}
     >
       {loading && (
-        <div className="absolute inset-0 rounded-xl bg-white/70 flex items-center justify-center z-10">
-          <div className="w-5 h-5 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
+        <div className="absolute inset-0 rounded-2xl bg-[rgba(2,8,23,0.55)] flex items-center justify-center z-10 backdrop-blur-sm">
+          <div className="w-5 h-5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
         </div>
       )}
 
@@ -68,7 +68,7 @@ export function KPICard({
 
         <div className="flex flex-col items-end gap-1 shrink-0">
           {icon && (
-            <div className={`p-2 rounded-lg ${statusDot[status]} bg-opacity-10`}>
+            <div className={`p-2 rounded-lg ${statusDot[status]} bg-opacity-15`}>
               {icon}
             </div>
           )}
@@ -93,13 +93,11 @@ export function KPICard({
       )}
 
       {href && (
-        <span className="text-xs text-indigo-500 font-medium mt-0.5">View details →</span>
+        <span className="text-xs text-blue-500 font-medium mt-0.5">View details →</span>
       )}
     </div>
   );
 
-  if (href) {
-    return <Link href={href}>{card}</Link>;
-  }
+  if (href) return <Link href={href}>{card}</Link>;
   return card;
 }

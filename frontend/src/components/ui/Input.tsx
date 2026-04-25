@@ -13,9 +13,9 @@ export function Input({ label, error, className, id, ...props }: InputProps) {
       <input
         id={id}
         className={clsx(
-          "block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm",
-          "placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500",
-          error && "border-red-500 focus:border-red-500 focus:ring-red-500",
+          "block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm neon-focus",
+          "placeholder:text-gray-400",
+          error && "border-red-500 focus:border-red-500",
           className
         )}
         {...props}
