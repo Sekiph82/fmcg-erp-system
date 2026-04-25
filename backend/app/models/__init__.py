@@ -308,6 +308,15 @@ from app.models.shelf_life import (
     DispositionSuggestion, FEFOAuditLog, SLAIRecommendation,
 )
 
+# ── Bank Reconciliation ───────────────────────────────────────────────────────
+from app.models.bank_reconciliation import (
+    BRAccountType, BRImportSource, BRStatementStatus, BRLineMatchStatus,
+    BRMatchMethod, BRERPTransactionType, BRAdjustmentType, BRRuleConditionType,
+    BRAIAgentType, BRAIRecStatus,
+    BRBankAccount, BRStatement, BRStatementLine, BRMatch, BRRule,
+    BRAdjustment, BRAIRecommendation,
+)
+
 # ── Material Flow Engine ──────────────────────────────────────────────────────
 from app.models.material_flow import (
     FlowType, FlowStatus, FlowMode, StageType, QualityStatus,
@@ -511,4 +520,10 @@ __all__ = [
     "MaterialReservation", "MaterialReservationLine",
     "ProductionConsumption", "PreparedLot", "TankOccupancy",
     "BatchReconciliation", "BatchReconciliationLine", "MFAIRecommendation",
+    # Bank Reconciliation
+    "BRAccountType", "BRImportSource", "BRStatementStatus", "BRLineMatchStatus",
+    "BRMatchMethod", "BRERPTransactionType", "BRAdjustmentType", "BRRuleConditionType",
+    "BRAIAgentType", "BRAIRecStatus",
+    "BRBankAccount", "BRStatement", "BRStatementLine", "BRMatch", "BRRule",
+    "BRAdjustment", "BRAIRecommendation",
 ]

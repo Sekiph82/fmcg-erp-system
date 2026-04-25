@@ -192,6 +192,28 @@ export const NAV_CONFIG: NavEntry[] = [
 
   {
     type: "section",
+    id: "bank-reconciliation",
+    label: "Bank Reconciliation",
+    permission: "finance.view",
+    icon: md(
+      "M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+    ),
+    items: [
+      { label: "Dashboard",         href: "/dashboard/bank-reconciliation",              permission: "finance.view" },
+      { label: "Import Statement",  href: "/dashboard/bank-reconciliation/import",       permission: "finance.view" },
+      { label: "All Statements",    href: "/dashboard/bank-reconciliation/statements",   permission: "finance.view" },
+      { label: "Bank Accounts",     href: "/dashboard/bank-reconciliation/accounts",     permission: "finance.view" },
+      { label: "Open Items Aging",  href: "/dashboard/bank-reconciliation/open-items",   permission: "finance.view" },
+      { label: "Matching Rules",    href: "/dashboard/bank-reconciliation/rules",        permission: "finance.view" },
+      { label: "Bank vs Ledger",    href: "/dashboard/bank-reconciliation/balance",      permission: "finance.view" },
+      { label: "M-Pesa Recon",      href: "/dashboard/bank-reconciliation/mpesa",        permission: "finance.view" },
+      { label: "Reports",           href: "/dashboard/bank-reconciliation/reports",      permission: "finance.view" },
+      { label: "AI Agents",         href: "/dashboard/bank-reconciliation/ai",           permission: "finance.view" },
+    ],
+  },
+
+  {
+    type: "section",
     id: "landed-cost",
     label: "Landed Cost Allocation",
     permission: "procurement.view",

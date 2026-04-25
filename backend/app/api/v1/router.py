@@ -19,6 +19,7 @@ from app.api.v1.endpoints import (
     subcontracting,
     landed_cost,
     invoice_match,
+    bank_reconciliation,
 )
 
 api_router = APIRouter()
@@ -136,3 +137,5 @@ api_router.include_router(subcontracting.router, prefix="/subcontracting", tags=
 api_router.include_router(landed_cost.router, prefix="/landed-cost", tags=["landed-cost"])
 # ── 3-Way Invoice Matching ────────────────────────────────────────────────────
 api_router.include_router(invoice_match.router, prefix="/invoice-match", tags=["invoice-match"])
+# ── Bank Reconciliation ───────────────────────────────────────────────────────
+api_router.include_router(bank_reconciliation.router, prefix="/bank-reconciliation", tags=["bank-reconciliation"])
