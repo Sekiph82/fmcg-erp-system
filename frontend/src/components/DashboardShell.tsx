@@ -57,7 +57,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
   }, [isDirty, confirmLeave]);
 
   return (
-    <div className="flex h-screen bg-[#0d1526] overflow-hidden">
+    <div className="flex h-screen bg-[#030d1a] overflow-hidden">
       {/* Mobile overlay backdrop */}
       {mobileOpen && (
         <div
@@ -71,7 +71,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
       {/* Right column: mobile top bar + main content */}
       <div className="flex flex-1 flex-col overflow-hidden min-w-0" data-theme="dark">
         {/* Mobile top bar — only visible on small screens */}
-        <header className="flex h-[52px] shrink-0 items-center gap-3 border-b border-white/[0.065] bg-[#0b1120] px-4 lg:hidden">
+        <header className="flex h-[52px] shrink-0 items-center gap-3 border-b border-cyan-500/[0.15] bg-[#020c18] px-4 lg:hidden" style={{boxShadow: '0 1px 0 rgba(0,212,255,0.08)' }}>
           <button
             onClick={openMobile}
             className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-white/10 transition-colors"
