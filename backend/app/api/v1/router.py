@@ -23,6 +23,7 @@ from app.api.v1.endpoints import (
     fixed_assets,
     dimensions,
     promotions,
+    tpm,
 )
 
 api_router = APIRouter()
@@ -148,3 +149,5 @@ api_router.include_router(fixed_assets.router, prefix="/fixed-assets", tags=["fi
 api_router.include_router(dimensions.router, prefix="/dimensions", tags=["dimensions"])
 # ── Promotional Schemes Auto-Apply ────────────────────────────────────────────
 api_router.include_router(promotions.router, prefix="/promotions", tags=["promotions"])
+# ── Trade Promotion Management (TPM) ──────────────────────────────────────────
+api_router.include_router(tpm.router, prefix="/tpm", tags=["tpm"])

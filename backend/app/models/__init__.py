@@ -318,6 +318,16 @@ from app.models.promotions import (
     PromoUsageTally, PromoAIRecommendation,
 )
 
+# ── Trade Promotion Management (TPM) ─────────────────────────────────────────
+from app.models.tpm import (
+    TPMPeriodType, TPMPlanStatus, TPMPromotionType, TPMObjectiveType,
+    TPMPromotionStatus, TPMBudgetType, TPMBaselineMethod,
+    TPMClaimantType, TPMClaimType, TPMClaimStatus,
+    TPMAIAgentType, TPMAIRecStatus,
+    TPMPlan, TPMPromotion, TPMBudgetLine, TPMExpectedPerf, TPMActualPerf,
+    TPMClaim, TPMClaimLine, TPMAIRecommendation,
+)
+
 # ── Accounting Dimensions / Cost Centers ─────────────────────────────────────
 from app.models.dimensions import (
     DimensionScope, CostCenterType, DimSourceType,
@@ -550,6 +560,13 @@ __all__ = [
     "MaterialReservation", "MaterialReservationLine",
     "ProductionConsumption", "PreparedLot", "TankOccupancy",
     "BatchReconciliation", "BatchReconciliationLine", "MFAIRecommendation",
+    # Trade Promotion Management
+    "TPMPeriodType", "TPMPlanStatus", "TPMPromotionType", "TPMObjectiveType",
+    "TPMPromotionStatus", "TPMBudgetType", "TPMBaselineMethod",
+    "TPMClaimantType", "TPMClaimType", "TPMClaimStatus",
+    "TPMAIAgentType", "TPMAIRecStatus",
+    "TPMPlan", "TPMPromotion", "TPMBudgetLine", "TPMExpectedPerf", "TPMActualPerf",
+    "TPMClaim", "TPMClaimLine", "TPMAIRecommendation",
     # Bank Reconciliation
     "BRAccountType", "BRImportSource", "BRStatementStatus", "BRLineMatchStatus",
     "BRMatchMethod", "BRERPTransactionType", "BRAdjustmentType", "BRRuleConditionType",

@@ -1,7 +1,53 @@
 # TASKS — FMCG ERP (Kenya) · Production Module
 
 ## Current Phase
-Phase 21 — Promotional Schemes Auto-Apply ✅ COMPLETED
+Phase 22 — Trade Promotion Management Enhancement ✅ COMPLETED
+
+---
+
+## Phase 22 — Trade Promotion Management Enhancement ✅
+
+- [x] `backend/app/models/tpm.py` — 11 enums + 8 models:
+  - Enums: TPMPeriodType, TPMPlanStatus, TPMPromotionType, TPMObjectiveType, TPMPromotionStatus, TPMBudgetType, TPMBaselineMethod, TPMClaimantType, TPMClaimType, TPMClaimStatus, TPMAIAgentType, TPMAIRecStatus
+  - Models: TPMPlan, TPMPromotion, TPMBudgetLine, TPMExpectedPerf, TPMActualPerf, TPMClaim, TPMClaimLine, TPMAIRecommendation
+- [x] `backend/app/schemas/tpm.py` — full Pydantic v2 schemas with `from __future__ import annotations` + `model_rebuild()`
+- [x] `backend/app/services/tpm_service.py`:
+  - Plan CRUD + approve + status transitions
+  - Promotion CRUD + approve + scheme linkage
+  - Budget line management with remaining-budget tracking
+  - Expected performance upsert (baseline_method, target volume, expected ROI)
+  - Actual performance upsert with auto-computed uplift_pct and roi_pct
+  - Claim CRUD + auto claim_no generation + review workflow (approve/reject) + settlement (partial and full)
+  - Dashboard aggregations (active plans, promotions, open claims, budget utilization)
+  - Budget vs Actual report (per promotion, with variance and utilization_pct)
+  - ROI report (expected vs actual ROI + uplift, sorted by actual ROI)
+  - Claim aging report (open claims ordered by age in days)
+  - AI Agent 1: ROI Analyst (completed promotions with <50% expected ROI achievement)
+  - AI Agent 2: Budget Risk Monitor (active promotions ≥90% budget consumed)
+  - AI Agent 3: Planner Assistant (overlapping promotions same channel/brand, cannibalization risk)
+- [x] `backend/app/api/v1/endpoints/tpm.py` — 20+ routes at /api/v1/tpm/
+- [x] `backend/app/models/__init__.py` + `router.py` updated
+- [x] `frontend/src/lib/tpm.ts` — TypeScript client + all labels + fmtCurrency
+- [x] Frontend pages (9 screens):
+  - TPM Dashboard (KPI cards, budget bar, promotions by status, quick links)
+  - Promotion Calendar (month grid with overlap detection and color-coded type bars)
+  - TPM Plans list (CRUD + approve + activate + close)
+  - New Plan form
+  - Trade Promotions list (CRUD + status workflow)
+  - New Promotion form (targeting scope: brand/channel/region/distributor)
+  - Promotion Detail (tabbed: overview, budget, performance, claims)
+  - Budget & Spend Monitor (planned/approved/actual/accrued/variance/utilization bar per promotion)
+  - Claims & Deduction Queue (submit/review/approve/reject/settle workflow)
+  - Settlement Tracker (pending vs partial vs settled claims)
+  - ROI / Post-Event Analysis (expected vs actual ROI, uplift, top performers vs underperformers)
+  - AI Agents (ROI Analyst + Budget Risk Monitor + Planner Assistant)
+- [x] Sidebar: "Trade Promotion Mgmt" section added to nav-config.tsx (9 items)
+
+## Next Immediate Task
+Phase 23 — Advanced CRM Pipeline
+
+## Blockers
+None
 
 ---
 

@@ -435,6 +435,27 @@ export const NAV_CONFIG: NavEntry[] = [
 
   {
     type: "section",
+    id: "tpm",
+    label: "Trade Promotion Mgmt",
+    permission: "promotions.view",
+    icon: md(
+      "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+    ),
+    items: [
+      { label: "TPM Dashboard",      href: "/dashboard/tpm",              permission: "promotions.view" },
+      { label: "Promotion Calendar", href: "/dashboard/tpm/calendar",     permission: "promotions.view" },
+      { label: "Plans",              href: "/dashboard/tpm/plans",        permission: "promotions.view" },
+      { label: "Trade Promotions",   href: "/dashboard/tpm/promotions",   permission: "promotions.view" },
+      { label: "Budget Monitor",     href: "/dashboard/tpm/budget",       permission: "promotions.view" },
+      { label: "Claims Queue",       href: "/dashboard/tpm/claims",       permission: "promotions.view" },
+      { label: "Settlement Tracker", href: "/dashboard/tpm/settlement",   permission: "promotions.view" },
+      { label: "ROI Analysis",       href: "/dashboard/tpm/roi",          permission: "promotions.view" },
+      { label: "AI Agents",          href: "/dashboard/tpm/ai",           permission: "promotions.view" },
+    ],
+  },
+
+  {
+    type: "section",
     id: "promotions",
     label: "Promotional Schemes",
     permission: "promotions.view",
