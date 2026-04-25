@@ -184,8 +184,9 @@ export const AI_REC_STATUS_COLOR: Record<LCAIRecStatus, string> = {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-export function fmtCurrency(val: number, code = "USD"): string {
-  return `${code} ${val.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+export function fmtCurrency(val: number | null | undefined, code = "USD"): string {
+  const n = val == null ? 0 : Number(val);
+  return `${code} ${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 // ── API ───────────────────────────────────────────────────────────────────────
