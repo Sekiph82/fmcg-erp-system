@@ -172,6 +172,23 @@ export const NAV_CONFIG: NavEntry[] = [
 
   {
     type: "section",
+    id: "landed-cost",
+    label: "Landed Cost Allocation",
+    permission: "procurement.view",
+    icon: md(
+      "M3 10h18M3 14h18M10 3v18M14 3v18M3 6a3 3 0 013-3h12a3 3 0 013 3v12a3 3 0 01-3 3H6a3 3 0 01-3-3V6z"
+    ),
+    items: [
+      { label: "LC Dashboard",    href: "/dashboard/landed-cost",              permission: "procurement.view" },
+      { label: "Documents",       href: "/dashboard/landed-cost/documents",    permission: "procurement.view" },
+      { label: "New Document",    href: "/dashboard/landed-cost/new",          permission: "procurement.view" },
+      { label: "Reports",         href: "/dashboard/landed-cost/reports",      permission: "procurement.view" },
+      { label: "AI Agents",       href: "/dashboard/landed-cost/ai",           permission: "procurement.view" },
+    ],
+  },
+
+  {
+    type: "section",
     id: "procurement-suggestion",
     label: "Procurement Suggestion Engine",
     permission: "procurement.view",

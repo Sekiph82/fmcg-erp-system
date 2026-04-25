@@ -261,6 +261,14 @@ from app.models.procurement_suggestion import (
     ProcurementSuggestionGroup, PSAIRecommendation,
 )
 
+# ── Landed Cost Allocation ────────────────────────────────────────────────────
+from app.models.landed_cost import (
+    LCStatus, LandedCostType, LCAllocationMethod, LCReferenceType,
+    LCAIAgentType, LCAIRecStatus,
+    LandedCostHeader, LandedCostLine, LandedCostGRNLink,
+    LandedCostAllocationLine, LCInventoryAdjustment, LCAIRecommendation,
+)
+
 # ── Allergen + Nutrition Management ──────────────────────────────────────────
 from app.models.allergen import (
     AllergenCategory, PresenceType, CrossContactRisk, NutrientBasis, NutrientSource,
@@ -462,6 +470,11 @@ __all__ = [
     "SupplierItemPrice",
     "ProcurementSuggestionRun", "ProcurementSuggestionLine",
     "ProcurementSuggestionGroup", "PSAIRecommendation",
+    # Landed Cost Allocation
+    "LCStatus", "LandedCostType", "LCAllocationMethod", "LCReferenceType",
+    "LCAIAgentType", "LCAIRecStatus",
+    "LandedCostHeader", "LandedCostLine", "LandedCostGRNLink",
+    "LandedCostAllocationLine", "LCInventoryAdjustment", "LCAIRecommendation",
     # Allergen + Nutrition Management
     "AllergenCategory", "PresenceType", "CrossContactRisk", "NutrientBasis", "NutrientSource",
     "LabelBasisType", "AllergenChangeType", "ANAIAgentType", "ANAIRecStatus",

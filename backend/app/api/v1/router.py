@@ -17,6 +17,7 @@ from app.api.v1.endpoints import (
     allergen,
     procurement_suggestion,
     subcontracting,
+    landed_cost,
 )
 
 api_router = APIRouter()
@@ -130,3 +131,5 @@ api_router.include_router(allergen.router, prefix="/allergen", tags=["allergen"]
 api_router.include_router(procurement_suggestion.router, prefix="/procurement/suggestions", tags=["procurement-suggestions"])
 # ── Subcontracting System ─────────────────────────────────────────────────────
 api_router.include_router(subcontracting.router, prefix="/subcontracting", tags=["subcontracting"])
+# ── Landed Cost Allocation ────────────────────────────────────────────────────
+api_router.include_router(landed_cost.router, prefix="/landed-cost", tags=["landed-cost"])
