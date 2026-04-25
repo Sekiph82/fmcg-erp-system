@@ -237,6 +237,25 @@ from app.models.traceability import (
     RecallCustomerImpact, RecallReturnRecord, TRRecAIRecommendation,
 )
 
+# ── Allergen + Nutrition Management ──────────────────────────────────────────
+from app.models.allergen import (
+    AllergenCategory, PresenceType, CrossContactRisk, NutrientBasis, NutrientSource,
+    LabelBasisType, AllergenChangeType, ANAIAgentType, ANAIRecStatus,
+    AllergenMaster, MaterialAllergenProfile, MaterialAllergenLine,
+    NutritionProfile, NutritionProfileLine,
+    ProductAllergenSummary, ProductNutritionSummary,
+    AllergenChangeLog, ProductServingConfig, ANAIRecommendation,
+)
+
+# ── GS1 Barcode + Label Printing System ──────────────────────────────────────
+from app.models.gs1 import (
+    BarcodeType, PackagingLevel, PrintJobStatus, SSCCStatus,
+    LabelTemplateStatus, PrintTrigger, GS1AIAgentType, GS1AIRecStatus,
+    GS1CompanyConfig, ProductGS1Config, LotBarcodeRecord,
+    SSCCPallet, SSCCPalletLot, GS1LabelTemplate, LabelPrintJob,
+    LabelPrintJobItem, GS1AIRecommendation,
+)
+
 # ── FEFO + Shelf-Life Control ─────────────────────────────────────────────────
 from app.models.shelf_life import (
     ShelfLifeStatus, PickingStrategy, ExpiryBlockPolicy, NearExpiryPolicy,
@@ -403,6 +422,19 @@ __all__ = [
     "ItemShelfLifeConfig", "PickingStrategyConfig", "CustomerShelfLifeRule",
     "LotShelfLifeProfile", "RetestRequest", "BulkHoldRecord", "ShelfLifeAlert",
     "DispositionSuggestion", "FEFOAuditLog", "SLAIRecommendation",
+    # Allergen + Nutrition Management
+    "AllergenCategory", "PresenceType", "CrossContactRisk", "NutrientBasis", "NutrientSource",
+    "LabelBasisType", "AllergenChangeType", "ANAIAgentType", "ANAIRecStatus",
+    "AllergenMaster", "MaterialAllergenProfile", "MaterialAllergenLine",
+    "NutritionProfile", "NutritionProfileLine",
+    "ProductAllergenSummary", "ProductNutritionSummary",
+    "AllergenChangeLog", "ProductServingConfig", "ANAIRecommendation",
+    # GS1 Barcode + Label Printing
+    "BarcodeType", "PackagingLevel", "PrintJobStatus", "SSCCStatus",
+    "LabelTemplateStatus", "PrintTrigger", "GS1AIAgentType", "GS1AIRecStatus",
+    "GS1CompanyConfig", "ProductGS1Config", "LotBarcodeRecord",
+    "SSCCPallet", "SSCCPalletLot", "GS1LabelTemplate", "LabelPrintJob",
+    "LabelPrintJobItem", "GS1AIRecommendation",
     # Material Flow Engine
     "FlowType", "FlowStatus", "FlowMode", "StageType", "QualityStatus",
     "MovementReason", "ReservationStatus", "TankStatus", "ReconciliationStatus",

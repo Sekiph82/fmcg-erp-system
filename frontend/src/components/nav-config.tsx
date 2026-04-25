@@ -189,6 +189,50 @@ export const NAV_CONFIG: NavEntry[] = [
     ],
   },
 
+  {
+    type: "section",
+    id: "allergen",
+    label: "Allergen & Nutrition",
+    permission: "quality.view",
+    icon: md(
+      "M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+    ),
+    items: [
+      { label: "AN Dashboard",       href: "/dashboard/allergen",                   permission: "quality.view" },
+      { label: "Allergen Master",     href: "/dashboard/allergen/allergens",         permission: "quality.view" },
+      { label: "Material Profiles",   href: "/dashboard/allergen/material-profiles", permission: "quality.view" },
+      { label: "Nutrition Profiles",  href: "/dashboard/allergen/nutrition",         permission: "quality.view" },
+      { label: "Product Allergens",   href: "/dashboard/allergen/product-allergens", permission: "quality.view" },
+      { label: "Product Nutrition",   href: "/dashboard/allergen/product-nutrition", permission: "quality.view" },
+      { label: "Roll-Up Viewer",      href: "/dashboard/allergen/rollup",            permission: "quality.view" },
+      { label: "Label Readiness",     href: "/dashboard/allergen/label-readiness",   permission: "quality.view" },
+      { label: "Change Logs",         href: "/dashboard/allergen/change-logs",       permission: "quality.view" },
+      { label: "Reports",             href: "/dashboard/allergen/reports",           permission: "quality.view" },
+      { label: "AI Agents",           href: "/dashboard/allergen/ai",                permission: "quality.view" },
+    ],
+  },
+
+  {
+    type: "section",
+    id: "gs1",
+    label: "GS1 & Label Printing",
+    permission: "quality.view",
+    icon: md(
+      "M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"
+    ),
+    items: [
+      { label: "GS1 Dashboard",      href: "/dashboard/gs1",             permission: "quality.view" },
+      { label: "GS1 Configuration",  href: "/dashboard/gs1/config",      permission: "quality.view" },
+      { label: "Barcode Generator",  href: "/dashboard/gs1/barcodes",    permission: "quality.view" },
+      { label: "Label Templates",    href: "/dashboard/gs1/labels",      permission: "quality.view" },
+      { label: "Print Queue",        href: "/dashboard/gs1/print-queue", permission: "quality.view" },
+      { label: "SSCC Pallets",       href: "/dashboard/gs1/sscc",        permission: "quality.view" },
+      { label: "Scan Debug",         href: "/dashboard/gs1/scan",        permission: "quality.view" },
+      { label: "GS1 Reports",        href: "/dashboard/gs1/reports",     permission: "quality.view" },
+      { label: "AI Agents",          href: "/dashboard/gs1/ai",          permission: "quality.view" },
+    ],
+  },
+
   // ╔══════════════════════════════╗
   // ║       COMMERCIAL             ║
   // ╚══════════════════════════════╝

@@ -13,6 +13,8 @@ from app.api.v1.endpoints import (
     mrp, mps, planning, bom, production_execution, shop_floor,
     material_flow, machine_operator, shelf_life, traceability,
     qms,
+    gs1,
+    allergen,
 )
 
 api_router = APIRouter()
@@ -118,3 +120,7 @@ api_router.include_router(shelf_life.router, prefix="/shelf-life", tags=["shelf-
 api_router.include_router(traceability.router, prefix="/traceability", tags=["traceability"])
 # ── Quality Management System + HACCP ────────────────────────────────────────
 api_router.include_router(qms.router, prefix="/qms", tags=["qms"])
+# ── GS1 Barcode + Label Printing System ──────────────────────────────────────
+api_router.include_router(gs1.router, prefix="/gs1", tags=["gs1"])
+# ── Allergen + Nutrition Management ──────────────────────────────────────────
+api_router.include_router(allergen.router, prefix="/allergen", tags=["allergen"])
