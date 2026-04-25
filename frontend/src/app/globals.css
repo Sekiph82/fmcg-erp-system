@@ -33,6 +33,9 @@
 [data-theme="dark"] {
   color-scheme: dark;
   background-color: var(--color-page-bg);
+  /* Base text color — ensures elements with NO explicit text-* class
+     are readable instead of defaulting to browser black                    */
+  color: #c8e3f7;
 }
 
 /* Layered radial gradients give the background enough "depth"
@@ -129,6 +132,52 @@
 /* ── Ring / focus ring ────────────────────────────────────────────────────── */
 [data-theme="dark"] .ring-gray-200 { --tw-ring-color: rgba(0,180,255,0.25) !important; }
 [data-theme="dark"] .ring-gray-300 { --tw-ring-color: rgba(0,180,255,0.35) !important; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   COLORED LIGHT BACKGROUNDS  (-50 variants used in special callout cards)
+   e.g. "Payable" bg-green-50, "On Hold" bg-red-50
+   ══════════════════════════════════════════════════════════════════════════ */
+[data-theme="dark"] .bg-green-50 {
+  background: rgba(34,197,94,0.10) !important;
+  backdrop-filter: blur(10px) !important;
+  box-shadow: 0 0 16px rgba(34,197,94,0.12), 0 0 0 1px rgba(34,197,94,0.22) !important;
+  border-color: rgba(34,197,94,0.28) !important;
+}
+[data-theme="dark"] .bg-red-50 {
+  background: rgba(239,68,68,0.10) !important;
+  backdrop-filter: blur(10px) !important;
+  box-shadow: 0 0 16px rgba(239,68,68,0.12), 0 0 0 1px rgba(239,68,68,0.22) !important;
+  border-color: rgba(239,68,68,0.28) !important;
+}
+[data-theme="dark"] .bg-blue-50 {
+  background: rgba(59,130,246,0.10) !important;
+  backdrop-filter: blur(10px) !important;
+  box-shadow: 0 0 16px rgba(59,130,246,0.12), 0 0 0 1px rgba(59,130,246,0.22) !important;
+  border-color: rgba(59,130,246,0.28) !important;
+}
+[data-theme="dark"] .bg-yellow-50 {
+  background: rgba(234,179,8,0.09) !important;
+  box-shadow: 0 0 14px rgba(234,179,8,0.12), 0 0 0 1px rgba(234,179,8,0.20) !important;
+  border-color: rgba(234,179,8,0.26) !important;
+}
+[data-theme="dark"] .bg-orange-50 {
+  background: rgba(249,115,22,0.09) !important;
+  box-shadow: 0 0 14px rgba(249,115,22,0.12), 0 0 0 1px rgba(249,115,22,0.20) !important;
+  border-color: rgba(249,115,22,0.26) !important;
+}
+[data-theme="dark"] .bg-purple-50 {
+  background: rgba(168,85,247,0.09) !important;
+  box-shadow: 0 0 14px rgba(168,85,247,0.12), 0 0 0 1px rgba(168,85,247,0.20) !important;
+  border-color: rgba(168,85,247,0.26) !important;
+}
+
+/* Colored borders on special cards */
+[data-theme="dark"] .border-green-200  { border-color: rgba(34,197,94,0.30)  !important; }
+[data-theme="dark"] .border-red-200    { border-color: rgba(239,68,68,0.30)  !important; }
+[data-theme="dark"] .border-blue-200   { border-color: rgba(59,130,246,0.30) !important; }
+[data-theme="dark"] .border-yellow-200 { border-color: rgba(234,179,8,0.28)  !important; }
+[data-theme="dark"] .border-orange-200 { border-color: rgba(249,115,22,0.28) !important; }
+[data-theme="dark"] .border-purple-200 { border-color: rgba(168,85,247,0.28) !important; }
 
 /* ══════════════════════════════════════════════════════════════════════════
    GLASS NAVIGATION BAR  (article Example 4)
@@ -316,6 +365,54 @@
 
 /* Full-filled status backgrounds (BLOCKED badges, etc.) keep their color */
 [data-theme="dark"] .bg-red-600 { box-shadow: var(--glow-red) !important; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   MISSING SEMANTIC TEXT COLORS  (-600 / -500 variants used across pages)
+   ══════════════════════════════════════════════════════════════════════════ */
+/* Blue */
+[data-theme="dark"] .text-blue-600    { color: #60a5fa !important; }
+[data-theme="dark"] .text-blue-500    { color: #93c5fd !important; }
+[data-theme="dark"] .text-blue-400    { color: #bfdbfe !important; }
+
+/* Green */
+[data-theme="dark"] .text-green-600   { color: #4ade80 !important; }
+[data-theme="dark"] .text-green-500   { color: #86efac !important; }
+[data-theme="dark"] .text-green-400   { color: #bbf7d0 !important; }
+
+/* Red */
+[data-theme="dark"] .text-red-500     { color: #fca5a5 !important; }
+[data-theme="dark"] .text-red-400     { color: #fecaca !important; }
+
+/* Yellow */
+[data-theme="dark"] .text-yellow-600  { color: #fbbf24 !important; }
+[data-theme="dark"] .text-yellow-500  { color: #fcd34d !important; }
+
+/* Orange */
+[data-theme="dark"] .text-orange-600  { color: #fb923c !important; }
+[data-theme="dark"] .text-orange-500  { color: #fdba74 !important; }
+
+/* Purple */
+[data-theme="dark"] .text-purple-600  { color: #c084fc !important; }
+[data-theme="dark"] .text-purple-500  { color: #d8b4fe !important; }
+
+/* Indigo */
+[data-theme="dark"] .text-indigo-600  { color: #818cf8 !important; }
+[data-theme="dark"] .text-indigo-500  { color: #a5b4fc !important; }
+[data-theme="dark"] .text-indigo-400  { color: #c7d2fe !important; }
+
+/* Teal */
+[data-theme="dark"] .text-teal-600    { color: #2dd4bf !important; }
+[data-theme="dark"] .text-teal-500    { color: #5eead4 !important; }
+
+/* Cyan */
+[data-theme="dark"] .text-cyan-600    { color: #22d3ee !important; }
+[data-theme="dark"] .text-cyan-500    { color: #67e8f9 !important; }
+
+/* Rose / Amber */
+[data-theme="dark"] .text-rose-600    { color: #fb7185 !important; }
+[data-theme="dark"] .text-rose-700    { color: #f43f5e !important; }
+[data-theme="dark"] .text-amber-600   { color: #f59e0b !important; }
+[data-theme="dark"] .text-amber-700   { color: #d97706 !important; }
 
 /* ══════════════════════════════════════════════════════════════════════════
    GLOWING SIDEBAR ACTIVE INDICATOR  (article Example 3)
