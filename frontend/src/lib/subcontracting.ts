@@ -1,4 +1,4 @@
-import apiClient from "@/lib/api";
+import { apiClient } from "@/lib/api";
 
 // ── Enums ─────────────────────────────────────────────────────────────────────
 export type SCOrderStatus = "DRAFT"|"APPROVED"|"ISSUED"|"IN_PROGRESS"|"PARTIALLY_RECEIVED"|"COMPLETED"|"CLOSED"|"CANCELLED";
