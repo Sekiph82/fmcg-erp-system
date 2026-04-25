@@ -14,7 +14,7 @@ function Stat({ label, value, warn }: { label: string; value: number; warn?: boo
 
 export default function AllergenDashboardPage() {
   const qc = useQueryClient();
-  const { data, isLoading } = useQuery({ queryKey: ["an-dashboard"], queryFn: allergenApi.getDashboard });
+  const { data, isLoading, isError } = useQuery({ queryKey: ["an-dashboard"], queryFn: allergenApi.getDashboard });
 
   const runAll = useMutation({
     mutationFn: async () => {
@@ -34,7 +34,7 @@ export default function AllergenDashboardPage() {
   });
 
   if (isLoading) return <div className="p-8 text-gray-400">Loading…</div>;
-  if (!data) return null;
+  if (isError || !data) return <div className="p-8 text-red-500">Failed to load Allergen & Nutrition dashboard. Ensure the database migration has been run (<code>alembic upgrade head</code>).</div>;
 
   return (
     <div className="p-6 space-y-6">

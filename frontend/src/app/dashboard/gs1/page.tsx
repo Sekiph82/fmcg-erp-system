@@ -15,7 +15,7 @@ function StatCard({ label, value, sub }: { label: string; value: number | string
 
 export default function GS1DashboardPage() {
   const qc = useQueryClient();
-  const { data, isLoading } = useQuery({ queryKey: ["gs1-dashboard"], queryFn: gs1Api.getDashboard });
+  const { data, isLoading, isError } = useQuery({ queryKey: ["gs1-dashboard"], queryFn: gs1Api.getDashboard });
 
   const validator = useMutation({
     mutationFn: gs1Api.runLabelValidator,
@@ -27,7 +27,7 @@ export default function GS1DashboardPage() {
   });
 
   if (isLoading) return <div className="p-8 text-gray-400">Loading GS1 dashboard…</div>;
-  if (!data) return null;
+  if (isError || !data) return <div className="p-8 text-red-500">Failed to load GS1 & Label Printing dashboard. Ensure the database migration has been run (<code>alembic upgrade head</code>).</div>;
 
   return (
     <div className="p-6 space-y-6">
