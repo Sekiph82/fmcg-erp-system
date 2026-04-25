@@ -12,13 +12,13 @@ Adds:
   destination_tag         – where treated water is routed (e.g. Boiler Feed, CIP)
   department              – department assignment (for filtering)
 
-Revision ID: d4e5f6a7b8c9
+Revision ID: d4e5f6a7b8cc
 Revises: c2d3e4f5a0b1
 """
 from alembic import op
 import sqlalchemy as sa
 
-revision    = "d4e5f6a7b8c9"
+revision    = "d4e5f6a7b8cc"
 down_revision = "c2d3e4f5a0b1"
 branch_labels = None
 depends_on    = None

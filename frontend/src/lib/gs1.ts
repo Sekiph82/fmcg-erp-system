@@ -1,6 +1,6 @@
 // GS1 Barcode + Label Printing System — types & API client
 
-const BASE = "/api/v1/gs1";
+const BASE = `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/v1/gs1`;
 
 // ── Enums / Types ─────────────────────────────────────────────────────────────
 

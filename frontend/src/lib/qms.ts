@@ -1,6 +1,6 @@
 // Quality Management System (QMS) + HACCP — types & API client
 
-const BASE = "/api/v1/qms";
+const BASE = `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"}/api/v1/qms`;
 
 // ── Enums / Types ─────────────────────────────────────────────────────────────
 
