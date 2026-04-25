@@ -153,6 +153,25 @@ export const NAV_CONFIG: NavEntry[] = [
 
   {
     type: "section",
+    id: "subcontracting",
+    label: "Subcontracting",
+    permission: "procurement.view",
+    icon: md(
+      "M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-2 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+    ),
+    items: [
+      { label: "SC Dashboard",        href: "/dashboard/subcontracting",              permission: "procurement.view" },
+      { label: "Orders",              href: "/dashboard/subcontracting/orders",        permission: "procurement.view" },
+      { label: "SC Locations",        href: "/dashboard/subcontracting/locations",     permission: "procurement.view" },
+      { label: "Subcontractor Stock", href: "/dashboard/subcontracting/stock",         permission: "procurement.view" },
+      { label: "Yield Analysis",      href: "/dashboard/subcontracting/yield",         permission: "procurement.view" },
+      { label: "Performance",         href: "/dashboard/subcontracting/performance",   permission: "procurement.view" },
+      { label: "AI Agents",           href: "/dashboard/subcontracting/ai",            permission: "procurement.view" },
+    ],
+  },
+
+  {
+    type: "section",
     id: "procurement-suggestion",
     label: "Procurement Suggestion Engine",
     permission: "procurement.view",

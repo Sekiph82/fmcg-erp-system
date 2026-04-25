@@ -1,7 +1,54 @@
 # TASKS — FMCG ERP (Kenya) · Production Module
 
 ## Current Phase
-Phase 14 — Procurement Suggestion Engine ✅ COMPLETED
+Phase 15 — Subcontracting System ✅ COMPLETED
+
+---
+
+## Phase 15 — Subcontracting System ✅
+
+- [x] `backend/app/models/subcontracting.py` — 6 enums + 10 models:
+  - Enums: SCOrderStatus (8), SCIssueStatus, SCReceiptStatus, SCYieldStatus, SCAIAgentType, ScrapReasonCode
+  - Models: SubcontractorLocation (virtual warehouse per supplier), SubcontractOrder (header), SubcontractOrderLine (what to produce), SubcontractMaterialIssue (material send header), SubcontractMaterialIssueLine (per-material with lots), SubcontractReceipt (goods received header), SubcontractReceiptLine (per FG line), SubcontractYieldRecord (yield/variance per order line), SCPerformanceRecord (KPI per order), SCAIRecommendation
+- [x] `backend/app/schemas/subcontracting.py` — full Pydantic v2 schemas
+- [x] `backend/app/services/subcontracting_service.py`:
+  - create_order / approve_order / complete_order
+  - issue_materials → stock movement source warehouse → subcontractor virtual location
+  - receive_goods → stock movement subcontractor → factory, updates order line qty
+  - _recalculate_yield → actual vs expected yield, scrap tracking, yield status
+  - _upsert_performance → KPI calc: delay days, rejection rate, yield, cost variance, score 0-100
+  - get_subcontractor_stock → aggregate materials at active subcontractor locations
+  - AI Agent 1: Performance Analyzer (low yield + overdue orders)
+  - AI Agent 2: Cost Optimizer (high wastage cost detection)
+  - AI Agent 3: Risk Detector (missing locations + near-deadline orders)
+- [x] `backend/app/api/v1/endpoints/subcontracting.py` — 20 routes at /api/v1/subcontracting/
+- [x] `frontend/src/lib/subcontracting.ts` — types, API client, color helpers
+- [x] Frontend pages:
+  - Dashboard (KPIs, recent orders, quick links)
+  - Orders (list + create + detail with issues/receipts/yield)
+  - SC Locations (virtual warehouse management)
+  - Subcontractor Stock (materials at external sites, grouped by supplier)
+  - Yield Analysis (actual vs expected, variance, scrap)
+  - Performance (KPI table with scoring bars, delivery/quality/cost)
+  - AI Agents (3 agents, risk badges, action tracking)
+- [x] Nav: "Subcontracting" section with 7 links
+
+**DB MIGRATION STATUS — FULLY APPLIED ✅**
+- Tables already existed from prior worktree work
+- Migration marker `4a1b1eba5eed_subcontracting_system` applied ✅
+- Single clean head: `4a1b1eba5eed` ✅
+- All 20 API endpoints verified ✅
+
+---
+
+## Next: Prompt 16 — Landed Cost Allocation
+
+## Blockers
+None
+
+---
+
+## Phase 14 — Procurement Suggestion Engine ✅ COMPLETED
 
 ---
 

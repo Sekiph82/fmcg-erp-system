@@ -16,6 +16,7 @@ from app.api.v1.endpoints import (
     gs1,
     allergen,
     procurement_suggestion,
+    subcontracting,
 )
 
 api_router = APIRouter()
@@ -127,3 +128,5 @@ api_router.include_router(gs1.router, prefix="/gs1", tags=["gs1"])
 api_router.include_router(allergen.router, prefix="/allergen", tags=["allergen"])
 # ── Procurement Suggestion Engine ────────────────────────────────────────────
 api_router.include_router(procurement_suggestion.router, prefix="/procurement/suggestions", tags=["procurement-suggestions"])
+# ── Subcontracting System ─────────────────────────────────────────────────────
+api_router.include_router(subcontracting.router, prefix="/subcontracting", tags=["subcontracting"])

@@ -241,6 +241,17 @@ from app.models.traceability import (
     RecallCustomerImpact, RecallReturnRecord, TRRecAIRecommendation,
 )
 
+# ── Subcontracting System ─────────────────────────────────────────────────────
+from app.models.subcontracting import (
+    SCOrderStatus, SCIssueStatus, SCReceiptStatus, SCYieldStatus,
+    SCAIAgentType, ScrapReasonCode,
+    SubcontractorLocation,
+    SubcontractOrder, SubcontractOrderLine,
+    SubcontractMaterialIssue, SubcontractMaterialIssueLine,
+    SubcontractReceipt, SubcontractReceiptLine,
+    SubcontractYieldRecord, SCPerformanceRecord, SCAIRecommendation,
+)
+
 # ── Procurement Suggestion Engine ────────────────────────────────────────────
 from app.models.procurement_suggestion import (
     PSRunStatus, PSSuggestionStatus, PSUrgencyLevel, PSGroupStatus,
@@ -437,6 +448,14 @@ __all__ = [
     "ItemShelfLifeConfig", "PickingStrategyConfig", "CustomerShelfLifeRule",
     "LotShelfLifeProfile", "RetestRequest", "BulkHoldRecord", "ShelfLifeAlert",
     "DispositionSuggestion", "FEFOAuditLog", "SLAIRecommendation",
+    # Subcontracting System
+    "SCOrderStatus", "SCIssueStatus", "SCReceiptStatus", "SCYieldStatus",
+    "SCAIAgentType", "ScrapReasonCode",
+    "SubcontractorLocation",
+    "SubcontractOrder", "SubcontractOrderLine",
+    "SubcontractMaterialIssue", "SubcontractMaterialIssueLine",
+    "SubcontractReceipt", "SubcontractReceiptLine",
+    "SubcontractYieldRecord", "SCPerformanceRecord", "SCAIRecommendation",
     # Procurement Suggestion Engine
     "PSRunStatus", "PSSuggestionStatus", "PSUrgencyLevel", "PSGroupStatus",
     "PSAIAgentType", "SupplierItemPriority",
