@@ -308,6 +308,16 @@ from app.models.shelf_life import (
     DispositionSuggestion, FEFOAuditLog, SLAIRecommendation,
 )
 
+# ── Promotional Schemes Auto-Apply ───────────────────────────────────────────
+from app.models.promotions import (
+    SchemeStatus, SchemeType, TriggerBasis, RewardType,
+    PromoApplicationType, PromoImpactType, OverrideStatus,
+    PromoAIAgentType, PromoAIRecStatus,
+    PromoScheme, PromoEligibility, PromoRuleLine, PromoTierLine,
+    SalesOrderPromo, SalesOrderPromoLine, PromoOverrideRequest,
+    PromoUsageTally, PromoAIRecommendation,
+)
+
 # ── Accounting Dimensions / Cost Centers ─────────────────────────────────────
 from app.models.dimensions import (
     DimensionScope, CostCenterType, DimSourceType,

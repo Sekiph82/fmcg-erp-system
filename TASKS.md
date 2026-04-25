@@ -1,7 +1,46 @@
 # TASKS — FMCG ERP (Kenya) · Production Module
 
 ## Current Phase
-Phase 20 — Accounting Dimensions / Cost Centers ✅ COMPLETED
+Phase 21 — Promotional Schemes Auto-Apply ✅ COMPLETED
+
+---
+
+## Phase 21 — Promotional Schemes Auto-Apply ✅
+
+- [x] `backend/app/models/promotions.py` — 8 enums + 9 models:
+  - Enums: SchemeStatus, SchemeType, TriggerBasis, RewardType, PromoApplicationType, PromoImpactType, OverrideStatus, PromoAIAgentType, PromoAIRecStatus
+  - Models: PromoScheme, PromoEligibility, PromoRuleLine, PromoTierLine, SalesOrderPromo, SalesOrderPromoLine, PromoUsageTally, OverrideRequest, PromoAIRecommendation
+- [x] `backend/app/schemas/promotions.py` — full Pydantic v2 schemas with `from __future__ import annotations` + `model_rebuild()`
+- [x] `backend/app/services/promotions_service.py`:
+  - Eligibility engine (customer, channel, region, category, brand scoping with OR logic)
+  - Rule evaluation engine (_evaluate_rule, _build_line_impact, _build_order_level_impact)
+  - 10 scheme types: BUY_X_GET_Y, PERCENT_DISCOUNT, FIXED_DISCOUNT, TIERED_DISCOUNT, QTY_BREAK_PRICE, SPEND_BASED, MIX_AND_MATCH, BUNDLE, FREE_GOODS_DIFF_SKU, CHANNEL_DEAL
+  - Stacking/exclusivity conflict resolution (priority_rank + exclusive flag)
+  - Next-threshold hints (add N units to unlock %)
+  - Monthly cost tally upsert (UNIQUE scheme_id + tally_month)
+  - Override approval workflow
+  - AI Agent 1: Conflict Advisor (overlapping schemes, stacking conflicts)
+  - AI Agent 2: Cost Monitor (schemes over monthly budget)
+  - AI Agent 3: Upsell Assistant (near-threshold orders)
+- [x] `backend/app/api/v1/endpoints/promotions.py` — 20+ routes at /api/v1/promotions/
+- [x] `backend/app/models/__init__.py` + `router.py` updated
+- [x] `frontend/src/lib/promotions.ts` — TypeScript client + labels + fmtCurrency
+- [x] Frontend pages (8 screens):
+  - Dashboard (KPIs + active/expiring schemes)
+  - Scheme Master List (with activate/suspend/resume actions)
+  - New Scheme — Rule Builder (header + eligibility scopes + dynamic rule lines)
+  - Scheme Detail (full read-only view with usage stats)
+  - Promotion Simulator (test promotions against sample orders)
+  - Override Approval Queue (approve/reject pending requests)
+  - Cost Analytics (usage table + cost share progress bars)
+  - AI Agents (Conflict Advisor + Cost Monitor + Upsell Assistant)
+- [x] Sidebar: "Promotional Schemes" section added to nav-config.tsx
+
+## Next Immediate Task
+Phase 22 — Trade Promotion Management Enhancement
+
+## Blockers
+None
 
 ---
 

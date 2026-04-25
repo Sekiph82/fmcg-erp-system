@@ -22,6 +22,7 @@ from app.api.v1.endpoints import (
     bank_reconciliation,
     fixed_assets,
     dimensions,
+    promotions,
 )
 
 api_router = APIRouter()
@@ -145,3 +146,5 @@ api_router.include_router(bank_reconciliation.router, prefix="/bank-reconciliati
 api_router.include_router(fixed_assets.router, prefix="/fixed-assets", tags=["fixed-assets"])
 # ── Accounting Dimensions / Cost Centers ──────────────────────────────────────
 api_router.include_router(dimensions.router, prefix="/dimensions", tags=["dimensions"])
+# ── Promotional Schemes Auto-Apply ────────────────────────────────────────────
+api_router.include_router(promotions.router, prefix="/promotions", tags=["promotions"])

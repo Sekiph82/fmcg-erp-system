@@ -435,6 +435,25 @@ export const NAV_CONFIG: NavEntry[] = [
 
   {
     type: "section",
+    id: "promotions",
+    label: "Promotional Schemes",
+    permission: "promotions.view",
+    icon: md(
+      "M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
+    ),
+    items: [
+      { label: "Dashboard",        href: "/dashboard/promotions",             permission: "promotions.view" },
+      { label: "Schemes",          href: "/dashboard/promotions/schemes",     permission: "promotions.view" },
+      { label: "New Scheme",       href: "/dashboard/promotions/schemes/new", permission: "promotions.view" },
+      { label: "Simulator",        href: "/dashboard/promotions/simulate",    permission: "promotions.view" },
+      { label: "Override Queue",   href: "/dashboard/promotions/overrides",   permission: "promotions.view" },
+      { label: "Cost Analytics",   href: "/dashboard/promotions/analytics",   permission: "promotions.view" },
+      { label: "AI Agents",        href: "/dashboard/promotions/ai",          permission: "promotions.view" },
+    ],
+  },
+
+  {
+    type: "section",
     id: "finance",
     label: "Finance",
     permission: "finance.view",
