@@ -17,12 +17,6 @@ export default function LandedCostDetailPage() {
     enabled: !!id,
   });
 
-  const mutateFn = (fn: () => Promise<LandedCostOut>) =>
-    useMutation({
-      mutationFn: fn,
-      onSuccess: () => qc.invalidateQueries({ queryKey: ["lc-doc", id] }),
-    });
-
   const allocate = useMutation({
     mutationFn: () => lcApi.allocate(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["lc-doc", id] }),
@@ -45,6 +39,10 @@ export default function LandedCostDetailPage() {
 
   if (isLoading) return <div className="p-8 text-gray-500">Loading…</div>;
   if (error || !doc) return <div className="p-8 text-red-500">Document not found.</div>;
+
+  const costLines      = doc.cost_lines      ?? [];
+  const grnLinks       = doc.grn_links       ?? [];
+  const allocationLines = doc.allocation_lines ?? [];
 
   const canAllocate = ["DRAFT", "VALIDATED"].includes(doc.status);
   const canPost     = doc.status === "VALIDATED";
@@ -96,10 +94,10 @@ export default function LandedCostDetailPage() {
       {/* Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: "Currency",       value: `${doc.currency_code} @ ${doc.exchange_rate}` },
-          { label: "Method",         value: ALLOC_METHOD_LABEL[doc.allocation_method] ?? doc.allocation_method },
-          { label: "Total (FC)",     value: fmtCurrency(doc.total_lc_amount_fc, doc.currency_code) },
-          { label: "Total (Base)",   value: fmtCurrency(doc.total_lc_amount_base) },
+          { label: "Currency",     value: `${doc.currency_code} @ ${doc.exchange_rate}` },
+          { label: "Method",       value: ALLOC_METHOD_LABEL[doc.allocation_method] ?? doc.allocation_method },
+          { label: "Total (FC)",   value: fmtCurrency(doc.total_lc_amount_fc, doc.currency_code) },
+          { label: "Total (Base)", value: fmtCurrency(doc.total_lc_amount_base) },
         ].map((c) => (
           <div key={c.label} className="bg-white border rounded-xl p-4">
             <p className="text-xs text-gray-500">{c.label}</p>
@@ -111,7 +109,7 @@ export default function LandedCostDetailPage() {
       {/* Cost Lines */}
       <div className="bg-white border rounded-xl overflow-hidden">
         <div className="px-5 py-3 border-b bg-gray-50">
-          <h2 className="text-sm font-semibold text-gray-700">Cost Components ({doc.cost_lines.length})</h2>
+          <h2 className="text-sm font-semibold text-gray-700">Cost Components ({costLines.length})</h2>
         </div>
         <table className="w-full text-sm">
           <thead className="bg-gray-50 text-xs text-gray-500 uppercase">
@@ -122,14 +120,14 @@ export default function LandedCostDetailPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {doc.cost_lines.map((cl) => (
+            {costLines.map((cl) => (
               <tr key={cl.id} className="hover:bg-gray-50">
                 <td className="px-4 py-2 text-xs font-medium">{COST_TYPE_LABEL[cl.cost_type as keyof typeof COST_TYPE_LABEL] ?? cl.cost_type}</td>
                 <td className="px-4 py-2 text-gray-600 text-xs">{cl.description ?? "—"}</td>
                 <td className="px-4 py-2 text-gray-600 text-xs">{cl.vendor_name ?? "—"}</td>
-                <td className="px-4 py-2 font-medium">{cl.amount_fc.toLocaleString()}</td>
+                <td className="px-4 py-2 font-medium">{Number(cl.amount_fc ?? 0).toLocaleString()}</td>
                 <td className="px-4 py-2 text-gray-500 text-xs">{cl.currency_code}</td>
-                <td className="px-4 py-2 text-gray-500 text-xs">{Number(cl.exchange_rate).toFixed(4)}</td>
+                <td className="px-4 py-2 text-gray-500 text-xs">{Number(cl.exchange_rate ?? 1).toFixed(4)}</td>
                 <td className="px-4 py-2 font-medium">{fmtCurrency(cl.amount_base)}</td>
                 <td className="px-4 py-2">
                   <span className={`text-xs px-2 py-0.5 rounded-full ${cl.is_included_in_valuation ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
@@ -138,7 +136,7 @@ export default function LandedCostDetailPage() {
                 </td>
               </tr>
             ))}
-            {doc.cost_lines.length === 0 && (
+            {costLines.length === 0 && (
               <tr><td colSpan={8} className="px-4 py-4 text-center text-gray-400">No cost lines.</td></tr>
             )}
           </tbody>
@@ -148,9 +146,9 @@ export default function LandedCostDetailPage() {
       {/* GRN Links */}
       <div className="bg-white border rounded-xl overflow-hidden">
         <div className="px-5 py-3 border-b bg-gray-50">
-          <h2 className="text-sm font-semibold text-gray-700">Linked GRNs ({doc.grn_links.length})</h2>
+          <h2 className="text-sm font-semibold text-gray-700">Linked GRNs ({grnLinks.length})</h2>
         </div>
-        {doc.grn_links.length === 0 ? (
+        {grnLinks.length === 0 ? (
           <p className="px-5 py-4 text-sm text-gray-400">No GRNs linked.</p>
         ) : (
           <table className="w-full text-sm">
@@ -162,7 +160,7 @@ export default function LandedCostDetailPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {doc.grn_links.map((g) => (
+              {grnLinks.map((g) => (
                 <tr key={g.id} className="hover:bg-gray-50">
                   <td className="px-4 py-2 font-mono text-xs">{g.grn_no ?? g.grn_id.slice(0, 8)}</td>
                   <td className="px-4 py-2 text-gray-600 text-xs">{g.po_no ?? "—"}</td>
@@ -177,10 +175,10 @@ export default function LandedCostDetailPage() {
       </div>
 
       {/* Allocation Lines */}
-      {doc.allocation_lines.length > 0 && (
+      {allocationLines.length > 0 && (
         <div className="bg-white border rounded-xl overflow-hidden">
           <div className="px-5 py-3 border-b bg-gray-50">
-            <h2 className="text-sm font-semibold text-gray-700">Allocation Results ({doc.allocation_lines.length} lines)</h2>
+            <h2 className="text-sm font-semibold text-gray-700">Allocation Results ({allocationLines.length} lines)</h2>
           </div>
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-xs text-gray-500 uppercase">
@@ -191,7 +189,7 @@ export default function LandedCostDetailPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {doc.allocation_lines.map((al) => (
+              {allocationLines.map((al) => (
                 <tr key={al.id} className="hover:bg-gray-50">
                   <td className="px-4 py-2 text-xs">{al.material_name ?? "—"}</td>
                   <td className="px-4 py-2 font-mono text-xs">{al.lot_no ?? "—"}</td>
