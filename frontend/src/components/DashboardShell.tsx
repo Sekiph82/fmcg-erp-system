@@ -57,7 +57,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
   }, [isDirty, confirmLeave]);
 
   return (
-    <div className="flex h-screen bg-[#f1f3f6] overflow-hidden">
+    <div className="flex h-screen bg-[#0d1526] overflow-hidden">
       {/* Mobile overlay backdrop */}
       {mobileOpen && (
         <div
@@ -69,12 +69,12 @@ export function DashboardShell({ children }: DashboardShellProps) {
       <Sidebar mobileOpen={mobileOpen} onMobileClose={closeMobile} />
 
       {/* Right column: mobile top bar + main content */}
-      <div className="flex flex-1 flex-col overflow-hidden min-w-0">
+      <div className="flex flex-1 flex-col overflow-hidden min-w-0" data-theme="dark">
         {/* Mobile top bar — only visible on small screens */}
-        <header className="flex h-[52px] shrink-0 items-center gap-3 border-b border-gray-200/80 bg-white px-4 lg:hidden">
+        <header className="flex h-[52px] shrink-0 items-center gap-3 border-b border-white/[0.065] bg-[#0b1120] px-4 lg:hidden">
           <button
             onClick={openMobile}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-white/10 transition-colors"
             aria-label="Open navigation"
           >
             <svg className="h-[18px] w-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -86,7 +86,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
             <div className="flex h-6 w-6 items-center justify-center rounded-md bg-indigo-600 text-[9px] font-bold text-white">
               ERP
             </div>
-            <span className="text-[13px] font-semibold text-gray-800 tracking-tight">
+            <span className="text-[13px] font-semibold text-white tracking-tight">
               FMCG ERP
             </span>
           </div>
