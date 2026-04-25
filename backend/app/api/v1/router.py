@@ -20,6 +20,7 @@ from app.api.v1.endpoints import (
     landed_cost,
     invoice_match,
     bank_reconciliation,
+    fixed_assets,
 )
 
 api_router = APIRouter()
@@ -139,3 +140,5 @@ api_router.include_router(landed_cost.router, prefix="/landed-cost", tags=["land
 api_router.include_router(invoice_match.router, prefix="/invoice-match", tags=["invoice-match"])
 # ── Bank Reconciliation ───────────────────────────────────────────────────────
 api_router.include_router(bank_reconciliation.router, prefix="/bank-reconciliation", tags=["bank-reconciliation"])
+# ── Fixed Asset Accounting + Depreciation ─────────────────────────────────────
+api_router.include_router(fixed_assets.router, prefix="/fixed-assets", tags=["fixed-assets"])

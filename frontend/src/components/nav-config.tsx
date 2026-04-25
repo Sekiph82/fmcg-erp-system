@@ -214,6 +214,28 @@ export const NAV_CONFIG: NavEntry[] = [
 
   {
     type: "section",
+    id: "fixed-assets",
+    label: "Fixed Assets",
+    permission: "finance.view",
+    icon: md(
+      "M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+    ),
+    items: [
+      { label: "Dashboard",      href: "/dashboard/fixed-assets",              permission: "finance.view" },
+      { label: "Asset Register", href: "/dashboard/fixed-assets/assets",       permission: "finance.view" },
+      { label: "New Asset",      href: "/dashboard/fixed-assets/assets/new",   permission: "finance.view" },
+      { label: "Categories",     href: "/dashboard/fixed-assets/categories",   permission: "finance.view" },
+      { label: "Depreciation",   href: "/dashboard/fixed-assets/depreciation", permission: "finance.view" },
+      { label: "Posting Run",    href: "/dashboard/fixed-assets/posting",      permission: "finance.view" },
+      { label: "Disposals",      href: "/dashboard/fixed-assets/disposal",     permission: "finance.view" },
+      { label: "Transfers",      href: "/dashboard/fixed-assets/transfer",     permission: "finance.view" },
+      { label: "Legacy Import",  href: "/dashboard/fixed-assets/import",       permission: "finance.view" },
+      { label: "AI Agents",      href: "/dashboard/fixed-assets/ai",           permission: "finance.view" },
+    ],
+  },
+
+  {
+    type: "section",
     id: "landed-cost",
     label: "Landed Cost Allocation",
     permission: "procurement.view",

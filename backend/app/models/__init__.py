@@ -308,6 +308,15 @@ from app.models.shelf_life import (
     DispositionSuggestion, FEFOAuditLog, SLAIRecommendation,
 )
 
+# ── Fixed Asset Accounting + Depreciation ────────────────────────────────────
+from app.models.fixed_assets import (
+    DepreciationMethod, DepreciationFrequency, DepreciationStartRule,
+    FAAssetStatus, ScheduleStatus, AssetEventType, DisposalMethod,
+    FAIAgentType, FAIRecStatus,
+    FAAssetCategory, FAFixedAsset, FADepreciationSchedule,
+    FAAssetEvent, FAAssetDisposal, FAAssetComponent, FAAIRecommendation,
+)
+
 # ── Bank Reconciliation ───────────────────────────────────────────────────────
 from app.models.bank_reconciliation import (
     BRAccountType, BRImportSource, BRStatementStatus, BRLineMatchStatus,
@@ -526,4 +535,10 @@ __all__ = [
     "BRAIAgentType", "BRAIRecStatus",
     "BRBankAccount", "BRStatement", "BRStatementLine", "BRMatch", "BRRule",
     "BRAdjustment", "BRAIRecommendation",
+    # Fixed Asset Accounting
+    "DepreciationMethod", "DepreciationFrequency", "DepreciationStartRule",
+    "FAAssetStatus", "ScheduleStatus", "AssetEventType", "DisposalMethod",
+    "FAIAgentType", "FAIRecStatus",
+    "FAAssetCategory", "FAFixedAsset", "FADepreciationSchedule",
+    "FAAssetEvent", "FAAssetDisposal", "FAAssetComponent", "FAAIRecommendation",
 ]
