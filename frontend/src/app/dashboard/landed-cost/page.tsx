@@ -29,7 +29,7 @@ export default function LandedCostDashboard() {
     { label: "Cancelled", value: data.cancelled_count, color: "bg-red-100 text-red-600" },
   ];
 
-  const chartData = data.top_cost_types.map((t) => ({
+  const chartData = (data.top_cost_types ?? []).map((t) => ({
     name: COST_TYPE_LABEL[t.cost_type as keyof typeof COST_TYPE_LABEL] ?? t.cost_type,
     total: t.total,
   }));
@@ -138,7 +138,7 @@ export default function LandedCostDashboard() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {data.recent_documents.map((doc) => (
+            {(data.recent_documents ?? []).map((doc) => (
               <tr key={doc.id} className="hover:bg-gray-50">
                 <td className="px-4 py-2 font-mono text-xs">{doc.lc_no}</td>
                 <td className="px-4 py-2">{doc.vendor_name ?? "—"}</td>
