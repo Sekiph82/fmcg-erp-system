@@ -124,32 +124,32 @@ const BASE = "/api/v1/tax";
 
 export const taxApi = {
   listCountries: async () => {
-    const res = await apiClient.get<CountryTaxConfig[]>(`${BASE}/countries`);
+    const res = await apiClient.get<CountryTaxConfig[]>(`${BASE}/countries`).then((r) => r.data);
     return res.data;
   },
   getCountry: async (code: string) => {
-    const res = await apiClient.get<CountryTaxConfig>(`${BASE}/countries/${code}`);
+    const res = await apiClient.get<CountryTaxConfig>(`${BASE}/countries/${code}`).then((r) => r.data);
     return res.data;
   },
   createCountry: async (d: object) => {
-    const res = await apiClient.post<CountryTaxConfig>(`${BASE}/countries`, d);
+    const res = await apiClient.post<CountryTaxConfig>(`${BASE}/countries`, d).then((r) => r.data);
     return res.data;
   },
   updateCountry: async (code: string, d: object) => {
-    const res = await apiClient.patch<CountryTaxConfig>(`${BASE}/countries/${code}`, d);
+    const res = await apiClient.patch<CountryTaxConfig>(`${BASE}/countries/${code}`, d).then((r) => r.data);
     return res.data;
   },
 
   listCategories: async () => {
-    const res = await apiClient.get<TaxCategory[]>(`${BASE}/categories`);
+    const res = await apiClient.get<TaxCategory[]>(`${BASE}/categories`).then((r) => r.data);
     return res.data;
   },
   createCategory: async (d: object) => {
-    const res = await apiClient.post<TaxCategory>(`${BASE}/categories`, d);
+    const res = await apiClient.post<TaxCategory>(`${BASE}/categories`, d).then((r) => r.data);
     return res.data;
   },
   updateCategory: async (id: string, d: object) => {
-    const res = await apiClient.patch<TaxCategory>(`${BASE}/categories/${id}`, d);
+    const res = await apiClient.patch<TaxCategory>(`${BASE}/categories/${id}`, d).then((r) => r.data);
     return res.data;
   },
 
@@ -160,30 +160,30 @@ export const taxApi = {
     return res.data;
   },
   createRule: async (d: object) => {
-    const res = await apiClient.post<TaxRule>(`${BASE}/rules`, d);
+    const res = await apiClient.post<TaxRule>(`${BASE}/rules`, d).then((r) => r.data);
     return res.data;
   },
   updateRule: async (id: string, d: object) => {
-    const res = await apiClient.patch<TaxRule>(`${BASE}/rules/${id}`, d);
+    const res = await apiClient.patch<TaxRule>(`${BASE}/rules/${id}`, d).then((r) => r.data);
     return res.data;
   },
 
   listMappings: async (params?: { country_code?: string; product_id?: string; material_id?: string }) => {
-    const res = await apiClient.get<ProductTaxMapping[]>(`${BASE}/mappings`, { params });
+    const res = await apiClient.get<ProductTaxMapping[]>(`${BASE}/mappings`, { params }).then((r) => r.data);
     return res.data;
   },
   createMapping: async (d: object) => {
-    const res = await apiClient.post<ProductTaxMapping>(`${BASE}/mappings`, d);
+    const res = await apiClient.post<ProductTaxMapping>(`${BASE}/mappings`, d).then((r) => r.data);
     return res.data;
   },
   updateMapping: async (id: string, d: object) => {
-    const res = await apiClient.patch<ProductTaxMapping>(`${BASE}/mappings/${id}`, d);
+    const res = await apiClient.patch<ProductTaxMapping>(`${BASE}/mappings/${id}`, d).then((r) => r.data);
     return res.data;
   },
-  deleteMapping: (id: string) => apiClient.delete(`${BASE}/mappings/${id}`),
+  deleteMapping: (id: string) => apiClient.delete(`${BASE}/mappings/${id}`).then((r) => r.data),
 
   listFlags: async (params?: { country_code?: string; status?: string }) => {
-    const res = await apiClient.get<RegulatoryFlag[]>(`${BASE}/regulatory-flags`, { params });
+    const res = await apiClient.get<RegulatoryFlag[]>(`${BASE}/regulatory-flags`, { params }).then((r) => r.data);
     return res.data;
   },
   getExpiringFlags: async (days = 30) => {
@@ -193,33 +193,33 @@ export const taxApi = {
     return res.data;
   },
   createFlag: async (d: object) => {
-    const res = await apiClient.post<RegulatoryFlag>(`${BASE}/regulatory-flags`, d);
+    const res = await apiClient.post<RegulatoryFlag>(`${BASE}/regulatory-flags`, d).then((r) => r.data);
     return res.data;
   },
   updateFlag: async (id: string, d: object) => {
-    const res = await apiClient.patch<RegulatoryFlag>(`${BASE}/regulatory-flags/${id}`, d);
+    const res = await apiClient.patch<RegulatoryFlag>(`${BASE}/regulatory-flags/${id}`, d).then((r) => r.data);
     return res.data;
   },
-  deleteFlag: (id: string) => apiClient.delete(`${BASE}/regulatory-flags/${id}`),
+  deleteFlag: (id: string) => apiClient.delete(`${BASE}/regulatory-flags/${id}`).then((r) => r.data),
 
   listTransactionTaxes: async (params?: {
     entity_type?: string;
     entity_id?: string;
     country_code?: string;
   }) => {
-    const res = await apiClient.get<TransactionTax[]>(`${BASE}/transaction-taxes`, { params });
+    const res = await apiClient.get<TransactionTax[]>(`${BASE}/transaction-taxes`, { params }).then((r) => r.data);
     return res.data;
   },
   createTransactionTax: async (d: object) => {
-    const res = await apiClient.post<TransactionTax>(`${BASE}/transaction-taxes`, d);
+    const res = await apiClient.post<TransactionTax>(`${BASE}/transaction-taxes`, d).then((r) => r.data);
     return res.data;
   },
   applyTaxes: async (d: object) => {
-    const res = await apiClient.post<TransactionTax[]>(`${BASE}/transaction-taxes/apply`, d);
+    const res = await apiClient.post<TransactionTax[]>(`${BASE}/transaction-taxes/apply`, d).then((r) => r.data);
     return res.data;
   },
   updateTransactionTax: async (id: string, d: object) => {
-    const res = await apiClient.patch<TransactionTax>(`${BASE}/transaction-taxes/${id}`, d);
+    const res = await apiClient.patch<TransactionTax>(`${BASE}/transaction-taxes/${id}`, d).then((r) => r.data);
     return res.data;
   },
   bulkPost: async (entityType: string, entityId: string) => {

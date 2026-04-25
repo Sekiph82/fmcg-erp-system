@@ -139,7 +139,7 @@ export const importApi = {
 
   /** Get module manifest (fields, permissions, unique keys). */
   async getModules(): Promise<ImportModuleInfo[]> {
-    const r = await apiClient.get<ImportModuleInfo[]>("/api/v1/bulk-import/modules");
+    const r = await apiClient.get<ImportModuleInfo[]>("/api/v1/bulk-import/modules").then((r) => r.data);
     return r.data;
   },
 };

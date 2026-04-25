@@ -114,19 +114,19 @@ const BASE = "/api/v1/electricity";
 export const electricityApi = {
   // Analytics
   async kpis(scope?: ElectricityScope): Promise<ElectricityKPIs> {
-    const res = await apiClient.get<ElectricityKPIs>(`${BASE}/kpis`, { params: scope });
+    const res = await apiClient.get<ElectricityKPIs>(`${BASE}/kpis`, { params: scope }).then((r) => r.data);
     return res.data;
   },
 
   async dailyTrend(scope?: ElectricityScope): Promise<ElectricityTrendPoint[]> {
-    const res = await apiClient.get<ElectricityTrendPoint[]>(`${BASE}/trend/daily`, { params: scope });
+    const res = await apiClient.get<ElectricityTrendPoint[]>(`${BASE}/trend/daily`, { params: scope }).then((r) => r.data);
     return res.data;
   },
 
   async shiftTrend(params?: {
     date_from?: string; date_to?: string; department?: string; line_id?: string;
   }): Promise<ElectricityShiftPoint[]> {
-    const res = await apiClient.get<ElectricityShiftPoint[]>(`${BASE}/trend/shift`, { params });
+    const res = await apiClient.get<ElectricityShiftPoint[]>(`${BASE}/trend/shift`, { params }).then((r) => r.data);
     return res.data;
   },
 
@@ -147,27 +147,27 @@ export const electricityApi = {
 
   // Transactions
   async listTransactions(params?: ElectricityTxFilters): Promise<UtilityTransaction[]> {
-    const res = await apiClient.get<UtilityTransaction[]>(`${BASE}/transactions`, { params });
+    const res = await apiClient.get<UtilityTransaction[]>(`${BASE}/transactions`, { params }).then((r) => r.data);
     return res.data;
   },
 
   async getTransaction(id: string): Promise<UtilityTransaction> {
-    const res = await apiClient.get<UtilityTransaction>(`${BASE}/transactions/${id}`);
+    const res = await apiClient.get<UtilityTransaction>(`${BASE}/transactions/${id}`).then((r) => r.data);
     return res.data;
   },
 
   async createTransaction(data: UtilityTransactionCreate): Promise<UtilityTransaction> {
-    const res = await apiClient.post<UtilityTransaction>(`${BASE}/transactions`, data);
+    const res = await apiClient.post<UtilityTransaction>(`${BASE}/transactions`, data).then((r) => r.data);
     return res.data;
   },
 
   async updateTransaction(id: string, data: UtilityTransactionUpdate): Promise<UtilityTransaction> {
-    const res = await apiClient.patch<UtilityTransaction>(`${BASE}/transactions/${id}`, data);
+    const res = await apiClient.patch<UtilityTransaction>(`${BASE}/transactions/${id}`, data).then((r) => r.data);
     return res.data;
   },
 
   async deleteTransaction(id: string): Promise<void> {
-    await apiClient.delete(`${BASE}/transactions/${id}`);
+    await apiClient.delete(`${BASE}/transactions/${id}`).then((r) => r.data);
   },
 };
 

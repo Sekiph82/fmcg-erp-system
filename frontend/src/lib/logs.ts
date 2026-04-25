@@ -78,16 +78,16 @@ function buildParams(obj: Record<string, unknown>): string {
 
 export const logsApi = {
   listOperational: (filters: OperationalLogFilters = {}): Promise<LogsPageResponse> =>
-    apiClient.get(`/logs/operational${buildParams(filters as Record<string, unknown>)}`),
+    apiClient.get(`/logs/operational${buildParams(filters as Record<string, unknown>)}`).then((r) => r.data),
 
   listMpesa: (filters: Omit<OperationalLogFilters, "module_name"> = {}): Promise<LogsPageResponse> =>
-    apiClient.get(`/logs/mpesa${buildParams(filters as Record<string, unknown>)}`),
+    apiClient.get(`/logs/mpesa${buildParams(filters as Record<string, unknown>)}`).then((r) => r.data),
 
   mpesaTransactionHistory: (txId: string): Promise<MpesaStatusHistory[]> =>
-    apiClient.get(`/logs/mpesa/transaction/${txId}/history`),
+    apiClient.get(`/logs/mpesa/transaction/${txId}/history`).then((r) => r.data),
 
   listSecurity: (filters: SecurityLogFilters = {}): Promise<SecurityLog[]> =>
-    apiClient.get(`/logs/security${buildParams(filters as Record<string, unknown>)}`),
+    apiClient.get(`/logs/security${buildParams(filters as Record<string, unknown>)}`).then((r) => r.data),
 
   exportUrl: (filters: OperationalLogFilters = {}): string =>
     `/api/v1/logs/operational/export${buildParams(filters as Record<string, unknown>)}`,

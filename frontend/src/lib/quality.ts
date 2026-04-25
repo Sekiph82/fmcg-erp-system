@@ -124,19 +124,19 @@ export interface RejectionSummaryRow {
 export const qualityApi = {
   // Parameters
   async listParameters(params?: { qc_type?: QCType; active_only?: boolean }): Promise<QCParameter[]> {
-    const res = await apiClient.get<QCParameter[]>("/api/v1/quality/parameters/", { params });
+    const res = await apiClient.get<QCParameter[]>("/api/v1/quality/parameters/", { params }).then((r) => r.data);
     return res.data;
   },
   async createParameter(data: object): Promise<QCParameter> {
-    const res = await apiClient.post<QCParameter>("/api/v1/quality/parameters/", data);
+    const res = await apiClient.post<QCParameter>("/api/v1/quality/parameters/", data).then((r) => r.data);
     return res.data;
   },
   async updateParameter(id: string, data: object): Promise<QCParameter> {
-    const res = await apiClient.patch<QCParameter>(`/api/v1/quality/parameters/${id}`, data);
+    const res = await apiClient.patch<QCParameter>(`/api/v1/quality/parameters/${id}`, data).then((r) => r.data);
     return res.data;
   },
   async deleteParameter(id: string): Promise<void> {
-    await apiClient.delete(`/api/v1/quality/parameters/${id}`);
+    await apiClient.delete(`/api/v1/quality/parameters/${id}`).then((r) => r.data);
   },
 
   // Inspections
@@ -147,30 +147,30 @@ export const qualityApi = {
     material_id?: string;
     product_id?: string;
   }): Promise<QCInspection[]> {
-    const res = await apiClient.get<QCInspection[]>("/api/v1/quality/inspections/", { params });
+    const res = await apiClient.get<QCInspection[]>("/api/v1/quality/inspections/", { params }).then((r) => r.data);
     return res.data;
   },
   async getInspection(id: string): Promise<QCInspectionDetail> {
-    const res = await apiClient.get<QCInspectionDetail>(`/api/v1/quality/inspections/${id}`);
+    const res = await apiClient.get<QCInspectionDetail>(`/api/v1/quality/inspections/${id}`).then((r) => r.data);
     return res.data;
   },
   async createInspection(data: object): Promise<QCInspectionDetail> {
-    const res = await apiClient.post<QCInspectionDetail>("/api/v1/quality/inspections/", data);
+    const res = await apiClient.post<QCInspectionDetail>("/api/v1/quality/inspections/", data).then((r) => r.data);
     return res.data;
   },
   async updateInspection(id: string, data: object): Promise<QCInspectionDetail> {
-    const res = await apiClient.patch<QCInspectionDetail>(`/api/v1/quality/inspections/${id}`, data);
+    const res = await apiClient.patch<QCInspectionDetail>(`/api/v1/quality/inspections/${id}`, data).then((r) => r.data);
     return res.data;
   },
   async addTestResult(inspectionId: string, data: object): Promise<QCInspectionDetail> {
-    const res = await apiClient.post<QCInspectionDetail>(`/api/v1/quality/inspections/${inspectionId}/results`, data);
+    const res = await apiClient.post<QCInspectionDetail>(`/api/v1/quality/inspections/${inspectionId}/results`, data).then((r) => r.data);
     return res.data;
   },
   async deleteTestResult(inspectionId: string, resultId: string): Promise<void> {
-    await apiClient.delete(`/api/v1/quality/inspections/${inspectionId}/results/${resultId}`);
+    await apiClient.delete(`/api/v1/quality/inspections/${inspectionId}/results/${resultId}`).then((r) => r.data);
   },
   async decide(inspectionId: string, data: object): Promise<QCInspectionDetail> {
-    const res = await apiClient.post<QCInspectionDetail>(`/api/v1/quality/inspections/${inspectionId}/decide`, data);
+    const res = await apiClient.post<QCInspectionDetail>(`/api/v1/quality/inspections/${inspectionId}/decide`, data).then((r) => r.data);
     return res.data;
   },
   async releaseQuarantine(inspectionId: string, notes?: string): Promise<QCInspectionDetail> {
@@ -182,14 +182,14 @@ export const qualityApi = {
     return res.data;
   },
   async getCOA(inspectionId: string): Promise<COAReport> {
-    const res = await apiClient.get<COAReport>(`/api/v1/quality/inspections/${inspectionId}/coa`);
+    const res = await apiClient.get<COAReport>(`/api/v1/quality/inspections/${inspectionId}/coa`).then((r) => r.data);
     return res.data;
   },
   async createForGRN(params: {
     grn_id: string; grn_line_id: string; inspection_no: string;
     material_id?: string; supplier_id?: string; warehouse_id?: string; lot_number?: string;
   }): Promise<QCInspectionDetail> {
-    const res = await apiClient.post<QCInspectionDetail>("/api/v1/quality/create-for-grn", null, { params });
+    const res = await apiClient.post<QCInspectionDetail>("/api/v1/quality/create-for-grn", null, { params }).then((r) => r.data);
     return res.data;
   },
   async createForOrder(params: {
@@ -197,13 +197,13 @@ export const qualityApi = {
     product_id?: string; warehouse_id?: string; lot_number?: string; batch_no?: string;
     qc_type?: QCType;
   }): Promise<QCInspectionDetail> {
-    const res = await apiClient.post<QCInspectionDetail>("/api/v1/quality/create-for-order", null, { params });
+    const res = await apiClient.post<QCInspectionDetail>("/api/v1/quality/create-for-order", null, { params }).then((r) => r.data);
     return res.data;
   },
 
   // Reports
   async rejectionSummary(): Promise<RejectionSummaryRow[]> {
-    const res = await apiClient.get<RejectionSummaryRow[]>("/api/v1/quality/reports/rejections");
+    const res = await apiClient.get<RejectionSummaryRow[]>("/api/v1/quality/reports/rejections").then((r) => r.data);
     return res.data;
   },
 };

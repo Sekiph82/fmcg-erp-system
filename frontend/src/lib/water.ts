@@ -293,12 +293,12 @@ export async function downloadSoftWaterCsv(
 export const waterApi = {
   // ── Water analytics ──────────────────────────────────────────────────────
   async kpis(scope?: WaterScope): Promise<WaterKPIs> {
-    const r = await apiClient.get<WaterKPIs>("/api/v1/water/kpis", { params: scope });
+    const r = await apiClient.get<WaterKPIs>("/api/v1/water/kpis", { params: scope }).then((r) => r.data);
     return r.data;
   },
 
   async dailyTrend(scope?: WaterScope): Promise<WaterTrendPoint[]> {
-    const r = await apiClient.get<WaterTrendPoint[]>("/api/v1/water/trend/daily", { params: scope });
+    const r = await apiClient.get<WaterTrendPoint[]>("/api/v1/water/trend/daily", { params: scope }).then((r) => r.data);
     return r.data;
   },
 
@@ -315,22 +315,22 @@ export const waterApi = {
 
   // ── Water transactions ────────────────────────────────────────────────────
   async listTransactions(params?: Record<string, unknown>) {
-    const r = await apiClient.get("/api/v1/water/transactions", { params });
+    const r = await apiClient.get("/api/v1/water/transactions", { params }).then((r) => r.data);
     return r.data;
   },
 
   async createTransaction(data: unknown) {
-    const r = await apiClient.post("/api/v1/water/transactions", data);
+    const r = await apiClient.post("/api/v1/water/transactions", data).then((r) => r.data);
     return r.data;
   },
 
   async updateTransaction(id: string, data: unknown) {
-    const r = await apiClient.patch(`/api/v1/water/transactions/${id}`, data);
+    const r = await apiClient.patch(`/api/v1/water/transactions/${id}`, data).then((r) => r.data);
     return r.data;
   },
 
   async deleteTransaction(id: string) {
-    await apiClient.delete(`/api/v1/water/transactions/${id}`);
+    await apiClient.delete(`/api/v1/water/transactions/${id}`).then((r) => r.data);
   },
 };
 
@@ -340,7 +340,7 @@ export const softWaterApi = {
     date_from?: string; date_to?: string;
     asset_id?: string; department?: string; shift_ref?: string;
   }): Promise<SoftWaterKPIs> {
-    const r = await apiClient.get<SoftWaterKPIs>("/api/v1/soft-water/kpis", { params });
+    const r = await apiClient.get<SoftWaterKPIs>("/api/v1/soft-water/kpis", { params }).then((r) => r.data);
     return r.data;
   },
 
@@ -348,37 +348,37 @@ export const softWaterApi = {
     date_from?: string; date_to?: string;
     asset_id?: string; department?: string;
   }): Promise<SoftWaterTrendPoint[]> {
-    const r = await apiClient.get<SoftWaterTrendPoint[]>("/api/v1/soft-water/trend/daily", { params });
+    const r = await apiClient.get<SoftWaterTrendPoint[]>("/api/v1/soft-water/trend/daily", { params }).then((r) => r.data);
     return r.data;
   },
 
   async listAssets(): Promise<SoftenerAsset[]> {
-    const r = await apiClient.get<SoftenerAsset[]>("/api/v1/soft-water/assets");
+    const r = await apiClient.get<SoftenerAsset[]>("/api/v1/soft-water/assets").then((r) => r.data);
     return r.data;
   },
 
   // ── Records CRUD ──────────────────────────────────────────────────────────
   async listRecords(filters?: SoftWaterFilters): Promise<SoftWaterRecord[]> {
-    const r = await apiClient.get<SoftWaterRecord[]>("/api/v1/soft-water/records", { params: filters });
+    const r = await apiClient.get<SoftWaterRecord[]>("/api/v1/soft-water/records", { params: filters }).then((r) => r.data);
     return r.data;
   },
 
   async getRecord(id: string): Promise<SoftWaterRecord> {
-    const r = await apiClient.get<SoftWaterRecord>(`/api/v1/soft-water/records/${id}`);
+    const r = await apiClient.get<SoftWaterRecord>(`/api/v1/soft-water/records/${id}`).then((r) => r.data);
     return r.data;
   },
 
   async createRecord(data: SoftWaterRecordCreate): Promise<SoftWaterRecord> {
-    const r = await apiClient.post<SoftWaterRecord>("/api/v1/soft-water/records", data);
+    const r = await apiClient.post<SoftWaterRecord>("/api/v1/soft-water/records", data).then((r) => r.data);
     return r.data;
   },
 
   async updateRecord(id: string, data: SoftWaterRecordUpdate): Promise<SoftWaterRecord> {
-    const r = await apiClient.patch<SoftWaterRecord>(`/api/v1/soft-water/records/${id}`, data);
+    const r = await apiClient.patch<SoftWaterRecord>(`/api/v1/soft-water/records/${id}`, data).then((r) => r.data);
     return r.data;
   },
 
   async deleteRecord(id: string): Promise<void> {
-    await apiClient.delete(`/api/v1/soft-water/records/${id}`);
+    await apiClient.delete(`/api/v1/soft-water/records/${id}`).then((r) => r.data);
   },
 };

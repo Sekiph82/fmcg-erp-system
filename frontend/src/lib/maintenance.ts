@@ -142,93 +142,93 @@ export interface OverduePMRow {
 export const maintenanceApi = {
   // Assets
   async listAssets(params?: { status?: AssetStatus; line?: string }): Promise<Asset[]> {
-    const res = await apiClient.get<Asset[]>("/api/v1/maintenance/assets/", { params });
+    const res = await apiClient.get<Asset[]>("/api/v1/maintenance/assets/", { params }).then((r) => r.data);
     return res.data;
   },
   async createAsset(data: object): Promise<Asset> {
-    const res = await apiClient.post<Asset>("/api/v1/maintenance/assets/", data);
+    const res = await apiClient.post<Asset>("/api/v1/maintenance/assets/", data).then((r) => r.data);
     return res.data;
   },
   async updateAsset(id: string, data: object): Promise<Asset> {
-    const res = await apiClient.patch<Asset>(`/api/v1/maintenance/assets/${id}`, data);
+    const res = await apiClient.patch<Asset>(`/api/v1/maintenance/assets/${id}`, data).then((r) => r.data);
     return res.data;
   },
 
   // PM Plans
   async listPMPlans(params?: { asset_id?: string; active_only?: boolean }): Promise<PMPlan[]> {
-    const res = await apiClient.get<PMPlan[]>("/api/v1/maintenance/pm-plans/", { params });
+    const res = await apiClient.get<PMPlan[]>("/api/v1/maintenance/pm-plans/", { params }).then((r) => r.data);
     return res.data;
   },
   async createPMPlan(data: object): Promise<PMPlan> {
-    const res = await apiClient.post<PMPlan>("/api/v1/maintenance/pm-plans/", data);
+    const res = await apiClient.post<PMPlan>("/api/v1/maintenance/pm-plans/", data).then((r) => r.data);
     return res.data;
   },
   async updatePMPlan(id: string, data: object): Promise<PMPlan> {
-    const res = await apiClient.patch<PMPlan>(`/api/v1/maintenance/pm-plans/${id}`, data);
+    const res = await apiClient.patch<PMPlan>(`/api/v1/maintenance/pm-plans/${id}`, data).then((r) => r.data);
     return res.data;
   },
 
   // Work Orders
   async listWorkOrders(params?: { plan_id?: string; status?: PMStatus }): Promise<PMWorkOrder[]> {
-    const res = await apiClient.get<PMWorkOrder[]>("/api/v1/maintenance/work-orders/", { params });
+    const res = await apiClient.get<PMWorkOrder[]>("/api/v1/maintenance/work-orders/", { params }).then((r) => r.data);
     return res.data;
   },
   async createWorkOrder(data: object): Promise<PMWorkOrder> {
-    const res = await apiClient.post<PMWorkOrder>("/api/v1/maintenance/work-orders/", data);
+    const res = await apiClient.post<PMWorkOrder>("/api/v1/maintenance/work-orders/", data).then((r) => r.data);
     return res.data;
   },
   async completeWorkOrder(id: string, data: object): Promise<PMWorkOrder> {
-    const res = await apiClient.post<PMWorkOrder>(`/api/v1/maintenance/work-orders/${id}/complete`, data);
+    const res = await apiClient.post<PMWorkOrder>(`/api/v1/maintenance/work-orders/${id}/complete`, data).then((r) => r.data);
     return res.data;
   },
 
   // Breakdowns
   async listBreakdowns(params?: { asset_id?: string; status?: BreakdownStatus }): Promise<BreakdownRecord[]> {
-    const res = await apiClient.get<BreakdownRecord[]>("/api/v1/maintenance/breakdowns/", { params });
+    const res = await apiClient.get<BreakdownRecord[]>("/api/v1/maintenance/breakdowns/", { params }).then((r) => r.data);
     return res.data;
   },
   async createBreakdown(data: object): Promise<BreakdownRecord> {
-    const res = await apiClient.post<BreakdownRecord>("/api/v1/maintenance/breakdowns/", data);
+    const res = await apiClient.post<BreakdownRecord>("/api/v1/maintenance/breakdowns/", data).then((r) => r.data);
     return res.data;
   },
   async resolveBreakdown(id: string, data: object): Promise<BreakdownRecord> {
-    const res = await apiClient.patch<BreakdownRecord>(`/api/v1/maintenance/breakdowns/${id}/resolve`, data);
+    const res = await apiClient.patch<BreakdownRecord>(`/api/v1/maintenance/breakdowns/${id}/resolve`, data).then((r) => r.data);
     return res.data;
   },
   async listBreakdownSpares(bdId: string): Promise<SparePartUsage[]> {
-    const res = await apiClient.get<SparePartUsage[]>(`/api/v1/maintenance/breakdowns/${bdId}/spare-usages`);
+    const res = await apiClient.get<SparePartUsage[]>(`/api/v1/maintenance/breakdowns/${bdId}/spare-usages`).then((r) => r.data);
     return res.data;
   },
 
   // Spare Parts
   async listSpareParts(activeOnly = true): Promise<SparePart[]> {
-    const res = await apiClient.get<SparePart[]>("/api/v1/maintenance/spare-parts/", { params: { active_only: activeOnly } });
+    const res = await apiClient.get<SparePart[]>("/api/v1/maintenance/spare-parts/", { params: { active_only: activeOnly } }).then((r) => r.data);
     return res.data;
   },
   async createSparePart(data: object): Promise<SparePart> {
-    const res = await apiClient.post<SparePart>("/api/v1/maintenance/spare-parts/", data);
+    const res = await apiClient.post<SparePart>("/api/v1/maintenance/spare-parts/", data).then((r) => r.data);
     return res.data;
   },
   async updateSparePart(id: string, data: object): Promise<SparePart> {
-    const res = await apiClient.patch<SparePart>(`/api/v1/maintenance/spare-parts/${id}`, data);
+    const res = await apiClient.patch<SparePart>(`/api/v1/maintenance/spare-parts/${id}`, data).then((r) => r.data);
     return res.data;
   },
   async recordSpareUsage(data: object): Promise<SparePartUsage> {
-    const res = await apiClient.post<SparePartUsage>("/api/v1/maintenance/spare-parts/usage", data);
+    const res = await apiClient.post<SparePartUsage>("/api/v1/maintenance/spare-parts/usage", data).then((r) => r.data);
     return res.data;
   },
 
   // Reports
   async reportMtbfMttr(): Promise<MtbfMttrRow[]> {
-    const res = await apiClient.get<MtbfMttrRow[]>("/api/v1/maintenance/reports/mtbf-mttr");
+    const res = await apiClient.get<MtbfMttrRow[]>("/api/v1/maintenance/reports/mtbf-mttr").then((r) => r.data);
     return res.data;
   },
   async reportDowntimeByMachine(): Promise<DowntimeByMachineRow[]> {
-    const res = await apiClient.get<DowntimeByMachineRow[]>("/api/v1/maintenance/reports/downtime-by-machine");
+    const res = await apiClient.get<DowntimeByMachineRow[]>("/api/v1/maintenance/reports/downtime-by-machine").then((r) => r.data);
     return res.data;
   },
   async reportOverduePM(): Promise<OverduePMRow[]> {
-    const res = await apiClient.get<OverduePMRow[]>("/api/v1/maintenance/reports/overdue-pm");
+    const res = await apiClient.get<OverduePMRow[]>("/api/v1/maintenance/reports/overdue-pm").then((r) => r.data);
     return res.data;
   },
 };

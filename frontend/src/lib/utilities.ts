@@ -125,23 +125,23 @@ export const utilitiesApi = {
     async list(category?: ConfigCategory, skip = 0, limit = 200): Promise<SystemConfig[]> {
       const params: Record<string, unknown> = { skip, limit };
       if (category) params.category = category;
-      const res = await apiClient.get<SystemConfig[]>("/api/v1/utilities/configs", { params });
+      const res = await apiClient.get<SystemConfig[]>("/api/v1/utilities/configs", { params }).then((r) => r.data);
       return res.data;
     },
     async get(id: string): Promise<SystemConfig> {
-      const res = await apiClient.get<SystemConfig>(`/api/v1/utilities/configs/${id}`);
+      const res = await apiClient.get<SystemConfig>(`/api/v1/utilities/configs/${id}`).then((r) => r.data);
       return res.data;
     },
     async create(data: SystemConfigCreate): Promise<SystemConfig> {
-      const res = await apiClient.post<SystemConfig>("/api/v1/utilities/configs", data);
+      const res = await apiClient.post<SystemConfig>("/api/v1/utilities/configs", data).then((r) => r.data);
       return res.data;
     },
     async update(id: string, data: SystemConfigUpdate): Promise<SystemConfig> {
-      const res = await apiClient.patch<SystemConfig>(`/api/v1/utilities/configs/${id}`, data);
+      const res = await apiClient.patch<SystemConfig>(`/api/v1/utilities/configs/${id}`, data).then((r) => r.data);
       return res.data;
     },
     async delete(id: string): Promise<void> {
-      await apiClient.delete(`/api/v1/utilities/configs/${id}`);
+      await apiClient.delete(`/api/v1/utilities/configs/${id}`).then((r) => r.data);
     },
   },
 
@@ -154,19 +154,19 @@ export const utilitiesApi = {
       return res.data;
     },
     async get(id: string): Promise<UomConversion> {
-      const res = await apiClient.get<UomConversion>(`/api/v1/utilities/uom-conversions/${id}`);
+      const res = await apiClient.get<UomConversion>(`/api/v1/utilities/uom-conversions/${id}`).then((r) => r.data);
       return res.data;
     },
     async create(data: UomConversionCreate): Promise<UomConversion> {
-      const res = await apiClient.post<UomConversion>("/api/v1/utilities/uom-conversions", data);
+      const res = await apiClient.post<UomConversion>("/api/v1/utilities/uom-conversions", data).then((r) => r.data);
       return res.data;
     },
     async update(id: string, data: UomConversionUpdate): Promise<UomConversion> {
-      const res = await apiClient.patch<UomConversion>(`/api/v1/utilities/uom-conversions/${id}`, data);
+      const res = await apiClient.patch<UomConversion>(`/api/v1/utilities/uom-conversions/${id}`, data).then((r) => r.data);
       return res.data;
     },
     async delete(id: string): Promise<void> {
-      await apiClient.delete(`/api/v1/utilities/uom-conversions/${id}`);
+      await apiClient.delete(`/api/v1/utilities/uom-conversions/${id}`).then((r) => r.data);
     },
   },
 
@@ -179,19 +179,19 @@ export const utilitiesApi = {
       return res.data;
     },
     async get(id: string): Promise<NumberSeries> {
-      const res = await apiClient.get<NumberSeries>(`/api/v1/utilities/number-series/${id}`);
+      const res = await apiClient.get<NumberSeries>(`/api/v1/utilities/number-series/${id}`).then((r) => r.data);
       return res.data;
     },
     async create(data: NumberSeriesCreate): Promise<NumberSeries> {
-      const res = await apiClient.post<NumberSeries>("/api/v1/utilities/number-series", data);
+      const res = await apiClient.post<NumberSeries>("/api/v1/utilities/number-series", data).then((r) => r.data);
       return res.data;
     },
     async update(id: string, data: NumberSeriesUpdate): Promise<NumberSeries> {
-      const res = await apiClient.patch<NumberSeries>(`/api/v1/utilities/number-series/${id}`, data);
+      const res = await apiClient.patch<NumberSeries>(`/api/v1/utilities/number-series/${id}`, data).then((r) => r.data);
       return res.data;
     },
     async delete(id: string): Promise<void> {
-      await apiClient.delete(`/api/v1/utilities/number-series/${id}`);
+      await apiClient.delete(`/api/v1/utilities/number-series/${id}`).then((r) => r.data);
     },
     async getNextNumber(module: string): Promise<NextNumberResponse> {
       const res = await apiClient.post<NextNumberResponse>(
@@ -210,19 +210,19 @@ export const utilitiesApi = {
       return res.data;
     },
     async get(id: string): Promise<Currency> {
-      const res = await apiClient.get<Currency>(`/api/v1/utilities/currencies/${id}`);
+      const res = await apiClient.get<Currency>(`/api/v1/utilities/currencies/${id}`).then((r) => r.data);
       return res.data;
     },
     async create(data: CurrencyCreate): Promise<Currency> {
-      const res = await apiClient.post<Currency>("/api/v1/utilities/currencies", data);
+      const res = await apiClient.post<Currency>("/api/v1/utilities/currencies", data).then((r) => r.data);
       return res.data;
     },
     async update(id: string, data: CurrencyUpdate): Promise<Currency> {
-      const res = await apiClient.patch<Currency>(`/api/v1/utilities/currencies/${id}`, data);
+      const res = await apiClient.patch<Currency>(`/api/v1/utilities/currencies/${id}`, data).then((r) => r.data);
       return res.data;
     },
     async delete(id: string): Promise<void> {
-      await apiClient.delete(`/api/v1/utilities/currencies/${id}`);
+      await apiClient.delete(`/api/v1/utilities/currencies/${id}`).then((r) => r.data);
     },
   },
 };

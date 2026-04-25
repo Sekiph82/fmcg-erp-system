@@ -249,13 +249,13 @@ const BASE = "/api/v1/integrations";
 export const integrationsApi = {
   // Providers
   getProviders: async (): Promise<ProviderStatus[]> => {
-    const res = await apiClient.get<ProviderStatus[]>(`${BASE}/providers`);
+    const res = await apiClient.get<ProviderStatus[]>(`${BASE}/providers`).then((r) => r.data);
     return res.data;
   },
 
   // Configs
   listConfigs: async (): Promise<IntegrationConfig[]> => {
-    const res = await apiClient.get<IntegrationConfig[]>(`${BASE}/configs`);
+    const res = await apiClient.get<IntegrationConfig[]>(`${BASE}/configs`).then((r) => r.data);
     return res.data;
   },
 
@@ -266,18 +266,18 @@ export const integrationsApi = {
     limit?: number;
     offset?: number;
   }): Promise<IntegrationLog[]> => {
-    const res = await apiClient.get<IntegrationLog[]>(`${BASE}/logs`, { params });
+    const res = await apiClient.get<IntegrationLog[]>(`${BASE}/logs`, { params }).then((r) => r.data);
     return res.data;
   },
 
   getLog: async (id: string): Promise<IntegrationLog> => {
-    const res = await apiClient.get<IntegrationLog>(`${BASE}/logs/${id}`);
+    const res = await apiClient.get<IntegrationLog>(`${BASE}/logs/${id}`).then((r) => r.data);
     return res.data;
   },
 
   // M-Pesa
   initiateMpesa: async (data: MpesaInitiateRequest): Promise<MpesaTransaction> => {
-    const res = await apiClient.post<MpesaTransaction>(`${BASE}/mpesa/initiate`, data);
+    const res = await apiClient.post<MpesaTransaction>(`${BASE}/mpesa/initiate`, data).then((r) => r.data);
     return res.data;
   },
 
@@ -286,38 +286,38 @@ export const integrationsApi = {
     limit?: number;
     offset?: number;
   }): Promise<MpesaTransaction[]> => {
-    const res = await apiClient.get<MpesaTransaction[]>(`${BASE}/mpesa/transactions`, { params });
+    const res = await apiClient.get<MpesaTransaction[]>(`${BASE}/mpesa/transactions`, { params }).then((r) => r.data);
     return res.data;
   },
 
   getMpesaTransaction: async (id: string): Promise<MpesaTransaction> => {
-    const res = await apiClient.get<MpesaTransaction>(`${BASE}/mpesa/transactions/${id}`);
+    const res = await apiClient.get<MpesaTransaction>(`${BASE}/mpesa/transactions/${id}`).then((r) => r.data);
     return res.data;
   },
 
   retryMpesa: async (id: string): Promise<MpesaTransaction> => {
-    const res = await apiClient.post<MpesaTransaction>(`${BASE}/mpesa/transactions/${id}/retry`);
+    const res = await apiClient.post<MpesaTransaction>(`${BASE}/mpesa/transactions/${id}/retry`).then((r) => r.data);
     return res.data;
   },
 
   checkMpesaStatus: async (id: string): Promise<MpesaTransaction> => {
-    const res = await apiClient.get<MpesaTransaction>(`${BASE}/mpesa/transactions/${id}/status`);
+    const res = await apiClient.get<MpesaTransaction>(`${BASE}/mpesa/transactions/${id}/status`).then((r) => r.data);
     return res.data;
   },
 
   getMpesaConfig: async (): Promise<MpesaConfigStatus> => {
-    const res = await apiClient.get<MpesaConfigStatus>(`${BASE}/mpesa/config`);
+    const res = await apiClient.get<MpesaConfigStatus>(`${BASE}/mpesa/config`).then((r) => r.data);
     return res.data;
   },
 
   // Barcode
   generateBarcode: async (data: BarcodeGenerateRequest): Promise<BarcodeGenerateResponse> => {
-    const res = await apiClient.post<BarcodeGenerateResponse>(`${BASE}/barcode/generate`, data);
+    const res = await apiClient.post<BarcodeGenerateResponse>(`${BASE}/barcode/generate`, data).then((r) => r.data);
     return res.data;
   },
 
   scanBarcode: async (barcode_value: string): Promise<BarcodeScanResult | null> => {
-    const res = await apiClient.post<BarcodeScanResult | null>(`${BASE}/barcode/scan`, { barcode_value });
+    const res = await apiClient.post<BarcodeScanResult | null>(`${BASE}/barcode/scan`, { barcode_value }).then((r) => r.data);
     return res.data;
   },
 
@@ -329,18 +329,18 @@ export const integrationsApi = {
   },
 
   printBarcode: async (label_id: string): Promise<BarcodeLabel> => {
-    const res = await apiClient.post<BarcodeLabel>(`${BASE}/barcode/print`, { label_id });
+    const res = await apiClient.post<BarcodeLabel>(`${BASE}/barcode/print`, { label_id }).then((r) => r.data);
     return res.data;
   },
 
   // CRM
   syncCrm: async (data: CrmSyncRequest): Promise<CrmSyncResult> => {
-    const res = await apiClient.post<CrmSyncResult>(`${BASE}/crm/sync/customers`, data);
+    const res = await apiClient.post<CrmSyncResult>(`${BASE}/crm/sync/customers`, data).then((r) => r.data);
     return res.data;
   },
 
   listCrmMappings: async (): Promise<CrmCustomerMapping[]> => {
-    const res = await apiClient.get<CrmCustomerMapping[]>(`${BASE}/crm/mappings`);
+    const res = await apiClient.get<CrmCustomerMapping[]>(`${BASE}/crm/mappings`).then((r) => r.data);
     return res.data;
   },
 
@@ -351,7 +351,7 @@ export const integrationsApi = {
 
   // E-commerce
   importOrders: async (data: EcommerceImportRequest): Promise<EcommerceImportResult> => {
-    const res = await apiClient.post<EcommerceImportResult>(`${BASE}/ecommerce/import-orders`, data);
+    const res = await apiClient.post<EcommerceImportResult>(`${BASE}/ecommerce/import-orders`, data).then((r) => r.data);
     return res.data;
   },
 
@@ -361,13 +361,13 @@ export const integrationsApi = {
   },
 
   listEcommerceOrders: async (): Promise<EcommerceOrderMapping[]> => {
-    const res = await apiClient.get<EcommerceOrderMapping[]>(`${BASE}/ecommerce/orders`);
+    const res = await apiClient.get<EcommerceOrderMapping[]>(`${BASE}/ecommerce/orders`).then((r) => r.data);
     return res.data;
   },
 
   // IoT
   ingestIotEvent: async (data: IotEventCreate): Promise<IotEvent> => {
-    const res = await apiClient.post<IotEvent>(`${BASE}/iot/events`, data);
+    const res = await apiClient.post<IotEvent>(`${BASE}/iot/events`, data).then((r) => r.data);
     return res.data;
   },
 
@@ -377,34 +377,34 @@ export const integrationsApi = {
     hours?: number;
     limit?: number;
   }): Promise<IotEvent[]> => {
-    const res = await apiClient.get<IotEvent[]>(`${BASE}/iot/events`, { params });
+    const res = await apiClient.get<IotEvent[]>(`${BASE}/iot/events`, { params }).then((r) => r.data);
     return res.data;
   },
 
   getMachineStatus: async (): Promise<MachineStatusRow[]> => {
-    const res = await apiClient.get<MachineStatusRow[]>(`${BASE}/iot/machines`);
+    const res = await apiClient.get<MachineStatusRow[]>(`${BASE}/iot/machines`).then((r) => r.data);
     return res.data;
   },
 
   // ── Marketing sync (placeholder hooks) ─────────────────────────────────────
 
   triggerAdsSync: async (provider: string = "META_ADS") => {
-    const res = await apiClient.post<MarketingSyncStatus>(`${BASE}/marketing/ads-sync`, null, { params: { provider } });
+    const res = await apiClient.post<MarketingSyncStatus>(`${BASE}/marketing/ads-sync`, null, { params: { provider } }).then((r) => r.data);
     return res.data;
   },
 
   triggerSocialSync: async (provider: string = "SOCIAL_ANALYTICS") => {
-    const res = await apiClient.post<MarketingSyncStatus>(`${BASE}/marketing/social-sync`, null, { params: { provider } });
+    const res = await apiClient.post<MarketingSyncStatus>(`${BASE}/marketing/social-sync`, null, { params: { provider } }).then((r) => r.data);
     return res.data;
   },
 
   triggerEcommerceSync: async (provider: string = "SHOPIFY") => {
-    const res = await apiClient.post<MarketingSyncStatus>(`${BASE}/marketing/ecommerce-sync`, null, { params: { provider } });
+    const res = await apiClient.post<MarketingSyncStatus>(`${BASE}/marketing/ecommerce-sync`, null, { params: { provider } }).then((r) => r.data);
     return res.data;
   },
 
   getMarketingSyncStatus: async (): Promise<MarketingProviderSyncRow[]> => {
-    const res = await apiClient.get<MarketingProviderSyncRow[]>(`${BASE}/marketing/sync-status`);
+    const res = await apiClient.get<MarketingProviderSyncRow[]>(`${BASE}/marketing/sync-status`).then((r) => r.data);
     return res.data;
   },
 };

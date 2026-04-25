@@ -141,57 +141,57 @@ export interface AILog {
 
 export const aiApi = {
   async status(): Promise<AIStatus> {
-    const res = await apiClient.get<AIStatus>("/api/v1/ai/status/");
+    const res = await apiClient.get<AIStatus>("/api/v1/ai/status/").then((r) => r.data);
     return res.data;
   },
 
   async dashboard(): Promise<AIDashboard> {
-    const res = await apiClient.get<AIDashboard>("/api/v1/ai/dashboard/");
+    const res = await apiClient.get<AIDashboard>("/api/v1/ai/dashboard/").then((r) => r.data);
     return res.data;
   },
 
   // Predictions
   async generatePredictions(types?: string[]): Promise<{ count: number; predictions: AIPrediction[] }> {
-    const res = await apiClient.post("/api/v1/ai/predictions/generate/", { prediction_types: types ?? null });
+    const res = await apiClient.post("/api/v1/ai/predictions/generate/", { prediction_types: types ?? null }).then((r) => r.data);
     return res.data;
   },
   async listPredictions(params?: { prediction_type?: string; risk_level?: string; limit?: number }): Promise<AIPrediction[]> {
-    const res = await apiClient.get<AIPrediction[]>("/api/v1/ai/predictions/", { params });
+    const res = await apiClient.get<AIPrediction[]>("/api/v1/ai/predictions/", { params }).then((r) => r.data);
     return res.data;
   },
   async archivePrediction(id: string): Promise<void> {
-    await apiClient.delete(`/api/v1/ai/predictions/${id}/archive/`);
+    await apiClient.delete(`/api/v1/ai/predictions/${id}/archive/`).then((r) => r.data);
   },
 
   // Recommendations
   async generateRecommendations(focusArea?: string): Promise<{ count: number; recommendations: AIRecommendation[] }> {
-    const res = await apiClient.post("/api/v1/ai/recommendations/generate/", { focus_area: focusArea ?? null });
+    const res = await apiClient.post("/api/v1/ai/recommendations/generate/", { focus_area: focusArea ?? null }).then((r) => r.data);
     return res.data;
   },
   async listRecommendations(params?: { category?: string; priority?: string; include_actioned?: boolean }): Promise<AIRecommendation[]> {
-    const res = await apiClient.get<AIRecommendation[]>("/api/v1/ai/recommendations/", { params });
+    const res = await apiClient.get<AIRecommendation[]>("/api/v1/ai/recommendations/", { params }).then((r) => r.data);
     return res.data;
   },
   async actionRecommendation(id: string): Promise<void> {
-    await apiClient.post(`/api/v1/ai/recommendations/${id}/action/`);
+    await apiClient.post(`/api/v1/ai/recommendations/${id}/action/`).then((r) => r.data);
   },
   async dismissRecommendation(id: string): Promise<void> {
-    await apiClient.post(`/api/v1/ai/recommendations/${id}/dismiss/`);
+    await apiClient.post(`/api/v1/ai/recommendations/${id}/dismiss/`).then((r) => r.data);
   },
 
   // Scenarios
   async simulateScenario(body: {
     scenario_type: string; parameters: Record<string, any>; title?: string;
   }): Promise<AIScenario> {
-    const res = await apiClient.post<AIScenario>("/api/v1/ai/scenarios/simulate/", body);
+    const res = await apiClient.post<AIScenario>("/api/v1/ai/scenarios/simulate/", body).then((r) => r.data);
     return res.data;
   },
   async listScenarios(params?: { scenario_type?: string }): Promise<AIScenario[]> {
-    const res = await apiClient.get<AIScenario[]>("/api/v1/ai/scenarios/", { params });
+    const res = await apiClient.get<AIScenario[]>("/api/v1/ai/scenarios/", { params }).then((r) => r.data);
     return res.data;
   },
   async getScenario(id: string): Promise<AIScenario> {
-    const res = await apiClient.get<AIScenario>(`/api/v1/ai/scenarios/${id}/`);
+    const res = await apiClient.get<AIScenario>(`/api/v1/ai/scenarios/${id}/`).then((r) => r.data);
     return res.data;
   },
 
@@ -202,28 +202,28 @@ export const aiApi = {
     cost_target?: number;
     performance_priority?: string;
   }): Promise<AIFormulation> {
-    const res = await apiClient.post<AIFormulation>("/api/v1/ai/formulations/generate/", body);
+    const res = await apiClient.post<AIFormulation>("/api/v1/ai/formulations/generate/", body).then((r) => r.data);
     return res.data;
   },
   async listFormulations(params?: { product_category?: string; is_approved?: boolean }): Promise<AIFormulation[]> {
-    const res = await apiClient.get<AIFormulation[]>("/api/v1/ai/formulations/", { params });
+    const res = await apiClient.get<AIFormulation[]>("/api/v1/ai/formulations/", { params }).then((r) => r.data);
     return res.data;
   },
   async getFormulation(id: string): Promise<AIFormulation> {
-    const res = await apiClient.get<AIFormulation>(`/api/v1/ai/formulations/${id}/`);
+    const res = await apiClient.get<AIFormulation>(`/api/v1/ai/formulations/${id}/`).then((r) => r.data);
     return res.data;
   },
   async approveFormulation(id: string): Promise<void> {
-    await apiClient.post(`/api/v1/ai/formulations/${id}/approve/`);
+    await apiClient.post(`/api/v1/ai/formulations/${id}/approve/`).then((r) => r.data);
   },
   async toggleFavorite(id: string): Promise<{ is_favorite: boolean }> {
-    const res = await apiClient.post<{ is_favorite: boolean }>(`/api/v1/ai/formulations/${id}/favorite/`);
+    const res = await apiClient.post<{ is_favorite: boolean }>(`/api/v1/ai/formulations/${id}/favorite/`).then((r) => r.data);
     return res.data;
   },
 
   // Logs
   async listLogs(limit?: number): Promise<AILog[]> {
-    const res = await apiClient.get<AILog[]>("/api/v1/ai/logs/", { params: { limit } });
+    const res = await apiClient.get<AILog[]>("/api/v1/ai/logs/", { params: { limit } }).then((r) => r.data);
     return res.data;
   },
 };

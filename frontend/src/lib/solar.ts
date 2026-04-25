@@ -178,12 +178,12 @@ const BASE = "/api/v1/solar";
 export const solarApi = {
   // Analytics
   async kpis(scope?: SolarScope): Promise<SolarKPIs> {
-    const res = await apiClient.get<SolarKPIs>(`${BASE}/kpis`, { params: scope });
+    const res = await apiClient.get<SolarKPIs>(`${BASE}/kpis`, { params: scope }).then((r) => r.data);
     return res.data;
   },
 
   async dailyTrend(scope?: SolarScope): Promise<SolarTrendPoint[]> {
-    const res = await apiClient.get<SolarTrendPoint[]>(`${BASE}/trend/daily`, { params: scope });
+    const res = await apiClient.get<SolarTrendPoint[]>(`${BASE}/trend/daily`, { params: scope }).then((r) => r.data);
     return res.data;
   },
 
@@ -204,47 +204,47 @@ export const solarApi = {
 
   // Transactions
   async listTransactions(params?: SolarTxFilters): Promise<UtilityTransaction[]> {
-    const res = await apiClient.get<UtilityTransaction[]>(`${BASE}/transactions`, { params });
+    const res = await apiClient.get<UtilityTransaction[]>(`${BASE}/transactions`, { params }).then((r) => r.data);
     return res.data;
   },
 
   async getTransaction(id: string): Promise<UtilityTransaction> {
-    const res = await apiClient.get<UtilityTransaction>(`${BASE}/transactions/${id}`);
+    const res = await apiClient.get<UtilityTransaction>(`${BASE}/transactions/${id}`).then((r) => r.data);
     return res.data;
   },
 
   async createTransaction(data: UtilityTransactionCreate): Promise<UtilityTransaction> {
-    const res = await apiClient.post<UtilityTransaction>(`${BASE}/transactions`, data);
+    const res = await apiClient.post<UtilityTransaction>(`${BASE}/transactions`, data).then((r) => r.data);
     return res.data;
   },
 
   async updateTransaction(id: string, data: UtilityTransactionUpdate): Promise<UtilityTransaction> {
-    const res = await apiClient.patch<UtilityTransaction>(`${BASE}/transactions/${id}`, data);
+    const res = await apiClient.patch<UtilityTransaction>(`${BASE}/transactions/${id}`, data).then((r) => r.data);
     return res.data;
   },
 
   async deleteTransaction(id: string): Promise<void> {
-    await apiClient.delete(`${BASE}/transactions/${id}`);
+    await apiClient.delete(`${BASE}/transactions/${id}`).then((r) => r.data);
   },
 
   // Operational records
   async listRecords(params?: SolarRecordFilters): Promise<SolarRecord[]> {
-    const res = await apiClient.get<SolarRecord[]>(`${BASE}/records`, { params });
+    const res = await apiClient.get<SolarRecord[]>(`${BASE}/records`, { params }).then((r) => r.data);
     return res.data;
   },
 
   async createRecord(data: SolarRecordCreate): Promise<SolarRecord> {
-    const res = await apiClient.post<SolarRecord>(`${BASE}/records`, data);
+    const res = await apiClient.post<SolarRecord>(`${BASE}/records`, data).then((r) => r.data);
     return res.data;
   },
 
   async updateRecord(id: string, data: Partial<SolarRecordCreate>): Promise<SolarRecord> {
-    const res = await apiClient.patch<SolarRecord>(`${BASE}/records/${id}`, data);
+    const res = await apiClient.patch<SolarRecord>(`${BASE}/records/${id}`, data).then((r) => r.data);
     return res.data;
   },
 
   async deleteRecord(id: string): Promise<void> {
-    await apiClient.delete(`${BASE}/records/${id}`);
+    await apiClient.delete(`${BASE}/records/${id}`).then((r) => r.data);
   },
 };
 

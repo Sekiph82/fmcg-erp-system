@@ -95,17 +95,17 @@ export interface CostFilters {
 
 export const productionCostApi = {
   async kpis(params?: Pick<CostFilters, "date_from" | "date_to">): Promise<CostKPIs> {
-    const r = await apiClient.get<CostKPIs>("/api/v1/production-cost/kpis", { params });
+    const r = await apiClient.get<CostKPIs>("/api/v1/production-cost/kpis", { params }).then((r) => r.data);
     return r.data;
   },
 
   async report(params?: CostFilters): Promise<CostReportRow[]> {
-    const r = await apiClient.get<CostReportRow[]>("/api/v1/production-cost/report", { params });
+    const r = await apiClient.get<CostReportRow[]>("/api/v1/production-cost/report", { params }).then((r) => r.data);
     return r.data;
   },
 
   async trend(params?: CostFilters): Promise<CostTrendPoint[]> {
-    const r = await apiClient.get<CostTrendPoint[]>("/api/v1/production-cost/trend", { params });
+    const r = await apiClient.get<CostTrendPoint[]>("/api/v1/production-cost/trend", { params }).then((r) => r.data);
     return r.data;
   },
 

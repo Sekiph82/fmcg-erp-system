@@ -298,62 +298,62 @@ export const SEVERITY_COLORS: Record<string, string> = {
 const BASE = "/api/v1/machine-ops";
 
 export const moApi = {
-  getDashboard: () => apiClient.get<MODashboard>(`${BASE}/dashboard`),
+  getDashboard: () => apiClient.get<MODashboard>(`${BASE}/dashboard`).then((r) => r.data),
 
   // Machines
-  listMachines: (params?: Record<string, string>) => apiClient.get<Machine[]>(`${BASE}/machines`, { params }),
-  getMachine: (id: string) => apiClient.get<Machine>(`${BASE}/machines/${id}`),
-  createMachine: (d: Partial<Machine>) => apiClient.post<Machine>(`${BASE}/machines`, d),
-  updateMachine: (id: string, d: Partial<Machine>) => apiClient.patch<Machine>(`${BASE}/machines/${id}`, d),
-  getMachineRuntime: (id: string, params?: Record<string, string>) => apiClient.get<RuntimeLog[]>(`${BASE}/machines/${id}/runtime`, { params }),
-  getMachinePerformance: (id: string, params?: Record<string, string>) => apiClient.get<PerformanceSnapshot[]>(`${BASE}/machines/${id}/performance`, { params }),
-  computePerformance: (id: string, snapshot_date?: string) => apiClient.post<PerformanceSnapshot>(`${BASE}/machines/${id}/performance/compute`, {}, { params: snapshot_date ? { snapshot_date } : {} }),
+  listMachines: (params?: Record<string, string>) => apiClient.get<Machine[]>(`${BASE}/machines`, { params }).then((r) => r.data),
+  getMachine: (id: string) => apiClient.get<Machine>(`${BASE}/machines/${id}`).then((r) => r.data),
+  createMachine: (d: Partial<Machine>) => apiClient.post<Machine>(`${BASE}/machines`, d).then((r) => r.data),
+  updateMachine: (id: string, d: Partial<Machine>) => apiClient.patch<Machine>(`${BASE}/machines/${id}`, d).then((r) => r.data),
+  getMachineRuntime: (id: string, params?: Record<string, string>) => apiClient.get<RuntimeLog[]>(`${BASE}/machines/${id}/runtime`, { params }).then((r) => r.data),
+  getMachinePerformance: (id: string, params?: Record<string, string>) => apiClient.get<PerformanceSnapshot[]>(`${BASE}/machines/${id}/performance`, { params }).then((r) => r.data),
+  computePerformance: (id: string, snapshot_date?: string) => apiClient.post<PerformanceSnapshot>(`${BASE}/machines/${id}/performance/compute`, {}, { params: snapshot_date ? { snapshot_date } : {} }).then((r) => r.data),
 
   // Operators
-  listOperators: () => apiClient.get<OperatorProfile[]>(`${BASE}/operators`),
-  getOperator: (id: string) => apiClient.get<OperatorProfile>(`${BASE}/operators/${id}`),
-  createOperator: (d: Partial<OperatorProfile>) => apiClient.post<OperatorProfile>(`${BASE}/operators`, d),
-  getOperatorPerformance: (id: string) => apiClient.get<LaborTimeLog[]>(`${BASE}/operators/${id}/performance`),
+  listOperators: () => apiClient.get<OperatorProfile[]>(`${BASE}/operators`).then((r) => r.data),
+  getOperator: (id: string) => apiClient.get<OperatorProfile>(`${BASE}/operators/${id}`).then((r) => r.data),
+  createOperator: (d: Partial<OperatorProfile>) => apiClient.post<OperatorProfile>(`${BASE}/operators`, d).then((r) => r.data),
+  getOperatorPerformance: (id: string) => apiClient.get<LaborTimeLog[]>(`${BASE}/operators/${id}/performance`).then((r) => r.data),
 
   // Teams
-  listTeams: () => apiClient.get<ProductionTeam[]>(`${BASE}/teams`),
-  createTeam: (d: Partial<ProductionTeam>) => apiClient.post<ProductionTeam>(`${BASE}/teams`, d),
-  getTeam: (id: string) => apiClient.get<ProductionTeam>(`${BASE}/teams/${id}`),
-  addTeamMember: (teamId: string, d: object) => apiClient.post<TeamMember>(`${BASE}/teams/${teamId}/members`, d),
+  listTeams: () => apiClient.get<ProductionTeam[]>(`${BASE}/teams`).then((r) => r.data),
+  createTeam: (d: Partial<ProductionTeam>) => apiClient.post<ProductionTeam>(`${BASE}/teams`, d).then((r) => r.data),
+  getTeam: (id: string) => apiClient.get<ProductionTeam>(`${BASE}/teams/${id}`).then((r) => r.data),
+  addTeamMember: (teamId: string, d: object) => apiClient.post<TeamMember>(`${BASE}/teams/${teamId}/members`, d).then((r) => r.data),
 
   // Skills
-  listSkills: (params?: Record<string, string>) => apiClient.get<SkillCert[]>(`${BASE}/operators/skills`, { params }),
-  createSkill: (d: Partial<SkillCert>) => apiClient.post<SkillCert>(`${BASE}/operators/skills`, d),
-  refreshCertStatuses: () => apiClient.post<{ updated: number }>(`${BASE}/operators/skills/refresh-statuses`, {}),
+  listSkills: (params?: Record<string, string>) => apiClient.get<SkillCert[]>(`${BASE}/operators/skills`, { params }).then((r) => r.data),
+  createSkill: (d: Partial<SkillCert>) => apiClient.post<SkillCert>(`${BASE}/operators/skills`, d).then((r) => r.data),
+  refreshCertStatuses: () => apiClient.post<{ updated: number }>(`${BASE}/operators/skills/refresh-statuses`, {}).then((r) => r.data),
 
   // Assignments
-  validateAssignment: (d: object) => apiClient.post<AssignmentValidateResult>(`${BASE}/assignments/validate`, d),
-  createAssignment: (d: object) => apiClient.post<WorkOrderAssignment>(`${BASE}/assignments`, d),
-  getAssignment: (workOrderId: string) => apiClient.get<WorkOrderAssignment>(`${BASE}/assignments/${workOrderId}`),
-  getAssignmentHistory: (workOrderId: string) => apiClient.get<AssignmentHistory[]>(`${BASE}/assignments/${workOrderId}/history`),
+  validateAssignment: (d: object) => apiClient.post<AssignmentValidateResult>(`${BASE}/assignments/validate`, d).then((r) => r.data),
+  createAssignment: (d: object) => apiClient.post<WorkOrderAssignment>(`${BASE}/assignments`, d).then((r) => r.data),
+  getAssignment: (workOrderId: string) => apiClient.get<WorkOrderAssignment>(`${BASE}/assignments/${workOrderId}`).then((r) => r.data),
+  getAssignmentHistory: (workOrderId: string) => apiClient.get<AssignmentHistory[]>(`${BASE}/assignments/${workOrderId}/history`).then((r) => r.data),
 
   // Runtime
-  logRuntime: (d: Partial<RuntimeLog>) => apiClient.post<RuntimeLog>(`${BASE}/runtime`, d),
-  listRuntime: (params?: Record<string, string>) => apiClient.get<RuntimeLog[]>(`${BASE}/runtime`, { params }),
+  logRuntime: (d: Partial<RuntimeLog>) => apiClient.post<RuntimeLog>(`${BASE}/runtime`, d).then((r) => r.data),
+  listRuntime: (params?: Record<string, string>) => apiClient.get<RuntimeLog[]>(`${BASE}/runtime`, { params }).then((r) => r.data),
 
   // Labor
-  logLabor: (d: Partial<LaborTimeLog>) => apiClient.post<LaborTimeLog>(`${BASE}/labor`, d),
-  listLabor: (params?: Record<string, string>) => apiClient.get<LaborTimeLog[]>(`${BASE}/labor`, { params }),
-  approveLabor: (id: string) => apiClient.post<LaborTimeLog>(`${BASE}/labor/${id}/approve`, {}),
+  logLabor: (d: Partial<LaborTimeLog>) => apiClient.post<LaborTimeLog>(`${BASE}/labor`, d).then((r) => r.data),
+  listLabor: (params?: Record<string, string>) => apiClient.get<LaborTimeLog[]>(`${BASE}/labor`, { params }).then((r) => r.data),
+  approveLabor: (id: string) => apiClient.post<LaborTimeLog>(`${BASE}/labor/${id}/approve`, {}).then((r) => r.data),
 
   // Downtime
-  logDowntime: (d: Partial<DowntimeIntel>) => apiClient.post<DowntimeIntel>(`${BASE}/downtime`, d),
-  listDowntime: (params?: Record<string, string>) => apiClient.get<DowntimeIntel[]>(`${BASE}/downtime`, { params }),
-  getDowntimeIntelligence: () => apiClient.get<DowntimeIntel[]>(`${BASE}/downtime/intelligence`),
+  logDowntime: (d: Partial<DowntimeIntel>) => apiClient.post<DowntimeIntel>(`${BASE}/downtime`, d).then((r) => r.data),
+  listDowntime: (params?: Record<string, string>) => apiClient.get<DowntimeIntel[]>(`${BASE}/downtime`, { params }).then((r) => r.data),
+  getDowntimeIntelligence: () => apiClient.get<DowntimeIntel[]>(`${BASE}/downtime/intelligence`).then((r) => r.data),
 
   // Performance
-  listPerformance: (params?: Record<string, string>) => apiClient.get<PerformanceSnapshot[]>(`${BASE}/performance`, { params }),
+  listPerformance: (params?: Record<string, string>) => apiClient.get<PerformanceSnapshot[]>(`${BASE}/performance`, { params }).then((r) => r.data),
 
   // Costing
-  getCosting: (orderId: string) => apiClient.get<CostContribution>(`${BASE}/costing/${orderId}`),
+  getCosting: (orderId: string) => apiClient.get<CostContribution>(`${BASE}/costing/${orderId}`).then((r) => r.data),
 
   // AI
-  runAI: () => apiClient.post<MOAIRec[]>(`${BASE}/ai/run`, {}),
-  listAIRecs: (params?: Record<string, string>) => apiClient.get<MOAIRec[]>(`${BASE}/ai/recommendations`, { params }),
-  actionAIRec: (id: string, status: MOAIRecStatus, notes?: string) => apiClient.post<MOAIRec>(`${BASE}/ai/recommendations/${id}/action`, { status, notes }),
+  runAI: () => apiClient.post<MOAIRec[]>(`${BASE}/ai/run`, {}).then((r) => r.data),
+  listAIRecs: (params?: Record<string, string>) => apiClient.get<MOAIRec[]>(`${BASE}/ai/recommendations`, { params }).then((r) => r.data),
+  actionAIRec: (id: string, status: MOAIRecStatus, notes?: string) => apiClient.post<MOAIRec>(`${BASE}/ai/recommendations/${id}/action`, { status, notes }).then((r) => r.data),
 };

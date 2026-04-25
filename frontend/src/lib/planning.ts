@@ -212,48 +212,48 @@ export function fmtMins(mins: number): string {
 // ── API client ─────────────────────────────────────────────────────────────────
 
 export const planningApi = {
-  dashboard: () => apiClient.get<PlanningDashboard>("/planning/dashboard"),
+  dashboard: () => apiClient.get<PlanningDashboard>("/planning/dashboard").then((r) => r.data),
 
   // Scenarios
-  createScenario: (body: Partial<ScenarioOut>) => apiClient.post<ScenarioOut>("/planning/scenarios", body),
-  listScenarios:  (status?: string) => apiClient.get<ScenarioSummary[]>(`/planning/scenarios${status ? `?status=${status}` : ""}`),
-  getScenario:    (id: string) => apiClient.get<ScenarioOut>(`/planning/scenarios/${id}`),
-  updateScenario: (id: string, body: Partial<ScenarioOut>) => apiClient.patch<ScenarioOut>(`/planning/scenarios/${id}`, body),
-  activateScenario: (id: string) => apiClient.post<ScenarioOut>(`/planning/scenarios/${id}/activate`, {}),
-  lockScenario:   (id: string) => apiClient.post<ScenarioOut>(`/planning/scenarios/${id}/lock`, {}),
+  createScenario: (body: Partial<ScenarioOut>) => apiClient.post<ScenarioOut>("/planning/scenarios", body).then((r) => r.data),
+  listScenarios:  (status?: string) => apiClient.get<ScenarioSummary[]>(`/planning/scenarios${status ? `?status=${status}` : ""}`).then((r) => r.data),
+  getScenario:    (id: string) => apiClient.get<ScenarioOut>(`/planning/scenarios/${id}`).then((r) => r.data),
+  updateScenario: (id: string, body: Partial<ScenarioOut>) => apiClient.patch<ScenarioOut>(`/planning/scenarios/${id}`, body).then((r) => r.data),
+  activateScenario: (id: string) => apiClient.post<ScenarioOut>(`/planning/scenarios/${id}/activate`, {}).then((r) => r.data),
+  lockScenario:   (id: string) => apiClient.post<ScenarioOut>(`/planning/scenarios/${id}/lock`, {}).then((r) => r.data),
 
   // Calculate (run scheduling engine)
-  calculate: (id: string) => apiClient.post<{ total_ops: number; scheduled: number; blocked: number }>(`/planning/scenarios/${id}/calculate`, {}),
+  calculate: (id: string) => apiClient.post<{ total_ops: number; scheduled: number; blocked: number }>(`/planning/scenarios/${id}/calculate`, {}).then((r) => r.data),
 
   // Operations
   listOps: (scenarioId: string, status?: string) =>
-    apiClient.get<OpQueueOut[]>(`/planning/scenarios/${scenarioId}/operations${status ? `?status=${status}` : ""}`),
+    apiClient.get<OpQueueOut[]>(`/planning/scenarios/${scenarioId}/operations${status ? `?status=${status}` : ""}`).then((r) => r.data),
 
   // Capacity board
-  capacityBoard: (scenarioId: string) => apiClient.get<CapacityBoard>(`/planning/scenarios/${scenarioId}/capacity`),
+  capacityBoard: (scenarioId: string) => apiClient.get<CapacityBoard>(`/planning/scenarios/${scenarioId}/capacity`).then((r) => r.data),
 
   // Bottlenecks
-  listBottlenecks: (scenarioId: string) => apiClient.get<BottleneckOut[]>(`/planning/scenarios/${scenarioId}/bottlenecks`),
-  resolveBottleneck: (bnId: string) => apiClient.post<BottleneckOut>(`/planning/bottlenecks/${bnId}/resolve`, {}),
+  listBottlenecks: (scenarioId: string) => apiClient.get<BottleneckOut[]>(`/planning/scenarios/${scenarioId}/bottlenecks`).then((r) => r.data),
+  resolveBottleneck: (bnId: string) => apiClient.post<BottleneckOut>(`/planning/bottlenecks/${bnId}/resolve`, {}).then((r) => r.data),
 
   // AI
-  runAI:    (scenarioId: string) => apiClient.post<{ total: number }>(`/planning/scenarios/${scenarioId}/run-ai`, {}),
-  listAI:   (scenarioId: string) => apiClient.get<AIRecOut[]>(`/planning/scenarios/${scenarioId}/ai-recommendations`),
+  runAI:    (scenarioId: string) => apiClient.post<{ total: number }>(`/planning/scenarios/${scenarioId}/run-ai`, {}).then((r) => r.data),
+  listAI:   (scenarioId: string) => apiClient.get<AIRecOut[]>(`/planning/scenarios/${scenarioId}/ai-recommendations`).then((r) => r.data),
   actionAI: (recId: string, status: PlanningRecStatus, userId: string) =>
-    apiClient.post<AIRecOut>(`/planning/ai-recommendations/${recId}/action`, { status, actioned_by_id: userId }),
+    apiClient.post<AIRecOut>(`/planning/ai-recommendations/${recId}/action`, { status, actioned_by_id: userId }).then((r) => r.data),
 
   // Simulations
   createSim:  (scenarioId: string, body: { sim_name: string; description?: string; changes: Record<string, unknown>[] }) =>
-    apiClient.post<SimulationOut>(`/planning/scenarios/${scenarioId}/simulations`, body),
-  computeSim: (simId: string) => apiClient.post<SimulationOut>(`/planning/simulations/${simId}/compute`, {}),
-  publishSim: (simId: string) => apiClient.post<SimulationOut>(`/planning/simulations/${simId}/publish`, {}),
-  listSims:   (scenarioId: string) => apiClient.get<SimulationOut[]>(`/planning/scenarios/${scenarioId}/simulations`),
+    apiClient.post<SimulationOut>(`/planning/scenarios/${scenarioId}/simulations`, body).then((r) => r.data),
+  computeSim: (simId: string) => apiClient.post<SimulationOut>(`/planning/simulations/${simId}/compute`, {}).then((r) => r.data),
+  publishSim: (simId: string) => apiClient.post<SimulationOut>(`/planning/simulations/${simId}/publish`, {}).then((r) => r.data),
+  listSims:   (scenarioId: string) => apiClient.get<SimulationOut[]>(`/planning/scenarios/${scenarioId}/simulations`).then((r) => r.data),
 
   // Calendars
-  createCalendar: (body: Record<string, unknown>) => apiClient.post("/planning/calendars", body),
-  listCalendars:  (wcId?: string) => apiClient.get(`/planning/calendars${wcId ? `?work_center_id=${wcId}` : ""}`),
+  createCalendar: (body: Record<string, unknown>) => apiClient.post("/planning/calendars", body).then((r) => r.data),
+  listCalendars:  (wcId?: string) => apiClient.get(`/planning/calendars${wcId ? `?work_center_id=${wcId}` : ""}`).then((r) => r.data),
 
   // Changeover matrix
-  createChangeover: (body: Record<string, unknown>) => apiClient.post("/planning/changeover-matrix", body),
-  listChangeover:   (wcId?: string) => apiClient.get<ChangeoverRow[]>(`/planning/changeover-matrix${wcId ? `?work_center_id=${wcId}` : ""}`),
+  createChangeover: (body: Record<string, unknown>) => apiClient.post("/planning/changeover-matrix", body).then((r) => r.data),
+  listChangeover:   (wcId?: string) => apiClient.get<ChangeoverRow[]>(`/planning/changeover-matrix${wcId ? `?work_center_id=${wcId}` : ""}`).then((r) => r.data),
 };

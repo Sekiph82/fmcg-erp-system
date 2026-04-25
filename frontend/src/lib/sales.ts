@@ -241,117 +241,117 @@ export interface ShipmentCreate {
 export const salesApi = {
   // Customers
   async listCustomers(activeOnly = false): Promise<Customer[]> {
-    const res = await apiClient.get<Customer[]>(`/api/v1/sales/customers/?active_only=${activeOnly}`);
+    const res = await apiClient.get<Customer[]>(`/api/v1/sales/customers/?active_only=${activeOnly}`).then((r) => r.data);
     return res.data;
   },
   async getCustomer(id: string): Promise<Customer> {
-    const res = await apiClient.get<Customer>(`/api/v1/sales/customers/${id}`);
+    const res = await apiClient.get<Customer>(`/api/v1/sales/customers/${id}`).then((r) => r.data);
     return res.data;
   },
   async createCustomer(data: Partial<Customer>): Promise<Customer> {
-    const res = await apiClient.post<Customer>("/api/v1/sales/customers/", data);
+    const res = await apiClient.post<Customer>("/api/v1/sales/customers/", data).then((r) => r.data);
     return res.data;
   },
   async updateCustomer(id: string, data: Partial<Customer>): Promise<Customer> {
-    const res = await apiClient.patch<Customer>(`/api/v1/sales/customers/${id}`, data);
+    const res = await apiClient.patch<Customer>(`/api/v1/sales/customers/${id}`, data).then((r) => r.data);
     return res.data;
   },
 
   // Sales Orders
   async listOrders(params?: { status?: SOStatus; customer_id?: string; from_date?: string; to_date?: string }): Promise<SalesOrder[]> {
-    const res = await apiClient.get<SalesOrder[]>("/api/v1/sales/orders/", { params });
+    const res = await apiClient.get<SalesOrder[]>("/api/v1/sales/orders/", { params }).then((r) => r.data);
     return res.data;
   },
   async getOrder(id: string): Promise<SalesOrder> {
-    const res = await apiClient.get<SalesOrder>(`/api/v1/sales/orders/${id}`);
+    const res = await apiClient.get<SalesOrder>(`/api/v1/sales/orders/${id}`).then((r) => r.data);
     return res.data;
   },
   async createOrder(data: SOCreate): Promise<SalesOrder> {
-    const res = await apiClient.post<SalesOrder>("/api/v1/sales/orders/", data);
+    const res = await apiClient.post<SalesOrder>("/api/v1/sales/orders/", data).then((r) => r.data);
     return res.data;
   },
   async updateOrder(id: string, data: Partial<SalesOrder>): Promise<SalesOrder> {
-    const res = await apiClient.patch<SalesOrder>(`/api/v1/sales/orders/${id}`, data);
+    const res = await apiClient.patch<SalesOrder>(`/api/v1/sales/orders/${id}`, data).then((r) => r.data);
     return res.data;
   },
   async confirmOrder(id: string): Promise<SalesOrder> {
-    const res = await apiClient.post<SalesOrder>(`/api/v1/sales/orders/${id}/confirm`, {});
+    const res = await apiClient.post<SalesOrder>(`/api/v1/sales/orders/${id}/confirm`, {}).then((r) => r.data);
     return res.data;
   },
   async allocateOrder(id: string, warehouse_id: string): Promise<SalesOrder> {
-    const res = await apiClient.post<SalesOrder>(`/api/v1/sales/orders/${id}/allocate`, { warehouse_id });
+    const res = await apiClient.post<SalesOrder>(`/api/v1/sales/orders/${id}/allocate`, { warehouse_id }).then((r) => r.data);
     return res.data;
   },
   async cancelOrder(id: string): Promise<SalesOrder> {
-    const res = await apiClient.post<SalesOrder>(`/api/v1/sales/orders/${id}/cancel`, {});
+    const res = await apiClient.post<SalesOrder>(`/api/v1/sales/orders/${id}/cancel`, {}).then((r) => r.data);
     return res.data;
   },
 
   // Shipments
   async listShipments(params?: { status?: ShipmentStatus; so_id?: string }): Promise<Shipment[]> {
-    const res = await apiClient.get<Shipment[]>("/api/v1/sales/shipments/", { params });
+    const res = await apiClient.get<Shipment[]>("/api/v1/sales/shipments/", { params }).then((r) => r.data);
     return res.data;
   },
   async getShipment(id: string): Promise<Shipment> {
-    const res = await apiClient.get<Shipment>(`/api/v1/sales/shipments/${id}`);
+    const res = await apiClient.get<Shipment>(`/api/v1/sales/shipments/${id}`).then((r) => r.data);
     return res.data;
   },
   async createShipment(data: ShipmentCreate): Promise<Shipment> {
-    const res = await apiClient.post<Shipment>("/api/v1/sales/shipments/", data);
+    const res = await apiClient.post<Shipment>("/api/v1/sales/shipments/", data).then((r) => r.data);
     return res.data;
   },
   async startPicking(id: string): Promise<Shipment> {
-    const res = await apiClient.post<Shipment>(`/api/v1/sales/shipments/${id}/start-picking`, {});
+    const res = await apiClient.post<Shipment>(`/api/v1/sales/shipments/${id}/start-picking`, {}).then((r) => r.data);
     return res.data;
   },
   async pickLine(shipmentId: string, lineId: string): Promise<ShipmentLine> {
-    const res = await apiClient.post<ShipmentLine>(`/api/v1/sales/shipments/${shipmentId}/lines/${lineId}/pick`, {});
+    const res = await apiClient.post<ShipmentLine>(`/api/v1/sales/shipments/${shipmentId}/lines/${lineId}/pick`, {}).then((r) => r.data);
     return res.data;
   },
   async dispatchShipment(id: string, dispatched_date?: string): Promise<Shipment> {
-    const res = await apiClient.post<Shipment>(`/api/v1/sales/shipments/${id}/dispatch`, { dispatched_date });
+    const res = await apiClient.post<Shipment>(`/api/v1/sales/shipments/${id}/dispatch`, { dispatched_date }).then((r) => r.data);
     return res.data;
   },
 
   // Invoices
   async listInvoices(params?: { status?: InvoiceStatus; customer_id?: string }): Promise<Invoice[]> {
-    const res = await apiClient.get<Invoice[]>("/api/v1/sales/invoices/", { params });
+    const res = await apiClient.get<Invoice[]>("/api/v1/sales/invoices/", { params }).then((r) => r.data);
     return res.data;
   },
   async getInvoice(id: string): Promise<Invoice> {
-    const res = await apiClient.get<Invoice>(`/api/v1/sales/invoices/${id}`);
+    const res = await apiClient.get<Invoice>(`/api/v1/sales/invoices/${id}`).then((r) => r.data);
     return res.data;
   },
   async createInvoiceFromShipment(shipmentId: string, data: { invoice_no: string; invoice_date: string; due_date: string; notes?: string }): Promise<Invoice> {
-    const res = await apiClient.post<Invoice>(`/api/v1/sales/shipments/${shipmentId}/invoice`, data);
+    const res = await apiClient.post<Invoice>(`/api/v1/sales/shipments/${shipmentId}/invoice`, data).then((r) => r.data);
     return res.data;
   },
   async recordPayment(invoiceId: string, data: { payment_date: string; amount: number; reference?: string; notes?: string }): Promise<Payment> {
-    const res = await apiClient.post<Payment>(`/api/v1/sales/invoices/${invoiceId}/payments`, data);
+    const res = await apiClient.post<Payment>(`/api/v1/sales/invoices/${invoiceId}/payments`, data).then((r) => r.data);
     return res.data;
   },
   async syncOverdue(): Promise<{ updated: number }> {
-    const res = await apiClient.post<{ updated: number }>("/api/v1/sales/invoices/sync-overdue", {});
+    const res = await apiClient.post<{ updated: number }>("/api/v1/sales/invoices/sync-overdue", {}).then((r) => r.data);
     return res.data;
   },
 
   // M-Pesa
   async initiateMpesaPayment(soId: string, data: { phone_number: string; amount: number }): Promise<MpesaTransaction> {
-    const res = await apiClient.post<MpesaTransaction>(`/api/v1/sales/orders/${soId}/mpesa/initiate`, data);
+    const res = await apiClient.post<MpesaTransaction>(`/api/v1/sales/orders/${soId}/mpesa/initiate`, data).then((r) => r.data);
     return res.data;
   },
   async listMpesaTransactions(soId: string): Promise<MpesaTransaction[]> {
-    const res = await apiClient.get<MpesaTransaction[]>(`/api/v1/sales/orders/${soId}/mpesa/transactions`);
+    const res = await apiClient.get<MpesaTransaction[]>(`/api/v1/sales/orders/${soId}/mpesa/transactions`).then((r) => r.data);
     return res.data;
   },
 
   // Reports
   async getOutstandingInvoices(): Promise<OutstandingInvoiceRow[]> {
-    const res = await apiClient.get<OutstandingInvoiceRow[]>("/api/v1/sales/reports/outstanding");
+    const res = await apiClient.get<OutstandingInvoiceRow[]>("/api/v1/sales/reports/outstanding").then((r) => r.data);
     return res.data;
   },
   async getSalesSummary(): Promise<SalesSummary> {
-    const res = await apiClient.get<SalesSummary>("/api/v1/sales/reports/summary");
+    const res = await apiClient.get<SalesSummary>("/api/v1/sales/reports/summary").then((r) => r.data);
     return res.data;
   },
 };

@@ -339,56 +339,56 @@ export async function downloadWastewaterCsv(
 
 export const wastewaterApi = {
   async kpis(params?: Partial<WastewaterFilters>): Promise<WastewaterKPIs> {
-    const r = await apiClient.get<WastewaterKPIs>("/api/v1/wastewater/kpis", { params });
+    const r = await apiClient.get<WastewaterKPIs>("/api/v1/wastewater/kpis", { params }).then((r) => r.data);
     return r.data;
   },
 
   async dailyTrend(params?: Partial<WastewaterFilters>): Promise<WastewaterTrendPoint[]> {
-    const r = await apiClient.get<WastewaterTrendPoint[]>("/api/v1/wastewater/trend/daily", { params });
+    const r = await apiClient.get<WastewaterTrendPoint[]>("/api/v1/wastewater/trend/daily", { params }).then((r) => r.data);
     return r.data;
   },
 
   async stageAnalysis(params?: Partial<WastewaterFilters>): Promise<WastewaterStagePoint[]> {
-    const r = await apiClient.get<WastewaterStagePoint[]>("/api/v1/wastewater/trend/stage", { params });
+    const r = await apiClient.get<WastewaterStagePoint[]>("/api/v1/wastewater/trend/stage", { params }).then((r) => r.data);
     return r.data;
   },
 
   async complianceSummary(params?: Partial<WastewaterFilters>): Promise<WastewaterComplianceSummary> {
-    const r = await apiClient.get<WastewaterComplianceSummary>("/api/v1/wastewater/compliance/summary", { params });
+    const r = await apiClient.get<WastewaterComplianceSummary>("/api/v1/wastewater/compliance/summary", { params }).then((r) => r.data);
     return r.data;
   },
 
   async evaluateAlarms(recordId: string): Promise<WastewaterAlarm[]> {
-    const r = await apiClient.get<WastewaterAlarm[]>(`/api/v1/wastewater/alarms/evaluate/${recordId}`);
+    const r = await apiClient.get<WastewaterAlarm[]>(`/api/v1/wastewater/alarms/evaluate/${recordId}`).then((r) => r.data);
     return r.data;
   },
 
   async listAssets(): Promise<WastewaterAsset[]> {
-    const r = await apiClient.get<WastewaterAsset[]>("/api/v1/wastewater/assets");
+    const r = await apiClient.get<WastewaterAsset[]>("/api/v1/wastewater/assets").then((r) => r.data);
     return r.data;
   },
 
   async listRecords(params?: Partial<WastewaterFilters>): Promise<WastewaterRecord[]> {
-    const r = await apiClient.get<WastewaterRecord[]>("/api/v1/wastewater/records", { params });
+    const r = await apiClient.get<WastewaterRecord[]>("/api/v1/wastewater/records", { params }).then((r) => r.data);
     return r.data;
   },
 
   async getRecord(id: string): Promise<WastewaterRecord> {
-    const r = await apiClient.get<WastewaterRecord>(`/api/v1/wastewater/records/${id}`);
+    const r = await apiClient.get<WastewaterRecord>(`/api/v1/wastewater/records/${id}`).then((r) => r.data);
     return r.data;
   },
 
   async createRecord(data: WastewaterRecordCreate): Promise<WastewaterRecord> {
-    const r = await apiClient.post<WastewaterRecord>("/api/v1/wastewater/records", data);
+    const r = await apiClient.post<WastewaterRecord>("/api/v1/wastewater/records", data).then((r) => r.data);
     return r.data;
   },
 
   async updateRecord(id: string, data: WastewaterRecordUpdate): Promise<WastewaterRecord> {
-    const r = await apiClient.patch<WastewaterRecord>(`/api/v1/wastewater/records/${id}`, data);
+    const r = await apiClient.patch<WastewaterRecord>(`/api/v1/wastewater/records/${id}`, data).then((r) => r.data);
     return r.data;
   },
 
   async deleteRecord(id: string): Promise<void> {
-    await apiClient.delete(`/api/v1/wastewater/records/${id}`);
+    await apiClient.delete(`/api/v1/wastewater/records/${id}`).then((r) => r.data);
   },
 };

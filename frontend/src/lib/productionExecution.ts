@@ -206,70 +206,70 @@ export function fmtMins(mins: number): string {
 const BASE = "/api/v1/production-execution";
 
 export const execApi = {
-  dashboard: () => apiClient.get<ExecDashboard>(`${BASE}/dashboard`),
+  dashboard: () => apiClient.get<ExecDashboard>(`${BASE}/dashboard`).then((r) => r.data),
 
   // Orders
   list:    (params?: { status?: string; product_id?: string }) => {
     const qs = new URLSearchParams(
       Object.entries(params || {}).filter(([, v]) => v) as [string, string][]
     ).toString();
-    return apiClient.get<ProdExecOrderSummary[]>(`${BASE}${qs ? `?${qs}` : ""}`);
+    return apiClient.get<ProdExecOrderSummary[]>(`${BASE}${qs ? `?${qs}` : ""}`).then((r) => r.data);
   },
-  create:  (body: Partial<ProdExecOrderOut>) => apiClient.post<ProdExecOrderOut>(BASE, body),
-  get:     (id: string) => apiClient.get<ProdExecOrderOut>(`${BASE}/${id}`),
-  update:  (id: string, body: Partial<ProdExecOrderOut>) => apiClient.patch<ProdExecOrderOut>(`${BASE}/${id}`, body),
+  create:  (body: Partial<ProdExecOrderOut>) => apiClient.post<ProdExecOrderOut>(BASE, body).then((r) => r.data),
+  get:     (id: string) => apiClient.get<ProdExecOrderOut>(`${BASE}/${id}`).then((r) => r.data),
+  update:  (id: string, body: Partial<ProdExecOrderOut>) => apiClient.patch<ProdExecOrderOut>(`${BASE}/${id}`, body).then((r) => r.data),
 
   // Lifecycle
-  advance:  (id: string) => apiClient.post<ProdExecOrderOut>(`${BASE}/${id}/advance`, {}),
-  release:  (id: string) => apiClient.post<ProdExecOrderOut>(`${BASE}/${id}/release`, {}),
-  start:    (id: string) => apiClient.post<ProdExecOrderOut>(`${BASE}/${id}/start`, {}),
-  pause:    (id: string) => apiClient.post<ProdExecOrderOut>(`${BASE}/${id}/pause`, {}),
+  advance:  (id: string) => apiClient.post<ProdExecOrderOut>(`${BASE}/${id}/advance`, {}).then((r) => r.data),
+  release:  (id: string) => apiClient.post<ProdExecOrderOut>(`${BASE}/${id}/release`, {}).then((r) => r.data),
+  start:    (id: string) => apiClient.post<ProdExecOrderOut>(`${BASE}/${id}/start`, {}).then((r) => r.data),
+  pause:    (id: string) => apiClient.post<ProdExecOrderOut>(`${BASE}/${id}/pause`, {}).then((r) => r.data),
   complete: (id: string, body: { completed_qty: number; scrap_qty?: number; remarks?: string }) =>
-    apiClient.post<ProdExecOrderOut>(`${BASE}/${id}/complete`, body),
-  close:    (id: string) => apiClient.post<ProdExecOrderOut>(`${BASE}/${id}/close`, {}),
-  cancel:   (id: string) => apiClient.post<ProdExecOrderOut>(`${BASE}/${id}/cancel`, {}),
+    apiClient.post<ProdExecOrderOut>(`${BASE}/${id}/complete`, body).then((r) => r.data),
+  close:    (id: string) => apiClient.post<ProdExecOrderOut>(`${BASE}/${id}/close`, {}).then((r) => r.data),
+  cancel:   (id: string) => apiClient.post<ProdExecOrderOut>(`${BASE}/${id}/cancel`, {}).then((r) => r.data),
 
   // Split / Merge / Rework
   split:  (id: string, split_qtys: number[], reason?: string) =>
-    apiClient.post<ProdExecOrderOut[]>(`${BASE}/${id}/split`, { split_qtys, reason }),
+    apiClient.post<ProdExecOrderOut[]>(`${BASE}/${id}/split`, { split_qtys, reason }).then((r) => r.data),
   merge:  (order_ids: string[], reason?: string) =>
-    apiClient.post<ProdExecOrderOut>(`${BASE}/merge`, { order_ids, reason }),
+    apiClient.post<ProdExecOrderOut>(`${BASE}/merge`, { order_ids, reason }).then((r) => r.data),
   rework: (id: string, qty: number, reason: string) =>
-    apiClient.post<ProdExecOrderOut>(`${BASE}/${id}/rework`, { qty, reason }),
+    apiClient.post<ProdExecOrderOut>(`${BASE}/${id}/rework`, { qty, reason }).then((r) => r.data),
 
   // Genealogy
-  genealogy: (id: string) => apiClient.get<any>(`${BASE}/${id}/genealogy`),
+  genealogy: (id: string) => apiClient.get<any>(`${BASE}/${id}/genealogy`).then((r) => r.data),
   addGenealogyLink: (id: string, body: Partial<BatchGenealogyOut>) =>
-    apiClient.post<BatchGenealogyOut>(`${BASE}/${id}/genealogy`, body),
+    apiClient.post<BatchGenealogyOut>(`${BASE}/${id}/genealogy`, body).then((r) => r.data),
 
   // Batch record
-  batchRecord: (id: string) => apiClient.get<any>(`${BASE}/${id}/batch-record`),
+  batchRecord: (id: string) => apiClient.get<any>(`${BASE}/${id}/batch-record`).then((r) => r.data),
 
   // Work Orders
   listWorkOrders:    (params?: { status?: string }) => {
     const qs = params?.status ? `?status=${params.status}` : "";
-    return apiClient.get<ExecWorkOrderOut[]>(`${BASE}/work-orders${qs}`);
+    return apiClient.get<ExecWorkOrderOut[]>(`${BASE}/work-orders${qs}`).then((r) => r.data);
   },
   addWorkOrder:     (orderId: string, body: Partial<ExecWorkOrderOut>) =>
-    apiClient.post<ExecWorkOrderOut>(`${BASE}/${orderId}/work-orders`, body),
+    apiClient.post<ExecWorkOrderOut>(`${BASE}/${orderId}/work-orders`, body).then((r) => r.data),
   startWorkOrder:   (woId: string) =>
-    apiClient.post<ExecWorkOrderOut>(`${BASE}/work-orders/${woId}/start`, {}),
+    apiClient.post<ExecWorkOrderOut>(`${BASE}/work-orders/${woId}/start`, {}).then((r) => r.data),
   completeWorkOrder:(woId: string, body: Record<string, unknown>) =>
-    apiClient.post<ExecWorkOrderOut>(`${BASE}/work-orders/${woId}/complete`, body),
+    apiClient.post<ExecWorkOrderOut>(`${BASE}/work-orders/${woId}/complete`, body).then((r) => r.data),
   updateWorkOrder:  (woId: string, body: Partial<ExecWorkOrderOut>) =>
-    apiClient.patch<ExecWorkOrderOut>(`${BASE}/work-orders/${woId}`, body),
+    apiClient.patch<ExecWorkOrderOut>(`${BASE}/work-orders/${woId}`, body).then((r) => r.data),
 
   // Materials
   addMaterial:    (orderId: string, body: Partial<ExecOrderMaterialOut>) =>
-    apiClient.post<ExecOrderMaterialOut>(`${BASE}/${orderId}/materials`, body),
+    apiClient.post<ExecOrderMaterialOut>(`${BASE}/${orderId}/materials`, body).then((r) => r.data),
   issueMaterial:  (orderId: string, body: { material_id: string; qty: number; lot_no?: string; action: string }) =>
-    apiClient.post<ExecOrderMaterialOut>(`${BASE}/${orderId}/materials/issue`, body),
+    apiClient.post<ExecOrderMaterialOut>(`${BASE}/${orderId}/materials/issue`, body).then((r) => r.data),
   returnMaterial: (orderId: string, body: { material_id: string; qty: number; action: string }) =>
-    apiClient.post<ExecOrderMaterialOut>(`${BASE}/${orderId}/materials/return`, body),
+    apiClient.post<ExecOrderMaterialOut>(`${BASE}/${orderId}/materials/return`, body).then((r) => r.data),
 
   // AI
-  runAI:    (id: string) => apiClient.post<{ total: number }>(`${BASE}/${id}/run-ai`, {}),
-  listAI:   (id: string) => apiClient.get<ExecAIRecOut[]>(`${BASE}/${id}/ai-recs`),
+  runAI:    (id: string) => apiClient.post<{ total: number }>(`${BASE}/${id}/run-ai`, {}).then((r) => r.data),
+  listAI:   (id: string) => apiClient.get<ExecAIRecOut[]>(`${BASE}/${id}/ai-recs`).then((r) => r.data),
   actionAI: (recId: string, status: string) =>
-    apiClient.post<ExecAIRecOut>(`${BASE}/ai-recs/${recId}/action`, { status }),
+    apiClient.post<ExecAIRecOut>(`${BASE}/ai-recs/${recId}/action`, { status }).then((r) => r.data),
 };

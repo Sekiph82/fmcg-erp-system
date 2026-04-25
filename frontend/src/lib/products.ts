@@ -42,21 +42,21 @@ export const productsApi = {
   },
 
   async get(id: string): Promise<Product> {
-    const res = await apiClient.get<Product>(`/api/v1/products/${id}`);
+    const res = await apiClient.get<Product>(`/api/v1/products/${id}`).then((r) => r.data);
     return res.data;
   },
 
   async create(data: ProductCreate): Promise<Product> {
-    const res = await apiClient.post<Product>("/api/v1/products/", data);
+    const res = await apiClient.post<Product>("/api/v1/products/", data).then((r) => r.data);
     return res.data;
   },
 
   async update(id: string, data: Partial<ProductCreate>): Promise<Product> {
-    const res = await apiClient.patch<Product>(`/api/v1/products/${id}`, data);
+    const res = await apiClient.patch<Product>(`/api/v1/products/${id}`, data).then((r) => r.data);
     return res.data;
   },
 
   async delete(id: string): Promise<void> {
-    await apiClient.delete(`/api/v1/products/${id}`);
+    await apiClient.delete(`/api/v1/products/${id}`).then((r) => r.data);
   },
 };

@@ -228,10 +228,10 @@ const BASE = "/api/v1/procurement/suggestions";
 
 export const psApi = {
   getDashboard: () =>
-    apiClient.get<PSDashboard>(`${BASE}/dashboard`),
+    apiClient.get<PSDashboard>(`${BASE}/dashboard`).then((r) => r.data),
 
   listRuns: (skip = 0, limit = 50) =>
-    apiClient.get<PSRunOut[]>(`${BASE}/runs?skip=${skip}&limit=${limit}`),
+    apiClient.get<PSRunOut[]>(`${BASE}/runs?skip=${skip}&limit=${limit}`).then((r) => r.data),
 
   createRun: (payload: {
     warehouse_id?: string;
@@ -241,13 +241,13 @@ export const psApi = {
     include_reorder_point?: boolean;
     currency?: string;
     notes?: string;
-  }) => apiClient.post<PSRunOut>(`${BASE}/runs`, payload),
+  }) => apiClient.post<PSRunOut>(`${BASE}/runs`, payload).then((r) => r.data),
 
   getRun: (id: string) =>
-    apiClient.get<PSRunOut>(`${BASE}/runs/${id}`),
+    apiClient.get<PSRunOut>(`${BASE}/runs/${id}`).then((r) => r.data),
 
   executeRun: (id: string) =>
-    apiClient.post<PSRunOut>(`${BASE}/runs/${id}/execute`, {}),
+    apiClient.post<PSRunOut>(`${BASE}/runs/${id}/execute`, {}).then((r) => r.data),
 
   listSuggestions: (runId: string, params?: {
     urgency?: PSUrgencyLevel;
@@ -262,52 +262,52 @@ export const psApi = {
     if (params?.status)    qs.set("status", params.status);
     if (params?.skip)      qs.set("skip", String(params.skip));
     if (params?.limit)     qs.set("limit", String(params.limit));
-    return apiClient.get<PSLineOut[]>(`${BASE}/suggestions?${qs}`);
+    return apiClient.get<PSLineOut[]>(`${BASE}/suggestions?${qs}`).then((r) => r.data);
   },
 
   updateSuggestion: (id: string, payload: Partial<PSLineOut>) =>
-    apiClient.patch<PSLineOut>(`${BASE}/suggestions/${id}`, payload),
+    apiClient.patch<PSLineOut>(`${BASE}/suggestions/${id}`, payload).then((r) => r.data),
 
   approveSuggestion: (id: string) =>
-    apiClient.post<PSLineOut>(`${BASE}/suggestions/${id}/approve`, {}),
+    apiClient.post<PSLineOut>(`${BASE}/suggestions/${id}/approve`, {}).then((r) => r.data),
 
   rejectSuggestion: (id: string, reason?: string) =>
-    apiClient.post<PSLineOut>(`${BASE}/suggestions/${id}/reject?reason=${encodeURIComponent(reason ?? "")}`, {}),
+    apiClient.post<PSLineOut>(`${BASE}/suggestions/${id}/reject?reason=${encodeURIComponent(reason ?? "")}`, {}).then((r) => r.data),
 
   listGroups: (runId: string) =>
-    apiClient.get<PSGroupOut[]>(`${BASE}/groups?run_id=${runId}`),
+    apiClient.get<PSGroupOut[]>(`${BASE}/groups?run_id=${runId}`).then((r) => r.data),
 
   convertGroupToPR: (payload: { group_id: string; required_date: string; notes?: string }) =>
-    apiClient.post<{ pr_id: string; pr_no: string; status: string }>(`${BASE}/groups/convert-to-pr`, payload),
+    apiClient.post<{ pr_id: string; pr_no: string; status: string }>(`${BASE}/groups/convert-to-pr`, payload).then((r) => r.data),
 
   compareSuppliers: (materialId: string) =>
-    apiClient.get<SupplierCompareResult>(`${BASE}/suppliers/${materialId}/compare`),
+    apiClient.get<SupplierCompareResult>(`${BASE}/suppliers/${materialId}/compare`).then((r) => r.data),
 
   listSupplierPrices: (params?: { material_id?: string; supplier_id?: string }) => {
     const qs = new URLSearchParams();
     if (params?.material_id) qs.set("material_id", params.material_id);
     if (params?.supplier_id) qs.set("supplier_id", params.supplier_id);
-    return apiClient.get<SupplierItemPriceOut[]>(`${BASE}/supplier-prices?${qs}`);
+    return apiClient.get<SupplierItemPriceOut[]>(`${BASE}/supplier-prices?${qs}`).then((r) => r.data);
   },
 
   createSupplierPrice: (payload: Partial<SupplierItemPriceOut>) =>
-    apiClient.post<SupplierItemPriceOut>(`${BASE}/supplier-prices`, payload),
+    apiClient.post<SupplierItemPriceOut>(`${BASE}/supplier-prices`, payload).then((r) => r.data),
 
   updateSupplierPrice: (id: string, payload: Partial<SupplierItemPriceOut>) =>
-    apiClient.patch<SupplierItemPriceOut>(`${BASE}/supplier-prices/${id}`, payload),
+    apiClient.patch<SupplierItemPriceOut>(`${BASE}/supplier-prices/${id}`, payload).then((r) => r.data),
 
   deleteSupplierPrice: (id: string) =>
     apiClient.delete(`${BASE}/supplier-prices/${id}`),
 
   runAIAgents: (runId: string) =>
-    apiClient.post<{ generated: number; by_agent: Record<string, number> }>(`${BASE}/runs/${runId}/ai/run`, {}),
+    apiClient.post<{ generated: number; by_agent: Record<string, number> }>(`${BASE}/runs/${runId}/ai/run`, {}).then((r) => r.data),
 
   listAIRecs: (runId: string) =>
-    apiClient.get<PSAIRecOut[]>(`${BASE}/runs/${runId}/ai/recommendations`),
+    apiClient.get<PSAIRecOut[]>(`${BASE}/runs/${runId}/ai/recommendations`).then((r) => r.data),
 
   actionAIRec: (recId: string, notes?: string) =>
-    apiClient.post<PSAIRecOut>(`${BASE}/ai/recommendations/${recId}/action?notes=${encodeURIComponent(notes ?? "")}`, {}),
+    apiClient.post<PSAIRecOut>(`${BASE}/ai/recommendations/${recId}/action?notes=${encodeURIComponent(notes ?? "")}`, {}).then((r) => r.data),
 
   shortageReport: (runId: string) =>
-    apiClient.get<ShortageReportRow[]>(`${BASE}/reports/shortages?run_id=${runId}`),
+    apiClient.get<ShortageReportRow[]>(`${BASE}/reports/shortages?run_id=${runId}`).then((r) => r.data),
 };

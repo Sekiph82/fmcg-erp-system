@@ -256,7 +256,7 @@ export const utilityManagementApi = {
     },
 
     async delete(id: string): Promise<void> {
-      await apiClient.delete(`${BASE}/asset-categories/${id}`);
+      await apiClient.delete(`${BASE}/asset-categories/${id}`).then((r) => r.data);
     },
 
     exportCsvUrl(): string {
@@ -268,27 +268,27 @@ export const utilityManagementApi = {
   // ── Assets ───────────────────────────────────────────────────────────────────
   assets: {
     async list(params?: AssetFilters & { skip?: number; limit?: number }): Promise<UtilityAsset[]> {
-      const res = await apiClient.get<UtilityAsset[]>(`${BASE}/assets`, { params });
+      const res = await apiClient.get<UtilityAsset[]>(`${BASE}/assets`, { params }).then((r) => r.data);
       return res.data;
     },
 
     async get(id: string): Promise<UtilityAsset> {
-      const res = await apiClient.get<UtilityAsset>(`${BASE}/assets/${id}`);
+      const res = await apiClient.get<UtilityAsset>(`${BASE}/assets/${id}`).then((r) => r.data);
       return res.data;
     },
 
     async create(data: UtilityAssetCreate): Promise<UtilityAsset> {
-      const res = await apiClient.post<UtilityAsset>(`${BASE}/assets`, data);
+      const res = await apiClient.post<UtilityAsset>(`${BASE}/assets`, data).then((r) => r.data);
       return res.data;
     },
 
     async update(id: string, data: UtilityAssetUpdate): Promise<UtilityAsset> {
-      const res = await apiClient.patch<UtilityAsset>(`${BASE}/assets/${id}`, data);
+      const res = await apiClient.patch<UtilityAsset>(`${BASE}/assets/${id}`, data).then((r) => r.data);
       return res.data;
     },
 
     async delete(id: string): Promise<void> {
-      await apiClient.delete(`${BASE}/assets/${id}`);
+      await apiClient.delete(`${BASE}/assets/${id}`).then((r) => r.data);
     },
 
     exportCsvUrl(): string {

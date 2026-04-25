@@ -123,207 +123,207 @@ export interface AIInsight {
 export const advProductionApi = {
   // Work Centers
   async listWorkCenters(p?: { status?: string }): Promise<WorkCenter[]> {
-    const r = await apiClient.get(`${BASE}/work-centers`, { params: p });
+    const r = await apiClient.get(`${BASE}/work-centers`, { params: p }).then((r) => r.data);
     return r.data;
   },
   async createWorkCenter(d: Partial<WorkCenter>): Promise<WorkCenter> {
-    const r = await apiClient.post(`${BASE}/work-centers`, d);
+    const r = await apiClient.post(`${BASE}/work-centers`, d).then((r) => r.data);
     return r.data;
   },
   async updateWorkCenter(id: string, d: Partial<WorkCenter>): Promise<WorkCenter> {
-    const r = await apiClient.patch(`${BASE}/work-centers/${id}`, d);
+    const r = await apiClient.patch(`${BASE}/work-centers/${id}`, d).then((r) => r.data);
     return r.data;
   },
   async deleteWorkCenter(id: string): Promise<void> {
-    await apiClient.delete(`${BASE}/work-centers/${id}`);
+    await apiClient.delete(`${BASE}/work-centers/${id}`).then((r) => r.data);
   },
 
   // Routings
   async listRoutings(p?: { product_id?: string }): Promise<Routing[]> {
-    const r = await apiClient.get(`${BASE}/routings`, { params: p });
+    const r = await apiClient.get(`${BASE}/routings`, { params: p }).then((r) => r.data);
     return r.data;
   },
   async createRouting(d: object): Promise<Routing> {
-    const r = await apiClient.post(`${BASE}/routings`, d);
+    const r = await apiClient.post(`${BASE}/routings`, d).then((r) => r.data);
     return r.data;
   },
   async deleteRouting(id: string): Promise<void> {
-    await apiClient.delete(`${BASE}/routings/${id}`);
+    await apiClient.delete(`${BASE}/routings/${id}`).then((r) => r.data);
   },
   async addRoutingStep(routingId: string, d: object): Promise<RoutingStep> {
-    const r = await apiClient.post(`${BASE}/routings/${routingId}/steps`, d);
+    const r = await apiClient.post(`${BASE}/routings/${routingId}/steps`, d).then((r) => r.data);
     return r.data;
   },
 
   // Work Orders
   async listWorkOrders(p?: { production_order_id?: string; status?: string }): Promise<WorkOrder[]> {
-    const r = await apiClient.get(`${BASE}/work-orders`, { params: p });
+    const r = await apiClient.get(`${BASE}/work-orders`, { params: p }).then((r) => r.data);
     return r.data;
   },
   async createWorkOrder(d: object): Promise<WorkOrder> {
-    const r = await apiClient.post(`${BASE}/work-orders`, d);
+    const r = await apiClient.post(`${BASE}/work-orders`, d).then((r) => r.data);
     return r.data;
   },
   async updateWorkOrder(id: string, d: object): Promise<WorkOrder> {
-    const r = await apiClient.patch(`${BASE}/work-orders/${id}`, d);
+    const r = await apiClient.patch(`${BASE}/work-orders/${id}`, d).then((r) => r.data);
     return r.data;
   },
   async startWorkOrder(id: string): Promise<WorkOrder> {
-    const r = await apiClient.post(`${BASE}/work-orders/${id}/start`);
+    const r = await apiClient.post(`${BASE}/work-orders/${id}/start`).then((r) => r.data);
     return r.data;
   },
   async completeWorkOrder(id: string, qty?: number): Promise<WorkOrder> {
-    const r = await apiClient.post(`${BASE}/work-orders/${id}/complete`, null, { params: { actual_quantity: qty } });
+    const r = await apiClient.post(`${BASE}/work-orders/${id}/complete`, null, { params: { actual_quantity: qty } }).then((r) => r.data);
     return r.data;
   },
   async deleteWorkOrder(id: string): Promise<void> {
-    await apiClient.delete(`${BASE}/work-orders/${id}`);
+    await apiClient.delete(`${BASE}/work-orders/${id}`).then((r) => r.data);
   },
 
   // Shifts
   async listShifts(): Promise<Shift[]> {
-    const r = await apiClient.get(`${BASE}/shifts`);
+    const r = await apiClient.get(`${BASE}/shifts`).then((r) => r.data);
     return r.data;
   },
   async createShift(d: object): Promise<Shift> {
-    const r = await apiClient.post(`${BASE}/shifts`, d);
+    const r = await apiClient.post(`${BASE}/shifts`, d).then((r) => r.data);
     return r.data;
   },
   async deleteShift(id: string): Promise<void> {
-    await apiClient.delete(`${BASE}/shifts/${id}`);
+    await apiClient.delete(`${BASE}/shifts/${id}`).then((r) => r.data);
   },
 
   // Schedules
   async listSchedules(p?: { work_center_id?: string; status?: string; date_from?: string; date_to?: string }): Promise<ProductionSchedule[]> {
-    const r = await apiClient.get(`${BASE}/schedules`, { params: p });
+    const r = await apiClient.get(`${BASE}/schedules`, { params: p }).then((r) => r.data);
     return r.data;
   },
   async createSchedule(d: object): Promise<ProductionSchedule> {
-    const r = await apiClient.post(`${BASE}/schedules`, d);
+    const r = await apiClient.post(`${BASE}/schedules`, d).then((r) => r.data);
     return r.data;
   },
   async getConflicts(): Promise<ProductionSchedule[]> {
-    const r = await apiClient.get(`${BASE}/schedules/conflicts`);
+    const r = await apiClient.get(`${BASE}/schedules/conflicts`).then((r) => r.data);
     return r.data;
   },
   async deleteSchedule(id: string): Promise<void> {
-    await apiClient.delete(`${BASE}/schedules/${id}`);
+    await apiClient.delete(`${BASE}/schedules/${id}`).then((r) => r.data);
   },
 
   // Time Tracking
   async listTimeTracking(p?: { work_order_id?: string }): Promise<TimeTracking[]> {
-    const r = await apiClient.get(`${BASE}/time-tracking`, { params: p });
+    const r = await apiClient.get(`${BASE}/time-tracking`, { params: p }).then((r) => r.data);
     return r.data;
   },
   async createTimeTracking(d: object): Promise<TimeTracking> {
-    const r = await apiClient.post(`${BASE}/time-tracking`, d);
+    const r = await apiClient.post(`${BASE}/time-tracking`, d).then((r) => r.data);
     return r.data;
   },
   async deleteTimeTracking(id: string): Promise<void> {
-    await apiClient.delete(`${BASE}/time-tracking/${id}`);
+    await apiClient.delete(`${BASE}/time-tracking/${id}`).then((r) => r.data);
   },
 
   // Downtime
   async listDowntime(p?: { work_center_id?: string; category?: string }): Promise<DowntimeEvent[]> {
-    const r = await apiClient.get(`${BASE}/downtime`, { params: p });
+    const r = await apiClient.get(`${BASE}/downtime`, { params: p }).then((r) => r.data);
     return r.data;
   },
   async createDowntime(d: object): Promise<DowntimeEvent> {
-    const r = await apiClient.post(`${BASE}/downtime`, d);
+    const r = await apiClient.post(`${BASE}/downtime`, d).then((r) => r.data);
     return r.data;
   },
   async updateDowntime(id: string, d: object): Promise<DowntimeEvent> {
-    const r = await apiClient.patch(`${BASE}/downtime/${id}`, d);
+    const r = await apiClient.patch(`${BASE}/downtime/${id}`, d).then((r) => r.data);
     return r.data;
   },
   async deleteDowntime(id: string): Promise<void> {
-    await apiClient.delete(`${BASE}/downtime/${id}`);
+    await apiClient.delete(`${BASE}/downtime/${id}`).then((r) => r.data);
   },
 
   // QC
   async listQC(p?: { production_order_id?: string; status?: string }): Promise<QCInspection[]> {
-    const r = await apiClient.get(`${BASE}/qc`, { params: p });
+    const r = await apiClient.get(`${BASE}/qc`, { params: p }).then((r) => r.data);
     return r.data;
   },
   async createQC(d: object): Promise<QCInspection> {
-    const r = await apiClient.post(`${BASE}/qc`, d);
+    const r = await apiClient.post(`${BASE}/qc`, d).then((r) => r.data);
     return r.data;
   },
   async updateQC(id: string, d: object): Promise<QCInspection> {
-    const r = await apiClient.patch(`${BASE}/qc/${id}`, d);
+    const r = await apiClient.patch(`${BASE}/qc/${id}`, d).then((r) => r.data);
     return r.data;
   },
   async deleteQC(id: string): Promise<void> {
-    await apiClient.delete(`${BASE}/qc/${id}`);
+    await apiClient.delete(`${BASE}/qc/${id}`).then((r) => r.data);
   },
 
   // Waste
   async listWaste(p?: { production_order_id?: string; is_anomaly?: boolean }): Promise<WasteRecord[]> {
-    const r = await apiClient.get(`${BASE}/waste`, { params: p });
+    const r = await apiClient.get(`${BASE}/waste`, { params: p }).then((r) => r.data);
     return r.data;
   },
   async createWaste(d: object): Promise<WasteRecord> {
-    const r = await apiClient.post(`${BASE}/waste`, d);
+    const r = await apiClient.post(`${BASE}/waste`, d).then((r) => r.data);
     return r.data;
   },
   async deleteWaste(id: string): Promise<void> {
-    await apiClient.delete(`${BASE}/waste/${id}`);
+    await apiClient.delete(`${BASE}/waste/${id}`).then((r) => r.data);
   },
 
   // Batch Lots
   async listBatchLots(p?: { production_order_id?: string; status?: string }): Promise<BatchLot[]> {
-    const r = await apiClient.get(`${BASE}/batch-lots`, { params: p });
+    const r = await apiClient.get(`${BASE}/batch-lots`, { params: p }).then((r) => r.data);
     return r.data;
   },
   async createBatchLot(d: object): Promise<BatchLot> {
-    const r = await apiClient.post(`${BASE}/batch-lots`, d);
+    const r = await apiClient.post(`${BASE}/batch-lots`, d).then((r) => r.data);
     return r.data;
   },
   async updateBatchLot(id: string, d: object): Promise<BatchLot> {
-    const r = await apiClient.patch(`${BASE}/batch-lots/${id}`, d);
+    const r = await apiClient.patch(`${BASE}/batch-lots/${id}`, d).then((r) => r.data);
     return r.data;
   },
   async deleteBatchLot(id: string): Promise<void> {
-    await apiClient.delete(`${BASE}/batch-lots/${id}`);
+    await apiClient.delete(`${BASE}/batch-lots/${id}`).then((r) => r.data);
   },
 
   // Labor
   async listLabor(p?: { work_order_id?: string }): Promise<LaborLog[]> {
-    const r = await apiClient.get(`${BASE}/labor`, { params: p });
+    const r = await apiClient.get(`${BASE}/labor`, { params: p }).then((r) => r.data);
     return r.data;
   },
   async createLabor(d: object): Promise<LaborLog> {
-    const r = await apiClient.post(`${BASE}/labor`, d);
+    const r = await apiClient.post(`${BASE}/labor`, d).then((r) => r.data);
     return r.data;
   },
   async deleteLabor(id: string): Promise<void> {
-    await apiClient.delete(`${BASE}/labor/${id}`);
+    await apiClient.delete(`${BASE}/labor/${id}`).then((r) => r.data);
   },
 
   // OEE
   async listOEE(p?: { work_center_id?: string; date_from?: string; date_to?: string }): Promise<OEERecord[]> {
-    const r = await apiClient.get(`${BASE}/oee`, { params: p });
+    const r = await apiClient.get(`${BASE}/oee`, { params: p }).then((r) => r.data);
     return r.data;
   },
   async createOEE(d: object): Promise<OEERecord> {
-    const r = await apiClient.post(`${BASE}/oee`, d);
+    const r = await apiClient.post(`${BASE}/oee`, d).then((r) => r.data);
     return r.data;
   },
   async updateOEE(id: string, d: object): Promise<OEERecord> {
-    const r = await apiClient.patch(`${BASE}/oee/${id}`, d);
+    const r = await apiClient.patch(`${BASE}/oee/${id}`, d).then((r) => r.data);
     return r.data;
   },
   async deleteOEE(id: string): Promise<void> {
-    await apiClient.delete(`${BASE}/oee/${id}`);
+    await apiClient.delete(`${BASE}/oee/${id}`).then((r) => r.data);
   },
   async oeeeSummary(p?: { work_center_id?: string; date_from?: string; date_to?: string }): Promise<OEESummaryRow[]> {
-    const r = await apiClient.get(`${BASE}/oee/summary`, { params: p });
+    const r = await apiClient.get(`${BASE}/oee/summary`, { params: p }).then((r) => r.data);
     return r.data;
   },
 
   // AI Insights
   async aiInsights(p?: { work_center_id?: string }): Promise<{ total_insights: number; insights: AIInsight[] }> {
-    const r = await apiClient.get(`${BASE}/ai-insights`, { params: p });
+    const r = await apiClient.get(`${BASE}/ai-insights`, { params: p }).then((r) => r.data);
     return r.data;
   },
 };

@@ -182,115 +182,115 @@ export interface ShipmentDashboardRow {
 export const logisticsApi = {
   // Shipments
   async listShipments(params?: { status?: IntlShipmentStatus }): Promise<IntlShipment[]> {
-    const res = await apiClient.get<IntlShipment[]>("/api/v1/logistics/shipments/", { params });
+    const res = await apiClient.get<IntlShipment[]>("/api/v1/logistics/shipments/", { params }).then((r) => r.data);
     return res.data;
   },
   async getShipment(id: string): Promise<IntlShipment> {
-    const res = await apiClient.get<IntlShipment>(`/api/v1/logistics/shipments/${id}`);
+    const res = await apiClient.get<IntlShipment>(`/api/v1/logistics/shipments/${id}`).then((r) => r.data);
     return res.data;
   },
   async createShipment(data: object): Promise<IntlShipment> {
-    const res = await apiClient.post<IntlShipment>("/api/v1/logistics/shipments/", data);
+    const res = await apiClient.post<IntlShipment>("/api/v1/logistics/shipments/", data).then((r) => r.data);
     return res.data;
   },
   async updateShipment(id: string, data: object): Promise<IntlShipment> {
-    const res = await apiClient.patch<IntlShipment>(`/api/v1/logistics/shipments/${id}`, data);
+    const res = await apiClient.patch<IntlShipment>(`/api/v1/logistics/shipments/${id}`, data).then((r) => r.data);
     return res.data;
   },
 
   // Containers
   async listContainers(params?: { shipment_id?: string; status?: ContainerStatus }): Promise<ShipmentContainer[]> {
-    const res = await apiClient.get<ShipmentContainer[]>("/api/v1/logistics/containers/", { params });
+    const res = await apiClient.get<ShipmentContainer[]>("/api/v1/logistics/containers/", { params }).then((r) => r.data);
     return res.data;
   },
   async createContainer(data: object): Promise<ShipmentContainer> {
-    const res = await apiClient.post<ShipmentContainer>("/api/v1/logistics/containers/", data);
+    const res = await apiClient.post<ShipmentContainer>("/api/v1/logistics/containers/", data).then((r) => r.data);
     return res.data;
   },
   async updateContainer(id: string, data: object): Promise<ShipmentContainer> {
-    const res = await apiClient.patch<ShipmentContainer>(`/api/v1/logistics/containers/${id}`, data);
+    const res = await apiClient.patch<ShipmentContainer>(`/api/v1/logistics/containers/${id}`, data).then((r) => r.data);
     return res.data;
   },
 
   // PO Links
   async listPOLinks(shipmentId: string): Promise<POLink[]> {
-    const res = await apiClient.get<POLink[]>(`/api/v1/logistics/shipments/${shipmentId}/po-links`);
+    const res = await apiClient.get<POLink[]>(`/api/v1/logistics/shipments/${shipmentId}/po-links`).then((r) => r.data);
     return res.data;
   },
   async addPOLink(shipmentId: string, data: { po_id: string; notes?: string }): Promise<POLink> {
-    const res = await apiClient.post<POLink>(`/api/v1/logistics/shipments/${shipmentId}/po-links`, data);
+    const res = await apiClient.post<POLink>(`/api/v1/logistics/shipments/${shipmentId}/po-links`, data).then((r) => r.data);
     return res.data;
   },
   async removePOLink(linkId: string): Promise<void> {
-    await apiClient.delete(`/api/v1/logistics/po-links/${linkId}`);
+    await apiClient.delete(`/api/v1/logistics/po-links/${linkId}`).then((r) => r.data);
   },
 
   // Customs Documents
   async listDocuments(shipmentId: string): Promise<CustomsDocument[]> {
-    const res = await apiClient.get<CustomsDocument[]>(`/api/v1/logistics/shipments/${shipmentId}/documents`);
+    const res = await apiClient.get<CustomsDocument[]>(`/api/v1/logistics/shipments/${shipmentId}/documents`).then((r) => r.data);
     return res.data;
   },
   async createDocument(data: object): Promise<CustomsDocument> {
-    const res = await apiClient.post<CustomsDocument>("/api/v1/logistics/documents/", data);
+    const res = await apiClient.post<CustomsDocument>("/api/v1/logistics/documents/", data).then((r) => r.data);
     return res.data;
   },
   async updateDocument(id: string, data: object): Promise<CustomsDocument> {
-    const res = await apiClient.patch<CustomsDocument>(`/api/v1/logistics/documents/${id}`, data);
+    const res = await apiClient.patch<CustomsDocument>(`/api/v1/logistics/documents/${id}`, data).then((r) => r.data);
     return res.data;
   },
 
   // Customs Clearance
   async getClearance(shipmentId: string): Promise<CustomsClearance> {
-    const res = await apiClient.get<CustomsClearance>(`/api/v1/logistics/shipments/${shipmentId}/clearance`);
+    const res = await apiClient.get<CustomsClearance>(`/api/v1/logistics/shipments/${shipmentId}/clearance`).then((r) => r.data);
     return res.data;
   },
   async createClearance(data: object): Promise<CustomsClearance> {
-    const res = await apiClient.post<CustomsClearance>("/api/v1/logistics/clearance/", data);
+    const res = await apiClient.post<CustomsClearance>("/api/v1/logistics/clearance/", data).then((r) => r.data);
     return res.data;
   },
   async updateClearance(id: string, data: object): Promise<CustomsClearance> {
-    const res = await apiClient.patch<CustomsClearance>(`/api/v1/logistics/clearance/${id}`, data);
+    const res = await apiClient.patch<CustomsClearance>(`/api/v1/logistics/clearance/${id}`, data).then((r) => r.data);
     return res.data;
   },
 
   // Arrivals
   async listArrivals(): Promise<ArrivalNotification[]> {
-    const res = await apiClient.get<ArrivalNotification[]>("/api/v1/logistics/arrivals/");
+    const res = await apiClient.get<ArrivalNotification[]>("/api/v1/logistics/arrivals/").then((r) => r.data);
     return res.data;
   },
   async getEtaAlerts(daysAhead = 14): Promise<IntlShipment[]> {
-    const res = await apiClient.get<IntlShipment[]>("/api/v1/logistics/arrivals/alerts", { params: { days_ahead: daysAhead } });
+    const res = await apiClient.get<IntlShipment[]>("/api/v1/logistics/arrivals/alerts", { params: { days_ahead: daysAhead } }).then((r) => r.data);
     return res.data;
   },
   async getArrival(shipmentId: string): Promise<ArrivalNotification> {
-    const res = await apiClient.get<ArrivalNotification>(`/api/v1/logistics/shipments/${shipmentId}/arrival`);
+    const res = await apiClient.get<ArrivalNotification>(`/api/v1/logistics/shipments/${shipmentId}/arrival`).then((r) => r.data);
     return res.data;
   },
   async updateArrival(shipmentId: string, data: object): Promise<ArrivalNotification> {
-    const res = await apiClient.patch<ArrivalNotification>(`/api/v1/logistics/shipments/${shipmentId}/arrival`, data);
+    const res = await apiClient.patch<ArrivalNotification>(`/api/v1/logistics/shipments/${shipmentId}/arrival`, data).then((r) => r.data);
     return res.data;
   },
 
   // Dashboard
   async getDashboard(): Promise<ShipmentDashboardRow[]> {
-    const res = await apiClient.get<ShipmentDashboardRow[]>("/api/v1/logistics/dashboard/");
+    const res = await apiClient.get<ShipmentDashboardRow[]>("/api/v1/logistics/dashboard/").then((r) => r.data);
     return res.data;
   },
 
   // Local Logistics Costs
   async listLocalCosts(shipmentId: string): Promise<LocalCostSummary> {
-    const res = await apiClient.get<LocalCostSummary>(`/api/v1/logistics/shipments/${shipmentId}/local-costs`);
+    const res = await apiClient.get<LocalCostSummary>(`/api/v1/logistics/shipments/${shipmentId}/local-costs`).then((r) => r.data);
     return res.data;
   },
   async createLocalCost(shipmentId: string, data: object): Promise<LocalCostRecord> {
-    const res = await apiClient.post<LocalCostRecord>(`/api/v1/logistics/shipments/${shipmentId}/local-costs`, data);
+    const res = await apiClient.post<LocalCostRecord>(`/api/v1/logistics/shipments/${shipmentId}/local-costs`, data).then((r) => r.data);
     return res.data;
   },
   async updateLocalCost(costId: string, data: object): Promise<LocalCostRecord> {
-    const res = await apiClient.patch<LocalCostRecord>(`/api/v1/logistics/local-costs/${costId}`, data);
+    const res = await apiClient.patch<LocalCostRecord>(`/api/v1/logistics/local-costs/${costId}`, data).then((r) => r.data);
     return res.data;
   },
   async deleteLocalCost(costId: string): Promise<void> {
-    await apiClient.delete(`/api/v1/logistics/local-costs/${costId}`);
+    await apiClient.delete(`/api/v1/logistics/local-costs/${costId}`).then((r) => r.data);
   },
 };

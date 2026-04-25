@@ -323,64 +323,64 @@ export function fmtKES(v: number): string {
 // ── API client ─────────────────────────────────────────────────────────────────
 
 export const bomApi = {
-  dashboard: () => apiClient.get<BOMDashboard>("/bom/dashboard"),
+  dashboard: () => apiClient.get<BOMDashboard>("/bom/dashboard").then((r) => r.data),
 
   // BOM CRUD
-  create:  (body: Partial<BOMSummary>) => apiClient.post<BOMSummary>("/bom", body),
+  create:  (body: Partial<BOMSummary>) => apiClient.post<BOMSummary>("/bom", body).then((r) => r.data),
   list:    (params?: { bom_type?: string; lifecycle?: string; product_id?: string }) => {
     const qs = new URLSearchParams(Object.entries(params || {}).filter(([, v]) => v) as [string, string][]).toString();
-    return apiClient.get<BOMSummary[]>(`/bom${qs ? `?${qs}` : ""}`);
+    return apiClient.get<BOMSummary[]>(`/bom${qs ? `?${qs}` : ""}`).then((r) => r.data);
   },
-  get:     (id: string) => apiClient.get<BOMOut>(`/bom/${id}`),
-  update:  (id: string, body: Partial<BOMSummary>) => apiClient.patch<BOMSummary>(`/bom/${id}`, body),
-  clone:   (id: string, newVersion: string) => apiClient.post<BOMSummary>(`/bom/${id}/clone?new_version=${newVersion}`, {}),
-  advance: (id: string) => apiClient.post<BOMSummary>(`/bom/${id}/advance`, {}),
-  archive: (id: string) => apiClient.post<BOMSummary>(`/bom/${id}/archive`, {}),
+  get:     (id: string) => apiClient.get<BOMOut>(`/bom/${id}`).then((r) => r.data),
+  update:  (id: string, body: Partial<BOMSummary>) => apiClient.patch<BOMSummary>(`/bom/${id}`, body).then((r) => r.data),
+  clone:   (id: string, newVersion: string) => apiClient.post<BOMSummary>(`/bom/${id}/clone?new_version=${newVersion}`, {}).then((r) => r.data),
+  advance: (id: string) => apiClient.post<BOMSummary>(`/bom/${id}/advance`, {}).then((r) => r.data),
+  archive: (id: string) => apiClient.post<BOMSummary>(`/bom/${id}/archive`, {}).then((r) => r.data),
 
   // Lines
-  addLine:    (bomId: string, body: Partial<BOMLineOut>) => apiClient.post<BOMLineOut>(`/bom/${bomId}/lines`, body),
-  listLines:  (bomId: string) => apiClient.get<BOMLineOut[]>(`/bom/${bomId}/lines`),
-  updateLine: (lineId: string, body: Partial<BOMLineOut>) => apiClient.patch<BOMLineOut>(`/bom/lines/${lineId}`, body),
-  deleteLine: (lineId: string) => apiClient.delete(`/bom/lines/${lineId}`),
+  addLine:    (bomId: string, body: Partial<BOMLineOut>) => apiClient.post<BOMLineOut>(`/bom/${bomId}/lines`, body).then((r) => r.data),
+  listLines:  (bomId: string) => apiClient.get<BOMLineOut[]>(`/bom/${bomId}/lines`).then((r) => r.data),
+  updateLine: (lineId: string, body: Partial<BOMLineOut>) => apiClient.patch<BOMLineOut>(`/bom/lines/${lineId}`, body).then((r) => r.data),
+  deleteLine: (lineId: string) => apiClient.delete(`/bom/lines/${lineId}`).then((r) => r.data),
 
   // Explosion
   explode: (id: string, targetQty?: number) =>
-    apiClient.get<ExplosionResult>(`/bom/${id}/explode${targetQty ? `?target_qty=${targetQty}` : ""}`),
+    apiClient.get<ExplosionResult>(`/bom/${id}/explode${targetQty ? `?target_qty=${targetQty}` : ""}`).then((r) => r.data),
 
   // Scaling
   scale: (id: string, targetQty: number) =>
-    apiClient.post<ScalingResult>(`/bom/${id}/scale`, { target_qty: targetQty }),
+    apiClient.post<ScalingResult>(`/bom/${id}/scale`, { target_qty: targetQty }).then((r) => r.data),
 
   // Costing
-  costing: (id: string) => apiClient.get<CostingResult>(`/bom/${id}/costing`),
+  costing: (id: string) => apiClient.get<CostingResult>(`/bom/${id}/costing`).then((r) => r.data),
 
   // Compliance
-  compliance: (id: string) => apiClient.get<ComplianceSummary>(`/bom/${id}/compliance-summary`),
+  compliance: (id: string) => apiClient.get<ComplianceSummary>(`/bom/${id}/compliance-summary`).then((r) => r.data),
 
   // Compare
   compare: (id: string, otherId: string) => apiClient.get<Record<string, unknown>>(`/bom/${id}/compare/${otherId}`),
 
   // AI
-  runAI:    (id: string) => apiClient.post<{ total: number }>(`/bom/${id}/run-ai`, {}),
-  listAI:   (id: string) => apiClient.get<BOMAIRecOut[]>(`/bom/${id}/ai-recommendations`),
+  runAI:    (id: string) => apiClient.post<{ total: number }>(`/bom/${id}/run-ai`, {}).then((r) => r.data),
+  listAI:   (id: string) => apiClient.get<BOMAIRecOut[]>(`/bom/${id}/ai-recommendations`).then((r) => r.data),
   actionAI: (recId: string, status: BOMRecStatus) =>
-    apiClient.post<BOMAIRecOut>(`/bom/ai-recommendations/${recId}/action`, { status }),
+    apiClient.post<BOMAIRecOut>(`/bom/ai-recommendations/${recId}/action`, { status }).then((r) => r.data),
 
   // Yield configs
-  addYield:    (id: string, body: Partial<YieldConfigOut>) => apiClient.post<YieldConfigOut>(`/bom/${id}/yield-configs`, body),
-  listYield:   (id: string) => apiClient.get<YieldConfigOut[]>(`/bom/${id}/yield-configs`),
+  addYield:    (id: string, body: Partial<YieldConfigOut>) => apiClient.post<YieldConfigOut>(`/bom/${id}/yield-configs`, body).then((r) => r.data),
+  listYield:   (id: string) => apiClient.get<YieldConfigOut[]>(`/bom/${id}/yield-configs`).then((r) => r.data),
 
   // Substitute groups
   createGroup:  (body: { group_name: string; policy: string; notes?: string }) =>
-    apiClient.post<SubstGroupOut>("/bom/substitute-groups", body),
-  listGroups:   () => apiClient.get<SubstGroupOut[]>("/bom/substitute-groups"),
+    apiClient.post<SubstGroupOut>("/bom/substitute-groups", body).then((r) => r.data),
+  listGroups:   () => apiClient.get<SubstGroupOut[]>("/bom/substitute-groups").then((r) => r.data),
   addSubstitute:(body: Partial<SubstituteOut & { group_id: string }>) =>
-    apiClient.post<SubstituteOut>("/bom/substitutes", body),
+    apiClient.post<SubstituteOut>("/bom/substitutes", body).then((r) => r.data),
 
   // Conversion profiles
   createConversion: (body: Partial<ConversionProfileOut>) =>
-    apiClient.post<ConversionProfileOut>("/bom/conversion-profiles", body),
-  listConversions:  () => apiClient.get<ConversionProfileOut[]>("/bom/conversion-profiles"),
+    apiClient.post<ConversionProfileOut>("/bom/conversion-profiles", body).then((r) => r.data),
+  listConversions:  () => apiClient.get<ConversionProfileOut[]>("/bom/conversion-profiles").then((r) => r.data),
   calcConversion:   (profileId: string, sourceQty: number, sourceUom?: string) =>
     apiClient.post<ConversionCalcResult>(
       `/bom/conversion-profiles/${profileId}/calculate?source_qty=${sourceQty}${sourceUom ? `&source_uom=${sourceUom}` : ""}`,

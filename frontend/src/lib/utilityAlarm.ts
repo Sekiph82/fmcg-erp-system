@@ -297,42 +297,42 @@ export const alarmApi = {
     const filtered = params
       ? Object.fromEntries(Object.entries(params).filter(([, v]) => v !== undefined && v !== ""))
       : {};
-    const r = await apiClient.get<AlarmRule[]>("/api/v1/alarms/rules", { params: filtered });
+    const r = await apiClient.get<AlarmRule[]>("/api/v1/alarms/rules", { params: filtered }).then((r) => r.data);
     return r.data;
   },
 
   async getRuleTemplates(): Promise<AlarmRuleTemplate[]> {
-    const r = await apiClient.get<AlarmRuleTemplate[]>("/api/v1/alarms/rules/templates");
+    const r = await apiClient.get<AlarmRuleTemplate[]>("/api/v1/alarms/rules/templates").then((r) => r.data);
     return r.data;
   },
 
   async createRule(data: AlarmRuleCreate): Promise<AlarmRule> {
-    const r = await apiClient.post<AlarmRule>("/api/v1/alarms/rules", data);
+    const r = await apiClient.post<AlarmRule>("/api/v1/alarms/rules", data).then((r) => r.data);
     return r.data;
   },
 
   async getRule(id: string): Promise<AlarmRule> {
-    const r = await apiClient.get<AlarmRule>(`/api/v1/alarms/rules/${id}`);
+    const r = await apiClient.get<AlarmRule>(`/api/v1/alarms/rules/${id}`).then((r) => r.data);
     return r.data;
   },
 
   async updateRule(id: string, data: AlarmRuleUpdate): Promise<AlarmRule> {
-    const r = await apiClient.patch<AlarmRule>(`/api/v1/alarms/rules/${id}`, data);
+    const r = await apiClient.patch<AlarmRule>(`/api/v1/alarms/rules/${id}`, data).then((r) => r.data);
     return r.data;
   },
 
   async deleteRule(id: string): Promise<void> {
-    await apiClient.delete(`/api/v1/alarms/rules/${id}`);
+    await apiClient.delete(`/api/v1/alarms/rules/${id}`).then((r) => r.data);
   },
 
   async toggleRule(id: string): Promise<AlarmRule> {
-    const r = await apiClient.post<AlarmRule>(`/api/v1/alarms/rules/${id}/toggle`);
+    const r = await apiClient.post<AlarmRule>(`/api/v1/alarms/rules/${id}/toggle`).then((r) => r.data);
     return r.data;
   },
 
   // Events
   async getEventsSummary(): Promise<AlarmSummary> {
-    const r = await apiClient.get<AlarmSummary>("/api/v1/alarms/events/summary");
+    const r = await apiClient.get<AlarmSummary>("/api/v1/alarms/events/summary").then((r) => r.data);
     return r.data;
   },
 
@@ -340,22 +340,22 @@ export const alarmApi = {
     const filtered = params
       ? Object.fromEntries(Object.entries(params).filter(([, v]) => v !== undefined && v !== ""))
       : {};
-    const r = await apiClient.get<AlarmEvent[]>("/api/v1/alarms/events", { params: filtered });
+    const r = await apiClient.get<AlarmEvent[]>("/api/v1/alarms/events", { params: filtered }).then((r) => r.data);
     return r.data;
   },
 
   async getEvent(id: string): Promise<AlarmEvent> {
-    const r = await apiClient.get<AlarmEvent>(`/api/v1/alarms/events/${id}`);
+    const r = await apiClient.get<AlarmEvent>(`/api/v1/alarms/events/${id}`).then((r) => r.data);
     return r.data;
   },
 
   async acknowledgeEvent(id: string, notes?: string): Promise<AlarmEvent> {
-    const r = await apiClient.post<AlarmEvent>(`/api/v1/alarms/events/${id}/acknowledge`, { notes });
+    const r = await apiClient.post<AlarmEvent>(`/api/v1/alarms/events/${id}/acknowledge`, { notes }).then((r) => r.data);
     return r.data;
   },
 
   async assignEvent(id: string, assigned_to_id: string): Promise<AlarmEvent> {
-    const r = await apiClient.post<AlarmEvent>(`/api/v1/alarms/events/${id}/assign`, { assigned_to_id });
+    const r = await apiClient.post<AlarmEvent>(`/api/v1/alarms/events/${id}/assign`, { assigned_to_id }).then((r) => r.data);
     return r.data;
   },
 
@@ -363,18 +363,18 @@ export const alarmApi = {
     id: string,
     payload: { root_cause: string; corrective_action: string; notes?: string },
   ): Promise<AlarmEvent> {
-    const r = await apiClient.post<AlarmEvent>(`/api/v1/alarms/events/${id}/resolve`, payload);
+    const r = await apiClient.post<AlarmEvent>(`/api/v1/alarms/events/${id}/resolve`, payload).then((r) => r.data);
     return r.data;
   },
 
   async suppressEvent(id: string): Promise<AlarmEvent> {
-    const r = await apiClient.post<AlarmEvent>(`/api/v1/alarms/events/${id}/suppress`);
+    const r = await apiClient.post<AlarmEvent>(`/api/v1/alarms/events/${id}/suppress`).then((r) => r.data);
     return r.data;
   },
 
   // Evaluation
   async evaluate(): Promise<{ new_alarms: number; message: string }> {
-    const r = await apiClient.post<{ new_alarms: number; message: string }>("/api/v1/alarms/evaluate");
+    const r = await apiClient.post<{ new_alarms: number; message: string }>("/api/v1/alarms/evaluate").then((r) => r.data);
     return r.data;
   },
 };

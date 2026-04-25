@@ -236,7 +236,7 @@ const BASE = "/api/v1/mps";
 
 export const mpsApi = {
   // Dashboard
-  dashboard: () => apiClient.get<MPSDashboard>(`${BASE}/dashboard`),
+  dashboard: () => apiClient.get<MPSDashboard>(`${BASE}/dashboard`).then((r) => r.data),
 
   // Plans
   createPlan: (body: {
@@ -248,48 +248,48 @@ export const mpsApi = {
     capacity_mode?: MPSCapacityMode;
     mrp_run_id?: string;
     notes?: string;
-  }) => apiClient.post<MPSPlan>(`${BASE}/plans`, body),
+  }) => apiClient.post<MPSPlan>(`${BASE}/plans`, body).then((r) => r.data),
 
   listPlans: (limit = 50, offset = 0) =>
-    apiClient.get<MPSPlanSummary[]>(`${BASE}/plans?limit=${limit}&offset=${offset}`),
+    apiClient.get<MPSPlanSummary[]>(`${BASE}/plans?limit=${limit}&offset=${offset}`).then((r) => r.data),
 
-  getPlan: (id: string) => apiClient.get<MPSPlan>(`${BASE}/plans/${id}`),
+  getPlan: (id: string) => apiClient.get<MPSPlan>(`${BASE}/plans/${id}`).then((r) => r.data),
 
   generateFromMrp: (mpsId: string, body: {
     mrp_run_id: string;
     period_type?: string;
     respect_batch_sizes?: boolean;
     default_batch_qty?: number;
-  }) => apiClient.post<{ lines_created: number }>(`${BASE}/plans/${mpsId}/generate-from-mrp`, body),
+  }) => apiClient.post<{ lines_created: number }>(`${BASE}/plans/${mpsId}/generate-from-mrp`, body).then((r) => r.data),
 
   runCapacity:  (id: string) => apiClient.post<Record<string, unknown>>(`${BASE}/plans/${id}/run-capacity`, {}),
   runCampaigns: (id: string) => apiClient.post<Record<string, unknown>>(`${BASE}/plans/${id}/run-campaigns`, {}),
   runAI:        (id: string) => apiClient.post<Record<string, unknown>>(`${BASE}/plans/${id}/run-ai`, {}),
-  approvePlan:  (id: string) => apiClient.patch<MPSPlan>(`${BASE}/plans/${id}/approve`, {}),
+  approvePlan:  (id: string) => apiClient.patch<MPSPlan>(`${BASE}/plans/${id}/approve`, {}).then((r) => r.data),
   releasePlan:  (id: string, targetWarehouseId: string) =>
     apiClient.post<Record<string, unknown>>(`${BASE}/plans/${id}/release?target_warehouse_id=${targetWarehouseId}`, {}),
 
   // Lines
-  listLines: (mpsId: string) => apiClient.get<MPSLine[]>(`${BASE}/plans/${mpsId}/lines`),
+  listLines: (mpsId: string) => apiClient.get<MPSLine[]>(`${BASE}/plans/${mpsId}/lines`).then((r) => r.data),
   updateLine: (mpsId: string, lineId: string, body: Partial<MPSLine>) =>
-    apiClient.patch<MPSLine>(`${BASE}/plans/${mpsId}/lines/${lineId}`, body),
+    apiClient.patch<MPSLine>(`${BASE}/plans/${mpsId}/lines/${lineId}`, body).then((r) => r.data),
 
   // Capacity
-  getCapacityHeatmap: (mpsId: string) => apiClient.get<CapacityHeatmap>(`${BASE}/plans/${mpsId}/capacity-heatmap`),
+  getCapacityHeatmap: (mpsId: string) => apiClient.get<CapacityHeatmap>(`${BASE}/plans/${mpsId}/capacity-heatmap`).then((r) => r.data),
   getRescheduleSuggestion: (lineId: string) =>
     apiClient.get<Record<string, unknown>>(`${BASE}/lines/${lineId}/reschedule-suggestion`),
 
   // Campaigns
-  getCampaigns: (mpsId: string) => apiClient.get<MPSCampaign[]>(`${BASE}/plans/${mpsId}/campaigns`),
+  getCampaigns: (mpsId: string) => apiClient.get<MPSCampaign[]>(`${BASE}/plans/${mpsId}/campaigns`).then((r) => r.data),
 
   // What-If
   createWhatIf: (mpsId: string, body: { scenario_name: string; description?: string; changes: WhatIfChange[] }) =>
-    apiClient.post<MPSWhatIf>(`${BASE}/plans/${mpsId}/whatif`, body),
-  listWhatIf: (mpsId: string) => apiClient.get<MPSWhatIf[]>(`${BASE}/plans/${mpsId}/whatif`),
-  getWhatIf: (id: string) => apiClient.get<MPSWhatIf>(`${BASE}/whatif/${id}`),
+    apiClient.post<MPSWhatIf>(`${BASE}/plans/${mpsId}/whatif`, body).then((r) => r.data),
+  listWhatIf: (mpsId: string) => apiClient.get<MPSWhatIf[]>(`${BASE}/plans/${mpsId}/whatif`).then((r) => r.data),
+  getWhatIf: (id: string) => apiClient.get<MPSWhatIf>(`${BASE}/whatif/${id}`).then((r) => r.data),
 
   // AI
-  getAIRecs: (mpsId: string) => apiClient.get<MPSAIRec[]>(`${BASE}/plans/${mpsId}/ai-recommendations`),
-  acceptRec: (recId: string) => apiClient.patch<MPSAIRec>(`${BASE}/ai-recommendations/${recId}/accept`, {}),
-  rejectRec: (recId: string) => apiClient.patch<MPSAIRec>(`${BASE}/ai-recommendations/${recId}/reject`, {}),
+  getAIRecs: (mpsId: string) => apiClient.get<MPSAIRec[]>(`${BASE}/plans/${mpsId}/ai-recommendations`).then((r) => r.data),
+  acceptRec: (recId: string) => apiClient.patch<MPSAIRec>(`${BASE}/ai-recommendations/${recId}/accept`, {}).then((r) => r.data),
+  rejectRec: (recId: string) => apiClient.patch<MPSAIRec>(`${BASE}/ai-recommendations/${recId}/reject`, {}).then((r) => r.data),
 };

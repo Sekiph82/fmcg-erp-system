@@ -203,27 +203,27 @@ const BASE = "/api/v1/utility-management";
 
 export const utilityTransactionsApi = {
   async list(params?: TransactionFilters): Promise<UtilityTransaction[]> {
-    const res = await apiClient.get<UtilityTransaction[]>(`${BASE}/transactions`, { params });
+    const res = await apiClient.get<UtilityTransaction[]>(`${BASE}/transactions`, { params }).then((r) => r.data);
     return res.data;
   },
 
   async get(id: string): Promise<UtilityTransaction> {
-    const res = await apiClient.get<UtilityTransaction>(`${BASE}/transactions/${id}`);
+    const res = await apiClient.get<UtilityTransaction>(`${BASE}/transactions/${id}`).then((r) => r.data);
     return res.data;
   },
 
   async create(data: UtilityTransactionCreate): Promise<UtilityTransaction> {
-    const res = await apiClient.post<UtilityTransaction>(`${BASE}/transactions`, data);
+    const res = await apiClient.post<UtilityTransaction>(`${BASE}/transactions`, data).then((r) => r.data);
     return res.data;
   },
 
   async update(id: string, data: UtilityTransactionUpdate): Promise<UtilityTransaction> {
-    const res = await apiClient.patch<UtilityTransaction>(`${BASE}/transactions/${id}`, data);
+    const res = await apiClient.patch<UtilityTransaction>(`${BASE}/transactions/${id}`, data).then((r) => r.data);
     return res.data;
   },
 
   async delete(id: string): Promise<void> {
-    await apiClient.delete(`${BASE}/transactions/${id}`);
+    await apiClient.delete(`${BASE}/transactions/${id}`).then((r) => r.data);
   },
 
   async summary(params?: {

@@ -38,21 +38,21 @@ export const warehousesApi = {
   },
 
   async get(id: string): Promise<Warehouse> {
-    const res = await apiClient.get<Warehouse>(`/api/v1/warehouses/${id}`);
+    const res = await apiClient.get<Warehouse>(`/api/v1/warehouses/${id}`).then((r) => r.data);
     return res.data;
   },
 
   async create(data: WarehouseCreate): Promise<Warehouse> {
-    const res = await apiClient.post<Warehouse>("/api/v1/warehouses/", data);
+    const res = await apiClient.post<Warehouse>("/api/v1/warehouses/", data).then((r) => r.data);
     return res.data;
   },
 
   async update(id: string, data: Partial<WarehouseCreate>): Promise<Warehouse> {
-    const res = await apiClient.patch<Warehouse>(`/api/v1/warehouses/${id}`, data);
+    const res = await apiClient.patch<Warehouse>(`/api/v1/warehouses/${id}`, data).then((r) => r.data);
     return res.data;
   },
 
   async delete(id: string): Promise<void> {
-    await apiClient.delete(`/api/v1/warehouses/${id}`);
+    await apiClient.delete(`/api/v1/warehouses/${id}`).then((r) => r.data);
   },
 };

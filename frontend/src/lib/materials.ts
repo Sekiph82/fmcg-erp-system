@@ -40,21 +40,21 @@ export const materialsApi = {
   },
 
   async get(id: string): Promise<Material> {
-    const res = await apiClient.get<Material>(`/api/v1/materials/${id}`);
+    const res = await apiClient.get<Material>(`/api/v1/materials/${id}`).then((r) => r.data);
     return res.data;
   },
 
   async create(data: MaterialCreate): Promise<Material> {
-    const res = await apiClient.post<Material>("/api/v1/materials/", data);
+    const res = await apiClient.post<Material>("/api/v1/materials/", data).then((r) => r.data);
     return res.data;
   },
 
   async update(id: string, data: Partial<MaterialCreate>): Promise<Material> {
-    const res = await apiClient.patch<Material>(`/api/v1/materials/${id}`, data);
+    const res = await apiClient.patch<Material>(`/api/v1/materials/${id}`, data).then((r) => r.data);
     return res.data;
   },
 
   async delete(id: string): Promise<void> {
-    await apiClient.delete(`/api/v1/materials/${id}`);
+    await apiClient.delete(`/api/v1/materials/${id}`).then((r) => r.data);
   },
 };

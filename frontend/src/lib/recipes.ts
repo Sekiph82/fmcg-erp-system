@@ -85,69 +85,69 @@ export interface ProcessParameterCreate {
 
 export const recipesApi = {
   async list(params?: { product_id?: string; status?: RecipeStatus; skip?: number; limit?: number }): Promise<Recipe[]> {
-    const res = await apiClient.get<Recipe[]>("/api/v1/recipes/", { params });
+    const res = await apiClient.get<Recipe[]>("/api/v1/recipes/", { params }).then((r) => r.data);
     return res.data;
   },
 
   async get(id: string): Promise<RecipeDetail> {
-    const res = await apiClient.get<RecipeDetail>(`/api/v1/recipes/${id}`);
+    const res = await apiClient.get<RecipeDetail>(`/api/v1/recipes/${id}`).then((r) => r.data);
     return res.data;
   },
 
   async create(data: RecipeCreate): Promise<Recipe> {
-    const res = await apiClient.post<Recipe>("/api/v1/recipes/", data);
+    const res = await apiClient.post<Recipe>("/api/v1/recipes/", data).then((r) => r.data);
     return res.data;
   },
 
   async update(id: string, data: Partial<RecipeCreate>): Promise<Recipe> {
-    const res = await apiClient.patch<Recipe>(`/api/v1/recipes/${id}`, data);
+    const res = await apiClient.patch<Recipe>(`/api/v1/recipes/${id}`, data).then((r) => r.data);
     return res.data;
   },
 
   async approve(id: string): Promise<Recipe> {
-    const res = await apiClient.post<Recipe>(`/api/v1/recipes/${id}/approve`);
+    const res = await apiClient.post<Recipe>(`/api/v1/recipes/${id}/approve`).then((r) => r.data);
     return res.data;
   },
 
   async obsolete(id: string): Promise<Recipe> {
-    const res = await apiClient.post<Recipe>(`/api/v1/recipes/${id}/obsolete`);
+    const res = await apiClient.post<Recipe>(`/api/v1/recipes/${id}/obsolete`).then((r) => r.data);
     return res.data;
   },
 
   async duplicate(id: string, new_version: string, new_name?: string): Promise<Recipe> {
-    const res = await apiClient.post<Recipe>(`/api/v1/recipes/${id}/duplicate`, { new_version, new_name });
+    const res = await apiClient.post<Recipe>(`/api/v1/recipes/${id}/duplicate`, { new_version, new_name }).then((r) => r.data);
     return res.data;
   },
 
   async addItem(recipeId: string, data: RecipeItemCreate): Promise<RecipeItem> {
-    const res = await apiClient.post<RecipeItem>(`/api/v1/recipes/${recipeId}/items`, data);
+    const res = await apiClient.post<RecipeItem>(`/api/v1/recipes/${recipeId}/items`, data).then((r) => r.data);
     return res.data;
   },
 
   async updateItem(recipeId: string, itemId: string, data: Partial<RecipeItemCreate>): Promise<RecipeItem> {
-    const res = await apiClient.patch<RecipeItem>(`/api/v1/recipes/${recipeId}/items/${itemId}`, data);
+    const res = await apiClient.patch<RecipeItem>(`/api/v1/recipes/${recipeId}/items/${itemId}`, data).then((r) => r.data);
     return res.data;
   },
 
   async deleteItem(recipeId: string, itemId: string): Promise<void> {
-    await apiClient.delete(`/api/v1/recipes/${recipeId}/items/${itemId}`);
+    await apiClient.delete(`/api/v1/recipes/${recipeId}/items/${itemId}`).then((r) => r.data);
   },
 
   async addProcessParam(recipeId: string, data: ProcessParameterCreate): Promise<ProcessParameter> {
-    const res = await apiClient.post<ProcessParameter>(`/api/v1/recipes/${recipeId}/process-parameters`, data);
+    const res = await apiClient.post<ProcessParameter>(`/api/v1/recipes/${recipeId}/process-parameters`, data).then((r) => r.data);
     return res.data;
   },
 
   async updateProcessParam(recipeId: string, paramId: string, data: Partial<ProcessParameterCreate>): Promise<ProcessParameter> {
-    const res = await apiClient.patch<ProcessParameter>(`/api/v1/recipes/${recipeId}/process-parameters/${paramId}`, data);
+    const res = await apiClient.patch<ProcessParameter>(`/api/v1/recipes/${recipeId}/process-parameters/${paramId}`, data).then((r) => r.data);
     return res.data;
   },
 
   async deleteProcessParam(recipeId: string, paramId: string): Promise<void> {
-    await apiClient.delete(`/api/v1/recipes/${recipeId}/process-parameters/${paramId}`);
+    await apiClient.delete(`/api/v1/recipes/${recipeId}/process-parameters/${paramId}`).then((r) => r.data);
   },
 
   async deleteRecipe(id: string): Promise<void> {
-    await apiClient.delete(`/api/v1/recipes/${id}`);
+    await apiClient.delete(`/api/v1/recipes/${id}`).then((r) => r.data);
   },
 };

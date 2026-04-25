@@ -307,63 +307,63 @@ export const SEVERITY_COLORS: Record<string, string> = {
 const BASE = "/api/v1/material-flow";
 
 export const mfApi = {
-  getDashboard: () => apiClient.get<MFDashboard>(`${BASE}/dashboard`),
+  getDashboard: () => apiClient.get<MFDashboard>(`${BASE}/dashboard`).then((r) => r.data),
 
   // Stages
-  listStages: () => apiClient.get<FlowStage[]>(`${BASE}/stages`),
-  createStage: (d: Partial<FlowStage>) => apiClient.post<FlowStage>(`${BASE}/stages`, d),
+  listStages: () => apiClient.get<FlowStage[]>(`${BASE}/stages`).then((r) => r.data),
+  createStage: (d: Partial<FlowStage>) => apiClient.post<FlowStage>(`${BASE}/stages`, d).then((r) => r.data),
 
   // Transactions
   listTransactions: (params?: Record<string, string>) =>
-    apiClient.get<FlowTransaction[]>(`${BASE}/transactions`, { params }),
-  getTransaction: (id: string) => apiClient.get<FlowTransaction>(`${BASE}/transactions/${id}`),
-  createTransaction: (d: FlowTransactionCreate) => apiClient.post<FlowTransaction>(`${BASE}/transactions`, d),
-  confirmTransaction: (id: string) => apiClient.post<FlowTransaction>(`${BASE}/transactions/${id}/confirm`, {}),
-  reverseTransaction: (id: string) => apiClient.post<FlowTransaction>(`${BASE}/transactions/${id}/reverse`, {}),
+    apiClient.get<FlowTransaction[]>(`${BASE}/transactions`, { params }).then((r) => r.data),
+  getTransaction: (id: string) => apiClient.get<FlowTransaction>(`${BASE}/transactions/${id}`).then((r) => r.data),
+  createTransaction: (d: FlowTransactionCreate) => apiClient.post<FlowTransaction>(`${BASE}/transactions`, d).then((r) => r.data),
+  confirmTransaction: (id: string) => apiClient.post<FlowTransaction>(`${BASE}/transactions/${id}/confirm`, {}).then((r) => r.data),
+  reverseTransaction: (id: string) => apiClient.post<FlowTransaction>(`${BASE}/transactions/${id}/reverse`, {}).then((r) => r.data),
 
   // Issues / Returns / Transfers / FG
-  issueMaterials: (d: FlowTransactionCreate) => apiClient.post<FlowTransaction>(`${BASE}/issues`, d),
-  returnMaterials: (d: FlowTransactionCreate) => apiClient.post<FlowTransaction>(`${BASE}/returns`, d),
-  transferMaterials: (d: FlowTransactionCreate) => apiClient.post<FlowTransaction>(`${BASE}/transfers`, d),
-  fgReceipt: (d: FlowTransactionCreate) => apiClient.post<FlowTransaction>(`${BASE}/fg-receipts`, d),
+  issueMaterials: (d: FlowTransactionCreate) => apiClient.post<FlowTransaction>(`${BASE}/issues`, d).then((r) => r.data),
+  returnMaterials: (d: FlowTransactionCreate) => apiClient.post<FlowTransaction>(`${BASE}/returns`, d).then((r) => r.data),
+  transferMaterials: (d: FlowTransactionCreate) => apiClient.post<FlowTransaction>(`${BASE}/transfers`, d).then((r) => r.data),
+  fgReceipt: (d: FlowTransactionCreate) => apiClient.post<FlowTransaction>(`${BASE}/fg-receipts`, d).then((r) => r.data),
 
   // Reservations
   listReservations: (params?: Record<string, string>) =>
-    apiClient.get<Reservation[]>(`${BASE}/reservations`, { params }),
-  getReservation: (id: string) => apiClient.get<Reservation>(`${BASE}/reservations/${id}`),
-  createReservation: (d: object) => apiClient.post<Reservation>(`${BASE}/reservations`, d),
-  cancelReservation: (id: string) => apiClient.post<Reservation>(`${BASE}/reservations/${id}/cancel`, {}),
+    apiClient.get<Reservation[]>(`${BASE}/reservations`, { params }).then((r) => r.data),
+  getReservation: (id: string) => apiClient.get<Reservation>(`${BASE}/reservations/${id}`).then((r) => r.data),
+  createReservation: (d: object) => apiClient.post<Reservation>(`${BASE}/reservations`, d).then((r) => r.data),
+  cancelReservation: (id: string) => apiClient.post<Reservation>(`${BASE}/reservations/${id}/cancel`, {}).then((r) => r.data),
 
   // Consumptions
-  recordConsumption: (d: object) => apiClient.post<Consumption>(`${BASE}/consumptions`, d),
-  listConsumptions: (orderId: string) => apiClient.get<Consumption[]>(`${BASE}/consumptions/${orderId}`),
+  recordConsumption: (d: object) => apiClient.post<Consumption>(`${BASE}/consumptions`, d).then((r) => r.data),
+  listConsumptions: (orderId: string) => apiClient.get<Consumption[]>(`${BASE}/consumptions/${orderId}`).then((r) => r.data),
 
   // Prepared lots
   listPreparedLots: (params?: Record<string, string>) =>
-    apiClient.get<PreparedLot[]>(`${BASE}/prepared-lots`, { params }),
-  createPreparedLot: (d: object) => apiClient.post<PreparedLot>(`${BASE}/prepared-lots`, d),
-  recordWeigh: (id: string, d: object) => apiClient.post<PreparedLot>(`${BASE}/prepared-lots/${id}/weigh`, d),
+    apiClient.get<PreparedLot[]>(`${BASE}/prepared-lots`, { params }).then((r) => r.data),
+  createPreparedLot: (d: object) => apiClient.post<PreparedLot>(`${BASE}/prepared-lots`, d).then((r) => r.data),
+  recordWeigh: (id: string, d: object) => apiClient.post<PreparedLot>(`${BASE}/prepared-lots/${id}/weigh`, d).then((r) => r.data),
 
   // Tanks
-  listTanks: (params?: Record<string, string>) => apiClient.get<TankOccupancy[]>(`${BASE}/tanks`, { params }),
-  getTank: (id: string) => apiClient.get<TankOccupancy>(`${BASE}/tanks/${id}`),
-  createTank: (d: object) => apiClient.post<TankOccupancy>(`${BASE}/tanks`, d),
-  updateTank: (id: string, d: object) => apiClient.patch<TankOccupancy>(`${BASE}/tanks/${id}`, d),
+  listTanks: (params?: Record<string, string>) => apiClient.get<TankOccupancy[]>(`${BASE}/tanks`, { params }).then((r) => r.data),
+  getTank: (id: string) => apiClient.get<TankOccupancy>(`${BASE}/tanks/${id}`).then((r) => r.data),
+  createTank: (d: object) => apiClient.post<TankOccupancy>(`${BASE}/tanks`, d).then((r) => r.data),
+  updateTank: (id: string, d: object) => apiClient.patch<TankOccupancy>(`${BASE}/tanks/${id}`, d).then((r) => r.data),
 
   // Reconciliation
-  getReconciliation: (orderId: string) => apiClient.get<Reconciliation>(`${BASE}/reconciliation/${orderId}`),
+  getReconciliation: (orderId: string) => apiClient.get<Reconciliation>(`${BASE}/reconciliation/${orderId}`).then((r) => r.data),
   closeReconciliation: (orderId: string, d?: object) =>
-    apiClient.post<Reconciliation>(`${BASE}/reconciliation/${orderId}/close`, d || {}),
+    apiClient.post<Reconciliation>(`${BASE}/reconciliation/${orderId}/close`, d || {}).then((r) => r.data),
 
   // History
   getHistory: (params?: Record<string, string>) =>
-    apiClient.get<FlowTransaction[]>(`${BASE}/history`, { params }),
+    apiClient.get<FlowTransaction[]>(`${BASE}/history`, { params }).then((r) => r.data),
 
   // AI
   runAI: (orderId?: string) =>
-    apiClient.post<MFAIRec[]>(`${BASE}/ai/run`, {}, { params: orderId ? { production_order_id: orderId } : {} }),
+    apiClient.post<MFAIRec[]>(`${BASE}/ai/run`, {}, { params: orderId ? { production_order_id: orderId } : {} }).then((r) => r.data),
   listAIRecs: (params?: Record<string, string>) =>
-    apiClient.get<MFAIRec[]>(`${BASE}/ai/recommendations`, { params }),
+    apiClient.get<MFAIRec[]>(`${BASE}/ai/recommendations`, { params }).then((r) => r.data),
   actionAIRec: (id: string, status: MFAIRecStatus, notes?: string) =>
-    apiClient.post<MFAIRec>(`${BASE}/ai/recommendations/${id}/action`, { status, notes }),
+    apiClient.post<MFAIRec>(`${BASE}/ai/recommendations/${id}/action`, { status, notes }).then((r) => r.data),
 };

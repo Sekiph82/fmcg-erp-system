@@ -224,128 +224,128 @@ export interface DeliveryAlertRow {
 export const procurementApi = {
   // PRs
   async listPRs(params?: { status?: PRStatus }): Promise<PR[]> {
-    const res = await apiClient.get<PR[]>("/api/v1/procurement/pr/", { params });
+    const res = await apiClient.get<PR[]>("/api/v1/procurement/pr/", { params }).then((r) => r.data);
     return res.data;
   },
   async getPR(id: string): Promise<PRDetail> {
-    const res = await apiClient.get<PRDetail>(`/api/v1/procurement/pr/${id}`);
+    const res = await apiClient.get<PRDetail>(`/api/v1/procurement/pr/${id}`).then((r) => r.data);
     return res.data;
   },
   async createPR(data: object): Promise<PRDetail> {
-    const res = await apiClient.post<PRDetail>("/api/v1/procurement/pr/", data);
+    const res = await apiClient.post<PRDetail>("/api/v1/procurement/pr/", data).then((r) => r.data);
     return res.data;
   },
   async updatePR(id: string, data: object): Promise<PRDetail> {
-    const res = await apiClient.patch<PRDetail>(`/api/v1/procurement/pr/${id}`, data);
+    const res = await apiClient.patch<PRDetail>(`/api/v1/procurement/pr/${id}`, data).then((r) => r.data);
     return res.data;
   },
   async submitPR(id: string): Promise<PR> {
-    const res = await apiClient.post<PR>(`/api/v1/procurement/pr/${id}/submit`);
+    const res = await apiClient.post<PR>(`/api/v1/procurement/pr/${id}/submit`).then((r) => r.data);
     return res.data;
   },
   async approvePR(id: string, approve: boolean, rejection_reason?: string): Promise<PR> {
-    const res = await apiClient.post<PR>(`/api/v1/procurement/pr/${id}/approve`, { approve, rejection_reason });
+    const res = await apiClient.post<PR>(`/api/v1/procurement/pr/${id}/approve`, { approve, rejection_reason }).then((r) => r.data);
     return res.data;
   },
   async convertPRToPO(id: string, data: object): Promise<PODetail> {
-    const res = await apiClient.post<PODetail>(`/api/v1/procurement/pr/${id}/convert`, data);
+    const res = await apiClient.post<PODetail>(`/api/v1/procurement/pr/${id}/convert`, data).then((r) => r.data);
     return res.data;
   },
   async addPRLine(id: string, data: object): Promise<PRDetail> {
-    const res = await apiClient.post<PRDetail>(`/api/v1/procurement/pr/${id}/lines`, data);
+    const res = await apiClient.post<PRDetail>(`/api/v1/procurement/pr/${id}/lines`, data).then((r) => r.data);
     return res.data;
   },
   async deletePRLine(prId: string, lineId: string): Promise<void> {
-    await apiClient.delete(`/api/v1/procurement/pr/${prId}/lines/${lineId}`);
+    await apiClient.delete(`/api/v1/procurement/pr/${prId}/lines/${lineId}`).then((r) => r.data);
   },
 
   // POs
   async listPOs(params?: { status?: POStatus; supplier_id?: string }): Promise<PO[]> {
-    const res = await apiClient.get<PO[]>("/api/v1/procurement/po/", { params });
+    const res = await apiClient.get<PO[]>("/api/v1/procurement/po/", { params }).then((r) => r.data);
     return res.data;
   },
   async getPO(id: string): Promise<PODetail> {
-    const res = await apiClient.get<PODetail>(`/api/v1/procurement/po/${id}`);
+    const res = await apiClient.get<PODetail>(`/api/v1/procurement/po/${id}`).then((r) => r.data);
     return res.data;
   },
   async createPO(data: object): Promise<PODetail> {
-    const res = await apiClient.post<PODetail>("/api/v1/procurement/po/", data);
+    const res = await apiClient.post<PODetail>("/api/v1/procurement/po/", data).then((r) => r.data);
     return res.data;
   },
   async updatePO(id: string, data: object): Promise<PODetail> {
-    const res = await apiClient.patch<PODetail>(`/api/v1/procurement/po/${id}`, data);
+    const res = await apiClient.patch<PODetail>(`/api/v1/procurement/po/${id}`, data).then((r) => r.data);
     return res.data;
   },
   async approvePO(id: string): Promise<PO> {
-    const res = await apiClient.post<PO>(`/api/v1/procurement/po/${id}/approve`);
+    const res = await apiClient.post<PO>(`/api/v1/procurement/po/${id}/approve`).then((r) => r.data);
     return res.data;
   },
   async markOrdered(id: string): Promise<PO> {
-    const res = await apiClient.post<PO>(`/api/v1/procurement/po/${id}/order`);
+    const res = await apiClient.post<PO>(`/api/v1/procurement/po/${id}/order`).then((r) => r.data);
     return res.data;
   },
   async cancelPO(id: string): Promise<PO> {
-    const res = await apiClient.post<PO>(`/api/v1/procurement/po/${id}/cancel`);
+    const res = await apiClient.post<PO>(`/api/v1/procurement/po/${id}/cancel`).then((r) => r.data);
     return res.data;
   },
 
   // GRNs
   async listGRNs(params?: { po_id?: string }): Promise<GRN[]> {
-    const res = await apiClient.get<GRN[]>("/api/v1/procurement/grn/", { params });
+    const res = await apiClient.get<GRN[]>("/api/v1/procurement/grn/", { params }).then((r) => r.data);
     return res.data;
   },
   async getGRN(id: string): Promise<GRNDetail> {
-    const res = await apiClient.get<GRNDetail>(`/api/v1/procurement/grn/${id}`);
+    const res = await apiClient.get<GRNDetail>(`/api/v1/procurement/grn/${id}`).then((r) => r.data);
     return res.data;
   },
   async createGRN(data: object): Promise<GRNDetail> {
-    const res = await apiClient.post<GRNDetail>("/api/v1/procurement/grn/", data);
+    const res = await apiClient.post<GRNDetail>("/api/v1/procurement/grn/", data).then((r) => r.data);
     return res.data;
   },
   async postGRN(id: string): Promise<GRNDetail> {
-    const res = await apiClient.post<GRNDetail>(`/api/v1/procurement/grn/${id}/post`);
+    const res = await apiClient.post<GRNDetail>(`/api/v1/procurement/grn/${id}/post`).then((r) => r.data);
     return res.data;
   },
 
   // Shipments
   async listShipments(params?: { po_id?: string }): Promise<ImportShipment[]> {
-    const res = await apiClient.get<ImportShipment[]>("/api/v1/procurement/shipments/", { params });
+    const res = await apiClient.get<ImportShipment[]>("/api/v1/procurement/shipments/", { params }).then((r) => r.data);
     return res.data;
   },
   async getShipment(id: string): Promise<ImportShipment> {
-    const res = await apiClient.get<ImportShipment>(`/api/v1/procurement/shipments/${id}`);
+    const res = await apiClient.get<ImportShipment>(`/api/v1/procurement/shipments/${id}`).then((r) => r.data);
     return res.data;
   },
   async createShipment(data: object): Promise<ImportShipment> {
-    const res = await apiClient.post<ImportShipment>("/api/v1/procurement/shipments/", data);
+    const res = await apiClient.post<ImportShipment>("/api/v1/procurement/shipments/", data).then((r) => r.data);
     return res.data;
   },
   async updateShipment(id: string, data: object): Promise<ImportShipment> {
-    const res = await apiClient.patch<ImportShipment>(`/api/v1/procurement/shipments/${id}`, data);
+    const res = await apiClient.patch<ImportShipment>(`/api/v1/procurement/shipments/${id}`, data).then((r) => r.data);
     return res.data;
   },
 
   // Supplier Payments
   async recordPayment(poId: string, data: { payment_date: string; amount: number; method: string; reference?: string; notes?: string }): Promise<SupplierPayment> {
-    const res = await apiClient.post<SupplierPayment>(`/api/v1/procurement/po/${poId}/payments`, data);
+    const res = await apiClient.post<SupplierPayment>(`/api/v1/procurement/po/${poId}/payments`, data).then((r) => r.data);
     return res.data;
   },
   async listPayments(poId: string): Promise<SupplierPayment[]> {
-    const res = await apiClient.get<SupplierPayment[]>(`/api/v1/procurement/po/${poId}/payments`);
+    const res = await apiClient.get<SupplierPayment[]>(`/api/v1/procurement/po/${poId}/payments`).then((r) => r.data);
     return res.data;
   },
 
   // Evaluations
   async listEvaluations(params?: { supplier_id?: string }): Promise<SupplierEvaluation[]> {
-    const res = await apiClient.get<SupplierEvaluation[]>("/api/v1/procurement/evaluations/", { params });
+    const res = await apiClient.get<SupplierEvaluation[]>("/api/v1/procurement/evaluations/", { params }).then((r) => r.data);
     return res.data;
   },
   async createEvaluation(data: object): Promise<SupplierEvaluation> {
-    const res = await apiClient.post<SupplierEvaluation>("/api/v1/procurement/evaluations/", data);
+    const res = await apiClient.post<SupplierEvaluation>("/api/v1/procurement/evaluations/", data).then((r) => r.data);
     return res.data;
   },
   async supplierDashboard(): Promise<SupplierDashboardRow[]> {
-    const res = await apiClient.get<SupplierDashboardRow[]>("/api/v1/procurement/suppliers/dashboard");
+    const res = await apiClient.get<SupplierDashboardRow[]>("/api/v1/procurement/suppliers/dashboard").then((r) => r.data);
     return res.data;
   },
 
@@ -357,7 +357,7 @@ export const procurementApi = {
     return res.data;
   },
   async deliveryAlerts(): Promise<DeliveryAlertRow[]> {
-    const res = await apiClient.get<DeliveryAlertRow[]>("/api/v1/procurement/delivery/alerts");
+    const res = await apiClient.get<DeliveryAlertRow[]>("/api/v1/procurement/delivery/alerts").then((r) => r.data);
     return res.data;
   },
 };

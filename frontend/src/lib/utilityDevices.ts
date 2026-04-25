@@ -250,44 +250,44 @@ export const utilityDevicesApi = {
   // ── Devices ──────────────────────────────────────────────────────────────────
   devices: {
     async list(params?: DeviceFilters & { skip?: number; limit?: number }): Promise<UtilityDevice[]> {
-      const res = await apiClient.get<UtilityDevice[]>(`${BASE}/devices`, { params });
+      const res = await apiClient.get<UtilityDevice[]>(`${BASE}/devices`, { params }).then((r) => r.data);
       return res.data;
     },
 
     async get(id: string): Promise<UtilityDevice> {
-      const res = await apiClient.get<UtilityDevice>(`${BASE}/devices/${id}`);
+      const res = await apiClient.get<UtilityDevice>(`${BASE}/devices/${id}`).then((r) => r.data);
       return res.data;
     },
 
     async create(data: UtilityDeviceCreate): Promise<UtilityDevice> {
-      const res = await apiClient.post<UtilityDevice>(`${BASE}/devices`, data);
+      const res = await apiClient.post<UtilityDevice>(`${BASE}/devices`, data).then((r) => r.data);
       return res.data;
     },
 
     async update(id: string, data: UtilityDeviceUpdate): Promise<UtilityDevice> {
-      const res = await apiClient.patch<UtilityDevice>(`${BASE}/devices/${id}`, data);
+      const res = await apiClient.patch<UtilityDevice>(`${BASE}/devices/${id}`, data).then((r) => r.data);
       return res.data;
     },
 
     async delete(id: string): Promise<void> {
-      await apiClient.delete(`${BASE}/devices/${id}`);
+      await apiClient.delete(`${BASE}/devices/${id}`).then((r) => r.data);
     },
   },
 
   // ── Readings ──────────────────────────────────────────────────────────────────
   readings: {
     async list(params?: ReadingFilters & { skip?: number; limit?: number }): Promise<UtilityReading[]> {
-      const res = await apiClient.get<UtilityReading[]>(`${BASE}/readings`, { params });
+      const res = await apiClient.get<UtilityReading[]>(`${BASE}/readings`, { params }).then((r) => r.data);
       return res.data;
     },
 
     async get(id: string): Promise<UtilityReading> {
-      const res = await apiClient.get<UtilityReading>(`${BASE}/readings/${id}`);
+      const res = await apiClient.get<UtilityReading>(`${BASE}/readings/${id}`).then((r) => r.data);
       return res.data;
     },
 
     async create(data: UtilityReadingCreate): Promise<UtilityReading> {
-      const res = await apiClient.post<UtilityReading>(`${BASE}/readings`, data);
+      const res = await apiClient.post<UtilityReading>(`${BASE}/readings`, data).then((r) => r.data);
       return res.data;
     },
 
@@ -300,7 +300,7 @@ export const utilityDevicesApi = {
     },
 
     async delete(id: string): Promise<void> {
-      await apiClient.delete(`${BASE}/readings/${id}`);
+      await apiClient.delete(`${BASE}/readings/${id}`).then((r) => r.data);
     },
   },
 };
