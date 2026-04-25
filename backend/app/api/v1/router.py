@@ -21,6 +21,7 @@ from app.api.v1.endpoints import (
     invoice_match,
     bank_reconciliation,
     fixed_assets,
+    dimensions,
 )
 
 api_router = APIRouter()
@@ -142,3 +143,5 @@ api_router.include_router(invoice_match.router, prefix="/invoice-match", tags=["
 api_router.include_router(bank_reconciliation.router, prefix="/bank-reconciliation", tags=["bank-reconciliation"])
 # ── Fixed Asset Accounting + Depreciation ─────────────────────────────────────
 api_router.include_router(fixed_assets.router, prefix="/fixed-assets", tags=["fixed-assets"])
+# ── Accounting Dimensions / Cost Centers ──────────────────────────────────────
+api_router.include_router(dimensions.router, prefix="/dimensions", tags=["dimensions"])

@@ -308,6 +308,17 @@ from app.models.shelf_life import (
     DispositionSuggestion, FEFOAuditLog, SLAIRecommendation,
 )
 
+# ── Accounting Dimensions / Cost Centers ─────────────────────────────────────
+from app.models.dimensions import (
+    DimensionScope, CostCenterType, DimSourceType,
+    AllocationBasis, AllocationFrequency, AllocationRunStatus,
+    ValidationSeverity, DimAIAgentType, DimAIRecStatus,
+    DimType, DimValue, CostCenter, TransactionDimension,
+    DimValidationRule, AllocationRule, AllocationRuleLine,
+    AllocationRun, AllocationRunLine, DimDefaultRule,
+    DimReclassification, DimAIRecommendation,
+)
+
 # ── Fixed Asset Accounting + Depreciation ────────────────────────────────────
 from app.models.fixed_assets import (
     DepreciationMethod, DepreciationFrequency, DepreciationStartRule,

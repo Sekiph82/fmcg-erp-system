@@ -1,7 +1,56 @@
 # TASKS — FMCG ERP (Kenya) · Production Module
 
 ## Current Phase
-Phase 15 — Subcontracting System ✅ COMPLETED
+Phase 20 — Accounting Dimensions / Cost Centers ✅ COMPLETED
+
+---
+
+## Phase 20 — Accounting Dimensions / Cost Centers ✅
+
+- [x] `backend/app/models/dimensions.py` — 9 enums + 11 models:
+  - Enums: DimensionScope, CostCenterType, DimSourceType, AllocationBasis, AllocationFrequency, AllocationRunStatus, ValidationSeverity, DimAIAgentType, DimAIRecStatus
+  - Models: DimType, DimValue (hierarchical), CostCenter (hierarchical), TransactionDimension, DimValidationRule, AllocationRule, AllocationRuleLine, AllocationRun, AllocationRunLine, DimDefaultRule, DimReclassification, DimAIRecommendation
+- [x] `backend/app/schemas/dimensions.py` — full Pydantic v2 schemas for all create/read/request DTOs
+- [x] `backend/app/services/dimensions_service.py`:
+  - CRUD for dim types, values, cost centers
+  - Transaction tagging (upsert with lock enforcement)
+  - Default derivation engine (priority-ordered rule matching)
+  - Validation engine (check mandatory dimensions per transaction type)
+  - Allocation engine (FIXED_PCT + weight-based, dry-run/post modes)
+  - Reclassification service (audit trail + tag update)
+  - AI Agent 1: Completeness Monitor (empty types, untagged mandatory)
+  - AI Agent 2: Allocation Optimizer (missing lines, pct ≠ 100)
+  - AI Agent 3: Profitability Lens (no production cost centers)
+- [x] `backend/app/api/v1/endpoints/dimensions.py` — 25+ routes at /api/v1/dimensions/
+- [x] `backend/app/models/__init__.py` + `router.py` updated
+- [x] `frontend/src/lib/dimensions.ts` — TypeScript client + labels
+- [x] Frontend pages (10 screens):
+  - Dashboard (KPIs + quick links)
+  - Dimension Type Manager
+  - Dimension Value Tree Manager
+  - Cost Center Master
+  - Allocation Rule Manager
+  - Allocation Run Screen
+  - Validation Rule Manager
+  - Default Derivation Rules
+  - Reclassification Workflow
+  - Tagging Completeness Report
+  - AI Agents
+- [x] Sidebar: "Accounting Dimensions" section added to nav-config.tsx
+
+## Next Immediate Task
+Phase 21 — Promotional Schemes Auto-Apply
+
+## Blockers
+None
+
+---
+
+## Phase 19 — Fixed Asset Accounting + Depreciation ✅ COMPLETED
+
+---
+
+## Phase 15 — Subcontracting System ✅ COMPLETED
 
 ---
 

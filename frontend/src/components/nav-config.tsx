@@ -236,6 +236,29 @@ export const NAV_CONFIG: NavEntry[] = [
 
   {
     type: "section",
+    id: "dimensions",
+    label: "Accounting Dimensions",
+    permission: "finance.view",
+    icon: md(
+      "M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
+    ),
+    items: [
+      { label: "Dashboard",        href: "/dashboard/dimensions",              permission: "finance.view" },
+      { label: "Dimension Types",  href: "/dashboard/dimensions/types",        permission: "finance.view" },
+      { label: "Dim Values",       href: "/dashboard/dimensions/values",       permission: "finance.view" },
+      { label: "Cost Centers",     href: "/dashboard/dimensions/cost-centers", permission: "finance.view" },
+      { label: "Allocation Rules", href: "/dashboard/dimensions/allocations",  permission: "finance.view" },
+      { label: "Allocation Run",   href: "/dashboard/dimensions/allocation-run", permission: "finance.view" },
+      { label: "Validation Rules", href: "/dashboard/dimensions/validation",   permission: "finance.view" },
+      { label: "Default Rules",    href: "/dashboard/dimensions/defaults",     permission: "finance.view" },
+      { label: "Reclassify",       href: "/dashboard/dimensions/reclassify",   permission: "finance.view" },
+      { label: "Completeness",     href: "/dashboard/dimensions/completeness", permission: "finance.view" },
+      { label: "AI Agents",        href: "/dashboard/dimensions/ai",           permission: "finance.view" },
+    ],
+  },
+
+  {
+    type: "section",
     id: "landed-cost",
     label: "Landed Cost Allocation",
     permission: "procurement.view",
