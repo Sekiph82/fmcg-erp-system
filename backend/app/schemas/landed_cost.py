@@ -4,7 +4,7 @@ from decimal import Decimal
 from typing import List, Optional
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 # ── Cost Line ─────────────────────────────────────────────────────────────────
@@ -165,8 +165,8 @@ class LCDashboard(BaseModel):
     total_lc_cost_mtd: Decimal
     total_lc_cost_ytd: Decimal
     pending_ai_recs: int
-    top_cost_types: list
-    recent_documents: List[LandedCostSummary]
+    top_cost_types: List[dict] = Field(default_factory=list)
+    recent_documents: List[LandedCostSummary] = Field(default_factory=list)
 
 
 # ── Reports ───────────────────────────────────────────────────────────────────

@@ -4,7 +4,7 @@ from decimal import Decimal
 from typing import List, Optional, Any
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 # ── Tolerance Rule ────────────────────────────────────────────────────────────
@@ -195,8 +195,8 @@ class IMDashboard(BaseModel):
     payable_count: int
     on_hold_count: int
     pending_ai_recs: int
-    mismatch_by_type: List[dict]
-    recent_matches: List[MatchHeaderSummary]
+    mismatch_by_type: List[dict] = Field(default_factory=list)
+    recent_matches: List[MatchHeaderSummary] = Field(default_factory=list)
 
 
 # ── Run Request ───────────────────────────────────────────────────────────────

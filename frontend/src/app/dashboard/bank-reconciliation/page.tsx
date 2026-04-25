@@ -80,7 +80,7 @@ export default function BRDashboardPage() {
             </tr>
           </thead>
           <tbody className="divide-y">
-            {data.recent_statements.map((s: BRStatement) => (
+            {(data.recent_statements ?? []).map((s: BRStatement) => (
               <tr key={s.id} className="hover:bg-gray-50">
                 <td className="px-4 py-2 font-mono text-xs font-medium">{s.statement_no}</td>
                 <td className="px-4 py-2 text-xs text-gray-600">

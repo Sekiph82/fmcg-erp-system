@@ -157,7 +157,7 @@ export default function LandedCostDashboard() {
                 </td>
               </tr>
             ))}
-            {data.recent_documents.length === 0 && (
+            {(data.recent_documents ?? []).length === 0 && (
               <tr><td colSpan={7} className="px-4 py-6 text-center text-gray-400">No documents yet.</td></tr>
             )}
           </tbody>

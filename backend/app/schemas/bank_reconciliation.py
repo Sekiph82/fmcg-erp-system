@@ -315,7 +315,7 @@ class BRDashboard(BaseModel):
     statements_in_recon:     int
     statements_locked:       int
     pending_ai_recs:         int
-    recent_statements:       List[BRStatementOut]
+    recent_statements:       List[BRStatementOut] = Field(default_factory=list)
 
 class BROpenItemRow(BaseModel):
     line_id:             UUID

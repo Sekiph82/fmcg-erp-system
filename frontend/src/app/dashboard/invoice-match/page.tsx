@@ -29,7 +29,7 @@ export default function InvoiceMatchDashboard() {
     { label: "Duplicate Suspected",value: data.duplicate_suspected, color: "bg-purple-100 text-purple-700" },
   ];
 
-  const chartData = data.mismatch_by_type.map((m) => ({
+  const chartData = (data.mismatch_by_type ?? []).map((m) => ({
     name: String(m.type).replace(/_/g, " "),
     count: m.count,
   }));
@@ -132,7 +132,7 @@ export default function InvoiceMatchDashboard() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {data.recent_matches.map((m) => (
+            {(data.recent_matches ?? []).map((m) => (
               <tr key={m.id} className="hover:bg-gray-50">
                 <td className="px-4 py-2 font-mono text-xs">{m.match_no}</td>
                 <td className="px-4 py-2 text-gray-600">{m.invoice_no ?? "—"}</td>
@@ -153,7 +153,7 @@ export default function InvoiceMatchDashboard() {
                 </td>
               </tr>
             ))}
-            {data.recent_matches.length === 0 && (
+            {(data.recent_matches ?? []).length === 0 && (
               <tr><td colSpan={7} className="px-4 py-6 text-center text-gray-400">No matches yet. Run a match from an invoice.</td></tr>
             )}
           </tbody>
