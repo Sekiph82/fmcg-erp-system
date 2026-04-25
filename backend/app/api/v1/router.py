@@ -18,6 +18,7 @@ from app.api.v1.endpoints import (
     procurement_suggestion,
     subcontracting,
     landed_cost,
+    invoice_match,
 )
 
 api_router = APIRouter()
@@ -133,3 +134,5 @@ api_router.include_router(procurement_suggestion.router, prefix="/procurement/su
 api_router.include_router(subcontracting.router, prefix="/subcontracting", tags=["subcontracting"])
 # ── Landed Cost Allocation ────────────────────────────────────────────────────
 api_router.include_router(landed_cost.router, prefix="/landed-cost", tags=["landed-cost"])
+# ── 3-Way Invoice Matching ────────────────────────────────────────────────────
+api_router.include_router(invoice_match.router, prefix="/invoice-match", tags=["invoice-match"])

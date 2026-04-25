@@ -261,6 +261,15 @@ from app.models.procurement_suggestion import (
     ProcurementSuggestionGroup, PSAIRecommendation,
 )
 
+# ── 3-Way Invoice Matching ────────────────────────────────────────────────────
+from app.models.invoice_match import (
+    MatchLineStatus, MatchOverallStatus, MatchReviewAction, DuplicateRisk,
+    IMAIAgentType, IMAIRecStatus,
+    InvoiceMatchTolerance, InvoiceMatchHeader, InvoiceMatchLine,
+    InvoiceMatchGRNLink, DuplicateInvoiceLog, InvoiceMatchReview,
+    IMAIRecommendation,
+)
+
 # ── Landed Cost Allocation ────────────────────────────────────────────────────
 from app.models.landed_cost import (
     LCStatus, LandedCostType, LCAllocationMethod, LCReferenceType,
@@ -470,6 +479,12 @@ __all__ = [
     "SupplierItemPrice",
     "ProcurementSuggestionRun", "ProcurementSuggestionLine",
     "ProcurementSuggestionGroup", "PSAIRecommendation",
+    # 3-Way Invoice Matching
+    "MatchLineStatus", "MatchOverallStatus", "MatchReviewAction", "DuplicateRisk",
+    "IMAIAgentType", "IMAIRecStatus",
+    "InvoiceMatchTolerance", "InvoiceMatchHeader", "InvoiceMatchLine",
+    "InvoiceMatchGRNLink", "DuplicateInvoiceLog", "InvoiceMatchReview",
+    "IMAIRecommendation",
     # Landed Cost Allocation
     "LCStatus", "LandedCostType", "LCAllocationMethod", "LCReferenceType",
     "LCAIAgentType", "LCAIRecStatus",

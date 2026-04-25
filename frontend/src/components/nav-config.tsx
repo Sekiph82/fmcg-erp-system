@@ -172,6 +172,26 @@ export const NAV_CONFIG: NavEntry[] = [
 
   {
     type: "section",
+    id: "invoice-match",
+    label: "3-Way Invoice Matching",
+    permission: "finance.view",
+    icon: md(
+      "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
+    ),
+    items: [
+      { label: "Match Dashboard",   href: "/dashboard/invoice-match",                permission: "finance.view" },
+      { label: "All Matches",       href: "/dashboard/invoice-match/matches",         permission: "finance.view" },
+      { label: "Review Queue",      href: "/dashboard/invoice-match/review-queue",    permission: "finance.view" },
+      { label: "Blocked Invoices",  href: "/dashboard/invoice-match/blocked",         permission: "finance.view" },
+      { label: "Duplicate Review",  href: "/dashboard/invoice-match/duplicates",      permission: "finance.view" },
+      { label: "Tolerance Rules",   href: "/dashboard/invoice-match/tolerance-rules", permission: "finance.view" },
+      { label: "Reports",           href: "/dashboard/invoice-match/reports",         permission: "finance.view" },
+      { label: "AI Agents",         href: "/dashboard/invoice-match/ai",              permission: "finance.view" },
+    ],
+  },
+
+  {
+    type: "section",
     id: "landed-cost",
     label: "Landed Cost Allocation",
     permission: "procurement.view",
