@@ -132,11 +132,11 @@ export const fmt = (n: number|null|undefined, dp = 2) =>
 const B = "/api/v1/subcontracting";
 
 export const scApi = {
-  getDashboard: () => apiClient.get<SCDashboard>(`${B}/dashboard`),
+  getDashboard: () => apiClient.get<SCDashboard>(`${B}/dashboard`).then((r) => r.data),
 
-  listLocations: () => apiClient.get<SubcontractorLocationOut[]>(`${B}/locations`),
+  listLocations: () => apiClient.get<SubcontractorLocationOut[]>(`${B}/locations`).then((r) => r.data),
   createLocation: (p: {supplier_id: string; warehouse_id: string; notes?: string}) =>
-    apiClient.post<SubcontractorLocationOut>(`${B}/locations`, p),
+    apiClient.post<SubcontractorLocationOut>(`${B}/locations`, p).then((r) => r.data),
 
   listOrders: (params?: {status?: string; supplier_id?: string; skip?: number; limit?: number}) => {
     const qs = new URLSearchParams();
@@ -144,45 +144,45 @@ export const scApi = {
     if (params?.supplier_id) qs.set("supplier_id", params.supplier_id);
     if (params?.skip)        qs.set("skip", String(params.skip));
     if (params?.limit)       qs.set("limit", String(params.limit));
-    return apiClient.get<SCOrderOut[]>(`${B}/orders?${qs}`);
+    return apiClient.get<SCOrderOut[]>(`${B}/orders?${qs}`).then((r) => r.data);
   },
   createOrder: (p: Partial<SCOrderOut> & {lines?: Partial<SCOrderLineOut>[]}) =>
-    apiClient.post<SCOrderOut>(`${B}/orders`, p),
-  getOrder: (id: string) => apiClient.get<SCOrderOut>(`${B}/orders/${id}`),
-  approveOrder: (id: string) => apiClient.post<SCOrderOut>(`${B}/orders/${id}/approve`, {}),
-  completeOrder: (id: string) => apiClient.post<SCOrderOut>(`${B}/orders/${id}/complete`, {}),
+    apiClient.post<SCOrderOut>(`${B}/orders`, p).then((r) => r.data),
+  getOrder: (id: string) => apiClient.get<SCOrderOut>(`${B}/orders/${id}`).then((r) => r.data),
+  approveOrder: (id: string) => apiClient.post<SCOrderOut>(`${B}/orders/${id}/approve`, {}).then((r) => r.data),
+  completeOrder: (id: string) => apiClient.post<SCOrderOut>(`${B}/orders/${id}/complete`, {}).then((r) => r.data),
 
   issueMaterial: (orderId: string, p: Partial<SCIssueOut> & {lines?: Partial<SCIssueLineOut>[]}) =>
-    apiClient.post<SCIssueOut>(`${B}/orders/${orderId}/issue-material`, p),
-  listIssues: (orderId: string) => apiClient.get<SCIssueOut[]>(`${B}/orders/${orderId}/issues`),
+    apiClient.post<SCIssueOut>(`${B}/orders/${orderId}/issue-material`, p).then((r) => r.data),
+  listIssues: (orderId: string) => apiClient.get<SCIssueOut[]>(`${B}/orders/${orderId}/issues`).then((r) => r.data),
 
   receiveGoods: (orderId: string, p: Partial<SCReceiptOut> & {lines?: Partial<SCReceiptLineOut>[]}) =>
-    apiClient.post<SCReceiptOut>(`${B}/orders/${orderId}/receive`, p),
-  listReceipts: (orderId: string) => apiClient.get<SCReceiptOut[]>(`${B}/orders/${orderId}/receipts`),
+    apiClient.post<SCReceiptOut>(`${B}/orders/${orderId}/receive`, p).then((r) => r.data),
+  listReceipts: (orderId: string) => apiClient.get<SCReceiptOut[]>(`${B}/orders/${orderId}/receipts`).then((r) => r.data),
 
-  getYield: (orderId: string) => apiClient.get<SCYieldOut[]>(`${B}/orders/${orderId}/yield`),
+  getYield: (orderId: string) => apiClient.get<SCYieldOut[]>(`${B}/orders/${orderId}/yield`).then((r) => r.data),
   yieldReport: (abnormalOnly = false) =>
-    apiClient.get<SCYieldOut[]>(`${B}/yield/report?abnormal_only=${abnormalOnly}`),
+    apiClient.get<SCYieldOut[]>(`${B}/yield/report?abnormal_only=${abnormalOnly}`).then((r) => r.data),
 
   getStock: (supplierId?: string) => {
     const qs = supplierId ? `?supplier_id=${supplierId}` : "";
-    return apiClient.get<SubcontractorStockRow[]>(`${B}/stock${qs}`);
+    return apiClient.get<SubcontractorStockRow[]>(`${B}/stock${qs}`).then((r) => r.data);
   },
 
   getPerformance: (supplierId?: string) => {
     const qs = supplierId ? `?supplier_id=${supplierId}` : "";
-    return apiClient.get<SCPerformanceOut[]>(`${B}/performance${qs}`);
+    return apiClient.get<SCPerformanceOut[]>(`${B}/performance${qs}`).then((r) => r.data);
   },
 
   runAI: (orderId?: string) => orderId
-    ? apiClient.post<{generated: number; by_agent: Record<string, number>}>(`${B}/orders/${orderId}/ai/run`, {})
-    : apiClient.post<{generated: number; by_agent: Record<string, number>}>(`${B}/ai/run`, {}),
+    ? apiClient.post<{generated: number; by_agent: Record<string, number>}>(`${B}/orders/${orderId}/ai/run`, {}).then((r) => r.data)
+    : apiClient.post<{generated: number; by_agent: Record<string, number>}>(`${B}/ai/run`, {}).then((r) => r.data),
   listAIRecs: (params?: {order_id?: string; supplier_id?: string}) => {
     const qs = new URLSearchParams();
     if (params?.order_id)    qs.set("order_id", params.order_id);
     if (params?.supplier_id) qs.set("supplier_id", params.supplier_id);
-    return apiClient.get<SCAIRecOut[]>(`${B}/ai/recommendations?${qs}`);
+    return apiClient.get<SCAIRecOut[]>(`${B}/ai/recommendations?${qs}`).then((r) => r.data);
   },
   actionAIRec: (id: string, notes?: string) =>
-    apiClient.post<SCAIRecOut>(`${B}/ai/recommendations/${id}/action?notes=${encodeURIComponent(notes ?? "")}`, {}),
+    apiClient.post<SCAIRecOut>(`${B}/ai/recommendations/${id}/action?notes=${encodeURIComponent(notes ?? "")}`, {}).then((r) => r.data),
 };

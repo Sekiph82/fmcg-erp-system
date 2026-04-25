@@ -235,11 +235,11 @@ export function fmtVar(v: number | null, suffix = ""): string {
 const BASE = "/api/v1/invoice-match";
 
 export const imApi = {
-  getDashboard: () => apiClient.get<IMDashboard>(`${BASE}/dashboard`),
+  getDashboard: () => apiClient.get<IMDashboard>(`${BASE}/dashboard`).then((r) => r.data),
 
   // Matching
   runMatch: (invoice_id: string, force_rerun = false) =>
-    apiClient.post<MatchHeaderOut>(`${BASE}/run`, { invoice_id, force_rerun }),
+    apiClient.post<MatchHeaderOut>(`${BASE}/run`, { invoice_id, force_rerun }).then((r) => r.data),
 
   // List / Get
   list: (params?: { status?: string; review_required?: boolean; duplicate_flag?: boolean }) => {
@@ -248,45 +248,45 @@ export const imApi = {
         .filter(([, v]) => v !== undefined && v !== null)
         .map(([k, v]) => [k, String(v)])
     ).toString();
-    return apiClient.get<MatchHeaderSummary[]>(`${BASE}${qs ? `?${qs}` : ""}`);
+    return apiClient.get<MatchHeaderSummary[]>(`${BASE}${qs ? `?${qs}` : ""}`).then((r) => r.data);
   },
-  get: (id: string) => apiClient.get<MatchHeaderOut>(`${BASE}/${id}`),
-  getBlockedInvoices: () => apiClient.get<MatchHeaderSummary[]>(`${BASE}/blocked-invoices`),
-  getDuplicateSuspicions: () => apiClient.get<DuplicateLog[]>(`${BASE}/duplicate-suspicions`),
+  get: (id: string) => apiClient.get<MatchHeaderOut>(`${BASE}/${id}`).then((r) => r.data),
+  getBlockedInvoices: () => apiClient.get<MatchHeaderSummary[]>(`${BASE}/blocked-invoices`).then((r) => r.data),
+  getDuplicateSuspicions: () => apiClient.get<DuplicateLog[]>(`${BASE}/duplicate-suspicions`).then((r) => r.data),
 
   // Review
   review: (id: string, body: Record<string, unknown>) =>
-    apiClient.post<MatchHeaderOut>(`${BASE}/${id}/review`, body),
+    apiClient.post<MatchHeaderOut>(`${BASE}/${id}/review`, body).then((r) => r.data),
   approveException: (id: string, reviewer_name: string, justification: string) =>
-    apiClient.post<MatchHeaderOut>(`${BASE}/${id}/approve-exception`, { reviewer_name, justification }),
+    apiClient.post<MatchHeaderOut>(`${BASE}/${id}/approve-exception`, { reviewer_name, justification }).then((r) => r.data),
   reject: (id: string, reviewer_name: string, justification: string) =>
-    apiClient.post<MatchHeaderOut>(`${BASE}/${id}/reject`, { reviewer_name, justification }),
+    apiClient.post<MatchHeaderOut>(`${BASE}/${id}/reject`, { reviewer_name, justification }).then((r) => r.data),
 
   // Duplicates
   resolveDuplicate: (dupId: string, resolved_by: string, resolution_notes: string) =>
-    apiClient.post<DuplicateLog>(`${BASE}/duplicate-suspicions/${dupId}/resolve`, { resolved_by, resolution_notes }),
+    apiClient.post<DuplicateLog>(`${BASE}/duplicate-suspicions/${dupId}/resolve`, { resolved_by, resolution_notes }).then((r) => r.data),
 
   // Tolerance rules
   listToleranceRules: (active_only = false) =>
-    apiClient.get<ToleranceRule[]>(`${BASE}/tolerance-rules${active_only ? "?active_only=true" : ""}`),
+    apiClient.get<ToleranceRule[]>(`${BASE}/tolerance-rules${active_only ? "?active_only=true" : ""}`).then((r) => r.data),
   createToleranceRule: (body: Record<string, unknown>) =>
-    apiClient.post<ToleranceRule>(`${BASE}/tolerance-rules`, body),
+    apiClient.post<ToleranceRule>(`${BASE}/tolerance-rules`, body).then((r) => r.data),
   updateToleranceRule: (id: string, body: Record<string, unknown>) =>
-    apiClient.patch<ToleranceRule>(`${BASE}/tolerance-rules/${id}`, body),
+    apiClient.patch<ToleranceRule>(`${BASE}/tolerance-rules/${id}`, body).then((r) => r.data),
 
   // Reports
   reportMismatchSummary: () =>
-    apiClient.get<Record<string, unknown>[]>(`${BASE}/reports/mismatch-summary`),
+    apiClient.get<Record<string, unknown>[]>(`${BASE}/reports/mismatch-summary`).then((r) => r.data),
   reportSupplierAccuracy: () =>
-    apiClient.get<Record<string, unknown>[]>(`${BASE}/reports/supplier-accuracy`),
+    apiClient.get<Record<string, unknown>[]>(`${BASE}/reports/supplier-accuracy`).then((r) => r.data),
 
   // AI
-  runAI: () => apiClient.post<{ recommendations_created: number }>(`${BASE}/ai/run`, {}),
-  runAIForMatch: (id: string) => apiClient.post<{ recommendations_created: number }>(`${BASE}/${id}/ai/run`, {}),
+  runAI: () => apiClient.post<{ recommendations_created: number }>(`${BASE}/ai/run`, {}).then((r) => r.data),
+  runAIForMatch: (id: string) => apiClient.post<{ recommendations_created: number }>(`${BASE}/${id}/ai/run`, {}).then((r) => r.data),
   listAIRecs: (params?: { status?: string }) => {
     const qs = params?.status ? `?status=${params.status}` : "";
-    return apiClient.get<IMAIRec[]>(`${BASE}/ai/recs${qs}`);
+    return apiClient.get<IMAIRec[]>(`${BASE}/ai/recs${qs}`).then((r) => r.data);
   },
   actionAIRec: (recId: string, status: "ACCEPTED" | "REJECTED") =>
-    apiClient.post<IMAIRec>(`${BASE}/ai/recs/${recId}/action`, { status }),
+    apiClient.post<IMAIRec>(`${BASE}/ai/recs/${recId}/action`, { status }).then((r) => r.data),
 };

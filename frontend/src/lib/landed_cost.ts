@@ -195,55 +195,55 @@ const BASE = "/api/v1/landed-cost";
 
 export const lcApi = {
   // Dashboard
-  getDashboard: () => apiClient.get<LCDashboard>(`${BASE}/dashboard`),
+  getDashboard: () => apiClient.get<LCDashboard>(`${BASE}/dashboard`).then((r) => r.data),
 
   // CRUD
   list: (params?: { status?: string }) => {
     const qs = params?.status ? `?status=${params.status}` : "";
-    return apiClient.get<LandedCostSummary[]>(`${BASE}${qs}`);
+    return apiClient.get<LandedCostSummary[]>(`${BASE}${qs}`).then((r) => r.data);
   },
-  create: (body: Record<string, unknown>) => apiClient.post<LandedCostOut>(BASE, body),
-  get: (id: string) => apiClient.get<LandedCostOut>(`${BASE}/${id}`),
-  update: (id: string, body: Record<string, unknown>) => apiClient.patch<LandedCostOut>(`${BASE}/${id}`, body),
+  create: (body: Record<string, unknown>) => apiClient.post<LandedCostOut>(BASE, body).then((r) => r.data),
+  get: (id: string) => apiClient.get<LandedCostOut>(`${BASE}/${id}`).then((r) => r.data),
+  update: (id: string, body: Record<string, unknown>) => apiClient.patch<LandedCostOut>(`${BASE}/${id}`, body).then((r) => r.data),
 
   // Cost lines
   addCostLine: (headerId: string, body: Record<string, unknown>) =>
-    apiClient.post<LandedCostOut>(`${BASE}/${headerId}/lines`, body),
+    apiClient.post<LandedCostOut>(`${BASE}/${headerId}/lines`, body).then((r) => r.data),
 
   // GRN links
   addGRNLink: (headerId: string, body: Record<string, unknown>) =>
-    apiClient.post<LandedCostOut>(`${BASE}/${headerId}/grn-links`, body),
+    apiClient.post<LandedCostOut>(`${BASE}/${headerId}/grn-links`, body).then((r) => r.data),
 
   // Allocation
-  allocate: (headerId: string) => apiClient.post<LandedCostOut>(`${BASE}/${headerId}/allocate`, {}),
+  allocate: (headerId: string) => apiClient.post<LandedCostOut>(`${BASE}/${headerId}/allocate`, {}).then((r) => r.data),
 
   // Post / Cancel
-  post: (headerId: string) => apiClient.post<LandedCostOut>(`${BASE}/${headerId}/post`, {}),
-  cancel: (headerId: string) => apiClient.post<LandedCostOut>(`${BASE}/${headerId}/cancel`, {}),
+  post: (headerId: string) => apiClient.post<LandedCostOut>(`${BASE}/${headerId}/post`, {}).then((r) => r.data),
+  cancel: (headerId: string) => apiClient.post<LandedCostOut>(`${BASE}/${headerId}/cancel`, {}).then((r) => r.data),
 
   // Reports
   reportCostByType: (params?: { date_from?: string; date_to?: string }) => {
     const qs = new URLSearchParams(
       Object.entries(params || {}).filter(([, v]) => v) as [string, string][]
     ).toString();
-    return apiClient.get<Record<string, unknown>[]>(`${BASE}/reports/cost-by-type${qs ? `?${qs}` : ""}`);
+    return apiClient.get<Record<string, unknown>[]>(`${BASE}/reports/cost-by-type${qs ? `?${qs}` : ""}`).then((r) => r.data);
   },
   reportAllocationByMaterial: (params?: { date_from?: string; date_to?: string }) => {
     const qs = new URLSearchParams(
       Object.entries(params || {}).filter(([, v]) => v) as [string, string][]
     ).toString();
-    return apiClient.get<Record<string, unknown>[]>(`${BASE}/reports/allocation-by-material${qs ? `?${qs}` : ""}`);
+    return apiClient.get<Record<string, unknown>[]>(`${BASE}/reports/allocation-by-material${qs ? `?${qs}` : ""}`).then((r) => r.data);
   },
 
   // AI
-  runAI: () => apiClient.post<{ recommendations_created: number }>(`${BASE}/ai/run`, {}),
-  runAIForDoc: (headerId: string) => apiClient.post<{ recommendations_created: number }>(`${BASE}/${headerId}/ai/run`, {}),
+  runAI: () => apiClient.post<{ recommendations_created: number }>(`${BASE}/ai/run`, {}).then((r) => r.data),
+  runAIForDoc: (headerId: string) => apiClient.post<{ recommendations_created: number }>(`${BASE}/${headerId}/ai/run`, {}).then((r) => r.data),
   listAIRecs: (params?: { status?: string }) => {
     const qs = params?.status ? `?status=${params.status}` : "";
-    return apiClient.get<LCAIRec[]>(`${BASE}/ai/recs${qs}`);
+    return apiClient.get<LCAIRec[]>(`${BASE}/ai/recs${qs}`).then((r) => r.data);
   },
   listAIRecsForDoc: (headerId: string) =>
-    apiClient.get<LCAIRec[]>(`${BASE}/${headerId}/ai/recs`),
+    apiClient.get<LCAIRec[]>(`${BASE}/${headerId}/ai/recs`).then((r) => r.data),
   actionAIRec: (recId: string, status: "ACCEPTED" | "REJECTED") =>
-    apiClient.post<LCAIRec>(`${BASE}/ai/recs/${recId}/action`, { status }),
+    apiClient.post<LCAIRec>(`${BASE}/ai/recs/${recId}/action`, { status }).then((r) => r.data),
 };
