@@ -116,11 +116,12 @@ function SectionGroup({
             if (!isExpanded) onToggle();
           }}
           className={[
-            "flex h-9 w-9 items-center justify-center rounded-lg transition-all duration-150",
+            "flex h-9 w-9 items-center justify-center rounded-lg transition-all duration-200",
             hasActiveChild
-              ? "bg-indigo-500/20 text-indigo-400"
-              : "text-slate-500 hover:bg-white/[0.06] hover:text-slate-300",
+              ? "bg-cyan-500/[0.14] text-cyan-300 border border-cyan-500/[0.30]"
+              : "text-slate-500 hover:bg-white/[0.06] hover:text-slate-300 border border-transparent",
           ].join(" ")}
+          style={hasActiveChild ? { boxShadow: "0 0 12px rgba(0,180,255,0.30)" } : undefined}
         >
           {section.icon}
         </button>
@@ -192,12 +193,16 @@ function SectionGroup({
                   href={item.href}
                   onClick={onNavigate}
                   className={[
-                    "flex items-center border-l-[2px] py-[6px] pl-[28px] pr-2.5",
+                    "relative flex items-center border-l-[2px] py-[6px] pl-[28px] pr-2.5",
                     "text-[12.5px] leading-snug rounded-r-lg transition-all duration-150",
                     active
-                      ? "border-indigo-400 bg-indigo-500/[0.12] text-indigo-100 font-medium"
+                      ? "border-cyan-400 bg-cyan-500/[0.10] text-cyan-100 font-medium"
                       : "border-transparent text-slate-500 hover:bg-white/[0.045] hover:text-slate-300",
                   ].join(" ")}
+                  style={active ? {
+                    boxShadow: "inset 3px 0 10px rgba(0,180,255,0.15), -1px 0 12px rgba(0,180,255,0.25)",
+                    textShadow: "0 0 8px rgba(0,200,255,0.35)",
+                  } : undefined}
                 >
                   {item.label}
                 </Link>
@@ -235,11 +240,12 @@ function StandaloneLink({
           href={entry.href}
           onClick={onNavigate}
           className={[
-            "flex h-9 w-9 items-center justify-center rounded-lg transition-all duration-150",
+            "flex h-9 w-9 items-center justify-center rounded-lg transition-all duration-200",
             active
-              ? "bg-indigo-600/90 text-white shadow-sm shadow-indigo-900/50"
-              : "text-slate-500 hover:bg-white/[0.06] hover:text-slate-300",
+              ? "bg-cyan-500/[0.15] text-cyan-300 border border-cyan-500/[0.35]"
+              : "text-slate-500 hover:bg-white/[0.06] hover:text-slate-300 border border-transparent",
           ].join(" ")}
+          style={active ? { boxShadow: "0 0 14px rgba(0,180,255,0.35)" } : undefined}
         >
           {entry.icon}
         </Link>
@@ -253,13 +259,17 @@ function StandaloneLink({
       onClick={onNavigate}
       className={[
         "flex items-center gap-2.5 rounded-lg px-2.5 py-[9px]",
-        "text-[12.5px] font-medium transition-all duration-150",
+        "text-[12.5px] font-medium transition-all duration-200",
         active
-          ? "bg-indigo-600 text-white shadow-sm shadow-indigo-900/40"
-          : "text-slate-400 hover:bg-white/[0.045] hover:text-slate-200",
+          ? "bg-cyan-500/[0.12] text-cyan-100 border border-cyan-500/[0.30]"
+          : "text-slate-400 hover:bg-white/[0.045] hover:text-slate-200 border border-transparent",
       ].join(" ")}
+      style={active ? {
+        boxShadow: "0 0 14px rgba(0,180,255,0.30), inset 0 1px 0 rgba(0,200,255,0.10)",
+        textShadow: "0 0 8px rgba(0,200,255,0.35)",
+      } : undefined}
     >
-      <span className={active ? "text-white/90" : "text-slate-500"}>{entry.icon}</span>
+      <span className={active ? "text-cyan-300" : "text-slate-500"}>{entry.icon}</span>
       {entry.label}
     </Link>
   );
