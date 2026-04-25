@@ -1,6 +1,64 @@
 # TASKS — FMCG ERP (Kenya) · Production Module
 
 ## Current Phase
+Phase 14 — Procurement Suggestion Engine ✅ COMPLETED
+
+---
+
+## Phase 14 — Procurement Suggestion Engine ✅
+
+- [x] `backend/app/models/procurement_suggestion.py` — 6 enums + 5 models:
+  - Enums: PSRunStatus, PSSuggestionStatus, PSUrgencyLevel, PSGroupStatus, PSAIAgentType, SupplierItemPriority
+  - Models: SupplierItemPrice (multi-supplier per material with MOQ/lead-time), ProcurementSuggestionRun (engine header), ProcurementSuggestionLine (per-item suggestion with full detail), ProcurementSuggestionGroup (consolidated supplier orders), PSAIRecommendation (3 AI agents)
+- [x] `backend/app/schemas/procurement_suggestion.py` — full Pydantic v2 schemas
+- [x] `backend/app/services/procurement_suggestion_service.py`:
+  - Core engine: MRP shortage pull + safety stock/reorder point sweep
+  - Supplier scoring: priority + reliability + performance + preferred supplier weighted score
+  - MOQ enforcement + pack_size rounding (ceil to valid multiple)
+  - Lead-time planning: lead + buffer + customs days → suggested order date
+  - Urgency classification: CRITICAL/HIGH/MEDIUM/LOW
+  - Risk detection: single-supplier, long lead time, no supplier mapped
+  - Recommendation scoring 0-100
+  - Supplier grouping/consolidation by supplier
+  - Convert group → Purchase Requisition
+  - Supplier comparison engine (all suppliers for a material, scored)
+  - Dashboard stats
+  - Shortage report
+  - AI Agent 1: Supplier Optimizer (cheapest alternative finder)
+  - AI Agent 2: Demand Risk Predictor (critical shortage + unmapped material alerts)
+  - AI Agent 3: Cost Optimizer (bulk purchase opportunity detector)
+- [x] `backend/app/api/v1/endpoints/procurement_suggestion.py` — 20+ routes at /api/v1/procurement/suggestions/
+- [x] `frontend/src/lib/procurement_suggestion.ts` — types, API client, color helpers
+- [x] `frontend/src/app/dashboard/procurement-suggestion/` — 7 pages:
+  - Dashboard (run engine, latest runs, KPIs, quick links)
+  - Suggestions list (filter by urgency/status/risk, approve/reject, supplier compare panel)
+  - Grouped orders (consolidated by supplier, convert-to-PR modal)
+  - Supplier prices (CRUD for supplier-item price mappings)
+  - Supplier compare (score all suppliers for a material)
+  - Shortage report (detailed shortage analysis with cost projection)
+  - AI agents (run all 3 agents, view/action recommendations)
+- [x] Nav: "Procurement Suggestion Engine" section with 7 links
+
+**DB MIGRATION STATUS — FULLY APPLIED ✅**
+- Merged 3 diverging heads → `87ad3195d2c5_merge_all_heads` ✅
+- Generated `4cddbd375e74_procurement_suggestion_engine` ✅
+- Removed accidental table drops (currencies, system_configs, number_series, uom_conversions) ✅
+- Added missing `app.models.utilities` import to `__init__.py` ✅
+- Applied migration: `alembic upgrade head` ✅
+- Verified: 297 tables, 5 new tables (supplier_item_prices, procurement_suggestion_runs/lines/groups, ps_ai_recommendations) ✅
+- API tested: CREATE/EXECUTE run → 40 suggestions, 28 AI recs ✅
+- Single clean head: `4cddbd375e74` ✅
+
+---
+
+## Next: Prompt 15 — Subcontracting
+
+## Blockers
+None
+
+---
+
+## Previous Phase
 Phase 13 — Allergen + Nutrition Management System ✅ COMPLETED
 
 ---

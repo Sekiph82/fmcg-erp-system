@@ -15,6 +15,7 @@ from app.api.v1.endpoints import (
     qms,
     gs1,
     allergen,
+    procurement_suggestion,
 )
 
 api_router = APIRouter()
@@ -124,3 +125,5 @@ api_router.include_router(qms.router, prefix="/qms", tags=["qms"])
 api_router.include_router(gs1.router, prefix="/gs1", tags=["gs1"])
 # ── Allergen + Nutrition Management ──────────────────────────────────────────
 api_router.include_router(allergen.router, prefix="/allergen", tags=["allergen"])
+# ── Procurement Suggestion Engine ────────────────────────────────────────────
+api_router.include_router(procurement_suggestion.router, prefix="/procurement/suggestions", tags=["procurement-suggestions"])

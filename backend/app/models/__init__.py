@@ -1,3 +1,7 @@
+from app.models.utilities import (
+    ConfigCategory, SystemConfig, UomConversion, NumberSeries, Currency,
+)
+
 from app.models.ai import (
     AIRequest, AIPrediction, AIRecommendation, AIFormulation, AIScenario,
     AIRequestStatus, AIRequestType, AIProvider as AIProviderEnum,
@@ -237,6 +241,15 @@ from app.models.traceability import (
     RecallCustomerImpact, RecallReturnRecord, TRRecAIRecommendation,
 )
 
+# ── Procurement Suggestion Engine ────────────────────────────────────────────
+from app.models.procurement_suggestion import (
+    PSRunStatus, PSSuggestionStatus, PSUrgencyLevel, PSGroupStatus,
+    PSAIAgentType, SupplierItemPriority,
+    SupplierItemPrice,
+    ProcurementSuggestionRun, ProcurementSuggestionLine,
+    ProcurementSuggestionGroup, PSAIRecommendation,
+)
+
 # ── Allergen + Nutrition Management ──────────────────────────────────────────
 from app.models.allergen import (
     AllergenCategory, PresenceType, CrossContactRisk, NutrientBasis, NutrientSource,
@@ -279,6 +292,8 @@ from app.models.material_flow import (
 )
 
 __all__ = [
+    # Utilities (system configs, currencies, UOM, number series)
+    "ConfigCategory", "SystemConfig", "UomConversion", "NumberSeries", "Currency",
     # AI
     "AIRequest", "AIPrediction", "AIRecommendation", "AIFormulation", "AIScenario",
     "AIRequestStatus", "AIRequestType", "AIProviderEnum",
@@ -422,6 +437,12 @@ __all__ = [
     "ItemShelfLifeConfig", "PickingStrategyConfig", "CustomerShelfLifeRule",
     "LotShelfLifeProfile", "RetestRequest", "BulkHoldRecord", "ShelfLifeAlert",
     "DispositionSuggestion", "FEFOAuditLog", "SLAIRecommendation",
+    # Procurement Suggestion Engine
+    "PSRunStatus", "PSSuggestionStatus", "PSUrgencyLevel", "PSGroupStatus",
+    "PSAIAgentType", "SupplierItemPriority",
+    "SupplierItemPrice",
+    "ProcurementSuggestionRun", "ProcurementSuggestionLine",
+    "ProcurementSuggestionGroup", "PSAIRecommendation",
     # Allergen + Nutrition Management
     "AllergenCategory", "PresenceType", "CrossContactRisk", "NutrientBasis", "NutrientSource",
     "LabelBasisType", "AllergenChangeType", "ANAIAgentType", "ANAIRecStatus",
