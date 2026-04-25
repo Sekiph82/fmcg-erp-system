@@ -1,4 +1,4 @@
-const BASE = "/api/shop-floor";
+const BASE = "/api/v1/shop-floor";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 

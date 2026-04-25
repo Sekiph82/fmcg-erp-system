@@ -203,7 +203,7 @@ export function fmtMins(mins: number): string {
 
 // ── API client ─────────────────────────────────────────────────────────────────
 
-const BASE = "/production-execution";
+const BASE = "/api/v1/production-execution";
 
 export const execApi = {
   dashboard: () => apiClient.get<ExecDashboard>(`${BASE}/dashboard`),

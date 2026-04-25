@@ -232,7 +232,7 @@ export function utilizationColor(pct: number): string {
 
 // ── API ───────────────────────────────────────────────────────────────────────
 
-const BASE = "/mps";
+const BASE = "/api/v1/mps";
 
 export const mpsApi = {
   // Dashboard

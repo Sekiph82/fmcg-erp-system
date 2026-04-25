@@ -224,7 +224,7 @@ export const fmt = (n: number | null | undefined, dp = 2) =>
 
 // ── API client ─────────────────────────────────────────────────────────────────
 
-const BASE = "/procurement/suggestions";
+const BASE = "/api/v1/procurement/suggestions";
 
 export const psApi = {
   getDashboard: () =>

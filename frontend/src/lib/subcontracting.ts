@@ -129,7 +129,7 @@ export const fmt = (n: number|null|undefined, dp = 2) =>
   n == null ? "—" : Number(n).toLocaleString("en-KE", {minimumFractionDigits: dp, maximumFractionDigits: dp});
 
 // ── API client ────────────────────────────────────────────────────────────────
-const B = "/subcontracting";
+const B = "/api/v1/subcontracting";
 
 export const scApi = {
   getDashboard: () => apiClient.get<SCDashboard>(`${B}/dashboard`),
