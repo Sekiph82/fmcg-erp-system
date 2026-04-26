@@ -1,6 +1,6 @@
 """customer_distributor_portal
 
-Revision ID: a0b1c2d3e4f5
+Revision ID: a9b0c1d2e3f4
 Revises: f9a0b1c2d3e4
 Create Date: 2026-04-26 01:00:00.000000
 
@@ -9,7 +9,7 @@ from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
-revision = 'a0b1c2d3e4f5'
+revision = 'a9b0c1d2e3f4'
 down_revision = 'f9a0b1c2d3e4'
 branch_labels = None
 depends_on = None

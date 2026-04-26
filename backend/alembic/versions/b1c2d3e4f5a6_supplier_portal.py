@@ -1,7 +1,7 @@
 """supplier_portal
 
 Revision ID: b1c2d3e4f5a6
-Revises: a0b1c2d3e4f5
+Revises: a9b0c1d2e3f4
 Create Date: 2026-04-26 08:00:00.000000
 
 """
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 revision = 'b1c2d3e4f5a6'
-down_revision = 'a0b1c2d3e4f5'
+down_revision = 'a9b0c1d2e3f4'
 branch_labels = None
 depends_on = None
 
