@@ -1,17 +1,17 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { marketingApi, MarketingDashboard, CampaignStatus } from "@/lib/marketingApi";
+import { marketingApi, MarketingDashboard } from "@/lib/marketingApi";
 import { RequirePermission } from "@/components/PermissionGuard";
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
-function KPI({ label, value, sub, color = "text-white" }: {
+function KPI({ label, value, sub, color = "text-slate-100" }: {
   label: string; value: string | number; sub?: string; color?: string;
 }) {
   return (
-    <div className="rounded-xl bg-[#131c2e] border border-slate-700/50 p-4">
-      <p className="text-xs text-slate-400 mb-1">{label}</p>
+    <div className="glow-card p-4">
+      <p className="text-xs text-slate-400 mb-1 uppercase tracking-wide font-medium">{label}</p>
       <p className={`text-2xl font-bold ${color}`}>{value}</p>
       {sub && <p className="text-xs text-slate-500 mt-0.5">{sub}</p>}
     </div>
@@ -20,11 +20,20 @@ function KPI({ label, value, sub, color = "text-white" }: {
 
 const STATUS_COLORS: Record<string, string> = {
   DRAFT:     "bg-slate-600",
-  PLANNED:   "bg-blue-600",
-  ACTIVE:    "bg-emerald-600",
-  PAUSED:    "bg-yellow-600",
-  COMPLETED: "bg-sky-600",
-  CANCELLED: "bg-red-600",
+  PLANNED:   "bg-blue-500",
+  ACTIVE:    "bg-emerald-500",
+  PAUSED:    "bg-amber-500",
+  COMPLETED: "bg-sky-500",
+  CANCELLED: "bg-red-500",
+};
+
+const STATUS_BADGE: Record<string, string> = {
+  DRAFT:     "bg-slate-700 text-slate-300",
+  PLANNED:   "bg-blue-900/60 text-blue-300",
+  ACTIVE:    "bg-emerald-900/60 text-emerald-300",
+  PAUSED:    "bg-amber-900/60 text-amber-300",
+  COMPLETED: "bg-sky-900/60 text-sky-300",
+  CANCELLED: "bg-red-900/60 text-red-300",
 };
 
 function StatusBar({ data }: { data: Record<string, number> }) {
@@ -35,7 +44,7 @@ function StatusBar({ data }: { data: Record<string, number> }) {
       {Object.entries(data).map(([status, count]) => (
         <div key={status} className="flex items-center gap-3">
           <span className="text-xs text-slate-400 w-24 shrink-0">{status}</span>
-          <div className="flex-1 h-2 bg-slate-800 rounded-full overflow-hidden">
+          <div className="flex-1 h-2 bg-slate-800/60 rounded-full overflow-hidden">
             <div
               className={`h-full rounded-full ${STATUS_COLORS[status] ?? "bg-slate-500"}`}
               style={{ width: `${(count / total) * 100}%` }}
@@ -59,7 +68,7 @@ function BudgetVsActualChart({ rows }: { rows: MarketingDashboard["budget_vs_act
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <span className="text-xs text-slate-500 w-20 shrink-0">Budget</span>
-              <div className="flex-1 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+              <div className="flex-1 h-1.5 bg-slate-800/60 rounded-full overflow-hidden">
                 <div className="h-full bg-blue-500 rounded-full" style={{ width: `${(r.budget / max) * 100}%` }} />
               </div>
               <span className="text-xs text-slate-400 w-20 text-right">
@@ -68,7 +77,7 @@ function BudgetVsActualChart({ rows }: { rows: MarketingDashboard["budget_vs_act
             </div>
             <div className="flex items-center gap-2">
               <span className="text-xs text-slate-500 w-20 shrink-0">Actual Rev</span>
-              <div className="flex-1 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+              <div className="flex-1 h-1.5 bg-slate-800/60 rounded-full overflow-hidden">
                 <div className={`h-full rounded-full ${r.actual_revenue >= r.budget ? "bg-emerald-500" : "bg-orange-500"}`}
                   style={{ width: `${(r.actual_revenue / max) * 100}%` }} />
               </div>
@@ -91,7 +100,7 @@ function PromotionsByRegion({ rows }: { rows: Array<{ region: string; count: num
       {rows.map((r) => (
         <div key={r.region} className="flex items-center gap-3">
           <span className="text-xs text-slate-400 w-28 shrink-0 truncate">{r.region}</span>
-          <div className="flex-1 h-2 bg-slate-800 rounded-full overflow-hidden">
+          <div className="flex-1 h-2 bg-slate-800/60 rounded-full overflow-hidden">
             <div className="h-full bg-purple-500 rounded-full" style={{ width: `${(r.count / max) * 100}%` }} />
           </div>
           <span className="text-xs font-medium text-slate-300 w-6 text-right">{r.count}</span>
@@ -118,95 +127,87 @@ export default function MarketingDashboardPage() {
 
   return (
     <RequirePermission permission="marketing.view">
-      <div className="min-h-screen bg-[#0b1120] p-6 text-white">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold">Marketing Dashboard</h1>
-          <p className="text-slate-400 text-sm mt-1">Campaign and promotion performance overview</p>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-100">Marketing Dashboard</h1>
+            <p className="text-sm text-slate-400 mt-1">Campaign and promotion performance overview</p>
+          </div>
+          <div className="flex gap-2">
+            <a href="/dashboard/marketing/campaigns/new" className="glow-button-secondary text-sm">+ New Campaign</a>
+            <a href="/dashboard/marketing/promotions/new" className="glow-button text-sm">+ New Promotion</a>
+          </div>
         </div>
 
         {isLoading ? (
           <p className="text-slate-400">Loading...</p>
-        ) : data ? (
+        ) : !data ? (
+          <p className="text-red-400">Failed to load marketing data.</p>
+        ) : (
           <>
-            {/* ── Campaign KPIs ──────────────────────────────────────────── */}
-            <section className="mb-8">
-              <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
-                Campaigns
-              </h2>
+            {/* ── Campaign KPIs ────────────────────────────────────────────── */}
+            <section>
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Campaigns</p>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <KPI label="Active Campaigns"    value={data.active_campaigns}    color="text-emerald-400" />
-                <KPI label="Planned Campaigns"   value={data.planned_campaigns}   color="text-blue-400" />
-                <KPI label="Total Budget"         value={fmt(data.total_budget)} />
-                <KPI label="Actual Revenue"       value={fmt(data.total_actual_revenue)} color="text-sky-400" />
+                <KPI label="Active Campaigns"  value={data.active_campaigns}           color="text-emerald-400" />
+                <KPI label="Planned Campaigns" value={data.planned_campaigns}           color="text-blue-400" />
+                <KPI label="Total Budget"       value={fmt(data.total_budget)} />
+                <KPI label="Actual Revenue"     value={fmt(data.total_actual_revenue)}  color="text-sky-400" />
               </div>
             </section>
 
-            {/* ── ROI KPIs ──────────────────────────────────────────────── */}
-            <section className="mb-8">
+            {/* ── ROI KPIs ─────────────────────────────────────────────────── */}
+            <section>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                <KPI
-                  label="Expected ROI"
-                  value={`${(data.expected_roi * 100).toFixed(1)}%`}
-                  sub="revenue / budget"
-                />
+                <KPI label="Expected ROI"     value={`${(data.expected_roi * 100).toFixed(1)}%`}  sub="revenue / budget" />
                 <KPI
                   label="Actual ROI"
                   value={`${(data.actual_roi * 100).toFixed(1)}%`}
                   color={data.actual_roi >= data.expected_roi ? "text-emerald-400" : "text-orange-400"}
                 />
-                <KPI label="Expected Revenue"    value={fmt(data.total_expected_revenue)} />
+                <KPI label="Expected Revenue" value={fmt(data.total_expected_revenue)} />
               </div>
             </section>
 
-            {/* ── Promotion KPIs ────────────────────────────────────────── */}
-            <section className="mb-8">
-              <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
-                Promotions
-              </h2>
-              <div className="grid grid-cols-2 md:grid-cols-2 gap-4">
-                <KPI label="Total Promotions"    value={data.total_promotions} />
-                <KPI label="Active Promotions"   value={data.active_promotions} color="text-emerald-400" />
+            {/* ── Promotion KPIs ───────────────────────────────────────────── */}
+            <section>
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Promotions</p>
+              <div className="grid grid-cols-2 gap-4">
+                <KPI label="Total Promotions"  value={data.total_promotions} />
+                <KPI label="Active Promotions" value={data.active_promotions} color="text-emerald-400" />
               </div>
             </section>
 
-            {/* ── Charts row ────────────────────────────────────────────── */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-              {/* Campaign by status */}
-              <div className="rounded-xl bg-[#131c2e] border border-slate-700/50 p-5">
-                <h3 className="text-sm font-semibold mb-4">Campaign Count by Status</h3>
+            {/* ── Charts row ───────────────────────────────────────────────── */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="glow-card p-5">
+                <h3 className="text-sm font-semibold text-slate-200 mb-4">Campaign Count by Status</h3>
                 <StatusBar data={data.campaign_by_status} />
               </div>
-
-              {/* Budget vs Actual Revenue */}
-              <div className="rounded-xl bg-[#131c2e] border border-slate-700/50 p-5">
-                <h3 className="text-sm font-semibold mb-4">Budget vs Actual Revenue (Top 10)</h3>
+              <div className="glow-card p-5">
+                <h3 className="text-sm font-semibold text-slate-200 mb-4">Budget vs Actual Revenue (Top 10)</h3>
                 <BudgetVsActualChart rows={data.budget_vs_actual} />
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-              {/* Promotions by region */}
-              <div className="rounded-xl bg-[#131c2e] border border-slate-700/50 p-5">
-                <h3 className="text-sm font-semibold mb-4">Promotions by Region</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="glow-card p-5">
+                <h3 className="text-sm font-semibold text-slate-200 mb-4">Promotions by Region</h3>
                 <PromotionsByRegion rows={data.promotions_by_region} />
               </div>
-
-              {/* Campaign activity summary */}
-              <div className="rounded-xl bg-[#131c2e] border border-slate-700/50 p-5">
-                <h3 className="text-sm font-semibold mb-4">Recent Campaign Activity</h3>
+              <div className="glow-card p-5">
+                <h3 className="text-sm font-semibold text-slate-200 mb-4">Recent Campaign Activity</h3>
                 {data.recent_campaigns.length === 0 ? (
                   <p className="text-slate-500 text-sm">No recent campaigns.</p>
                 ) : (
                   <div className="space-y-2 max-h-56 overflow-y-auto">
                     {data.recent_campaigns.map((c, i) => (
-                      <div key={i} className="flex items-center justify-between py-1.5 border-b border-slate-800 last:border-0">
+                      <div key={i} className="flex items-center justify-between py-1.5 border-b border-slate-700/50 last:border-0">
                         <div>
                           <p className="text-sm font-medium text-slate-200 truncate max-w-[180px]">{c.name}</p>
                           <p className="text-xs text-slate-500">{c.start_date}</p>
                         </div>
-                        <span
-                          className={`text-xs font-medium px-2 py-0.5 rounded ${STATUS_COLORS[c.status] ?? "bg-slate-600"} text-white`}
-                        >
+                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_BADGE[c.status] ?? "bg-slate-700 text-slate-300"}`}>
                           {c.status}
                         </span>
                       </div>
@@ -218,7 +219,7 @@ export default function MarketingDashboardPage() {
 
             {/* Quick links */}
             <section>
-              <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Quick Actions</h2>
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Quick Actions</p>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {[
                   { label: "+ New Campaign",  href: "/dashboard/marketing/campaigns/new" },
@@ -229,7 +230,7 @@ export default function MarketingDashboardPage() {
                   <a
                     key={item.href}
                     href={item.href}
-                    className="rounded-xl bg-[#131c2e] border border-slate-700/50 p-4 text-sm font-medium hover:border-blue-500/50 transition-colors text-center"
+                    className="glow-card p-4 text-sm font-medium text-slate-300 hover:text-white text-center transition-colors block"
                   >
                     {item.label}
                   </a>
@@ -237,8 +238,6 @@ export default function MarketingDashboardPage() {
               </div>
             </section>
           </>
-        ) : (
-          <p className="text-slate-400">No data available.</p>
         )}
       </div>
     </RequirePermission>

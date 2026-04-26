@@ -67,7 +67,7 @@ function KPISkeleton() {
   return (
     <div className="grid grid-cols-2 gap-3 animate-pulse">
       {Array.from({ length: 9 }).map((_, i) => (
-        <div key={i} className="h-20 bg-gray-100 rounded-xl" />
+        <div key={i} className="h-20 bg-slate-800/50 rounded-xl" />
       ))}
     </div>
   );
@@ -166,15 +166,15 @@ export default function AnalyticsHubPage() {
     <RequirePermission permission="analytics.view">
       <div className="max-w-2xl mx-auto space-y-6 pb-10">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Analytics & BI</h1>
-          <p className="text-xs text-gray-400 mt-0.5">
+          <h1 className="text-xl font-bold text-slate-100">Analytics & BI</h1>
+          <p className="text-xs text-slate-400 mt-0.5">
             {data ? `Updated ${new Date(data.as_of).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : "Daily KPI snapshot"}
           </p>
         </div>
 
         {/* Daily KPI Grid */}
         <section>
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">
             Today&apos;s KPIs
           </p>
           {isLoading || !data ? <KPISkeleton /> : <KPIGrid d={data} />}
@@ -182,7 +182,7 @@ export default function AnalyticsHubPage() {
 
         {/* Module dashboards */}
         <section>
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">
             Module Dashboards
           </p>
           <div className="grid grid-cols-2 gap-3">

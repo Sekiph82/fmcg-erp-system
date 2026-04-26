@@ -61,9 +61,9 @@ export function KPICard({
 
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide truncate">{label}</p>
-          <p className="mt-1 text-2xl font-bold text-gray-900 leading-none">{value}</p>
-          {subtext && <p className="mt-1 text-xs text-gray-400">{subtext}</p>}
+          <p className="text-xs font-medium text-slate-400 uppercase tracking-wide truncate">{label}</p>
+          <p className="mt-1 text-2xl font-bold text-slate-100 leading-none">{value}</p>
+          {subtext && <p className="mt-1 text-xs text-slate-500">{subtext}</p>}
         </div>
 
         <div className="flex flex-col items-end gap-1 shrink-0">
@@ -93,7 +93,7 @@ export function KPICard({
       )}
 
       {href && (
-        <span className="text-xs text-blue-500 font-medium mt-0.5">View details →</span>
+        <span className="text-xs text-blue-400 font-medium mt-0.5">View details →</span>
       )}
     </div>
   );

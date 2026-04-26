@@ -461,7 +461,7 @@ async def procurement_analytics(
         select(func.count(PurchaseOrder.id)).where(
             and_(
                 PurchaseOrder.status.in_([POStatus.ORDERED, POStatus.PARTIALLY_RECEIVED]),
-                PurchaseOrder.expected_delivery < today,
+                PurchaseOrder.expected_delivery_date < today,
             )
         )
     )
@@ -1999,7 +1999,7 @@ async def daily_kpis(db: AsyncSession = Depends(get_db)):
     All metrics sourced from real data — nothing hardcoded.
     """
     from app.models.sales import (
-        SalesOrder, SOStatus, Invoice, InvoiceStatus, MpesaTransaction, MpesaTxStatus
+        SalesOrder, SOStatus, SOLine, Invoice, InvoiceStatus, MpesaTransaction, MpesaTxStatus
     )
     from app.models.inventory import Stock, StockMovement
     from app.models.master import Product, Material
@@ -2013,8 +2013,16 @@ async def daily_kpis(db: AsyncSession = Depends(get_db)):
 
     # ── Sales today ──
     so_row = (await db.execute(
-        select(func.count(SalesOrder.id),
-               func.coalesce(func.sum(SalesOrder.total_amount), 0))
+        select(
+            func.count(func.distinct(SalesOrder.id)),
+            func.coalesce(
+                func.sum(
+                    SOLine.ordered_quantity * SOLine.unit_price
+                    * (1 - func.coalesce(SOLine.discount_pct, 0))
+                ), 0
+            ),
+        )
+        .outerjoin(SOLine, SOLine.so_id == SalesOrder.id)
         .where(and_(SalesOrder.order_date == today,
                     SalesOrder.status.notin_([SOStatus.CANCELLED, SOStatus.DRAFT])))
     )).one()
@@ -2097,7 +2105,7 @@ async def daily_kpis(db: AsyncSession = Depends(get_db)):
     delay_count = (await db.execute(
         select(func.count(PurchaseOrder.id)).where(and_(
             PurchaseOrder.status.in_([POStatus.ORDERED, POStatus.PARTIALLY_RECEIVED]),
-            PurchaseOrder.expected_delivery < today,
+            PurchaseOrder.expected_delivery_date < today,
         ))
     )).scalar_one() or 0
 
