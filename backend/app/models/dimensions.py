@@ -133,7 +133,7 @@ class CostCenter(Base, TimestampMixin):
     parent_id             = Column(UUID(as_uuid=True), ForeignKey("cost_centers.id"), nullable=True)
     cost_center_type      = Column(Enum(CostCenterType), nullable=False, default=CostCenterType.ADMIN)
     plant_id              = Column(UUID(as_uuid=True), ForeignKey("warehouses.id"), nullable=True)
-    manager_employee_id   = Column(UUID(as_uuid=True), ForeignKey("employees.id"), nullable=True)
+    manager_employee_id   = Column(UUID(as_uuid=True), ForeignKey("hr_employees.id"), nullable=True)
     department            = Column(String(100))
     active                = Column(Boolean, default=True)
     start_date            = Column(Date)

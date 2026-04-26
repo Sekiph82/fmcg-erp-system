@@ -2,7 +2,7 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.db.base import get_db
+from app.db.session import get_db
 from app.schemas.promotions import (
     PromoSchemeCreate, PromoSchemeRead, PromoSchemeListItem,
     EvaluateOrderRequest, EvaluateOrderResult,

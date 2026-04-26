@@ -160,7 +160,7 @@ class FAFixedAsset(Base, TimestampMixin):
     plant           = Column(String(100), nullable=True)
     department      = Column(String(100), nullable=True)
     cost_center     = Column(String(100), nullable=True)
-    custodian_employee_id = Column(UUID(as_uuid=True), ForeignKey("employees.id", ondelete="SET NULL"), nullable=True)
+    custodian_employee_id = Column(UUID(as_uuid=True), ForeignKey("hr_employees.id", ondelete="SET NULL"), nullable=True)
     condition_status = Column(String(50), nullable=True)
     is_legacy_import = Column(Boolean, default=False)
     legacy_accumulated_depreciation = Column(Numeric(18, 4), nullable=True)
