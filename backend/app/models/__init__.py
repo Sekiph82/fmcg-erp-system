@@ -318,6 +318,15 @@ from app.models.promotions import (
     PromoUsageTally, PromoAIRecommendation,
 )
 
+# ── Advanced CRM Pipeline ─────────────────────────────────────────────────────
+from app.models.crm import (
+    CRMRecordType, CRMAccountType, CRMSourceType, CRMStageType,
+    CRMTemperature, CRMStatus, CRMActivityType, CRMActivityResult,
+    CRMLossReason, CRMWinReason, CRMAIAgentType, CRMAIRecStatus,
+    CRMPipelineStage, CRMRecord, CRMInterestLine, CRMActivity,
+    CRMCompetitor, CRMWinLoss, CRMAIRecommendation,
+)
+
 # ── Trade Promotion Management (TPM) ─────────────────────────────────────────
 from app.models.tpm import (
     TPMPeriodType, TPMPlanStatus, TPMPromotionType, TPMObjectiveType,
@@ -560,6 +569,12 @@ __all__ = [
     "MaterialReservation", "MaterialReservationLine",
     "ProductionConsumption", "PreparedLot", "TankOccupancy",
     "BatchReconciliation", "BatchReconciliationLine", "MFAIRecommendation",
+    # Advanced CRM Pipeline
+    "CRMRecordType", "CRMAccountType", "CRMSourceType", "CRMStageType",
+    "CRMTemperature", "CRMStatus", "CRMActivityType", "CRMActivityResult",
+    "CRMLossReason", "CRMWinReason", "CRMAIAgentType", "CRMAIRecStatus",
+    "CRMPipelineStage", "CRMRecord", "CRMInterestLine", "CRMActivity",
+    "CRMCompetitor", "CRMWinLoss", "CRMAIRecommendation",
     # Trade Promotion Management
     "TPMPeriodType", "TPMPlanStatus", "TPMPromotionType", "TPMObjectiveType",
     "TPMPromotionStatus", "TPMBudgetType", "TPMBaselineMethod",

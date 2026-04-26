@@ -1,7 +1,72 @@
 # TASKS — FMCG ERP (Kenya) · Production Module
 
 ## Current Phase
-Phase 22 — Trade Promotion Management Enhancement ✅ COMPLETED
+Phase 23 — Advanced CRM Pipeline ✅ COMPLETED
+
+---
+
+## Phase 23 — Advanced CRM Pipeline ✅
+
+- [x] `backend/app/models/crm.py` — 12 enums + 7 models:
+  - Enums: CRMRecordType, CRMAccountType, CRMSourceType, CRMStageType, CRMTemperature, CRMStatus, CRMActivityType, CRMActivityResult, CRMLossReason, CRMWinReason, CRMAIAgentType, CRMAIRecStatus
+  - Models: CRMPipelineStage, CRMRecord, CRMInterestLine, CRMActivity, CRMCompetitor, CRMWinLoss, CRMAIRecommendation
+- [x] `backend/app/schemas/crm.py` — full Pydantic v2 schemas (stage CRUD, record CRUD, qualify, convert, close-won/lost, forecast rows, win-loss report, AI rec ack)
+- [x] `backend/app/services/crm_pipeline_service.py`:
+  - Stage CRUD + seed_default_stages (10 default stages)
+  - Record CRUD (leads + opportunities) with auto-code generation (LD-XXXXX, OPP-XXXXX)
+  - Auto-probability from stage assignment
+  - qualify_record (6-point fit checklist, score bonus)
+  - convert_to_opportunity (type change, code assignment, audit trail)
+  - close_won / close_lost (status update + win/loss record creation)
+  - put_on_hold / reopen
+  - add_interest_line / delete_interest_line
+  - Activity CRUD + complete_activity
+  - Competitor intelligence add
+  - check_duplicates (company/email/phone dedup)
+  - update_lead_score (source, activity, qualification, revenue, next action, interest lines)
+  - Dashboard aggregation (12 KPIs + stage distribution + top reps)
+  - Forecast (monthly bucketing, expected + weighted revenue, N months ahead)
+  - Pipeline report (by stage with weighted values)
+  - Win/Loss analytics (by reason, by win reason, competitor causes)
+  - AI Agent 1: Lead Prioritization (stale leads 7+ days, closing soon within 30 days)
+  - AI Agent 2: Pipeline Risk Monitor (overdue close dates, stage bottlenecks >5 records)
+  - AI Agent 3: Win/Loss Insight (recurring loss reasons ≥3, competitor patterns ≥2)
+- [x] `backend/app/api/v1/endpoints/crm_pipeline.py` — 25+ routes at /api/v1/crm/
+  - GET/POST /crm/stages + PATCH + POST seed-defaults
+  - GET/POST /crm/leads + /crm/opportunities + /crm/records
+  - GET/PATCH /crm/records/{id}
+  - POST /crm/records/{id}/qualify | convert-to-opportunity | close-won | close-lost | on-hold | reopen | update-score
+  - POST /crm/records/{id}/interest-lines + DELETE /crm/interest-lines/{id}
+  - GET/POST /crm/activities + POST /crm/activities/{id}/complete
+  - POST /crm/competitors
+  - GET /crm/check-duplicates
+  - GET /crm/dashboard | /crm/forecast | /crm/reports/pipeline | /crm/reports/win-loss
+  - POST /crm/ai/run-lead-prioritization | run-pipeline-risk | run-win-loss-insight
+  - GET/PATCH /crm/ai/recommendations
+- [x] `backend/alembic/versions/f9a0b1c2d3e4_crm_pipeline.py` — migration (down_revision: e7f8a9b0c1d2)
+  - 7 tables: crm_pipeline_stages, crm_records, crm_interest_lines, crm_activities, crm_competitors, crm_win_loss, crm_ai_recommendations
+- [x] `backend/app/models/__init__.py` + `router.py` updated
+- [x] `frontend/src/lib/crm_pipeline.ts` — TypeScript types, API client, label maps, color maps, fmtCurrency
+- [x] Frontend pages (11 screens):
+  - CRM Dashboard (KPI cards, pipeline value, weighted pipeline, stage distribution, top reps, quick links)
+  - Lead List (filters by status/temperature, create modal, score bar, temperature badge)
+  - Opportunity List (pipeline/weighted summary, filters, create modal)
+  - Pipeline Kanban Board (drag-drop stage movement, cards with revenue/probability/close date)
+  - Record Detail (6 tabs: overview, activities, products, competitors, close deal + convert modal)
+  - Activity Timeline (filters: overdue/type/status, complete/reschedule actions, linked record)
+  - Forecast Dashboard (monthly bar chart, expected vs weighted, pipeline by stage table)
+  - Win/Loss Analysis (win rate bar, loss reasons, win reasons, competitor causes)
+  - Lead Qualification Panel (6-point BANT+PG checklist, score meter, qualify/disqualify)
+  - Overdue Follow-Up Queue (urgency-colored cards, complete/reschedule actions)
+  - Stage Configuration (CRUD, seed defaults, activate/deactivate)
+  - AI Agents (3 agents: Lead Prioritization + Pipeline Risk + Win/Loss Insight, ack workflow)
+- [x] Sidebar: "CRM Pipeline" section added (11 items)
+
+## Next Immediate Task
+Phase 24 — Customer / Distributor Portal
+
+## Blockers
+None
 
 ---
 

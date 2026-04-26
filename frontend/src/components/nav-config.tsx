@@ -435,6 +435,29 @@ export const NAV_CONFIG: NavEntry[] = [
 
   {
     type: "section",
+    id: "crm-pipeline",
+    label: "CRM Pipeline",
+    permission: "sales.view",
+    icon: md(
+      "M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+    ),
+    items: [
+      { label: "CRM Dashboard",      href: "/dashboard/crm",              permission: "sales.view" },
+      { label: "Leads",              href: "/dashboard/crm/leads",        permission: "sales.view" },
+      { label: "Opportunities",      href: "/dashboard/crm/opportunities", permission: "sales.view" },
+      { label: "Pipeline Board",     href: "/dashboard/crm/pipeline",     permission: "sales.view" },
+      { label: "Activity Timeline",  href: "/dashboard/crm/activities",   permission: "sales.view" },
+      { label: "Lead Qualification", href: "/dashboard/crm/qualify",      permission: "sales.view" },
+      { label: "Forecast",           href: "/dashboard/crm/forecast",     permission: "sales.view" },
+      { label: "Win/Loss Analysis",  href: "/dashboard/crm/win-loss",     permission: "sales.view" },
+      { label: "Overdue Queue",      href: "/dashboard/crm/overdue",      permission: "sales.view" },
+      { label: "Stage Config",       href: "/dashboard/crm/stages",       permission: "sales.view" },
+      { label: "AI Agents",          href: "/dashboard/crm/ai",           permission: "sales.view" },
+    ],
+  },
+
+  {
+    type: "section",
     id: "tpm",
     label: "Trade Promotion Mgmt",
     permission: "promotions.view",
