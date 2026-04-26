@@ -318,6 +318,15 @@ from app.models.promotions import (
     PromoUsageTally, PromoAIRecommendation,
 )
 
+# ── Supplier Portal ───────────────────────────────────────────────────────────
+from app.models.supplier_portal import (
+    SPAccountStatus, SPUserRole, SPActivityType,
+    SPPOResponseStatus, SPETAStatus, SPDocUploadType, SPDocReviewStatus,
+    SPPaymentVisibility, SPAIAgentType, SPAIRecStatus,
+    SPAccount, SPUser, SPPermissionProfile, SPActivityLog,
+    SPDocument, SPPOResponse, SPETALog, SPAIRecommendation,
+)
+
 # ── Customer / Distributor Portal ─────────────────────────────────────────────
 from app.models.portal import (
     PortalAccountType, PortalAccountStatus, PortalUserRole,
@@ -580,6 +589,12 @@ __all__ = [
     "MaterialReservation", "MaterialReservationLine",
     "ProductionConsumption", "PreparedLot", "TankOccupancy",
     "BatchReconciliation", "BatchReconciliationLine", "MFAIRecommendation",
+    # Supplier Portal
+    "SPAccountStatus", "SPUserRole", "SPActivityType",
+    "SPPOResponseStatus", "SPETAStatus", "SPDocUploadType", "SPDocReviewStatus",
+    "SPPaymentVisibility", "SPAIAgentType", "SPAIRecStatus",
+    "SPAccount", "SPUser", "SPPermissionProfile", "SPActivityLog",
+    "SPDocument", "SPPOResponse", "SPETALog", "SPAIRecommendation",
     # Customer / Distributor Portal
     "PortalAccountType", "PortalAccountStatus", "PortalUserRole",
     "PortalActivityType", "PortalClaimType", "PortalClaimStatus",

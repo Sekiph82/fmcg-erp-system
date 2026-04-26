@@ -435,6 +435,28 @@ export const NAV_CONFIG: NavEntry[] = [
 
   {
     type: "section",
+    id: "supplier-portal",
+    label: "Supplier Portal",
+    permission: "procurement.view",
+    icon: md(
+      "M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+    ),
+    items: [
+      { label: "Portal Admin",       href: "/dashboard/supplier-portal",                  permission: "procurement.view" },
+      { label: "Purchase Orders",    href: "/dashboard/supplier-portal/accounts",         permission: "procurement.view" },
+      { label: "ETA Management",     href: "/dashboard/supplier-portal/eta",              permission: "procurement.view" },
+      { label: "Documents",          href: "/dashboard/supplier-portal/documents",        permission: "procurement.view" },
+      { label: "Invoice Submission", href: "/dashboard/supplier-portal/invoices",         permission: "procurement.view" },
+      { label: "Payment Status",     href: "/dashboard/supplier-portal/payment",          permission: "procurement.view" },
+      { label: "Portal Users",       href: "/dashboard/supplier-portal/users",            permission: "procurement.view" },
+      { label: "Activity Log",       href: "/dashboard/supplier-portal/activity",         permission: "procurement.view" },
+      { label: "Reports",            href: "/dashboard/supplier-portal/reports",          permission: "procurement.view" },
+      { label: "AI Agents",          href: "/dashboard/supplier-portal/ai",               permission: "procurement.view" },
+    ],
+  },
+
+  {
+    type: "section",
     id: "customer-portal",
     label: "Customer / Distributor Portal",
     permission: "sales.view",

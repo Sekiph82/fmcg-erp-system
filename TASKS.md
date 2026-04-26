@@ -56,8 +56,48 @@ Phase 24 — Customer / Distributor Portal ✅ COMPLETED
   - AI Agents (3 agents + recommendation ack workflow)
 - [x] Sidebar: "Customer / Distributor Portal" section added (8 items)
 
+## Phase 25 — Supplier Portal ✅ COMPLETED
+
+- [x] `backend/app/models/supplier_portal.py` — 9 enums + 7 models:
+  - Enums: SPAccountStatus, SPUserRole, SPActivityType, SPPOResponseStatus, SPETAStatus, SPDocUploadType, SPDocReviewStatus, SPPaymentVisibility, SPAIAgentType, SPAIRecStatus
+  - Models: SPAccount, SPUser, SPPermissionProfile, SPActivityLog, SPDocument, SPPOResponse, SPETALog, SPAIRecommendation
+- [x] `backend/app/schemas/supplier_portal.py` — full Pydantic v2 schemas
+- [x] `backend/app/services/supplier_portal_service.py`:
+  - Account CRUD (create, update, list, get by supplier)
+  - User invite + deactivate + password reset
+  - Login with activity logging
+  - Scoped PO list + detail (filtered by supplier_id)
+  - PO acknowledgment / response workflow (accept/reject/partial/revised ETA)
+  - ETA proposal + revision history + buyer review
+  - Document upload (all 13 types) + review workflow
+  - Expiring document detection (configurable days)
+  - Payment status visibility (policy-gated)
+  - Portal activity log
+  - Dashboard (open POs, pending ACK, doc uploads, expiring certs, recent activity, AI alerts)
+  - AI Agent 1: Collaboration Monitor (overdue PO acknowledgments)
+  - AI Agent 2: Friction Assistant (low portal adoption)
+  - AI Agent 3: Risk Signal (expiring compliance docs)
+  - Reports: adoption, PO ack time, ETA revisions, non-responding suppliers
+- [x] `backend/app/api/v1/endpoints/supplier_portal.py` — 25+ routes at /api/v1/supplier-portal/
+- [x] `backend/alembic/versions/b1c2d3e4f5a6_supplier_portal.py` — migration (down_revision: a0b1c2d3e4f5), 7 tables
+- [x] `backend/app/models/__init__.py` + `router.py` updated
+- [x] `frontend/src/lib/supplier_portal.ts` — TypeScript types, API client, color/label maps
+- [x] Frontend pages (10 screens):
+  - Portal Admin (account list + onboarding modal, status KPIs)
+  - Account Detail (dashboard KPIs + quick links + AI alerts + recent activity)
+  - Purchase Orders per account (list + PO acknowledge/reject/propose-ETA modal)
+  - ETA Management (history view + propose modal + buyer review modal)
+  - Document Center (upload all 13 doc types + review workflow + expiry alert banner)
+  - Invoice Submission (upload invoices with metadata + PO link)
+  - Payment Status (invoice payment tracking, policy-gated)
+  - Portal Users (invite + deactivate + role management)
+  - Activity Log (full audit trail per account)
+  - Reports (4 reports: adoption, ack time, ETA revisions, non-responding)
+  - AI Agents (3 agents + recommendation ack/dismiss/action workflow)
+- [x] Sidebar: "Supplier Portal" section added (10 items)
+
 ## Next Immediate Task
-Phase 25 — Supplier Portal
+Phase 26 — Dunning / Overdue Collection
 
 ## Blockers
 None
