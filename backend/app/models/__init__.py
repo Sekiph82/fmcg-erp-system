@@ -318,6 +318,14 @@ from app.models.promotions import (
     PromoUsageTally, PromoAIRecommendation,
 )
 
+# ── Price List Enhancement ────────────────────────────────────────────────────
+from app.models.price_list import (
+    PLType, PLStatus, PLDiscountType, PLApprovalAction,
+    PLDiscountScope, PLChangeType, PLAIAgentType, PLAIRecStatus,
+    PLHeader, PLLine, PLTier, PLAssignment, PLDiscountRule,
+    PLApproval, PLChangeHistory, PLAIRecommendation,
+)
+
 # ── Dunning / Overdue Collection ─────────────────────────────────────────────
 from app.models.dunning import (
     DunningActionType, DunningCaseStatus, DunningActionOutcome,
@@ -598,6 +606,11 @@ __all__ = [
     "MaterialReservation", "MaterialReservationLine",
     "ProductionConsumption", "PreparedLot", "TankOccupancy",
     "BatchReconciliation", "BatchReconciliationLine", "MFAIRecommendation",
+    # Price List Enhancement
+    "PLType", "PLStatus", "PLDiscountType", "PLApprovalAction",
+    "PLDiscountScope", "PLChangeType", "PLAIAgentType", "PLAIRecStatus",
+    "PLHeader", "PLLine", "PLTier", "PLAssignment", "PLDiscountRule",
+    "PLApproval", "PLChangeHistory", "PLAIRecommendation",
     # Dunning / Overdue Collection
     "DunningActionType", "DunningCaseStatus", "DunningActionOutcome",
     "PTPStatus", "DunningExceptionType", "DunningAIAgentType", "DunningAIRecStatus",

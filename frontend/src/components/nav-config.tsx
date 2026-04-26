@@ -435,6 +435,26 @@ export const NAV_CONFIG: NavEntry[] = [
 
   {
     type: "section",
+    id: "price-lists",
+    label: "Price Lists & Discounts",
+    permission: "sales.view",
+    icon: md(
+      "M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
+    ),
+    items: [
+      { label: "Dashboard",         href: "/dashboard/price-lists",                  permission: "sales.view" },
+      { label: "Approval Queue",    href: "/dashboard/price-lists/approval-queue",   permission: "sales.view" },
+      { label: "Discount Rules",    href: "/dashboard/price-lists/discount-rules",   permission: "sales.view" },
+      { label: "Margin Guardrails", href: "/dashboard/price-lists/margin",           permission: "sales.view" },
+      { label: "Version Compare",   href: "/dashboard/price-lists/compare",          permission: "sales.view" },
+      { label: "Bulk Import",       href: "/dashboard/price-lists/import",           permission: "sales.view" },
+      { label: "Reports",           href: "/dashboard/price-lists/reports",          permission: "sales.view" },
+      { label: "AI Agents",         href: "/dashboard/price-lists/ai",               permission: "sales.view" },
+    ],
+  },
+
+  {
+    type: "section",
     id: "dunning",
     label: "Dunning & Collections",
     permission: "finance.view",

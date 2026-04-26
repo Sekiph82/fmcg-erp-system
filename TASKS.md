@@ -132,8 +132,44 @@ Phase 24 — Customer / Distributor Portal ✅ COMPLETED
   - AI Agents (3 agents, ack/action/dismiss workflow)
 - [x] Sidebar: "Dunning & Collections" section added (9 links)
 
+## Phase 27 — Price List & Discount Enhancement ✅ COMPLETED
+
+- [x] `backend/app/models/price_list.py` — 9 enums + 8 models: PLHeader, PLLine, PLTier, PLAssignment, PLDiscountRule, PLApproval, PLChangeHistory, PLAIRecommendation
+- [x] `backend/app/schemas/price_list.py` — full Pydantic v2 schemas
+- [x] `backend/app/services/price_list_service.py`:
+  - Header CRUD with draft/review/approve/activate/archive lifecycle
+  - PLLine CRUD (locked when active — must clone for edits)
+  - PLTier CRUD (quantity break pricing: unit price override, discount%, fixed discount)
+  - PLAssignment CRUD (customer / distributor / channel / region / country / segment)
+  - PLDiscountRule CRUD (scope, type, max%, approval gate, margin floor, reason requirement)
+  - Approval workflow (submit → review → approve/reject → activate)
+  - Price resolution engine (7-level hierarchy: customer-specific → assignment → promo → channel/region → default/standard)
+  - Margin check engine (BELOW_COST=blocked, <10%=approval, <20%=warning, ≥20%=OK)
+  - Bulk CSV import (validates product codes, upserts lines, logs change history)
+  - Template CSV generator
+  - Change history log (every CRUD action logged)
+  - 4 reports: dashboard KPIs, expiring lists, below-margin lines, version comparison diff
+  - AI Agent 1: Pricing Risk Monitor (expired active lists, below-margin lines)
+  - AI Agent 2: Price Optimization (overlapping list consolidation)
+  - AI Agent 3: Discount Abuse Detector (no-margin-guard customer lists)
+- [x] `backend/app/api/v1/endpoints/price_list.py` — 30+ routes at /api/v1/price-lists/
+- [x] `backend/alembic/versions/d3e4f5a6b7c8_price_list.py` — migration (down_revision: c2d3e4f5a6b7), 8 tables
+- [x] `backend/app/models/__init__.py` + `router.py` updated
+- [x] `frontend/src/lib/price_list.ts` — TypeScript types, API client, color/label maps
+- [x] Frontend pages (8 screens):
+  - Dashboard (KPI cards, expiring alert banner, create price list modal, filterable table)
+  - Price List Detail (5 tabs: lines, tiers, assignments, history, approvals + workflow buttons)
+  - Approval Queue (review/approve/reject with reviewer name + notes)
+  - Discount Rules (create rules with scope/type/approval/margin guards)
+  - Margin Guardrails (live margin check + BELOW_COST/BELOW_MIN/WARNING/OK logic + below-margin report)
+  - Version Compare (diff two price lists by price delta and delta%)
+  - Bulk Import (CSV paste + download template + error reporting)
+  - Reports (dashboard KPIs, expiring 60d, below-margin)
+  - AI Agents (3 agents + ack/action/dismiss workflow)
+- [x] Sidebar: "Price Lists & Discounts" section added (8 links)
+
 ## Next Immediate Task
-Phase 27 — Price List and Discount Enhancement
+Phase 28 — Subscription / Recurring Orders
 
 ## Blockers
 None
