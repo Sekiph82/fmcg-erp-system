@@ -1,7 +1,46 @@
 # TASKS — FMCG ERP (Kenya) · Production Module
 
 ## Current Phase
-Phase 24 — Customer / Distributor Portal ✅ COMPLETED
+Phase 28 — Subscription / Recurring Orders ✅ COMPLETED
+
+---
+
+## Phase 28 — Subscription / Recurring Orders ✅
+
+- [x] `backend/app/models/subscription.py` — 8 enums + 5 models (UUID PKs):
+  - Enums: RecurrenceType, SubscriptionStatus, GenerationMode, PriceSource, GenerationStatus, PauseSkipAction, SubAIAgentType, SubAIRecStatus
+  - Models: SubscriptionTemplate, SubscriptionLine, SubscriptionGenerationLog, SubscriptionPauseSkip, SubAIRecommendation
+- [x] `backend/app/schemas/subscription.py` — Pydantic v2 schemas (template CRUD, generation log, pause/skip, AI rec, upcoming demand)
+- [x] `backend/app/services/subscription_service.py`:
+  - Recurrence engine: WEEKLY, BIWEEKLY, MONTHLY_DATE, MONTHLY_DAY, CUSTOM_DAYS, ROUTE_BASED
+  - Pre-generation validation (customer active, credit hold, item active, duplicate guard, pause/skip check)
+  - Sales order generation with generation mode (DRAFT_ONLY / APPROVAL_REQUIRED / AUTO_CONFIRM)
+  - next_generation_date calculation after each run
+  - Scheduler: run_scheduled_generation() — processes all due active templates
+  - Pause / skip / resume / cancel workflow
+  - Upcoming demand feed for MRP/planning
+  - 3 AI agents: DEMAND_PREDICTOR, RISK_MONITOR, OPTIMIZATION_ASSISTANT
+  - Reports: template health, generation by status, failed generations
+- [x] `backend/app/api/v1/endpoints/subscription.py` — 20 routes at /api/v1/recurring-orders/
+- [x] `backend/alembic/versions/e4f5a6b7c8d9_subscription_recurring_orders.py` — migration (down_revision: d3e4f5a6b7c8)
+- [x] `backend/app/models/__init__.py` + `router.py` updated
+- [x] `frontend/src/lib/subscription.ts` — TypeScript types, API client, color/label maps
+- [x] Frontend pages (6 screens):
+  - Dashboard (stats, recent templates, generation stats, AI alerts)
+  - Template List (filterable by status)
+  - Template Detail (4 sections: info grid, lines tab, generation log tab, pause history tab)
+  - New Template form (recurrence settings, generation mode, lines)
+  - Generation Calendar (8-week calendar + next-date list)
+  - Upcoming Demand (grouped by date, MRP feed)
+  - Reports (health KPIs, bar chart, failed log)
+  - AI Insights (3-agent descriptions, rec acknowledge/dismiss)
+- [x] Nav-config: "Recurring Orders" section with 6 links
+
+## Next: Prompt 29 — Van Sales / Mobile POS
+
+---
+
+## Phase 24 — Customer / Distributor Portal ✅ COMPLETED
 
 ---
 

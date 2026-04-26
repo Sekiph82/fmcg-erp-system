@@ -982,6 +982,29 @@ export const NAV_CONFIG: NavEntry[] = [
     ],
   },
 
+  // ╔══════════════════════════════════╗
+  // ║   SUBSCRIPTION / RECURRING       ║
+  // ╚══════════════════════════════════╝
+  cluster("cluster-recurring", "Recurring Orders"),
+
+  {
+    type: "section",
+    id: "recurring-orders",
+    label: "Recurring Orders",
+    permission: "sales.view",
+    icon: md(
+      "M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+    ),
+    items: [
+      { label: "Dashboard",          href: "/dashboard/recurring-orders",                   permission: "sales.view" },
+      { label: "Templates",          href: "/dashboard/recurring-orders/templates",          permission: "sales.view" },
+      { label: "Generation Calendar",href: "/dashboard/recurring-orders/schedule",          permission: "sales.view" },
+      { label: "Upcoming Demand",    href: "/dashboard/recurring-orders/upcoming-demand",   permission: "sales.view" },
+      { label: "Reports",            href: "/dashboard/recurring-orders/reports",           permission: "sales.view" },
+      { label: "AI Insights",        href: "/dashboard/recurring-orders/ai",                permission: "sales.view" },
+    ],
+  },
+
   // ╔══════════════════════════════╗
   // ║       PEOPLE & ADMIN         ║
   // ╚══════════════════════════════╝

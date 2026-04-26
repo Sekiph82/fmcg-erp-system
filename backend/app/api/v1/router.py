@@ -29,6 +29,7 @@ from app.api.v1.endpoints import (
     supplier_portal,
     dunning,
     price_list,
+    subscription,
 )
 
 api_router = APIRouter()
@@ -166,3 +167,5 @@ api_router.include_router(supplier_portal.router, prefix="/supplier-portal", tag
 api_router.include_router(dunning.router, prefix="/dunning", tags=["dunning"])
 # ── Price List & Discount Enhancement ─────────────────────────────────────────
 api_router.include_router(price_list.router, prefix="/price-lists", tags=["price-lists"])
+# ── Subscription / Recurring Orders ───────────────────────────────────────────
+api_router.include_router(subscription.router, prefix="/recurring-orders", tags=["recurring-orders"])

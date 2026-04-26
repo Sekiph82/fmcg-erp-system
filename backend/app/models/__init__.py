@@ -403,6 +403,16 @@ from app.models.bank_reconciliation import (
     BRAdjustment, BRAIRecommendation,
 )
 
+# ── Subscription / Recurring Orders ──────────────────────────────────────────
+from app.models.subscription import (
+    RecurrenceType, SubscriptionStatus, GenerationMode,
+    PriceSource, GenerationStatus, PauseSkipAction,
+    SubAIAgentType, SubAIRecStatus,
+    SubscriptionTemplate, SubscriptionLine,
+    SubscriptionGenerationLog, SubscriptionPauseSkip,
+    SubAIRecommendation,
+)
+
 # ── Material Flow Engine ──────────────────────────────────────────────────────
 from app.models.material_flow import (
     FlowType, FlowStatus, FlowMode, StageType, QualityStatus,
@@ -598,6 +608,13 @@ __all__ = [
     "GS1CompanyConfig", "ProductGS1Config", "LotBarcodeRecord",
     "SSCCPallet", "SSCCPalletLot", "GS1LabelTemplate", "LabelPrintJob",
     "LabelPrintJobItem", "GS1AIRecommendation",
+    # Subscription / Recurring Orders
+    "RecurrenceType", "SubscriptionStatus", "GenerationMode",
+    "PriceSource", "GenerationStatus", "PauseSkipAction",
+    "SubAIAgentType", "SubAIRecStatus",
+    "SubscriptionTemplate", "SubscriptionLine",
+    "SubscriptionGenerationLog", "SubscriptionPauseSkip",
+    "SubAIRecommendation",
     # Material Flow Engine
     "FlowType", "FlowStatus", "FlowMode", "StageType", "QualityStatus",
     "MovementReason", "ReservationStatus", "TankStatus", "ReconciliationStatus",
