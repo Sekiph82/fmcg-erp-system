@@ -56,8 +56,9 @@ export default function MPSDashboardPage() {
   });
 
   if (isLoading) return <div className="p-8 text-gray-400">Loading MPS dashboard…</div>;
+  if (!dash) return <div className="p-8 text-red-500">Failed to load MPS dashboard.</div>;
 
-  const d = dash!;
+  const d = dash;
 
   return (
     <div className="p-6 space-y-6">

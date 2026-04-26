@@ -14,7 +14,7 @@ from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal, ROUND_HALF_UP
 from typing import Optional
 
-from sqlalchemy import select, func, and_, update
+from sqlalchemy import select, func, and_, update, cast, Integer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.mps import (
@@ -344,10 +344,10 @@ async def get_mps_dashboard(db: AsyncSession) -> MPSDashboard:
         select(
             func.count().label("total"),
             func.sum(
-                func.cast(MPSLine.feasibility_status == MPSFeasibilityStatus.OVERLOADED, type_=None)
+                cast(MPSLine.feasibility_status == MPSFeasibilityStatus.OVERLOADED, Integer)
             ).label("over"),
             func.sum(
-                func.cast(MPSLine.feasibility_status == MPSFeasibilityStatus.FEASIBLE, type_=None)
+                cast(MPSLine.feasibility_status == MPSFeasibilityStatus.FEASIBLE, Integer)
             ).label("feas"),
         ).select_from(MPSLine)
     )

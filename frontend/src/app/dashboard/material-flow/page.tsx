@@ -26,7 +26,7 @@ export default function MaterialFlowDashboard() {
   const qc = useQueryClient();
   const { data, isLoading, isError, error } = useQuery<MFDashboard>({
     queryKey: ["mf-dashboard"],
-    queryFn: () => mfApi.getDashboard().then((r) => r.data),
+    queryFn: () => mfApi.getDashboard(),
     refetchInterval: 30000,
     retry: 1,
   });

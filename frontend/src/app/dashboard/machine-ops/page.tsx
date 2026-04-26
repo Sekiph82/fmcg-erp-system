@@ -38,7 +38,7 @@ export default function MachineOpsDashboard() {
   const qc = useQueryClient();
   const { data, isLoading, isError, error } = useQuery<MODashboard>({
     queryKey: ["mo-dashboard"],
-    queryFn: () => moApi.getDashboard().then((r) => r.data),
+    queryFn: () => moApi.getDashboard(),
     refetchInterval: 30000,
     retry: 1,
   });

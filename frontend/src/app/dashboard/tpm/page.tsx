@@ -10,8 +10,9 @@ export default function TPMDashboardPage() {
   });
 
   if (isLoading) return <div className="p-6 text-gray-400">Loading…</div>;
+  if (!data) return <div className="p-6 text-red-500">Failed to load TPM dashboard.</div>;
 
-  const d = data!;
+  const d = data;
   const spendPct = d.total_planned_budget > 0
     ? Math.min((d.total_actual_spend / d.total_planned_budget) * 100, 100)
     : 0;

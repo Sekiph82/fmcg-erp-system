@@ -1,4 +1,4 @@
-import axios from "axios";
+import { apiClient as axios } from "@/lib/api";
 
 const API = "/api/v1/fixed-assets";
 
