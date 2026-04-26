@@ -403,6 +403,16 @@ from app.models.bank_reconciliation import (
     BRAdjustment, BRAIRecommendation,
 )
 
+# ── Sales Commission Tracking ─────────────────────────────────────────────────
+from app.models.commissions import (
+    CommissionAppliesTo, CommissionScope, RuleStatus,
+    ConditionType, CommissionType, TxnStatus as CMTxnStatus, PayoutStatus,
+    CMAIAgentType, CMAIRecStatus,
+    CommissionRule, CommissionRuleLine, CommissionTarget,
+    CommissionTxn, CommissionAdjustment, CommissionPayout,
+    CMAIRecommendation,
+)
+
 # ── Moto Sales Extension ─────────────────────────────────────────────────────
 from app.models.van_sales import (
     MpesaStkStatus, VanMpesaPayment,
@@ -634,6 +644,13 @@ __all__ = [
     "GS1CompanyConfig", "ProductGS1Config", "LotBarcodeRecord",
     "SSCCPallet", "SSCCPalletLot", "GS1LabelTemplate", "LabelPrintJob",
     "LabelPrintJobItem", "GS1AIRecommendation",
+    # Sales Commission Tracking
+    "CommissionAppliesTo", "CommissionScope", "RuleStatus",
+    "ConditionType", "CommissionType", "CMTxnStatus", "PayoutStatus",
+    "CMAIAgentType", "CMAIRecStatus",
+    "CommissionRule", "CommissionRuleLine", "CommissionTarget",
+    "CommissionTxn", "CommissionAdjustment", "CommissionPayout",
+    "CMAIRecommendation",
     # Moto Sales Extension
     "MpesaStkStatus", "VanMpesaPayment",
     "FraudType", "FraudSeverity", "FraudAlertStatus", "VanFraudAlert",

@@ -1,7 +1,44 @@
 # TASKS — FMCG ERP (Kenya) · Production Module
 
 ## Current Phase
-Phase 33 — Moto Sales Extension ✅ COMPLETED
+Phase 31 — Sales Commission Tracking ✅ COMPLETED
+
+---
+
+## Phase 31 — Sales Commission Tracking ✅
+
+- [x] `backend/app/models/commissions.py` — 10 enums + 7 models (UUID PKs): CommissionRule, CommissionRuleLine, CommissionTarget, CommissionTxn, CommissionAdjustment, CommissionPayout, CMAIRecommendation
+- [x] `backend/app/schemas/commissions.py` — Pydantic v2 schemas
+- [x] `backend/app/services/commissions_service.py`:
+  - Rule CRUD + activate
+  - Rule resolution engine: scope priority (CUSTOMER > PRODUCT > GLOBAL), active date range, applies_to matching
+  - Tiered line resolution: matches base_amount against min/max thresholds, picks best tier
+  - Calculation engine: auto-dedup (same order+rep), applies PERCENTAGE/FIXED, reversal support
+  - Auto-updates CommissionTarget actuals + achievement% + bonus on calculation
+  - Approve / reject / add adjustment
+  - Payout generation: aggregates approved txns for entity+period, sums adjustments, sets net
+  - Approve payout + mark paid (auto-marks included txns as PAID)
+  - Reports: summary KPIs, by-period breakdown
+  - 3 AI agents: INCENTIVE_OPTIMIZER (zero-commission month), FRAUD_DETECTION (spikes >3× avg), PERFORMANCE_ADVISOR (targets <50%)
+- [x] `backend/app/api/v1/endpoints/commissions.py` — 22 routes at /api/v1/commissions/
+- [x] `backend/alembic/versions/c9d0e1f2a3b4_commissions.py` — migration (down_revision: b8c9d0e1f2a3)
+- [x] `backend/app/models/__init__.py` + `router.py` updated
+- [x] `frontend/src/lib/commissions.ts` — types, API client, color/label maps
+- [x] Frontend pages (7 pages):
+  - Dashboard (KPI strip, pending approval list, draft payouts, AI alerts)
+  - Rules (list + inline create form with default line, activate button)
+  - Transactions (calculate form, status filter, approve/reject inline)
+  - Targets (set/update form, achievement progress bar, bonus tracking)
+  - Payouts (generate by entity+period, approve, mark paid workflow)
+  - Reports (KPI cards, commission-by-period bar chart, rep/period table)
+  - AI Insights (3-agent panel, ack/dismiss)
+- [x] Nav-config: "Sales Commissions" section with 7 links
+
+## Next: Prompt 32 — Expense Claims
+
+---
+
+## Phase 33 — Moto Sales Extension ✅ COMPLETED
 
 ---
 

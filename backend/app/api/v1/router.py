@@ -33,6 +33,7 @@ from app.api.v1.endpoints import (
     van_sales,
     contracts,
     moto_sales,
+    commissions,
 )
 
 api_router = APIRouter()
@@ -178,3 +179,5 @@ api_router.include_router(van_sales.router, prefix="/van-sales", tags=["van-sale
 api_router.include_router(contracts.router, prefix="/contracts", tags=["contracts"])
 # ── Moto Sales Extension (M-Pesa + Fraud + Performance) ──────────────────────
 api_router.include_router(moto_sales.router, prefix="/moto-sales", tags=["moto-sales"])
+# ── Sales Commission Tracking ─────────────────────────────────────────────────
+api_router.include_router(commissions.router, prefix="/commissions", tags=["commissions"])
