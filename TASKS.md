@@ -1,7 +1,43 @@
 # TASKS — FMCG ERP (Kenya) · Production Module
 
 ## Current Phase
-Phase 29 — Van Sales / Mobile POS ✅ COMPLETED
+Phase 30 — Contract Management ✅ COMPLETED
+
+---
+
+## Phase 30 — Contract Management ✅
+
+- [x] `backend/app/models/contracts.py` — 12 enums + 7 models (UUID PKs): Contract, ContractTerm, ContractRebate, ContractPerformance, ContractVersion, ContractApproval, CTAIRecommendation
+- [x] `backend/app/schemas/contracts.py` — Pydantic v2 schemas (header CRUD, terms, rebates, performance upsert, approval, version, AI rec)
+- [x] `backend/app/services/contracts_service.py`:
+  - Full lifecycle: DRAFT → UNDER_REVIEW → APPROVED → ACTIVE → EXPIRED/TERMINATED/ARCHIVED
+  - Submit/approve/reject/activate/terminate/archive transitions
+  - Terms and rebate CRUD
+  - Performance upsert with auto achievement_pct and rebate_earned calculation from rebate tiers
+  - Version snapshot on every meaningful change
+  - Approval log for full audit trail
+  - Contract lookup by party (for order integration)
+  - Reports: summary KPIs, expiring contracts, performance aggregation
+  - 3 AI agents: RISK_MONITOR (underperforming <60%), RENEWAL_ADVISOR (expiring in 45d), COMPLIANCE_MONITOR (large unsettled rebates)
+- [x] `backend/app/api/v1/endpoints/contracts.py` — 22 routes at /api/v1/contracts/
+- [x] `backend/alembic/versions/a6b7c8d9e0f1_contracts.py` — migration (down_revision: f5a6b7c8d9e0)
+- [x] `backend/app/models/__init__.py` + `router.py` updated
+- [x] `frontend/src/lib/contracts.ts` — types, API client, color/label maps
+- [x] Frontend pages (7 pages):
+  - Dashboard (KPI strip, recent contracts, expiring alerts, AI alerts)
+  - All Contracts list (status + party type filters)
+  - Contract Detail (5 tabs: terms, rebates, performance, version history, approval log + lifecycle buttons)
+  - New Contract form (type, party, dates, renewal settings)
+  - Expiring Contracts (30/60/90d filter, days-left urgency coloring)
+  - Reports (portfolio KPI, achievement chart, rebate league table)
+  - AI Insights (3-agent panel, ack/dismiss)
+- [x] Nav-config: "Contract Management" section with 6 links
+
+## Next: Prompt 31 — Sales Commission Tracking
+
+---
+
+## Phase 29 — Van Sales / Mobile POS ✅ COMPLETED
 
 ---
 

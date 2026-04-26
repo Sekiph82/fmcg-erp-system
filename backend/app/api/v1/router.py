@@ -31,6 +31,7 @@ from app.api.v1.endpoints import (
     price_list,
     subscription,
     van_sales,
+    contracts,
 )
 
 api_router = APIRouter()
@@ -172,3 +173,5 @@ api_router.include_router(price_list.router, prefix="/price-lists", tags=["price
 api_router.include_router(subscription.router, prefix="/recurring-orders", tags=["recurring-orders"])
 # ── Van Sales / Mobile POS ────────────────────────────────────────────────────
 api_router.include_router(van_sales.router, prefix="/van-sales", tags=["van-sales"])
+# ── Contract Management ───────────────────────────────────────────────────────
+api_router.include_router(contracts.router, prefix="/contracts", tags=["contracts"])

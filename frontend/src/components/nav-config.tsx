@@ -983,6 +983,29 @@ export const NAV_CONFIG: NavEntry[] = [
   },
 
   // ╔══════════════════════════════════╗
+  // ║       CONTRACT MANAGEMENT        ║
+  // ╚══════════════════════════════════╝
+  cluster("cluster-contracts", "Contracts"),
+
+  {
+    type: "section",
+    id: "contracts",
+    label: "Contract Management",
+    permission: "sales.view",
+    icon: md(
+      "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+    ),
+    items: [
+      { label: "Dashboard",      href: "/dashboard/contracts",            permission: "sales.view" },
+      { label: "All Contracts",  href: "/dashboard/contracts/list",       permission: "sales.view" },
+      { label: "New Contract",   href: "/dashboard/contracts/new",        permission: "sales.view" },
+      { label: "Expiring Soon",  href: "/dashboard/contracts/expiring",   permission: "sales.view" },
+      { label: "Reports",        href: "/dashboard/contracts/reports",    permission: "sales.view" },
+      { label: "AI Insights",    href: "/dashboard/contracts/ai",         permission: "sales.view" },
+    ],
+  },
+
+  // ╔══════════════════════════════════╗
   // ║     VAN SALES / MOBILE POS       ║
   // ╚══════════════════════════════════╝
   cluster("cluster-van-sales", "Van Sales"),

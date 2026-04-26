@@ -403,6 +403,15 @@ from app.models.bank_reconciliation import (
     BRAdjustment, BRAIRecommendation,
 )
 
+# ── Contract Management ───────────────────────────────────────────────────────
+from app.models.contracts import (
+    ContractType, PartyType, ContractStatus, TermType, ValueType,
+    RebateType, CalcBasis, SettlementFreq, ApprovalAction,
+    CTAIAgentType, CTAIRecStatus,
+    Contract, ContractTerm, ContractRebate, ContractPerformance,
+    ContractVersion, ContractApproval, CTAIRecommendation,
+)
+
 # ── Van Sales / Mobile POS ───────────────────────────────────────────────────
 from app.models.van_sales import (
     VanStatus, TxnType, TxnStatus, PaymentStatus, PaymentMethod,
@@ -618,6 +627,12 @@ __all__ = [
     "GS1CompanyConfig", "ProductGS1Config", "LotBarcodeRecord",
     "SSCCPallet", "SSCCPalletLot", "GS1LabelTemplate", "LabelPrintJob",
     "LabelPrintJobItem", "GS1AIRecommendation",
+    # Contract Management
+    "ContractType", "PartyType", "ContractStatus", "TermType", "ValueType",
+    "RebateType", "CalcBasis", "SettlementFreq", "ApprovalAction",
+    "CTAIAgentType", "CTAIRecStatus",
+    "Contract", "ContractTerm", "ContractRebate", "ContractPerformance",
+    "ContractVersion", "ContractApproval", "CTAIRecommendation",
     # Van Sales / Mobile POS
     "VanStatus", "TxnType", "TxnStatus", "PaymentStatus", "PaymentMethod",
     "VisitStatus", "ReturnReason", "ReconciliationStatus",
