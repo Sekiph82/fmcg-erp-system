@@ -318,6 +318,17 @@ from app.models.promotions import (
     PromoUsageTally, PromoAIRecommendation,
 )
 
+# ── Customer / Distributor Portal ─────────────────────────────────────────────
+from app.models.portal import (
+    PortalAccountType, PortalAccountStatus, PortalUserRole,
+    PortalActivityType, PortalClaimType, PortalClaimStatus,
+    PortalOrderMode, PortalDraftOrderStatus,
+    PortalAIAgentType, PortalAIRecStatus,
+    PortalAccount, PortalUser, PortalActivityLog,
+    PortalClaim, PortalDraftOrder, PortalDraftOrderLine,
+    PortalAIRecommendation,
+)
+
 # ── Advanced CRM Pipeline ─────────────────────────────────────────────────────
 from app.models.crm import (
     CRMRecordType, CRMAccountType, CRMSourceType, CRMStageType,
@@ -569,6 +580,14 @@ __all__ = [
     "MaterialReservation", "MaterialReservationLine",
     "ProductionConsumption", "PreparedLot", "TankOccupancy",
     "BatchReconciliation", "BatchReconciliationLine", "MFAIRecommendation",
+    # Customer / Distributor Portal
+    "PortalAccountType", "PortalAccountStatus", "PortalUserRole",
+    "PortalActivityType", "PortalClaimType", "PortalClaimStatus",
+    "PortalOrderMode", "PortalDraftOrderStatus",
+    "PortalAIAgentType", "PortalAIRecStatus",
+    "PortalAccount", "PortalUser", "PortalActivityLog",
+    "PortalClaim", "PortalDraftOrder", "PortalDraftOrderLine",
+    "PortalAIRecommendation",
     # Advanced CRM Pipeline
     "CRMRecordType", "CRMAccountType", "CRMSourceType", "CRMStageType",
     "CRMTemperature", "CRMStatus", "CRMActivityType", "CRMActivityResult",

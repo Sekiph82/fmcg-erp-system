@@ -25,6 +25,7 @@ from app.api.v1.endpoints import (
     promotions,
     tpm,
     crm_pipeline,
+    portal,
 )
 
 api_router = APIRouter()
@@ -154,3 +155,5 @@ api_router.include_router(promotions.router, prefix="/promotions", tags=["promot
 api_router.include_router(tpm.router, prefix="/tpm", tags=["tpm"])
 # ── Advanced CRM Pipeline ─────────────────────────────────────────────────────
 api_router.include_router(crm_pipeline.router, prefix="/crm", tags=["crm-pipeline"])
+# ── Customer / Distributor Portal ─────────────────────────────────────────────
+api_router.include_router(portal.router, prefix="/portal", tags=["portal"])

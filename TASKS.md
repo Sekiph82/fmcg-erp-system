@@ -1,7 +1,70 @@
 # TASKS — FMCG ERP (Kenya) · Production Module
 
 ## Current Phase
-Phase 23 — Advanced CRM Pipeline ✅ COMPLETED
+Phase 24 — Customer / Distributor Portal ✅ COMPLETED
+
+---
+
+## Phase 24 — Customer / Distributor Portal ✅
+
+- [x] **Import fixes** — corrected `from app.database import` → `from app.db.base import` and `from app.db.session import` in `tpm.py`, `crm.py`, `tpm endpoint`, `crm_pipeline endpoint`
+- [x] `backend/app/models/portal.py` — 12 enums + 7 models:
+  - Enums: PortalAccountType, PortalAccountStatus, PortalUserRole, PortalActivityType, PortalClaimType, PortalClaimStatus, PortalOrderMode, PortalDraftOrderStatus, PortalAIAgentType, PortalAIRecStatus
+  - Models: PortalAccount, PortalUser, PortalActivityLog, PortalClaim, PortalDraftOrder, PortalDraftOrderLine, PortalAIRecommendation
+- [x] `backend/app/schemas/portal.py` — full Pydantic v2 schemas (account CRUD, user invite, login/activate, claims, draft orders, dashboard, AI rec)
+- [x] `backend/app/services/portal_service.py`:
+  - Account CRUD (create, update, activate, suspend) with auto-code PA-XXXXX
+  - User invite (invitation token, 7-day expiry, SHA-256 password hashing)
+  - activate_user_with_password (token verification + password set)
+  - login (email/password auth, status check, activity log)
+  - Scoped queries — orders/shipments/invoices/payments filtered by linked_customer_id or linked_distributor_id
+  - get_portal_dashboard (outstanding balance, aging 0-30/31-60/61-90/90+, open orders, recent invoices, open claims)
+  - get_portal_statement (period-filtered invoice + payment reconciliation)
+  - create_claim / review_claim (claim_no CLM-XXXXX, status workflow)
+  - create_draft_order / submit_draft_order / review_draft_order (draft_no DRF-XXXXX, line total calc)
+  - reorder_from_order (clones SO lines into a draft order for the same account)
+  - Activity logging for all key actions
+  - AI Agent 1: Support Assistant (accounts with ≥3 open claims)
+  - AI Agent 2: Friction Monitor (5+ logins but no orders in 30 days)
+  - AI Agent 3: Commercial Opportunity (last order > 45 days ago)
+  - portal_adoption_report (total/active accounts, users, 30-day logins/orders/claims)
+- [x] `backend/app/api/v1/endpoints/portal.py` — 30+ routes at /api/v1/portal/
+  - POST /portal/auth/login + /portal/auth/activate
+  - GET/POST /portal/accounts + GET/PATCH/POST activate/suspend per account
+  - GET/POST /portal/accounts/{id}/users/invite, POST /portal/users/{id}/deactivate
+  - GET /portal/accounts/{id}/dashboard | orders | orders/{oid} | shipments | invoices | payments | statement
+  - GET/POST /portal/accounts/{id}/claims + PATCH /portal/claims/{id}/review
+  - GET/POST /portal/accounts/{id}/draft-orders + POST submit + PATCH /portal/draft-orders/{id}/review
+  - POST /portal/accounts/{id}/reorder/{source_order_id}
+  - GET /portal/accounts/{id}/activity
+  - GET /portal/reports/adoption
+  - POST /portal/ai/run-support-assistant | run-friction-monitor | run-commercial-opportunity
+  - GET/PATCH /portal/ai/recommendations
+- [x] `backend/alembic/versions/a0b1c2d3e4f5_portal.py` — migration (down_revision: f9a0b1c2d3e4), 7 tables
+- [x] `backend/app/models/__init__.py` + `router.py` updated
+- [x] `frontend/src/lib/portal.ts` — TypeScript types, API client, label/color maps, fmtCurrency
+- [x] Frontend pages (9 screens):
+  - Portal Admin Dashboard (adoption KPIs, account list with activate/suspend, quick links)
+  - Portal Accounts List (card view with type/status filters, manage + portal view links)
+  - Portal Account Detail (6 tabs: overview/users/orders/invoices/claims/drafts + invite modal + aging chart)
+  - Portal Customer View (clean B2B portal layout, 8 tabs: dashboard/orders/shipments/invoices/payments/statement/claims/new order)
+  - Draft Order Review Queue (submitted drafts across all accounts, approve/reject)
+  - Claims Review (claim list + side review panel with resolve/reject/under-review actions)
+  - Portal Users (all users across accounts, role/status filters, deactivate)
+  - Activity Log (per-account activity timeline)
+  - Reports (adoption KPIs, activation rate bar, 30-day activity summary)
+  - AI Agents (3 agents + recommendation ack workflow)
+- [x] Sidebar: "Customer / Distributor Portal" section added (8 items)
+
+## Next Immediate Task
+Phase 25 — Supplier Portal
+
+## Blockers
+None
+
+---
+
+## Phase 23 — Advanced CRM Pipeline ✅ COMPLETED
 
 ---
 

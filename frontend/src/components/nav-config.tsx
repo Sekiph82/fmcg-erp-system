@@ -435,6 +435,26 @@ export const NAV_CONFIG: NavEntry[] = [
 
   {
     type: "section",
+    id: "customer-portal",
+    label: "Customer / Distributor Portal",
+    permission: "sales.view",
+    icon: md(
+      "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+    ),
+    items: [
+      { label: "Portal Admin",     href: "/dashboard/portal",              permission: "sales.view" },
+      { label: "Portal Accounts",  href: "/dashboard/portal/accounts",     permission: "sales.view" },
+      { label: "Draft Order Queue", href: "/dashboard/portal/drafts",      permission: "sales.view" },
+      { label: "Claims Review",    href: "/dashboard/portal/claims",       permission: "sales.view" },
+      { label: "Portal Users",     href: "/dashboard/portal/users",        permission: "sales.view" },
+      { label: "Activity Log",     href: "/dashboard/portal/activity",     permission: "sales.view" },
+      { label: "Reports",          href: "/dashboard/portal/reports",      permission: "sales.view" },
+      { label: "AI Agents",        href: "/dashboard/portal/ai",           permission: "sales.view" },
+    ],
+  },
+
+  {
+    type: "section",
     id: "crm-pipeline",
     label: "CRM Pipeline",
     permission: "sales.view",

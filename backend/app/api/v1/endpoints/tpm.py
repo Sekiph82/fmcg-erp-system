@@ -5,7 +5,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database import get_db
+from app.db.session import get_db
 from app.schemas.tpm import (
     TPMPlanCreate, TPMPlanRead,
     TPMPromotionCreate, TPMPromotionRead,
