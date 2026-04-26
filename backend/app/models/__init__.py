@@ -403,6 +403,13 @@ from app.models.bank_reconciliation import (
     BRAdjustment, BRAIRecommendation,
 )
 
+# ── Moto Sales Extension ─────────────────────────────────────────────────────
+from app.models.van_sales import (
+    MpesaStkStatus, VanMpesaPayment,
+    FraudType, FraudSeverity, FraudAlertStatus, VanFraudAlert,
+    VanRiderPerformance,
+)
+
 # ── Contract Management ───────────────────────────────────────────────────────
 from app.models.contracts import (
     ContractType, PartyType, ContractStatus, TermType, ValueType,
@@ -627,6 +634,10 @@ __all__ = [
     "GS1CompanyConfig", "ProductGS1Config", "LotBarcodeRecord",
     "SSCCPallet", "SSCCPalletLot", "GS1LabelTemplate", "LabelPrintJob",
     "LabelPrintJobItem", "GS1AIRecommendation",
+    # Moto Sales Extension
+    "MpesaStkStatus", "VanMpesaPayment",
+    "FraudType", "FraudSeverity", "FraudAlertStatus", "VanFraudAlert",
+    "VanRiderPerformance",
     # Contract Management
     "ContractType", "PartyType", "ContractStatus", "TermType", "ValueType",
     "RebateType", "CalcBasis", "SettlementFreq", "ApprovalAction",

@@ -1,7 +1,40 @@
 # TASKS — FMCG ERP (Kenya) · Production Module
 
 ## Current Phase
-Phase 30 — Contract Management ✅ COMPLETED
+Phase 33 — Moto Sales Extension ✅ COMPLETED
+
+---
+
+## Phase 33 — Moto Sales / Van Sales Extension (M-Pesa + Fraud + Performance) ✅
+
+Built as an extension to Phase 29 Van Sales module.
+
+- [x] Extended `backend/app/models/van_sales.py` with 3 new model classes:
+  - `VanMpesaPayment` — STK Push lifecycle (merchant_request_id, checkout_request_id, receipt, status, callback time, raw_callback)
+  - `VanFraudAlert` — fraud type, risk_score (0–100), severity, status, reviewed_by, resolution
+  - `VanRiderPerformance` — daily score per driver: visits, completion%, collection%, cash variance, fraud flags, composite score (0–100)
+- [x] `backend/app/services/moto_sales_service.py`:
+  - `initiate_stk_push()` — creates PENDING record (production: calls Daraja API)
+  - `handle_stk_callback()` — updates status, auto-creates van_payment on SUCCESS, updates txn payment_status
+  - `run_fraud_scan()` — 3 detectors: abnormal discounts (>20% avg), repeated returns (>3 in 7d), payment mismatch (unpaid >72h)
+  - `_severity_from_score()` — risk score → LOW/MEDIUM/HIGH/CRITICAL
+  - `review_fraud_alert()` — set status + resolution + reviewer
+  - `compute_rider_performance()` — upserts daily record with composite score (route 30%, collection 25%, cash accuracy 15%, sales volume 20%, fraud-free 10%)
+  - `leaderboard()` — 7-day aggregation ranked by avg score
+- [x] `backend/app/api/v1/endpoints/moto_sales.py` — 10 routes at /api/v1/moto-sales/
+- [x] `backend/alembic/versions/b8c9d0e1f2a3_moto_sales_extension.py` — migration (down_revision: a6b7c8d9e0f1), 3 new tables
+- [x] `frontend/src/lib/moto_sales.ts` — types, API client, color helpers, scoreColor()
+- [x] Frontend pages (3 new screens under /dashboard/van-sales/):
+  - Fraud Alerts — scan button, KPI strip, severity+status filters, inline review panel (Dismiss/Confirm/Escalate)
+  - Rider Performance — leaderboard tab (podium + full table), daily records tab, compute form
+  - M-Pesa Payments — STK Push initiation form, status filter, payment table with receipt tracking
+- [x] Nav: "Van Sales" section extended with 3 new links (Fraud Alerts, Rider Performance, M-Pesa Payments)
+
+## Next: Prompt 31 — Sales Commission Tracking
+
+---
+
+## Phase 30 — Contract Management ✅ COMPLETED
 
 ---
 

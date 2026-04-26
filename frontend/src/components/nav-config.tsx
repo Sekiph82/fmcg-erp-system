@@ -1027,6 +1027,9 @@ export const NAV_CONFIG: NavEntry[] = [
       { label: "Reconciliation",   href: "/dashboard/van-sales/reconciliation",    permission: "sales.view" },
       { label: "Reports",          href: "/dashboard/van-sales/reports",           permission: "sales.view" },
       { label: "AI Intelligence",  href: "/dashboard/van-sales/ai",                permission: "sales.view" },
+      { label: "Fraud Alerts",     href: "/dashboard/van-sales/fraud",             permission: "sales.view" },
+      { label: "Rider Performance",href: "/dashboard/van-sales/performance",       permission: "sales.view" },
+      { label: "M-Pesa Payments",  href: "/dashboard/van-sales/mpesa",             permission: "sales.view" },
     ],
   },
 

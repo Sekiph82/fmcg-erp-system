@@ -32,6 +32,7 @@ from app.api.v1.endpoints import (
     subscription,
     van_sales,
     contracts,
+    moto_sales,
 )
 
 api_router = APIRouter()
@@ -175,3 +176,5 @@ api_router.include_router(subscription.router, prefix="/recurring-orders", tags=
 api_router.include_router(van_sales.router, prefix="/van-sales", tags=["van-sales"])
 # ── Contract Management ───────────────────────────────────────────────────────
 api_router.include_router(contracts.router, prefix="/contracts", tags=["contracts"])
+# ── Moto Sales Extension (M-Pesa + Fraud + Performance) ──────────────────────
+api_router.include_router(moto_sales.router, prefix="/moto-sales", tags=["moto-sales"])

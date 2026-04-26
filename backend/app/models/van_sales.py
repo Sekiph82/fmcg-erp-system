@@ -278,3 +278,110 @@ class VSAIRecommendation(Base, TimestampMixin):
     van_id      = Column(UUID(as_uuid=True), ForeignKey("vans.id"), nullable=True)
     driver_id   = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     route_id    = Column(UUID(as_uuid=True), ForeignKey("sales_routes.id"), nullable=True)
+
+
+# ── M-Pesa STK Push ───────────────────────────────────────────────────────────
+
+class MpesaStkStatus(str, enum.Enum):
+    PENDING  = "PENDING"
+    SUCCESS  = "SUCCESS"
+    FAILED   = "FAILED"
+    TIMEOUT  = "TIMEOUT"
+    CANCELLED = "CANCELLED"
+
+
+class VanMpesaPayment(Base, TimestampMixin):
+    __tablename__ = "van_mpesa_payments"
+
+    id               = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    txn_id           = Column(UUID(as_uuid=True), ForeignKey("van_sales_txns.id"), nullable=False)
+    van_payment_id   = Column(UUID(as_uuid=True), ForeignKey("van_payments.id"), nullable=True)
+    phone_number     = Column(String(20), nullable=False)
+    amount           = Column(Numeric(14, 2), nullable=False)
+    merchant_request_id = Column(String(100), nullable=True, unique=True)
+    checkout_request_id = Column(String(100), nullable=True, unique=True)
+    mpesa_receipt_no = Column(String(50), nullable=True)
+    status           = Column(String(30), nullable=False, default=MpesaStkStatus.PENDING.value)
+    result_code      = Column(String(10), nullable=True)
+    result_desc      = Column(Text, nullable=True)
+    request_time     = Column(DateTime, nullable=False)
+    callback_time    = Column(DateTime, nullable=True)
+    raw_callback     = Column(JSON, nullable=True)
+
+
+# ── Fraud Alert ───────────────────────────────────────────────────────────────
+
+class FraudType(str, enum.Enum):
+    ABNORMAL_DISCOUNT    = "ABNORMAL_DISCOUNT"
+    PRICE_OVERRIDE       = "PRICE_OVERRIDE"
+    REPEATED_RETURN      = "REPEATED_RETURN"
+    STOCK_MISMATCH       = "STOCK_MISMATCH"
+    DUPLICATE_TXN        = "DUPLICATE_TXN"
+    PAYMENT_MISMATCH     = "PAYMENT_MISMATCH"
+    OFFLINE_MANIPULATION = "OFFLINE_MANIPULATION"
+    UNUSUAL_PATTERN      = "UNUSUAL_PATTERN"
+
+
+class FraudSeverity(str, enum.Enum):
+    LOW      = "LOW"
+    MEDIUM   = "MEDIUM"
+    HIGH     = "HIGH"
+    CRITICAL = "CRITICAL"
+
+
+class FraudAlertStatus(str, enum.Enum):
+    OPEN       = "OPEN"
+    REVIEWED   = "REVIEWED"
+    DISMISSED  = "DISMISSED"
+    ESCALATED  = "ESCALATED"
+    CONFIRMED  = "CONFIRMED"
+
+
+class VanFraudAlert(Base, TimestampMixin):
+    __tablename__ = "van_fraud_alerts"
+
+    id           = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    txn_id       = Column(UUID(as_uuid=True), ForeignKey("van_sales_txns.id"), nullable=True)
+    van_id       = Column(UUID(as_uuid=True), ForeignKey("vans.id"), nullable=True)
+    driver_id    = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    fraud_type   = Column(String(50), nullable=False)
+    risk_score   = Column(Numeric(5, 2), nullable=False, default=0)  # 0–100
+    severity     = Column(String(20), nullable=False, default=FraudSeverity.LOW.value)
+    status       = Column(String(30), nullable=False, default=FraudAlertStatus.OPEN.value)
+    description  = Column(Text, nullable=True)
+    data         = Column(JSON, nullable=True)
+    reviewed_by  = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    reviewed_at  = Column(DateTime, nullable=True)
+    resolution   = Column(Text, nullable=True)
+
+
+# ── Rider Performance ─────────────────────────────────────────────────────────
+
+class VanRiderPerformance(Base, TimestampMixin):
+    __tablename__ = "van_rider_performance"
+    __table_args__ = (UniqueConstraint("driver_id", "perf_date", name="uq_rider_perf_date"),)
+
+    id                   = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    driver_id            = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    van_id               = Column(UUID(as_uuid=True), ForeignKey("vans.id"), nullable=True)
+    route_id             = Column(UUID(as_uuid=True), ForeignKey("sales_routes.id"), nullable=True)
+    perf_date            = Column(Date, nullable=False)
+
+    total_sales          = Column(Numeric(14, 2), nullable=False, default=0)
+    total_orders         = Column(Integer, nullable=False, default=0)
+    total_visits         = Column(Integer, nullable=False, default=0)
+    completed_visits     = Column(Integer, nullable=False, default=0)
+    missed_visits        = Column(Integer, nullable=False, default=0)
+
+    route_completion_pct = Column(Numeric(5, 2), nullable=True)  # completed/total*100
+    collection_rate_pct  = Column(Numeric(5, 2), nullable=True)  # paid/invoiced*100
+
+    expected_cash        = Column(Numeric(14, 2), nullable=True)
+    actual_cash          = Column(Numeric(14, 2), nullable=True)
+    cash_variance        = Column(Numeric(14, 2), nullable=True)
+
+    stock_variance_pct   = Column(Numeric(7, 3), nullable=True)
+    fraud_flag_count     = Column(Integer, nullable=False, default=0)
+
+    performance_score    = Column(Numeric(5, 2), nullable=True)  # 0–100 composite
+    notes                = Column(Text, nullable=True)
