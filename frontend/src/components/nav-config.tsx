@@ -435,6 +435,27 @@ export const NAV_CONFIG: NavEntry[] = [
 
   {
     type: "section",
+    id: "dunning",
+    label: "Dunning & Collections",
+    permission: "finance.view",
+    icon: md(
+      "M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+    ),
+    items: [
+      { label: "Dashboard",          href: "/dashboard/dunning",                permission: "finance.view" },
+      { label: "Aging Report",       href: "/dashboard/dunning/aging",          permission: "finance.view" },
+      { label: "Dunning Cases",      href: "/dashboard/dunning/cases",          permission: "finance.view" },
+      { label: "Collector Queue",    href: "/dashboard/dunning/workqueue",      permission: "finance.view" },
+      { label: "Credit Holds",       href: "/dashboard/dunning/credit-holds",   permission: "finance.view" },
+      { label: "Policies",           href: "/dashboard/dunning/policies",       permission: "finance.view" },
+      { label: "Templates",          href: "/dashboard/dunning/templates",      permission: "finance.view" },
+      { label: "Reports",            href: "/dashboard/dunning/reports",        permission: "finance.view" },
+      { label: "AI Agents",          href: "/dashboard/dunning/ai",             permission: "finance.view" },
+    ],
+  },
+
+  {
+    type: "section",
     id: "supplier-portal",
     label: "Supplier Portal",
     permission: "procurement.view",

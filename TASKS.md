@@ -96,8 +96,44 @@ Phase 24 — Customer / Distributor Portal ✅ COMPLETED
   - AI Agents (3 agents + recommendation ack/dismiss/action workflow)
 - [x] Sidebar: "Supplier Portal" section added (10 items)
 
+## Phase 26 — Dunning / Overdue Collection ✅ COMPLETED
+
+- [x] `backend/app/models/dunning.py` — 8 enums + 9 models: DunningPolicy, DunningLevel, DunningTemplate, DunningCase, DunningCaseInvoice, DunningActionLog, DunningPTP, DunningException, DunningAIRecommendation
+- [x] `backend/app/schemas/dunning.py` — full Pydantic v2 schemas
+- [x] `backend/app/services/dunning_service.py`:
+  - Policy CRUD + priority resolution hierarchy (customer → segment → channel → country → default)
+  - Level CRUD + level resolution from days_overdue
+  - Template CRUD + merge-field rendering
+  - Overdue detection engine (scans invoices past due_date, computes balance)
+  - Case creation/update (one open case per customer, auto credit hold from policy thresholds)
+  - PO level determination, priority scoring (amount + age + broken PTPs)
+  - PO Acknowledgment / reminder / manual note / dispute flagging
+  - PTP create/update/broken-check workflow
+  - Exception CRUD
+  - Credit hold apply + release
+  - 4 reports: dashboard, aging, effectiveness, workqueue, PTP fulfillment
+  - AI Agent 1: Collection Prioritization (unassigned high-priority cases)
+  - AI Agent 2: Payment Risk Monitor (repeated broken PTPs)
+  - AI Agent 3: Effectiveness Assistant (stale cases 14+ days without action)
+- [x] `backend/app/api/v1/endpoints/dunning.py` — 30+ routes at /api/v1/dunning/
+- [x] `backend/alembic/versions/c2d3e4f5a6b7_dunning.py` — migration (down_revision: b1c2d3e4f5a6), 9 tables
+- [x] `backend/app/models/__init__.py` + `router.py` updated
+- [x] `frontend/src/lib/dunning.ts` — TypeScript types, API client, color/label maps
+- [x] Frontend pages (9 screens):
+  - Dashboard (KPI cards, priority case list, quick links, run detection button)
+  - Aging Report (customer-level aging buckets: current/1-7/8-14/15-30/31-60/61-90/90+, totals row)
+  - Case List (filterable by status + credit hold, priority bar)
+  - Case Detail (5 tabs: overview, invoices, timeline, PTPs, exceptions + send reminder + add note + PTP record + credit hold)
+  - Policies (policy list + level editor with drag/visual step view + add level modal)
+  - Collector Workqueue (priority-sorted queue, check broken PTPs)
+  - Credit Hold Management (all holds, release flow)
+  - Templates (create message templates with merge fields + preview)
+  - Reports (KPIs, PTP fulfillment bar, effectiveness table)
+  - AI Agents (3 agents, ack/action/dismiss workflow)
+- [x] Sidebar: "Dunning & Collections" section added (9 links)
+
 ## Next Immediate Task
-Phase 26 — Dunning / Overdue Collection
+Phase 27 — Price List and Discount Enhancement
 
 ## Blockers
 None

@@ -318,6 +318,15 @@ from app.models.promotions import (
     PromoUsageTally, PromoAIRecommendation,
 )
 
+# ── Dunning / Overdue Collection ─────────────────────────────────────────────
+from app.models.dunning import (
+    DunningActionType, DunningCaseStatus, DunningActionOutcome,
+    PTPStatus, DunningExceptionType, DunningAIAgentType, DunningAIRecStatus,
+    DunningPolicy, DunningLevel, DunningTemplate, DunningCase,
+    DunningCaseInvoice, DunningActionLog, DunningPTP, DunningException,
+    DunningAIRecommendation,
+)
+
 # ── Supplier Portal ───────────────────────────────────────────────────────────
 from app.models.supplier_portal import (
     SPAccountStatus, SPUserRole, SPActivityType,
@@ -589,6 +598,12 @@ __all__ = [
     "MaterialReservation", "MaterialReservationLine",
     "ProductionConsumption", "PreparedLot", "TankOccupancy",
     "BatchReconciliation", "BatchReconciliationLine", "MFAIRecommendation",
+    # Dunning / Overdue Collection
+    "DunningActionType", "DunningCaseStatus", "DunningActionOutcome",
+    "PTPStatus", "DunningExceptionType", "DunningAIAgentType", "DunningAIRecStatus",
+    "DunningPolicy", "DunningLevel", "DunningTemplate", "DunningCase",
+    "DunningCaseInvoice", "DunningActionLog", "DunningPTP", "DunningException",
+    "DunningAIRecommendation",
     # Supplier Portal
     "SPAccountStatus", "SPUserRole", "SPActivityType",
     "SPPOResponseStatus", "SPETAStatus", "SPDocUploadType", "SPDocReviewStatus",
