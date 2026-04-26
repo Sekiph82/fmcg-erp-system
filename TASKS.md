@@ -1,7 +1,45 @@
 # TASKS — FMCG ERP (Kenya) · Production Module
 
 ## Current Phase
-Phase 28 — Subscription / Recurring Orders ✅ COMPLETED
+Phase 29 — Van Sales / Mobile POS ✅ COMPLETED
+
+---
+
+## Phase 29 — Van Sales / Mobile POS ✅
+
+- [x] `backend/app/models/van_sales.py` — 9 enums + 9 models (UUID PKs): Van, VanStock, VanStockMovement, VanVisit, VanSalesTxn, VanSalesTxnLine, VanPayment, VanReconciliation, VSAIRecommendation
+- [x] `backend/app/schemas/van_sales.py` — Pydantic v2 schemas (van CRUD, stock load, visits, txns, payments, reconciliation, offline sync, AI)
+- [x] `backend/app/services/van_sales_service.py`:
+  - Van CRUD
+  - Van stock load / deduct (on sale) / add (on return)
+  - Visit lifecycle: create → check-in → check-out / missed
+  - Transaction creation with line-level price/discount/tax calc
+  - Payment collection with receipt no generation
+  - Offline sync: dedup by offline_id, batch visits/txns/payments
+  - Daily reconciliation: aggregate sales/returns/payments by van
+  - Reports: van summary, route performance, driver performance
+  - 3 AI agents: ROUTE_OPTIMIZER (missed visits), SALES_ASSISTANT (inactive vans), RISK_MONITOR (high discounts)
+- [x] `backend/app/api/v1/endpoints/van_sales.py` — 25+ routes at /api/v1/van-sales/
+- [x] `backend/alembic/versions/f5a6b7c8d9e0_van_sales.py` — migration (down_revision: e4f5a6b7c8d9)
+- [x] `backend/app/models/__init__.py` + `router.py` updated
+- [x] `frontend/src/lib/van_sales.ts` — types, API client, color maps
+- [x] Frontend pages (8 pages):
+  - Dashboard (KPI cards, van list, AI alerts, quick nav)
+  - Vans list + new van form
+  - Van detail (4 tabs: transactions, stock, visits, reconciliation)
+  - Mobile POS (sale/return flow → items → payment → receipt)
+  - Route Execution (visit sequence, check-in/out, missed marking)
+  - Van Stock (load stock panel, current stock table)
+  - Reconciliation (daily close-out, approval workflow, history)
+  - Reports (route performance bar chart, driver league table)
+  - AI Insights (3-agent panel, ack/dismiss)
+- [x] Nav-config: "Van Sales / Mobile POS" section with 8 links
+
+## Next: Prompt 30 — Contract Management
+
+---
+
+## Phase 28 — Subscription / Recurring Orders ✅ COMPLETED
 
 ---
 

@@ -403,6 +403,16 @@ from app.models.bank_reconciliation import (
     BRAdjustment, BRAIRecommendation,
 )
 
+# ── Van Sales / Mobile POS ───────────────────────────────────────────────────
+from app.models.van_sales import (
+    VanStatus, TxnType, TxnStatus, PaymentStatus, PaymentMethod,
+    VisitStatus, ReturnReason, ReconciliationStatus,
+    VSAIAgentType, VSAIRecStatus,
+    Van, VanStock, VanStockMovement, VanVisit,
+    VanSalesTxn, VanSalesTxnLine, VanPayment,
+    VanReconciliation, VSAIRecommendation,
+)
+
 # ── Subscription / Recurring Orders ──────────────────────────────────────────
 from app.models.subscription import (
     RecurrenceType, SubscriptionStatus, GenerationMode,
@@ -608,6 +618,13 @@ __all__ = [
     "GS1CompanyConfig", "ProductGS1Config", "LotBarcodeRecord",
     "SSCCPallet", "SSCCPalletLot", "GS1LabelTemplate", "LabelPrintJob",
     "LabelPrintJobItem", "GS1AIRecommendation",
+    # Van Sales / Mobile POS
+    "VanStatus", "TxnType", "TxnStatus", "PaymentStatus", "PaymentMethod",
+    "VisitStatus", "ReturnReason", "ReconciliationStatus",
+    "VSAIAgentType", "VSAIRecStatus",
+    "Van", "VanStock", "VanStockMovement", "VanVisit",
+    "VanSalesTxn", "VanSalesTxnLine", "VanPayment",
+    "VanReconciliation", "VSAIRecommendation",
     # Subscription / Recurring Orders
     "RecurrenceType", "SubscriptionStatus", "GenerationMode",
     "PriceSource", "GenerationStatus", "PauseSkipAction",

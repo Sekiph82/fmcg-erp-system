@@ -983,6 +983,31 @@ export const NAV_CONFIG: NavEntry[] = [
   },
 
   // ╔══════════════════════════════════╗
+  // ║     VAN SALES / MOBILE POS       ║
+  // ╚══════════════════════════════════╝
+  cluster("cluster-van-sales", "Van Sales"),
+
+  {
+    type: "section",
+    id: "van-sales",
+    label: "Van Sales / Mobile POS",
+    permission: "sales.view",
+    icon: md(
+      "M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
+    ),
+    items: [
+      { label: "Dashboard",        href: "/dashboard/van-sales",                   permission: "sales.view" },
+      { label: "Vans",             href: "/dashboard/van-sales/vans",              permission: "sales.view" },
+      { label: "Route Execution",  href: "/dashboard/van-sales/route",             permission: "sales.view" },
+      { label: "Mobile POS",       href: "/dashboard/van-sales/pos",               permission: "sales.view" },
+      { label: "Van Stock",        href: "/dashboard/van-sales/stock",             permission: "sales.view" },
+      { label: "Reconciliation",   href: "/dashboard/van-sales/reconciliation",    permission: "sales.view" },
+      { label: "Reports",          href: "/dashboard/van-sales/reports",           permission: "sales.view" },
+      { label: "AI Intelligence",  href: "/dashboard/van-sales/ai",                permission: "sales.view" },
+    ],
+  },
+
+  // ╔══════════════════════════════════╗
   // ║   SUBSCRIPTION / RECURRING       ║
   // ╚══════════════════════════════════╝
   cluster("cluster-recurring", "Recurring Orders"),
