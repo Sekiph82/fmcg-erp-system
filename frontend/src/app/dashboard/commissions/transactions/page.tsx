@@ -36,7 +36,7 @@ export default function TransactionsPage() {
   const upd = (k: string, v: string) => setCalcForm((f) => ({ ...f, [k]: v }));
 
   return (
-    <div className="p-6 space-y-5 min-h-screen bg-[#060d18] text-slate-200">
+    <div className="p-6 space-y-5 text-slate-200">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-white">Commission Transactions</h1>

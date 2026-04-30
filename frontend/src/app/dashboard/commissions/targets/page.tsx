@@ -21,7 +21,7 @@ export default function TargetsPage() {
   });
 
   return (
-    <div className="p-6 space-y-5 min-h-screen bg-[#060d18] text-slate-200">
+    <div className="p-6 space-y-5 text-slate-200">
       <div>
         <h1 className="text-xl font-bold text-white">Sales Targets & Performance</h1>
         <p className="text-slate-500 text-sm mt-0.5">Track rep targets vs actuals and achievement</p>

@@ -35,7 +35,7 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
   const daysLeft = c.end_date ? Math.ceil((new Date(c.end_date).getTime() - Date.now()) / 86400000) : null;
 
   return (
-    <div className="p-6 space-y-6 min-h-screen bg-[#060d18] text-slate-200">
+    <div className="p-6 space-y-6 text-slate-200">
       <div className="flex items-start justify-between">
         <div>
           <Link href="/dashboard/contracts/list" className="text-slate-500 text-sm hover:text-slate-300">← Contracts</Link>

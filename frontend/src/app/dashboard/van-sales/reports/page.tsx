@@ -14,7 +14,7 @@ export default function VanSalesReportsPage() {
   });
 
   return (
-    <div className="p-6 space-y-6 min-h-screen bg-[#060d18] text-slate-200">
+    <div className="p-6 space-y-6 text-slate-200">
       <div>
         <h1 className="text-xl font-bold text-white">Van Sales Reports</h1>
         <p className="text-slate-500 text-sm mt-0.5">30-day performance analytics</p>

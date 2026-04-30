@@ -28,7 +28,7 @@ export default function VanDetailPage({ params }: { params: Promise<{ id: string
   const todayCollected = txns.reduce((s, t) => s + t.paid_amount, 0);
 
   return (
-    <div className="p-6 space-y-6 min-h-screen bg-[#060d18] text-slate-200">
+    <div className="p-6 space-y-6 text-slate-200">
       <div className="flex items-start justify-between">
         <div>
           <Link href="/dashboard/van-sales/vans" className="text-slate-500 text-sm hover:text-slate-300">← Vans</Link>

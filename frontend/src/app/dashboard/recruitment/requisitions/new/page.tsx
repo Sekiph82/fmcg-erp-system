@@ -40,7 +40,7 @@ export default function NewRequisitionPage() {
   );
 
   return (
-    <div className="p-6 space-y-6 min-h-screen bg-[#060d18] text-slate-200 max-w-3xl">
+    <div className="p-6 space-y-6 text-slate-200 max-w-3xl">
       <h1 className="text-xl font-bold text-white">New Job Requisition</h1>
 
       <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-5 space-y-4">

@@ -65,7 +65,7 @@ export default function TemplateDetailPage({ params }: { params: Promise<{ id: s
   if (!t) return <div className="p-6 text-slate-500">Template not found</div>;
 
   return (
-    <div className="p-6 space-y-6 min-h-screen bg-[#060d18] text-slate-200">
+    <div className="p-6 space-y-6 text-slate-200">
       <div className="flex items-start justify-between">
         <div>
           <div className="flex items-center gap-3 mb-1">

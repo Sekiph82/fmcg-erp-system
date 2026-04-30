@@ -28,7 +28,7 @@ export default function CommissionsDashboard() {
   const s = summary as any;
 
   return (
-    <div className="p-6 space-y-6 min-h-screen bg-[#060d18] text-slate-200">
+    <div className="p-6 space-y-6 text-slate-200">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">Sales Commission Tracking</h1>

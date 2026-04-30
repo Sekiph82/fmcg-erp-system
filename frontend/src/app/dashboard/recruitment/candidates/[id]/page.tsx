@@ -20,10 +20,10 @@ export default function CandidateDetailPage() {
     recruitmentApi.listPipeline({}).then((pl) => setPipeline(pl.filter((p) => p.candidate_id === id)));
   }, [id]);
 
-  if (!cand) return <div className="p-6 min-h-screen bg-[#060d18] text-slate-500">Loading…</div>;
+  if (!cand) return <div className="p-6 text-slate-500">Loading…</div>;
 
   return (
-    <div className="p-6 space-y-5 min-h-screen bg-[#060d18] text-slate-200 max-w-3xl">
+    <div className="p-6 space-y-5 text-slate-200 max-w-3xl">
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-xl font-bold text-white">{cand.full_name}</h1>

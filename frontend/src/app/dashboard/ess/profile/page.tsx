@@ -27,14 +27,14 @@ export default function ESSProfilePage() {
   );
 
   if (!profile) return (
-    <div className="p-6 min-h-screen bg-[#060d18] text-slate-200 space-y-4">
+    <div className="p-6 text-slate-200 space-y-4">
       <h1 className="text-xl font-bold text-white">My Profile</h1>
       <p className="text-slate-500 text-sm">No profile found. Set up via HR Admin → Create Profile.</p>
     </div>
   );
 
   return (
-    <div className="p-6 space-y-5 min-h-screen bg-[#060d18] text-slate-200 max-w-2xl">
+    <div className="p-6 space-y-5 text-slate-200 max-w-2xl">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-white">My Profile</h1>
         {!editing && <button onClick={startEdit} className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm">Edit</button>}

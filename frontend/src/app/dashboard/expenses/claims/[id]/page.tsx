@@ -17,10 +17,10 @@ export default function ClaimDetailPage() {
     catch (e: any) { setMsg(e.message); }
   };
 
-  if (!claim) return <div className="p-6 min-h-screen bg-[#060d18] text-slate-500">Loading…</div>;
+  if (!claim) return <div className="p-6 text-slate-500">Loading…</div>;
 
   return (
-    <div className="p-6 space-y-5 min-h-screen bg-[#060d18] text-slate-200 max-w-4xl">
+    <div className="p-6 space-y-5 text-slate-200 max-w-4xl">
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-xl font-bold text-white">{claim.claim_no}</h1>

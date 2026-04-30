@@ -28,7 +28,7 @@ export default function ApprovalQueuePage() {
   };
 
   return (
-    <div className="p-6 space-y-5 min-h-screen bg-[#060d18] text-slate-200">
+    <div className="p-6 space-y-5 text-slate-200">
       <h1 className="text-xl font-bold text-white">Approval Queue</h1>
 
       <div className="flex gap-2">

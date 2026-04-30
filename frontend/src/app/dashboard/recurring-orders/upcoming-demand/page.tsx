@@ -23,7 +23,7 @@ export default function UpcomingDemandPage() {
   const dates = Object.keys(byDate).sort();
 
   return (
-    <div className="p-6 space-y-5 min-h-screen bg-[#060d18] text-slate-200">
+    <div className="p-6 space-y-5 text-slate-200">
       <div>
         <h1 className="text-xl font-bold text-white">Upcoming Recurring Demand</h1>
         <p className="text-slate-500 text-sm mt-0.5">MRP / planning feed from active recurring templates</p>
