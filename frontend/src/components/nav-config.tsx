@@ -1059,6 +1059,30 @@ export const NAV_CONFIG: NavEntry[] = [
   },
 
   // ╔══════════════════════════════════╗
+  // ║       NOTIFICATION CENTER        ║
+  // ╚══════════════════════════════════╝
+  cluster("cluster-notifications", "Notifications"),
+
+  {
+    type: "section",
+    id: "notification-center",
+    label: "Notification Center",
+    permission: "hr.view",
+    icon: md(
+      "M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+    ),
+    items: [
+      { label: "Dashboard",        href: "/dashboard/notification-center",                   permission: "hr.view" },
+      { label: "All Notifications",href: "/dashboard/notification-center/list",             permission: "hr.view" },
+      { label: "Preferences",      href: "/dashboard/notification-center/preferences",      permission: "hr.view" },
+      { label: "Templates",        href: "/dashboard/notification-center/templates",        permission: "hr.view" },
+      { label: "Schedules",        href: "/dashboard/notification-center/schedules",        permission: "hr.view" },
+      { label: "Reports",          href: "/dashboard/notification-center/reports",          permission: "hr.view" },
+      { label: "AI Insights",      href: "/dashboard/notification-center/ai",               permission: "hr.view" },
+    ],
+  },
+
+  // ╔══════════════════════════════════╗
   // ║   TIMESHEET APPROVAL WORKFLOW    ║
   // ╚══════════════════════════════════╝
   cluster("cluster-timesheets", "Timesheets"),

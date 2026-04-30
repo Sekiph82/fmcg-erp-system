@@ -445,6 +445,14 @@ from app.models.appraisals import (
     APAIRecommendation,
 )
 
+# ── Notification Center ───────────────────────────────────────────────────────
+from app.models.notifications import (
+    NotificationType as NCNotifType, NotificationPriority, NotificationChannel,
+    NotificationStatus, NCNotifAIAgentType, NCNotifAIRecStatus,
+    Notification, NotificationPreference, NotificationTemplate,
+    NotificationSchedule, NCNotifAIRecommendation,
+)
+
 # ── Timesheet Approval Workflow ───────────────────────────────────────────────
 from app.models.timesheets import (
     TimesheetStatus, ActivityType, ApprovalAction as TSApprovalAction,

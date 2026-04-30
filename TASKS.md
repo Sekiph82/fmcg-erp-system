@@ -1,7 +1,47 @@
 # TASKS — FMCG ERP (Kenya) · Production Module
 
 ## Current Phase
-Phase 37 — Timesheet Approval Workflow ✅ COMPLETED
+Phase 38 — Notification Center ✅ COMPLETED
+
+---
+
+## Phase 38 — Notification Center ✅
+
+- [x] `backend/app/models/notifications.py` — 6 enums + 5 models (UUID PKs): Notification, NotificationPreference, NotificationTemplate, NotificationSchedule, NCNotifAIRecommendation
+- [x] `backend/app/schemas/notifications.py` — Pydantic v2 schemas (create, bulk, template-send, preference upsert, template CRUD, schedule CRUD, dashboard, AI rec)
+- [x] `backend/app/services/notifications_service.py`:
+  - Notification CRUD + list with multi-filter (user, type, priority, read, module)
+  - Bulk send (fan-out to N users in one call)
+  - Template-based send with {{variable}} interpolation via _render()
+  - mark_read / mark_all_read / delete
+  - get_unread_count per user
+  - Preference upsert (toggle per type+channel) + seed_default_preferences (8 defaults)
+  - Template CRUD + seed_default_templates (10 templates: approval_req, leave approved/rejected, timesheet approved/rejected, cert expiring, task assigned, stock low, payment received, system alert)
+  - Schedule CRUD + process_due_schedules (fires due reminders, auto-reschedule recurring, deactivates one-shots) + deactivate_schedule
+  - trigger_notification() utility for cross-module use
+  - Dashboard: 9 KPIs + by_type/priority/channel breakdowns + top modules
+  - Reports: delivery (channel × status matrix), unread per user, failed notifications
+  - AI Agent 1: Optimizer (users with >50 unread + channels with >5 failures)
+  - AI Agent 2: Behavior Analyzer (users reading <10% of notifications)
+- [x] `backend/app/api/v1/endpoints/notifications.py` — 30+ routes at /api/v1/notifications/
+- [x] `backend/alembic/versions/d6e7f8a9b0c1_notification_center.py` — migration (down_revision: c5d6e7f8a9b0), 5 tables + 3 indexes
+- [x] `backend/app/models/__init__.py` + `router.py` updated
+- [x] `frontend/src/lib/notifications_center.ts` — full types, API client, color/icon/label maps, type guards
+- [x] Frontend pages (7 pages):
+  - Dashboard (5 KPI cards, by-type/priority/channel breakdowns, top modules, quick nav, seed templates button)
+  - All Notifications (multi-filter, compose modal, mark read/all-read/delete, unread badge on left border)
+  - Preferences (user-level toggle matrix: type × channel, seed defaults, toggle switches)
+  - Templates (CRUD + seed defaults + send-from-template modal with variable extraction)
+  - Schedules (create + recurring, process-due button, overdue highlighting, deactivate)
+  - Reports (delivery matrix, unread-by-user bar chart, failed notifications list)
+  - AI Insights (2 agents + ack/action/dismiss workflow)
+- [x] Nav: "Notification Center" section with 7 links added
+
+## Next: Prompt 39 — Kanban Boards
+
+---
+
+## Phase 37 — Timesheet Approval Workflow ✅ COMPLETED
 
 ---
 

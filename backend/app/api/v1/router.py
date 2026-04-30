@@ -40,6 +40,7 @@ from app.api.v1.endpoints import (
     appraisals,
     training,
     timesheets,
+    notifications,
 )
 
 api_router = APIRouter()
@@ -199,3 +200,5 @@ api_router.include_router(appraisals.router, prefix="/appraisals", tags=["apprai
 api_router.include_router(training.router, prefix="/training", tags=["training"])
 # ── Timesheet Approval Workflow ───────────────────────────────────────────────
 api_router.include_router(timesheets.router, prefix="/timesheets", tags=["timesheets"])
+# ── Notification Center ───────────────────────────────────────────────────────
+api_router.include_router(notifications.router, prefix="/notifications", tags=["notifications"])
