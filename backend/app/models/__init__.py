@@ -436,6 +436,15 @@ from app.models.ess import (
     ESSDocument, ESSActivityLog, ESSAIRecommendation,
 )
 
+# ── Performance Appraisals ────────────────────────────────────────────────────
+from app.models.appraisals import (
+    AppraisalPeriodType, AppraisalPeriodStatus, AppraisalStatus,
+    FinalRating, DevelopmentPlanStatus, APAIAgentType, APAIRecStatus,
+    AppraisalPeriod, AppraisalTemplate, AppraisalRecord,
+    AppraisalKPILine, AppraisalCompetencyLine, AppraisalDevelopmentPlan,
+    APAIRecommendation,
+)
+
 # ── Moto Sales Extension ─────────────────────────────────────────────────────
 from app.models.van_sales import (
     MpesaStkStatus, VanMpesaPayment,

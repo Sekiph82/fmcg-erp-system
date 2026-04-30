@@ -1059,6 +1059,34 @@ export const NAV_CONFIG: NavEntry[] = [
   },
 
   // ╔══════════════════════════════════╗
+  // ║     PERFORMANCE APPRAISALS       ║
+  // ╚══════════════════════════════════╝
+  cluster("cluster-appraisals", "Performance Appraisals"),
+
+  {
+    type: "section",
+    id: "appraisals",
+    label: "Performance Appraisals",
+    permission: "hr.view",
+    icon: md(
+      "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+    ),
+    items: [
+      { label: "Dashboard",          href: "/dashboard/appraisals",                       permission: "hr.view" },
+      { label: "Periods",            href: "/dashboard/appraisals/periods",               permission: "hr.view" },
+      { label: "Templates",          href: "/dashboard/appraisals/templates",             permission: "hr.view" },
+      { label: "All Records",        href: "/dashboard/appraisals/records",               permission: "hr.view" },
+      { label: "New Appraisal",      href: "/dashboard/appraisals/records/new",          permission: "hr.view" },
+      { label: "Self Review",        href: "/dashboard/appraisals/self-review",          permission: "hr.view" },
+      { label: "Manager Queue",      href: "/dashboard/appraisals/manager-queue",        permission: "hr.view" },
+      { label: "HR Review",          href: "/dashboard/appraisals/hr-review",            permission: "hr.view" },
+      { label: "Development Plans",  href: "/dashboard/appraisals/development-plans",    permission: "hr.view" },
+      { label: "Reports",            href: "/dashboard/appraisals/reports",              permission: "hr.view" },
+      { label: "AI Insights",        href: "/dashboard/appraisals/ai",                   permission: "hr.view" },
+    ],
+  },
+
+  // ╔══════════════════════════════════╗
   // ║         EXPENSE CLAIMS           ║
   // ╚══════════════════════════════════╝
   cluster("cluster-expenses", "Expense Claims"),

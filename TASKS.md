@@ -1,7 +1,49 @@
 # TASKS — FMCG ERP (Kenya) · Production Module
 
 ## Current Phase
-Phase 34 — Employee Self-Service ✅ COMPLETED
+Phase 35 — Performance Appraisals ✅ COMPLETED
+
+---
+
+## Phase 35 — Performance Appraisals ✅
+
+- [x] `backend/app/models/appraisals.py` — 8 enums + 7 models (UUID PKs): AppraisalPeriod, AppraisalTemplate, AppraisalRecord, AppraisalKPILine, AppraisalCompetencyLine, AppraisalDevelopmentPlan, APAIRecommendation
+- [x] `backend/app/schemas/appraisals.py` — Pydantic v2 schemas (period CRUD, template CRUD, record create, KPI/competency/dev-plan CRUD, self-submit, manager-review, hr-review, finalize, dashboard, AI rec)
+- [x] `backend/app/services/appraisals_service.py`:
+  - Period CRUD + activate/close via update
+  - Template CRUD with kpi/competency weight validation
+  - Record CRUD + list with filters (period, employee, dept, status)
+  - Workflow: self_submit → manager_review → hr_review → calibration → completed
+  - reject at any stage
+  - KPI line CRUD (add/update/delete) with self_score + manager_score
+  - Competency line CRUD (add/update/delete) with self_rating + manager_rating
+  - Development plan CRUD + list with status filter
+  - Scoring engine: weighted KPI + competency scores → combined final score
+  - Rating bands: 90+ Excellent, 75–89 Good, 60–74 Meets Expectations, <60 Improvement Needed
+  - Dashboard: 9 KPIs + rating distribution + dept avg scores
+  - Reports: completion, rating distribution, promotions
+  - AI Agent 1: Performance Insight (low performers <60 score)
+  - AI Agent 2: Calibration Risk Monitor (dept avg ≥85 with 3+ employees → inflation warning)
+  - AI Agent 3: Development Plan Assistant (completed appraisals with no dev plan)
+- [x] `backend/app/api/v1/endpoints/appraisals.py` — 30+ routes at /api/v1/appraisals/
+- [x] `backend/alembic/versions/a3b4c5d6e7f8_performance_appraisals.py` — migration (down_revision: f2a3b4c5d6e7), 7 tables
+- [x] `backend/app/models/__init__.py` + `router.py` updated
+- [x] `frontend/src/lib/appraisals.ts` — types, API client, color/label maps
+- [x] Frontend pages (11 pages):
+  - Dashboard (9 KPI cards, rating distribution, dept avg scores, quick nav)
+  - Periods (list + create + activate/close workflow)
+  - Templates (list + create with KPI/competency weight split, auto-complement)
+  - All Records (status/employee filter, detail modal with KPI/competency lines, calc-scores action)
+  - New Appraisal (header form + KPI line builder + 8 default competencies)
+  - Self Review (pending queue + scoring modal with KPI scores + competency ratings + submit)
+  - Manager Queue (pending queue + manager score entry + increment/promotion recs + submit to HR)
+  - HR Review (dual-tab: HR Review + Calibration, finalize workflow, reject)
+  - Development Plans (list with overdue detection + status update modal)
+  - Reports (completion report, rating distribution, promotion/increment report)
+  - AI Insights (3 agents + ack/action/dismiss workflow)
+- [x] Nav: "Performance Appraisals" section with 11 links added
+
+## Next: Prompt 36 — Training and Skills Management
 
 ---
 
