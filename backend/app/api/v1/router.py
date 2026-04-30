@@ -36,6 +36,7 @@ from app.api.v1.endpoints import (
     commissions,
     expenses,
     recruitment,
+    ess,
 )
 
 api_router = APIRouter()
@@ -187,3 +188,5 @@ api_router.include_router(commissions.router, prefix="/commissions", tags=["comm
 api_router.include_router(expenses.router, prefix="/expenses", tags=["expenses"])
 # ── Recruitment / ATS ─────────────────────────────────────────────────────────
 api_router.include_router(recruitment.router, prefix="/recruitment", tags=["recruitment"])
+# ── Employee Self-Service ─────────────────────────────────────────────────────
+api_router.include_router(ess.router, prefix="/ess", tags=["ess"])

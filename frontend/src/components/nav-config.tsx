@@ -1007,6 +1007,32 @@ export const NAV_CONFIG: NavEntry[] = [
   },
 
   // ╔══════════════════════════════════╗
+  // ║     EMPLOYEE SELF-SERVICE        ║
+  // ╚══════════════════════════════════╝
+  cluster("cluster-ess", "Employee Self-Service"),
+
+  {
+    type: "section",
+    id: "ess",
+    label: "Employee Self-Service",
+    permission: "hr.view",
+    icon: md(
+      "M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+    ),
+    items: [
+      { label: "ESS Dashboard",    href: "/dashboard/ess",               permission: "hr.view" },
+      { label: "My Profile",       href: "/dashboard/ess/profile",        permission: "hr.view" },
+      { label: "Leave",            href: "/dashboard/ess/leave",          permission: "hr.view" },
+      { label: "Attendance",       href: "/dashboard/ess/attendance",     permission: "hr.view" },
+      { label: "Documents",        href: "/dashboard/ess/documents",      permission: "hr.view" },
+      { label: "My Requests",      href: "/dashboard/ess/requests",       permission: "hr.view" },
+      { label: "Notifications",    href: "/dashboard/ess/notifications",  permission: "hr.view" },
+      { label: "HR Admin",         href: "/dashboard/ess/admin",          permission: "hr.view" },
+      { label: "AI Insights",      href: "/dashboard/ess/ai",             permission: "hr.view" },
+    ],
+  },
+
+  // ╔══════════════════════════════════╗
   // ║       RECRUITMENT / ATS          ║
   // ╚══════════════════════════════════╝
   cluster("cluster-recruitment", "Recruitment"),

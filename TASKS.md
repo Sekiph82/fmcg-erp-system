@@ -1,7 +1,52 @@
 # TASKS — FMCG ERP (Kenya) · Production Module
 
 ## Current Phase
-Phase 33 — Recruitment / ATS ✅ COMPLETED
+Phase 34 — Employee Self-Service ✅ COMPLETED
+
+---
+
+## Phase 34 — Employee Self-Service (ESS) ✅
+
+- [x] `backend/app/models/ess.py` — 10 enums + 11 models (UUID PKs): ESSAccount, ESSEmployeeProfile, ESSLeaveType, ESSLeaveBalance, ESSLeaveRequest, ESSAttendanceRecord, ESSRequest, ESSNotification, ESSDocument, ESSActivityLog, ESSAIRecommendation
+- [x] `backend/app/schemas/ess.py` — Pydantic v2 schemas (auth, profile, leave types/balances/requests, attendance, requests, documents, notifications, dashboard, AI)
+- [x] `backend/app/services/ess_service.py`:
+  - SHA-256 password hashing + login with failed-attempt lockout (5 attempts → suspend)
+  - Account CRUD + status management
+  - Profile upsert/update (employee-editable fields only: personal_email, phone, address, emergency contacts)
+  - Leave type CRUD + seed (7 defaults: Annual 21d, Sick 10d, Maternity 90d, Paternity 14d, Compassionate, Study, Unpaid)
+  - Leave balance upsert with available_days property (entitled + carried + adjusted − taken − pending)
+  - Leave request create (working-days calc Mon–Fri) + submit + approve (pending→taken) + reject (release pending) + cancel
+  - Auto-notifications on leave approve/reject
+  - Attendance upsert with check-in/out auto hours calc + late-minutes detection (>08:30)
+  - Attendance monthly summary
+  - ESS request create + submit + HR review with notification push
+  - Document upload + list (visibility-gated)
+  - Notification CRUD + mark-read + mark-all-read + broadcast
+  - Activity log (auto-logged on login, profile update, leave/request actions)
+  - Dashboard (10 KPIs: leave balance, pending requests, attendance, notifications)
+  - AI Agent 1: Employee Assistant (low balance, pending leave >5 days)
+  - AI Agent 2: HR Support Assistant (request backlogs, high rejection rate)
+- [x] `backend/app/api/v1/endpoints/ess.py` — 35+ routes at /api/v1/ess/
+- [x] `backend/alembic/versions/f2a3b4c5d6e7_employee_self_service.py` — migration (down_revision: e1f2a3b4c5d6), 11 tables
+- [x] `backend/app/models/__init__.py` + `router.py` updated
+- [x] `frontend/src/lib/ess.ts` — types, API client, color/icon maps
+- [x] Frontend pages (8 pages):
+  - ESS Dashboard (5 KPI cards, 8 quick links, days-since-joining)
+  - My Profile (read-only work info + editable personal/emergency contacts)
+  - Leave (balance cards with usage bars, apply form with working-days, history table)
+  - Attendance (month/year filter, summary KPIs, check-in/out log entry, full record table)
+  - Documents (grouped by type with icons, download links)
+  - My Requests (create + submit, history with HR notes)
+  - Notifications (unread indicator dot, mark-read, mark-all-read, unread-only filter)
+  - HR Admin (leave approval queue, request review queue, account+profile creation, seed setup)
+  - AI Insights (2 agents, ack/action/dismiss)
+- [x] Nav: "Employee Self-Service" section with 9 links added
+
+## Next: Prompt 35 — Performance Appraisals
+
+---
+
+## Phase 33 — Recruitment / ATS ✅ COMPLETED
 
 ---
 

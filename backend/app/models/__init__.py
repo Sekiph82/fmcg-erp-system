@@ -427,6 +427,14 @@ from app.models.recruitment import (
     CandidatePipeline, CandidatePipelineHistory, Interview, Offer,
     RTAIRecommendation,
 )
+from app.models.ess import (
+    ESSAccountStatus, EmploymentStatus as ESSEmploymentStatus, LeaveStatus,
+    AttendanceStatus, ESSRequestType, ESSRequestStatus,
+    NotificationType, ESSDocumentType, ESSAIAgentType, ESSAIRecStatus,
+    ESSAccount, ESSEmployeeProfile, ESSLeaveType, ESSLeaveBalance,
+    ESSLeaveRequest, ESSAttendanceRecord, ESSRequest, ESSNotification,
+    ESSDocument, ESSActivityLog, ESSAIRecommendation,
+)
 
 # ── Moto Sales Extension ─────────────────────────────────────────────────────
 from app.models.van_sales import (
@@ -760,4 +768,11 @@ __all__ = [
     "RecruitmentStage", "JobRequisition", "JobPosting", "Candidate",
     "CandidatePipeline", "CandidatePipelineHistory", "Interview", "Offer",
     "RTAIRecommendation",
+    # Employee Self-Service
+    "ESSAccountStatus", "ESSEmploymentStatus", "LeaveStatus", "AttendanceStatus",
+    "ESSRequestType", "ESSRequestStatus", "NotificationType", "ESSDocumentType",
+    "ESSAIAgentType", "ESSAIRecStatus",
+    "ESSAccount", "ESSEmployeeProfile", "ESSLeaveType", "ESSLeaveBalance",
+    "ESSLeaveRequest", "ESSAttendanceRecord", "ESSRequest", "ESSNotification",
+    "ESSDocument", "ESSActivityLog", "ESSAIRecommendation",
 ]
