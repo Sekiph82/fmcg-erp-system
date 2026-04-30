@@ -159,73 +159,73 @@ export const SEVERITY_COLORS: Record<string, string> = {
 
 export const subscriptionApi = {
   listTemplates: (params?: { customer_id?: string; status?: string; skip?: number; limit?: number }) =>
-    apiClient.get<SubscriptionTemplate[]>(BASE, { params }),
+    apiClient.get<SubscriptionTemplate[]>(BASE, { params }).then((r) => r.data),
 
   createTemplate: (data: Partial<SubscriptionTemplate>) =>
-    apiClient.post<SubscriptionTemplate>(BASE, data),
+    apiClient.post<SubscriptionTemplate>(BASE, data).then((r) => r.data),
 
   getTemplate: (id: string) =>
-    apiClient.get<SubscriptionTemplate>(`${BASE}/${id}`),
+    apiClient.get<SubscriptionTemplate>(`${BASE}/${id}`).then((r) => r.data),
 
   updateTemplate: (id: string, data: Partial<SubscriptionTemplate>) =>
-    apiClient.patch<SubscriptionTemplate>(`${BASE}/${id}`, data),
+    apiClient.patch<SubscriptionTemplate>(`${BASE}/${id}`, data).then((r) => r.data),
 
   activate: (id: string) =>
-    apiClient.post<SubscriptionTemplate>(`${BASE}/${id}/activate`, {}),
+    apiClient.post<SubscriptionTemplate>(`${BASE}/${id}/activate`, {}).then((r) => r.data),
 
   cancel: (id: string) =>
-    apiClient.post<SubscriptionTemplate>(`${BASE}/${id}/cancel`, {}),
+    apiClient.post<SubscriptionTemplate>(`${BASE}/${id}/cancel`, {}).then((r) => r.data),
 
   archive: (id: string) =>
-    apiClient.post<SubscriptionTemplate>(`${BASE}/${id}/archive`, {}),
+    apiClient.post<SubscriptionTemplate>(`${BASE}/${id}/archive`, {}).then((r) => r.data),
 
   pause: (id: string, data: Partial<PauseSkip>) =>
-    apiClient.post<PauseSkip>(`${BASE}/${id}/pause`, data),
+    apiClient.post<PauseSkip>(`${BASE}/${id}/pause`, data).then((r) => r.data),
 
   skipCycle: (id: string, data: Partial<PauseSkip>) =>
-    apiClient.post<PauseSkip>(`${BASE}/${id}/skip-cycle`, data),
+    apiClient.post<PauseSkip>(`${BASE}/${id}/skip-cycle`, data).then((r) => r.data),
 
   resume: (id: string, data: Partial<PauseSkip>) =>
-    apiClient.post<PauseSkip>(`${BASE}/${id}/resume`, data),
+    apiClient.post<PauseSkip>(`${BASE}/${id}/resume`, data).then((r) => r.data),
 
   pauseHistory: (id: string) =>
-    apiClient.get<PauseSkip[]>(`${BASE}/${id}/pause-history`),
+    apiClient.get<PauseSkip[]>(`${BASE}/${id}/pause-history`).then((r) => r.data),
 
   generateNow: (id: string, data?: { force?: boolean; notes?: string }) =>
-    apiClient.post<GenerationLog>(`${BASE}/${id}/generate-now`, data ?? {}),
+    apiClient.post<GenerationLog>(`${BASE}/${id}/generate-now`, data ?? {}).then((r) => r.data),
 
   generationLog: (id: string, params?: { skip?: number; limit?: number }) =>
-    apiClient.get<GenerationLog[]>(`${BASE}/${id}/generation-log`, { params }),
+    apiClient.get<GenerationLog[]>(`${BASE}/${id}/generation-log`, { params }).then((r) => r.data),
 
   runScheduler: () =>
     apiClient.post<{ generated: number; skipped: number; failed: number }>(
       `${BASE}/scheduler/run`, {}
-    ),
+    ).then((r) => r.data),
 
   upcomingDemand: (from_date?: string, to_date?: string) =>
     apiClient.get<UpcomingDemand[]>(`${BASE}/upcoming-demand`, {
       params: { from_date, to_date },
-    }),
+    }).then((r) => r.data),
 
   reportTemplates: () =>
     apiClient.get<{ total: number; active: number; paused: number; expired: number }>(
       `${BASE}/reports/templates`
-    ),
+    ).then((r) => r.data),
 
   reportGeneration: (days = 30) =>
     apiClient.get<{ status: string; count: number }[]>(`${BASE}/reports/generation`, {
       params: { days },
-    }),
+    }).then((r) => r.data),
 
   reportFailed: (days = 30) =>
-    apiClient.get<GenerationLog[]>(`${BASE}/reports/failed`, { params: { days } }),
+    apiClient.get<GenerationLog[]>(`${BASE}/reports/failed`, { params: { days } }).then((r) => r.data),
 
   runAI: () =>
-    apiClient.post<SubAIRec[]>(`${BASE}/ai/run`, {}),
+    apiClient.post<SubAIRec[]>(`${BASE}/ai/run`, {}).then((r) => r.data),
 
   aiRecs: (params?: { agent_type?: string; status?: string }) =>
-    apiClient.get<SubAIRec[]>(`${BASE}/ai/recommendations`, { params }),
+    apiClient.get<SubAIRec[]>(`${BASE}/ai/recommendations`, { params }).then((r) => r.data),
 
   ackAIRec: (id: string, status: string) =>
-    apiClient.patch<SubAIRec>(`${BASE}/ai/recommendations/${id}`, { status }),
+    apiClient.patch<SubAIRec>(`${BASE}/ai/recommendations/${id}`, { status }).then((r) => r.data),
 };

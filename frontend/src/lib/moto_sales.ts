@@ -117,23 +117,23 @@ export function scoreColor(score?: number): string {
 export const motoSalesApi = {
   // M-Pesa
   stkPush: (data: { txn_id: string; phone_number: string; amount: number }) =>
-    apiClient.post<VanMpesaPayment>(`${BASE}/mpesa/stk-push`, data),
+    apiClient.post<VanMpesaPayment>(`${BASE}/mpesa/stk-push`, data).then((r) => r.data),
   listMpesa: (params?: { txn_id?: string; status?: string }) =>
-    apiClient.get<VanMpesaPayment[]>(`${BASE}/mpesa/payments`, { params }),
+    apiClient.get<VanMpesaPayment[]>(`${BASE}/mpesa/payments`, { params }).then((r) => r.data),
 
   // Fraud
   runFraudScan: (days = 7) =>
-    apiClient.post<VanFraudAlert[]>(`${BASE}/fraud/scan`, {}, { params: { days } }),
+    apiClient.post<VanFraudAlert[]>(`${BASE}/fraud/scan`, {}, { params: { days } }).then((r) => r.data),
   listFraudAlerts: (params?: { van_id?: string; driver_id?: string; status?: string; severity?: string }) =>
-    apiClient.get<VanFraudAlert[]>(`${BASE}/fraud/alerts`, { params }),
+    apiClient.get<VanFraudAlert[]>(`${BASE}/fraud/alerts`, { params }).then((r) => r.data),
   reviewAlert: (id: string, data: { status: string; resolution?: string }) =>
-    apiClient.patch<VanFraudAlert>(`${BASE}/fraud/alerts/${id}`, data),
+    apiClient.patch<VanFraudAlert>(`${BASE}/fraud/alerts/${id}`, data).then((r) => r.data),
 
   // Performance
   computePerformance: (driver_id: string, perf_date: string) =>
-    apiClient.post<VanRiderPerformance>(`${BASE}/performance/compute`, { driver_id, perf_date }),
+    apiClient.post<VanRiderPerformance>(`${BASE}/performance/compute`, { driver_id, perf_date }).then((r) => r.data),
   listPerformance: (params?: { driver_id?: string; from_date?: string; to_date?: string }) =>
-    apiClient.get<VanRiderPerformance[]>(`${BASE}/performance`, { params }),
+    apiClient.get<VanRiderPerformance[]>(`${BASE}/performance`, { params }).then((r) => r.data),
   leaderboard: (params?: { from_date?: string; to_date?: string }) =>
-    apiClient.get<LeaderboardEntry[]>(`${BASE}/performance/leaderboard`, { params }),
+    apiClient.get<LeaderboardEntry[]>(`${BASE}/performance/leaderboard`, { params }).then((r) => r.data),
 };

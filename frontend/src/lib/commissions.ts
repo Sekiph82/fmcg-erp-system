@@ -157,62 +157,62 @@ export const AGENT_LABELS: Record<string, string> = {
 export const commissionsApi = {
   // Rules
   listRules: (params?: { applies_to?: string; status?: string }) =>
-    apiClient.get<CommissionRule[]>(`${BASE}/rules`, { params }),
+    apiClient.get<CommissionRule[]>(`${BASE}/rules`, { params }).then((r) => r.data),
   createRule: (data: any) =>
-    apiClient.post<CommissionRule>(`${BASE}/rules`, data),
+    apiClient.post<CommissionRule>(`${BASE}/rules`, data).then((r) => r.data),
   getRule: (id: string) =>
-    apiClient.get<CommissionRule>(`${BASE}/rules/${id}`),
+    apiClient.get<CommissionRule>(`${BASE}/rules/${id}`).then((r) => r.data),
   updateRule: (id: string, data: any) =>
-    apiClient.patch<CommissionRule>(`${BASE}/rules/${id}`, data),
+    apiClient.patch<CommissionRule>(`${BASE}/rules/${id}`, data).then((r) => r.data),
   activateRule: (id: string) =>
-    apiClient.post<CommissionRule>(`${BASE}/rules/${id}/activate`, {}),
+    apiClient.post<CommissionRule>(`${BASE}/rules/${id}/activate`, {}).then((r) => r.data),
 
   // Targets
   listTargets: (params?: { entity_id?: string; period?: string }) =>
-    apiClient.get<CommissionTarget[]>(`${BASE}/targets`, { params }),
+    apiClient.get<CommissionTarget[]>(`${BASE}/targets`, { params }).then((r) => r.data),
   upsertTarget: (data: any) =>
-    apiClient.post<CommissionTarget>(`${BASE}/targets`, data),
+    apiClient.post<CommissionTarget>(`${BASE}/targets`, data).then((r) => r.data),
 
   // Calculate
   calculate: (data: any) =>
-    apiClient.post<CommissionTxn>(`${BASE}/calculate`, data),
+    apiClient.post<CommissionTxn>(`${BASE}/calculate`, data).then((r) => r.data),
 
   // Transactions
   listTransactions: (params?: { sales_rep_id?: string; period?: string; status?: string; limit?: number }) =>
-    apiClient.get<CommissionTxn[]>(`${BASE}/transactions`, { params }),
+    apiClient.get<CommissionTxn[]>(`${BASE}/transactions`, { params }).then((r) => r.data),
   getTransaction: (id: string) =>
-    apiClient.get<CommissionTxn>(`${BASE}/transactions/${id}`),
+    apiClient.get<CommissionTxn>(`${BASE}/transactions/${id}`).then((r) => r.data),
   approveTxn: (id: string, comments?: string) =>
-    apiClient.post<CommissionTxn>(`${BASE}/transactions/${id}/approve`, { comments }),
+    apiClient.post<CommissionTxn>(`${BASE}/transactions/${id}/approve`, { comments }).then((r) => r.data),
   rejectTxn: (id: string, reason: string) =>
-    apiClient.post<CommissionTxn>(`${BASE}/transactions/${id}/reject`, { reason }),
+    apiClient.post<CommissionTxn>(`${BASE}/transactions/${id}/reject`, { reason }).then((r) => r.data),
   addAdjustment: (id: string, data: any) =>
-    apiClient.post<CommissionAdjustment>(`${BASE}/transactions/${id}/adjustments`, data),
+    apiClient.post<CommissionAdjustment>(`${BASE}/transactions/${id}/adjustments`, data).then((r) => r.data),
 
   // Payouts
   listPayouts: (params?: { entity_id?: string; period?: string; status?: string }) =>
-    apiClient.get<CommissionPayout[]>(`${BASE}/payouts`, { params }),
+    apiClient.get<CommissionPayout[]>(`${BASE}/payouts`, { params }).then((r) => r.data),
   createPayout: (data: any) =>
-    apiClient.post<CommissionPayout>(`${BASE}/payouts`, data),
+    apiClient.post<CommissionPayout>(`${BASE}/payouts`, data).then((r) => r.data),
   approvePayout: (id: string) =>
-    apiClient.post<CommissionPayout>(`${BASE}/payouts/${id}/approve`, {}),
+    apiClient.post<CommissionPayout>(`${BASE}/payouts/${id}/approve`, {}).then((r) => r.data),
   markPaid: (id: string, payment_date: string) =>
-    apiClient.post<CommissionPayout>(`${BASE}/payouts/${id}/mark-paid`, {}, { params: { payment_date } }),
+    apiClient.post<CommissionPayout>(`${BASE}/payouts/${id}/mark-paid`, {}, { params: { payment_date } }).then((r) => r.data),
 
   // Reports
   reportSummary: () =>
     apiClient.get<{ total_txns: number; pending: number; approved: number; total_commission: number; paid_commission: number }>(
       `${BASE}/reports/summary`
-    ),
+    ).then((r) => r.data),
   reportByPeriod: (period?: string) =>
     apiClient.get<{ period: string; sales_rep_id: string; total_commission: number; txn_count: number }[]>(
       `${BASE}/reports/by-period`, { params: { period } }
-    ),
+    ).then((r) => r.data),
 
   // AI
-  runAI: () => apiClient.post<CMAIRec[]>(`${BASE}/ai/run`, {}),
+  runAI: () => apiClient.post<CMAIRec[]>(`${BASE}/ai/run`, {}).then((r) => r.data),
   aiRecs: (params?: { agent_type?: string; status?: string }) =>
-    apiClient.get<CMAIRec[]>(`${BASE}/ai/recommendations`, { params }),
+    apiClient.get<CMAIRec[]>(`${BASE}/ai/recommendations`, { params }).then((r) => r.data),
   ackRec: (id: string, status: string) =>
-    apiClient.patch<CMAIRec>(`${BASE}/ai/recommendations/${id}`, { status }),
+    apiClient.patch<CMAIRec>(`${BASE}/ai/recommendations/${id}`, { status }).then((r) => r.data),
 };

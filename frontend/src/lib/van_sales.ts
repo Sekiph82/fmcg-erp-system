@@ -205,74 +205,74 @@ export const SEVERITY_COLORS: Record<string, string> = {
 export const vanSalesApi = {
   // Vans
   listVans: (params?: { status?: string }) =>
-    apiClient.get<Van[]>(`${BASE}/vans`, { params }),
+    apiClient.get<Van[]>(`${BASE}/vans`, { params }).then((r) => r.data),
   createVan: (data: Partial<Van>) =>
-    apiClient.post<Van>(`${BASE}/vans`, data),
+    apiClient.post<Van>(`${BASE}/vans`, data).then((r) => r.data),
   getVan: (id: string) =>
-    apiClient.get<Van>(`${BASE}/vans/${id}`),
+    apiClient.get<Van>(`${BASE}/vans/${id}`).then((r) => r.data),
   updateVan: (id: string, data: Partial<Van>) =>
-    apiClient.patch<Van>(`${BASE}/vans/${id}`, data),
+    apiClient.patch<Van>(`${BASE}/vans/${id}`, data).then((r) => r.data),
 
   // Stock
   getStock: (vanId: string) =>
-    apiClient.get<VanStock[]>(`${BASE}/vans/${vanId}/stock`),
+    apiClient.get<VanStock[]>(`${BASE}/vans/${vanId}/stock`).then((r) => r.data),
   loadStock: (vanId: string, data: { lines: Partial<VanStock>[]; notes?: string }) =>
-    apiClient.post<VanStock[]>(`${BASE}/vans/${vanId}/stock/load`, data),
+    apiClient.post<VanStock[]>(`${BASE}/vans/${vanId}/stock/load`, data).then((r) => r.data),
 
   // Visits
   listVisits: (vanId: string, route_date?: string) =>
-    apiClient.get<VanVisit[]>(`${BASE}/vans/${vanId}/visits`, { params: { route_date } }),
+    apiClient.get<VanVisit[]>(`${BASE}/vans/${vanId}/visits`, { params: { route_date } }).then((r) => r.data),
   createVisit: (vanId: string, data: Partial<VanVisit>) =>
-    apiClient.post<VanVisit>(`${BASE}/vans/${vanId}/visits`, data),
+    apiClient.post<VanVisit>(`${BASE}/vans/${vanId}/visits`, data).then((r) => r.data),
   checkIn: (visitId: string, data: { gps_lat?: number; gps_lng?: number }) =>
-    apiClient.post<VanVisit>(`${BASE}/visits/${visitId}/check-in`, data),
+    apiClient.post<VanVisit>(`${BASE}/visits/${visitId}/check-in`, data).then((r) => r.data),
   checkOut: (visitId: string, notes?: string) =>
-    apiClient.post<VanVisit>(`${BASE}/visits/${visitId}/check-out`, {}, { params: { notes } }),
+    apiClient.post<VanVisit>(`${BASE}/visits/${visitId}/check-out`, {}, { params: { notes } }).then((r) => r.data),
   markMissed: (visitId: string, reason?: string) =>
-    apiClient.post<VanVisit>(`${BASE}/visits/${visitId}/missed`, {}, { params: { reason } }),
+    apiClient.post<VanVisit>(`${BASE}/visits/${visitId}/missed`, {}, { params: { reason } }).then((r) => r.data),
 
   // Transactions
   listTransactions: (vanId: string, route_date?: string, params?: { skip?: number; limit?: number }) =>
-    apiClient.get<VanSalesTxn[]>(`${BASE}/vans/${vanId}/transactions`, { params: { route_date, ...params } }),
+    apiClient.get<VanSalesTxn[]>(`${BASE}/vans/${vanId}/transactions`, { params: { route_date, ...params } }).then((r) => r.data),
   createTransaction: (vanId: string, data: any) =>
-    apiClient.post<VanSalesTxn>(`${BASE}/vans/${vanId}/transactions`, data),
+    apiClient.post<VanSalesTxn>(`${BASE}/vans/${vanId}/transactions`, data).then((r) => r.data),
   getTransaction: (txnId: string) =>
-    apiClient.get<VanSalesTxn>(`${BASE}/transactions/${txnId}`),
+    apiClient.get<VanSalesTxn>(`${BASE}/transactions/${txnId}`).then((r) => r.data),
 
   // Payments
   addPayment: (txnId: string, data: Partial<VanPayment>) =>
-    apiClient.post<VanPayment>(`${BASE}/transactions/${txnId}/payments`, data),
+    apiClient.post<VanPayment>(`${BASE}/transactions/${txnId}/payments`, data).then((r) => r.data),
 
   // Reconciliation
   listReconciliations: (vanId: string) =>
-    apiClient.get<VanReconciliation[]>(`${BASE}/vans/${vanId}/reconciliations`),
+    apiClient.get<VanReconciliation[]>(`${BASE}/vans/${vanId}/reconciliations`).then((r) => r.data),
   createReconciliation: (vanId: string, data: { route_date: string; notes?: string }) =>
-    apiClient.post<VanReconciliation>(`${BASE}/vans/${vanId}/reconciliations`, data),
+    apiClient.post<VanReconciliation>(`${BASE}/vans/${vanId}/reconciliations`, data).then((r) => r.data),
   approveReconciliation: (reconId: string) =>
-    apiClient.post<VanReconciliation>(`${BASE}/reconciliations/${reconId}/approve`, {}),
+    apiClient.post<VanReconciliation>(`${BASE}/reconciliations/${reconId}/approve`, {}).then((r) => r.data),
 
   // Sync
   sync: (vanId: string, payload: any) =>
-    apiClient.post<SyncResult>(`${BASE}/vans/${vanId}/sync`, payload),
+    apiClient.post<SyncResult>(`${BASE}/vans/${vanId}/sync`, payload).then((r) => r.data),
 
   // Reports
   vanSummary: (vanId: string, days = 30) =>
     apiClient.get<{ txn_count: number; total_sales: number; total_collected: number; days: number }>(
       `${BASE}/reports/van/${vanId}/summary`, { params: { days } }
-    ),
+    ).then((r) => r.data),
   routePerformance: (days = 30) =>
     apiClient.get<{ route_id: string; txn_count: number; total_sales: number }[]>(
       `${BASE}/reports/route-performance`, { params: { days } }
-    ),
+    ).then((r) => r.data),
   driverPerformance: (days = 30) =>
     apiClient.get<{ driver_id: string; txn_count: number; total_sales: number }[]>(
       `${BASE}/reports/driver-performance`, { params: { days } }
-    ),
+    ).then((r) => r.data),
 
   // AI
-  runAI: () => apiClient.post<VSAIRec[]>(`${BASE}/ai/run`, {}),
+  runAI: () => apiClient.post<VSAIRec[]>(`${BASE}/ai/run`, {}).then((r) => r.data),
   aiRecs: (params?: { agent_type?: string; status?: string }) =>
-    apiClient.get<VSAIRec[]>(`${BASE}/ai/recommendations`, { params }),
+    apiClient.get<VSAIRec[]>(`${BASE}/ai/recommendations`, { params }).then((r) => r.data),
   ackRec: (id: string, status: string) =>
-    apiClient.patch<VSAIRec>(`${BASE}/ai/recommendations/${id}`, { status }),
+    apiClient.patch<VSAIRec>(`${BASE}/ai/recommendations/${id}`, { status }).then((r) => r.data),
 };

@@ -160,54 +160,54 @@ export const SEVERITY_COLORS: Record<string, string> = {
 
 export const contractsApi = {
   list: (params?: { party_type?: string; status?: string; party_id?: string; skip?: number; limit?: number }) =>
-    apiClient.get<Contract[]>(BASE, { params }),
-  create: (data: any) => apiClient.post<Contract>(BASE, data),
-  get: (id: string) => apiClient.get<Contract>(`${BASE}/${id}`),
-  update: (id: string, data: any) => apiClient.patch<Contract>(`${BASE}/${id}`, data),
+    apiClient.get<Contract[]>(BASE, { params }).then((r) => r.data),
+  create: (data: any) => apiClient.post<Contract>(BASE, data).then((r) => r.data),
+  get: (id: string) => apiClient.get<Contract>(`${BASE}/${id}`).then((r) => r.data),
+  update: (id: string, data: any) => apiClient.patch<Contract>(`${BASE}/${id}`, data).then((r) => r.data),
 
   submit: (id: string, comments?: string) =>
-    apiClient.post<Contract>(`${BASE}/${id}/submit`, { comments }),
+    apiClient.post<Contract>(`${BASE}/${id}/submit`, { comments }).then((r) => r.data),
   approve: (id: string, comments?: string) =>
-    apiClient.post<Contract>(`${BASE}/${id}/approve`, { comments }),
+    apiClient.post<Contract>(`${BASE}/${id}/approve`, { comments }).then((r) => r.data),
   reject: (id: string, comments?: string) =>
-    apiClient.post<Contract>(`${BASE}/${id}/reject`, { comments }),
+    apiClient.post<Contract>(`${BASE}/${id}/reject`, { comments }).then((r) => r.data),
   activate: (id: string) =>
-    apiClient.post<Contract>(`${BASE}/${id}/activate`, {}),
+    apiClient.post<Contract>(`${BASE}/${id}/activate`, {}).then((r) => r.data),
   terminate: (id: string, reason: string) =>
-    apiClient.post<Contract>(`${BASE}/${id}/terminate`, { reason }),
+    apiClient.post<Contract>(`${BASE}/${id}/terminate`, { reason }).then((r) => r.data),
   archive: (id: string) =>
-    apiClient.post<Contract>(`${BASE}/${id}/archive`, {}),
+    apiClient.post<Contract>(`${BASE}/${id}/archive`, {}).then((r) => r.data),
 
   addTerm: (id: string, data: Partial<ContractTerm>) =>
-    apiClient.post<ContractTerm>(`${BASE}/${id}/terms`, data),
+    apiClient.post<ContractTerm>(`${BASE}/${id}/terms`, data).then((r) => r.data),
   deleteTerm: (termId: string) =>
-    apiClient.delete(`${BASE}/terms/${termId}`),
+    apiClient.delete(`${BASE}/terms/${termId}`).then((r) => r.data),
 
   addRebate: (id: string, data: Partial<ContractRebate>) =>
-    apiClient.post<ContractRebate>(`${BASE}/${id}/rebates`, data),
+    apiClient.post<ContractRebate>(`${BASE}/${id}/rebates`, data).then((r) => r.data),
 
   listPerformance: (id: string) =>
-    apiClient.get<ContractPerformance[]>(`${BASE}/${id}/performance`),
+    apiClient.get<ContractPerformance[]>(`${BASE}/${id}/performance`).then((r) => r.data),
   upsertPerformance: (id: string, data: any) =>
-    apiClient.post<ContractPerformance>(`${BASE}/${id}/performance`, data),
+    apiClient.post<ContractPerformance>(`${BASE}/${id}/performance`, data).then((r) => r.data),
 
-  history: (id: string) => apiClient.get<ContractVersion[]>(`${BASE}/${id}/history`),
-  approvals: (id: string) => apiClient.get<ContractApproval[]>(`${BASE}/${id}/approvals`),
+  history: (id: string) => apiClient.get<ContractVersion[]>(`${BASE}/${id}/history`).then((r) => r.data),
+  approvals: (id: string) => apiClient.get<ContractApproval[]>(`${BASE}/${id}/approvals`).then((r) => r.data),
 
   reportSummary: () =>
     apiClient.get<{ total: number; active: number; expiring_30_days: number; draft: number; under_review: number }>(
       `${BASE}/reports/summary`
-    ),
+    ).then((r) => r.data),
   reportExpiring: (days = 60) =>
-    apiClient.get<Contract[]>(`${BASE}/reports/expiring`, { params: { days } }),
+    apiClient.get<Contract[]>(`${BASE}/reports/expiring`, { params: { days } }).then((r) => r.data),
   reportPerformance: () =>
     apiClient.get<{ contract_id: string; avg_achievement_pct: number; total_rebate_earned: number; periods: number }[]>(
       `${BASE}/reports/performance`
-    ),
+    ).then((r) => r.data),
 
-  runAI: () => apiClient.post<CTAIRec[]>(`${BASE}/ai/run`, {}),
+  runAI: () => apiClient.post<CTAIRec[]>(`${BASE}/ai/run`, {}).then((r) => r.data),
   aiRecs: (params?: { agent_type?: string; status?: string }) =>
-    apiClient.get<CTAIRec[]>(`${BASE}/ai/recommendations`, { params }),
+    apiClient.get<CTAIRec[]>(`${BASE}/ai/recommendations`, { params }).then((r) => r.data),
   ackRec: (id: string, status: string) =>
-    apiClient.patch<CTAIRec>(`${BASE}/ai/recommendations/${id}`, { status }),
+    apiClient.patch<CTAIRec>(`${BASE}/ai/recommendations/${id}`, { status }).then((r) => r.data),
 };
