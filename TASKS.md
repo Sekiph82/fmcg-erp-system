@@ -1,7 +1,46 @@
 # TASKS — FMCG ERP (Kenya) · Production Module
 
 ## Current Phase
-Phase 35 — Performance Appraisals ✅ COMPLETED
+Phase 36 — Training and Skills Management ✅ COMPLETED
+
+---
+
+## Phase 36 — Training and Skills Management ✅
+
+- [x] `backend/app/models/training.py` — 8 enums + 8 models (UUID PKs): SkillMaster, EmployeeSkillProfile, TrainingProgram, TrainingSession, TrainingAssignment, CertificationRecord, TrainingFeedback, TRAIRecommendation
+- [x] `backend/app/schemas/training.py` — Pydantic v2 schemas (skill CRUD, employee skill profile upsert/update, program CRUD, session CRUD, assignment create/complete, certification CRUD, feedback submit, dashboard, AI rec)
+- [x] `backend/app/services/training_service.py`:
+  - Skill CRUD + seed_default_skills (12 defaults: Excel, Data Analysis, Communication, Leadership, Teamwork, Problem Solving, Fire Safety, First Aid, HACCP, ISO 9001, PM, People Mgmt)
+  - Skill gap detection (SKILL_LEVEL_ORDER comparison: basic→intermediate→advanced→expert)
+  - Employee skill matrix query (employee + dept filters)
+  - Skill gap report (filtered matrix rows where has_gap=True)
+  - Training program CRUD + effectiveness calculation (avg feedback rating)
+  - Session CRUD + complete_session (auto-completes all enrolled assignments)
+  - Assignment create (auto-increments session.enrolled_count) + complete (auto-generates cert if validity_period_days set) + mark_overdue batch
+  - Certification CRUD + refresh_certification_statuses (auto valid/expiring/expired from today's date)
+  - Feedback submit + list + avg calculation
+  - Dashboard: 13 KPIs across programs, sessions, assignments, certifications, skill profiles
+  - Reports: completion, cert expiry, training cost (per head × enrolled), skill gaps
+  - AI Agent 1: Skill Gap Advisor (employees with skill gaps → recommend training)
+  - AI Agent 2: Effectiveness Analyzer (programs with avg feedback < 3/5 from 3+ respondents)
+  - AI Agent 3: Compliance Risk Monitor (expiring ≤30d + expired certs → renewal alerts)
+- [x] `backend/app/api/v1/endpoints/training.py` — 35+ routes at /api/v1/training/
+- [x] `backend/alembic/versions/b4c5d6e7f8a9_training_skills_management.py` — migration (down_revision: a3b4c5d6e7f8), 8 tables
+- [x] `backend/app/models/__init__.py` + `router.py` updated
+- [x] `frontend/src/lib/training.ts` — types, API client, color/label maps
+- [x] Frontend pages (9 pages):
+  - Dashboard (12 KPI cards, quick nav)
+  - Training Programs (list + create with type/category/cost/validity, effectiveness viewer)
+  - Sessions / Calendar (grouped by month, schedule + complete + cancel)
+  - Skill Matrix (grouped by employee, gap highlighting, upsert skill profile, seed defaults)
+  - Assignments (list + filter + assign + complete modal with score + mark-overdue batch)
+  - Certification Tracker (list + create + expiry days remaining + status badges + edit/renew modal)
+  - Feedback (submit + list + star ratings for overall/content/trainer/relevance)
+  - Reports (4 tabs: skill gaps, completion, cert expiry, training cost)
+  - AI Insights (3 agents + ack/action/dismiss workflow)
+- [x] Nav: "Training & Skills" section with 9 links added
+
+## Next: Prompt 37 — Timesheet Approval Workflow
 
 ---
 

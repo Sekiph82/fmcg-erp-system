@@ -1059,6 +1059,32 @@ export const NAV_CONFIG: NavEntry[] = [
   },
 
   // ╔══════════════════════════════════╗
+  // ║   TRAINING & SKILLS MANAGEMENT   ║
+  // ╚══════════════════════════════════╝
+  cluster("cluster-training", "Training & Skills"),
+
+  {
+    type: "section",
+    id: "training",
+    label: "Training & Skills",
+    permission: "hr.view",
+    icon: md(
+      "M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222"
+    ),
+    items: [
+      { label: "Dashboard",           href: "/dashboard/training",                      permission: "hr.view" },
+      { label: "Training Programs",   href: "/dashboard/training/programs",             permission: "hr.view" },
+      { label: "Sessions / Calendar", href: "/dashboard/training/sessions",             permission: "hr.view" },
+      { label: "Skill Matrix",        href: "/dashboard/training/skill-matrix",         permission: "hr.view" },
+      { label: "Assignments",         href: "/dashboard/training/assignments",          permission: "hr.view" },
+      { label: "Certifications",      href: "/dashboard/training/certifications",       permission: "hr.view" },
+      { label: "Feedback",            href: "/dashboard/training/feedback",             permission: "hr.view" },
+      { label: "Reports",             href: "/dashboard/training/reports",              permission: "hr.view" },
+      { label: "AI Insights",         href: "/dashboard/training/ai",                   permission: "hr.view" },
+    ],
+  },
+
+  // ╔══════════════════════════════════╗
   // ║     PERFORMANCE APPRAISALS       ║
   // ╚══════════════════════════════════╝
   cluster("cluster-appraisals", "Performance Appraisals"),

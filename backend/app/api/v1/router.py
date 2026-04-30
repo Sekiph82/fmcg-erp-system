@@ -38,6 +38,7 @@ from app.api.v1.endpoints import (
     recruitment,
     ess,
     appraisals,
+    training,
 )
 
 api_router = APIRouter()
@@ -193,3 +194,5 @@ api_router.include_router(recruitment.router, prefix="/recruitment", tags=["recr
 api_router.include_router(ess.router, prefix="/ess", tags=["ess"])
 # ── Performance Appraisals ────────────────────────────────────────────────────
 api_router.include_router(appraisals.router, prefix="/appraisals", tags=["appraisals"])
+# ── Training & Skills Management ──────────────────────────────────────────────
+api_router.include_router(training.router, prefix="/training", tags=["training"])

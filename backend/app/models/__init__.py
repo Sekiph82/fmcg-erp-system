@@ -445,6 +445,15 @@ from app.models.appraisals import (
     APAIRecommendation,
 )
 
+# ── Training & Skills Management ──────────────────────────────────────────────
+from app.models.training import (
+    SkillCategory, SkillLevel, TrainingType,
+    SessionStatus, AssignmentStatus, CertificationStatus,
+    TRAIAgentType, TRAIRecStatus,
+    SkillMaster, EmployeeSkillProfile, TrainingProgram, TrainingSession,
+    TrainingAssignment, CertificationRecord, TrainingFeedback, TRAIRecommendation,
+)
+
 # ── Moto Sales Extension ─────────────────────────────────────────────────────
 from app.models.van_sales import (
     MpesaStkStatus, VanMpesaPayment,
