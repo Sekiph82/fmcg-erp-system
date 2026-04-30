@@ -53,7 +53,7 @@ export default function LeaveManagementPage() {
               const lt = types.find((t) => t.leave_type_id === b.leave_type_id);
               const pct = b.entitled_days > 0 ? (Number(b.taken_days) / Number(b.entitled_days)) * 100 : 0;
               return (
-                <div key={b.balance_id} className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-4">
+                <div key={b.balance_id} className="glow-card p-4">
                   <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-1">{lt?.type_name ?? "Leave"}</p>
                   <p className="text-2xl font-bold text-blue-400">{b.available_days.toFixed(1)}</p>
                   <p className="text-[10px] text-slate-600 mt-0.5">of {Number(b.entitled_days)} days available</p>
@@ -66,7 +66,7 @@ export default function LeaveManagementPage() {
       )}
 
       {showForm && (
-        <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-5 space-y-3">
+        <div className="glow-card p-5 space-y-3">
           <h2 className="text-sm font-semibold text-white">Apply for Leave</h2>
           <div className="grid grid-cols-2 gap-3">
             <div><label className={labelCls}>Leave Type</label>
@@ -86,7 +86,7 @@ export default function LeaveManagementPage() {
 
       <div>
         <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-2">Leave History</p>
-        <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] overflow-hidden">
+        <div className="glass-table">
           <table className="w-full text-sm">
             <thead><tr className="border-b border-white/[0.07]">
               {["Ref", "Type", "From", "To", "Days", "Status", "Actions"].map((h) => (

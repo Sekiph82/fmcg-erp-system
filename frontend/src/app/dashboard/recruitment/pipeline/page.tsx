@@ -64,7 +64,7 @@ export default function PipelineBoardPage() {
               </div>
               {cards.map((p) => (
                 <div key={p.pipeline_id} draggable onDragStart={() => setDragging(p.pipeline_id)} onDragEnd={() => setDragging(null)}
-                  className="rounded-lg border border-white/[0.07] bg-[#0d1829] p-3 cursor-grab space-y-1.5 hover:bg-white/[0.04]">
+                  className="glow-card rounded-lg p-3 cursor-grab space-y-1.5 hover:bg-white/[0.04]">
                   <p className="text-xs font-medium text-slate-300">{p.candidate_id.slice(-8)}</p>
                   <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${PIPELINE_STATUS_COLOR[p.status]}`}>{p.status}</span>
                   <p className="text-[10px] text-slate-600">{p.application_date}</p>

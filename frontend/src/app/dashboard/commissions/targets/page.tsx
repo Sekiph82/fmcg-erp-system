@@ -29,7 +29,7 @@ export default function TargetsPage() {
 
       {/* Set target */}
       <form onSubmit={(e) => { e.preventDefault(); mut.mutate({ entity_id: form.entity_id, applies_to: form.applies_to, period: form.period, target_value: parseFloat(form.target_value) }); }}
-        className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-5 space-y-3">
+        className="glow-card p-5 space-y-3">
         <h2 className="text-sm font-semibold text-white">Set / Update Target</h2>
         <div className="grid grid-cols-4 gap-3">
           <div>

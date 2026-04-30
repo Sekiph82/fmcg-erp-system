@@ -48,7 +48,7 @@ export default function InterviewsPage() {
       {msg && <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3 text-sm text-emerald-300">{msg}</div>}
 
       {showSchedule && (
-        <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-5 space-y-3">
+        <div className="glow-card p-5 space-y-3">
           <h2 className="text-sm font-semibold text-white">Schedule Interview</h2>
           <div className="grid grid-cols-3 gap-3">
             <div><label className={labelCls}>Candidate ID</label><input value={form.candidate_id} onChange={(e) => setForm({ ...form, candidate_id: e.target.value })} placeholder="UUID" className={inputCls} /></div>
@@ -71,7 +71,7 @@ export default function InterviewsPage() {
       )}
 
       {feedbackTarget && (
-        <div className="rounded-xl border border-indigo-500/20 bg-[#0d1829] p-5 space-y-3">
+        <div className="glow-card border-indigo-500/20 p-5 space-y-3">
           <h2 className="text-sm font-semibold text-white">Record Feedback</h2>
           <div className="grid grid-cols-3 gap-3">
             <div><label className={labelCls}>Overall Score (/100)</label><input type="number" max={100} value={feedback.score} onChange={(e) => setFeedback({ ...feedback, score: e.target.value })} className={inputCls} /></div>
@@ -91,7 +91,7 @@ export default function InterviewsPage() {
         </div>
       )}
 
-      <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] overflow-hidden">
+      <div className="glass-table">
         <table className="w-full text-sm">
           <thead><tr className="border-b border-white/[0.07]">
             {["Date", "Candidate", "Type", "Location", "Score", "Decision", "Actions"].map((h) => (

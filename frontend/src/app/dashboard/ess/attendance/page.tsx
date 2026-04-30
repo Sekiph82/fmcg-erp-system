@@ -55,7 +55,7 @@ export default function AttendancePage() {
             { label: "On Leave", value: summary.on_leave, color: "text-blue-400" },
             { label: "Total Hours", value: `${summary.total_hours}h`, color: "text-white" },
           ].map((k) => (
-            <div key={k.label} className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-4">
+            <div key={k.label} className="glow-card p-4">
               <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-1">{k.label}</p>
               <p className={`text-2xl font-bold ${k.color}`}>{k.value}</p>
             </div>
@@ -64,7 +64,7 @@ export default function AttendancePage() {
       )}
 
       {showEntry && (
-        <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-5 space-y-3">
+        <div className="glow-card p-5 space-y-3">
           <h2 className="text-sm font-semibold text-white">Log Attendance</h2>
           <div className="grid grid-cols-3 gap-3">
             <div><label className={labelCls}>Date</label><input type="date" value={entry.attendance_date} onChange={(e) => setEntry({ ...entry, attendance_date: e.target.value })} className={inputCls} /></div>
@@ -80,7 +80,7 @@ export default function AttendancePage() {
         </div>
       )}
 
-      <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] overflow-hidden">
+      <div className="glass-table">
         <table className="w-full text-sm">
           <thead><tr className="border-b border-white/[0.07]">
             {["Date", "Status", "Check In", "Check Out", "Hours", "Late (min)", "Notes"].map((h) => (

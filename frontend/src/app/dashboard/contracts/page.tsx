@@ -5,7 +5,7 @@ import Link from "next/link";
 
 function KpiCard({ label, value, color = "text-white" }: { label: string; value: number; color?: string }) {
   return (
-    <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-5">
+    <div className="glow-card p-5">
       <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-1">{label}</p>
       <p className={`text-3xl font-bold ${color}`}>{value}</p>
     </div>
@@ -55,7 +55,7 @@ export default function ContractsDashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Recent contracts */}
-        <div className="lg:col-span-2 rounded-xl border border-white/[0.07] bg-[#0d1829] p-5">
+        <div className="lg:col-span-2 glow-card p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-semibold text-white">Recent Contracts</h2>
             <Link href="/dashboard/contracts/list" className="text-xs text-indigo-400 hover:text-indigo-300">View all</Link>
@@ -82,7 +82,7 @@ export default function ContractsDashboard() {
 
         <div className="space-y-4">
           {/* Expiring soon */}
-          <div className="rounded-xl border border-amber-500/20 bg-[#0d1829] p-4">
+          <div className="glow-card border-amber-500/20 p-4">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-sm font-semibold text-amber-300">Expiring in 30 Days</h2>
               <Link href="/dashboard/contracts/expiring" className="text-xs text-indigo-400">View all</Link>
@@ -100,7 +100,7 @@ export default function ContractsDashboard() {
           </div>
 
           {/* AI alerts */}
-          <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-4">
+          <div className="glow-card p-4">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-sm font-semibold text-white">AI Alerts</h2>
               <Link href="/dashboard/contracts/ai" className="text-xs text-indigo-400">View all</Link>

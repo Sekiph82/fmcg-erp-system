@@ -52,7 +52,7 @@ export default function RequisitionDetailPage() {
           { label: "Pipeline", value: pipeline.length, color: "text-purple-400" },
           { label: "Salary Range", value: req.salary_min ? `${fmtCurrency(req.salary_min)} – ${fmtCurrency(req.salary_max ?? 0)}` : "—", color: "text-emerald-400" },
         ].map((k) => (
-          <div key={k.label} className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-4">
+          <div key={k.label} className="glow-card p-4">
             <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-1">{k.label}</p>
             <p className={`text-lg font-bold ${k.color}`}>{k.value}</p>
           </div>
@@ -67,7 +67,7 @@ export default function RequisitionDetailPage() {
       </div>
 
       {tab === "overview" && (
-        <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-5 space-y-4 text-sm">
+        <div className="glow-card p-5 space-y-4 text-sm">
           {req.job_description && <div><p className="text-[10px] text-slate-500 uppercase tracking-widest mb-1">Job Description</p><p className="text-slate-300 whitespace-pre-wrap">{req.job_description}</p></div>}
           {req.requirements && <div><p className="text-[10px] text-slate-500 uppercase tracking-widest mb-1">Requirements</p><p className="text-slate-300 whitespace-pre-wrap">{req.requirements}</p></div>}
           {req.notes && <div><p className="text-[10px] text-slate-500 uppercase tracking-widest mb-1">Notes</p><p className="text-slate-400">{req.notes}</p></div>}
@@ -84,7 +84,7 @@ export default function RequisitionDetailPage() {
             <button onClick={() => act(() => recruitmentApi.createPosting({ requisition_id: id, posting_channel: "website" }))}
               className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm">+ Add Posting</button>
           </div>
-          <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] overflow-hidden">
+          <div className="glass-table">
             <table className="w-full text-sm">
               <thead><tr className="border-b border-white/[0.07]">
                 {["Channel", "Status", "Publish Date", "Expiry", "Actions"].map((h) => (
@@ -111,7 +111,7 @@ export default function RequisitionDetailPage() {
       )}
 
       {tab === "pipeline" && (
-        <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] overflow-hidden">
+        <div className="glass-table">
           <table className="w-full text-sm">
             <thead><tr className="border-b border-white/[0.07]">
               {["Pipeline ID", "Status", "Applied", "Score", "Actions"].map((h) => (

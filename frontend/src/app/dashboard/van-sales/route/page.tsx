@@ -53,15 +53,15 @@ export default function RouteExecutionPage() {
         <>
           {/* Progress */}
           <div className="grid grid-cols-3 gap-4">
-            <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-4 text-center">
+            <div className="glow-card p-4 text-center">
               <p className="text-2xl font-bold text-emerald-400">{completed}</p>
               <p className="text-xs text-slate-500 mt-0.5">Completed</p>
             </div>
-            <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-4 text-center">
+            <div className="glow-card p-4 text-center">
               <p className="text-2xl font-bold text-amber-400">{remaining}</p>
               <p className="text-xs text-slate-500 mt-0.5">Remaining</p>
             </div>
-            <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-4 text-center">
+            <div className="glow-card p-4 text-center">
               <p className="text-2xl font-bold text-red-400">{missed}</p>
               <p className="text-xs text-slate-500 mt-0.5">Missed</p>
             </div>
@@ -70,7 +70,7 @@ export default function RouteExecutionPage() {
           {/* Visit list */}
           <div className="space-y-2">
             {visits.sort((a, b) => (a.sequence_no ?? 99) - (b.sequence_no ?? 99)).map((v) => (
-              <div key={v.id} className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-4">
+              <div key={v.id} className="glow-card p-4">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-3">
                     <div className="w-7 h-7 rounded-full bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-xs text-indigo-300 font-bold">

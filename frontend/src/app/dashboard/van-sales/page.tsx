@@ -5,7 +5,7 @@ import Link from "next/link";
 
 function KpiCard({ label, value, sub, color = "text-white" }: { label: string; value: string | number; sub?: string; color?: string }) {
   return (
-    <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-5">
+    <div className="glow-card p-5">
       <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-1">{label}</p>
       <p className={`text-3xl font-bold ${color}`}>{value}</p>
       {sub && <p className="text-xs text-slate-500 mt-1">{sub}</p>}
@@ -71,7 +71,7 @@ export default function VanSalesDashboard() {
           { href: "/dashboard/van-sales/reconciliation", label: "Reconciliation", icon: "✅", desc: "Daily close-out" },
         ].map((card) => (
           <Link key={card.href} href={card.href}
-            className="rounded-xl border border-white/[0.07] bg-[#0d1829] hover:bg-white/[0.04] p-4 transition-colors">
+            className="glow-card hover:bg-white/[0.04] p-4 transition-colors">
             <p className="text-2xl mb-2">{card.icon}</p>
             <p className="text-sm font-semibold text-white">{card.label}</p>
             <p className="text-xs text-slate-500 mt-0.5">{card.desc}</p>
@@ -81,7 +81,7 @@ export default function VanSalesDashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Van list */}
-        <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-5">
+        <div className="glow-card p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-semibold text-white">Vans</h2>
             <Link href="/dashboard/van-sales/vans" className="text-xs text-indigo-400 hover:text-indigo-300">View all</Link>
@@ -104,7 +104,7 @@ export default function VanSalesDashboard() {
         </div>
 
         {/* AI Alerts */}
-        <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-5">
+        <div className="glow-card p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-semibold text-white">AI Alerts</h2>
             <Link href="/dashboard/van-sales/ai" className="text-xs text-indigo-400 hover:text-indigo-300">View all</Link>

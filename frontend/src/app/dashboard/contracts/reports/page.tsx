@@ -23,14 +23,14 @@ export default function ContractReportsPage() {
           { label: "Draft", value: s?.draft ?? 0, color: "text-slate-400" },
           { label: "Under Review", value: s?.under_review ?? 0, color: "text-blue-400" },
         ].map((c) => (
-          <div key={c.label} className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-4">
+          <div key={c.label} className="glow-card p-4">
             <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">{c.label}</p>
             <p className={`text-2xl font-bold ${c.color}`}>{c.value}</p>
           </div>
         ))}
       </div>
 
-      <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-5">
+      <div className="glow-card p-5">
         <h2 className="text-sm font-semibold text-white mb-4">Contract Performance — Average Achievement %</h2>
         {perf.length > 0 ? (
           <ResponsiveContainer width="100%" height={220}>
@@ -48,7 +48,7 @@ export default function ContractReportsPage() {
         ) : <p className="text-slate-600 text-center py-10">No performance data yet</p>}
       </div>
 
-      <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-5">
+      <div className="glow-card p-5">
         <h2 className="text-sm font-semibold text-white mb-4">Rebate Earned by Contract</h2>
         <table className="w-full text-sm">
           <thead className="text-slate-500 text-xs uppercase tracking-wider">

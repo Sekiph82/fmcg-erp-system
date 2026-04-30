@@ -121,7 +121,7 @@ export default function TemplateDetailPage({ params }: { params: Promise<{ id: s
           { label: "Currency", value: t.currency },
           { label: "Lines", value: String(t.lines.length) },
         ].map((item) => (
-          <div key={item.label} className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-4">
+          <div key={item.label} className="glow-card p-4">
             <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">{item.label}</p>
             <p className="text-sm text-white font-medium">{item.value}</p>
           </div>

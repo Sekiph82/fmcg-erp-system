@@ -25,7 +25,7 @@ export default function NewVanPage() {
         <p className="text-slate-500 text-sm mt-0.5">Register a delivery van</p>
       </div>
       <form onSubmit={(e) => { e.preventDefault(); setError(""); mut.mutate({ van_code: form.van_code, plate_number: form.plate_number || undefined, capacity_kg: form.capacity_kg || undefined, notes: form.notes || undefined }); }}
-        className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-5 space-y-4">
+        className="glow-card p-5 space-y-4">
         {[
           { key: "van_code", label: "Van Code *", placeholder: "VAN-001", required: true },
           { key: "plate_number", label: "Plate Number", placeholder: "KBX 123A" },

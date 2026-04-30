@@ -40,7 +40,7 @@ export default function CandidateDetailPage() {
       </div>
 
       {tab === "profile" && (
-        <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-5 grid grid-cols-2 gap-4 text-sm">
+        <div className="glow-card p-5 grid grid-cols-2 gap-4 text-sm">
           {[["Current Employer", cand.current_employer], ["Current Title", cand.current_title], ["Experience", cand.years_experience ? `${cand.years_experience} years` : "—"], ["Education", cand.education_level], ["Location", cand.location], ["National ID", "—"]].map(([l, v]) => (
             <div key={l as string}><p className="text-[10px] text-slate-500 uppercase tracking-widest mb-0.5">{l}</p><p className="text-slate-300">{v || "—"}</p></div>
           ))}
@@ -53,7 +53,7 @@ export default function CandidateDetailPage() {
       {tab === "pipeline" && (
         <div className="space-y-2">
           {pipeline.map((p) => (
-            <div key={p.pipeline_id} className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-4 flex items-center justify-between text-sm">
+            <div key={p.pipeline_id} className="glow-card p-4 flex items-center justify-between text-sm">
               <div><p className="font-mono text-xs text-slate-500">{p.requisition_id.slice(-8)}</p><p className="text-xs text-slate-600">Applied: {p.application_date || "—"}</p></div>
               <div className="text-right">
                 <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${PIPELINE_STATUS_COLOR[p.status]}`}>{p.status}</span>
@@ -68,7 +68,7 @@ export default function CandidateDetailPage() {
       {tab === "interviews" && (
         <div className="space-y-2">
           {interviews.map((iv) => (
-            <div key={iv.interview_id} className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-4 space-y-1">
+            <div key={iv.interview_id} className="glow-card p-4 space-y-1">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-white font-medium">{new Date(iv.interview_date).toLocaleString()}</span>
                 <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${INTERVIEW_DECISION_COLOR[iv.decision]}`}>{iv.decision}</span>
@@ -85,7 +85,7 @@ export default function CandidateDetailPage() {
       {tab === "offers" && (
         <div className="space-y-2">
           {offers.map((o) => (
-            <div key={o.offer_id} className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-4 space-y-1">
+            <div key={o.offer_id} className="glow-card p-4 space-y-1">
               <div className="flex items-center justify-between">
                 <span className="font-mono text-xs text-slate-400">{o.offer_code}</span>
                 <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${OFFER_STATUS_COLOR[o.status]}`}>{o.status}</span>

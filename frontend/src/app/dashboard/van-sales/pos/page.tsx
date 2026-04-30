@@ -126,7 +126,7 @@ export default function POSPage() {
           {/* Lines */}
           <div className="space-y-3">
             {lines.map((l, i) => (
-              <div key={i} className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-3 space-y-2">
+              <div key={i} className="glow-card p-3 space-y-2">
                 <div className="flex items-center justify-between">
                   <p className="text-xs text-slate-400 font-semibold">Line {i + 1}</p>
                   <button onClick={() => removeLine(i)} className="text-red-400 text-xs hover:text-red-300">✕</button>
@@ -176,7 +176,7 @@ export default function POSPage() {
 
           {/* Summary */}
           {lines.length > 0 && (
-            <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-4 space-y-1 text-sm">
+            <div className="glow-card p-4 space-y-1 text-sm">
               <div className="flex justify-between text-slate-400"><span>Subtotal</span><span>KES {totals.subtotal.toFixed(2)}</span></div>
               <div className="flex justify-between text-amber-400"><span>Discount</span><span>- KES {totals.disc.toFixed(2)}</span></div>
               <div className="flex justify-between text-slate-400"><span>Tax</span><span>KES {totals.tax.toFixed(2)}</span></div>

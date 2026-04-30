@@ -40,7 +40,7 @@ export default function OffersPage() {
       {msg && <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3 text-sm text-emerald-300">{msg}</div>}
 
       {showForm && (
-        <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-5 space-y-3">
+        <div className="glow-card p-5 space-y-3">
           <div className="grid grid-cols-3 gap-3">
             <div><label className={labelCls}>Candidate ID</label><input value={form.candidate_id} onChange={(e) => setForm({ ...form, candidate_id: e.target.value })} placeholder="UUID" className={inputCls} /></div>
             <div><label className={labelCls}>Requisition</label>
@@ -59,7 +59,7 @@ export default function OffersPage() {
       )}
 
       {respondTarget && (
-        <div className="rounded-xl border border-emerald-500/20 bg-[#0d1829] p-5 space-y-3">
+        <div className="glow-card border-emerald-500/20 p-5 space-y-3">
           <h2 className="text-sm font-semibold text-white">Record Candidate Response</h2>
           <div className="grid grid-cols-3 gap-3">
             <div><label className={labelCls}>Decision</label>
@@ -77,7 +77,7 @@ export default function OffersPage() {
         </div>
       )}
 
-      <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] overflow-hidden">
+      <div className="glass-table">
         <table className="w-full text-sm">
           <thead><tr className="border-b border-white/[0.07]">
             {["Offer Code", "Requisition", "Salary", "Joining", "Expiry", "Status", "Actions"].map((h) => (

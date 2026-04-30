@@ -6,7 +6,7 @@ import { useState } from "react";
 
 function StatCard({ label, value, color }: { label: string; value: number; color: string }) {
   return (
-    <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-5">
+    <div className="glow-card p-5">
       <p className="text-[11px] text-slate-500 uppercase tracking-widest mb-1">{label}</p>
       <p className={`text-3xl font-bold ${color}`}>{value}</p>
     </div>
@@ -80,7 +80,7 @@ export default function RecurringOrdersDashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent templates */}
-        <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-5">
+        <div className="glow-card p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-semibold text-white">Recent Templates</h2>
             <Link href="/dashboard/recurring-orders/templates" className="text-xs text-indigo-400 hover:text-indigo-300">View all</Link>
@@ -105,7 +105,7 @@ export default function RecurringOrdersDashboard() {
         </div>
 
         {/* Generation stats */}
-        <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-5">
+        <div className="glow-card p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-semibold text-white">Generation Stats (30 days)</h2>
             <Link href="/dashboard/recurring-orders/reports" className="text-xs text-indigo-400 hover:text-indigo-300">Reports</Link>
@@ -128,7 +128,7 @@ export default function RecurringOrdersDashboard() {
 
       {/* AI Recommendations */}
       {aiRecs.length > 0 && (
-        <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-5">
+        <div className="glow-card p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-semibold text-white">AI Insights</h2>
             <Link href="/dashboard/recurring-orders/ai" className="text-xs text-indigo-400 hover:text-indigo-300">View all</Link>

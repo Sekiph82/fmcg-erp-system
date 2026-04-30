@@ -52,7 +52,7 @@ export default function VanDetailPage({ params }: { params: Promise<{ id: string
           { label: "Transactions", value: txns.length, color: "text-white" },
           { label: "Stock Lines", value: stock.length, color: "text-slate-300" },
         ].map((c) => (
-          <div key={c.label} className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-4">
+          <div key={c.label} className="glow-card p-4">
             <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">{c.label}</p>
             <p className={`text-2xl font-bold ${c.color}`}>{c.value}</p>
           </div>
@@ -155,7 +155,7 @@ export default function VanDetailPage({ params }: { params: Promise<{ id: string
           </div>
           <div className="space-y-2">
             {recons.map((r) => (
-              <div key={r.id} className="p-4 rounded-xl border border-white/[0.07] bg-[#0d1829]">
+              <div key={r.id} className="p-4 glow-card">
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-sm font-semibold text-white">{r.route_date}</p>
                   <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${r.status === "APPROVED" ? "bg-emerald-500/20 text-emerald-300" : r.status === "DISCREPANCY" ? "bg-red-500/20 text-red-300" : "bg-slate-500/20 text-slate-400"}`}>{r.status}</span>

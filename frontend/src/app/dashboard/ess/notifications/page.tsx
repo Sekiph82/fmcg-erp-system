@@ -38,7 +38,7 @@ export default function NotificationsPage() {
       <div className="space-y-2">
         {notifications.map((n) => (
           <div key={n.notification_id}
-            className={`rounded-xl border p-4 flex gap-3 transition-colors ${!n.read_flag ? "border-indigo-500/20 bg-indigo-500/5" : "border-white/[0.07] bg-[#0d1829]"}`}>
+            className={`rounded-xl border p-4 flex gap-3 transition-colors ${!n.read_flag ? "border-indigo-500/20 bg-indigo-500/5" : "border-white/[0.07] glow-card"}`}>
             <span className="text-xl shrink-0 mt-0.5">{NOTIF_TYPE_ICON[n.notification_type]}</span>
             <div className="flex-1 min-w-0">
               <div className="flex items-start justify-between gap-2">
@@ -54,7 +54,7 @@ export default function NotificationsPage() {
           </div>
         ))}
         {notifications.length === 0 && (
-          <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-8 text-center text-slate-600">
+          <div className="glow-card p-8 text-center text-slate-600">
             {unreadOnly ? "No unread notifications" : "No notifications"}
           </div>
         )}

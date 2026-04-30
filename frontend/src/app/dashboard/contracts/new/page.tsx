@@ -49,7 +49,7 @@ export default function NewContractPage() {
         <p className="text-slate-500 text-sm mt-0.5">Create a commercial agreement</p>
       </div>
       <form onSubmit={handleSubmit} className="space-y-5">
-        <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-5 space-y-4">
+        <div className="glow-card p-5 space-y-4">
           <h2 className="text-sm font-semibold text-white">Contract Info</h2>
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -91,7 +91,7 @@ export default function NewContractPage() {
           </div>
         </div>
 
-        <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-5 space-y-4">
+        <div className="glow-card p-5 space-y-4">
           <h2 className="text-sm font-semibold text-white">Duration & Renewal</h2>
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -116,7 +116,7 @@ export default function NewContractPage() {
           </div>
         </div>
 
-        <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-5">
+        <div className="glow-card p-5">
           <label className="text-xs text-slate-400 mb-1 block">Notes</label>
           <textarea value={form.notes} onChange={(e) => upd("notes", e.target.value)} rows={3}
             className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 resize-none" />

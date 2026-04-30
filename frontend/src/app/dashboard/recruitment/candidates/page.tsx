@@ -38,7 +38,7 @@ export default function CandidatesPage() {
         </select>
       </div>
 
-      <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] overflow-hidden">
+      <div className="glass-table">
         <table className="w-full text-sm">
           <thead><tr className="border-b border-white/[0.07]">
             {["Code", "Name", "Email", "Source", "Current Title", "Exp (yrs)", "Skills"].map((h) => (

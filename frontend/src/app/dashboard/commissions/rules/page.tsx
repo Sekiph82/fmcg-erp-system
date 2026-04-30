@@ -76,7 +76,7 @@ export default function RulesPage() {
 
       {/* New rule form */}
       {showNew && (
-        <form onSubmit={handleCreate} className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-5 space-y-4">
+        <form onSubmit={handleCreate} className="glow-card p-5 space-y-4">
           <h2 className="text-sm font-semibold text-white">New Commission Rule</h2>
           <div className="grid grid-cols-2 gap-3">
             {[

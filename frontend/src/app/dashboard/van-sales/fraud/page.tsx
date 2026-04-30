@@ -91,12 +91,12 @@ export default function FraudAlertsPage() {
       <div className="space-y-3">
         {isLoading && <p className="text-slate-500 text-sm">Loading…</p>}
         {!isLoading && alerts.length === 0 && (
-          <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-8 text-center text-slate-600">
+          <div className="glow-card p-8 text-center text-slate-600">
             No fraud alerts matching current filters
           </div>
         )}
         {alerts.map((a) => (
-          <div key={a.id} className={`rounded-xl border p-4 ${a.severity === "CRITICAL" ? "border-red-500/40 bg-red-500/5" : a.severity === "HIGH" ? "border-orange-500/30 bg-[#0d1829]" : "border-white/[0.07] bg-[#0d1829]"}`}>
+          <div key={a.id} className={`rounded-xl border p-4 ${a.severity === "CRITICAL" ? "border-red-500/40 bg-red-500/5" : a.severity === "HIGH" ? "border-orange-500/30 glow-card" : "border-white/[0.07] glow-card"}`}>
             <div className="flex items-start justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1.5 flex-wrap">

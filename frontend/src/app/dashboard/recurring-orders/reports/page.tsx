@@ -42,7 +42,7 @@ export default function ReportsPage() {
           { label: "Paused", value: s?.paused ?? 0, color: "text-amber-400" },
           { label: "Expired", value: s?.expired ?? 0, color: "text-red-400" },
         ].map((card) => (
-          <div key={card.label} className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-5">
+          <div key={card.label} className="glow-card p-5">
             <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">{card.label}</p>
             <p className={`text-3xl font-bold ${card.color}`}>{card.value}</p>
           </div>
@@ -50,7 +50,7 @@ export default function ReportsPage() {
       </div>
 
       {/* Generation chart */}
-      <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-5">
+      <div className="glow-card p-5">
         <h2 className="text-sm font-semibold text-white mb-4">Generation by Status (30 days)</h2>
         {genReport.length > 0 ? (
           <ResponsiveContainer width="100%" height={220}>
@@ -74,7 +74,7 @@ export default function ReportsPage() {
       </div>
 
       {/* Failed generations */}
-      <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-5">
+      <div className="glow-card p-5">
         <h2 className="text-sm font-semibold text-white mb-4">Failed Generations (30 days)</h2>
         <table className="w-full text-sm">
           <thead className="text-slate-500 text-xs uppercase tracking-wider">

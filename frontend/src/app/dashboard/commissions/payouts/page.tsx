@@ -42,7 +42,7 @@ export default function PayoutsPage() {
       </div>
 
       {/* Create payout */}
-      <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-5 space-y-3">
+      <div className="glow-card p-5 space-y-3">
         <h2 className="text-sm font-semibold text-white">Generate Payout for Period</h2>
         <div className="grid grid-cols-3 gap-3">
           <div>
@@ -83,7 +83,7 @@ export default function PayoutsPage() {
       <div className="space-y-3">
         {isLoading && <p className="text-slate-500 text-sm">Loading…</p>}
         {payouts.map((p) => (
-          <div key={p.id} className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-4">
+          <div key={p.id} className="glow-card p-4">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <div className="flex items-center gap-2 mb-2">
@@ -113,7 +113,7 @@ export default function PayoutsPage() {
           </div>
         ))}
         {!isLoading && payouts.length === 0 && (
-          <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-8 text-center text-slate-600">No payouts</div>
+          <div className="glow-card p-8 text-center text-slate-600">No payouts</div>
         )}
       </div>
     </div>

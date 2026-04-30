@@ -51,7 +51,7 @@ export default function NewClaimPage() {
     <div className="p-6 space-y-6 text-slate-200 max-w-4xl">
       <h1 className="text-xl font-bold text-white">New Expense Claim</h1>
 
-      <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-5 space-y-4">
+      <div className="glow-card p-5 space-y-4">
         <h2 className="text-sm font-semibold text-white">Claim Details</h2>
         <div className="grid grid-cols-2 gap-4">
           <div><label className={labelCls}>Claim Date</label><input type="date" value={form.claim_date} onChange={(e) => setForm({ ...form, claim_date: e.target.value })} className={inputCls} /></div>
@@ -68,7 +68,7 @@ export default function NewClaimPage() {
         </div>
       </div>
 
-      <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-5 space-y-4">
+      <div className="glow-card p-5 space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold text-white">Expense Lines</h2>
           <button onClick={addLine} className="px-3 py-1.5 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] text-slate-300 text-xs">+ Add Line</button>

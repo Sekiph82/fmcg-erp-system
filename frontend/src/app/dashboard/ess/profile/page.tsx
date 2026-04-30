@@ -42,7 +42,7 @@ export default function ESSProfilePage() {
 
       {msg && <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3 text-sm text-emerald-300">{msg}</div>}
 
-      <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-5 space-y-1">
+      <div className="glow-card p-5 space-y-1">
         <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-3">Work Information</p>
         <div className="grid grid-cols-2 gap-4">
           <Field label="Full Name" value={profile.full_name} />
@@ -56,7 +56,7 @@ export default function ESSProfilePage() {
         </div>
       </div>
 
-      <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-5">
+      <div className="glow-card p-5">
         <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-3">Personal Information</p>
         {!editing ? (
           <div className="grid grid-cols-2 gap-4">

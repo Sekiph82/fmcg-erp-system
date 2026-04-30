@@ -82,7 +82,7 @@ export default function RiderPerformancePage() {
                 const isFirst = idx === 0;
                 return (
                   <div key={r.driver_id}
-                    className={`rounded-xl border p-5 text-center ${isFirst ? "border-amber-500/40 bg-amber-500/10 scale-105" : "border-white/[0.07] bg-[#0d1829]"}`}>
+                    className={`rounded-xl border p-5 text-center ${isFirst ? "border-amber-500/40 bg-amber-500/10 scale-105" : "border-white/[0.07] glow-card"}`}>
                     <p className="text-3xl mb-2">{medals[idx]}</p>
                     <p className="text-xs text-slate-500 font-mono mb-2">{r.driver_id.slice(0, 8)}…</p>
                     <ScoreBadge score={r.avg_score} />

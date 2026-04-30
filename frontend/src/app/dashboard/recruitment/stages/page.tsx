@@ -46,7 +46,7 @@ export default function StagesPage() {
       </div>
 
       {showForm && (
-        <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-5 space-y-3">
+        <div className="glow-card p-5 space-y-3">
           <div className="grid grid-cols-4 gap-3">
             <div><label className={labelCls}>Code</label><input value={form.stage_code} onChange={(e) => setForm({ ...form, stage_code: e.target.value })} className={inputCls} /></div>
             <div><label className={labelCls}>Name</label><input value={form.stage_name} onChange={(e) => setForm({ ...form, stage_name: e.target.value })} className={inputCls} /></div>
@@ -63,7 +63,7 @@ export default function StagesPage() {
         </div>
       )}
 
-      <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] overflow-hidden">
+      <div className="glass-table">
         <table className="w-full text-sm">
           <thead><tr className="border-b border-white/[0.07]">
             {["Seq", "Code", "Stage Name", "Type"].map((h) => (

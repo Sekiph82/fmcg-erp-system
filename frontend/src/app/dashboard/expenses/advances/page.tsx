@@ -37,7 +37,7 @@ export default function AdvancesPage() {
       </div>
 
       {showForm && (
-        <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-5 space-y-3">
+        <div className="glow-card p-5 space-y-3">
           <div className="grid grid-cols-3 gap-3">
             <div><label className={labelCls}>Date</label><input type="date" value={form.advance_date} onChange={(e) => setForm({ ...form, advance_date: e.target.value })} className={inputCls} /></div>
             <div><label className={labelCls}>Amount (KES)</label><input type="number" value={form.advance_amount} onChange={(e) => setForm({ ...form, advance_amount: e.target.value })} className={inputCls} /></div>
@@ -51,7 +51,7 @@ export default function AdvancesPage() {
         </div>
       )}
 
-      <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] overflow-hidden">
+      <div className="glass-table">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-white/[0.07]">

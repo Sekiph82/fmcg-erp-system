@@ -21,7 +21,7 @@ export default function VanSalesReportsPage() {
       </div>
 
       {/* Route performance */}
-      <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-5">
+      <div className="glow-card p-5">
         <h2 className="text-sm font-semibold text-white mb-4">Route Performance (Sales)</h2>
         {routePerf.length > 0 ? (
           <ResponsiveContainer width="100%" height={220}>
@@ -40,7 +40,7 @@ export default function VanSalesReportsPage() {
       </div>
 
       {/* Driver performance */}
-      <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-5">
+      <div className="glow-card p-5">
         <h2 className="text-sm font-semibold text-white mb-4">Driver Performance</h2>
         <table className="w-full text-sm">
           <thead className="text-slate-500 text-xs uppercase tracking-wider">

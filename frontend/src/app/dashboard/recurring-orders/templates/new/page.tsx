@@ -76,7 +76,7 @@ export default function NewTemplatePage() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5">
-        <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-5 space-y-4">
+        <div className="glow-card p-5 space-y-4">
           <h2 className="text-sm font-semibold text-white">Template Info</h2>
 
           <div className="grid grid-cols-2 gap-4">
@@ -109,7 +109,7 @@ export default function NewTemplatePage() {
           </div>
         </div>
 
-        <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-5 space-y-4">
+        <div className="glow-card p-5 space-y-4">
           <h2 className="text-sm font-semibold text-white">Recurrence Settings</h2>
 
           <div className="grid grid-cols-2 gap-4">
@@ -153,7 +153,7 @@ export default function NewTemplatePage() {
           </div>
         </div>
 
-        <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-5 space-y-4">
+        <div className="glow-card p-5 space-y-4">
           <h2 className="text-sm font-semibold text-white">Generation Settings</h2>
           <div>
             <label className="text-xs text-slate-400 mb-1 block">Generation Mode</label>

@@ -54,7 +54,7 @@ export default function HRAdminPage() {
       </div>
 
       {tab === "leave" && (
-        <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] overflow-hidden">
+        <div className="glass-table">
           <table className="w-full text-sm">
             <thead><tr className="border-b border-white/[0.07]">
               {["Ref", "Employee", "Dates", "Days", "Reason", "Actions"].map((h) => (
@@ -82,7 +82,7 @@ export default function HRAdminPage() {
       )}
 
       {tab === "requests" && (
-        <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] overflow-hidden">
+        <div className="glass-table">
           <table className="w-full text-sm">
             <thead><tr className="border-b border-white/[0.07]">
               {["Ref", "Type", "Subject", "Actions"].map((h) => (
@@ -109,7 +109,7 @@ export default function HRAdminPage() {
 
       {tab === "accounts" && (
         <div className="space-y-4">
-          <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-5 space-y-3">
+          <div className="glow-card p-5 space-y-3">
             <h2 className="text-sm font-semibold text-white">Create ESS Account</h2>
             <div className="grid grid-cols-3 gap-3">
               <div><label className={labelCls}>Employee ID (UUID)</label><input value={newAcc.employee_id} onChange={(e) => setNewAcc({ ...newAcc, employee_id: e.target.value })} className={inputCls} /></div>
@@ -118,7 +118,7 @@ export default function HRAdminPage() {
             </div>
             <button onClick={handleCreateAccount} className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm">Create Account</button>
           </div>
-          <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-5 space-y-3">
+          <div className="glow-card p-5 space-y-3">
             <h2 className="text-sm font-semibold text-white">Create / Update Profile</h2>
             <div className="grid grid-cols-3 gap-3">
               {[["employee_id", "Employee ID (UUID)"], ["full_name", "Full Name"], ["email", "Work Email"], ["job_title", "Job Title"], ["department_name", "Department"], ["joining_date", "Joining Date"]].map(([k, l]) => (
@@ -131,7 +131,7 @@ export default function HRAdminPage() {
       )}
 
       {tab === "seed" && (
-        <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-5 space-y-4">
+        <div className="glow-card p-5 space-y-4">
           <h2 className="text-sm font-semibold text-white">Initial Setup</h2>
           <div className="flex items-center justify-between rounded-lg border border-white/[0.06] bg-white/[0.02] p-4">
             <div>

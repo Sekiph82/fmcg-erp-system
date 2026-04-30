@@ -33,7 +33,7 @@ export default function DocumentsPage() {
       </div>
 
       {Object.keys(grouped).length === 0 && (
-        <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-8 text-center text-slate-600">
+        <div className="glow-card p-8 text-center text-slate-600">
           No documents available. HR will upload documents here.
         </div>
       )}
@@ -45,7 +45,7 @@ export default function DocumentsPage() {
           </p>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             {items.map((doc) => (
-              <div key={doc.document_id} className="rounded-xl border border-white/[0.07] bg-[#0d1829] hover:bg-white/[0.04] p-4 flex items-start gap-3 transition-colors">
+              <div key={doc.document_id} className="glow-card hover:bg-white/[0.04] p-4 flex items-start gap-3 transition-colors">
                 <span className="text-2xl">{DOC_ICONS[doc.document_type]}</span>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-white font-medium truncate">{doc.document_name}</p>

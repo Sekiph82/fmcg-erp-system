@@ -61,7 +61,7 @@ export default function SchedulePage() {
       )}
 
       {/* Calendar grid */}
-      <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-4 overflow-x-auto">
+      <div className="glow-card p-4 overflow-x-auto">
         <div className="grid grid-cols-7 gap-1 min-w-[700px]">
           {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
             <div key={d} className="text-center text-[10px] text-slate-500 uppercase pb-2">{d}</div>
@@ -92,7 +92,7 @@ export default function SchedulePage() {
       </div>
 
       {/* Template list with next dates */}
-      <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-5">
+      <div className="glow-card p-5">
         <h2 className="text-sm font-semibold text-white mb-4">Active Templates — Next Generation Dates</h2>
         <table className="w-full text-sm">
           <thead className="text-slate-500 text-xs uppercase tracking-wider">

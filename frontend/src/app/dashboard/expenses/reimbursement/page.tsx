@@ -27,7 +27,7 @@ export default function ReimbursementPage() {
           <h1 className="text-xl font-bold text-white">Reimbursement</h1>
           <p className="text-slate-500 text-sm mt-0.5">Finance-approved claims ready for payment</p>
         </div>
-        <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] px-4 py-2 text-right">
+        <div className="glow-card px-4 py-2 text-right">
           <p className="text-[10px] text-slate-500 uppercase tracking-widest">Total to Reimburse</p>
           <p className="text-xl font-bold text-purple-400">{fmtCurrency(total)}</p>
         </div>
@@ -35,7 +35,7 @@ export default function ReimbursementPage() {
 
       {msg && <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3 text-sm text-emerald-300">{msg}</div>}
 
-      <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] overflow-hidden">
+      <div className="glass-table">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-white/[0.07]">

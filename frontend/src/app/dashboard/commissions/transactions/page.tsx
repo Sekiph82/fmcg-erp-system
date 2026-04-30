@@ -91,7 +91,7 @@ export default function TransactionsPage() {
       <div className="space-y-2">
         {isLoading && <p className="text-slate-500 text-sm">Loading…</p>}
         {txns.map((t) => (
-          <div key={t.id} className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-4">
+          <div key={t.id} className="glow-card p-4">
             <div className="flex items-start justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -136,7 +136,7 @@ export default function TransactionsPage() {
           </div>
         ))}
         {!isLoading && txns.length === 0 && (
-          <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-8 text-center text-slate-600">No transactions</div>
+          <div className="glow-card p-8 text-center text-slate-600">No transactions</div>
         )}
       </div>
     </div>

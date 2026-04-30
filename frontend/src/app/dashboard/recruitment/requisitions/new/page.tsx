@@ -43,7 +43,7 @@ export default function NewRequisitionPage() {
     <div className="p-6 space-y-6 text-slate-200 max-w-3xl">
       <h1 className="text-xl font-bold text-white">New Job Requisition</h1>
 
-      <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-5 space-y-4">
+      <div className="glow-card p-5 space-y-4">
         <div className="grid grid-cols-2 gap-4">
           {f("Job Title *", "job_title")}
           {f("Location", "location")}

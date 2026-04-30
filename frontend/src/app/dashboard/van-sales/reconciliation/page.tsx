@@ -46,7 +46,7 @@ export default function ReconciliationPage() {
       {selectedVanId && (
         <>
           {/* Today's reconciliation */}
-          <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-5">
+          <div className="glow-card p-5">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-sm font-semibold text-white">Today — {today}</h2>
               {!todayRecon && (
@@ -88,7 +88,7 @@ export default function ReconciliationPage() {
           </div>
 
           {/* History */}
-          <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-5">
+          <div className="glow-card p-5">
             <h2 className="text-sm font-semibold text-white mb-4">History</h2>
             <div className="space-y-2">
               {recons.map((r) => (

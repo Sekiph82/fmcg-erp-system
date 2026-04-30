@@ -43,7 +43,7 @@ export default function ESSDashboardPage() {
             { label: "Pending Requests", value: data.pending_requests, color: "text-orange-400" },
             { label: "Unread Notifications", value: data.unread_notifications, color: "text-purple-400" },
           ].map((k) => (
-            <div key={k.label} className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-5">
+            <div key={k.label} className="glow-card p-5">
               <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-1">{k.label}</p>
               <p className={`text-2xl font-bold ${k.color}`}>{k.value}</p>
             </div>
@@ -54,7 +54,7 @@ export default function ESSDashboardPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {links.map((l) => (
           <Link key={l.href} href={l.href}
-            className="rounded-xl border border-white/[0.07] bg-[#0d1829] hover:bg-white/[0.04] p-4 flex items-center gap-3 transition-colors">
+            className="glow-card hover:bg-white/[0.04] p-4 flex items-center gap-3 transition-colors">
             <span className="text-xl">{l.icon}</span>
             <span className="text-sm font-medium text-slate-300">{l.label}</span>
           </Link>

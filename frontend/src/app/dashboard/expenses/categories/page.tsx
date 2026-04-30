@@ -39,7 +39,7 @@ export default function CategoriesPage() {
       </div>
 
       {showForm && (
-        <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-5 space-y-3">
+        <div className="glow-card p-5 space-y-3">
           <div className="grid grid-cols-3 gap-3">
             <div><label className={labelCls}>Code *</label><input value={form.category_code} onChange={(e) => setForm({ ...form, category_code: e.target.value })} className={inputCls} /></div>
             <div className="col-span-2"><label className={labelCls}>Name *</label><input value={form.category_name} onChange={(e) => setForm({ ...form, category_name: e.target.value })} className={inputCls} /></div>
@@ -59,7 +59,7 @@ export default function CategoriesPage() {
         </div>
       )}
 
-      <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] overflow-hidden">
+      <div className="glass-table">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-white/[0.07]">

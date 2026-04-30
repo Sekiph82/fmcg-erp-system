@@ -39,7 +39,7 @@ export default function ESSAIPage() {
 
       <div className="grid grid-cols-2 gap-4">
         {AGENTS.map((a) => (
-          <div key={a.type} className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-5 space-y-3">
+          <div key={a.type} className="glow-card p-5 space-y-3">
             <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${agentColor[a.type]}`}>{AI_AGENT_LABEL[a.type]}</span>
             <p className="text-xs text-slate-500">{a.desc}</p>
             <button onClick={() => runAgent(a)} disabled={running === a.type}
@@ -54,7 +54,7 @@ export default function ESSAIPage() {
         <h2 className="text-sm font-semibold text-white mb-3">Pending Recommendations ({pendingRecs.length})</h2>
         <div className="space-y-3">
           {pendingRecs.map((r) => (
-            <div key={r.rec_id} className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-4 space-y-2">
+            <div key={r.rec_id} className="glow-card p-4 space-y-2">
               <div className="flex items-start justify-between gap-3">
                 <div className="space-y-1">
                   <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${agentColor[r.agent_type]}`}>{AI_AGENT_LABEL[r.agent_type]}</span>
@@ -70,7 +70,7 @@ export default function ESSAIPage() {
               </div>
             </div>
           ))}
-          {pendingRecs.length === 0 && <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-8 text-center text-slate-600">No pending recommendations — run an agent above.</div>}
+          {pendingRecs.length === 0 && <div className="glow-card p-8 text-center text-slate-600">No pending recommendations — run an agent above.</div>}
         </div>
       </div>
     </div>

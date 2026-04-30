@@ -54,7 +54,7 @@ export default function UpcomingDemandPage() {
       {/* By date */}
       <div className="space-y-4">
         {dates.map((d) => (
-          <div key={d} className="rounded-xl border border-white/[0.07] bg-[#0d1829] overflow-hidden">
+          <div key={d} className="glass-table">
             <div className="px-4 py-3 bg-white/[0.03] border-b border-white/[0.06]">
               <span className="text-sm font-semibold text-white">{d}</span>
               <span className="ml-2 text-xs text-slate-500">{byDate[d].length} lines</span>

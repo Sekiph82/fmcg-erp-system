@@ -70,7 +70,7 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
           { label: "Auto Renew", value: c.auto_renew ? "Yes" : "No" },
           { label: "Notice Days", value: String(c.renewal_notice_days) },
         ].map((item) => (
-          <div key={item.label} className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-3">
+          <div key={item.label} className="glow-card p-3">
             <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-0.5">{item.label}</p>
             <p className={`text-sm font-medium ${(item as any).color ?? "text-white"}`}>{item.value}</p>
           </div>
@@ -79,7 +79,7 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
 
       {/* Approval comment input */}
       {["DRAFT", "UNDER_REVIEW"].includes(c.status) && (
-        <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-4">
+        <div className="glow-card p-4">
           <label className="text-xs text-slate-400 mb-1 block">Comments (for approval actions)</label>
           <input value={comments} onChange={(e) => setComments(e.target.value)}
             className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"
@@ -184,7 +184,7 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
 
       {tab === "perf" && (
         <div className="space-y-4">
-          <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-4">
+          <div className="glow-card p-4">
             <h3 className="text-xs font-semibold text-white mb-3">Log Performance</h3>
             <div className="grid grid-cols-3 gap-3">
               {[
@@ -243,7 +243,7 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
       {tab === "history" && (
         <div className="space-y-2">
           {history.map((v) => (
-            <div key={v.id} className="p-4 rounded-xl border border-white/[0.07] bg-[#0d1829]">
+            <div key={v.id} className="p-4 glow-card">
               <div className="flex items-center justify-between mb-1">
                 <span className="text-sm font-semibold text-white">Version {v.version_no}</span>
                 <span className="text-xs text-slate-500">{new Date(v.created_at).toLocaleDateString()}</span>
@@ -259,7 +259,7 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
       {tab === "approvals" && (
         <div className="space-y-2">
           {approvals.map((a) => (
-            <div key={a.id} className="flex items-start gap-3 p-3 rounded-xl border border-white/[0.07] bg-[#0d1829]">
+            <div key={a.id} className="flex items-start gap-3 p-3 glow-card">
               <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium shrink-0 mt-0.5 ${
                 a.action === "APPROVED" ? "bg-emerald-500/20 text-emerald-300"
                 : a.action === "REJECTED" ? "bg-red-500/20 text-red-300"

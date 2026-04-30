@@ -5,7 +5,7 @@ import Link from "next/link";
 
 function KpiCard({ label, value, color = "text-white", sub }: { label: string; value: string | number; color?: string; sub?: string }) {
   return (
-    <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-5">
+    <div className="glow-card p-5">
       <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-1">{label}</p>
       <p className={`text-2xl font-bold ${color}`}>{value}</p>
       {sub && <p className="text-xs text-slate-600 mt-0.5">{sub}</p>}
@@ -56,7 +56,7 @@ export default function CommissionsDashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Pending approvals */}
-        <div className="lg:col-span-2 rounded-xl border border-white/[0.07] bg-[#0d1829] p-5">
+        <div className="lg:col-span-2 glow-card p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-semibold text-white">Pending Approval</h2>
             <Link href="/dashboard/commissions/transactions" className="text-xs text-indigo-400 hover:text-indigo-300">All transactions</Link>
@@ -80,7 +80,7 @@ export default function CommissionsDashboard() {
 
         <div className="space-y-4">
           {/* Payouts */}
-          <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-4">
+          <div className="glow-card p-4">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-sm font-semibold text-white">Draft Payouts</h2>
               <Link href="/dashboard/commissions/payouts" className="text-xs text-indigo-400">View all</Link>
@@ -100,7 +100,7 @@ export default function CommissionsDashboard() {
           </div>
 
           {/* AI */}
-          <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-4">
+          <div className="glow-card p-4">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-sm font-semibold text-white">AI Insights</h2>
               <Link href="/dashboard/commissions/ai" className="text-xs text-indigo-400">View all</Link>

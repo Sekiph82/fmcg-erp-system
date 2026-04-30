@@ -39,7 +39,7 @@ export default function RequestTrackerPage() {
       {msg && <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3 text-sm text-emerald-300">{msg}</div>}
 
       {showForm && (
-        <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-5 space-y-3">
+        <div className="glow-card p-5 space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div><label className={labelCls}>Request Type</label>
               <select value={form.request_type} onChange={(e) => setForm({ ...form, request_type: e.target.value as ESSRequestType })} className={selectCls}>
@@ -53,7 +53,7 @@ export default function RequestTrackerPage() {
         </div>
       )}
 
-      <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] overflow-hidden">
+      <div className="glass-table">
         <table className="w-full text-sm">
           <thead><tr className="border-b border-white/[0.07]">
             {["Ref", "Type", "Subject", "Date", "Status", "HR Notes"].map((h) => (

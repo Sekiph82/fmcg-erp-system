@@ -37,7 +37,7 @@ export default function ClaimDetailPage() {
           { label: "Approved", value: fmtCurrency(claim.total_approved_amount), color: "text-emerald-400" },
           { label: "Reimbursement", value: claim.reimbursement_method.toUpperCase(), color: "text-white" },
         ].map((k) => (
-          <div key={k.label} className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-4">
+          <div key={k.label} className="glow-card p-4">
             <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-1">{k.label}</p>
             <p className={`text-xl font-bold ${k.color}`}>{k.value}</p>
           </div>
@@ -45,7 +45,7 @@ export default function ClaimDetailPage() {
       </div>
 
       {/* Lines */}
-      <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] overflow-hidden">
+      <div className="glass-table">
         <div className="px-4 py-3 border-b border-white/[0.07] flex items-center justify-between">
           <h2 className="text-sm font-semibold text-white">Expense Lines ({claim.lines.length})</h2>
         </div>
@@ -81,7 +81,7 @@ export default function ClaimDetailPage() {
       </div>
 
       {/* Actions */}
-      <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-5 space-y-3">
+      <div className="glow-card p-5 space-y-3">
         <h2 className="text-sm font-semibold text-white">Actions</h2>
         <textarea value={approverNotes} onChange={(e) => setApproverNotes(e.target.value)}
           placeholder="Notes / rejection reason…" rows={2}

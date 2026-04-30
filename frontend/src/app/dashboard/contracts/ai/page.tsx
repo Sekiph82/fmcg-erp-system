@@ -42,7 +42,7 @@ export default function ContractAIPage() {
           { key: "RENEWAL_ADVISOR", desc: "Flags contracts expiring within 45 days without auto-renew. Suggests commercial terms to review before renewal." },
           { key: "COMPLIANCE_MONITOR", desc: "Detects large unsettled rebate balances, pricing violations, and deviation from contracted terms." },
         ].map((a) => (
-          <div key={a.key} className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-4">
+          <div key={a.key} className="glow-card p-4">
             <p className="text-sm font-semibold text-indigo-300 mb-1">{AGENT_LABELS[a.key]}</p>
             <p className="text-xs text-slate-500">{a.desc}</p>
           </div>
@@ -52,12 +52,12 @@ export default function ContractAIPage() {
       <div className="space-y-3">
         {isLoading && <p className="text-slate-500 text-sm">Loading…</p>}
         {!isLoading && recs.length === 0 && (
-          <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-8 text-center text-slate-600">
+          <div className="glow-card p-8 text-center text-slate-600">
             No recommendations — click "Run AI Agents" to generate insights.
           </div>
         )}
         {recs.map((r) => (
-          <div key={r.id} className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-4">
+          <div key={r.id} className="glow-card p-4">
             <div className="flex items-start justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1.5">

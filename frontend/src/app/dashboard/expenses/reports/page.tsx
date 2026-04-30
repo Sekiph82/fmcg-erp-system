@@ -38,7 +38,7 @@ export default function ExpenseReportsPage() {
       </div>
 
       {loading ? <p className="text-slate-500 text-sm">Loading…</p> : (
-        <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] overflow-hidden">
+        <div className="glass-table">
           {tab === "employee" && (
             <table className="w-full text-sm">
               <thead><tr className="border-b border-white/[0.07]">

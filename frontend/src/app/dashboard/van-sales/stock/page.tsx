@@ -57,11 +57,11 @@ export default function VanStockPage() {
       {selectedVanId && !showLoad && (
         <>
           <div className="grid grid-cols-2 gap-4">
-            <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-4">
+            <div className="glow-card p-4">
               <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Stock Lines</p>
               <p className="text-2xl font-bold text-white">{stock.length}</p>
             </div>
-            <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-4">
+            <div className="glow-card p-4">
               <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Total Units</p>
               <p className="text-2xl font-bold text-emerald-400">{totalQty.toFixed(1)}</p>
             </div>
@@ -102,7 +102,7 @@ export default function VanStockPage() {
         <div className="space-y-4">
           <h2 className="text-sm font-semibold text-white">Load Stock to Van</h2>
           {loadLines.map((l, i) => (
-            <div key={i} className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-4 space-y-2">
+            <div key={i} className="glow-card p-4 space-y-2">
               <div className="grid grid-cols-2 gap-2">
                 {[
                   { key: "item_id", label: "Item ID", placeholder: "UUID" },
