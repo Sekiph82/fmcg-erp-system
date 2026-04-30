@@ -412,6 +412,13 @@ from app.models.commissions import (
     CommissionTxn, CommissionAdjustment, CommissionPayout,
     CMAIRecommendation,
 )
+from app.models.expenses import (
+    ExpenseStatus, ReimbursementMethod, AdvanceSettlementStatus,
+    PolicyViolationSeverity, ExpAIAgentType, ExpAIRecStatus,
+    ExpenseCategory, ExpensePolicy, ExpenseClaim, ExpenseClaimLine,
+    ExpenseAdvance, ExpenseAccountingEntry,
+    ExpAIRecommendation as ExpAIRecommendation,
+)
 
 # ── Moto Sales Extension ─────────────────────────────────────────────────────
 from app.models.van_sales import (
@@ -733,4 +740,9 @@ __all__ = [
     "FAIAgentType", "FAIRecStatus",
     "FAAssetCategory", "FAFixedAsset", "FADepreciationSchedule",
     "FAAssetEvent", "FAAssetDisposal", "FAAssetComponent", "FAAIRecommendation",
+    # Expense Claims
+    "ExpenseStatus", "ReimbursementMethod", "AdvanceSettlementStatus",
+    "PolicyViolationSeverity", "ExpAIAgentType", "ExpAIRecStatus",
+    "ExpenseCategory", "ExpensePolicy", "ExpenseClaim", "ExpenseClaimLine",
+    "ExpenseAdvance", "ExpenseAccountingEntry", "ExpAIRecommendation",
 ]

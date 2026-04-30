@@ -1007,6 +1007,33 @@ export const NAV_CONFIG: NavEntry[] = [
   },
 
   // ╔══════════════════════════════════╗
+  // ║         EXPENSE CLAIMS           ║
+  // ╚══════════════════════════════════╝
+  cluster("cluster-expenses", "Expense Claims"),
+
+  {
+    type: "section",
+    id: "expenses",
+    label: "Expense Claims",
+    permission: "hr.view",
+    icon: md(
+      "M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"
+    ),
+    items: [
+      { label: "Dashboard",       href: "/dashboard/expenses",                  permission: "hr.view" },
+      { label: "My Claims",       href: "/dashboard/expenses/claims",           permission: "hr.view" },
+      { label: "New Claim",       href: "/dashboard/expenses/claims/new",       permission: "hr.view" },
+      { label: "Approval Queue",  href: "/dashboard/expenses/approval",         permission: "hr.view" },
+      { label: "Reimbursement",   href: "/dashboard/expenses/reimbursement",    permission: "hr.view" },
+      { label: "Advances",        href: "/dashboard/expenses/advances",         permission: "hr.view" },
+      { label: "Categories",      href: "/dashboard/expenses/categories",       permission: "hr.view" },
+      { label: "Policies",        href: "/dashboard/expenses/policies",         permission: "hr.view" },
+      { label: "Reports",         href: "/dashboard/expenses/reports",          permission: "hr.view" },
+      { label: "AI Insights",     href: "/dashboard/expenses/ai",               permission: "hr.view" },
+    ],
+  },
+
+  // ╔══════════════════════════════════╗
   // ║       CONTRACT MANAGEMENT        ║
   // ╚══════════════════════════════════╝
   cluster("cluster-contracts", "Contracts"),

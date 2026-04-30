@@ -1,7 +1,45 @@
 # TASKS — FMCG ERP (Kenya) · Production Module
 
 ## Current Phase
-Phase 31 — Sales Commission Tracking ✅ COMPLETED
+Phase 32 — Expense Claims ✅ COMPLETED
+
+---
+
+## Phase 32 — Expense Claims ✅
+
+- [x] `backend/app/models/expenses.py` — 6 enums + 6 models (UUID PKs): ExpenseCategory, ExpensePolicy, ExpenseClaim, ExpenseClaimLine, ExpenseAdvance, ExpenseAccountingEntry, ExpAIRecommendation
+- [x] `backend/app/schemas/expenses.py` — Pydantic v2 schemas (category, policy, claim header, claim line, advance, approve/reject, pay, AI rec)
+- [x] `backend/app/services/expenses_service.py`:
+  - Category CRUD + update
+  - Policy CRUD + resolution
+  - Policy validation engine: per-line limit, receipt threshold, duplicate receipt detection (BLOCK severity)
+  - Claim CRUD + add_line + submit + manager_approve + finance_approve + reject + return_for_correction + pay
+  - Approval: line-by-line approval amounts, auto-full-approve if no line_approvals provided
+  - Total recalculation (approved vs rejected)
+  - Accounting entry creation on finance_approve (debit expense / credit employee payable)
+  - Advance CRUD + settlement auto-update on claim payment
+  - Dashboard KPIs (8 metrics)
+  - Reports: by-employee, by-category, policy-violations
+  - AI Agent 1: Risk Monitor (duplicate receipts, high-value claims)
+  - AI Agent 2: Policy Optimizer (categories with >5 violations)
+  - AI Agent 3: Reimbursement Assistant (ready-to-pay claims, overdue advances)
+- [x] `backend/app/api/v1/endpoints/expenses.py` — 25+ routes at /api/v1/expenses/
+- [x] `backend/alembic/versions/d0e1f2a3b4c5_expense_claims.py` — migration (down_revision: c9d0e1f2a3b4), 7 tables
+- [x] `backend/app/models/__init__.py` + `router.py` updated
+- [x] `frontend/src/lib/expenses.ts` — types, API client, color/label maps, fmtCurrency
+- [x] Frontend pages (9 pages):
+  - Dashboard (8 KPI cards, quick nav links)
+  - My Claims (status filter, submit action, table)
+  - Claim Detail (lines table with policy violations, full approval/rejection/payment workflow)
+  - New Claim (header form + dynamic expense line editor with category/receipt/attachment)
+  - Approval Queue (manager + finance tabs, approve/reject inline)
+  - Reimbursement Screen (finance-approved claims, mark-paid with payment reference)
+  - Advances (create advance, unsettled balance, settlement status tracking)
+  - Reports (by-employee, by-category, policy-violations tabs)
+  - AI Insights (3 agents, run + acknowledge/action/dismiss workflow)
+- [x] Nav: "Expense Claims" section with 10 links added
+
+## Next: Prompt 33 — Recruitment / ATS
 
 ---
 

@@ -34,6 +34,7 @@ from app.api.v1.endpoints import (
     contracts,
     moto_sales,
     commissions,
+    expenses,
 )
 
 api_router = APIRouter()
@@ -181,3 +182,5 @@ api_router.include_router(contracts.router, prefix="/contracts", tags=["contract
 api_router.include_router(moto_sales.router, prefix="/moto-sales", tags=["moto-sales"])
 # ── Sales Commission Tracking ─────────────────────────────────────────────────
 api_router.include_router(commissions.router, prefix="/commissions", tags=["commissions"])
+# ── Expense Claims ────────────────────────────────────────────────────────────
+api_router.include_router(expenses.router, prefix="/expenses", tags=["expenses"])
