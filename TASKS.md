@@ -1,7 +1,54 @@
 # TASKS — FMCG ERP (Kenya) · Production Module
 
 ## Current Phase
-Phase 32 — Expense Claims ✅ COMPLETED
+Phase 33 — Recruitment / ATS ✅ COMPLETED
+
+---
+
+## Phase 33 — Recruitment / ATS ✅
+
+- [x] `backend/app/models/recruitment.py` — 13 enums + 9 models (UUID PKs): RecruitmentStage, JobRequisition, JobPosting, Candidate, CandidatePipeline, CandidatePipelineHistory, Interview, Offer, RTAIRecommendation
+- [x] `backend/app/schemas/recruitment.py` — Pydantic v2 schemas (stages, requisitions, postings, candidates, pipeline CRUD + move, interviews + feedback, offers + respond, dashboard, AI)
+- [x] `backend/app/services/recruitment_service.py`:
+  - Stage CRUD + seed_default_stages (11 stages: REQ_CREATED → HIRED/REJECTED/ON_HOLD)
+  - Requisition CRUD + approve + open + close lifecycle
+  - Job posting CRUD + publish
+  - Candidate CRUD + email-dedup + search (name/email/skills full-text)
+  - Pipeline add + move_stage (auto-hire trigger on FINAL_HIRE stage, auto-reject on FINAL_REJECT)
+  - Pipeline rejection workflow
+  - Interview schedule + record_feedback (score, technical, cultural, decision)
+  - Offer CRUD + send + respond (accepted triggers _trigger_hire → pipeline moved to HIRED, req filled_count++)
+  - Auto-close requisition when filled_count >= headcount
+  - Dashboard (8 KPIs incl. avg time-to-hire)
+  - 3 reports: pipeline-by-stage, source-effectiveness, offer-acceptance-rate
+  - AI Agent 1: Candidate Matcher (open reqs with <3 pipeline candidates)
+  - AI Agent 2: Hiring Risk Detector (offers pending >5 days, repeated interview failures)
+  - AI Agent 3: Pipeline Optimizer (stage bottlenecks 7+ days stuck, reqs open 60+ days)
+- [x] `backend/app/api/v1/endpoints/recruitment.py` — 30+ routes at /api/v1/recruitment/
+- [x] `backend/alembic/versions/e1f2a3b4c5d6_recruitment_ats.py` — migration (down_revision: d0e1f2a3b4c5), 9 tables
+- [x] `backend/app/models/__init__.py` + `router.py` updated
+- [x] `frontend/src/lib/recruitment.ts` — types, API client, color/label maps
+- [x] Frontend pages (9 pages):
+  - Dashboard (8 KPI cards, quick nav)
+  - Requisitions list (status filter, approve/open/close inline)
+  - Requisition Detail (overview/postings/pipeline tabs, workflow buttons, add posting)
+  - New Requisition form
+  - Candidates list (search + source filter, live debounce)
+  - Add Candidate form
+  - Candidate Detail (profile/pipeline/interviews/offers tabs)
+  - Pipeline Kanban Board (drag-and-drop stage movement, reject button, requisition filter)
+  - Interviews (schedule + record feedback inline)
+  - Offers (create + send + record candidate response → auto-hire)
+  - Pipeline Stages (CRUD + seed defaults)
+  - Reports (pipeline-by-stage bar, source effectiveness, offer acceptance KPIs)
+  - AI Insights (3 agents, ack/action/dismiss)
+- [x] Nav: "Recruitment / ATS" section with 9 links added
+
+## Next: Prompt 34 — Employee Self-Service
+
+---
+
+## Phase 32 — Expense Claims ✅ COMPLETED
 
 ---
 

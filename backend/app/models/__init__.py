@@ -419,6 +419,14 @@ from app.models.expenses import (
     ExpenseAdvance, ExpenseAccountingEntry,
     ExpAIRecommendation as ExpAIRecommendation,
 )
+from app.models.recruitment import (
+    EmploymentType, RequisitionStatus, PostingChannel, PostingStatus,
+    CandidateSource, PipelineStatus, InterviewType, InterviewDecision,
+    OfferStatus, StageType, RTAIAgentType, RTAIRecStatus,
+    RecruitmentStage, JobRequisition, JobPosting, Candidate,
+    CandidatePipeline, CandidatePipelineHistory, Interview, Offer,
+    RTAIRecommendation,
+)
 
 # ── Moto Sales Extension ─────────────────────────────────────────────────────
 from app.models.van_sales import (
@@ -745,4 +753,11 @@ __all__ = [
     "PolicyViolationSeverity", "ExpAIAgentType", "ExpAIRecStatus",
     "ExpenseCategory", "ExpensePolicy", "ExpenseClaim", "ExpenseClaimLine",
     "ExpenseAdvance", "ExpenseAccountingEntry", "ExpAIRecommendation",
+    # Recruitment / ATS
+    "EmploymentType", "RequisitionStatus", "PostingChannel", "PostingStatus",
+    "CandidateSource", "PipelineStatus", "InterviewType", "InterviewDecision",
+    "OfferStatus", "StageType", "RTAIAgentType", "RTAIRecStatus",
+    "RecruitmentStage", "JobRequisition", "JobPosting", "Candidate",
+    "CandidatePipeline", "CandidatePipelineHistory", "Interview", "Offer",
+    "RTAIRecommendation",
 ]
