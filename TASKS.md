@@ -1,7 +1,48 @@
 # TASKS — FMCG ERP (Kenya) · Production Module
 
 ## Current Phase
-Phase 36 — Training and Skills Management ✅ COMPLETED
+Phase 37 — Timesheet Approval Workflow ✅ COMPLETED
+
+---
+
+## Phase 37 — Timesheet Approval Workflow ✅
+
+- [x] `backend/app/models/timesheets.py` — 5 enums + 4 models (UUID PKs): TimesheetHeader, TimesheetLine, TimesheetApprovalLog, TSAIRecommendation
+- [x] `backend/app/schemas/timesheets.py` — Pydantic v2 schemas (header CRUD, submit/approve/reject/finalize, line CRUD, approval log, dashboard, AI rec)
+- [x] `backend/app/services/timesheets_service.py`:
+  - Timesheet header CRUD + list with filters (employee, status, period, dept)
+  - Workflow: draft → submitted → manager_approved → finalized, with rejected → resubmit path
+  - Daily hours cap validation (≤16h per day per employee)
+  - Auto-recalculate total/overtime/regular hours on every line add/update/delete
+  - Approval log appended on every workflow action
+  - Rejection counter tracked for resubmission detection
+  - auto_fill_from_attendance: bulk insert lines from attendance data
+  - payroll_input: export finalized timesheets as payroll-ready flat file
+  - project_time_report: aggregate hours by project
+  - activity_summary: hours by activity type
+  - utilization_report: per-employee total + overtime hours
+  - overtime_report: filtered utilization (OT > 0)
+  - AI Agent 1: Utilization Analyzer (avg < 35h → underutilized, avg > 55h → overtime risk)
+  - AI Agent 2: Anomaly Detector (daily hours > 14h → flag for review)
+- [x] `backend/app/api/v1/endpoints/timesheets.py` — 25+ routes at /api/v1/timesheets/
+- [x] `backend/alembic/versions/c5d6e7f8a9b0_timesheet_approval_workflow.py` — migration (down_revision: b4c5d6e7f8a9), 4 tables
+- [x] `backend/app/models/__init__.py` + `router.py` updated
+- [x] `frontend/src/lib/timesheets.ts` — types, API client, color/label maps
+- [x] Frontend pages (7 pages):
+  - Dashboard (9 KPI cards, top projects bar chart, quick nav)
+  - My Timesheets (status filter, detail modal with lines + approval history, submit action)
+  - New Time Entry (weekly header form + dynamic line table with day-quick-add buttons, activity type, OT/billable flags)
+  - Weekly View (calendar grid by employee × day, color-coded by activity type, week navigation)
+  - Approval Queue (pending + manager-approved tabs, review modal with approve/reject, finalize action)
+  - Reports (6 tabs: summary, utilization, overtime, project time, activity mix, payroll input)
+  - AI Insights (2 agents + ack/action/dismiss workflow)
+- [x] Nav: "Timesheet Management" section with 7 links added
+
+## Next: Prompt 38 — Notification Center
+
+---
+
+## Phase 36 — Training and Skills Management ✅ COMPLETED
 
 ---
 

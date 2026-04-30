@@ -1059,6 +1059,30 @@ export const NAV_CONFIG: NavEntry[] = [
   },
 
   // ╔══════════════════════════════════╗
+  // ║   TIMESHEET APPROVAL WORKFLOW    ║
+  // ╚══════════════════════════════════╝
+  cluster("cluster-timesheets", "Timesheets"),
+
+  {
+    type: "section",
+    id: "timesheets",
+    label: "Timesheet Management",
+    permission: "hr.view",
+    icon: md(
+      "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+    ),
+    items: [
+      { label: "Dashboard",       href: "/dashboard/timesheets",                    permission: "hr.view" },
+      { label: "My Timesheets",   href: "/dashboard/timesheets/my-timesheets",      permission: "hr.view" },
+      { label: "New Time Entry",  href: "/dashboard/timesheets/time-entry",         permission: "hr.view" },
+      { label: "Weekly View",     href: "/dashboard/timesheets/weekly-view",        permission: "hr.view" },
+      { label: "Approval Queue",  href: "/dashboard/timesheets/approval-queue",     permission: "hr.view" },
+      { label: "Reports",         href: "/dashboard/timesheets/reports",            permission: "hr.view" },
+      { label: "AI Insights",     href: "/dashboard/timesheets/ai",                 permission: "hr.view" },
+    ],
+  },
+
+  // ╔══════════════════════════════════╗
   // ║   TRAINING & SKILLS MANAGEMENT   ║
   // ╚══════════════════════════════════╝
   cluster("cluster-training", "Training & Skills"),

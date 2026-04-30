@@ -445,6 +445,13 @@ from app.models.appraisals import (
     APAIRecommendation,
 )
 
+# ── Timesheet Approval Workflow ───────────────────────────────────────────────
+from app.models.timesheets import (
+    TimesheetStatus, ActivityType, ApprovalAction as TSApprovalAction,
+    TSAIAgentType, TSAIRecStatus,
+    TimesheetHeader, TimesheetLine, TimesheetApprovalLog, TSAIRecommendation,
+)
+
 # ── Training & Skills Management ──────────────────────────────────────────────
 from app.models.training import (
     SkillCategory, SkillLevel, TrainingType,
