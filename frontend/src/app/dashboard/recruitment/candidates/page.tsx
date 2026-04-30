@@ -11,70 +11,55 @@ export default function CandidatesPage() {
   const [source, setSource] = useState("");
   const [debounced, setDebounced] = useState("");
 
-  useEffect(() => {
-    const t = setTimeout(() => setDebounced(search), 300);
-    return () => clearTimeout(t);
-  }, [search]);
-
+  useEffect(() => { const t = setTimeout(() => setDebounced(search), 300); return () => clearTimeout(t); }, [search]);
   useEffect(() => {
     recruitmentApi.listCandidates({ search: debounced || undefined, source: source || undefined })
       .then(setCandidates).catch(console.error);
   }, [debounced, source]);
 
   return (
-    <div className="p-6 space-y-4">
+    <div className="p-6 space-y-5 min-h-screen bg-[#060d18] text-slate-200">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">Candidates</h1>
+        <div>
+          <h1 className="text-xl font-bold text-white">Candidates</h1>
+          <p className="text-slate-500 text-sm mt-0.5">{candidates.length} candidates</p>
+        </div>
         <Link href="/dashboard/recruitment/candidates/new"
-          className="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700">+ Add Candidate</Link>
+          className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium">+ Add Candidate</Link>
       </div>
 
       <div className="flex gap-3">
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search name, email, skills…"
-          className="border rounded px-3 py-2 text-sm w-64"
-        />
-        <select value={source} onChange={(e) => setSource(e.target.value)} className="border rounded px-3 py-2 text-sm">
+        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name, email, skills…"
+          className="bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 w-64" />
+        <select value={source} onChange={(e) => setSource(e.target.value)}
+          className="bg-[#0d1829] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white focus:outline-none">
           <option value="">All Sources</option>
           {SOURCES.map((s) => <option key={s} value={s}>{s}</option>)}
         </select>
       </div>
 
-      <div className="bg-white rounded-xl border overflow-hidden">
+      <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 text-xs uppercase text-gray-500">
-            <tr>
-              <th className="px-4 py-3 text-left">Code</th>
-              <th className="px-4 py-3 text-left">Name</th>
-              <th className="px-4 py-3 text-left">Email</th>
-              <th className="px-4 py-3 text-left">Source</th>
-              <th className="px-4 py-3 text-left">Current Title</th>
-              <th className="px-4 py-3 text-left">Exp (yrs)</th>
-              <th className="px-4 py-3 text-left">Skills</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y">
+          <thead><tr className="border-b border-white/[0.07]">
+            {["Code", "Name", "Email", "Source", "Current Title", "Exp (yrs)", "Skills"].map((h) => (
+              <th key={h} className="px-4 py-3 text-[10px] text-slate-500 uppercase tracking-widest text-left">{h}</th>
+            ))}
+          </tr></thead>
+          <tbody>
             {candidates.map((c) => (
-              <tr key={c.candidate_id} className="hover:bg-gray-50">
+              <tr key={c.candidate_id} className="border-b border-white/[0.05] hover:bg-white/[0.02]">
                 <td className="px-4 py-3 font-mono text-xs">
-                  <Link href={`/dashboard/recruitment/candidates/${c.candidate_id}`}
-                    className="text-blue-600 hover:underline">{c.candidate_code}</Link>
+                  <Link href={`/dashboard/recruitment/candidates/${c.candidate_id}`} className="text-indigo-400 hover:text-indigo-300">{c.candidate_code}</Link>
                 </td>
-                <td className="px-4 py-3 font-medium">{c.full_name}</td>
-                <td className="px-4 py-3 text-gray-600">{c.email}</td>
-                <td className="px-4 py-3 capitalize text-xs">
-                  <span className="bg-gray-100 px-2 py-0.5 rounded-full">{c.source}</span>
-                </td>
-                <td className="px-4 py-3 text-gray-500">{c.current_title || "—"}</td>
-                <td className="px-4 py-3 text-center">{c.years_experience ?? "—"}</td>
-                <td className="px-4 py-3 text-xs text-gray-400 max-w-[150px] truncate">{c.skills_tags || "—"}</td>
+                <td className="px-4 py-3 text-white font-medium">{c.full_name}</td>
+                <td className="px-4 py-3 text-slate-400">{c.email}</td>
+                <td className="px-4 py-3"><span className="text-[10px] bg-slate-500/20 text-slate-400 px-2 py-0.5 rounded-full">{c.source}</span></td>
+                <td className="px-4 py-3 text-slate-400">{c.current_title || "—"}</td>
+                <td className="px-4 py-3 text-slate-400 text-center">{c.years_experience ?? "—"}</td>
+                <td className="px-4 py-3 text-slate-500 text-xs max-w-[150px] truncate">{c.skills_tags || "—"}</td>
               </tr>
             ))}
-            {candidates.length === 0 && (
-              <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400">No candidates found</td></tr>
-            )}
+            {candidates.length === 0 && <tr><td colSpan={7} className="px-4 py-8 text-center text-slate-600">No candidates found</td></tr>}
           </tbody>
         </table>
       </div>

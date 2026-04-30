@@ -167,33 +167,33 @@ export const REQ_STATUS_LABEL: Record<RequisitionStatus, string> = {
   closed: "Closed", cancelled: "Cancelled",
 };
 export const REQ_STATUS_COLOR: Record<RequisitionStatus, string> = {
-  draft: "bg-gray-100 text-gray-700",
-  approved: "bg-blue-100 text-blue-700",
-  open: "bg-green-100 text-green-700",
-  closed: "bg-gray-100 text-gray-500",
-  cancelled: "bg-red-100 text-red-700",
+  draft: "bg-slate-500/20 text-slate-400",
+  approved: "bg-blue-500/20 text-blue-300",
+  open: "bg-emerald-500/20 text-emerald-300",
+  closed: "bg-slate-700/20 text-slate-500",
+  cancelled: "bg-red-500/20 text-red-300",
 };
 export const PIPELINE_STATUS_COLOR: Record<PipelineStatus, string> = {
-  active: "bg-blue-100 text-blue-700",
-  moved: "bg-indigo-100 text-indigo-700",
-  rejected: "bg-red-100 text-red-700",
-  hired: "bg-green-100 text-green-700",
-  on_hold: "bg-yellow-100 text-yellow-700",
-  withdrawn: "bg-gray-100 text-gray-500",
+  active: "bg-blue-500/20 text-blue-300",
+  moved: "bg-indigo-500/20 text-indigo-300",
+  rejected: "bg-red-500/20 text-red-300",
+  hired: "bg-emerald-500/20 text-emerald-300",
+  on_hold: "bg-amber-500/20 text-amber-300",
+  withdrawn: "bg-slate-700/20 text-slate-500",
 };
 export const OFFER_STATUS_COLOR: Record<OfferStatus, string> = {
-  draft: "bg-gray-100 text-gray-600",
-  sent: "bg-blue-100 text-blue-700",
-  accepted: "bg-green-100 text-green-700",
-  rejected: "bg-red-100 text-red-700",
-  negotiating: "bg-yellow-100 text-yellow-700",
-  expired: "bg-gray-100 text-gray-500",
+  draft: "bg-slate-500/20 text-slate-400",
+  sent: "bg-blue-500/20 text-blue-300",
+  accepted: "bg-emerald-500/20 text-emerald-300",
+  rejected: "bg-red-500/20 text-red-300",
+  negotiating: "bg-amber-500/20 text-amber-300",
+  expired: "bg-slate-700/20 text-slate-500",
 };
 export const INTERVIEW_DECISION_COLOR: Record<InterviewDecision, string> = {
-  pass: "bg-green-100 text-green-700",
-  fail: "bg-red-100 text-red-700",
-  hold: "bg-yellow-100 text-yellow-700",
-  pending: "bg-gray-100 text-gray-600",
+  pass: "bg-emerald-500/20 text-emerald-300",
+  fail: "bg-red-500/20 text-red-300",
+  hold: "bg-amber-500/20 text-amber-300",
+  pending: "bg-slate-500/20 text-slate-400",
 };
 export const AI_AGENT_LABEL: Record<RTAIAgentType, string> = {
   candidate_matcher: "Candidate Matcher",

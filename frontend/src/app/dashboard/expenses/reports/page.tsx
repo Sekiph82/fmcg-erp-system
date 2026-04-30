@@ -11,14 +11,11 @@ export default function ExpenseReportsPage() {
 
   const load = async () => {
     setLoading(true);
-    let result: any[] = [];
-    if (tab === "employee") result = await expensesApi.reportByEmployee();
-    else if (tab === "category") result = await expensesApi.reportByCategory();
-    else result = await expensesApi.reportViolations();
-    setData(result);
+    if (tab === "employee") setData(await expensesApi.reportByEmployee());
+    else if (tab === "category") setData(await expensesApi.reportByCategory());
+    else setData(await expensesApi.reportViolations());
     setLoading(false);
   };
-
   useEffect(() => { load(); }, [tab]);
 
   const tabs: { id: Tab; label: string }[] = [
@@ -28,92 +25,80 @@ export default function ExpenseReportsPage() {
   ];
 
   return (
-    <div className="p-6 space-y-4">
-      <h1 className="text-xl font-bold">Expense Reports</h1>
+    <div className="p-6 space-y-5 min-h-screen bg-[#060d18] text-slate-200">
+      <h1 className="text-xl font-bold text-white">Expense Reports</h1>
 
       <div className="flex gap-2">
         {tabs.map((t) => (
           <button key={t.id} onClick={() => setTab(t.id)}
-            className={`px-4 py-2 rounded text-sm border ${tab === t.id ? "bg-blue-600 text-white" : "bg-white"}`}>{t.label}</button>
+            className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${tab === t.id ? "bg-indigo-600 border-indigo-500 text-white" : "border-white/[0.08] text-slate-400 hover:border-white/20"}`}>
+            {t.label}
+          </button>
         ))}
       </div>
 
-      {loading ? <p className="text-sm text-gray-500">Loading…</p> : (
-        <div className="bg-white rounded-xl border overflow-hidden">
+      {loading ? <p className="text-slate-500 text-sm">Loading…</p> : (
+        <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] overflow-hidden">
           {tab === "employee" && (
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 text-xs uppercase text-gray-500">
-                <tr>
-                  <th className="px-4 py-3 text-left">Employee ID</th>
-                  <th className="px-4 py-3 text-right">Claims</th>
-                  <th className="px-4 py-3 text-right">Total Claimed</th>
-                  <th className="px-4 py-3 text-right">Total Approved</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
+              <thead><tr className="border-b border-white/[0.07]">
+                {["Employee ID", "Claims", "Total Claimed", "Total Approved"].map((h) => (
+                  <th key={h} className={`px-4 py-3 text-[10px] text-slate-500 uppercase tracking-widest ${h !== "Employee ID" && h !== "Claims" ? "text-right" : "text-left"}`}>{h}</th>
+                ))}
+              </tr></thead>
+              <tbody>
                 {data.map((r, i) => (
-                  <tr key={i} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 font-mono text-xs">{r.employee_id}</td>
-                    <td className="px-4 py-3 text-right">{r.claim_count}</td>
-                    <td className="px-4 py-3 text-right">{fmtCurrency(r.total_claimed || 0)}</td>
-                    <td className="px-4 py-3 text-right">{fmtCurrency(r.total_approved || 0)}</td>
+                  <tr key={i} className="border-b border-white/[0.05] hover:bg-white/[0.02]">
+                    <td className="px-4 py-3 font-mono text-xs text-slate-400">{r.employee_id}</td>
+                    <td className="px-4 py-3 text-white">{r.claim_count}</td>
+                    <td className="px-4 py-3 text-right text-white">{fmtCurrency(r.total_claimed || 0)}</td>
+                    <td className="px-4 py-3 text-right text-emerald-400">{fmtCurrency(r.total_approved || 0)}</td>
                   </tr>
                 ))}
-                {data.length === 0 && <tr><td colSpan={4} className="px-4 py-8 text-center text-gray-400">No data</td></tr>}
+                {data.length === 0 && <tr><td colSpan={4} className="px-4 py-8 text-center text-slate-600">No data</td></tr>}
               </tbody>
             </table>
           )}
-
           {tab === "category" && (
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 text-xs uppercase text-gray-500">
-                <tr>
-                  <th className="px-4 py-3 text-left">Category</th>
-                  <th className="px-4 py-3 text-right">Lines</th>
-                  <th className="px-4 py-3 text-right">Total Claimed</th>
-                  <th className="px-4 py-3 text-right">Total Approved</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
+              <thead><tr className="border-b border-white/[0.07]">
+                {["Category", "Lines", "Total Claimed", "Total Approved"].map((h) => (
+                  <th key={h} className={`px-4 py-3 text-[10px] text-slate-500 uppercase tracking-widest ${h !== "Category" && h !== "Lines" ? "text-right" : "text-left"}`}>{h}</th>
+                ))}
+              </tr></thead>
+              <tbody>
                 {data.map((r, i) => (
-                  <tr key={i} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 font-medium">{r.category_name}</td>
-                    <td className="px-4 py-3 text-right">{r.line_count}</td>
-                    <td className="px-4 py-3 text-right">{fmtCurrency(r.total_claimed || 0)}</td>
-                    <td className="px-4 py-3 text-right">{fmtCurrency(r.total_approved || 0)}</td>
+                  <tr key={i} className="border-b border-white/[0.05] hover:bg-white/[0.02]">
+                    <td className="px-4 py-3 text-white font-medium">{r.category_name}</td>
+                    <td className="px-4 py-3 text-slate-400">{r.line_count}</td>
+                    <td className="px-4 py-3 text-right text-white">{fmtCurrency(r.total_claimed || 0)}</td>
+                    <td className="px-4 py-3 text-right text-emerald-400">{fmtCurrency(r.total_approved || 0)}</td>
                   </tr>
                 ))}
-                {data.length === 0 && <tr><td colSpan={4} className="px-4 py-8 text-center text-gray-400">No data</td></tr>}
+                {data.length === 0 && <tr><td colSpan={4} className="px-4 py-8 text-center text-slate-600">No data</td></tr>}
               </tbody>
             </table>
           )}
-
           {tab === "violations" && (
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 text-xs uppercase text-gray-500">
-                <tr>
-                  <th className="px-4 py-3 text-left">Line ID</th>
-                  <th className="px-4 py-3 text-left">Receipt</th>
-                  <th className="px-4 py-3 text-right">Amount</th>
-                  <th className="px-4 py-3 text-left">Severity</th>
-                  <th className="px-4 py-3 text-left">Note</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
+              <thead><tr className="border-b border-white/[0.07]">
+                {["Line ID", "Receipt", "Amount", "Severity", "Note"].map((h) => (
+                  <th key={h} className={`px-4 py-3 text-[10px] text-slate-500 uppercase tracking-widest ${h === "Amount" ? "text-right" : "text-left"}`}>{h}</th>
+                ))}
+              </tr></thead>
+              <tbody>
                 {data.map((r, i) => (
-                  <tr key={i} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 font-mono text-xs">{r.expense_line_id?.slice(-8)}</td>
-                    <td className="px-4 py-3">{r.receipt_no || "—"}</td>
-                    <td className="px-4 py-3 text-right">{fmtCurrency(r.claimed_amount)}</td>
+                  <tr key={i} className="border-b border-white/[0.05] hover:bg-white/[0.02]">
+                    <td className="px-4 py-3 font-mono text-xs text-slate-500">{r.expense_line_id?.slice(-8)}</td>
+                    <td className="px-4 py-3 text-slate-400">{r.receipt_no || "—"}</td>
+                    <td className="px-4 py-3 text-right text-white">{fmtCurrency(r.claimed_amount)}</td>
                     <td className="px-4 py-3">
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${r.severity === "block" ? "bg-red-100 text-red-700" : "bg-yellow-100 text-yellow-700"}`}>
-                        {r.severity}
-                      </span>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${r.severity === "block" ? "bg-red-500/20 text-red-300" : "bg-amber-500/20 text-amber-300"}`}>{r.severity}</span>
                     </td>
-                    <td className="px-4 py-3 text-gray-500 text-xs">{r.note}</td>
+                    <td className="px-4 py-3 text-slate-500 text-xs">{r.note}</td>
                   </tr>
                 ))}
-                {data.length === 0 && <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-400">No violations</td></tr>}
+                {data.length === 0 && <tr><td colSpan={5} className="px-4 py-8 text-center text-slate-600">No violations</td></tr>}
               </tbody>
             </table>
           )}

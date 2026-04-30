@@ -1,9 +1,12 @@
 "use client";
 import { useEffect, useState } from "react";
-import { essApi, ESSRequest, ESSRequestType, ESSRequestStatus, REQUEST_STATUS_COLOR } from "@/lib/ess";
+import { essApi, ESSRequest, ESSRequestType, REQUEST_STATUS_COLOR } from "@/lib/ess";
 
 const DEMO_EMPLOYEE = "00000000-0000-0000-0000-000000000001";
 const REQ_TYPES: ESSRequestType[] = ["leave", "expense", "profile_update", "document", "certificate", "payslip", "other"];
+const inputCls = "w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500";
+const selectCls = "w-full bg-[#0d1829] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white focus:outline-none";
+const labelCls = "block text-[10px] text-slate-400 mb-1";
 
 export default function RequestTrackerPage() {
   const [requests, setRequests] = useState<ESSRequest[]>([]);
@@ -17,75 +20,58 @@ export default function RequestTrackerPage() {
   const handleCreate = async () => {
     const req = await essApi.createRequest({ ...form, employee_id: DEMO_EMPLOYEE });
     await essApi.submitRequest(req.request_id);
-    await load(); setShowForm(false);
-    setMsg("Request submitted"); setTimeout(() => setMsg(""), 2500);
+    await load(); setShowForm(false); setMsg("Request submitted"); setTimeout(() => setMsg(""), 2500);
   };
 
   return (
-    <div className="p-6 space-y-5">
+    <div className="p-6 space-y-5 min-h-screen bg-[#060d18] text-slate-200">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">My Requests</h1>
+        <div>
+          <h1 className="text-xl font-bold text-white">My Requests</h1>
+          <p className="text-slate-500 text-sm mt-0.5">{requests.length} requests</p>
+        </div>
         <button onClick={() => setShowForm(!showForm)}
-          className="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700">
+          className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium">
           {showForm ? "Cancel" : "+ New Request"}
         </button>
       </div>
 
-      {msg && <div className="bg-green-50 text-green-700 text-sm px-4 py-2 rounded">{msg}</div>}
+      {msg && <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3 text-sm text-emerald-300">{msg}</div>}
 
       {showForm && (
-        <div className="bg-white border rounded-xl p-5 space-y-3">
+        <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-5 space-y-3">
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">Request Type</label>
-              <select value={form.request_type} onChange={(e) => setForm({ ...form, request_type: e.target.value as ESSRequestType })}
-                className="w-full border rounded p-2 text-sm">
+            <div><label className={labelCls}>Request Type</label>
+              <select value={form.request_type} onChange={(e) => setForm({ ...form, request_type: e.target.value as ESSRequestType })} className={selectCls}>
                 {REQ_TYPES.map((t) => <option key={t} value={t}>{t.replace("_", " ")}</option>)}
               </select>
             </div>
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">Subject</label>
-              <input value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })}
-                className="w-full border rounded p-2 text-sm" />
-            </div>
-            <div className="col-span-2">
-              <label className="block text-xs text-gray-500 mb-1">Description</label>
-              <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })}
-                rows={3} className="w-full border rounded p-2 text-sm" />
-            </div>
+            <div><label className={labelCls}>Subject</label><input value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} className={inputCls} /></div>
+            <div className="col-span-2"><label className={labelCls}>Description</label><textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} className={inputCls} /></div>
           </div>
-          <button onClick={handleCreate} className="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700">
-            Submit Request
-          </button>
+          <button onClick={handleCreate} className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm">Submit Request</button>
         </div>
       )}
 
-      <div className="bg-white rounded-xl border overflow-hidden">
+      <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 text-xs uppercase text-gray-500">
-            <tr>
-              <th className="px-4 py-3 text-left">Ref</th>
-              <th className="px-4 py-3 text-left">Type</th>
-              <th className="px-4 py-3 text-left">Subject</th>
-              <th className="px-4 py-3 text-left">Date</th>
-              <th className="px-4 py-3 text-left">Status</th>
-              <th className="px-4 py-3 text-left">HR Notes</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y">
+          <thead><tr className="border-b border-white/[0.07]">
+            {["Ref", "Type", "Subject", "Date", "Status", "HR Notes"].map((h) => (
+              <th key={h} className="px-4 py-3 text-[10px] text-slate-500 uppercase tracking-widest text-left">{h}</th>
+            ))}
+          </tr></thead>
+          <tbody>
             {requests.map((r) => (
-              <tr key={r.request_id} className="hover:bg-gray-50">
-                <td className="px-4 py-3 font-mono text-xs">{r.request_no}</td>
-                <td className="px-4 py-3 capitalize text-xs">{r.request_type.replace("_", " ")}</td>
-                <td className="px-4 py-3">{r.subject}</td>
-                <td className="px-4 py-3">{r.request_date}</td>
-                <td className="px-4 py-3">
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${REQUEST_STATUS_COLOR[r.status]}`}>{r.status.replace("_", " ")}</span>
-                </td>
-                <td className="px-4 py-3 text-gray-400 text-xs">{r.hr_notes || "—"}</td>
+              <tr key={r.request_id} className="border-b border-white/[0.05] hover:bg-white/[0.02]">
+                <td className="px-4 py-3 font-mono text-xs text-slate-500">{r.request_no}</td>
+                <td className="px-4 py-3 text-slate-400 capitalize text-xs">{r.request_type.replace("_", " ")}</td>
+                <td className="px-4 py-3 text-white">{r.subject}</td>
+                <td className="px-4 py-3 text-slate-400">{r.request_date}</td>
+                <td className="px-4 py-3"><span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${REQUEST_STATUS_COLOR[r.status]}`}>{r.status.replace("_", " ")}</span></td>
+                <td className="px-4 py-3 text-slate-600 text-xs">{r.hr_notes || "—"}</td>
               </tr>
             ))}
-            {requests.length === 0 && <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400">No requests</td></tr>}
+            {requests.length === 0 && <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-600">No requests</td></tr>}
           </tbody>
         </table>
       </div>

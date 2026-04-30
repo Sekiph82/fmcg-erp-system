@@ -15,83 +15,59 @@ export default function RequisitionsPage() {
   };
   useEffect(() => { load(); }, [filter]);
 
-  const handleApprove = async (id: string) => {
-    await recruitmentApi.approveRequisition(id, { approver_id: "00000000-0000-0000-0000-000000000001" });
-    load();
-  };
-  const handleOpen = async (id: string) => {
-    await recruitmentApi.openRequisition(id);
-    load();
-  };
-  const handleClose = async (id: string) => {
-    await recruitmentApi.closeRequisition(id);
-    load();
-  };
+  const handleApprove = async (id: string) => { await recruitmentApi.approveRequisition(id, { approver_id: "00000000-0000-0000-0000-000000000001" }); load(); };
+  const handleOpen = async (id: string) => { await recruitmentApi.openRequisition(id); load(); };
+  const handleClose = async (id: string) => { await recruitmentApi.closeRequisition(id); load(); };
 
   return (
-    <div className="p-6 space-y-4">
+    <div className="p-6 space-y-5 min-h-screen bg-[#060d18] text-slate-200">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">Job Requisitions</h1>
+        <div>
+          <h1 className="text-xl font-bold text-white">Job Requisitions</h1>
+          <p className="text-slate-500 text-sm mt-0.5">{reqs.length} requisitions</p>
+        </div>
         <Link href="/dashboard/recruitment/requisitions/new"
-          className="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700">+ New</Link>
+          className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium">+ New</Link>
       </div>
 
       <div className="flex gap-2 flex-wrap">
         <button onClick={() => setFilter("")}
-          className={`px-3 py-1 rounded text-sm border ${filter === "" ? "bg-blue-600 text-white" : "bg-white"}`}>All</button>
+          className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${filter === "" ? "bg-indigo-600 border-indigo-500 text-white" : "border-white/[0.08] text-slate-400 hover:border-white/20"}`}>All</button>
         {STATUSES.map((s) => (
           <button key={s} onClick={() => setFilter(s)}
-            className={`px-3 py-1 rounded text-sm border ${filter === s ? "bg-blue-600 text-white" : "bg-white"}`}>
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${filter === s ? "bg-indigo-600 border-indigo-500 text-white" : "border-white/[0.08] text-slate-400 hover:border-white/20"}`}>
             {REQ_STATUS_LABEL[s]}
           </button>
         ))}
       </div>
 
-      <div className="bg-white rounded-xl border overflow-hidden">
+      <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 text-xs uppercase text-gray-500">
-            <tr>
-              <th className="px-4 py-3 text-left">Code</th>
-              <th className="px-4 py-3 text-left">Title</th>
-              <th className="px-4 py-3 text-left">Type</th>
-              <th className="px-4 py-3 text-left">Headcount</th>
-              <th className="px-4 py-3 text-left">Status</th>
-              <th className="px-4 py-3 text-left">Closing</th>
-              <th className="px-4 py-3 text-left">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y">
+          <thead><tr className="border-b border-white/[0.07]">
+            {["Code", "Title", "Type", "Headcount", "Status", "Closing", "Actions"].map((h) => (
+              <th key={h} className="px-4 py-3 text-[10px] text-slate-500 uppercase tracking-widest text-left">{h}</th>
+            ))}
+          </tr></thead>
+          <tbody>
             {reqs.map((r) => (
-              <tr key={r.requisition_id} className="hover:bg-gray-50">
+              <tr key={r.requisition_id} className="border-b border-white/[0.05] hover:bg-white/[0.02]">
                 <td className="px-4 py-3 font-mono text-xs">
-                  <Link href={`/dashboard/recruitment/requisitions/${r.requisition_id}`}
-                    className="text-blue-600 hover:underline">{r.requisition_code}</Link>
+                  <Link href={`/dashboard/recruitment/requisitions/${r.requisition_id}`} className="text-indigo-400 hover:text-indigo-300">{r.requisition_code}</Link>
                 </td>
-                <td className="px-4 py-3 font-medium">{r.job_title}</td>
-                <td className="px-4 py-3 text-xs capitalize">{r.employment_type.replace("_", " ")}</td>
-                <td className="px-4 py-3">{r.filled_count}/{r.headcount}</td>
-                <td className="px-4 py-3">
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${REQ_STATUS_COLOR[r.status]}`}>
-                    {REQ_STATUS_LABEL[r.status]}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-gray-500">{r.closing_date || "—"}</td>
-                <td className="px-4 py-3 space-x-2">
-                  {r.status === "draft" && (
-                    <button onClick={() => handleApprove(r.requisition_id)} className="text-xs text-blue-600 hover:underline">Approve</button>
-                  )}
-                  {r.status === "approved" && (
-                    <button onClick={() => handleOpen(r.requisition_id)} className="text-xs text-green-600 hover:underline">Open</button>
-                  )}
-                  {r.status === "open" && (
-                    <button onClick={() => handleClose(r.requisition_id)} className="text-xs text-gray-500 hover:underline">Close</button>
-                  )}
-                  <Link href={`/dashboard/recruitment/requisitions/${r.requisition_id}`}
-                    className="text-xs text-gray-500 hover:underline">View</Link>
+                <td className="px-4 py-3 text-white font-medium">{r.job_title}</td>
+                <td className="px-4 py-3 text-slate-400 text-xs capitalize">{r.employment_type.replace("_", " ")}</td>
+                <td className="px-4 py-3 text-slate-400">{r.filled_count}/{r.headcount}</td>
+                <td className="px-4 py-3"><span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${REQ_STATUS_COLOR[r.status]}`}>{REQ_STATUS_LABEL[r.status]}</span></td>
+                <td className="px-4 py-3 text-slate-500">{r.closing_date || "—"}</td>
+                <td className="px-4 py-3 space-x-3">
+                  {r.status === "draft" && <button onClick={() => handleApprove(r.requisition_id)} className="text-xs text-blue-400 hover:text-blue-300">Approve</button>}
+                  {r.status === "approved" && <button onClick={() => handleOpen(r.requisition_id)} className="text-xs text-emerald-400 hover:text-emerald-300">Open</button>}
+                  {r.status === "open" && <button onClick={() => handleClose(r.requisition_id)} className="text-xs text-slate-400 hover:text-slate-300">Close</button>}
+                  <Link href={`/dashboard/recruitment/requisitions/${r.requisition_id}`} className="text-xs text-slate-500 hover:text-slate-400">View</Link>
                 </td>
               </tr>
             ))}
-            {reqs.length === 0 && <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400">No requisitions</td></tr>}
+            {reqs.length === 0 && <tr><td colSpan={7} className="px-4 py-8 text-center text-slate-600">No requisitions</td></tr>}
           </tbody>
         </table>
       </div>

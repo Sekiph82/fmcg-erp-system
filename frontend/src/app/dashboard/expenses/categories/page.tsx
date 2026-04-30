@@ -2,6 +2,9 @@
 import { useEffect, useState } from "react";
 import { expensesApi, ExpenseCategory } from "@/lib/expenses";
 
+const inputCls = "w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500";
+const labelCls = "block text-[10px] text-slate-400 mb-1";
+
 export default function CategoriesPage() {
   const [cats, setCats] = useState<ExpenseCategory[]>([]);
   const [form, setForm] = useState({ category_code: "", category_name: "", daily_limit_amount: "", monthly_limit_amount: "", receipt_required_flag: true });
@@ -23,76 +26,60 @@ export default function CategoriesPage() {
   };
 
   return (
-    <div className="p-6 space-y-4">
+    <div className="p-6 space-y-5 min-h-screen bg-[#060d18] text-slate-200">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">Expense Categories</h1>
-        <button onClick={() => setShowForm(!showForm)} className="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700">
+        <div>
+          <h1 className="text-xl font-bold text-white">Expense Categories</h1>
+          <p className="text-slate-500 text-sm mt-0.5">{cats.length} categories</p>
+        </div>
+        <button onClick={() => setShowForm(!showForm)}
+          className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium">
           {showForm ? "Cancel" : "+ New Category"}
         </button>
       </div>
 
       {showForm && (
-        <div className="bg-white border rounded-xl p-5 space-y-3">
+        <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-5 space-y-3">
           <div className="grid grid-cols-3 gap-3">
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">Code *</label>
-              <input value={form.category_code} onChange={(e) => setForm({ ...form, category_code: e.target.value })}
-                className="w-full border rounded p-2 text-sm" />
-            </div>
-            <div className="col-span-2">
-              <label className="block text-xs text-gray-500 mb-1">Name *</label>
-              <input value={form.category_name} onChange={(e) => setForm({ ...form, category_name: e.target.value })}
-                className="w-full border rounded p-2 text-sm" />
-            </div>
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">Daily Limit</label>
-              <input type="number" value={form.daily_limit_amount} onChange={(e) => setForm({ ...form, daily_limit_amount: e.target.value })}
-                className="w-full border rounded p-2 text-sm" />
-            </div>
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">Monthly Limit</label>
-              <input type="number" value={form.monthly_limit_amount} onChange={(e) => setForm({ ...form, monthly_limit_amount: e.target.value })}
-                className="w-full border rounded p-2 text-sm" />
-            </div>
+            <div><label className={labelCls}>Code *</label><input value={form.category_code} onChange={(e) => setForm({ ...form, category_code: e.target.value })} className={inputCls} /></div>
+            <div className="col-span-2"><label className={labelCls}>Name *</label><input value={form.category_name} onChange={(e) => setForm({ ...form, category_name: e.target.value })} className={inputCls} /></div>
+            <div><label className={labelCls}>Daily Limit (KES)</label><input type="number" value={form.daily_limit_amount} onChange={(e) => setForm({ ...form, daily_limit_amount: e.target.value })} className={inputCls} /></div>
+            <div><label className={labelCls}>Monthly Limit (KES)</label><input type="number" value={form.monthly_limit_amount} onChange={(e) => setForm({ ...form, monthly_limit_amount: e.target.value })} className={inputCls} /></div>
             <div className="flex items-end pb-2">
-              <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" checked={form.receipt_required_flag}
-                  onChange={(e) => setForm({ ...form, receipt_required_flag: e.target.checked })} />
+              <label className="flex items-center gap-2 text-sm text-slate-400 cursor-pointer">
+                <input type="checkbox" checked={form.receipt_required_flag} onChange={(e) => setForm({ ...form, receipt_required_flag: e.target.checked })} />
                 Receipt Required
               </label>
             </div>
           </div>
           <button onClick={handleCreate} disabled={saving}
-            className="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700 disabled:opacity-50">
+            className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm disabled:opacity-50">
             {saving ? "Saving…" : "Create"}
           </button>
         </div>
       )}
 
-      <div className="bg-white rounded-xl border overflow-hidden">
+      <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 text-xs uppercase text-gray-500">
-            <tr>
-              <th className="px-4 py-3 text-left">Code</th>
-              <th className="px-4 py-3 text-left">Name</th>
-              <th className="px-4 py-3 text-right">Daily Limit</th>
-              <th className="px-4 py-3 text-right">Monthly Limit</th>
-              <th className="px-4 py-3 text-left">Receipt Req.</th>
-              <th className="px-4 py-3 text-left">Taxable</th>
+          <thead>
+            <tr className="border-b border-white/[0.07]">
+              {["Code", "Name", "Daily Limit", "Monthly Limit", "Receipt Req.", "Taxable"].map((h) => (
+                <th key={h} className={`px-4 py-3 text-[10px] text-slate-500 uppercase tracking-widest ${h.includes("Limit") ? "text-right" : "text-left"}`}>{h}</th>
+              ))}
             </tr>
           </thead>
-          <tbody className="divide-y">
+          <tbody>
             {cats.map((c) => (
-              <tr key={c.expense_category_id} className="hover:bg-gray-50">
-                <td className="px-4 py-3 font-mono text-xs">{c.category_code}</td>
-                <td className="px-4 py-3 font-medium">{c.category_name}</td>
-                <td className="px-4 py-3 text-right">{c.daily_limit_amount ? `KES ${Number(c.daily_limit_amount).toLocaleString()}` : "—"}</td>
-                <td className="px-4 py-3 text-right">{c.monthly_limit_amount ? `KES ${Number(c.monthly_limit_amount).toLocaleString()}` : "—"}</td>
-                <td className="px-4 py-3">{c.receipt_required_flag ? "Yes" : "No"}</td>
-                <td className="px-4 py-3">{c.taxable_flag ? "Yes" : "No"}</td>
+              <tr key={c.expense_category_id} className="border-b border-white/[0.05] hover:bg-white/[0.02]">
+                <td className="px-4 py-3 font-mono text-xs text-slate-400">{c.category_code}</td>
+                <td className="px-4 py-3 text-white font-medium">{c.category_name}</td>
+                <td className="px-4 py-3 text-right text-slate-400">{c.daily_limit_amount ? `KES ${Number(c.daily_limit_amount).toLocaleString()}` : "—"}</td>
+                <td className="px-4 py-3 text-right text-slate-400">{c.monthly_limit_amount ? `KES ${Number(c.monthly_limit_amount).toLocaleString()}` : "—"}</td>
+                <td className="px-4 py-3 text-slate-400">{c.receipt_required_flag ? <span className="text-emerald-400">Yes</span> : "No"}</td>
+                <td className="px-4 py-3 text-slate-400">{c.taxable_flag ? <span className="text-amber-400">Yes</span> : "No"}</td>
               </tr>
             ))}
-            {cats.length === 0 && <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400">No categories</td></tr>}
+            {cats.length === 0 && <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-600">No categories</td></tr>}
           </tbody>
         </table>
       </div>

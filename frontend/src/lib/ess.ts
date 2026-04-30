@@ -166,30 +166,30 @@ export interface ESSAIRecommendation {
 // ── Color / label maps ────────────────────────────────────────────────────────
 
 export const LEAVE_STATUS_COLOR: Record<LeaveStatus, string> = {
-  draft: "bg-gray-100 text-gray-600",
-  submitted: "bg-blue-100 text-blue-700",
-  approved: "bg-green-100 text-green-700",
-  rejected: "bg-red-100 text-red-700",
-  cancelled: "bg-gray-100 text-gray-400",
+  draft: "bg-slate-500/20 text-slate-400",
+  submitted: "bg-blue-500/20 text-blue-300",
+  approved: "bg-emerald-500/20 text-emerald-300",
+  rejected: "bg-red-500/20 text-red-300",
+  cancelled: "bg-slate-700/20 text-slate-500",
 };
 
 export const ATTENDANCE_STATUS_COLOR: Record<AttendanceStatus, string> = {
-  present: "bg-green-100 text-green-700",
-  absent: "bg-red-100 text-red-700",
-  late: "bg-yellow-100 text-yellow-700",
-  half_day: "bg-orange-100 text-orange-700",
-  on_leave: "bg-blue-100 text-blue-700",
-  holiday: "bg-purple-100 text-purple-700",
-  work_from_home: "bg-teal-100 text-teal-700",
+  present: "bg-emerald-500/20 text-emerald-300",
+  absent: "bg-red-500/20 text-red-300",
+  late: "bg-amber-500/20 text-amber-300",
+  half_day: "bg-orange-500/20 text-orange-300",
+  on_leave: "bg-blue-500/20 text-blue-300",
+  holiday: "bg-purple-500/20 text-purple-300",
+  work_from_home: "bg-teal-500/20 text-teal-300",
 };
 
 export const REQUEST_STATUS_COLOR: Record<ESSRequestStatus, string> = {
-  draft: "bg-gray-100 text-gray-600",
-  submitted: "bg-blue-100 text-blue-700",
-  in_review: "bg-yellow-100 text-yellow-700",
-  approved: "bg-green-100 text-green-700",
-  rejected: "bg-red-100 text-red-700",
-  closed: "bg-gray-100 text-gray-500",
+  draft: "bg-slate-500/20 text-slate-400",
+  submitted: "bg-blue-500/20 text-blue-300",
+  in_review: "bg-amber-500/20 text-amber-300",
+  approved: "bg-emerald-500/20 text-emerald-300",
+  rejected: "bg-red-500/20 text-red-300",
+  closed: "bg-slate-700/20 text-slate-500",
 };
 
 export const NOTIF_TYPE_ICON: Record<NotificationType, string> = {

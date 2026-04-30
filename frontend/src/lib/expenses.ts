@@ -148,20 +148,20 @@ export const STATUS_LABEL: Record<ExpenseStatus, string> = {
 };
 
 export const STATUS_COLOR: Record<ExpenseStatus, string> = {
-  draft: "bg-gray-100 text-gray-700",
-  submitted: "bg-blue-100 text-blue-700",
-  manager_approved: "bg-indigo-100 text-indigo-700",
-  finance_approved: "bg-purple-100 text-purple-700",
-  rejected: "bg-red-100 text-red-700",
-  paid: "bg-green-100 text-green-700",
-  cancelled: "bg-gray-100 text-gray-500",
+  draft: "bg-slate-500/20 text-slate-400",
+  submitted: "bg-blue-500/20 text-blue-300",
+  manager_approved: "bg-indigo-500/20 text-indigo-300",
+  finance_approved: "bg-purple-500/20 text-purple-300",
+  rejected: "bg-red-500/20 text-red-300",
+  paid: "bg-emerald-500/20 text-emerald-300",
+  cancelled: "bg-slate-700/20 text-slate-500",
 };
 
 export const ADVANCE_STATUS_COLOR: Record<AdvanceSettlementStatus, string> = {
-  open: "bg-yellow-100 text-yellow-700",
-  partially_settled: "bg-blue-100 text-blue-700",
-  settled: "bg-green-100 text-green-700",
-  overdue: "bg-red-100 text-red-700",
+  open: "bg-amber-500/20 text-amber-300",
+  partially_settled: "bg-blue-500/20 text-blue-300",
+  settled: "bg-emerald-500/20 text-emerald-300",
+  overdue: "bg-red-500/20 text-red-300",
 };
 
 export const AI_AGENT_LABEL: Record<ExpAIAgentType, string> = {

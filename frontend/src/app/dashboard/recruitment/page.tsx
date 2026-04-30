@@ -5,18 +5,17 @@ import { recruitmentApi, RecruitmentDashboard } from "@/lib/recruitment";
 
 export default function RecruitmentDashboardPage() {
   const [data, setData] = useState<RecruitmentDashboard | null>(null);
-
   useEffect(() => { recruitmentApi.dashboard().then(setData).catch(console.error); }, []);
 
   const kpis = data ? [
-    { label: "Open Requisitions",      value: data.open_requisitions,     color: "bg-blue-50 text-blue-700" },
-    { label: "Total Candidates",        value: data.total_candidates,       color: "bg-indigo-50 text-indigo-700" },
-    { label: "Active Pipelines",        value: data.active_pipelines,       color: "bg-purple-50 text-purple-700" },
-    { label: "Interviews This Week",    value: data.interviews_this_week,   color: "bg-yellow-50 text-yellow-700" },
-    { label: "Pending Offers",          value: data.pending_offers,         color: "bg-orange-50 text-orange-700" },
-    { label: "Hires This Month",        value: data.hires_this_month,       color: "bg-green-50 text-green-700" },
-    { label: "Avg Time to Hire (days)", value: data.avg_time_to_hire_days,  color: "bg-teal-50 text-teal-700" },
-    { label: "AI Alerts",               value: data.ai_alerts,              color: "bg-gray-50 text-gray-700" },
+    { label: "Open Requisitions",       value: data.open_requisitions,         color: "text-blue-400" },
+    { label: "Total Candidates",         value: data.total_candidates,          color: "text-white" },
+    { label: "Active Pipelines",         value: data.active_pipelines,          color: "text-purple-400" },
+    { label: "Interviews This Week",     value: data.interviews_this_week,      color: "text-amber-400" },
+    { label: "Pending Offers",           value: data.pending_offers,            color: "text-orange-400" },
+    { label: "Hires This Month",         value: data.hires_this_month,          color: "text-emerald-400" },
+    { label: "Avg Time to Hire (days)",  value: data.avg_time_to_hire_days,     color: "text-teal-400" },
+    { label: "AI Alerts",                value: data.ai_alerts,                 color: "text-slate-400" },
   ] : [];
 
   const links = [
@@ -32,20 +31,21 @@ export default function RecruitmentDashboardPage() {
   ];
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 min-h-screen bg-[#060d18] text-slate-200">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Recruitment / ATS</h1>
+        <div>
+          <h1 className="text-2xl font-bold text-white">Recruitment / ATS</h1>
+          <p className="text-slate-500 text-sm mt-0.5">End-to-end hiring pipeline management</p>
+        </div>
         <Link href="/dashboard/recruitment/requisitions/new"
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700">
-          + New Requisition
-        </Link>
+          className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium">+ New Requisition</Link>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {kpis.map((k) => (
-          <div key={k.label} className={`rounded-xl p-4 ${k.color}`}>
-            <p className="text-xs font-medium opacity-70">{k.label}</p>
-            <p className="text-2xl font-bold mt-1">{k.value}</p>
+          <div key={k.label} className="rounded-xl border border-white/[0.07] bg-[#0d1829] p-5">
+            <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-1">{k.label}</p>
+            <p className={`text-2xl font-bold ${k.color}`}>{k.value}</p>
           </div>
         ))}
       </div>
@@ -53,7 +53,7 @@ export default function RecruitmentDashboardPage() {
       <div className="grid grid-cols-3 md:grid-cols-5 gap-3">
         {links.map((l) => (
           <Link key={l.href} href={l.href}
-            className="bg-white border rounded-lg p-3 text-sm font-medium text-center hover:bg-gray-50 shadow-sm">
+            className="rounded-xl border border-white/[0.07] bg-[#0d1829] hover:bg-white/[0.04] p-4 text-sm font-medium text-slate-300 text-center transition-colors">
             {l.label}
           </Link>
         ))}

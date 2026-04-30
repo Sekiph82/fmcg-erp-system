@@ -3,8 +3,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { expensesApi, ExpenseClaim, ExpenseStatus, STATUS_LABEL, STATUS_COLOR, fmtCurrency } from "@/lib/expenses";
 
-const PENDING_STATUSES: ExpenseStatus[] = ["submitted", "manager_approved"];
-
 export default function ApprovalQueuePage() {
   const [activeTab, setActiveTab] = useState<"manager" | "finance">("manager");
   const [claims, setClaims] = useState<ExpenseClaim[]>([]);
@@ -17,76 +15,64 @@ export default function ApprovalQueuePage() {
     setClaims(data);
     setLoading(false);
   };
-
   useEffect(() => { load(); }, [activeTab]);
 
   const handleApprove = async (id: string) => {
-    if (activeTab === "manager") {
-      await expensesApi.managerApprove(id, { approver_id: "00000000-0000-0000-0000-000000000002" });
-    } else {
-      await expensesApi.financeApprove(id, { approver_id: "00000000-0000-0000-0000-000000000003" });
-    }
+    if (activeTab === "manager") await expensesApi.managerApprove(id, { approver_id: "00000000-0000-0000-0000-000000000002" });
+    else await expensesApi.financeApprove(id, { approver_id: "00000000-0000-0000-0000-000000000003" });
     load();
   };
-
   const handleReject = async (id: string) => {
     await expensesApi.rejectClaim(id, { approver_id: "00000000-0000-0000-0000-000000000002", notes: "Rejected from queue" });
     load();
   };
 
   return (
-    <div className="p-6 space-y-4">
-      <h1 className="text-xl font-bold">Approval Queue</h1>
+    <div className="p-6 space-y-5 min-h-screen bg-[#060d18] text-slate-200">
+      <h1 className="text-xl font-bold text-white">Approval Queue</h1>
 
       <div className="flex gap-2">
         {(["manager", "finance"] as const).map((t) => (
           <button key={t} onClick={() => setActiveTab(t)}
-            className={`px-4 py-2 rounded text-sm border ${activeTab === t ? "bg-blue-600 text-white" : "bg-white"}`}>
+            className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${activeTab === t ? "bg-indigo-600 border-indigo-500 text-white" : "border-white/[0.08] text-slate-400 hover:border-white/20"}`}>
             {t === "manager" ? "Manager Approval (Submitted)" : "Finance Approval (Manager Approved)"}
           </button>
         ))}
       </div>
 
-      {loading ? <p className="text-sm text-gray-500">Loading…</p> : (
-        <div className="bg-white rounded-xl border overflow-hidden">
+      {loading ? <p className="text-slate-500 text-sm">Loading…</p> : (
+        <div className="rounded-xl border border-white/[0.07] bg-[#0d1829] overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-xs uppercase text-gray-500">
-              <tr>
-                <th className="px-4 py-3 text-left">Claim No</th>
-                <th className="px-4 py-3 text-left">Date</th>
-                <th className="px-4 py-3 text-left">Status</th>
-                <th className="px-4 py-3 text-right">Claimed</th>
-                <th className="px-4 py-3 text-left">Violations</th>
-                <th className="px-4 py-3 text-left">Actions</th>
+            <thead>
+              <tr className="border-b border-white/[0.07]">
+                {["Claim No", "Date", "Status", "Claimed", "Violations", "Actions"].map((h) => (
+                  <th key={h} className={`px-4 py-3 text-[10px] text-slate-500 uppercase tracking-widest ${h === "Claimed" ? "text-right" : "text-left"}`}>{h}</th>
+                ))}
               </tr>
             </thead>
-            <tbody className="divide-y">
+            <tbody>
               {claims.map((c) => {
                 const violations = c.lines.filter((l) => l.policy_violation_flag).length;
                 return (
-                  <tr key={c.expense_claim_id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 font-mono">
-                      <Link href={`/dashboard/expenses/claims/${c.expense_claim_id}`} className="text-blue-600 hover:underline">{c.claim_no}</Link>
+                  <tr key={c.expense_claim_id} className="border-b border-white/[0.05] hover:bg-white/[0.02]">
+                    <td className="px-4 py-3 font-mono text-xs">
+                      <Link href={`/dashboard/expenses/claims/${c.expense_claim_id}`} className="text-indigo-400 hover:text-indigo-300">{c.claim_no}</Link>
                     </td>
-                    <td className="px-4 py-3">{c.claim_date}</td>
+                    <td className="px-4 py-3 text-slate-400">{c.claim_date}</td>
+                    <td className="px-4 py-3"><span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${STATUS_COLOR[c.status]}`}>{STATUS_LABEL[c.status]}</span></td>
+                    <td className="px-4 py-3 text-right text-white font-medium">{fmtCurrency(c.total_claimed_amount)}</td>
                     <td className="px-4 py-3">
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLOR[c.status]}`}>{STATUS_LABEL[c.status]}</span>
+                      {violations > 0 && <span className="text-[10px] bg-red-500/20 text-red-300 px-2 py-0.5 rounded-full">{violations} violation(s)</span>}
                     </td>
-                    <td className="px-4 py-3 text-right font-mono">{fmtCurrency(c.total_claimed_amount)}</td>
-                    <td className="px-4 py-3">
-                      {violations > 0 && <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full">{violations} violation(s)</span>}
-                    </td>
-                    <td className="px-4 py-3 space-x-2">
-                      <button onClick={() => handleApprove(c.expense_claim_id)} className="text-xs text-green-600 hover:underline">Approve</button>
-                      <button onClick={() => handleReject(c.expense_claim_id)} className="text-xs text-red-500 hover:underline">Reject</button>
-                      <Link href={`/dashboard/expenses/claims/${c.expense_claim_id}`} className="text-xs text-gray-500 hover:underline">Detail</Link>
+                    <td className="px-4 py-3 space-x-3">
+                      <button onClick={() => handleApprove(c.expense_claim_id)} className="text-xs text-emerald-400 hover:text-emerald-300">Approve</button>
+                      <button onClick={() => handleReject(c.expense_claim_id)} className="text-xs text-red-400 hover:text-red-300">Reject</button>
+                      <Link href={`/dashboard/expenses/claims/${c.expense_claim_id}`} className="text-xs text-slate-500 hover:text-slate-400">Detail</Link>
                     </td>
                   </tr>
                 );
               })}
-              {claims.length === 0 && (
-                <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400">No claims in queue</td></tr>
-              )}
+              {claims.length === 0 && <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-600">No claims in queue</td></tr>}
             </tbody>
           </table>
         </div>
