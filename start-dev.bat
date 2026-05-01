@@ -139,10 +139,30 @@ echo.
 echo [4/5] Starting services with Docker Compose...
 echo.
 
-docker compose --env-file .env.development up -d --build
+:: Start DB first (it may already be running from a previous session)
+docker compose --env-file .env.development up -d db
+timeout /t 3 /nobreak >nul
+
+:: Build and force-recreate the backend so it always starts fresh with latest code
+docker compose --env-file .env.development build backend
 if errorlevel 1 (
     echo.
-    echo  ERROR: docker compose failed. See output above.
+    echo  ERROR: docker compose build failed. See output above.
+    goto :error
+)
+
+docker compose --env-file .env.development up -d --force-recreate backend
+if errorlevel 1 (
+    echo.
+    echo  ERROR: docker compose failed to start backend. See output above.
+    goto :error
+)
+
+:: Start frontend (no force-recreate needed — it hot-reloads)
+docker compose --env-file .env.development up -d frontend
+if errorlevel 1 (
+    echo.
+    echo  ERROR: docker compose failed to start frontend. See output above.
     goto :error
 )
 
@@ -169,21 +189,26 @@ echo.
 if !DB_READY!==1 ( echo  PostgreSQL is up. ) else ( echo  WARNING: PostgreSQL not ready yet, continuing... )
 
 :: --- Backend ---
-echo  Waiting for Backend API...
+echo  Waiting for Backend API (health check)...
 set BACKEND_READY=0
-for /l %%i in (1,1,45) do (
+for /l %%i in (1,1,60) do (
     if !BACKEND_READY!==0 (
         curl -s -o nul -w "%%{http_code}" http://localhost:8000/health 2>nul | find "200" >nul 2>&1
         if not errorlevel 1 (
             set BACKEND_READY=1
         ) else (
-            netstat -an 2>nul | find "0.0.0.0:8000" >nul 2>&1
-            if not errorlevel 1 ( set BACKEND_READY=1 ) else ( <nul set /p "=." & timeout /t 2 /nobreak >nul )
+            <nul set /p "=." & timeout /t 2 /nobreak >nul
         )
     )
 )
 echo.
-if !BACKEND_READY!==1 ( echo  Backend is up. ) else ( echo  WARNING: Backend not ready yet, continuing... )
+if !BACKEND_READY!==0 (
+    echo  WARNING: Backend health check timed out. Trying to continue...
+) else (
+    echo  Backend is up.
+    :: Brief stability pause — lets uvicorn finish any in-progress reload
+    timeout /t 3 /nobreak >nul
+)
 
 :: --- Frontend ---
 echo  Waiting for Frontend...

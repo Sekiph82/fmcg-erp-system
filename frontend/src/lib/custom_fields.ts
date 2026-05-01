@@ -1,6 +1,7 @@
-const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
-const BASE = `${API}/api/v1/custom-fields`;
-const VALUES_BASE = `${API}/api/v1/custom-fields/values`;
+import { apiClient } from "./api";
+
+const BASE = "/api/v1/custom-fields";
+const VALUES_BASE = "/api/v1/custom-fields/values";
 
 export type FieldType =
   | "text" | "long_text" | "number" | "decimal" | "currency"
@@ -107,69 +108,50 @@ export interface CFAIRec {
   created_at: string;
 }
 
-async function api<T>(path: string, base = BASE, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${base}${path}`, {
-    headers: { "Content-Type": "application/json" },
-    ...init,
-  });
-  if (!res.ok) throw new Error(await res.text());
-  return res.json();
-}
-
-function qs(params?: Record<string, string | boolean | undefined>): string {
-  if (!params) return "";
-  const p = new URLSearchParams();
-  for (const [k, v] of Object.entries(params)) {
-    if (v !== undefined && v !== null) p.set(k, String(v));
-  }
-  const s = p.toString();
-  return s ? `?${s}` : "";
-}
-
 export const customFieldsApi = {
   listFields: (params?: { entity_type?: string; active_only?: boolean }) =>
-    api<CustomFieldDefinition[]>(`${qs(params)}`),
+    apiClient.get<CustomFieldDefinition[]>(BASE, { params }).then(r => r.data),
   createField: (data: object) =>
-    api<CustomFieldDefinition>("", BASE, { method: "POST", body: JSON.stringify(data) }),
-  getField: (id: string) => api<CustomFieldDefinition>(`/${id}`),
+    apiClient.post<CustomFieldDefinition>(BASE, data).then(r => r.data),
+  getField: (id: string) =>
+    apiClient.get<CustomFieldDefinition>(`${BASE}/${id}`).then(r => r.data),
   updateField: (id: string, data: object) =>
-    api<CustomFieldDefinition>(`/${id}`, BASE, { method: "PATCH", body: JSON.stringify(data) }),
+    apiClient.patch<CustomFieldDefinition>(`${BASE}/${id}`, data).then(r => r.data),
   disableField: (id: string) =>
-    api<CustomFieldDefinition>(`/${id}/disable`, BASE, { method: "POST" }),
+    apiClient.post<CustomFieldDefinition>(`${BASE}/${id}/disable`).then(r => r.data),
   addOption: (id: string, data: object) =>
-    api<{ ok: boolean }>(`/${id}/options`, BASE, { method: "POST", body: JSON.stringify(data) }),
+    apiClient.post<{ ok: boolean }>(`${BASE}/${id}/options`, data).then(r => r.data),
   removeOption: (optionId: string) =>
-    api<{ ok: boolean }>(`/options/${optionId}`, BASE, { method: "DELETE" }),
+    apiClient.delete<{ ok: boolean }>(`${BASE}/options/${optionId}`).then(r => r.data),
 
   getEntityFields: (entityType: string) =>
-    api<CustomFieldDefinition[]>(`/entity/${entityType}`),
-  getMetadata: () => api<Record<string, unknown>>("/metadata"),
-  getUsageStats: () => api<UsageStat[]>("/usage-stats"),
+    apiClient.get<CustomFieldDefinition[]>(`${BASE}/entity/${entityType}`).then(r => r.data),
+  getMetadata: () =>
+    apiClient.get<Record<string, unknown>>(`${BASE}/metadata`).then(r => r.data),
+  getUsageStats: () =>
+    apiClient.get<UsageStat[]>(`${BASE}/usage-stats`).then(r => r.data),
 
   getValues: (entityType: string, entityId: string) =>
-    api<FieldValueOut[]>(`/${entityType}/${entityId}`, VALUES_BASE),
+    apiClient.get<FieldValueOut[]>(`${VALUES_BASE}/${entityType}/${entityId}`).then(r => r.data),
   setValues: (entityType: string, entityId: string, values: Record<string, unknown>, updatedBy = "User") =>
-    api<FieldValueOut[]>(`/${entityType}/${entityId}`, VALUES_BASE, {
-      method: "POST", body: JSON.stringify({ values, updated_by: updatedBy }),
-    }),
+    apiClient.post<FieldValueOut[]>(`${VALUES_BASE}/${entityType}/${entityId}`, { values, updated_by: updatedBy }).then(r => r.data),
   validateValues: (entityType: string, entityId: string, values: Record<string, unknown>) =>
-    api<ValidationResult>(`/${entityType}/${entityId}/validate`, VALUES_BASE, {
-      method: "POST", body: JSON.stringify({ values }),
-    }),
+    apiClient.post<ValidationResult>(`${VALUES_BASE}/${entityType}/${entityId}/validate`, { values }).then(r => r.data),
   getMissingRequired: (entityType: string) =>
-    api<{ entity_id: string; field_code: string; field_label: string }[]>(
-      `/${entityType}/missing-required`, VALUES_BASE
-    ),
+    apiClient.get<{ entity_id: string; field_code: string; field_label: string }[]>(
+      `${VALUES_BASE}/${entityType}/missing-required`
+    ).then(r => r.data),
 
-  listAIRecs: () => api<CFAIRec[]>("/ai/recs"),
+  listAIRecs: () =>
+    apiClient.get<CFAIRec[]>(`${BASE}/ai/recs`).then(r => r.data),
   runFieldDesignAssistant: () =>
-    api<{ generated: number }>("/ai/run/field-design-assistant", BASE, { method: "POST" }),
+    apiClient.post<{ generated: number }>(`${BASE}/ai/run/field-design-assistant`).then(r => r.data),
   runDataQualityMonitor: () =>
-    api<{ generated: number }>("/ai/run/data-quality-monitor", BASE, { method: "POST" }),
+    apiClient.post<{ generated: number }>(`${BASE}/ai/run/data-quality-monitor`).then(r => r.data),
   runReportingAssistant: () =>
-    api<{ generated: number }>("/ai/run/reporting-assistant", BASE, { method: "POST" }),
+    apiClient.post<{ generated: number }>(`${BASE}/ai/run/reporting-assistant`).then(r => r.data),
   ackAIRec: (id: string, data: { status: CFAIRecStatus }) =>
-    api<CFAIRec>(`/ai/recs/${id}`, BASE, { method: "PATCH", body: JSON.stringify(data) }),
+    apiClient.patch<CFAIRec>(`${BASE}/ai/recs/${id}`, data).then(r => r.data),
 };
 
 export const ENTITY_LABEL: Record<EntityType, string> = {

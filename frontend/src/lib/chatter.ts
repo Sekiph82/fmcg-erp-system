@@ -1,5 +1,6 @@
-const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
-const BASE = `${API}/api/v1/chatter`;
+import { apiClient } from "./api";
+
+const BASE = "/api/v1/chatter";
 
 export type ReferenceType =
   | "sales_order" | "invoice" | "customer" | "purchase_order"
@@ -86,71 +87,50 @@ export interface CTAIRec {
   created_at: string;
 }
 
-async function api<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, {
-    headers: { "Content-Type": "application/json" },
-    ...init,
-  });
-  if (!res.ok) throw new Error(await res.text());
-  return res.json();
-}
-
-function qs(params?: Record<string, string | number | undefined>): string {
-  if (!params) return "";
-  const p = new URLSearchParams();
-  for (const [k, v] of Object.entries(params)) {
-    if (v !== undefined && v !== "" && v !== null) p.set(k, String(v));
-  }
-  const s = p.toString();
-  return s ? `?${s}` : "";
-}
-
 export const chatterApi = {
   listActivities: (params?: {
     reference_type?: string; reference_id?: string;
     activity_type?: string; created_by?: string;
     search?: string; page?: number; per_page?: number;
-  }) => api<ActivityPage>(`/activities${qs(params)}`),
+  }) => apiClient.get<ActivityPage>(`${BASE}/activities`, { params }).then(r => r.data),
 
   createActivity: (data: object) =>
-    api<ActivityOut>("/activities", { method: "POST", body: JSON.stringify(data) }),
+    apiClient.post<ActivityOut>(`${BASE}/activities`, data).then(r => r.data),
 
-  getActivity: (id: string) => api<ActivityOut>(`/activities/${id}`),
+  getActivity: (id: string) =>
+    apiClient.get<ActivityOut>(`${BASE}/activities/${id}`).then(r => r.data),
 
   pinActivity: (id: string) =>
-    api<ActivityOut>(`/activities/${id}/pin`, { method: "POST" }),
+    apiClient.post<ActivityOut>(`${BASE}/activities/${id}/pin`).then(r => r.data),
 
-  getFeed: (limit = 50) => api<ActivityOut[]>(`/feed?limit=${limit}`),
+  getFeed: (limit = 50) =>
+    apiClient.get<ActivityOut[]>(`${BASE}/feed`, { params: { limit } }).then(r => r.data),
 
-  getStats: () => api<ChatterStats>("/stats"),
+  getStats: () =>
+    apiClient.get<ChatterStats>(`${BASE}/stats`).then(r => r.data),
 
   postComment: (activityId: string, data: object) =>
-    api<ActivityOut>(`/activities/${activityId}/comment`, {
-      method: "POST", body: JSON.stringify(data),
-    }),
+    apiClient.post<ActivityOut>(`${BASE}/activities/${activityId}/comment`, data).then(r => r.data),
 
   editComment: (commentId: string, message: string) =>
-    api<CommentOut>(`/comments/${commentId}`, {
-      method: "PATCH", body: JSON.stringify({ message }),
-    }),
+    apiClient.patch<CommentOut>(`${BASE}/comments/${commentId}`, { message }).then(r => r.data),
 
   deleteComment: (commentId: string) =>
-    api<{ ok: boolean }>(`/comments/${commentId}`, { method: "DELETE" }),
+    apiClient.delete<{ ok: boolean }>(`${BASE}/comments/${commentId}`).then(r => r.data),
 
   addAttachment: (activityId: string, data: object) =>
-    api<ActivityOut>(`/activities/${activityId}/attach`, {
-      method: "POST", body: JSON.stringify(data),
-    }),
+    apiClient.post<ActivityOut>(`${BASE}/activities/${activityId}/attach`, data).then(r => r.data),
 
-  listAIRecs: () => api<CTAIRec[]>("/ai/recs"),
+  listAIRecs: () =>
+    apiClient.get<CTAIRec[]>(`${BASE}/ai/recs`).then(r => r.data),
   runActivitySummarizer: () =>
-    api<{ generated: number }>("/ai/run/activity-summarizer", { method: "POST" }),
+    apiClient.post<{ generated: number }>(`${BASE}/ai/run/activity-summarizer`).then(r => r.data),
   runFollowUpAssistant: () =>
-    api<{ generated: number }>("/ai/run/follow-up-assistant", { method: "POST" }),
+    apiClient.post<{ generated: number }>(`${BASE}/ai/run/follow-up-assistant`).then(r => r.data),
   runInsightExtractor: () =>
-    api<{ generated: number }>("/ai/run/insight-extractor", { method: "POST" }),
+    apiClient.post<{ generated: number }>(`${BASE}/ai/run/insight-extractor`).then(r => r.data),
   ackAIRec: (id: string, data: { status: CTAIRecStatus }) =>
-    api<CTAIRec>(`/ai/recs/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+    apiClient.patch<CTAIRec>(`${BASE}/ai/recs/${id}`, data).then(r => r.data),
 };
 
 export const TYPE_ICON: Record<ActivityType, string> = {

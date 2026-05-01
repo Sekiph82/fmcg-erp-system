@@ -1,5 +1,6 @@
-const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
-const BASE = `${API}/api/v1/calendar`;
+import { apiClient } from "./api";
+
+const BASE = "/api/v1/calendar";
 
 export type EventType = "meeting" | "task" | "booking" | "production" | "maintenance" | "other";
 export type EventStatus = "scheduled" | "completed" | "cancelled";
@@ -80,66 +81,47 @@ export interface CAIRec {
   created_at: string;
 }
 
-async function api<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, {
-    headers: { "Content-Type": "application/json" },
-    ...init,
-  });
-  if (!res.ok) throw new Error(await res.text());
-  return res.json();
-}
-
-function qs(params?: Record<string, string | undefined>): string {
-  if (!params) return "";
-  const p = new URLSearchParams();
-  for (const [k, v] of Object.entries(params)) {
-    if (v !== undefined && v !== "") p.set(k, v);
-  }
-  const s = p.toString();
-  return s ? `?${s}` : "";
-}
-
 export const calendarApi = {
   listResources: (params?: { resource_type?: string; status?: string }) =>
-    api<CalendarResource[]>(`/resources${qs(params)}`),
+    apiClient.get<CalendarResource[]>(`${BASE}/resources`, { params }).then(r => r.data),
   createResource: (data: object) =>
-    api<CalendarResource>("/resources", { method: "POST", body: JSON.stringify(data) }),
+    apiClient.post<CalendarResource>(`${BASE}/resources`, data).then(r => r.data),
   updateResource: (id: string, data: object) =>
-    api<CalendarResource>(`/resources/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+    apiClient.patch<CalendarResource>(`${BASE}/resources/${id}`, data).then(r => r.data),
 
   listEvents: (params?: { start?: string; end?: string; event_type?: string; status?: string }) =>
-    api<CalendarEvent[]>(`/events${qs(params)}`),
+    apiClient.get<CalendarEvent[]>(`${BASE}/events`, { params }).then(r => r.data),
   createEvent: (data: object) =>
-    api<CalendarEvent>("/events", { method: "POST", body: JSON.stringify(data) }),
-  getEvent: (id: string) => api<CalendarEvent>(`/events/${id}`),
+    apiClient.post<CalendarEvent>(`${BASE}/events`, data).then(r => r.data),
+  getEvent: (id: string) =>
+    apiClient.get<CalendarEvent>(`${BASE}/events/${id}`).then(r => r.data),
   updateEvent: (id: string, data: object) =>
-    api<CalendarEvent>(`/events/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+    apiClient.patch<CalendarEvent>(`${BASE}/events/${id}`, data).then(r => r.data),
   cancelEvent: (id: string) =>
-    api<{ ok: boolean }>(`/events/${id}`, { method: "DELETE" }),
+    apiClient.delete<{ ok: boolean }>(`${BASE}/events/${id}`).then(r => r.data),
 
   listBookings: (params?: { resource_id?: string; start?: string; end?: string; status?: string }) =>
-    api<ResourceBooking[]>(`/bookings${qs(params)}`),
+    apiClient.get<ResourceBooking[]>(`${BASE}/bookings`, { params }).then(r => r.data),
   createBooking: (data: object) =>
-    api<ResourceBooking>("/bookings", { method: "POST", body: JSON.stringify(data) }),
+    apiClient.post<ResourceBooking>(`${BASE}/bookings`, data).then(r => r.data),
   confirmBooking: (id: string) =>
-    api<ResourceBooking>(`/bookings/${id}/confirm`, { method: "POST" }),
+    apiClient.post<ResourceBooking>(`${BASE}/bookings/${id}/confirm`).then(r => r.data),
   cancelBooking: (id: string) =>
-    api<{ ok: boolean }>(`/bookings/${id}`, { method: "DELETE" }),
+    apiClient.delete<{ ok: boolean }>(`${BASE}/bookings/${id}`).then(r => r.data),
 
   checkAvailability: (data: object) =>
-    api<{ available: boolean; conflicts: number }>("/availability/check", {
-      method: "POST", body: JSON.stringify(data),
-    }),
+    apiClient.post<{ available: boolean; conflicts: number }>(`${BASE}/availability/check`, data).then(r => r.data),
   getAvailableSlots: (data: object) =>
-    api<AvailabilitySlot[]>("/availability/slots", { method: "POST", body: JSON.stringify(data) }),
+    apiClient.post<AvailabilitySlot[]>(`${BASE}/availability/slots`, data).then(r => r.data),
 
-  listAIRecs: () => api<CAIRec[]>("/ai/recs"),
+  listAIRecs: () =>
+    apiClient.get<CAIRec[]>(`${BASE}/ai/recs`).then(r => r.data),
   runScheduleOptimizer: () =>
-    api<{ generated: number }>("/ai/run/schedule-optimizer", { method: "POST" }),
+    apiClient.post<{ generated: number }>(`${BASE}/ai/run/schedule-optimizer`).then(r => r.data),
   runConflictResolver: () =>
-    api<{ generated: number }>("/ai/run/conflict-resolver", { method: "POST" }),
+    apiClient.post<{ generated: number }>(`${BASE}/ai/run/conflict-resolver`).then(r => r.data),
   ackAIRec: (id: string, data: { status: CAIRecStatus }) =>
-    api<CAIRec>(`/ai/recs/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+    apiClient.patch<CAIRec>(`${BASE}/ai/recs/${id}`, data).then(r => r.data),
 };
 
 export const EVENT_COLOR: Record<EventType, string> = {
