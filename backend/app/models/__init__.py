@@ -474,8 +474,8 @@ from app.models.custom_fields import (
 # ── Chatter / Activity Timeline ───────────────────────────────────────────────
 from app.models.chatter import (
     ReferenceType, ActivityType, Visibility,
-    CTAIAgentType, CTAIRecStatus,
-    Activity, ActivityComment, ActivityAttachment, Mention, CTAIRecommendation,
+    ChatterAIAgentType, ChatterAIRecStatus,
+    Activity, ActivityComment, ActivityAttachment, Mention, ChatterAIRecommendation,
 )
 
 # ── Calendar & Resource Scheduling ───────────────────────────────────────────

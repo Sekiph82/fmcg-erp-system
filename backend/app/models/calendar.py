@@ -7,7 +7,7 @@ from sqlalchemy import (
     ForeignKey, Text, Enum as SAEnum, JSON, Float,
 )
 from sqlalchemy.orm import relationship
-from app.db.base_class import Base
+from app.db.base import Base
 
 
 class EventType(str, enum.Enum):

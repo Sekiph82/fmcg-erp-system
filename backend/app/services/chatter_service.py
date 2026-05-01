@@ -6,8 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_, or_
 from sqlalchemy.orm import selectinload
 from app.models.chatter import (
-    Activity, ActivityComment, ActivityAttachment, Mention, CTAIRecommendation,
-    ReferenceType, ActivityType, Visibility, CTAIAgentType, CTAIRecStatus,
+    Activity, ActivityComment, ActivityAttachment, Mention, ChatterAIRecommendation,
+    ReferenceType, ActivityType, Visibility, ChatterAIAgentType, ChatterAIRecStatus,
 )
 from app.schemas.chatter import (
     ActivityCreate, ActivityPage, CommentCreate, AttachmentCreate, CTAIRecAck,
@@ -261,16 +261,16 @@ async def add_attachment(db: AsyncSession, activity_id: str, data: AttachmentCre
 
 # ── AI Agents ─────────────────────────────────────────────────────────────────
 
-async def list_ai_recs(db: AsyncSession) -> List[CTAIRecommendation]:
+async def list_ai_recs(db: AsyncSession) -> List[ChatterAIRecommendation]:
     result = await db.execute(
-        select(CTAIRecommendation).order_by(CTAIRecommendation.created_at.desc())
+        select(ChatterAIRecommendation).order_by(ChatterAIRecommendation.created_at.desc())
     )
     return result.scalars().all()
 
 
-async def ack_ai_rec(db: AsyncSession, rec_id: str, data: CTAIRecAck) -> CTAIRecommendation:
+async def ack_ai_rec(db: AsyncSession, rec_id: str, data: CTAIRecAck) -> ChatterAIRecommendation:
     result = await db.execute(
-        select(CTAIRecommendation).where(CTAIRecommendation.rec_id == rec_id)
+        select(ChatterAIRecommendation).where(ChatterAIRecommendation.rec_id == rec_id)
     )
     r = result.scalar_one_or_none()
     if not r:
@@ -300,8 +300,8 @@ async def run_activity_summarizer(db: AsyncSession) -> int:
         )
         type_counts = {str(r[0].value if hasattr(r[0], 'value') else r[0]): r[1] for r in type_result.all()}
         summary = ", ".join(f"{k}: {v}" for k, v in list(type_counts.items())[:3])
-        recs.append(CTAIRecommendation(
-            agent_type=CTAIAgentType.ACTIVITY_SUMMARIZER,
+        recs.append(ChatterAIRecommendation(
+            agent_type=ChatterAIAgentType.ACTIVITY_SUMMARIZER,
             reference_type=str(ref_type.value if hasattr(ref_type, 'value') else ref_type),
             reference_id=ref_id,
             title=f"High-activity record: {cnt} events",
@@ -335,8 +335,8 @@ async def run_follow_up_assistant(db: AsyncSession) -> int:
             continue
         seen.add(key)
         age_h = round((datetime.utcnow() - m.created_at).total_seconds() / 3600)
-        recs.append(CTAIRecommendation(
-            agent_type=CTAIAgentType.FOLLOW_UP_ASSISTANT,
+        recs.append(ChatterAIRecommendation(
+            agent_type=ChatterAIAgentType.FOLLOW_UP_ASSISTANT,
             title=f"Unanswered mention: @{m.mentioned_user}",
             body=(
                 f"@{m.mentioned_user} was mentioned {age_h}h ago but has not been notified or responded. "
@@ -376,8 +376,8 @@ async def run_insight_extractor(db: AsyncSession) -> int:
     recs = []
     if len(issue_msgs) >= 3:
         sample = " | ".join(issue_msgs[:3])
-        recs.append(CTAIRecommendation(
-            agent_type=CTAIAgentType.INSIGHT_EXTRACTOR,
+        recs.append(ChatterAIRecommendation(
+            agent_type=ChatterAIAgentType.INSIGHT_EXTRACTOR,
             title=f"{len(issue_msgs)} issue-related comments in the last 7 days",
             body=(
                 f"Found {len(issue_msgs)} comments containing problem-related keywords "
@@ -397,8 +397,8 @@ async def run_insight_extractor(db: AsyncSession) -> int:
     from app.models.chatter import ReferenceType as RT
     for ref_type in RT:
         if ref_type not in active_types and ref_type != RT.OTHER:
-            recs.append(CTAIRecommendation(
-                agent_type=CTAIAgentType.INSIGHT_EXTRACTOR,
+            recs.append(ChatterAIRecommendation(
+                agent_type=ChatterAIAgentType.INSIGHT_EXTRACTOR,
                 title=f"No activity logged for {ref_type.value} in 7 days",
                 body=(
                     f"The {ref_type.value} module has had no chatter activity in the past 7 days. "

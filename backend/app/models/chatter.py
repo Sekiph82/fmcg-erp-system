@@ -7,7 +7,7 @@ from sqlalchemy import (
     ForeignKey, Text, Enum as SAEnum, JSON,
 )
 from sqlalchemy.orm import relationship
-from app.db.base_class import Base
+from app.db.base import Base
 
 
 class ReferenceType(str, enum.Enum):
@@ -37,13 +37,13 @@ class Visibility(str, enum.Enum):
     GLOBAL = "global"
 
 
-class CTAIAgentType(str, enum.Enum):
+class ChatterAIAgentType(str, enum.Enum):
     ACTIVITY_SUMMARIZER = "activity_summarizer"
     FOLLOW_UP_ASSISTANT = "follow_up_assistant"
     INSIGHT_EXTRACTOR = "insight_extractor"
 
 
-class CTAIRecStatus(str, enum.Enum):
+class ChatterAIRecStatus(str, enum.Enum):
     PENDING = "pending"
     ACKNOWLEDGED = "acknowledged"
     ACTIONED = "actioned"
@@ -129,17 +129,17 @@ class Mention(Base):
     activity = relationship("Activity", back_populates="mentions", foreign_keys=[activity_id])
 
 
-class CTAIRecommendation(Base):
+class ChatterAIRecommendation(Base):
     __tablename__ = "chatter_ai_recommendations"
 
     rec_id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    agent_type = Column(SAEnum(CTAIAgentType), nullable=False)
+    agent_type = Column(SAEnum(ChatterAIAgentType), nullable=False)
     reference_type = Column(String(50), nullable=True)
     reference_id = Column(String(36), nullable=True)
     title = Column(String(300))
     body = Column(Text)
     score = Column(Float, nullable=True)
-    status = Column(SAEnum(CTAIRecStatus), default=CTAIRecStatus.PENDING)
+    status = Column(SAEnum(ChatterAIRecStatus), default=ChatterAIRecStatus.PENDING)
     rec_metadata = Column(JSON, default=dict)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

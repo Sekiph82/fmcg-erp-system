@@ -4,7 +4,7 @@ from datetime import datetime
 from enum import Enum as PyEnum
 from sqlalchemy import (
     Column, String, Boolean, DateTime, Text, Integer, Enum,
-    UniqueConstraint,
+    UniqueConstraint, ForeignKey,
 )
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
@@ -119,7 +119,7 @@ class ReportField(Base):
     __tablename__ = "rb_report_fields"
 
     report_field_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    report_id = Column(UUID(as_uuid=True), nullable=False)
+    report_id = Column(UUID(as_uuid=True), ForeignKey("rb_report_definitions.report_id", ondelete="CASCADE"), nullable=False)
     field_path = Column(String(200), nullable=False)
     alias = Column(String(200), nullable=True)
     data_type = Column(String(50), default="string")
@@ -137,7 +137,7 @@ class ReportFilter(Base):
     __tablename__ = "rb_report_filters"
 
     filter_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    report_id = Column(UUID(as_uuid=True), nullable=False)
+    report_id = Column(UUID(as_uuid=True), ForeignKey("rb_report_definitions.report_id", ondelete="CASCADE"), nullable=False)
     field_path = Column(String(200), nullable=False)
     operator = Column(Enum(FilterOperator), nullable=False)
     value = Column(Text, nullable=True)
@@ -152,7 +152,7 @@ class ReportCalculatedField(Base):
     __tablename__ = "rb_calculated_fields"
 
     calc_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    report_id = Column(UUID(as_uuid=True), nullable=False)
+    report_id = Column(UUID(as_uuid=True), ForeignKey("rb_report_definitions.report_id", ondelete="CASCADE"), nullable=False)
     expression = Column(Text, nullable=False)
     alias = Column(String(200), nullable=False)
     data_type = Column(String(50), default="number")
@@ -165,7 +165,7 @@ class ReportSchedule(Base):
     __tablename__ = "rb_report_schedules"
 
     schedule_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    report_id = Column(UUID(as_uuid=True), nullable=False)
+    report_id = Column(UUID(as_uuid=True), ForeignKey("rb_report_definitions.report_id", ondelete="CASCADE"), nullable=False)
     frequency = Column(Enum(ScheduleFrequency), nullable=False)
     run_time = Column(String(10), nullable=True)
     recipients = Column(Text, nullable=True)
@@ -199,8 +199,8 @@ class DashboardWidget(Base):
     __tablename__ = "rb_dashboard_widgets"
 
     widget_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    dashboard_id = Column(UUID(as_uuid=True), nullable=False)
-    report_id = Column(UUID(as_uuid=True), nullable=True)
+    dashboard_id = Column(UUID(as_uuid=True), ForeignKey("rb_dashboards.dashboard_id", ondelete="CASCADE"), nullable=False)
+    report_id = Column(UUID(as_uuid=True), ForeignKey("rb_report_definitions.report_id", ondelete="SET NULL"), nullable=True)
     widget_title = Column(String(200), nullable=True)
     chart_type = Column(Enum(ChartType), default=ChartType.TABLE)
     position = Column(Integer, default=0)

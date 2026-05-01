@@ -4,7 +4,7 @@ from typing import Optional, List
 from pydantic import BaseModel
 from app.models.chatter import (
     ReferenceType, ActivityType, Visibility,
-    CTAIAgentType, CTAIRecStatus,
+    ChatterAIAgentType, ChatterAIRecStatus,
 )
 
 
@@ -96,20 +96,20 @@ class AttachmentCreate(BaseModel):
 
 class CTAIRecOut(BaseModel):
     rec_id: str
-    agent_type: CTAIAgentType
+    agent_type: ChatterAIAgentType
     reference_type: Optional[str] = None
     reference_id: Optional[str] = None
     title: str
     body: str
     score: Optional[float] = None
-    status: CTAIRecStatus
+    status: ChatterAIRecStatus
     rec_metadata: dict = {}
     created_at: datetime
     model_config = {"from_attributes": True}
 
 
 class CTAIRecAck(BaseModel):
-    status: CTAIRecStatus
+    status: ChatterAIRecStatus
 
 
 ActivityOut.model_rebuild()
