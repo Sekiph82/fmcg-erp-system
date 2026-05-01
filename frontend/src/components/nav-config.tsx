@@ -391,8 +391,11 @@ export const NAV_CONFIG: NavEntry[] = [
     items: [
       { label: "Sales Orders",      href: "/dashboard/sales/orders",       permission: "sales.view" },
       { label: "Field Sales",       href: "/dashboard/sales/field-sales",  permission: "sales.view" },
-      { label: "Distributors",      href: "/dashboard/sales/distributors", permission: "sales.view" },
-      { label: "Pricing & Promos",  href: "/dashboard/sales/pricing",      permission: "sales.view" },
+      { label: "Distributors",      href: "/dashboard/sales/distributors",         permission: "sales.view" },
+      { label: "Secondary Sales",   href: "/dashboard/secondary-sales",            permission: "sales.view" },
+      { label: "Sell-Through",      href: "/dashboard/secondary-sales/analysis",   permission: "sales.view" },
+      { label: "Dist. Inventory",   href: "/dashboard/secondary-sales/inventory",  permission: "sales.view" },
+      { label: "Pricing & Promos",  href: "/dashboard/sales/pricing",              permission: "sales.view" },
       { label: "Delivery",          href: "/dashboard/sales/delivery",     permission: "sales.view" },
       { label: "Shipments",         href: "/dashboard/sales/shipments",    permission: "sales.view" },
       { label: "Proof of Delivery", href: "/dashboard/sales/pod",          permission: "sales.view" },

@@ -46,6 +46,7 @@ from app.api.v1.endpoints import (
     calendar,
     chatter,
     custom_fields,
+    secondary_sales,
 )
 
 api_router = APIRouter()
@@ -221,3 +222,5 @@ api_router.include_router(calendar.router, prefix="/calendar", tags=["calendar"]
 api_router.include_router(chatter.router, prefix="/chatter", tags=["chatter"])
 # ── Custom Fields ─────────────────────────────────────────────────────────────
 api_router.include_router(custom_fields.router, prefix="/custom-fields", tags=["custom-fields"])
+# ── Secondary Sales / Distributor Sell-Through ────────────────────────────────
+api_router.include_router(secondary_sales.router, prefix="/secondary-sales", tags=["secondary-sales"])

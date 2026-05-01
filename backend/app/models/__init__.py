@@ -50,6 +50,9 @@ from app.models.quality import (
 
 # ── Distribution layer (must load before sales) ───────────────────────────────
 from app.models.distribution import Distributor, DistributorPricingTier
+from app.models.secondary_sales import (
+    RetailerMaster, SecondarySalesHeader, SecondarySalesLine, DistributorInventorySnapshot,
+)
 from app.models.field_sales import SalesRep, SalesRoute, RouteStop, DailyTarget, VisitLog
 
 # ── Sales ─────────────────────────────────────────────────────────────────────

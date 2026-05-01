@@ -1,12 +1,28 @@
 # TASKS — FMCG ERP (Kenya) · Production Module
 
 ## Current Phase
-Phase 7 — Putaway Rules ✅ COMPLETED
+Phase 7 — Secondary Sales / Distributor Sell-Through ✅ COMPLETED
 
 ## In Progress
 (none)
 
-## Completed in Last Run
+## Completed in Last Run (Prompt 49 — Secondary Sales)
+- Created `backend/app/models/secondary_sales.py` — RetailerMaster, SecondarySalesHeader, SecondarySalesLine, DistributorInventorySnapshot + 3 enums
+- Created `backend/app/schemas/secondary_sales.py` — full Pydantic schema set
+- Created `backend/app/crud/secondary_sales.py` — CRUD for all 4 models, upsert snapshot
+- Created `backend/app/services/secondary_sales_service.py` — upload+validation engine, sell-through analysis, distributor/product performance, 3 AI agents (demand signal, distributor risk, promotion impact)
+- Created `backend/app/api/v1/endpoints/secondary_sales.py` — 16 endpoints at /secondary-sales/
+- Registered `secondary_sales` in router.py under prefix /secondary-sales
+- Registered 4 new models in `models/__init__.py`
+- Created migration `c7d8e9f0a1b2_secondary_sales.py` — 4 tables + 3 enums
+- Created `frontend/src/lib/secondarySales.ts` — full API client
+- Created `frontend/src/app/dashboard/secondary-sales/page.tsx` — dashboard with 3 tabs (uploads, sell-through, performance)
+- Created `frontend/src/app/dashboard/secondary-sales/upload/page.tsx` — CSV + manual entry upload screen
+- Created `frontend/src/app/dashboard/secondary-sales/analysis/page.tsx` — sell-through analysis + promotion impact AI
+- Created `frontend/src/app/dashboard/secondary-sales/inventory/page.tsx` — distributor inventory snapshots
+- Added 4 nav links (Secondary Sales, Sell-Through, Dist. Inventory) under Sales & Distribution
+
+## Completed in Previous Run (Prompt 48 — Putaway Rules)
 - Added `PutawayRuleType`, `PutawayTaskStatus`, `LocationType` enums to `models/wms.py`
 - Added `PutawayRule`, `PutawayTask`, `PutawayExecution` models to `models/wms.py`
 - Extended `StorageLocation` with `location_type`, `current_utilization_pct` columns
@@ -32,7 +48,7 @@ Phase 7 — Putaway Rules ✅ COMPLETED
 - Added Putaway Tasks + Putaway Rules to nav-config.tsx
 
 ## Next Immediate Task
-Prompt 49 - Secondary sales / distributor sell-through
+Prompt 51 - Environmental / sustainability reporting
 
 ## Blockers
 (none)
