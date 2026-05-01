@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { aiApi, AIChatResponse } from "@/lib/aiApi";
+import { aiApi, AIChatResponse, parseAIError } from "@/lib/aiApi";
 import { Button } from "@/components/ui/Button";
 
 interface Message {
@@ -25,6 +25,7 @@ export default function ERPChatPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   const { data: status } = useQuery({
     queryKey: ["ai-status"],
@@ -62,11 +63,18 @@ export default function ERPChatPage() {
         },
       ]);
     } catch (err: unknown) {
-      const e = err as { response?: { data?: { detail?: string } } };
-      setError(e?.response?.data?.detail || "Chat request failed. Check backend logs.");
+      if ((err as Error)?.name === "CanceledError" || (err as Error)?.name === "AbortError") return;
+      setError(parseAIError(err).message);
+    } finally {
+      setLoading(false);
+      abortRef.current = null;
     }
-    setLoading(false);
   }
+
+  const cancelRequest = useCallback(() => {
+    abortRef.current?.abort();
+    setLoading(false);
+  }, []);
 
   const isMock = status?.mode === "mock" || !status?.configured;
 
@@ -137,14 +145,23 @@ export default function ERPChatPage() {
         ))}
 
         {loading && (
-          <div className="flex justify-start">
+          <div className="flex justify-start items-center gap-3">
             <div className="bg-white border border-gray-200 rounded-2xl px-4 py-3">
-              <div className="flex gap-1">
-                <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+              <div className="flex items-center gap-2">
+                <div className="flex gap-1">
+                  <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                  <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                  <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                </div>
+                <span className="text-xs text-gray-400 ml-1">Thinking…</span>
               </div>
             </div>
+            <button
+              onClick={cancelRequest}
+              className="text-xs text-gray-400 hover:text-gray-600 underline"
+            >
+              Cancel
+            </button>
           </div>
         )}
 

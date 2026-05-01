@@ -1,6 +1,8 @@
 import logging
-from fastapi import FastAPI
+import time
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from contextlib import asynccontextmanager
 
 from app.core.config import settings
@@ -48,6 +50,8 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+app.add_middleware(GZipMiddleware, minimum_size=1000)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.BACKEND_CORS_ORIGINS,
@@ -55,6 +59,18 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def add_process_time_header(request: Request, call_next):
+    t0 = time.monotonic()
+    response = await call_next(request)
+    elapsed_ms = int((time.monotonic() - t0) * 1000)
+    response.headers["X-Process-Time-Ms"] = str(elapsed_ms)
+    if elapsed_ms > 500:
+        logger.warning("SLOW %s %s → %dms", request.method, request.url.path, elapsed_ms)
+    return response
+
 
 app.include_router(api_router, prefix=settings.API_V1_STR)
 
