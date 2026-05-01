@@ -1329,12 +1329,15 @@ export const NAV_CONFIG: NavEntry[] = [
       "M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"
     ),
     items: [
-      { label: "Overview",         href: "/dashboard/hr",            permission: "hr.view" },
-      { label: "Employees",        href: "/dashboard/hr/employees",  permission: "hr.view" },
-      { label: "Shifts",           href: "/dashboard/hr/shifts",     permission: "hr.view" },
-      { label: "Attendance",       href: "/dashboard/hr/attendance", permission: "hr.view" },
-      { label: "Leave Management", href: "/dashboard/hr/leave",      permission: "hr.view" },
-      { label: "Payroll",          href: "/dashboard/hr/payroll",    permission: "hr.view" },
+      { label: "Overview",           href: "/dashboard/hr",                   permission: "hr.view" },
+      { label: "Employees",          href: "/dashboard/hr/employees",         permission: "hr.view" },
+      { label: "Shifts",             href: "/dashboard/hr/shifts",            permission: "hr.view" },
+      { label: "Attendance",         href: "/dashboard/hr/attendance",        permission: "hr.view" },
+      { label: "Leave Management",   href: "/dashboard/hr/leave",             permission: "hr.view" },
+      { label: "Payroll",            href: "/dashboard/hr/payroll",           permission: "hr.view" },
+      { label: "Kenya Payroll",      href: "/dashboard/payroll",              permission: "hr.view" },
+      { label: "Payroll Profiles",   href: "/dashboard/payroll/profiles",     permission: "hr.view" },
+      { label: "Payroll Reports",    href: "/dashboard/payroll/reports",      permission: "hr.view" },
     ],
   },
 

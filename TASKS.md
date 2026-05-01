@@ -1,12 +1,27 @@
 # TASKS — FMCG ERP (Kenya) · Production Module
 
 ## Current Phase
-Phase 7 — Environmental / Sustainability Reporting (ESG) ✅ COMPLETED
+Phase 7 — Kenya Payroll Localization / Compliance ✅ COMPLETED
 
 ## In Progress
 (none)
 
-## Completed in Last Run (Prompt 50 — ESG / Sustainability Reporting)
+## Completed in Last Run (Prompt 51 — Kenya Payroll Localization / Compliance)
+- Created `backend/app/models/payroll_ke.py` — 7 models: EmployeePayrollProfile, KeTaxBand, KeStatutoryRate, KeNhifTier, PayrollRun, KePayrollLine, Payslip + 3 enums
+- Created `backend/app/schemas/payroll_ke.py` — 15 Pydantic schemas
+- Created `backend/app/services/payroll_ke_service.py` — Kenya calculation engine: PAYE (Finance Act 2024 progressive bands), NHIF (17-tier lookup table), NSSF (6% capped), AHL Housing Levy (1.5%), seed function for default 2024 rates, payroll run lifecycle (create/calculate/approve), 4 statutory reports, 2 AI agents
+- Created `backend/app/api/v1/endpoints/payroll_ke.py` — 24 endpoints at /payroll-ke/
+- Registered in router.py under prefix /payroll-ke
+- Registered 7 new models in models/__init__.py
+- Created migration `e9f0a1b2c3d4_payroll_ke.py` — 7 tables + 3 enums
+- Created `frontend/src/lib/payrollKe.ts` — full typed API client + MONTH_NAMES/STATUS_COLORS helpers
+- Created `frontend/src/app/dashboard/payroll/page.tsx` — dashboard with runs table, KPIs, AI compliance check, create run modal
+- Created `frontend/src/app/dashboard/payroll/runs/[id]/page.tsx` — run detail: calculate, approve, payslip cards with earnings/deductions breakdown, AI anomaly tab
+- Created `frontend/src/app/dashboard/payroll/profiles/page.tsx` — employee payroll profile manager (KRA PIN, NHIF, NSSF, salary structure)
+- Created `frontend/src/app/dashboard/payroll/reports/page.tsx` — statutory reports: PAYE/NHIF/NSSF/summary with CSV export + KRA remittance notes
+- Added Kenya Payroll, Payroll Profiles, Payroll Reports to nav-config.tsx HR section
+
+## Completed in Previous Run (Prompt 50 — ESG / Sustainability Reporting)
 - Created `backend/app/models/esg.py` — ActivityData, EmissionFactor, EmissionRecord, ResourceMetric, ESGTarget + 3 enums (SourceType/12 values, EmissionScope, ESGMetricType)
 - Created `backend/app/schemas/esg.py` — 14 Pydantic schemas
 - Created `backend/app/crud/esg.py` — full CRUD: factors (with active-factor lookup by source/region/date), activities, emission records, metrics, targets
@@ -65,7 +80,7 @@ Phase 7 — Environmental / Sustainability Reporting (ESG) ✅ COMPLETED
 - Added Putaway Tasks + Putaway Rules to nav-config.tsx
 
 ## Next Immediate Task
-Prompt 51 - Kenya payroll localization / compliance
+Prompt 52 - AI Simulation / Recommendation Layer Refinement
 
 ## Blockers
 (none)

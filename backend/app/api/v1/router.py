@@ -48,6 +48,7 @@ from app.api.v1.endpoints import (
     custom_fields,
     secondary_sales,
     esg,
+    payroll_ke,
 )
 
 api_router = APIRouter()
@@ -227,3 +228,5 @@ api_router.include_router(custom_fields.router, prefix="/custom-fields", tags=["
 api_router.include_router(secondary_sales.router, prefix="/secondary-sales", tags=["secondary-sales"])
 # ── ESG / Environmental Sustainability ────────────────────────────────────────
 api_router.include_router(esg.router, prefix="/esg", tags=["esg"])
+# ── Kenya Payroll Localization ─────────────────────────────────────────────────
+api_router.include_router(payroll_ke.router, prefix="/payroll-ke", tags=["payroll-ke"])

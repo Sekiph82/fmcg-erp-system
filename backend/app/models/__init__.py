@@ -56,6 +56,10 @@ from app.models.secondary_sales import (
 from app.models.esg import (
     ActivityData, EmissionFactor, EmissionRecord, ResourceMetric, ESGTarget,
 )
+from app.models.payroll_ke import (
+    EmployeePayrollProfile, KeTaxBand, KeStatutoryRate, KeNhifTier,
+    PayrollRun, KePayrollLine, Payslip,
+)
 from app.models.field_sales import SalesRep, SalesRoute, RouteStop, DailyTarget, VisitLog
 
 # ── Sales ─────────────────────────────────────────────────────────────────────
