@@ -1,16 +1,36 @@
 # TASKS — FMCG ERP (Kenya) · Production Module
 
 ## Current Phase
-Phase 44 — Two-Factor Authentication (2FA) ✅ COMPLETED
+Phase 45 — Webhook / Event Engine ✅ COMPLETED
 
 ## Next Immediate Task
-Prompt 45 - Webhook / Event Engine
+Prompt 46 - Fleet Management (Vehicle Operations, Route Execution, Maintenance, Fuel, and Cost Control)
 
 ## In Progress
 (none)
 
 ## Blockers
 (none)
+
+---
+
+## Phase 45 — Webhook / Event Engine ✅
+
+- [x] `backend/app/models/webhook.py` — EventDefinition, EventLog, Subscription, DeliveryAttempt, InboundEndpoint; HttpMethod, AuthType, DeliveryStatus enums
+- [x] `backend/app/schemas/webhook.py` — Pydantic schemas for all flows (publish, subscribe, deliver, inbound, dashboard, report)
+- [x] `backend/app/services/webhook_service.py` — full service: seed 15 standard events, publish_event() with filter eval, HMAC signing, HTTP delivery (httpx), exponential backoff retry, dead-letter, replay, subscription CRUD, test ping, inbound signature verify, dashboard, reports, 3 AI agents
+- [x] `backend/app/api/v1/endpoints/webhooks.py` — 22 endpoints at /api/v1/webhooks/
+- [x] `backend/alembic/versions/e3f4a5b6c7d8_webhook_event_engine.py` — migration (down_revision: d2e3f4a5b6c7), 5 tables + 3 enums
+- [x] `backend/app/models/__init__.py` — webhook models registered
+- [x] `backend/app/api/v1/router.py` — /webhooks router registered
+- [x] `frontend/src/lib/webhooks.ts` — full API client + STATUS_BADGE map
+- [x] `frontend/src/app/dashboard/webhooks/page.tsx` — dashboard: KPI grid, top events, recent failures, process-queue and seed actions
+- [x] `frontend/src/app/dashboard/webhooks/definitions/page.tsx` — event definitions table with module/search filter
+- [x] `frontend/src/app/dashboard/webhooks/subscriptions/page.tsx` — subscription manager: create/test/toggle/delete with auth config
+- [x] `frontend/src/app/dashboard/webhooks/deliveries/page.tsx` — delivery log with status filter and manual retry
+- [x] `frontend/src/app/dashboard/webhooks/dead-letter/page.tsx` — dead-letter queue with bulk select + retry
+- [x] `frontend/src/app/dashboard/webhooks/inbound/page.tsx` — inbound endpoint registry with URL display
+- [x] `frontend/src/app/dashboard/webhooks/reports/page.tsx` — delivery analytics + 3 AI agent outputs
 
 ---
 

@@ -10,6 +10,10 @@ from app.models.role import Role, Permission, role_permission
 from app.models.user import User, user_role
 from app.models.audit_log import AuditLog
 from app.models.two_factor import User2FASettings, TwoFASession, RecoveryCode, TwoFAMethod, TwoFASessionStatus
+from app.models.webhook import (
+    EventDefinition, EventLog, Subscription, DeliveryAttempt, InboundEndpoint,
+    AuthType, DeliveryStatus, HttpMethod,
+)
 from app.models.master import Product, Material, Supplier, Warehouse
 from app.models.inventory import Stock, Lot, StockMovement
 from app.models.recipe import Recipe, RecipeItem, ProcessParameter
@@ -571,6 +575,9 @@ __all__ = [
     "AuditLog",
     # 2FA
     "User2FASettings", "TwoFASession", "RecoveryCode", "TwoFAMethod", "TwoFASessionStatus",
+    # Webhooks / Event Engine
+    "EventDefinition", "EventLog", "Subscription", "DeliveryAttempt", "InboundEndpoint",
+    "AuthType", "DeliveryStatus", "HttpMethod",
     "Product", "Material", "Supplier", "Warehouse",
     "Stock", "Lot", "StockMovement",
     "Recipe", "RecipeItem", "ProcessParameter",
