@@ -535,12 +535,9 @@ from app.models.training import (
     TrainingAssignment, CertificationRecord, TrainingFeedback, TRAIRecommendation,
 )
 
-# ── Moto Sales Extension ─────────────────────────────────────────────────────
-from app.models.van_sales import (
-    MpesaStkStatus, VanMpesaPayment,
-    FraudType, FraudSeverity, FraudAlertStatus, VanFraudAlert,
-    VanRiderPerformance,
-)
+# ── Moto Sales Extension (part of van_sales module) ─────────────────────────
+# Note: VanMpesaPayment, VanFraudAlert, VanRiderPerformance are defined in
+# van_sales.py and imported together with the rest of van_sales models below.
 
 # ── Contract Management ───────────────────────────────────────────────────────
 from app.models.contracts import (
@@ -551,7 +548,7 @@ from app.models.contracts import (
     ContractVersion, ContractApproval, CTAIRecommendation,
 )
 
-# ── Van Sales / Mobile POS ───────────────────────────────────────────────────
+# ── Van Sales / Mobile POS + Moto Sales Extension ────────────────────────────
 from app.models.van_sales import (
     VanStatus, TxnType, TxnStatus, PaymentStatus, PaymentMethod,
     VisitStatus, ReturnReason, ReconciliationStatus,
@@ -559,6 +556,10 @@ from app.models.van_sales import (
     Van, VanStock, VanStockMovement, VanVisit,
     VanSalesTxn, VanSalesTxnLine, VanPayment,
     VanReconciliation, VSAIRecommendation,
+    # Moto Sales Extension (same module file)
+    MpesaStkStatus, VanMpesaPayment,
+    FraudType, FraudSeverity, FraudAlertStatus, VanFraudAlert,
+    VanRiderPerformance,
 )
 
 # ── Subscription / Recurring Orders ──────────────────────────────────────────

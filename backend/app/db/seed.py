@@ -299,6 +299,42 @@ PERMISSIONS = [
     ("utilities",  "view",   "View Utilities",   "View system configs, UOM conversions, number series and currencies", False),
     ("utilities",  "edit",   "Edit Utilities",   "Edit UOM conversions and exchange rates",                           False),
     ("utilities",  "manage", "Manage Utilities", "Full admin — create/delete system configs, number series, currencies", False),
+
+    # ── AI & Intelligence ─────────────────────────────────────────────────────
+    ("ai",  "view",    "View AI",            "View AI dashboard, predictions, recommendations, logs",          False),
+    ("ai",  "create",  "Run AI",             "Generate AI predictions, recommendations, scenarios, formulations, chat", False),
+    ("ai",  "edit",    "Action AI",          "Mark AI recommendations as actioned or dismissed",               False),
+    ("ai",  "approve", "Approve AI",         "Approve AI-generated formulations and high-risk recommendations", False),
+
+    # ── Utility Management (factory infrastructure) ────────────────────────────
+    ("utility_management", "view",   "View Utility Management",   "View utility assets, meters, readings, consumption", False),
+    ("utility_management", "create", "Create Utility Management", "Add utility assets, meters, and log readings",        False),
+    ("utility_management", "edit",   "Edit Utility Management",   "Edit utility asset and meter configuration",          False),
+
+    # ── Fleet Management ──────────────────────────────────────────────────────
+    ("fleet",  "view",   "View Fleet",    "View vehicles, drivers, trips, fuel, and incidents",   False),
+    ("fleet",  "create", "Create Fleet",  "Add vehicles, drivers, and log trips",                 False),
+    ("fleet",  "edit",   "Edit Fleet",    "Edit fleet records and approve trips",                 False),
+
+    # ── Cycle Counting ────────────────────────────────────────────────────────
+    ("cycle_count", "view",    "View Cycle Count",    "View count plans, tasks, and variances",         False),
+    ("cycle_count", "create",  "Create Cycle Count",  "Create count plans and enter count results",     False),
+    ("cycle_count", "approve", "Approve Cycle Count", "Approve variances and post stock adjustments",   False),
+
+    # ── Webhook / Event Engine ────────────────────────────────────────────────
+    ("integrations", "webhooks", "Manage Webhooks",  "Create, delete, and test webhook subscriptions", False),
+
+    # ── ESG / Sustainability ──────────────────────────────────────────────────
+    ("esg",  "view",   "View ESG",    "View ESG activities, emissions, and targets",        False),
+    ("esg",  "create", "Create ESG",  "Log ESG activity data and emission records",         False),
+    ("esg",  "edit",   "Edit ESG",    "Edit ESG factors, targets, and activity records",    False),
+    ("esg",  "export", "Export ESG",  "Export ESG reports",                                 False),
+
+    # ── Kenya Payroll ─────────────────────────────────────────────────────────
+    ("payroll_ke", "view",    "View Payroll",      "View payroll runs and payslips",                      False),
+    ("payroll_ke", "create",  "Create Payroll",    "Create and calculate payroll runs",                   False),
+    ("payroll_ke", "approve", "Approve Payroll",   "Approve payroll runs for payment",                    False),
+    ("payroll_ke", "export",  "Export Payroll",    "Export statutory reports and payslips",               False),
 ]
 
 
@@ -368,6 +404,12 @@ ROLE_DEFINITIONS = {
             "integrations.view",
             "analytics.view", "analytics.export",
             "marketing_analytics.view",
+            "ai.view", "ai.create", "ai.edit", "ai.approve",
+            "utility_management.view",
+            "fleet.view",
+            "cycle_count.view",
+            "esg.view", "esg.export",
+            "payroll_ke.view",
             # Full bulk-import authority across all modules
             *_ALL_IMPORT_PERMS,
         ],
@@ -421,14 +463,16 @@ ROLE_DEFINITIONS = {
         ],
     },
     "cto": {
-        "description": "Chief Technology Officer — integrations, system config, and full import authority",
+        "description": "Chief Technology Officer — integrations, system config, AI, and full import authority",
         "permissions": [
-            "integrations.view", "integrations.edit",
+            "integrations.view", "integrations.edit", "integrations.webhooks",
             "users.view", "users.create", "users.edit",
             "roles.view", "roles.create", "roles.edit",
             "audit.view", "audit.export",
             # CTO manages system utilities (configs, UOM, number series, currencies)
             "utilities.view", "utilities.edit", "utilities.manage",
+            # Full AI access
+            "ai.view", "ai.create", "ai.edit", "ai.approve",
             # Read-only visibility across all operational modules
             "production.view", "procurement.view", "inventory.view",
             "logistics.view", "quality.view", "maintenance.view",
@@ -437,6 +481,9 @@ ROLE_DEFINITIONS = {
             "documents.view",
             "mpesa.view_transactions", "mpesa.view_payment_logs",
             "analytics.view",
+            "utility_management.view",
+            "fleet.view", "cycle_count.view",
+            "esg.view",
             # Full bulk-import authority across all modules
             *_ALL_IMPORT_PERMS,
         ],
@@ -482,7 +529,7 @@ ROLE_DEFINITIONS = {
 
     # ── Data Manager ──────────────────────────────────────────────────────────
     "data_manager": {
-        "description": "Data Manager — bulk import and template authority across all enabled modules",
+        "description": "Data Manager — bulk import, AI analytics, and template authority across all enabled modules",
         "permissions": [
             # Read access to every module (needed to validate imports)
             "inventory.view", "products.view", "materials.view",
@@ -492,6 +539,9 @@ ROLE_DEFINITIONS = {
             "hr.view", "tax.view", "users.view",
             "documents.view",
             "audit.view",
+            "analytics.view",
+            "ai.view", "ai.create",
+            "esg.view",
             # Full bulk-import authority across all modules
             *_ALL_IMPORT_PERMS,
         ],
