@@ -308,9 +308,10 @@ function CollapseToggle({ collapsed, onToggle }: { collapsed: boolean; onToggle:
 interface SidebarProps {
   mobileOpen: boolean;
   onMobileClose: () => void;
+  onOpenSearch?: () => void;
 }
 
-export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
+export function Sidebar({ mobileOpen, onMobileClose, onOpenSearch }: SidebarProps) {
   const pathname = usePathname();
   const { user, logout, hasPermission } = useAuth();
 
@@ -438,6 +439,36 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
           </>
         )}
       </div>
+
+      {/* ── Search trigger ─────────────────────────────────────────────────────── */}
+      {onOpenSearch && !collapsed && (
+        <div className="px-2 pt-2 pb-1 shrink-0">
+          <button
+            onClick={onOpenSearch}
+            className="w-full flex items-center gap-2 rounded-lg px-2.5 py-2 text-slate-500 hover:text-slate-300 hover:bg-white/[0.05] border border-white/[0.06] transition-all text-[12px] group"
+          >
+            <svg className="h-3.5 w-3.5 shrink-0 text-slate-600 group-hover:text-slate-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <span className="flex-1 text-left truncate">Search…</span>
+            <kbd className="text-[9px] font-mono bg-white/[0.04] border border-white/[0.07] rounded px-1 py-0.5 text-slate-600 shrink-0">⌘K</kbd>
+          </button>
+        </div>
+      )}
+      {onOpenSearch && collapsed && (
+        <div className="px-[7px] pt-1.5 pb-0.5 shrink-0 flex justify-center">
+          <Tooltip label="Search (Ctrl+K)">
+            <button
+              onClick={onOpenSearch}
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 hover:bg-white/[0.06] hover:text-slate-300 border border-transparent transition-all"
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </button>
+          </Tooltip>
+        </div>
+      )}
 
       {/* ── Navigation ─────────────────────────────────────────────────────────── */}
       <nav

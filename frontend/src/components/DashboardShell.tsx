@@ -3,6 +3,8 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Sidebar } from "./Sidebar";
+import { CommandPalette } from "./CommandPalette";
+import { useCommandPalette } from "@/hooks/useCommandPalette";
 import { useUnsavedChangesContext } from "@/context/UnsavedChangesContext";
 
 interface DashboardShellProps {
@@ -14,6 +16,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
   const { isDirty, confirmLeave } = useUnsavedChangesContext();
   const router = useRouter();
   const originalPushRef = useRef<typeof window.history.pushState | null>(null);
+  const { open, openPalette, closePalette, recent, recordVisit } = useCommandPalette();
 
   const openMobile = useCallback(() => setMobileOpen(true), []);
   const closeMobile = useCallback(() => setMobileOpen(false), []);
@@ -23,7 +26,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (!isDirty) return;
       e.preventDefault();
-      e.returnValue = ""; // triggers browser's native "Leave site?" dialog
+      e.returnValue = "";
     };
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
@@ -32,7 +35,6 @@ export function DashboardShell({ children }: DashboardShellProps) {
   // ── In-app navigation (Next.js SPA route changes) ────────────────────────────
   useEffect(() => {
     if (!isDirty) {
-      // Restore original pushState if we patched it
       if (originalPushRef.current) {
         window.history.pushState = originalPushRef.current;
         originalPushRef.current = null;
@@ -66,11 +68,11 @@ export function DashboardShell({ children }: DashboardShellProps) {
         />
       )}
 
-      <Sidebar mobileOpen={mobileOpen} onMobileClose={closeMobile} />
+      <Sidebar mobileOpen={mobileOpen} onMobileClose={closeMobile} onOpenSearch={openPalette} />
 
       {/* Right column: mobile top bar + main content */}
       <div className="flex flex-1 flex-col overflow-hidden min-w-0" data-theme="dark">
-        {/* Mobile top bar — only visible on small screens */}
+        {/* Mobile top bar */}
         <header className="flex h-[52px] shrink-0 items-center gap-3 border-b border-cyan-500/[0.15] bg-[#020c18] px-4 lg:hidden" style={{boxShadow: '0 1px 0 rgba(0,212,255,0.08)' }}>
           <button
             onClick={openMobile}
@@ -78,11 +80,10 @@ export function DashboardShell({ children }: DashboardShellProps) {
             aria-label="Open navigation"
           >
             <svg className="h-[18px] w-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                d="M4 6h16M4 12h16M4 18h16" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-1">
             <div className="flex h-6 w-6 items-center justify-center rounded-md bg-indigo-600 text-[9px] font-bold text-white">
               ERP
             </div>
@@ -90,6 +91,16 @@ export function DashboardShell({ children }: DashboardShellProps) {
               FMCG ERP
             </span>
           </div>
+          {/* Mobile search button */}
+          <button
+            onClick={openPalette}
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-white/10 transition-colors"
+            aria-label="Open search"
+          >
+            <svg className="h-[18px] w-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </button>
         </header>
 
         {/* Main scrollable content */}
@@ -97,6 +108,14 @@ export function DashboardShell({ children }: DashboardShellProps) {
           <div className="p-6 lg:p-8">{children}</div>
         </main>
       </div>
+
+      {/* Global Command Palette */}
+      <CommandPalette
+        open={open}
+        onClose={closePalette}
+        onVisit={recordVisit}
+        recent={recent}
+      />
     </div>
   );
 }

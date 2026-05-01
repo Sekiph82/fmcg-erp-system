@@ -1,7 +1,7 @@
 # TASKS — FMCG ERP (Kenya) · Production Module
 
 ## Current Phase
-Phase 6 — Navigation Architecture Refactor ✅ COMPLETED
+Phase 6 — Command Palette System ✅ COMPLETED
 
 ## In Progress
 (none)
@@ -82,8 +82,34 @@ Phase 6 — Navigation Architecture Refactor ✅ COMPLETED
 13. Utilities & Sustainability — utility-management, esg
 14. System, AI & Platform — ai, analytics, report-builder, kanban, notification-center, calendar, chatter, custom-fields, webhooks, integrations, admin, utilities
 
+## Completed in This Run (Phase 6 — Command Palette)
+### New backend files
+- `backend/app/api/v1/endpoints/search.py` — global search across products, materials, suppliers, customers, sales orders, invoices, POs; GET /api/v1/search/?q=
+- Registered in `router.py` under prefix `/search`
+
+### New frontend files
+- `frontend/src/lib/actionRegistry.ts` — 40 quick actions (create/run/report/AI), fuzzy filter util
+- `frontend/src/hooks/useCommandPalette.ts` — open/close state, Ctrl+K listener, localStorage recent history
+- `frontend/src/components/CommandPalette.tsx` — full modal: glassmorphism, keyboard nav (↑↓/Enter/Esc), grouped results (navigation/actions/records), debounced API search, recent history
+
+### Modified files
+- `frontend/src/components/DashboardShell.tsx` — mounts CommandPalette globally, passes onOpenSearch to Sidebar, adds mobile search icon button
+- `frontend/src/components/Sidebar.tsx` — added onOpenSearch prop, search trigger button (expanded = inline bar with ⌘K hint, collapsed = icon button with tooltip)
+
+### Features delivered
+- Ctrl+K / Cmd+K opens palette from any page
+- Search bar in sidebar (expanded) + icon (collapsed) + mobile header button
+- Navigation items: fuzzy-matched from NAV_CONFIG, permission-filtered
+- Quick actions: 40 predefined (create SO, run MRP, open report, AI chat, etc.)
+- Records: debounced (250ms) API call across 7 entity types
+- Result grouping: Navigation / Actions / Records / AI Commands
+- Keyboard nav: ↑↓ move, Enter open, Esc close, auto-scroll selected into view
+- Recent history: localStorage, persists across sessions, shown when query empty
+- Permission filtering: nav items and actions filtered via hasPermission()
+- No auto-execute: AI commands only link to destination, never auto-trigger
+
 ## Next Immediate Task
-UX validation and user navigation testing — verify all routes still resolve correctly.
+UX tuning and performance optimization — verify routes, run type check.
 
 ## Completed in Last Run (Prompt 51 — Kenya Payroll Localization / Compliance)
 - Created `backend/app/models/payroll_ke.py` — 7 models: EmployeePayrollProfile, KeTaxBand, KeStatutoryRate, KeNhifTier, PayrollRun, KePayrollLine, Payslip + 3 enums
