@@ -1,7 +1,45 @@
 # TASKS — FMCG ERP (Kenya) · Production Module
 
 ## Current Phase
-Phase 38 — Notification Center ✅ COMPLETED
+Phase 39 — Kanban Boards ✅ COMPLETED
+
+---
+
+## Phase 39 — Kanban Boards ✅
+
+- [x] `backend/app/models/kanban.py` — 8 enums + 6 models (UUID PKs): KanbanBoard, KanbanColumn, KanbanCard, KanbanActivity, KanbanComment, KBAIRecommendation
+- [x] `backend/app/schemas/kanban.py` — Pydantic v2 schemas (board CRUD, column CRUD, card CRUD + move, comment, activity out, dashboard, AI rec)
+- [x] `backend/app/services/kanban_service.py`:
+  - Board CRUD + seed_default_boards (5 boards: CRM Pipeline, Recruitment, Task, Approvals, Operations with color-coded columns + final/failure stage types)
+  - Column CRUD with card_count computed on load
+  - Card CRUD + card_no auto-generate (KB-XXXX sequential)
+  - move_card: updates column_id + position, auto-sets status (DONE on final_success, ARCHIVED on final_failure, ACTIVE on normal), logs MOVED activity
+  - update_card: logs typed activities (ASSIGNED, PRIORITY_CHANGED, STATUS_CHANGED, DUE_DATE_SET)
+  - delete_card: soft-archive + activity log
+  - add_comment: creates comment + COMMENTED activity
+  - Dashboard: 7 KPI counts + cards_by_priority + cards_by_module + top assignees (5)
+  - report_bottleneck: card count per column with WIP limit violation detection
+  - report_completion: done/total + completion rate %
+  - AI Agent 1: Workflow Optimizer (WIP limit exceeded + column with >60% card concentration)
+  - AI Agent 2: Task Prioritizer (overdue active cards + unassigned critical cards)
+- [x] `backend/app/api/v1/endpoints/kanban.py` — 25+ routes at /api/v1/kanban/
+- [x] `backend/alembic/versions/e7f8a9b0c1d2_kanban_boards.py` — migration (down_revision: d6e7f8a9b0c1), 6 tables + 2 indexes
+- [x] `backend/app/models/__init__.py` + `router.py` updated
+- [x] `frontend/src/lib/kanban.ts` — types, API client, color/label maps (PRIORITY_COLOR, PRIORITY_BADGE, STATUS_COLOR, STAGE_COLOR, MODULE_LABEL)
+- [x] Frontend pages (6 pages):
+  - Dashboard (7 KPI cards, by-priority/module/assignee panels, quick nav, seed button)
+  - All Boards (card grid with column previews, module filter, create form, "Open Board" link)
+  - Board View (full Kanban board with drag-and-drop HTML5 DnD, color-coded columns, add-card inline per column, card detail side panel with activity + comments, WIP limit badge, overdue highlighting, user/priority filter)
+  - All Cards (table with filters by priority/status/user/overdue, card detail modal)
+  - Reports (bottleneck bar chart per column with WIP limit overlay, completion rate gauge)
+  - AI Insights (2 agents + ack/action/dismiss workflow)
+- [x] Nav: "Kanban Boards" section with 6 links added
+
+## Next: Prompt 40 — Custom Report Builder
+
+---
+
+## Phase 38 — Notification Center ✅ COMPLETED
 
 ---
 

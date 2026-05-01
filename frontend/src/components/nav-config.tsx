@@ -1059,6 +1059,29 @@ export const NAV_CONFIG: NavEntry[] = [
   },
 
   // ╔══════════════════════════════════╗
+  // ║          KANBAN BOARDS           ║
+  // ╚══════════════════════════════════╝
+  cluster("cluster-kanban", "Kanban"),
+
+  {
+    type: "section",
+    id: "kanban",
+    label: "Kanban Boards",
+    permission: "hr.view",
+    icon: md(
+      "M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"
+    ),
+    items: [
+      { label: "Dashboard",    href: "/dashboard/kanban",           permission: "hr.view" },
+      { label: "All Boards",   href: "/dashboard/kanban/boards",    permission: "hr.view" },
+      { label: "Board View",   href: "/dashboard/kanban/view",      permission: "hr.view" },
+      { label: "All Cards",    href: "/dashboard/kanban/cards",     permission: "hr.view" },
+      { label: "Reports",      href: "/dashboard/kanban/reports",   permission: "hr.view" },
+      { label: "AI Insights",  href: "/dashboard/kanban/ai",        permission: "hr.view" },
+    ],
+  },
+
+  // ╔══════════════════════════════════╗
   // ║       NOTIFICATION CENTER        ║
   // ╚══════════════════════════════════╝
   cluster("cluster-notifications", "Notifications"),

@@ -445,6 +445,15 @@ from app.models.appraisals import (
     APAIRecommendation,
 )
 
+# ── Kanban Boards ─────────────────────────────────────────────────────────────
+from app.models.kanban import (
+    BoardModuleType, BoardVisibility, ColumnStageType,
+    CardPriority, CardStatus, ActivityEventType,
+    KBAIAgentType, KBAIRecStatus,
+    KanbanBoard, KanbanColumn, KanbanCard,
+    KanbanActivity, KanbanComment, KBAIRecommendation,
+)
+
 # ── Notification Center ───────────────────────────────────────────────────────
 from app.models.notifications import (
     NotificationType as NCNotifType, NotificationPriority, NotificationChannel,
