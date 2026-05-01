@@ -734,6 +734,7 @@ export const NAV_CONFIG: NavEntry[] = [
     ),
     items: [
       { label: "AI Dashboard",         href: "/dashboard/ai",                    permission: "ai.view" },
+      { label: "ERP Copilot (Chat)",   href: "/dashboard/ai/chat",               permission: "ai.view" },
       { label: "Predictions",          href: "/dashboard/ai/predictions",        permission: "ai.view" },
       { label: "Recommendations",      href: "/dashboard/ai/recommendations",    permission: "ai.view" },
       { label: "Scenario Simulator",   href: "/dashboard/ai/scenarios",          permission: "ai.view" },

@@ -44,7 +44,7 @@ Always output valid JSON as specified in each prompt."""
 
 async def _gather_erp_context(db: AsyncSession) -> dict:
     """Pull live ERP data to feed into AI prompts."""
-    from app.models.sales import Invoice, SalesOrder, Customer, InvoiceStatus
+    from app.models.sales import Invoice, InvoiceStatus
     from app.models.inventory import Stock
     from app.models.master import Product, Material, Supplier
     from app.models.procurement import PurchaseOrder, POStatus
@@ -52,72 +52,90 @@ async def _gather_erp_context(db: AsyncSession) -> dict:
     today = date.today()
     d90 = today - timedelta(days=90)
 
-    # Sales last 90 days
-    sales = (await db.execute(
-        select(
-            func.count(Invoice.id).label("invoice_count"),
-            func.coalesce(func.sum(Invoice.total_amount), 0).label("total_revenue"),
-            func.coalesce(func.sum(Invoice.paid_amount), 0).label("total_collected"),
-        )
-        .where(Invoice.invoice_date >= d90)
-        .where(Invoice.status.notin_([InvoiceStatus.CANCELLED, InvoiceStatus.DRAFT]))
-    )).one()
-
-    # Outstanding receivables
-    recv = (await db.execute(
-        select(func.coalesce(
-            func.sum(Invoice.total_amount - Invoice.paid_amount), 0
-        ).label("outstanding"))
-        .where(Invoice.status.notin_([InvoiceStatus.PAID, InvoiceStatus.CANCELLED]))
-    )).scalar() or 0
-
-    # Inventory summary
-    inventory = (await db.execute(
-        select(
-            func.count(Stock.id).label("sku_count"),
-            func.coalesce(func.sum(Stock.quantity_on_hand), 0).label("total_qty"),
-        )
-    )).one()
-
-    # Low-stock items (quantity_on_hand <= reorder_point)
-    low_stock_items = (await db.execute(
-        select(Product.name, Stock.quantity_on_hand, Product.uom)
-        .join(Stock, Stock.product_id == Product.id)
-        .where(Stock.quantity_on_hand <= Stock.reorder_point)
-        .limit(10)
-    )).all()
-
-    # Active products
-    product_count = (await db.execute(
-        select(func.count(Product.id)).where(Product.is_active == True)
-    )).scalar() or 0
-
-    # Active suppliers
-    supplier_count = (await db.execute(
-        select(func.count(Supplier.id)).where(Supplier.is_active == True)
-    )).scalar() or 0
-
-    # Open POs
-    open_pos = (await db.execute(
-        select(func.count(PurchaseOrder.id))
-        .where(PurchaseOrder.status.in_([POStatus.APPROVED, POStatus.ORDERED, POStatus.PARTIALLY_RECEIVED]))
-    )).scalar() or 0
-
-    return {
-        "sales_90d": {
+    # Sales last 90 days — wrapped in try/except for schema resilience
+    try:
+        sales = (await db.execute(
+            select(
+                func.count(Invoice.id).label("invoice_count"),
+                func.coalesce(func.sum(Invoice.total_amount), 0).label("total_revenue"),
+                func.coalesce(func.sum(Invoice.paid_amount), 0).label("total_collected"),
+            )
+            .where(Invoice.invoice_date >= d90)
+            .where(Invoice.status.notin_([InvoiceStatus.CANCELLED, InvoiceStatus.DRAFT]))
+        )).one()
+        sales_data = {
             "invoice_count": sales.invoice_count,
             "total_revenue_kes": float(sales.total_revenue),
             "total_collected_kes": float(sales.total_collected),
-            "outstanding_receivables_kes": float(recv),
-        },
-        "inventory": {
+        }
+    except Exception as e:
+        log.warning("Could not gather sales context: %s", e)
+        sales_data = {"invoice_count": 0, "total_revenue_kes": 0, "total_collected_kes": 0}
+
+    try:
+        recv = (await db.execute(
+            select(func.coalesce(
+                func.sum(Invoice.total_amount - Invoice.paid_amount), 0
+            ).label("outstanding"))
+            .where(Invoice.status.notin_([InvoiceStatus.PAID, InvoiceStatus.CANCELLED]))
+        )).scalar() or 0
+        sales_data["outstanding_receivables_kes"] = float(recv)
+    except Exception as e:
+        log.warning("Could not gather receivables: %s", e)
+        sales_data["outstanding_receivables_kes"] = 0
+
+    # Inventory summary
+    try:
+        inventory = (await db.execute(
+            select(
+                func.count(Stock.id).label("sku_count"),
+                func.coalesce(func.sum(Stock.quantity_on_hand), 0).label("total_qty"),
+            )
+        )).one()
+        # Low-stock: join Product to get reorder_point (reorder_point is on Product, NOT Stock)
+        low_stock_items = (await db.execute(
+            select(Product.name, Stock.quantity_on_hand, Product.uom)
+            .join(Stock, Stock.product_id == Product.id)
+            .where(Stock.quantity_on_hand <= Product.reorder_point)
+            .limit(10)
+        )).all()
+        inventory_data = {
             "total_sku_count": inventory.sku_count,
             "total_qty": float(inventory.total_qty),
             "low_stock_items": [
                 {"name": r.name, "qty": float(r.quantity_on_hand), "uom": r.uom}
                 for r in low_stock_items
             ],
-        },
+        }
+    except Exception as e:
+        log.warning("Could not gather inventory context: %s", e)
+        inventory_data = {"total_sku_count": 0, "total_qty": 0, "low_stock_items": []}
+
+    # Master data counts
+    try:
+        product_count = (await db.execute(
+            select(func.count(Product.id)).where(Product.is_active == True)  # noqa: E712
+        )).scalar() or 0
+        supplier_count = (await db.execute(
+            select(func.count(Supplier.id)).where(Supplier.is_active == True)  # noqa: E712
+        )).scalar() or 0
+    except Exception as e:
+        log.warning("Could not gather master data counts: %s", e)
+        product_count, supplier_count = 0, 0
+
+    # Open POs
+    try:
+        open_pos = (await db.execute(
+            select(func.count(PurchaseOrder.id))
+            .where(PurchaseOrder.status.in_([POStatus.APPROVED, POStatus.ORDERED, POStatus.PARTIALLY_RECEIVED]))
+        )).scalar() or 0
+    except Exception as e:
+        log.warning("Could not gather PO context: %s", e)
+        open_pos = 0
+
+    return {
+        "sales_90d": sales_data,
+        "inventory": inventory_data,
         "master_data": {
             "active_products": product_count,
             "active_suppliers": supplier_count,
@@ -129,6 +147,27 @@ async def _gather_erp_context(db: AsyncSession) -> dict:
 
 # ── AI Request logger ─────────────────────────────────────────────────────────
 
+def _resolve_provider_enum() -> AIProviderEnum:
+    """Map settings.AI_PROVIDER to AIProviderEnum safely."""
+    from app.services.ai_provider import get_ai_provider
+    active = get_ai_provider()
+    name = active.__class__.__name__.lower().replace("provider", "")
+    mapping = {
+        "anthropic": AIProviderEnum.ANTHROPIC,
+        "openai": AIProviderEnum.OPENAI,
+        "gemini": AIProviderEnum.GEMINI,
+        "mock": AIProviderEnum.MOCK,
+    }
+    return mapping.get(name, AIProviderEnum.AUTO)
+
+
+def _resolve_model_name() -> str:
+    """Return the model name for the currently active provider."""
+    from app.services.ai_provider import get_ai_provider
+    active = get_ai_provider()
+    return getattr(active, "_model", getattr(active, "_model_name", "mock-v1"))
+
+
 async def _log_request(
     db: AsyncSession,
     request_type: AIRequestType,
@@ -137,8 +176,8 @@ async def _log_request(
 ) -> AIRequest:
     req = AIRequest(
         request_type=request_type,
-        provider=AIProviderEnum(settings.AI_PROVIDER),
-        model=settings.ANTHROPIC_MODEL if settings.AI_PROVIDER == "anthropic" else settings.OPENAI_MODEL,
+        provider=_resolve_provider_enum(),
+        model=_resolve_model_name(),
         status=AIRequestStatus.RUNNING,
         input_data=input_data,
         created_by_id=user_id,
@@ -571,10 +610,12 @@ async def get_ai_dashboard(db: AsyncSession) -> dict:
     )).scalars().all()
 
     # Provider status
+    active_provider = get_ai_provider()
     provider_status = {
-        "provider": settings.AI_PROVIDER,
+        "provider": active_provider.__class__.__name__.replace("Provider", "").lower(),
         "configured": settings.AI_CONFIGURED,
-        "model": settings.ANTHROPIC_MODEL if settings.AI_PROVIDER == "anthropic" else settings.OPENAI_MODEL,
+        "model": getattr(active_provider, "_model", getattr(active_provider, "_model_name", "mock-v1")),
+        "mode": "mock" if active_provider.__class__.__name__ == "MockProvider" else "live",
     }
 
     return {
@@ -607,4 +648,148 @@ async def get_ai_dashboard(db: AsyncSession) -> dict:
             }
             for r in critical_recs
         ],
+    }
+
+
+# ── ERP Copilot Chat ──────────────────────────────────────────────────────────
+
+CHAT_SYSTEM_PROMPT = """You are an intelligent ERP copilot for an FMCG manufacturing company in Kenya/East Africa.
+You have real-time access to the company's ERP data (sales, inventory, procurement, production, finance).
+
+Your role is to:
+- Answer questions about the company's ERP data clearly and accurately
+- Highlight risks, opportunities, and anomalies
+- Provide actionable recommendations grounded in the data
+- Explain ERP concepts in plain English
+
+Rules:
+- Only state facts supported by the ERP data provided in context
+- If data is insufficient, say so explicitly — do NOT fabricate numbers
+- All monetary values in KES unless the user specifies otherwise
+- Be concise but complete
+- If in mock/dev mode, clearly label your response as [MOCK/DEV MODE - Demo Data]
+
+IMPORTANT: You are NOT a general-purpose chatbot. Stay focused on ERP and business operations topics."""
+
+
+async def generate_chat_response(
+    db: AsyncSession,
+    message: str,
+    conversation_history: Optional[list[dict]] = None,
+    user_id: Optional[uuid.UUID] = None,
+) -> dict:
+    """
+    ERP Copilot: answer a free-form question using live ERP context.
+    Returns structured response with answer, source data used, and provider info.
+    """
+    erp_ctx = await _gather_erp_context(db)
+    provider = get_ai_provider()
+    is_mock = provider.__class__.__name__ == "MockProvider"
+
+    # Build conversation context
+    history_str = ""
+    if conversation_history:
+        for turn in conversation_history[-6:]:  # last 3 exchanges
+            role = turn.get("role", "user")
+            content = turn.get("content", "")
+            history_str += f"\n{role.upper()}: {content}"
+
+    prompt = f"""Current ERP Data Snapshot:
+{json.dumps(erp_ctx, indent=2)}
+
+{f'Conversation so far:{history_str}' if history_str else ''}
+
+USER QUESTION: {message}
+
+Provide a clear, data-grounded answer. If the ERP data doesn't contain enough information to answer precisely, say so and suggest what additional data would help.
+{"[MOCK/DEV MODE: Use the demo data above to generate a plausible example answer. Clearly label the response as mock/demo data.]" if is_mock else ""}"""
+
+    req = await _log_request(db, AIRequestType.DOCUMENT,
+                              {"message": message, "erp_context": erp_ctx}, user_id)
+    resp = None
+    try:
+        resp = await provider.generate_text(prompt, system=CHAT_SYSTEM_PROMPT)
+        await _finish_request(db, req, resp, {"answer": resp.text})
+        await db.commit()
+
+        return {
+            "answer": ("[MOCK/DEV MODE] " if is_mock else "") + resp.text,
+            "provider": resp.provider,
+            "model": resp.model,
+            "mode": "mock" if is_mock else "live",
+            "erp_context_used": list(erp_ctx.keys()),
+            "tokens": {
+                "prompt": resp.prompt_tokens,
+                "completion": resp.completion_tokens,
+            },
+            "latency_ms": resp.latency_ms,
+        }
+    except Exception as e:
+        err_msg = str(e)
+        await _finish_request(db, req, resp or AIResponse("", "error", "error"), None, err_msg)
+        await db.commit()
+        raise
+
+
+# ── Deterministic Forecast Baseline ──────────────────────────────────────────
+
+async def compute_sales_baseline(db: AsyncSession) -> dict:
+    """
+    Deterministic moving-average sales forecast — no LLM required.
+    Uses last 90 days of invoice data to compute a 30-day baseline forecast.
+    This provides a data-grounded baseline that the LLM can then interpret.
+    """
+    from app.models.sales import Invoice, InvoiceStatus
+
+    today = date.today()
+    rows = []
+    # Pull monthly revenue for last 3 months
+    for months_ago in range(3, 0, -1):
+        start = date(today.year, today.month, 1) - timedelta(days=30 * months_ago)
+        end = start + timedelta(days=30)
+        try:
+            result = await db.execute(
+                select(func.coalesce(func.sum(Invoice.total_amount), 0))
+                .where(Invoice.invoice_date >= start)
+                .where(Invoice.invoice_date < end)
+                .where(Invoice.status.notin_([InvoiceStatus.CANCELLED, InvoiceStatus.DRAFT]))
+            )
+            rows.append(float(result.scalar() or 0))
+        except Exception:
+            rows.append(0.0)
+
+    if not rows or all(v == 0 for v in rows):
+        return {
+            "baseline_forecast_kes": 0,
+            "method": "moving_average_3m",
+            "data_quality": "insufficient",
+            "confidence": 0.0,
+            "monthly_history": rows,
+            "note": "No sales data available for baseline computation.",
+        }
+
+    # Simple 3-month moving average
+    avg = sum(rows) / len(rows)
+
+    # Trend: difference between last and first month as % of average
+    trend_pct = ((rows[-1] - rows[0]) / avg * 100) if avg > 0 else 0
+
+    # Weighted average: more recent months weighted higher
+    weights = [1, 2, 3]
+    weighted = sum(r * w for r, w in zip(rows, weights)) / sum(weights)
+
+    # Confidence: higher when all months have data and low variance
+    variance = sum((r - avg) ** 2 for r in rows) / len(rows)
+    cv = (variance ** 0.5) / avg if avg > 0 else 1.0  # coefficient of variation
+    confidence = max(0.0, min(1.0, 1.0 - cv))
+
+    return {
+        "baseline_forecast_kes": round(weighted, 2),
+        "moving_average_kes": round(avg, 2),
+        "trend_pct": round(trend_pct, 2),
+        "method": "weighted_moving_average_3m",
+        "data_quality": "good" if all(r > 0 for r in rows) else "partial",
+        "confidence": round(confidence, 3),
+        "monthly_history_kes": rows,
+        "note": "Baseline uses weighted 3-month moving average (weights: 1,2,3). LLM interprets this baseline.",
     }

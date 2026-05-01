@@ -349,7 +349,16 @@ class MockProvider(BaseAIProvider):
         elif "scenario" in prompt_lower or "simulate" in prompt_lower:
             text = json.dumps(MOCK_SCENARIO)
         else:
-            text = json.dumps({"result": "Mock AI response", "status": "ok"})
+            # Generic ERP copilot response for free-form chat
+            text = (
+                "[MOCK/DEV MODE — No API key configured. This is a demo response.]\n\n"
+                "I can see the ERP data in context. In production (with a real API key), "
+                "I would analyze this data and provide specific, data-grounded answers to your question.\n\n"
+                "To enable real AI responses:\n"
+                "1. Set ANTHROPIC_API_KEY, OPENAI_API_KEY, or GEMINI_API_KEY in your .env file\n"
+                "2. Restart the backend\n\n"
+                "This mock mode is intentionally non-deceptive — it will not fabricate ERP facts."
+            )
         return AIResponse(text=text, provider="mock", model="mock-v1",
                           prompt_tokens=100, completion_tokens=500, latency_ms=50)
 

@@ -43,6 +43,11 @@ class FormulationRequest(BaseModel):
     performance_priority: str = "balanced"  # cost | balanced | quality
 
 
+class ChatRequest(BaseModel):
+    message: str
+    conversation_history: Optional[List[dict]] = None   # [{role, content}]
+
+
 # ── Dashboard ─────────────────────────────────────────────────────────────────
 
 @router.get("/dashboard/",
@@ -428,3 +433,64 @@ def _form_to_dict(f: AIFormulation) -> dict:
         "notes": f.notes,
         "created_at": str(f.created_at),
     }
+
+
+# ── ERP Copilot Chat ──────────────────────────────────────────────────────────
+
+@router.post("/chat/")
+async def chat(
+    body: ChatRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    """
+    Free-form ERP copilot. Ask any question about the company's ERP data.
+    Returns a structured response with the answer, provider info, and context used.
+    """
+    if not body.message or not body.message.strip():
+        raise HTTPException(400, "Message cannot be empty")
+    if len(body.message) > 2000:
+        raise HTTPException(400, "Message too long (max 2000 characters)")
+
+    try:
+        result = await svc.generate_chat_response(
+            db,
+            message=body.message.strip(),
+            conversation_history=body.conversation_history,
+            user_id=current_user.id,
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(500, f"Chat failed: {str(e)}")
+
+
+# ── Deterministic Forecast Baseline ──────────────────────────────────────────
+
+@router.get("/forecast-baseline/")
+async def get_forecast_baseline(
+    db: AsyncSession = Depends(get_db),
+    _=Depends(get_current_user),
+):
+    """
+    Returns a deterministic moving-average sales baseline — no LLM required.
+    Use this as a sanity check or supplement to AI predictions.
+    """
+    return await svc.compute_sales_baseline(db)
+
+
+# ── AI Health ─────────────────────────────────────────────────────────────────
+
+@router.get("/health/")
+async def ai_health():
+    """Lightweight health check — tests provider instantiation."""
+    from app.services.ai_provider import get_ai_provider
+    try:
+        provider = get_ai_provider()
+        provider_name = provider.__class__.__name__.replace("Provider", "").lower()
+        return {
+            "status": "ok",
+            "provider": provider_name,
+            "mode": "mock" if provider_name == "mock" else "live",
+        }
+    except Exception as e:
+        return {"status": "error", "error": str(e)}

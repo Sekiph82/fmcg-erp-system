@@ -28,7 +28,9 @@ class AIRequestType(str, enum.Enum):
 class AIProvider(str, enum.Enum):
     ANTHROPIC = "anthropic"
     OPENAI = "openai"
+    GEMINI = "gemini"
     MOCK = "mock"
+    AUTO = "auto"
 
 
 class AIRequest(Base, TimestampMixin):

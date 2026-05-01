@@ -1,7 +1,30 @@
 # TASKS — FMCG ERP (Kenya) · Production Module
 
 ## Current Phase
-Phase 47 — Cycle Counting ✅ COMPLETED
+AI MODULE AUDIT + FIX ✅ COMPLETED
+
+## In Progress
+(none)
+
+## Completed in Last Run
+- Full AI module audit → AI_MODULE_AUDIT.md
+- Fixed critical bug: `Stock.reorder_point` not a column — now joins Product.reorder_point
+- Fixed critical bug: `AIProvider` enum missing GEMINI + AUTO values
+- Fixed: `_log_request` now uses active provider name, not settings string
+- Fixed: `get_ai_dashboard` now reports actual active provider
+- Added: `POST /api/v1/ai/chat/` — ERP Copilot free-form chat endpoint
+- Added: `GET /api/v1/ai/forecast-baseline/` — deterministic 3-month moving average
+- Added: `GET /api/v1/ai/health/` — lightweight health check
+- Added: `generate_chat_response()` in ai_service.py with CHAT_SYSTEM_PROMPT
+- Added: `compute_sales_baseline()` deterministic forecast engine
+- Added: `_resolve_provider_enum()` and `_resolve_model_name()` helpers
+- Added: MockProvider improved for chat — explicit non-deceptive mock response
+- Added: `aiApi.chat()`, `aiApi.forecastBaseline()`, `aiApi.health()` to frontend client
+- Added: `AIChatResponse` and `AIForecastBaseline` TypeScript interfaces
+- Added: `frontend/src/app/dashboard/ai/chat/page.tsx` — ERP Copilot chat UI
+- Added: Nav link "ERP Copilot (Chat)" in AI section
+- Created: AI_MODULE_AUDIT.md at project root
+- Created: AI_MODULE_TEST_CHECKLIST.md at project root
 
 ## Next Immediate Task
 Prompt 49 - Putaway Rules

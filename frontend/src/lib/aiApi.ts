@@ -9,6 +9,27 @@ export interface AIStatus {
   mode: "live" | "mock";
 }
 
+export interface AIChatResponse {
+  answer: string;
+  provider: string;
+  model: string;
+  mode: "live" | "mock";
+  erp_context_used: string[];
+  tokens: { prompt: number; completion: number };
+  latency_ms: number;
+}
+
+export interface AIForecastBaseline {
+  baseline_forecast_kes: number;
+  moving_average_kes: number;
+  trend_pct: number;
+  method: string;
+  data_quality: string;
+  confidence: number;
+  monthly_history_kes: number[];
+  note: string;
+}
+
 export interface AIDashboard {
   stats: {
     active_predictions: number;
@@ -203,4 +224,16 @@ export const aiApi = {
   // Logs
   listLogs: (limit?: number): Promise<AILog[]> =>
     apiClient.get<AILog[]>("/api/v1/ai/logs/", { params: { limit } }).then((r) => r.data),
+
+  // ERP Copilot Chat
+  chat: (message: string, conversation_history?: Array<{ role: string; content: string }>): Promise<AIChatResponse> =>
+    apiClient.post<AIChatResponse>("/api/v1/ai/chat/", { message, conversation_history }).then((r) => r.data),
+
+  // Deterministic forecast baseline
+  forecastBaseline: (): Promise<AIForecastBaseline> =>
+    apiClient.get<AIForecastBaseline>("/api/v1/ai/forecast-baseline/").then((r) => r.data),
+
+  // AI Health
+  health: (): Promise<{ status: string; provider: string; mode: string }> =>
+    apiClient.get("/api/v1/ai/health/").then((r) => r.data),
 };
