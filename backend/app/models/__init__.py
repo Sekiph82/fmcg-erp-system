@@ -14,6 +14,11 @@ from app.models.webhook import (
     EventDefinition, EventLog, Subscription, DeliveryAttempt, InboundEndpoint,
     AuthType, DeliveryStatus, HttpMethod,
 )
+from app.models.fleet import (
+    Vehicle, FleetDriver, FleetTrip, FuelLog, MaintenanceRecord, IncidentLog,
+    VehicleType, VehicleStatus, FuelType, TripStatus,
+    MaintenanceType, IncidentType, IncidentStatus, DriverStatus,
+)
 from app.models.master import Product, Material, Supplier, Warehouse
 from app.models.inventory import Stock, Lot, StockMovement
 from app.models.recipe import Recipe, RecipeItem, ProcessParameter
@@ -578,6 +583,10 @@ __all__ = [
     # Webhooks / Event Engine
     "EventDefinition", "EventLog", "Subscription", "DeliveryAttempt", "InboundEndpoint",
     "AuthType", "DeliveryStatus", "HttpMethod",
+    # Fleet Management
+    "Vehicle", "FleetDriver", "FleetTrip", "FuelLog", "MaintenanceRecord", "IncidentLog",
+    "VehicleType", "VehicleStatus", "FuelType", "TripStatus",
+    "MaintenanceType", "IncidentType", "IncidentStatus", "DriverStatus",
     "Product", "Material", "Supplier", "Warehouse",
     "Stock", "Lot", "StockMovement",
     "Recipe", "RecipeItem", "ProcessParameter",

@@ -1,16 +1,38 @@
 # TASKS — FMCG ERP (Kenya) · Production Module
 
 ## Current Phase
-Phase 45 — Webhook / Event Engine ✅ COMPLETED
+Phase 46 — Fleet Management ✅ COMPLETED
 
 ## Next Immediate Task
-Prompt 46 - Fleet Management (Vehicle Operations, Route Execution, Maintenance, Fuel, and Cost Control)
+Prompt 47 - Cycle Counting
 
 ## In Progress
 (none)
 
 ## Blockers
 (none)
+
+---
+
+## Phase 46 — Fleet Management ✅
+
+- [x] `backend/app/models/fleet.py` — Vehicle, FleetDriver, FleetTrip, FuelLog, MaintenanceRecord, IncidentLog + 8 enums
+- [x] `backend/app/schemas/fleet.py` — Pydantic schemas for all models + FleetDashboard
+- [x] `backend/app/services/fleet_service.py` — full CRUD (vehicle, driver, trip, fuel, maintenance, incident), availability check, vehicle/driver state machine, dashboard, 4 reports (utilization, fuel, maintenance, driver), 3 AI agents
+- [x] `backend/app/api/v1/endpoints/fleet.py` — 30+ endpoints at /api/v1/fleet/
+- [x] `backend/alembic/versions/f4a5b6c7d8e9_fleet_management.py` — migration (down_revision: e3f4a5b6c7d8), 6 tables + 8 enums
+- [x] `backend/app/models/__init__.py` — fleet models registered
+- [x] `backend/app/api/v1/router.py` — /fleet router registered
+- [x] `frontend/src/lib/fleet.ts` — full API client + status badge maps
+- [x] `frontend/src/app/dashboard/fleet/page.tsx` — dashboard with KPIs + upcoming maintenance + recent trips
+- [x] `frontend/src/app/dashboard/fleet/vehicles/page.tsx` — vehicle list with status filter and inline status update
+- [x] `frontend/src/app/dashboard/fleet/trips/page.tsx` — trip planning with vehicle/driver picker and status tracking
+- [x] `frontend/src/app/dashboard/fleet/fuel/page.tsx` — fuel log with cost/liter auto-calc
+- [x] `frontend/src/app/dashboard/fleet/maintenance/page.tsx` — maintenance tracker with mark-complete and vehicle status integration
+- [x] `frontend/src/app/dashboard/fleet/drivers/page.tsx` — driver roster with license expiry warning
+- [x] `frontend/src/app/dashboard/fleet/incidents/page.tsx` — incident log with type/status filters
+- [x] `frontend/src/app/dashboard/fleet/reports/page.tsx` — 4 reports + 3 AI agent outputs
+- [x] `frontend/src/components/nav-config.tsx` — Fleet Management section added (8 links)
 
 ---
 

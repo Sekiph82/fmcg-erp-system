@@ -1412,6 +1412,32 @@ export const NAV_CONFIG: NavEntry[] = [
   },
 
   // ╔══════════════════════════════════════╗
+  // ║         FLEET MANAGEMENT            ║
+  // ╚══════════════════════════════════════╝
+  cluster("cluster-fleet", "Fleet Management"),
+
+  {
+    type: "section",
+    id: "fleet",
+    label: "Fleet Management",
+    permission: "hr.view",
+    icon: md(
+      "M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z",
+      "M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10l2 1h2m0-11h8l2 4h2a1 1 0 011 1v4l-3 1"
+    ),
+    items: [
+      { label: "Dashboard",     href: "/dashboard/fleet",              permission: "hr.view" },
+      { label: "Vehicles",      href: "/dashboard/fleet/vehicles",     permission: "hr.view" },
+      { label: "Drivers",       href: "/dashboard/fleet/drivers",      permission: "hr.view" },
+      { label: "Trips",         href: "/dashboard/fleet/trips",        permission: "hr.view" },
+      { label: "Fuel Log",      href: "/dashboard/fleet/fuel",         permission: "hr.view" },
+      { label: "Maintenance",   href: "/dashboard/fleet/maintenance",  permission: "hr.view" },
+      { label: "Incidents",     href: "/dashboard/fleet/incidents",    permission: "hr.view" },
+      { label: "Reports & AI",  href: "/dashboard/fleet/reports",      permission: "hr.view" },
+    ],
+  },
+
+  // ╔══════════════════════════════════════╗
   // ║   CALENDAR & RESOURCE SCHEDULING     ║
   // ╚══════════════════════════════════════╝
   cluster("cluster-calendar", "Calendar & Scheduling"),
