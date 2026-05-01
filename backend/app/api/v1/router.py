@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from app.api.v1.endpoints import (
-    health, auth, users, roles, audit, logs,
+    health, auth, users, roles, audit, logs, two_factor,
     suppliers, products, materials, warehouses,
     inventory, recipes, production, wms, procurement, quality, sales, finance,
     maintenance, logistics, tax_regulatory, dashboard, integrations,
@@ -52,6 +52,7 @@ api_router = APIRouter()
 
 api_router.include_router(health.router, prefix="/health", tags=["health"])
 api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
+api_router.include_router(two_factor.router, prefix="/auth/2fa", tags=["2fa"])
 api_router.include_router(users.router, prefix="/users", tags=["users"])
 api_router.include_router(roles.router, prefix="/roles", tags=["roles"])
 api_router.include_router(audit.router, prefix="/audit", tags=["audit"])

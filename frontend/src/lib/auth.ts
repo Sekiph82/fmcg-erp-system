@@ -1,8 +1,11 @@
 import { apiClient } from "./api";
 
 export interface LoginResponse {
-  access_token: string;
+  access_token?: string;
   token_type: string;
+  two_fa_required?: boolean;
+  session_token?: string;
+  method?: string;
 }
 
 export interface Permission {

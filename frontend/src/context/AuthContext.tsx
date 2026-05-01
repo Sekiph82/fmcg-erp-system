@@ -10,6 +10,7 @@ interface AuthContextValue {
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
   hasPermission: (code: string) => boolean;
+  completeTwoFA: (accessToken: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -36,7 +37,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (username: string, password: string) => {
     const res = await apiLogin(username, password);
-    localStorage.setItem("access_token", res.access_token);
+    if (res.two_fa_required && res.session_token) {
+      sessionStorage.setItem("2fa_session_token", res.session_token);
+      sessionStorage.setItem("2fa_method", res.method || "totp");
+      router.push("/auth/2fa");
+      return;
+    }
+    if (res.access_token) {
+      localStorage.setItem("access_token", res.access_token);
+      const me = await getMe();
+      setUser(me);
+      router.push("/dashboard");
+    }
+  };
+
+  const completeTwoFA = async (accessToken: string) => {
+    localStorage.setItem("access_token", accessToken);
+    sessionStorage.removeItem("2fa_session_token");
+    sessionStorage.removeItem("2fa_method");
     const me = await getMe();
     setUser(me);
     router.push("/dashboard");
@@ -55,7 +73,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, hasPermission }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, hasPermission, completeTwoFA }}>
       {children}
     </AuthContext.Provider>
   );

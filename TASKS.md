@@ -1,13 +1,39 @@
 # TASKS — FMCG ERP (Kenya) · Production Module
 
 ## Current Phase
-Phase 43 — Custom Fields ✅ COMPLETED
+Phase 44 — Two-Factor Authentication (2FA) ✅ COMPLETED
 
 ## Next Immediate Task
-Prompt 44 - 2FA
+Prompt 45 - Webhook / Event Engine
+
+## In Progress
+(none)
 
 ## Blockers
 (none)
+
+---
+
+## Phase 44 — Two-Factor Authentication (2FA) ✅
+
+- [x] `backend/app/models/two_factor.py` — User2FASettings, TwoFASession, RecoveryCode with TwoFAMethod + TwoFASessionStatus enums
+- [x] `backend/app/schemas/two_factor.py` — Setup, verify, login-verify, disable, recovery codes, step-up, report schemas
+- [x] `backend/app/core/totp.py` — TOTP secret gen, QR base64, verify_totp, OTP gen, recovery code gen/hash/verify, pending-2FA JWT, step-up JWT
+- [x] `backend/app/crud/two_factor.py` — get/create settings, session lifecycle, recovery code CRUD, reports
+- [x] `backend/app/api/v1/endpoints/two_factor.py` — 12 endpoints: setup, verify, enable, disable, login-verify, recovery-codes, use-recovery-code, step-up, report, AI security-risk, AI access-anomaly
+- [x] `backend/app/api/v1/endpoints/auth.py` — login now 2FA-aware: returns session_token when 2FA enabled
+- [x] `backend/app/schemas/auth.py` — LoginResponse with two_fa_required, session_token, method fields
+- [x] `backend/app/models/audit_log.py` — 10 new 2FA audit event constants
+- [x] `backend/app/models/user.py` — two_fa_settings relationship
+- [x] `backend/app/models/__init__.py` — two_factor models registered for Alembic
+- [x] `backend/app/api/v1/router.py` — /auth/2fa router registered
+- [x] `backend/requirements.txt` — pyotp>=2.9.0 added
+- [x] `backend/alembic/versions/d2e3f4a5b6c7_two_factor_auth.py` — migration: user_2fa_settings, two_fa_sessions, recovery_codes tables + enums
+- [x] `frontend/src/lib/twoFactor.ts` — full API client: setup, verify, disable, login-verify, recovery, step-up, AI reports
+- [x] `frontend/src/lib/auth.ts` — LoginResponse updated for 2FA fields
+- [x] `frontend/src/context/AuthContext.tsx` — login handles 2FA redirect; completeTwoFA() finalizes auth
+- [x] `frontend/src/app/auth/2fa/page.tsx` — OTP entry page with recovery code toggle
+- [x] `frontend/src/app/dashboard/security/page.tsx` — 2FA settings page: method select, QR display, verify, disable, recovery codes, admin reports + AI output
 
 ---
 

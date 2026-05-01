@@ -5,11 +5,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_db
 from app.crud.user import authenticate, get_user_by_username
 from app.crud import audit as audit_crud
+from app.crud import two_factor as tfa_crud
 from app.core.security import create_access_token
 from app.core.deps import get_current_user
-from app.schemas.auth import Token
+from app.core import totp as totp_utils
+from app.schemas.auth import Token, LoginResponse
 from app.schemas.user import UserRead
 from app.models.audit_log import AuditEvent
+from app.models.two_factor import TwoFAMethod
 
 router = APIRouter()
 
@@ -21,7 +24,7 @@ def _ip(request: Request):
     )
 
 
-@router.post("/login", response_model=Token)
+@router.post("/login", response_model=LoginResponse)
 async def login(
     request: Request,
     form_data: OAuth2PasswordRequestForm = Depends(),
@@ -60,6 +63,43 @@ async def login(
         await db.commit()
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account is inactive")
 
+    # ── 2FA check ─────────────────────────────────────────────────────────────
+    tfa_settings = await tfa_crud.get_2fa_settings(db, user.id)
+    if tfa_settings and tfa_settings.is_enabled:
+        await tfa_crud.expire_old_sessions(db, user.id)
+
+        challenge_code = None
+        if tfa_settings.method in (TwoFAMethod.SMS, TwoFAMethod.EMAIL):
+            challenge_code = totp_utils.generate_otp()
+            # TODO: dispatch OTP via notification service
+
+        session = await tfa_crud.create_2fa_session(
+            db,
+            user_id=user.id,
+            settings_id=tfa_settings.id,
+            method=tfa_settings.method,
+            challenge_code=challenge_code,
+        )
+        await audit_crud.log_event(
+            db,
+            event_type=AuditEvent.TWO_FA_CHALLENGE_SENT,
+            actor_id=user.id,
+            actor_email=user.email,
+            target_type="user",
+            target_id=str(user.id),
+            target_name=user.email,
+            details={"method": tfa_settings.method},
+            ip_address=_ip(request),
+        )
+        await db.commit()
+
+        pending_token = totp_utils.create_pending_2fa_token(str(user.id), str(session.id))
+        return LoginResponse(
+            two_fa_required=True,
+            session_token=pending_token,
+            method=tfa_settings.method,
+        )
+
     await audit_crud.log_event(
         db,
         event_type=AuditEvent.LOGIN_SUCCESS,
@@ -71,7 +111,7 @@ async def login(
         ip_address=_ip(request),
     )
     await db.commit()
-    return Token(access_token=create_access_token(str(user.id)))
+    return LoginResponse(access_token=create_access_token(str(user.id)))
 
 
 @router.get("/me", response_model=UserRead)
