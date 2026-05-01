@@ -463,6 +463,13 @@ from app.models.kanban import (
     KanbanActivity, KanbanComment, KBAIRecommendation,
 )
 
+# ── Chatter / Activity Timeline ───────────────────────────────────────────────
+from app.models.chatter import (
+    ReferenceType, ActivityType, Visibility,
+    CTAIAgentType, CTAIRecStatus,
+    Activity, ActivityComment, ActivityAttachment, Mention, CTAIRecommendation,
+)
+
 # ── Calendar & Resource Scheduling ───────────────────────────────────────────
 from app.models.calendar import (
     EventType, EventStatus, ParticipantRole, ResponseStatus,

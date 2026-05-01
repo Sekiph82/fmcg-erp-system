@@ -44,6 +44,7 @@ from app.api.v1.endpoints import (
     kanban,
     report_builder,
     calendar,
+    chatter,
 )
 
 api_router = APIRouter()
@@ -211,3 +212,5 @@ api_router.include_router(kanban.router, prefix="/kanban", tags=["kanban"])
 api_router.include_router(report_builder.router, prefix="/reports-builder", tags=["report-builder"])
 # ── Calendar & Resource Scheduling ───────────────────────────────────────────
 api_router.include_router(calendar.router, prefix="/calendar", tags=["calendar"])
+# ── Chatter / Activity Timeline ───────────────────────────────────────────────
+api_router.include_router(chatter.router, prefix="/chatter", tags=["chatter"])

@@ -1,10 +1,10 @@
 # TASKS — FMCG ERP (Kenya) · Production Module
 
 ## Current Phase
-Phase 41 — Calendar / Resource Scheduling ✅ COMPLETED
+Phase 42 — Chatter / Activity Timeline ✅ COMPLETED
 
 ## Next Immediate Task
-Prompt 42 - Chatter / activity timeline
+Prompt 43 - Custom fields
 
 ## Blockers
 (none)
@@ -41,6 +41,37 @@ Prompt 42 - Chatter / activity timeline
   - Schedules (create with frequency/time/recipients/format, deactivate)
   - AI Insights (3 agents + ack/action/dismiss workflow)
 - [x] Nav: "Custom Report Builder" section with 8 links added
+
+## Phase 42 — Chatter / Activity Timeline ✅ COMPLETED
+
+- [x] `backend/app/models/chatter.py` — 5 enums + 5 models: Activity, ActivityComment, ActivityAttachment, Mention, CTAIRecommendation
+- [x] `backend/app/schemas/chatter.py` — Pydantic v2 schemas (ActivityOut with nested comments/attachments/mentions, ActivityPage, CTAIRecOut)
+- [x] `backend/app/services/chatter_service.py`:
+  - `log_activity()` — exported cross-module hook (no commit, caller-owned transaction)
+  - `list_activities()` — paginated with filters: reference_type, reference_id, activity_type, created_by, full-text search (ilike title+message)
+  - `post_comment()` — auto-extracts @mentions, creates Mention records
+  - `edit_comment()` / `delete_comment()` (soft delete, sets message="[deleted]")
+  - `add_attachment()` — logs attachment_added system event automatically
+  - `get_stats()` — total_activities, total_comments, pending_mentions, by_module breakdown
+  - AI Agent 1: Activity Summarizer (>10 events per record → summary suggestion)
+  - AI Agent 2: Follow-up Assistant (mentions >48h old without notified_flag)
+  - AI Agent 3: Insight Extractor (issue keywords in recent comments + inactive modules)
+- [x] `backend/app/api/v1/endpoints/chatter.py` — 15+ routes at /api/v1/chatter/
+- [x] `backend/alembic/versions/b0c1d2e3f4a5_chatter_activity_timeline.py` — migration (down_revision: a9b0c1d2e3f4), 5 tables + 5 indexes
+- [x] `backend/app/models/__init__.py` + `router.py` updated
+- [x] `frontend/src/lib/chatter.ts` — types, API client, TYPE_ICON, TYPE_COLOR, TYPE_BADGE, REF_LABEL, timeAgo helpers
+- [x] `frontend/src/components/chatter/ChatterTimeline.tsx` — reusable component (embeds in any record page): Avatar, CommentThread (with edit/delete), ActivityCard (all types), post-comment box, attach file, @mention display, grouped by date
+- [x] Frontend pages (5 pages):
+  - Dashboard (stats cards, activity feed preview, module volume bar chart, quick nav)
+  - Activity Feed (filterable by type/module, paginated list with comment/attachment counts)
+  - Search (text + type + module + user filters, paginated results)
+  - Reports (3 tabs: module volume, activity types breakdown, top users)
+  - AI Insights (3 agents + ack/action/dismiss workflow)
+- [x] Nav: "Chatter & Timeline" section with 5 links added
+
+## Next: Prompt 43 — Custom Fields
+
+---
 
 ## Phase 41 — Calendar / Resource Scheduling ✅ COMPLETED
 

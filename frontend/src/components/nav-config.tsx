@@ -1367,6 +1367,28 @@ export const NAV_CONFIG: NavEntry[] = [
   },
 
   // ╔══════════════════════════════════════╗
+  // ║    CHATTER / ACTIVITY TIMELINE       ║
+  // ╚══════════════════════════════════════╝
+  cluster("cluster-chatter", "Chatter & Activity"),
+
+  {
+    type: "section",
+    id: "chatter",
+    label: "Chatter & Timeline",
+    permission: "hr.view",
+    icon: md(
+      "M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+    ),
+    items: [
+      { label: "Dashboard",     href: "/dashboard/chatter",          permission: "hr.view" },
+      { label: "Activity Feed", href: "/dashboard/chatter/feed",     permission: "hr.view" },
+      { label: "Search",        href: "/dashboard/chatter/search",   permission: "hr.view" },
+      { label: "Reports",       href: "/dashboard/chatter/reports",  permission: "hr.view" },
+      { label: "AI Insights",   href: "/dashboard/chatter/ai",       permission: "hr.view" },
+    ],
+  },
+
+  // ╔══════════════════════════════════════╗
   // ║   CALENDAR & RESOURCE SCHEDULING     ║
   // ╚══════════════════════════════════════╝
   cluster("cluster-calendar", "Calendar & Scheduling"),
