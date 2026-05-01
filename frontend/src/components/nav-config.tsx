@@ -1365,6 +1365,32 @@ export const NAV_CONFIG: NavEntry[] = [
       { label: "Currencies",       href: "/dashboard/utilities?tab=currencies",permission: "utilities.view" },
     ],
   },
+
+  // ╔══════════════════════════════════════╗
+  // ║   CALENDAR & RESOURCE SCHEDULING     ║
+  // ╚══════════════════════════════════════╝
+  cluster("cluster-calendar", "Calendar & Scheduling"),
+
+  {
+    type: "section",
+    id: "calendar",
+    label: "Calendar & Scheduling",
+    permission: "hr.view",
+    icon: md(
+      "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+    ),
+    items: [
+      { label: "Dashboard",          href: "/dashboard/calendar",               permission: "hr.view" },
+      { label: "Calendar View",      href: "/dashboard/calendar/view",          permission: "hr.view" },
+      { label: "Events",             href: "/dashboard/calendar/events",        permission: "hr.view" },
+      { label: "New Event",          href: "/dashboard/calendar/new-event",     permission: "hr.view" },
+      { label: "Resources",          href: "/dashboard/calendar/resources",     permission: "hr.view" },
+      { label: "Bookings",           href: "/dashboard/calendar/bookings",      permission: "hr.view" },
+      { label: "Availability",       href: "/dashboard/calendar/availability",  permission: "hr.view" },
+      { label: "Reports",            href: "/dashboard/calendar/reports",       permission: "hr.view" },
+      { label: "AI Insights",        href: "/dashboard/calendar/ai",            permission: "hr.view" },
+    ],
+  },
 ];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

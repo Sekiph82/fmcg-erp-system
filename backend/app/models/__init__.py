@@ -463,6 +463,15 @@ from app.models.kanban import (
     KanbanActivity, KanbanComment, KBAIRecommendation,
 )
 
+# ── Calendar & Resource Scheduling ───────────────────────────────────────────
+from app.models.calendar import (
+    EventType, EventStatus, ParticipantRole, ResponseStatus,
+    ResourceType, ResourceStatus, BookingStatus, RecurrenceFrequency,
+    CAIAgentType, CAIRecStatus,
+    CalendarResource, RecurrenceRule, CalendarEvent,
+    EventParticipant, ResourceBooking, CAIRecommendation,
+)
+
 # ── Notification Center ───────────────────────────────────────────────────────
 from app.models.notifications import (
     NotificationType as NCNotifType, NotificationPriority, NotificationChannel,

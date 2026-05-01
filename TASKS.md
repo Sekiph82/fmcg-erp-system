@@ -1,7 +1,13 @@
 # TASKS — FMCG ERP (Kenya) · Production Module
 
 ## Current Phase
-Phase 40 — Custom Report Builder ✅ COMPLETED
+Phase 41 — Calendar / Resource Scheduling ✅ COMPLETED
+
+## Next Immediate Task
+Prompt 42 - Chatter / activity timeline
+
+## Blockers
+(none)
 
 ---
 
@@ -36,7 +42,28 @@ Phase 40 — Custom Report Builder ✅ COMPLETED
   - AI Insights (3 agents + ack/action/dismiss workflow)
 - [x] Nav: "Custom Report Builder" section with 8 links added
 
-## Next: Prompt 41 — Calendar / Resource Scheduling
+## Phase 41 — Calendar / Resource Scheduling ✅ COMPLETED
+
+- [x] `backend/app/models/calendar.py` — 10 enums + 6 models: CalendarResource, RecurrenceRule, CalendarEvent, EventParticipant, ResourceBooking, CAIRecommendation
+- [x] `backend/app/schemas/calendar.py` — Pydantic v2 schemas (resource, event, booking, participant, recurrence, availability, AI rec)
+- [x] `backend/app/services/calendar_service.py` — scheduling engine: check_availability (overlap detection), get_available_slots (08:00–18:00 30-min step), _generate_occurrences (daily/weekly/monthly recurrence expansion with exceptions), create_event (with participants + resource conflict check), AI agents: schedule_optimizer (< 20% utilization) + conflict_resolver (overlapping or <15 min buffer)
+- [x] `backend/app/api/v1/endpoints/calendar.py` — 20+ routes at /api/v1/calendar/
+- [x] `backend/alembic/versions/a9b0c1d2e3f4_calendar_resource_scheduling.py` — migration (down_revision: f8a9b0c1d2e3), 6 tables + 4 indexes
+- [x] `backend/app/models/__init__.py` + `router.py` updated
+- [x] `frontend/src/lib/calendar.ts` — types, API client, EVENT_COLOR, EVENT_BADGE, RESOURCE_ICON, STATUS_BADGE maps
+- [x] Frontend pages (9 pages):
+  - Dashboard (stats: events this week, upcoming 24h, pending bookings, active resources; upcoming events list; resources grid; quick nav)
+  - Calendar View (day/week/month views; week: 7-column grid, hourly rows, absolute-positioned event blocks; month: 7×6 grid; event detail modal)
+  - Events (filterable table by type/status; cancel action)
+  - New Event (4-step wizard: basic info → participants → resource picker → recurrence + confirm)
+  - Resources (grid cards with edit modal, activate/deactivate/maintenance toggle)
+  - Bookings (table with resource filter, create booking with availability pre-check, confirm/cancel actions)
+  - Availability (slot finder: resource multi-select + date + duration → available slots grid; specific slot checker with conflict count)
+  - Reports (3 tabs: utilization bar chart with color bands, event type breakdown, booking status summary)
+  - AI Insights (schedule_optimizer + conflict_resolver agents; ack/action/dismiss workflow)
+- [x] Nav: "Calendar & Scheduling" section with 9 links added
+
+## Next: Prompt 42 — Chatter / Activity Timeline
 
 ---
 
