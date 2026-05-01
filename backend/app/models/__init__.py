@@ -445,6 +445,15 @@ from app.models.appraisals import (
     APAIRecommendation,
 )
 
+# ── Custom Report Builder ─────────────────────────────────────────────────────
+from app.models.report_builder import (
+    ReportVisibility, AggregationType, FilterOperator, LogicalOperator,
+    SortDirection, ChartType, ScheduleFrequency, ExportFormat,
+    RBAIAgentType, RBAIRecStatus,
+    ReportDefinition, ReportField, ReportFilter, ReportCalculatedField,
+    ReportSchedule, ReportDashboard, DashboardWidget, RBAIRecommendation,
+)
+
 # ── Kanban Boards ─────────────────────────────────────────────────────────────
 from app.models.kanban import (
     BoardModuleType, BoardVisibility, ColumnStageType,

@@ -1059,6 +1059,31 @@ export const NAV_CONFIG: NavEntry[] = [
   },
 
   // ╔══════════════════════════════════╗
+  // ║     CUSTOM REPORT BUILDER        ║
+  // ╚══════════════════════════════════╝
+  cluster("cluster-reports", "Reports"),
+
+  {
+    type: "section",
+    id: "report-builder",
+    label: "Custom Report Builder",
+    permission: "hr.view",
+    icon: md(
+      "M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+    ),
+    items: [
+      { label: "Dashboard",       href: "/dashboard/report-builder",               permission: "hr.view" },
+      { label: "Data Catalog",    href: "/dashboard/report-builder/catalog",       permission: "hr.view" },
+      { label: "Build Report",    href: "/dashboard/report-builder/builder",       permission: "hr.view" },
+      { label: "Saved Reports",   href: "/dashboard/report-builder/saved",         permission: "hr.view" },
+      { label: "Report Viewer",   href: "/dashboard/report-builder/viewer",        permission: "hr.view" },
+      { label: "Dashboards",      href: "/dashboard/report-builder/dashboards",    permission: "hr.view" },
+      { label: "Schedules",       href: "/dashboard/report-builder/schedules",     permission: "hr.view" },
+      { label: "AI Insights",     href: "/dashboard/report-builder/ai",            permission: "hr.view" },
+    ],
+  },
+
+  // ╔══════════════════════════════════╗
   // ║          KANBAN BOARDS           ║
   // ╚══════════════════════════════════╝
   cluster("cluster-kanban", "Kanban"),

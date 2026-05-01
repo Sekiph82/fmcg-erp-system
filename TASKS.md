@@ -1,7 +1,46 @@
 # TASKS — FMCG ERP (Kenya) · Production Module
 
 ## Current Phase
-Phase 39 — Kanban Boards ✅ COMPLETED
+Phase 40 — Custom Report Builder ✅ COMPLETED
+
+---
+
+## Phase 40 — Custom Report Builder ✅
+
+- [x] `backend/app/models/report_builder.py` — 10 enums + 8 models (UUID PKs): ReportDefinition, ReportField, ReportFilter, ReportCalculatedField, ReportSchedule, ReportDashboard, DashboardWidget, RBAIRecommendation
+- [x] `backend/app/schemas/report_builder.py` — Pydantic v2 schemas (report CRUD + run + clone, fields/filters/calc-fields, schedule, dashboard + widget, AI rec)
+- [x] `backend/app/services/report_builder_service.py`:
+  - DATA_SOURCES catalog: 15 data sources (sales_orders, customers, products, stock, invoices, purchase_orders, expenses, timesheets, appraisals, crm_records, kanban_cards, training_assignments, certifications, notifications, skill_matrix) with friendly field labels + types
+  - _execute_query: safe query engine using SQLAlchemy text() with pre-validated field names from catalog (prevents arbitrary SQL injection), Python-level filter application post-DB
+  - Report CRUD + clone (deep copy fields/filters to new report)
+  - seed_templates: 6 template reports (sales summary, expense summary, timesheet utilization, cert expiry, CRM pipeline, appraisal ratings)
+  - run_report: executes query engine, updates run_count + last_run_at
+  - export_report_csv: streams CSV with DictWriter
+  - Schedule CRUD + deactivate
+  - Dashboard CRUD + widget add/remove
+  - AI Agent 1: Builder Assistant (reports with 0 runs → suggest fields + scheduling)
+  - AI Agent 2: Insight Generator (high-usage reports → recommend dashboard/scheduling)
+  - AI Agent 3: Performance Optimizer (reports with no filters → warn about large datasets)
+- [x] `backend/app/api/v1/endpoints/report_builder.py` — 30+ routes at /api/v1/reports-builder/
+- [x] `backend/alembic/versions/f8a9b0c1d2e3_custom_report_builder.py` — migration (down_revision: e7f8a9b0c1d2), 8 tables
+- [x] `backend/app/models/__init__.py` + `router.py` updated
+- [x] `frontend/src/lib/report_builder.ts` — types, API client, label maps (AGG_LABEL, OP_LABEL, CHART_LABEL)
+- [x] Frontend pages (8 pages):
+  - Dashboard (report/template counts, data source cards, quick nav, seed button)
+  - Data Catalog (searchable card grid per data source, field type badges, live 5-row preview on click)
+  - Build Report (4-step: report details → data source picker → field selector with aggregation/groupby/sort → filter builder with operator selection)
+  - Saved Reports (table with run count, clone modal, CSV export, delete, link to viewer)
+  - Report Viewer (run report + paginate, column metadata, export CSV, execution time display)
+  - Dashboards (grid + create + widget management with chart-type selector)
+  - Schedules (create with frequency/time/recipients/format, deactivate)
+  - AI Insights (3 agents + ack/action/dismiss workflow)
+- [x] Nav: "Custom Report Builder" section with 8 links added
+
+## Next: Prompt 41 — Calendar / Resource Scheduling
+
+---
+
+## Phase 39 — Kanban Boards ✅ COMPLETED
 
 ---
 

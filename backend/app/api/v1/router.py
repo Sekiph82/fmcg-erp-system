@@ -42,6 +42,7 @@ from app.api.v1.endpoints import (
     timesheets,
     notifications,
     kanban,
+    report_builder,
 )
 
 api_router = APIRouter()
@@ -205,3 +206,5 @@ api_router.include_router(timesheets.router, prefix="/timesheets", tags=["timesh
 api_router.include_router(notifications.router, prefix="/notifications", tags=["notifications"])
 # ── Kanban Boards ─────────────────────────────────────────────────────────────
 api_router.include_router(kanban.router, prefix="/kanban", tags=["kanban"])
+# ── Custom Report Builder ─────────────────────────────────────────────────────
+api_router.include_router(report_builder.router, prefix="/reports-builder", tags=["report-builder"])
