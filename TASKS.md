@@ -1,10 +1,10 @@
 # TASKS — FMCG ERP (Kenya) · Production Module
 
 ## Current Phase
-Phase 42 — Chatter / Activity Timeline ✅ COMPLETED
+Phase 43 — Custom Fields ✅ COMPLETED
 
 ## Next Immediate Task
-Prompt 43 - Custom fields
+Prompt 44 - 2FA
 
 ## Blockers
 (none)
@@ -41,6 +41,39 @@ Prompt 43 - Custom fields
   - Schedules (create with frequency/time/recipients/format, deactivate)
   - AI Insights (3 agents + ack/action/dismiss workflow)
 - [x] Nav: "Custom Report Builder" section with 8 links added
+
+## Phase 43 — Custom Fields ✅ COMPLETED
+
+- [x] `backend/app/models/custom_fields.py` — 5 enums + 5 models: CustomFieldDefinition, CustomFieldOption, CustomFieldValue, CustomFieldValidationRule, CFAIRecommendation; UniqueConstraint(field_code, entity_type) and UniqueConstraint(custom_field_id, entity_id)
+- [x] `backend/app/schemas/custom_fields.py` — Pydantic v2 schemas (field CRUD, FieldValueOut, FieldValuesSet, ValidationResult, UsageStat, CFAIRecOut)
+- [x] `backend/app/services/custom_fields_service.py`:
+  - Safe formula evaluator: ast-based, supports +, -, *, / with {field_code} variable substitution
+  - `_store_kwargs` / `_extract_value` — typed column routing by field_type
+  - `_display_value` — format for display (KES currency, Select→label, multi_select→CSV labels)
+  - `validate_values` — required, type, SELECT options, email/URL format, min/max/min_length/max_length/regex/unique rules
+  - `set_values` — upsert with typed storage (skips COMPUTED fields)
+  - `get_values` — returns FieldValueOut list with computed fields evaluated on-the-fly
+  - `get_missing_required` — scans known entity_ids for missing required field values
+  - `get_metadata` — entity→field metadata dict for Report Builder integration
+  - AI: Field Design Assistant (0-field modules + duplicate labels), Data Quality Monitor (0-value required + low-adoption fields), Reporting Assistant (high-usage fields not reportable)
+- [x] `backend/app/api/v1/endpoints/custom_fields.py` — 20+ routes at /api/v1/custom-fields/ (route ordering: specific paths before /{id})
+- [x] `backend/alembic/versions/c1d2e3f4a5b6_custom_fields.py` — migration (down_revision: b0c1d2e3f4a5), 5 tables + 6 indexes
+- [x] `backend/app/models/__init__.py` + `router.py` updated
+- [x] `frontend/src/lib/custom_fields.ts` — types, API client, ENTITY_LABEL, FIELD_TYPE_LABEL, FIELD_TYPE_ICON maps
+- [x] `frontend/src/components/custom-fields/CustomFieldsForm.tsx` — embeddable form component: renders all 16 field types correctly, section grouping, required/sensitive badges, save-to-entity action
+- [x] Frontend pages (7 files):
+  - Dashboard (stats, fields-by-module bars, most-used fields, recent fields table)
+  - Field Manager (full table with flags, enable/disable)
+  - New Field (3-step wizard: core info → flags → options+rules; auto-generates field_code from label)
+  - Field Detail [id] (edit form + options CRUD + validation rules viewer + field metadata)
+  - Values Browser (entity type + ID lookup with inline edit, missing required values report)
+  - Reports (4 tabs: definitions table, usage bar chart, coverage by module, flag summary)
+  - AI Insights (3 agents + ack/action/dismiss)
+- [x] Nav: "Custom Fields" section with 6 links added
+
+## Next: Prompt 44 — 2FA
+
+---
 
 ## Phase 42 — Chatter / Activity Timeline ✅ COMPLETED
 

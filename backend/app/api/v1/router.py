@@ -45,6 +45,7 @@ from app.api.v1.endpoints import (
     report_builder,
     calendar,
     chatter,
+    custom_fields,
 )
 
 api_router = APIRouter()
@@ -214,3 +215,5 @@ api_router.include_router(report_builder.router, prefix="/reports-builder", tags
 api_router.include_router(calendar.router, prefix="/calendar", tags=["calendar"])
 # ── Chatter / Activity Timeline ───────────────────────────────────────────────
 api_router.include_router(chatter.router, prefix="/chatter", tags=["chatter"])
+# ── Custom Fields ─────────────────────────────────────────────────────────────
+api_router.include_router(custom_fields.router, prefix="/custom-fields", tags=["custom-fields"])

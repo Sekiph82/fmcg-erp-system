@@ -1367,6 +1367,29 @@ export const NAV_CONFIG: NavEntry[] = [
   },
 
   // ╔══════════════════════════════════════╗
+  // ║         CUSTOM FIELDS                ║
+  // ╚══════════════════════════════════════╝
+  cluster("cluster-custom-fields", "Custom Fields"),
+
+  {
+    type: "section",
+    id: "custom-fields",
+    label: "Custom Fields",
+    permission: "hr.view",
+    icon: md(
+      "M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
+    ),
+    items: [
+      { label: "Dashboard",       href: "/dashboard/custom-fields",               permission: "hr.view" },
+      { label: "Field Manager",   href: "/dashboard/custom-fields/fields",         permission: "hr.view" },
+      { label: "Create Field",    href: "/dashboard/custom-fields/new-field",      permission: "hr.view" },
+      { label: "Values Browser",  href: "/dashboard/custom-fields/values",         permission: "hr.view" },
+      { label: "Reports",         href: "/dashboard/custom-fields/reports",        permission: "hr.view" },
+      { label: "AI Insights",     href: "/dashboard/custom-fields/ai",             permission: "hr.view" },
+    ],
+  },
+
+  // ╔══════════════════════════════════════╗
   // ║    CHATTER / ACTIVITY TIMELINE       ║
   // ╚══════════════════════════════════════╝
   cluster("cluster-chatter", "Chatter & Activity"),

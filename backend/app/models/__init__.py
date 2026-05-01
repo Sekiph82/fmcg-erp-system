@@ -463,6 +463,14 @@ from app.models.kanban import (
     KanbanActivity, KanbanComment, KBAIRecommendation,
 )
 
+# ── Custom Fields ─────────────────────────────────────────────────────────────
+from app.models.custom_fields import (
+    FieldType, EntityType, ValidationRuleType,
+    CFAIAgentType, CFAIRecStatus,
+    CustomFieldDefinition, CustomFieldOption, CustomFieldValue,
+    CustomFieldValidationRule, CFAIRecommendation,
+)
+
 # ── Chatter / Activity Timeline ───────────────────────────────────────────────
 from app.models.chatter import (
     ReferenceType, ActivityType, Visibility,
