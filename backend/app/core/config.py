@@ -59,6 +59,21 @@ class Settings(BaseSettings):
     AI_MAX_TOKENS: int = 4096
     AI_TEMPERATURE: float = 0.3             # lower = more deterministic for structured outputs
 
+    # ── AI data masking (external LLM calls only) ──────────────────────────────
+    AI_MASK_EXTERNAL_CONTEXT: bool = True
+    AI_SEND_PRODUCT_NAMES_TO_LLM: bool = True
+    AI_SEND_CUSTOMER_NAMES_TO_LLM: bool = False
+    AI_SEND_SUPPLIER_NAMES_TO_LLM: bool = False
+    AI_SEND_FINANCIAL_TOTALS_TO_LLM: bool = True
+    AI_CONTEXT_MAX_RECORDS: int = 50
+
+    # ── AI rate limits (requests per user per hour) ────────────────────────────
+    AI_RATE_LIMIT_CHAT: int = 30
+    AI_RATE_LIMIT_GENERATE: int = 10
+
+    # ── Hybrid module enhancement (off by default — avoids unexpected LLM cost) ─
+    AI_ENABLE_MODULE_LLM_ENHANCEMENT: bool = False
+
     @property
     def AI_CONFIGURED(self) -> bool:
         if self.AI_PROVIDER == "anthropic":
@@ -70,6 +85,27 @@ class Settings(BaseSettings):
         if self.AI_PROVIDER == "auto":
             return bool(self.ANTHROPIC_API_KEY or self.OPENAI_API_KEY or self.GEMINI_API_KEY)
         return self.AI_PROVIDER == "mock"
+
+    @property
+    def AI_ACTIVE_MODEL(self) -> str:
+        """Return the model name for the currently configured provider."""
+        p = self.AI_PROVIDER.lower()
+        if p == "anthropic":
+            return self.ANTHROPIC_MODEL
+        if p == "openai":
+            return self.OPENAI_MODEL
+        if p == "gemini":
+            return self.GEMINI_MODEL
+        if p == "mock":
+            return "mock-v1"
+        # auto — return whichever key is present
+        if self.ANTHROPIC_API_KEY:
+            return self.ANTHROPIC_MODEL
+        if self.OPENAI_API_KEY:
+            return self.OPENAI_MODEL
+        if self.GEMINI_API_KEY:
+            return self.GEMINI_MODEL
+        return "mock-v1"
 
     def parse_cors(self, v: str) -> List[str]:
         try:

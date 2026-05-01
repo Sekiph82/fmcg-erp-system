@@ -1,13 +1,65 @@
 # TASKS — FMCG ERP (Kenya) · Production Module
 
 ## Current Phase
-AI Structure & Configuration Audit ✅ COMPLETED
+AI Architecture Security & Stability Fix ✅ COMPLETED
 
 ## In Progress
-AI Implementation Fix Plan (next)
+(none)
 
-## Blockers
-None — audit complete, awaiting fix-order instruction
+## Completed in This Run (AI Architecture Fix)
+### New files created
+- `backend/app/core/ai_safety.py` — prompt injection guard, data masking, safe system prompt builder
+- `backend/app/core/ai_rate_limiter.py` — in-memory per-user rate limiter (TODO: upgrade to Redis for multi-worker)
+- `backend/app/core/ai_modes.py` — AI mode classification constants (LLM_POWERED / RULE_BASED / STATISTICAL / HYBRID)
+- `backend/app/prompts/__init__.py` — prompt package root
+- `backend/app/prompts/central_ai.py` — SYSTEM_PROMPT_FMCG (extracted from ai_service.py)
+- `backend/app/prompts/chat.py` — CHAT_SYSTEM_PROMPT with safety rules embedded
+- `backend/app/prompts/predictions.py` — PREDICTION_SCHEMA + build_prediction_prompt()
+- `backend/app/prompts/recommendations.py` — RECOMMENDATION_SCHEMA + build_recommendation_prompt()
+- `backend/app/prompts/scenarios.py` — SCENARIO_SCHEMA + build_scenario_prompt()
+- `backend/app/prompts/formulations.py` — FORMULATION_SCHEMA + build_formulation_prompt()
+- `backend/app/prompts/module_enhancement.py` — MODULE_ENHANCEMENT_SCHEMA + build_enhancement_prompt()
+- `backend/app/services/module_ai_llm_enhancer.py` — optional hybrid LLM enhancer (disabled by default)
+
+### Modified files
+- `backend/app/core/config.py` — added 9 new AI settings (masking, rate limits, hybrid toggle, AI_ACTIVE_MODEL property)
+- `backend/app/api/v1/endpoints/ai.py` — auth on /status/ + /health/, rate limiting on all LLM POSTs, injection guard on /chat/, fixed model display, _safe_json_parse() for expected_impact, new /modes/ endpoint
+- `backend/app/services/ai_service.py` — imports prompts from app.prompts/, applies mask_sensitive_context() + build_safe_system_prompt() before all LLM calls, removed ERP context from AIRequest input_data log (no sensitive data in logs)
+- `frontend/src/lib/aiApi.ts` — added parseAIError() for 401/403/429/500, AIMode type, updated AIStatus interface, AIScenario.expected_impact typed as object
+- `frontend/src/app/dashboard/ai/page.tsx` — proper 401/403/429 error messages, fallback_active warning, ai_mode_label badge
+
+### Security fixes
+- [x] /ai/status/ — requires require_permission("ai", "view") — no longer public
+- [x] /ai/health/ — requires get_current_user
+- [x] /chat/ — prompt injection detection + sanitization + hard-block for clearly malicious messages
+- [x] All LLM POST endpoints — per-user rate limiting (configurable via AI_RATE_LIMIT_CHAT / AI_RATE_LIMIT_GENERATE)
+- [x] Data masking — mask_sensitive_context() applied before every external LLM call
+- [x] Safety reminder appended to every system prompt via build_safe_system_prompt()
+- [x] No API keys or secrets in AIRequest input_data log
+
+### Stability fixes
+- [x] expected_impact JSON bug — _safe_json_parse() in _scenario_to_dict() parses Text column as JSON object before returning to frontend
+- [x] Model display bug — /status/ now returns correct model for Gemini/OpenAI/Anthropic/Mock via provider instance introspection
+- [x] AI dashboard mode field — "live" → "llm" to match AIMode type
+
+### Tests run
+- Python syntax check: 15 files — all OK
+- No backend test runner found; manual test checklist in Remaining Risks
+
+## Remaining Risks / Next Steps
+1. Rate limiter is in-memory — will not work across multiple workers. Upgrade to Redis before horizontal scaling.
+2. Module AI agents (40+ modules) remain RULE_BASED — consider wiring AI_ENABLE_MODULE_LLM_ENHANCEMENT=True for CRM/procurement when ready.
+3. No frontend TypeScript build run yet — verify `npm run build` passes in frontend/.
+4. Manual test checklist:
+   - GET /api/v1/ai/status/ without auth → should return 401/403
+   - POST /api/v1/ai/chat/ with "ignore previous instructions" → should return blocked response
+   - POST /api/v1/ai/chat/ with normal ERP question → should work
+   - POST generate endpoints >10x in an hour → should return 429 with reset_at
+   - AIScenario expected_impact in frontend → should be object not string
+   - Check AI dashboard shows correct provider name and model for active Gemini key
+
+## Next Immediate Task
+Phase 49+ (Putaway Rules continuation) or next module phase as instructed.
 
 ## Completed in Last Run (Prompt 51 — Kenya Payroll Localization / Compliance)
 - Created `backend/app/models/payroll_ke.py` — 7 models: EmployeePayrollProfile, KeTaxBand, KeStatutoryRate, KeNhifTier, PayrollRun, KePayrollLine, Payslip + 3 enums

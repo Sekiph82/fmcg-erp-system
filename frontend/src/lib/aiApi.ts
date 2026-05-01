@@ -1,4 +1,9 @@
 import { apiClient } from "@/lib/api";
+import axios from "axios";
+
+// ── AI mode classification ────────────────────────────────────────────────────
+
+export type AIMode = "llm_powered" | "rule_based" | "statistical" | "hybrid";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -6,17 +11,20 @@ export interface AIStatus {
   provider: string;
   configured: boolean;
   model: string;
-  mode: "live" | "mock";
+  mode: "llm" | "mock";
+  fallback_active: boolean;
+  ai_mode_label: string;
 }
 
 export interface AIChatResponse {
   answer: string;
   provider: string;
   model: string;
-  mode: "live" | "mock";
+  mode: "live" | "mock" | "blocked";
   erp_context_used: string[];
   tokens: { prompt: number; completion: number };
   latency_ms: number;
+  safety?: { injection_detected: boolean; sanitized: boolean; action?: string };
 }
 
 export interface AIForecastBaseline {
@@ -76,7 +84,7 @@ export interface AIScenario {
   title: string;
   scenario_type: string;
   input_parameters?: Record<string, any>;
-  expected_impact?: string;
+  expected_impact?: Record<string, any>;  // parsed from JSON — object not string
   risks?: string[];
   opportunities?: string[];
   simulation_data: Record<string, any>;
@@ -158,6 +166,41 @@ export interface AILog {
   created_at: string;
 }
 
+// ── Error helpers ─────────────────────────────────────────────────────────────
+
+export interface AIError {
+  status: number;
+  message: string;
+  resetAt?: string;
+}
+
+export function parseAIError(err: unknown): AIError {
+  if (axios.isAxiosError(err)) {
+    const status = err.response?.status ?? 0;
+    const data = err.response?.data;
+
+    if (status === 401) return { status: 401, message: "Please log in to use AI features." };
+    if (status === 403) return { status: 403, message: "You do not have permission to use this AI feature." };
+    if (status === 429) {
+      const detail = data?.detail;
+      const resetAt = typeof detail === "object" ? detail?.reset_at : undefined;
+      return {
+        status: 429,
+        message: "AI usage limit reached. Please try again later.",
+        resetAt,
+      };
+    }
+    if (status === 500) return { status: 500, message: "The AI service returned an error. Please retry." };
+    const msg = typeof data?.detail === "string"
+      ? data.detail
+      : typeof data === "string"
+        ? data
+        : "Unexpected AI error.";
+    return { status, message: msg };
+  }
+  return { status: 0, message: "Network error. Please check your connection." };
+}
+
 // ── API client ────────────────────────────────────────────────────────────────
 
 export const aiApi = {
@@ -166,6 +209,9 @@ export const aiApi = {
 
   dashboard: (): Promise<AIDashboard> =>
     apiClient.get<AIDashboard>("/api/v1/ai/dashboard/").then((r) => r.data),
+
+  modes: (): Promise<{ modes: Record<string, { mode: AIMode; label: string; description: string }>; legend: Record<string, any> }> =>
+    apiClient.get("/api/v1/ai/modes/").then((r) => r.data),
 
   // Predictions
   generatePredictions: (types?: string[]): Promise<{ count: number; predictions: AIPrediction[] }> =>

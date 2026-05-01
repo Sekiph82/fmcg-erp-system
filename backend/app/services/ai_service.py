@@ -1,8 +1,8 @@
 """
 AI Service — business logic layer.
 
-Gathers ERP data, engineers prompts, calls the AI provider,
-persists results, and returns structured outputs.
+Gathers ERP context, applies data masking, engineers prompts (from app.prompts),
+calls the AI provider via abstraction layer, persists results.
 """
 from __future__ import annotations
 
@@ -22,28 +22,23 @@ from app.models.ai import (
     AIRequestStatus, AIPrediction, AIRecommendation, AIFormulation, AIScenario,
 )
 from app.core.config import settings
+from app.core.ai_safety import mask_sensitive_context, build_safe_system_prompt
+
+# Import prompt templates from dedicated module
+from app.prompts.central_ai import SYSTEM_PROMPT_FMCG
+from app.prompts.chat import CHAT_SYSTEM_PROMPT
+from app.prompts.predictions import PREDICTION_SCHEMA, build_prediction_prompt
+from app.prompts.recommendations import RECOMMENDATION_SCHEMA, build_recommendation_prompt
+from app.prompts.scenarios import SCENARIO_SCHEMA, build_scenario_prompt
+from app.prompts.formulations import FORMULATION_SCHEMA, build_formulation_prompt
 
 log = logging.getLogger(__name__)
-
-SYSTEM_PROMPT_FMCG = """You are an expert AI assistant embedded in an FMCG (Fast-Moving Consumer Goods) ERP system
-for a manufacturing company in Kenya/East Africa producing personal care and home care products (detergents, shampoos, creams, wipes, etc.).
-
-You have deep expertise in:
-- FMCG product formulation chemistry (surfactants, emulsifiers, preservatives, rheology)
-- East African/Kenyan market dynamics
-- Supply chain management and procurement
-- Financial analysis and margin optimization
-- Demand forecasting and inventory management
-
-Always provide actionable, specific, commercially realistic advice grounded in actual industry practice.
-All monetary values in KES unless specified otherwise.
-Always output valid JSON as specified in each prompt."""
 
 
 # ── ERP Data Gatherer ─────────────────────────────────────────────────────────
 
 async def _gather_erp_context(db: AsyncSession) -> dict:
-    """Pull live ERP data to feed into AI prompts."""
+    """Pull live ERP aggregate data to feed into AI prompts."""
     from app.models.sales import Invoice, InvoiceStatus
     from app.models.inventory import Stock
     from app.models.master import Product, Material, Supplier
@@ -52,7 +47,6 @@ async def _gather_erp_context(db: AsyncSession) -> dict:
     today = date.today()
     d90 = today - timedelta(days=90)
 
-    # Sales last 90 days — wrapped in try/except for schema resilience
     try:
         sales = (await db.execute(
             select(
@@ -84,7 +78,6 @@ async def _gather_erp_context(db: AsyncSession) -> dict:
         log.warning("Could not gather receivables: %s", e)
         sales_data["outstanding_receivables_kes"] = 0
 
-    # Inventory summary
     try:
         inventory = (await db.execute(
             select(
@@ -92,12 +85,12 @@ async def _gather_erp_context(db: AsyncSession) -> dict:
                 func.coalesce(func.sum(Stock.quantity_on_hand), 0).label("total_qty"),
             )
         )).one()
-        # Low-stock: join Product to get reorder_point (reorder_point is on Product, NOT Stock)
+        # reorder_point is on Product, NOT Stock
         low_stock_items = (await db.execute(
             select(Product.name, Stock.quantity_on_hand, Product.uom)
             .join(Stock, Stock.product_id == Product.id)
             .where(Stock.quantity_on_hand <= Product.reorder_point)
-            .limit(10)
+            .limit(settings.AI_CONTEXT_MAX_RECORDS)
         )).all()
         inventory_data = {
             "total_sku_count": inventory.sku_count,
@@ -111,7 +104,6 @@ async def _gather_erp_context(db: AsyncSession) -> dict:
         log.warning("Could not gather inventory context: %s", e)
         inventory_data = {"total_sku_count": 0, "total_qty": 0, "low_stock_items": []}
 
-    # Master data counts
     try:
         product_count = (await db.execute(
             select(func.count(Product.id)).where(Product.is_active == True)  # noqa: E712
@@ -123,7 +115,6 @@ async def _gather_erp_context(db: AsyncSession) -> dict:
         log.warning("Could not gather master data counts: %s", e)
         product_count, supplier_count = 0, 0
 
-    # Open POs
     try:
         open_pos = (await db.execute(
             select(func.count(PurchaseOrder.id))
@@ -148,8 +139,6 @@ async def _gather_erp_context(db: AsyncSession) -> dict:
 # ── AI Request logger ─────────────────────────────────────────────────────────
 
 def _resolve_provider_enum() -> AIProviderEnum:
-    """Map settings.AI_PROVIDER to AIProviderEnum safely."""
-    from app.services.ai_provider import get_ai_provider
     active = get_ai_provider()
     name = active.__class__.__name__.lower().replace("provider", "")
     mapping = {
@@ -162,8 +151,6 @@ def _resolve_provider_enum() -> AIProviderEnum:
 
 
 def _resolve_model_name() -> str:
-    """Return the model name for the currently active provider."""
-    from app.services.ai_provider import get_ai_provider
     active = get_ai_provider()
     return getattr(active, "_model", getattr(active, "_model_name", "mock-v1"))
 
@@ -204,60 +191,24 @@ async def _finish_request(
 
 # ── Prediction Engine ─────────────────────────────────────────────────────────
 
-PREDICTION_SCHEMA = """{
-  "predictions": [
-    {
-      "type": "sales_forecast | demand_prediction | stock_depletion | cost_trend | supplier_risk | production_planning",
-      "subject": "string",
-      "period": "string",
-      "forecast_value": number_or_null,
-      "unit": "string",
-      "confidence": 0.0_to_1.0,
-      "trend": "up | down | stable",
-      "trend_pct": number_or_null,
-      "risk_level": "low | medium | high | critical",
-      "summary": "2-3 sentence actionable summary",
-      "items_at_risk": ["array of specific items if applicable"]
-    }
-  ],
-  "generated_at": "YYYY-MM-DD",
-  "data_freshness": "string"
-}"""
-
-
 async def generate_predictions(
     db: AsyncSession,
     prediction_types: Optional[list[str]] = None,
     user_id: Optional[uuid.UUID] = None,
 ) -> list[AIPrediction]:
     erp_ctx = await _gather_erp_context(db)
+    masked_ctx = mask_sensitive_context(erp_ctx)
     types_str = ", ".join(prediction_types) if prediction_types else "all types"
 
-    prompt = f"""Analyze this FMCG ERP data and generate predictions for: {types_str}
-
-ERP Context (last 90 days):
-{json.dumps(erp_ctx, indent=2)}
-
-Generate comprehensive predictions covering:
-1. Sales forecast (next 30 days)
-2. Demand prediction by category
-3. Stock depletion risk (focus on low-stock items)
-4. Raw material cost trends (next 90 days)
-5. Supplier risk assessment
-6. Production planning recommendations
-
-For each prediction provide specific KES values, timelines, and actionable insights.
-Today is {erp_ctx['date']}.
-
-Output schema:
-{PREDICTION_SCHEMA}"""
+    safe_system = build_safe_system_prompt(SYSTEM_PROMPT_FMCG)
+    prompt = build_prediction_prompt(masked_ctx, types_str)
 
     req = await _log_request(db, AIRequestType.PREDICTION,
-                              {"erp_context": erp_ctx, "types": prediction_types}, user_id)
+                              {"types": prediction_types}, user_id)
     resp = None
     try:
         provider = get_ai_provider()
-        obj, resp = await provider.generate_structured_output(prompt, system=SYSTEM_PROMPT_FMCG)
+        obj, resp = await provider.generate_structured_output(prompt, system=safe_system)
         await _finish_request(db, req, resp, obj)
 
         results = []
@@ -285,55 +236,24 @@ Output schema:
 
 # ── Recommendation Engine ─────────────────────────────────────────────────────
 
-RECOMMENDATION_SCHEMA = """{
-  "recommendations": [
-    {
-      "category": "pricing | stock | supplier | production | margin | cash_flow",
-      "title": "short actionable title",
-      "reason": "why this is recommended (data-backed)",
-      "expected_impact": "specific quantified impact",
-      "confidence_level": "low | medium | high",
-      "priority": "low | medium | high | critical",
-      "action_steps": ["step 1", "step 2"]
-    }
-  ],
-  "generated_at": "YYYY-MM-DD"
-}"""
-
-
 async def generate_recommendations(
     db: AsyncSession,
     focus_area: Optional[str] = None,
     user_id: Optional[uuid.UUID] = None,
 ) -> list[AIRecommendation]:
     erp_ctx = await _gather_erp_context(db)
+    masked_ctx = mask_sensitive_context(erp_ctx)
     focus_str = f"Focus particularly on: {focus_area}" if focus_area else "Cover all areas"
 
-    prompt = f"""Based on this FMCG ERP data, generate specific, actionable recommendations.
-{focus_str}
-
-ERP Context:
-{json.dumps(erp_ctx, indent=2)}
-
-Generate 5–8 recommendations covering:
-- Pricing optimization (where margins can be improved)
-- Stock optimization (what to reorder, what's overstocked)
-- Supplier selection (risks, alternates)
-- Production planning (capacity, scheduling)
-- Margin improvement (cost reduction, mix shift)
-- Cash flow optimization
-
-Each recommendation must have specific numbers, timelines, and clear ROI.
-
-Output schema:
-{RECOMMENDATION_SCHEMA}"""
+    safe_system = build_safe_system_prompt(SYSTEM_PROMPT_FMCG)
+    prompt = build_recommendation_prompt(masked_ctx, focus_str)
 
     req = await _log_request(db, AIRequestType.RECOMMENDATION,
-                              {"erp_context": erp_ctx, "focus": focus_area}, user_id)
+                              {"focus": focus_area}, user_id)
     resp = None
     try:
         provider = get_ai_provider()
-        obj, resp = await provider.generate_structured_output(prompt, system=SYSTEM_PROMPT_FMCG)
+        obj, resp = await provider.generate_structured_output(prompt, system=safe_system)
         await _finish_request(db, req, resp, obj)
 
         results = []
@@ -359,24 +279,6 @@ Output schema:
 
 # ── Scenario Simulator ────────────────────────────────────────────────────────
 
-SCENARIO_SCHEMA = """{
-  "scenario": {
-    "title": "string",
-    "type": "string",
-    "parameters": {},
-    "expected_impact": {
-      "revenue_change_pct": number,
-      "volume_change_pct": number,
-      "margin_change_pct": number,
-      "break_even_months": number_or_null
-    },
-    "risks": ["risk 1", "risk 2"],
-    "opportunities": ["opportunity 1", "opportunity 2"],
-    "recommendation": "final actionable recommendation"
-  }
-}"""
-
-
 async def simulate_scenario(
     db: AsyncSession,
     scenario_type: str,
@@ -384,6 +286,7 @@ async def simulate_scenario(
     user_id: Optional[uuid.UUID] = None,
 ) -> AIScenario:
     erp_ctx = await _gather_erp_context(db)
+    masked_ctx = mask_sensitive_context(erp_ctx)
 
     scenario_descriptions = {
         "price_change": f"Simulate changing product prices by {parameters.get('change_pct', 10)}% for {parameters.get('product', 'selected products')}",
@@ -393,41 +296,26 @@ async def simulate_scenario(
     }
     description = scenario_descriptions.get(scenario_type, f"Simulate scenario: {parameters}")
 
-    prompt = f"""Simulate this business scenario for an FMCG company:
-
-Scenario: {description}
-Full Parameters: {json.dumps(parameters)}
-
-Current ERP Context:
-{json.dumps(erp_ctx, indent=2)}
-
-Provide a detailed impact analysis including:
-- Revenue, volume, and margin impacts (as percentages and KES amounts)
-- Break-even timeline if applicable
-- Top 3–5 risks with mitigation ideas
-- Top 3–5 opportunities to capitalize on
-- Final recommendation (proceed / modify / avoid)
-
-Be specific with numbers based on the ERP data provided.
-
-Output schema:
-{SCENARIO_SCHEMA}"""
+    safe_system = build_safe_system_prompt(SYSTEM_PROMPT_FMCG)
+    prompt = build_scenario_prompt(masked_ctx, description, parameters)
 
     req = await _log_request(db, AIRequestType.SCENARIO,
-                              {"type": scenario_type, "parameters": parameters, "erp_context": erp_ctx}, user_id)
+                              {"type": scenario_type, "parameters": parameters}, user_id)
     resp = None
     try:
         provider = get_ai_provider()
-        obj, resp = await provider.generate_structured_output(prompt, system=SYSTEM_PROMPT_FMCG)
+        obj, resp = await provider.generate_structured_output(prompt, system=safe_system)
         await _finish_request(db, req, resp, obj)
 
         scenario_data = obj.get("scenario", obj)
+        # Store expected_impact as JSON string in Text column (parsed on read in serializer)
+        expected_impact_raw = scenario_data.get("expected_impact", {})
         scenario = AIScenario(
             request_id=req.id,
             title=scenario_data.get("title", description),
             scenario_type=scenario_type,
             input_parameters=parameters,
-            expected_impact=json.dumps(scenario_data.get("expected_impact", {})),
+            expected_impact=json.dumps(expected_impact_raw) if isinstance(expected_impact_raw, dict) else expected_impact_raw,
             risks=scenario_data.get("risks", []),
             opportunities=scenario_data.get("opportunities", []),
             simulation_data=scenario_data,
@@ -442,55 +330,6 @@ Output schema:
 
 # ── Formulation Engine ────────────────────────────────────────────────────────
 
-FORMULATION_SCHEMA = """{
-  "formulation": {
-    "name": "string",
-    "product_category": "string",
-    "version": "standard",
-    "description": "string",
-    "ingredients": [
-      {
-        "ingredient_name": "Full chemical name with grade/concentration",
-        "inci_name": "INCI / IUPAC name",
-        "cas_number": "string or N/A",
-        "percentage": number,
-        "function": "function in formulation",
-        "supplier_examples": ["supplier1", "supplier2"],
-        "approx_cost_per_kg_usd": number
-      }
-    ],
-    "process_instructions": ["step 1", "step 2", "..."],
-    "processing_temperature": "string",
-    "mixing_speed": "string",
-    "estimated_ph": "string",
-    "estimated_viscosity_cP": "string or null",
-    "cost_breakdown": {
-      "raw_materials_per_kg_usd": number,
-      "packaging_estimate_per_unit_usd": number,
-      "labor_overhead_per_kg_usd": number,
-      "total_cogs_per_kg_usd": number
-    },
-    "performance_profile": {
-      "cleaning_efficiency": "rating/10 and description",
-      "foam_level": "Low|Medium|High",
-      "rinse_ability": "string",
-      "stability": "string",
-      "biodegradability": "string",
-      "skin_mildness": "string",
-      "antibacterial": "string"
-    },
-    "alternatives": {
-      "low_cost": {"name": "string", "key_changes": "string", "trade_offs": "string"},
-      "premium": {"name": "string", "key_changes": "string", "trade_offs": "string"},
-      "eco": {"name": "string", "key_changes": "string", "trade_offs": "string"}
-    },
-    "safety_notes": ["note 1", "note 2"],
-    "regulatory_notes": "string",
-    "shelf_life": "string"
-  }
-}"""
-
-
 async def generate_formulation(
     db: AsyncSession,
     product_category: str,
@@ -499,8 +338,6 @@ async def generate_formulation(
     performance_priority: str,
     user_id: Optional[uuid.UUID] = None,
 ) -> AIFormulation:
-
-    # Try to load ERP material context
     try:
         from app.models.master import Material
         materials = (await db.execute(
@@ -514,40 +351,17 @@ async def generate_formulation(
     props_str = "\n".join(f"  - {k}: {v}" for k, v in target_properties.items())
     erp_mat_str = f"Available ERP materials (use if applicable): {', '.join(erp_materials)}" if erp_materials else ""
 
-    prompt = f"""You are a senior formulation chemist specializing in FMCG products.
-Generate a complete, commercially viable formulation for the following:
-
-Product Category: {product_category}
-Target Properties:
-{props_str}
-Performance Priority: {performance_priority} (cost = minimize cost, quality = maximize performance, balanced = both)
-{cost_str}
-{erp_mat_str}
-
-REQUIREMENTS:
-1. Use REAL chemical ingredient names (not generic like "surfactant" — use "Sodium Lauryl Ether Sulfate 70%")
-2. Include CAS numbers for all synthetic ingredients
-3. All percentages must add up to EXACTLY 100%
-4. Cost estimates must be realistic USD/kg for East African market (2024–2025)
-5. Process instructions must be step-by-step, practically executable
-6. Include all three alternative formulations (low-cost, premium, eco-friendly)
-7. Safety notes must be specific to the actual chemicals used
-
-This formulation will be reviewed by the company's quality team before production.
-
-Output schema (follow EXACTLY):
-{FORMULATION_SCHEMA}"""
+    safe_system = build_safe_system_prompt(SYSTEM_PROMPT_FMCG)
+    prompt = build_formulation_prompt(product_category, props_str, performance_priority, cost_str, erp_mat_str)
 
     req = await _log_request(db, AIRequestType.FORMULATION, {
         "product_category": product_category,
-        "target_properties": target_properties,
-        "cost_target": cost_target,
         "performance_priority": performance_priority,
     }, user_id)
     resp = None
     try:
         provider = get_ai_provider()
-        obj, resp = await provider.generate_structured_output(prompt, system=SYSTEM_PROMPT_FMCG)
+        obj, resp = await provider.generate_structured_output(prompt, system=safe_system)
         await _finish_request(db, req, resp, obj)
 
         form_data = obj.get("formulation", obj)
@@ -578,14 +392,13 @@ Output schema (follow EXACTLY):
 async def get_ai_dashboard(db: AsyncSession) -> dict:
     from sqlalchemy import desc
 
-    # Count stored items
     pred_count = (await db.execute(
-        select(func.count(AIPrediction.id)).where(AIPrediction.is_archived == False)
+        select(func.count(AIPrediction.id)).where(AIPrediction.is_archived == False)  # noqa: E712
     )).scalar() or 0
 
     rec_count = (await db.execute(
         select(func.count(AIRecommendation.id))
-        .where(AIRecommendation.is_actioned == False, AIRecommendation.is_dismissed == False)
+        .where(AIRecommendation.is_actioned == False, AIRecommendation.is_dismissed == False)  # noqa: E712
     )).scalar() or 0
 
     form_count = (await db.execute(
@@ -596,26 +409,25 @@ async def get_ai_dashboard(db: AsyncSession) -> dict:
         select(func.count(AIScenario.id))
     )).scalar() or 0
 
-    # Recent predictions
     recent_preds = (await db.execute(
         select(AIPrediction).order_by(desc(AIPrediction.created_at)).limit(5)
     )).scalars().all()
 
-    # Critical recommendations
     critical_recs = (await db.execute(
         select(AIRecommendation)
-        .where(AIRecommendation.priority == "critical", AIRecommendation.is_actioned == False)
+        .where(AIRecommendation.priority == "critical", AIRecommendation.is_actioned == False)  # noqa: E712
         .order_by(desc(AIRecommendation.created_at))
         .limit(5)
     )).scalars().all()
 
-    # Provider status
     active_provider = get_ai_provider()
+    provider_name = active_provider.__class__.__name__.replace("Provider", "").lower()
     provider_status = {
-        "provider": active_provider.__class__.__name__.replace("Provider", "").lower(),
+        "provider": provider_name,
         "configured": settings.AI_CONFIGURED,
         "model": getattr(active_provider, "_model", getattr(active_provider, "_model_name", "mock-v1")),
-        "mode": "mock" if active_provider.__class__.__name__ == "MockProvider" else "live",
+        "mode": "mock" if provider_name == "mock" else "llm",
+        "fallback_active": provider_name == "mock" and not settings.AI_CONFIGURED,
     }
 
     return {
@@ -653,25 +465,6 @@ async def get_ai_dashboard(db: AsyncSession) -> dict:
 
 # ── ERP Copilot Chat ──────────────────────────────────────────────────────────
 
-CHAT_SYSTEM_PROMPT = """You are an intelligent ERP copilot for an FMCG manufacturing company in Kenya/East Africa.
-You have real-time access to the company's ERP data (sales, inventory, procurement, production, finance).
-
-Your role is to:
-- Answer questions about the company's ERP data clearly and accurately
-- Highlight risks, opportunities, and anomalies
-- Provide actionable recommendations grounded in the data
-- Explain ERP concepts in plain English
-
-Rules:
-- Only state facts supported by the ERP data provided in context
-- If data is insufficient, say so explicitly — do NOT fabricate numbers
-- All monetary values in KES unless the user specifies otherwise
-- Be concise but complete
-- If in mock/dev mode, clearly label your response as [MOCK/DEV MODE - Demo Data]
-
-IMPORTANT: You are NOT a general-purpose chatbot. Stay focused on ERP and business operations topics."""
-
-
 async def generate_chat_response(
     db: AsyncSession,
     message: str,
@@ -679,23 +472,24 @@ async def generate_chat_response(
     user_id: Optional[uuid.UUID] = None,
 ) -> dict:
     """
-    ERP Copilot: answer a free-form question using live ERP context.
-    Returns structured response with answer, source data used, and provider info.
+    ERP Copilot: answer a free-form question using masked live ERP context.
+    Prompt injection sanitization is handled upstream in the endpoint layer.
     """
     erp_ctx = await _gather_erp_context(db)
+    masked_ctx = mask_sensitive_context(erp_ctx)
+
     provider = get_ai_provider()
     is_mock = provider.__class__.__name__ == "MockProvider"
 
-    # Build conversation context
     history_str = ""
     if conversation_history:
-        for turn in conversation_history[-6:]:  # last 3 exchanges
+        for turn in conversation_history[-6:]:
             role = turn.get("role", "user")
             content = turn.get("content", "")
             history_str += f"\n{role.upper()}: {content}"
 
     prompt = f"""Current ERP Data Snapshot:
-{json.dumps(erp_ctx, indent=2)}
+{json.dumps(masked_ctx, indent=2)}
 
 {f'Conversation so far:{history_str}' if history_str else ''}
 
@@ -704,11 +498,13 @@ USER QUESTION: {message}
 Provide a clear, data-grounded answer. If the ERP data doesn't contain enough information to answer precisely, say so and suggest what additional data would help.
 {"[MOCK/DEV MODE: Use the demo data above to generate a plausible example answer. Clearly label the response as mock/demo data.]" if is_mock else ""}"""
 
+    safe_system = build_safe_system_prompt(CHAT_SYSTEM_PROMPT)
+
     req = await _log_request(db, AIRequestType.DOCUMENT,
-                              {"message": message, "erp_context": erp_ctx}, user_id)
+                              {"message": message}, user_id)
     resp = None
     try:
-        resp = await provider.generate_text(prompt, system=CHAT_SYSTEM_PROMPT)
+        resp = await provider.generate_text(prompt, system=safe_system)
         await _finish_request(db, req, resp, {"answer": resp.text})
         await db.commit()
 
@@ -717,7 +513,7 @@ Provide a clear, data-grounded answer. If the ERP data doesn't contain enough in
             "provider": resp.provider,
             "model": resp.model,
             "mode": "mock" if is_mock else "live",
-            "erp_context_used": list(erp_ctx.keys()),
+            "erp_context_used": list(masked_ctx.keys()),
             "tokens": {
                 "prompt": resp.prompt_tokens,
                 "completion": resp.completion_tokens,
@@ -735,15 +531,13 @@ Provide a clear, data-grounded answer. If the ERP data doesn't contain enough in
 
 async def compute_sales_baseline(db: AsyncSession) -> dict:
     """
-    Deterministic moving-average sales forecast — no LLM required.
+    Deterministic weighted moving-average sales forecast — no LLM required.
     Uses last 90 days of invoice data to compute a 30-day baseline forecast.
-    This provides a data-grounded baseline that the LLM can then interpret.
     """
     from app.models.sales import Invoice, InvoiceStatus
 
     today = date.today()
     rows = []
-    # Pull monthly revenue for last 3 months
     for months_ago in range(3, 0, -1):
         start = date(today.year, today.month, 1) - timedelta(days=30 * months_ago)
         end = start + timedelta(days=30)
@@ -768,19 +562,12 @@ async def compute_sales_baseline(db: AsyncSession) -> dict:
             "note": "No sales data available for baseline computation.",
         }
 
-    # Simple 3-month moving average
     avg = sum(rows) / len(rows)
-
-    # Trend: difference between last and first month as % of average
     trend_pct = ((rows[-1] - rows[0]) / avg * 100) if avg > 0 else 0
-
-    # Weighted average: more recent months weighted higher
     weights = [1, 2, 3]
     weighted = sum(r * w for r, w in zip(rows, weights)) / sum(weights)
-
-    # Confidence: higher when all months have data and low variance
     variance = sum((r - avg) ** 2 for r in rows) / len(rows)
-    cv = (variance ** 0.5) / avg if avg > 0 else 1.0  # coefficient of variation
+    cv = (variance ** 0.5) / avg if avg > 0 else 1.0
     confidence = max(0.0, min(1.0, 1.0 - cv))
 
     return {

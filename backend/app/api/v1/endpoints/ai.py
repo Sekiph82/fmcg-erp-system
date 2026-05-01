@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import uuid
 from datetime import datetime, timezone
 from typing import List, Optional, Any
@@ -11,6 +12,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import get_current_user, get_db, require_permission
 from app.core.config import settings
+from app.core.ai_modes import MODULE_AI_MODES, MODE_LABELS, MODE_DESCRIPTIONS
+from app.core.ai_rate_limiter import check_rate_limit
+from app.core.ai_safety import detect_prompt_injection, sanitize_user_prompt, is_clearly_malicious
 from app.models.ai import (
     AIRequest, AIPrediction, AIRecommendation, AIFormulation, AIScenario,
     AIRequestStatus,
@@ -23,29 +27,29 @@ router = APIRouter()
 # ── Request / Response schemas ────────────────────────────────────────────────
 
 class PredictionRequest(BaseModel):
-    prediction_types: Optional[List[str]] = None  # null = all
+    prediction_types: Optional[List[str]] = None
 
 
 class RecommendationRequest(BaseModel):
-    focus_area: Optional[str] = None   # e.g. "pricing", "stock"
+    focus_area: Optional[str] = None
 
 
 class ScenarioRequest(BaseModel):
-    scenario_type: str      # price_change | cost_change | supplier_change | product_change
+    scenario_type: str
     parameters: dict
     title: Optional[str] = None
 
 
 class FormulationRequest(BaseModel):
-    product_category: str   # liquid_detergent | shampoo | cream | wipes | ...
-    target_properties: dict  # e.g. {"cleaning_power": "high", "fragrance": "lemon", "eco_friendly": True}
-    cost_target: Optional[float] = None   # USD/kg
-    performance_priority: str = "balanced"  # cost | balanced | quality
+    product_category: str
+    target_properties: dict
+    cost_target: Optional[float] = None
+    performance_priority: str = "balanced"
 
 
 class ChatRequest(BaseModel):
     message: str
-    conversation_history: Optional[List[dict]] = None   # [{role, content}]
+    conversation_history: Optional[List[dict]] = None
 
 
 # ── Dashboard ─────────────────────────────────────────────────────────────────
@@ -56,13 +60,42 @@ async def ai_dashboard(db: AsyncSession = Depends(get_db)):
     return await svc.get_ai_dashboard(db)
 
 
-@router.get("/status/")
+@router.get("/status/",
+            dependencies=[Depends(require_permission("ai", "view"))])
 async def ai_status():
+    """
+    Return safe AI configuration status.
+    Requires ai:view permission — never exposes API keys or raw env values.
+    """
+    from app.services.ai_provider import get_ai_provider
+    active = get_ai_provider()
+    provider_name = active.__class__.__name__.replace("Provider", "").lower()
+    is_mock = provider_name == "mock"
+
     return {
-        "provider": settings.AI_PROVIDER,
+        "provider": provider_name,
         "configured": settings.AI_CONFIGURED,
-        "model": settings.ANTHROPIC_MODEL if settings.AI_PROVIDER == "anthropic" else settings.OPENAI_MODEL,
-        "mode": "live" if settings.AI_CONFIGURED and settings.AI_PROVIDER != "mock" else "mock",
+        "model": getattr(active, "_model", getattr(active, "_model_name", "mock-v1")),
+        "mode": "llm" if not is_mock else "mock",
+        "fallback_active": is_mock and settings.AI_CONFIGURED is False,
+        "ai_mode_label": "Mock / Dev Mode" if is_mock else "LLM-Powered",
+    }
+
+
+@router.get("/modes/",
+            dependencies=[Depends(require_permission("ai", "view"))])
+async def ai_modes():
+    """Return AI mode classification for all modules."""
+    return {
+        "modes": {
+            module: {
+                "mode": mode,
+                "label": MODE_LABELS.get(mode, mode),
+                "description": MODE_DESCRIPTIONS.get(mode, ""),
+            }
+            for module, mode in MODULE_AI_MODES.items()
+        },
+        "legend": {k: {"label": v, "description": MODE_DESCRIPTIONS[k]} for k, v in MODE_LABELS.items()},
     }
 
 
@@ -74,6 +107,7 @@ async def generate_predictions(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(require_permission("ai", "create")),
 ):
+    await check_rate_limit(str(current_user.id), "predictions", settings.AI_RATE_LIMIT_GENERATE)
     try:
         predictions = await svc.generate_predictions(
             db,
@@ -85,6 +119,8 @@ async def generate_predictions(
             "count": len(predictions),
             "predictions": [_pred_to_dict(p) for p in predictions],
         }
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(500, f"AI prediction failed: {str(e)}")
 
@@ -97,7 +133,7 @@ async def list_predictions(
     db: AsyncSession = Depends(get_db),
     _=Depends(require_permission("ai", "view")),
 ):
-    q = select(AIPrediction).where(AIPrediction.is_archived == False).order_by(
+    q = select(AIPrediction).where(AIPrediction.is_archived == False).order_by(  # noqa: E712
         desc(AIPrediction.created_at)
     ).limit(limit)
     if prediction_type:
@@ -132,6 +168,7 @@ async def generate_recommendations(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(require_permission("ai", "create")),
 ):
+    await check_rate_limit(str(current_user.id), "recommendations", settings.AI_RATE_LIMIT_GENERATE)
     try:
         recs = await svc.generate_recommendations(
             db,
@@ -143,6 +180,8 @@ async def generate_recommendations(
             "count": len(recs),
             "recommendations": [_rec_to_dict(r) for r in recs],
         }
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(500, f"AI recommendation failed: {str(e)}")
 
@@ -158,12 +197,12 @@ async def list_recommendations(
 ):
     q = (
         select(AIRecommendation)
-        .where(AIRecommendation.is_dismissed == False)
+        .where(AIRecommendation.is_dismissed == False)  # noqa: E712
         .order_by(desc(AIRecommendation.created_at))
         .limit(limit)
     )
     if not include_actioned:
-        q = q.where(AIRecommendation.is_actioned == False)
+        q = q.where(AIRecommendation.is_actioned == False)  # noqa: E712
     if category:
         q = q.where(AIRecommendation.category == category)
     if priority:
@@ -212,6 +251,7 @@ async def simulate_scenario(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(require_permission("ai", "create")),
 ):
+    await check_rate_limit(str(current_user.id), "scenarios", settings.AI_RATE_LIMIT_GENERATE)
     try:
         scenario = await svc.simulate_scenario(
             db,
@@ -221,6 +261,8 @@ async def simulate_scenario(
         )
         await db.commit()
         return _scenario_to_dict(scenario)
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(500, f"AI scenario simulation failed: {str(e)}")
 
@@ -261,6 +303,7 @@ async def generate_formulation(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(require_permission("ai", "create")),
 ):
+    await check_rate_limit(str(current_user.id), "formulations", settings.AI_RATE_LIMIT_GENERATE)
     try:
         formulation = await svc.generate_formulation(
             db,
@@ -273,6 +316,8 @@ async def generate_formulation(
         await db.commit()
         await db.refresh(formulation)
         return _form_to_dict(formulation)
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(500, f"AI formulation generation failed: {str(e)}")
 
@@ -403,13 +448,23 @@ def _rec_to_dict(r: AIRecommendation) -> dict:
     }
 
 
+def _safe_json_parse(v: Any) -> Any:
+    """Parse a value that may be a JSON-encoded string stored in a Text column."""
+    if isinstance(v, str):
+        try:
+            return json.loads(v)
+        except (json.JSONDecodeError, ValueError):
+            return v
+    return v
+
+
 def _scenario_to_dict(s: AIScenario) -> dict:
     return {
         "id": str(s.id),
         "title": s.title,
         "scenario_type": s.scenario_type,
         "input_parameters": s.input_parameters,
-        "expected_impact": s.expected_impact,
+        "expected_impact": _safe_json_parse(s.expected_impact),
         "risks": s.risks,
         "opportunities": s.opportunities,
         "simulation_data": s.simulation_data,
@@ -441,25 +496,52 @@ def _form_to_dict(f: AIFormulation) -> dict:
 async def chat(
     body: ChatRequest,
     db: AsyncSession = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user=Depends(require_permission("ai", "create")),
 ):
     """
-    Free-form ERP copilot. Ask any question about the company's ERP data.
-    Returns a structured response with the answer, provider info, and context used.
+    Free-form ERP copilot. Includes prompt injection guard and rate limiting.
+    Returns structured response with answer, provider info, and context used.
     """
     if not body.message or not body.message.strip():
         raise HTTPException(400, "Message cannot be empty")
     if len(body.message) > 2000:
         raise HTTPException(400, "Message too long (max 2000 characters)")
 
+    # Rate limit
+    await check_rate_limit(str(current_user.id), "chat", settings.AI_RATE_LIMIT_CHAT)
+
+    # Injection guard
+    raw_message = body.message.strip()
+    if is_clearly_malicious(raw_message):
+        return {
+            "answer": "I'm sorry, I can't process that request. Please ask an ERP-related question.",
+            "provider": "safety_filter",
+            "model": "none",
+            "mode": "blocked",
+            "erp_context_used": [],
+            "tokens": {"prompt": 0, "completion": 0},
+            "latency_ms": 0,
+            "safety": {"injection_detected": True, "action": "blocked"},
+        }
+
+    detection = detect_prompt_injection(raw_message)
+    sanitized_message = sanitize_user_prompt(raw_message)
+
     try:
         result = await svc.generate_chat_response(
             db,
-            message=body.message.strip(),
+            message=sanitized_message,
             conversation_history=body.conversation_history,
             user_id=current_user.id,
         )
+        # Attach safety metadata (no secrets in response)
+        result["safety"] = {
+            "injection_detected": detection["detected"],
+            "sanitized": sanitized_message != raw_message,
+        }
         return result
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(500, f"Chat failed: {str(e)}")
 
@@ -471,18 +553,16 @@ async def get_forecast_baseline(
     db: AsyncSession = Depends(get_db),
     _=Depends(get_current_user),
 ):
-    """
-    Returns a deterministic moving-average sales baseline — no LLM required.
-    Use this as a sanity check or supplement to AI predictions.
-    """
+    """Deterministic moving-average sales baseline — no LLM required."""
     return await svc.compute_sales_baseline(db)
 
 
 # ── AI Health ─────────────────────────────────────────────────────────────────
 
-@router.get("/health/")
+@router.get("/health/",
+            dependencies=[Depends(get_current_user)])
 async def ai_health():
-    """Lightweight health check — tests provider instantiation."""
+    """Lightweight health check — tests provider instantiation. Requires auth."""
     from app.services.ai_provider import get_ai_provider
     try:
         provider = get_ai_provider()

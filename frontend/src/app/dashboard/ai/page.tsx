@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
-import { aiApi, AIDashboard, AIPrediction, AIRecommendation } from "@/lib/aiApi";
+import { aiApi, AIDashboard, AIPrediction, AIRecommendation, parseAIError } from "@/lib/aiApi";
 
 const RISK_PILL: Record<string, string> = {
   low: "bg-green-100 text-green-700",
@@ -51,11 +51,13 @@ export default function AIDashboardPage() {
   const generatePreds = useMutation({
     mutationFn: () => aiApi.generatePredictions(),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["ai-dashboard"] }),
+    onError: (err) => { const e = parseAIError(err); alert(e.message + (e.resetAt ? ` Reset at: ${new Date(e.resetAt).toLocaleTimeString()}` : "")); },
   });
 
   const generateRecs = useMutation({
     mutationFn: () => aiApi.generateRecommendations(),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["ai-dashboard"] }),
+    onError: (err) => { const e = parseAIError(err); alert(e.message + (e.resetAt ? ` Reset at: ${new Date(e.resetAt).toLocaleTimeString()}` : "")); },
   });
 
   const actionRec = useMutation({
@@ -69,7 +71,12 @@ export default function AIDashboardPage() {
   });
 
   if (isLoading) return <div className="p-8 text-gray-500">Loading AI dashboard…</div>;
-  if (error) return <div className="p-8 text-red-500">Failed to load AI data.</div>;
+  if (error) {
+    const aiErr = parseAIError(error);
+    if (aiErr.status === 401) return <div className="p-8 text-yellow-600">Please log in to access AI features.</div>;
+    if (aiErr.status === 403) return <div className="p-8 text-orange-600">You do not have permission to use AI features.</div>;
+    return <div className="p-8 text-red-500">{aiErr.message}</div>;
+  }
 
   const stats = data?.stats;
 
@@ -85,9 +92,12 @@ export default function AIDashboardPage() {
               {status?.provider ?? "…"} / {status?.model ?? "…"}
             </span>
             {" "}
-            <span className={`text-xs px-2 py-0.5 rounded-full ${status?.mode === "live" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}>
-              {status?.mode ?? ""}
+            <span className={`text-xs px-2 py-0.5 rounded-full ${status?.mode === "llm" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}>
+              {status?.ai_mode_label ?? status?.mode ?? ""}
             </span>
+            {status?.fallback_active && (
+              <span className="ml-2 text-xs text-yellow-600">⚠ Mock mode — no API key configured</span>
+            )}
           </p>
         </div>
         <div className="flex gap-2">
