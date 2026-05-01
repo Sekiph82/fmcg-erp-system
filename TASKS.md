@@ -1,7 +1,7 @@
 # TASKS — FMCG ERP (Kenya) · Production Module
 
 ## Current Phase
-AI Architecture Security & Stability Fix ✅ COMPLETED
+Phase 6 — Navigation Architecture Refactor ✅ COMPLETED
 
 ## In Progress
 (none)
@@ -58,8 +58,32 @@ AI Architecture Security & Stability Fix ✅ COMPLETED
    - AIScenario expected_impact in frontend → should be object not string
    - Check AI dashboard shows correct provider name and model for active Gemini key
 
+## Completed in This Run (Phase 6 — Navigation Architecture Refactor)
+- `frontend/src/components/nav-config.tsx` — full restructure into 14 domain-based clusters
+- Structure: Dashboard (standalone) + 13 cluster headers + 66 sections
+- All existing routes preserved — zero path changes, zero module loss
+- New sections added: webhooks (Phase 45), 2FA/Security link (Phase 44)
+- Report builder permission corrected from `hr.view` to `analytics.view`
+- Fleet section permission updated from `hr.view` to `logistics.view`
+
+### 14-cluster map
+1. Dashboard — standalone link
+2. Master Data — master
+3. Planning — mrp, mps, planning (APS), procurement-suggestion
+4. Production / MES — production, production-execution, bom, shop-floor, machine-ops, material-flow
+5. Inventory & Warehouse — warehouse, shelf-life, traceability, cycle-count
+6. Quality & Compliance — quality, qms, allergen, gs1
+7. Procurement & Suppliers — procurement, subcontracting, landed-cost, supplier-portal
+8. Sales & Distribution — sales, price-lists, contracts, recurring-orders, commissions, customer-portal
+9. Marketing & CRM — crm-pipeline, marketing, tpm, promotions
+10. Finance & Accounting — finance, accounting, invoice-match, bank-reconciliation, fixed-assets, dimensions, dunning, tax
+11. HR & Payroll — hr, recruitment, ess, appraisals, training, timesheets, expenses
+12. Logistics & Field Operations — logistics, fleet, van-sales, maintenance
+13. Utilities & Sustainability — utility-management, esg
+14. System, AI & Platform — ai, analytics, report-builder, kanban, notification-center, calendar, chatter, custom-fields, webhooks, integrations, admin, utilities
+
 ## Next Immediate Task
-Phase 49+ (Putaway Rules continuation) or next module phase as instructed.
+UX validation and user navigation testing — verify all routes still resolve correctly.
 
 ## Completed in Last Run (Prompt 51 — Kenya Payroll Localization / Compliance)
 - Created `backend/app/models/payroll_ke.py` — 7 models: EmployeePayrollProfile, KeTaxBand, KeStatutoryRate, KeNhifTier, PayrollRun, KePayrollLine, Payslip + 3 enums
