@@ -1,16 +1,36 @@
 # TASKS — FMCG ERP (Kenya) · Production Module
 
 ## Current Phase
-Phase 46 — Fleet Management ✅ COMPLETED
+Phase 47 — Cycle Counting ✅ COMPLETED
 
 ## Next Immediate Task
-Prompt 47 - Cycle Counting
+Prompt 49 - Putaway Rules
 
 ## In Progress
 (none)
 
 ## Blockers
 (none)
+
+---
+
+## Phase 47 — Cycle Counting ✅
+
+- [x] `backend/app/models/cycle_count.py` — CycleCountPlan, CycleCountTask, CountEntry, CountAdjustment, ABCClassification + 5 enums
+- [x] `backend/app/schemas/cycle_count.py` — Pydantic schemas for all models + CycleCountDashboard
+- [x] `backend/app/services/cycle_count_service.py` — plan/task CRUD, ABC task generation (random + ABC-class), count entry with system_qty lookup + variance calc + tolerance check + auto-approve, stock posting (Stock update + StockMovement ADJUSTMENT), approval/rejection workflow, ABC classification engine (cumulative value split: A≤70%/B≤90%/C rest), dashboard, 3 reports (accuracy, variance, completion), 2 AI agents
+- [x] `backend/app/api/v1/endpoints/cycle_count.py` — 25+ endpoints at /api/v1/cycle-count/
+- [x] `backend/alembic/versions/a5b6c7d8e9f0_cycle_count.py` — migration (down_revision: f4a5b6c7d8e9), 5 tables + 5 enums
+- [x] `backend/app/models/__init__.py` — cycle_count models registered
+- [x] `backend/app/api/v1/router.py` — /cycle-count router registered
+- [x] `frontend/src/lib/cycleCount.ts` — full API client + status badge maps
+- [x] `frontend/src/app/dashboard/cycle-count/page.tsx` — dashboard KPIs + variance alert + nav
+- [x] `frontend/src/app/dashboard/cycle-count/plans/page.tsx` — plan manager with generate-tasks action
+- [x] `frontend/src/app/dashboard/cycle-count/tasks/page.tsx` — task queue with date/status filter + overdue highlight
+- [x] `frontend/src/app/dashboard/cycle-count/entries/page.tsx` — count entry form + variance color coding
+- [x] `frontend/src/app/dashboard/cycle-count/variances/page.tsx` — bulk approve/reject with stock-movement posting
+- [x] `frontend/src/app/dashboard/cycle-count/reports/page.tsx` — accuracy + completion + variance reports + 2 AI outputs
+- [x] `frontend/src/components/nav-config.tsx` — Cycle Count section added (6 links)
 
 ---
 

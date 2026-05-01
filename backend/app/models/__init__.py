@@ -14,6 +14,10 @@ from app.models.webhook import (
     EventDefinition, EventLog, Subscription, DeliveryAttempt, InboundEndpoint,
     AuthType, DeliveryStatus, HttpMethod,
 )
+from app.models.cycle_count import (
+    CycleCountPlan, CycleCountTask, CountEntry, CountAdjustment, ABCClassification,
+    PlanType, PlanStatus, TaskStatus, ABCClass, AdjustmentStatus,
+)
 from app.models.fleet import (
     Vehicle, FleetDriver, FleetTrip, FuelLog, MaintenanceRecord, IncidentLog,
     VehicleType, VehicleStatus, FuelType, TripStatus,
@@ -580,6 +584,9 @@ __all__ = [
     "AuditLog",
     # 2FA
     "User2FASettings", "TwoFASession", "RecoveryCode", "TwoFAMethod", "TwoFASessionStatus",
+    # Cycle Count
+    "CycleCountPlan", "CycleCountTask", "CountEntry", "CountAdjustment", "ABCClassification",
+    "PlanType", "PlanStatus", "TaskStatus", "ABCClass", "AdjustmentStatus",
     # Webhooks / Event Engine
     "EventDefinition", "EventLog", "Subscription", "DeliveryAttempt", "InboundEndpoint",
     "AuthType", "DeliveryStatus", "HttpMethod",
