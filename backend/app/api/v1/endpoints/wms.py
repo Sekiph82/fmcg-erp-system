@@ -17,7 +17,12 @@ from app.schemas.wms import (
     PutawayRequest, QuarantineRequest, ReleaseQuarantineRequest,
     FEFOSuggestion,
     NearExpiryRow, LowStockRow, StockAgingRow, LotTraceResult,
+    PutawayRuleCreate, PutawayRuleUpdate, PutawayRuleRead,
+    PutawayTaskCreate, PutawayTaskRead,
+    PutawayExecuteRequest, PutawayExecutionRead,
+    SuggestLocationResult,
 )
+from app.models.wms import PutawayTaskStatus
 
 router = APIRouter()
 
@@ -481,6 +486,178 @@ async def movement_ledger(
         movement_type=movement_type,
         skip=skip, limit=limit,
     )
+
+
+# ── Putaway Rule endpoints ────────────────────────────────────────────────────
+
+def _rule_read(rule) -> PutawayRuleRead:
+    r = PutawayRuleRead.model_validate(rule)
+    if rule.warehouse:
+        r.warehouse_name = rule.warehouse.name
+    if rule.zone:
+        r.zone_name = rule.zone.name
+    if rule.location:
+        r.location_code = rule.location.code
+    if rule.product:
+        r.product_name = rule.product.name
+    return r
+
+
+def _task_read(task) -> PutawayTaskRead:
+    r = PutawayTaskRead.model_validate(task)
+    if task.warehouse:
+        r.warehouse_name = task.warehouse.name
+    if task.product:
+        r.product_name = task.product.name
+        r.product_sku = task.product.sku
+    if task.material:
+        r.material_name = task.material.name
+    if task.suggested_location:
+        r.suggested_location_code = task.suggested_location.code
+    if task.assignee:
+        r.assignee_name = task.assignee.username
+    return r
+
+
+@router.get("/putaway/rules", response_model=List[PutawayRuleRead])
+async def list_putaway_rules(
+    warehouse_id: Optional[uuid.UUID] = None,
+    is_active: Optional[bool] = None,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(get_current_user),
+):
+    rules = await crud.list_putaway_rules(db, warehouse_id=warehouse_id, is_active=is_active)
+    return [_rule_read(r) for r in rules]
+
+
+@router.post("/putaway/rules", response_model=PutawayRuleRead, status_code=201)
+async def create_putaway_rule(
+    data: PutawayRuleCreate,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(get_current_user),
+):
+    obj = await crud.create_putaway_rule(db, data)
+    await db.commit()
+    rule = await crud.get_putaway_rule(db, obj.id)
+    return _rule_read(rule)
+
+
+@router.patch("/putaway/rules/{rule_id}", response_model=PutawayRuleRead)
+async def update_putaway_rule(
+    rule_id: uuid.UUID,
+    data: PutawayRuleUpdate,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(get_current_user),
+):
+    rule = await crud.get_putaway_rule(db, rule_id)
+    if not rule:
+        raise HTTPException(404, "Rule not found")
+    rule = await crud.update_putaway_rule(db, rule, data)
+    await db.commit()
+    rule = await crud.get_putaway_rule(db, rule_id)
+    return _rule_read(rule)
+
+
+# ── Putaway Task endpoints ────────────────────────────────────────────────────
+
+@router.get("/putaway/tasks", response_model=List[PutawayTaskRead])
+async def list_putaway_tasks(
+    warehouse_id: Optional[uuid.UUID] = None,
+    status: Optional[PutawayTaskStatus] = None,
+    skip: int = 0, limit: int = 100,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(get_current_user),
+):
+    tasks = await crud.list_putaway_tasks(db, warehouse_id=warehouse_id, status=status, skip=skip, limit=limit)
+    return [_task_read(t) for t in tasks]
+
+
+@router.post("/putaway/tasks", response_model=PutawayTaskRead, status_code=201)
+async def create_putaway_task(
+    data: PutawayTaskCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    task = await svc.create_putaway_task_from_receipt(db, data, current_user.id)
+    await db.commit()
+    task = await crud.get_putaway_task(db, task.id)
+    return _task_read(task)
+
+
+@router.get("/putaway/tasks/{task_id}", response_model=PutawayTaskRead)
+async def get_putaway_task(
+    task_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(get_current_user),
+):
+    task = await crud.get_putaway_task(db, task_id)
+    if not task:
+        raise HTTPException(404, "Task not found")
+    return _task_read(task)
+
+
+@router.post("/putaway/tasks/{task_id}/execute", response_model=PutawayExecutionRead)
+async def execute_putaway_task(
+    task_id: uuid.UUID,
+    req: PutawayExecuteRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    task = await crud.get_putaway_task(db, task_id)
+    if not task:
+        raise HTTPException(404, "Task not found")
+    execution = await svc.execute_putaway_task(db, task, req, current_user.id)
+    await db.commit()
+    await db.refresh(execution)
+    r = PutawayExecutionRead.model_validate(execution)
+    if execution.actual_location:
+        r.actual_location_code = execution.actual_location.code
+    return r
+
+
+# ── Suggest location ──────────────────────────────────────────────────────────
+
+@router.get("/putaway/suggest", response_model=SuggestLocationResult)
+async def suggest_location(
+    warehouse_id: uuid.UUID,
+    product_id: Optional[uuid.UUID] = None,
+    material_id: Optional[uuid.UUID] = None,
+    category: Optional[str] = None,
+    weight_kg: Optional[float] = None,
+    volume_m3: Optional[float] = None,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(get_current_user),
+):
+    from decimal import Decimal as D
+    return await svc.suggest_putaway_location(
+        db,
+        warehouse_id=warehouse_id,
+        product_id=product_id,
+        material_id=material_id,
+        category=category,
+        weight_kg=D(str(weight_kg)) if weight_kg else None,
+        volume_m3=D(str(volume_m3)) if volume_m3 else None,
+    )
+
+
+# ── AI Agents ─────────────────────────────────────────────────────────────────
+
+@router.get("/putaway/ai/space-optimizer")
+async def ai_space_optimizer(
+    warehouse_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(get_current_user),
+):
+    return await svc.ai_space_optimizer(db, warehouse_id)
+
+
+@router.get("/putaway/ai/efficiency")
+async def ai_putaway_efficiency(
+    warehouse_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(get_current_user),
+):
+    return await svc.ai_putaway_efficiency(db, warehouse_id)
 
 
 # Fix missing import

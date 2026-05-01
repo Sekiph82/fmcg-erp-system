@@ -21,7 +21,8 @@ from app.models.inventory import Stock, Lot, StockMovement, MovementType, StockT
 from app.models.master import Product, Material, Warehouse
 from app.models.wms import (
     WarehouseZone, StorageLocation, StockCount, StockCountLine,
-    StockCountStatus,
+    StockCountStatus, PutawayRule, PutawayRuleType, PutawayTask,
+    PutawayExecution, PutawayTaskStatus,
 )
 from app.models.production import MaterialConsumption, FinishedGoodsReceipt
 from app.crud import wms as crud
@@ -29,6 +30,7 @@ from app.schemas.wms import (
     PutawayRequest, QuarantineRequest, ReleaseQuarantineRequest,
     FEFOSuggestion, NearExpiryRow, LowStockRow, StockAgingRow,
     LotTraceRow, LotTraceResult, RecordCountRequest,
+    PutawayTaskCreate, PutawayExecuteRequest, SuggestLocationResult,
 )
 
 
@@ -620,3 +622,355 @@ async def get_movement_ledger(
             "created_at": m.created_at.isoformat() if m.created_at else None,
         })
     return out
+
+
+# ── Putaway Rule Engine ───────────────────────────────────────────────────────
+
+async def _available_locations_in_zone(
+    db: AsyncSession,
+    zone_id: uuid.UUID,
+    weight_kg: Optional[Decimal],
+    volume_m3: Optional[Decimal],
+) -> List[StorageLocation]:
+    q = select(StorageLocation).where(
+        StorageLocation.zone_id == zone_id,
+        StorageLocation.is_active == True,  # noqa: E712
+        StorageLocation.is_blocked == False,  # noqa: E712
+    )
+    result = await db.execute(q)
+    locs = list(result.scalars().all())
+
+    valid = []
+    for loc in locs:
+        if weight_kg and loc.max_weight_kg and weight_kg > loc.max_weight_kg:
+            continue
+        if volume_m3 and loc.max_volume_m3 and volume_m3 > loc.max_volume_m3:
+            continue
+        valid.append(loc)
+    return valid
+
+
+async def suggest_putaway_location(
+    db: AsyncSession,
+    warehouse_id: uuid.UUID,
+    product_id: Optional[uuid.UUID] = None,
+    material_id: Optional[uuid.UUID] = None,
+    category: Optional[str] = None,
+    weight_kg: Optional[Decimal] = None,
+    volume_m3: Optional[Decimal] = None,
+) -> SuggestLocationResult:
+    """Evaluate putaway rules by priority and return best location suggestion."""
+    rules_q = await db.execute(
+        select(PutawayRule)
+        .where(
+            PutawayRule.warehouse_id == warehouse_id,
+            PutawayRule.is_active == True,  # noqa: E712
+        )
+        .order_by(PutawayRule.priority.asc())
+    )
+    rules = list(rules_q.scalars().all())
+
+    for rule in rules:
+        if rule.rule_type == PutawayRuleType.FIXED:
+            if product_id and rule.product_id and rule.product_id != product_id:
+                continue
+            if rule.location_id:
+                loc_r = await db.execute(
+                    select(StorageLocation)
+                    .where(
+                        StorageLocation.id == rule.location_id,
+                        StorageLocation.is_active == True,  # noqa: E712
+                        StorageLocation.is_blocked == False,  # noqa: E712
+                    )
+                )
+                loc = loc_r.scalar_one_or_none()
+                if loc:
+                    await db.execute(
+                        select(WarehouseZone).where(WarehouseZone.id == loc.zone_id)
+                    )
+                    zone_r = await db.execute(select(WarehouseZone).where(WarehouseZone.id == loc.zone_id))
+                    zone = zone_r.scalar_one_or_none()
+                    return SuggestLocationResult(
+                        location_id=loc.id,
+                        location_code=loc.code,
+                        zone_name=zone.name if zone else None,
+                        rule_applied=rule.rule_code,
+                        confidence="FIXED",
+                    )
+
+        elif rule.rule_type in (PutawayRuleType.ZONE, PutawayRuleType.CATEGORY):
+            if rule.rule_type == PutawayRuleType.CATEGORY:
+                if not category or rule.category != category:
+                    continue
+            if rule.zone_id:
+                candidates = await _available_locations_in_zone(db, rule.zone_id, weight_kg, volume_m3)
+                if candidates:
+                    loc = candidates[0]
+                    zone_r = await db.execute(select(WarehouseZone).where(WarehouseZone.id == loc.zone_id))
+                    zone = zone_r.scalar_one_or_none()
+                    return SuggestLocationResult(
+                        location_id=loc.id,
+                        location_code=loc.code,
+                        zone_name=zone.name if zone else None,
+                        rule_applied=rule.rule_code,
+                        confidence="ZONE",
+                    )
+
+        elif rule.rule_type in (PutawayRuleType.RANDOM, PutawayRuleType.NEAREST):
+            zone_filter = PutawayRule.zone_id == rule.zone_id if rule.zone_id else None
+            target_zone_id = rule.zone_id
+            if target_zone_id:
+                candidates = await _available_locations_in_zone(db, target_zone_id, weight_kg, volume_m3)
+            else:
+                all_zones_q = await db.execute(
+                    select(WarehouseZone.id).where(WarehouseZone.warehouse_id == warehouse_id)
+                )
+                zone_ids = [r for (r,) in all_zones_q.all()]
+                candidates = []
+                for zid in zone_ids:
+                    candidates += await _available_locations_in_zone(db, zid, weight_kg, volume_m3)
+            if candidates:
+                import random
+                if rule.rule_type == PutawayRuleType.RANDOM:
+                    loc = random.choice(candidates)
+                else:
+                    loc = candidates[0]
+                zone_r = await db.execute(select(WarehouseZone).where(WarehouseZone.id == loc.zone_id))
+                zone = zone_r.scalar_one_or_none()
+                return SuggestLocationResult(
+                    location_id=loc.id,
+                    location_code=loc.code,
+                    zone_name=zone.name if zone else None,
+                    rule_applied=rule.rule_code,
+                    confidence=rule.rule_type.value,
+                )
+
+    # Fallback: any available location in warehouse
+    all_zones_q = await db.execute(
+        select(WarehouseZone.id).where(WarehouseZone.warehouse_id == warehouse_id)
+    )
+    zone_ids = [r for (r,) in all_zones_q.all()]
+    for zid in zone_ids:
+        candidates = await _available_locations_in_zone(db, zid, weight_kg, volume_m3)
+        if candidates:
+            loc = candidates[0]
+            zone_r = await db.execute(select(WarehouseZone).where(WarehouseZone.id == loc.zone_id))
+            zone = zone_r.scalar_one_or_none()
+            return SuggestLocationResult(
+                location_id=loc.id,
+                location_code=loc.code,
+                zone_name=zone.name if zone else None,
+                rule_applied="FALLBACK",
+                confidence="LOW",
+            )
+
+    return SuggestLocationResult(confidence="NONE")
+
+
+async def create_putaway_task_from_receipt(
+    db: AsyncSession,
+    data: PutawayTaskCreate,
+    user_id: uuid.UUID,
+) -> PutawayTask:
+    from app.crud import wms as crud
+
+    suggestion = await suggest_putaway_location(
+        db,
+        warehouse_id=data.warehouse_id,
+        product_id=data.product_id,
+        material_id=data.material_id,
+        weight_kg=data.weight_kg,
+        volume_m3=data.volume_m3,
+    )
+
+    from datetime import date as d_date
+    task_no = f"PUT-{_now().strftime('%Y%m%d%H%M%S')}"
+    task = await crud.create_putaway_task(
+        db, data, task_no, suggested_location_id=suggestion.location_id
+    )
+    await db.flush()
+    await db.refresh(task)
+    return task
+
+
+async def execute_putaway_task(
+    db: AsyncSession,
+    task: PutawayTask,
+    req: PutawayExecuteRequest,
+    user_id: uuid.UUID,
+) -> PutawayExecution:
+    if task.status == PutawayTaskStatus.COMPLETED:
+        raise HTTPException(422, "Task already completed")
+    if task.status == PutawayTaskStatus.CANCELLED:
+        raise HTTPException(422, "Task is cancelled")
+
+    loc_r = await db.execute(
+        select(StorageLocation).where(
+            StorageLocation.id == req.actual_location_id,
+            StorageLocation.is_blocked == False,  # noqa: E712
+        )
+    )
+    loc = loc_r.scalar_one_or_none()
+    if not loc:
+        raise HTTPException(404, "Target location not found or blocked")
+
+    is_variance = (
+        task.suggested_location_id is not None
+        and task.suggested_location_id != req.actual_location_id
+    )
+
+    if is_variance and not req.override_reason:
+        raise HTTPException(422, "override_reason required when location differs from suggestion")
+
+    execution = PutawayExecution(
+        task_id=task.id,
+        actual_location_id=req.actual_location_id,
+        executed_by=user_id,
+        executed_at=_now(),
+        is_variance=is_variance,
+        notes=req.notes,
+    )
+    db.add(execution)
+
+    task.status = PutawayTaskStatus.COMPLETED
+    if req.override_reason:
+        task.override_reason = req.override_reason
+
+    # Move stock to actual location
+    stock_filters = [
+        Stock.warehouse_id == task.warehouse_id,
+        Stock.location_id.is_(None),
+    ]
+    if task.product_id:
+        stock_filters += [Stock.product_id == task.product_id, Stock.stock_type == StockType.PRODUCT]
+    elif task.material_id:
+        stock_filters += [Stock.material_id == task.material_id, Stock.stock_type == StockType.MATERIAL]
+
+    if task.lot_number:
+        lot_r = await db.execute(select(Lot).where(Lot.lot_number == task.lot_number))
+        lot = lot_r.scalar_one_or_none()
+        if lot:
+            stock_filters.append(Stock.lot_id == lot.id)
+
+    stock_r = await db.execute(select(Stock).where(and_(*stock_filters)).with_for_update())
+    stock = stock_r.scalar_one_or_none()
+    if stock:
+        stock.location_id = req.actual_location_id
+
+    await db.flush()
+    await db.refresh(execution)
+    return execution
+
+
+# ── AI: Space Optimizer ───────────────────────────────────────────────────────
+
+async def ai_space_optimizer(
+    db: AsyncSession,
+    warehouse_id: uuid.UUID,
+) -> dict:
+    """Analyze location utilization and suggest improvements."""
+    # Count locations per zone and occupied (stock assigned)
+    zones_q = await db.execute(
+        select(WarehouseZone).where(WarehouseZone.warehouse_id == warehouse_id)
+    )
+    zones = list(zones_q.scalars().all())
+
+    zone_stats = []
+    total_locs = 0
+    occupied_locs = 0
+
+    for zone in zones:
+        locs_q = await db.execute(
+            select(StorageLocation).where(StorageLocation.zone_id == zone.id)
+        )
+        locs = list(locs_q.scalars().all())
+        loc_ids = [l.id for l in locs]
+
+        occupied = 0
+        if loc_ids:
+            occ_q = await db.execute(
+                select(func.count(Stock.id.distinct())).where(
+                    Stock.location_id.in_(loc_ids),
+                    Stock.quantity_on_hand > 0,
+                )
+            )
+            occupied = occ_q.scalar() or 0
+
+        total_locs += len(locs)
+        occupied_locs += occupied
+        utilization_pct = round(occupied / len(locs) * 100, 1) if locs else 0
+        zone_stats.append({
+            "zone_code": zone.code,
+            "zone_name": zone.name,
+            "zone_type": zone.zone_type.value,
+            "total_locations": len(locs),
+            "occupied_locations": occupied,
+            "utilization_pct": utilization_pct,
+            "available_locations": len(locs) - occupied,
+        })
+
+    overall_pct = round(occupied_locs / total_locs * 100, 1) if total_locs else 0
+    insights = []
+    for z in zone_stats:
+        if z["utilization_pct"] > 90:
+            insights.append(f"Zone '{z['zone_name']}' near capacity ({z['utilization_pct']}%) — consider expansion or overflow zone.")
+        elif z["utilization_pct"] < 20 and z["total_locations"] > 5:
+            insights.append(f"Zone '{z['zone_name']}' underutilized ({z['utilization_pct']}%) — consolidate stock or repurpose space.")
+
+    return {
+        "warehouse_id": str(warehouse_id),
+        "overall_utilization_pct": overall_pct,
+        "total_locations": total_locs,
+        "occupied_locations": occupied_locs,
+        "available_locations": total_locs - occupied_locs,
+        "zone_breakdown": zone_stats,
+        "ai_insights": insights if insights else ["Warehouse space utilization is within normal range."],
+        "generated_at": _now().isoformat(),
+    }
+
+
+async def ai_putaway_efficiency(
+    db: AsyncSession,
+    warehouse_id: uuid.UUID,
+) -> dict:
+    """Detect override patterns and inefficient placements."""
+    tasks_q = await db.execute(
+        select(PutawayTask)
+        .where(
+            PutawayTask.warehouse_id == warehouse_id,
+            PutawayTask.status == PutawayTaskStatus.COMPLETED,
+        )
+        .options(selectinload(PutawayTask.execution))
+    )
+    tasks = list(tasks_q.scalars().all())
+
+    total = len(tasks)
+    overrides = sum(1 for t in tasks if t.execution and t.execution.is_variance)
+    override_pct = round(overrides / total * 100, 1) if total else 0
+
+    pending_q = await db.execute(
+        select(func.count(PutawayTask.id)).where(
+            PutawayTask.warehouse_id == warehouse_id,
+            PutawayTask.status == PutawayTaskStatus.PENDING,
+        )
+    )
+    pending = pending_q.scalar() or 0
+
+    insights = []
+    if override_pct > 30:
+        insights.append(f"High override rate ({override_pct}%) — putaway rules may not match actual workflow. Review rule priorities.")
+    if pending > 20:
+        insights.append(f"{pending} putaway tasks pending — potential congestion. Assign more warehouse staff.")
+    if total == 0:
+        insights.append("No completed putaway tasks yet. Generate tasks from goods receipts to begin tracking.")
+
+    return {
+        "warehouse_id": str(warehouse_id),
+        "total_completed_tasks": total,
+        "override_count": overrides,
+        "override_rate_pct": override_pct,
+        "pending_tasks": pending,
+        "ai_insights": insights if insights else ["Putaway efficiency is within acceptable range."],
+        "generated_at": _now().isoformat(),
+    }
+

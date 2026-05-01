@@ -30,7 +30,7 @@ from app.models.production import (
     ProductionPlan, ProductionPlanLine, ProductionOrder,
     MaterialConsumption, FinishedGoodsReceipt, DowntimeLog,
 )
-from app.models.wms import WarehouseZone, StorageLocation, StockCount, StockCountLine
+from app.models.wms import WarehouseZone, StorageLocation, StockCount, StockCountLine, PutawayRule, PutawayTask, PutawayExecution
 from app.models.procurement import (
     PurchaseRequisition, PRLine, PurchaseOrder, POLine,
     GoodsReceipt, GRNLine, ImportShipment, SupplierEvaluation, SupplierPayment,

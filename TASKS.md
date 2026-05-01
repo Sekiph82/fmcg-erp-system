@@ -1,36 +1,38 @@
 # TASKS — FMCG ERP (Kenya) · Production Module
 
 ## Current Phase
-AI MODULE AUDIT + FIX ✅ COMPLETED
+Phase 7 — Putaway Rules ✅ COMPLETED
 
 ## In Progress
 (none)
 
 ## Completed in Last Run
-- Full AI module audit → AI_MODULE_AUDIT.md
-- Fixed critical bug: `Stock.reorder_point` not a column — now joins Product.reorder_point
-- Fixed critical bug: `AIProvider` enum missing GEMINI + AUTO values
-- Fixed: `_log_request` now uses active provider name, not settings string
-- Fixed: `get_ai_dashboard` now reports actual active provider
-- Added: `POST /api/v1/ai/chat/` — ERP Copilot free-form chat endpoint
-- Added: `GET /api/v1/ai/forecast-baseline/` — deterministic 3-month moving average
-- Added: `GET /api/v1/ai/health/` — lightweight health check
-- Added: `generate_chat_response()` in ai_service.py with CHAT_SYSTEM_PROMPT
-- Added: `compute_sales_baseline()` deterministic forecast engine
-- Added: `_resolve_provider_enum()` and `_resolve_model_name()` helpers
-- Added: MockProvider improved for chat — explicit non-deceptive mock response
-- Added: `aiApi.chat()`, `aiApi.forecastBaseline()`, `aiApi.health()` to frontend client
-- Added: `AIChatResponse` and `AIForecastBaseline` TypeScript interfaces
-- Added: `frontend/src/app/dashboard/ai/chat/page.tsx` — ERP Copilot chat UI
-- Added: Nav link "ERP Copilot (Chat)" in AI section
-- Created: AI_MODULE_AUDIT.md at project root
-- Created: AI_MODULE_TEST_CHECKLIST.md at project root
+- Added `PutawayRuleType`, `PutawayTaskStatus`, `LocationType` enums to `models/wms.py`
+- Added `PutawayRule`, `PutawayTask`, `PutawayExecution` models to `models/wms.py`
+- Extended `StorageLocation` with `location_type`, `current_utilization_pct` columns
+- Added putaway rule/task/execution schemas to `schemas/wms.py`
+- Extended `crud/wms.py` with CRUD for rules and tasks
+- Added rule engine (`suggest_putaway_location`) to `services/wms_service.py`
+- Added `create_putaway_task_from_receipt`, `execute_putaway_task` to service
+- Added `ai_space_optimizer`, `ai_putaway_efficiency` AI agents to service
+- Added endpoints to `api/v1/endpoints/wms.py`:
+  - `GET/POST /wms/putaway/rules`
+  - `PATCH /wms/putaway/rules/{id}`
+  - `GET/POST /wms/putaway/tasks`
+  - `GET /wms/putaway/tasks/{id}`
+  - `POST /wms/putaway/tasks/{id}/execute`
+  - `GET /wms/putaway/suggest`
+  - `GET /wms/putaway/ai/space-optimizer`
+  - `GET /wms/putaway/ai/efficiency`
+- Added migration `b6c7d8e9f0a1_putaway_rules.py`
+- Created `frontend/src/lib/putaway.ts`
+- Created `frontend/src/app/dashboard/putaway/page.tsx` (task list + KPIs)
+- Created `frontend/src/app/dashboard/putaway/rules/page.tsx` (rule manager)
+- Created `frontend/src/app/dashboard/putaway/execute/[id]/page.tsx` (execution screen)
+- Added Putaway Tasks + Putaway Rules to nav-config.tsx
 
 ## Next Immediate Task
-Prompt 49 - Putaway Rules
-
-## In Progress
-(none)
+Prompt 49 - Secondary sales / distributor sell-through
 
 ## Blockers
 (none)

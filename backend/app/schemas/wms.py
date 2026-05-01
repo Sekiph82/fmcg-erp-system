@@ -4,7 +4,7 @@ from decimal import Decimal
 from datetime import datetime, date
 import uuid
 
-from app.models.wms import ZoneType, StockCountType, StockCountStatus
+from app.models.wms import ZoneType, StockCountType, StockCountStatus, PutawayRuleType, PutawayTaskStatus, LocationType
 
 
 # ── Zones ─────────────────────────────────────────────────────────────────────
@@ -34,6 +34,7 @@ class StorageLocationCreate(BaseModel):
     barcode: Optional[str] = None
     max_weight_kg: Optional[Decimal] = None
     max_volume_m3: Optional[Decimal] = None
+    location_type: Optional[LocationType] = None
     is_active: bool = True
     is_blocked: bool = False
 
@@ -43,6 +44,8 @@ class StorageLocationUpdate(BaseModel):
     barcode: Optional[str] = None
     max_weight_kg: Optional[Decimal] = None
     max_volume_m3: Optional[Decimal] = None
+    location_type: Optional[LocationType] = None
+    current_utilization_pct: Optional[Decimal] = None
     is_active: Optional[bool] = None
     is_blocked: Optional[bool] = None
 
@@ -54,6 +57,7 @@ class StorageLocationRead(StorageLocationCreate):
     zone_type: Optional[ZoneType] = None
     warehouse_id: Optional[uuid.UUID] = None
     warehouse_name: Optional[str] = None
+    current_utilization_pct: Optional[Decimal] = None
     model_config = {"from_attributes": True}
 
 
@@ -231,3 +235,107 @@ class LotTraceResult(BaseModel):
     expiry_date: Optional[date] = None
     manufacture_date: Optional[date] = None
     events: List[LotTraceRow]
+
+
+# ── Putaway Rules ─────────────────────────────────────────────────────────────
+
+class PutawayRuleCreate(BaseModel):
+    rule_code: str
+    warehouse_id: uuid.UUID
+    rule_type: PutawayRuleType
+    priority: int = 100
+    product_id: Optional[uuid.UUID] = None
+    category: Optional[str] = None
+    zone_id: Optional[uuid.UUID] = None
+    location_id: Optional[uuid.UUID] = None
+    is_active: bool = True
+    notes: Optional[str] = None
+
+
+class PutawayRuleUpdate(BaseModel):
+    rule_type: Optional[PutawayRuleType] = None
+    priority: Optional[int] = None
+    product_id: Optional[uuid.UUID] = None
+    category: Optional[str] = None
+    zone_id: Optional[uuid.UUID] = None
+    location_id: Optional[uuid.UUID] = None
+    is_active: Optional[bool] = None
+    notes: Optional[str] = None
+
+
+class PutawayRuleRead(PutawayRuleCreate):
+    id: uuid.UUID
+    warehouse_name: Optional[str] = None
+    zone_name: Optional[str] = None
+    location_code: Optional[str] = None
+    product_name: Optional[str] = None
+    model_config = {"from_attributes": True}
+
+
+# ── Putaway Tasks ─────────────────────────────────────────────────────────────
+
+class PutawayTaskCreate(BaseModel):
+    warehouse_id: uuid.UUID
+    product_id: Optional[uuid.UUID] = None
+    material_id: Optional[uuid.UUID] = None
+    lot_number: Optional[str] = None
+    quantity: Decimal
+    weight_kg: Optional[Decimal] = None
+    volume_m3: Optional[Decimal] = None
+    receipt_ref: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class PutawayTaskRead(BaseModel):
+    id: uuid.UUID
+    task_no: str
+    warehouse_id: uuid.UUID
+    product_id: Optional[uuid.UUID] = None
+    material_id: Optional[uuid.UUID] = None
+    lot_number: Optional[str] = None
+    quantity: Decimal
+    weight_kg: Optional[Decimal] = None
+    volume_m3: Optional[Decimal] = None
+    suggested_location_id: Optional[uuid.UUID] = None
+    assigned_to: Optional[uuid.UUID] = None
+    status: PutawayTaskStatus
+    receipt_ref: Optional[str] = None
+    override_reason: Optional[str] = None
+    notes: Optional[str] = None
+    product_name: Optional[str] = None
+    product_sku: Optional[str] = None
+    material_name: Optional[str] = None
+    suggested_location_code: Optional[str] = None
+    warehouse_name: Optional[str] = None
+    assignee_name: Optional[str] = None
+    model_config = {"from_attributes": True}
+
+
+# ── Putaway Execution ─────────────────────────────────────────────────────────
+
+class PutawayExecuteRequest(BaseModel):
+    actual_location_id: uuid.UUID
+    override_reason: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class PutawayExecutionRead(BaseModel):
+    id: uuid.UUID
+    task_id: uuid.UUID
+    actual_location_id: uuid.UUID
+    executed_by: Optional[uuid.UUID] = None
+    executed_at: datetime
+    is_variance: bool
+    notes: Optional[str] = None
+    actual_location_code: Optional[str] = None
+    model_config = {"from_attributes": True}
+
+
+# ── Suggest Location ──────────────────────────────────────────────────────────
+
+class SuggestLocationResult(BaseModel):
+    location_id: Optional[uuid.UUID] = None
+    location_code: Optional[str] = None
+    zone_name: Optional[str] = None
+    rule_applied: Optional[str] = None
+    confidence: str = "AUTO"
