@@ -47,6 +47,7 @@ from app.api.v1.endpoints import (
     chatter,
     custom_fields,
     secondary_sales,
+    esg,
 )
 
 api_router = APIRouter()
@@ -224,3 +225,5 @@ api_router.include_router(chatter.router, prefix="/chatter", tags=["chatter"])
 api_router.include_router(custom_fields.router, prefix="/custom-fields", tags=["custom-fields"])
 # ── Secondary Sales / Distributor Sell-Through ────────────────────────────────
 api_router.include_router(secondary_sales.router, prefix="/secondary-sales", tags=["secondary-sales"])
+# ── ESG / Environmental Sustainability ────────────────────────────────────────
+api_router.include_router(esg.router, prefix="/esg", tags=["esg"])

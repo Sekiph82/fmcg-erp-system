@@ -1,12 +1,29 @@
 # TASKS — FMCG ERP (Kenya) · Production Module
 
 ## Current Phase
-Phase 7 — Secondary Sales / Distributor Sell-Through ✅ COMPLETED
+Phase 7 — Environmental / Sustainability Reporting (ESG) ✅ COMPLETED
 
 ## In Progress
 (none)
 
-## Completed in Last Run (Prompt 49 — Secondary Sales)
+## Completed in Last Run (Prompt 50 — ESG / Sustainability Reporting)
+- Created `backend/app/models/esg.py` — ActivityData, EmissionFactor, EmissionRecord, ResourceMetric, ESGTarget + 3 enums (SourceType/12 values, EmissionScope, ESGMetricType)
+- Created `backend/app/schemas/esg.py` — 14 Pydantic schemas
+- Created `backend/app/crud/esg.py` — full CRUD: factors (with active-factor lookup by source/region/date), activities, emission records, metrics, targets
+- Created `backend/app/services/esg_service.py` — calculation engine (quantity × factor → kgCO2e), fleet auto-import, sell-through reports, target performance, 3 AI agents (hotspot/reduction/data-quality), 8 default factor seeds (GHG Protocol/DEFRA/IPCC/KPLC)
+- Created `backend/app/api/v1/endpoints/esg.py` — 22 endpoints at /esg/
+- Registered `esg` in router.py under prefix /esg
+- Registered 5 new models in `models/__init__.py`
+- Created migration `d8e9f0a1b2c3_esg_sustainability.py` — 5 tables + 3 enums
+- Created `frontend/src/lib/esg.ts` — full typed API client + SOURCE_TYPE_LABELS/SOURCE_UNITS maps
+- Created `frontend/src/app/dashboard/esg/page.tsx` — dashboard: Scope 1/2/3 KPIs, recycling rate bar, AI analysis panel, fleet import button, factor seed button
+- Created `frontend/src/app/dashboard/esg/activities/page.tsx` — activity logger with source/date filters, emission calculation display
+- Created `frontend/src/app/dashboard/esg/factors/page.tsx` — emission factor manager with seed action
+- Created `frontend/src/app/dashboard/esg/targets/page.tsx` — target creation + progress visualization (baseline/target/actual bars)
+- Created `frontend/src/app/dashboard/esg/reports/page.tsx` — scope/source/resource reports with CSV export + GHG Protocol standards note
+- Added ESG section (5 links) to nav-config.tsx
+
+## Completed in Previous Run (Prompt 49 — Secondary Sales)
 - Created `backend/app/models/secondary_sales.py` — RetailerMaster, SecondarySalesHeader, SecondarySalesLine, DistributorInventorySnapshot + 3 enums
 - Created `backend/app/schemas/secondary_sales.py` — full Pydantic schema set
 - Created `backend/app/crud/secondary_sales.py` — CRUD for all 4 models, upsert snapshot
@@ -48,7 +65,7 @@ Phase 7 — Secondary Sales / Distributor Sell-Through ✅ COMPLETED
 - Added Putaway Tasks + Putaway Rules to nav-config.tsx
 
 ## Next Immediate Task
-Prompt 51 - Environmental / sustainability reporting
+Prompt 51 - Kenya payroll localization / compliance
 
 ## Blockers
 (none)
