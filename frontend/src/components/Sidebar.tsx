@@ -16,7 +16,7 @@ import {
 // ── Storage keys ──────────────────────────────────────────────────────────────
 
 const STORAGE_COLLAPSED = "erp_sidebar_collapsed";
-const STORAGE_EXPANDED  = "erp_sidebar_expanded";
+const STORAGE_EXPANDED  = "erp_sidebar_expanded_v2"; // v2 = single-expand
 
 // ── Chevron ───────────────────────────────────────────────────────────────────
 
@@ -63,11 +63,11 @@ function Avatar({ name }: { name: string }) {
   );
 }
 
-// ── Cluster header (expanded only) ────────────────────────────────────────────
+// ── Cluster header — now just a divider label, not a clickable row ────────────
 
 function ClusterLabel({ label }: { label: string }) {
   return (
-    <div className="flex items-center gap-2.5 px-3 pt-[18px] pb-[5px]">
+    <div className="flex items-center gap-2.5 px-3 pt-[14px] pb-[4px]">
       <span className="text-[9.5px] font-semibold tracking-[0.14em] text-slate-600 uppercase select-none whitespace-nowrap">
         {label}
       </span>
@@ -76,7 +76,7 @@ function ClusterLabel({ label }: { label: string }) {
   );
 }
 
-// ── Section group ─────────────────────────────────────────────────────────────
+// ── Section group — accordion item ────────────────────────────────────────────
 
 interface SectionProps {
   section: NavSection;
@@ -106,7 +106,7 @@ function SectionGroup({
 
   const hasActiveChild = visibleItems.some((item) => isItemActive(item.href, pathname));
 
-  // ── Collapsed icon rail ──────────────────────────────────────────────────────
+  // ── Collapsed icon rail ───────────────────────────────────────────────────────
   if (collapsed) {
     return (
       <Tooltip label={section.label}>
@@ -129,20 +129,20 @@ function SectionGroup({
     );
   }
 
-  // ── Expanded section ─────────────────────────────────────────────────────────
+  // ── Expanded accordion section ────────────────────────────────────────────────
   return (
     <div>
       {/* Section header button */}
       <button
         onClick={onToggle}
+        aria-expanded={isExpanded}
         className={[
-          "group/hdr flex w-full items-center gap-2.5 rounded-lg px-2.5 py-[8px] text-left transition-all duration-150",
+          "group/hdr flex w-full items-center gap-2.5 rounded-lg px-2.5 py-[7px] text-left transition-all duration-150",
           hasActiveChild
             ? "text-slate-200 hover:bg-white/[0.04]"
             : "text-slate-500 hover:bg-white/[0.04] hover:text-slate-300",
         ].join(" ")}
       >
-        {/* Icon */}
         <span
           className={[
             "shrink-0 transition-colors",
@@ -154,17 +154,15 @@ function SectionGroup({
           {section.icon}
         </span>
 
-        {/* Label */}
         <span className="flex-1 text-[12.5px] font-medium leading-none truncate">
           {section.label}
         </span>
 
-        {/* Active-but-collapsed indicator dot */}
+        {/* Active dot when collapsed (children active but section closed) */}
         {hasActiveChild && !isExpanded && (
           <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-400" />
         )}
 
-        {/* Chevron */}
         <span
           className={[
             "shrink-0 transition-colors",
@@ -175,12 +173,12 @@ function SectionGroup({
         </span>
       </button>
 
-      {/* Animated item list — grid-template-rows trick for smooth auto-height */}
+      {/* Smooth height animation via grid-template-rows trick */}
       <div
         style={{
           display: "grid",
           gridTemplateRows: isExpanded ? "1fr" : "0fr",
-          transition: "grid-template-rows 0.22s ease",
+          transition: "grid-template-rows 0.20s ease",
         }}
       >
         <div style={{ overflow: "hidden" }}>
@@ -193,8 +191,8 @@ function SectionGroup({
                   href={item.href}
                   onClick={onNavigate}
                   className={[
-                    "relative flex items-center border-l-[2px] py-[6px] pl-[28px] pr-2.5",
-                    "text-[12.5px] leading-snug rounded-r-lg transition-all duration-150",
+                    "relative flex items-center border-l-[2px] py-[5.5px] pl-[28px] pr-2.5",
+                    "text-[12px] leading-snug rounded-r-lg transition-all duration-150",
                     active
                       ? "border-cyan-400 bg-cyan-500/[0.10] text-cyan-100 font-medium"
                       : "border-transparent text-slate-500 hover:bg-white/[0.045] hover:text-slate-300",
@@ -258,7 +256,7 @@ function StandaloneLink({
       href={entry.href}
       onClick={onNavigate}
       className={[
-        "flex items-center gap-2.5 rounded-lg px-2.5 py-[9px]",
+        "flex items-center gap-2.5 rounded-lg px-2.5 py-[8px]",
         "text-[12.5px] font-medium transition-all duration-200",
         active
           ? "bg-cyan-500/[0.12] text-cyan-100 border border-cyan-500/[0.30]"
@@ -316,40 +314,39 @@ export function Sidebar({ mobileOpen, onMobileClose, onOpenSearch }: SidebarProp
   const { user, logout, hasPermission } = useAuth();
 
   const [collapsed, setCollapsed] = useState(false);
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
+  // Single string: which section ID is currently open (or null = all closed)
+  const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
 
-  // Hydrate from localStorage after mount
+  // ── Hydrate on mount ──────────────────────────────────────────────────────────
   useEffect(() => {
     const savedCollapsed = localStorage.getItem(STORAGE_COLLAPSED);
     if (savedCollapsed !== null) setCollapsed(savedCollapsed === "true");
 
-    const savedExpanded = localStorage.getItem(STORAGE_EXPANDED);
-    const base: Set<string> = savedExpanded
-      ? new Set<string>(JSON.parse(savedExpanded))
-      : new Set<string>();
-
+    // Route always wins: if current page belongs to a section, expand it
     const activeSection = getSectionIdForPath(pathname);
-    if (activeSection) base.add(activeSection);
+    if (activeSection) {
+      setExpandedSection(activeSection);
+    } else {
+      // No active section — restore last manually opened section
+      const saved = localStorage.getItem(STORAGE_EXPANDED);
+      setExpandedSection(saved ?? null);
+    }
 
-    setExpandedSections(base);
     setMounted(true);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Auto-expand active section on route change
+  // ── Auto-expand when route changes ────────────────────────────────────────────
   useEffect(() => {
     if (!mounted) return;
     const activeSection = getSectionIdForPath(pathname);
-    if (activeSection) {
-      setExpandedSections((prev) => {
-        if (prev.has(activeSection)) return prev;
-        const next = new Set(prev);
-        next.add(activeSection);
-        localStorage.setItem(STORAGE_EXPANDED, JSON.stringify(Array.from(next)));
-        return next;
-      });
+    if (activeSection && activeSection !== expandedSection) {
+      setExpandedSection(activeSection);
+      localStorage.setItem(STORAGE_EXPANDED, activeSection);
     }
+  // expandedSection intentionally omitted — we only react to route changes
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname, mounted]);
 
   const toggleCollapsed = useCallback(() => {
@@ -365,17 +362,17 @@ export function Sidebar({ mobileOpen, onMobileClose, onOpenSearch }: SidebarProp
     localStorage.setItem(STORAGE_COLLAPSED, "false");
   }, []);
 
+  // Single-expand accordion: open clicked section, close previously open one
   const toggleSection = useCallback((id: string) => {
-    setExpandedSections((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      localStorage.setItem(STORAGE_EXPANDED, JSON.stringify(Array.from(next)));
+    setExpandedSection((prev) => {
+      const next = prev === id ? null : id;
+      // Persist the manually chosen open section
+      if (next) localStorage.setItem(STORAGE_EXPANDED, next);
+      else localStorage.removeItem(STORAGE_EXPANDED);
       return next;
     });
   }, []);
 
-  // Close mobile on navigation
   const handleNavigate = useCallback(() => {
     onMobileClose();
   }, [onMobileClose]);
@@ -387,23 +384,18 @@ export function Sidebar({ mobileOpen, onMobileClose, onOpenSearch }: SidebarProp
   return (
     <aside
       className={[
-        // Base
         "flex h-screen flex-col",
         "bg-[#0b1120]",
         "border-r border-white/[0.065]",
         "transition-[width,transform] duration-200 ease-in-out",
-        // Desktop: static sidebar that shrinks/expands
         "relative",
-        // Desktop width
         collapsed ? "w-[52px]" : "w-[228px]",
-        // Mobile: fixed overlay controlled by mobileOpen
         "max-lg:fixed max-lg:inset-y-0 max-lg:left-0 max-lg:z-50 max-lg:w-[228px]",
         mobileOpen ? "max-lg:translate-x-0" : "max-lg:-translate-x-full",
-      ]
-        .join(" ")}
+      ].join(" ")}
       style={{ flexShrink: 0 }}
     >
-      {/* ── Logo / Header ──────────────────────────────────────────────────────── */}
+      {/* ── Logo / Header ─────────────────────────────────────────────────────── */}
       <div
         className={[
           "flex h-[52px] shrink-0 items-center border-b border-white/[0.065]",
@@ -440,7 +432,7 @@ export function Sidebar({ mobileOpen, onMobileClose, onOpenSearch }: SidebarProp
         )}
       </div>
 
-      {/* ── Search trigger ─────────────────────────────────────────────────────── */}
+      {/* ── Search trigger ────────────────────────────────────────────────────── */}
       {onOpenSearch && !collapsed && (
         <div className="px-2 pt-2 pb-1 shrink-0">
           <button
@@ -470,7 +462,7 @@ export function Sidebar({ mobileOpen, onMobileClose, onOpenSearch }: SidebarProp
         </div>
       )}
 
-      {/* ── Navigation ─────────────────────────────────────────────────────────── */}
+      {/* ── Navigation ───────────────────────────────────────────────────────── */}
       <nav
         className={[
           "flex-1 overflow-y-auto overflow-x-hidden py-2",
@@ -483,17 +475,11 @@ export function Sidebar({ mobileOpen, onMobileClose, onOpenSearch }: SidebarProp
         {NAV_CONFIG.map((entry) => {
           const key = entry.id;
 
-          // ── Cluster header ────────────────────────────────────────────────────
           if (entry.type === "cluster-header") {
-            if (collapsed) {
-              return <CollapsedClusterDivider key={key} />;
-            }
-            return (
-              <ClusterLabel key={key} label={(entry as NavClusterHeader).label} />
-            );
+            if (collapsed) return <CollapsedClusterDivider key={key} />;
+            return <ClusterLabel key={key} label={(entry as NavClusterHeader).label} />;
           }
 
-          // ── Standalone link ───────────────────────────────────────────────────
           if (entry.type === "link") {
             return (
               <StandaloneLink
@@ -507,7 +493,7 @@ export function Sidebar({ mobileOpen, onMobileClose, onOpenSearch }: SidebarProp
             );
           }
 
-          // ── Section group ─────────────────────────────────────────────────────
+          // Section
           const section = entry as NavSection;
           if (section.permission && !can(section.permission)) {
             const anyVisible = section.items.some((i) => !i.permission || can(i.permission));
@@ -520,7 +506,7 @@ export function Sidebar({ mobileOpen, onMobileClose, onOpenSearch }: SidebarProp
               section={section}
               collapsed={collapsed}
               pathname={pathname}
-              isExpanded={expandedSections.has(section.id)}
+              isExpanded={expandedSection === section.id}
               onToggle={() => toggleSection(section.id)}
               onExpandSidebar={expandSidebar}
               onNavigate={handleNavigate}
@@ -529,11 +515,10 @@ export function Sidebar({ mobileOpen, onMobileClose, onOpenSearch }: SidebarProp
           );
         })}
 
-        {/* Bottom padding */}
         <div className="h-3" />
       </nav>
 
-      {/* ── User footer ────────────────────────────────────────────────────────── */}
+      {/* ── User footer ──────────────────────────────────────────────────────── */}
       <div
         className={[
           "shrink-0 border-t border-white/[0.065] bg-[#080f1b]",

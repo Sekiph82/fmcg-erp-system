@@ -19,7 +19,6 @@ interface NavResult {
   label: string;
   subtitle: string;
   href: string;
-  icon?: React.ReactNode;
 }
 
 interface RecordResult {
@@ -40,35 +39,28 @@ interface Props {
   recent: RecentItem[];
 }
 
-// ── Icon map for record types ─────────────────────────────────────────────────
+// ── Icon maps ─────────────────────────────────────────────────────────────────
 
 const RECORD_ICONS: Record<string, string> = {
-  customer: "👤",
-  supplier: "🏢",
-  product: "📦",
-  material: "🧪",
-  sales_order: "🛒",
+  customer:       "👤",
+  supplier:       "🏢",
+  product:        "📦",
+  material:       "🧪",
+  sales_order:    "🛒",
   purchase_order: "📋",
-  invoice: "📄",
-};
-
-const CAT_ICONS: Record<string, string> = {
-  navigation: "🗺️",
-  action: "⚡",
-  report: "📊",
-  ai: "🧠",
-  record: "🔍",
+  invoice:        "📄",
 };
 
 const CAT_LABEL: Record<string, string> = {
   navigation: "Navigation",
-  action: "Actions",
-  report: "Reports",
-  ai: "AI Commands",
-  record: "Records",
+  action:     "Actions",
+  report:     "Reports",
+  ai:         "AI Commands",
+  record:     "Records",
+  recent:     "Recent",
 };
 
-// ── Fuzzy match ──────────────────────────────────────────────────────────────
+// ── Fuzzy match ───────────────────────────────────────────────────────────────
 
 function fuzzyMatch(text: string, query: string): boolean {
   if (!query) return true;
@@ -84,12 +76,9 @@ function fuzzyMatch(text: string, query: string): boolean {
   return true;
 }
 
-// ── Build nav index from NAV_CONFIG ──────────────────────────────────────────
+// ── Build nav results from NAV_CONFIG ─────────────────────────────────────────
 
-function buildNavResults(
-  query: string,
-  hasPermission: (code: string) => boolean,
-): NavResult[] {
+function buildNavResults(query: string, hasPermission: (c: string) => boolean): NavResult[] {
   const results: NavResult[] = [];
   const q = query.toLowerCase();
 
@@ -108,8 +97,6 @@ function buildNavResults(
     if (entry.type === "section") {
       const sec = entry as NavSection;
       if (sec.permission && !hasPermission(sec.permission)) continue;
-
-      // Section matches — add section link and top items
       const secMatches = !q || fuzzyMatch(sec.label, q);
 
       for (const item of sec.items) {
@@ -117,7 +104,7 @@ function buildNavResults(
         if (secMatches || fuzzyMatch(item.label, q)) {
           results.push({
             type: "nav",
-            id: `${sec.id}-${item.label}`,
+            id: `${sec.id}__${item.label}`,
             label: item.label,
             subtitle: sec.label,
             href: item.href,
@@ -131,20 +118,22 @@ function buildNavResults(
   return results.slice(0, query ? 8 : 6);
 }
 
-// ── Command Palette component ─────────────────────────────────────────────────
+// ── Command Palette ───────────────────────────────────────────────────────────
 
 export function CommandPalette({ open, onClose, onVisit, recent }: Props) {
-  const [query, setQuery] = useState("");
+  const [query, setQuery]               = useState("");
   const [recordResults, setRecordResults] = useState<RecordResult[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [selectedIdx, setSelectedIdx] = useState(0);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const listRef = useRef<HTMLDivElement>(null);
+  const [loading, setLoading]           = useState(false);
+  const [selectedIdx, setSelectedIdx]   = useState(0);
+
+  const inputRef    = useRef<HTMLInputElement>(null);
+  const listRef     = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const router = useRouter();
   const { hasPermission } = useAuth();
 
-  // Focus input when opened
+  // Focus + reset on open
   useEffect(() => {
     if (open) {
       setQuery("");
@@ -154,7 +143,7 @@ export function CommandPalette({ open, onClose, onVisit, recent }: Props) {
     }
   }, [open]);
 
-  // Fetch records with debounce
+  // Debounced record search
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     if (query.length < 2) { setRecordResults([]); return; }
@@ -176,13 +165,12 @@ export function CommandPalette({ open, onClose, onVisit, recent }: Props) {
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [query]);
 
-  // Build result groups
+  // Build grouped results
   const { allResults, groups } = useMemo(() => {
     const q = query.trim();
 
-    // No query → show recent
     if (!q) {
-      const recentResults: NavResult[] = recent.map((r) => ({
+      const recentItems: NavResult[] = recent.map((r) => ({
         type: "nav" as const,
         id: r.href,
         label: r.label,
@@ -190,31 +178,30 @@ export function CommandPalette({ open, onClose, onVisit, recent }: Props) {
         href: r.href,
       }));
       return {
-        allResults: recentResults as Result[],
-        groups: recentResults.length > 0
-          ? [{ category: "recent", label: "Recent", items: recentResults as Result[] }]
+        allResults: recentItems as Result[],
+        groups: recentItems.length > 0
+          ? [{ category: "recent", items: recentItems as Result[] }]
           : [],
       };
     }
 
     const navItems = buildNavResults(q, hasPermission);
-    const actions = filterActions(ACTION_REGISTRY, q, hasPermission).slice(0, 5);
-    const records = recordResults.map((r) => ({ ...r, type: "record" as const }));
+    const actions  = filterActions(ACTION_REGISTRY, q, hasPermission).slice(0, 5);
+    const records  = recordResults.map((r) => ({ ...r, type: "record" as const }));
 
     const groupList = [
-      navItems.length > 0   && { category: "navigation", label: "Navigation",  items: navItems as Result[] },
-      actions.length > 0    && { category: "action",     label: "Actions",     items: actions as Result[] },
-      records.length > 0    && { category: "record",     label: "Records",     items: records as Result[] },
-    ].filter(Boolean) as { category: string; label: string; items: Result[] }[];
+      navItems.length > 0 && { category: "navigation", items: navItems as Result[] },
+      actions.length > 0  && { category: "action",     items: actions as Result[] },
+      records.length > 0  && { category: "record",     items: records as Result[] },
+    ].filter(Boolean) as { category: string; items: Result[] }[];
 
-    const all = groupList.flatMap((g) => g.items);
-    return { allResults: all, groups: groupList };
+    return { allResults: groupList.flatMap((g) => g.items), groups: groupList };
   }, [query, recordResults, recent, hasPermission]);
 
-  // Reset selection when results change
+  // Reset selection on result change
   useEffect(() => { setSelectedIdx(0); }, [allResults.length, query]);
 
-  // Scroll selected item into view
+  // Scroll selected into view
   useEffect(() => {
     const el = listRef.current?.querySelector(`[data-idx="${selectedIdx}"]`) as HTMLElement | null;
     el?.scrollIntoView({ block: "nearest" });
@@ -223,153 +210,217 @@ export function CommandPalette({ open, onClose, onVisit, recent }: Props) {
   const navigate = useCallback((result: Result) => {
     const href = (result as NavResult).href ?? (result as PaletteAction).href;
     if (!href) return;
-    onVisit({ label: result.label, href, subtitle: (result as NavResult).subtitle ?? (result as PaletteAction).description });
+    onVisit({
+      label:    result.label,
+      href,
+      subtitle: (result as NavResult).subtitle ?? (result as PaletteAction).description,
+    });
     onClose();
     router.push(href);
   }, [onClose, onVisit, router]);
 
   const handleKey = useCallback((e: ReactKeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      setSelectedIdx((i) => Math.min(i + 1, allResults.length - 1));
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      setSelectedIdx((i) => Math.max(i - 1, 0));
-    } else if (e.key === "Enter") {
-      e.preventDefault();
-      if (allResults[selectedIdx]) navigate(allResults[selectedIdx]);
-    } else if (e.key === "Escape") {
-      onClose();
+    switch (e.key) {
+      case "ArrowDown":
+        e.preventDefault();
+        setSelectedIdx((i) => Math.min(i + 1, allResults.length - 1));
+        break;
+      case "ArrowUp":
+        e.preventDefault();
+        setSelectedIdx((i) => Math.max(i - 1, 0));
+        break;
+      case "Enter":
+        e.preventDefault();
+        if (allResults[selectedIdx]) navigate(allResults[selectedIdx]);
+        break;
+      case "Escape":
+        onClose();
+        break;
     }
   }, [allResults, selectedIdx, navigate, onClose]);
 
   if (!open) return null;
 
-  const globalIdx = (groupItems: Result[], offset: number) =>
-    allResults.indexOf(groupItems[0]) + offset;
+  // ── Render ───────────────────────────────────────────────────────────────────
 
   return (
+    // Full-screen overlay — intercepts clicks outside panel
     <div
-      className="fixed inset-0 z-[9999] flex items-start justify-center pt-[10vh] px-4"
-      onClick={onClose}
+      className="fixed inset-0 z-[9999] flex items-start justify-center"
+      style={{ paddingTop: "10vh", paddingLeft: 16, paddingRight: 16 }}
+      onMouseDown={onClose}
     >
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-
-      {/* Panel */}
+      {/* Backdrop — solid enough to fully cover underlying content */}
       <div
-        className="relative w-full max-w-2xl rounded-2xl overflow-hidden shadow-2xl"
+        className="absolute inset-0"
+        style={{ background: "rgba(0, 0, 0, 0.72)" }}
+        aria-hidden="true"
+      />
+
+      {/*
+        Panel — sits above the backdrop.
+        No overflow-hidden on the outer shell so box-shadow renders correctly.
+        Inner sections handle their own overflow.
+      */}
+      <div
+        className="relative w-full max-w-[640px] rounded-2xl shadow-2xl flex flex-col"
         style={{
-          background: "rgba(5, 18, 35, 0.92)",
-          border: "1px solid rgba(0, 212, 255, 0.18)",
-          boxShadow: "0 0 0 1px rgba(0,212,255,0.08), 0 32px 64px -12px rgba(0,0,0,0.8), 0 0 40px rgba(0,212,255,0.06)",
+          maxHeight: "min(540px, calc(90vh - 10vh))",
+          background: "#0a1628",
+          border: "1px solid rgba(99, 102, 241, 0.25)",
+          boxShadow: "0 0 0 1px rgba(99,102,241,0.08), 0 24px 48px rgba(0,0,0,0.8)",
         }}
-        onClick={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
       >
-        {/* Search input */}
-        <div className="flex items-center gap-3 px-4 py-3.5 border-b border-white/[0.08]">
-          <svg className="h-4.5 w-4.5 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        {/* ── Search input row ─────────────────────────────────────────────── */}
+        <div
+          className="flex items-center gap-3 px-4 shrink-0"
+          style={{
+            height: 52,
+            borderBottom: "1px solid rgba(255,255,255,0.07)",
+          }}
+        >
+          {/* Small, non-dominant search icon */}
+          <svg
+            className="h-4 w-4 shrink-0 text-slate-500"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
+
           <input
             ref={inputRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKey}
             placeholder="Search modules, actions, records…"
-            className="flex-1 bg-transparent text-[15px] text-slate-100 placeholder:text-slate-500 outline-none"
+            className="flex-1 bg-transparent text-[14.5px] text-slate-100 placeholder:text-slate-500 outline-none"
             autoComplete="off"
             spellCheck={false}
+            aria-label="Search"
           />
-          {loading && (
-            <div className="h-3.5 w-3.5 rounded-full border-2 border-cyan-500/40 border-t-cyan-400 animate-spin shrink-0" />
+
+          {loading ? (
+            <div className="h-3.5 w-3.5 rounded-full border-2 border-cyan-500/30 border-t-cyan-400 animate-spin shrink-0" />
+          ) : (
+            <kbd className="hidden sm:inline-flex items-center shrink-0 text-[10px] text-slate-600 font-mono bg-white/[0.04] rounded px-1.5 py-0.5 border border-white/[0.06]">
+              ESC
+            </kbd>
           )}
-          <kbd className="hidden sm:flex items-center gap-0.5 shrink-0 text-[10px] text-slate-600 font-mono bg-white/[0.05] rounded px-1.5 py-0.5 border border-white/[0.07]">
-            ESC
-          </kbd>
         </div>
 
-        {/* Results */}
-        <div ref={listRef} className="max-h-[420px] overflow-y-auto overscroll-contain py-1">
+        {/* ── Results area — scrolls inside the panel ──────────────────────── */}
+        <div
+          ref={listRef}
+          className="flex-1 overflow-y-auto overscroll-contain"
+          style={{ minHeight: 0 }}
+        >
+          {/* Empty states */}
           {groups.length === 0 && query.trim() && !loading && (
-            <div className="px-4 py-10 text-center text-sm text-slate-500">
-              No results for <span className="text-slate-300 font-medium">"{query}"</span>
+            <div className="px-4 py-10 text-center">
+              <p className="text-sm text-slate-500">
+                No results for{" "}
+                <span className="text-slate-300 font-medium">"{query}"</span>
+              </p>
             </div>
           )}
 
           {groups.length === 0 && !query.trim() && (
-            <div className="px-4 py-8 text-center text-sm text-slate-500">
-              Type to search modules, actions, records…
-              <div className="mt-2 text-xs text-slate-600">↑↓ navigate · Enter select · Esc close</div>
+            <div className="px-4 py-8 text-center">
+              <p className="text-sm text-slate-500">Type to search modules, actions, records…</p>
+              <p className="mt-2 text-xs text-slate-600">↑↓ navigate · Enter open · Esc close</p>
             </div>
           )}
 
-          {groups.map((group) => {
-            const startOffset = allResults.indexOf(group.items[0]);
+          {/* Result groups */}
+          {groups.map((group, gi) => {
+            // Compute the flat index offset for this group
+            const offset = groups.slice(0, gi).reduce((acc, g) => acc + g.items.length, 0);
+
             return (
               <div key={group.category}>
-                {/* Group header */}
+                {/* Group label */}
                 <div className="flex items-center gap-2 px-4 pt-3 pb-1">
                   <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest">
-                    {group.category === "recent" ? "Recent" : CAT_LABEL[group.category] ?? group.label}
+                    {CAT_LABEL[group.category] ?? group.category}
                   </span>
-                  {group.category !== "recent" && (
-                    <span className="text-slate-700 text-[10px]">{CAT_ICONS[group.category]}</span>
-                  )}
                 </div>
 
                 {/* Items */}
                 {group.items.map((item, i) => {
-                  const absIdx = startOffset + i;
+                  const absIdx     = offset + i;
                   const isSelected = selectedIdx === absIdx;
+
                   const href = (item as NavResult).href ?? (item as PaletteAction).href ?? "";
-                  const subtitle = (item as NavResult).subtitle
-                    ?? (item as PaletteAction).description
-                    ?? "";
-                  const iconStr = (item as PaletteAction).icon
-                    ?? RECORD_ICONS[(item as RecordResult).recordType ?? ""]
-                    ?? (item.type === "nav" || item.type === "record" ? "🗺️" : "⚡");
+                  const subtitle =
+                    (item as NavResult).subtitle ??
+                    (item as PaletteAction).description ??
+                    "";
+                  // PaletteAction has no 'type' field; use loose cast for discriminating
+                  const itemType = (item as { type?: string }).type;
+
+                  const icon =
+                    (item as PaletteAction).icon ??
+                    RECORD_ICONS[(item as RecordResult).recordType ?? ""] ??
+                    (itemType === "record" ? "🔍" : "🗺️");
+
+                  const badgeText =
+                    itemType === "record"
+                      ? (item as RecordResult).recordType?.replace("_", " ")
+                      : itemType === "nav"
+                      ? "page"
+                      : (item as PaletteAction).category;
+
+                  const badgeCls =
+                    itemType === "ai"
+                      ? "text-cyan-600 border-cyan-900/80 bg-cyan-950/60"
+                      : itemType === "nav" || itemType === "record"
+                      ? "text-slate-500 border-slate-700/80 bg-slate-800/60"
+                      : "text-indigo-400 border-indigo-900/80 bg-indigo-950/60";
 
                   return (
                     <button
-                      key={item.id ?? href}
+                      key={`${group.category}-${item.id ?? href}-${i}`}
                       data-idx={absIdx}
                       onClick={() => navigate(item)}
-                      className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors ${
+                      className={[
+                        "w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors",
                         isSelected
-                          ? "bg-cyan-500/[0.12] text-white"
-                          : "text-slate-300 hover:bg-white/[0.04] hover:text-white"
-                      }`}
+                          ? "bg-indigo-500/[0.14] text-white"
+                          : "text-slate-300 hover:bg-white/[0.04] hover:text-white",
+                      ].join(" ")}
                     >
-                      {/* Icon */}
-                      <span className="text-base shrink-0 w-6 text-center select-none">{iconStr}</span>
+                      {/* Emoji icon */}
+                      <span className="text-[15px] shrink-0 w-5 text-center select-none leading-none">
+                        {icon}
+                      </span>
 
-                      {/* Text */}
+                      {/* Label + subtitle */}
                       <div className="flex-1 min-w-0">
-                        <div className="text-[13.5px] font-medium truncate">{item.label}</div>
+                        <div className="text-[13px] font-medium truncate leading-snug">
+                          {item.label}
+                        </div>
                         {subtitle && (
-                          <div className="text-[11px] text-slate-500 truncate mt-0.5">{subtitle}</div>
+                          <div className="text-[11px] text-slate-500 truncate mt-[1px]">
+                            {subtitle}
+                          </div>
                         )}
                       </div>
 
-                      {/* Category badge */}
-                      <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded border shrink-0 ${
-                        item.type === "nav" || item.type === "record"
-                          ? "text-slate-600 border-slate-700 bg-slate-800/50"
-                          : item.type === "ai"
-                          ? "text-cyan-600 border-cyan-900 bg-cyan-950/50"
-                          : "text-indigo-500 border-indigo-900 bg-indigo-950/50"
-                      }`}>
-                        {item.type === "record"
-                          ? (item as RecordResult).recordType?.replace("_", " ")
-                          : item.type === "nav"
-                          ? "page"
-                          : (item as PaletteAction).category}
-                      </span>
+                      {/* Type badge */}
+                      {badgeText && (
+                        <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded border shrink-0 ${badgeCls}`}>
+                          {badgeText}
+                        </span>
+                      )}
 
                       {/* Arrow on selected */}
                       {isSelected && (
-                        <svg className="h-3.5 w-3.5 text-cyan-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="h-3 w-3 text-indigo-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
                         </svg>
                       )}
@@ -379,24 +430,29 @@ export function CommandPalette({ open, onClose, onVisit, recent }: Props) {
               </div>
             );
           })}
+
+          <div className="h-1" />
         </div>
 
-        {/* Footer */}
-        <div className="flex items-center justify-between px-4 py-2.5 border-t border-white/[0.06]">
+        {/* ── Footer hints ─────────────────────────────────────────────────── */}
+        <div
+          className="flex items-center justify-between px-4 py-2 shrink-0"
+          style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}
+        >
           <div className="flex items-center gap-3 text-[11px] text-slate-600">
-            <span className="flex items-center gap-1">
-              <kbd className="bg-white/[0.05] border border-white/[0.08] rounded px-1 py-0.5 font-mono text-[10px] text-slate-500">↑↓</kbd>
-              navigate
+            <span>
+              <kbd className="font-mono text-[10px] bg-white/[0.04] border border-white/[0.07] rounded px-1 py-0.5">↑↓</kbd>
+              {" "}navigate
             </span>
-            <span className="flex items-center gap-1">
-              <kbd className="bg-white/[0.05] border border-white/[0.08] rounded px-1 py-0.5 font-mono text-[10px] text-slate-500">↵</kbd>
-              open
+            <span>
+              <kbd className="font-mono text-[10px] bg-white/[0.04] border border-white/[0.07] rounded px-1 py-0.5">↵</kbd>
+              {" "}open
             </span>
           </div>
-          <div className="flex items-center gap-1 text-[11px] text-slate-600">
-            <kbd className="bg-white/[0.05] border border-white/[0.08] rounded px-1 py-0.5 font-mono text-[10px] text-slate-500">Ctrl K</kbd>
-            to toggle
-          </div>
+          <span className="text-[11px] text-slate-600">
+            <kbd className="font-mono text-[10px] bg-white/[0.04] border border-white/[0.07] rounded px-1 py-0.5">Ctrl K</kbd>
+            {" "}toggle
+          </span>
         </div>
       </div>
     </div>
