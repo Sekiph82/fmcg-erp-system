@@ -9,6 +9,10 @@ from app.crud import two_factor as tfa_crud
 from app.core.security import create_access_token
 from app.core.deps import get_current_user
 from app.core import totp as totp_utils
+from app.core import token_blocklist
+from app.core.login_limiter import (
+    check_login_allowed, record_login_failure, clear_login_failures,
+)
 from app.schemas.auth import Token, LoginResponse
 from app.schemas.user import UserRead
 from app.models.audit_log import AuditEvent
@@ -17,7 +21,7 @@ from app.models.two_factor import TwoFAMethod
 router = APIRouter()
 
 
-def _ip(request: Request):
+def _ip(request: Request) -> str | None:
     forwarded = request.headers.get("X-Forwarded-For")
     return forwarded.split(",")[0].strip() if forwarded else (
         request.client.host if request.client else None
@@ -30,9 +34,19 @@ async def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: AsyncSession = Depends(get_db),
 ):
+    ip = _ip(request)
+    # Rate-limit by IP and username combination
+    await check_login_allowed(form_data.username)
+    if ip:
+        await check_login_allowed(ip)
+
     user = await authenticate(db, form_data.username, form_data.password)
     if not user:
         existing = await get_user_by_username(db, form_data.username)
+        failure_count = await record_login_failure(form_data.username)
+        if ip:
+            await record_login_failure(ip)
+
         await audit_crud.log_event(
             db,
             event_type=AuditEvent.LOGIN_FAILED,
@@ -40,15 +54,17 @@ async def login(
             actor_email=form_data.username,
             target_type="user",
             target_name=form_data.username,
-            details={"reason": "bad_credentials"},
-            ip_address=_ip(request),
+            details={"reason": "bad_credentials", "failure_count": failure_count},
+            ip_address=ip,
         )
         await db.commit()
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
         )
+
     if not user.is_active:
+        await record_login_failure(form_data.username)
         await audit_crud.log_event(
             db,
             event_type=AuditEvent.LOGIN_FAILED,
@@ -58,10 +74,15 @@ async def login(
             target_id=str(user.id),
             target_name=user.email,
             details={"reason": "inactive_account"},
-            ip_address=_ip(request),
+            ip_address=ip,
         )
         await db.commit()
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account is inactive")
+
+    # Clear failure counter on successful credential validation
+    clear_login_failures(form_data.username)
+    if ip:
+        clear_login_failures(ip)
 
     # ── 2FA check ─────────────────────────────────────────────────────────────
     tfa_settings = await tfa_crud.get_2fa_settings(db, user.id)
@@ -89,7 +110,7 @@ async def login(
             target_id=str(user.id),
             target_name=user.email,
             details={"method": tfa_settings.method},
-            ip_address=_ip(request),
+            ip_address=ip,
         )
         await db.commit()
 
@@ -108,10 +129,43 @@ async def login(
         target_type="user",
         target_id=str(user.id),
         target_name=user.email,
-        ip_address=_ip(request),
+        ip_address=ip,
     )
     await db.commit()
     return LoginResponse(access_token=create_access_token(str(user.id)))
+
+
+@router.post("/logout")
+async def logout(
+    request: Request,
+    current_user=Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Invalidate the current JWT by adding it to the blocklist."""
+    from datetime import datetime, timezone, timedelta
+    from app.core.config import settings
+
+    authorization = request.headers.get("Authorization", "")
+    token = authorization.removeprefix("Bearer ").strip()
+    if token:
+        expire_at = (
+            datetime.now(timezone.utc) +
+            timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        ).timestamp()
+        token_blocklist.add(token, expire_at)
+
+    await audit_crud.log_event(
+        db,
+        event_type=AuditEvent.LOGOUT,
+        actor_id=current_user.id,
+        actor_email=current_user.email,
+        target_type="user",
+        target_id=str(current_user.id),
+        target_name=current_user.email,
+        ip_address=_ip(request),
+    )
+    await db.commit()
+    return {"detail": "Logged out successfully"}
 
 
 @router.get("/me", response_model=UserRead)

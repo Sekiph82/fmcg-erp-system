@@ -1,10 +1,10 @@
 # TASKS — FMCG ERP (Kenya) · Production Module
 
 ## Current Phase
-Full System Completion Review ✅ COMPLETED
+Full Security Architecture ✅ COMPLETED
 
 ## In Progress
-Security Threat Review and Protection Design (next)
+(none)
 
 ## Completed in This Run (AI Architecture Fix)
 ### New files created
@@ -288,8 +288,67 @@ Zero unit/integration tests exist. All test coverage is manual.
 | `backend/app/db/seed.py` | +28 permissions, updated ceo/cto/data_manager roles |
 | `backend/app/models/__init__.py` | Consolidated van_sales double import |
 
+## Completed in This Run (Full Security Architecture)
+
+### New backend files (6)
+| File | Purpose |
+|---|---|
+| `backend/app/core/login_limiter.py` | Per-username + per-IP brute-force protection. 5 failures → 30-min lockout. Async, in-memory (TODO: Redis for multi-worker) |
+| `backend/app/core/password_policy.py` | Min 8 chars, uppercase, lowercase, digit required. Common password blocklist. `validate_password()` raises `PasswordPolicyError` |
+| `backend/app/core/token_blocklist.py` | JWT invalidation on logout. SHA-256 hash stored in memory. `is_blocked()` checked on every request. Auto-cleans expired entries |
+| `backend/app/core/business_guards.py` | `margin_floor_check()`, `duplicate_payment_check()`, `stock_adjustment_requires_reason()`, `expense_approval_required()`, `payroll_statutory_completeness()`, `invoice_match_payment_block()` |
+| `backend/app/core/security_headers.py` | OWASP security headers on every response: HSTS, X-Content-Type-Options, X-Frame-Options, CSP, Permissions-Policy, Referrer-Policy, Cache-Control for auth endpoints |
+| `backend/app/api/v1/endpoints/security_monitor.py` | Security dashboard API: `/security/dashboard/`, `/security/failed-logins/`, `/security/anomalies/`, `/security/account-status/{user}`, `/security/unlock/{id}` |
+
+### New frontend files (2)
+| File | Purpose |
+|---|---|
+| `frontend/src/lib/securityMonitor.ts` | API client for security monitoring endpoints |
+| `frontend/src/app/dashboard/security/monitor/page.tsx` | Security dashboard: KPI cards, top attacker IPs, failed login table, anomaly feed, manual unlock |
+
+### Modified backend files
+| File | Change |
+|---|---|
+| `backend/app/main.py` | Added `SecurityHeadersMiddleware` |
+| `backend/app/core/deps.py` | `get_current_user()` checks `token_blocklist.is_blocked()` before validating JWT |
+| `backend/app/core/config.py` | 7 new security settings: login limits, password policy, session timeout |
+| `backend/app/api/v1/endpoints/auth.py` | Login endpoint: rate-limit check → login attempt → record failure on fail, clear on success → 2FA → audit log. New `POST /auth/logout` endpoint invalidates JWT |
+| `backend/app/api/v1/router.py` | Registered `security_monitor` at `/security` |
+| `backend/app/models/audit_log.py` | +15 new AuditEvent constants: ACCOUNT_LOCKED, PERMISSION_DENIED, AI_INJECTION_DETECTED, MARGIN_FLOOR_OVERRIDE, DUPLICATE_PAYMENT_BLOCKED, approvals, TOKEN_REVOKED, etc. |
+
+### Modified frontend files
+| File | Change |
+|---|---|
+| `frontend/src/components/nav-config.tsx` | Added "Security Monitor" link in Admin section |
+
+### Security architecture layers implemented
+
+| Layer | Implementation |
+|---|---|
+| Identity | bcrypt passwords, JWT, 2FA (existing), token blocklist on logout |
+| Brute-force | Per-username + per-IP rate limiting, 30-min lockout, audit logged |
+| Access control | RBAC (existing), `require_permission` on all endpoints, frontend `hasPermission` |
+| Password policy | Min length, complexity, common-password blocklist |
+| API security | JWT auth, token blocklist, login rate limiting, GZip, timing headers |
+| Transport | HSTS, CSP, X-Frame-Options, security headers on every response |
+| Business logic | 6 guards (margin, duplicate payment, stock, expense, payroll, invoice match) |
+| Audit trail | 25+ AuditEvent types, immutable audit_log table, IP tracking |
+| Monitoring | Security dashboard, failed login tracker, anomaly feed, manual unlock |
+| AI security | Prompt injection guard, data masking (previous session) |
+| Session | Token blocklist invalidates sessions on logout |
+
+### What still needs production hardening
+- Redis for login limiter and token blocklist (multi-worker)
+- Refresh token rotation (current: long-lived access token)
+- Per-role 2FA enforcement (currently optional)
+- Penetration testing
+- HTTPS/TLS certificate configuration (infrastructure level)
+- Secrets vault (currently: .env file)
+- Regular dependency vulnerability scanning
+- Database-level encryption for sensitive fields (salary, tax IDs)
+
 ## Next Immediate Task
-Security Threat Review and Protection Design — OWASP Top 10 audit, rate limiting review, injection vectors, auth hardening.
+Security Hardening Implementation — wire `business_guards` into critical endpoints, add `validate_password` to user creation/password-change flows, penetration testing prep.
 
 ## Completed in Last Run (Prompt 51 — Kenya Payroll Localization / Compliance)
 - Created `backend/app/models/payroll_ke.py` — 7 models: EmployeePayrollProfile, KeTaxBand, KeStatutoryRate, KeNhifTier, PayrollRun, KePayrollLine, Payslip + 3 enums

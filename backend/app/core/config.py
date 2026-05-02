@@ -15,6 +15,22 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "changeme"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 8  # 8 hours
 
+    # ── Login brute-force protection ───────────────────────────────────────────
+    LOGIN_MAX_ATTEMPTS: int = 5          # failures before lockout
+    LOGIN_WINDOW_SECONDS: int = 600      # 10-min rolling window
+    LOGIN_LOCKOUT_SECONDS: int = 1800    # 30-min lockout
+
+    # ── Password policy ────────────────────────────────────────────────────────
+    PASSWORD_MIN_LENGTH: int = 8
+    PASSWORD_REQUIRE_UPPERCASE: bool = True
+    PASSWORD_REQUIRE_LOWERCASE: bool = True
+    PASSWORD_REQUIRE_DIGIT: bool = True
+    PASSWORD_REQUIRE_SPECIAL: bool = False  # enable in production
+
+    # ── Session security ───────────────────────────────────────────────────────
+    SESSION_INACTIVITY_TIMEOUT_MINUTES: int = 480  # 8 hours
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+
     # Database
     DATABASE_URL: str = "postgresql+asyncpg://erp_user:changeme@localhost:5432/fmcg_erp"
 

@@ -7,6 +7,7 @@ from sqlalchemy.orm import selectinload
 import uuid
 
 from app.core.security import decode_token
+from app.core import token_blocklist
 from app.db.session import get_db
 
 logger = logging.getLogger(__name__)
@@ -20,6 +21,10 @@ async def get_current_user(
 ):
     from app.models.user import User
     from app.models.role import Role
+
+    # Reject explicitly logged-out tokens
+    if token_blocklist.is_blocked(token):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token has been revoked. Please log in again.")
 
     user_id = decode_token(token)
     if not user_id:
