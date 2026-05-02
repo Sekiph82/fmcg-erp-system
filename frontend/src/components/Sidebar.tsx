@@ -520,19 +520,25 @@ export function Sidebar({ mobileOpen, onMobileClose, onOpenSearch }: SidebarProp
       >
         {collapsed ? (
           <button onClick={expandSidebar} title="Expand sidebar" className="group flex items-center justify-center">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-[10px] font-bold text-white tracking-tight shadow-lg shadow-indigo-900/50 group-hover:bg-indigo-500 transition-colors">
-              ERP
+            {/* POVU logo icon — circular crop in collapsed mode */}
+            <div className="h-8 w-8 rounded-lg overflow-hidden shadow-lg group-hover:opacity-90 transition-opacity">
+              <img
+                src="/povu-logo.jpg"
+                alt="POVU"
+                className="h-full w-full object-cover"
+              />
             </div>
           </button>
         ) : (
           <>
             <div className="flex items-center gap-2.5 min-w-0">
-              <div className="flex h-[28px] w-[28px] shrink-0 items-center justify-center rounded-[7px] bg-indigo-600 text-[9.5px] font-bold text-white shadow-md shadow-indigo-900/40">
-                ERP
-              </div>
-              <div className="min-w-0 leading-none">
-                <p className="text-[13px] font-semibold text-white tracking-tight truncate">FMCG ERP</p>
-                <p className="text-[10px] text-slate-500 tracking-wide mt-[3px] truncate">Enterprise Suite</p>
+              {/* POVU logo — full display in expanded mode */}
+              <div className="h-[34px] w-auto shrink-0">
+                <img
+                  src="/povu-logo.jpg"
+                  alt="POVU"
+                  className="h-full w-auto object-contain"
+                />
               </div>
             </div>
             <CollapseToggle collapsed={collapsed} onToggle={toggleCollapsed} />

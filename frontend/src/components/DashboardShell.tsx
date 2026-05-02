@@ -84,12 +84,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
             </svg>
           </button>
           <div className="flex items-center gap-2 flex-1">
-            <div className="flex h-6 w-6 items-center justify-center rounded-md bg-indigo-600 text-[9px] font-bold text-white">
-              ERP
-            </div>
-            <span className="text-[13px] font-semibold text-white tracking-tight">
-              FMCG ERP
-            </span>
+            <img src="/povu-logo.jpg" alt="POVU" className="h-7 w-auto object-contain" />
           </div>
           {/* Mobile search button */}
           <button

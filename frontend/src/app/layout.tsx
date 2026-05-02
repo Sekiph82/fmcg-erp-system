@@ -9,8 +9,8 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "FMCG ERP",
-  description: "Enterprise Resource Planning for FMCG companies",
+  title: "POVU ERP",
+  description: "POVU — Enterprise Resource Planning",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
