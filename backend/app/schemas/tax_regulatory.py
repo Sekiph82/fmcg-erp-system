@@ -5,11 +5,13 @@ from typing import Optional, List
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
+from uuid import UUID as _UUID  # noqa: F401 - re-export for consistency
 
 from app.models.tax_regulatory import (
     TaxType, TaxAppliesTo, RegulatoryFlagType,
-    ComplianceStatus, TxTaxStatus,
+    ComplianceStatus, TxTaxStatus, ETimsStatus, VATReturnStatus,
 )
+from datetime import datetime
 
 
 # ── Country Tax Config ─────────────────────────────────────────────────────────
@@ -281,3 +283,75 @@ class ApplyTaxRequest(BaseModel):
     hs_code: Optional[str] = None
     product_id: Optional[UUID] = None
     material_id: Optional[UUID] = None
+
+
+# ── eTIMS / KRA ───────────────────────────────────────────────────────────────
+
+class ETimsSubmissionRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: UUID
+    invoice_id: UUID
+    status: ETimsStatus
+    control_unit_invoice_no: Optional[str]
+    signed_invoice_hash: Optional[str]
+    invoice_qr_data: Optional[str]
+    transmitted_at: Optional[datetime]
+    kra_response_code: Optional[str]
+    kra_response_message: Optional[str]
+    error_message: Optional[str]
+    retry_count: int
+    created_at: datetime
+
+
+class VATReturnCreate(BaseModel):
+    period_ym: str
+    notes: Optional[str] = None
+
+
+class VATReturnRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: UUID
+    period_ym: str
+    status: VATReturnStatus
+    standard_rated_sales: Decimal
+    zero_rated_sales: Decimal
+    exempt_sales: Decimal
+    output_vat: Decimal
+    standard_rated_purchases: Decimal
+    input_vat: Decimal
+    net_vat_payable: Decimal
+    filed_at: Optional[datetime]
+    acknowledgement_ref: Optional[str]
+    notes: Optional[str]
+    created_at: datetime
+
+
+class WithholdingTaxCreate(BaseModel):
+    direction: str     # DEDUCTED | SUFFERED
+    entity_type: str   # SUPPLIER | CUSTOMER
+    entity_id: UUID
+    invoice_id: Optional[UUID] = None
+    payment_date: date
+    gross_amount: Decimal
+    wht_rate: Decimal
+    period_ym: str
+    certificate_no: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class WithholdingTaxRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: UUID
+    direction: str
+    entity_type: str
+    entity_id: UUID
+    invoice_id: Optional[UUID]
+    payment_date: date
+    gross_amount: Decimal
+    wht_rate: Decimal
+    wht_amount: Decimal
+    net_amount: Decimal
+    certificate_no: Optional[str]
+    period_ym: str
+    notes: Optional[str]
+    created_at: datetime

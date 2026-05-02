@@ -197,3 +197,99 @@ class TransactionTax(Base, TimestampMixin):
 
     tax_rule = relationship("TaxRule")
     created_by = relationship("User")
+
+
+# ── eTIMS / KRA e-Invoice ──────────────────────────────────────────────────────
+
+class ETimsStatus(str, enum.Enum):
+    PENDING = "PENDING"
+    SUBMITTED = "SUBMITTED"
+    ACCEPTED = "ACCEPTED"
+    REJECTED = "REJECTED"
+    FAILED = "FAILED"
+
+
+class ETimsSubmission(Base, TimestampMixin):
+    """
+    Tracks KRA eTIMS submission status per invoice.
+    One-to-one with Invoice. Simulation-ready: set ETIMS_API_URL in config to enable live calls.
+    """
+    __tablename__ = "etims_submissions"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    invoice_id = Column(UUID(as_uuid=True), ForeignKey("invoices.id", ondelete="CASCADE"),
+                        unique=True, nullable=False)
+    status = Column(Enum(ETimsStatus), nullable=False, default=ETimsStatus.PENDING)
+    control_unit_invoice_no = Column(String(100), nullable=True)   # TIMS serial number from KRA
+    signed_invoice_hash = Column(String(500), nullable=True)       # SHA-256 of signed invoice
+    invoice_qr_data = Column(Text, nullable=True)                  # QR code string
+    transmitted_at = Column(DateTime(timezone=True), nullable=True)
+    kra_response_code = Column(String(20), nullable=True)
+    kra_response_message = Column(Text, nullable=True)
+    error_message = Column(Text, nullable=True)
+    retry_count = Column(Integer, nullable=False, default=0)
+    submitted_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+
+    invoice = relationship("Invoice")
+    submitted_by = relationship("User")
+
+
+class VATReturnStatus(str, enum.Enum):
+    DRAFT = "DRAFT"
+    SUBMITTED = "SUBMITTED"
+    ACKNOWLEDGED = "ACKNOWLEDGED"
+
+
+class VATReturn(Base, TimestampMixin):
+    """
+    Monthly VAT3 return aggregate for KRA filing.
+    Auto-generated from sales invoices and purchase invoices.
+    """
+    __tablename__ = "vat_returns"
+    __table_args__ = (UniqueConstraint("period_ym", name="uq_vat_return_period"),)
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    period_ym = Column(String(7), nullable=False, index=True)   # "2026-04"
+    status = Column(Enum(VATReturnStatus), nullable=False, default=VATReturnStatus.DRAFT)
+
+    # Sales (Output VAT)
+    standard_rated_sales = Column(Numeric(18, 4), nullable=False, default=0)
+    zero_rated_sales = Column(Numeric(18, 4), nullable=False, default=0)
+    exempt_sales = Column(Numeric(18, 4), nullable=False, default=0)
+    output_vat = Column(Numeric(18, 4), nullable=False, default=0)
+
+    # Purchases (Input VAT)
+    standard_rated_purchases = Column(Numeric(18, 4), nullable=False, default=0)
+    input_vat = Column(Numeric(18, 4), nullable=False, default=0)
+
+    # Net
+    net_vat_payable = Column(Numeric(18, 4), nullable=False, default=0)
+
+    filed_at = Column(DateTime(timezone=True), nullable=True)
+    filed_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    acknowledgement_ref = Column(String(200), nullable=True)
+    notes = Column(Text, nullable=True)
+
+    filed_by = relationship("User")
+
+
+class WithholdingTaxRecord(Base, TimestampMixin):
+    """WHT deducted from payments to suppliers or received from customers."""
+    __tablename__ = "withholding_tax_records"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    direction = Column(String(20), nullable=False)               # DEDUCTED | SUFFERED
+    entity_type = Column(String(30), nullable=False)             # SUPPLIER | CUSTOMER
+    entity_id = Column(UUID(as_uuid=True), nullable=False, index=True)
+    invoice_id = Column(UUID(as_uuid=True), nullable=True)       # polymorphic, not FK
+    payment_date = Column(Date, nullable=False)
+    gross_amount = Column(Numeric(16, 4), nullable=False)
+    wht_rate = Column(Numeric(8, 4), nullable=False)
+    wht_amount = Column(Numeric(16, 4), nullable=False)
+    net_amount = Column(Numeric(16, 4), nullable=False)
+    certificate_no = Column(String(100), nullable=True)
+    period_ym = Column(String(7), nullable=False)
+    notes = Column(Text, nullable=True)
+    created_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+
+    created_by = relationship("User")

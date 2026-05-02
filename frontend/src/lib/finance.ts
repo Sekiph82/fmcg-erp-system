@@ -363,6 +363,112 @@ export interface AccountingDashboard {
   }>;
 }
 
+// ── GL Report Types ───────────────────────────────────────────────────────────
+
+export interface TrialBalanceRow {
+  account_id: string;
+  account_code: string;
+  account_name: string;
+  account_type: AccountType;
+  total_debit: number;
+  total_credit: number;
+  net_balance: number;
+}
+
+export interface GLTransactionRow {
+  entry_id: string;
+  entry_no: string;
+  entry_date: string;
+  description: string;
+  source_module?: string;
+  source_ref?: string;
+  debit: number;
+  credit: number;
+  running_balance: number;
+}
+
+export interface GLAccountDrillDown {
+  account_id: string;
+  account_code: string;
+  account_name: string;
+  account_type: AccountType;
+  opening_balance: number;
+  closing_balance: number;
+  total_debit: number;
+  total_credit: number;
+  transactions: GLTransactionRow[];
+}
+
+export interface PLLineItem {
+  account_id: string;
+  account_code: string;
+  account_name: string;
+  amount: number;
+}
+
+export interface PLStatement {
+  from_date: string;
+  to_date: string;
+  revenue_lines: PLLineItem[];
+  expense_lines: PLLineItem[];
+  total_revenue: number;
+  total_expenses: number;
+  gross_profit: number;
+  net_income: number;
+}
+
+export interface BSLineItem {
+  account_id: string;
+  account_code: string;
+  account_name: string;
+  balance: number;
+}
+
+export interface BalanceSheetStatement {
+  as_of_date: string;
+  asset_lines: BSLineItem[];
+  liability_lines: BSLineItem[];
+  equity_lines: BSLineItem[];
+  total_assets: number;
+  total_liabilities: number;
+  total_equity: number;
+  is_balanced: boolean;
+}
+
+export type PeriodStatus = "OPEN" | "CLOSED" | "LOCKED";
+
+export interface AccountingPeriod {
+  id: string;
+  period_ym: string;
+  status: PeriodStatus;
+  closed_at?: string;
+  notes?: string;
+  created_at: string;
+}
+
+// ── Exchange Rate Types ───────────────────────────────────────────────────────
+
+export type RateSource = "MANUAL" | "CBK" | "ECB" | "API";
+
+export interface ExchangeRate {
+  id: string;
+  currency: string;
+  rate_date: string;
+  rate_to_kes: number;
+  source: RateSource;
+  notes?: string;
+  created_at: string;
+}
+
+export interface FXConvertResult {
+  from_currency: string;
+  to_currency: string;
+  amount: number;
+  rate: number;
+  converted_amount: number;
+  rate_date: string;
+}
+
 export const financeApi = {
   // COA
   async listCOA(activeOnly = true): Promise<COA[]> {
@@ -580,6 +686,83 @@ export const financeApi = {
 
   async supplierLedger(): Promise<SupplierLedgerRow[]> {
     const res = await apiClient.get<SupplierLedgerRow[]>("/api/v1/finance/accounting/supplier-ledger/");
+    return res.data;
+  },
+
+  // ── GL Reports ─────────────────────────────────────────────────────────────
+
+  async trialBalance(params?: { from_date?: string; to_date?: string }): Promise<TrialBalanceRow[]> {
+    const res = await apiClient.get<TrialBalanceRow[]>("/api/v1/finance/reports/trial-balance", { params });
+    return res.data;
+  },
+
+  async profitAndLoss(fromDate: string, toDate: string): Promise<PLStatement> {
+    const res = await apiClient.get<PLStatement>("/api/v1/finance/reports/profit-loss", {
+      params: { from_date: fromDate, to_date: toDate },
+    });
+    return res.data;
+  },
+
+  async balanceSheet(asOfDate: string): Promise<BalanceSheetStatement> {
+    const res = await apiClient.get<BalanceSheetStatement>("/api/v1/finance/reports/balance-sheet", {
+      params: { as_of_date: asOfDate },
+    });
+    return res.data;
+  },
+
+  async generalLedger(accountId: string, fromDate: string, toDate: string): Promise<GLAccountDrillDown> {
+    const res = await apiClient.get<GLAccountDrillDown>("/api/v1/finance/reports/general-ledger", {
+      params: { account_id: accountId, from_date: fromDate, to_date: toDate },
+    });
+    return res.data;
+  },
+
+  // ── Accounting Periods ─────────────────────────────────────────────────────
+
+  async listPeriods(): Promise<AccountingPeriod[]> {
+    const res = await apiClient.get<AccountingPeriod[]>("/api/v1/finance/accounting/periods/");
+    return res.data;
+  },
+
+  async createPeriod(data: { period_ym: string; notes?: string }): Promise<AccountingPeriod> {
+    const res = await apiClient.post<AccountingPeriod>("/api/v1/finance/accounting/periods/", data);
+    return res.data;
+  },
+
+  async closePeriod(id: string): Promise<AccountingPeriod> {
+    const res = await apiClient.post<AccountingPeriod>(`/api/v1/finance/accounting/periods/${id}/close`);
+    return res.data;
+  },
+
+  async lockPeriod(id: string): Promise<AccountingPeriod> {
+    const res = await apiClient.post<AccountingPeriod>(`/api/v1/finance/accounting/periods/${id}/lock`);
+    return res.data;
+  },
+
+  // ── Exchange Rates ──────────────────────────────────────────────────────────
+
+  async listExchangeRates(params?: { currency?: string; limit?: number }): Promise<ExchangeRate[]> {
+    const res = await apiClient.get<ExchangeRate[]>("/api/v1/finance/exchange-rates/", { params });
+    return res.data;
+  },
+
+  async latestExchangeRates(): Promise<ExchangeRate[]> {
+    const res = await apiClient.get<ExchangeRate[]>("/api/v1/finance/exchange-rates/latest");
+    return res.data;
+  },
+
+  async createExchangeRate(data: {
+    currency: string; rate_date: string; rate_to_kes: number;
+    source?: RateSource; notes?: string;
+  }): Promise<ExchangeRate> {
+    const res = await apiClient.post<ExchangeRate>("/api/v1/finance/exchange-rates/", data);
+    return res.data;
+  },
+
+  async convertCurrency(amount: number, currency: string, asOfDate?: string): Promise<FXConvertResult> {
+    const res = await apiClient.get<FXConvertResult>("/api/v1/finance/exchange-rates/convert", {
+      params: { amount, currency, as_of_date: asOfDate },
+    });
     return res.data;
   },
 };

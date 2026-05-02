@@ -32,6 +32,9 @@ from app.schemas.finance import (
     PurchasePaymentCreate, PurchasePaymentRead,
     CustomerPaymentCreate, CustomerPaymentRead,
     CustomerLedgerRow, SupplierLedgerRow, AccountingDashboard,
+    TrialBalanceRow, GLAccountDrillDown, PLStatement, BalanceSheetStatement,
+    PeriodCreate, PeriodRead,
+    ExchangeRateCreate, ExchangeRateRead, FXConvertResult,
 )
 from app.crud import finance as crud
 from app.services import finance_service as svc
@@ -490,6 +493,224 @@ async def report_budget_vs_actual(
     db: AsyncSession = Depends(get_db),
 ):
     return await svc.budget_vs_actual(db, year, department)
+
+
+# ── GL Reports ───────────────────────────────────────────────────────────────
+
+@router.get("/reports/trial-balance", response_model=List[TrialBalanceRow],
+            dependencies=[Depends(require_permission("finance", "view"))])
+async def report_trial_balance(
+    from_date: Optional[date] = None,
+    to_date: Optional[date] = None,
+    db: AsyncSession = Depends(get_db),
+):
+    return await svc.trial_balance(db, from_date=from_date, to_date=to_date)
+
+
+@router.get("/reports/profit-loss", response_model=PLStatement,
+            dependencies=[Depends(require_permission("finance", "view"))])
+async def report_profit_loss(
+    from_date: date = Query(...),
+    to_date: date = Query(...),
+    db: AsyncSession = Depends(get_db),
+):
+    return await svc.profit_and_loss(db, from_date=from_date, to_date=to_date)
+
+
+@router.get("/reports/balance-sheet", response_model=BalanceSheetStatement,
+            dependencies=[Depends(require_permission("finance", "view"))])
+async def report_balance_sheet(
+    as_of_date: date = Query(...),
+    db: AsyncSession = Depends(get_db),
+):
+    return await svc.balance_sheet(db, as_of_date=as_of_date)
+
+
+@router.get("/reports/general-ledger", response_model=GLAccountDrillDown,
+            dependencies=[Depends(require_permission("finance", "view"))])
+async def report_general_ledger(
+    account_id: uuid.UUID = Query(...),
+    from_date: date = Query(...),
+    to_date: date = Query(...),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await svc.general_ledger_account(db, account_id, from_date, to_date)
+    if not result:
+        raise HTTPException(404, "Account not found")
+    return result
+
+
+# ── Accounting Periods ────────────────────────────────────────────────────────
+
+from app.models.finance import AccountingPeriod, PeriodStatus
+
+
+@router.get("/accounting/periods/", response_model=List[PeriodRead],
+            dependencies=[Depends(require_permission("finance", "view"))])
+async def list_periods(db: AsyncSession = Depends(get_db)):
+    from sqlalchemy import select as _sel
+    rows = (await db.execute(
+        _sel(AccountingPeriod).order_by(AccountingPeriod.period_ym.desc())
+    )).scalars().all()
+    return [PeriodRead.model_validate(r) for r in rows]
+
+
+@router.post("/accounting/periods/", response_model=PeriodRead, status_code=201)
+async def create_period(
+    body: PeriodCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(require_permission("finance", "create")),
+):
+    period = AccountingPeriod(period_ym=body.period_ym, notes=body.notes)
+    db.add(period)
+    await db.commit()
+    await db.refresh(period)
+    return PeriodRead.model_validate(period)
+
+
+@router.post("/accounting/periods/{period_id}/close", response_model=PeriodRead)
+async def close_period(
+    period_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(require_permission("finance", "approve")),
+):
+    from sqlalchemy import select as _sel
+    period = (await db.execute(
+        _sel(AccountingPeriod).where(AccountingPeriod.id == period_id)
+    )).scalar_one_or_none()
+    if not period:
+        raise HTTPException(404, "Period not found")
+    if period.status == PeriodStatus.LOCKED:
+        raise HTTPException(422, "Period is already locked")
+    period.status = PeriodStatus.CLOSED
+    period.closed_by_id = current_user.id
+    period.closed_at = datetime.now(timezone.utc)
+    await db.commit()
+    await db.refresh(period)
+    return PeriodRead.model_validate(period)
+
+
+@router.post("/accounting/periods/{period_id}/lock", response_model=PeriodRead)
+async def lock_period(
+    period_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(require_permission("finance", "approve")),
+):
+    from sqlalchemy import select as _sel
+    period = (await db.execute(
+        _sel(AccountingPeriod).where(AccountingPeriod.id == period_id)
+    )).scalar_one_or_none()
+    if not period:
+        raise HTTPException(404, "Period not found")
+    period.status = PeriodStatus.LOCKED
+    period.closed_by_id = current_user.id
+    period.closed_at = datetime.now(timezone.utc)
+    await db.commit()
+    await db.refresh(period)
+    return PeriodRead.model_validate(period)
+
+
+# ── Exchange Rates ────────────────────────────────────────────────────────────
+
+from app.models.finance import ExchangeRate as ExchangeRateModel
+from sqlalchemy import select as _fxsel
+
+
+@router.get("/exchange-rates/", response_model=List[ExchangeRateRead],
+            dependencies=[Depends(require_permission("finance", "view"))])
+async def list_exchange_rates(
+    currency: Optional[str] = None,
+    limit: int = Query(200, le=1000),
+    db: AsyncSession = Depends(get_db),
+):
+    q = _fxsel(ExchangeRateModel).order_by(
+        ExchangeRateModel.rate_date.desc(),
+        ExchangeRateModel.currency,
+    ).limit(limit)
+    if currency:
+        q = q.where(ExchangeRateModel.currency == currency.upper())
+    rows = (await db.execute(q)).scalars().all()
+    return [ExchangeRateRead.model_validate(r) for r in rows]
+
+
+@router.post("/exchange-rates/", response_model=ExchangeRateRead, status_code=201)
+async def create_exchange_rate(
+    body: ExchangeRateCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(require_permission("finance", "create")),
+):
+    from sqlalchemy.dialects.postgresql import insert as pg_insert
+    rate = ExchangeRateModel(
+        currency=body.currency.upper(),
+        rate_date=body.rate_date,
+        rate_to_kes=body.rate_to_kes,
+        source=body.source,
+        notes=body.notes,
+        created_by_id=current_user.id,
+    )
+    db.add(rate)
+    try:
+        await db.commit()
+        await db.refresh(rate)
+    except Exception:
+        await db.rollback()
+        # On conflict (same currency+date), update
+        existing = (await db.execute(
+            _fxsel(ExchangeRateModel).where(
+                ExchangeRateModel.currency == body.currency.upper(),
+                ExchangeRateModel.rate_date == body.rate_date,
+            )
+        )).scalar_one_or_none()
+        if existing:
+            existing.rate_to_kes = body.rate_to_kes
+            existing.source = body.source
+            existing.notes = body.notes
+            await db.commit()
+            await db.refresh(existing)
+            return ExchangeRateRead.model_validate(existing)
+        raise
+    return ExchangeRateRead.model_validate(rate)
+
+
+@router.get("/exchange-rates/convert", response_model=FXConvertResult,
+            dependencies=[Depends(require_permission("finance", "view"))])
+async def convert_currency(
+    amount: Decimal = Query(...),
+    currency: str = Query(...),
+    as_of_date: Optional[date] = None,
+    db: AsyncSession = Depends(get_db),
+):
+    try:
+        result = await svc.convert_to_kes(db, amount, currency, as_of_date)
+    except ValueError as e:
+        raise HTTPException(404, str(e))
+    return result
+
+
+@router.get("/exchange-rates/latest", response_model=List[ExchangeRateRead],
+            dependencies=[Depends(require_permission("finance", "view"))])
+async def latest_rates(db: AsyncSession = Depends(get_db)):
+    """Return most recent rate per currency."""
+    from sqlalchemy import distinct, text
+    # Subquery: max date per currency
+    subq = (
+        _fxsel(
+            ExchangeRateModel.currency,
+            func.max(ExchangeRateModel.rate_date).label("max_date"),
+        )
+        .group_by(ExchangeRateModel.currency)
+        .subquery()
+    )
+    q = (
+        _fxsel(ExchangeRateModel)
+        .join(subq, and_(
+            ExchangeRateModel.currency == subq.c.currency,
+            ExchangeRateModel.rate_date == subq.c.max_date,
+        ))
+        .order_by(ExchangeRateModel.currency)
+    )
+    rows = (await db.execute(q)).scalars().all()
+    return [ExchangeRateRead.model_validate(r) for r in rows]
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────

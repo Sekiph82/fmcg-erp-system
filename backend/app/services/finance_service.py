@@ -21,13 +21,18 @@ from sqlalchemy.orm import selectinload
 from app.models.finance import (
     CashAccount, CashTransaction, MpesaReconciliation,
     ProductCost, ProductionCostEntry, BudgetLine,
+    ChartOfAccount, JournalEntry, JournalLine, ExchangeRate,
     CashAccountType, TxDirection, FinTxStatus, ReconciliationStatus, CostType, BudgetStatus,
+    AccountType,
 )
 from app.models.production import ProductionOrder, MaterialConsumption
 from app.models.sales import Invoice, SalesOrder, InvoiceStatus
 from app.schemas.finance import (
     CashPositionRow, MpesaSummaryRow, PaymentChannelRow,
     ReceivableRow, ReconciliationExceptionRow, BudgetVsActualRow,
+    TrialBalanceRow, GLAccountDrillDown, GLTransactionRow,
+    PLStatement, PLLineItem, BalanceSheetStatement, BSLineItem,
+    FXConvertResult,
 )
 
 
@@ -488,3 +493,332 @@ async def budget_vs_actual(
             variance_pct=variance_pct,
         ))
     return rows
+
+
+# ── General Ledger Reports ────────────────────────────────────────────────────
+
+async def trial_balance(
+    db: AsyncSession,
+    from_date: Optional[date] = None,
+    to_date: Optional[date] = None,
+) -> List[TrialBalanceRow]:
+    """Sum posted journal lines per account for the period."""
+    from sqlalchemy.orm import aliased
+
+    q = (
+        select(
+            ChartOfAccount.id.label("account_id"),
+            ChartOfAccount.code.label("account_code"),
+            ChartOfAccount.name.label("account_name"),
+            ChartOfAccount.account_type.label("account_type"),
+            func.coalesce(func.sum(JournalLine.debit), Decimal("0")).label("total_debit"),
+            func.coalesce(func.sum(JournalLine.credit), Decimal("0")).label("total_credit"),
+        )
+        .join(JournalLine, JournalLine.account_id == ChartOfAccount.id)
+        .join(JournalEntry, JournalEntry.id == JournalLine.entry_id)
+        .where(
+            JournalEntry.is_posted == True,  # noqa: E712
+            ChartOfAccount.is_control == False,  # noqa: E712
+        )
+    )
+    if from_date:
+        q = q.where(JournalEntry.entry_date >= from_date)
+    if to_date:
+        q = q.where(JournalEntry.entry_date <= to_date)
+    q = q.group_by(
+        ChartOfAccount.id, ChartOfAccount.code,
+        ChartOfAccount.name, ChartOfAccount.account_type,
+    ).order_by(ChartOfAccount.code)
+
+    rows = (await db.execute(q)).all()
+    result = []
+    for r in rows:
+        debit = Decimal(str(r.total_debit or 0))
+        credit = Decimal(str(r.total_credit or 0))
+        net = debit - credit
+        result.append(TrialBalanceRow(
+            account_id=r.account_id,
+            account_code=r.account_code,
+            account_name=r.account_name,
+            account_type=r.account_type,
+            total_debit=debit,
+            total_credit=credit,
+            net_balance=net,
+        ))
+    return result
+
+
+async def profit_and_loss(
+    db: AsyncSession,
+    from_date: date,
+    to_date: date,
+) -> PLStatement:
+    """P&L from posted journal entries in date range."""
+    q = (
+        select(
+            ChartOfAccount.id.label("account_id"),
+            ChartOfAccount.code.label("account_code"),
+            ChartOfAccount.name.label("account_name"),
+            ChartOfAccount.account_type.label("account_type"),
+            func.coalesce(func.sum(JournalLine.debit), Decimal("0")).label("total_debit"),
+            func.coalesce(func.sum(JournalLine.credit), Decimal("0")).label("total_credit"),
+        )
+        .join(JournalLine, JournalLine.account_id == ChartOfAccount.id)
+        .join(JournalEntry, JournalEntry.id == JournalLine.entry_id)
+        .where(
+            JournalEntry.is_posted == True,  # noqa: E712
+            ChartOfAccount.is_control == False,  # noqa: E712
+            ChartOfAccount.account_type.in_([AccountType.REVENUE, AccountType.EXPENSE]),
+            JournalEntry.entry_date >= from_date,
+            JournalEntry.entry_date <= to_date,
+        )
+        .group_by(
+            ChartOfAccount.id, ChartOfAccount.code,
+            ChartOfAccount.name, ChartOfAccount.account_type,
+        )
+        .order_by(ChartOfAccount.account_type, ChartOfAccount.code)
+    )
+    rows = (await db.execute(q)).all()
+
+    revenue_lines, expense_lines = [], []
+    total_revenue = Decimal("0")
+    total_expenses = Decimal("0")
+
+    for r in rows:
+        debit = Decimal(str(r.total_debit or 0))
+        credit = Decimal(str(r.total_credit or 0))
+        if r.account_type == AccountType.REVENUE:
+            amount = credit - debit  # credit-normal
+            revenue_lines.append(PLLineItem(
+                account_id=r.account_id, account_code=r.account_code,
+                account_name=r.account_name, amount=amount,
+            ))
+            total_revenue += amount
+        else:  # EXPENSE
+            amount = debit - credit   # debit-normal
+            expense_lines.append(PLLineItem(
+                account_id=r.account_id, account_code=r.account_code,
+                account_name=r.account_name, amount=amount,
+            ))
+            total_expenses += amount
+
+    return PLStatement(
+        from_date=from_date,
+        to_date=to_date,
+        revenue_lines=revenue_lines,
+        expense_lines=expense_lines,
+        total_revenue=total_revenue,
+        total_expenses=total_expenses,
+        gross_profit=total_revenue - total_expenses,
+        net_income=total_revenue - total_expenses,
+    )
+
+
+async def balance_sheet(
+    db: AsyncSession,
+    as_of_date: date,
+) -> BalanceSheetStatement:
+    """Balance Sheet as of date from all posted journal entries."""
+    q = (
+        select(
+            ChartOfAccount.id.label("account_id"),
+            ChartOfAccount.code.label("account_code"),
+            ChartOfAccount.name.label("account_name"),
+            ChartOfAccount.account_type.label("account_type"),
+            func.coalesce(func.sum(JournalLine.debit), Decimal("0")).label("total_debit"),
+            func.coalesce(func.sum(JournalLine.credit), Decimal("0")).label("total_credit"),
+        )
+        .join(JournalLine, JournalLine.account_id == ChartOfAccount.id)
+        .join(JournalEntry, JournalEntry.id == JournalLine.entry_id)
+        .where(
+            JournalEntry.is_posted == True,  # noqa: E712
+            ChartOfAccount.is_control == False,  # noqa: E712
+            ChartOfAccount.account_type.in_([AccountType.ASSET, AccountType.LIABILITY, AccountType.EQUITY]),
+            JournalEntry.entry_date <= as_of_date,
+        )
+        .group_by(
+            ChartOfAccount.id, ChartOfAccount.code,
+            ChartOfAccount.name, ChartOfAccount.account_type,
+        )
+        .order_by(ChartOfAccount.account_type, ChartOfAccount.code)
+    )
+    rows = (await db.execute(q)).all()
+
+    asset_lines, liability_lines, equity_lines = [], [], []
+    total_assets = Decimal("0")
+    total_liabilities = Decimal("0")
+    total_equity = Decimal("0")
+
+    for r in rows:
+        debit = Decimal(str(r.total_debit or 0))
+        credit = Decimal(str(r.total_credit or 0))
+        if r.account_type == AccountType.ASSET:
+            balance = debit - credit  # debit-normal
+            asset_lines.append(BSLineItem(
+                account_id=r.account_id, account_code=r.account_code,
+                account_name=r.account_name, balance=balance,
+            ))
+            total_assets += balance
+        elif r.account_type == AccountType.LIABILITY:
+            balance = credit - debit  # credit-normal
+            liability_lines.append(BSLineItem(
+                account_id=r.account_id, account_code=r.account_code,
+                account_name=r.account_name, balance=balance,
+            ))
+            total_liabilities += balance
+        else:  # EQUITY
+            balance = credit - debit  # credit-normal
+            equity_lines.append(BSLineItem(
+                account_id=r.account_id, account_code=r.account_code,
+                account_name=r.account_name, balance=balance,
+            ))
+            total_equity += balance
+
+    diff = abs(total_assets - (total_liabilities + total_equity))
+    is_balanced = diff < Decimal("0.01")
+
+    return BalanceSheetStatement(
+        as_of_date=as_of_date,
+        asset_lines=asset_lines,
+        liability_lines=liability_lines,
+        equity_lines=equity_lines,
+        total_assets=total_assets,
+        total_liabilities=total_liabilities,
+        total_equity=total_equity,
+        is_balanced=is_balanced,
+    )
+
+
+async def general_ledger_account(
+    db: AsyncSession,
+    account_id: uuid.UUID,
+    from_date: date,
+    to_date: date,
+) -> GLAccountDrillDown:
+    """GL drill-down: transactions for an account with running balance."""
+    # Load account
+    account = (await db.execute(
+        select(ChartOfAccount).where(ChartOfAccount.id == account_id)
+    )).scalar_one_or_none()
+    if not account:
+        return None
+
+    # Opening balance = net of all posted lines before from_date
+    ob_q = (await db.execute(
+        select(
+            func.coalesce(func.sum(JournalLine.debit), Decimal("0")).label("d"),
+            func.coalesce(func.sum(JournalLine.credit), Decimal("0")).label("c"),
+        )
+        .join(JournalEntry, JournalEntry.id == JournalLine.entry_id)
+        .where(
+            JournalEntry.is_posted == True,  # noqa: E712
+            JournalLine.account_id == account_id,
+            JournalEntry.entry_date < from_date,
+        )
+    )).one()
+    ob_debit = Decimal(str(ob_q.d or 0))
+    ob_credit = Decimal(str(ob_q.c or 0))
+    is_debit_normal = account.account_type in (AccountType.ASSET, AccountType.EXPENSE)
+    opening_balance = (ob_debit - ob_credit) if is_debit_normal else (ob_credit - ob_debit)
+
+    # Period lines
+    lines_q = (await db.execute(
+        select(JournalLine, JournalEntry)
+        .join(JournalEntry, JournalEntry.id == JournalLine.entry_id)
+        .where(
+            JournalEntry.is_posted == True,  # noqa: E712
+            JournalLine.account_id == account_id,
+            JournalEntry.entry_date >= from_date,
+            JournalEntry.entry_date <= to_date,
+        )
+        .order_by(JournalEntry.entry_date, JournalEntry.entry_no)
+    )).all()
+
+    transactions = []
+    running = opening_balance
+    total_debit = Decimal("0")
+    total_credit = Decimal("0")
+
+    for line, entry in lines_q:
+        d = Decimal(str(line.debit or 0))
+        c = Decimal(str(line.credit or 0))
+        total_debit += d
+        total_credit += c
+        if is_debit_normal:
+            running += d - c
+        else:
+            running += c - d
+        transactions.append(GLTransactionRow(
+            entry_id=entry.id,
+            entry_no=entry.entry_no,
+            entry_date=entry.entry_date,
+            description=line.description or entry.description,
+            source_module=entry.source_module,
+            source_ref=entry.source_ref,
+            debit=d,
+            credit=c,
+            running_balance=running,
+        ))
+
+    return GLAccountDrillDown(
+        account_id=account.id,
+        account_code=account.code,
+        account_name=account.name,
+        account_type=account.account_type,
+        opening_balance=opening_balance,
+        closing_balance=running,
+        total_debit=total_debit,
+        total_credit=total_credit,
+        transactions=transactions,
+    )
+
+
+# ── Exchange Rate Helpers ─────────────────────────────────────────────────────
+
+async def get_rate(
+    db: AsyncSession,
+    currency: str,
+    as_of_date: Optional[date] = None,
+) -> Optional[ExchangeRate]:
+    """Return most recent exchange rate for currency on or before as_of_date."""
+    if currency.upper() == "KES":
+        return None
+    q = (
+        select(ExchangeRate)
+        .where(ExchangeRate.currency == currency.upper())
+    )
+    if as_of_date:
+        q = q.where(ExchangeRate.rate_date <= as_of_date)
+    q = q.order_by(ExchangeRate.rate_date.desc()).limit(1)
+    return (await db.execute(q)).scalar_one_or_none()
+
+
+async def convert_to_kes(
+    db: AsyncSession,
+    amount: Decimal,
+    currency: str,
+    as_of_date: Optional[date] = None,
+) -> FXConvertResult:
+    """Convert amount from foreign currency to KES using the closest available rate."""
+    target_date = as_of_date or date.today()
+    if currency.upper() == "KES":
+        return FXConvertResult(
+            from_currency="KES",
+            to_currency="KES",
+            amount=amount,
+            rate=Decimal("1"),
+            converted_amount=amount,
+            rate_date=target_date,
+        )
+    rate_obj = await get_rate(db, currency, target_date)
+    if not rate_obj:
+        raise ValueError(f"No exchange rate found for {currency} as of {target_date}")
+    kes_amount = (amount * rate_obj.rate_to_kes).quantize(Decimal("0.01"))
+    return FXConvertResult(
+        from_currency=currency.upper(),
+        to_currency="KES",
+        amount=amount,
+        rate=rate_obj.rate_to_kes,
+        converted_amount=kes_amount,
+        rate_date=rate_obj.rate_date,
+    )

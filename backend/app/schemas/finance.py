@@ -362,7 +362,7 @@ class BudgetVsActualRow(BaseModel):
 
 # ── Purchase Invoices (Accounting module) ─────────────────────────────────────
 
-from app.models.finance import PurchaseInvoiceStatus  # noqa: E402
+from app.models.finance import PurchaseInvoiceStatus, PeriodStatus, RateSource  # noqa: E402
 
 
 class PurchaseInvoiceLineCreate(BaseModel):
@@ -502,3 +502,122 @@ class AccountingDashboard(BaseModel):
     overdue_purchase_invoices: int
     recent_sales_invoices: List[dict] = []
     recent_purchase_invoices: List[dict] = []
+
+
+# ── General Ledger Reports ────────────────────────────────────────────────────
+
+class TrialBalanceRow(BaseModel):
+    account_id: uuid.UUID
+    account_code: str
+    account_name: str
+    account_type: AccountType
+    total_debit: Decimal
+    total_credit: Decimal
+    net_balance: Decimal  # debit - credit; sign convention per account type
+
+
+class GLTransactionRow(BaseModel):
+    entry_id: uuid.UUID
+    entry_no: str
+    entry_date: date
+    description: str
+    source_module: Optional[str]
+    source_ref: Optional[str]
+    debit: Decimal
+    credit: Decimal
+    running_balance: Decimal
+
+
+class GLAccountDrillDown(BaseModel):
+    account_id: uuid.UUID
+    account_code: str
+    account_name: str
+    account_type: AccountType
+    opening_balance: Decimal
+    closing_balance: Decimal
+    total_debit: Decimal
+    total_credit: Decimal
+    transactions: List[GLTransactionRow] = []
+
+
+class PLLineItem(BaseModel):
+    account_id: uuid.UUID
+    account_code: str
+    account_name: str
+    amount: Decimal
+
+
+class PLStatement(BaseModel):
+    from_date: date
+    to_date: date
+    revenue_lines: List[PLLineItem] = []
+    expense_lines: List[PLLineItem] = []
+    total_revenue: Decimal
+    total_expenses: Decimal
+    gross_profit: Decimal
+    net_income: Decimal
+
+
+class BSLineItem(BaseModel):
+    account_id: uuid.UUID
+    account_code: str
+    account_name: str
+    balance: Decimal
+
+
+class BalanceSheetStatement(BaseModel):
+    as_of_date: date
+    asset_lines: List[BSLineItem] = []
+    liability_lines: List[BSLineItem] = []
+    equity_lines: List[BSLineItem] = []
+    total_assets: Decimal
+    total_liabilities: Decimal
+    total_equity: Decimal
+    is_balanced: bool
+
+
+# ── Accounting Periods ────────────────────────────────────────────────────────
+
+class PeriodCreate(BaseModel):
+    period_ym: str   # "YYYY-MM"
+    notes: Optional[str] = None
+
+
+class PeriodRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: uuid.UUID
+    period_ym: str
+    status: PeriodStatus
+    closed_at: Optional[datetime]
+    notes: Optional[str]
+    created_at: datetime
+
+
+# ── Exchange Rates ────────────────────────────────────────────────────────────
+
+class ExchangeRateCreate(BaseModel):
+    currency: str
+    rate_date: date
+    rate_to_kes: Decimal
+    source: RateSource = RateSource.MANUAL
+    notes: Optional[str] = None
+
+
+class ExchangeRateRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: uuid.UUID
+    currency: str
+    rate_date: date
+    rate_to_kes: Decimal
+    source: RateSource
+    notes: Optional[str]
+    created_at: datetime
+
+
+class FXConvertResult(BaseModel):
+    from_currency: str
+    to_currency: str
+    amount: Decimal
+    rate: Decimal
+    converted_amount: Decimal
+    rate_date: date

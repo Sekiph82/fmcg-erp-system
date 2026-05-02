@@ -297,6 +297,55 @@ class BudgetLine(Base, TimestampMixin):
 
 # ── Purchase Invoices ─────────────────────────────────────────────────────────
 
+class RateSource(str, enum.Enum):
+    MANUAL = "MANUAL"
+    CBK = "CBK"        # Central Bank of Kenya
+    ECB = "ECB"        # European Central Bank
+    API = "API"
+
+
+class ExchangeRate(Base, TimestampMixin):
+    """
+    Daily exchange rates vs KES base currency.
+    One row per currency per date.
+    """
+    __tablename__ = "exchange_rates"
+    __table_args__ = (UniqueConstraint("currency", "rate_date", name="uq_exchange_rate_date"),)
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    currency = Column(String(10), nullable=False, index=True)   # e.g. "USD"
+    rate_date = Column(Date, nullable=False, index=True)
+    rate_to_kes = Column(Numeric(18, 6), nullable=False)        # 1 unit of currency = X KES
+    source = Column(Enum(RateSource), nullable=False, default=RateSource.MANUAL)
+    notes = Column(String(255), nullable=True)
+    created_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+
+    created_by = relationship("User")
+
+
+class PeriodStatus(str, enum.Enum):
+    OPEN = "OPEN"
+    CLOSED = "CLOSED"
+    LOCKED = "LOCKED"
+
+
+class AccountingPeriod(Base, TimestampMixin):
+    """
+    Accounting period lock. Prevents posting to closed/locked periods.
+    """
+    __tablename__ = "accounting_periods"
+    __table_args__ = (UniqueConstraint("period_ym", name="uq_accounting_period_ym"),)
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    period_ym = Column(String(7), nullable=False, index=True)   # "2026-04"
+    status = Column(Enum(PeriodStatus), nullable=False, default=PeriodStatus.OPEN)
+    closed_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    closed_at = Column(DateTime(timezone=True), nullable=True)
+    notes = Column(Text, nullable=True)
+
+    closed_by = relationship("User")
+
+
 class PurchaseInvoiceStatus(str, enum.Enum):
     DRAFT = "DRAFT"
     RECEIVED = "RECEIVED"

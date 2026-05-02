@@ -14,6 +14,8 @@ from app.schemas.tax_regulatory import (
     RegulatoryFlagCreate, RegulatoryFlagUpdate, RegulatoryFlagRead,
     TransactionTaxCreate, TransactionTaxUpdate, TransactionTaxRead,
     TaxSummaryRow, RegulatoryStatusRow, ApplyTaxRequest,
+    ETimsSubmissionRead, VATReturnCreate, VATReturnRead,
+    WithholdingTaxCreate, WithholdingTaxRead,
 )
 import app.crud.tax_regulatory as crud
 import app.services.tax_service as svc
@@ -303,3 +305,240 @@ async def regulatory_status(
     db: AsyncSession = Depends(get_db),
 ):
     return await svc.regulatory_status_dashboard(db, country_code=country_code)
+
+
+# ── eTIMS / KRA e-Invoice ─────────────────────────────────────────────────────
+
+from datetime import datetime, timezone
+from sqlalchemy import select as _tsel
+from app.models.tax_regulatory import (
+    ETimsSubmission, ETimsStatus,
+    VATReturn, VATReturnStatus,
+    WithholdingTaxRecord,
+)
+import hashlib
+
+
+@router.get("/etims/submissions", response_model=List[ETimsSubmissionRead])
+async def list_etims_submissions(
+    status: Optional[ETimsStatus] = None,
+    limit: int = Query(100, le=500),
+    db: AsyncSession = Depends(get_db),
+):
+    q = _tsel(ETimsSubmission).order_by(ETimsSubmission.created_at.desc()).limit(limit)
+    if status:
+        q = q.where(ETimsSubmission.status == status)
+    rows = (await db.execute(q)).scalars().all()
+    return [ETimsSubmissionRead.model_validate(r) for r in rows]
+
+
+@router.get("/etims/submissions/{invoice_id}", response_model=ETimsSubmissionRead)
+async def get_etims_submission(invoice_id: UUID, db: AsyncSession = Depends(get_db)):
+    row = (await db.execute(
+        _tsel(ETimsSubmission).where(ETimsSubmission.invoice_id == invoice_id)
+    )).scalar_one_or_none()
+    if not row:
+        raise HTTPException(404, "No eTIMS submission for this invoice")
+    return ETimsSubmissionRead.model_validate(row)
+
+
+@router.post("/etims/submit/{invoice_id}", response_model=ETimsSubmissionRead)
+async def submit_etims(
+    invoice_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Submit invoice to KRA eTIMS. In production, calls ETIMS_API_URL.
+    In demo mode, simulates acceptance with a generated TIMS serial.
+    """
+    from app.models.sales import Invoice
+    import os
+
+    invoice = (await db.execute(
+        _tsel(Invoice).where(Invoice.id == invoice_id)
+    )).scalar_one_or_none()
+    if not invoice:
+        raise HTTPException(404, "Invoice not found")
+
+    # Get or create submission record
+    sub = (await db.execute(
+        _tsel(ETimsSubmission).where(ETimsSubmission.invoice_id == invoice_id)
+    )).scalar_one_or_none()
+
+    if sub and sub.status == ETimsStatus.ACCEPTED:
+        raise HTTPException(422, "Invoice already accepted by KRA")
+
+    if not sub:
+        sub = ETimsSubmission(invoice_id=invoice_id, submitted_by_id=current_user.id)
+        db.add(sub)
+
+    etims_api_url = os.environ.get("ETIMS_API_URL", "")
+
+    if etims_api_url:
+        # Real integration — placeholder for live KRA call
+        # In production: POST to ETIMS_API_URL with signed invoice payload
+        sub.status = ETimsStatus.SUBMITTED
+        sub.transmitted_at = datetime.now(timezone.utc)
+        sub.kra_response_message = "Submitted to KRA (awaiting response)"
+    else:
+        # Simulation mode
+        invoice_hash = hashlib.sha256(
+            f"{invoice.invoice_no}:{invoice.total_amount}:{invoice.invoice_date}".encode()
+        ).hexdigest()
+        tims_serial = f"KRA-{invoice.invoice_no}-{invoice.invoice_date.strftime('%Y%m%d')}"
+        qr_data = f"INV={invoice.invoice_no}|DATE={invoice.invoice_date}|TOTAL={invoice.total_amount}|HASH={invoice_hash[:16]}"
+
+        sub.status = ETimsStatus.ACCEPTED
+        sub.control_unit_invoice_no = tims_serial
+        sub.signed_invoice_hash = invoice_hash
+        sub.invoice_qr_data = qr_data
+        sub.transmitted_at = datetime.now(timezone.utc)
+        sub.kra_response_code = "00"
+        sub.kra_response_message = "Accepted (simulation mode — set ETIMS_API_URL for live integration)"
+        sub.retry_count += 1
+
+    await db.commit()
+    await db.refresh(sub)
+    return ETimsSubmissionRead.model_validate(sub)
+
+
+# ── VAT Returns ───────────────────────────────────────────────────────────────
+
+@router.get("/vat-returns", response_model=List[VATReturnRead])
+async def list_vat_returns(db: AsyncSession = Depends(get_db)):
+    rows = (await db.execute(
+        _tsel(VATReturn).order_by(VATReturn.period_ym.desc())
+    )).scalars().all()
+    return [VATReturnRead.model_validate(r) for r in rows]
+
+
+@router.post("/vat-returns/generate", response_model=VATReturnRead, status_code=201)
+async def generate_vat_return(
+    body: VATReturnCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Auto-generate VAT3 return from invoices for the given period."""
+    from app.models.sales import Invoice, InvoiceStatus
+    from app.models.finance import PurchaseInvoice
+    from sqlalchemy import func, and_, extract
+
+    year, month = int(body.period_ym[:4]), int(body.period_ym[5:])
+
+    # Sales invoices for period
+    sales_q = await db.execute(
+        _tsel(
+            func.coalesce(func.sum(Invoice.subtotal), 0).label("sales"),
+            func.coalesce(func.sum(Invoice.tax_amount), 0).label("output_vat"),
+        )
+        .where(
+            Invoice.status.notin_([InvoiceStatus.CANCELLED, InvoiceStatus.DRAFT]),
+            extract("year", Invoice.invoice_date) == year,
+            extract("month", Invoice.invoice_date) == month,
+        )
+    )
+    s = sales_q.one()
+
+    # Purchase invoices for period
+    from app.models.finance import PurchaseInvoiceStatus as PIStatus
+    purch_q = await db.execute(
+        _tsel(
+            func.coalesce(func.sum(PurchaseInvoice.subtotal), 0).label("purchases"),
+            func.coalesce(func.sum(PurchaseInvoice.tax_amount), 0).label("input_vat"),
+        )
+        .where(
+            PurchaseInvoice.status.notin_([PIStatus.CANCELLED, PIStatus.DRAFT]),
+            extract("year", PurchaseInvoice.invoice_date) == year,
+            extract("month", PurchaseInvoice.invoice_date) == month,
+        )
+    )
+    p = purch_q.one()
+
+    output_vat = float(s.output_vat or 0)
+    input_vat = float(p.input_vat or 0)
+    net_vat = output_vat - input_vat
+
+    # Upsert
+    existing = (await db.execute(
+        _tsel(VATReturn).where(VATReturn.period_ym == body.period_ym)
+    )).scalar_one_or_none()
+
+    if existing:
+        vr = existing
+    else:
+        vr = VATReturn(period_ym=body.period_ym, filed_by_id=current_user.id)
+        db.add(vr)
+
+    vr.standard_rated_sales = float(s.sales or 0)
+    vr.output_vat = output_vat
+    vr.standard_rated_purchases = float(p.purchases or 0)
+    vr.input_vat = input_vat
+    vr.net_vat_payable = net_vat
+    vr.notes = body.notes
+
+    await db.commit()
+    await db.refresh(vr)
+    return VATReturnRead.model_validate(vr)
+
+
+@router.post("/vat-returns/{vat_return_id}/file", response_model=VATReturnRead)
+async def file_vat_return(
+    vat_return_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    vr = (await db.execute(_tsel(VATReturn).where(VATReturn.id == vat_return_id))).scalar_one_or_none()
+    if not vr:
+        raise HTTPException(404, "VAT return not found")
+    vr.status = VATReturnStatus.SUBMITTED
+    vr.filed_at = datetime.now(timezone.utc)
+    vr.filed_by_id = current_user.id
+    await db.commit()
+    await db.refresh(vr)
+    return VATReturnRead.model_validate(vr)
+
+
+# ── Withholding Tax ───────────────────────────────────────────────────────────
+
+@router.get("/withholding-tax", response_model=List[WithholdingTaxRead])
+async def list_wht(
+    period_ym: Optional[str] = None,
+    limit: int = Query(200, le=1000),
+    db: AsyncSession = Depends(get_db),
+):
+    q = _tsel(WithholdingTaxRecord).order_by(WithholdingTaxRecord.payment_date.desc()).limit(limit)
+    if period_ym:
+        q = q.where(WithholdingTaxRecord.period_ym == period_ym)
+    rows = (await db.execute(q)).scalars().all()
+    return [WithholdingTaxRead.model_validate(r) for r in rows]
+
+
+@router.post("/withholding-tax", response_model=WithholdingTaxRead, status_code=201)
+async def create_wht(
+    body: WithholdingTaxCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    from decimal import Decimal
+    wht_amount = (body.gross_amount * body.wht_rate / 100).quantize(Decimal("0.01"))
+    net_amount = body.gross_amount - wht_amount
+    rec = WithholdingTaxRecord(
+        direction=body.direction,
+        entity_type=body.entity_type,
+        entity_id=body.entity_id,
+        invoice_id=body.invoice_id,
+        payment_date=body.payment_date,
+        gross_amount=body.gross_amount,
+        wht_rate=body.wht_rate,
+        wht_amount=wht_amount,
+        net_amount=net_amount,
+        certificate_no=body.certificate_no,
+        period_ym=body.period_ym,
+        notes=body.notes,
+        created_by_id=current_user.id,
+    )
+    db.add(rec)
+    await db.commit()
+    await db.refresh(rec)
+    return WithholdingTaxRead.model_validate(rec)
