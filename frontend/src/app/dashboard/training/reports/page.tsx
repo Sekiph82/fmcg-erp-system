@@ -74,7 +74,7 @@ export default function TrainingReportsPage() {
 
         {loading && <p className="text-gray-500 text-sm">Loading…</p>}
 
-        {data && tab === "skill_gaps" && (() => {
+        {!!data && tab === "skill_gaps" && (() => {
           const rows = data as EmployeeSkillRow[];
           return (
             <div>
@@ -100,7 +100,7 @@ export default function TrainingReportsPage() {
           );
         })()}
 
-        {data && tab === "completion" && (() => {
+        {!!data && tab === "completion" && (() => {
           const d = data as { total: number; completed: number; overdue: number; pending: number; completion_rate_pct: number };
           return (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -119,7 +119,7 @@ export default function TrainingReportsPage() {
           );
         })()}
 
-        {data && tab === "cert_expiry" && (() => {
+        {!!data && tab === "cert_expiry" && (() => {
           const rows = data as { certification_id: string; employee_id: string; employee_name: string | null; certificate_name: string; expiry_date: string | null; days_to_expiry: number | null; status: string }[];
           return (
             <table className="w-full text-sm">
@@ -143,7 +143,7 @@ export default function TrainingReportsPage() {
           );
         })()}
 
-        {data && tab === "cost" && (() => {
+        {!!data && tab === "cost" && (() => {
           const rows = data as { training_id: string; training_name: string; cost_per_head: number; enrolled_count: number; total_cost: number }[];
           const total = rows.reduce((s, r) => s + r.total_cost, 0);
           return (

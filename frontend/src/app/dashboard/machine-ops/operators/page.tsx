@@ -23,7 +23,7 @@ export default function OperatorsPage() {
 
   const { data, isLoading } = useQuery<OperatorProfile[]>({
     queryKey: ["mo-operators"],
-    queryFn: () => moApi.listOperators().then((r) => r.data),
+    queryFn: () => moApi.listOperators(),
   });
 
   const create = useMutation({

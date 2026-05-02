@@ -206,7 +206,7 @@ export default function MachineUtilityKpiPage() {
               <PolarAngleAxis dataKey="subject" tick={{ fontSize: 11 }} />
               <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fontSize: 9 }} />
               <Radar name="Score" dataKey="value" stroke="#818cf8" fill="#818cf8" fillOpacity={0.3} />
-              <Tooltip formatter={(v: number) => `${v.toFixed(0)}/100`} />
+              <Tooltip formatter={(v: unknown) => `${Number(v).toFixed(0)}/100`} />
             </RadarChart>
           </ResponsiveContainer>
         </div>

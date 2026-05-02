@@ -16,7 +16,7 @@ export default function CertsPage() {
 
   const { data, isLoading } = useQuery<SkillCert[]>({
     queryKey: ["mo-certs", expiringOnly],
-    queryFn: () => moApi.listSkills(expiringOnly ? { expiring_only: "true" } : {}).then((r) => r.data),
+    queryFn: () => moApi.listSkills(expiringOnly ? { expiring_only: "true" } : {}),
   });
 
   const refresh = useMutation({
@@ -27,6 +27,7 @@ export default function CertsPage() {
   const create = useMutation({
     mutationFn: () => moApi.createSkill({
       ...form,
+      skill_level: form.skill_level as import("@/lib/machineOperator").SkillLevel,
       certification_expiry: form.certification_expiry || undefined,
     }),
     onSuccess: () => {
@@ -129,7 +130,7 @@ export default function CertsPage() {
                   <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
                   <input
                     type={type || "text"}
-                    value={(form as Record<string, string>)[field]}
+                    value={(form as unknown as Record<string, string>)[field]}
                     onChange={(e) => setForm((p) => ({ ...p, [field]: e.target.value }))}
                     className="w-full border rounded px-3 py-2 text-sm"
                     placeholder={placeholder}

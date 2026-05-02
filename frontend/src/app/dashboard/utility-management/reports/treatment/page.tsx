@@ -59,7 +59,7 @@ function ChemicalTab({ dateFrom, dateTo }: { dateFrom: string; dateTo: string })
           <h3 className="text-sm font-semibold mb-4">By Chemical</h3>
           <ResponsiveContainer width="100%" height={200}>
             <PieChart>
-              <Pie data={d?.by_chemical ?? []} dataKey="value" nameKey="label" cx="50%" cy="50%" outerRadius={75} label={({ name, pct: p }) => `${name} ${p ? p.toFixed(0) : ""}%`}>
+              <Pie data={d?.by_chemical ?? []} dataKey="value" nameKey="label" cx="50%" cy="50%" outerRadius={75} label={(props: any) => `${props.name} ${props.pct ? Number(props.pct).toFixed(0) : ""}%`}>
                 {(d?.by_chemical ?? []).map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
               </Pie>
               <Tooltip />

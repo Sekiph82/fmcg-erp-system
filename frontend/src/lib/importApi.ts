@@ -40,6 +40,10 @@ export interface ImportResult {
   import_mode: string;
   module:      string;
   errors:      ImportRowError[];
+  // Convenience fields used by some pages
+  success?: boolean;
+  message?: string;
+  inserted?: number;
 }
 
 export interface ImportHistoryEntry {
@@ -113,6 +117,18 @@ export const importApi = {
     return r.data;
   },
 
+  /** Upload and import a file (alias for runImport). */
+  upload: async (module: string, file: File): Promise<ImportResult> => {
+    const form = new FormData();
+    form.append("file", file);
+    const r = await apiClient.post<ImportResult>(
+      `/api/v1/bulk-import/${module}/import`,
+      form,
+      { headers: { "Content-Type": "multipart/form-data" } },
+    );
+    return r.data;
+  },
+
   /** Fetch import history with optional filters. */
   async getHistory(params?: {
     module?:    string;
@@ -139,7 +155,7 @@ export const importApi = {
 
   /** Get module manifest (fields, permissions, unique keys). */
   async getModules(): Promise<ImportModuleInfo[]> {
-    const r = await apiClient.get<ImportModuleInfo[]>("/api/v1/bulk-import/modules").then((r) => r.data);
+    const r = await apiClient.get<ImportModuleInfo[]>("/api/v1/bulk-import/modules");
     return r.data;
   },
 };

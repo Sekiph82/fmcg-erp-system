@@ -93,7 +93,7 @@ export default function SupplierPortalAccountsPage() {
                   </span>
                 </td>
                 <td className="px-4 py-3 text-slate-500 text-xs">
-                  {new Date(a.created_at).toLocaleDateString()}
+                  {a.created_at ? new Date(a.created_at).toLocaleDateString() : "—"}
                 </td>
                 <td className="px-4 py-3">
                   <Link

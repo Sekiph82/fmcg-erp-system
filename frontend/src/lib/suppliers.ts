@@ -42,17 +42,17 @@ export const suppliersApi = {
   },
 
   async get(id: string): Promise<Supplier> {
-    const res = await apiClient.get<Supplier>(`/api/v1/suppliers/${id}`).then((r) => r.data);
+    const res = await apiClient.get<Supplier>(`/api/v1/suppliers/${id}`);
     return res.data;
   },
 
   async create(data: SupplierCreate): Promise<Supplier> {
-    const res = await apiClient.post<Supplier>("/api/v1/suppliers/", data).then((r) => r.data);
+    const res = await apiClient.post<Supplier>("/api/v1/suppliers/", data);
     return res.data;
   },
 
   async update(id: string, data: Partial<SupplierCreate>): Promise<Supplier> {
-    const res = await apiClient.patch<Supplier>(`/api/v1/suppliers/${id}`, data).then((r) => r.data);
+    const res = await apiClient.patch<Supplier>(`/api/v1/suppliers/${id}`, data);
     return res.data;
   },
 

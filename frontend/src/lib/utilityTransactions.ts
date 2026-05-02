@@ -203,22 +203,22 @@ const BASE = "/api/v1/utility-management";
 
 export const utilityTransactionsApi = {
   async list(params?: TransactionFilters): Promise<UtilityTransaction[]> {
-    const res = await apiClient.get<UtilityTransaction[]>(`${BASE}/transactions`, { params }).then((r) => r.data);
+    const res = await apiClient.get<UtilityTransaction[]>(`${BASE}/transactions`, { params });
     return res.data;
   },
 
   async get(id: string): Promise<UtilityTransaction> {
-    const res = await apiClient.get<UtilityTransaction>(`${BASE}/transactions/${id}`).then((r) => r.data);
+    const res = await apiClient.get<UtilityTransaction>(`${BASE}/transactions/${id}`);
     return res.data;
   },
 
   async create(data: UtilityTransactionCreate): Promise<UtilityTransaction> {
-    const res = await apiClient.post<UtilityTransaction>(`${BASE}/transactions`, data).then((r) => r.data);
+    const res = await apiClient.post<UtilityTransaction>(`${BASE}/transactions`, data);
     return res.data;
   },
 
   async update(id: string, data: UtilityTransactionUpdate): Promise<UtilityTransaction> {
-    const res = await apiClient.patch<UtilityTransaction>(`${BASE}/transactions/${id}`, data).then((r) => r.data);
+    const res = await apiClient.patch<UtilityTransaction>(`${BASE}/transactions/${id}`, data);
     return res.data;
   },
 

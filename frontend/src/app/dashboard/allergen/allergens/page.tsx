@@ -33,7 +33,7 @@ export default function AllergenMasterPage() {
             {[["Code", "allergen_code"], ["Name", "allergen_name"], ["Regulatory Name", "regulatory_name"]].map(([label, key]) => (
               <div key={key}>
                 <label className="text-xs text-gray-500">{label}</label>
-                <input className="mt-0.5 w-full border rounded px-2 py-1.5 text-sm" value={(form as Record<string, string>)[key]} onChange={(e) => setForm((p) => ({ ...p, [key]: e.target.value }))} />
+                <input className="mt-0.5 w-full border rounded px-2 py-1.5 text-sm" value={(form as unknown as Record<string, string>)[key]} onChange={(e) => setForm((p) => ({ ...p, [key]: e.target.value }))} />
               </div>
             ))}
             <div>

@@ -17,7 +17,7 @@ export default function WinLossPage() {
   const [activeTab, setActiveTab] = useState<"loss" | "win" | "competitor">("loss");
 
   useEffect(() => {
-    crmApi.getWinLossReport().then(d => setData(d as WinLossReport)).catch(console.error).finally(() => setLoading(false));
+    crmApi.getWinLossReport().then(d => setData(d as unknown as WinLossReport)).catch(console.error).finally(() => setLoading(false));
   }, []);
 
   if (loading) return <div className="p-6 text-gray-500">Loading…</div>;

@@ -162,7 +162,7 @@ function ImportModal({ onClose }: { onClose: () => void }) {
       qc.invalidateQueries({ queryKey: ["ww-records"] });
       qc.invalidateQueries({ queryKey: ["ww-kpis"] });
     } catch (e: unknown) {
-      setResult({ success: false, message: String(e), inserted: 0, errors: [] });
+      setResult({ success: false, message: String(e), inserted: 0, errors: [], total_rows: 0, valid_rows: 0, failed_rows: 0, imported: false, import_mode: "", module: "wastewater" });
     } finally {
       setBusy(false);
     }
@@ -704,7 +704,7 @@ export default function WastewaterPage() {
               <YAxis tick={{ fill: "#94a3b8", fontSize: 11 }} />
               <Tooltip
                 contentStyle={{ background: "#1e293b", border: "1px solid #475569", borderRadius: 6 }}
-                formatter={(v: number) => n(v, 1)}
+                formatter={(v: unknown) => n(v as number | null | undefined, 1)}
               />
               <Legend wrapperStyle={{ fontSize: 12 }} />
               <Line type="monotone" dataKey="avg_cod_influent" name="COD In"  stroke={RED}    strokeWidth={2} dot={false} />
@@ -726,7 +726,7 @@ export default function WastewaterPage() {
               <YAxis yAxisId="ph"  orientation="right" tick={{ fill: "#94a3b8", fontSize: 11 }} domain={[4, 12]} />
               <Tooltip
                 contentStyle={{ background: "#1e293b", border: "1px solid #475569", borderRadius: 6 }}
-                formatter={(v: number) => n(v, 2)}
+                formatter={(v: unknown) => n(v as number | null | undefined, 2)}
               />
               <Legend wrapperStyle={{ fontSize: 12 }} />
               <Line yAxisId="do" type="monotone" dataKey="avg_do"          name="DO (mg/L)"   stroke={GREEN}  strokeWidth={2} dot={false} />
@@ -755,7 +755,7 @@ export default function WastewaterPage() {
               <YAxis tick={{ fill: "#94a3b8", fontSize: 11 }} />
               <Tooltip
                 contentStyle={{ background: "#1e293b", border: "1px solid #475569", borderRadius: 6 }}
-                formatter={(v: number) => n(v, 1)}
+                formatter={(v: unknown) => n(v as number | null | undefined, 1)}
               />
               <Legend wrapperStyle={{ fontSize: 12 }} />
               <Area type="monotone" dataKey="influent_flow_m3h" name="Influent" stroke={BLUE} fill="url(#gradInf)" strokeWidth={2} />

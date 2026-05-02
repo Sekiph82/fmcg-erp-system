@@ -36,10 +36,11 @@ function pct(n?: number | null) {
 type KpiStatus = "good" | "warn" | "critical" | "neutral" | "info";
 
 function KpiCard({
-  label, value, unit, sub, status = "neutral", estimated, href,
+  label, value, unit, sub, status = "neutral", estimated, href, children,
 }: {
   label: string; value: string | number; unit?: string;
   sub?: string; status?: KpiStatus; estimated?: boolean; href?: string;
+  children?: React.ReactNode;
 }) {
   const borderMap: Record<KpiStatus, string> = {
     good:     "border-green-400 dark:border-green-500",
@@ -68,6 +69,7 @@ function KpiCard({
         {unit && <span className="text-sm font-normal text-gray-500 ml-1">{unit}</span>}
       </p>
       {sub && <p className="text-xs text-gray-400 mt-1">{sub}</p>}
+      {children}
     </div>
   );
   if (href) return <Link href={href} className="block hover:opacity-90 transition-opacity">{card}</Link>;
@@ -194,7 +196,7 @@ function TopConsumersPanel({ dateFrom, dateTo }: { dateFrom: string; dateTo: str
             <CartesianGrid strokeDasharray="3 3" horizontal={false} />
             <XAxis type="number" tick={{ fontSize: 10 }} />
             <YAxis dataKey="name" type="category" tick={{ fontSize: 10 }} width={108} />
-            <Tooltip formatter={(v: number) => [fmt(v, 1), "Consumption"]} />
+            <Tooltip formatter={(v: unknown) => [fmt(v as number | null | undefined, 1), "Consumption"]} />
             <Bar dataKey="qty" fill="#60a5fa" radius={[0, 4, 4, 0]} />
           </BarChart>
         </ResponsiveContainer>
@@ -403,9 +405,9 @@ export default function UtilityKpiCenter() {
             <YAxis yAxisId="left" tick={{ fontSize: 10 }} />
             <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 10 }} />
             <Tooltip
-              formatter={(v: number, name: string) => [
-                v?.toLocaleString(undefined, { maximumFractionDigits: 1 }),
-                UTILITY_CHART_LABELS[name] ?? name,
+              formatter={(v: unknown, name: unknown) => [
+                Number(v).toLocaleString(undefined, { maximumFractionDigits: 1 }),
+                UTILITY_CHART_LABELS[String(name)] ?? String(name),
               ]}
               labelFormatter={l => `Date: ${l}`}
             />

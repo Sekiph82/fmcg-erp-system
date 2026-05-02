@@ -13,9 +13,9 @@ export default function AssignmentPage() {
   const [validation, setValidation] = useState<AssignmentValidateResult | null>(null);
   const [created, setCreated] = useState<WorkOrderAssignment | null>(null);
 
-  const { data: machines } = useQuery<Machine[]>({ queryKey: ["mo-machines"], queryFn: () => moApi.listMachines().then((r) => r.data) });
-  const { data: operators } = useQuery<OperatorProfile[]>({ queryKey: ["mo-operators"], queryFn: () => moApi.listOperators().then((r) => r.data) });
-  const { data: teams } = useQuery<ProductionTeam[]>({ queryKey: ["mo-teams"], queryFn: () => moApi.listTeams().then((r) => r.data) });
+  const { data: machines } = useQuery<Machine[]>({ queryKey: ["mo-machines"], queryFn: () => moApi.listMachines() });
+  const { data: operators } = useQuery<OperatorProfile[]>({ queryKey: ["mo-operators"], queryFn: () => moApi.listOperators() });
+  const { data: teams } = useQuery<ProductionTeam[]>({ queryKey: ["mo-teams"], queryFn: () => moApi.listTeams() });
 
   const validate = useMutation({
     mutationFn: () => moApi.validateAssignment({
@@ -23,7 +23,7 @@ export default function AssignmentPage() {
       machine_id: form.machine_id || undefined,
       operator_id: form.operator_id || undefined,
     }),
-    onSuccess: (r) => setValidation(r.data),
+    onSuccess: (r) => setValidation(r),
   });
 
   const assign = useMutation({
@@ -34,7 +34,7 @@ export default function AssignmentPage() {
       team_id: form.team_id || undefined,
     }),
     onSuccess: (r) => {
-      setCreated(r.data);
+      setCreated(r);
       qc.invalidateQueries({ queryKey: ["mo-dashboard"] });
     },
   });

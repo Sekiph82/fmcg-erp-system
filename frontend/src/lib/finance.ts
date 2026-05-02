@@ -366,53 +366,53 @@ export interface AccountingDashboard {
 export const financeApi = {
   // COA
   async listCOA(activeOnly = true): Promise<COA[]> {
-    const res = await apiClient.get<COA[]>("/api/v1/finance/coa/", { params: { active_only: activeOnly } }).then((r) => r.data);
+    const res = await apiClient.get<COA[]>("/api/v1/finance/coa/", { params: { active_only: activeOnly } });
     return res.data;
   },
   async createCOA(data: object): Promise<COA> {
-    const res = await apiClient.post<COA>("/api/v1/finance/coa/", data).then((r) => r.data);
+    const res = await apiClient.post<COA>("/api/v1/finance/coa/", data);
     return res.data;
   },
 
   // Journal
   async listJournal(params?: object): Promise<JournalEntry[]> {
-    const res = await apiClient.get<JournalEntry[]>("/api/v1/finance/journal/", { params }).then((r) => r.data);
+    const res = await apiClient.get<JournalEntry[]>("/api/v1/finance/journal/", { params });
     return res.data;
   },
   async createJournalEntry(data: object): Promise<JournalEntry> {
-    const res = await apiClient.post<JournalEntry>("/api/v1/finance/journal/", data).then((r) => r.data);
+    const res = await apiClient.post<JournalEntry>("/api/v1/finance/journal/", data);
     return res.data;
   },
   async postJournalEntry(id: string): Promise<JournalEntry> {
-    const res = await apiClient.post<JournalEntry>(`/api/v1/finance/journal/${id}/post`).then((r) => r.data);
+    const res = await apiClient.post<JournalEntry>(`/api/v1/finance/journal/${id}/post`);
     return res.data;
   },
 
   // Cash Accounts
   async listCashAccounts(activeOnly = true): Promise<CashAccount[]> {
-    const res = await apiClient.get<CashAccount[]>("/api/v1/finance/cash-accounts/", { params: { active_only: activeOnly } }).then((r) => r.data);
+    const res = await apiClient.get<CashAccount[]>("/api/v1/finance/cash-accounts/", { params: { active_only: activeOnly } });
     return res.data;
   },
   async createCashAccount(data: object): Promise<CashAccount> {
-    const res = await apiClient.post<CashAccount>("/api/v1/finance/cash-accounts/", data).then((r) => r.data);
+    const res = await apiClient.post<CashAccount>("/api/v1/finance/cash-accounts/", data);
     return res.data;
   },
   async listTransactions(accountId: string, params?: object): Promise<CashTransaction[]> {
-    const res = await apiClient.get<CashTransaction[]>(`/api/v1/finance/cash-accounts/${accountId}/transactions`, { params }).then((r) => r.data);
+    const res = await apiClient.get<CashTransaction[]>(`/api/v1/finance/cash-accounts/${accountId}/transactions`, { params });
     return res.data;
   },
   async addTransaction(accountId: string, data: object): Promise<CashTransaction> {
-    const res = await apiClient.post<CashTransaction>(`/api/v1/finance/cash-accounts/${accountId}/transactions`, data).then((r) => r.data);
+    const res = await apiClient.post<CashTransaction>(`/api/v1/finance/cash-accounts/${accountId}/transactions`, data);
     return res.data;
   },
   async clearTransaction(txId: string): Promise<CashTransaction> {
-    const res = await apiClient.post<CashTransaction>(`/api/v1/finance/transactions/${txId}/clear`).then((r) => r.data);
+    const res = await apiClient.post<CashTransaction>(`/api/v1/finance/transactions/${txId}/clear`);
     return res.data;
   },
 
   // M-Pesa
   async listMpesaTransactions(params?: object): Promise<CashTransaction[]> {
-    const res = await apiClient.get<CashTransaction[]>("/api/v1/finance/mpesa/transactions", { params }).then((r) => r.data);
+    const res = await apiClient.get<CashTransaction[]>("/api/v1/finance/mpesa/transactions", { params });
     return res.data;
   },
   async listReconciliations(status?: ReconciliationStatus): Promise<MpesaReconciliation[]> {
@@ -422,11 +422,11 @@ export const financeApi = {
     return res.data;
   },
   async autoMatchMpesa(): Promise<{ matched: number; skipped: number }> {
-    const res = await apiClient.post<{ matched: number; skipped: number }>("/api/v1/finance/mpesa/auto-match").then((r) => r.data);
+    const res = await apiClient.post<{ matched: number; skipped: number }>("/api/v1/finance/mpesa/auto-match");
     return res.data;
   },
   async manualMatch(reconId: string, data: { invoice_id?: string; so_id?: string; matched_amount?: number; notes?: string }): Promise<MpesaReconciliation> {
-    const res = await apiClient.post<MpesaReconciliation>(`/api/v1/finance/mpesa/reconciliation/${reconId}/match`, data).then((r) => r.data);
+    const res = await apiClient.post<MpesaReconciliation>(`/api/v1/finance/mpesa/reconciliation/${reconId}/match`, data);
     return res.data;
   },
   async markException(reconId: string, reason: string): Promise<MpesaReconciliation> {
@@ -438,15 +438,15 @@ export const financeApi = {
 
   // Costing
   async listCostEntries(params?: object): Promise<ProductionCostEntry[]> {
-    const res = await apiClient.get<ProductionCostEntry[]>("/api/v1/finance/costing/entries", { params }).then((r) => r.data);
+    const res = await apiClient.get<ProductionCostEntry[]>("/api/v1/finance/costing/entries", { params });
     return res.data;
   },
   async addCostEntry(data: object): Promise<ProductionCostEntry> {
-    const res = await apiClient.post<ProductionCostEntry>("/api/v1/finance/costing/entries", data).then((r) => r.data);
+    const res = await apiClient.post<ProductionCostEntry>("/api/v1/finance/costing/entries", data);
     return res.data;
   },
   async rollupProductionCosts(productionOrderId: string): Promise<ProductionCostEntry[]> {
-    const res = await apiClient.post<ProductionCostEntry[]>(`/api/v1/finance/costing/rollup/${productionOrderId}`).then((r) => r.data);
+    const res = await apiClient.post<ProductionCostEntry[]>(`/api/v1/finance/costing/rollup/${productionOrderId}`);
     return res.data;
   },
   async rollupProductCost(productId: string, periodYm: string): Promise<ProductCost> {
@@ -456,31 +456,31 @@ export const financeApi = {
     return res.data;
   },
   async listProductCosts(params?: object): Promise<ProductCost[]> {
-    const res = await apiClient.get<ProductCost[]>("/api/v1/finance/costing/products", { params }).then((r) => r.data);
+    const res = await apiClient.get<ProductCost[]>("/api/v1/finance/costing/products", { params });
     return res.data;
   },
 
   // Budgets
   async listBudgets(): Promise<Budget[]> {
-    const res = await apiClient.get<Budget[]>("/api/v1/finance/budgets/").then((r) => r.data);
+    const res = await apiClient.get<Budget[]>("/api/v1/finance/budgets/");
     return res.data;
   },
   async getBudget(id: string): Promise<Budget> {
-    const res = await apiClient.get<Budget>(`/api/v1/finance/budgets/${id}`).then((r) => r.data);
+    const res = await apiClient.get<Budget>(`/api/v1/finance/budgets/${id}`);
     return res.data;
   },
   async createBudget(data: object): Promise<Budget> {
-    const res = await apiClient.post<Budget>("/api/v1/finance/budgets/", data).then((r) => r.data);
+    const res = await apiClient.post<Budget>("/api/v1/finance/budgets/", data);
     return res.data;
   },
   async approveBudget(id: string): Promise<Budget> {
-    const res = await apiClient.post<Budget>(`/api/v1/finance/budgets/${id}/approve`).then((r) => r.data);
+    const res = await apiClient.post<Budget>(`/api/v1/finance/budgets/${id}/approve`);
     return res.data;
   },
 
   // Reports
   async cashPosition(): Promise<CashPositionRow[]> {
-    const res = await apiClient.get<CashPositionRow[]>("/api/v1/finance/reports/cash-position").then((r) => r.data);
+    const res = await apiClient.get<CashPositionRow[]>("/api/v1/finance/reports/cash-position");
     return res.data;
   },
   async mpesaSummary(fromDate: string, toDate: string): Promise<MpesaSummaryRow[]> {
@@ -496,11 +496,11 @@ export const financeApi = {
     return res.data;
   },
   async receivables(): Promise<ReceivableRow[]> {
-    const res = await apiClient.get<ReceivableRow[]>("/api/v1/finance/reports/receivables").then((r) => r.data);
+    const res = await apiClient.get<ReceivableRow[]>("/api/v1/finance/reports/receivables");
     return res.data;
   },
   async reconciliationExceptions(): Promise<ReconciliationExceptionRow[]> {
-    const res = await apiClient.get<ReconciliationExceptionRow[]>("/api/v1/finance/reports/reconciliation-exceptions").then((r) => r.data);
+    const res = await apiClient.get<ReconciliationExceptionRow[]>("/api/v1/finance/reports/reconciliation-exceptions");
     return res.data;
   },
   async budgetVsActual(year: number, department?: string): Promise<BudgetVsActualRow[]> {
@@ -513,19 +513,19 @@ export const financeApi = {
   // ── Accounting Module ──────────────────────────────────────────────────────
 
   async accountingDashboard(): Promise<AccountingDashboard> {
-    const res = await apiClient.get<AccountingDashboard>("/api/v1/finance/accounting/dashboard/").then((r) => r.data);
+    const res = await apiClient.get<AccountingDashboard>("/api/v1/finance/accounting/dashboard/");
     return res.data;
   },
 
   async listSalesInvoices(params?: {
     status?: string; customer_id?: string; from_date?: string; to_date?: string; limit?: number;
   }): Promise<SalesInvoice[]> {
-    const res = await apiClient.get<SalesInvoice[]>("/api/v1/finance/accounting/sales-invoices/", { params }).then((r) => r.data);
+    const res = await apiClient.get<SalesInvoice[]>("/api/v1/finance/accounting/sales-invoices/", { params });
     return res.data;
   },
 
   async getSalesInvoice(id: string): Promise<SalesInvoice> {
-    const res = await apiClient.get<SalesInvoice>(`/api/v1/finance/accounting/sales-invoices/${id}`).then((r) => r.data);
+    const res = await apiClient.get<SalesInvoice>(`/api/v1/finance/accounting/sales-invoices/${id}`);
     return res.data;
   },
 
@@ -542,17 +542,17 @@ export const financeApi = {
   async listPurchaseInvoices(params?: {
     status?: string; supplier_id?: string; from_date?: string; to_date?: string; limit?: number;
   }): Promise<PurchaseInvoice[]> {
-    const res = await apiClient.get<PurchaseInvoice[]>("/api/v1/finance/accounting/purchase-invoices/", { params }).then((r) => r.data);
+    const res = await apiClient.get<PurchaseInvoice[]>("/api/v1/finance/accounting/purchase-invoices/", { params });
     return res.data;
   },
 
   async getPurchaseInvoice(id: string): Promise<PurchaseInvoice> {
-    const res = await apiClient.get<PurchaseInvoice>(`/api/v1/finance/accounting/purchase-invoices/${id}`).then((r) => r.data);
+    const res = await apiClient.get<PurchaseInvoice>(`/api/v1/finance/accounting/purchase-invoices/${id}`);
     return res.data;
   },
 
   async createPurchaseInvoice(data: object): Promise<PurchaseInvoice> {
-    const res = await apiClient.post<PurchaseInvoice>("/api/v1/finance/accounting/purchase-invoices/", data).then((r) => r.data);
+    const res = await apiClient.post<PurchaseInvoice>("/api/v1/finance/accounting/purchase-invoices/", data);
     return res.data;
   },
 
@@ -569,17 +569,17 @@ export const financeApi = {
   async listAllPayments(params?: {
     payment_type?: "customer" | "supplier"; from_date?: string; to_date?: string; limit?: number;
   }): Promise<CombinedPayment[]> {
-    const res = await apiClient.get<CombinedPayment[]>("/api/v1/finance/accounting/payments/", { params }).then((r) => r.data);
+    const res = await apiClient.get<CombinedPayment[]>("/api/v1/finance/accounting/payments/", { params });
     return res.data;
   },
 
   async customerLedger(): Promise<CustomerLedgerRow[]> {
-    const res = await apiClient.get<CustomerLedgerRow[]>("/api/v1/finance/accounting/customer-ledger/").then((r) => r.data);
+    const res = await apiClient.get<CustomerLedgerRow[]>("/api/v1/finance/accounting/customer-ledger/");
     return res.data;
   },
 
   async supplierLedger(): Promise<SupplierLedgerRow[]> {
-    const res = await apiClient.get<SupplierLedgerRow[]>("/api/v1/finance/accounting/supplier-ledger/").then((r) => r.data);
+    const res = await apiClient.get<SupplierLedgerRow[]>("/api/v1/finance/accounting/supplier-ledger/");
     return res.data;
   },
 };

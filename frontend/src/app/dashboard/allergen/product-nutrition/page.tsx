@@ -65,8 +65,8 @@ export default function ProductNutritionPage() {
               {selected.serving_size_value && <p>Serving Size: {selected.serving_size_value}{selected.serving_size_uom}</p>}
               {selected.nutrition_per_100g && Object.entries(selected.nutrition_per_100g).map(([code, data]) => (
                 <div key={code} className="flex justify-between border-b border-gray-200 py-0.5">
-                  <span>{(data as Record<string, string>).name}</span>
-                  <span>{(data as Record<string, number | string>).value} {(data as Record<string, string>).unit}</span>
+                  <span>{(data as unknown as Record<string, string>).name}</span>
+                  <span>{(data as unknown as Record<string, number | string>).value} {(data as unknown as Record<string, string>).unit}</span>
                 </div>
               ))}
             </div>
@@ -99,7 +99,7 @@ export default function ProductNutritionPage() {
                       const val = per100[k];
                       return (
                         <td key={k} className="px-2 py-2 text-right font-mono text-xs">
-                          {val ? `${(val as Record<string, number>).value?.toFixed(1)} ${(val as Record<string, string>).unit}` : "—"}
+                          {val ? `${(val as unknown as Record<string, number>).value?.toFixed(1)} ${(val as unknown as Record<string, string>).unit}` : "—"}
                         </td>
                       );
                     })}

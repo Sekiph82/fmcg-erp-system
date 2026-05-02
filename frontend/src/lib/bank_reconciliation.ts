@@ -327,9 +327,9 @@ export const brApi = {
 
   // Reports
   reportUnreconciled: () =>
-    apiClient.get<object[]>(`${BASE}/reports/unreconciled`).then((r) => r.data),
+    apiClient.get<Record<string, unknown>[]>(`${BASE}/reports/unreconciled`).then((r) => r.data),
   reportAgedOpenItems: () =>
-    apiClient.get<object[]>(`${BASE}/reports/aged-open-items`).then((r) => r.data),
+    apiClient.get<Record<string, unknown>[]>(`${BASE}/reports/aged-open-items`).then((r) => r.data),
 
   // AI
   runAI: (stmtId?: string) =>

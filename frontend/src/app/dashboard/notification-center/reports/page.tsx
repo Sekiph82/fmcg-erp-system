@@ -43,10 +43,10 @@ export default function NotificationReportsPage() {
       <div className="bg-white border rounded-lg p-4 shadow-sm">
         {loading && <p className="text-gray-500 text-sm">Loading…</p>}
 
-        {data && tab === "delivery" && (() => {
+        {!!data && tab === "delivery" && (() => {
           const rows = data as { channel: string; status: string; count: number }[];
-          const channels = [...new Set(rows.map(r => r.channel))];
-          const statuses = [...new Set(rows.map(r => r.status))];
+          const channels = Array.from(new Set(rows.map(r => r.channel)));
+          const statuses = Array.from(new Set(rows.map(r => r.status)));
           const map: Record<string, Record<string, number>> = {};
           for (const r of rows) {
             if (!map[r.channel]) map[r.channel] = {};
@@ -74,7 +74,7 @@ export default function NotificationReportsPage() {
           );
         })()}
 
-        {data && tab === "unread" && (() => {
+        {!!data && tab === "unread" && (() => {
           const rows = data as { user_id: string; unread_count: number }[];
           return (
             <div>
@@ -109,7 +109,7 @@ export default function NotificationReportsPage() {
           );
         })()}
 
-        {data && tab === "failed" && (() => {
+        {!!data && tab === "failed" && (() => {
           const rows = data as NCNotification[];
           return (
             <div>

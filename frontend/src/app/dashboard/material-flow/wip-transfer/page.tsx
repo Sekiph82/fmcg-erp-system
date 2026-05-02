@@ -24,12 +24,12 @@ export default function WIPTransferPage() {
 
   const { data: stages } = useQuery<FlowStage[]>({
     queryKey: ["mf-stages"],
-    queryFn: () => mfApi.listStages().then((r) => r.data),
+    queryFn: () => mfApi.listStages(),
   });
 
   const { data: txList } = useQuery<FlowTransaction[]>({
     queryKey: ["mf-transactions", "transfer"],
-    queryFn: () => mfApi.listTransactions({ flow_type: "STAGE_TRANSFER" }).then((r) => r.data),
+    queryFn: () => mfApi.listTransactions({ flow_type: "STAGE_TRANSFER" }),
   });
 
   const create = useMutation({
@@ -52,7 +52,7 @@ export default function WIPTransferPage() {
         }],
       }),
     onSuccess: (r) => {
-      setSuccessMsg(`Transfer ${r.data.flow_no} posted.`);
+      setSuccessMsg(`Transfer ${r.flow_no} posted.`);
       qc.invalidateQueries({ queryKey: ["mf-transactions", "transfer"] });
       qc.invalidateQueries({ queryKey: ["mf-dashboard"] });
       setTimeout(() => setSuccessMsg(""), 4000);

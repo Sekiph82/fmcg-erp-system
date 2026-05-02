@@ -14,7 +14,7 @@ export default function EventDefinitionsPage() {
     setLoading(false);
   }
 
-  const modules = [...new Set(defs.map((d) => d.module))].sort();
+  const modules = Array.from(new Set(defs.map((d) => d.module))).sort();
   const [moduleFilter, setModuleFilter] = useState("all");
 
   const filtered = defs.filter((d) => {

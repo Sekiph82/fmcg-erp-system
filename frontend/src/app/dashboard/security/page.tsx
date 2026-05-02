@@ -320,7 +320,7 @@ export default function SecurityPage() {
             </div>
           )}
 
-          {riskReport && (
+          {!!riskReport && (
             <div>
               <h3 className="text-sm font-semibold text-gray-700 mb-2">AI Security Risk Monitor</h3>
               <pre className="bg-gray-900 text-green-300 text-xs rounded-lg p-3 overflow-auto max-h-40">
@@ -329,7 +329,7 @@ export default function SecurityPage() {
             </div>
           )}
 
-          {anomalyReport && (
+          {!!anomalyReport && (
             <div>
               <h3 className="text-sm font-semibold text-gray-700 mb-2">AI Access Anomaly Detector</h3>
               <pre className="bg-gray-900 text-blue-300 text-xs rounded-lg p-3 overflow-auto max-h-40">

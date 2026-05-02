@@ -69,7 +69,7 @@ export default function CycleCountDashboardPage() {
                   {Number(v.variance_qty) > 0 ? "+" : ""}{Number(v.variance_qty).toFixed(2)}
                 </span>
                 <span className="text-gray-500">{Number(v.variance_pct).toFixed(1)}%</span>
-                {v.variance_value && (
+                {!!v.variance_value && (
                   <span className="text-gray-500">KES {Math.abs(Number(v.variance_value)).toLocaleString()}</span>
                 )}
               </div>

@@ -180,53 +180,53 @@ const BASE = "/api/v1/mrp";
 export const mrpApi = {
   // ── Forecasting ────────────────────────────────────────────────────────────
   async generateForecast(body: ForecastGenerateRequest): Promise<Forecast> {
-    const r = await apiClient.post<Forecast>(`${BASE}/forecast/generate`, body).then((r) => r.data);
+    const r = await apiClient.post<Forecast>(`${BASE}/forecast/generate`, body);
     return r.data;
   },
 
   async listForecasts(params?: { product_id?: string; status?: string; skip?: number; limit?: number }): Promise<ForecastSummary[]> {
-    const r = await apiClient.get<ForecastSummary[]>(`${BASE}/forecasts`, { params }).then((r) => r.data);
+    const r = await apiClient.get<ForecastSummary[]>(`${BASE}/forecasts`, { params });
     return r.data;
   },
 
   async getForecast(id: string): Promise<Forecast> {
-    const r = await apiClient.get<Forecast>(`${BASE}/forecasts/${id}`).then((r) => r.data);
+    const r = await apiClient.get<Forecast>(`${BASE}/forecasts/${id}`);
     return r.data;
   },
 
   async approveForecast(id: string): Promise<Forecast> {
-    const r = await apiClient.patch<Forecast>(`${BASE}/forecasts/${id}/approve`).then((r) => r.data);
+    const r = await apiClient.patch<Forecast>(`${BASE}/forecasts/${id}/approve`);
     return r.data;
   },
 
   async overrideLine(forecastId: string, lineId: string, body: { adjusted_qty?: number; notes?: string }): Promise<ForecastLine> {
-    const r = await apiClient.patch<ForecastLine>(`${BASE}/forecasts/${forecastId}/lines/${lineId}`, body).then((r) => r.data);
+    const r = await apiClient.patch<ForecastLine>(`${BASE}/forecasts/${forecastId}/lines/${lineId}`, body);
     return r.data;
   },
 
   async backfillActuals(forecastId: string): Promise<{ updated_lines: number }> {
-    const r = await apiClient.post<{ updated_lines: number }>(`${BASE}/forecasts/${forecastId}/backfill`).then((r) => r.data);
+    const r = await apiClient.post<{ updated_lines: number }>(`${BASE}/forecasts/${forecastId}/backfill`);
     return r.data;
   },
 
   async forecastAccuracy(): Promise<ForecastAccuracyRow[]> {
-    const r = await apiClient.get<ForecastAccuracyRow[]>(`${BASE}/forecasts/accuracy`).then((r) => r.data);
+    const r = await apiClient.get<ForecastAccuracyRow[]>(`${BASE}/forecasts/accuracy`);
     return r.data;
   },
 
   // ── MRP Runs ───────────────────────────────────────────────────────────────
   async triggerRun(body: MRPRunCreate): Promise<MRPRun> {
-    const r = await apiClient.post<MRPRun>(`${BASE}/runs`, body).then((r) => r.data);
+    const r = await apiClient.post<MRPRun>(`${BASE}/runs`, body);
     return r.data;
   },
 
   async listRuns(params?: { skip?: number; limit?: number }): Promise<MRPRun[]> {
-    const r = await apiClient.get<MRPRun[]>(`${BASE}/runs`, { params }).then((r) => r.data);
+    const r = await apiClient.get<MRPRun[]>(`${BASE}/runs`, { params });
     return r.data;
   },
 
   async getRun(id: string): Promise<MRPRun> {
-    const r = await apiClient.get<MRPRun>(`${BASE}/runs/${id}`).then((r) => r.data);
+    const r = await apiClient.get<MRPRun>(`${BASE}/runs/${id}`);
     return r.data;
   },
 
@@ -241,28 +241,28 @@ export const mrpApi = {
   async listSuggestions(params?: {
     run_id?: string; suggestion_type?: string; status?: string; skip?: number; limit?: number;
   }): Promise<MRPSuggestion[]> {
-    const r = await apiClient.get<MRPSuggestion[]>(`${BASE}/suggestions`, { params }).then((r) => r.data);
+    const r = await apiClient.get<MRPSuggestion[]>(`${BASE}/suggestions`, { params });
     return r.data;
   },
 
   async approveSuggestion(id: string, notes?: string): Promise<MRPSuggestion> {
-    const r = await apiClient.patch<MRPSuggestion>(`${BASE}/suggestions/${id}/approve`, { notes }).then((r) => r.data);
+    const r = await apiClient.patch<MRPSuggestion>(`${BASE}/suggestions/${id}/approve`, { notes });
     return r.data;
   },
 
   async rejectSuggestion(id: string, rejection_reason: string): Promise<MRPSuggestion> {
-    const r = await apiClient.patch<MRPSuggestion>(`${BASE}/suggestions/${id}/reject`, { rejection_reason }).then((r) => r.data);
+    const r = await apiClient.patch<MRPSuggestion>(`${BASE}/suggestions/${id}/reject`, { rejection_reason });
     return r.data;
   },
 
   async convertSuggestion(id: string): Promise<SuggestionConvertResult> {
-    const r = await apiClient.post<SuggestionConvertResult>(`${BASE}/suggestions/${id}/convert`).then((r) => r.data);
+    const r = await apiClient.post<SuggestionConvertResult>(`${BASE}/suggestions/${id}/convert`);
     return r.data;
   },
 
   // ── Dashboard ──────────────────────────────────────────────────────────────
   async getDashboard(): Promise<MRPDashboard> {
-    const r = await apiClient.get<MRPDashboard>(`${BASE}/dashboard`).then((r) => r.data);
+    const r = await apiClient.get<MRPDashboard>(`${BASE}/dashboard`);
     return r.data;
   },
 

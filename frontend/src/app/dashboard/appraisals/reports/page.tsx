@@ -76,7 +76,7 @@ export default function AppraisalReportsPage() {
           </button>
         </div>
 
-        {data && tab === "completion" && (
+        {!!data && tab === "completion" && (
           <div className="space-y-3">
             {(() => {
               const d = data as { total: number; completed: number; pending: number; completion_rate_pct: number; by_status: Record<string, number> };
@@ -116,7 +116,7 @@ export default function AppraisalReportsPage() {
           </div>
         )}
 
-        {data && tab === "ratings" && (
+        {!!data && tab === "ratings" && (
           <div>
             <h3 className="text-sm font-semibold text-gray-700 mb-2">Rating Distribution</h3>
             <div className="grid grid-cols-2 gap-3">
@@ -131,7 +131,7 @@ export default function AppraisalReportsPage() {
           </div>
         )}
 
-        {data && tab === "promotions" && (
+        {!!data && tab === "promotions" && (
           <div>
             <h3 className="text-sm font-semibold text-gray-700 mb-2">Promotion & Increment Recommendations</h3>
             <table className="w-full text-sm">

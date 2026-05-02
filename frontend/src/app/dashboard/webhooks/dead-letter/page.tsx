@@ -29,7 +29,7 @@ export default function DeadLetterPage() {
   async function handleRetrySelected() {
     setRetrying(true);
     try {
-      for (const id of selected) {
+      for (const id of Array.from(selected)) {
         await retryDelivery(id);
       }
       setMsg(`Retried ${selected.size} item(s)`);

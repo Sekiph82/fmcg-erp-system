@@ -13,7 +13,7 @@ export default function CostingPage() {
 
   const { data, isLoading } = useQuery<CostContribution>({
     queryKey: ["mo-costing", fetchId],
-    queryFn: () => moApi.getCosting(fetchId).then((r) => r.data),
+    queryFn: () => moApi.getCosting(fetchId),
     enabled: !!fetchId,
   });
 
@@ -84,10 +84,10 @@ export default function CostingPage() {
               <h2 className="font-semibold text-gray-800 mb-4">Cost Distribution</h2>
               <ResponsiveContainer width="100%" height={220}>
                 <PieChart>
-                  <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false}>
+                  <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`} labelLine={false}>
                     {pieData.map((_, idx) => <Cell key={idx} fill={COLORS[idx % COLORS.length]} />)}
                   </Pie>
-                  <Tooltip formatter={(v: number) => `KES ${v.toLocaleString(undefined, { minimumFractionDigits: 2 })}`} />
+                  <Tooltip formatter={(v: unknown) => `KES ${Number(v).toLocaleString(undefined, { minimumFractionDigits: 2 })}`} />
                 </PieChart>
               </ResponsiveContainer>
             </div>

@@ -22,12 +22,12 @@ export default function FGReceiptPage() {
 
   const { data: stages } = useQuery<FlowStage[]>({
     queryKey: ["mf-stages"],
-    queryFn: () => mfApi.listStages().then((r) => r.data),
+    queryFn: () => mfApi.listStages(),
   });
 
   const { data: txList } = useQuery<FlowTransaction[]>({
     queryKey: ["mf-transactions", "fg"],
-    queryFn: () => mfApi.listTransactions({ flow_type: "FG_RECEIPT" }).then((r) => r.data),
+    queryFn: () => mfApi.listTransactions({ flow_type: "FG_RECEIPT" }),
   });
 
   const create = useMutation({
@@ -49,7 +49,7 @@ export default function FGReceiptPage() {
         }],
       }),
     onSuccess: (r) => {
-      setSuccessMsg(`FG Receipt ${r.data.flow_no} created. Product moved to ${form.destination_stage}.`);
+      setSuccessMsg(`FG Receipt ${r.flow_no} created. Product moved to ${form.destination_stage}.`);
       qc.invalidateQueries({ queryKey: ["mf-transactions", "fg"] });
       qc.invalidateQueries({ queryKey: ["mf-dashboard"] });
       setForm({ ...form, quantity: "", lot_id: "", notes: "" });

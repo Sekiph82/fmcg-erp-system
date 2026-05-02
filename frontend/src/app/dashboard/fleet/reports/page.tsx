@@ -129,17 +129,17 @@ export default function FleetReportsPage() {
         </Section>
       )}
 
-      {ai1 && (
+      {!!ai1 && (
         <Section title="AI: Route Efficiency Optimizer">
           <pre className="text-xs bg-gray-900 text-green-300 rounded-lg p-4 overflow-auto max-h-64">{JSON.stringify(ai1, null, 2)}</pre>
         </Section>
       )}
-      {ai2 && (
+      {!!ai2 && (
         <Section title="AI: Fuel Anomaly Detector">
           <pre className="text-xs bg-gray-900 text-amber-300 rounded-lg p-4 overflow-auto max-h-64">{JSON.stringify(ai2, null, 2)}</pre>
         </Section>
       )}
-      {ai3 && (
+      {!!ai3 && (
         <Section title="AI: Maintenance Predictor">
           <pre className="text-xs bg-gray-900 text-blue-300 rounded-lg p-4 overflow-auto max-h-64">{JSON.stringify(ai3, null, 2)}</pre>
         </Section>

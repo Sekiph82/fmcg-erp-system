@@ -36,7 +36,7 @@ export default function IssuePage() {
 
   const { data: txList } = useQuery<FlowTransaction[]>({
     queryKey: ["mf-transactions", "issue"],
-    queryFn: () => mfApi.listTransactions({ flow_type: "RAW_ISSUE" }).then((r) => r.data),
+    queryFn: () => mfApi.listTransactions({ flow_type: "RAW_ISSUE" }),
   });
 
   const createIssue = useMutation({
@@ -54,12 +54,12 @@ export default function IssuePage() {
           uom: l.uom,
           destination_warehouse_id: l.destination_warehouse_id || undefined,
           destination_stage_id: l.destination_stage_id || undefined,
-          quality_status: l.quality_status,
+          quality_status: l.quality_status as import("@/lib/materialFlow").QualityStatus,
           issue_flag: true,
         })),
       }),
     onSuccess: (r) => {
-      setSuccessMsg(`Issue transaction ${r.data.flow_no} created successfully.`);
+      setSuccessMsg(`Issue transaction ${r.flow_no} created successfully.`);
       setLines([{ ...BLANK_LINE }]);
       setNotes("");
       qc.invalidateQueries({ queryKey: ["mf-transactions"] });

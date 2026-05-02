@@ -126,7 +126,7 @@ export default function KanbanViewPage() {
       return true;
     });
 
-  const allUsers = [...new Set(cards.map(c => c.assigned_user_name).filter(Boolean))] as string[];
+  const allUsers = Array.from(new Set(cards.map(c => c.assigned_user_name).filter(Boolean))) as string[];
 
   return (
     <div className="p-4 space-y-3 h-full flex flex-col">

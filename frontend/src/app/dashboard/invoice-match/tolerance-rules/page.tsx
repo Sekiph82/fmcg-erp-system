@@ -71,7 +71,7 @@ export default function ToleranceRulesPage() {
               <div key={field}>
                 <label className="block text-xs text-gray-500 mb-1">{label}</label>
                 <input type={type} className="border rounded-lg px-3 py-2 text-sm w-full"
-                  value={(form as Record<string, string>)[field] ?? ""}
+                  value={(form as unknown as Record<string, string>)[field] ?? ""}
                   onChange={(e) => setForm({ ...form, [field]: e.target.value })} />
               </div>
             ))}

@@ -40,9 +40,9 @@ export default function GS1ConfigPage() {
       cartons_per_pallet: productForm.cartons_per_pallet ? Number(productForm.cartons_per_pallet) : undefined,
     };
     if (editingProduct) {
-      updateProduct.mutate({ id: editingProduct.id, data });
+      updateProduct.mutate({ id: editingProduct.id, data: data as unknown as Partial<ProductGS1Config> });
     } else {
-      createProduct.mutate(data as Partial<ProductGS1Config>);
+      createProduct.mutate(data as unknown as Partial<ProductGS1Config>);
     }
   }
 
@@ -155,7 +155,7 @@ export default function GS1ConfigPage() {
           <div className="flex gap-4 text-sm">
             {[["requires_lot_tracking", "Lot Tracking"], ["requires_expiry_tracking", "Expiry Tracking"], ["requires_serialization", "Serialization"]].map(([key, label]) => (
               <label key={key} className="flex items-center gap-1.5">
-                <input type="checkbox" checked={(productForm as Record<string, boolean>)[key]} onChange={(e) => setProductForm((p) => ({ ...p, [key]: e.target.checked }))} />
+                <input type="checkbox" checked={(productForm as unknown as Record<string, boolean>)[key]} onChange={(e) => setProductForm((p) => ({ ...p, [key]: e.target.checked }))} />
                 {label}
               </label>
             ))}

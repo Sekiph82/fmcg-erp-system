@@ -278,17 +278,17 @@ export async function downloadCompressorCsv(
 
 export const compressorApi = {
   async kpis(params?: Partial<CompressorFilters>): Promise<AirKPIs> {
-    const r = await apiClient.get<AirKPIs>("/api/v1/compressor/kpis", { params }).then((r) => r.data);
+    const r = await apiClient.get<AirKPIs>("/api/v1/compressor/kpis", { params });
     return r.data;
   },
 
   async dailyTrend(params?: Partial<CompressorFilters>): Promise<AirTrendPoint[]> {
-    const r = await apiClient.get<AirTrendPoint[]>("/api/v1/compressor/trend/daily", { params }).then((r) => r.data);
+    const r = await apiClient.get<AirTrendPoint[]>("/api/v1/compressor/trend/daily", { params });
     return r.data;
   },
 
   async shiftAnalysis(params?: Partial<CompressorFilters>): Promise<AirShiftPoint[]> {
-    const r = await apiClient.get<AirShiftPoint[]>("/api/v1/compressor/trend/shift", { params }).then((r) => r.data);
+    const r = await apiClient.get<AirShiftPoint[]>("/api/v1/compressor/trend/shift", { params });
     return r.data;
   },
 
@@ -303,27 +303,27 @@ export const compressorApi = {
   },
 
   async listAssets(): Promise<CompressorAsset[]> {
-    const r = await apiClient.get<CompressorAsset[]>("/api/v1/compressor/assets").then((r) => r.data);
+    const r = await apiClient.get<CompressorAsset[]>("/api/v1/compressor/assets");
     return r.data;
   },
 
   async listRecords(params?: Partial<CompressorFilters>): Promise<CompressorRecord[]> {
-    const r = await apiClient.get<CompressorRecord[]>("/api/v1/compressor/records", { params }).then((r) => r.data);
+    const r = await apiClient.get<CompressorRecord[]>("/api/v1/compressor/records", { params });
     return r.data;
   },
 
   async getRecord(id: string): Promise<CompressorRecord> {
-    const r = await apiClient.get<CompressorRecord>(`/api/v1/compressor/records/${id}`).then((r) => r.data);
+    const r = await apiClient.get<CompressorRecord>(`/api/v1/compressor/records/${id}`);
     return r.data;
   },
 
   async createRecord(data: CompressorRecordCreate): Promise<CompressorRecord> {
-    const r = await apiClient.post<CompressorRecord>("/api/v1/compressor/records", data).then((r) => r.data);
+    const r = await apiClient.post<CompressorRecord>("/api/v1/compressor/records", data);
     return r.data;
   },
 
   async updateRecord(id: string, data: CompressorRecordUpdate): Promise<CompressorRecord> {
-    const r = await apiClient.patch<CompressorRecord>(`/api/v1/compressor/records/${id}`, data).then((r) => r.data);
+    const r = await apiClient.patch<CompressorRecord>(`/api/v1/compressor/records/${id}`, data);
     return r.data;
   },
 
@@ -332,17 +332,17 @@ export const compressorApi = {
   },
 
   async listTransactions(params?: Record<string, unknown>): Promise<UtilityTransaction[]> {
-    const r = await apiClient.get<UtilityTransaction[]>("/api/v1/compressor/transactions", { params }).then((r) => r.data);
+    const r = await apiClient.get<UtilityTransaction[]>("/api/v1/compressor/transactions", { params });
     return r.data;
   },
 
   async createTransaction(data: UtilityTransactionCreate): Promise<UtilityTransaction> {
-    const r = await apiClient.post<UtilityTransaction>("/api/v1/compressor/transactions", data).then((r) => r.data);
+    const r = await apiClient.post<UtilityTransaction>("/api/v1/compressor/transactions", data);
     return r.data;
   },
 
   async updateTransaction(id: string, data: UtilityTransactionUpdate): Promise<UtilityTransaction> {
-    const r = await apiClient.patch<UtilityTransaction>(`/api/v1/compressor/transactions/${id}`, data).then((r) => r.data);
+    const r = await apiClient.patch<UtilityTransaction>(`/api/v1/compressor/transactions/${id}`, data);
     return r.data;
   },
 

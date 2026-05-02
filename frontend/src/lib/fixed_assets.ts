@@ -40,6 +40,11 @@ export interface FAFixedAsset {
   asset_code: string;
   asset_name: string;
   asset_category_id: string;
+  description?: string | null;
+  serial_number?: string | null;
+  depreciation_start_rule?: string | null;
+  useful_life_units_total?: number | null;
+  depreciation_rate?: number | null;
   category_name: string | null;
   asset_type: string | null;
   serial_no: string | null;
@@ -78,6 +83,7 @@ export interface FADepreciationScheduleRow {
   period_start: string;
   period_end: string;
   scheduled_amount: number;
+  depreciation_amount: number;
   posted_amount: number | null;
   posting_date: string | null;
   schedule_status: ScheduleStatus;

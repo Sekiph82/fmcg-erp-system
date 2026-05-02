@@ -36,7 +36,7 @@ export default function LeadQualificationPage() {
     if (!selected) return;
     setSaving(true);
     try {
-      await crmApi.qualify(selected.id, form);
+      await crmApi.qualify(selected.id, form as unknown as Record<string, unknown>);
       setSelected(null);
       setForm({ budget_fit: false, need_fit: false, timeline_fit: false, authority_fit: false, product_fit: false, geo_fit: false, notes: "" });
       load();

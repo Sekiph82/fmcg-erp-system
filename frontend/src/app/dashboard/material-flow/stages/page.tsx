@@ -48,7 +48,7 @@ export default function StagesPage() {
 
   const { data } = useQuery<FlowStage[]>({
     queryKey: ["mf-stages"],
-    queryFn: () => mfApi.listStages().then((r) => r.data),
+    queryFn: () => mfApi.listStages(),
   });
 
   const create = useMutation({

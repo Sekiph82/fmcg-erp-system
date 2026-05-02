@@ -41,6 +41,7 @@ export interface StorageLocation {
   barcode?: string;
   max_weight_kg?: number;
   max_volume_m3?: number;
+  location_type?: string;
   is_active: boolean;
   is_blocked: boolean;
 }
@@ -175,39 +176,39 @@ export interface MovementLedgerRow {
 export const wmsApi = {
   // Zones
   async listZones(params?: { warehouse_id?: string }): Promise<WarehouseZone[]> {
-    const res = await apiClient.get<WarehouseZone[]>("/api/v1/wms/zones/", { params }).then((r) => r.data);
+    const res = await apiClient.get<WarehouseZone[]>("/api/v1/wms/zones/", { params });
     return res.data;
   },
   async createZone(data: Omit<WarehouseZone, "id" | "location_count" | "warehouse_name">): Promise<WarehouseZone> {
-    const res = await apiClient.post<WarehouseZone>("/api/v1/wms/zones/", data).then((r) => r.data);
+    const res = await apiClient.post<WarehouseZone>("/api/v1/wms/zones/", data);
     return res.data;
   },
 
   // Locations
   async listLocations(params?: { zone_id?: string; warehouse_id?: string }): Promise<StorageLocation[]> {
-    const res = await apiClient.get<StorageLocation[]>("/api/v1/wms/locations/", { params }).then((r) => r.data);
+    const res = await apiClient.get<StorageLocation[]>("/api/v1/wms/locations/", { params });
     return res.data;
   },
   async createLocation(data: Omit<StorageLocation, "id" | "zone_code" | "zone_name" | "zone_type" | "warehouse_id" | "warehouse_name">): Promise<StorageLocation> {
-    const res = await apiClient.post<StorageLocation>("/api/v1/wms/locations/", data).then((r) => r.data);
+    const res = await apiClient.post<StorageLocation>("/api/v1/wms/locations/", data);
     return res.data;
   },
   async updateLocation(id: string, data: Partial<StorageLocation>): Promise<StorageLocation> {
-    const res = await apiClient.patch<StorageLocation>(`/api/v1/wms/locations/${id}`, data).then((r) => r.data);
+    const res = await apiClient.patch<StorageLocation>(`/api/v1/wms/locations/${id}`, data);
     return res.data;
   },
 
   // Scan
   async scanLocation(barcode: string) {
-    const res = await apiClient.get(`/api/v1/wms/scan/location/${barcode}`).then((r) => r.data);
+    const res = await apiClient.get(`/api/v1/wms/scan/location/${barcode}`);
     return res.data;
   },
   async scanLot(lotNumber: string) {
-    const res = await apiClient.get(`/api/v1/wms/scan/lot/${lotNumber}`).then((r) => r.data);
+    const res = await apiClient.get(`/api/v1/wms/scan/lot/${lotNumber}`);
     return res.data;
   },
   async scanProduct(barcode: string) {
-    const res = await apiClient.get(`/api/v1/wms/scan/product/${barcode}`).then((r) => r.data);
+    const res = await apiClient.get(`/api/v1/wms/scan/product/${barcode}`);
     return res.data;
   },
 
@@ -221,49 +222,49 @@ export const wmsApi = {
 
   // Operations
   async putaway(data: { product_id?: string; material_id?: string; warehouse_id: string; location_id: string; lot_number?: string; quantity: number; reference: string }) {
-    const res = await apiClient.post("/api/v1/wms/putaway", data).then((r) => r.data);
+    const res = await apiClient.post("/api/v1/wms/putaway", data);
     return res.data;
   },
   async quarantine(data: { warehouse_id: string; product_id?: string; material_id?: string; lot_number?: string; reason: string; notes?: string }) {
-    const res = await apiClient.post("/api/v1/wms/quarantine", data).then((r) => r.data);
+    const res = await apiClient.post("/api/v1/wms/quarantine", data);
     return res.data;
   },
   async releaseQuarantine(data: { warehouse_id: string; product_id?: string; material_id?: string; lot_number?: string; notes?: string }) {
-    const res = await apiClient.post("/api/v1/wms/release", data).then((r) => r.data);
+    const res = await apiClient.post("/api/v1/wms/release", data);
     return res.data;
   },
 
   // Stock Counts
   async listCounts(params?: { warehouse_id?: string; status?: StockCountStatus }): Promise<StockCount[]> {
-    const res = await apiClient.get<StockCount[]>("/api/v1/wms/counts/", { params }).then((r) => r.data);
+    const res = await apiClient.get<StockCount[]>("/api/v1/wms/counts/", { params });
     return res.data;
   },
   async getCount(id: string): Promise<StockCountDetail> {
-    const res = await apiClient.get<StockCountDetail>(`/api/v1/wms/counts/${id}`).then((r) => r.data);
+    const res = await apiClient.get<StockCountDetail>(`/api/v1/wms/counts/${id}`);
     return res.data;
   },
   async createCount(data: { count_no: string; warehouse_id: string; zone_id?: string; count_type: StockCountType; scheduled_date: string; notes?: string }): Promise<StockCount> {
-    const res = await apiClient.post<StockCount>("/api/v1/wms/counts/", data).then((r) => r.data);
+    const res = await apiClient.post<StockCount>("/api/v1/wms/counts/", data);
     return res.data;
   },
   async startCount(id: string): Promise<StockCount> {
-    const res = await apiClient.post<StockCount>(`/api/v1/wms/counts/${id}/start`).then((r) => r.data);
+    const res = await apiClient.post<StockCount>(`/api/v1/wms/counts/${id}/start`);
     return res.data;
   },
   async recordLine(countId: string, lineId: string, data: { counted_quantity: number; notes?: string }): Promise<StockCountLine> {
-    const res = await apiClient.post<StockCountLine>(`/api/v1/wms/counts/${countId}/lines/${lineId}/record`, data).then((r) => r.data);
+    const res = await apiClient.post<StockCountLine>(`/api/v1/wms/counts/${countId}/lines/${lineId}/record`, data);
     return res.data;
   },
   async submitCount(id: string): Promise<StockCount> {
-    const res = await apiClient.post<StockCount>(`/api/v1/wms/counts/${id}/submit`).then((r) => r.data);
+    const res = await apiClient.post<StockCount>(`/api/v1/wms/counts/${id}/submit`);
     return res.data;
   },
   async approveCount(id: string): Promise<StockCount> {
-    const res = await apiClient.post<StockCount>(`/api/v1/wms/counts/${id}/approve`).then((r) => r.data);
+    const res = await apiClient.post<StockCount>(`/api/v1/wms/counts/${id}/approve`);
     return res.data;
   },
   async cancelCount(id: string): Promise<StockCount> {
-    const res = await apiClient.post<StockCount>(`/api/v1/wms/counts/${id}/cancel`).then((r) => r.data);
+    const res = await apiClient.post<StockCount>(`/api/v1/wms/counts/${id}/cancel`);
     return res.data;
   },
 
@@ -287,11 +288,11 @@ export const wmsApi = {
     return res.data;
   },
   async lotTrace(lotNumber: string): Promise<LotTraceResult> {
-    const res = await apiClient.get<LotTraceResult>(`/api/v1/wms/reports/lot-trace/${lotNumber}`).then((r) => r.data);
+    const res = await apiClient.get<LotTraceResult>(`/api/v1/wms/reports/lot-trace/${lotNumber}`);
     return res.data;
   },
   async movementLedger(params?: { warehouse_id?: string; date_from?: string; date_to?: string; movement_type?: string; limit?: number }): Promise<MovementLedgerRow[]> {
-    const res = await apiClient.get<MovementLedgerRow[]>("/api/v1/wms/reports/movement-ledger", { params }).then((r) => r.data);
+    const res = await apiClient.get<MovementLedgerRow[]>("/api/v1/wms/reports/movement-ledger", { params });
     return res.data;
   },
 };

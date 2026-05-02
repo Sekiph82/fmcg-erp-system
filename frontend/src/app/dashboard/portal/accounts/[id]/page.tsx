@@ -41,7 +41,7 @@ export default function PortalAccountDetailPage() {
   const handleInvite = async () => {
     setInviteSaving(true);
     try {
-      await portalApi.inviteUser(id, inviteForm);
+      await portalApi.inviteUser(id, inviteForm as unknown as Partial<PortalUser>);
       setShowInvite(false);
       setInviteForm({ full_name: "", email: "", phone: "", role_type: "VIEWER" });
       await load();
@@ -349,7 +349,7 @@ function PortalInvoicesTab({ accountId }: { accountId: string }) {
 function PortalClaimsAdminTab({ accountId }: { accountId: string }) {
   const [claims, setClaims] = useState<Record<string, unknown>[]>([]);
   useEffect(() => {
-    portalApi.getClaims(accountId).then(d => setClaims(d as Record<string, unknown>[])).catch(console.error);
+    portalApi.getClaims(accountId).then(d => setClaims(d as unknown as Record<string, unknown>[])).catch(console.error);
   }, [accountId]);
   return (
     <div className="bg-white rounded-xl border shadow-sm overflow-x-auto">
@@ -383,20 +383,20 @@ function PortalClaimsAdminTab({ accountId }: { accountId: string }) {
 function PortalDraftsAdminTab({ accountId }: { accountId: string }) {
   const [drafts, setDrafts] = useState<Record<string, unknown>[]>([]);
   useEffect(() => {
-    portalApi.getDraftOrders(accountId).then(d => setDrafts(d as Record<string, unknown>[])).catch(console.error);
+    portalApi.getDraftOrders(accountId).then(d => setDrafts(d as unknown as Record<string, unknown>[])).catch(console.error);
   }, [accountId]);
 
   const handleApprove = async (draftId: string) => {
     try {
       await portalApi.reviewDraftOrder(draftId, { status: "APPROVED", reviewed_by: "admin" });
-      portalApi.getDraftOrders(accountId).then(d => setDrafts(d as Record<string, unknown>[]));
+      portalApi.getDraftOrders(accountId).then(d => setDrafts(d as unknown as Record<string, unknown>[]));
     } catch (e) { console.error(e); }
   };
 
   const handleReject = async (draftId: string) => {
     try {
       await portalApi.reviewDraftOrder(draftId, { status: "REJECTED", reviewed_by: "admin", review_notes: "Rejected by admin" });
-      portalApi.getDraftOrders(accountId).then(d => setDrafts(d as Record<string, unknown>[]));
+      portalApi.getDraftOrders(accountId).then(d => setDrafts(d as unknown as Record<string, unknown>[]));
     } catch (e) { console.error(e); }
   };
 

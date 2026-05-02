@@ -10,10 +10,11 @@ export default function SubcontractorStockPage() {
 
   const bySupplier = (data ?? []).reduce((acc, r) => {
     const k = r.supplier_id;
-    if (!acc[k]) acc[k] = { name: r.supplier_name, rows: [] };
-    acc[k].rows.push(r);
+    const entry = acc[k] ?? { name: r.supplier_name, rows: [] };
+    entry.rows.push(r);
+    acc[k] = entry;
     return acc;
-  }, {} as Record<string, { name: string; rows: typeof data }>);
+  }, {} as Record<string, { name: string; rows: NonNullable<typeof data> }>);
 
   return (
     <div className="p-6 space-y-5">

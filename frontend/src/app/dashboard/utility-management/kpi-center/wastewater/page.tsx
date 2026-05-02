@@ -186,7 +186,7 @@ export default function WastewaterKpiPage() {
               <CartesianGrid strokeDasharray="3 3" horizontal={false} />
               <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 10 }} tickFormatter={v => `${v}%`} />
               <YAxis dataKey="name" type="category" tick={{ fontSize: 11 }} width={100} />
-              <Tooltip formatter={(v: number) => `${v.toFixed(1)}%`} />
+              <Tooltip formatter={(v: unknown) => `${Number(v).toFixed(1)}%`} />
               <ReferenceLine x={90} stroke="#22c55e" strokeDasharray="4 4" label={{ value: "Target 90%", position: "top", fontSize: 10, fill: "#22c55e" }} />
               <Bar dataKey="value" name="Actual %" fill="#6ee7b7" radius={[0, 4, 4, 0]} />
             </BarChart>

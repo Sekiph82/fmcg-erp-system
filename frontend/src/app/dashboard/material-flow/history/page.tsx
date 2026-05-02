@@ -15,7 +15,7 @@ export default function FlowHistoryPage() {
       mfApi.getHistory({
         ...(orderId ? { production_order_id: orderId } : {}),
         ...(flowType ? { flow_type: flowType } : {}),
-      }).then((r) => r.data),
+      }),
   });
 
   return (

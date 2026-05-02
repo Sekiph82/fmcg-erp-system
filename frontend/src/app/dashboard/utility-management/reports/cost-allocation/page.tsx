@@ -81,7 +81,7 @@ export default function CostAllocationPage() {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis type="number" tick={{ fontSize: 10 }} />
               <YAxis type="category" dataKey="dimension" tick={{ fontSize: 10 }} width={75} />
-              <Tooltip formatter={(v: number) => [`$${v.toFixed(2)}`, "Allocated Cost"]} />
+              <Tooltip formatter={(v: unknown) => [`$${Number(v).toFixed(2)}`, "Allocated Cost"]} />
               <Bar dataKey="allocated_cost" name="Cost ($)" fill="#f43f5e" radius={[0, 2, 2, 0]} />
             </BarChart>
           </ResponsiveContainer>
@@ -91,7 +91,7 @@ export default function CostAllocationPage() {
           <ResponsiveContainer width="100%" height={280}>
             <PieChart>
               <Pie data={d?.by_utility ?? []} dataKey="value" nameKey="label" cx="50%" cy="50%" outerRadius={100}
-                label={({ label, pct: p }) => `${label} ${p ? Number(p).toFixed(0) : ""}%`}>
+                label={(props: any) => `${props.label} ${props.pct ? Number(props.pct).toFixed(0) : ""}%`}>
                 {(d?.by_utility ?? []).map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
               </Pie>
               <Tooltip />

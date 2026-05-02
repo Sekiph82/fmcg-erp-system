@@ -267,17 +267,17 @@ export async function downloadSteamTxCsv(filename: string): Promise<void> {
 export const boilerApi = {
   // ── KPIs & analytics ────────────────────────────────────────────────────────
   async kpis(params?: Partial<SteamFilters>): Promise<SteamKPIs> {
-    const r = await apiClient.get<SteamKPIs>("/api/v1/steam/kpis", { params }).then((r) => r.data);
+    const r = await apiClient.get<SteamKPIs>("/api/v1/steam/kpis", { params });
     return r.data;
   },
 
   async dailyTrend(params?: Partial<SteamFilters>): Promise<SteamTrendPoint[]> {
-    const r = await apiClient.get<SteamTrendPoint[]>("/api/v1/steam/trend/daily", { params }).then((r) => r.data);
+    const r = await apiClient.get<SteamTrendPoint[]>("/api/v1/steam/trend/daily", { params });
     return r.data;
   },
 
   async shiftAnalysis(params?: Partial<SteamFilters>): Promise<SteamShiftPoint[]> {
-    const r = await apiClient.get<SteamShiftPoint[]>("/api/v1/steam/trend/shift", { params }).then((r) => r.data);
+    const r = await apiClient.get<SteamShiftPoint[]>("/api/v1/steam/trend/shift", { params });
     return r.data;
   },
 
@@ -293,28 +293,28 @@ export const boilerApi = {
 
   // ── Assets dropdown ──────────────────────────────────────────────────────────
   async listAssets(): Promise<BoilerAsset[]> {
-    const r = await apiClient.get<BoilerAsset[]>("/api/v1/steam/assets").then((r) => r.data);
+    const r = await apiClient.get<BoilerAsset[]>("/api/v1/steam/assets");
     return r.data;
   },
 
   // ── Boiler records CRUD ──────────────────────────────────────────────────────
   async listRecords(params?: Partial<SteamFilters>): Promise<BoilerRecord[]> {
-    const r = await apiClient.get<BoilerRecord[]>("/api/v1/steam/records", { params }).then((r) => r.data);
+    const r = await apiClient.get<BoilerRecord[]>("/api/v1/steam/records", { params });
     return r.data;
   },
 
   async getRecord(id: string): Promise<BoilerRecord> {
-    const r = await apiClient.get<BoilerRecord>(`/api/v1/steam/records/${id}`).then((r) => r.data);
+    const r = await apiClient.get<BoilerRecord>(`/api/v1/steam/records/${id}`);
     return r.data;
   },
 
   async createRecord(data: BoilerRecordCreate): Promise<BoilerRecord> {
-    const r = await apiClient.post<BoilerRecord>("/api/v1/steam/records", data).then((r) => r.data);
+    const r = await apiClient.post<BoilerRecord>("/api/v1/steam/records", data);
     return r.data;
   },
 
   async updateRecord(id: string, data: BoilerRecordUpdate): Promise<BoilerRecord> {
-    const r = await apiClient.patch<BoilerRecord>(`/api/v1/steam/records/${id}`, data).then((r) => r.data);
+    const r = await apiClient.patch<BoilerRecord>(`/api/v1/steam/records/${id}`, data);
     return r.data;
   },
 
@@ -324,17 +324,17 @@ export const boilerApi = {
 
   // ── STEAM transactions CRUD ──────────────────────────────────────────────────
   async listTransactions(params?: Record<string, unknown>): Promise<UtilityTransaction[]> {
-    const r = await apiClient.get<UtilityTransaction[]>("/api/v1/steam/transactions", { params }).then((r) => r.data);
+    const r = await apiClient.get<UtilityTransaction[]>("/api/v1/steam/transactions", { params });
     return r.data;
   },
 
   async createTransaction(data: UtilityTransactionCreate): Promise<UtilityTransaction> {
-    const r = await apiClient.post<UtilityTransaction>("/api/v1/steam/transactions", data).then((r) => r.data);
+    const r = await apiClient.post<UtilityTransaction>("/api/v1/steam/transactions", data);
     return r.data;
   },
 
   async updateTransaction(id: string, data: UtilityTransactionUpdate): Promise<UtilityTransaction> {
-    const r = await apiClient.patch<UtilityTransaction>(`/api/v1/steam/transactions/${id}`, data).then((r) => r.data);
+    const r = await apiClient.patch<UtilityTransaction>(`/api/v1/steam/transactions/${id}`, data);
     return r.data;
   },
 

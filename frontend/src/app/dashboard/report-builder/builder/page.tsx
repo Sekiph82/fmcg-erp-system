@@ -52,7 +52,7 @@ export default function ReportBuilderPage() {
 
   const updateField = (i: number, key: keyof FieldRow, val: unknown) => {
     const n = [...fields];
-    (n[i] as Record<string, unknown>)[key] = val;
+    (n[i] as unknown as Record<string, unknown>)[key] = val;
     setFields(n);
   };
 
@@ -65,7 +65,7 @@ export default function ReportBuilderPage() {
 
   const updateFilter = (i: number, key: keyof FilterRow, val: string) => {
     const n = [...filters];
-    (n[i] as Record<string, unknown>)[key] = val;
+    (n[i] as unknown as Record<string, unknown>)[key] = val;
     setFilters(n);
   };
 

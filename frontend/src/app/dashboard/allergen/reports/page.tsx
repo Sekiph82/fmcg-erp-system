@@ -56,8 +56,8 @@ export default function AllergenReportsPage() {
                 <tr key={i} className="hover:bg-gray-50">
                   <td className="px-3 py-2 font-mono text-xs">{r.code}</td>
                   <td className="px-3 py-2 font-medium">{r.name}</td>
-                  <td className="px-3 py-2">{r.allergen_present_flag === "true" || r.allergen_present_flag === true ? <span className="text-red-600 text-xs font-medium">YES</span> : <span className="text-green-600 text-xs">No</span>}</td>
-                  <td className="px-3 py-2">{r.allergen_may_contain_flag === "true" || r.allergen_may_contain_flag === true ? <span className="text-orange-600 text-xs">YES</span> : <span className="text-gray-400 text-xs">No</span>}</td>
+                  <td className="px-3 py-2">{r.allergen_present_flag === "true" || (r.allergen_present_flag as unknown) === true ? <span className="text-red-600 text-xs font-medium">YES</span> : <span className="text-green-600 text-xs">No</span>}</td>
+                  <td className="px-3 py-2">{r.allergen_may_contain_flag === "true" || (r.allergen_may_contain_flag as unknown) === true ? <span className="text-orange-600 text-xs">YES</span> : <span className="text-gray-400 text-xs">No</span>}</td>
                   <td className="px-3 py-2 text-xs">{r.cross_contact_risk_level}</td>
                   <td className="px-3 py-2 text-gray-500 text-xs">{r.supplier_allergen_statement_ref || "—"}</td>
                   <td className="px-3 py-2 text-gray-400 text-xs">{r.allergen_review_date || "—"}</td>

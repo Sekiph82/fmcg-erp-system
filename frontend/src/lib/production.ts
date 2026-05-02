@@ -202,23 +202,23 @@ export interface CompleteOrderRequest {
 export const productionApi = {
   // Plans
   async listPlans(params?: { status?: PlanStatus; skip?: number; limit?: number }): Promise<ProductionPlan[]> {
-    const res = await apiClient.get<ProductionPlan[]>("/api/v1/production/plans/", { params }).then((r) => r.data);
+    const res = await apiClient.get<ProductionPlan[]>("/api/v1/production/plans/", { params });
     return res.data;
   },
   async getPlan(id: string): Promise<ProductionPlanDetail> {
-    const res = await apiClient.get<ProductionPlanDetail>(`/api/v1/production/plans/${id}`).then((r) => r.data);
+    const res = await apiClient.get<ProductionPlanDetail>(`/api/v1/production/plans/${id}`);
     return res.data;
   },
   async createPlan(data: PlanCreate): Promise<ProductionPlan> {
-    const res = await apiClient.post<ProductionPlan>("/api/v1/production/plans/", data).then((r) => r.data);
+    const res = await apiClient.post<ProductionPlan>("/api/v1/production/plans/", data);
     return res.data;
   },
   async confirmPlan(id: string): Promise<ProductionPlan> {
-    const res = await apiClient.post<ProductionPlan>(`/api/v1/production/plans/${id}/confirm`).then((r) => r.data);
+    const res = await apiClient.post<ProductionPlan>(`/api/v1/production/plans/${id}/confirm`);
     return res.data;
   },
   async addPlanLine(planId: string, data: PlanLineCreate): Promise<PlanLine> {
-    const res = await apiClient.post<PlanLine>(`/api/v1/production/plans/${planId}/lines`, data).then((r) => r.data);
+    const res = await apiClient.post<PlanLine>(`/api/v1/production/plans/${planId}/lines`, data);
     return res.data;
   },
   async deletePlanLine(planId: string, lineId: string): Promise<void> {
@@ -227,51 +227,51 @@ export const productionApi = {
 
   // Orders
   async listOrders(params?: { status?: OrderStatus; product_id?: string; skip?: number; limit?: number }): Promise<ProductionOrder[]> {
-    const res = await apiClient.get<ProductionOrder[]>("/api/v1/production/orders/", { params }).then((r) => r.data);
+    const res = await apiClient.get<ProductionOrder[]>("/api/v1/production/orders/", { params });
     return res.data;
   },
   async getOrder(id: string): Promise<ProductionOrderDetail> {
-    const res = await apiClient.get<ProductionOrderDetail>(`/api/v1/production/orders/${id}`).then((r) => r.data);
+    const res = await apiClient.get<ProductionOrderDetail>(`/api/v1/production/orders/${id}`);
     return res.data;
   },
   async createOrder(data: OrderCreate): Promise<ProductionOrder> {
-    const res = await apiClient.post<ProductionOrder>("/api/v1/production/orders/", data).then((r) => r.data);
+    const res = await apiClient.post<ProductionOrder>("/api/v1/production/orders/", data);
     return res.data;
   },
 
   // Execution
   async releaseOrder(id: string): Promise<ProductionOrder> {
-    const res = await apiClient.post<ProductionOrder>(`/api/v1/production/orders/${id}/release`).then((r) => r.data);
+    const res = await apiClient.post<ProductionOrder>(`/api/v1/production/orders/${id}/release`);
     return res.data;
   },
   async startOrder(id: string): Promise<ProductionOrder> {
-    const res = await apiClient.post<ProductionOrder>(`/api/v1/production/orders/${id}/start`).then((r) => r.data);
+    const res = await apiClient.post<ProductionOrder>(`/api/v1/production/orders/${id}/start`);
     return res.data;
   },
   async pauseOrder(id: string, data: { machine_id?: string; reason: DowntimeReason; notes?: string }): Promise<DowntimeLog> {
-    const res = await apiClient.post<DowntimeLog>(`/api/v1/production/orders/${id}/pause`, data).then((r) => r.data);
+    const res = await apiClient.post<DowntimeLog>(`/api/v1/production/orders/${id}/pause`, data);
     return res.data;
   },
   async resumeOrder(id: string, notes?: string): Promise<DowntimeLog> {
-    const res = await apiClient.post<DowntimeLog>(`/api/v1/production/orders/${id}/resume`, { notes }).then((r) => r.data);
+    const res = await apiClient.post<DowntimeLog>(`/api/v1/production/orders/${id}/resume`, { notes });
     return res.data;
   },
   async completeOrder(id: string, data: CompleteOrderRequest): Promise<ProductionOrderDetail> {
-    const res = await apiClient.post<ProductionOrderDetail>(`/api/v1/production/orders/${id}/complete`, data).then((r) => r.data);
+    const res = await apiClient.post<ProductionOrderDetail>(`/api/v1/production/orders/${id}/complete`, data);
     return res.data;
   },
   async cancelOrder(id: string): Promise<ProductionOrder> {
-    const res = await apiClient.post<ProductionOrder>(`/api/v1/production/orders/${id}/cancel`).then((r) => r.data);
+    const res = await apiClient.post<ProductionOrder>(`/api/v1/production/orders/${id}/cancel`);
     return res.data;
   },
   async getOEE(id: string): Promise<OEEMetrics> {
-    const res = await apiClient.get<OEEMetrics>(`/api/v1/production/orders/${id}/oee`).then((r) => r.data);
+    const res = await apiClient.get<OEEMetrics>(`/api/v1/production/orders/${id}/oee`);
     return res.data;
   },
 
   // Reports
   async getReport(params: { date_from: string; date_to: string; product_id?: string }): Promise<ProductionSummary> {
-    const res = await apiClient.get<ProductionSummary>("/api/v1/production/reports/summary", { params }).then((r) => r.data);
+    const res = await apiClient.get<ProductionSummary>("/api/v1/production/reports/summary", { params });
     return res.data;
   },
 };

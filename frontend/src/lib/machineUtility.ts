@@ -307,7 +307,7 @@ export async function downloadMachineUtilityCsv(
 export const machineUtilityApi = {
   // ── Dropdowns
   async workCenters(): Promise<WorkCenterDropdown[]> {
-    const r = await apiClient.get<WorkCenterDropdown[]>("/api/v1/machine-utility/work-centers").then((r) => r.data);
+    const r = await apiClient.get<WorkCenterDropdown[]>("/api/v1/machine-utility/work-centers");
     return r.data;
   },
   async devices(utilityType?: UtilityType): Promise<DeviceDropdown[]> {
@@ -316,7 +316,7 @@ export const machineUtilityApi = {
     return r.data;
   },
   async productionOrders(): Promise<ProductionOrderDropdown[]> {
-    const r = await apiClient.get<ProductionOrderDropdown[]>("/api/v1/machine-utility/production-orders").then((r) => r.data);
+    const r = await apiClient.get<ProductionOrderDropdown[]>("/api/v1/machine-utility/production-orders");
     return r.data;
   },
   async mappingDropdown(workCenterId?: string, utilityType?: UtilityType): Promise<MappingDropdown[]> {
@@ -327,15 +327,15 @@ export const machineUtilityApi = {
 
   // ── Mapping master CRUD
   async listMappings(params?: Partial<MachineUtilityFilters>): Promise<MachineUtilityMapping[]> {
-    const r = await apiClient.get<MachineUtilityMapping[]>("/api/v1/machine-utility/mappings", { params }).then((r) => r.data);
+    const r = await apiClient.get<MachineUtilityMapping[]>("/api/v1/machine-utility/mappings", { params });
     return r.data;
   },
   async createMapping(data: MachineUtilityMappingCreate): Promise<MachineUtilityMapping> {
-    const r = await apiClient.post<MachineUtilityMapping>("/api/v1/machine-utility/mappings", data).then((r) => r.data);
+    const r = await apiClient.post<MachineUtilityMapping>("/api/v1/machine-utility/mappings", data);
     return r.data;
   },
   async updateMapping(id: string, data: MachineUtilityMappingUpdate): Promise<MachineUtilityMapping> {
-    const r = await apiClient.patch<MachineUtilityMapping>(`/api/v1/machine-utility/mappings/${id}`, data).then((r) => r.data);
+    const r = await apiClient.patch<MachineUtilityMapping>(`/api/v1/machine-utility/mappings/${id}`, data);
     return r.data;
   },
   async deleteMapping(id: string): Promise<void> {
@@ -344,15 +344,15 @@ export const machineUtilityApi = {
 
   // ── Consumption records CRUD
   async listRecords(params?: Partial<MachineUtilityFilters>): Promise<MachineConsumptionRecord[]> {
-    const r = await apiClient.get<MachineConsumptionRecord[]>("/api/v1/machine-utility/records", { params }).then((r) => r.data);
+    const r = await apiClient.get<MachineConsumptionRecord[]>("/api/v1/machine-utility/records", { params });
     return r.data;
   },
   async createRecord(data: MachineConsumptionRecordCreate): Promise<MachineConsumptionRecord> {
-    const r = await apiClient.post<MachineConsumptionRecord>("/api/v1/machine-utility/records", data).then((r) => r.data);
+    const r = await apiClient.post<MachineConsumptionRecord>("/api/v1/machine-utility/records", data);
     return r.data;
   },
   async updateRecord(id: string, data: MachineConsumptionRecordUpdate): Promise<MachineConsumptionRecord> {
-    const r = await apiClient.patch<MachineConsumptionRecord>(`/api/v1/machine-utility/records/${id}`, data).then((r) => r.data);
+    const r = await apiClient.patch<MachineConsumptionRecord>(`/api/v1/machine-utility/records/${id}`, data);
     return r.data;
   },
   async deleteRecord(id: string): Promise<void> {
@@ -361,11 +361,11 @@ export const machineUtilityApi = {
 
   // ── Analytics
   async kpis(params?: Partial<MachineUtilityFilters>): Promise<MachineUtilityKPIs> {
-    const r = await apiClient.get<MachineUtilityKPIs>("/api/v1/machine-utility/kpis", { params }).then((r) => r.data);
+    const r = await apiClient.get<MachineUtilityKPIs>("/api/v1/machine-utility/kpis", { params });
     return r.data;
   },
   async dailyTrend(params?: Partial<MachineUtilityFilters>): Promise<MachineUtilityTrendPoint[]> {
-    const r = await apiClient.get<MachineUtilityTrendPoint[]>("/api/v1/machine-utility/trend/daily", { params }).then((r) => r.data);
+    const r = await apiClient.get<MachineUtilityTrendPoint[]>("/api/v1/machine-utility/trend/daily", { params });
     return r.data;
   },
   async breakdown(

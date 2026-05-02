@@ -18,12 +18,12 @@ export default function BulkTransferPage() {
 
   const { data: tanks } = useQuery<TankOccupancy[]>({
     queryKey: ["mf-tanks"],
-    queryFn: () => mfApi.listTanks().then((r) => r.data),
+    queryFn: () => mfApi.listTanks(),
   });
 
   const { data: txList } = useQuery<FlowTransaction[]>({
     queryKey: ["mf-transactions", "bulk"],
-    queryFn: () => mfApi.listTransactions({ flow_type: "BULK_TRANSFER" }).then((r) => r.data),
+    queryFn: () => mfApi.listTransactions({ flow_type: "BULK_TRANSFER" }),
   });
 
   const create = useMutation({
@@ -43,7 +43,7 @@ export default function BulkTransferPage() {
         }],
       }),
     onSuccess: (r) => {
-      setSuccessMsg(`Bulk transfer ${r.data.flow_no} posted.`);
+      setSuccessMsg(`Bulk transfer ${r.flow_no} posted.`);
       qc.invalidateQueries({ queryKey: ["mf-transactions", "bulk"] });
       qc.invalidateQueries({ queryKey: ["mf-tanks"] });
       qc.invalidateQueries({ queryKey: ["mf-dashboard"] });

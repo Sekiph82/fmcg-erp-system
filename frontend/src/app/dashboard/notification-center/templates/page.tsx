@@ -50,8 +50,8 @@ export default function TemplatesPage() {
 
   // Extract {{variable}} placeholders
   const extractVars = (tpl: NCTemplate): string[] => {
-    const matches = [...(tpl.title_template + " " + tpl.message_template).matchAll(/\{\{(\w+)\}\}/g)];
-    return [...new Set(matches.map(m => m[1]))];
+    const matches = Array.from((tpl.title_template + " " + tpl.message_template).matchAll(/\{\{(\w+)\}\}/g));
+    return Array.from(new Set(matches.map(m => m[1])));
   };
 
   return (

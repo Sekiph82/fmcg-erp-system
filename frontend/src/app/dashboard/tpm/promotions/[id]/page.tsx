@@ -228,7 +228,7 @@ export default function TPMPromotionDetailPage() {
               </div>
               <div className="text-right">
                 <p className="text-sm font-bold text-orange-400">{fmtCurrency(c.claimed_amount)}</p>
-                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${CLAIM_STATUS_BADGE[c.status as any] ?? ""}`}>{c.status}</span>
+                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${CLAIM_STATUS_BADGE[c.status as import("@/lib/tpm").TPMClaimStatus] ?? ""}`}>{c.status}</span>
               </div>
             </div>
           ))}

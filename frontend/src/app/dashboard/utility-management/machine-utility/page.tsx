@@ -573,7 +573,7 @@ export default function MachineUtilityPage() {
   const trendUtilityKeys = useMemo(() => {
     const keys = new Set<string>();
     trend.forEach(r => { if (r.utility_type) keys.add(r.utility_type); });
-    return [...keys];
+    return Array.from(keys);
   }, [trend]);
 
   return (
@@ -782,7 +782,7 @@ export default function MachineUtilityPage() {
                   <YAxis type="category" dataKey="label" tick={{ fill: "#94a3b8", fontSize: 11 }} width={90} />
                   <Tooltip
                     contentStyle={{ background: "#1e293b", border: "1px solid #475569", borderRadius: 6 }}
-                    formatter={(v: number) => n(v, 2)}
+                    formatter={(v: unknown) => n(v as number | null | undefined, 2)}
                   />
                   <Bar dataKey="total_consumption" name="Consumption" radius={[0, 3, 3, 0]}>
                     {(bkd?.rows ?? []).map((_, i) => (

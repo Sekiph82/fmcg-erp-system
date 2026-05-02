@@ -144,7 +144,7 @@ export default function TrainingProgramsPage() {
                   </button>
                 </div>
               </div>
-              {effectiveness[p.training_id] && (
+              {!!effectiveness[p.training_id] && (
                 <div className="mt-2 bg-blue-50 rounded p-2 text-xs text-blue-800">
                   {(() => {
                     const e = effectiveness[p.training_id] as { feedback_count: number; avg_rating?: number };

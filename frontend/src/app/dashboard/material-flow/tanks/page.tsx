@@ -69,7 +69,7 @@ export default function TanksPage() {
 
   const { data: tanks } = useQuery<TankOccupancy[]>({
     queryKey: ["mf-tanks"],
-    queryFn: () => mfApi.listTanks().then((r) => r.data),
+    queryFn: () => mfApi.listTanks(),
     refetchInterval: 15000,
   });
 

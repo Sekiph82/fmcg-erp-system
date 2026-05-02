@@ -23,7 +23,7 @@ export default function ReturnsPage() {
 
   const { data: txList } = useQuery<FlowTransaction[]>({
     queryKey: ["mf-transactions", "returns"],
-    queryFn: () => mfApi.listTransactions({ flow_type: "RETURN" }).then((r) => r.data),
+    queryFn: () => mfApi.listTransactions({ flow_type: "RETURN" }),
   });
 
   const create = useMutation({
@@ -45,7 +45,7 @@ export default function ReturnsPage() {
         }],
       }),
     onSuccess: (r) => {
-      setSuccessMsg(`Return transaction ${r.data.flow_no} created.`);
+      setSuccessMsg(`Return transaction ${r.flow_no} created.`);
       qc.invalidateQueries({ queryKey: ["mf-transactions", "returns"] });
       qc.invalidateQueries({ queryKey: ["mf-dashboard"] });
       setForm({ ...form, quantity: "", material_id: "", lot_id: "", notes: "" });

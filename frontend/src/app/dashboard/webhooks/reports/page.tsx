@@ -88,7 +88,7 @@ export default function WebhookReportsPage() {
         </div>
       )}
 
-      {health && (
+      {!!health && (
         <div className="bg-white rounded-2xl border border-gray-200 p-6">
           <h2 className="font-semibold text-gray-900 mb-3">AI: Integration Health Monitor</h2>
           <pre className="text-xs bg-gray-900 text-green-300 rounded-lg p-4 overflow-auto max-h-64">
@@ -97,7 +97,7 @@ export default function WebhookReportsPage() {
         </div>
       )}
 
-      {advisor && (
+      {!!advisor && (
         <div className="bg-white rounded-2xl border border-gray-200 p-6">
           <h2 className="font-semibold text-gray-900 mb-3">AI: Payload Advisor</h2>
           <pre className="text-xs bg-gray-900 text-blue-300 rounded-lg p-4 overflow-auto max-h-64">
@@ -106,7 +106,7 @@ export default function WebhookReportsPage() {
         </div>
       )}
 
-      {anomaly && (
+      {!!anomaly && (
         <div className="bg-white rounded-2xl border border-gray-200 p-6">
           <h2 className="font-semibold text-gray-900 mb-3">AI: Anomaly Detector</h2>
           <pre className="text-xs bg-gray-900 text-amber-300 rounded-lg p-4 overflow-auto max-h-64">

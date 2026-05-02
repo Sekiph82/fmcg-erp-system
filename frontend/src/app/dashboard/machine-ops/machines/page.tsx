@@ -21,7 +21,7 @@ export default function MachinesPage() {
 
   const { data, isLoading } = useQuery<Machine[]>({
     queryKey: ["mo-machines", filterStatus],
-    queryFn: () => moApi.listMachines(filterStatus ? { status: filterStatus } : {}).then((r) => r.data),
+    queryFn: () => moApi.listMachines(filterStatus ? { status: filterStatus } : {}),
   });
 
   const create = useMutation({

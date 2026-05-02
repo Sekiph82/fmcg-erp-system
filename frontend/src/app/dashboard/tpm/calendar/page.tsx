@@ -45,7 +45,7 @@ export default function TPMCalendarPage() {
     return yearMatch && typeMatch && channelMatch;
   });
 
-  const channels = [...new Set(promotions.map((p: TPMPromotion) => p.channel_id).filter(Boolean))];
+  const channels = Array.from(new Set(promotions.map((p: TPMPromotion) => p.channel_id).filter(Boolean)));
 
   return (
     <div className="p-6 space-y-5">
@@ -62,7 +62,7 @@ export default function TPMCalendarPage() {
             className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm">
             <option value="">All Types</option>
             {Object.keys(PROMOTION_TYPE_LABEL).map((t) => (
-              <option key={t} value={t}>{PROMOTION_TYPE_LABEL[t as any]}</option>
+              <option key={t} value={t}>{PROMOTION_TYPE_LABEL[t as import("@/lib/tpm").TPMPromotionType]}</option>
             ))}
           </select>
           {channels.length > 0 && (

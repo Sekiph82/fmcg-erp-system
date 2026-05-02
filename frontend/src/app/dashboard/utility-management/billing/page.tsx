@@ -940,7 +940,7 @@ export default function UtilityBillingPage() {
   const kpiQ = useQuery({
     queryKey: ["billing-kpis", utilityType, dateFrom, dateTo],
     queryFn: () => billingApi.kpis({
-      utility_type: utilityType || undefined,
+      utility_type: utilityType as UtilityTypeBilling || undefined,
       date_from: dateFrom || undefined,
       date_to: dateTo || undefined,
     }),
@@ -1170,7 +1170,7 @@ export default function UtilityBillingPage() {
                     <Pie data={pieData} dataKey="value" cx="50%" cy="50%" innerRadius={60} outerRadius={90}>
                       {pieData.map((d, i) => <Cell key={i} fill={d.fill} />)}
                     </Pie>
-                    <Tooltip formatter={(v: number) => fmt(v)} />
+                    <Tooltip formatter={(v: unknown) => fmt(v as number | null | undefined)} />
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="flex flex-col gap-1.5">
@@ -1381,7 +1381,7 @@ export default function UtilityBillingPage() {
                     <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                     <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={v => fmt(v, 0)} />
                     <YAxis dataKey="name" type="category" tick={{ fontSize: 11 }} width={115} />
-                    <Tooltip formatter={(v: number) => [fmt(v), "Allocated Cost"]} />
+                    <Tooltip formatter={(v: unknown) => [fmt(v as number | null | undefined), "Allocated Cost"]} />
                     <Bar dataKey="cost" radius={[0, 4, 4, 0]}>
                       {report.rows.slice(0, 20).map((r, i) => (
                         <Cell key={i} fill={UTILITY_TYPE_COLORS[r.utility_type as UtilityTypeBilling] ?? "#60a5fa"} />

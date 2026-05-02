@@ -125,19 +125,19 @@ export const utilitiesApi = {
     async list(category?: ConfigCategory, skip = 0, limit = 200): Promise<SystemConfig[]> {
       const params: Record<string, unknown> = { skip, limit };
       if (category) params.category = category;
-      const res = await apiClient.get<SystemConfig[]>("/api/v1/utilities/configs", { params }).then((r) => r.data);
+      const res = await apiClient.get<SystemConfig[]>("/api/v1/utilities/configs", { params });
       return res.data;
     },
     async get(id: string): Promise<SystemConfig> {
-      const res = await apiClient.get<SystemConfig>(`/api/v1/utilities/configs/${id}`).then((r) => r.data);
+      const res = await apiClient.get<SystemConfig>(`/api/v1/utilities/configs/${id}`);
       return res.data;
     },
     async create(data: SystemConfigCreate): Promise<SystemConfig> {
-      const res = await apiClient.post<SystemConfig>("/api/v1/utilities/configs", data).then((r) => r.data);
+      const res = await apiClient.post<SystemConfig>("/api/v1/utilities/configs", data);
       return res.data;
     },
     async update(id: string, data: SystemConfigUpdate): Promise<SystemConfig> {
-      const res = await apiClient.patch<SystemConfig>(`/api/v1/utilities/configs/${id}`, data).then((r) => r.data);
+      const res = await apiClient.patch<SystemConfig>(`/api/v1/utilities/configs/${id}`, data);
       return res.data;
     },
     async delete(id: string): Promise<void> {
@@ -154,15 +154,15 @@ export const utilitiesApi = {
       return res.data;
     },
     async get(id: string): Promise<UomConversion> {
-      const res = await apiClient.get<UomConversion>(`/api/v1/utilities/uom-conversions/${id}`).then((r) => r.data);
+      const res = await apiClient.get<UomConversion>(`/api/v1/utilities/uom-conversions/${id}`);
       return res.data;
     },
     async create(data: UomConversionCreate): Promise<UomConversion> {
-      const res = await apiClient.post<UomConversion>("/api/v1/utilities/uom-conversions", data).then((r) => r.data);
+      const res = await apiClient.post<UomConversion>("/api/v1/utilities/uom-conversions", data);
       return res.data;
     },
     async update(id: string, data: UomConversionUpdate): Promise<UomConversion> {
-      const res = await apiClient.patch<UomConversion>(`/api/v1/utilities/uom-conversions/${id}`, data).then((r) => r.data);
+      const res = await apiClient.patch<UomConversion>(`/api/v1/utilities/uom-conversions/${id}`, data);
       return res.data;
     },
     async delete(id: string): Promise<void> {
@@ -179,15 +179,15 @@ export const utilitiesApi = {
       return res.data;
     },
     async get(id: string): Promise<NumberSeries> {
-      const res = await apiClient.get<NumberSeries>(`/api/v1/utilities/number-series/${id}`).then((r) => r.data);
+      const res = await apiClient.get<NumberSeries>(`/api/v1/utilities/number-series/${id}`);
       return res.data;
     },
     async create(data: NumberSeriesCreate): Promise<NumberSeries> {
-      const res = await apiClient.post<NumberSeries>("/api/v1/utilities/number-series", data).then((r) => r.data);
+      const res = await apiClient.post<NumberSeries>("/api/v1/utilities/number-series", data);
       return res.data;
     },
     async update(id: string, data: NumberSeriesUpdate): Promise<NumberSeries> {
-      const res = await apiClient.patch<NumberSeries>(`/api/v1/utilities/number-series/${id}`, data).then((r) => r.data);
+      const res = await apiClient.patch<NumberSeries>(`/api/v1/utilities/number-series/${id}`, data);
       return res.data;
     },
     async delete(id: string): Promise<void> {
@@ -210,15 +210,15 @@ export const utilitiesApi = {
       return res.data;
     },
     async get(id: string): Promise<Currency> {
-      const res = await apiClient.get<Currency>(`/api/v1/utilities/currencies/${id}`).then((r) => r.data);
+      const res = await apiClient.get<Currency>(`/api/v1/utilities/currencies/${id}`);
       return res.data;
     },
     async create(data: CurrencyCreate): Promise<Currency> {
-      const res = await apiClient.post<Currency>("/api/v1/utilities/currencies", data).then((r) => r.data);
+      const res = await apiClient.post<Currency>("/api/v1/utilities/currencies", data);
       return res.data;
     },
     async update(id: string, data: CurrencyUpdate): Promise<Currency> {
-      const res = await apiClient.patch<Currency>(`/api/v1/utilities/currencies/${id}`, data).then((r) => r.data);
+      const res = await apiClient.patch<Currency>(`/api/v1/utilities/currencies/${id}`, data);
       return res.data;
     },
     async delete(id: string): Promise<void> {

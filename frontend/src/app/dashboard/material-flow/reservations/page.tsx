@@ -21,7 +21,7 @@ export default function ReservationsPage() {
 
   const { data } = useQuery<Reservation[]>({
     queryKey: ["mf-reservations"],
-    queryFn: () => mfApi.listReservations().then((r) => r.data),
+    queryFn: () => mfApi.listReservations(),
   });
 
   const cancel = useMutation({

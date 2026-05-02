@@ -71,7 +71,7 @@ export default function TimesheetReportsPage() {
           </button>
         </div>
 
-        {data && tab === "summary" && (() => {
+        {!!data && tab === "summary" && (() => {
           const d = data as { total_timesheets: number; total_hours: number; overtime_hours: number; regular_hours: number; by_status: Record<string, number> };
           return (
             <div className="space-y-3">
@@ -103,7 +103,7 @@ export default function TimesheetReportsPage() {
           );
         })()}
 
-        {data && (tab === "utilization" || tab === "overtime") && (
+        {!!data && (tab === "utilization" || tab === "overtime") && (
           <table className="w-full text-sm">
             <thead className="bg-gray-50"><tr>
               {["Employee","Dept","Timesheets","Total Hrs","OT Hrs"].map(h=><th key={h} className="px-3 py-2 text-left text-xs font-semibold text-gray-600">{h}</th>)}
@@ -122,7 +122,7 @@ export default function TimesheetReportsPage() {
           </table>
         )}
 
-        {data && tab === "project" && (
+        {!!data && tab === "project" && (
           <table className="w-full text-sm">
             <thead className="bg-gray-50"><tr>
               {["Project","Total Hours","Entries"].map(h=><th key={h} className="px-3 py-2 text-left text-xs font-semibold text-gray-600">{h}</th>)}
@@ -139,7 +139,7 @@ export default function TimesheetReportsPage() {
           </table>
         )}
 
-        {data && tab === "activity" && (
+        {!!data && tab === "activity" && (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             {(data as { activity_type: string; total_hours: number }[]).map(r => (
               <div key={r.activity_type} className="bg-gray-50 rounded p-3 text-center">
@@ -150,7 +150,7 @@ export default function TimesheetReportsPage() {
           </div>
         )}
 
-        {data && tab === "payroll" && (
+        {!!data && tab === "payroll" && (
           <table className="w-full text-sm">
             <thead className="bg-gray-50"><tr>
               {["Employee","Period","Regular Hrs","OT Hrs","Total Hrs"].map(h=><th key={h} className="px-3 py-2 text-left text-xs font-semibold text-gray-600">{h}</th>)}

@@ -60,7 +60,7 @@ export default function TimeEntryPage() {
 
   const updateLine = (i: number, field: keyof LineForm, value: unknown) => {
     const n = [...lines];
-    (n[i] as Record<string, unknown>)[field] = value;
+    (n[i] as unknown as Record<string, unknown>)[field] = value;
     setLines(n);
   };
 

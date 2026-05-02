@@ -83,7 +83,7 @@ export default function LandedCostDashboard() {
               <BarChart data={chartData} margin={{ top: 4, right: 8, bottom: 40, left: 8 }}>
                 <XAxis dataKey="name" tick={{ fontSize: 11 }} angle={-20} textAnchor="end" />
                 <YAxis tick={{ fontSize: 11 }} />
-                <Tooltip formatter={(v: number) => fmtCurrency(v)} />
+                <Tooltip formatter={(v: unknown) => fmtCurrency(v as number | null | undefined)} />
                 <Bar dataKey="total" radius={[4, 4, 0, 0]}>
                   {chartData.map((_, i) => (
                     <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />

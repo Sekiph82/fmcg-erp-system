@@ -107,7 +107,7 @@ export default function LabelsPage() {
                 <label key={k} className="flex items-center gap-1.5 text-xs">
                   <input
                     type="checkbox"
-                    checked={(form.fields as Record<string, boolean>)[k] ?? false}
+                    checked={(form.fields as unknown as Record<string, boolean>)[k] ?? false}
                     onChange={(e) => setForm((p) => ({ ...p, fields: { ...p.fields, [k]: e.target.checked } }))}
                   />
                   {k.replace("show_", "").replace(/_/g, " ")}

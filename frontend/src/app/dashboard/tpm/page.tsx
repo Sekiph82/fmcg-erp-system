@@ -71,7 +71,7 @@ export default function TPMDashboardPage() {
           <h2 className="text-sm font-semibold text-gray-700">Promotions by Status</h2>
           {Object.entries(d.promotions_by_status).map(([status, count]) => (
             <div key={status} className="flex items-center justify-between text-sm">
-              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${PROMOTION_STATUS_BADGE[status as any] ?? "bg-gray-100 text-gray-600"}`}>
+              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${PROMOTION_STATUS_BADGE[status as import("@/lib/tpm").TPMPromotionStatus] ?? "bg-gray-100 text-gray-600"}`}>
                 {status}
               </span>
               <span className="text-gray-300 font-bold">{count}</span>
@@ -96,7 +96,7 @@ export default function TPMDashboardPage() {
                 <p className="text-xs text-gray-500 font-mono">{p.promotion_code}</p>
               </div>
               <div className="text-right text-xs text-gray-500">
-                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${PROMOTION_STATUS_BADGE[p.status as any] ?? ""}`}>{p.status}</span>
+                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${PROMOTION_STATUS_BADGE[p.status as import("@/lib/tpm").TPMPromotionStatus] ?? ""}`}>{p.status}</span>
                 <p className="mt-1">{p.valid_from} → {p.valid_to}</p>
               </div>
             </div>

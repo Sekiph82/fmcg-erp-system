@@ -13,12 +13,12 @@ export default function TeamsPage() {
 
   const { data: teams } = useQuery<ProductionTeam[]>({
     queryKey: ["mo-teams"],
-    queryFn: () => moApi.listTeams().then((r) => r.data),
+    queryFn: () => moApi.listTeams(),
   });
 
   const { data: operators } = useQuery<OperatorProfile[]>({
     queryKey: ["mo-operators"],
-    queryFn: () => moApi.listOperators().then((r) => r.data),
+    queryFn: () => moApi.listOperators(),
   });
 
   const createTeam = useMutation({

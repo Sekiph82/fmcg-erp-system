@@ -85,6 +85,7 @@ export interface TPMPromotion {
   budget_lines: TPMBudgetLine[];
   expected_perf?: TPMExpectedPerf;
   actual_perf?: TPMActualPerf;
+  claims?: TPMClaim[];
 }
 
 export interface TPMPlan {

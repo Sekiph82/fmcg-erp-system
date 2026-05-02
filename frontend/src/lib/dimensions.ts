@@ -95,6 +95,7 @@ export interface DimValidationRule {
   dim_type_id: string;
   severity: ValidationSeverity;
   active: boolean;
+  notes?: string;
   dim_type_name?: string;
 }
 
@@ -117,7 +118,7 @@ export interface DimDefaultRule {
 // ── Allocation Rule ────────────────────────────────────────────────────────────
 
 export interface AllocationRuleLine {
-  id: string;
+  id?: string;
   target_dim_value_id: string;
   target_dim_value_name?: string;
   fixed_pct?: number;
@@ -135,6 +136,7 @@ export interface AllocationRule {
   allocation_basis: AllocationBasis;
   frequency: AllocationFrequency;
   gl_account_cost_pool?: string;
+  notes?: string;
   active: boolean;
   source_dim_value_name?: string;
   target_dim_type_name?: string;

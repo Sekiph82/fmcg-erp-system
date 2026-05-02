@@ -18,12 +18,12 @@ export default function RuntimePage() {
 
   const { data: machines } = useQuery<Machine[]>({
     queryKey: ["mo-machines"],
-    queryFn: () => moApi.listMachines().then((r) => r.data),
+    queryFn: () => moApi.listMachines(),
   });
 
   const { data, isLoading } = useQuery<RuntimeLog[]>({
     queryKey: ["mo-runtime", machineId],
-    queryFn: () => moApi.listRuntime(machineId ? { machine_id: machineId } : {}).then((r) => r.data),
+    queryFn: () => moApi.listRuntime(machineId ? { machine_id: machineId } : {}),
   });
 
   const log = useMutation({

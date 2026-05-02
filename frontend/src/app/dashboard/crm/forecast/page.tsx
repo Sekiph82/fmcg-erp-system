@@ -22,7 +22,7 @@ export default function ForecastPage() {
         crmApi.getForecast(months),
         crmApi.getPipelineReport(),
       ]);
-      setForecast(fc as ForecastRow[]);
+      setForecast(fc as unknown as ForecastRow[]);
       setPipeline(pp);
     } catch (e) { console.error(e); }
     setLoading(false);

@@ -385,5 +385,5 @@ export const bomApi = {
     apiClient.post<ConversionCalcResult>(
       `/bom/conversion-profiles/${profileId}/calculate?source_qty=${sourceQty}${sourceUom ? `&source_uom=${sourceUom}` : ""}`,
       {}
-    ),
+    ).then((r) => r.data),
 };

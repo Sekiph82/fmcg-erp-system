@@ -180,10 +180,10 @@ export default function UtilityCostKpiPage() {
             <ResponsiveContainer width="100%" height={240}>
               <PieChart>
                 <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90}
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                  label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}>
                   {pieData.map(d => <Cell key={d.key} fill={COST_COLORS[d.key] ?? "#94a3b8"} />)}
                 </Pie>
-                <Tooltip formatter={(v: number) => fmtCcy(v, cc)} />
+                <Tooltip formatter={(v: unknown) => fmtCcy(v as number | null | undefined, cc)} />
               </PieChart>
             </ResponsiveContainer>
           </div>
@@ -198,7 +198,7 @@ export default function UtilityCostKpiPage() {
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                 <XAxis type="number" tick={{ fontSize: 10 }} tickFormatter={v => `${cc}${v.toLocaleString()}`} />
                 <YAxis dataKey="name" type="category" tick={{ fontSize: 11 }} width={90} />
-                <Tooltip formatter={(v: number) => fmtCcy(v, cc)} />
+                <Tooltip formatter={(v: unknown) => fmtCcy(v as number | null | undefined, cc)} />
                 <Bar dataKey="cost" name="Cost" radius={[0, 4, 4, 0]}>
                   {barData.map((d, i) => {
                     const key = d.name.toLowerCase();
@@ -220,7 +220,7 @@ export default function UtilityCostKpiPage() {
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="date" tick={{ fontSize: 10 }} tickFormatter={d => d.slice(5)} />
             <YAxis tick={{ fontSize: 10 }} tickFormatter={v => `${cc}${v.toLocaleString()}`} />
-            <Tooltip formatter={(v: number) => fmtCcy(v, cc)} />
+            <Tooltip formatter={(v: unknown) => fmtCcy(v as number | null | undefined, cc)} />
             <Bar dataKey="total_cost" name="Daily Cost" fill="#94a3b8" radius={[3, 3, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>

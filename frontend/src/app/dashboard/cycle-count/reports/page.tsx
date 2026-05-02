@@ -114,13 +114,13 @@ export default function CycleCountReportsPage() {
         </div>
       )}
 
-      {ai1 && (
+      {!!ai1 && (
         <div className="bg-white rounded-2xl border border-gray-200 p-6">
           <h2 className="font-semibold text-gray-900 mb-3">AI: Variance Analyzer</h2>
           <pre className="text-xs bg-gray-900 text-amber-300 rounded-lg p-4 overflow-auto max-h-64">{JSON.stringify(ai1, null, 2)}</pre>
         </div>
       )}
-      {ai2 && (
+      {!!ai2 && (
         <div className="bg-white rounded-2xl border border-gray-200 p-6">
           <h2 className="font-semibold text-gray-900 mb-3">AI: Count Optimizer</h2>
           <pre className="text-xs bg-gray-900 text-blue-300 rounded-lg p-4 overflow-auto max-h-64">{JSON.stringify(ai2, null, 2)}</pre>

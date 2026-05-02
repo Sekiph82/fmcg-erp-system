@@ -26,7 +26,7 @@ export default function DowntimePage() {
 
   const { data: machines } = useQuery<Machine[]>({
     queryKey: ["mo-machines"],
-    queryFn: () => moApi.listMachines().then((r) => r.data),
+    queryFn: () => moApi.listMachines(),
   });
 
   const { data, isLoading } = useQuery<DowntimeIntel[]>({
@@ -34,7 +34,7 @@ export default function DowntimePage() {
     queryFn: () => moApi.listDowntime({
       ...(machineId ? { machine_id: machineId } : {}),
       ...(filterClass ? { downtime_class: filterClass } : {}),
-    }).then((r) => r.data),
+    }),
   });
 
   const logDt = useMutation({

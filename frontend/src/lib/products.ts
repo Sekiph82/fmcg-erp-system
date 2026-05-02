@@ -42,17 +42,17 @@ export const productsApi = {
   },
 
   async get(id: string): Promise<Product> {
-    const res = await apiClient.get<Product>(`/api/v1/products/${id}`).then((r) => r.data);
+    const res = await apiClient.get<Product>(`/api/v1/products/${id}`);
     return res.data;
   },
 
   async create(data: ProductCreate): Promise<Product> {
-    const res = await apiClient.post<Product>("/api/v1/products/", data).then((r) => r.data);
+    const res = await apiClient.post<Product>("/api/v1/products/", data);
     return res.data;
   },
 
   async update(id: string, data: Partial<ProductCreate>): Promise<Product> {
-    const res = await apiClient.patch<Product>(`/api/v1/products/${id}`, data).then((r) => r.data);
+    const res = await apiClient.patch<Product>(`/api/v1/products/${id}`, data);
     return res.data;
   },
 

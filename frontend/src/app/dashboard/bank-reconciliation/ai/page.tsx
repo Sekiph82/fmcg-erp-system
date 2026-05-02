@@ -56,9 +56,9 @@ export default function BRAIPage() {
       {runAI.data && (
         <p className="text-sm text-green-700 bg-green-50 px-3 py-2 rounded">
           Created {(runAI.data as { recommendations_created: number }).recommendations_created} new recommendation(s).
-          By agent: Match Confidence {(runAI.data as { by_agent: Record<string, number> }).by_agent?.MATCH_CONFIDENCE || 0},
-          Cash Anomaly {(runAI.data as { by_agent: Record<string, number> }).by_agent?.CASH_ANOMALY || 0},
-          Rule Optimizer {(runAI.data as { by_agent: Record<string, number> }).by_agent?.RULE_OPTIMIZER || 0}
+          By agent: Match Confidence {(runAI.data as unknown as { by_agent: Record<string, number> }).by_agent?.MATCH_CONFIDENCE || 0},
+          Cash Anomaly {(runAI.data as unknown as { by_agent: Record<string, number> }).by_agent?.CASH_ANOMALY || 0},
+          Rule Optimizer {(runAI.data as unknown as { by_agent: Record<string, number> }).by_agent?.RULE_OPTIMIZER || 0}
         </p>
       )}
 

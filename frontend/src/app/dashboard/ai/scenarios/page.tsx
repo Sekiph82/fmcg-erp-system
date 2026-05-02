@@ -134,7 +134,7 @@ export default function ScenariosPage() {
               {result.expected_impact && (
                 <div className="bg-blue-50 rounded-lg p-3">
                   <p className="text-xs font-semibold text-blue-700 mb-1">Expected Impact</p>
-                  <p className="text-sm text-gray-700">{result.expected_impact}</p>
+                  <p className="text-sm text-gray-700">{typeof result.expected_impact === "object" ? JSON.stringify(result.expected_impact) : String(result.expected_impact ?? "")}</p>
                 </div>
               )}
 
@@ -218,7 +218,7 @@ export default function ScenariosPage() {
                     <div>
                       <p className="text-sm font-medium text-gray-800">{s.title}</p>
                       <p className="text-xs text-gray-400 capitalize">{s.scenario_type.replace(/_/g, " ")} · {new Date(s.created_at).toLocaleDateString()}</p>
-                      {s.expected_impact && <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{s.expected_impact}</p>}
+                      {s.expected_impact && <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{typeof s.expected_impact === "object" ? JSON.stringify(s.expected_impact) : String(s.expected_impact)}</p>}
                     </div>
                   </div>
                 ))}

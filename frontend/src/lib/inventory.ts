@@ -160,32 +160,32 @@ export function extractStructuredError(err: unknown): ProductInUseError | Invent
 
 export const inventoryApi = {
   async stockSummary(params?: { warehouse_id?: string; product_id?: string }): Promise<StockSummary[]> {
-    const res = await apiClient.get<StockSummary[]>("/api/v1/inventory/stock/summary", { params }).then((r) => r.data);
+    const res = await apiClient.get<StockSummary[]>("/api/v1/inventory/stock/summary", { params });
     return res.data;
   },
 
   async movementDetail(params?: { warehouse_id?: string; product_id?: string }): Promise<MovementDetail[]> {
-    const res = await apiClient.get<MovementDetail[]>("/api/v1/inventory/movements/detail", { params }).then((r) => r.data);
+    const res = await apiClient.get<MovementDetail[]>("/api/v1/inventory/movements/detail", { params });
     return res.data;
   },
 
   async stockEntry(data: StockEntryRequest) {
-    const res = await apiClient.post("/api/v1/inventory/stock/entry", data).then((r) => r.data);
+    const res = await apiClient.post("/api/v1/inventory/stock/entry", data);
     return res.data;
   },
 
   async stockIssue(data: StockIssueRequest) {
-    const res = await apiClient.post("/api/v1/inventory/stock/issue", data).then((r) => r.data);
+    const res = await apiClient.post("/api/v1/inventory/stock/issue", data);
     return res.data;
   },
 
   async stockTransfer(data: StockTransferRequest) {
-    const res = await apiClient.post("/api/v1/inventory/stock/transfer", data).then((r) => r.data);
+    const res = await apiClient.post("/api/v1/inventory/stock/transfer", data);
     return res.data;
   },
 
   async adjustStock(stockId: string, data: StockAdjustRequest) {
-    const res = await apiClient.post(`/api/v1/inventory/stock/${stockId}/adjust`, data).then((r) => r.data);
+    const res = await apiClient.post(`/api/v1/inventory/stock/${stockId}/adjust`, data);
     return res.data;
   },
 
@@ -194,7 +194,7 @@ export const inventoryApi = {
   },
 
   async updateMovement(movementId: string, data: StockMovementUpdate) {
-    const res = await apiClient.patch(`/api/v1/inventory/movements/${movementId}`, data).then((r) => r.data);
+    const res = await apiClient.patch(`/api/v1/inventory/movements/${movementId}`, data);
     return res.data;
   },
 
@@ -203,7 +203,7 @@ export const inventoryApi = {
   },
 
   async listLots() {
-    const res = await apiClient.get("/api/v1/inventory/lots").then((r) => r.data);
+    const res = await apiClient.get("/api/v1/inventory/lots");
     return res.data;
   },
 

@@ -69,7 +69,7 @@ export default function LandedCostReports() {
               <BarChart data={chartTypeData}>
                 <XAxis dataKey="name" tick={{ fontSize: 10 }} angle={-15} textAnchor="end" height={50} />
                 <YAxis tick={{ fontSize: 10 }} />
-                <Tooltip formatter={(v: number) => fmtCurrency(v)} />
+                <Tooltip formatter={(v: unknown) => fmtCurrency(v as number | null | undefined)} />
                 <Bar dataKey="total" radius={[4, 4, 0, 0]}>
                   {chartTypeData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                 </Bar>
@@ -81,7 +81,7 @@ export default function LandedCostReports() {
                   {chartTypeData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                 </Pie>
                 <Legend />
-                <Tooltip formatter={(v: number) => fmtCurrency(v)} />
+                <Tooltip formatter={(v: unknown) => fmtCurrency(v as number | null | undefined)} />
               </PieChart>
             </ResponsiveContainer>
           </div>

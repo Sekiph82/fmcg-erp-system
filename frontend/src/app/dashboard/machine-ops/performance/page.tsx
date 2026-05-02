@@ -18,12 +18,12 @@ export default function PerformancePage() {
 
   const { data: machines } = useQuery<Machine[]>({
     queryKey: ["mo-machines"],
-    queryFn: () => moApi.listMachines().then((r) => r.data),
+    queryFn: () => moApi.listMachines(),
   });
 
   const { data: snapshots, isLoading } = useQuery<PerformanceSnapshot[]>({
     queryKey: ["mo-performance", machineId],
-    queryFn: () => moApi.listPerformance(machineId ? { machine_id: machineId } : {}).then((r) => r.data),
+    queryFn: () => moApi.listPerformance(machineId ? { machine_id: machineId } : {}),
   });
 
   const compute = useMutation({
@@ -71,7 +71,7 @@ export default function PerformancePage() {
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
               <XAxis dataKey="date" tick={{ fontSize: 10 }} />
               <YAxis domain={[0, 100]} tick={{ fontSize: 10 }} unit="%" />
-              <Tooltip formatter={(v: number) => `${v}%`} />
+              <Tooltip formatter={(v: unknown) => `${v}%`} />
               <ReferenceLine y={85} stroke="#22c55e" strokeDasharray="4 4" label={{ value: "World Class 85%", fill: "#22c55e", fontSize: 10 }} />
               <ReferenceLine y={65} stroke="#f59e0b" strokeDasharray="4 4" />
               <Bar dataKey="oee" name="OEE" fill="#6366f1" radius={[3, 3, 0, 0]} />

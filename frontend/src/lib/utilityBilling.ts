@@ -354,15 +354,15 @@ export async function downloadAllocationsCsv(
 export const billingApi = {
   // Tariffs
   async listTariffs(params?: TariffFilters): Promise<UtilityTariff[]> {
-    const r = await apiClient.get<UtilityTariff[]>("/api/v1/billing/tariffs", { params }).then((r) => r.data);
+    const r = await apiClient.get<UtilityTariff[]>("/api/v1/billing/tariffs", { params });
     return r.data;
   },
   async createTariff(data: TariffCreate): Promise<UtilityTariff> {
-    const r = await apiClient.post<UtilityTariff>("/api/v1/billing/tariffs", data).then((r) => r.data);
+    const r = await apiClient.post<UtilityTariff>("/api/v1/billing/tariffs", data);
     return r.data;
   },
   async updateTariff(id: string, data: TariffUpdate): Promise<UtilityTariff> {
-    const r = await apiClient.patch<UtilityTariff>(`/api/v1/billing/tariffs/${id}`, data).then((r) => r.data);
+    const r = await apiClient.patch<UtilityTariff>(`/api/v1/billing/tariffs/${id}`, data);
     return r.data;
   },
   async deleteTariff(id: string): Promise<void> {
@@ -376,19 +376,19 @@ export const billingApi = {
 
   // Bills
   async kpis(params?: Partial<BillFilters & { currency_code?: string }>): Promise<BillingKPIs> {
-    const r = await apiClient.get<BillingKPIs>("/api/v1/billing/bills/kpis", { params }).then((r) => r.data);
+    const r = await apiClient.get<BillingKPIs>("/api/v1/billing/bills/kpis", { params });
     return r.data;
   },
   async listBills(params?: BillFilters): Promise<UtilityBill[]> {
-    const r = await apiClient.get<UtilityBill[]>("/api/v1/billing/bills", { params }).then((r) => r.data);
+    const r = await apiClient.get<UtilityBill[]>("/api/v1/billing/bills", { params });
     return r.data;
   },
   async createBill(data: BillCreate): Promise<UtilityBill> {
-    const r = await apiClient.post<UtilityBill>("/api/v1/billing/bills", data).then((r) => r.data);
+    const r = await apiClient.post<UtilityBill>("/api/v1/billing/bills", data);
     return r.data;
   },
   async updateBill(id: string, data: BillUpdate): Promise<UtilityBill> {
-    const r = await apiClient.patch<UtilityBill>(`/api/v1/billing/bills/${id}`, data).then((r) => r.data);
+    const r = await apiClient.patch<UtilityBill>(`/api/v1/billing/bills/${id}`, data);
     return r.data;
   },
   async deleteBill(id: string): Promise<void> {
@@ -397,28 +397,28 @@ export const billingApi = {
 
   // Allocations
   async listAllocations(params?: AllocationFilters): Promise<UtilityAllocation[]> {
-    const r = await apiClient.get<UtilityAllocation[]>("/api/v1/billing/allocations", { params }).then((r) => r.data);
+    const r = await apiClient.get<UtilityAllocation[]>("/api/v1/billing/allocations", { params });
     return r.data;
   },
   async createAllocation(data: AllocationCreate): Promise<UtilityAllocation> {
-    const r = await apiClient.post<UtilityAllocation>("/api/v1/billing/allocations", data).then((r) => r.data);
+    const r = await apiClient.post<UtilityAllocation>("/api/v1/billing/allocations", data);
     return r.data;
   },
   async updateAllocation(id: string, data: AllocationUpdate): Promise<UtilityAllocation> {
-    const r = await apiClient.patch<UtilityAllocation>(`/api/v1/billing/allocations/${id}`, data).then((r) => r.data);
+    const r = await apiClient.patch<UtilityAllocation>(`/api/v1/billing/allocations/${id}`, data);
     return r.data;
   },
   async deleteAllocation(id: string): Promise<void> {
     await apiClient.delete(`/api/v1/billing/allocations/${id}`).then((r) => r.data);
   },
   async runEngine(req: AllocationEngineRequest): Promise<AllocationEngineResult> {
-    const r = await apiClient.post<AllocationEngineResult>("/api/v1/billing/allocations/run-engine", req).then((r) => r.data);
+    const r = await apiClient.post<AllocationEngineResult>("/api/v1/billing/allocations/run-engine", req);
     return r.data;
   },
   async report(params?: {
     group_by?: string; utility_type?: string; date_from?: string; date_to?: string;
   }): Promise<AllocationReport> {
-    const r = await apiClient.get<AllocationReport>("/api/v1/billing/allocations/report", { params }).then((r) => r.data);
+    const r = await apiClient.get<AllocationReport>("/api/v1/billing/allocations/report", { params });
     return r.data;
   },
 };

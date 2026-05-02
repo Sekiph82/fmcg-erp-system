@@ -42,7 +42,7 @@ export default function VariancesPage() {
     if (!selected.size) return;
     setProcessing(true);
     try {
-      const r = await approveAdjustments([...selected]);
+      const r = await approveAdjustments(Array.from(selected));
       setMsg(`Approved & posted ${r.approved} adjustment(s)`);
       await load();
     } catch { setMsg("Approve failed"); }
@@ -53,7 +53,7 @@ export default function VariancesPage() {
     if (!selected.size || !rejectionReason) { setMsg("Enter rejection reason"); return; }
     setProcessing(true);
     try {
-      const r = await rejectAdjustments([...selected], rejectionReason);
+      const r = await rejectAdjustments(Array.from(selected), rejectionReason);
       setMsg(`Rejected ${r.rejected} adjustment(s)`);
       setRejectionReason("");
       await load();

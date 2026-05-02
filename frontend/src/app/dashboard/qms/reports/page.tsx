@@ -72,10 +72,10 @@ export default function QMSReportsPage() {
       qmsApi.getDeviationReport(),
       qmsApi.getLotQualityReport(),
     ]).then(([qc, ccp, dev, lot]) => {
-      setQcReport(qc as QCReport);
-      setCcpReport(ccp as CCPReport);
-      setDevReport(dev as DevReport);
-      setLotReport(lot as LotReport);
+      setQcReport(qc as unknown as QCReport);
+      setCcpReport(ccp as unknown as CCPReport);
+      setDevReport(dev as unknown as DevReport);
+      setLotReport(lot as unknown as LotReport);
     }).catch(console.error).finally(() => setLoading(false));
   }, []);
 

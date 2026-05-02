@@ -19,7 +19,7 @@ export default function BankAccountsPage() {
   });
 
   const create = useMutation({
-    mutationFn: () => brApi.createAccount(form),
+    mutationFn: () => brApi.createAccount(form as unknown as Partial<BRBankAccount>),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["br-accounts-all"] });
       setShowForm(false);
@@ -58,7 +58,7 @@ export default function BankAccountsPage() {
             ].map(({ key, label, type }) => (
               <div key={key}>
                 <label className="text-xs text-gray-500 font-medium">{label}</label>
-                <input type={type} value={(form as Record<string, string>)[key]}
+                <input type={type} value={(form as unknown as Record<string, string>)[key]}
                   onChange={(e) => setForm({ ...form, [key]: e.target.value })}
                   className="mt-1 w-full border rounded-lg px-3 py-2 text-sm" />
               </div>

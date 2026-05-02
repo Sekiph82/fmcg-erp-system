@@ -130,10 +130,10 @@ export default function ChemicalsKpiPage() {
             <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Cost by Treatment Category</h3>
             <ResponsiveContainer width="100%" height={240}>
               <PieChart>
-                <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90} label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}>
                   {pieData.map((_, i) => <Cell key={i} fill={COST_COLORS[i % COST_COLORS.length]} />)}
                 </Pie>
-                <Tooltip formatter={(v: number) => fmtCcy(v)} />
+                <Tooltip formatter={(v: unknown) => fmtCcy(v as number | null | undefined)} />
               </PieChart>
             </ResponsiveContainer>
           </div>

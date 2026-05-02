@@ -190,23 +190,23 @@ export interface RunAllOutput {
 
 export const productionAiApi = {
   async dashboard(): Promise<AIDashboard> {
-    const r = await apiClient.get<AIDashboard>("/api/v1/production-ai/dashboard").then((r) => r.data);
+    const r = await apiClient.get<AIDashboard>("/api/v1/production-ai/dashboard");
     return r.data;
   },
 
   async runAll(orderId?: string): Promise<RunAllOutput> {
     const params = orderId ? { order_id: orderId } : undefined;
-    const r = await apiClient.post<RunAllOutput>("/api/v1/production-ai/run-all", null, { params }).then((r) => r.data);
+    const r = await apiClient.post<RunAllOutput>("/api/v1/production-ai/run-all", null, { params });
     return r.data;
   },
 
   async predict(orderId: string): Promise<PredictionOutput> {
-    const r = await apiClient.post<PredictionOutput>(`/api/v1/production-ai/predict/${orderId}`).then((r) => r.data);
+    const r = await apiClient.post<PredictionOutput>(`/api/v1/production-ai/predict/${orderId}`);
     return r.data;
   },
 
   async detectAnomalies(params?: { order_id?: string; look_back_days?: number }): Promise<AnomalyOutput[]> {
-    const r = await apiClient.post<AnomalyOutput[]>("/api/v1/production-ai/detect-anomalies", null, { params }).then((r) => r.data);
+    const r = await apiClient.post<AnomalyOutput[]>("/api/v1/production-ai/detect-anomalies", null, { params });
     return r.data;
   },
 
@@ -232,12 +232,12 @@ export const productionAiApi = {
   },
 
   async maintenancePredict(): Promise<SuggestionOutput[]> {
-    const r = await apiClient.post<SuggestionOutput[]>("/api/v1/production-ai/maintenance-predict").then((r) => r.data);
+    const r = await apiClient.post<SuggestionOutput[]>("/api/v1/production-ai/maintenance-predict");
     return r.data;
   },
 
   async listAnomalies(params?: { is_resolved?: boolean; severity?: string; limit?: number }): Promise<AnomalyRead[]> {
-    const r = await apiClient.get<AnomalyRead[]>("/api/v1/production-ai/anomalies", { params }).then((r) => r.data);
+    const r = await apiClient.get<AnomalyRead[]>("/api/v1/production-ai/anomalies", { params });
     return r.data;
   },
 
@@ -251,7 +251,7 @@ export const productionAiApi = {
   async listSuggestions(params?: {
     status?: string; agent_type?: string; product_id?: string; limit?: number;
   }): Promise<SuggestionRead[]> {
-    const r = await apiClient.get<SuggestionRead[]>("/api/v1/production-ai/suggestions", { params }).then((r) => r.data);
+    const r = await apiClient.get<SuggestionRead[]>("/api/v1/production-ai/suggestions", { params });
     return r.data;
   },
 
@@ -270,7 +270,7 @@ export const productionAiApi = {
   async listPredictions(params?: {
     order_id?: string; risk_level?: string; limit?: number;
   }): Promise<PredictionRead[]> {
-    const r = await apiClient.get<PredictionRead[]>("/api/v1/production-ai/predictions", { params }).then((r) => r.data);
+    const r = await apiClient.get<PredictionRead[]>("/api/v1/production-ai/predictions", { params });
     return r.data;
   },
 };

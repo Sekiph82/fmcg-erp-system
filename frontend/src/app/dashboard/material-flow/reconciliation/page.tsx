@@ -27,7 +27,7 @@ export default function ReconciliationPage() {
 
   const { data: recon, isLoading } = useQuery<Reconciliation>({
     queryKey: ["mf-recon", fetchedOrderId],
-    queryFn: () => mfApi.getReconciliation(fetchedOrderId).then((r) => r.data),
+    queryFn: () => mfApi.getReconciliation(fetchedOrderId),
     enabled: !!fetchedOrderId,
   });
 

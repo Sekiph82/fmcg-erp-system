@@ -45,7 +45,7 @@ export default function KanbanReportsPage() {
         </button>
       </div>
 
-      {completion && (() => {
+      {!!completion && (() => {
         const c = completion as { total: number; done: number; completion_rate_pct: number };
         return (
           <div className="bg-white border rounded-lg p-4 shadow-sm">
@@ -69,7 +69,7 @@ export default function KanbanReportsPage() {
         );
       })()}
 
-      {bottleneck && (() => {
+      {!!bottleneck && (() => {
         const rows = bottleneck as { column_id: string; column_name: string; card_count: number; wip_limit: number | null; over_wip_limit: boolean }[];
         const maxCards = Math.max(...rows.map(r => r.card_count), 1);
         return (

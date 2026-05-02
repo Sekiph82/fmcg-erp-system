@@ -11,7 +11,7 @@ export default function NutritionProfilesPage() {
   const [selected, setSelected] = useState<NutritionProfile | null>(null);
   const [form, setForm] = useState({
     entity_id: "", basis_type: "PER_100G", notes: "",
-    lines: DEFAULT_NUTRIENTS.map((n) => ({ ...n, nutrient_code: n.code, value: "", source_type: "MANUAL", approved_flag: false })),
+    lines: DEFAULT_NUTRIENTS.map((n) => ({ ...n, nutrient_code: n.code, nutrient_name: n.name, value: "", source_type: "MANUAL", approved_flag: false })),
   });
   const [addLine, setAddLine] = useState({ nutrient_code: "", nutrient_name: "", unit: "g", value: "", source_type: "MANUAL" });
 
@@ -21,9 +21,9 @@ export default function NutritionProfilesPage() {
     mutationFn: () => {
       const lines = form.lines.filter((l) => l.value !== "").map((l) => ({ nutrient_code: l.nutrient_code, nutrient_name: l.nutrient_name, unit: l.unit, value: Number(l.value), source_type: l.source_type, approved_flag: l.approved_flag }));
       if (entityType === "material") {
-        return allergenApi.createMaterialNutrition(form.entity_id, { basis_type: form.basis_type as NutritionProfile["basis_type"], notes: form.notes, lines } as Partial<NutritionProfile>);
+        return allergenApi.createMaterialNutrition(form.entity_id, { basis_type: form.basis_type as NutritionProfile["basis_type"], notes: form.notes, lines } as unknown as Partial<NutritionProfile>);
       }
-      return allergenApi.createProductNutrition(form.entity_id, { basis_type: form.basis_type as NutritionProfile["basis_type"], notes: form.notes, lines } as Partial<NutritionProfile>);
+      return allergenApi.createProductNutrition(form.entity_id, { basis_type: form.basis_type as NutritionProfile["basis_type"], notes: form.notes, lines } as unknown as Partial<NutritionProfile>);
     },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["nutrition-profiles"] }); setShowForm(false); },
   });

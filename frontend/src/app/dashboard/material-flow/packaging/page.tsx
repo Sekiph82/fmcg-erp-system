@@ -15,7 +15,7 @@ export default function PackagingIssuePage() {
 
   const { data: txList } = useQuery<FlowTransaction[]>({
     queryKey: ["mf-transactions", "pkg"],
-    queryFn: () => mfApi.listTransactions({ flow_type: "PKG_ISSUE" }).then((r) => r.data),
+    queryFn: () => mfApi.listTransactions({ flow_type: "PKG_ISSUE" }),
   });
 
   const create = useMutation({
@@ -36,7 +36,7 @@ export default function PackagingIssuePage() {
         })),
       }),
     onSuccess: (r) => {
-      setSuccess(`Packaging issue ${r.data.flow_no} posted.`);
+      setSuccess(`Packaging issue ${r.flow_no} posted.`);
       qc.invalidateQueries({ queryKey: ["mf-transactions", "pkg"] });
       qc.invalidateQueries({ queryKey: ["mf-dashboard"] });
       setLines([{ material_id: "", qty: "", uom: "PCS", pkg_type: "Bottles" }]);

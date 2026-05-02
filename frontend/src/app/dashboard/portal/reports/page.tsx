@@ -52,11 +52,11 @@ export default function PortalReportsPage() {
               <div className="h-full bg-blue-500 rounded-full transition-all"
                 style={{ width: `${adoption.activation_rate_pct}%` }} />
             </div>
-            <span className="text-sm font-bold text-blue-700">{adoption.activation_rate_pct}%</span>
+            <span className="text-sm font-bold text-blue-700">{String(adoption.activation_rate_pct ?? "")}%</span>
           </div>
           <div className="flex justify-between text-xs text-gray-400 mt-1">
-            <span>{adoption.active_accounts} active</span>
-            <span>{adoption.total_accounts} total</span>
+            <span>{String(adoption.active_accounts ?? "")} active</span>
+            <span>{String(adoption.total_accounts ?? "")} total</span>
           </div>
         </div>
       )}

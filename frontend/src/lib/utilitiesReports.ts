@@ -496,7 +496,7 @@ const BASE = "/api/v1/utilities-reports";
 export const reportsApi = {
   // 1. Daily Consumption
   async dailyConsumption(params?: CommonParams & { utility_type?: string }): Promise<DailyConsumptionReport> {
-    const r = await apiClient.get<DailyConsumptionReport>(`${BASE}/daily-consumption`, { params }).then((r) => r.data);
+    const r = await apiClient.get<DailyConsumptionReport>(`${BASE}/daily-consumption`, { params });
     return r.data;
   },
   exportDailyConsumption(params?: CommonParams & { utility_type?: string }): Promise<void> {
@@ -506,7 +506,7 @@ export const reportsApi = {
 
   // 2. Daily Summary
   async dailySummary(params?: DateRangeParams): Promise<DailySummaryReport> {
-    const r = await apiClient.get<DailySummaryReport>(`${BASE}/daily-summary`, { params }).then((r) => r.data);
+    const r = await apiClient.get<DailySummaryReport>(`${BASE}/daily-summary`, { params });
     return r.data;
   },
   exportDailySummary(params?: DateRangeParams): Promise<void> {
@@ -516,7 +516,7 @@ export const reportsApi = {
 
   // 3. Boiler Efficiency
   async boilerEfficiency(params?: CommonParams & { asset_no?: string }): Promise<BoilerEfficiencyReport> {
-    const r = await apiClient.get<BoilerEfficiencyReport>(`${BASE}/boiler-efficiency`, { params }).then((r) => r.data);
+    const r = await apiClient.get<BoilerEfficiencyReport>(`${BASE}/boiler-efficiency`, { params });
     return r.data;
   },
   exportBoilerEfficiency(params?: CommonParams & { asset_no?: string }): Promise<void> {
@@ -526,7 +526,7 @@ export const reportsApi = {
 
   // 4. Steam Generation
   async steamGeneration(params?: DateRangeParams & { asset_no?: string; skip?: number; limit?: number }): Promise<SteamGenerationReport> {
-    const r = await apiClient.get<SteamGenerationReport>(`${BASE}/steam-generation`, { params }).then((r) => r.data);
+    const r = await apiClient.get<SteamGenerationReport>(`${BASE}/steam-generation`, { params });
     return r.data;
   },
   exportSteamGeneration(params?: DateRangeParams & { asset_no?: string }): Promise<void> {
@@ -536,7 +536,7 @@ export const reportsApi = {
 
   // 5. Compressor Performance
   async compressorPerformance(params?: CommonParams & { asset_no?: string }): Promise<CompressorPerformanceReport> {
-    const r = await apiClient.get<CompressorPerformanceReport>(`${BASE}/compressor-performance`, { params }).then((r) => r.data);
+    const r = await apiClient.get<CompressorPerformanceReport>(`${BASE}/compressor-performance`, { params });
     return r.data;
   },
   exportCompressorPerformance(params?: CommonParams & { asset_no?: string }): Promise<void> {
@@ -546,7 +546,7 @@ export const reportsApi = {
 
   // 6. Soft Water Production
   async softWater(params?: CommonParams & { asset_no?: string }): Promise<SoftWaterProductionReport> {
-    const r = await apiClient.get<SoftWaterProductionReport>(`${BASE}/soft-water`, { params }).then((r) => r.data);
+    const r = await apiClient.get<SoftWaterProductionReport>(`${BASE}/soft-water`, { params });
     return r.data;
   },
   exportSoftWater(params?: CommonParams & { asset_no?: string }): Promise<void> {
@@ -556,7 +556,7 @@ export const reportsApi = {
 
   // 7. Chemical Treatment
   async chemicalTreatment(params?: DateRangeParams & { treatment_type?: string; asset_no?: string; skip?: number; limit?: number }): Promise<ChemicalTreatmentReport> {
-    const r = await apiClient.get<ChemicalTreatmentReport>(`${BASE}/chemical-treatment`, { params }).then((r) => r.data);
+    const r = await apiClient.get<ChemicalTreatmentReport>(`${BASE}/chemical-treatment`, { params });
     return r.data;
   },
   exportChemicalTreatment(params?: DateRangeParams & { treatment_type?: string; asset_no?: string }): Promise<void> {
@@ -566,7 +566,7 @@ export const reportsApi = {
 
   // 8. Solar Generation
   async solarGeneration(params?: DateRangeParams & { asset_no?: string; skip?: number; limit?: number }): Promise<SolarGenerationReport> {
-    const r = await apiClient.get<SolarGenerationReport>(`${BASE}/solar-generation`, { params }).then((r) => r.data);
+    const r = await apiClient.get<SolarGenerationReport>(`${BASE}/solar-generation`, { params });
     return r.data;
   },
   exportSolarGeneration(params?: DateRangeParams & { asset_no?: string }): Promise<void> {
@@ -576,7 +576,7 @@ export const reportsApi = {
 
   // 9. Wastewater Compliance
   async wastewaterCompliance(params?: CommonParams & { asset_no?: string }): Promise<WastewaterComplianceReport> {
-    const r = await apiClient.get<WastewaterComplianceReport>(`${BASE}/wastewater-compliance`, { params }).then((r) => r.data);
+    const r = await apiClient.get<WastewaterComplianceReport>(`${BASE}/wastewater-compliance`, { params });
     return r.data;
   },
   exportWastewaterCompliance(params?: CommonParams & { asset_no?: string }): Promise<void> {
@@ -586,7 +586,7 @@ export const reportsApi = {
 
   // 10. Cost Allocation
   async costAllocation(params?: DateRangeParams & { group_by?: string; utility_type?: string; skip?: number; limit?: number }): Promise<CostAllocationReport> {
-    const r = await apiClient.get<CostAllocationReport>(`${BASE}/cost-allocation`, { params }).then((r) => r.data);
+    const r = await apiClient.get<CostAllocationReport>(`${BASE}/cost-allocation`, { params });
     return r.data;
   },
   exportCostAllocation(params?: DateRangeParams & { group_by?: string; utility_type?: string }): Promise<void> {
@@ -596,7 +596,7 @@ export const reportsApi = {
 
   // 11. Base Load Analysis
   async baseLoad(params?: DateRangeParams & { utility_type?: string }): Promise<BaseLoadAnalysis> {
-    const r = await apiClient.get<BaseLoadAnalysis>(`${BASE}/base-load`, { params }).then((r) => r.data);
+    const r = await apiClient.get<BaseLoadAnalysis>(`${BASE}/base-load`, { params });
     return r.data;
   },
   exportBaseLoad(params?: DateRangeParams & { utility_type?: string }): Promise<void> {
@@ -606,7 +606,7 @@ export const reportsApi = {
 
   // 12. Peak Demand
   async peakDemand(params?: DateRangeParams & { utility_type?: string; top_n?: number }): Promise<PeakDemandAnalysis> {
-    const r = await apiClient.get<PeakDemandAnalysis>(`${BASE}/peak-demand`, { params }).then((r) => r.data);
+    const r = await apiClient.get<PeakDemandAnalysis>(`${BASE}/peak-demand`, { params });
     return r.data;
   },
   exportPeakDemand(params?: DateRangeParams & { utility_type?: string; top_n?: number }): Promise<void> {
@@ -616,7 +616,7 @@ export const reportsApi = {
 
   // 13. Alarm Trends
   async alarmTrends(params?: DateRangeParams & { utility_type?: string; severity?: string }): Promise<AlarmTrendReport> {
-    const r = await apiClient.get<AlarmTrendReport>(`${BASE}/alarm-trends`, { params }).then((r) => r.data);
+    const r = await apiClient.get<AlarmTrendReport>(`${BASE}/alarm-trends`, { params });
     return r.data;
   },
   exportAlarmTrends(params?: DateRangeParams & { utility_type?: string; severity?: string }): Promise<void> {
@@ -626,7 +626,7 @@ export const reportsApi = {
 
   // 14. Abnormal Consumption
   async abnormalConsumption(params?: DateRangeParams & { utility_type?: string; department?: string; deviation_threshold_pct?: number; skip?: number; limit?: number }): Promise<AbnormalConsumptionReport> {
-    const r = await apiClient.get<AbnormalConsumptionReport>(`${BASE}/abnormal-consumption`, { params }).then((r) => r.data);
+    const r = await apiClient.get<AbnormalConsumptionReport>(`${BASE}/abnormal-consumption`, { params });
     return r.data;
   },
   exportAbnormalConsumption(params?: DateRangeParams & { utility_type?: string; department?: string; deviation_threshold_pct?: number }): Promise<void> {
@@ -636,7 +636,7 @@ export const reportsApi = {
 
   // 15. Sustainability
   async sustainability(params?: DateRangeParams): Promise<SustainabilityReport> {
-    const r = await apiClient.get<SustainabilityReport>(`${BASE}/sustainability`, { params }).then((r) => r.data);
+    const r = await apiClient.get<SustainabilityReport>(`${BASE}/sustainability`, { params });
     return r.data;
   },
   exportSustainability(params?: DateRangeParams): Promise<void> {

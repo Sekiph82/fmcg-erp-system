@@ -127,6 +127,7 @@ export interface RuntimeLog {
   duration_minutes?: number;
   operator_id?: string;
   reason_code?: string;
+  notes?: string;
   machine_name?: string;
   operator_name?: string;
 }
@@ -189,6 +190,8 @@ export interface DowntimeIntel {
   maintenance_escalated: boolean;
   cost_impact?: number;
   root_cause?: string;
+  units_lost?: number;
+  notes?: string;
   machine_name?: string;
 }
 

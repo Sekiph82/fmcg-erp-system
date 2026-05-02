@@ -268,22 +268,22 @@ export const utilityManagementApi = {
   // ── Assets ───────────────────────────────────────────────────────────────────
   assets: {
     async list(params?: AssetFilters & { skip?: number; limit?: number }): Promise<UtilityAsset[]> {
-      const res = await apiClient.get<UtilityAsset[]>(`${BASE}/assets`, { params }).then((r) => r.data);
+      const res = await apiClient.get<UtilityAsset[]>(`${BASE}/assets`, { params });
       return res.data;
     },
 
     async get(id: string): Promise<UtilityAsset> {
-      const res = await apiClient.get<UtilityAsset>(`${BASE}/assets/${id}`).then((r) => r.data);
+      const res = await apiClient.get<UtilityAsset>(`${BASE}/assets/${id}`);
       return res.data;
     },
 
     async create(data: UtilityAssetCreate): Promise<UtilityAsset> {
-      const res = await apiClient.post<UtilityAsset>(`${BASE}/assets`, data).then((r) => r.data);
+      const res = await apiClient.post<UtilityAsset>(`${BASE}/assets`, data);
       return res.data;
     },
 
     async update(id: string, data: UtilityAssetUpdate): Promise<UtilityAsset> {
-      const res = await apiClient.patch<UtilityAsset>(`${BASE}/assets/${id}`, data).then((r) => r.data);
+      const res = await apiClient.patch<UtilityAsset>(`${BASE}/assets/${id}`, data);
       return res.data;
     },
 
