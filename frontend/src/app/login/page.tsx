@@ -29,10 +29,15 @@ export default function LoginPage() {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-600 text-white font-bold text-lg mb-3">
-            ERP
+          {/* POVU logo replacing the purple ERP square */}
+          <div className="flex justify-center mb-3">
+            <img
+              src="/povu-logo.jpg"
+              alt="POVU"
+              className="h-16 w-auto object-contain"
+            />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">FMCG ERP</h1>
+          <h1 className="text-2xl font-bold text-gray-900">POVU ERP</h1>
           <p className="text-sm text-gray-500 mt-1">Sign in to your account</p>
         </div>
 

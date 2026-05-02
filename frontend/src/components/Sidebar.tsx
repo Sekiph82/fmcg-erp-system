@@ -532,13 +532,17 @@ export function Sidebar({ mobileOpen, onMobileClose, onOpenSearch }: SidebarProp
         ) : (
           <>
             <div className="flex items-center gap-2.5 min-w-0">
-              {/* POVU logo — full display in expanded mode */}
-              <div className="h-[34px] w-auto shrink-0">
+              {/* POVU logo — replaces the purple ERP square */}
+              <div className="h-[28px] w-[28px] shrink-0 rounded-[7px] overflow-hidden shadow-md">
                 <img
                   src="/povu-logo.jpg"
                   alt="POVU"
-                  className="h-full w-auto object-contain"
+                  className="h-full w-full object-cover"
                 />
+              </div>
+              <div className="min-w-0 leading-none">
+                <p className="text-[13px] font-semibold text-white tracking-tight truncate">POVU ERP</p>
+                <p className="text-[10px] text-slate-500 tracking-wide mt-[3px] truncate">Enterprise Suite</p>
               </div>
             </div>
             <CollapseToggle collapsed={collapsed} onToggle={toggleCollapsed} />
