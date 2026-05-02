@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
@@ -10,13 +10,58 @@ import {
   NavStandaloneLink,
   NavClusterHeader,
   isItemActive,
-  getSectionIdForPath,
 } from "./nav-config";
 
 // ── Storage keys ──────────────────────────────────────────────────────────────
 
 const STORAGE_COLLAPSED = "erp_sidebar_collapsed";
-const STORAGE_EXPANDED  = "erp_sidebar_expanded_v2"; // v2 = single-expand
+const STORAGE_CLUSTER   = "erp_sidebar_cluster_v1";  // which of the 14 clusters is open
+const STORAGE_SECTION   = "erp_sidebar_section_v1";  // which section inside that cluster is open
+
+// ── Pre-process NAV_CONFIG into grouped structure (runs once at module level) ─
+
+interface ClusterData {
+  clusterId: string;
+  label: string;
+  sections: NavSection[];
+}
+
+type Group =
+  | { kind: "standalone"; entry: NavStandaloneLink }
+  | { kind: "cluster";    data: ClusterData };
+
+const GROUPS: Group[] = (() => {
+  const result: Group[] = [];
+  let cur: ClusterData | null = null;
+
+  for (const entry of NAV_CONFIG) {
+    if (entry.type === "link") {
+      cur = null;
+      result.push({ kind: "standalone", entry: entry as NavStandaloneLink });
+    } else if (entry.type === "cluster-header") {
+      const ch = entry as NavClusterHeader;
+      cur = { clusterId: ch.id, label: ch.label, sections: [] };
+      result.push({ kind: "cluster", data: cur });
+    } else if (entry.type === "section" && cur) {
+      cur.sections.push(entry as NavSection);
+    }
+  }
+
+  return result;
+})();
+
+// Return the cluster + section IDs that contain the active path
+function findActive(pathname: string): { clusterId: string | null; sectionId: string | null } {
+  for (const group of GROUPS) {
+    if (group.kind !== "cluster") continue;
+    for (const section of group.data.sections) {
+      if (section.items.some((item) => isItemActive(item.href, pathname))) {
+        return { clusterId: group.data.clusterId, sectionId: section.id };
+      }
+    }
+  }
+  return { clusterId: null, sectionId: null };
+}
 
 // ── Chevron ───────────────────────────────────────────────────────────────────
 
@@ -25,9 +70,7 @@ function Chevron({ open }: { open: boolean }) {
     <svg
       className="h-3 w-3 shrink-0 transition-transform duration-200"
       style={{ transform: open ? "rotate(90deg)" : "rotate(0deg)" }}
-      fill="none"
-      stroke="currentColor"
-      viewBox="0 0 24 24"
+      fill="none" stroke="currentColor" viewBox="0 0 24 24"
     >
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
     </svg>
@@ -51,11 +94,7 @@ function Tooltip({ label, children }: { label: string; children: React.ReactNode
 // ── Avatar ────────────────────────────────────────────────────────────────────
 
 function Avatar({ name }: { name: string }) {
-  const initials = name
-    .split(" ")
-    .slice(0, 2)
-    .map((w) => w[0]?.toUpperCase() ?? "")
-    .join("");
+  const initials = name.split(" ").slice(0, 2).map((w) => w[0]?.toUpperCase() ?? "").join("");
   return (
     <div className="h-7 w-7 shrink-0 rounded-full bg-indigo-600/25 ring-1 ring-indigo-500/30 flex items-center justify-center text-[11px] font-bold text-indigo-300 select-none">
       {initials || "?"}
@@ -63,164 +102,30 @@ function Avatar({ name }: { name: string }) {
   );
 }
 
-// ── Cluster header — now just a divider label, not a clickable row ────────────
+// ── Collapse toggle ───────────────────────────────────────────────────────────
 
-function ClusterLabel({ label }: { label: string }) {
+function CollapseToggle({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => void }) {
   return (
-    <div className="flex items-center gap-2.5 px-3 pt-[14px] pb-[4px]">
-      <span className="text-[9.5px] font-semibold tracking-[0.14em] text-slate-600 uppercase select-none whitespace-nowrap">
-        {label}
-      </span>
-      <div className="flex-1 h-px bg-white/[0.055]" />
-    </div>
-  );
-}
-
-// ── Section group — accordion item ────────────────────────────────────────────
-
-interface SectionProps {
-  section: NavSection;
-  collapsed: boolean;
-  pathname: string;
-  isExpanded: boolean;
-  onToggle: () => void;
-  onExpandSidebar: () => void;
-  onNavigate: () => void;
-  hasPermission: (code: string) => boolean;
-}
-
-function SectionGroup({
-  section,
-  collapsed,
-  pathname,
-  isExpanded,
-  onToggle,
-  onExpandSidebar,
-  onNavigate,
-  hasPermission,
-}: SectionProps) {
-  const visibleItems = section.items.filter(
-    (item) => !item.permission || hasPermission(item.permission)
-  );
-  if (visibleItems.length === 0) return null;
-
-  const hasActiveChild = visibleItems.some((item) => isItemActive(item.href, pathname));
-
-  // ── Collapsed icon rail ───────────────────────────────────────────────────────
-  if (collapsed) {
-    return (
-      <Tooltip label={section.label}>
-        <button
-          onClick={() => {
-            onExpandSidebar();
-            if (!isExpanded) onToggle();
-          }}
-          className={[
-            "flex h-9 w-9 items-center justify-center rounded-lg transition-all duration-200",
-            hasActiveChild
-              ? "bg-cyan-500/[0.14] text-cyan-300 border border-cyan-500/[0.30]"
-              : "text-slate-500 hover:bg-white/[0.06] hover:text-slate-300 border border-transparent",
-          ].join(" ")}
-          style={hasActiveChild ? { boxShadow: "0 0 12px rgba(0,180,255,0.30)" } : undefined}
-        >
-          {section.icon}
-        </button>
-      </Tooltip>
-    );
-  }
-
-  // ── Expanded accordion section ────────────────────────────────────────────────
-  return (
-    <div>
-      {/* Section header button */}
-      <button
-        onClick={onToggle}
-        aria-expanded={isExpanded}
-        className={[
-          "group/hdr flex w-full items-center gap-2.5 rounded-lg px-2.5 py-[7px] text-left transition-all duration-150",
-          hasActiveChild
-            ? "text-slate-200 hover:bg-white/[0.04]"
-            : "text-slate-500 hover:bg-white/[0.04] hover:text-slate-300",
-        ].join(" ")}
-      >
-        <span
-          className={[
-            "shrink-0 transition-colors",
-            hasActiveChild
-              ? "text-indigo-400"
-              : "text-slate-600 group-hover/hdr:text-slate-400",
-          ].join(" ")}
-        >
-          {section.icon}
-        </span>
-
-        <span className="flex-1 text-[12.5px] font-medium leading-none truncate">
-          {section.label}
-        </span>
-
-        {/* Active dot when collapsed (children active but section closed) */}
-        {hasActiveChild && !isExpanded && (
-          <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-400" />
+    <button
+      onClick={onToggle}
+      title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+      className="flex h-7 w-7 items-center justify-center rounded-md text-slate-600 hover:bg-white/[0.07] hover:text-slate-300 transition-colors"
+    >
+      <svg className="h-[15px] w-[15px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        {collapsed ? (
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+        ) : (
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
         )}
-
-        <span
-          className={[
-            "shrink-0 transition-colors",
-            hasActiveChild ? "text-slate-400" : "text-slate-700 group-hover/hdr:text-slate-500",
-          ].join(" ")}
-        >
-          <Chevron open={isExpanded} />
-        </span>
-      </button>
-
-      {/* Smooth height animation via grid-template-rows trick */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateRows: isExpanded ? "1fr" : "0fr",
-          transition: "grid-template-rows 0.20s ease",
-        }}
-      >
-        <div style={{ overflow: "hidden" }}>
-          <div className="pb-1 pt-0.5">
-            {visibleItems.map((item) => {
-              const active = isItemActive(item.href, pathname);
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={onNavigate}
-                  className={[
-                    "relative flex items-center border-l-[2px] py-[5.5px] pl-[28px] pr-2.5",
-                    "text-[12px] leading-snug rounded-r-lg transition-all duration-150",
-                    active
-                      ? "border-cyan-400 bg-cyan-500/[0.10] text-cyan-100 font-medium"
-                      : "border-transparent text-slate-500 hover:bg-white/[0.045] hover:text-slate-300",
-                  ].join(" ")}
-                  style={active ? {
-                    boxShadow: "inset 3px 0 10px rgba(0,180,255,0.15), -1px 0 12px rgba(0,180,255,0.25)",
-                    textShadow: "0 0 8px rgba(0,200,255,0.35)",
-                  } : undefined}
-                >
-                  {item.label}
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-    </div>
+      </svg>
+    </button>
   );
 }
 
-// ── Standalone link ───────────────────────────────────────────────────────────
+// ── Standalone link (Dashboard) ───────────────────────────────────────────────
 
 function StandaloneLink({
-  entry,
-  collapsed,
-  pathname,
-  hasPermission,
-  onNavigate,
+  entry, collapsed, pathname, hasPermission, onNavigate,
 }: {
   entry: NavStandaloneLink;
   collapsed: boolean;
@@ -256,8 +161,7 @@ function StandaloneLink({
       href={entry.href}
       onClick={onNavigate}
       className={[
-        "flex items-center gap-2.5 rounded-lg px-2.5 py-[8px]",
-        "text-[12.5px] font-medium transition-all duration-200",
+        "flex items-center gap-2.5 rounded-lg px-2.5 py-[8px] text-[12.5px] font-medium transition-all duration-200",
         active
           ? "bg-cyan-500/[0.12] text-cyan-100 border border-cyan-500/[0.30]"
           : "text-slate-400 hover:bg-white/[0.045] hover:text-slate-200 border border-transparent",
@@ -273,31 +177,228 @@ function StandaloneLink({
   );
 }
 
-// ── Collapsed cluster divider ─────────────────────────────────────────────────
+// ── Section accordion (second level, within an open cluster) ─────────────────
 
-function CollapsedClusterDivider() {
-  return <div className="my-2 mx-auto h-px w-5 bg-white/[0.07]" />;
+function SectionAccordion({
+  section, pathname, isExpanded, onToggle, hasPermission, onNavigate,
+}: {
+  section: NavSection;
+  pathname: string;
+  isExpanded: boolean;
+  onToggle: () => void;
+  hasPermission: (code: string) => boolean;
+  onNavigate: () => void;
+}) {
+  const visibleItems = section.items.filter(
+    (item) => !item.permission || hasPermission(item.permission)
+  );
+  if (visibleItems.length === 0) return null;
+
+  const hasActiveChild = visibleItems.some((item) => isItemActive(item.href, pathname));
+
+  return (
+    <div>
+      {/* Section header — second accordion level */}
+      <button
+        onClick={onToggle}
+        aria-expanded={isExpanded}
+        className={[
+          "group/sec flex w-full items-center gap-2 rounded-lg px-2.5 py-[6px] pl-[14px] text-left transition-all duration-150",
+          hasActiveChild
+            ? "text-slate-300 hover:bg-white/[0.03]"
+            : "text-slate-500 hover:bg-white/[0.03] hover:text-slate-400",
+        ].join(" ")}
+      >
+        <span
+          className={[
+            "shrink-0 transition-colors",
+            hasActiveChild ? "text-indigo-400" : "text-slate-600 group-hover/sec:text-slate-500",
+          ].join(" ")}
+        >
+          {section.icon}
+        </span>
+        <span className="flex-1 text-[12px] font-medium leading-none truncate">
+          {section.label}
+        </span>
+        {hasActiveChild && !isExpanded && (
+          <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-400" />
+        )}
+        <span
+          className={[
+            "shrink-0 transition-colors",
+            hasActiveChild ? "text-slate-400" : "text-slate-700 group-hover/sec:text-slate-600",
+          ].join(" ")}
+        >
+          <Chevron open={isExpanded} />
+        </span>
+      </button>
+
+      {/* Section items — animated */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateRows: isExpanded ? "1fr" : "0fr",
+          transition: "grid-template-rows 0.18s ease",
+        }}
+      >
+        <div style={{ overflow: "hidden" }}>
+          <div className="pb-0.5 pt-0.5">
+            {visibleItems.map((item) => {
+              const active = isItemActive(item.href, pathname);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={onNavigate}
+                  className={[
+                    "relative flex items-center border-l-[2px] py-[5px] pl-[34px] pr-2.5",
+                    "text-[11.5px] leading-snug rounded-r-lg transition-all duration-150",
+                    active
+                      ? "border-cyan-400 bg-cyan-500/[0.10] text-cyan-100 font-medium"
+                      : "border-transparent text-slate-500 hover:bg-white/[0.045] hover:text-slate-300",
+                  ].join(" ")}
+                  style={active ? {
+                    boxShadow: "inset 3px 0 10px rgba(0,180,255,0.15), -1px 0 12px rgba(0,180,255,0.25)",
+                    textShadow: "0 0 8px rgba(0,200,255,0.35)",
+                  } : undefined}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
-// ── Collapse toggle ───────────────────────────────────────────────────────────
+// ── Cluster accordion (first level — the 14 main categories) ─────────────────
 
-function CollapseToggle({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => void }) {
+interface ClusterAccordionProps {
+  data: ClusterData;
+  isExpanded: boolean;
+  expandedSection: string | null;
+  onToggleCluster: () => void;
+  onToggleSection: (id: string) => void;
+  collapsed: boolean;
+  pathname: string;
+  hasPermission: (code: string) => boolean;
+  onExpandSidebar: () => void;
+  onNavigate: () => void;
+}
+
+function ClusterAccordion({
+  data, isExpanded, expandedSection, onToggleCluster, onToggleSection,
+  collapsed, pathname, hasPermission, onExpandSidebar, onNavigate,
+}: ClusterAccordionProps) {
+  const visibleSections = data.sections.filter((sec) =>
+    sec.items.some((item) => !item.permission || hasPermission(item.permission))
+  );
+  if (visibleSections.length === 0) return null;
+
+  const hasActiveChild = visibleSections.some((sec) =>
+    sec.items.some(
+      (item) => (!item.permission || hasPermission(item.permission)) && isItemActive(item.href, pathname)
+    )
+  );
+
+  // Use the first section's icon as representative cluster icon
+  const clusterIcon = visibleSections[0]?.icon;
+
+  // ── Collapsed icon rail (sidebar fully collapsed) ─────────────────────────
+  if (collapsed) {
+    return (
+      <Tooltip label={data.label}>
+        <button
+          onClick={() => {
+            onExpandSidebar();
+            if (!isExpanded) onToggleCluster();
+          }}
+          className={[
+            "flex h-9 w-9 items-center justify-center rounded-lg transition-all duration-200",
+            hasActiveChild
+              ? "bg-cyan-500/[0.14] text-cyan-300 border border-cyan-500/[0.30]"
+              : "text-slate-500 hover:bg-white/[0.06] hover:text-slate-300 border border-transparent",
+          ].join(" ")}
+          style={hasActiveChild ? { boxShadow: "0 0 12px rgba(0,180,255,0.30)" } : undefined}
+        >
+          {clusterIcon}
+        </button>
+      </Tooltip>
+    );
+  }
+
+  // ── Expanded sidebar ──────────────────────────────────────────────────────
   return (
-    <button
-      onClick={onToggle}
-      title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-      className="flex h-7 w-7 items-center justify-center rounded-md text-slate-600 hover:bg-white/[0.07] hover:text-slate-300 transition-colors"
-    >
-      <svg className="h-[15px] w-[15px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        {collapsed ? (
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-            d="M13 5l7 7-7 7M5 5l7 7-7 7" />
-        ) : (
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-            d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+    <div>
+      {/* Cluster header button — this IS one of the 14 main categories */}
+      <button
+        onClick={onToggleCluster}
+        aria-expanded={isExpanded}
+        className={[
+          "group/cl flex w-full items-center gap-2.5 rounded-lg px-2.5 py-[7px] text-left transition-all duration-150",
+          hasActiveChild
+            ? "text-slate-200 hover:bg-white/[0.04]"
+            : "text-slate-500 hover:bg-white/[0.04] hover:text-slate-300",
+        ].join(" ")}
+      >
+        {/* Cluster icon */}
+        <span
+          className={[
+            "shrink-0 transition-colors",
+            hasActiveChild ? "text-indigo-400" : "text-slate-600 group-hover/cl:text-slate-400",
+          ].join(" ")}
+        >
+          {clusterIcon}
+        </span>
+
+        {/* Cluster label */}
+        <span className="flex-1 text-[12.5px] font-semibold leading-none truncate">
+          {data.label}
+        </span>
+
+        {/* Active indicator dot — shows when cluster is closed but has active child */}
+        {hasActiveChild && !isExpanded && (
+          <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-400" />
         )}
-      </svg>
-    </button>
+
+        {/* Chevron */}
+        <span
+          className={[
+            "shrink-0 transition-colors",
+            hasActiveChild ? "text-slate-400" : "text-slate-700 group-hover/cl:text-slate-500",
+          ].join(" ")}
+        >
+          <Chevron open={isExpanded} />
+        </span>
+      </button>
+
+      {/* Animated content: sections within this cluster */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateRows: isExpanded ? "1fr" : "0fr",
+          transition: "grid-template-rows 0.20s ease",
+        }}
+      >
+        <div style={{ overflow: "hidden" }}>
+          <div className="pb-1 pt-0.5 ml-[3px] border-l border-white/[0.06]">
+            {visibleSections.map((section) => (
+              <SectionAccordion
+                key={section.id}
+                section={section}
+                pathname={pathname}
+                isExpanded={expandedSection === section.id}
+                onToggle={() => onToggleSection(section.id)}
+                hasPermission={hasPermission}
+                onNavigate={onNavigate}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -313,24 +414,25 @@ export function Sidebar({ mobileOpen, onMobileClose, onOpenSearch }: SidebarProp
   const pathname = usePathname();
   const { user, logout, hasPermission } = useAuth();
 
-  const [collapsed, setCollapsed] = useState(false);
-  // Single string: which section ID is currently open (or null = all closed)
+  const [collapsed,       setCollapsed]       = useState(false);
+  const [expandedCluster, setExpandedCluster] = useState<string | null>(null);
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
-  const [mounted, setMounted] = useState(false);
+  const [mounted,         setMounted]         = useState(false);
 
-  // ── Hydrate on mount ──────────────────────────────────────────────────────────
+  // ── Hydrate from localStorage + auto-expand based on current route ────────────
   useEffect(() => {
     const savedCollapsed = localStorage.getItem(STORAGE_COLLAPSED);
     if (savedCollapsed !== null) setCollapsed(savedCollapsed === "true");
 
-    // Route always wins: if current page belongs to a section, expand it
-    const activeSection = getSectionIdForPath(pathname);
-    if (activeSection) {
-      setExpandedSection(activeSection);
+    const { clusterId, sectionId } = findActive(pathname);
+    if (clusterId) {
+      // Route wins: expand the cluster + section the user is currently in
+      setExpandedCluster(clusterId);
+      setExpandedSection(sectionId);
     } else {
-      // No active section — restore last manually opened section
-      const saved = localStorage.getItem(STORAGE_EXPANDED);
-      setExpandedSection(saved ?? null);
+      // No active route in any section — restore the last manually opened state
+      setExpandedCluster(localStorage.getItem(STORAGE_CLUSTER) ?? null);
+      setExpandedSection(localStorage.getItem(STORAGE_SECTION) ?? null);
     }
 
     setMounted(true);
@@ -340,12 +442,15 @@ export function Sidebar({ mobileOpen, onMobileClose, onOpenSearch }: SidebarProp
   // ── Auto-expand when route changes ────────────────────────────────────────────
   useEffect(() => {
     if (!mounted) return;
-    const activeSection = getSectionIdForPath(pathname);
-    if (activeSection && activeSection !== expandedSection) {
-      setExpandedSection(activeSection);
-      localStorage.setItem(STORAGE_EXPANDED, activeSection);
+    const { clusterId, sectionId } = findActive(pathname);
+    if (clusterId) {
+      setExpandedCluster(clusterId);
+      setExpandedSection(sectionId);
+      localStorage.setItem(STORAGE_CLUSTER, clusterId);
+      if (sectionId) localStorage.setItem(STORAGE_SECTION, sectionId);
+      else localStorage.removeItem(STORAGE_SECTION);
     }
-  // expandedSection intentionally omitted — we only react to route changes
+  // expandedCluster / expandedSection intentionally omitted — react only to route changes
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname, mounted]);
 
@@ -362,13 +467,27 @@ export function Sidebar({ mobileOpen, onMobileClose, onOpenSearch }: SidebarProp
     localStorage.setItem(STORAGE_COLLAPSED, "false");
   }, []);
 
-  // Single-expand accordion: open clicked section, close previously open one
+  // Open clicked cluster; close it if already open. Reset section when switching clusters.
+  const toggleCluster = useCallback((id: string) => {
+    setExpandedCluster((prev) => {
+      const next = prev === id ? null : id;
+      if (next) localStorage.setItem(STORAGE_CLUSTER, next);
+      else localStorage.removeItem(STORAGE_CLUSTER);
+      // Clear section selection when closing or switching clusters
+      if (next !== prev) {
+        setExpandedSection(null);
+        localStorage.removeItem(STORAGE_SECTION);
+      }
+      return next;
+    });
+  }, []);
+
+  // Toggle section within the currently open cluster
   const toggleSection = useCallback((id: string) => {
     setExpandedSection((prev) => {
       const next = prev === id ? null : id;
-      // Persist the manually chosen open section
-      if (next) localStorage.setItem(STORAGE_EXPANDED, next);
-      else localStorage.removeItem(STORAGE_EXPANDED);
+      if (next) localStorage.setItem(STORAGE_SECTION, next);
+      else localStorage.removeItem(STORAGE_SECTION);
       return next;
     });
   }, []);
@@ -384,11 +503,8 @@ export function Sidebar({ mobileOpen, onMobileClose, onOpenSearch }: SidebarProp
   return (
     <aside
       className={[
-        "flex h-screen flex-col",
-        "bg-[#0b1120]",
-        "border-r border-white/[0.065]",
-        "transition-[width,transform] duration-200 ease-in-out",
-        "relative",
+        "flex h-screen flex-col bg-[#0b1120] border-r border-white/[0.065]",
+        "transition-[width,transform] duration-200 ease-in-out relative",
         collapsed ? "w-[52px]" : "w-[228px]",
         "max-lg:fixed max-lg:inset-y-0 max-lg:left-0 max-lg:z-50 max-lg:w-[228px]",
         mobileOpen ? "max-lg:translate-x-0" : "max-lg:-translate-x-full",
@@ -403,11 +519,7 @@ export function Sidebar({ mobileOpen, onMobileClose, onOpenSearch }: SidebarProp
         ].join(" ")}
       >
         {collapsed ? (
-          <button
-            onClick={expandSidebar}
-            title="Expand sidebar"
-            className="group flex items-center justify-center"
-          >
+          <button onClick={expandSidebar} title="Expand sidebar" className="group flex items-center justify-center">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-[10px] font-bold text-white tracking-tight shadow-lg shadow-indigo-900/50 group-hover:bg-indigo-500 transition-colors">
               ERP
             </div>
@@ -419,12 +531,8 @@ export function Sidebar({ mobileOpen, onMobileClose, onOpenSearch }: SidebarProp
                 ERP
               </div>
               <div className="min-w-0 leading-none">
-                <p className="text-[13px] font-semibold text-white tracking-tight truncate">
-                  FMCG ERP
-                </p>
-                <p className="text-[10px] text-slate-500 tracking-wide mt-[3px] truncate">
-                  Enterprise Suite
-                </p>
+                <p className="text-[13px] font-semibold text-white tracking-tight truncate">FMCG ERP</p>
+                <p className="text-[10px] text-slate-500 tracking-wide mt-[3px] truncate">Enterprise Suite</p>
               </div>
             </div>
             <CollapseToggle collapsed={collapsed} onToggle={toggleCollapsed} />
@@ -472,19 +580,12 @@ export function Sidebar({ mobileOpen, onMobileClose, onOpenSearch }: SidebarProp
         ].join(" ")}
         style={{ scrollbarWidth: "none" }}
       >
-        {NAV_CONFIG.map((entry) => {
-          const key = entry.id;
-
-          if (entry.type === "cluster-header") {
-            if (collapsed) return <CollapsedClusterDivider key={key} />;
-            return <ClusterLabel key={key} label={(entry as NavClusterHeader).label} />;
-          }
-
-          if (entry.type === "link") {
+        {GROUPS.map((group) => {
+          if (group.kind === "standalone") {
             return (
               <StandaloneLink
-                key={key}
-                entry={entry as NavStandaloneLink}
+                key={group.entry.id}
+                entry={group.entry}
                 collapsed={collapsed}
                 pathname={pathname}
                 hasPermission={can}
@@ -493,24 +594,22 @@ export function Sidebar({ mobileOpen, onMobileClose, onOpenSearch }: SidebarProp
             );
           }
 
-          // Section
-          const section = entry as NavSection;
-          if (section.permission && !can(section.permission)) {
-            const anyVisible = section.items.some((i) => !i.permission || can(i.permission));
-            if (!anyVisible) return null;
-          }
-
+          // cluster
           return (
-            <SectionGroup
-              key={key}
-              section={section}
+            <ClusterAccordion
+              key={group.data.clusterId}
+              data={group.data}
+              isExpanded={expandedCluster === group.data.clusterId}
+              expandedSection={
+                expandedCluster === group.data.clusterId ? expandedSection : null
+              }
+              onToggleCluster={() => toggleCluster(group.data.clusterId)}
+              onToggleSection={toggleSection}
               collapsed={collapsed}
               pathname={pathname}
-              isExpanded={expandedSection === section.id}
-              onToggle={() => toggleSection(section.id)}
+              hasPermission={can}
               onExpandSidebar={expandSidebar}
               onNavigate={handleNavigate}
-              hasPermission={can}
             />
           );
         })}
@@ -522,17 +621,13 @@ export function Sidebar({ mobileOpen, onMobileClose, onOpenSearch }: SidebarProp
       <div
         className={[
           "shrink-0 border-t border-white/[0.065] bg-[#080f1b]",
-          collapsed
-            ? "flex flex-col items-center gap-2 py-3 px-[7px]"
-            : "px-3 py-3",
+          collapsed ? "flex flex-col items-center gap-2 py-3 px-[7px]" : "px-3 py-3",
         ].join(" ")}
       >
         {collapsed ? (
           <>
             <Tooltip label={user?.full_name ?? "User"}>
-              <div className="cursor-default">
-                <Avatar name={user?.full_name ?? "?"} />
-              </div>
+              <div className="cursor-default"><Avatar name={user?.full_name ?? "?"} /></div>
             </Tooltip>
             <Tooltip label="Sign out">
               <button
@@ -550,12 +645,8 @@ export function Sidebar({ mobileOpen, onMobileClose, onOpenSearch }: SidebarProp
           <div className="flex items-center gap-2.5">
             <Avatar name={user?.full_name ?? "?"} />
             <div className="min-w-0 flex-1 leading-none">
-              <p className="text-[12px] font-semibold text-slate-300 truncate">
-                {user?.full_name ?? "—"}
-              </p>
-              <p className="text-[11px] text-slate-600 mt-[3px] truncate">
-                {user?.email ?? ""}
-              </p>
+              <p className="text-[12px] font-semibold text-slate-300 truncate">{user?.full_name ?? "—"}</p>
+              <p className="text-[11px] text-slate-600 mt-[3px] truncate">{user?.email ?? ""}</p>
             </div>
             <button
               onClick={logout}
