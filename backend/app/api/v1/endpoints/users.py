@@ -5,6 +5,7 @@ import uuid
 
 from app.db.session import get_db
 from app.core.deps import get_current_user, require_permission
+from app.core.password_policy import validate_password, PasswordPolicyError
 from app.crud import user as crud
 from app.crud import audit as audit_crud
 from app.schemas.user import UserCreate, UserUpdate, UserRead, UserReadShort, PasswordReset, RoleAssign
@@ -61,6 +62,10 @@ async def create_user(
         raise HTTPException(status_code=400, detail="Email already registered")
     if await crud.get_user_by_username(db, data.username):
         raise HTTPException(status_code=400, detail="Username already taken")
+    try:
+        validate_password(data.password, username=data.username)
+    except PasswordPolicyError as e:
+        raise HTTPException(status_code=422, detail={"error": "password_policy_violation", "violations": e.violations})
     user = await crud.create_user(db, data)
     await audit_crud.log_event(
         db,
@@ -193,6 +198,10 @@ async def reset_password(
     user = await crud.get_user(db, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    try:
+        validate_password(data.new_password, username=user.username)
+    except PasswordPolicyError as e:
+        raise HTTPException(status_code=422, detail={"error": "password_policy_violation", "violations": e.violations})
     await crud.reset_password(db, user, data.new_password)
     await audit_crud.log_event(
         db,
@@ -254,3 +263,48 @@ async def assign_roles(
         )
     await db.commit()
     return user
+
+
+# ── Self-service password change ─────────────────────────────────────────────
+
+from pydantic import BaseModel as _BaseModel  # noqa: E402
+
+
+class _ChangePasswordRequest(_BaseModel):
+    current_password: str
+    new_password: str
+
+
+@router.post("/me/change-password", status_code=status.HTTP_204_NO_CONTENT)
+async def change_own_password(
+    data: _ChangePasswordRequest,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    """Authenticated user changes their own password. Verifies current password first."""
+    from app.core.security import verify_password
+
+    if not verify_password(data.current_password, current_user.hashed_password):
+        raise HTTPException(status_code=401, detail="Current password is incorrect")
+
+    try:
+        validate_password(data.new_password, username=current_user.username)
+    except PasswordPolicyError as e:
+        raise HTTPException(
+            status_code=422,
+            detail={"error": "password_policy_violation", "violations": e.violations},
+        )
+
+    await crud.reset_password(db, current_user, data.new_password)
+    await audit_crud.log_event(
+        db,
+        event_type=AuditEvent.PASSWORD_CHANGED,
+        actor_id=current_user.id,
+        actor_email=current_user.email,
+        target_type="user",
+        target_id=str(current_user.id),
+        target_name=current_user.email,
+        ip_address=_ip(request),
+    )
+    await db.commit()

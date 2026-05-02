@@ -5,6 +5,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from contextlib import asynccontextmanager
 from app.core.security_headers import SecurityHeadersMiddleware
+from app.core.input_sanitizer import InputSanitizerMiddleware
+from app.core.exception_handlers import register_handlers
 
 from app.core.config import settings
 from app.api.v1.router import api_router
@@ -52,6 +54,7 @@ app = FastAPI(
 )
 
 app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(InputSanitizerMiddleware)
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 app.add_middleware(
@@ -75,6 +78,7 @@ async def add_process_time_header(request: Request, call_next):
 
 
 app.include_router(api_router, prefix=settings.API_V1_STR)
+register_handlers(app)
 
 
 @app.get("/health")
