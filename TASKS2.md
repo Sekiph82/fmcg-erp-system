@@ -10,7 +10,7 @@ Phase 1 — Critical ERP Foundation
 
 ## Current Gap
 
-Gap 6 — Manufacturing Execution System (MES) Depth
+Gap 7 — MRP Engine Hardening
 
 
 
@@ -21,6 +21,8 @@ Not started yet.
 
 
 ## Completed in Last Run
+
+Gap 6 — Manufacturing Execution System (MES) Depth
 
 Gap 5 — Serialized Inventory / Serial Number Tracking
 
@@ -46,11 +48,11 @@ Gap 1 — Full Double-Entry General Ledger
 
 5\. Serialized Inventory / Serial Number Tracking
 
+6\. Manufacturing Execution System (MES) Depth
+
 
 
 ## Remaining Gap Items
-
-6\. Manufacturing Execution System Depth
 
 7\. MRP Engine Hardening
 
@@ -184,27 +186,26 @@ Gap 1 — Full Double-Entry General Ledger
 
 ## Next Immediate Task
 
-Implement Gap 6 — Manufacturing Execution System (MES) Depth.
+Implement Gap 7 — MRP Engine Hardening.
 
-Existing system has production orders, materials, recipes. Need MES execution-level layer.
-
-Key gaps to fill:
-- WorkCenter model: capacity (units/hr), shift hours, machine_type, current_utilization
-- ProductionRouting: ordered multi-step operations per product/BOM
-- OperationStep: sequence, work_center_id, setup_time_min, run_time_min_per_unit, scrap_pct
-- LaborEntry: who worked on what operation, start/end time, units produced
-- WIPLot: tracks work-in-progress quantity per production order per step
-- ScrapEntry: qty scrapped, reason, step
-- ProductionVariance: standard vs actual cost per batch
-- Frontend: Work center capacity dashboard, routing management page, shop floor
-  operator interface (minimal — shows active order, current step, start/stop times)
+Existing MRP endpoint is at /mrp. Need to check what already exists before adding.
 
 Files to inspect first:
-- backend/app/models/production.py (understand existing production models)
-- backend/app/api/v1/endpoints/production.py
-- backend/app/api/v1/endpoints/production_execution.py (may already have some of this)
-- backend/app/api/v1/endpoints/shop_floor.py
-- frontend/src/app/dashboard/production/ (existing pages)
+- backend/app/api/v1/endpoints/mrp.py — list existing endpoints
+- backend/app/models/ — check for MRPRun, MRPLine, MRPException models
+- backend/app/services/mrp_service.py (if exists)
+- frontend/src/app/dashboard/production/planning/ or /mrp/ pages
+
+Key gaps from spec:
+- Exception message system (shortage, delay, risk alerts)
+- Lead-time aware planning (supplier lead times)
+- Minimum Order Quantity enforcement
+- Frozen planning window (freeze horizon)
+- Simulation mode (what-if scenarios)
+- Planner workbench dashboard
+- Demand aggregation (sales orders + forecast + safety stock combined view)
+
+DO NOT re-implement what exists. Inspect first, extend only the gaps.
 
 
 
@@ -216,14 +217,14 @@ App uses create_all — no migration cycle needed.
 
 ## Files Changed in Last Run
 
-Gap 5 additions:
-backend/app/models/inventory.py — Added SerialStatus enum, SerialNumber, SerialMovement models
-backend/app/schemas/serial_tracking.py — New file: SerialNumberCreate, SerialBulkCreate, SerialNumberRead, SerialTransferRequest, SerialMovementRead
-backend/app/api/v1/endpoints/serial_tracking.py — New file: list, create, bulk_create, lookup, get, history, transfer endpoints
-backend/app/api/v1/router.py — Registered serial_tracking router at /inventory/serials
-frontend/src/lib/inventory.ts — Added SerialStatus/SerialNumber/SerialMovement types + serialApi
-frontend/src/app/dashboard/inventory/serials/page.tsx — New page: lookup, status filter cards, list table, detail panel with history, create/transfer modals
-frontend/src/components/nav-config.tsx — Added Serial Numbers nav entry under Warehouse & Inventory
+Gap 6 additions:
+backend/app/schemas/production_costing.py — Added WIPRow, VarianceDetailRow, WorkCenterUtilRow schemas
+backend/app/services/production_cost_service.py — Added get_wip_report(), get_variance_detail(), get_work_center_utilization() service functions
+backend/app/api/v1/endpoints/production_costing.py — Added GET /wip, GET /variance-detail, GET /work-center-utilization endpoints
+frontend/src/lib/productionCosting.ts — Added WIPRow, VarianceDetailRow, WorkCenterUtilRow types + api methods (wip, varianceDetail, workCenterUtilization)
+frontend/src/app/dashboard/production/wip/page.tsx — New WIP valuation dashboard
+frontend/src/app/dashboard/production/variance/page.tsx — New variance detail + work center utilization tabbed page
+frontend/src/components/nav-config.tsx — Added WIP Valuation and Variance Analysis nav entries
 
 
 
@@ -236,17 +237,16 @@ Frontend TypeScript: PASS (tsc --noEmit, 0 errors)
 
 ## Notes for Next Claude Run
 
-Gap 6: MES Depth — inspect existing production_execution.py and shop_floor.py FIRST
-before adding any new models. The system already has advanced production modules.
-Many things (routing, work centers, labor, WIP) may already exist in:
-- backend/app/models/production.py
-- backend/app/api/v1/endpoints/production_execution.py
-- backend/app/api/v1/endpoints/shop_floor.py
+Gap 7: MRP Engine Hardening.
 
-DO NOT duplicate existing models. Extend what exists.
+Existing MRP system likely has: run MRP, get MRP output, procurement suggestions.
+Check backend/app/api/v1/endpoints/mrp.py and related service files.
 
-Key check: does WorkCenter model exist? Does OperationRouting/Step exist?
-If yes — identify what's missing and add only the gaps (likely: WIP valuation,
-scrap variance accounting, production variance report, capacity utilization dashboard).
+Key true gaps (not yet implemented):
+1. Exception messages — when MRP run finds shortage/late delivery/overstock → create MRPException records
+   with type (SHORTAGE/LATE_DELIVERY/EXCESS_STOCK), material_id, qty, due_date
+2. Frozen planning window — ignore demand within frozen_horizon_days from today; store frozen_horizon in config
+3. Simulation mode — run MRP with hypothetical sales orders/demand changes without persisting
+4. Planner workbench — dashboard showing: open exceptions, pegged demand, supply/demand timeline per material
 
-If no WorkCenter at all — create it plus full routing chain.
+Check if MRPException model already exists. If yes, extend. If no, add.

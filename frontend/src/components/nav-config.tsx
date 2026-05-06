@@ -182,6 +182,8 @@ export const NAV_CONFIG: NavEntry[] = [
       { label: "Waste & Yield",     href: "/dashboard/production/waste-yield",  permission: "production.view" },
       { label: "Batch / Lots",      href: "/dashboard/production/batch-lots",   permission: "production.view" },
       { label: "Costing",           href: "/dashboard/production/costing",      permission: "production.view" },
+      { label: "WIP Valuation",     href: "/dashboard/production/wip",          permission: "production.view" },
+      { label: "Variance Analysis", href: "/dashboard/production/variance",     permission: "production.view" },
       { label: "AI Intelligence",   href: "/dashboard/production/ai",           permission: "production.view" },
       { label: "MES Reports",       href: "/dashboard/production/reports",      permission: "production.view" },
     ],

@@ -91,6 +91,55 @@ export interface CostFilters {
   product_id?: string;
 }
 
+export interface WIPRow {
+  order_id:          string;
+  order_no:          string;
+  product_name:      string | null;
+  product_sku:       string | null;
+  planned_quantity:  number;
+  actual_quantity:   number | null;
+  uom:               string;
+  status:            string;
+  wip_material_cost: number;
+  wip_labor_cost:    number;
+  wip_machine_cost:  number;
+  wip_total:         number;
+  scheduled_start:   string | null;
+  scheduled_end:     string | null;
+}
+
+export interface VarianceDetailRow {
+  order_id:              string;
+  order_no:              string;
+  product_name:          string | null;
+  product_sku:           string | null;
+  status:                string;
+  actual_quantity:       number | null;
+  std_material_cost:     number;
+  actual_material_cost:  number;
+  material_variance:     number;
+  std_labor_cost:        number;
+  actual_labor_cost:     number;
+  labor_variance:        number;
+  std_machine_cost:      number;
+  actual_machine_cost:   number;
+  machine_variance:      number;
+  total_variance:        number;
+  variance_pct:          number | null;
+}
+
+export interface WorkCenterUtilRow {
+  work_center_id:        string;
+  work_center_name:      string;
+  work_center_code:      string;
+  capacity_hours:        number | null;
+  actual_hours_used:     number;
+  utilization_pct:       number | null;
+  completed_orders:      number;
+  labor_cost_incurred:   number;
+  machine_cost_incurred: number;
+}
+
 // ── API client ─────────────────────────────────────────────────────────────────
 
 export const productionCostApi = {
@@ -120,6 +169,23 @@ export const productionCostApi = {
     const r = await apiClient.post<OrderCostBreakdown>(
       `/api/v1/production-cost/orders/${orderId}/finalize`,
     );
+    return r.data;
+  },
+
+  async wip(): Promise<WIPRow[]> {
+    const r = await apiClient.get<WIPRow[]>("/api/v1/production-cost/wip");
+    return r.data;
+  },
+
+  async varianceDetail(params?: Pick<CostFilters, "date_from" | "date_to">): Promise<VarianceDetailRow[]> {
+    const r = await apiClient.get<VarianceDetailRow[]>("/api/v1/production-cost/variance-detail", { params });
+    return r.data;
+  },
+
+  async workCenterUtilization(date_from: string, date_to: string): Promise<WorkCenterUtilRow[]> {
+    const r = await apiClient.get<WorkCenterUtilRow[]>("/api/v1/production-cost/work-center-utilization", {
+      params: { date_from, date_to },
+    });
     return r.data;
   },
 };

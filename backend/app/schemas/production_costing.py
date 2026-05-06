@@ -85,3 +85,59 @@ class CostKPIs(BaseModel):
     energy_pct:            float
     flag_high_variance:    bool
     flag_high_material:    bool
+
+
+class WIPRow(BaseModel):
+    """WIP value for one in-progress production order."""
+    order_id:              str
+    order_no:              str
+    product_name:          Optional[str]   = None
+    product_sku:           Optional[str]   = None
+    planned_quantity:      float
+    actual_quantity:       Optional[float] = None
+    uom:                   str
+    status:                str
+    wip_material_cost:     float
+    wip_labor_cost:        float
+    wip_machine_cost:      float
+    wip_total:             float
+    scheduled_start:       Optional[str]   = None
+    scheduled_end:         Optional[str]   = None
+
+
+class VarianceDetailRow(BaseModel):
+    """Component-level variance for one production order."""
+    order_id:              str
+    order_no:              str
+    product_name:          Optional[str]   = None
+    product_sku:           Optional[str]   = None
+    status:                str
+    actual_quantity:       Optional[float] = None
+    # Material
+    std_material_cost:     float
+    actual_material_cost:  float
+    material_variance:     float            # actual - standard (positive = over)
+    # Labor
+    std_labor_cost:        float
+    actual_labor_cost:     float
+    labor_variance:        float
+    # Machine
+    std_machine_cost:      float
+    actual_machine_cost:   float
+    machine_variance:      float
+    # Total
+    total_variance:        float
+    variance_pct:          Optional[float]  = None
+
+
+class WorkCenterUtilRow(BaseModel):
+    """Utilization data for one work center over a date range."""
+    work_center_id:        str
+    work_center_name:      str
+    work_center_code:      str
+    capacity_hours:        Optional[float]  = None
+    actual_hours_used:     float
+    utilization_pct:       Optional[float]  = None
+    completed_orders:      int
+    labor_cost_incurred:   float
+    machine_cost_incurred: float

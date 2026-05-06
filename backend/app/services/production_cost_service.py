@@ -399,3 +399,233 @@ async def get_cost_kpis(
         "flag_high_variance":   (float(r.avg_variance_pct or 0)) > 10,
         "flag_high_material":   (mat / total * 100 if total else 0) > 70,
     }
+
+
+# ── WIP Valuation ─────────────────────────────────────────────────────────────
+
+async def get_wip_report(db: AsyncSession) -> List[dict]:
+    """
+    Compute current WIP value for all IN_PROGRESS production orders.
+    WIP = materials consumed so far + labor logged so far + machine time so far.
+    """
+    from app.models.production_advanced import WorkCenter
+    orders_q = await db.execute(
+        select(ProductionOrder)
+        .options(selectinload(ProductionOrder.product))
+        .where(ProductionOrder.status == ProductionOrderStatus.IN_PROGRESS)
+        .order_by(ProductionOrder.scheduled_start)
+    )
+    orders = orders_q.scalars().all()
+
+    rows = []
+    for order in orders:
+        cost = await compute_order_cost(db, order)
+        rows.append({
+            "order_id":          str(order.id),
+            "order_no":          order.order_no,
+            "product_name":      order.product.name if order.product else None,
+            "product_sku":       order.product.sku  if order.product else None,
+            "planned_quantity":  float(order.planned_quantity),
+            "actual_quantity":   float(order.actual_quantity) if order.actual_quantity else None,
+            "uom":               order.uom,
+            "status":            order.status.value,
+            "wip_material_cost": cost["total_material_cost"],
+            "wip_labor_cost":    cost["total_labor_cost"],
+            "wip_machine_cost":  cost["total_machine_cost"],
+            "wip_total":         (cost["total_material_cost"] or 0)
+                                 + (cost["total_labor_cost"] or 0)
+                                 + (cost["total_machine_cost"] or 0),
+            "scheduled_start":   order.scheduled_start.isoformat() if order.scheduled_start else None,
+            "scheduled_end":     order.scheduled_end.isoformat()   if order.scheduled_end   else None,
+        })
+    return rows
+
+
+# ── Variance Detail ───────────────────────────────────────────────────────────
+
+async def get_variance_detail(
+    db: AsyncSession,
+    date_from: Optional[date] = None,
+    date_to: Optional[date] = None,
+) -> List[dict]:
+    """
+    Per-order variance detail: material/labor/machine standard vs actual with $ variance.
+    Includes both COMPLETED (finalized) and IN_PROGRESS orders with partial costs.
+    """
+    from app.models.production_advanced import WorkCenter, RoutingStep, Routing
+    filters = [
+        ProductionOrder.status.in_([ProductionOrderStatus.IN_PROGRESS, ProductionOrderStatus.COMPLETED])
+    ]
+    if date_from:
+        filters.append(func.date(ProductionOrder.scheduled_start) >= date_from)
+    if date_to:
+        filters.append(func.date(ProductionOrder.scheduled_start) <= date_to)
+
+    orders_q = await db.execute(
+        select(ProductionOrder)
+        .options(selectinload(ProductionOrder.product))
+        .where(*filters)
+        .order_by(ProductionOrder.scheduled_start.desc())
+        .limit(200)
+    )
+    orders = orders_q.scalars().all()
+
+    rows = []
+    for order in orders:
+        cost = await compute_order_cost(db, order)
+        std_cost_unit = _dec(order.standard_cost_per_unit) if order.standard_cost_per_unit else None
+        planned_qty = _dec(order.planned_quantity)
+
+        # Standard total = standard_cost_per_unit × planned_quantity
+        # Break standard cost into components using ratio from compute:
+        # We don't store std component breakdown, so approximate from routing
+        # Standard material = total_standard_material (recompute subset)
+        mat_q = await db.execute(
+            select(
+                func.coalesce(func.sum(
+                    MaterialConsumption.standard_quantity * Material.standard_cost
+                ), 0)
+            )
+            .join(Material, MaterialConsumption.material_id == Material.id)
+            .where(MaterialConsumption.production_order_id == order.id)
+        )
+        std_material = _dec(mat_q.scalar())
+
+        # Standard labor from routing: Σ (standard_time_min/60 × labor_rate) per step
+        # Use work orders linked to order → routing step standard times
+        std_labor_q = await db.execute(
+            select(
+                func.coalesce(func.sum(
+                    RoutingStep.standard_time_minutes * WorkCenter.labor_rate_per_hour / 60
+                ), 0)
+            )
+            .join(WorkOrder, WorkOrder.routing_step_id == RoutingStep.id)
+            .join(WorkCenter, WorkOrder.work_center_id == WorkCenter.id)
+            .where(WorkOrder.production_order_id == order.id)
+        )
+        std_labor = _dec(std_labor_q.scalar())
+
+        # Standard machine from routing steps
+        std_machine_q = await db.execute(
+            select(
+                func.coalesce(func.sum(
+                    RoutingStep.standard_time_minutes * WorkCenter.machine_cost_per_hour / 60
+                ), 0)
+            )
+            .join(WorkOrder, WorkOrder.routing_step_id == RoutingStep.id)
+            .join(WorkCenter, WorkOrder.work_center_id == WorkCenter.id)
+            .where(WorkOrder.production_order_id == order.id)
+        )
+        std_machine = _dec(std_machine_q.scalar())
+
+        act_material = _dec(cost["total_material_cost"])
+        act_labor    = _dec(cost["total_labor_cost"])
+        act_machine  = _dec(cost["total_machine_cost"])
+
+        mat_var   = act_material - std_material
+        lab_var   = act_labor    - std_labor
+        mach_var  = act_machine  - std_machine
+        total_var = mat_var + lab_var + mach_var
+
+        std_total = std_material + std_labor + std_machine
+        var_pct = float(total_var / std_total * 100) if std_total > 0 else None
+
+        rows.append({
+            "order_id":             str(order.id),
+            "order_no":             order.order_no,
+            "product_name":         order.product.name if order.product else None,
+            "product_sku":          order.product.sku  if order.product else None,
+            "status":               order.status.value,
+            "actual_quantity":      float(order.actual_quantity) if order.actual_quantity else None,
+            "std_material_cost":    float(std_material),
+            "actual_material_cost": float(act_material),
+            "material_variance":    float(mat_var),
+            "std_labor_cost":       float(std_labor),
+            "actual_labor_cost":    float(act_labor),
+            "labor_variance":       float(lab_var),
+            "std_machine_cost":     float(std_machine),
+            "actual_machine_cost":  float(act_machine),
+            "machine_variance":     float(mach_var),
+            "total_variance":       float(total_var),
+            "variance_pct":         var_pct,
+        })
+    return rows
+
+
+# ── Work Center Utilization ───────────────────────────────────────────────────
+
+async def get_work_center_utilization(
+    db: AsyncSession,
+    date_from: date,
+    date_to: date,
+) -> List[dict]:
+    """
+    For each work center: actual hours used vs capacity in the date range.
+    Capacity hours = capacity value treated as units/hr × 8hr/day × days.
+    Actual hours = sum of completed WorkOrder durations.
+    """
+    from app.models.production_advanced import WorkCenter, WorkOrderStatus
+
+    wc_q = await db.execute(
+        select(WorkCenter).where(WorkCenter.status.in_(["ACTIVE", "MAINTENANCE"]))
+        .order_by(WorkCenter.name)
+    )
+    work_centers = wc_q.scalars().all()
+
+    days_in_range = max((date_to - date_from).days + 1, 1)
+
+    rows = []
+    for wc in work_centers:
+        # Actual hours from WorkOrders with start_time/end_time in range
+        wo_q = await db.execute(
+            select(WorkOrder.start_time, WorkOrder.end_time)
+            .where(
+                WorkOrder.work_center_id == wc.id,
+                WorkOrder.start_time.isnot(None),
+                WorkOrder.end_time.isnot(None),
+                func.date(WorkOrder.start_time) >= date_from,
+                func.date(WorkOrder.start_time) <= date_to,
+            )
+        )
+        wo_rows = wo_q.all()
+
+        actual_hours = sum(
+            (end - start).total_seconds() / 3600
+            for start, end in wo_rows
+            if start and end
+        )
+        completed_orders = len(wo_rows)
+
+        # Capacity: assume 8-hour shift, 1 shift/day by default
+        # Use work center capacity_uom as signal — if "units/hr" we can't convert
+        # Fall back to: 8 hr/day × days_in_range
+        capacity_hours = 8.0 * days_in_range
+
+        utilization_pct = (actual_hours / capacity_hours * 100) if capacity_hours > 0 else None
+
+        # Labor + machine cost from LaborLog and WorkOrder durations in range
+        labor_q = await db.execute(
+            select(func.coalesce(func.sum(LaborLog.hours_worked), 0))
+            .join(WorkOrder, LaborLog.work_order_id == WorkOrder.id)
+            .where(
+                WorkOrder.work_center_id == wc.id,
+                func.date(WorkOrder.start_time) >= date_from,
+                func.date(WorkOrder.start_time) <= date_to,
+            )
+        )
+        labor_hours = _dec(labor_q.scalar())
+        labor_cost = float(labor_hours * _dec(wc.labor_rate_per_hour)) if wc.labor_rate_per_hour else 0.0
+        machine_cost = float(_dec(actual_hours) * _dec(wc.machine_cost_per_hour)) if wc.machine_cost_per_hour else 0.0
+
+        rows.append({
+            "work_center_id":        str(wc.id),
+            "work_center_name":      wc.name,
+            "work_center_code":      wc.work_center_id,
+            "capacity_hours":        capacity_hours,
+            "actual_hours_used":     round(actual_hours, 2),
+            "utilization_pct":       round(utilization_pct, 1) if utilization_pct is not None else None,
+            "completed_orders":      completed_orders,
+            "labor_cost_incurred":   round(labor_cost, 2),
+            "machine_cost_incurred": round(machine_cost, 2),
+        })
+    return rows

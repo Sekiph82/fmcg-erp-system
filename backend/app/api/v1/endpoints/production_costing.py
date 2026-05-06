@@ -29,6 +29,7 @@ from app.models.production import ProductionOrder, ProductionOrderStatus
 from app.models.master import Product
 from app.schemas.production_costing import (
     OrderCostBreakdown, CostReportRow, CostTrendPoint, CostKPIs,
+    WIPRow, VarianceDetailRow, WorkCenterUtilRow,
 )
 from app.services import production_cost_service as svc
 
@@ -168,3 +169,40 @@ async def finalize_order_cost(
             if order.costing_finalized_at else None
         ),
     )
+
+
+# ── WIP Valuation ─────────────────────────────────────────────────────────────
+
+@router.get("/wip", response_model=List[WIPRow])
+async def get_wip_report(
+    db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
+):
+    rows = await svc.get_wip_report(db)
+    return [WIPRow(**r) for r in rows]
+
+
+# ── Variance Detail ───────────────────────────────────────────────────────────
+
+@router.get("/variance-detail", response_model=List[VarianceDetailRow])
+async def get_variance_detail(
+    date_from: Optional[date] = None,
+    date_to: Optional[date] = None,
+    db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
+):
+    rows = await svc.get_variance_detail(db, date_from, date_to)
+    return [VarianceDetailRow(**r) for r in rows]
+
+
+# ── Work Center Utilization ───────────────────────────────────────────────────
+
+@router.get("/work-center-utilization", response_model=List[WorkCenterUtilRow])
+async def get_work_center_utilization(
+    date_from: date = Query(...),
+    date_to: date = Query(...),
+    db: AsyncSession = Depends(get_db),
+    _user=Depends(get_current_user),
+):
+    rows = await svc.get_work_center_utilization(db, date_from, date_to)
+    return [WorkCenterUtilRow(**r) for r in rows]
