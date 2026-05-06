@@ -10,7 +10,7 @@ Phase 1 — Critical ERP Foundation
 
 ## Current Gap
 
-Gap 9 — Workflow Engine & Approval System
+Gap 10 — Batch Recall Operational Hardening
 
 
 
@@ -21,6 +21,8 @@ Not started yet.
 
 
 ## Completed in Last Run
+
+Gap 9 — Workflow Engine & Approval System
 
 Gap 8 — Inventory Valuation & Costing Engine
 
@@ -58,11 +60,11 @@ Gap 1 — Full Double-Entry General Ledger
 
 8\. Inventory Valuation & Costing Engine
 
+9\. Workflow Engine & Approval System
+
 
 
 ## Remaining Gap Items
-
-9\. Workflow Engine & Approval System
 
 10\. Batch Recall Operational Hardening
 
@@ -190,26 +192,24 @@ Gap 1 — Full Double-Entry General Ledger
 
 ## Next Immediate Task
 
-Implement Gap 9 — Workflow Engine & Approval System.
+Implement Gap 10 — Batch Recall Operational Hardening.
 
-Existing system has basic roles + approve endpoints on individual modules (budget, MRP, shop floor).
-No generic approval engine.
+Existing system has recall logic (traceability module). Need enterprise-grade hardening.
 
 Files to inspect first:
-- backend/app/models/ — check if any file has "Workflow", "ApprovalMatrix", "Approval" models
-- backend/app/api/v1/endpoints/ — check for any workflow endpoint
-- frontend/src/app/dashboard/ — check for any approval or workflow pages
+- backend/app/models/traceability.py — list existing recall models
+- backend/app/api/v1/endpoints/traceability.py — list existing endpoints
+- frontend/src/app/dashboard/ — find recall/traceability pages
 
-Key items to build:
-1. ApprovalRule model: module (PR/PO/Budget/Production), amount_threshold, role_required, level (1/2/3)
-2. ApprovalRequest model: object_type, object_id, status (PENDING/APPROVED/REJECTED/ESCALATED),
-   requested_by, current_level, steps (JSON audit trail)
-3. Service: submit_for_approval(db, object_type, object_id, amount, requester_id)
-4. Service: approve(db, request_id, approver_id, notes)
-5. Service: reject(db, request_id, approver_id, reason)
-6. Service: escalate_overdue(db) — find requests > SLA hours, escalate
-7. Endpoints: GET /approvals/ (my pending), POST /approvals/{id}/approve, POST /approvals/{id}/reject
-8. Frontend: approval inbox page (/dashboard/approvals)
+Key items to add (only what's missing):
+- Recall drill/test simulation mode (RecallDrill model)
+- Predefined communication templates (RecallTemplate model)
+- Effectiveness validation (closure checklist per recall)
+- Immutable audit trail (every status change logged)
+- Risk-based dashboard with SLA tracking
+- Evidence/document attachment system
+
+DO NOT re-implement what exists. Inspect first.
 
 
 
@@ -221,14 +221,15 @@ App uses create_all — no migration needed.
 
 ## Files Changed in Last Run
 
-Gap 8 additions:
-backend/app/models/inventory.py — Added InventoryValuationMethod enum + CostLayer model
-backend/app/schemas/inventory.py — Added ValuationRow, ValuationSummary, AgingRow schemas
-backend/app/services/inventory_service.py — Added create_cost_layer(), consume_fifo_layers(), inventory_valuation_report(), inventory_aging_report() service functions
-backend/app/api/v1/endpoints/inventory.py — Added GET /inventory/valuation and GET /inventory/aging endpoints
-frontend/src/lib/inventory.ts — Added ValuationRow, ValuationSummary, AgingRow types + inventoryApi.valuation() + inventoryApi.aging()
-frontend/src/app/dashboard/inventory/valuation/page.tsx — New valuation dashboard: KPI cards, Valuation Report tab (FIFO/WAC/Std side-by-side), Aging tab (bucket summary + layer detail)
-frontend/src/components/nav-config.tsx — Added Valuation nav entry under Warehouse & Inventory
+Gap 9 additions:
+backend/app/models/workflow.py — New file: ApprovalModule/ApprovalStatus enums + ApprovalRule/ApprovalRequest/ApprovalStep models
+backend/app/schemas/workflow.py — New file: ApprovalRuleCreate/Read/Update, ApprovalStepRead, ApprovalRequestRead, ApprovalSubmit, ApprovalAction, ApprovalReject schemas
+backend/app/services/approval_service.py — New file: submit_for_approval(), approve_request(), reject_request(), cancel_request(), escalate_overdue(), get_pending_for_user()
+backend/app/api/v1/endpoints/approvals.py — New file: GET / (inbox), GET /all, GET /{id}, POST /submit, POST /{id}/approve, POST /{id}/reject, POST /{id}/cancel, POST /admin/escalate-overdue, GET /rules/, POST /rules/, PATCH /rules/{id}, DELETE /rules/{id}
+backend/app/api/v1/router.py — Registered approvals router at /approvals
+frontend/src/lib/approvals.ts — New file: ApprovalModule/Status/Step/Request/Rule types + approvalsApi + STATUS_COLOR map
+frontend/src/app/dashboard/approvals/page.tsx — New approval inbox page: My Inbox tab, All Requests tab, Rules admin tab, detail panel with step timeline, approve/reject actions, new rule modal
+frontend/src/components/nav-config.tsx — Added Approval Inbox nav entry under Admin & System
 
 
 
@@ -241,18 +242,15 @@ Frontend TypeScript: PASS (tsc --noEmit, 0 errors)
 
 ## Notes for Next Claude Run
 
-Gap 9: Workflow Engine & Approval System.
+Gap 10: Batch Recall Operational Hardening.
 
-Inspect backend/app/models/ for any existing Workflow/Approval models before adding new ones.
-Also check if notifications.py service can be used for approval notifications.
+Inspect backend/app/models/traceability.py and backend/app/api/v1/endpoints/traceability.py
+BEFORE adding anything. The system has recall logic already.
 
-The approval engine should be GENERIC — not tied to one module. Any module (PO, PR, Budget,
-Production Order, Invoice) can submit an approval request. The ApprovalRule table maps
-(module, amount_threshold) → (required_role, level).
-
-Multi-level approvals: Level 1 (supervisor) → Level 2 (manager) → Level 3 (director).
-Amount thresholds trigger different levels.
-
-Delegation: if approver is out, requests auto-route to delegate (delegate_id on User or separate table).
-
-SLA: each rule has sla_hours. If request sits > sla_hours, auto-escalate to next level.
+Expected true gaps:
+1. RecallDrill model — simulate recall without actually stopping production
+2. RecallCommunication templates — predefined messages per audience (retailer/consumer/regulator)
+3. RecallEffectiveness — closure report: % units recovered, time to complete, SLA compliance
+4. Immutable audit steps on recall (every status change: who/when/what)
+5. Risk-based dashboard: severity × affected units × days open = risk score
+6. Evidence attachments (FK to documents module)
