@@ -15,6 +15,7 @@ from app.schemas.inventory import (
     StockMovementUpdate,
     StockEntryRequest, StockIssueRequest, StockTransferRequest,
     StockAdjustRequest,
+    ValuationSummary, AgingRow,
 )
 
 logger = logging.getLogger(__name__)
@@ -331,3 +332,25 @@ async def channel_stock_summary(
         }
         for r in rows
     ]
+
+
+# ── Inventory Valuation ────────────────────────────────────────────────────────
+
+@router.get("/valuation", response_model=ValuationSummary,
+            dependencies=[Depends(require_permission("inventory", "view"))])
+async def inventory_valuation(
+    warehouse_id: Optional[uuid.UUID] = None,
+    db: AsyncSession = Depends(get_db),
+):
+    """FIFO / WAC / Standard cost valuation for all active stocks."""
+    return await svc.inventory_valuation_report(db, warehouse_id=warehouse_id)
+
+
+@router.get("/aging", response_model=List[AgingRow],
+            dependencies=[Depends(require_permission("inventory", "view"))])
+async def inventory_aging(
+    warehouse_id: Optional[uuid.UUID] = None,
+    db: AsyncSession = Depends(get_db),
+):
+    """Inventory aging: days held per cost layer, grouped into buckets."""
+    return await svc.inventory_aging_report(db, warehouse_id=warehouse_id)

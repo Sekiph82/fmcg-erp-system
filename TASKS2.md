@@ -10,7 +10,7 @@ Phase 1 — Critical ERP Foundation
 
 ## Current Gap
 
-Gap 8 — Inventory Valuation & Costing Engine
+Gap 9 — Workflow Engine & Approval System
 
 
 
@@ -21,6 +21,8 @@ Not started yet.
 
 
 ## Completed in Last Run
+
+Gap 8 — Inventory Valuation & Costing Engine
 
 Gap 7 — MRP Engine Hardening
 
@@ -54,11 +56,11 @@ Gap 1 — Full Double-Entry General Ledger
 
 7\. MRP Engine Hardening
 
+8\. Inventory Valuation & Costing Engine
+
 
 
 ## Remaining Gap Items
-
-8\. Inventory Valuation & Costing Engine
 
 9\. Workflow Engine & Approval System
 
@@ -188,31 +190,26 @@ Gap 1 — Full Double-Entry General Ledger
 
 ## Next Immediate Task
 
-Implement Gap 8 — Inventory Valuation & Costing Engine.
+Implement Gap 9 — Workflow Engine & Approval System.
 
-Existing system has:
-- Stock model (quantity_on_hand per warehouse/lot/product)
-- MaterialConsumption (actual qty used in production)
-- ProductionOrder (with total_material_cost finalized)
-- StockMovement (every qty change)
-- ProductCost / ProductionCostEntry in finance.py
-
-Key gaps to fill:
-- FIFO / Weighted Average / Standard Cost valuation methods
-- Cost layer tracking (FIFO requires ordered layers: date, qty, unit_cost)
-- Real-time COGS posting when stock is issued/sold
-- Inventory valuation report (total inventory value by method)
-- Inventory aging valuation (how long stock has been held)
-- GL integration for every stock movement
+Existing system has basic roles + approve endpoints on individual modules (budget, MRP, shop floor).
+No generic approval engine.
 
 Files to inspect first:
-- backend/app/models/inventory.py (existing Stock, StockMovement models)
-- backend/app/models/finance.py (existing GL/Journal models)
-- backend/app/services/inventory_service.py (if exists)
-- frontend/src/app/dashboard/inventory/ (existing pages)
+- backend/app/models/ — check if any file has "Workflow", "ApprovalMatrix", "Approval" models
+- backend/app/api/v1/endpoints/ — check for any workflow endpoint
+- frontend/src/app/dashboard/ — check for any approval or workflow pages
 
-DO NOT re-implement what exists. Inspect existing stock movement and costing models.
-Add only the FIFO layer tracking and valuation reports.
+Key items to build:
+1. ApprovalRule model: module (PR/PO/Budget/Production), amount_threshold, role_required, level (1/2/3)
+2. ApprovalRequest model: object_type, object_id, status (PENDING/APPROVED/REJECTED/ESCALATED),
+   requested_by, current_level, steps (JSON audit trail)
+3. Service: submit_for_approval(db, object_type, object_id, amount, requester_id)
+4. Service: approve(db, request_id, approver_id, notes)
+5. Service: reject(db, request_id, approver_id, reason)
+6. Service: escalate_overdue(db) — find requests > SLA hours, escalate
+7. Endpoints: GET /approvals/ (my pending), POST /approvals/{id}/approve, POST /approvals/{id}/reject
+8. Frontend: approval inbox page (/dashboard/approvals)
 
 
 
@@ -220,23 +217,18 @@ Add only the FIFO layer tracking and valuation reports.
 
 App uses create_all — no migration needed.
 
-GitHub push was blocked by 840MB PDF in history. Fixed: rewrote 12 commits with
-git filter-branch, added KenyaFactoryAI/imports/**/*.pdf to .gitignore, pushed
-successfully (commit a2e38a6).
-
 
 
 ## Files Changed in Last Run
 
-Gap 7 additions:
-backend/app/models/master.py — Added minimum_order_qty field to Material model
-backend/app/models/mrp.py — Added frozen_horizon_days to MRPRun; added MRPExceptionType, MRPExceptionSeverity enums; added MRPException model
-backend/app/schemas/mrp.py — Added frozen_horizon_days to MRPRunCreate/MRPRunOut; added MRPExceptionOut schema
-backend/app/services/mrp_service.py — Fixed MOQ to use Material.minimum_order_qty with ceiling rounding; added frozen window filter to _build_so_demand; added exception generation (SHORTAGE/EXCESS_STOCK/LATE_ORDER) at end of _do_mrp; added frozen_horizon_days to create_mrp_run
-backend/app/api/v1/endpoints/mrp.py — Added MRPException/MRPExceptionOut imports; pass frozen_horizon_days in trigger; added GET /exceptions and PATCH /exceptions/{id}/acknowledge endpoints
-frontend/src/lib/mrp.ts — Added frozen_horizon_days to MRPRun/MRPRunCreate; added MRPException type; added getExceptions/acknowledgeException API methods
-frontend/src/app/dashboard/mrp/workbench/page.tsx — New planner workbench page: exceptions tab (with acknowledge), supply/demand tab, draft suggestions tab (quick approve/reject)
-frontend/src/components/nav-config.tsx — Added Planner Workbench nav entry
+Gap 8 additions:
+backend/app/models/inventory.py — Added InventoryValuationMethod enum + CostLayer model
+backend/app/schemas/inventory.py — Added ValuationRow, ValuationSummary, AgingRow schemas
+backend/app/services/inventory_service.py — Added create_cost_layer(), consume_fifo_layers(), inventory_valuation_report(), inventory_aging_report() service functions
+backend/app/api/v1/endpoints/inventory.py — Added GET /inventory/valuation and GET /inventory/aging endpoints
+frontend/src/lib/inventory.ts — Added ValuationRow, ValuationSummary, AgingRow types + inventoryApi.valuation() + inventoryApi.aging()
+frontend/src/app/dashboard/inventory/valuation/page.tsx — New valuation dashboard: KPI cards, Valuation Report tab (FIFO/WAC/Std side-by-side), Aging tab (bucket summary + layer detail)
+frontend/src/components/nav-config.tsx — Added Valuation nav entry under Warehouse & Inventory
 
 
 
@@ -249,20 +241,18 @@ Frontend TypeScript: PASS (tsc --noEmit, 0 errors)
 
 ## Notes for Next Claude Run
 
-Gap 8: Inventory Valuation & Costing Engine.
+Gap 9: Workflow Engine & Approval System.
 
-Inspect these files first:
-- backend/app/models/inventory.py — Stock, Lot, StockMovement models
-- backend/app/models/finance.py — JournalEntry/JournalLine for GL posting
-- backend/app/services/inventory_service.py (may not exist — check)
+Inspect backend/app/models/ for any existing Workflow/Approval models before adding new ones.
+Also check if notifications.py service can be used for approval notifications.
 
-Key additions needed:
-1. CostLayer model — FIFO layers: product_id/material_id, lot_id, receipt_date, qty, unit_cost, qty_remaining
-2. InventoryValuationMethod enum (FIFO, WEIGHTED_AVG, STANDARD)
-3. Service: compute_fifo_cost() — consumes layers in FIFO order
-4. Service: weighted_avg_cost() — total_value / total_qty
-5. Service: inventory_valuation_report() — total inventory value by method
-6. Service: inventory_aging() — days held × qty × unit_cost per lot
-7. GL posting on stock issue — debit COGS, credit Inventory Asset
-8. Endpoint: GET /inventory/valuation — summary by method
-9. Frontend: valuation dashboard page at /dashboard/inventory/valuation
+The approval engine should be GENERIC — not tied to one module. Any module (PO, PR, Budget,
+Production Order, Invoice) can submit an approval request. The ApprovalRule table maps
+(module, amount_threshold) → (required_role, level).
+
+Multi-level approvals: Level 1 (supervisor) → Level 2 (manager) → Level 3 (director).
+Amount thresholds trigger different levels.
+
+Delegation: if approver is out, requests auto-route to delegate (delegate_id on User or separate table).
+
+SLA: each rule has sla_hours. If request sits > sla_hours, auto-escalate to next level.

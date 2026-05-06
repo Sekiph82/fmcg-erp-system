@@ -238,6 +238,48 @@ export const serialApi = {
   },
 };
 
+// ── Inventory Valuation Types ─────────────────────────────────────────────────
+
+export interface ValuationRow {
+  stock_type:       string;
+  item_id:          string;
+  item_sku?:        string | null;
+  item_name?:       string | null;
+  warehouse_id?:    string | null;
+  warehouse_name?:  string | null;
+  lot_id?:          string | null;
+  lot_number?:      string | null;
+  qty_on_hand:      number;
+  fifo_unit_cost?:  number | null;
+  fifo_total_value?: number | null;
+  wac_unit_cost?:   number | null;
+  wac_total_value?: number | null;
+  std_unit_cost?:   number | null;
+  std_total_value?: number | null;
+}
+
+export interface ValuationSummary {
+  method:      string;
+  total_value: number;
+  item_count:  number;
+  rows:        ValuationRow[];
+}
+
+export interface AgingRow {
+  stock_type:    string;
+  item_id:       string;
+  item_sku?:     string | null;
+  item_name?:    string | null;
+  lot_id?:       string | null;
+  lot_number?:   string | null;
+  receipt_date:  string;
+  days_held:     number;
+  qty_remaining: number;
+  unit_cost:     number;
+  total_value:   number;
+  aging_bucket:  string;
+}
+
 export const inventoryApi = {
   async stockSummary(params?: { warehouse_id?: string; product_id?: string }): Promise<StockSummary[]> {
     const res = await apiClient.get<StockSummary[]>("/api/v1/inventory/stock/summary", { params });
@@ -289,5 +331,19 @@ export const inventoryApi = {
 
   async deleteLot(id: string): Promise<void> {
     await apiClient.delete(`/api/v1/inventory/lots/${id}`).then((r) => r.data);
+  },
+
+  async valuation(warehouse_id?: string): Promise<ValuationSummary> {
+    const res = await apiClient.get<ValuationSummary>("/api/v1/inventory/valuation", {
+      params: warehouse_id ? { warehouse_id } : undefined,
+    });
+    return res.data;
+  },
+
+  async aging(warehouse_id?: string): Promise<AgingRow[]> {
+    const res = await apiClient.get<AgingRow[]>("/api/v1/inventory/aging", {
+      params: warehouse_id ? { warehouse_id } : undefined,
+    });
+    return res.data;
   },
 };

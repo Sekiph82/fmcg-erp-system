@@ -285,9 +285,10 @@ export const NAV_CONFIG: NavEntry[] = [
     label: "Warehouse & Inventory",
     icon: md("M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10"),
     items: [
-      { label: "Inventory",        href: "/dashboard/inventory",           permission: "inventory.view" },
-      { label: "Stock Movements",  href: "/dashboard/movements",           permission: "inventory.view" },
-      { label: "Serial Numbers",   href: "/dashboard/inventory/serials",   permission: "inventory.view" },
+      { label: "Inventory",        href: "/dashboard/inventory",             permission: "inventory.view" },
+      { label: "Stock Movements",  href: "/dashboard/movements",             permission: "inventory.view" },
+      { label: "Serial Numbers",   href: "/dashboard/inventory/serials",     permission: "inventory.view" },
+      { label: "Valuation",        href: "/dashboard/inventory/valuation",   permission: "inventory.view" },
       { label: "WMS / Zones",      href: "/dashboard/wms",                 permission: "wms.view" },
       { label: "Stock Counts",     href: "/dashboard/wms/counts",          permission: "wms.view" },
       { label: "WMS Reports",      href: "/dashboard/wms/reports",         permission: "wms.view" },

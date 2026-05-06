@@ -11,16 +11,16 @@ All stock mutations go through here. Rules:
 """
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime, timezone
 from decimal import Decimal
 from typing import Optional, List
 import uuid
 
 from fastapi import HTTPException, status
-from sqlalchemy import select, and_
+from sqlalchemy import select, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.inventory import Stock, Lot, StockMovement, MovementType, StockType
+from app.models.inventory import Stock, Lot, StockMovement, MovementType, StockType, CostLayer
 from app.models.master import Product, Warehouse
 from app.schemas.inventory import (
     StockEntryRequest,
@@ -28,6 +28,9 @@ from app.schemas.inventory import (
     StockTransferRequest,
     StockSummaryRead,
     MovementDetailRead,
+    ValuationRow,
+    ValuationSummary,
+    AgingRow,
 )
 
 
@@ -594,3 +597,253 @@ async def get_movement_detail(
             created_by_username=m.created_by.username if m.created_by else None,
         ))
     return out
+
+
+# ── Cost Layer management ──────────────────────────────────────────────────────
+
+async def create_cost_layer(
+    db: AsyncSession,
+    *,
+    stock_type: StockType,
+    product_id: Optional[uuid.UUID],
+    material_id: Optional[uuid.UUID],
+    lot_id: Optional[uuid.UUID],
+    warehouse_id: Optional[uuid.UUID],
+    movement_id: Optional[uuid.UUID],
+    receipt_date: date,
+    qty: Decimal,
+    unit_cost: Decimal,
+) -> CostLayer:
+    """Create a FIFO cost layer on goods receipt."""
+    layer = CostLayer(
+        stock_type=stock_type,
+        product_id=product_id,
+        material_id=material_id,
+        lot_id=lot_id,
+        warehouse_id=warehouse_id,
+        movement_id=movement_id,
+        receipt_date=receipt_date,
+        qty_received=qty,
+        qty_remaining=qty,
+        unit_cost=unit_cost,
+        total_value=qty * unit_cost,
+        is_exhausted=False,
+    )
+    db.add(layer)
+    await db.flush()
+    return layer
+
+
+async def consume_fifo_layers(
+    db: AsyncSession,
+    *,
+    stock_type: StockType,
+    product_id: Optional[uuid.UUID],
+    material_id: Optional[uuid.UUID],
+    warehouse_id: Optional[uuid.UUID],
+    qty_to_consume: Decimal,
+) -> Decimal:
+    """
+    Consume cost layers FIFO order. Returns weighted average cost of consumed qty.
+    Updates qty_remaining + is_exhausted on affected layers.
+    """
+    q = select(CostLayer).where(
+        CostLayer.stock_type == stock_type,
+        CostLayer.is_exhausted.is_(False),
+    ).order_by(CostLayer.receipt_date.asc(), CostLayer.created_at.asc())
+
+    if product_id:
+        q = q.where(CostLayer.product_id == product_id)
+    if material_id:
+        q = q.where(CostLayer.material_id == material_id)
+    if warehouse_id:
+        q = q.where(CostLayer.warehouse_id == warehouse_id)
+
+    result = await db.execute(q)
+    layers = list(result.scalars().all())
+
+    remaining = qty_to_consume
+    total_cost_consumed = Decimal("0")
+
+    for layer in layers:
+        if remaining <= 0:
+            break
+        take = min(layer.qty_remaining, remaining)
+        total_cost_consumed += take * layer.unit_cost
+        layer.qty_remaining -= take
+        layer.total_value = layer.qty_remaining * layer.unit_cost
+        if layer.qty_remaining <= 0:
+            layer.is_exhausted = True
+        remaining -= take
+
+    await db.flush()
+    consumed = qty_to_consume - remaining
+    return (total_cost_consumed / consumed).quantize(Decimal("0.0001")) if consumed > 0 else Decimal("0")
+
+
+# ── Inventory Valuation Report ─────────────────────────────────────────────────
+
+async def inventory_valuation_report(
+    db: AsyncSession,
+    warehouse_id: Optional[uuid.UUID] = None,
+) -> ValuationSummary:
+    """
+    Compute inventory value for all active stocks using FIFO, WAC, and Standard cost.
+    Returns all three side-by-side per stock line.
+    """
+    from sqlalchemy.orm import selectinload
+    from app.models.master import Material
+
+    q = select(Stock).options(
+        selectinload(Stock.product),
+        selectinload(Stock.material),
+        selectinload(Stock.warehouse),
+        selectinload(Stock.lot),
+    )
+    if warehouse_id:
+        q = q.where(Stock.warehouse_id == warehouse_id)
+    q = q.where(Stock.quantity_on_hand > 0)
+    stocks = (await db.execute(q)).scalars().all()
+
+    rows: list[ValuationRow] = []
+    total_fifo = Decimal("0")
+
+    for s in stocks:
+        qty = Decimal(str(s.quantity_on_hand))
+        is_product = s.stock_type == StockType.PRODUCT
+
+        # FIFO: sum active layers
+        layer_q = select(
+            func.coalesce(func.sum(CostLayer.total_value), 0),
+            func.coalesce(func.sum(CostLayer.qty_remaining), 0),
+        ).where(
+            CostLayer.is_exhausted.is_(False),
+            CostLayer.warehouse_id == s.warehouse_id,
+        )
+        if is_product and s.product_id:
+            layer_q = layer_q.where(CostLayer.product_id == s.product_id)
+        else:
+            layer_q = layer_q.where(CostLayer.material_id == s.material_id)
+
+        lr = (await db.execute(layer_q)).one()
+        fifo_value = Decimal(str(lr[0]))
+        layer_qty = Decimal(str(lr[1]))
+        fifo_unit = (fifo_value / layer_qty).quantize(Decimal("0.0001")) if layer_qty > 0 else None
+        fifo_total = (fifo_unit * qty) if fifo_unit else None
+
+        # WAC: total layer value / total layer qty (same formula)
+        wac_unit = fifo_unit  # same layers, same result
+        wac_total = fifo_total
+
+        # Standard cost
+        std_unit = None
+        if is_product and s.product:
+            std_unit = Decimal(str(s.product.standard_cost)) if s.product.standard_cost else None
+        elif s.material:
+            std_unit = Decimal(str(s.material.standard_cost)) if s.material.standard_cost else None
+
+        std_total = (std_unit * qty) if std_unit else None
+
+        if fifo_total:
+            total_fifo += fifo_total
+
+        item = s.product if is_product else s.material
+        rows.append(ValuationRow(
+            stock_type=s.stock_type.value,
+            item_id=s.product_id or s.material_id,
+            item_sku=item.sku if item and hasattr(item, "sku") else (item.code if item else None),
+            item_name=item.name if item else None,
+            warehouse_id=s.warehouse_id,
+            warehouse_name=s.warehouse.name if s.warehouse else None,
+            lot_id=s.lot_id,
+            lot_number=s.lot.lot_number if s.lot else None,
+            qty_on_hand=qty,
+            fifo_unit_cost=fifo_unit,
+            fifo_total_value=fifo_total,
+            wac_unit_cost=wac_unit,
+            wac_total_value=wac_total,
+            std_unit_cost=std_unit,
+            std_total_value=std_total,
+        ))
+
+    return ValuationSummary(
+        method="FIFO",
+        total_value=total_fifo,
+        item_count=len(rows),
+        rows=rows,
+    )
+
+
+# ── Inventory Aging Report ─────────────────────────────────────────────────────
+
+def _aging_bucket(days: int) -> str:
+    if days <= 30:  return "0-30"
+    if days <= 60:  return "31-60"
+    if days <= 90:  return "61-90"
+    if days <= 180: return "91-180"
+    return "180+"
+
+
+async def inventory_aging_report(
+    db: AsyncSession,
+    warehouse_id: Optional[uuid.UUID] = None,
+) -> List[AgingRow]:
+    """Return one row per active cost layer showing days held and value."""
+    from app.models.master import Material
+
+    q = select(CostLayer).where(
+        CostLayer.is_exhausted.is_(False),
+        CostLayer.qty_remaining > 0,
+    ).order_by(CostLayer.receipt_date.asc())
+
+    if warehouse_id:
+        q = q.where(CostLayer.warehouse_id == warehouse_id)
+
+    layers = (await db.execute(q)).scalars().all()
+
+    if not layers:
+        return []
+
+    product_ids = {l.product_id for l in layers if l.product_id}
+    material_ids = {l.material_id for l in layers if l.material_id}
+    lot_ids = {l.lot_id for l in layers if l.lot_id}
+
+    products = {}
+    if product_ids:
+        from app.models.master import Product as Prod
+        pr = await db.execute(select(Prod).where(Prod.id.in_(product_ids)))
+        products = {p.id: p for p in pr.scalars()}
+
+    materials = {}
+    if material_ids:
+        from app.models.master import Material as Mat
+        mr = await db.execute(select(Mat).where(Mat.id.in_(material_ids)))
+        materials = {m.id: m for m in mr.scalars()}
+
+    lots = {}
+    if lot_ids:
+        from app.models.inventory import Lot as LotModel
+        lr = await db.execute(select(LotModel).where(LotModel.id.in_(lot_ids)))
+        lots = {l.id: l for l in lr.scalars()}
+
+    today = date.today()
+    rows = []
+    for layer in layers:
+        days_held = (today - layer.receipt_date).days
+        item = products.get(layer.product_id) if layer.product_id else materials.get(layer.material_id)
+        lot = lots.get(layer.lot_id) if layer.lot_id else None
+        rows.append(AgingRow(
+            stock_type=layer.stock_type.value,
+            item_id=layer.product_id or layer.material_id,
+            item_sku=item.sku if item and hasattr(item, "sku") else (item.code if item else None),
+            item_name=item.name if item else None,
+            lot_id=layer.lot_id,
+            lot_number=lot.lot_number if lot else None,
+            receipt_date=layer.receipt_date,
+            days_held=days_held,
+            qty_remaining=layer.qty_remaining,
+            unit_cost=layer.unit_cost,
+            total_value=layer.total_value,
+            aging_bucket=_aging_bucket(days_held),
+        ))
+    return rows

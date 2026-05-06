@@ -9,6 +9,12 @@ from datetime import datetime, timezone
 from app.db.base import Base, TimestampMixin
 
 
+class InventoryValuationMethod(str, enum.Enum):
+    FIFO         = "FIFO"
+    WEIGHTED_AVG = "WEIGHTED_AVG"
+    STANDARD     = "STANDARD"
+
+
 class MovementType(str, enum.Enum):
     RECEIPT = "RECEIPT"           # Goods received from supplier
     ISSUE = "ISSUE"               # Goods issued for production/sale
@@ -147,3 +153,33 @@ class SerialMovement(Base, TimestampMixin):
     from_warehouse = relationship("Warehouse", foreign_keys=[from_warehouse_id])
     to_warehouse = relationship("Warehouse", foreign_keys=[to_warehouse_id])
     moved_by = relationship("User", foreign_keys=[moved_by_id])
+
+
+# ── Cost Layers (FIFO / WAC valuation) ───────────────────────────────────────
+
+class CostLayer(Base, TimestampMixin):
+    """
+    One record per goods receipt event per product/material.
+    FIFO valuation consumes layers in receipt_date order.
+    WAC uses all active layers to compute weighted average.
+    """
+    __tablename__ = "cost_layers"
+
+    id              = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    stock_type      = Column(Enum(StockType), nullable=False)
+    product_id      = Column(UUID(as_uuid=True), ForeignKey("products.id",  ondelete="RESTRICT"), nullable=True)
+    material_id     = Column(UUID(as_uuid=True), ForeignKey("materials.id", ondelete="RESTRICT"), nullable=True)
+    lot_id          = Column(UUID(as_uuid=True), ForeignKey("lots.id",      ondelete="SET NULL"),  nullable=True)
+    warehouse_id    = Column(UUID(as_uuid=True), ForeignKey("warehouses.id", ondelete="SET NULL"), nullable=True)
+    movement_id     = Column(UUID(as_uuid=True), ForeignKey("stock_movements.id", ondelete="SET NULL"), nullable=True)
+    receipt_date    = Column(Date, nullable=False)
+    qty_received    = Column(Numeric(14, 3), nullable=False)
+    qty_remaining   = Column(Numeric(14, 3), nullable=False)   # decremented as stock is issued
+    unit_cost       = Column(Numeric(18, 6), nullable=False)
+    total_value     = Column(Numeric(18, 4), nullable=False)   # qty_remaining × unit_cost (kept in sync)
+    is_exhausted    = Column(Boolean, default=False, nullable=False, index=True)
+
+    product   = relationship("Product")
+    material  = relationship("Material")
+    lot       = relationship("Lot")
+    warehouse = relationship("Warehouse")

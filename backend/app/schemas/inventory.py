@@ -164,3 +164,45 @@ class StockMovementUpdate(BaseModel):
     """Allowed edits on a StockMovement (notes and reference only)."""
     reference_number: Optional[str] = None
     notes: Optional[str] = None
+
+
+# ── Inventory Valuation schemas ────────────────────────────────────────────────
+
+class ValuationRow(BaseModel):
+    stock_type:       str
+    item_id:          uuid.UUID
+    item_sku:         Optional[str]
+    item_name:        Optional[str]
+    warehouse_id:     Optional[uuid.UUID]
+    warehouse_name:   Optional[str]
+    lot_id:           Optional[uuid.UUID]
+    lot_number:       Optional[str]
+    qty_on_hand:      Decimal
+    fifo_unit_cost:   Optional[Decimal]
+    fifo_total_value: Optional[Decimal]
+    wac_unit_cost:    Optional[Decimal]
+    wac_total_value:  Optional[Decimal]
+    std_unit_cost:    Optional[Decimal]
+    std_total_value:  Optional[Decimal]
+
+
+class ValuationSummary(BaseModel):
+    method:      str          # FIFO | WEIGHTED_AVG | STANDARD
+    total_value: Decimal
+    item_count:  int
+    rows:        list[ValuationRow]
+
+
+class AgingRow(BaseModel):
+    stock_type:   str
+    item_id:      uuid.UUID
+    item_sku:     Optional[str]
+    item_name:    Optional[str]
+    lot_id:       Optional[uuid.UUID]
+    lot_number:   Optional[str]
+    receipt_date: date
+    days_held:    int
+    qty_remaining: Decimal
+    unit_cost:    Decimal
+    total_value:  Decimal
+    aging_bucket: str          # 0-30 / 31-60 / 61-90 / 91-180 / 180+
