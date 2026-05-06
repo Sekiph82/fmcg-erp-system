@@ -10,7 +10,7 @@ Phase 2 — High Importance (Tier 2)
 
 ## Current Gap
 
-Gap 12 — Email Integration (Gmail / Outlook Sync)
+Gap 13 — Multi-Company / Multi-Branch Architecture
 
 
 
@@ -21,6 +21,8 @@ Not started yet.
 
 
 ## Completed in Last Run
+
+Gap 12 — Email Integration Gmail / Outlook Sync
 
 Gap 11 — Real-Time Team Messaging / Collaboration Channels
 
@@ -70,11 +72,11 @@ Gap 1 — Full Double-Entry General Ledger
 
 11\. Real-Time Team Messaging / Collaboration Channels
 
+12\. Email Integration Gmail / Outlook Sync
+
 
 
 ## Remaining Gap Items
-
-12\. Email Integration Gmail / Outlook Sync
 
 13\. Multi-Company / Multi-Branch Architecture
 
@@ -196,22 +198,27 @@ Gap 1 — Full Double-Entry General Ledger
 
 ## Next Immediate Task
 
-Implement Gap 12 — Email Integration (Gmail / Outlook Sync).
+Implement Gap 13 — Multi-Company / Multi-Branch Architecture.
 
-This is a complex external API integration. Inspect existing integrations module first:
-- backend/app/api/v1/endpoints/integrations.py — check for any email-related endpoints
-- backend/app/models/ — check for EmailMessage, EmailThread, EmailAccount models
+This is a STRUCTURAL gap. Inspect existing system first:
+- backend/app/models/user.py — does User have company_id?
+- backend/app/models/master.py — does Product/Material have company_id?
+- backend/app/models/ — check if Company or Branch model exists
 
-Build pragmatic implementation (no live OAuth in this build — use stub/simulation):
-1. EmailAccount model — provider (GMAIL/OUTLOOK/SMTP), email, connected status, sync_enabled
-2. EmailThread model — external_thread_id, subject, participants, linked_module, linked_object_id
-3. EmailMessage model — thread_id, from_email, to_emails, subject, body_text, received_at, is_inbound, is_read
-4. EmailTemplate model — name, subject_template, body_template, module
-5. Service: simulate_sync() — generate realistic demo email threads linked to customers/suppliers
-6. Service: send_from_record() — compose and log outgoing email linked to a record
-7. Endpoints: GET /email/accounts, GET /email/threads, GET /email/threads/{id}/messages,
-   POST /email/send, GET /email/threads?linked_to={object_id}
-8. Frontend: /dashboard/email page with thread list + message view + compose
+Key decisions:
+- Pragmatic approach: add Company model (not full multi-tenant DB isolation)
+- Add company_id + branch_id to key models (Product, Warehouse, Customer, Supplier, Budget, PO, SO)
+- Add Company CRUD + Branch CRUD endpoints
+- Add company context to user sessions (current_company_id in JWT or header)
+- Consolidated reporting: GET /companies/{id}/summary — cross-entity financial summary
+- Frontend: company switcher in header, company admin page
+
+DO NOT attempt full database-level tenancy isolation (too complex for this build).
+Use application-level filtering: each query adds .where(model.company_id == current_company_id).
+
+Scope: add Company + Branch models, user-company assignment, basic CRUD,
+company switcher UI. Do NOT rewrite existing queries to add company filtering
+(that is a separate migration effort).
 
 
 
@@ -223,14 +230,14 @@ App uses create_all — no migration needed.
 
 ## Files Changed in Last Run
 
-Gap 11 additions:
-backend/app/models/messaging.py — New file: ChannelType/MemberRole enums + ChatChannel, ChannelMember, ChannelMessage models
-backend/app/schemas/messaging.py — New file: ChannelCreate/Read, MessageCreate/Read, MessagePage, DMCreate schemas
-backend/app/api/v1/endpoints/messaging.py — New file: 11 endpoints (list/create channels, DM, join, get/post messages, thread, edit, delete, search)
-backend/app/api/v1/router.py — Registered messaging router at /messaging
-frontend/src/lib/messaging.ts — New file: Channel/Message/MessagePage types + messagingApi + timeAgo utility
-frontend/src/app/dashboard/messages/page.tsx — New full-featured chat UI: channel sidebar with unread badges, message thread with hover actions (reply/edit/delete), thread view, search overlay, compose with Enter-to-send, 5s auto-refresh polling
-frontend/src/components/nav-config.tsx — Added Team Messages nav entry under Chatter & Timeline
+Gap 12 additions:
+backend/app/models/email_integration.py — New file: EmailProvider enum + EmailAccount, EmailThread, EmailMessage, EmailTemplate models
+backend/app/schemas/email_integration.py — New file: full CRUD schemas for accounts, threads, messages, send request, templates
+backend/app/api/v1/endpoints/email_integration.py — New file: account CRUD, thread list/detail/link, send email, simulate sync (5 realistic demo emails), template CRUD
+backend/app/api/v1/router.py — Registered email_integration router at /email
+frontend/src/lib/email.ts — New file: EmailAccount/Thread/Message/Template types + emailApi + PROVIDER_COLOR + fmtEmailDate
+frontend/src/app/dashboard/email/page.tsx — Full email client UI: account switcher, thread list with unread badges, message view with inbound/outbound bubbles, compose modal, sync button, link-to-record display
+frontend/src/components/nav-config.tsx — Added Email Inbox nav entry under Integrations
 
 
 
@@ -243,16 +250,17 @@ Frontend TypeScript: PASS (tsc --noEmit, 0 errors)
 
 ## Notes for Next Claude Run
 
-Gap 12: Email Integration.
+Gap 13: Multi-Company / Multi-Branch Architecture.
 
-Build a practical email management layer — not full OAuth (that needs user credentials).
+Pragmatic approach — do NOT add company_id to every existing model (too risky).
 Instead:
-- Store email accounts (connected via config, or demo mode)
-- Sync/store email threads linked to ERP records
-- Allow composing + logging outbound emails from within ERP records
-- Show email history on customer/supplier/order pages
+1. Company model — id, name, registration_no, country, base_currency, is_active
+2. Branch model — id, company_id, name, branch_code, address, is_active
+3. UserCompanyAccess — user_id, company_id, role (ADMIN/USER/VIEWER), is_default
+4. CompanySummary service — aggregate KPIs per company (revenue, expenses, employees, products)
+5. Endpoints: GET/POST/PATCH /companies, GET/POST /companies/{id}/branches, 
+   POST /companies/{id}/users (grant access), GET /companies/{id}/summary
+6. Frontend: /dashboard/companies page (admin), company switcher component in header
 
-Key design: EmailThread links to any ERP object via (linked_module, linked_object_id) — same
-pattern as the approval workflow and messaging link_module approach.
-
-Check integrations.py endpoint first — there may be existing email-related stubs.
+The company switcher should store selected company_id in localStorage and pass it as
+X-Company-ID header on requests. Existing data is treated as belonging to the default company.

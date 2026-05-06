@@ -52,6 +52,7 @@ from app.api.v1.endpoints import (
     serial_tracking,
     approvals,
     messaging,
+    email_integration,
 )
 
 api_router = APIRouter()
@@ -241,3 +242,5 @@ api_router.include_router(serial_tracking.router, prefix="/inventory/serials", t
 api_router.include_router(approvals.router, prefix="/approvals", tags=["approvals"])
 # ── Team Messaging / Channels ─────────────────────────────────────────────────
 api_router.include_router(messaging.router, prefix="/messaging", tags=["messaging"])
+# ── Email Integration ─────────────────────────────────────────────────────────
+api_router.include_router(email_integration.router, prefix="/email", tags=["email"])
