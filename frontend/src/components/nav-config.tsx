@@ -108,6 +108,7 @@ export const NAV_CONFIG: NavEntry[] = [
     icon: md("M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"),
     items: [
       { label: "MRP Dashboard",      href: "/dashboard/mrp",              permission: "production.view" },
+      { label: "Planner Workbench",  href: "/dashboard/mrp/workbench",    permission: "production.view" },
       { label: "MRP Runs",           href: "/dashboard/mrp/run",          permission: "production.view" },
       { label: "Suggestions",        href: "/dashboard/mrp/suggestions",  permission: "production.view" },
       { label: "Demand Forecasting", href: "/dashboard/mrp/forecast",     permission: "production.view" },

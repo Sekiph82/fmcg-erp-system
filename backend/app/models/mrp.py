@@ -58,6 +58,21 @@ class SuggestionStatus(str, enum.Enum):
     CONVERTED = "CONVERTED"
 
 
+class MRPExceptionType(str, enum.Enum):
+    SHORTAGE      = "SHORTAGE"        # net requirement > 0 with no supply
+    EXCESS_STOCK  = "EXCESS_STOCK"    # supply > 1.5× demand
+    LATE_ORDER    = "LATE_ORDER"      # planned_start_date is in the past
+    DEMAND_SPIKE  = "DEMAND_SPIKE"    # demand > 2× rolling average
+    FROZEN_DEMAND = "FROZEN_DEMAND"   # demand inside frozen window not covered
+
+
+class MRPExceptionSeverity(str, enum.Enum):
+    LOW      = "LOW"
+    MEDIUM   = "MEDIUM"
+    HIGH     = "HIGH"
+    CRITICAL = "CRITICAL"
+
+
 # ── Demand Forecast ──────────────────────────────────────────────────────────
 
 class DemandForecast(Base, TimestampMixin):
@@ -130,6 +145,7 @@ class MRPRun(Base, TimestampMixin):
     run_no                = Column(String(50), unique=True, nullable=False, index=True)
     run_date              = Column(Date, nullable=False)
     planning_horizon_days = Column(Integer, nullable=False, default=90)
+    frozen_horizon_days   = Column(Integer, nullable=False, default=0)
     status                = Column(Enum(MRPRunStatus), nullable=False, default=MRPRunStatus.QUEUED)
     trigger               = Column(Enum(MRPTrigger), nullable=False, default=MRPTrigger.MANUAL)
     include_forecast      = Column(Boolean, default=True, nullable=False)
@@ -238,3 +254,29 @@ class MRPSuggestion(Base, TimestampMixin):
     driver_product     = relationship("Product", foreign_keys=[driver_product_id])
     preferred_supplier = relationship("Supplier")
     approver           = relationship("User")
+
+
+# ── MRP Exception (stored per run) ────────────────────────────────────────────
+
+class MRPException(Base, TimestampMixin):
+    """Planner-facing exception messages generated at end of each MRP run."""
+    __tablename__ = "mrp_exceptions"
+
+    id               = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    run_id           = Column(UUID(as_uuid=True), ForeignKey("mrp_runs.id", ondelete="CASCADE"),
+                              nullable=False, index=True)
+    exception_type   = Column(Enum(MRPExceptionType), nullable=False)
+    severity         = Column(Enum(MRPExceptionSeverity), nullable=False)
+    product_id       = Column(UUID(as_uuid=True), ForeignKey("products.id", ondelete="RESTRICT"),
+                              nullable=True)
+    material_id      = Column(UUID(as_uuid=True), ForeignKey("materials.id", ondelete="RESTRICT"),
+                              nullable=True)
+    message          = Column(String(500), nullable=False)
+    action_required  = Column(String(500), nullable=True)
+    qty              = Column(Numeric(14, 3), nullable=True)
+    due_date         = Column(Date, nullable=True)
+    is_acknowledged  = Column(Boolean, default=False, nullable=False)
+
+    run      = relationship("MRPRun")
+    product  = relationship("Product")
+    material = relationship("Material")

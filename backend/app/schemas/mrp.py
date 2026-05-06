@@ -89,6 +89,7 @@ class ForecastAccuracyRow(BaseModel):
 
 class MRPRunCreate(BaseModel):
     planning_horizon_days: int            = Field(90, ge=7, le=365)
+    frozen_horizon_days:   int            = Field(0, ge=0, le=90)
     include_forecast:      bool           = True
     include_safety_stock:  bool           = True
     warehouse_id:          Optional[UUID] = None
@@ -100,6 +101,7 @@ class MRPRunOut(_Base):
     run_no:                str
     run_date:              date
     planning_horizon_days: int
+    frozen_horizon_days:   int
     status:                str
     trigger:               str
     include_forecast:      bool
@@ -200,3 +202,21 @@ class ShortageAlert(BaseModel):
     suggested_qty:     Optional[Decimal]
     required_date:     Optional[date]
     run_no:            str
+
+
+class MRPExceptionOut(_Base):
+    id:               UUID
+    run_id:           UUID
+    exception_type:   str
+    severity:         str
+    product_id:       Optional[UUID]
+    product_sku:      Optional[str]   = None
+    product_name:     Optional[str]   = None
+    material_id:      Optional[UUID]
+    material_name:    Optional[str]   = None
+    message:          str
+    action_required:  Optional[str]
+    qty:              Optional[Decimal]
+    due_date:         Optional[date]
+    is_acknowledged:  bool
+    created_at:       Optional[datetime]

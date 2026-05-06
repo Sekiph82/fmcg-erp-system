@@ -10,7 +10,7 @@ Phase 1 — Critical ERP Foundation
 
 ## Current Gap
 
-Gap 7 — MRP Engine Hardening
+Gap 8 — Inventory Valuation & Costing Engine
 
 
 
@@ -21,6 +21,8 @@ Not started yet.
 
 
 ## Completed in Last Run
+
+Gap 7 — MRP Engine Hardening
 
 Gap 6 — Manufacturing Execution System (MES) Depth
 
@@ -50,11 +52,11 @@ Gap 1 — Full Double-Entry General Ledger
 
 6\. Manufacturing Execution System (MES) Depth
 
+7\. MRP Engine Hardening
+
 
 
 ## Remaining Gap Items
-
-7\. MRP Engine Hardening
 
 8\. Inventory Valuation & Costing Engine
 
@@ -186,45 +188,55 @@ Gap 1 — Full Double-Entry General Ledger
 
 ## Next Immediate Task
 
-Implement Gap 7 — MRP Engine Hardening.
+Implement Gap 8 — Inventory Valuation & Costing Engine.
 
-Existing MRP endpoint is at /mrp. Need to check what already exists before adding.
+Existing system has:
+- Stock model (quantity_on_hand per warehouse/lot/product)
+- MaterialConsumption (actual qty used in production)
+- ProductionOrder (with total_material_cost finalized)
+- StockMovement (every qty change)
+- ProductCost / ProductionCostEntry in finance.py
+
+Key gaps to fill:
+- FIFO / Weighted Average / Standard Cost valuation methods
+- Cost layer tracking (FIFO requires ordered layers: date, qty, unit_cost)
+- Real-time COGS posting when stock is issued/sold
+- Inventory valuation report (total inventory value by method)
+- Inventory aging valuation (how long stock has been held)
+- GL integration for every stock movement
 
 Files to inspect first:
-- backend/app/api/v1/endpoints/mrp.py — list existing endpoints
-- backend/app/models/ — check for MRPRun, MRPLine, MRPException models
-- backend/app/services/mrp_service.py (if exists)
-- frontend/src/app/dashboard/production/planning/ or /mrp/ pages
+- backend/app/models/inventory.py (existing Stock, StockMovement models)
+- backend/app/models/finance.py (existing GL/Journal models)
+- backend/app/services/inventory_service.py (if exists)
+- frontend/src/app/dashboard/inventory/ (existing pages)
 
-Key gaps from spec:
-- Exception message system (shortage, delay, risk alerts)
-- Lead-time aware planning (supplier lead times)
-- Minimum Order Quantity enforcement
-- Frozen planning window (freeze horizon)
-- Simulation mode (what-if scenarios)
-- Planner workbench dashboard
-- Demand aggregation (sales orders + forecast + safety stock combined view)
-
-DO NOT re-implement what exists. Inspect first, extend only the gaps.
+DO NOT re-implement what exists. Inspect existing stock movement and costing models.
+Add only the FIFO layer tracking and valuation reports.
 
 
 
 ## Blockers
 
-App uses create_all — no migration cycle needed.
+App uses create_all — no migration needed.
+
+GitHub push was blocked by 840MB PDF in history. Fixed: rewrote 12 commits with
+git filter-branch, added KenyaFactoryAI/imports/**/*.pdf to .gitignore, pushed
+successfully (commit a2e38a6).
 
 
 
 ## Files Changed in Last Run
 
-Gap 6 additions:
-backend/app/schemas/production_costing.py — Added WIPRow, VarianceDetailRow, WorkCenterUtilRow schemas
-backend/app/services/production_cost_service.py — Added get_wip_report(), get_variance_detail(), get_work_center_utilization() service functions
-backend/app/api/v1/endpoints/production_costing.py — Added GET /wip, GET /variance-detail, GET /work-center-utilization endpoints
-frontend/src/lib/productionCosting.ts — Added WIPRow, VarianceDetailRow, WorkCenterUtilRow types + api methods (wip, varianceDetail, workCenterUtilization)
-frontend/src/app/dashboard/production/wip/page.tsx — New WIP valuation dashboard
-frontend/src/app/dashboard/production/variance/page.tsx — New variance detail + work center utilization tabbed page
-frontend/src/components/nav-config.tsx — Added WIP Valuation and Variance Analysis nav entries
+Gap 7 additions:
+backend/app/models/master.py — Added minimum_order_qty field to Material model
+backend/app/models/mrp.py — Added frozen_horizon_days to MRPRun; added MRPExceptionType, MRPExceptionSeverity enums; added MRPException model
+backend/app/schemas/mrp.py — Added frozen_horizon_days to MRPRunCreate/MRPRunOut; added MRPExceptionOut schema
+backend/app/services/mrp_service.py — Fixed MOQ to use Material.minimum_order_qty with ceiling rounding; added frozen window filter to _build_so_demand; added exception generation (SHORTAGE/EXCESS_STOCK/LATE_ORDER) at end of _do_mrp; added frozen_horizon_days to create_mrp_run
+backend/app/api/v1/endpoints/mrp.py — Added MRPException/MRPExceptionOut imports; pass frozen_horizon_days in trigger; added GET /exceptions and PATCH /exceptions/{id}/acknowledge endpoints
+frontend/src/lib/mrp.ts — Added frozen_horizon_days to MRPRun/MRPRunCreate; added MRPException type; added getExceptions/acknowledgeException API methods
+frontend/src/app/dashboard/mrp/workbench/page.tsx — New planner workbench page: exceptions tab (with acknowledge), supply/demand tab, draft suggestions tab (quick approve/reject)
+frontend/src/components/nav-config.tsx — Added Planner Workbench nav entry
 
 
 
@@ -237,16 +249,20 @@ Frontend TypeScript: PASS (tsc --noEmit, 0 errors)
 
 ## Notes for Next Claude Run
 
-Gap 7: MRP Engine Hardening.
+Gap 8: Inventory Valuation & Costing Engine.
 
-Existing MRP system likely has: run MRP, get MRP output, procurement suggestions.
-Check backend/app/api/v1/endpoints/mrp.py and related service files.
+Inspect these files first:
+- backend/app/models/inventory.py — Stock, Lot, StockMovement models
+- backend/app/models/finance.py — JournalEntry/JournalLine for GL posting
+- backend/app/services/inventory_service.py (may not exist — check)
 
-Key true gaps (not yet implemented):
-1. Exception messages — when MRP run finds shortage/late delivery/overstock → create MRPException records
-   with type (SHORTAGE/LATE_DELIVERY/EXCESS_STOCK), material_id, qty, due_date
-2. Frozen planning window — ignore demand within frozen_horizon_days from today; store frozen_horizon in config
-3. Simulation mode — run MRP with hypothetical sales orders/demand changes without persisting
-4. Planner workbench — dashboard showing: open exceptions, pegged demand, supply/demand timeline per material
-
-Check if MRPException model already exists. If yes, extend. If no, add.
+Key additions needed:
+1. CostLayer model — FIFO layers: product_id/material_id, lot_id, receipt_date, qty, unit_cost, qty_remaining
+2. InventoryValuationMethod enum (FIFO, WEIGHTED_AVG, STANDARD)
+3. Service: compute_fifo_cost() — consumes layers in FIFO order
+4. Service: weighted_avg_cost() — total_value / total_qty
+5. Service: inventory_valuation_report() — total inventory value by method
+6. Service: inventory_aging() — days held × qty × unit_cost per lot
+7. GL posting on stock issue — debit COGS, credit Inventory Asset
+8. Endpoint: GET /inventory/valuation — summary by method
+9. Frontend: valuation dashboard page at /dashboard/inventory/valuation

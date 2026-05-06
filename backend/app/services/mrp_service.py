@@ -19,6 +19,7 @@ from app.models.master import Product, Material
 from app.models.mrp import (
     DemandForecast, DemandForecastLine,
     MRPResult, MRPRun, MRPRunStatus, MRPSuggestion,
+    MRPException, MRPExceptionType, MRPExceptionSeverity,
     SuggestionStatus, SuggestionType,
 )
 from app.models.procurement import (
@@ -61,8 +62,12 @@ async def _build_so_demand(
     run_date: date,
     horizon_date: date,
     warehouse_id: Optional[UUID],
+    frozen_horizon_days: int = 0,
 ) -> dict[UUID, Decimal]:
-    """Aggregate unshipped confirmed SO quantity per product."""
+    """Aggregate unshipped confirmed SO quantity per product.
+    Demand inside the frozen window (within frozen_horizon_days) is excluded
+    because those orders are already committed/in execution."""
+    freeze_cutoff = run_date + timedelta(days=frozen_horizon_days) if frozen_horizon_days > 0 else None
     q = (
         select(
             SOLine.product_id,
@@ -78,6 +83,8 @@ async def _build_so_demand(
         )
         .group_by(SOLine.product_id)
     )
+    if freeze_cutoff:
+        q = q.where(SalesOrder.requested_delivery_date > freeze_cutoff)
     if warehouse_id:
         q = q.where(SalesOrder.warehouse_id == warehouse_id)
     rows = (await db.execute(q)).all()
@@ -387,6 +394,7 @@ async def create_mrp_run(
     db: AsyncSession,
     *,
     planning_horizon_days: int = 90,
+    frozen_horizon_days: int = 0,
     include_forecast: bool = True,
     include_safety_stock: bool = True,
     warehouse_id: Optional[UUID] = None,
@@ -397,6 +405,7 @@ async def create_mrp_run(
         run_no=_run_no(),
         run_date=date.today(),
         planning_horizon_days=planning_horizon_days,
+        frozen_horizon_days=frozen_horizon_days,
         include_forecast=include_forecast,
         include_safety_stock=include_safety_stock,
         warehouse_id=warehouse_id,
@@ -438,7 +447,10 @@ async def _do_mrp(db: AsyncSession, run: MRPRun) -> None:
     horizon_date = run.run_date + timedelta(days=run.planning_horizon_days)
 
     # ── 1. Build demand maps ──────────────────────────────────────────────────
-    so_demand = await _build_so_demand(db, run.run_date, horizon_date, run.warehouse_id)
+    so_demand = await _build_so_demand(
+        db, run.run_date, horizon_date, run.warehouse_id,
+        frozen_horizon_days=run.frozen_horizon_days,
+    )
 
     forecast_demand: dict[UUID, Decimal] = {}
     if run.include_forecast:
@@ -565,13 +577,17 @@ async def _do_mrp(db: AsyncSession, run: MRPRun) -> None:
 
             mat = materials.get(mat_id)
             lead_days    = int(mat.lead_time_days) if mat else 14
-            moq          = Decimal("0")
+            moq          = _D(mat.minimum_order_qty) if mat and mat.minimum_order_qty else Decimal("0")
             supplier_id  = mat.supplier_id if mat else None
             est_cost     = _R(net_mat * _D(mat.standard_cost)) if mat and mat.standard_cost else None
             mat_uom      = mat_uom_map.get(mat_id, str(mat.uom) if mat else "KG")
 
-            # Apply MOQ if defined
-            order_qty = max(net_mat, moq) if moq > 0 else net_mat
+            # Apply MOQ — round up to nearest MOQ multiple if set
+            if moq > 0:
+                multiples = (net_mat / moq).to_integral_value(rounding="ROUND_CEILING")
+                order_qty = multiples * moq
+            else:
+                order_qty = net_mat
 
             required = horizon_date
             order_by = required - timedelta(days=lead_days)
@@ -600,4 +616,61 @@ async def _do_mrp(db: AsyncSession, run: MRPRun) -> None:
     run.product_count    = len(results)
     run.shortage_count   = sum(1 for r in results if r.shortage_flag)
     run.suggestion_count = len(production_suggestions) + len(procurement_suggestions)
+    await db.flush()
+
+    # ── 8. Generate MRP exceptions ────────────────────────────────────────────
+    exceptions: list[MRPException] = []
+
+    for result in results:
+        product = product_map.get(result.product_id)
+        pname = product.name if product else str(result.product_id)
+
+        # SHORTAGE exception
+        if result.shortage_flag and result.net_requirement_qty > 0:
+            sev = (MRPExceptionSeverity.CRITICAL if result.net_requirement_qty > result.gross_demand_qty * Decimal("0.5")
+                   else MRPExceptionSeverity.HIGH)
+            exceptions.append(MRPException(
+                run_id=run.id,
+                exception_type=MRPExceptionType.SHORTAGE,
+                severity=sev,
+                product_id=result.product_id,
+                message=f"Shortage of {float(result.net_requirement_qty):.0f} units for {pname}",
+                action_required="Create production order or expedite procurement",
+                qty=result.net_requirement_qty,
+                due_date=horizon_date,
+            ))
+
+        # EXCESS_STOCK exception — supply > 1.5× gross demand
+        if result.gross_demand_qty > 0 and result.total_supply_qty > result.gross_demand_qty * Decimal("1.5"):
+            excess = result.total_supply_qty - result.gross_demand_qty
+            exceptions.append(MRPException(
+                run_id=run.id,
+                exception_type=MRPExceptionType.EXCESS_STOCK,
+                severity=MRPExceptionSeverity.LOW,
+                product_id=result.product_id,
+                message=f"Excess supply of {float(excess):.0f} units for {pname} (supply {float(result.total_supply_qty):.0f} vs demand {float(result.gross_demand_qty):.0f})",
+                action_required="Consider reducing upcoming production orders or redirecting stock",
+                qty=excess,
+                due_date=horizon_date,
+            ))
+
+    # LATE_ORDER exceptions — procurement suggestions where planned_start_date is in the past
+    for sug in procurement_suggestions:
+        if sug.planned_start_date and sug.planned_start_date < run.run_date:
+            mat = materials.get(sug.material_id) if sug.material_id else None
+            mname = mat.name if mat else str(sug.material_id)
+            days_late = (run.run_date - sug.planned_start_date).days
+            exceptions.append(MRPException(
+                run_id=run.id,
+                exception_type=MRPExceptionType.LATE_ORDER,
+                severity=MRPExceptionSeverity.HIGH if days_late > 7 else MRPExceptionSeverity.MEDIUM,
+                material_id=sug.material_id,
+                message=f"Order for {mname} needed {days_late} days ago (required {sug.required_date})",
+                action_required="Place emergency purchase order immediately or find alternative supplier",
+                qty=sug.suggested_qty,
+                due_date=sug.required_date,
+            ))
+
+    for exc in exceptions:
+        db.add(exc)
     await db.flush()

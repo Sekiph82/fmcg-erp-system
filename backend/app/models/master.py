@@ -103,6 +103,7 @@ class Material(Base, TimestampMixin):
     uom = Column(Enum(UnitOfMeasure), nullable=False, default=UnitOfMeasure.KG)
     weight_kg = Column(Numeric(10, 3), nullable=True)
     reorder_point = Column(Numeric(12, 3), default=0, nullable=False)
+    minimum_order_qty = Column(Numeric(12, 3), default=0, nullable=False)
     standard_cost = Column(Numeric(14, 4), nullable=True)
     lead_time_days = Column(Integer, default=0, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)

@@ -18,14 +18,14 @@ from app.core.deps import get_current_user, get_db
 from app.models.master import Material, Product
 from app.models.mrp import (
     DemandForecast, DemandForecastLine, ForecastStatus,
-    MRPResult, MRPRun, MRPRunStatus, MRPSuggestion,
+    MRPException, MRPResult, MRPRun, MRPRunStatus, MRPSuggestion,
     SuggestionStatus, SuggestionType,
 )
 from app.models.user import User
 from app.schemas.mrp import (
     ForecastAccuracyRow, ForecastGenerateRequest, ForecastLineOut,
     ForecastLineOverride, ForecastOut, ForecastSummary,
-    MRPDashboard, MRPResultOut, MRPRunCreate, MRPRunOut,
+    MRPDashboard, MRPExceptionOut, MRPResultOut, MRPRunCreate, MRPRunOut,
     ShortageAlert, SuggestionApprove, SuggestionConvertResult,
     SuggestionOut, SuggestionReject,
 )
@@ -272,6 +272,7 @@ async def trigger_mrp_run(
     run = await create_mrp_run(
         db,
         planning_horizon_days=body.planning_horizon_days,
+        frozen_horizon_days=body.frozen_horizon_days,
         include_forecast=body.include_forecast,
         include_safety_stock=body.include_safety_stock,
         warehouse_id=body.warehouse_id,
@@ -291,6 +292,7 @@ async def trigger_mrp_run(
     return MRPRunOut(
         id=run.id, run_no=run.run_no, run_date=run.run_date,
         planning_horizon_days=run.planning_horizon_days,
+        frozen_horizon_days=run.frozen_horizon_days,
         status=str(run.status), trigger=str(run.trigger),
         include_forecast=run.include_forecast,
         include_safety_stock=run.include_safety_stock,
@@ -646,3 +648,64 @@ async def shortage_alerts(
         )
         for r, p, s in rows
     ]
+
+
+# ── MRP Exceptions ────────────────────────────────────────────────────────────
+
+@router.get("/exceptions", response_model=list[MRPExceptionOut])
+async def list_mrp_exceptions(
+    run_id: Optional[UUID] = Query(None),
+    unacknowledged_only: bool = Query(False),
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(get_current_user),
+):
+    """Return MRP exceptions from a specific run or the latest completed run."""
+    if not run_id:
+        latest = (await db.execute(
+            select(MRPRun).where(MRPRun.status == MRPRunStatus.COMPLETED)
+            .order_by(MRPRun.created_at.desc()).limit(1)
+        )).scalar_one_or_none()
+        if not latest:
+            return []
+        run_id = latest.id
+
+    q = (
+        select(MRPException)
+        .where(MRPException.run_id == run_id)
+        .order_by(MRPException.created_at.asc())
+    )
+    if unacknowledged_only:
+        q = q.where(MRPException.is_acknowledged.is_(False))
+    exceptions = (await db.execute(q)).scalars().all()
+
+    out = []
+    for exc in exceptions:
+        row = MRPExceptionOut.model_validate(exc)
+        if exc.product:
+            row.product_sku = exc.product.sku
+            row.product_name = exc.product.name
+        if exc.material:
+            row.material_name = exc.material.name
+        out.append(row)
+    return out
+
+
+@router.patch("/exceptions/{exc_id}/acknowledge", response_model=MRPExceptionOut)
+async def acknowledge_exception(
+    exc_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(get_current_user),
+):
+    exc = await db.get(MRPException, exc_id)
+    if not exc:
+        raise HTTPException(404, "Exception not found")
+    exc.is_acknowledged = True
+    await db.commit()
+    await db.refresh(exc)
+    row = MRPExceptionOut.model_validate(exc)
+    if exc.product:
+        row.product_sku = exc.product.sku
+        row.product_name = exc.product.name
+    if exc.material:
+        row.material_name = exc.material.name
+    return row

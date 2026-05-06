@@ -65,6 +65,7 @@ export interface MRPRun {
   run_no: string;
   run_date: string;
   planning_horizon_days: number;
+  frozen_horizon_days: number;
   status: string;
   trigger: string;
   include_forecast: boolean;
@@ -77,6 +78,24 @@ export interface MRPRun {
   started_at?: string | null;
   completed_at?: string | null;
   notes?: string | null;
+  created_at?: string | null;
+}
+
+export interface MRPException {
+  id: string;
+  run_id: string;
+  exception_type: "SHORTAGE" | "EXCESS_STOCK" | "LATE_ORDER" | "DEMAND_SPIKE" | "FROZEN_DEMAND";
+  severity: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+  product_id?: string | null;
+  product_sku?: string | null;
+  product_name?: string | null;
+  material_id?: string | null;
+  material_name?: string | null;
+  message: string;
+  action_required?: string | null;
+  qty?: number | null;
+  due_date?: string | null;
+  is_acknowledged: boolean;
   created_at?: string | null;
 }
 
@@ -167,6 +186,7 @@ export interface ForecastGenerateRequest {
 
 export interface MRPRunCreate {
   planning_horizon_days?: number;
+  frozen_horizon_days?: number;
   include_forecast?: boolean;
   include_safety_stock?: boolean;
   warehouse_id?: string;
@@ -270,6 +290,18 @@ export const mrpApi = {
     const r = await apiClient.get<ShortageAlert[]>(`${BASE}/shortage-alerts`, {
       params: run_id ? { run_id } : undefined,
     });
+    return r.data;
+  },
+
+  async getExceptions(run_id?: string, unacknowledged_only?: boolean): Promise<MRPException[]> {
+    const r = await apiClient.get<MRPException[]>(`${BASE}/exceptions`, {
+      params: { run_id, unacknowledged_only },
+    });
+    return r.data;
+  },
+
+  async acknowledgeException(id: string): Promise<MRPException> {
+    const r = await apiClient.patch<MRPException>(`${BASE}/exceptions/${id}/acknowledge`);
     return r.data;
   },
 };
