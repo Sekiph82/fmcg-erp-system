@@ -10,7 +10,7 @@ Phase 2 — High Importance (Tier 2)
 
 ## Current Gap
 
-Gap 13 — Multi-Company / Multi-Branch Architecture
+Gap 14 — WhatsApp Business API Integration
 
 
 
@@ -21,6 +21,8 @@ Not started yet.
 
 
 ## Completed in Last Run
+
+Gap 13 — Multi-Company / Multi-Branch Architecture
 
 Gap 12 — Email Integration Gmail / Outlook Sync
 
@@ -74,11 +76,11 @@ Gap 1 — Full Double-Entry General Ledger
 
 12\. Email Integration Gmail / Outlook Sync
 
+13\. Multi-Company / Multi-Branch Architecture
+
 
 
 ## Remaining Gap Items
-
-13\. Multi-Company / Multi-Branch Architecture
 
 14\. WhatsApp Business API Integration
 
@@ -198,27 +200,22 @@ Gap 1 — Full Double-Entry General Ledger
 
 ## Next Immediate Task
 
-Implement Gap 13 — Multi-Company / Multi-Branch Architecture.
+Implement Gap 14 — WhatsApp Business API Integration.
 
-This is a STRUCTURAL gap. Inspect existing system first:
-- backend/app/models/user.py — does User have company_id?
-- backend/app/models/master.py — does Product/Material have company_id?
-- backend/app/models/ — check if Company or Branch model exists
+Check existing integrations for any WhatsApp models first:
+- backend/app/models/integrations.py — IntegrationProvider enum (already has MPESA)
+- Check if any "whatsapp" or "WhatsApp" model exists
 
-Key decisions:
-- Pragmatic approach: add Company model (not full multi-tenant DB isolation)
-- Add company_id + branch_id to key models (Product, Warehouse, Customer, Supplier, Budget, PO, SO)
-- Add Company CRUD + Branch CRUD endpoints
-- Add company context to user sessions (current_company_id in JWT or header)
-- Consolidated reporting: GET /companies/{id}/summary — cross-entity financial summary
-- Frontend: company switcher in header, company admin page
-
-DO NOT attempt full database-level tenancy isolation (too complex for this build).
-Use application-level filtering: each query adds .where(model.company_id == current_company_id).
-
-Scope: add Company + Branch models, user-company assignment, basic CRUD,
-company switcher UI. Do NOT rewrite existing queries to add company filtering
-(that is a separate migration effort).
+Build:
+1. WhatsAppConfig model — business_phone_id, api_token, webhook_verify_token, is_active
+2. WhatsAppMessage model — direction (INBOUND/OUTBOUND), phone, message_type (TEXT/TEMPLATE/MEDIA),
+   body, template_name, status (SENT/DELIVERED/READ/FAILED), linked_module, linked_object_id
+3. WhatsAppTemplate model — template_name, language, components (JSON with header/body/footer/buttons)
+4. Service: send_text(), send_template(), process_inbound_webhook()
+5. Endpoints: POST /whatsapp/send, POST /whatsapp/webhook (Twilio/Meta callback), GET /whatsapp/messages,
+   GET /whatsapp/templates, POST /whatsapp/config
+6. Frontend: /dashboard/whatsapp page — message log, template management, send from record
+7. Simulate delivery in demo mode (no real API key needed)
 
 
 
@@ -230,14 +227,14 @@ App uses create_all — no migration needed.
 
 ## Files Changed in Last Run
 
-Gap 12 additions:
-backend/app/models/email_integration.py — New file: EmailProvider enum + EmailAccount, EmailThread, EmailMessage, EmailTemplate models
-backend/app/schemas/email_integration.py — New file: full CRUD schemas for accounts, threads, messages, send request, templates
-backend/app/api/v1/endpoints/email_integration.py — New file: account CRUD, thread list/detail/link, send email, simulate sync (5 realistic demo emails), template CRUD
-backend/app/api/v1/router.py — Registered email_integration router at /email
-frontend/src/lib/email.ts — New file: EmailAccount/Thread/Message/Template types + emailApi + PROVIDER_COLOR + fmtEmailDate
-frontend/src/app/dashboard/email/page.tsx — Full email client UI: account switcher, thread list with unread badges, message view with inbound/outbound bubbles, compose modal, sync button, link-to-record display
-frontend/src/components/nav-config.tsx — Added Email Inbox nav entry under Integrations
+Gap 13 additions:
+backend/app/models/company.py — New file: CompanyUserRole enum + Company, Branch, UserCompanyAccess models
+backend/app/schemas/company.py — New file: full CRUD schemas + CompanySummary
+backend/app/api/v1/endpoints/company.py — New file: 12 endpoints (company CRUD, set-default, branch CRUD, user access grant/revoke, KPI summary)
+backend/app/api/v1/router.py — Registered company router at /companies
+frontend/src/lib/company.ts — New file: Company/Branch/UserAccess/CompanySummary types + companyApi + localStorage switcher helpers
+frontend/src/app/dashboard/companies/page.tsx — Full company management page: company list, detail with 3 tabs (overview with KPI cards, branches with type badges, users with role badges), set-default button, add company modal, add branch modal
+frontend/src/components/nav-config.tsx — Added Companies nav entry under Admin & System
 
 
 
@@ -250,17 +247,19 @@ Frontend TypeScript: PASS (tsc --noEmit, 0 errors)
 
 ## Notes for Next Claude Run
 
-Gap 13: Multi-Company / Multi-Branch Architecture.
+Gap 14: WhatsApp Business API Integration.
 
-Pragmatic approach — do NOT add company_id to every existing model (too risky).
-Instead:
-1. Company model — id, name, registration_no, country, base_currency, is_active
-2. Branch model — id, company_id, name, branch_code, address, is_active
-3. UserCompanyAccess — user_id, company_id, role (ADMIN/USER/VIEWER), is_default
-4. CompanySummary service — aggregate KPIs per company (revenue, expenses, employees, products)
-5. Endpoints: GET/POST/PATCH /companies, GET/POST /companies/{id}/branches, 
-   POST /companies/{id}/users (grant access), GET /companies/{id}/summary
-6. Frontend: /dashboard/companies page (admin), company switcher component in header
+Build pragmatic WhatsApp layer — similar to Email (no live API key required):
+- Store WhatsApp config (phone_id, api_token placeholder)
+- Log all outbound/inbound messages
+- Template-based sending (important: WhatsApp Business requires pre-approved templates)
+- Webhook simulation for demo mode
 
-The company switcher should store selected company_id in localStorage and pass it as
-X-Company-ID header on requests. Existing data is treated as belonging to the default company.
+Key WhatsApp Business API concepts:
+- All outbound messages must use pre-approved templates (unless within 24h customer-initiated window)
+- Templates have components: header (text/image), body (with variables {{1}} {{2}}), footer, buttons
+- Delivery tracking: SENT → DELIVERED → READ (via webhook status updates)
+- Phone numbers in E.164 format (+254712345678 for Kenya)
+
+Demo mode: POST /whatsapp/simulate-inbound — creates fake inbound message from customer
+linked to a record (order/invoice), allowing demo of the full conversation flow.
