@@ -51,6 +51,7 @@ from app.api.v1.endpoints import (
     payroll_ke,
     serial_tracking,
     approvals,
+    messaging,
 )
 
 api_router = APIRouter()
@@ -238,3 +239,5 @@ api_router.include_router(payroll_ke.router, prefix="/payroll-ke", tags=["payrol
 api_router.include_router(serial_tracking.router, prefix="/inventory/serials", tags=["serial-tracking"])
 # ── Generic Approval Workflow ─────────────────────────────────────────────────
 api_router.include_router(approvals.router, prefix="/approvals", tags=["approvals"])
+# ── Team Messaging / Channels ─────────────────────────────────────────────────
+api_router.include_router(messaging.router, prefix="/messaging", tags=["messaging"])

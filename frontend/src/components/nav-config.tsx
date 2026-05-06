@@ -1247,6 +1247,7 @@ export const NAV_CONFIG: NavEntry[] = [
     permission: "hr.view",
     icon: md("M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"),
     items: [
+      { label: "Team Messages",  href: "/dashboard/messages",        permission: "hr.view" },
       { label: "Dashboard",     href: "/dashboard/chatter",         permission: "hr.view" },
       { label: "Activity Feed", href: "/dashboard/chatter/feed",    permission: "hr.view" },
       { label: "Search",        href: "/dashboard/chatter/search",  permission: "hr.view" },

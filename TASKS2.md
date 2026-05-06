@@ -10,7 +10,7 @@ Phase 2 — High Importance (Tier 2)
 
 ## Current Gap
 
-Gap 11 — Real-Time Team Messaging / Collaboration Channels
+Gap 12 — Email Integration (Gmail / Outlook Sync)
 
 
 
@@ -21,6 +21,8 @@ Not started yet.
 
 
 ## Completed in Last Run
+
+Gap 11 — Real-Time Team Messaging / Collaboration Channels
 
 Gap 10 — Batch Recall Operational Hardening
 
@@ -66,11 +68,11 @@ Gap 1 — Full Double-Entry General Ledger
 
 10\. Batch Recall Operational Hardening
 
+11\. Real-Time Team Messaging / Collaboration Channels
+
 
 
 ## Remaining Gap Items
-
-11\. Real-Time Team Messaging / Collaboration Channels
 
 12\. Email Integration Gmail / Outlook Sync
 
@@ -194,28 +196,22 @@ Gap 1 — Full Double-Entry General Ledger
 
 ## Next Immediate Task
 
-Implement Gap 11 — Real-Time Team Messaging / Collaboration Channels.
+Implement Gap 12 — Email Integration (Gmail / Outlook Sync).
 
-Check if any existing chat/messaging model exists first:
-- backend/app/models/chatter.py (investigator found this — check contents)
-- backend/app/api/v1/endpoints/chatter.py
-- frontend/src/lib/chatter.ts
-- frontend/src/app/dashboard/ — any messaging/chat pages
+This is a complex external API integration. Inspect existing integrations module first:
+- backend/app/api/v1/endpoints/integrations.py — check for any email-related endpoints
+- backend/app/models/ — check for EmailMessage, EmailThread, EmailAccount models
 
-Spec requires:
-- Channel-based messaging (Production, Sales, Finance, Ops)
-- Direct messages between users
-- @mentions with notifications
-- Threaded conversations
-- Message search
-- Cross-module linking (message → order → batch → issue)
-
-If chatter exists but is only record-level comments, need to add:
-- ChatChannel model (team channels, not per-record)
-- ChannelMessage model (with thread support)
-- DirectMessage model
-- WebSocket or polling endpoints for real-time feel
-- Frontend: chat/messaging page with channel list + message thread
+Build pragmatic implementation (no live OAuth in this build — use stub/simulation):
+1. EmailAccount model — provider (GMAIL/OUTLOOK/SMTP), email, connected status, sync_enabled
+2. EmailThread model — external_thread_id, subject, participants, linked_module, linked_object_id
+3. EmailMessage model — thread_id, from_email, to_emails, subject, body_text, received_at, is_inbound, is_read
+4. EmailTemplate model — name, subject_template, body_template, module
+5. Service: simulate_sync() — generate realistic demo email threads linked to customers/suppliers
+6. Service: send_from_record() — compose and log outgoing email linked to a record
+7. Endpoints: GET /email/accounts, GET /email/threads, GET /email/threads/{id}/messages,
+   POST /email/send, GET /email/threads?linked_to={object_id}
+8. Frontend: /dashboard/email page with thread list + message view + compose
 
 
 
@@ -227,15 +223,14 @@ App uses create_all — no migration needed.
 
 ## Files Changed in Last Run
 
-Gap 10 additions:
-backend/app/models/traceability.py — Added sla_target_hours to RecallHeader; added RecallAudience enum + RecallCommunicationTemplate model; added RecallStatusLog model (immutable); added RecallEvidence model
-backend/app/schemas/traceability.py — Added RecallAudience import; added RecallTemplateCreate/Update/Out, RecallStatusLogOut, RecallEvidenceCreate/Out schemas
-backend/app/services/recall_service.py — Added _log_status_change() helper; hooked into update_recall_status(); added list_templates(), create_template(), update_template(), list_status_logs(), add_evidence(), list_evidence() service functions
-backend/app/api/v1/endpoints/traceability.py — Added GET/POST/PATCH /recall-templates, GET /recalls/{id}/audit-log, GET/POST /recalls/{id}/evidence endpoints
-frontend/src/lib/traceability.ts — Added RecallAudience/RecallTemplate/RecallStatusLog/RecallEvidence types; added listTemplates, createTemplate, updateTemplate, getAuditLog, listEvidence, addEvidence API methods
-frontend/src/app/dashboard/traceability/templates/page.tsx — New comm. templates management page with audience filter cards, template table, active toggle, create/edit modal with placeholder docs
-frontend/src/app/dashboard/traceability/recalls/[id]/page.tsx — Added Audit Trail tab (immutable status log) + Evidence tab (attach/view documents); added audit/evidence state + fetch on tab switch
-frontend/src/components/nav-config.tsx — Added Comm. Templates nav entry
+Gap 11 additions:
+backend/app/models/messaging.py — New file: ChannelType/MemberRole enums + ChatChannel, ChannelMember, ChannelMessage models
+backend/app/schemas/messaging.py — New file: ChannelCreate/Read, MessageCreate/Read, MessagePage, DMCreate schemas
+backend/app/api/v1/endpoints/messaging.py — New file: 11 endpoints (list/create channels, DM, join, get/post messages, thread, edit, delete, search)
+backend/app/api/v1/router.py — Registered messaging router at /messaging
+frontend/src/lib/messaging.ts — New file: Channel/Message/MessagePage types + messagingApi + timeAgo utility
+frontend/src/app/dashboard/messages/page.tsx — New full-featured chat UI: channel sidebar with unread badges, message thread with hover actions (reply/edit/delete), thread view, search overlay, compose with Enter-to-send, 5s auto-refresh polling
+frontend/src/components/nav-config.tsx — Added Team Messages nav entry under Chatter & Timeline
 
 
 
@@ -248,17 +243,16 @@ Frontend TypeScript: PASS (tsc --noEmit, 0 errors)
 
 ## Notes for Next Claude Run
 
-Gap 11: Real-Time Team Messaging / Collaboration Channels.
+Gap 12: Email Integration.
 
-Inspect backend/app/models/chatter.py first — it likely has record-level chatter (comments on POs/records).
-Gap 11 requires TRUE team channels (not per-record), similar to Slack channels.
+Build a practical email management layer — not full OAuth (that needs user credentials).
+Instead:
+- Store email accounts (connected via config, or demo mode)
+- Sync/store email threads linked to ERP records
+- Allow composing + logging outbound emails from within ERP records
+- Show email history on customer/supplier/order pages
 
-If chatter.py has per-record comments only, need to add:
-1. ChatChannel model — id, name, channel_type (TEAM/DIRECT), module_link (nullable), members
-2. ChatMessage model — channel_id, sender_id, body, parent_id (thread), mentions (JSON array of user IDs)
-3. ChannelMember model — channel_id, user_id, last_read_at
-4. Service: create_channel, post_message, get_messages (with pagination), mark_read, search_messages
-5. Endpoints: GET /channels/, POST /channels/, POST /channels/{id}/messages, GET /channels/{id}/messages
-6. Frontend: /dashboard/messages/ with channel list sidebar + message thread + @mention support
+Key design: EmailThread links to any ERP object via (linked_module, linked_object_id) — same
+pattern as the approval workflow and messaging link_module approach.
 
-WebSocket is complex — use polling (GET with ?since=timestamp) for simplicity. Real-time feel via 5s refetch.
+Check integrations.py endpoint first — there may be existing email-related stubs.
