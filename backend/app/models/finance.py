@@ -51,6 +51,11 @@ class BudgetStatus(str, enum.Enum):
     LOCKED = "LOCKED"
 
 
+class BudgetType(str, enum.Enum):
+    OPEX = "OPEX"
+    CAPEX = "CAPEX"
+
+
 class CostType(str, enum.Enum):
     RAW_MATERIAL = "RAW_MATERIAL"
     PACKAGING = "PACKAGING"
@@ -263,13 +268,15 @@ class ProductionCostEntry(Base, TimestampMixin):
 
 class Budget(Base, TimestampMixin):
     __tablename__ = "budgets"
-    __table_args__ = (UniqueConstraint("year", "department", name="uq_budget_year_dept"),)
+    __table_args__ = (UniqueConstraint("year", "department", "version", name="uq_budget_year_dept_ver"),)
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     year = Column(Integer, nullable=False)
     department = Column(String(100), nullable=False)
     currency = Column(String(10), nullable=False, default="KES")
     status = Column(Enum(BudgetStatus), nullable=False, default=BudgetStatus.DRAFT)
+    budget_type = Column(Enum(BudgetType), nullable=False, default=BudgetType.OPEX)
+    version = Column(Integer, nullable=False, default=1)
     notes = Column(Text, nullable=True)
     created_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     approved_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)

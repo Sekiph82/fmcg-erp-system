@@ -10,7 +10,7 @@ Phase 1 — Critical ERP Foundation
 
 ## Current Gap
 
-Gap 4 — Budget Planning & Variance Analysis
+Gap 5 — Serialized Inventory / Serial Number Tracking
 
 
 
@@ -22,11 +22,13 @@ Not started yet.
 
 ## Completed in Last Run
 
-Gap 1 — Full Double-Entry General Ledger
+Gap 4 — Budget Planning & Variance Analysis
+
+Gap 3 — eTIMS / KRA e-Invoice Integration
 
 Gap 2 — Multi-Currency with Real-Time Exchange Rates
 
-Gap 3 — eTIMS / KRA e-Invoice Integration
+Gap 1 — Full Double-Entry General Ledger
 
 
 
@@ -38,11 +40,11 @@ Gap 3 — eTIMS / KRA e-Invoice Integration
 
 3\. eTIMS / KRA e-Invoice Integration
 
+4\. Budget Planning & Variance Analysis
+
 
 
 ## Remaining Gap Items
-
-4\. Budget Planning \& Variance Analysis
 
 5\. Serialized Inventory / Serial Number Tracking
 
@@ -50,9 +52,9 @@ Gap 3 — eTIMS / KRA e-Invoice Integration
 
 7\. MRP Engine Hardening
 
-8\. Inventory Valuation \& Costing Engine
+8\. Inventory Valuation & Costing Engine
 
-9\. Workflow Engine \& Approval System
+9\. Workflow Engine & Approval System
 
 10\. Batch Recall Operational Hardening
 
@@ -68,7 +70,7 @@ Gap 3 — eTIMS / KRA e-Invoice Integration
 
 16\. Helpdesk / Customer Complaint Ticketing
 
-17\. Project Management with Gantt \& Dependencies
+17\. Project Management with Gantt & Dependencies
 
 18\. Retail / Shop POS
 
@@ -92,7 +94,7 @@ Gap 3 — eTIMS / KRA e-Invoice Integration
 
 28\. Knowledge Base / Internal Wiki
 
-29\. Employee Survey \& Engagement Module
+29\. Employee Survey & Engagement Module
 
 30\. VoIP / Call Center Integration
 
@@ -110,17 +112,17 @@ Gap 3 — eTIMS / KRA e-Invoice Integration
 
 37\. Real-Time Notification Center
 
-38\. Reporting \& BI Layer
+38\. Reporting & BI Layer
 
 39\. Document Management System
 
 40\. Customer / Supplier Portal Expansion
 
-41\. Audit Logs \& Compliance Trail
+41\. Audit Logs & Compliance Trail
 
 42\. Mobile-First Field Sales Expansion
 
-43\. Resource \& Calendar Scheduling System
+43\. Resource & Calendar Scheduling System
 
 44\. Integration Marketplace / Connector Hub
 
@@ -144,9 +146,9 @@ Gap 3 — eTIMS / KRA e-Invoice Integration
 
 54\. HACCP System Expansion
 
-55\. Allergen \& Nutrition Management
+55\. Allergen & Nutrition Management
 
-56\. GS1 Barcode \& Labeling Advanced
+56\. GS1 Barcode & Labeling Advanced
 
 57\. Shelf-Life / FEFO Control Expansion
 
@@ -172,7 +174,7 @@ Gap 3 — eTIMS / KRA e-Invoice Integration
 
 68\. Predictive Maintenance
 
-69\. ESG Intelligence \& Sustainability Optimization
+69\. ESG Intelligence & Sustainability Optimization
 
 70\. Plugin / App Marketplace Architecture
 
@@ -180,61 +182,35 @@ Gap 3 — eTIMS / KRA e-Invoice Integration
 
 ## Next Immediate Task
 
-Implement Gap 4 — Budget Planning & Variance Analysis.
+Implement Gap 5 — Serialized Inventory / Serial Number Tracking.
 
-Existing system has Budget/BudgetLine models and basic endpoints (backend/app/models/finance.py).
-Budget approval exists. BUT: missing real actuals linking, monthly allocation enforcement,
-CapEx tracking, spending alerts, budget revision workflow.
+Existing system has batch/lot tracking in inventory. Need per-unit serial number tracking.
 
 Focus on:
-- Budget vs Actual: link budget lines to GL journal entries (not just cash transactions)
-  Fix the budget_vs_actual service to use posted GL instead of returning zeros
-- Budget approval workflow: notification on approve
-- Add budget_revision (version bumping) — new BudgetRevision model or just version field
-- Add CapEx budget type
-- Threshold alerts: if actual > % of budget → generate alert
-- Frontend: budget dashboard with real variance charts, drill-down page
+- SerialNumber model: serial_no, product_id, status (IN_STOCK/SOLD/SCRAPPED/IN_REPAIR),
+  current_location (warehouse_id), batch_id (optional link), warranty_expiry
+- SerialMovement model: serial_id, from_location, to_location, moved_at, reference_type, reference_id
+- API: assign serial numbers, lookup history, dispatch validation (block if not IN_STOCK),
+  warranty status endpoint
+- Frontend: serial number lookup page, movement history, serial assignment on goods receipt
 
 
 
 ## Blockers
 
-Alembic migration cycle — app uses create_all, no blocking issue.
+App uses create_all — no migration cycle needed.
 
 
 
 ## Files Changed in Last Run
 
-Gap 3 additions:
-backend/app/models/tax_regulatory.py — Added ETimsSubmission, VATReturn, WithholdingTaxRecord models
-backend/app/schemas/tax_regulatory.py — Added ETimsSubmissionRead, VATReturnCreate/Read, WithholdingTaxCreate/Read
-backend/app/api/v1/endpoints/tax_regulatory.py — Added /etims/submit, /vat-returns/generate, /withholding-tax endpoints
-frontend/src/app/dashboard/finance/etims/page.tsx — eTIMS submission dashboard
-frontend/src/app/dashboard/finance/vat-returns/page.tsx — VAT3 return generation and filing
-frontend/src/components/nav-config.tsx — Added eTIMS, VAT Returns to Tax & Regulatory nav
-
-Gap 2 additions:
-backend/app/models/finance.py — Added ExchangeRate model, RateSource enum
-backend/app/schemas/finance.py — Added ExchangeRateCreate, ExchangeRateRead, FXConvertResult schemas
-backend/app/services/finance_service.py — Added get_rate(), convert_to_kes()
-backend/app/api/v1/endpoints/finance.py — Added /exchange-rates/ CRUD and convert endpoint
-frontend/src/lib/finance.ts — Added ExchangeRate, FXConvertResult types and API methods
-frontend/src/app/dashboard/finance/exchange-rates/page.tsx
-
-Gap 1 additions:
-backend/app/models/finance.py — Added AccountingPeriod model
-backend/app/schemas/finance.py — Added GL report schemas
-backend/app/services/finance_service.py — Added GL service functions
-backend/app/api/v1/endpoints/finance.py — Added GL report + period endpoints
-frontend/src/lib/finance.ts — Added GL report types
-frontend/src/app/dashboard/finance/accounting/trial-balance/page.tsx
-frontend/src/app/dashboard/finance/accounting/profit-loss/page.tsx
-frontend/src/app/dashboard/finance/accounting/balance-sheet/page.tsx
-frontend/src/app/dashboard/finance/accounting/general-ledger/page.tsx
-frontend/src/app/dashboard/finance/accounting/chart-of-accounts/page.tsx
-frontend/src/app/dashboard/finance/accounting/period-closing/page.tsx
-frontend/src/app/dashboard/finance/accounting/journal/page.tsx
-frontend/src/components/nav-config.tsx
+Gap 4 additions:
+backend/app/models/finance.py — Added BudgetType enum, version + budget_type columns to Budget; updated UniqueConstraint
+backend/app/schemas/finance.py — Added BudgetType import, budget_type/version to BudgetCreate/BudgetRead, BudgetAlertRow schema, utilization_pct to BudgetVsActualRow
+backend/app/services/finance_service.py — Fixed budget_vs_actual() to use posted GL data, added _get_gl_actual() helper, added budget_alerts() service
+backend/app/api/v1/endpoints/finance.py — Added lock/revise budget endpoints, budget-alerts report endpoint, BudgetType/BudgetAlertRow imports
+frontend/src/lib/finance.ts — Added BudgetType, updated Budget interface, added BudgetAlertRow, added lockBudget/reviseBudget/budgetAlerts API methods
+frontend/src/app/dashboard/finance/budget/page.tsx — Added KPI cards, alert section, utilization bar, budget_type/version display, lock/revise buttons
 
 
 
@@ -247,20 +223,33 @@ Frontend TypeScript: PASS (tsc --noEmit, 0 errors)
 
 ## Notes for Next Claude Run
 
-Gap 4: Budget Planning & Variance Analysis.
+Gap 5: Serialized Inventory / Serial Number Tracking.
 
-1. Fix budget_vs_actual() in finance_service.py: currently returns zeros for actual.
-   Use posted JournalLine data where account maps to budget category, OR use Invoice/Payment data.
-   Simplest: use InvoiceStatus != DRAFT/CANCELLED sales + PurchaseInvoice data grouped by month.
+1. Create SerialNumber model in backend/app/models/inventory.py (or new file):
+   - Fields: id, serial_no (unique), product_id, batch_id (nullable),
+     status (IN_STOCK/SOLD/SCRAPPED/IN_REPAIR/RETURNED), warehouse_id (nullable),
+     warranty_expiry (Date, nullable), notes
+   - Check if inventory.py exists and what models are there
 
-2. Add BudgetVersion field to Budget model (Integer, default=1) for revision tracking.
+2. Create SerialMovement model for history tracking:
+   - Fields: id, serial_id, from_status, to_status, from_warehouse_id, to_warehouse_id,
+     reference_type (GRN/DISPATCH/ADJUSTMENT), reference_id, moved_at, moved_by_id
 
-3. Add budget threshold alert: when actual/budgeted > 0.9 (90%), create alert record.
+3. Backend: schemas + CRUD + service + endpoints in appropriate file
+   - GET /inventory/serials/ — list with filters (product, status, warehouse)
+   - POST /inventory/serials/ — create/assign (bulk or single)
+   - GET /inventory/serials/{serial_no} — lookup by serial number
+   - GET /inventory/serials/{id}/history — movement history
+   - POST /inventory/serials/{id}/transfer — change status/location
 
-4. Improve frontend budget/page.tsx to show real variance with color coding.
-   Currently at: frontend/src/app/dashboard/finance/budget/page.tsx
+4. Frontend: new page at /dashboard/inventory/serials/page.tsx
+   - Search by serial number
+   - List with product, status, location, warranty columns
+   - Movement history drawer/modal
 
-5. Add "New Budget" form to budget page if not already there.
+5. Check existing inventory module file paths first — do not duplicate models.
 
-Context note: Budget model already has year, department, status (DRAFT/APPROVED/LOCKED), lines (category, month, budgeted_amount).
-The service file ends with the budget_vs_actual function returning placeholder zeros.
+Key files to inspect:
+- backend/app/models/ (find inventory-related models)
+- backend/app/api/v1/endpoints/ (find inventory endpoints)
+- frontend/src/components/nav-config.tsx (to add nav entry)

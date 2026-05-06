@@ -27,9 +27,11 @@ from app.models.finance import (
 )
 from app.models.production import ProductionOrder, MaterialConsumption
 from app.models.sales import Invoice, SalesOrder, InvoiceStatus
+from sqlalchemy import extract
+from app.models.finance import Budget as BudgetModel
 from app.schemas.finance import (
     CashPositionRow, MpesaSummaryRow, PaymentChannelRow,
-    ReceivableRow, ReconciliationExceptionRow, BudgetVsActualRow,
+    ReceivableRow, ReconciliationExceptionRow, BudgetVsActualRow, BudgetAlertRow,
     TrialBalanceRow, GLAccountDrillDown, GLTransactionRow,
     PLStatement, PLLineItem, BalanceSheetStatement, BSLineItem,
     FXConvertResult,
@@ -459,14 +461,29 @@ async def reconciliation_exceptions(db: AsyncSession) -> List[ReconciliationExce
     return rows
 
 
+async def _get_gl_actual(db: AsyncSession, account_id: uuid.UUID, year: int, month: int) -> Decimal:
+    """Sum net debit (debit - credit) of posted GL lines for an account in a given year/month."""
+    q = (
+        select(
+            func.coalesce(func.sum(JournalLine.debit), Decimal("0"))
+            - func.coalesce(func.sum(JournalLine.credit), Decimal("0"))
+        )
+        .join(JournalLine.entry)
+        .where(
+            JournalLine.account_id == account_id,
+            JournalEntry.is_posted.is_(True),
+            extract("year", JournalEntry.entry_date) == year,
+            extract("month", JournalEntry.entry_date) == month,
+        )
+    )
+    result = await db.execute(q)
+    val = result.scalar()
+    return Decimal(str(val)) if val is not None else Decimal("0")
+
+
 async def budget_vs_actual(
     db: AsyncSession, year: int, department: Optional[str] = None
 ) -> List[BudgetVsActualRow]:
-    """
-    Compare budget lines to actual cash transactions by category/month.
-    Actual is approximated from cleared CashTransactions for now;
-    can be switched to GL when fully posted.
-    """
     q = select(BudgetLine).join(BudgetLine.budget).where(
         BudgetLine.budget.has(year=year),
     )
@@ -477,12 +494,14 @@ async def budget_vs_actual(
 
     rows = []
     for bl in lines:
-        # Simplified: actual = sum of cleared payments in that month category
-        # A full implementation would use GL postings
         budgeted = bl.budgeted_amount
-        actual = Decimal("0")   # placeholder — GL integration needed for real actuals
+        if bl.account_id:
+            actual = await _get_gl_actual(db, bl.account_id, year, bl.month)
+        else:
+            actual = Decimal("0")
         variance = actual - budgeted
         variance_pct = (variance / budgeted * 100).quantize(Decimal("0.01")) if budgeted != 0 else None
+        utilization_pct = (actual / budgeted * 100).quantize(Decimal("0.01")) if budgeted != 0 else None
         rows.append(BudgetVsActualRow(
             department=bl.budget.department,
             category=bl.category,
@@ -491,8 +510,40 @@ async def budget_vs_actual(
             actual=actual,
             variance=variance,
             variance_pct=variance_pct,
+            utilization_pct=utilization_pct,
         ))
     return rows
+
+
+async def budget_alerts(
+    db: AsyncSession, year: int, threshold: float = 0.9
+) -> List[BudgetAlertRow]:
+    """Return budget lines where actual spending exceeds threshold % of budgeted."""
+    q = select(BudgetLine).join(BudgetLine.budget).where(
+        BudgetLine.budget.has(year=year),
+    )
+    lines_result = await db.execute(q.options(selectinload(BudgetLine.budget)))
+    lines = list(lines_result.scalars().all())
+
+    alerts = []
+    for bl in lines:
+        if not bl.account_id or bl.budgeted_amount == 0:
+            continue
+        actual = await _get_gl_actual(db, bl.account_id, year, bl.month)
+        utilization = actual / bl.budgeted_amount
+        if utilization >= Decimal(str(threshold)):
+            utilization_pct = (utilization * 100).quantize(Decimal("0.01"))
+            alerts.append(BudgetAlertRow(
+                budget_id=bl.budget_id,
+                department=bl.budget.department,
+                category=bl.category,
+                month=bl.month,
+                budgeted=bl.budgeted_amount,
+                actual=actual,
+                utilization_pct=utilization_pct,
+                alert_level="CRITICAL" if utilization >= 1 else "WARNING",
+            ))
+    return alerts
 
 
 # ── General Ledger Reports ────────────────────────────────────────────────────

@@ -6,6 +6,7 @@ export type TxDirection = "RECEIPT" | "PAYMENT";
 export type FinTxStatus = "PENDING" | "CLEARED" | "FAILED" | "REVERSED";
 export type ReconciliationStatus = "UNMATCHED" | "MATCHED" | "MANUAL" | "EXCEPTION";
 export type BudgetStatus = "DRAFT" | "APPROVED" | "LOCKED";
+export type BudgetType = "OPEX" | "CAPEX";
 export type CostType = "RAW_MATERIAL" | "PACKAGING" | "LABOR" | "UTILITY" | "OVERHEAD";
 
 export interface COA {
@@ -148,6 +149,8 @@ export interface Budget {
   department: string;
   currency: string;
   status: BudgetStatus;
+  budget_type: BudgetType;
+  version: number;
   notes?: string;
   created_at: string;
   approved_at?: string;
@@ -214,6 +217,18 @@ export interface BudgetVsActualRow {
   actual: number;
   variance: number;
   variance_pct?: number;
+  utilization_pct?: number;
+}
+
+export interface BudgetAlertRow {
+  budget_id: string;
+  department: string;
+  category: string;
+  month: number;
+  budgeted: number;
+  actual: number;
+  utilization_pct: number;
+  alert_level: "WARNING" | "CRITICAL";
 }
 
 // ── Accounting Module Types ───────────────────────────────────────────────────
@@ -583,6 +598,14 @@ export const financeApi = {
     const res = await apiClient.post<Budget>(`/api/v1/finance/budgets/${id}/approve`);
     return res.data;
   },
+  async lockBudget(id: string): Promise<Budget> {
+    const res = await apiClient.post<Budget>(`/api/v1/finance/budgets/${id}/lock`);
+    return res.data;
+  },
+  async reviseBudget(id: string): Promise<Budget> {
+    const res = await apiClient.post<Budget>(`/api/v1/finance/budgets/${id}/revise`);
+    return res.data;
+  },
 
   // Reports
   async cashPosition(): Promise<CashPositionRow[]> {
@@ -612,6 +635,12 @@ export const financeApi = {
   async budgetVsActual(year: number, department?: string): Promise<BudgetVsActualRow[]> {
     const res = await apiClient.get<BudgetVsActualRow[]>("/api/v1/finance/reports/budget-vs-actual", {
       params: { year, department },
+    });
+    return res.data;
+  },
+  async budgetAlerts(year: number, threshold?: number): Promise<BudgetAlertRow[]> {
+    const res = await apiClient.get<BudgetAlertRow[]>("/api/v1/finance/reports/budget-alerts", {
+      params: { year, threshold },
     });
     return res.data;
   },

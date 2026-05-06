@@ -13,7 +13,7 @@ from app.models.finance import (
     ChartOfAccount, JournalEntry, JournalLine,
     CashAccount, CashTransaction, MpesaReconciliation,
     ProductCost, ProductionCostEntry, Budget, BudgetLine,
-    BudgetStatus, FinTxStatus, ReconciliationStatus,
+    BudgetStatus, BudgetType, FinTxStatus, ReconciliationStatus,
     PurchaseInvoice, PurchaseInvoiceLine, PurchasePayment,
     PurchaseInvoiceStatus,
 )
@@ -26,7 +26,7 @@ from app.schemas.finance import (
     ProductionCostEntryCreate, ProductionCostEntryRead, ProductCostRead,
     BudgetCreate, BudgetRead, BudgetDetailRead, BudgetLineRead,
     CashPositionRow, MpesaSummaryRow, PaymentChannelRow,
-    ReceivableRow, ReconciliationExceptionRow, BudgetVsActualRow,
+    ReceivableRow, ReconciliationExceptionRow, BudgetVsActualRow, BudgetAlertRow,
     PurchaseInvoiceCreate, PurchaseInvoiceRead,
     PurchaseInvoiceLineCreate, PurchaseInvoiceLineRead,
     PurchasePaymentCreate, PurchasePaymentRead,
@@ -439,6 +439,72 @@ async def approve_budget(
     return _build_budget_read(budget)
 
 
+@router.post("/budgets/{budget_id}/lock", response_model=BudgetRead)
+async def lock_budget(
+    budget_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(require_permission("finance", "approve")),
+):
+    budget = await crud.get_budget(db, budget_id)
+    if not budget:
+        raise HTTPException(404, "Budget not found")
+    if budget.status != BudgetStatus.APPROVED:
+        raise HTTPException(422, "Only approved budgets can be locked")
+    budget.status = BudgetStatus.LOCKED
+    await db.commit()
+    await db.refresh(budget)
+    return _build_budget_read(budget)
+
+
+@router.post("/budgets/{budget_id}/revise", response_model=BudgetRead)
+async def revise_budget(
+    budget_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(require_permission("finance", "create")),
+):
+    """Create a new budget revision (version bump). Locks the current version."""
+    from sqlalchemy import select as sa_select
+    from app.models.finance import BudgetLine as BudgetLineModel
+    import uuid as _uuid
+
+    old = await crud.get_budget(db, budget_id)
+    if not old:
+        raise HTTPException(404, "Budget not found")
+    if old.status == BudgetStatus.DRAFT:
+        raise HTTPException(422, "Cannot revise a DRAFT budget — approve it first")
+
+    old.status = BudgetStatus.LOCKED
+    new_budget = Budget(
+        id=_uuid.uuid4(),
+        year=old.year,
+        department=old.department,
+        currency=old.currency,
+        budget_type=old.budget_type,
+        version=old.version + 1,
+        status=BudgetStatus.DRAFT,
+        notes=old.notes,
+        created_by_id=current_user.id,
+    )
+    db.add(new_budget)
+    await db.flush()
+
+    result = await db.execute(sa_select(BudgetLineModel).where(BudgetLineModel.budget_id == old.id))
+    old_lines = list(result.scalars().all())
+    for ol in old_lines:
+        db.add(BudgetLineModel(
+            id=_uuid.uuid4(),
+            budget_id=new_budget.id,
+            category=ol.category,
+            account_id=ol.account_id,
+            month=ol.month,
+            budgeted_amount=ol.budgeted_amount,
+        ))
+
+    await db.commit()
+    new_budget = await crud.get_budget(db, new_budget.id)
+    return _build_budget_read(new_budget)
+
+
 # ── Reports ───────────────────────────────────────────────────────────────────
 
 @router.get("/reports/cash-position", response_model=List[CashPositionRow],
@@ -493,6 +559,16 @@ async def report_budget_vs_actual(
     db: AsyncSession = Depends(get_db),
 ):
     return await svc.budget_vs_actual(db, year, department)
+
+
+@router.get("/reports/budget-alerts", response_model=List[BudgetAlertRow],
+            dependencies=[Depends(require_permission("finance", "view"))])
+async def report_budget_alerts(
+    year: int = Query(...),
+    threshold: float = Query(0.9, ge=0.0, le=1.0),
+    db: AsyncSession = Depends(get_db),
+):
+    return await svc.budget_alerts(db, year, threshold)
 
 
 # ── GL Reports ───────────────────────────────────────────────────────────────

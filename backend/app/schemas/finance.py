@@ -9,7 +9,7 @@ from pydantic import BaseModel, ConfigDict
 
 from app.models.finance import (
     AccountType, CashAccountType, TxDirection, FinTxStatus,
-    ReconciliationStatus, BudgetStatus, CostType,
+    ReconciliationStatus, BudgetStatus, BudgetType, CostType,
 )
 
 
@@ -276,6 +276,7 @@ class BudgetCreate(BaseModel):
     year: int
     department: str
     currency: str = "KES"
+    budget_type: BudgetType = BudgetType.OPEX
     notes: Optional[str] = None
     lines: List[BudgetLineCreate] = []
 
@@ -287,6 +288,8 @@ class BudgetRead(BaseModel):
     department: str
     currency: str
     status: BudgetStatus
+    budget_type: BudgetType
+    version: int
     notes: Optional[str]
     created_at: datetime
     approved_at: Optional[datetime]
@@ -358,6 +361,18 @@ class BudgetVsActualRow(BaseModel):
     actual: Decimal
     variance: Decimal
     variance_pct: Optional[Decimal]
+    utilization_pct: Optional[Decimal] = None  # actual/budgeted * 100
+
+
+class BudgetAlertRow(BaseModel):
+    budget_id: uuid.UUID
+    department: str
+    category: str
+    month: int
+    budgeted: Decimal
+    actual: Decimal
+    utilization_pct: Decimal
+    alert_level: str  # WARNING (>90%) | CRITICAL (>100%)
 
 
 # ── Purchase Invoices (Accounting module) ─────────────────────────────────────
