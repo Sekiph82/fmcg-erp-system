@@ -1,3 +1,6 @@
+# Unrelated projects — keep out of ERP repo
+KenyaFactoryAI/
+
 # Environment
 .env
 *.env.local
