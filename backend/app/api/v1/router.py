@@ -49,6 +49,7 @@ from app.api.v1.endpoints import (
     secondary_sales,
     esg,
     payroll_ke,
+    serial_tracking,
 )
 
 api_router = APIRouter()
@@ -232,3 +233,5 @@ api_router.include_router(secondary_sales.router, prefix="/secondary-sales", tag
 api_router.include_router(esg.router, prefix="/esg", tags=["esg"])
 # ── Kenya Payroll Localization ─────────────────────────────────────────────────
 api_router.include_router(payroll_ke.router, prefix="/payroll-ke", tags=["payroll-ke"])
+# ── Serial Number Tracking ────────────────────────────────────────────────────
+api_router.include_router(serial_tracking.router, prefix="/inventory/serials", tags=["serial-tracking"])

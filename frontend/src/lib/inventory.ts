@@ -158,6 +158,86 @@ export function extractStructuredError(err: unknown): ProductInUseError | Invent
   return null;
 }
 
+// ── Serial Number Tracking ────────────────────────────────────────────────────
+
+export type SerialStatus = "IN_STOCK" | "SOLD" | "SCRAPPED" | "IN_REPAIR" | "RETURNED";
+
+export interface SerialNumber {
+  id: string;
+  serial_no: string;
+  product_id: string;
+  product_name?: string;
+  lot_id?: string;
+  lot_number?: string;
+  warehouse_id?: string;
+  warehouse_name?: string;
+  status: SerialStatus;
+  warranty_expiry?: string;
+  notes?: string;
+  created_at: string;
+}
+
+export interface SerialMovement {
+  id: string;
+  serial_id: string;
+  from_status?: SerialStatus;
+  to_status: SerialStatus;
+  from_warehouse_id?: string;
+  from_warehouse_name?: string;
+  to_warehouse_id?: string;
+  to_warehouse_name?: string;
+  reference_type?: string;
+  reference_no?: string;
+  created_at: string;
+  moved_by_username?: string;
+}
+
+export interface SerialTransferRequest {
+  to_status: SerialStatus;
+  to_warehouse_id?: string;
+  reference_type?: string;
+  reference_no?: string;
+}
+
+export const serialApi = {
+  async list(params?: {
+    product_id?: string; warehouse_id?: string; status?: SerialStatus; search?: string;
+  }): Promise<SerialNumber[]> {
+    const res = await apiClient.get<SerialNumber[]>("/api/v1/inventory/serials/", { params });
+    return res.data;
+  },
+  async create(data: {
+    serial_no: string; product_id: string; lot_id?: string; warehouse_id?: string;
+    warranty_expiry?: string; notes?: string;
+  }): Promise<SerialNumber> {
+    const res = await apiClient.post<SerialNumber>("/api/v1/inventory/serials/", data);
+    return res.data;
+  },
+  async bulkCreate(serials: {
+    serial_no: string; product_id: string; lot_id?: string; warehouse_id?: string;
+    warranty_expiry?: string; notes?: string;
+  }[]): Promise<SerialNumber[]> {
+    const res = await apiClient.post<SerialNumber[]>("/api/v1/inventory/serials/bulk", { serials });
+    return res.data;
+  },
+  async lookup(serialNo: string): Promise<SerialNumber> {
+    const res = await apiClient.get<SerialNumber>(`/api/v1/inventory/serials/lookup/${encodeURIComponent(serialNo)}`);
+    return res.data;
+  },
+  async get(id: string): Promise<SerialNumber> {
+    const res = await apiClient.get<SerialNumber>(`/api/v1/inventory/serials/${id}`);
+    return res.data;
+  },
+  async history(id: string): Promise<SerialMovement[]> {
+    const res = await apiClient.get<SerialMovement[]>(`/api/v1/inventory/serials/${id}/history`);
+    return res.data;
+  },
+  async transfer(id: string, data: SerialTransferRequest): Promise<SerialNumber> {
+    const res = await apiClient.post<SerialNumber>(`/api/v1/inventory/serials/${id}/transfer`, data);
+    return res.data;
+  },
+};
+
 export const inventoryApi = {
   async stockSummary(params?: { warehouse_id?: string; product_id?: string }): Promise<StockSummary[]> {
     const res = await apiClient.get<StockSummary[]>("/api/v1/inventory/stock/summary", { params });

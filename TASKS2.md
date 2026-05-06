@@ -10,7 +10,7 @@ Phase 1 — Critical ERP Foundation
 
 ## Current Gap
 
-Gap 5 — Serialized Inventory / Serial Number Tracking
+Gap 6 — Manufacturing Execution System (MES) Depth
 
 
 
@@ -21,6 +21,8 @@ Not started yet.
 
 
 ## Completed in Last Run
+
+Gap 5 — Serialized Inventory / Serial Number Tracking
 
 Gap 4 — Budget Planning & Variance Analysis
 
@@ -42,11 +44,11 @@ Gap 1 — Full Double-Entry General Ledger
 
 4\. Budget Planning & Variance Analysis
 
+5\. Serialized Inventory / Serial Number Tracking
+
 
 
 ## Remaining Gap Items
-
-5\. Serialized Inventory / Serial Number Tracking
 
 6\. Manufacturing Execution System Depth
 
@@ -182,17 +184,27 @@ Gap 1 — Full Double-Entry General Ledger
 
 ## Next Immediate Task
 
-Implement Gap 5 — Serialized Inventory / Serial Number Tracking.
+Implement Gap 6 — Manufacturing Execution System (MES) Depth.
 
-Existing system has batch/lot tracking in inventory. Need per-unit serial number tracking.
+Existing system has production orders, materials, recipes. Need MES execution-level layer.
 
-Focus on:
-- SerialNumber model: serial_no, product_id, status (IN_STOCK/SOLD/SCRAPPED/IN_REPAIR),
-  current_location (warehouse_id), batch_id (optional link), warranty_expiry
-- SerialMovement model: serial_id, from_location, to_location, moved_at, reference_type, reference_id
-- API: assign serial numbers, lookup history, dispatch validation (block if not IN_STOCK),
-  warranty status endpoint
-- Frontend: serial number lookup page, movement history, serial assignment on goods receipt
+Key gaps to fill:
+- WorkCenter model: capacity (units/hr), shift hours, machine_type, current_utilization
+- ProductionRouting: ordered multi-step operations per product/BOM
+- OperationStep: sequence, work_center_id, setup_time_min, run_time_min_per_unit, scrap_pct
+- LaborEntry: who worked on what operation, start/end time, units produced
+- WIPLot: tracks work-in-progress quantity per production order per step
+- ScrapEntry: qty scrapped, reason, step
+- ProductionVariance: standard vs actual cost per batch
+- Frontend: Work center capacity dashboard, routing management page, shop floor
+  operator interface (minimal — shows active order, current step, start/stop times)
+
+Files to inspect first:
+- backend/app/models/production.py (understand existing production models)
+- backend/app/api/v1/endpoints/production.py
+- backend/app/api/v1/endpoints/production_execution.py (may already have some of this)
+- backend/app/api/v1/endpoints/shop_floor.py
+- frontend/src/app/dashboard/production/ (existing pages)
 
 
 
@@ -204,13 +216,14 @@ App uses create_all — no migration cycle needed.
 
 ## Files Changed in Last Run
 
-Gap 4 additions:
-backend/app/models/finance.py — Added BudgetType enum, version + budget_type columns to Budget; updated UniqueConstraint
-backend/app/schemas/finance.py — Added BudgetType import, budget_type/version to BudgetCreate/BudgetRead, BudgetAlertRow schema, utilization_pct to BudgetVsActualRow
-backend/app/services/finance_service.py — Fixed budget_vs_actual() to use posted GL data, added _get_gl_actual() helper, added budget_alerts() service
-backend/app/api/v1/endpoints/finance.py — Added lock/revise budget endpoints, budget-alerts report endpoint, BudgetType/BudgetAlertRow imports
-frontend/src/lib/finance.ts — Added BudgetType, updated Budget interface, added BudgetAlertRow, added lockBudget/reviseBudget/budgetAlerts API methods
-frontend/src/app/dashboard/finance/budget/page.tsx — Added KPI cards, alert section, utilization bar, budget_type/version display, lock/revise buttons
+Gap 5 additions:
+backend/app/models/inventory.py — Added SerialStatus enum, SerialNumber, SerialMovement models
+backend/app/schemas/serial_tracking.py — New file: SerialNumberCreate, SerialBulkCreate, SerialNumberRead, SerialTransferRequest, SerialMovementRead
+backend/app/api/v1/endpoints/serial_tracking.py — New file: list, create, bulk_create, lookup, get, history, transfer endpoints
+backend/app/api/v1/router.py — Registered serial_tracking router at /inventory/serials
+frontend/src/lib/inventory.ts — Added SerialStatus/SerialNumber/SerialMovement types + serialApi
+frontend/src/app/dashboard/inventory/serials/page.tsx — New page: lookup, status filter cards, list table, detail panel with history, create/transfer modals
+frontend/src/components/nav-config.tsx — Added Serial Numbers nav entry under Warehouse & Inventory
 
 
 
@@ -223,33 +236,17 @@ Frontend TypeScript: PASS (tsc --noEmit, 0 errors)
 
 ## Notes for Next Claude Run
 
-Gap 5: Serialized Inventory / Serial Number Tracking.
+Gap 6: MES Depth — inspect existing production_execution.py and shop_floor.py FIRST
+before adding any new models. The system already has advanced production modules.
+Many things (routing, work centers, labor, WIP) may already exist in:
+- backend/app/models/production.py
+- backend/app/api/v1/endpoints/production_execution.py
+- backend/app/api/v1/endpoints/shop_floor.py
 
-1. Create SerialNumber model in backend/app/models/inventory.py (or new file):
-   - Fields: id, serial_no (unique), product_id, batch_id (nullable),
-     status (IN_STOCK/SOLD/SCRAPPED/IN_REPAIR/RETURNED), warehouse_id (nullable),
-     warranty_expiry (Date, nullable), notes
-   - Check if inventory.py exists and what models are there
+DO NOT duplicate existing models. Extend what exists.
 
-2. Create SerialMovement model for history tracking:
-   - Fields: id, serial_id, from_status, to_status, from_warehouse_id, to_warehouse_id,
-     reference_type (GRN/DISPATCH/ADJUSTMENT), reference_id, moved_at, moved_by_id
+Key check: does WorkCenter model exist? Does OperationRouting/Step exist?
+If yes — identify what's missing and add only the gaps (likely: WIP valuation,
+scrap variance accounting, production variance report, capacity utilization dashboard).
 
-3. Backend: schemas + CRUD + service + endpoints in appropriate file
-   - GET /inventory/serials/ — list with filters (product, status, warehouse)
-   - POST /inventory/serials/ — create/assign (bulk or single)
-   - GET /inventory/serials/{serial_no} — lookup by serial number
-   - GET /inventory/serials/{id}/history — movement history
-   - POST /inventory/serials/{id}/transfer — change status/location
-
-4. Frontend: new page at /dashboard/inventory/serials/page.tsx
-   - Search by serial number
-   - List with product, status, location, warranty columns
-   - Movement history drawer/modal
-
-5. Check existing inventory module file paths first — do not duplicate models.
-
-Key files to inspect:
-- backend/app/models/ (find inventory-related models)
-- backend/app/api/v1/endpoints/ (find inventory endpoints)
-- frontend/src/components/nav-config.tsx (to add nav entry)
+If no WorkCenter at all — create it plus full routing chain.
