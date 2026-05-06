@@ -10,7 +10,7 @@ Phase 2 — High Importance (Tier 2)
 
 ## Current Gap
 
-Gap 14 — WhatsApp Business API Integration
+Gap 15 — Quote / Estimation Module
 
 
 
@@ -21,6 +21,8 @@ Not started yet.
 
 
 ## Completed in Last Run
+
+Gap 14 — WhatsApp Business API Integration
 
 Gap 13 — Multi-Company / Multi-Branch Architecture
 
@@ -78,11 +80,11 @@ Gap 1 — Full Double-Entry General Ledger
 
 13\. Multi-Company / Multi-Branch Architecture
 
+14\. WhatsApp Business API Integration
+
 
 
 ## Remaining Gap Items
-
-14\. WhatsApp Business API Integration
 
 15\. Quote / Estimation Module
 
@@ -200,22 +202,24 @@ Gap 1 — Full Double-Entry General Ledger
 
 ## Next Immediate Task
 
-Implement Gap 14 — WhatsApp Business API Integration.
+Implement Gap 15 — Quote / Estimation Module.
 
-Check existing integrations for any WhatsApp models first:
-- backend/app/models/integrations.py — IntegrationProvider enum (already has MPESA)
-- Check if any "whatsapp" or "WhatsApp" model exists
+Check existing sales models first:
+- backend/app/models/sales.py — check if Quotation or Quote model exists
+- backend/app/api/v1/endpoints/sales.py — check for quote endpoints
+- frontend/src/app/dashboard/sales/ — check for quote pages
+
+Expected: No quote model exists (system goes straight from CRM to Sales Order).
 
 Build:
-1. WhatsAppConfig model — business_phone_id, api_token, webhook_verify_token, is_active
-2. WhatsAppMessage model — direction (INBOUND/OUTBOUND), phone, message_type (TEXT/TEMPLATE/MEDIA),
-   body, template_name, status (SENT/DELIVERED/READ/FAILED), linked_module, linked_object_id
-3. WhatsAppTemplate model — template_name, language, components (JSON with header/body/footer/buttons)
-4. Service: send_text(), send_template(), process_inbound_webhook()
-5. Endpoints: POST /whatsapp/send, POST /whatsapp/webhook (Twilio/Meta callback), GET /whatsapp/messages,
-   GET /whatsapp/templates, POST /whatsapp/config
-6. Frontend: /dashboard/whatsapp page — message log, template management, send from record
-7. Simulate delivery in demo mode (no real API key needed)
+1. Quotation model — quote_no (unique), customer_id, status (DRAFT/SENT/ACCEPTED/REJECTED/EXPIRED),
+   valid_until (date), version (int), discount_pct, currency, total_amount
+2. QuotationLine model — product_id, description, qty, unit_price, discount_pct, line_total
+3. Service: create_quote(), convert_to_so() — creates SalesOrder from accepted quote
+4. Endpoints: full CRUD + POST /quotes/{id}/send + POST /quotes/{id}/accept +
+   POST /quotes/{id}/reject + POST /quotes/{id}/convert-to-so + POST /quotes/{id}/revise (new version)
+5. Frontend: /dashboard/sales/quotes page — quote list, create/edit form, convert-to-SO button
+6. Win/loss tracking: status history, won/lost counts in dashboard
 
 
 
@@ -227,14 +231,14 @@ App uses create_all — no migration needed.
 
 ## Files Changed in Last Run
 
-Gap 13 additions:
-backend/app/models/company.py — New file: CompanyUserRole enum + Company, Branch, UserCompanyAccess models
-backend/app/schemas/company.py — New file: full CRUD schemas + CompanySummary
-backend/app/api/v1/endpoints/company.py — New file: 12 endpoints (company CRUD, set-default, branch CRUD, user access grant/revoke, KPI summary)
-backend/app/api/v1/router.py — Registered company router at /companies
-frontend/src/lib/company.ts — New file: Company/Branch/UserAccess/CompanySummary types + companyApi + localStorage switcher helpers
-frontend/src/app/dashboard/companies/page.tsx — Full company management page: company list, detail with 3 tabs (overview with KPI cards, branches with type badges, users with role badges), set-default button, add company modal, add branch modal
-frontend/src/components/nav-config.tsx — Added Companies nav entry under Admin & System
+Gap 14 additions:
+backend/app/models/whatsapp.py — New file: WAMessageDirection/Type/Status enums + WhatsAppConfig, WhatsAppMessage, WhatsAppTemplate models
+backend/app/schemas/whatsapp.py — New file: full schemas for config, send text, send template, message read, template CRUD, simulate inbound
+backend/app/api/v1/endpoints/whatsapp.py — New file: config CRUD, send text/template (demo mode → auto DELIVERED), Meta webhook handler (verification + message/status processing), message log, simulate-inbound, template CRUD, seed 5 FMCG demo templates
+backend/app/api/v1/router.py — Registered whatsapp router at /whatsapp
+frontend/src/lib/whatsapp.ts — New file: WAConfig/Message/Template types + waApi + STATUS_COLOR + STATUS_ICON maps
+frontend/src/app/dashboard/whatsapp/page.tsx — Full WhatsApp client: account selector, KPI cards, Conversations tab (contact list + message bubbles inbound/outbound), Templates tab (display + seed demo), Config tab (account table), send modal (text or template with variable fields)
+frontend/src/components/nav-config.tsx — Added WhatsApp nav entry under Integrations
 
 
 
@@ -247,19 +251,15 @@ Frontend TypeScript: PASS (tsc --noEmit, 0 errors)
 
 ## Notes for Next Claude Run
 
-Gap 14: WhatsApp Business API Integration.
+Gap 15: Quote / Estimation Module.
 
-Build pragmatic WhatsApp layer — similar to Email (no live API key required):
-- Store WhatsApp config (phone_id, api_token placeholder)
-- Log all outbound/inbound messages
-- Template-based sending (important: WhatsApp Business requires pre-approved templates)
-- Webhook simulation for demo mode
+Check backend/app/models/sales.py first — especially:
+- SalesOrder model fields (to ensure quote→SO conversion matches)
+- SOStatus enum values
+- SalesOrderLine fields
 
-Key WhatsApp Business API concepts:
-- All outbound messages must use pre-approved templates (unless within 24h customer-initiated window)
-- Templates have components: header (text/image), body (with variables {{1}} {{2}}), footer, buttons
-- Delivery tracking: SENT → DELIVERED → READ (via webhook status updates)
-- Phone numbers in E.164 format (+254712345678 for Kenya)
+Build quotation as pre-cursor to Sales Order:
+Quote → DRAFT → SENT (to customer) → ACCEPTED/REJECTED/EXPIRED → convert to SO
 
-Demo mode: POST /whatsapp/simulate-inbound — creates fake inbound message from customer
-linked to a record (order/invoice), allowing demo of the full conversation flow.
+Version bumping: when user revises a quote, old version stays, new DRAFT created with version+1.
+Only one ACTIVE version per customer per quote (same quote_no, different version).

@@ -54,6 +54,7 @@ from app.api.v1.endpoints import (
     messaging,
     email_integration,
     company,
+    whatsapp,
 )
 
 api_router = APIRouter()
@@ -247,3 +248,5 @@ api_router.include_router(messaging.router, prefix="/messaging", tags=["messagin
 api_router.include_router(email_integration.router, prefix="/email", tags=["email"])
 # ── Multi-Company / Branch ────────────────────────────────────────────────────
 api_router.include_router(company.router, prefix="/companies", tags=["companies"])
+# ── WhatsApp Business API ─────────────────────────────────────────────────────
+api_router.include_router(whatsapp.router, prefix="/whatsapp", tags=["whatsapp"])

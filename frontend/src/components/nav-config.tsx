@@ -1298,6 +1298,7 @@ export const NAV_CONFIG: NavEntry[] = [
     items: [
       { label: "Overview",       href: "/dashboard/integrations",               permission: "integrations.view" },
       { label: "Email Inbox",    href: "/dashboard/email",                      permission: "integrations.view" },
+      { label: "WhatsApp",       href: "/dashboard/whatsapp",                   permission: "integrations.view" },
       { label: "M-Pesa",         href: "/dashboard/integrations/mpesa",         permission: "mpesa.view_transactions" },
       { label: "Int. Logs",      href: "/dashboard/integrations/logs",          permission: "integrations.view" },
       { label: "Barcode",        href: "/dashboard/integrations/barcode",       permission: "integrations.view" },
