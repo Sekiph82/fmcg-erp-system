@@ -329,6 +329,49 @@ export interface RecallRegulatoryReport {
   summary_narrative: string;
 }
 
+// ── Gap 10 additions ─────────────────────────────────────────────────────────
+
+export type RecallAudience = "CONSUMER" | "RETAILER" | "REGULATOR" | "INTERNAL" | "MEDIA";
+
+export interface RecallTemplate {
+  id: string;
+  name: string;
+  audience: RecallAudience;
+  recall_type?: string | null;
+  severity_level?: string | null;
+  subject: string;
+  body: string;
+  channel: string;
+  language: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface RecallStatusLog {
+  id: string;
+  recall_id: string;
+  from_status?: string | null;
+  to_status: string;
+  changed_by_id?: string | null;
+  changed_by_name?: string | null;
+  changed_at: string;
+  reason?: string | null;
+  system_note?: string | null;
+}
+
+export interface RecallEvidence {
+  id: string;
+  recall_id: string;
+  title: string;
+  description?: string | null;
+  file_url?: string | null;
+  file_name?: string | null;
+  file_type?: string | null;
+  evidence_type?: string | null;
+  uploaded_by_id?: string | null;
+  created_at: string;
+}
+
 // ── API Client ────────────────────────────────────────────────────────────────
 
 const _BACKEND = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -432,6 +475,26 @@ export const traceApi = {
     req<TRRecAIRecommendation>(`${BASE}/recalls/ai-recommendations/${recId}/review`, {
       method: "POST", body: JSON.stringify(d),
     }),
+
+  // Communication Templates
+  listTemplates: (params?: { audience?: string; active_only?: boolean }) => {
+    const p = new URLSearchParams();
+    if (params?.audience) p.set("audience", params.audience);
+    if (params?.active_only !== undefined) p.set("active_only", String(params.active_only));
+    return req<RecallTemplate[]>(`${BASE}/recall-templates?${p}`);
+  },
+  createTemplate: (d: Omit<RecallTemplate, "id" | "is_active" | "created_at">) =>
+    req<RecallTemplate>(`${BASE}/recall-templates`, { method: "POST", body: JSON.stringify(d) }),
+  updateTemplate: (id: string, d: Partial<RecallTemplate>) =>
+    req<RecallTemplate>(`${BASE}/recall-templates/${id}`, { method: "PATCH", body: JSON.stringify(d) }),
+
+  // Status Audit Log
+  getAuditLog: (id: string) => req<RecallStatusLog[]>(`${BASE}/recalls/${id}/audit-log`),
+
+  // Evidence
+  listEvidence: (id: string) => req<RecallEvidence[]>(`${BASE}/recalls/${id}/evidence`),
+  addEvidence: (id: string, d: Omit<RecallEvidence, "id" | "recall_id" | "uploaded_by_id" | "created_at">) =>
+    req<RecallEvidence>(`${BASE}/recalls/${id}/evidence`, { method: "POST", body: JSON.stringify(d) }),
 };
 
 // ── Label & Color Maps ────────────────────────────────────────────────────────

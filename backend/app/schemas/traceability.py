@@ -11,6 +11,7 @@ from app.models.traceability import (
     RecallType, RecallTrigger, RecallSeverity, RecallStatus,
     RecallActionType, RecallActionStatus, RecallRiskStatus,
     TRRecAIAgentType, TRRecAIRecStatus,
+    RecallAudience,
 )
 
 
@@ -421,3 +422,76 @@ class TRRecAIRecommendationOut(_Base):
     created_at:      datetime
 
 RecallDetail.model_rebuild()
+
+
+# ── Communication Templates ───────────────────────────────────────────────────
+
+class RecallTemplateCreate(BaseModel):
+    name:          str
+    audience:      RecallAudience
+    recall_type:   Optional[str]  = None
+    severity_level: Optional[str] = None
+    subject:       str
+    body:          str
+    channel:       str = "EMAIL"
+    language:      str = "en"
+
+
+class RecallTemplateUpdate(BaseModel):
+    name:          Optional[str] = None
+    subject:       Optional[str] = None
+    body:          Optional[str] = None
+    channel:       Optional[str] = None
+    is_active:     Optional[bool] = None
+
+
+class RecallTemplateOut(_Base):
+    id:            UUID
+    name:          str
+    audience:      RecallAudience
+    recall_type:   Optional[str]
+    severity_level: Optional[str]
+    subject:       str
+    body:          str
+    channel:       str
+    language:      str
+    is_active:     bool
+    created_at:    datetime
+
+
+# ── Status Audit Log ──────────────────────────────────────────────────────────
+
+class RecallStatusLogOut(_Base):
+    id:            UUID
+    recall_id:     UUID
+    from_status:   Optional[str]
+    to_status:     str
+    changed_by_id: Optional[UUID]
+    changed_by_name: Optional[str] = None
+    changed_at:    datetime
+    reason:        Optional[str]
+    system_note:   Optional[str]
+
+
+# ── Evidence Attachments ──────────────────────────────────────────────────────
+
+class RecallEvidenceCreate(BaseModel):
+    title:         str
+    description:   Optional[str] = None
+    file_url:      Optional[str] = None
+    file_name:     Optional[str] = None
+    file_type:     Optional[str] = None
+    evidence_type: Optional[str] = None
+
+
+class RecallEvidenceOut(_Base):
+    id:            UUID
+    recall_id:     UUID
+    title:         str
+    description:   Optional[str]
+    file_url:      Optional[str]
+    file_name:     Optional[str]
+    file_type:     Optional[str]
+    evidence_type: Optional[str]
+    uploaded_by_id: Optional[UUID]
+    created_at:    datetime

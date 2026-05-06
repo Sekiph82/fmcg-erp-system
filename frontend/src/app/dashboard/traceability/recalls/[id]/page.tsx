@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import {
   traceApi, RecallDetail, RECALL_STATUS_BG, SEVERITY_BG,
   RISK_BG, ACTION_STATUS_BG, RECALL_ACTION_LABEL, AI_AGENT_LABEL,
-  RecallActionType,
+  RecallActionType, RecallStatusLog, RecallEvidence,
 } from "@/lib/traceability";
 
 const ACTION_TYPES: RecallActionType[] = [
@@ -17,11 +17,15 @@ export default function RecallDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [recall, setRecall] = useState<RecallDetail | null>(null);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"overview"|"scope"|"actions"|"customers"|"returns"|"ai">("overview");
+  const [tab, setTab] = useState<"overview"|"scope"|"actions"|"customers"|"returns"|"ai"|"audit"|"evidence">("overview");
   const [calculating, setCalculating] = useState(false);
   const [containing, setContaining] = useState(false);
   const [showAction, setShowAction] = useState(false);
   const [actionForm, setActionForm] = useState({ action_type: "quarantine", notes: "" });
+  const [auditLog, setAuditLog] = useState<RecallStatusLog[]>([]);
+  const [evidence, setEvidence] = useState<RecallEvidence[]>([]);
+  const [evidenceForm, setEvidenceForm] = useState({ title: "", description: "", file_url: "", evidence_type: "" });
+  const [addingEvidence, setAddingEvidence] = useState(false);
 
   const load = () => {
     setLoading(true);
@@ -107,10 +111,14 @@ export default function RecallDetailPage() {
 
       {/* Tabs */}
       <div className="flex gap-1 bg-gray-100 p-1 rounded-lg flex-wrap">
-        {(["overview","scope","actions","customers","returns","ai"] as const).map(t => (
-          <button key={t} onClick={() => setTab(t)}
+        {(["overview","scope","actions","customers","returns","ai","audit","evidence"] as const).map(t => (
+          <button key={t} onClick={() => {
+            setTab(t);
+            if (t === "audit" && auditLog.length === 0) traceApi.getAuditLog(id).then(setAuditLog).catch(() => {});
+            if (t === "evidence" && evidence.length === 0) traceApi.listEvidence(id).then(setEvidence).catch(() => {});
+          }}
             className={`px-4 py-1.5 rounded text-sm font-medium capitalize ${tab === t ? "bg-white shadow text-gray-800" : "text-gray-500"}`}>
-            {t === "ai" ? "AI Recs" : t.replace("-"," ")}
+            {t === "ai" ? "AI Recs" : t === "audit" ? "Audit Trail" : t.replace("-"," ")}
             {t === "ai" && recall.ai_recs.filter(r => r.status === "pending").length > 0 &&
               <span className="ml-1 bg-red-500 text-white text-xs rounded-full px-1">{recall.ai_recs.filter(r => r.status === "pending").length}</span>}
           </button>
@@ -367,6 +375,123 @@ export default function RecallDetailPage() {
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* ── Audit Trail ── */}
+      {tab === "audit" && (
+        <div className="bg-white rounded-xl border border-gray-200">
+          <div className="px-5 py-3 border-b font-semibold text-gray-800">Status Audit Trail — Immutable Log</div>
+          {auditLog.length === 0 ? (
+            <p className="px-5 py-8 text-center text-gray-400">No audit entries yet</p>
+          ) : (
+            <div className="divide-y">
+              {auditLog.map((log) => (
+                <div key={log.id} className="px-5 py-3 flex items-start gap-4">
+                  <div className="shrink-0 text-xs text-gray-400 w-36">
+                    {new Date(log.changed_at).toLocaleString("en-KE")}
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      {log.from_status && (
+                        <><span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">{log.from_status}</span>
+                        <span className="text-gray-400">→</span></>
+                      )}
+                      <span className="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded font-medium">{log.to_status}</span>
+                    </div>
+                    {log.changed_by_name && <p className="text-xs text-gray-500 mt-1">By: {log.changed_by_name}</p>}
+                    {log.reason && <p className="text-xs text-gray-600 mt-1 italic">{log.reason}</p>}
+                    {log.system_note && <p className="text-xs text-gray-400 mt-0.5">{log.system_note}</p>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Evidence ── */}
+      {tab === "evidence" && (
+        <div className="space-y-4">
+          <div className="bg-white rounded-xl border border-gray-200">
+            <div className="px-5 py-3 border-b flex items-center justify-between">
+              <span className="font-semibold text-gray-800">Evidence Attachments ({evidence.length})</span>
+              <button
+                className="text-sm text-indigo-600 hover:underline"
+                onClick={() => setAddingEvidence(true)}
+              >+ Add Evidence</button>
+            </div>
+            {evidence.length === 0 ? (
+              <p className="px-5 py-8 text-center text-gray-400">No evidence attached yet</p>
+            ) : (
+              <div className="divide-y">
+                {evidence.map((ev) => (
+                  <div key={ev.id} className="px-5 py-3 flex items-start gap-4">
+                    <div className="shrink-0">
+                      <span className={`text-xs px-2 py-0.5 rounded font-medium ${ev.evidence_type === "LAB_REPORT" ? "bg-blue-100 text-blue-700" : ev.evidence_type === "PHOTO" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}`}>
+                        {ev.evidence_type ?? "DOC"}
+                      </span>
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium text-gray-800">{ev.title}</p>
+                      {ev.description && <p className="text-xs text-gray-500 mt-0.5">{ev.description}</p>}
+                      {ev.file_name && <p className="text-xs text-gray-400 mt-0.5">📎 {ev.file_name}</p>}
+                      {ev.file_url && (
+                        <a href={ev.file_url} target="_blank" rel="noopener noreferrer" className="text-xs text-indigo-600 hover:underline mt-0.5 block">
+                          Open file
+                        </a>
+                      )}
+                    </div>
+                    <span className="text-xs text-gray-400 shrink-0">
+                      {new Date(ev.created_at).toLocaleDateString("en-KE")}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {addingEvidence && (
+            <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-3">
+              <h3 className="font-semibold text-gray-800">Add Evidence</h3>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Title</label>
+                  <input className="w-full border rounded px-3 py-2 text-sm" value={evidenceForm.title} onChange={(e) => setEvidenceForm((f) => ({ ...f, title: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Type</label>
+                  <select className="w-full border rounded px-3 py-2 text-sm" value={evidenceForm.evidence_type} onChange={(e) => setEvidenceForm((f) => ({ ...f, evidence_type: e.target.value }))}>
+                    {["LAB_REPORT","PHOTO","REGULATORY","CUSTOMER_COMPLAINT","INTERNAL_MEMO","OTHER"].map((t) => (
+                      <option key={t} value={t}>{t.replace(/_/g, " ")}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">File URL (optional)</label>
+                <input className="w-full border rounded px-3 py-2 text-sm" value={evidenceForm.file_url} onChange={(e) => setEvidenceForm((f) => ({ ...f, file_url: e.target.value }))} placeholder="https://…" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Description</label>
+                <textarea className="w-full border rounded px-3 py-2 text-sm" rows={2} value={evidenceForm.description} onChange={(e) => setEvidenceForm((f) => ({ ...f, description: e.target.value }))} />
+              </div>
+              <div className="flex gap-2">
+                <button className="px-3 py-1.5 text-sm border rounded" onClick={() => setAddingEvidence(false)}>Cancel</button>
+                <button
+                  className="px-3 py-1.5 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700"
+                  onClick={async () => {
+                    if (!evidenceForm.title.trim()) return;
+                    await traceApi.addEvidence(id, { ...evidenceForm, file_url: evidenceForm.file_url || undefined, evidence_type: evidenceForm.evidence_type || undefined } as Parameters<typeof traceApi.addEvidence>[1]);
+                    const ev = await traceApi.listEvidence(id);
+                    setEvidence(ev);
+                    setAddingEvidence(false);
+                    setEvidenceForm({ title: "", description: "", file_url: "", evidence_type: "" });
+                  }}
+                >Save Evidence</button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

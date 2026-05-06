@@ -18,6 +18,8 @@ from app.models.traceability import (
     RecallStatus, RecallActionStatus, RecallRiskStatus,
     RecallActionType, TRRecAIAgentType, TRRecAIRecStatus,
     TraceEventType, TraceEventLine, LotGenealogyLink,
+    RecallCommunicationTemplate, RecallStatusLog, RecallEvidence,
+    RecallAudience,
 )
 from app.models.inventory import Lot, Stock
 from app.models.sales import SalesOrder
@@ -27,6 +29,8 @@ from app.schemas.traceability import (
     RecallHeaderOut, RecallDetail, RecallDashboard,
     RecallScopeLineOut, RecallActionOut, RecallCustomerImpactOut,
     RecallReturnOut, TRRecAIRecommendationOut, RecallRegulatoryReport,
+    RecallTemplateCreate, RecallTemplateUpdate, RecallTemplateOut,
+    RecallEvidenceCreate, RecallEvidenceOut, RecallStatusLogOut,
 )
 from app.services import traceability_service as trace_svc
 
@@ -84,11 +88,40 @@ async def list_recalls(db: AsyncSession, status: Optional[RecallStatus] = None,
     return list(r.scalars().all())
 
 
+async def _log_status_change(
+    db: AsyncSession,
+    recall: RecallHeader,
+    to_status: str,
+    changed_by_id: Optional[uuid.UUID] = None,
+    reason: Optional[str] = None,
+    system_note: Optional[str] = None,
+) -> None:
+    """Create an immutable status change log entry."""
+    from datetime import timezone
+    log = RecallStatusLog(
+        recall_id=recall.id,
+        from_status=recall.status.value if recall.status else None,
+        to_status=to_status,
+        changed_by_id=changed_by_id,
+        changed_at=datetime.now(tz=timezone.utc),
+        reason=reason,
+        system_note=system_note,
+    )
+    db.add(log)
+
+
 async def update_recall_status(db: AsyncSession, recall_id: uuid.UUID,
                                 data: RecallStatusUpdate) -> RecallHeader:
     recall = await db.get(RecallHeader, recall_id)
     if not recall:
         raise ValueError("Recall not found")
+
+    await _log_status_change(
+        db, recall, data.status.value,
+        changed_by_id=data.approved_by_id,
+        reason=data.notes,
+        system_note=f"Status changed to {data.status.value}",
+    )
 
     recall.status = data.status
     now = datetime.utcnow()
@@ -853,3 +886,93 @@ async def get_recall_detail(db: AsyncSession, recall_id: uuid.UUID) -> RecallDet
         ai_recs=[TRRecAIRecommendationOut.model_validate(r) for r in ai_recs],
     )
     return detail
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Communication Templates
+# ─────────────────────────────────────────────────────────────────────────────
+
+async def list_templates(
+    db: AsyncSession,
+    audience: Optional[str] = None,
+    active_only: bool = True,
+) -> List[RecallCommunicationTemplate]:
+    q = select(RecallCommunicationTemplate)
+    if audience:
+        q = q.where(RecallCommunicationTemplate.audience == audience)
+    if active_only:
+        q = q.where(RecallCommunicationTemplate.is_active.is_(True))
+    q = q.order_by(RecallCommunicationTemplate.audience, RecallCommunicationTemplate.name)
+    return list((await db.execute(q)).scalars().all())
+
+
+async def create_template(
+    db: AsyncSession,
+    data: RecallTemplateCreate,
+    created_by_id: Optional[uuid.UUID] = None,
+) -> RecallCommunicationTemplate:
+    tmpl = RecallCommunicationTemplate(**data.model_dump(), created_by_id=created_by_id)
+    db.add(tmpl)
+    await db.commit()
+    await db.refresh(tmpl)
+    return tmpl
+
+
+async def update_template(
+    db: AsyncSession,
+    template_id: uuid.UUID,
+    data: RecallTemplateUpdate,
+) -> RecallCommunicationTemplate:
+    tmpl = await db.get(RecallCommunicationTemplate, template_id)
+    if not tmpl:
+        raise ValueError("Template not found")
+    for k, v in data.model_dump(exclude_none=True).items():
+        setattr(tmpl, k, v)
+    await db.commit()
+    await db.refresh(tmpl)
+    return tmpl
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Status Audit Log
+# ─────────────────────────────────────────────────────────────────────────────
+
+async def list_status_logs(
+    db: AsyncSession,
+    recall_id: uuid.UUID,
+) -> List[RecallStatusLog]:
+    q = (
+        select(RecallStatusLog)
+        .where(RecallStatusLog.recall_id == recall_id)
+        .order_by(RecallStatusLog.changed_at.asc())
+    )
+    return list((await db.execute(q)).scalars().all())
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Evidence Attachments
+# ─────────────────────────────────────────────────────────────────────────────
+
+async def add_evidence(
+    db: AsyncSession,
+    recall_id: uuid.UUID,
+    data: RecallEvidenceCreate,
+    uploaded_by_id: Optional[uuid.UUID] = None,
+) -> RecallEvidence:
+    ev = RecallEvidence(**data.model_dump(), recall_id=recall_id, uploaded_by_id=uploaded_by_id)
+    db.add(ev)
+    await db.commit()
+    await db.refresh(ev)
+    return ev
+
+
+async def list_evidence(
+    db: AsyncSession,
+    recall_id: uuid.UUID,
+) -> List[RecallEvidence]:
+    q = (
+        select(RecallEvidence)
+        .where(RecallEvidence.recall_id == recall_id)
+        .order_by(RecallEvidence.created_at.asc())
+    )
+    return list((await db.execute(q)).scalars().all())

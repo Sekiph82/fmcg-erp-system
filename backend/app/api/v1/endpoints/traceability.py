@@ -24,6 +24,8 @@ from app.schemas.traceability import (
     RecallHeaderOut, RecallDetail, RecallDashboard,
     RecallScopeLineOut, RecallActionOut, RecallCustomerImpactOut,
     RecallReturnOut, TRRecAIRecommendationOut, RecallRegulatoryReport,
+    RecallTemplateCreate, RecallTemplateUpdate, RecallTemplateOut,
+    RecallEvidenceCreate, RecallEvidenceOut, RecallStatusLogOut,
 )
 from app.services import traceability_service as trace_svc
 from app.services import recall_service as recall_svc
@@ -282,3 +284,69 @@ async def review_ai_rec(rec_id: uuid.UUID, data: TRRecAIRecReview,
         return TRRecAIRecommendationOut.model_validate(rec)
     except ValueError as e:
         raise HTTPException(404, str(e))
+
+
+# ── Communication Templates ───────────────────────────────────────────────────
+
+@router.get("/recall-templates", response_model=List[RecallTemplateOut])
+async def list_recall_templates(
+    audience: Optional[str] = None,
+    active_only: bool = True,
+    db: AsyncSession = Depends(get_db),
+):
+    templates = await recall_svc.list_templates(db, audience=audience, active_only=active_only)
+    return [RecallTemplateOut.model_validate(t) for t in templates]
+
+
+@router.post("/recall-templates", response_model=RecallTemplateOut, status_code=201)
+async def create_recall_template(
+    data: RecallTemplateCreate,
+    db: AsyncSession = Depends(get_db),
+):
+    tmpl = await recall_svc.create_template(db, data)
+    return RecallTemplateOut.model_validate(tmpl)
+
+
+@router.patch("/recall-templates/{template_id}", response_model=RecallTemplateOut)
+async def update_recall_template(
+    template_id: uuid.UUID,
+    data: RecallTemplateUpdate,
+    db: AsyncSession = Depends(get_db),
+):
+    try:
+        tmpl = await recall_svc.update_template(db, template_id, data)
+        return RecallTemplateOut.model_validate(tmpl)
+    except ValueError as e:
+        raise HTTPException(404, str(e))
+
+
+# ── Status Audit Log ──────────────────────────────────────────────────────────
+
+@router.get("/recalls/{recall_id}/audit-log", response_model=List[RecallStatusLogOut])
+async def recall_audit_log(recall_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    logs = await recall_svc.list_status_logs(db, recall_id)
+    out = []
+    for log in logs:
+        row = RecallStatusLogOut.model_validate(log)
+        if log.changed_by:
+            row.changed_by_name = log.changed_by.full_name or log.changed_by.username
+        out.append(row)
+    return out
+
+
+# ── Evidence Attachments ──────────────────────────────────────────────────────
+
+@router.get("/recalls/{recall_id}/evidence", response_model=List[RecallEvidenceOut])
+async def list_recall_evidence(recall_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    evidence = await recall_svc.list_evidence(db, recall_id)
+    return [RecallEvidenceOut.model_validate(e) for e in evidence]
+
+
+@router.post("/recalls/{recall_id}/evidence", response_model=RecallEvidenceOut, status_code=201)
+async def add_recall_evidence(
+    recall_id: uuid.UUID,
+    data: RecallEvidenceCreate,
+    db: AsyncSession = Depends(get_db),
+):
+    ev = await recall_svc.add_evidence(db, recall_id, data)
+    return RecallEvidenceOut.model_validate(ev)

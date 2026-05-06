@@ -333,6 +333,7 @@ export const NAV_CONFIG: NavEntry[] = [
       { label: "Genealogy Graph",    href: "/dashboard/traceability/genealogy",  permission: "production.view" },
       { label: "Recall List",        href: "/dashboard/traceability/recalls",    permission: "production.view" },
       { label: "Mock Recall Drill",  href: "/dashboard/traceability/mock-recall",permission: "production.view" },
+      { label: "Comm. Templates",    href: "/dashboard/traceability/templates",  permission: "production.view" },
       { label: "Regulatory Reports", href: "/dashboard/traceability/regulatory", permission: "production.view" },
     ],
   },

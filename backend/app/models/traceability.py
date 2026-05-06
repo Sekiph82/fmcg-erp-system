@@ -266,6 +266,7 @@ class RecallHeader(Base, TimestampMixin):
     effectiveness_score  = Column(Numeric(5, 2), nullable=True)
     time_to_trace_hours  = Column(Numeric(8, 2), nullable=True)
     time_to_contain_hours= Column(Numeric(8, 2), nullable=True)
+    sla_target_hours     = Column(Numeric(8, 2), nullable=True, default=72)  # 72h default SLA
 
     notes                = Column(Text, nullable=True)
 
@@ -443,3 +444,71 @@ class TRRecAIRecommendation(Base, TimestampMixin):
     customer    = relationship("Customer",     foreign_keys=[customer_id])
     warehouse   = relationship("Warehouse",    foreign_keys=[warehouse_id])
     reviewed_by = relationship("User",         foreign_keys=[reviewed_by_id])
+
+
+# ── Recall Communication Templates ───────────────────────────────────────────
+
+class RecallAudience(str, enum.Enum):
+    CONSUMER   = "CONSUMER"
+    RETAILER   = "RETAILER"
+    REGULATOR  = "REGULATOR"
+    INTERNAL   = "INTERNAL"
+    MEDIA      = "MEDIA"
+
+
+class RecallCommunicationTemplate(Base, TimestampMixin):
+    """Predefined message templates for recall communications."""
+    __tablename__ = "recall_communication_templates"
+
+    id           = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name         = Column(String(200), nullable=False)
+    audience     = Column(Enum(RecallAudience), nullable=False, index=True)
+    recall_type  = Column(String(50), nullable=True)   # null = all types
+    severity_level = Column(String(50), nullable=True) # null = all severities
+    subject      = Column(String(500), nullable=False)
+    body         = Column(Text, nullable=False)         # supports {{recall_no}}, {{product}}, {{lot}} placeholders
+    channel      = Column(String(50), nullable=False, default="EMAIL")  # EMAIL / SMS / WHATSAPP
+    language     = Column(String(10), nullable=False, default="en")
+    is_active    = Column(Boolean, default=True, nullable=False)
+    created_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+
+    created_by = relationship("User", foreign_keys=[created_by_id])
+
+
+# ── Recall Status Audit Log (immutable) ──────────────────────────────────────
+
+class RecallStatusLog(Base, TimestampMixin):
+    """Immutable log of every status change on a recall. Never updated or deleted."""
+    __tablename__ = "recall_status_logs"
+
+    id             = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    recall_id      = Column(UUID(as_uuid=True), ForeignKey("recall_headers.id", ondelete="CASCADE"),
+                            nullable=False, index=True)
+    from_status    = Column(String(50), nullable=True)
+    to_status      = Column(String(50), nullable=False)
+    changed_by_id  = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    changed_at     = Column(DateTime(timezone=True), nullable=False)
+    reason         = Column(Text, nullable=True)
+    system_note    = Column(String(500), nullable=True)  # auto-generated context
+
+    changed_by = relationship("User", foreign_keys=[changed_by_id])
+
+
+# ── Recall Evidence Attachment ────────────────────────────────────────────────
+
+class RecallEvidence(Base, TimestampMixin):
+    """Documents / photos attached to a recall as evidence."""
+    __tablename__ = "recall_evidence"
+
+    id          = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    recall_id   = Column(UUID(as_uuid=True), ForeignKey("recall_headers.id", ondelete="CASCADE"),
+                         nullable=False, index=True)
+    title       = Column(String(300), nullable=False)
+    description = Column(Text, nullable=True)
+    file_url    = Column(String(1000), nullable=True)
+    file_name   = Column(String(500), nullable=True)
+    file_type   = Column(String(100), nullable=True)  # PDF / JPEG / etc.
+    evidence_type = Column(String(100), nullable=True)  # LAB_REPORT / PHOTO / REGULATORY / CUSTOMER_COMPLAINT
+    uploaded_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+
+    uploaded_by = relationship("User", foreign_keys=[uploaded_by_id])
