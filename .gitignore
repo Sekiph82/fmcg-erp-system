@@ -39,3 +39,6 @@ postgres_data/
 # Auto-sync logs
 git-sync.log
 git-auto-pull.bat
+
+# Large files — exceed GitHub 100MB limit
+KenyaFactoryAI/imports/**/*.pdf
