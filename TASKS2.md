@@ -10,7 +10,7 @@ Phase 2 — High Importance (Tier 2)
 
 ## Current Gap
 
-Gap 15 — Quote / Estimation Module
+Gap 16 — Helpdesk / Customer Complaint Ticketing
 
 
 
@@ -21,6 +21,8 @@ Not started yet.
 
 
 ## Completed in Last Run
+
+Gap 15 — Quote / Estimation Module
 
 Gap 14 — WhatsApp Business API Integration
 
@@ -82,11 +84,11 @@ Gap 1 — Full Double-Entry General Ledger
 
 14\. WhatsApp Business API Integration
 
+15\. Quote / Estimation Module
+
 
 
 ## Remaining Gap Items
-
-15\. Quote / Estimation Module
 
 16\. Helpdesk / Customer Complaint Ticketing
 
@@ -202,24 +204,32 @@ Gap 1 — Full Double-Entry General Ledger
 
 ## Next Immediate Task
 
-Implement Gap 15 — Quote / Estimation Module.
+Implement Gap 16 — Helpdesk / Customer Complaint Ticketing.
 
-Check existing sales models first:
-- backend/app/models/sales.py — check if Quotation or Quote model exists
-- backend/app/api/v1/endpoints/sales.py — check for quote endpoints
-- frontend/src/app/dashboard/sales/ — check for quote pages
+Inspect first:
+- backend/app/models/ — check for any existing helpdesk/ticket/complaint model
+- frontend/src/app/dashboard/ — check for any helpdesk folder
+- nav-config.tsx — check if helpdesk section exists
 
-Expected: No quote model exists (system goes straight from CRM to Sales Order).
+Expected: No model exists. Build from scratch.
 
 Build:
-1. Quotation model — quote_no (unique), customer_id, status (DRAFT/SENT/ACCEPTED/REJECTED/EXPIRED),
-   valid_until (date), version (int), discount_pct, currency, total_amount
-2. QuotationLine model — product_id, description, qty, unit_price, discount_pct, line_total
-3. Service: create_quote(), convert_to_so() — creates SalesOrder from accepted quote
-4. Endpoints: full CRUD + POST /quotes/{id}/send + POST /quotes/{id}/accept +
-   POST /quotes/{id}/reject + POST /quotes/{id}/convert-to-so + POST /quotes/{id}/revise (new version)
-5. Frontend: /dashboard/sales/quotes page — quote list, create/edit form, convert-to-SO button
-6. Win/loss tracking: status history, won/lost counts in dashboard
+1. TicketStatus enum: OPEN / IN_PROGRESS / ESCALATED / RESOLVED / CLOSED
+2. TicketCategory enum: QUALITY / DELIVERY / BILLING / PRODUCT / OTHER
+3. TicketPriority enum: LOW / MEDIUM / HIGH / CRITICAL
+4. Ticket model: ticket_no, customer_id, category, priority, status,
+   subject, description, lot_id (nullable FK → lots), sla_hours,
+   first_response_at, resolved_at, customer_satisfaction (1-5),
+   assigned_to_id, created_by_id
+5. TicketComment model: ticket_id, body, is_internal, created_by_id
+6. Service + endpoints:
+   - CRUD tickets + GET /dashboard
+   - POST /tickets/{id}/assign, /escalate, /resolve, /close
+   - POST /tickets/{id}/comments
+   - SLA breach tracking (resolved_at vs created_at + sla_hours)
+7. Frontend: /dashboard/helpdesk/page.tsx
+8. Nav: add under "Quality & Compliance" cluster (tickets are quality/service items)
+   OR add a small section in Sales & Distribution — choose Quality & Compliance.
 
 
 
@@ -231,35 +241,40 @@ App uses create_all — no migration needed.
 
 ## Files Changed in Last Run
 
-Gap 14 additions:
-backend/app/models/whatsapp.py — New file: WAMessageDirection/Type/Status enums + WhatsAppConfig, WhatsAppMessage, WhatsAppTemplate models
-backend/app/schemas/whatsapp.py — New file: full schemas for config, send text, send template, message read, template CRUD, simulate inbound
-backend/app/api/v1/endpoints/whatsapp.py — New file: config CRUD, send text/template (demo mode → auto DELIVERED), Meta webhook handler (verification + message/status processing), message log, simulate-inbound, template CRUD, seed 5 FMCG demo templates
-backend/app/api/v1/router.py — Registered whatsapp router at /whatsapp
-frontend/src/lib/whatsapp.ts — New file: WAConfig/Message/Template types + waApi + STATUS_COLOR + STATUS_ICON maps
-frontend/src/app/dashboard/whatsapp/page.tsx — Full WhatsApp client: account selector, KPI cards, Conversations tab (contact list + message bubbles inbound/outbound), Templates tab (display + seed demo), Config tab (account table), send modal (text or template with variable fields)
-frontend/src/components/nav-config.tsx — Added WhatsApp nav entry under Integrations
+Gap 15 additions:
+backend/app/models/quotation.py — NEW: QuoteStatus, Quotation, QuotationLine models
+backend/app/schemas/quotation.py — NEW: full Pydantic schemas
+backend/app/api/v1/endpoints/quotation.py — NEW: full CRUD + send/accept/reject/expire/revise/convert endpoints
+backend/app/api/v1/router.py — registered quotation router at /quotes
+backend/app/models/__init__.py — imported QuoteStatus, Quotation, QuotationLine
+frontend/src/lib/quotations.ts — NEW: types, quoteApi, STATUS_COLORS, fmtCcy, fmtDate
+frontend/src/app/dashboard/sales/quotes/page.tsx — NEW: full page with KPI cards, filter, table, create modal, reject modal, row actions
+frontend/src/components/nav-config.tsx — added Quotations link to Sales & Distribution section
 
 
 
 ## Validation Results
 
-Backend Python compile: PASS (all modified files)
+Backend Python compile: PASS (all 5 files)
 Frontend TypeScript: PASS (tsc --noEmit, 0 errors)
 
 
 
 ## Notes for Next Claude Run
 
-Gap 15: Quote / Estimation Module.
+Gap 16: Helpdesk / Complaint Ticketing.
 
-Check backend/app/models/sales.py first — especially:
-- SalesOrder model fields (to ensure quote→SO conversion matches)
-- SOStatus enum values
-- SalesOrderLine fields
+Key design decisions:
+- lot_id link enables batch-level complaint tracking (ties into Gap 10 recall system)
+- SLA hours configurable per category (QUALITY=4h, CRITICAL=1h, others=24h)
+- customer_satisfaction score (1-5) captured on close
+- TicketComment supports internal notes vs external replies
+- Consider linking to Customer (sales.py) and Lot (inventory.py)
 
-Build quotation as pre-cursor to Sales Order:
-Quote → DRAFT → SENT (to customer) → ACCEPTED/REJECTED/EXPIRED → convert to SO
+Check if Lot model has the right FK target name:
+  grep "class Lot" backend/app/models/inventory.py
+  — should be "lots" table
 
-Version bumping: when user revises a quote, old version stays, new DRAFT created with version+1.
-Only one ACTIVE version per customer per quote (same quote_no, different version).
+Nav placement: Under Quality & Compliance cluster (alongside qms, allergen, gs1).
+OR under new "Customer Service" sub-cluster inside Sales & Distribution.
+Prefer Quality & Compliance for FMCG context (complaint = quality event).

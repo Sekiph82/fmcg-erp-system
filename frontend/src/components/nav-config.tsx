@@ -516,6 +516,7 @@ export const NAV_CONFIG: NavEntry[] = [
     permission: "sales.view",
     icon: md("M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"),
     items: [
+      { label: "Quotations",       href: "/dashboard/sales/quotes",              permission: "sales.view" },
       { label: "Sales Orders",     href: "/dashboard/sales/orders",              permission: "sales.view" },
       { label: "Field Sales",      href: "/dashboard/sales/field-sales",         permission: "sales.view" },
       { label: "Distributors",     href: "/dashboard/sales/distributors",        permission: "sales.view" },

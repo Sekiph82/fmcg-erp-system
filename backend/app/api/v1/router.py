@@ -55,6 +55,7 @@ from app.api.v1.endpoints import (
     email_integration,
     company,
     whatsapp,
+    quotation,
 )
 
 api_router = APIRouter()
@@ -250,3 +251,5 @@ api_router.include_router(email_integration.router, prefix="/email", tags=["emai
 api_router.include_router(company.router, prefix="/companies", tags=["companies"])
 # ── WhatsApp Business API ─────────────────────────────────────────────────────
 api_router.include_router(whatsapp.router, prefix="/whatsapp", tags=["whatsapp"])
+# ── Quote / Estimation Module ─────────────────────────────────────────────────
+api_router.include_router(quotation.router, prefix="/quotes", tags=["quotes"])

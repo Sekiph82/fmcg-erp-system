@@ -572,6 +572,11 @@ from app.models.subscription import (
     SubAIRecommendation,
 )
 
+# ── Quote / Estimation Module ─────────────────────────────────────────────────
+from app.models.quotation import (
+    QuoteStatus, Quotation, QuotationLine,
+)
+
 # ── Material Flow Engine ──────────────────────────────────────────────────────
 from app.models.material_flow import (
     FlowType, FlowStatus, FlowMode, StageType, QualityStatus,
@@ -810,6 +815,8 @@ __all__ = [
     "SubscriptionTemplate", "SubscriptionLine",
     "SubscriptionGenerationLog", "SubscriptionPauseSkip",
     "SubAIRecommendation",
+    # Quote / Estimation Module
+    "QuoteStatus", "Quotation", "QuotationLine",
     # Material Flow Engine
     "FlowType", "FlowStatus", "FlowMode", "StageType", "QualityStatus",
     "MovementReason", "ReservationStatus", "TankStatus", "ReconciliationStatus",
