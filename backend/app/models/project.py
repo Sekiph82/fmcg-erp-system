@@ -96,7 +96,10 @@ class ProjectTask(Base, TimestampMixin):
     milestone    = relationship("ProjectMilestone", back_populates="tasks", foreign_keys=[milestone_id])
     assigned_to  = relationship("User", foreign_keys=[assigned_to_id])
     sub_tasks    = relationship("ProjectTask", foreign_keys=[parent_task_id],
-                                backref="parent_task", lazy="select")
+                                back_populates="parent_task", lazy="select")
+    parent_task  = relationship("ProjectTask", foreign_keys=[parent_task_id],
+                                remote_side=[id], back_populates="sub_tasks",
+                                uselist=False, lazy="select")
     # Dependencies: tasks this task depends on
     dependencies = relationship("TaskDependency", foreign_keys="TaskDependency.task_id",
                                 cascade="all, delete-orphan")
