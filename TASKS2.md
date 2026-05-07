@@ -10,7 +10,7 @@ Phase 2 — High Importance (Tier 2)
 
 ## Current Gap
 
-Gap 19 — Electronic Signatures
+Gap 20 — Bank API Integration / Open Banking
 
 
 
@@ -21,6 +21,8 @@ Not started yet.
 
 
 ## Completed in Last Run
+
+Gap 19 — Electronic Signatures
 
 Gap 18 — Retail / Shop POS
 
@@ -98,11 +100,11 @@ Gap 1 — Full Double-Entry General Ledger
 
 18\. Retail / Shop POS
 
+19\. Electronic Signatures
+
 
 
 ## Remaining Gap Items
-
-19\. Electronic Signatures
 
 20\. Bank API Integration / Open Banking
 
@@ -210,39 +212,44 @@ Gap 1 — Full Double-Entry General Ledger
 
 ## Next Immediate Task
 
-Implement Gap 19 — Electronic Signatures.
+Implement Gap 20 — Bank API Integration / Open Banking.
 
 Inspect first:
-- backend/app/models/ — check for any existing signature/esign model
-- backend/app/models/documents.py — check Document model for attachment hooks
-- frontend/src/app/dashboard/ — check for esign folder
-- nav-config.tsx — best placement (Administration & System or Sales & Distribution)
+- backend/app/models/finance.py — check BankAccount / bank reconciliation models
+- backend/app/models/bank_reconciliation.py — existing reconciliation model
+- frontend/src/app/dashboard/ — check for bank-api or open-banking folder
+- nav-config.tsx — placement under Finance & Accounting cluster
 
-Expected: No signature model exists. Build from scratch.
+Expected: CSV import exists; no direct bank API sync. Build bank connection + sync simulation layer.
 
 Build:
-1. SignatureRequest model: request_no, document_id (nullable), document_type (e.g. "contract", "quotation"),
-   document_ref (str, the doc name), requester_id, signer_ids (junction), status (PENDING/SIGNED/DECLINED/EXPIRED),
-   subject, message, expires_at, signed_count, required_count
-2. SignatureRecord model: request_id, signer_id, signed_at, ip_address, user_agent,
-   signature_data (base64 PNG or SVG path), status (PENDING/SIGNED/DECLINED)
-3. Endpoints:
-   - POST /esign/requests — create signature request
-   - GET /esign/requests — list requests
-   - GET /esign/requests/{id} — detail
-   - POST /esign/requests/{id}/sign — signer submits signature
-   - POST /esign/requests/{id}/decline — signer declines
-   - GET /esign/requests/pending-for-me — my pending requests
-   - GET /esign/dashboard — stats
-4. Frontend:
-   - /dashboard/esign/page.tsx — request list + create modal
-   - Signature capture: HTML canvas draw pad (no external library)
-5. Nav: under "Administration & System" cluster (documents-adjacent)
+1. BankConnection model: connection_no, bank_name, account_name, account_number,
+   bank_code, currency, status (ACTIVE/DISCONNECTED), last_synced_at,
+   api_type (DIRECT/MOCK), credentials_ref (opaque string)
+2. BankTransaction model: connection_id, txn_date, value_date, description,
+   amount, direction (DEBIT/CREDIT), reference, balance_after,
+   classification (auto-tagged), is_reconciled, matched_record_id, matched_record_type
+3. BankSyncLog model: connection_id, synced_at, transactions_fetched, status, message
+4. Endpoints:
+   - POST /bank-api/connections — create bank connection
+   - GET  /bank-api/connections — list connections
+   - GET  /bank-api/connections/{id} — detail
+   - POST /bank-api/connections/{id}/sync — trigger sync (mock: generate sample txns)
+   - GET  /bank-api/transactions — list transactions (filter by connection, date, reconciled)
+   - POST /bank-api/transactions/{id}/reconcile — mark reconciled + link to ERP record
+   - POST /bank-api/transactions/{id}/classify — set classification
+   - GET  /bank-api/dashboard — stats (balance, unreconciled count, last sync)
+5. Frontend:
+   - /dashboard/bank-api/page.tsx — connections list + sync + transactions table
+   - Auto-classify rules: MPESA→payment, salary→payroll, etc.
+6. Nav: under Finance & Accounting cluster
 
-Signature capture approach:
-- Canvas-based draw pad in frontend
-- On sign, save canvas.toDataURL() as base64 PNG in signature_data field
-- No external library (react-signature-canvas) — use plain canvas API
+Sync approach:
+- Real bank API integration requires bank-specific credentials (not available in demo)
+- Implement MOCK sync that generates realistic Kenyan bank transactions
+- Mock generates 10–20 transactions per sync with realistic descriptions (M-Pesa, salary, supplier, etc.)
+- Mark api_type=MOCK for demo connections
+- Real API: stub the integration point but don't call external APIs without credentials
 
 
 
@@ -254,57 +261,39 @@ App uses create_all — no migration needed.
 
 ## Files Changed in Last Run
 
-Gap 18 additions:
-backend/app/models/pos.py — NEW: POSSessionStatus/PaymentMethod/SaleStatus enums + POSSession + POSSale + POSSaleLine models
-backend/app/schemas/pos.py — NEW: full Pydantic schemas incl. POSDashboard
-backend/app/api/v1/endpoints/pos.py — NEW: sessions (open/close/current/list) + sales (create/get/void) + dashboard endpoints
-backend/app/api/v1/router.py — registered pos router at /pos
-backend/app/models/__init__.py — imported POS models
-frontend/src/lib/pos.ts — NEW: types, posApi, fmtKES
-frontend/src/app/dashboard/pos/page.tsx — NEW: full touchscreen POS terminal (product grid, cart, payment modal, session controls)
-frontend/src/components/nav-config.tsx — added "Point of Sale" section under Sales & Distribution
-
-Gap 17 additions:
-backend/app/models/project.py — NEW
-backend/app/schemas/project.py — NEW
-backend/app/api/v1/endpoints/project.py — NEW
-frontend/src/lib/projects.ts — NEW
-frontend/src/app/dashboard/projects/page.tsx — NEW
-frontend/src/app/dashboard/projects/[id]/page.tsx — NEW (with Gantt chart)
-frontend/src/components/nav-config.tsx — added Project Management under Planning cluster
-
-Gap 16 additions:
-backend/app/models/helpdesk.py — NEW
-backend/app/schemas/helpdesk.py — NEW
-backend/app/api/v1/endpoints/helpdesk.py — NEW
-frontend/src/lib/helpdesk.ts — NEW
-frontend/src/app/dashboard/helpdesk/page.tsx — NEW
-frontend/src/components/nav-config.tsx — added Helpdesk under Quality & Compliance
+Gap 19 additions:
+backend/app/models/esign.py — NEW: SignatureRequest + SignatureRecord models + enums
+backend/app/schemas/esign.py — NEW: full Pydantic schemas incl. ESignDashboard
+backend/app/api/v1/endpoints/esign.py — NEW: create/list/pending-for-me/sign/decline/dashboard endpoints
+backend/app/api/v1/router.py — registered esign router at /esign
+backend/app/models/__init__.py — imported SignatureRequest, SignatureRecord models
+frontend/src/lib/esign.ts — NEW: types, esignApi, statusColor helper
+frontend/src/app/dashboard/esign/page.tsx — NEW: full page (KPI cards, tabs, requests table, canvas draw pad sign modal, decline modal, create modal with user search)
+frontend/src/components/nav-config.tsx — added "E-Signatures" under Admin & System after Documents
 
 
 
 ## Validation Results
 
-Backend Python compile: PASS (all files in this run)
+Backend Python compile: PASS (esign.py, schemas/esign.py, endpoints/esign.py)
+Backend import chain: PASS (models OK, endpoint OK)
 Frontend TypeScript: PASS (tsc --noEmit, 0 errors)
 
 
 
 ## Notes for Next Claude Run
 
-Gap 19: Electronic Signatures.
+Gap 20: Bank API Integration / Open Banking.
 
 Key design decisions:
-- No external e-sign service required (internal self-hosted implementation)
-- Canvas-based signature pad in frontend (plain HTML canvas API, no library)
-- SignatureRecord.signature_data stores base64 PNG string (may be large, use Text column)
-- For multi-signer: all must sign for status → SIGNED; any decline → DECLINED
-- IP address capture: FastAPI request.client.host in sign endpoint
-- Audit immutability: once signed, SignatureRecord cannot be modified
-- document_type is a free string (contract, quote, delivery_note, etc.)
-- document_ref is a human-readable label (e.g. "Contract CT-2024-0001")
-- The sign/decline endpoints should NOT require the user to own the request —
-  only the signer_id in the request should be able to sign their record
+- No real bank credentials available — build MOCK sync engine
+- Mock generates 10–20 realistic Kenyan bank transactions per sync trigger
+- Transaction classification: keyword-based auto-tag (M-Pesa, salary, rent, etc.)
+- Reconciliation: link transaction to existing ERP record (invoice, payment, etc.) via matched_record_type + matched_record_id (soft FK)
+- BankConnection.credentials_ref: store opaque string (future: encrypt, for now plain)
+- Balance tracking: each transaction stores balance_after (simulated running balance)
+- Multi-currency: BankConnection has currency field (KES, USD, EUR)
+- Sync log: keep history of every sync attempt with count + status
 
-Nav: under "Administration & System" cluster, after "Documents" item.
-Check nav-config.tsx for the exact section ID and surrounding items.
+Nav: under Finance & Accounting cluster. Check nav-config.tsx for the exact section and surrounding items.
+Finance section ID is likely "finance" — check for existing Bank Reconciliation item for exact placement.

@@ -59,6 +59,7 @@ from app.api.v1.endpoints import (
     helpdesk,
     project,
     pos,
+    esign,
 )
 
 api_router = APIRouter()
@@ -262,3 +263,5 @@ api_router.include_router(helpdesk.router, prefix="/helpdesk", tags=["helpdesk"]
 api_router.include_router(project.router, prefix="/projects", tags=["projects"])
 # ── Retail / Shop POS ─────────────────────────────────────────────────────────
 api_router.include_router(pos.router, prefix="/pos", tags=["pos"])
+# ── Electronic Signatures ─────────────────────────────────────────────────────
+api_router.include_router(esign.router, prefix="/esign", tags=["esign"])

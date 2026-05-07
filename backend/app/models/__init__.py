@@ -104,6 +104,12 @@ from app.models.operational_log import OperationalLog, MpesaStatusHistory
 # ── Documents ─────────────────────────────────────────────────────────────────
 from app.models.documents import Document, DocumentCategory, DocumentStatus
 
+# ── Electronic Signatures ─────────────────────────────────────────────────────
+from app.models.esign import (
+    SignatureRequest, SignatureRecord,
+    SignatureRequestStatus, SignatureRecordStatus,
+)
+
 # ── Import History ─────────────────────────────────────────────────────────────
 from app.models.import_history import ImportHistory, ImportStatus
 

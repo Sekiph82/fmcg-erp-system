@@ -1362,6 +1362,7 @@ export const NAV_CONFIG: NavEntry[] = [
       { label: "2FA / Security",     href: "/dashboard/security",           permission: "users.view" },
       { label: "Security Monitor",   href: "/dashboard/security/monitor",   permission: "audit.view" },
       { label: "Documents",          href: "/dashboard/documents",          permission: "documents.view" },
+      { label: "E-Signatures",       href: "/dashboard/esign",              permission: "documents.view" },
       { label: "Import History",     href: "/dashboard/import-history",     permission: "audit.view" },
       { label: "System Logs",        href: "/dashboard/logs",               permission: "audit.view" },
     ],
