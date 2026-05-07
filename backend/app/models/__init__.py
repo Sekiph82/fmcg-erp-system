@@ -577,6 +577,24 @@ from app.models.quotation import (
     QuoteStatus, Quotation, QuotationLine,
 )
 
+# ── Helpdesk / Customer Complaint Ticketing ───────────────────────────────────
+from app.models.helpdesk import (
+    TicketStatus, TicketCategory, TicketPriority, TicketSource,
+    HelpdeskTicket, TicketComment,
+)
+
+# ── Project Management ────────────────────────────────────────────────────────
+from app.models.project import (
+    ProjectStatus, ProjectTaskStatus, ProjectPriority,
+    Project, ProjectMilestone, ProjectTask, TaskDependency,
+)
+
+# ── Retail / Shop POS ─────────────────────────────────────────────────────────
+from app.models.pos import (
+    POSSessionStatus, POSPaymentMethod, POSSaleStatus,
+    POSSession, POSSale, POSSaleLine,
+)
+
 # ── Material Flow Engine ──────────────────────────────────────────────────────
 from app.models.material_flow import (
     FlowType, FlowStatus, FlowMode, StageType, QualityStatus,
@@ -817,6 +835,15 @@ __all__ = [
     "SubAIRecommendation",
     # Quote / Estimation Module
     "QuoteStatus", "Quotation", "QuotationLine",
+    # Helpdesk / Customer Complaint Ticketing
+    "TicketStatus", "TicketCategory", "TicketPriority", "TicketSource",
+    "HelpdeskTicket", "TicketComment",
+    # Project Management
+    "ProjectStatus", "ProjectTaskStatus", "ProjectPriority",
+    "Project", "ProjectMilestone", "ProjectTask", "TaskDependency",
+    # Retail / Shop POS
+    "POSSessionStatus", "POSPaymentMethod", "POSSaleStatus",
+    "POSSession", "POSSale", "POSSaleLine",
     # Material Flow Engine
     "FlowType", "FlowStatus", "FlowMode", "StageType", "QualityStatus",
     "MovementReason", "ReservationStatus", "TankStatus", "ReconciliationStatus",

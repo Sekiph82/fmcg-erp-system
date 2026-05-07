@@ -10,7 +10,7 @@ Phase 2 — High Importance (Tier 2)
 
 ## Current Gap
 
-Gap 16 — Helpdesk / Customer Complaint Ticketing
+Gap 19 — Electronic Signatures
 
 
 
@@ -21,6 +21,12 @@ Not started yet.
 
 
 ## Completed in Last Run
+
+Gap 18 — Retail / Shop POS
+
+Gap 17 — Project Management with Gantt & Dependencies
+
+Gap 16 — Helpdesk / Customer Complaint Ticketing
 
 Gap 15 — Quote / Estimation Module
 
@@ -86,15 +92,15 @@ Gap 1 — Full Double-Entry General Ledger
 
 15\. Quote / Estimation Module
 
-
-
-## Remaining Gap Items
-
 16\. Helpdesk / Customer Complaint Ticketing
 
 17\. Project Management with Gantt & Dependencies
 
 18\. Retail / Shop POS
+
+
+
+## Remaining Gap Items
 
 19\. Electronic Signatures
 
@@ -204,32 +210,39 @@ Gap 1 — Full Double-Entry General Ledger
 
 ## Next Immediate Task
 
-Implement Gap 16 — Helpdesk / Customer Complaint Ticketing.
+Implement Gap 19 — Electronic Signatures.
 
 Inspect first:
-- backend/app/models/ — check for any existing helpdesk/ticket/complaint model
-- frontend/src/app/dashboard/ — check for any helpdesk folder
-- nav-config.tsx — check if helpdesk section exists
+- backend/app/models/ — check for any existing signature/esign model
+- backend/app/models/documents.py — check Document model for attachment hooks
+- frontend/src/app/dashboard/ — check for esign folder
+- nav-config.tsx — best placement (Administration & System or Sales & Distribution)
 
-Expected: No model exists. Build from scratch.
+Expected: No signature model exists. Build from scratch.
 
 Build:
-1. TicketStatus enum: OPEN / IN_PROGRESS / ESCALATED / RESOLVED / CLOSED
-2. TicketCategory enum: QUALITY / DELIVERY / BILLING / PRODUCT / OTHER
-3. TicketPriority enum: LOW / MEDIUM / HIGH / CRITICAL
-4. Ticket model: ticket_no, customer_id, category, priority, status,
-   subject, description, lot_id (nullable FK → lots), sla_hours,
-   first_response_at, resolved_at, customer_satisfaction (1-5),
-   assigned_to_id, created_by_id
-5. TicketComment model: ticket_id, body, is_internal, created_by_id
-6. Service + endpoints:
-   - CRUD tickets + GET /dashboard
-   - POST /tickets/{id}/assign, /escalate, /resolve, /close
-   - POST /tickets/{id}/comments
-   - SLA breach tracking (resolved_at vs created_at + sla_hours)
-7. Frontend: /dashboard/helpdesk/page.tsx
-8. Nav: add under "Quality & Compliance" cluster (tickets are quality/service items)
-   OR add a small section in Sales & Distribution — choose Quality & Compliance.
+1. SignatureRequest model: request_no, document_id (nullable), document_type (e.g. "contract", "quotation"),
+   document_ref (str, the doc name), requester_id, signer_ids (junction), status (PENDING/SIGNED/DECLINED/EXPIRED),
+   subject, message, expires_at, signed_count, required_count
+2. SignatureRecord model: request_id, signer_id, signed_at, ip_address, user_agent,
+   signature_data (base64 PNG or SVG path), status (PENDING/SIGNED/DECLINED)
+3. Endpoints:
+   - POST /esign/requests — create signature request
+   - GET /esign/requests — list requests
+   - GET /esign/requests/{id} — detail
+   - POST /esign/requests/{id}/sign — signer submits signature
+   - POST /esign/requests/{id}/decline — signer declines
+   - GET /esign/requests/pending-for-me — my pending requests
+   - GET /esign/dashboard — stats
+4. Frontend:
+   - /dashboard/esign/page.tsx — request list + create modal
+   - Signature capture: HTML canvas draw pad (no external library)
+5. Nav: under "Administration & System" cluster (documents-adjacent)
+
+Signature capture approach:
+- Canvas-based draw pad in frontend
+- On sign, save canvas.toDataURL() as base64 PNG in signature_data field
+- No external library (react-signature-canvas) — use plain canvas API
 
 
 
@@ -241,40 +254,57 @@ App uses create_all — no migration needed.
 
 ## Files Changed in Last Run
 
-Gap 15 additions:
-backend/app/models/quotation.py — NEW: QuoteStatus, Quotation, QuotationLine models
-backend/app/schemas/quotation.py — NEW: full Pydantic schemas
-backend/app/api/v1/endpoints/quotation.py — NEW: full CRUD + send/accept/reject/expire/revise/convert endpoints
-backend/app/api/v1/router.py — registered quotation router at /quotes
-backend/app/models/__init__.py — imported QuoteStatus, Quotation, QuotationLine
-frontend/src/lib/quotations.ts — NEW: types, quoteApi, STATUS_COLORS, fmtCcy, fmtDate
-frontend/src/app/dashboard/sales/quotes/page.tsx — NEW: full page with KPI cards, filter, table, create modal, reject modal, row actions
-frontend/src/components/nav-config.tsx — added Quotations link to Sales & Distribution section
+Gap 18 additions:
+backend/app/models/pos.py — NEW: POSSessionStatus/PaymentMethod/SaleStatus enums + POSSession + POSSale + POSSaleLine models
+backend/app/schemas/pos.py — NEW: full Pydantic schemas incl. POSDashboard
+backend/app/api/v1/endpoints/pos.py — NEW: sessions (open/close/current/list) + sales (create/get/void) + dashboard endpoints
+backend/app/api/v1/router.py — registered pos router at /pos
+backend/app/models/__init__.py — imported POS models
+frontend/src/lib/pos.ts — NEW: types, posApi, fmtKES
+frontend/src/app/dashboard/pos/page.tsx — NEW: full touchscreen POS terminal (product grid, cart, payment modal, session controls)
+frontend/src/components/nav-config.tsx — added "Point of Sale" section under Sales & Distribution
+
+Gap 17 additions:
+backend/app/models/project.py — NEW
+backend/app/schemas/project.py — NEW
+backend/app/api/v1/endpoints/project.py — NEW
+frontend/src/lib/projects.ts — NEW
+frontend/src/app/dashboard/projects/page.tsx — NEW
+frontend/src/app/dashboard/projects/[id]/page.tsx — NEW (with Gantt chart)
+frontend/src/components/nav-config.tsx — added Project Management under Planning cluster
+
+Gap 16 additions:
+backend/app/models/helpdesk.py — NEW
+backend/app/schemas/helpdesk.py — NEW
+backend/app/api/v1/endpoints/helpdesk.py — NEW
+frontend/src/lib/helpdesk.ts — NEW
+frontend/src/app/dashboard/helpdesk/page.tsx — NEW
+frontend/src/components/nav-config.tsx — added Helpdesk under Quality & Compliance
 
 
 
 ## Validation Results
 
-Backend Python compile: PASS (all 5 files)
+Backend Python compile: PASS (all files in this run)
 Frontend TypeScript: PASS (tsc --noEmit, 0 errors)
 
 
 
 ## Notes for Next Claude Run
 
-Gap 16: Helpdesk / Complaint Ticketing.
+Gap 19: Electronic Signatures.
 
 Key design decisions:
-- lot_id link enables batch-level complaint tracking (ties into Gap 10 recall system)
-- SLA hours configurable per category (QUALITY=4h, CRITICAL=1h, others=24h)
-- customer_satisfaction score (1-5) captured on close
-- TicketComment supports internal notes vs external replies
-- Consider linking to Customer (sales.py) and Lot (inventory.py)
+- No external e-sign service required (internal self-hosted implementation)
+- Canvas-based signature pad in frontend (plain HTML canvas API, no library)
+- SignatureRecord.signature_data stores base64 PNG string (may be large, use Text column)
+- For multi-signer: all must sign for status → SIGNED; any decline → DECLINED
+- IP address capture: FastAPI request.client.host in sign endpoint
+- Audit immutability: once signed, SignatureRecord cannot be modified
+- document_type is a free string (contract, quote, delivery_note, etc.)
+- document_ref is a human-readable label (e.g. "Contract CT-2024-0001")
+- The sign/decline endpoints should NOT require the user to own the request —
+  only the signer_id in the request should be able to sign their record
 
-Check if Lot model has the right FK target name:
-  grep "class Lot" backend/app/models/inventory.py
-  — should be "lots" table
-
-Nav placement: Under Quality & Compliance cluster (alongside qms, allergen, gs1).
-OR under new "Customer Service" sub-cluster inside Sales & Distribution.
-Prefer Quality & Compliance for FMCG context (complaint = quality event).
+Nav: under "Administration & System" cluster, after "Documents" item.
+Check nav-config.tsx for the exact section ID and surrounding items.

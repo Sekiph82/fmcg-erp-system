@@ -56,6 +56,9 @@ from app.api.v1.endpoints import (
     company,
     whatsapp,
     quotation,
+    helpdesk,
+    project,
+    pos,
 )
 
 api_router = APIRouter()
@@ -253,3 +256,9 @@ api_router.include_router(company.router, prefix="/companies", tags=["companies"
 api_router.include_router(whatsapp.router, prefix="/whatsapp", tags=["whatsapp"])
 # ── Quote / Estimation Module ─────────────────────────────────────────────────
 api_router.include_router(quotation.router, prefix="/quotes", tags=["quotes"])
+# ── Helpdesk / Customer Complaint Ticketing ───────────────────────────────────
+api_router.include_router(helpdesk.router, prefix="/helpdesk", tags=["helpdesk"])
+# ── Project Management ────────────────────────────────────────────────────────
+api_router.include_router(project.router, prefix="/projects", tags=["projects"])
+# ── Retail / Shop POS ─────────────────────────────────────────────────────────
+api_router.include_router(pos.router, prefix="/pos", tags=["pos"])

@@ -163,6 +163,18 @@ export const NAV_CONFIG: NavEntry[] = [
     ],
   },
 
+  {
+    type: "section",
+    id: "projects",
+    label: "Project Management",
+    permission: "production.view",
+    icon: md("M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"),
+    items: [
+      { label: "All Projects", href: "/dashboard/projects",            permission: "production.view" },
+      { label: "Dashboard",    href: "/dashboard/projects/dashboard",  permission: "production.view" },
+    ],
+  },
+
   // ══════════════════════════════════════════
   // 4. PRODUCTION / MES
   // ══════════════════════════════════════════
@@ -433,6 +445,21 @@ export const NAV_CONFIG: NavEntry[] = [
     ],
   },
 
+  {
+    type: "section",
+    id: "helpdesk",
+    label: "Helpdesk & Complaints",
+    permission: "quality.view",
+    icon: md("M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"),
+    items: [
+      { label: "Dashboard",      href: "/dashboard/helpdesk",            permission: "quality.view" },
+      { label: "All Tickets",    href: "/dashboard/helpdesk/tickets",    permission: "quality.view" },
+      { label: "Open",           href: "/dashboard/helpdesk/open",       permission: "quality.view" },
+      { label: "Escalated",      href: "/dashboard/helpdesk/escalated",  permission: "quality.view" },
+      { label: "SLA Breaches",   href: "/dashboard/helpdesk/sla",        permission: "quality.view" },
+    ],
+  },
+
   // ══════════════════════════════════════════
   // 7. PROCUREMENT & SUPPLIERS
   // ══════════════════════════════════════════
@@ -508,6 +535,19 @@ export const NAV_CONFIG: NavEntry[] = [
   // 8. SALES & DISTRIBUTION
   // ══════════════════════════════════════════
   cluster("cluster-sales", "Sales & Distribution"),
+
+  {
+    type: "section",
+    id: "pos",
+    label: "Point of Sale",
+    permission: "sales.view",
+    icon: md("M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 11h.01M12 11h.01M15 11h.01M12 7h.01M9 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V5a2 2 0 00-2-2h-4M9 3h6M9 3v4m6-4v4"),
+    items: [
+      { label: "POS Terminal",   href: "/dashboard/pos",           permission: "sales.view" },
+      { label: "Sessions",       href: "/dashboard/pos/sessions",  permission: "sales.view" },
+      { label: "Today's Sales",  href: "/dashboard/pos/sales",     permission: "sales.view" },
+    ],
+  },
 
   {
     type: "section",
