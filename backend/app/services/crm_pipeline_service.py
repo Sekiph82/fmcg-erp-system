@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models.crm import (
-    CRMPipelineStage, CRMRecord, CRMInterestLine, CRMActivity,
+    CRMTerritory, CRMPipelineStage, CRMRecord, CRMInterestLine, CRMActivity,
     CRMCompetitor, CRMWinLoss, CRMAIRecommendation,
     CRMRecordType, CRMStatus, CRMTemperature,
     CRMAIAgentType, CRMAIRecStatus,
@@ -24,6 +24,7 @@ from app.schemas.crm import (
     CRMQualifyRequest, CRMConvertRequest,
     CRMCloseWonRequest, CRMCloseLostRequest,
     CRMAIRecAck,
+    CRMTerritoryCreate, CRMTerritoryUpdate,
 )
 
 
@@ -810,3 +811,180 @@ async def ack_ai_recommendation(db: AsyncSession, rec_id: str, data: CRMAIRecAck
     await db.commit()
     await db.refresh(rec)
     return rec
+
+
+# ── Territory Management ──────────────────────────────────────────────────────
+
+async def get_territories(db: AsyncSession, active_only: bool = False) -> List[CRMTerritory]:
+    q = select(CRMTerritory).order_by(CRMTerritory.territory_name)
+    if active_only:
+        q = q.where(CRMTerritory.active_flag.is_(True))
+    result = await db.execute(q)
+    return result.scalars().all()
+
+
+async def create_territory(db: AsyncSession, data: CRMTerritoryCreate) -> CRMTerritory:
+    territory = CRMTerritory(**data.model_dump())
+    db.add(territory)
+    await db.commit()
+    await db.refresh(territory)
+    return territory
+
+
+async def update_territory(db: AsyncSession, territory_id: str, data: CRMTerritoryUpdate) -> Optional[CRMTerritory]:
+    result = await db.execute(select(CRMTerritory).where(CRMTerritory.id == territory_id))
+    territory = result.scalar_one_or_none()
+    if not territory:
+        return None
+    for k, v in data.model_dump(exclude_none=True).items():
+        setattr(territory, k, v)
+    await db.commit()
+    await db.refresh(territory)
+    return territory
+
+
+async def get_territory_performance(db: AsyncSession) -> List[dict]:
+    territories = (await db.execute(select(CRMTerritory).where(CRMTerritory.active_flag.is_(True)))).scalars().all()
+    result = []
+    for t in territories:
+        rows = (await db.execute(
+            select(CRMRecord.status, func.count(CRMRecord.id), func.coalesce(func.sum(CRMRecord.expected_revenue), 0), func.coalesce(func.sum(CRMRecord.probability_pct), 0))
+            .where(CRMRecord.territory_id == t.id)
+            .group_by(CRMRecord.status)
+        )).all()
+        counts = {str(r[0]): {"count": r[1], "revenue": Decimal(str(r[2])), "prob_sum": Decimal(str(r[3]))} for r in rows}
+        total = sum(v["count"] for v in counts.values())
+        open_c = counts.get("OPEN", {}).get("count", 0)
+        won_c = counts.get("WON", {}).get("count", 0)
+        lost_c = counts.get("LOST", {}).get("count", 0)
+        pipeline = counts.get("OPEN", {}).get("revenue", Decimal("0"))
+        closed = won_c + lost_c
+        win_rate = round(won_c / closed * 100, 1) if closed > 0 else 0.0
+        weighted = Decimal("0")
+        if open_c > 0:
+            open_rows = (await db.execute(
+                select(CRMRecord.expected_revenue, CRMRecord.probability_pct)
+                .where(and_(CRMRecord.territory_id == t.id, CRMRecord.status == CRMStatus.OPEN))
+            )).all()
+            weighted = sum((Decimal(str(r[0] or 0))) * (Decimal(str(r[1] or 0))) / 100 for r in open_rows)
+        result.append({
+            "territory_id": str(t.id),
+            "territory_name": t.territory_name,
+            "region": t.region,
+            "assigned_rep_ids": t.assigned_rep_ids,
+            "total_records": total,
+            "open_records": open_c,
+            "won_records": won_c,
+            "lost_records": lost_c,
+            "pipeline_value": float(pipeline),
+            "weighted_value": float(weighted),
+            "win_rate_pct": win_rate,
+        })
+    return result
+
+
+# ── Customer 360 View ─────────────────────────────────────────────────────────
+
+async def get_record_360(db: AsyncSession, record_id: str) -> Optional[dict]:
+    record = await _load_record(db, record_id)
+    if not record:
+        return None
+
+    today = date.today()
+    now = datetime.utcnow()
+    pipeline_age_days = (today - record.created_at.date()).days if record.created_at else 0
+
+    activities = record.activities or []
+    total_activities = len(activities)
+    completed = [a for a in activities if a.result_status == CRMActivityResult.COMPLETED]
+    completed_count = len(completed)
+    overdue = [a for a in activities if a.result_status == CRMActivityResult.PLANNED and a.due_datetime and a.due_datetime < now]
+    overdue_count = len(overdue)
+    completion_rate = round(completed_count / total_activities * 100, 1) if total_activities > 0 else 0.0
+
+    last_activity_days: Optional[int] = None
+    last_activity_type: Optional[str] = None
+    if completed:
+        last_act = max(completed, key=lambda a: a.completed_datetime or a.activity_datetime or now)
+        ref_dt = last_act.completed_datetime or last_act.activity_datetime
+        if ref_dt:
+            last_activity_days = (now - ref_dt).days
+            last_activity_type = str(last_act.activity_type)
+
+    if last_activity_days is None:
+        communication_risk = "HIGH"
+    elif last_activity_days <= 7:
+        communication_risk = "LOW"
+    elif last_activity_days <= 21:
+        communication_risk = "MEDIUM"
+    else:
+        communication_risk = "HIGH"
+
+    interest_count = len(record.interest_lines or [])
+    expected_revenue = float(record.expected_revenue or 0)
+    probability_pct = float(record.probability_pct or 0)
+    weighted_value = expected_revenue * probability_pct / 100
+
+    deal_risk_flag = bool(
+        record.expected_close_date and record.expected_close_date < today and record.status == CRMStatus.OPEN
+    )
+
+    days_to_close: Optional[int] = None
+    if record.expected_close_date and record.status == CRMStatus.OPEN:
+        days_to_close = (record.expected_close_date - today).days
+
+    activity_health_score = min(100, int(
+        completion_rate * 0.4
+        + (max(0, 30 - (last_activity_days or 30)) / 30 * 30)
+        + (10 if not overdue_count else 0)
+        + (20 if interest_count > 0 else 0)
+    ))
+
+    flags: List[str] = []
+    if deal_risk_flag:
+        flags.append("OVERDUE_CLOSE_DATE")
+    if communication_risk == "HIGH":
+        flags.append("NO_RECENT_CONTACT")
+    if overdue_count > 0:
+        flags.append(f"{overdue_count}_OVERDUE_ACTIVITIES")
+    if not record.qualified_flag and record.record_type == CRMRecordType.LEAD:
+        flags.append("NOT_YET_QUALIFIED")
+    if interest_count == 0:
+        flags.append("NO_PRODUCT_INTEREST_LOGGED")
+    if record.lead_score < 30:
+        flags.append("LOW_LEAD_SCORE")
+
+    territory_name: Optional[str] = None
+    if record.territory:
+        territory_name = record.territory.territory_name
+
+    return {
+        "record_id": str(record.id),
+        "company_name": record.company_name,
+        "record_type": str(record.record_type),
+        "status": str(record.status),
+        "lead_score": record.lead_score,
+        "temperature": str(record.temperature),
+        "pipeline_age_days": pipeline_age_days,
+        "days_since_last_activity": last_activity_days,
+        "last_activity_type": last_activity_type,
+        "total_activities": total_activities,
+        "completed_activities": completed_count,
+        "overdue_activities": overdue_count,
+        "activity_completion_rate": completion_rate,
+        "communication_risk": communication_risk,
+        "interest_product_count": interest_count,
+        "expected_revenue": expected_revenue,
+        "probability_pct": probability_pct,
+        "weighted_value": weighted_value,
+        "deal_risk_flag": deal_risk_flag,
+        "credit_signal": "UNKNOWN",
+        "qualified_flag": record.qualified_flag,
+        "territory_name": territory_name,
+        "assigned_rep_id": record.assigned_rep_id,
+        "next_action_date": record.next_action_date,
+        "expected_close_date": record.expected_close_date,
+        "days_to_close": days_to_close,
+        "activity_health_score": activity_health_score,
+        "summary_flags": flags,
+    }

@@ -4,21 +4,28 @@ import uuid
 from datetime import datetime
 from sqlalchemy import (
     Column, String, DateTime, Boolean, Float,
-    ForeignKey, Text, Enum as SAEnum, JSON,
+    ForeignKey, Text, JSON,
 )
 from sqlalchemy.orm import relationship
 from app.db.base import Base
 
 
 class ReferenceType(str, enum.Enum):
-    SALES_ORDER = "sales_order"
-    INVOICE = "invoice"
-    CUSTOMER = "customer"
+    SALES_ORDER    = "sales_order"
+    INVOICE        = "invoice"
+    CUSTOMER       = "customer"
     PURCHASE_ORDER = "purchase_order"
-    CONTRACT = "contract"
-    EMPLOYEE = "employee"
-    PRODUCT = "product"
-    OTHER = "other"
+    CONTRACT       = "contract"
+    EMPLOYEE       = "employee"
+    PRODUCT        = "product"
+    CRM_RECORD     = "crm_record"
+    TICKET         = "ticket"
+    PROJECT        = "project"
+    PRODUCTION     = "production"
+    DOCUMENT       = "document"
+    BATCH          = "batch"
+    BATCH_RECALL   = "batch_recall"
+    OTHER          = "other"
 
 
 class ActivityType(str, enum.Enum):
@@ -53,17 +60,19 @@ class ChatterAIRecStatus(str, enum.Enum):
 class Activity(Base):
     __tablename__ = "chatter_activities"
 
-    activity_id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    reference_type = Column(SAEnum(ReferenceType), nullable=False)
-    reference_id = Column(String(36), nullable=False)
-    activity_type = Column(SAEnum(ActivityType), default=ActivityType.COMMENT)
-    title = Column(String(300), nullable=False)
-    message = Column(Text)
-    created_by = Column(String(100), default="system")
-    visibility = Column(SAEnum(Visibility), default=Visibility.GLOBAL)
-    is_pinned = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    activity_id    = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    reference_type = Column(String(50), nullable=False)
+    reference_id   = Column(String(36), nullable=False)
+    activity_type  = Column(String(50), default=ActivityType.COMMENT)
+    title          = Column(String(300), nullable=False)
+    message        = Column(Text)
+    created_by     = Column(String(100), default="system")
+    visibility     = Column(String(20), default=Visibility.GLOBAL)
+    is_pinned      = Column(Boolean, default=False)
+    sla_due_at     = Column(DateTime, nullable=True)
+    sla_breached   = Column(Boolean, default=False)
+    created_at     = Column(DateTime, default=datetime.utcnow)
+    updated_at     = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     comments = relationship(
         "ActivityComment", back_populates="activity", cascade="all, delete-orphan"
@@ -133,13 +142,13 @@ class ChatterAIRecommendation(Base):
     __tablename__ = "chatter_ai_recommendations"
 
     rec_id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    agent_type = Column(SAEnum(ChatterAIAgentType), nullable=False)
+    agent_type = Column(String(50), nullable=False)
     reference_type = Column(String(50), nullable=True)
     reference_id = Column(String(36), nullable=True)
     title = Column(String(300))
     body = Column(Text)
     score = Column(Float, nullable=True)
-    status = Column(SAEnum(ChatterAIRecStatus), default=ChatterAIRecStatus.PENDING)
+    status = Column(String(30), default=ChatterAIRecStatus.PENDING)
     rec_metadata = Column(JSON, default=dict)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

@@ -3,16 +3,24 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import {
-  crmApi, CRMRecord, CRMStage, CRMActivity,
+  crmApi, CRMRecord, CRMStage, CRMActivity, CRM360View,
   fmtCurrency, STATUS_LABELS, STATUS_COLORS, TEMPERATURE_LABELS, TEMPERATURE_COLORS,
   ACTIVITY_TYPE_LABELS, ACTIVITY_RESULT_LABELS, LOSS_REASON_LABELS, WIN_REASON_LABELS,
 } from "@/lib/crm_pipeline";
 
-type Tab = "overview" | "activities" | "products" | "competitors" | "close";
+type Tab = "overview" | "activities" | "products" | "competitors" | "360" | "close";
+
+const RISK_COLOR: Record<string, string> = {
+  LOW: "#10B981",
+  MEDIUM: "#F59E0B",
+  HIGH: "#EF4444",
+  UNKNOWN: "#6B7280",
+};
 
 export default function RecordDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [record, setRecord] = useState<CRMRecord | null>(null);
+  const [view360, setView360] = useState<CRM360View | null>(null);
   const [stages, setStages] = useState<CRMStage[]>([]);
   const [tab, setTab] = useState<Tab>("overview");
   const [loading, setLoading] = useState(true);
@@ -35,6 +43,7 @@ export default function RecordDetailPage() {
       const [rec, stgs] = await Promise.all([crmApi.getRecord(id), crmApi.getStages(true)]);
       setRecord(rec);
       setStages(stgs);
+      crmApi.get360(id).then(setView360).catch(() => {});
     } catch (e) { console.error(e); }
     setLoading(false);
   };
@@ -106,6 +115,7 @@ export default function RecordDetailPage() {
     { id: "activities", label: `Activities (${record.activities?.length || 0})` },
     { id: "products", label: `Products (${record.interest_lines?.length || 0})` },
     { id: "competitors", label: `Competitors (${record.competitors?.length || 0})` },
+    { id: "360", label: "360 View" },
     { id: "close", label: "Close Deal" },
   ];
 
@@ -302,6 +312,115 @@ export default function RecordDetailPage() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* 360 View Tab */}
+      {tab === "360" && (
+        <div className="space-y-4">
+          {!view360 ? (
+            <div className="text-sm text-gray-400">Loading 360 view…</div>
+          ) : (
+            <>
+              {/* Health Score */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-white rounded-xl border shadow-sm p-4 text-center">
+                  <div className="text-xs text-gray-500 mb-1">Activity Health Score</div>
+                  <div className="text-3xl font-bold text-indigo-700">{view360.activity_health_score}</div>
+                  <div className="text-xs text-gray-400">/ 100</div>
+                  <div className="w-full h-2 bg-gray-100 rounded-full mt-2 overflow-hidden">
+                    <div className="h-full rounded-full"
+                      style={{ width: `${view360.activity_health_score}%`, background: view360.activity_health_score >= 70 ? "#10B981" : view360.activity_health_score >= 40 ? "#F59E0B" : "#EF4444" }} />
+                  </div>
+                </div>
+                <div className="bg-white rounded-xl border shadow-sm p-4 text-center">
+                  <div className="text-xs text-gray-500 mb-1">Communication Risk</div>
+                  <div className="text-2xl font-bold" style={{ color: RISK_COLOR[view360.communication_risk] }}>
+                    {view360.communication_risk}
+                  </div>
+                  <div className="text-xs text-gray-400 mt-1">
+                    {view360.days_since_last_activity != null
+                      ? `Last contact ${view360.days_since_last_activity}d ago`
+                      : "No contact recorded"}
+                  </div>
+                </div>
+                <div className="bg-white rounded-xl border shadow-sm p-4 text-center">
+                  <div className="text-xs text-gray-500 mb-1">Pipeline Age</div>
+                  <div className="text-2xl font-bold text-gray-800">{view360.pipeline_age_days}d</div>
+                  <div className="text-xs text-gray-400 mt-1">
+                    {view360.days_to_close != null
+                      ? view360.days_to_close >= 0
+                        ? `${view360.days_to_close}d to close`
+                        : `${Math.abs(view360.days_to_close)}d overdue`
+                      : "No close date"}
+                  </div>
+                </div>
+              </div>
+
+              {/* Activity Metrics */}
+              <div className="bg-white rounded-xl border shadow-sm p-4">
+                <h3 className="font-semibold text-gray-800 mb-3 text-sm">Activity Metrics</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                  <div>
+                    <div className="text-xl font-bold text-gray-800">{view360.total_activities}</div>
+                    <div className="text-xs text-gray-400">Total</div>
+                  </div>
+                  <div>
+                    <div className="text-xl font-bold text-green-600">{view360.completed_activities}</div>
+                    <div className="text-xs text-gray-400">Completed</div>
+                  </div>
+                  <div>
+                    <div className="text-xl font-bold text-red-500">{view360.overdue_activities}</div>
+                    <div className="text-xs text-gray-400">Overdue</div>
+                  </div>
+                  <div>
+                    <div className="text-xl font-bold text-indigo-700">{view360.activity_completion_rate}%</div>
+                    <div className="text-xs text-gray-400">Completion Rate</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Deal Intelligence */}
+              <div className="bg-white rounded-xl border shadow-sm p-4">
+                <h3 className="font-semibold text-gray-800 mb-3 text-sm">Deal Intelligence</h3>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div className="text-gray-500">Weighted Value</div>
+                  <div className="font-semibold text-indigo-700">{fmtCurrency(view360.weighted_value)}</div>
+                  <div className="text-gray-500">Products Interested</div>
+                  <div>{view360.interest_product_count}</div>
+                  <div className="text-gray-500">Territory</div>
+                  <div>{view360.territory_name || "—"}</div>
+                  <div className="text-gray-500">Credit Signal</div>
+                  <div className="text-gray-400 italic">{view360.credit_signal}</div>
+                  <div className="text-gray-500">Deal Risk</div>
+                  <div>{view360.deal_risk_flag
+                    ? <span className="text-red-600 font-medium">OVERDUE CLOSE DATE</span>
+                    : <span className="text-green-600">On Track</span>}
+                  </div>
+                  {view360.last_activity_type && (
+                    <>
+                      <div className="text-gray-500">Last Activity</div>
+                      <div>{view360.last_activity_type}</div>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Summary Flags */}
+              {view360.summary_flags.length > 0 && (
+                <div className="bg-orange-50 border border-orange-200 rounded-xl p-4">
+                  <h3 className="font-semibold text-orange-800 mb-2 text-sm">Action Flags</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {view360.summary_flags.map(flag => (
+                      <span key={flag} className="px-2 py-0.5 bg-orange-100 text-orange-700 text-xs rounded-full font-medium">
+                        {flag.replace(/_/g, " ")}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
         </div>
       )}
 

@@ -4,7 +4,9 @@ const BASE = "/api/v1/chatter";
 
 export type ReferenceType =
   | "sales_order" | "invoice" | "customer" | "purchase_order"
-  | "contract" | "employee" | "product" | "other";
+  | "contract" | "employee" | "product"
+  | "crm_record" | "ticket" | "project" | "production" | "document" | "batch" | "batch_recall"
+  | "other";
 
 export type ActivityType =
   | "comment" | "system_event" | "status_change" | "assignment"
@@ -44,19 +46,31 @@ export interface MentionOut {
 
 export interface ActivityOut {
   activity_id: string;
-  reference_type: ReferenceType;
+  reference_type: string;
   reference_id: string;
-  activity_type: ActivityType;
+  activity_type: string;
   title: string;
   message?: string;
   created_by?: string;
-  visibility: Visibility;
+  visibility: string;
   is_pinned: boolean;
+  sla_due_at?: string;
+  sla_breached: boolean;
   created_at: string;
   updated_at: string;
   comments: CommentOut[];
   attachments: AttachmentOut[];
   mentions: MentionOut[];
+}
+
+export interface TimelineResponse {
+  items: ActivityOut[];
+  total: number;
+  page: number;
+  per_page: number;
+  pages: number;
+  module_breakdown: { module: string; count: number }[];
+  sla_breached_count: number;
 }
 
 export interface ActivityPage {
@@ -131,9 +145,17 @@ export const chatterApi = {
     apiClient.post<{ generated: number }>(`${BASE}/ai/run/insight-extractor`).then(r => r.data),
   ackAIRec: (id: string, data: { status: CTAIRecStatus }) =>
     apiClient.patch<CTAIRec>(`${BASE}/ai/recs/${id}`, data).then(r => r.data),
+
+  getTimeline: (params?: {
+    reference_types?: string; created_by?: string; search?: string;
+    sla_overdue_only?: boolean; page?: number; per_page?: number;
+  }) => apiClient.get<TimelineResponse>(`${BASE}/timeline`, { params }).then(r => r.data),
+
+  getSLABreached: (limit = 50) =>
+    apiClient.get<ActivityOut[]>(`${BASE}/sla/breached`, { params: { limit } }).then(r => r.data),
 };
 
-export const TYPE_ICON: Record<ActivityType, string> = {
+export const TYPE_ICON: Record<string, string> = {
   comment: "💬",
   system_event: "⚙️",
   status_change: "🔄",
@@ -143,7 +165,7 @@ export const TYPE_ICON: Record<ActivityType, string> = {
   notification_event: "🔔",
 };
 
-export const TYPE_COLOR: Record<ActivityType, string> = {
+export const TYPE_COLOR: Record<string, string> = {
   comment: "bg-blue-50 text-blue-700",
   system_event: "bg-gray-50 text-gray-600",
   status_change: "bg-orange-50 text-orange-700",
@@ -153,7 +175,7 @@ export const TYPE_COLOR: Record<ActivityType, string> = {
   notification_event: "bg-yellow-50 text-yellow-700",
 };
 
-export const TYPE_BADGE: Record<ActivityType, string> = {
+export const TYPE_BADGE: Record<string, string> = {
   comment: "bg-blue-100 text-blue-700",
   system_event: "bg-gray-100 text-gray-600",
   status_change: "bg-orange-100 text-orange-700",
@@ -163,7 +185,7 @@ export const TYPE_BADGE: Record<ActivityType, string> = {
   notification_event: "bg-yellow-100 text-yellow-700",
 };
 
-export const REF_LABEL: Record<ReferenceType, string> = {
+export const REF_LABEL: Partial<Record<string, string>> & { other: string } = {
   sales_order: "Sales Order",
   invoice: "Invoice",
   customer: "Customer",
@@ -171,6 +193,13 @@ export const REF_LABEL: Record<ReferenceType, string> = {
   contract: "Contract",
   employee: "Employee",
   product: "Product",
+  crm_record: "CRM / Lead",
+  ticket: "Helpdesk Ticket",
+  project: "Project",
+  production: "Production",
+  document: "Document",
+  batch: "Batch / Lot",
+  batch_recall: "Batch Recall",
   other: "Other",
 };
 

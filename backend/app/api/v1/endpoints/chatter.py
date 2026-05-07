@@ -63,6 +63,25 @@ async def get_stats(db: AsyncSession = Depends(get_db)):
     return await chatter_service.get_stats(db)
 
 
+@router.get("/timeline")
+async def get_timeline(
+    reference_types: Optional[str] = None,
+    created_by: Optional[str] = None,
+    search: Optional[str] = None,
+    sla_overdue_only: bool = False,
+    page: int = Query(1, ge=1),
+    per_page: int = Query(30, ge=1, le=100),
+    db: AsyncSession = Depends(get_db),
+):
+    ref_list = [r.strip() for r in reference_types.split(",")] if reference_types else None
+    return await chatter_service.get_timeline(db, reference_types=ref_list, created_by=created_by, search=search, sla_overdue_only=sla_overdue_only, page=page, per_page=per_page)
+
+
+@router.get("/sla/breached", response_model=List[ActivityOut])
+async def get_sla_breached(limit: int = Query(50, ge=1, le=200), db: AsyncSession = Depends(get_db)):
+    return await chatter_service.get_sla_breached(db, limit)
+
+
 # ── Comments ──────────────────────────────────────────────────────────────────
 
 @router.post("/activities/{activity_id}/comment", response_model=ActivityOut)

@@ -60,6 +60,7 @@ from app.api.v1.endpoints import (
     project,
     pos,
     esign,
+    bank_api,
 )
 
 api_router = APIRouter()
@@ -265,3 +266,5 @@ api_router.include_router(project.router, prefix="/projects", tags=["projects"])
 api_router.include_router(pos.router, prefix="/pos", tags=["pos"])
 # ── Electronic Signatures ─────────────────────────────────────────────────────
 api_router.include_router(esign.router, prefix="/esign", tags=["esign"])
+# ── Bank API / Open Banking ───────────────────────────────────────────────────
+api_router.include_router(bank_api.router, prefix="/bank-api", tags=["bank-api"])

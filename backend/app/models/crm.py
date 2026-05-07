@@ -125,6 +125,21 @@ class CRMAIRecStatus(str, enum.Enum):
 
 # ── Models ────────────────────────────────────────────────────────────────────
 
+class CRMTerritory(Base, TimestampMixin):
+    __tablename__ = "crm_territories"
+
+    id                   = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    territory_code       = Column(String(50), nullable=False, unique=True)
+    territory_name       = Column(String(150), nullable=False)
+    region               = Column(String(100))
+    parent_territory_id  = Column(UUID(as_uuid=True), ForeignKey("crm_territories.id"), nullable=True)
+    assigned_rep_ids     = Column(String(500))
+    active_flag          = Column(Boolean, default=True)
+    notes                = Column(Text)
+
+    records = relationship("CRMRecord", back_populates="territory", foreign_keys="CRMRecord.territory_id")
+
+
 class CRMPipelineStage(Base, TimestampMixin):
     __tablename__ = "crm_pipeline_stages"
 
@@ -165,6 +180,7 @@ class CRMRecord(Base, TimestampMixin):
     assigned_rep_id       = Column(String(50))
     assigned_team_id      = Column(String(50))
     stage_id              = Column(UUID(as_uuid=True), ForeignKey("crm_pipeline_stages.id"), nullable=True)
+    territory_id          = Column(UUID(as_uuid=True), ForeignKey("crm_territories.id"), nullable=True)
     probability_pct       = Column(Numeric(5, 2), default=0)
     probability_override  = Column(Boolean, default=False)
     expected_close_date   = Column(Date)
@@ -185,6 +201,7 @@ class CRMRecord(Base, TimestampMixin):
     notes                 = Column(Text)
 
     stage         = relationship("CRMPipelineStage", back_populates="records", foreign_keys=[stage_id])
+    territory     = relationship("CRMTerritory", back_populates="records", foreign_keys=[territory_id])
     interest_lines = relationship("CRMInterestLine", back_populates="record", cascade="all, delete-orphan")
     activities    = relationship("CRMActivity", back_populates="record", cascade="all, delete-orphan")
     competitors   = relationship("CRMCompetitor", back_populates="record", cascade="all, delete-orphan")

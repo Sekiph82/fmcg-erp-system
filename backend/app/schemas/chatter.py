@@ -42,14 +42,16 @@ class MentionOut(BaseModel):
 
 class ActivityOut(BaseModel):
     activity_id: str
-    reference_type: ReferenceType
+    reference_type: str
     reference_id: str
-    activity_type: ActivityType
+    activity_type: str
     title: str
     message: Optional[str] = None
     created_by: Optional[str] = None
-    visibility: Visibility
+    visibility: str
     is_pinned: bool
+    sla_due_at: Optional[datetime] = None
+    sla_breached: bool = False
     created_at: datetime
     updated_at: datetime
     comments: List[CommentOut] = []
@@ -67,13 +69,14 @@ class ActivityPage(BaseModel):
 
 
 class ActivityCreate(BaseModel):
-    reference_type: ReferenceType
+    reference_type: str
     reference_id: str
-    activity_type: ActivityType = ActivityType.COMMENT
+    activity_type: str = ActivityType.COMMENT
     title: str
     message: Optional[str] = None
     created_by: Optional[str] = "system"
-    visibility: Visibility = Visibility.GLOBAL
+    visibility: str = Visibility.GLOBAL
+    sla_due_at: Optional[datetime] = None
 
 
 class CommentCreate(BaseModel):
@@ -96,20 +99,20 @@ class AttachmentCreate(BaseModel):
 
 class CTAIRecOut(BaseModel):
     rec_id: str
-    agent_type: ChatterAIAgentType
+    agent_type: str
     reference_type: Optional[str] = None
     reference_id: Optional[str] = None
     title: str
     body: str
     score: Optional[float] = None
-    status: ChatterAIRecStatus
+    status: str
     rec_metadata: dict = {}
     created_at: datetime
     model_config = {"from_attributes": True}
 
 
 class CTAIRecAck(BaseModel):
-    status: ChatterAIRecStatus
+    status: str
 
 
 ActivityOut.model_rebuild()

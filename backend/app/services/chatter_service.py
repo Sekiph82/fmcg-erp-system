@@ -123,6 +123,8 @@ async def create_activity(db: AsyncSession, data: ActivityCreate) -> Activity:
         created_by=data.created_by or "system",
         visibility=data.visibility,
     )
+    if hasattr(data, "sla_due_at") and data.sla_due_at:
+        a.sla_due_at = data.sla_due_at
     await db.commit()
     return await _load_activity(db, a.activity_id)
 
@@ -396,7 +398,7 @@ async def run_insight_extractor(db: AsyncSession) -> int:
     active_types = {r[0] for r in active_types_result.all()}
     from app.models.chatter import ReferenceType as RT
     for ref_type in RT:
-        if ref_type not in active_types and ref_type != RT.OTHER:
+        if ref_type.value not in active_types and ref_type != RT.OTHER:
             recs.append(ChatterAIRecommendation(
                 agent_type=ChatterAIAgentType.INSIGHT_EXTRACTOR,
                 title=f"No activity logged for {ref_type.value} in 7 days",
@@ -412,3 +414,86 @@ async def run_insight_extractor(db: AsyncSession) -> int:
         db.add(r)
     await db.commit()
     return len(recs)
+
+
+# ── Cross-Module Timeline ─────────────────────────────────────────────────────
+
+async def get_timeline(
+    db: AsyncSession,
+    reference_types: Optional[List[str]] = None,
+    created_by: Optional[str] = None,
+    search: Optional[str] = None,
+    sla_overdue_only: bool = False,
+    page: int = 1,
+    per_page: int = 30,
+) -> dict:
+    q = select(Activity).options(
+        selectinload(Activity.comments),
+        selectinload(Activity.mentions),
+    )
+    if reference_types:
+        q = q.where(Activity.reference_type.in_(reference_types))
+    if created_by:
+        q = q.where(Activity.created_by == created_by)
+    if search:
+        q = q.where(or_(Activity.title.ilike(f"%{search}%"), Activity.message.ilike(f"%{search}%")))
+    if sla_overdue_only:
+        now = datetime.utcnow()
+        q = q.where(and_(Activity.sla_due_at.isnot(None), Activity.sla_due_at < now))
+
+    count_q = select(func.count()).select_from(q.order_by(None).subquery())
+    total = (await db.execute(count_q)).scalar() or 0
+
+    q = q.order_by(Activity.created_at.desc()).offset((page - 1) * per_page).limit(per_page)
+    items = (await db.execute(q)).scalars().all()
+
+    module_counts_result = await db.execute(
+        select(Activity.reference_type, func.count().label("cnt"))
+        .group_by(Activity.reference_type)
+        .order_by(func.count().desc())
+    )
+    module_breakdown = [{"module": r[0], "count": r[1]} for r in module_counts_result.all()]
+
+    sla_breached_count = (await db.execute(
+        select(func.count()).select_from(Activity)
+        .where(and_(Activity.sla_due_at.isnot(None), Activity.sla_due_at < datetime.utcnow()))
+    )).scalar() or 0
+
+    return {
+        "items": list(items),
+        "total": total,
+        "page": page,
+        "per_page": per_page,
+        "pages": max(1, -(-total // per_page)),
+        "module_breakdown": module_breakdown,
+        "sla_breached_count": sla_breached_count,
+    }
+
+
+async def get_sla_breached(db: AsyncSession, limit: int = 50) -> List[Activity]:
+    now = datetime.utcnow()
+    result = await db.execute(
+        select(Activity)
+        .options(selectinload(Activity.comments), selectinload(Activity.mentions))
+        .where(and_(Activity.sla_due_at.isnot(None), Activity.sla_due_at < now))
+        .order_by(Activity.sla_due_at.asc())
+        .limit(limit)
+    )
+    return result.scalars().all()
+
+
+async def create_activity_with_sla(db: AsyncSession, data) -> Activity:
+    a = await log_activity(
+        db,
+        reference_type=data.reference_type,
+        reference_id=data.reference_id,
+        activity_type=data.activity_type,
+        title=data.title,
+        message=data.message or "",
+        created_by=data.created_by or "system",
+        visibility=data.visibility,
+    )
+    if data.sla_due_at:
+        a.sla_due_at = data.sla_due_at
+    await db.commit()
+    return await _load_activity(db, a.activity_id)

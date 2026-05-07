@@ -110,6 +110,12 @@ from app.models.esign import (
     SignatureRequestStatus, SignatureRecordStatus,
 )
 
+# ── Bank API / Open Banking ───────────────────────────────────────────────────
+from app.models.bank_api import (
+    BankConnectionStatus, BankApiType, BankTxnDirection, BankTxnClassification,
+    BankSyncStatus, BankConnection, BankTransaction, BankSyncLog,
+)
+
 # ── Import History ─────────────────────────────────────────────────────────────
 from app.models.import_history import ImportHistory, ImportStatus
 
@@ -390,7 +396,7 @@ from app.models.crm import (
     CRMRecordType, CRMAccountType, CRMSourceType, CRMStageType,
     CRMTemperature, CRMStatus, CRMActivityType, CRMActivityResult,
     CRMLossReason, CRMWinReason, CRMAIAgentType, CRMAIRecStatus,
-    CRMPipelineStage, CRMRecord, CRMInterestLine, CRMActivity,
+    CRMTerritory, CRMPipelineStage, CRMRecord, CRMInterestLine, CRMActivity,
     CRMCompetitor, CRMWinLoss, CRMAIRecommendation,
 )
 
@@ -850,6 +856,9 @@ __all__ = [
     # Retail / Shop POS
     "POSSessionStatus", "POSPaymentMethod", "POSSaleStatus",
     "POSSession", "POSSale", "POSSaleLine",
+    # Bank API / Open Banking
+    "BankConnectionStatus", "BankApiType", "BankTxnDirection", "BankTxnClassification",
+    "BankSyncStatus", "BankConnection", "BankTransaction", "BankSyncLog",
     # Material Flow Engine
     "FlowType", "FlowStatus", "FlowMode", "StageType", "QualityStatus",
     "MovementReason", "ReservationStatus", "TankStatus", "ReconciliationStatus",
@@ -887,7 +896,7 @@ __all__ = [
     "CRMRecordType", "CRMAccountType", "CRMSourceType", "CRMStageType",
     "CRMTemperature", "CRMStatus", "CRMActivityType", "CRMActivityResult",
     "CRMLossReason", "CRMWinReason", "CRMAIAgentType", "CRMAIRecStatus",
-    "CRMPipelineStage", "CRMRecord", "CRMInterestLine", "CRMActivity",
+    "CRMTerritory", "CRMPipelineStage", "CRMRecord", "CRMInterestLine", "CRMActivity",
     "CRMCompetitor", "CRMWinLoss", "CRMAIRecommendation",
     # Trade Promotion Management
     "TPMPeriodType", "TPMPlanStatus", "TPMPromotionType", "TPMObjectiveType",

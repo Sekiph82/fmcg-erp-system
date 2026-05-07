@@ -144,6 +144,7 @@ class CRMRecordCreate(BaseModel):
     assigned_rep_id: Optional[str] = None
     assigned_team_id: Optional[str] = None
     stage_id: Optional[uuid.UUID] = None
+    territory_id: Optional[uuid.UUID] = None
     probability_pct: Optional[Decimal] = Decimal("0")
     expected_close_date: Optional[date] = None
     expected_revenue: Optional[Decimal] = Decimal("0")
@@ -162,6 +163,7 @@ class CRMRecordUpdate(BaseModel):
     contact_email: Optional[str] = None
     contact_phone: Optional[str] = None
     stage_id: Optional[uuid.UUID] = None
+    territory_id: Optional[uuid.UUID] = None
     probability_pct: Optional[Decimal] = None
     probability_override: Optional[bool] = None
     expected_close_date: Optional[date] = None
@@ -196,6 +198,7 @@ class CRMRecordRead(BaseModel):
     assigned_rep_id: Optional[str] = None
     assigned_team_id: Optional[str] = None
     stage_id: Optional[uuid.UUID] = None
+    territory_id: Optional[uuid.UUID] = None
     probability_pct: Optional[Decimal] = None
     expected_close_date: Optional[date] = None
     expected_revenue: Optional[Decimal] = None
@@ -295,6 +298,80 @@ class CRMAIRecAck(BaseModel):
     status: CRMAIRecStatus
     acknowledged_by: Optional[str] = None
     notes: Optional[str] = None
+
+
+# ── Territory ─────────────────────────────────────────────────────────────────
+
+class CRMTerritoryCreate(BaseModel):
+    territory_code: str
+    territory_name: str
+    region: Optional[str] = None
+    parent_territory_id: Optional[uuid.UUID] = None
+    assigned_rep_ids: Optional[str] = None
+    active_flag: bool = True
+    notes: Optional[str] = None
+
+
+class CRMTerritoryRead(CRMTerritoryCreate):
+    model_config = ConfigDict(from_attributes=True)
+    id: uuid.UUID
+    created_at: Optional[datetime] = None
+
+
+class CRMTerritoryUpdate(BaseModel):
+    territory_name: Optional[str] = None
+    region: Optional[str] = None
+    parent_territory_id: Optional[uuid.UUID] = None
+    assigned_rep_ids: Optional[str] = None
+    active_flag: Optional[bool] = None
+    notes: Optional[str] = None
+
+
+class CRMTerritoryPerformance(BaseModel):
+    territory_id: str
+    territory_name: str
+    region: Optional[str]
+    assigned_rep_ids: Optional[str]
+    total_records: int
+    open_records: int
+    won_records: int
+    lost_records: int
+    pipeline_value: float
+    weighted_value: float
+    win_rate_pct: float
+
+
+# ── Customer 360 View ─────────────────────────────────────────────────────────
+
+class CRM360View(BaseModel):
+    record_id: str
+    company_name: str
+    record_type: str
+    status: str
+    lead_score: int
+    temperature: str
+    pipeline_age_days: int
+    days_since_last_activity: Optional[int]
+    last_activity_type: Optional[str]
+    total_activities: int
+    completed_activities: int
+    overdue_activities: int
+    activity_completion_rate: float
+    communication_risk: str
+    interest_product_count: int
+    expected_revenue: float
+    probability_pct: float
+    weighted_value: float
+    deal_risk_flag: bool
+    credit_signal: str
+    qualified_flag: bool
+    territory_name: Optional[str]
+    assigned_rep_id: Optional[str]
+    next_action_date: Optional[date]
+    expected_close_date: Optional[date]
+    days_to_close: Optional[int]
+    activity_health_score: int
+    summary_flags: List[str]
 
 
 # ── Dashboard & Reports ───────────────────────────────────────────────────────

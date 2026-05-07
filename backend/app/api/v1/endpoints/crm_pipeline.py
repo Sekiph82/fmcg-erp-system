@@ -14,6 +14,7 @@ from app.schemas.crm import (
     CRMCloseWonRequest, CRMCloseLostRequest,
     CRMWinLossRead,
     CRMAIRecRead, CRMAIRecAck,
+    CRMTerritoryCreate, CRMTerritoryRead, CRMTerritoryUpdate,
 )
 import app.services.crm_pipeline_service as svc
 
@@ -303,3 +304,38 @@ async def ack_recommendation(rec_id: str, data: CRMAIRecAck, db: AsyncSession = 
     if not rec:
         raise HTTPException(404, "Recommendation not found")
     return rec
+
+
+# ── Territory Management ──────────────────────────────────────────────────────
+
+@router.get("/territories", response_model=List[CRMTerritoryRead])
+async def list_territories(active_only: bool = False, db: AsyncSession = Depends(get_db)):
+    return await svc.get_territories(db, active_only=active_only)
+
+
+@router.post("/territories", response_model=CRMTerritoryRead, status_code=201)
+async def create_territory(data: CRMTerritoryCreate, db: AsyncSession = Depends(get_db)):
+    return await svc.create_territory(db, data)
+
+
+@router.patch("/territories/{territory_id}", response_model=CRMTerritoryRead)
+async def update_territory(territory_id: str, data: CRMTerritoryUpdate, db: AsyncSession = Depends(get_db)):
+    result = await svc.update_territory(db, territory_id, data)
+    if not result:
+        raise HTTPException(404, "Territory not found")
+    return result
+
+
+@router.get("/territories/performance")
+async def territory_performance(db: AsyncSession = Depends(get_db)):
+    return await svc.get_territory_performance(db)
+
+
+# ── Customer 360 View ─────────────────────────────────────────────────────────
+
+@router.get("/records/{record_id}/360")
+async def get_record_360(record_id: str, db: AsyncSession = Depends(get_db)):
+    view = await svc.get_record_360(db, record_id)
+    if not view:
+        raise HTTPException(404, "Record not found")
+    return view

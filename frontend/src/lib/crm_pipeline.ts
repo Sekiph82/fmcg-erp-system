@@ -151,6 +151,63 @@ export interface CRMAIRec {
   created_at?: string;
 }
 
+export interface CRMTerritory {
+  id: string;
+  territory_code: string;
+  territory_name: string;
+  region?: string;
+  parent_territory_id?: string;
+  assigned_rep_ids?: string;
+  active_flag: boolean;
+  notes?: string;
+  created_at?: string;
+}
+
+export interface CRMTerritoryPerformance {
+  territory_id: string;
+  territory_name: string;
+  region?: string;
+  assigned_rep_ids?: string;
+  total_records: number;
+  open_records: number;
+  won_records: number;
+  lost_records: number;
+  pipeline_value: number;
+  weighted_value: number;
+  win_rate_pct: number;
+}
+
+export interface CRM360View {
+  record_id: string;
+  company_name: string;
+  record_type: string;
+  status: string;
+  lead_score: number;
+  temperature: string;
+  pipeline_age_days: number;
+  days_since_last_activity?: number;
+  last_activity_type?: string;
+  total_activities: number;
+  completed_activities: number;
+  overdue_activities: number;
+  activity_completion_rate: number;
+  communication_risk: string;
+  interest_product_count: number;
+  expected_revenue: number;
+  probability_pct: number;
+  weighted_value: number;
+  deal_risk_flag: boolean;
+  credit_signal: string;
+  qualified_flag: boolean;
+  territory_name?: string;
+  assigned_rep_id?: string;
+  next_action_date?: string;
+  expected_close_date?: string;
+  days_to_close?: number;
+  activity_health_score: number;
+  summary_flags: string[];
+}
+
 export interface CRMDashboard {
   total_leads: number;
   total_opportunities: number;
@@ -333,4 +390,13 @@ export const crmApi = {
   runWinLossInsight: () => r(ax.post<{ generated: number; message: string }>(`/crm/ai/run-win-loss-insight`)),
   getAIRecs: (params?: Record<string, unknown>) => r(ax.get<CRMAIRec[]>(`/crm/ai/recommendations`, { params })),
   ackAIRec: (id: string, data: Record<string, unknown>) => r(ax.patch<CRMAIRec>(`/crm/ai/recommendations/${id}`, data)),
+
+  // Territories
+  getTerritories: (activeOnly = false) => r(ax.get<CRMTerritory[]>(`/crm/territories`, { params: { active_only: activeOnly } })),
+  createTerritory: (data: Partial<CRMTerritory>) => r(ax.post<CRMTerritory>(`/crm/territories`, data)),
+  updateTerritory: (id: string, data: Partial<CRMTerritory>) => r(ax.patch<CRMTerritory>(`/crm/territories/${id}`, data)),
+  getTerritoryPerformance: () => r(ax.get<CRMTerritoryPerformance[]>(`/crm/territories/performance`)),
+
+  // 360 View
+  get360: (id: string) => r(ax.get<CRM360View>(`/crm/records/${id}/360`)),
 };

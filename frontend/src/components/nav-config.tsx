@@ -679,9 +679,10 @@ export const NAV_CONFIG: NavEntry[] = [
       { label: "Lead Qualification", href: "/dashboard/crm/qualify",      permission: "sales.view" },
       { label: "Forecast",           href: "/dashboard/crm/forecast",     permission: "sales.view" },
       { label: "Win/Loss Analysis",  href: "/dashboard/crm/win-loss",     permission: "sales.view" },
-      { label: "Overdue Queue",      href: "/dashboard/crm/overdue",      permission: "sales.view" },
-      { label: "Stage Config",       href: "/dashboard/crm/stages",       permission: "sales.view" },
-      { label: "AI Agents",          href: "/dashboard/crm/ai",           permission: "sales.view" },
+      { label: "Overdue Queue",        href: "/dashboard/crm/overdue",      permission: "sales.view" },
+      { label: "Territory Management", href: "/dashboard/crm/territory",    permission: "sales.view" },
+      { label: "Stage Config",         href: "/dashboard/crm/stages",       permission: "sales.view" },
+      { label: "AI Agents",            href: "/dashboard/crm/ai",           permission: "sales.view" },
     ],
   },
 
@@ -830,6 +831,17 @@ export const NAV_CONFIG: NavEntry[] = [
       { label: "M-Pesa Recon",     href: "/dashboard/bank-reconciliation/mpesa",      permission: "finance.view" },
       { label: "Reports",          href: "/dashboard/bank-reconciliation/reports",    permission: "finance.view" },
       { label: "AI Agents",        href: "/dashboard/bank-reconciliation/ai",         permission: "finance.view" },
+    ],
+  },
+
+  {
+    type: "section",
+    id: "bank-api",
+    label: "Open Banking",
+    permission: "finance.view",
+    icon: md("M3 10h18M5 10V7l7-4 7 4v3M6 10v8m4-8v8m4-8v8m4-8v8M4 18h16M3 21h18"),
+    items: [
+      { label: "Connections & Sync", href: "/dashboard/bank-api", permission: "finance.view" },
     ],
   },
 
@@ -1288,12 +1300,13 @@ export const NAV_CONFIG: NavEntry[] = [
     permission: "hr.view",
     icon: md("M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"),
     items: [
-      { label: "Team Messages",  href: "/dashboard/messages",        permission: "hr.view" },
-      { label: "Dashboard",     href: "/dashboard/chatter",         permission: "hr.view" },
-      { label: "Activity Feed", href: "/dashboard/chatter/feed",    permission: "hr.view" },
-      { label: "Search",        href: "/dashboard/chatter/search",  permission: "hr.view" },
-      { label: "Reports",       href: "/dashboard/chatter/reports", permission: "hr.view" },
-      { label: "AI Insights",   href: "/dashboard/chatter/ai",      permission: "hr.view" },
+      { label: "Team Messages",    href: "/dashboard/messages",          permission: "hr.view" },
+      { label: "Dashboard",        href: "/dashboard/chatter",           permission: "hr.view" },
+      { label: "Activity Feed",    href: "/dashboard/chatter/feed",      permission: "hr.view" },
+      { label: "Module Threads",   href: "/dashboard/chatter/threads",   permission: "hr.view" },
+      { label: "Search",           href: "/dashboard/chatter/search",    permission: "hr.view" },
+      { label: "Reports",          href: "/dashboard/chatter/reports",   permission: "hr.view" },
+      { label: "AI Insights",      href: "/dashboard/chatter/ai",        permission: "hr.view" },
     ],
   },
 
