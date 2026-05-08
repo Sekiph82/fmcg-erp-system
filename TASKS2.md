@@ -10,7 +10,7 @@ Phase 3 - Medium Importance (Tier 3)
 
 ## Current Gap
 
-Gap 29 - Employee Survey & Engagement Module
+Gap 31 - Customer Loyalty Program
 
 
 
@@ -22,31 +22,23 @@ Not started yet.
 
 ## Completed in Last Run
 
+Gap 30 - VoIP / Call Center Integration
+
+Gap 29 - Employee Survey & Engagement Module
+
 Gap 28 - Knowledge Base / Internal Wiki
 
 Gap 27 - Quality System Completion
-
-Gap 26 - Warehouse Execution Layer
-
-Gap 25 - Sales Order to Cash Full Lifecycle
-
-Gap 24 - Procurement System Depth
 
 
 
 ## Implemented Gap Items
 
-1-28 (all previous gaps implemented — see TASKS2.md history)
-
-Key: Gap 28 = Knowledge Base / Internal Wiki
+1-30 (all gaps through VoIP/Call Center implemented)
 
 
 
 ## Remaining Gap Items
-
-29. Employee Survey & Engagement Module
-
-30. VoIP / Call Center Integration
 
 31. Customer Loyalty Program
 
@@ -132,21 +124,22 @@ Key: Gap 28 = Knowledge Base / Internal Wiki
 
 ## Next Immediate Task
 
-Implement Gap 29 - Employee Survey & Engagement Module.
+Implement Gap 31 - Customer Loyalty Program.
 
 Inspect first:
-- backend/app/models/ess.py - existing ESS model (self-service)
-- frontend/src/app/dashboard/ess/ - existing ESS pages
-- Check if any survey/engagement model exists
+- backend/app/models/sales.py - Customer model (check if loyalty_points or tier fields exist)
+- Check if any loyalty/points model exists in backend/app/models/
 
-Expected: ESS module exists (leave, payslip, expenses). No survey/engagement module.
+Expected: No loyalty model exists. Fresh implementation.
 
 Build next coherent slice:
-1. Add EmployeeSurvey model (title, type: PULSE/ENGAGEMENT/EXIT, questions_json, status, anonymous_flag, start_date, end_date).
-2. Add SurveyResponse model (survey_id, respondent_id or null-if-anonymous, answers_json, submitted_at).
-3. Add schema + CRUD endpoints under /api/v1/surveys.
-4. Add frontend: survey dashboard, survey list, survey creation form, response form (for employees to fill), results/analytics page.
-5. Wire nav under HR & Workforce section.
+1. Add LoyaltyProgram model (name, points_per_unit_spend, tier_config_json).
+2. Add CustomerLoyaltyAccount model (customer_id, total_points, lifetime_points, tier, enrolled_at).
+3. Add LoyaltyTransaction model (account_id, points_delta, transaction_type, reference, created_at).
+4. Add LoyaltyRedemption model (account_id, points_used, reward_description, redeemed_at).
+5. Add endpoints under /api/v1/loyalty.
+6. Add frontend: loyalty dashboard (customer tiers, points balance), redeem points form, customer loyalty card view.
+7. Wire nav under Sales & Distribution.
 
 
 
@@ -154,22 +147,31 @@ Build next coherent slice:
 
 No schema migration blocker: app uses create_all.
 
-Validation environment blocker: this shell has no python/py launcher on PATH.
+Validation environment blocker: python not found on PATH.
 
 
 
 ## Files Changed in Last Run
 
-Gap 28 additions:
-backend/app/models/knowledge_base.py - NEW: KBCategory model (slug, name, description, parent_id for hierarchy, display_order, icon); KBArticle model (slug, title, summary, content_md, category_id, tags JSON, status DRAFT/PUBLISHED/ARCHIVED, version, author_id, last_editor_id, published_at, view_count, is_featured, access_level); KBArticleRevision model (article_id, version_no, title, content_md, change_summary, changed_by_id)
-backend/app/api/v1/endpoints/knowledge_base.py - NEW: GET/POST /kb/categories + PATCH /kb/categories/{id}; GET /kb/articles (with full-text LIKE search, category filter, status filter, pagination) + GET /kb/articles/{id} (increments view_count) + POST /kb/articles + PATCH /kb/articles/{id} (auto-saves revision when content changes) + DELETE /kb/articles/{id} (archives); GET /kb/articles/{id}/revisions; GET /kb/search; GET /kb/stats
-backend/app/api/v1/router.py - MODIFIED: Added knowledge_base import + /kb prefix route registration
-frontend/src/lib/knowledge_base.ts - NEW: KBCategory, KBArticle, KBArticleDetail, KBRevision, KBStats interfaces; kbApi with all CRUD + search + stats methods
-frontend/src/app/dashboard/knowledge-base/page.tsx - NEW: KB home - search bar with live results, stats row, category sidebar, featured/recent articles panel, top-viewed chips
-frontend/src/app/dashboard/knowledge-base/articles/page.tsx - NEW: Article list with search, category filter, status filter, table with actions (view/edit/archive)
-frontend/src/app/dashboard/knowledge-base/articles/new/page.tsx - NEW: Article editor - markdown textarea (24 rows), sidebar with slug/category/tags/access-level/featured, Save Draft + Publish buttons, markdown tips panel
-frontend/src/app/dashboard/knowledge-base/[id]/page.tsx - NEW: Article viewer - renders markdown to HTML with basic regex transform, version history toggle, featured/status badges, tags display
-frontend/src/components/nav-config.tsx - MODIFIED: Added Knowledge Base + KB Articles under Admin & System nav section
+Gap 30 additions:
+backend/app/models/voip.py - NEW: CallLog model (call_ref, direction INBOUND/OUTBOUND, phone_number, customer_id, crm_record_id, agent_id, started_at, ended_at, duration_seconds, outcome, notes, recording_url, follow_up_required, follow_up_date, tags); CallScript model (title, purpose, script_text, talking_points, objection_handlers)
+backend/app/api/v1/endpoints/voip.py - NEW: GET/POST /calls/logs + PATCH /calls/logs/{id}; GET/POST /calls/scripts; GET /calls/stats (total, answered, answer rate, follow-ups pending, avg duration, by-outcome breakdown)
+backend/app/api/v1/router.py - MODIFIED: Added voip import + /calls route
+frontend/src/lib/voip.ts - NEW: CallLog, CallScript, CallStats interfaces; voipApi with listCalls/createCall/updateCall, listScripts/createScript, getStats; OUTCOME_COLORS map; fmtDuration helper
+frontend/src/app/dashboard/calls/page.tsx - NEW: Call center page - KPI row, by-outcome breakdown chips, call log table with direction/outcome badges, log-call modal with phone/customer/direction/outcome/duration/notes/follow-up fields
+frontend/src/components/nav-config.tsx - MODIFIED: Added Call Center under Sales & Distribution nav
+
+Gap 29 additions:
+backend/app/models/surveys.py - NEW: EmployeeSurvey model (title, survey_type, status, anonymous_flag, start_date, end_date, target_department, response_count); SurveyQuestion model (question_text, question_type RATING/NPS/MULTIPLE_CHOICE/TEXT/YES_NO/LIKERT, options JSON, scale_min/max, category); SurveyResponse model (survey_id, respondent_id nullable-for-anonymous, answers JSON, completion_pct)
+backend/app/api/v1/endpoints/surveys.py - NEW: Full CRUD for surveys + questions; POST /surveys/{id}/launch + close; POST /surveys/{id}/respond; GET /surveys/{id}/results (computes per-question avg/distribution, overall engagement score 0-100); GET /surveys/dashboard/stats
+backend/app/api/v1/router.py - MODIFIED: Added surveys import + /surveys route
+frontend/src/lib/surveys.ts - NEW: Survey, SurveyDetail, SurveyQuestion, SurveyResults, QuestionStat interfaces; surveysApi
+frontend/src/app/dashboard/surveys/page.tsx - NEW: Survey dashboard with KPI bar, active survey alert strip, status filter, launch/close/respond actions
+frontend/src/app/dashboard/surveys/new/page.tsx - NEW: Survey builder with question editor (type, scale, options, category)
+frontend/src/app/dashboard/surveys/[id]/page.tsx - NEW: Survey detail with questions list, launch/close/respond buttons
+frontend/src/app/dashboard/surveys/[id]/respond/page.tsx - NEW: Survey response form with type-appropriate inputs (number pads for rating, NPS 0-10 with color zones, button grid for yes/no, options list for MC, textarea for text)
+frontend/src/app/dashboard/surveys/[id]/results/page.tsx - NEW: Results page with engagement score gauge, per-question avg + distribution bars, sample free-text responses
+frontend/src/components/nav-config.tsx - MODIFIED: Added Surveys under Human Resources nav section
 
 
 
@@ -183,12 +185,16 @@ Backend Python compile: BLOCKED (python not found)
 
 ## Notes for Next Claude Run
 
-Gap 28 implementation notes:
-- KBArticle.slug must be unique across all articles. Auto-generated from title (lowercase + hyphens).
-- Version history: KBArticleRevision saved on every content_md change. version increments on each save.
-- view_count incremented on every GET /kb/articles/{id} call.
-- Markdown rendering in frontend: simple regex-based without external lib. Handles H1/H2/H3, bold, italic, inline code, bullet lists. For richer rendering, consider adding react-markdown in future.
-- Article access_level: stored as string ("all", "management", "hr", etc.). Currently stored but not enforced at API level. Future: check user department/role against access_level.
-- Full-text search: LIKE-based on title, summary, content_md. For large KB, replace with PostgreSQL FTS or Elasticsearch.
+Gap 30 notes:
+- CallLog.call_ref auto-generated as CALL-{8hex} if not provided.
+- duration_seconds auto-computed from ended_at - started_at when ended_at is patched.
+- answer_rate = answered / total * 100.
+- Recording URL stored as plain string (no upload logic — link to external recording system).
 
-Gap 29 start: Check backend/app/models/ess.py to see if any survey tables exist. Check existing ESS nav entries. Fresh survey module implementation likely needed.
+Gap 29 notes:
+- SurveyResponse.respondent_id = NULL when survey is anonymous_flag=True.
+- engagement_score: normalises all RATING/LIKERT answers to 0-100 range using (val - min) / (max - min) * 100, then averages.
+- NPS question (0-10): distribution shows promoters (9-10), passives (7-8), detractors (0-6). Future: add NPS score = %promoters - %detractors.
+- completion_pct = answered_required / total_required * 100.
+
+Gap 31 start: Check Customer model in backend/app/models/sales.py for any loyalty fields before building new models.

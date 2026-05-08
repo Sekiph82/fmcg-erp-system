@@ -62,6 +62,8 @@ from app.api.v1.endpoints import (
     esign,
     bank_api,
     knowledge_base,
+    surveys,
+    voip,
 )
 
 api_router = APIRouter()
@@ -271,3 +273,7 @@ api_router.include_router(esign.router, prefix="/esign", tags=["esign"])
 api_router.include_router(bank_api.router, prefix="/bank-api", tags=["bank-api"])
 # ── Knowledge Base / Internal Wiki ────────────────────────────────────────────
 api_router.include_router(knowledge_base.router, prefix="/kb", tags=["knowledge-base"])
+# ── Employee Surveys & Engagement ─────────────────────────────────────────────
+api_router.include_router(surveys.router, prefix="/surveys", tags=["surveys"])
+# ── VoIP / Call Center ────────────────────────────────────────────────────────
+api_router.include_router(voip.router, prefix="/calls", tags=["voip"])

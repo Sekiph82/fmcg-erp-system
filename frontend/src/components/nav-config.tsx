@@ -580,6 +580,7 @@ export const NAV_CONFIG: NavEntry[] = [
       { label: "Invoices",            href: "/dashboard/sales/invoices",             permission: "sales.view" },
       { label: "Customer Statement",  href: "/dashboard/sales/customer-statement",   permission: "sales.view" },
       { label: "Margin Analysis",     href: "/dashboard/sales/margin",               permission: "sales.view" },
+      { label: "Call Center",         href: "/dashboard/calls",                      permission: "sales.view" },
       { label: "Sales Reports",       href: "/dashboard/sales/reports",              permission: "sales.view" },
     ],
   },
@@ -953,6 +954,7 @@ export const NAV_CONFIG: NavEntry[] = [
       { label: "Kenya Payroll",    href: "/dashboard/payroll",          permission: "hr.view" },
       { label: "Payroll Profiles", href: "/dashboard/payroll/profiles", permission: "hr.view" },
       { label: "Payroll Reports",  href: "/dashboard/payroll/reports",  permission: "hr.view" },
+      { label: "Surveys",          href: "/dashboard/surveys",          permission: "hr.view" },
     ],
   },
 
