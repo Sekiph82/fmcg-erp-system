@@ -92,6 +92,29 @@ class ReleaseStatus(str, enum.Enum):
     SCRAPPED = "SCRAPPED"
 
 
+class CalibrationStatus(str, enum.Enum):
+    CURRENT = "CURRENT"
+    DUE_SOON = "DUE_SOON"
+    OVERDUE = "OVERDUE"
+    OUT_OF_SERVICE = "OUT_OF_SERVICE"
+
+
+class CoAStatus(str, enum.Enum):
+    DRAFT = "DRAFT"
+    ISSUED = "ISSUED"
+    SUPERSEDED = "SUPERSEDED"
+
+
+class AQLLevel(str, enum.Enum):
+    S1 = "S1"
+    S2 = "S2"
+    S3 = "S3"
+    S4 = "S4"
+    LEVEL_I = "I"
+    LEVEL_II = "II"
+    LEVEL_III = "III"
+
+
 class QMSAIAgentType(str, enum.Enum):
     QUALITY_RISK_PREDICTOR = "QUALITY_RISK_PREDICTOR"
     DEVIATION_ANALYZER = "DEVIATION_ANALYZER"
@@ -545,3 +568,87 @@ class QMSAIRecommendation(Base, TimestampMixin):
     ccp = relationship("CriticalControlPoint", foreign_keys=[ccp_id])
     deviation = relationship("QCDeviation", foreign_keys=[deviation_id])
     reviewed_by = relationship("User", foreign_keys=[reviewed_by_id])
+
+
+# ── Instrument Calibration ────────────────────────────────────────────────────
+
+class InstrumentCalibration(Base, TimestampMixin):
+    __tablename__ = "instrument_calibrations"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    instrument_id = Column(String(50), unique=True, nullable=False, index=True)
+    instrument_name = Column(String(200), nullable=False)
+    instrument_type = Column(String(100), nullable=False)
+    location = Column(String(200), nullable=True)
+    manufacturer = Column(String(200), nullable=True)
+    model_no = Column(String(100), nullable=True)
+    serial_no = Column(String(100), nullable=True)
+    last_calibration_date = Column(Date, nullable=True)
+    next_calibration_due = Column(Date, nullable=True)
+    calibration_interval_days = Column(Integer, nullable=False, default=365)
+    calibration_authority = Column(String(200), nullable=True)
+    certificate_ref = Column(String(200), nullable=True)
+    status = Column(String(30), nullable=False, default="CURRENT")
+    is_active = Column(Boolean, default=True, nullable=False)
+    notes = Column(Text, nullable=True)
+    calibrated_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+
+    calibrated_by = relationship("User", foreign_keys=[calibrated_by_id])
+
+
+# ── AQL Sampling Plan ──────────────────────────────────────────────────────────
+
+class AQLSamplingPlan(Base, TimestampMixin):
+    __tablename__ = "aql_sampling_plans"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    plan_code = Column(String(50), unique=True, nullable=False, index=True)
+    plan_name = Column(String(200), nullable=False)
+    product_id = Column(UUID(as_uuid=True), ForeignKey("products.id", ondelete="SET NULL"), nullable=True)
+    material_id = Column(UUID(as_uuid=True), ForeignKey("materials.id", ondelete="SET NULL"), nullable=True)
+    product_category = Column(String(100), nullable=True)
+    lot_size_min = Column(Integer, nullable=False)
+    lot_size_max = Column(Integer, nullable=True)
+    sample_size = Column(Integer, nullable=False)
+    aql_level = Column(String(10), nullable=False, default="II")
+    aql_value = Column(Numeric(5, 2), nullable=False)
+    acceptance_number = Column(Integer, nullable=False)
+    rejection_number = Column(Integer, nullable=False)
+    inspection_level = Column(String(20), nullable=False, default="Normal")
+    applies_to_type = Column(String(50), nullable=False, default="INCOMING")
+    is_active = Column(Boolean, default=True, nullable=False)
+    notes = Column(Text, nullable=True)
+
+    product = relationship("Product", foreign_keys=[product_id])
+    material = relationship("Material", foreign_keys=[material_id])
+
+
+# ── Certificate of Analysis ───────────────────────────────────────────────────
+
+class CertificateOfAnalysis(Base, TimestampMixin):
+    __tablename__ = "certificates_of_analysis"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    coa_no = Column(String(50), unique=True, nullable=False, index=True)
+    lot_id = Column(UUID(as_uuid=True), ForeignKey("lots.id", ondelete="RESTRICT"), nullable=False)
+    product_id = Column(UUID(as_uuid=True), ForeignKey("products.id", ondelete="SET NULL"), nullable=True)
+    inspection_id = Column(UUID(as_uuid=True), ForeignKey("qc_inspections.id", ondelete="SET NULL"), nullable=True)
+    issue_date = Column(Date, nullable=False)
+    valid_until = Column(Date, nullable=True)
+    customer_id = Column(UUID(as_uuid=True), ForeignKey("customers.id", ondelete="SET NULL"), nullable=True)
+    status = Column(String(20), nullable=False, default="DRAFT")
+    lot_number = Column(String(100), nullable=True)
+    batch_no = Column(String(100), nullable=True)
+    manufacture_date = Column(Date, nullable=True)
+    expiry_date = Column(Date, nullable=True)
+    test_results_snapshot = Column(JSON, nullable=True)
+    overall_result = Column(String(20), nullable=True)
+    issued_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    approved_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    notes = Column(Text, nullable=True)
+
+    lot = relationship("Lot", foreign_keys=[lot_id])
+    product = relationship("Product", foreign_keys=[product_id])
+    inspection = relationship("QCInspection", foreign_keys=[inspection_id])
+    issued_by = relationship("User", foreign_keys=[issued_by_id])
+    approved_by = relationship("User", foreign_keys=[approved_by_id])

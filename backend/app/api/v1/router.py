@@ -61,6 +61,7 @@ from app.api.v1.endpoints import (
     pos,
     esign,
     bank_api,
+    knowledge_base,
 )
 
 api_router = APIRouter()
@@ -268,3 +269,5 @@ api_router.include_router(pos.router, prefix="/pos", tags=["pos"])
 api_router.include_router(esign.router, prefix="/esign", tags=["esign"])
 # ── Bank API / Open Banking ───────────────────────────────────────────────────
 api_router.include_router(bank_api.router, prefix="/bank-api", tags=["bank-api"])
+# ── Knowledge Base / Internal Wiki ────────────────────────────────────────────
+api_router.include_router(knowledge_base.router, prefix="/kb", tags=["knowledge-base"])

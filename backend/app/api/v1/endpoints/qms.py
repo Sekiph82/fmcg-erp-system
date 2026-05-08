@@ -18,6 +18,7 @@ from app.models.quality import (
     QCDeviation, DeviationStatus, RiskLevel,
     LotQualityStatus, ReleaseStatus, AllergenValidationRecord,
     QMSAIRecommendation, QMSAIAgentType, QMSAIRecStatus,
+    InstrumentCalibration, AQLSamplingPlan, CertificateOfAnalysis,
 )
 from app.schemas.qms import (
     QCTemplateCreate, QCTemplateUpdate, QCTemplateRead,
@@ -870,3 +871,328 @@ def _build_av_read(rec: AllergenValidationRecord) -> AllergenValidationRead:
     r.previous_product_name = rec.previous_product.name if rec.previous_product else None
     r.current_product_name = rec.current_product.name if rec.current_product else None
     return r
+
+
+# ── Instrument Calibration ────────────────────────────────────────────────────
+
+@router.get("/calibration", response_model=list)
+async def list_calibrations(
+    status: Optional[str] = None,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(get_current_user),
+):
+    from datetime import datetime, timedelta
+    today = date.today()
+    q = select(InstrumentCalibration)
+    if status:
+        q = q.where(InstrumentCalibration.status == status)
+    r = await db.execute(q.order_by(InstrumentCalibration.next_calibration_due))
+    instruments = list(r.scalars())
+    rows = []
+    for inst in instruments:
+        days_until_due = None
+        if inst.next_calibration_due:
+            days_until_due = (inst.next_calibration_due - today).days
+        rows.append({
+            "id": str(inst.id),
+            "instrument_id": inst.instrument_id,
+            "instrument_name": inst.instrument_name,
+            "instrument_type": inst.instrument_type,
+            "location": inst.location,
+            "serial_no": inst.serial_no,
+            "last_calibration_date": inst.last_calibration_date.isoformat() if inst.last_calibration_date else None,
+            "next_calibration_due": inst.next_calibration_due.isoformat() if inst.next_calibration_due else None,
+            "calibration_interval_days": inst.calibration_interval_days,
+            "calibration_authority": inst.calibration_authority,
+            "certificate_ref": inst.certificate_ref,
+            "status": inst.status,
+            "days_until_due": days_until_due,
+            "is_overdue": days_until_due is not None and days_until_due < 0,
+            "is_active": inst.is_active,
+            "notes": inst.notes,
+        })
+    return rows
+
+
+@router.post("/calibration", status_code=201)
+async def create_calibration(
+    body: dict,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    from datetime import timedelta
+    last_date = None
+    if body.get("last_calibration_date"):
+        from datetime import date as date_cls
+        last_date = date_cls.fromisoformat(body["last_calibration_date"])
+    interval = body.get("calibration_interval_days", 365)
+    next_due = None
+    if last_date:
+        from datetime import timedelta
+        next_due = last_date + timedelta(days=interval)
+    status = "CURRENT"
+    if next_due:
+        days = (next_due - date.today()).days
+        if days < 0:
+            status = "OVERDUE"
+        elif days <= 30:
+            status = "DUE_SOON"
+    inst = InstrumentCalibration(
+        instrument_id=body["instrument_id"],
+        instrument_name=body["instrument_name"],
+        instrument_type=body.get("instrument_type", ""),
+        location=body.get("location"),
+        manufacturer=body.get("manufacturer"),
+        model_no=body.get("model_no"),
+        serial_no=body.get("serial_no"),
+        last_calibration_date=last_date,
+        next_calibration_due=next_due,
+        calibration_interval_days=interval,
+        calibration_authority=body.get("calibration_authority"),
+        certificate_ref=body.get("certificate_ref"),
+        status=status,
+        notes=body.get("notes"),
+        calibrated_by_id=current_user.id,
+    )
+    db.add(inst)
+    await db.commit()
+    await db.refresh(inst)
+    return {"id": str(inst.id), "instrument_id": inst.instrument_id, "status": inst.status}
+
+
+@router.patch("/calibration/{instrument_id}")
+async def update_calibration(
+    instrument_id: uuid.UUID,
+    body: dict,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    from datetime import timedelta
+    r = await db.execute(select(InstrumentCalibration).where(InstrumentCalibration.id == instrument_id))
+    inst = r.scalar_one_or_none()
+    if not inst:
+        raise HTTPException(404, "Instrument not found")
+    allowed = ["instrument_name", "instrument_type", "location", "manufacturer", "model_no",
+               "serial_no", "calibration_interval_days", "calibration_authority", "certificate_ref",
+               "status", "is_active", "notes"]
+    for k in allowed:
+        if k in body:
+            setattr(inst, k, body[k])
+    if "last_calibration_date" in body and body["last_calibration_date"]:
+        from datetime import date as date_cls
+        last_date = date_cls.fromisoformat(body["last_calibration_date"])
+        inst.last_calibration_date = last_date
+        inst.next_calibration_due = last_date + timedelta(days=inst.calibration_interval_days)
+        days = (inst.next_calibration_due - date.today()).days
+        inst.status = "OVERDUE" if days < 0 else "DUE_SOON" if days <= 30 else "CURRENT"
+        inst.calibrated_by_id = current_user.id
+    await db.commit()
+    await db.refresh(inst)
+    return {"id": str(inst.id), "status": inst.status}
+
+
+# ── AQL Sampling Plans ────────────────────────────────────────────────────────
+
+@router.get("/aql-plans", response_model=list)
+async def list_aql_plans(
+    product_id: Optional[uuid.UUID] = None,
+    active_only: bool = True,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(get_current_user),
+):
+    from sqlalchemy.orm import selectinload
+    q = select(AQLSamplingPlan).options(
+        selectinload(AQLSamplingPlan.product),
+        selectinload(AQLSamplingPlan.material),
+    )
+    if product_id:
+        q = q.where(AQLSamplingPlan.product_id == product_id)
+    if active_only:
+        q = q.where(AQLSamplingPlan.is_active == True)
+    r = await db.execute(q.order_by(AQLSamplingPlan.lot_size_min))
+    plans = list(r.scalars())
+    return [
+        {
+            "id": str(p.id),
+            "plan_code": p.plan_code,
+            "plan_name": p.plan_name,
+            "product_name": p.product.name if p.product else None,
+            "lot_size_min": p.lot_size_min,
+            "lot_size_max": p.lot_size_max,
+            "sample_size": p.sample_size,
+            "aql_level": p.aql_level,
+            "aql_value": float(p.aql_value),
+            "acceptance_number": p.acceptance_number,
+            "rejection_number": p.rejection_number,
+            "inspection_level": p.inspection_level,
+            "applies_to_type": p.applies_to_type,
+            "is_active": p.is_active,
+            "notes": p.notes,
+        }
+        for p in plans
+    ]
+
+
+@router.post("/aql-plans", status_code=201)
+async def create_aql_plan(
+    body: dict,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(get_current_user),
+):
+    from decimal import Decimal
+    plan = AQLSamplingPlan(
+        plan_code=body["plan_code"],
+        plan_name=body["plan_name"],
+        product_id=uuid.UUID(body["product_id"]) if body.get("product_id") else None,
+        material_id=uuid.UUID(body["material_id"]) if body.get("material_id") else None,
+        product_category=body.get("product_category"),
+        lot_size_min=int(body["lot_size_min"]),
+        lot_size_max=int(body["lot_size_max"]) if body.get("lot_size_max") else None,
+        sample_size=int(body["sample_size"]),
+        aql_level=body.get("aql_level", "II"),
+        aql_value=Decimal(str(body["aql_value"])),
+        acceptance_number=int(body["acceptance_number"]),
+        rejection_number=int(body["rejection_number"]),
+        inspection_level=body.get("inspection_level", "Normal"),
+        applies_to_type=body.get("applies_to_type", "INCOMING"),
+        notes=body.get("notes"),
+    )
+    db.add(plan)
+    await db.commit()
+    await db.refresh(plan)
+    return {"id": str(plan.id), "plan_code": plan.plan_code}
+
+
+@router.patch("/aql-plans/{plan_id}")
+async def update_aql_plan(
+    plan_id: uuid.UUID,
+    body: dict,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(get_current_user),
+):
+    r = await db.execute(select(AQLSamplingPlan).where(AQLSamplingPlan.id == plan_id))
+    plan = r.scalar_one_or_none()
+    if not plan:
+        raise HTTPException(404, "AQL plan not found")
+    allowed = ["plan_name", "sample_size", "aql_value", "acceptance_number", "rejection_number",
+               "inspection_level", "is_active", "notes"]
+    for k in allowed:
+        if k in body:
+            setattr(plan, k, body[k])
+    await db.commit()
+    return {"id": str(plan.id), "plan_code": plan.plan_code}
+
+
+# ── Certificate of Analysis ───────────────────────────────────────────────────
+
+@router.get("/coa", response_model=list)
+async def list_coa(
+    lot_id: Optional[uuid.UUID] = None,
+    customer_id: Optional[uuid.UUID] = None,
+    status: Optional[str] = None,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(get_current_user),
+):
+    from sqlalchemy.orm import selectinload
+    q = select(CertificateOfAnalysis).options(
+        selectinload(CertificateOfAnalysis.product),
+        selectinload(CertificateOfAnalysis.lot),
+    )
+    if lot_id:
+        q = q.where(CertificateOfAnalysis.lot_id == lot_id)
+    if customer_id:
+        q = q.where(CertificateOfAnalysis.customer_id == customer_id)
+    if status:
+        q = q.where(CertificateOfAnalysis.status == status)
+    r = await db.execute(q.order_by(CertificateOfAnalysis.issue_date.desc()))
+    coas = list(r.scalars())
+    return [
+        {
+            "id": str(c.id),
+            "coa_no": c.coa_no,
+            "lot_id": str(c.lot_id),
+            "lot_number": c.lot_number,
+            "batch_no": c.batch_no,
+            "product_name": c.product.name if c.product else None,
+            "issue_date": c.issue_date.isoformat(),
+            "valid_until": c.valid_until.isoformat() if c.valid_until else None,
+            "manufacture_date": c.manufacture_date.isoformat() if c.manufacture_date else None,
+            "expiry_date": c.expiry_date.isoformat() if c.expiry_date else None,
+            "overall_result": c.overall_result,
+            "status": c.status,
+            "notes": c.notes,
+        }
+        for c in coas
+    ]
+
+
+@router.post("/coa", status_code=201)
+async def create_coa(
+    body: dict,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    from datetime import date as date_cls
+    test_snapshot = None
+    inspection_id = uuid.UUID(body["inspection_id"]) if body.get("inspection_id") else None
+    if inspection_id:
+        insp_r = await db.execute(
+            select(QCInspection).where(QCInspection.id == inspection_id)
+        )
+        insp = insp_r.scalar_one_or_none()
+        if insp:
+            results_r = await db.execute(
+                select(QCTestResult).where(QCTestResult.inspection_id == inspection_id)
+            )
+            results = list(results_r.scalars())
+            test_snapshot = [
+                {
+                    "parameter_name": t.parameter_name,
+                    "unit": t.unit,
+                    "numeric_value": float(t.numeric_value) if t.numeric_value else None,
+                    "text_value": t.text_value,
+                    "min_spec": float(t.min_spec) if t.min_spec else None,
+                    "max_spec": float(t.max_spec) if t.max_spec else None,
+                    "is_passed": t.is_passed,
+                    "is_critical": t.is_critical,
+                }
+                for t in results
+            ]
+    coa = CertificateOfAnalysis(
+        coa_no=body["coa_no"],
+        lot_id=uuid.UUID(body["lot_id"]),
+        product_id=uuid.UUID(body["product_id"]) if body.get("product_id") else None,
+        inspection_id=inspection_id,
+        issue_date=date_cls.fromisoformat(body["issue_date"]),
+        valid_until=date_cls.fromisoformat(body["valid_until"]) if body.get("valid_until") else None,
+        customer_id=uuid.UUID(body["customer_id"]) if body.get("customer_id") else None,
+        lot_number=body.get("lot_number"),
+        batch_no=body.get("batch_no"),
+        manufacture_date=date_cls.fromisoformat(body["manufacture_date"]) if body.get("manufacture_date") else None,
+        expiry_date=date_cls.fromisoformat(body["expiry_date"]) if body.get("expiry_date") else None,
+        test_results_snapshot=test_snapshot,
+        overall_result=body.get("overall_result", "PASS"),
+        status="DRAFT",
+        issued_by_id=current_user.id,
+        notes=body.get("notes"),
+    )
+    db.add(coa)
+    await db.commit()
+    await db.refresh(coa)
+    return {"id": str(coa.id), "coa_no": coa.coa_no, "status": coa.status}
+
+
+@router.post("/coa/{coa_id}/issue")
+async def issue_coa(
+    coa_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    r = await db.execute(select(CertificateOfAnalysis).where(CertificateOfAnalysis.id == coa_id))
+    coa = r.scalar_one_or_none()
+    if not coa:
+        raise HTTPException(404, "CoA not found")
+    coa.status = "ISSUED"
+    coa.approved_by_id = current_user.id
+    await db.commit()
+    return {"id": str(coa.id), "coa_no": coa.coa_no, "status": coa.status}

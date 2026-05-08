@@ -338,6 +338,59 @@ async function apiFetch<T>(path: string, opts?: RequestInit): Promise<T> {
   return res.json();
 }
 
+export interface CalibrationRecord {
+  id: string;
+  instrument_id: string;
+  instrument_name: string;
+  instrument_type: string;
+  location?: string;
+  serial_no?: string;
+  last_calibration_date?: string;
+  next_calibration_due?: string;
+  calibration_interval_days: number;
+  calibration_authority?: string;
+  certificate_ref?: string;
+  status: string;
+  days_until_due?: number;
+  is_overdue: boolean;
+  is_active: boolean;
+  notes?: string;
+}
+
+export interface AQLPlan {
+  id: string;
+  plan_code: string;
+  plan_name: string;
+  product_name?: string;
+  lot_size_min: number;
+  lot_size_max?: number;
+  sample_size: number;
+  aql_level: string;
+  aql_value: number;
+  acceptance_number: number;
+  rejection_number: number;
+  inspection_level: string;
+  applies_to_type: string;
+  is_active: boolean;
+  notes?: string;
+}
+
+export interface CoARecord {
+  id: string;
+  coa_no: string;
+  lot_id: string;
+  lot_number?: string;
+  batch_no?: string;
+  product_name?: string;
+  issue_date: string;
+  valid_until?: string;
+  manufacture_date?: string;
+  expiry_date?: string;
+  overall_result?: string;
+  status: string;
+  notes?: string;
+}
+
 export const qmsApi = {
   // Dashboard
   getDashboard: () => apiFetch<QMSDashboard>(`${BASE}/dashboard`),
@@ -508,4 +561,46 @@ export const qmsApi = {
     return apiFetch<Record<string, unknown>>(`${BASE}/reports/deviations?${q}`);
   },
   getLotQualityReport: () => apiFetch<Record<string, unknown>>(`${BASE}/reports/lot-quality`),
+
+  // Instrument Calibration
+  listCalibrations: (status?: string) => {
+    const q = status ? `?status=${status}` : "";
+    return apiFetch<CalibrationRecord[]>(`${BASE}/calibration${q}`);
+  },
+  createCalibration: (body: Record<string, unknown>) =>
+    apiFetch<{ id: string; instrument_id: string; status: string }>(`${BASE}/calibration`, {
+      method: "POST", body: JSON.stringify(body),
+    }),
+  updateCalibration: (id: string, body: Record<string, unknown>) =>
+    apiFetch<{ id: string; status: string }>(`${BASE}/calibration/${id}`, {
+      method: "PATCH", body: JSON.stringify(body),
+    }),
+
+  // AQL Sampling Plans
+  listAQLPlans: (active_only = true) =>
+    apiFetch<AQLPlan[]>(`${BASE}/aql-plans?active_only=${active_only}`),
+  createAQLPlan: (body: Record<string, unknown>) =>
+    apiFetch<{ id: string; plan_code: string }>(`${BASE}/aql-plans`, {
+      method: "POST", body: JSON.stringify(body),
+    }),
+  updateAQLPlan: (id: string, body: Record<string, unknown>) =>
+    apiFetch<{ id: string; plan_code: string }>(`${BASE}/aql-plans/${id}`, {
+      method: "PATCH", body: JSON.stringify(body),
+    }),
+
+  // Certificate of Analysis
+  listCoA: (params?: { lot_id?: string; status?: string }) => {
+    const q = new URLSearchParams();
+    if (params?.lot_id) q.set("lot_id", params.lot_id);
+    if (params?.status) q.set("status", params.status);
+    return apiFetch<CoARecord[]>(`${BASE}/coa?${q}`);
+  },
+  createCoA: (body: Record<string, unknown>) =>
+    apiFetch<{ id: string; coa_no: string; status: string }>(`${BASE}/coa`, {
+      method: "POST", body: JSON.stringify(body),
+    }),
+  issueCoA: (id: string) =>
+    apiFetch<{ id: string; coa_no: string; status: string }>(`${BASE}/coa/${id}/issue`, {
+      method: "POST",
+    }),
 };
