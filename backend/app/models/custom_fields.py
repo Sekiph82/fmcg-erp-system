@@ -55,6 +55,29 @@ class ValidationRuleType(str, enum.Enum):
     REFERENCE_EXISTS = "reference_exists"
 
 
+class FieldWidth(str, enum.Enum):
+    FULL = "full"
+    HALF = "half"
+    THIRD = "third"
+
+
+class WFTriggerEvent(str, enum.Enum):
+    RECORD_CREATED = "record_created"
+    RECORD_UPDATED = "record_updated"
+    FIELD_CHANGED = "field_changed"
+    VALUE_EQUALS = "value_equals"
+    VALUE_GT = "value_gt"
+    VALUE_LT = "value_lt"
+
+
+class WFActionType(str, enum.Enum):
+    SEND_NOTIFICATION = "send_notification"
+    SET_FIELD_VALUE = "set_field_value"
+    ASSIGN_TAG = "assign_tag"
+    TRIGGER_WORKFLOW = "trigger_workflow"
+    WEBHOOK_CALL = "webhook_call"
+
+
 class CFAIAgentType(str, enum.Enum):
     FIELD_DESIGN_ASSISTANT = "field_design_assistant"
     DATA_QUALITY_MONITOR = "data_quality_monitor"
@@ -93,6 +116,7 @@ class CustomFieldDefinition(Base):
     active_flag = Column(Boolean, default=True)
     display_order = Column(Integer, default=0)
     section_label = Column(String(100))
+    field_width = Column(String(20), default="full")
     reference_entity = Column(String(50))
     formula = Column(Text)
     created_by = Column(String(100), default="system")
@@ -173,5 +197,24 @@ class CFAIRecommendation(Base):
     score = Column(Float, nullable=True)
     status = Column(SAEnum(CFAIRecStatus), default=CFAIRecStatus.PENDING)
     rec_metadata = Column(JSON, default=dict)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class WorkflowTriggerRule(Base):
+    __tablename__ = "cf_workflow_rules"
+
+    rule_id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    rule_name = Column(String(200), nullable=False)
+    entity_type = Column(SAEnum(EntityType), nullable=False)
+    trigger_event = Column(String(50), nullable=False)
+    condition_field = Column(String(100), nullable=True)
+    condition_operator = Column(String(30), nullable=True)
+    condition_value = Column(String(500), nullable=True)
+    action_type = Column(String(50), nullable=False)
+    action_payload = Column(JSON, default=dict)
+    active_flag = Column(Boolean, default=True)
+    created_by = Column(String(100), default="system")
+    notes = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

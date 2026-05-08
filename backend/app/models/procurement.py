@@ -238,6 +238,113 @@ class SupplierPayment(Base, TimestampMixin):
     created_by = relationship("User")
 
 
+class RFQStatus(str, enum.Enum):
+    DRAFT = "DRAFT"
+    SENT = "SENT"
+    RESPONSES_RECEIVED = "RESPONSES_RECEIVED"
+    AWARDED = "AWARDED"
+    CANCELLED = "CANCELLED"
+
+
+class RFQResponseStatus(str, enum.Enum):
+    PENDING = "PENDING"
+    SUBMITTED = "SUBMITTED"
+    AWARDED = "AWARDED"
+    REJECTED = "REJECTED"
+
+
+class BPAStatus(str, enum.Enum):
+    ACTIVE = "ACTIVE"
+    EXPIRED = "EXPIRED"
+    CANCELLED = "CANCELLED"
+
+
+class RFQRequest(Base, TimestampMixin):
+    __tablename__ = "rfq_requests"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    rfq_no = Column(String(50), unique=True, nullable=False, index=True)
+    pr_id = Column(UUID(as_uuid=True), ForeignKey("purchase_requisitions.id", ondelete="SET NULL"), nullable=True)
+    title = Column(String(300), nullable=False)
+    material_id = Column(UUID(as_uuid=True), ForeignKey("materials.id", ondelete="SET NULL"), nullable=True)
+    product_id = Column(UUID(as_uuid=True), ForeignKey("products.id", ondelete="SET NULL"), nullable=True)
+    description = Column(String(500), nullable=True)
+    quantity = Column(Numeric(14, 3), nullable=False)
+    unit = Column(String(20), nullable=False, default="KG")
+    required_by = Column(Date, nullable=True)
+    response_deadline = Column(Date, nullable=True)
+    status = Column(Enum(RFQStatus), nullable=False, default=RFQStatus.DRAFT)
+    awarded_supplier_id = Column(UUID(as_uuid=True), ForeignKey("suppliers.id", ondelete="SET NULL"), nullable=True)
+    notes = Column(String(1000), nullable=True)
+    created_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+
+    pr = relationship("PurchaseRequisition")
+    awarded_supplier = relationship("Supplier", foreign_keys=[awarded_supplier_id])
+    responses = relationship("RFQResponse", back_populates="rfq", cascade="all, delete-orphan")
+
+
+class RFQResponse(Base, TimestampMixin):
+    __tablename__ = "rfq_responses"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    rfq_id = Column(UUID(as_uuid=True), ForeignKey("rfq_requests.id", ondelete="CASCADE"), nullable=False)
+    supplier_id = Column(UUID(as_uuid=True), ForeignKey("suppliers.id", ondelete="RESTRICT"), nullable=False)
+    quoted_unit_price = Column(Numeric(14, 4), nullable=True)
+    quoted_currency = Column(String(10), nullable=False, default="KES")
+    lead_time_days = Column(Integer, nullable=True)
+    valid_until = Column(Date, nullable=True)
+    payment_terms = Column(String(100), nullable=True)
+    notes = Column(String(1000), nullable=True)
+    status = Column(Enum(RFQResponseStatus), nullable=False, default=RFQResponseStatus.PENDING)
+    score = Column(Numeric(5, 2), nullable=True)
+
+    rfq = relationship("RFQRequest", back_populates="responses")
+    supplier = relationship("Supplier")
+
+
+class BlanketPurchaseAgreement(Base, TimestampMixin):
+    __tablename__ = "blanket_purchase_agreements"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    bpa_no = Column(String(50), unique=True, nullable=False, index=True)
+    supplier_id = Column(UUID(as_uuid=True), ForeignKey("suppliers.id", ondelete="RESTRICT"), nullable=False)
+    material_id = Column(UUID(as_uuid=True), ForeignKey("materials.id", ondelete="SET NULL"), nullable=True)
+    product_id = Column(UUID(as_uuid=True), ForeignKey("products.id", ondelete="SET NULL"), nullable=True)
+    description = Column(String(300), nullable=True)
+    agreed_unit_price = Column(Numeric(14, 4), nullable=False)
+    currency = Column(String(10), nullable=False, default="KES")
+    agreed_quantity = Column(Numeric(14, 3), nullable=True)
+    consumed_quantity = Column(Numeric(14, 3), nullable=False, default=0)
+    unit = Column(String(20), nullable=False, default="KG")
+    valid_from = Column(Date, nullable=False)
+    valid_to = Column(Date, nullable=False)
+    payment_terms = Column(String(100), nullable=True)
+    status = Column(Enum(BPAStatus), nullable=False, default=BPAStatus.ACTIVE)
+    notes = Column(String(1000), nullable=True)
+    created_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+
+    supplier = relationship("Supplier")
+
+
+class AutoReorderPolicy(Base, TimestampMixin):
+    __tablename__ = "auto_reorder_policies"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    material_id = Column(UUID(as_uuid=True), ForeignKey("materials.id", ondelete="SET NULL"), nullable=True)
+    product_id = Column(UUID(as_uuid=True), ForeignKey("products.id", ondelete="SET NULL"), nullable=True)
+    warehouse_id = Column(UUID(as_uuid=True), ForeignKey("warehouses.id", ondelete="SET NULL"), nullable=True)
+    reorder_point = Column(Numeric(14, 3), nullable=False)
+    reorder_quantity = Column(Numeric(14, 3), nullable=False)
+    max_stock_level = Column(Numeric(14, 3), nullable=True)
+    lead_time_days = Column(Integer, nullable=False, default=7)
+    preferred_supplier_id = Column(UUID(as_uuid=True), ForeignKey("suppliers.id", ondelete="SET NULL"), nullable=True)
+    auto_create_pr = Column(Boolean, nullable=False, default=True)
+    active_flag = Column(Boolean, nullable=False, default=True)
+    notes = Column(String(500), nullable=True)
+
+    preferred_supplier = relationship("Supplier")
+
+
 class SupplierEvaluation(Base, TimestampMixin):
     __tablename__ = "supplier_evaluations"
 

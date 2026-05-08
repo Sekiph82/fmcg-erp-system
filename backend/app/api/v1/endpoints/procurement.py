@@ -14,7 +14,8 @@ from app.core.deps import get_current_user, get_db
 from app.models.procurement import (
     PurchaseRequisition, PRLine, PurchaseOrder, POLine,
     GoodsReceipt, GRNLine, ImportShipment, SupplierEvaluation,
-    PRStatus, POStatus,
+    RFQRequest, RFQResponse, BlanketPurchaseAgreement, AutoReorderPolicy,
+    PRStatus, POStatus, RFQStatus, RFQResponseStatus, BPAStatus,
 )
 from decimal import Decimal as _Decimal
 from app.models.master import Supplier
@@ -27,6 +28,9 @@ from app.schemas.procurement import (
     SupplierEvaluationCreate, SupplierEvaluationRead, SupplierDashboardRow,
     InboundScheduleRow, DeliveryAlertRow,
     SupplierPaymentCreate, SupplierPaymentRead,
+    RFQCreate, RFQUpdate, RFQRead, RFQDetailRead, RFQResponseCreate, RFQResponseRead,
+    BlanketAgreementCreate, BlanketAgreementUpdate, BlanketAgreementRead,
+    AutoReorderPolicyCreate, AutoReorderPolicyUpdate, AutoReorderPolicyRead,
 )
 from app.crud import procurement as crud
 from app.services import procurement_service as svc
@@ -596,3 +600,293 @@ def _build_eval_read(ev: SupplierEvaluation) -> SupplierEvaluationRead:
     r = SupplierEvaluationRead.model_validate(ev)
     r.po_no = ev.po.po_no if ev.po else None
     return r
+
+
+# ── RFQ ────────────────────────────────────────────────────────────────────────
+
+@router.get("/rfq/", response_model=List[RFQRead])
+async def list_rfqs(
+    status: Optional[RFQStatus] = None,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    q = select(RFQRequest).options(selectinload(RFQRequest.responses))
+    if status:
+        q = q.where(RFQRequest.status == status)
+    result = await db.execute(q.order_by(RFQRequest.created_at.desc()))
+    rfqs = result.scalars().all()
+    rows = []
+    for r in rfqs:
+        row = RFQRead.model_validate(r)
+        row.awarded_supplier_name = r.awarded_supplier.name if r.awarded_supplier else None
+        row.response_count = len(r.responses)
+        rows.append(row)
+    return rows
+
+
+@router.post("/rfq/", response_model=RFQDetailRead, status_code=201)
+async def create_rfq(
+    body: RFQCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    rfq_data = body.model_dump(exclude={"supplier_ids"})
+    rfq = RFQRequest(**rfq_data, created_by_id=current_user.id)
+    db.add(rfq)
+    await db.flush()
+    for sid in body.supplier_ids:
+        resp = RFQResponse(rfq_id=rfq.id, supplier_id=sid)
+        db.add(resp)
+    await db.commit()
+    result = await db.execute(
+        select(RFQRequest).options(
+            selectinload(RFQRequest.responses).selectinload(RFQResponse.supplier),
+            selectinload(RFQRequest.awarded_supplier),
+        ).where(RFQRequest.id == rfq.id)
+    )
+    rfq = result.scalar_one()
+    return _build_rfq_detail(rfq)
+
+
+@router.get("/rfq/{rfq_id}", response_model=RFQDetailRead)
+async def get_rfq(
+    rfq_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    result = await db.execute(
+        select(RFQRequest).options(
+            selectinload(RFQRequest.responses).selectinload(RFQResponse.supplier),
+            selectinload(RFQRequest.awarded_supplier),
+        ).where(RFQRequest.id == rfq_id)
+    )
+    rfq = result.scalar_one_or_none()
+    if not rfq:
+        raise HTTPException(404, "RFQ not found")
+    return _build_rfq_detail(rfq)
+
+
+@router.patch("/rfq/{rfq_id}", response_model=RFQDetailRead)
+async def update_rfq(
+    rfq_id: uuid.UUID,
+    body: RFQUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    result = await db.execute(select(RFQRequest).where(RFQRequest.id == rfq_id))
+    rfq = result.scalar_one_or_none()
+    if not rfq:
+        raise HTTPException(404, "RFQ not found")
+    for k, v in body.model_dump(exclude_unset=True).items():
+        setattr(rfq, k, v)
+    await db.commit()
+    result = await db.execute(
+        select(RFQRequest).options(
+            selectinload(RFQRequest.responses).selectinload(RFQResponse.supplier),
+            selectinload(RFQRequest.awarded_supplier),
+        ).where(RFQRequest.id == rfq_id)
+    )
+    return _build_rfq_detail(result.scalar_one())
+
+
+@router.post("/rfq/{rfq_id}/responses", response_model=RFQResponseRead, status_code=201)
+async def add_rfq_response(
+    rfq_id: uuid.UUID,
+    body: RFQResponseCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    result = await db.execute(select(RFQRequest).where(RFQRequest.id == rfq_id))
+    rfq = result.scalar_one_or_none()
+    if not rfq:
+        raise HTTPException(404, "RFQ not found")
+    existing = await db.execute(
+        select(RFQResponse).where(
+            RFQResponse.rfq_id == rfq_id,
+            RFQResponse.supplier_id == body.supplier_id,
+        )
+    )
+    resp = existing.scalar_one_or_none()
+    if resp:
+        for k, v in body.model_dump(exclude_unset=True).items():
+            setattr(resp, k, v)
+        resp.status = RFQResponseStatus.SUBMITTED
+    else:
+        resp = RFQResponse(**body.model_dump(), rfq_id=rfq_id, status=RFQResponseStatus.SUBMITTED)
+        db.add(resp)
+    if rfq.status == RFQStatus.SENT:
+        rfq.status = RFQStatus.RESPONSES_RECEIVED
+    await db.commit()
+    await db.refresh(resp)
+    rr = RFQResponseRead.model_validate(resp)
+    supplier_result = await db.execute(select(Supplier).where(Supplier.id == resp.supplier_id))
+    s = supplier_result.scalar_one_or_none()
+    rr.supplier_name = s.name if s else None
+    return rr
+
+
+def _build_rfq_detail(rfq: RFQRequest) -> RFQDetailRead:
+    r = RFQDetailRead.model_validate(rfq)
+    r.awarded_supplier_name = rfq.awarded_supplier.name if rfq.awarded_supplier else None
+    r.response_count = len(rfq.responses)
+    responses = []
+    for resp in rfq.responses:
+        rr = RFQResponseRead.model_validate(resp)
+        rr.supplier_name = resp.supplier.name if resp.supplier else None
+        responses.append(rr)
+    r.responses = responses
+    return r
+
+
+# ── Blanket Purchase Agreements ───────────────────────────────────────────────
+
+@router.get("/bpa/", response_model=List[BlanketAgreementRead])
+async def list_bpas(
+    supplier_id: Optional[uuid.UUID] = None,
+    status: Optional[BPAStatus] = None,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    q = select(BlanketPurchaseAgreement).options(
+        selectinload(BlanketPurchaseAgreement.supplier)
+    )
+    if supplier_id:
+        q = q.where(BlanketPurchaseAgreement.supplier_id == supplier_id)
+    if status:
+        q = q.where(BlanketPurchaseAgreement.status == status)
+    result = await db.execute(q.order_by(BlanketPurchaseAgreement.valid_to.desc()))
+    bpas = result.scalars().all()
+    rows = []
+    for b in bpas:
+        row = BlanketAgreementRead.model_validate(b)
+        row.supplier_name = b.supplier.name if b.supplier else None
+        rows.append(row)
+    return rows
+
+
+@router.post("/bpa/", response_model=BlanketAgreementRead, status_code=201)
+async def create_bpa(
+    body: BlanketAgreementCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    bpa = BlanketPurchaseAgreement(**body.model_dump(), created_by_id=current_user.id)
+    db.add(bpa)
+    await db.commit()
+    await db.refresh(bpa)
+    result = await db.execute(
+        select(BlanketPurchaseAgreement).options(
+            selectinload(BlanketPurchaseAgreement.supplier)
+        ).where(BlanketPurchaseAgreement.id == bpa.id)
+    )
+    bpa = result.scalar_one()
+    row = BlanketAgreementRead.model_validate(bpa)
+    row.supplier_name = bpa.supplier.name if bpa.supplier else None
+    return row
+
+
+@router.patch("/bpa/{bpa_id}", response_model=BlanketAgreementRead)
+async def update_bpa(
+    bpa_id: uuid.UUID,
+    body: BlanketAgreementUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    result = await db.execute(
+        select(BlanketPurchaseAgreement).options(
+            selectinload(BlanketPurchaseAgreement.supplier)
+        ).where(BlanketPurchaseAgreement.id == bpa_id)
+    )
+    bpa = result.scalar_one_or_none()
+    if not bpa:
+        raise HTTPException(404, "Agreement not found")
+    for k, v in body.model_dump(exclude_unset=True).items():
+        setattr(bpa, k, v)
+    await db.commit()
+    await db.refresh(bpa)
+    row = BlanketAgreementRead.model_validate(bpa)
+    row.supplier_name = bpa.supplier.name if bpa.supplier else None
+    return row
+
+
+# ── Auto Reorder Policies ─────────────────────────────────────────────────────
+
+@router.get("/reorder-policies/", response_model=List[AutoReorderPolicyRead])
+async def list_reorder_policies(
+    active_only: bool = False,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    q = select(AutoReorderPolicy).options(
+        selectinload(AutoReorderPolicy.preferred_supplier)
+    )
+    if active_only:
+        q = q.where(AutoReorderPolicy.active_flag == True)
+    result = await db.execute(q.order_by(AutoReorderPolicy.created_at.desc()))
+    policies = result.scalars().all()
+    rows = []
+    for p in policies:
+        row = AutoReorderPolicyRead.model_validate(p)
+        row.preferred_supplier_name = p.preferred_supplier.name if p.preferred_supplier else None
+        rows.append(row)
+    return rows
+
+
+@router.post("/reorder-policies/", response_model=AutoReorderPolicyRead, status_code=201)
+async def create_reorder_policy(
+    body: AutoReorderPolicyCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    policy = AutoReorderPolicy(**body.model_dump())
+    db.add(policy)
+    await db.commit()
+    await db.refresh(policy)
+    result = await db.execute(
+        select(AutoReorderPolicy).options(
+            selectinload(AutoReorderPolicy.preferred_supplier)
+        ).where(AutoReorderPolicy.id == policy.id)
+    )
+    policy = result.scalar_one()
+    row = AutoReorderPolicyRead.model_validate(policy)
+    row.preferred_supplier_name = policy.preferred_supplier.name if policy.preferred_supplier else None
+    return row
+
+
+@router.patch("/reorder-policies/{policy_id}", response_model=AutoReorderPolicyRead)
+async def update_reorder_policy(
+    policy_id: uuid.UUID,
+    body: AutoReorderPolicyUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    result = await db.execute(
+        select(AutoReorderPolicy).options(
+            selectinload(AutoReorderPolicy.preferred_supplier)
+        ).where(AutoReorderPolicy.id == policy_id)
+    )
+    policy = result.scalar_one_or_none()
+    if not policy:
+        raise HTTPException(404, "Reorder policy not found")
+    for k, v in body.model_dump(exclude_unset=True).items():
+        setattr(policy, k, v)
+    await db.commit()
+    await db.refresh(policy)
+    row = AutoReorderPolicyRead.model_validate(policy)
+    row.preferred_supplier_name = policy.preferred_supplier.name if policy.preferred_supplier else None
+    return row
+
+
+@router.delete("/reorder-policies/{policy_id}")
+async def delete_reorder_policy(
+    policy_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    result = await db.execute(select(AutoReorderPolicy).where(AutoReorderPolicy.id == policy_id))
+    policy = result.scalar_one_or_none()
+    if not policy:
+        raise HTTPException(404, "Reorder policy not found")
+    await db.delete(policy)
+    await db.commit()
+    return {"ok": True}

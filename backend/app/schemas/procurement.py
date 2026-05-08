@@ -6,7 +6,10 @@ import uuid
 
 from pydantic import BaseModel, computed_field, ConfigDict
 
-from app.models.procurement import PRStatus, POStatus, GRNStatus, ImportShipmentStatus, POPaymentStatus
+from app.models.procurement import (
+    PRStatus, POStatus, GRNStatus, ImportShipmentStatus, POPaymentStatus,
+    RFQStatus, RFQResponseStatus, BPAStatus,
+)
 
 
 # ── PR Lines ───────────────────────────────────────────────────────────────────
@@ -409,5 +412,191 @@ class SupplierPaymentRead(BaseModel):
     amount: Decimal
     method: str
     reference: Optional[str]
+    notes: Optional[str]
+    created_at: datetime
+
+
+# ── RFQ ───────────────────────────────────────────────────────────────────────
+
+class RFQResponseCreate(BaseModel):
+    supplier_id: uuid.UUID
+    quoted_unit_price: Optional[Decimal] = None
+    quoted_currency: str = "KES"
+    lead_time_days: Optional[int] = None
+    valid_until: Optional[date] = None
+    payment_terms: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class RFQResponseRead(BaseModel):
+    model_config = {"from_attributes": True}
+    id: uuid.UUID
+    rfq_id: uuid.UUID
+    supplier_id: uuid.UUID
+    supplier_name: Optional[str] = None
+    quoted_unit_price: Optional[Decimal]
+    quoted_currency: str
+    lead_time_days: Optional[int]
+    valid_until: Optional[date]
+    payment_terms: Optional[str]
+    notes: Optional[str]
+    status: RFQResponseStatus
+    score: Optional[Decimal]
+    created_at: datetime
+
+
+class RFQCreate(BaseModel):
+    rfq_no: str
+    title: str
+    pr_id: Optional[uuid.UUID] = None
+    material_id: Optional[uuid.UUID] = None
+    product_id: Optional[uuid.UUID] = None
+    description: Optional[str] = None
+    quantity: Decimal
+    unit: str = "KG"
+    required_by: Optional[date] = None
+    response_deadline: Optional[date] = None
+    notes: Optional[str] = None
+    supplier_ids: List[uuid.UUID] = []
+
+
+class RFQUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    response_deadline: Optional[date] = None
+    required_by: Optional[date] = None
+    notes: Optional[str] = None
+    status: Optional[RFQStatus] = None
+    awarded_supplier_id: Optional[uuid.UUID] = None
+
+
+class RFQRead(BaseModel):
+    model_config = {"from_attributes": True}
+    id: uuid.UUID
+    rfq_no: str
+    pr_id: Optional[uuid.UUID]
+    title: str
+    material_id: Optional[uuid.UUID]
+    product_id: Optional[uuid.UUID]
+    description: Optional[str]
+    quantity: Decimal
+    unit: str
+    required_by: Optional[date]
+    response_deadline: Optional[date]
+    status: RFQStatus
+    awarded_supplier_id: Optional[uuid.UUID]
+    awarded_supplier_name: Optional[str] = None
+    notes: Optional[str]
+    created_at: datetime
+    response_count: int = 0
+
+
+class RFQDetailRead(RFQRead):
+    responses: List[RFQResponseRead] = []
+
+
+# ── Blanket Purchase Agreement ─────────────────────────────────────────────────
+
+class BlanketAgreementCreate(BaseModel):
+    bpa_no: str
+    supplier_id: uuid.UUID
+    material_id: Optional[uuid.UUID] = None
+    product_id: Optional[uuid.UUID] = None
+    description: Optional[str] = None
+    agreed_unit_price: Decimal
+    currency: str = "KES"
+    agreed_quantity: Optional[Decimal] = None
+    unit: str = "KG"
+    valid_from: date
+    valid_to: date
+    payment_terms: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class BlanketAgreementUpdate(BaseModel):
+    agreed_unit_price: Optional[Decimal] = None
+    agreed_quantity: Optional[Decimal] = None
+    valid_to: Optional[date] = None
+    payment_terms: Optional[str] = None
+    notes: Optional[str] = None
+    status: Optional[BPAStatus] = None
+
+
+class BlanketAgreementRead(BaseModel):
+    model_config = {"from_attributes": True}
+    id: uuid.UUID
+    bpa_no: str
+    supplier_id: uuid.UUID
+    supplier_name: Optional[str] = None
+    material_id: Optional[uuid.UUID]
+    product_id: Optional[uuid.UUID]
+    description: Optional[str]
+    agreed_unit_price: Decimal
+    currency: str
+    agreed_quantity: Optional[Decimal]
+    consumed_quantity: Decimal
+    unit: str
+    valid_from: date
+    valid_to: date
+    payment_terms: Optional[str]
+    status: BPAStatus
+    notes: Optional[str]
+    created_at: datetime
+
+    @computed_field
+    @property
+    def remaining_quantity(self) -> Optional[Decimal]:
+        if self.agreed_quantity is not None:
+            return self.agreed_quantity - self.consumed_quantity
+        return None
+
+    @computed_field
+    @property
+    def is_expired(self) -> bool:
+        from datetime import date as _date
+        return self.valid_to < _date.today()
+
+
+# ── Auto Reorder Policy ────────────────────────────────────────────────────────
+
+class AutoReorderPolicyCreate(BaseModel):
+    material_id: Optional[uuid.UUID] = None
+    product_id: Optional[uuid.UUID] = None
+    warehouse_id: Optional[uuid.UUID] = None
+    reorder_point: Decimal
+    reorder_quantity: Decimal
+    max_stock_level: Optional[Decimal] = None
+    lead_time_days: int = 7
+    preferred_supplier_id: Optional[uuid.UUID] = None
+    auto_create_pr: bool = True
+    active_flag: bool = True
+    notes: Optional[str] = None
+
+
+class AutoReorderPolicyUpdate(BaseModel):
+    reorder_point: Optional[Decimal] = None
+    reorder_quantity: Optional[Decimal] = None
+    max_stock_level: Optional[Decimal] = None
+    lead_time_days: Optional[int] = None
+    preferred_supplier_id: Optional[uuid.UUID] = None
+    auto_create_pr: Optional[bool] = None
+    active_flag: Optional[bool] = None
+    notes: Optional[str] = None
+
+
+class AutoReorderPolicyRead(BaseModel):
+    model_config = {"from_attributes": True}
+    id: uuid.UUID
+    material_id: Optional[uuid.UUID]
+    product_id: Optional[uuid.UUID]
+    warehouse_id: Optional[uuid.UUID]
+    reorder_point: Decimal
+    reorder_quantity: Decimal
+    max_stock_level: Optional[Decimal]
+    lead_time_days: int
+    preferred_supplier_id: Optional[uuid.UUID]
+    preferred_supplier_name: Optional[str] = None
+    auto_create_pr: bool
+    active_flag: bool
     notes: Optional[str]
     created_at: datetime

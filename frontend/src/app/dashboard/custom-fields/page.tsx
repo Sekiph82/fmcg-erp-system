@@ -142,9 +142,11 @@ export default function CustomFieldsDashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4 lg:grid-cols-6">
         {[
           { href: "/dashboard/custom-fields/fields", label: "Field Manager", icon: "📋" },
+          { href: "/dashboard/custom-fields/form-builder", label: "Form Builder", icon: "🎨" },
+          { href: "/dashboard/custom-fields/workflow-rules", label: "Workflow Rules", icon: "⚡" },
           { href: "/dashboard/custom-fields/new-field", label: "New Field", icon: "➕" },
           { href: "/dashboard/custom-fields/values", label: "Values Browser", icon: "🔍" },
           { href: "/dashboard/custom-fields/ai", label: "AI Insights", icon: "🤖" },

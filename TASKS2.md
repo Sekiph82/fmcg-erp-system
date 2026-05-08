@@ -10,17 +10,21 @@ Phase 2 - High Importance (Tier 2)
 
 ## Current Gap
 
-Gap 23 - No-Code / Extensibility Layer
+Gap 25 - Sales Order to Cash Full Lifecycle
 
 
 
 ## In Progress
 
-Not started yet.
+Gap 25 - Sales Order to Cash Full Lifecycle (inspection started, no files changed yet)
 
 
 
 ## Completed in Last Run
+
+Gap 24 - Procurement System Depth
+
+Gap 23 - No-Code / Extensibility Layer
 
 Gap 22 - Internal Collaboration Layer Expansion
 
@@ -114,13 +118,13 @@ Gap 1 - Full Double-Entry General Ledger
 
 22. Internal Collaboration Layer Expansion
 
-
-
-## Remaining Gap Items
-
 23. No-Code / Extensibility Layer
 
 24. Procurement System Depth
+
+
+
+## Remaining Gap Items
 
 25. Sales Order to Cash Full Lifecycle
 
@@ -218,23 +222,25 @@ Gap 1 - Full Double-Entry General Ledger
 
 ## Next Immediate Task
 
-Implement Gap 23 - No-Code / Extensibility Layer.
+Implement Gap 25 - Sales Order to Cash Full Lifecycle.
 
 Inspect first:
-- backend/app/models/custom_fields.py - existing CustomFieldDefinition, CustomFieldOption, CustomFieldValue models
-- backend/app/api/v1/endpoints/custom_fields.py - current custom field endpoint coverage
-- frontend/src/app/dashboard/custom-fields/ - existing custom fields UI pages
-- frontend/src/components/nav-config.tsx - where custom fields/extensibility appears in nav
+- backend/app/models/sales.py - existing SalesOrder, SalesOrderLine models
+- backend/app/api/v1/endpoints/sales.py - current sales endpoints
+- frontend/src/app/dashboard/sales/ - existing sales pages
+- frontend/src/lib/sales.ts - existing sales lib
 
-Expected: Custom fields module exists for adding per-entity fields. What is missing is: visual form builder (drag-drop field arrangement), workflow builder UI (trigger/action rules), dashboard builder (saved widget layouts), and a no-code custom object creation UI. Focus on the most practical slice: form builder + custom field manager with drag-drop arrangement.
+Expected: Basic sales order exists. Missing: credit limit check on SO creation, Return Management (RMA) workflow, payment allocation to invoices, customer statements (aged balance), overdue collection workflow, margin tracking per order.
 
 Build next coherent slice:
-1. Inspect existing custom fields backend/frontend coverage.
-2. Add form layout/arrangement metadata to CustomFieldDefinition (display_order, section_label, field_width).
-3. Add visual form builder page where users can drag-and-drop custom fields into a form layout.
-4. Add custom field preview (what the form would look like with current field arrangement).
-5. Add workflow trigger rule stub model (trigger_event + condition_field + action_type) - basic automation rules.
-6. Wire nav entry for Form Builder under Administration & System.
+1. Inspect existing sales backend/frontend.
+2. Add ReturnMerchandiseAuthorization (RMA) model + return lines.
+3. Add credit limit enforcement: check customer credit limit before confirming SO.
+4. Add customer statement endpoint (outstanding invoices + payments + aged balance).
+5. Add margin tracking: extend SO/SOLine with cost_price + gross_margin computed field.
+6. Add RMA frontend page.
+7. Add customer statement page.
+8. Update nav under Sales & Distribution.
 
 
 
@@ -248,14 +254,26 @@ Validation environment blocker: this shell has no python/py launcher on PATH, an
 
 ## Files Changed in Last Run
 
-Gap 22 additions:
-backend/app/models/chatter.py - MODIFIED: Extended ReferenceType enum (added crm_record, ticket, project, production, document, batch, batch_recall); changed Activity columns from SAEnum to String(50) to avoid PostgreSQL enum constraint on new values; added sla_due_at (DateTime nullable) and sla_breached (Boolean) columns to Activity; changed ChatterAIRecommendation columns from SAEnum to String
-backend/app/schemas/chatter.py - MODIFIED: Changed ActivityOut fields from enum types to str for reference_type/activity_type/visibility; added sla_due_at/sla_breached to ActivityOut; changed ActivityCreate to use str types + added sla_due_at; changed CTAIRecOut/CTAIRecAck to use str for agent_type/status
-backend/app/services/chatter_service.py - MODIFIED: Added sla_due_at support in create_activity; added get_timeline service (cross-module, paginated, with module_breakdown + sla_breached_count); added get_sla_breached service; added create_activity_with_sla stub
-backend/app/api/v1/endpoints/chatter.py - MODIFIED: Added GET /chatter/timeline endpoint (cross-module filtered timeline); added GET /chatter/sla/breached endpoint
-frontend/src/lib/chatter.ts - MODIFIED: Extended ReferenceType type union (crm_record, ticket, project, production, document, batch, batch_recall); changed ActivityOut types to string; added sla_due_at/sla_breached to ActivityOut; added TimelineResponse interface; added getTimeline + getSLABreached API methods; changed TYPE_ICON/TYPE_COLOR/TYPE_BADGE maps to Record<string, string>; added new REF_LABEL entries
-frontend/src/app/dashboard/chatter/threads/page.tsx - NEW: Cross-module activity timeline browser with SLA overdue alert section, module breakdown filter chips, reference type dropdown, search, SLA-only filter, pagination
-frontend/src/components/nav-config.tsx - MODIFIED: Added "Module Threads" nav entry under Chatter & Timeline
+Gap 24 additions:
+backend/app/models/procurement.py - MODIFIED: Added RFQStatus, RFQResponseStatus, BPAStatus enums; added RFQRequest model (rfq_no, title, material_id, product_id, quantity, unit, required_by, response_deadline, status, awarded_supplier_id, notes, created_by_id); added RFQResponse model (rfq_id, supplier_id, quoted_unit_price, quoted_currency, lead_time_days, valid_until, payment_terms, notes, status, score); added BlanketPurchaseAgreement model (bpa_no, supplier_id, material_id, product_id, agreed_unit_price, currency, agreed_quantity, consumed_quantity, unit, valid_from, valid_to, payment_terms, status); added AutoReorderPolicy model (material_id, product_id, warehouse_id, reorder_point, reorder_quantity, max_stock_level, lead_time_days, preferred_supplier_id, auto_create_pr, active_flag)
+backend/app/schemas/procurement.py - MODIFIED: Added RFQStatus/RFQResponseStatus/BPAStatus imports; added RFQResponseCreate, RFQResponseRead, RFQCreate, RFQUpdate, RFQRead, RFQDetailRead, BlanketAgreementCreate, BlanketAgreementUpdate, BlanketAgreementRead (with remaining_quantity + is_expired computed fields), AutoReorderPolicyCreate, AutoReorderPolicyUpdate, AutoReorderPolicyRead schemas
+backend/app/api/v1/endpoints/procurement.py - MODIFIED: Added RFQRequest/RFQResponse/BlanketPurchaseAgreement/AutoReorderPolicy model imports; added all new schema imports; added GET/POST /rfq/ + GET/PATCH /rfq/{id} + POST /rfq/{id}/responses endpoints; added GET/POST /bpa/ + PATCH /bpa/{id} endpoints; added GET/POST /reorder-policies/ + PATCH/DELETE /reorder-policies/{id} endpoints; added _build_rfq_detail() helper
+frontend/src/lib/procurement.ts - MODIFIED: Added RFQStatus, RFQResponseStatus, BPAStatus types; added RFQResponseRead, RFQRead, RFQDetail, BlanketAgreement, AutoReorderPolicy interfaces; added listRFQs/createRFQ/getRFQ/updateRFQ/addRFQResponse, listBPAs/createBPA/updateBPA, listReorderPolicies/createReorderPolicy/updateReorderPolicy/deleteReorderPolicy API methods
+frontend/src/app/dashboard/procurement/rfq/page.tsx - NEW: RFQ management page - list table with status filter, detail panel showing supplier responses with award button, create modal, add-response modal
+frontend/src/app/dashboard/procurement/blanket-agreements/page.tsx - NEW: Blanket agreements page - list with KPI cards (active/expired/total value), create/edit modal, expiring-soon highlight, cancel action
+frontend/src/app/dashboard/procurement/reorder-policies/page.tsx - NEW: Reorder policies page - list with auto_create_pr status, create/edit modal with material/product ID, reorder point/qty, lead time, preferred supplier, active toggle
+frontend/src/components/nav-config.tsx - MODIFIED: Added RFQ, Blanket Agreements, Reorder Policies nav entries under Procurement section
+
+Gap 23 additions:
+backend/app/models/custom_fields.py - MODIFIED: Added FieldWidth, WFTriggerEvent, WFActionType enums; added field_width column; added WorkflowTriggerRule model
+backend/app/schemas/custom_fields.py - MODIFIED: Added field_width to schemas; added FormLayoutItem/FormLayoutReorder/WorkflowRuleOut/WorkflowRuleCreate/WorkflowRuleUpdate schemas
+backend/app/services/custom_fields_service.py - MODIFIED: Added get_form_layout/reorder_form_layout/list_workflow_rules/create_workflow_rule/update_workflow_rule/delete_workflow_rule services
+backend/app/api/v1/endpoints/custom_fields.py - MODIFIED: Added form layout and workflow rules endpoints
+frontend/src/lib/custom_fields.ts - MODIFIED: Added new types, interfaces, API methods, and constants
+frontend/src/app/dashboard/custom-fields/form-builder/page.tsx - NEW: Visual form builder with HTML5 drag-and-drop
+frontend/src/app/dashboard/custom-fields/workflow-rules/page.tsx - NEW: Workflow rules CRUD page
+frontend/src/app/dashboard/custom-fields/page.tsx - MODIFIED: Extended quick links
+frontend/src/components/nav-config.tsx - MODIFIED: Added Form Builder + Workflow Rules entries
 
 
 
@@ -271,23 +289,12 @@ Backend import chain: NOT RUN due local Python environment blocker above
 
 ## Notes for Next Claude Run
 
-Gap 22 implementation notes:
-- Activity.reference_type, activity_type, visibility columns changed from SAEnum to String. This avoids PostgreSQL ENUM constraint issues when adding new reference type values. For fresh installs (create_all), the table will be created with String columns. For existing installs, the column type change won't happen automatically.
-- SLA timer fields: sla_due_at (DateTime, nullable) + sla_breached (Boolean, default False) added to Activity.
-- Cross-module timeline GET /chatter/timeline: filters by reference_types (comma-separated), created_by, search, sla_overdue_only, page/per_page. Returns items + module_breakdown (count per reference type) + sla_breached_count.
-- SLA breached queue: GET /chatter/sla/breached returns activities where sla_due_at < now, ordered by sla_due_at ascending (oldest overdue first).
-- New module threads page: shows SLA alert strip at top, module breakdown filter chips, timeline items with ref type + activity type badges, pagination.
-- ChatterTimeline.tsx component already uses the TYPE_BADGE/TYPE_ICON maps - changed maps to Record<string, string> to allow any string key (TypeScript fix).
+Gap 24 implementation notes:
+- RFQRequest.status transitions: DRAFT → SENT (via update endpoint) → RESPONSES_RECEIVED (auto-set when first response submitted) → AWARDED (via update with awarded_supplier_id).
+- RFQResponse: one row per RFQ+supplier. On re-submit, updates existing row. Status auto-set to SUBMITTED on addRFQResponse.
+- BlanketPurchaseAgreement: consumed_quantity starts at 0. Future enhancement: auto-increment on PO line creation linked to BPA. BlanketAgreementRead has computed remaining_quantity and is_expired.
+- AutoReorderPolicy: checked by MRP engine (future). auto_create_pr=true means MRP will generate PRs automatically when stock falls below reorder_point.
+- Frontend RFQ page shows split view: list left, detail panel right. Supplier IDs shown as UUID prefix until supplier lookup implemented (needs supplier search endpoint integration in future enhancement).
+- Expiring soon alert: agreements valid_to within 30 days highlighted in amber.
 
-Gap 21 implementation notes:
-- CRMTerritory is a new table (create_all will create it). territory_id column added to crm_records as nullable FK.
-- Territory management page shows per-territory pipeline/win-rate cards and a list with edit capability.
-- Customer 360 view (/crm/records/{id}/360) aggregates: activity health score (0-100), communication risk (LOW/MEDIUM/HIGH based on days since last completed activity), deal risk flag (close date overdue), overdue activity count, interest product count, weighted deal value, pipeline age, summary_flags list.
-- 360 tab added to record detail page with health score gauge, communication risk badge, activity metrics, deal intelligence grid, and action flags chips.
-- credit_signal is returned as "UNKNOWN" — full credit scoring requires linking to sales invoice/payment history which is deferred to Gap 25.
-
-Exact next task:
-Start Gap 23 by inspecting existing custom_fields backend/frontend before coding.
-Look at: backend/app/models/custom_fields.py, backend/app/api/v1/endpoints/custom_fields.py, frontend/src/app/dashboard/custom-fields/.
-Focus on: form layout metadata (display_order, section_label), visual form builder page, custom field arrangement UI.
-Do not create a parallel extensibility module. Extend existing custom_fields module.
+Gap 25 start: Inspect backend/app/models/sales.py and backend/app/api/v1/endpoints/sales.py before coding. Check if RMA model exists. Look at existing invoice/payment models to understand credit limit and payment allocation context.

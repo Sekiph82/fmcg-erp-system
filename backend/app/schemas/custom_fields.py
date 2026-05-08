@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from app.models.custom_fields import (
     FieldType, EntityType, ValidationRuleType,
     CFAIAgentType, CFAIRecStatus,
+    WFTriggerEvent, WFActionType,
 )
 
 
@@ -62,6 +63,7 @@ class CustomFieldOut(BaseModel):
     active_flag: bool
     display_order: int
     section_label: Optional[str] = None
+    field_width: Optional[str] = "full"
     reference_entity: Optional[str] = None
     formula: Optional[str] = None
     created_by: Optional[str] = None
@@ -91,6 +93,7 @@ class CustomFieldCreate(BaseModel):
     active_flag: bool = True
     display_order: int = 0
     section_label: Optional[str] = None
+    field_width: Optional[str] = "full"
     reference_entity: Optional[str] = None
     formula: Optional[str] = None
     created_by: Optional[str] = None
@@ -115,6 +118,7 @@ class CustomFieldUpdate(BaseModel):
     active_flag: Optional[bool] = None
     display_order: Optional[int] = None
     section_label: Optional[str] = None
+    field_width: Optional[str] = None
     formula: Optional[str] = None
     notes: Optional[str] = None
 
@@ -172,3 +176,57 @@ class CFAIRecAck(BaseModel):
 
 
 CustomFieldOut.model_rebuild()
+
+
+class FormLayoutItem(BaseModel):
+    custom_field_id: str
+    display_order: int
+    section_label: Optional[str] = None
+    field_width: Optional[str] = "full"
+
+
+class FormLayoutReorder(BaseModel):
+    items: List[FormLayoutItem]
+
+
+class WorkflowRuleOut(BaseModel):
+    rule_id: str
+    rule_name: str
+    entity_type: EntityType
+    trigger_event: str
+    condition_field: Optional[str] = None
+    condition_operator: Optional[str] = None
+    condition_value: Optional[str] = None
+    action_type: str
+    action_payload: dict = {}
+    active_flag: bool
+    created_by: Optional[str] = None
+    notes: Optional[str] = None
+    created_at: datetime
+    model_config = {"from_attributes": True}
+
+
+class WorkflowRuleCreate(BaseModel):
+    rule_name: str
+    entity_type: EntityType
+    trigger_event: str
+    condition_field: Optional[str] = None
+    condition_operator: Optional[str] = None
+    condition_value: Optional[str] = None
+    action_type: str
+    action_payload: dict = {}
+    active_flag: bool = True
+    created_by: Optional[str] = "system"
+    notes: Optional[str] = None
+
+
+class WorkflowRuleUpdate(BaseModel):
+    rule_name: Optional[str] = None
+    trigger_event: Optional[str] = None
+    condition_field: Optional[str] = None
+    condition_operator: Optional[str] = None
+    condition_value: Optional[str] = None
+    action_type: Optional[str] = None
+    action_payload: Optional[dict] = None
+    active_flag: Optional[bool] = None
+    notes: Optional[str] = None

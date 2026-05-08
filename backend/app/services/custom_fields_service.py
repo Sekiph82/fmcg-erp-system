@@ -9,13 +9,14 @@ from sqlalchemy import select, func, and_, or_
 from sqlalchemy.orm import selectinload
 from app.models.custom_fields import (
     CustomFieldDefinition, CustomFieldOption, CustomFieldValue,
-    CustomFieldValidationRule, CFAIRecommendation,
+    CustomFieldValidationRule, CFAIRecommendation, WorkflowTriggerRule,
     FieldType, EntityType, ValidationRuleType,
     CFAIAgentType, CFAIRecStatus,
 )
 from app.schemas.custom_fields import (
     CustomFieldCreate, CustomFieldUpdate, FieldValuesSet,
     FieldValueOut, ValidationResult, ValidationError, UsageStat, CFAIRecAck,
+    FormLayoutReorder, WorkflowRuleCreate, WorkflowRuleUpdate,
 )
 
 
@@ -585,6 +586,98 @@ async def run_field_design_assistant(db: AsyncSession) -> int:
         db.add(r)
     await db.commit()
     return len(recs)
+
+
+# ── Form Layout ────────────────────────────────────────────────────────────────
+
+async def get_form_layout(db: AsyncSession, entity_type: str) -> List[CustomFieldDefinition]:
+    result = await db.execute(
+        select(CustomFieldDefinition)
+        .options(
+            selectinload(CustomFieldDefinition.options),
+            selectinload(CustomFieldDefinition.validation_rules),
+        )
+        .where(
+            and_(
+                CustomFieldDefinition.entity_type == entity_type,
+                CustomFieldDefinition.active_flag == True,
+            )
+        )
+        .order_by(CustomFieldDefinition.display_order)
+    )
+    return result.scalars().all()
+
+
+async def reorder_form_layout(db: AsyncSession, entity_type: str, data: FormLayoutReorder) -> List[CustomFieldDefinition]:
+    for item in data.items:
+        result = await db.execute(
+            select(CustomFieldDefinition).where(
+                and_(
+                    CustomFieldDefinition.custom_field_id == item.custom_field_id,
+                    CustomFieldDefinition.entity_type == entity_type,
+                )
+            )
+        )
+        field = result.scalar_one_or_none()
+        if field:
+            field.display_order = item.display_order
+            if item.section_label is not None:
+                field.section_label = item.section_label
+            if item.field_width is not None:
+                field.field_width = item.field_width
+            field.updated_at = datetime.utcnow()
+    await db.commit()
+    return await get_form_layout(db, entity_type)
+
+
+# ── Workflow Rules ─────────────────────────────────────────────────────────────
+
+async def list_workflow_rules(
+    db: AsyncSession,
+    entity_type: Optional[str] = None,
+    active_only: bool = False,
+) -> List[WorkflowTriggerRule]:
+    q = select(WorkflowTriggerRule)
+    if entity_type:
+        q = q.where(WorkflowTriggerRule.entity_type == entity_type)
+    if active_only:
+        q = q.where(WorkflowTriggerRule.active_flag == True)
+    result = await db.execute(q.order_by(WorkflowTriggerRule.created_at.desc()))
+    return result.scalars().all()
+
+
+async def create_workflow_rule(db: AsyncSession, data: WorkflowRuleCreate) -> WorkflowTriggerRule:
+    rule = WorkflowTriggerRule(**data.model_dump())
+    db.add(rule)
+    await db.commit()
+    await db.refresh(rule)
+    return rule
+
+
+async def update_workflow_rule(db: AsyncSession, rule_id: str, data: WorkflowRuleUpdate) -> WorkflowTriggerRule:
+    result = await db.execute(
+        select(WorkflowTriggerRule).where(WorkflowTriggerRule.rule_id == rule_id)
+    )
+    rule = result.scalar_one_or_none()
+    if not rule:
+        raise ValueError("Workflow rule not found")
+    for k, v in data.model_dump(exclude_none=True).items():
+        setattr(rule, k, v)
+    rule.updated_at = datetime.utcnow()
+    await db.commit()
+    await db.refresh(rule)
+    return rule
+
+
+async def delete_workflow_rule(db: AsyncSession, rule_id: str) -> None:
+    result = await db.execute(
+        select(WorkflowTriggerRule).where(WorkflowTriggerRule.rule_id == rule_id)
+    )
+    rule = result.scalar_one_or_none()
+    if not rule:
+        raise ValueError("Workflow rule not found")
+    await db.delete(rule)
+    await db.commit()
 
 
 async def run_data_quality_monitor(db: AsyncSession) -> int:

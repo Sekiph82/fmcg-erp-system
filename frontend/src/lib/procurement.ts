@@ -1,6 +1,9 @@
 import { apiClient } from "@/lib/api";
 
 export type PRStatus = "DRAFT" | "PENDING_APPROVAL" | "APPROVED" | "CONVERTED" | "REJECTED" | "CANCELLED";
+export type RFQStatus = "DRAFT" | "SENT" | "RESPONSES_RECEIVED" | "AWARDED" | "CANCELLED";
+export type RFQResponseStatus = "PENDING" | "SUBMITTED" | "AWARDED" | "REJECTED";
+export type BPAStatus = "ACTIVE" | "EXPIRED" | "CANCELLED";
 export type POStatus = "DRAFT" | "APPROVED" | "ORDERED" | "PARTIALLY_RECEIVED" | "RECEIVED" | "CANCELLED";
 export type GRNStatus = "DRAFT" | "POSTED";
 export type ImportShipmentStatus = "PENDING" | "IN_TRANSIT" | "ARRIVED" | "CUSTOMS_CLEARED" | "DELIVERED";
@@ -221,6 +224,86 @@ export interface DeliveryAlertRow {
   message: string;
 }
 
+export interface RFQResponseRead {
+  id: string;
+  rfq_id: string;
+  supplier_id: string;
+  supplier_name?: string;
+  quoted_unit_price?: number;
+  quoted_currency: string;
+  lead_time_days?: number;
+  valid_until?: string;
+  payment_terms?: string;
+  notes?: string;
+  status: RFQResponseStatus;
+  score?: number;
+  created_at: string;
+}
+
+export interface RFQRead {
+  id: string;
+  rfq_no: string;
+  pr_id?: string;
+  title: string;
+  material_id?: string;
+  product_id?: string;
+  description?: string;
+  quantity: number;
+  unit: string;
+  required_by?: string;
+  response_deadline?: string;
+  status: RFQStatus;
+  awarded_supplier_id?: string;
+  awarded_supplier_name?: string;
+  notes?: string;
+  created_at: string;
+  response_count: number;
+}
+
+export interface RFQDetail extends RFQRead {
+  responses: RFQResponseRead[];
+}
+
+export interface BlanketAgreement {
+  id: string;
+  bpa_no: string;
+  supplier_id: string;
+  supplier_name?: string;
+  material_id?: string;
+  product_id?: string;
+  description?: string;
+  agreed_unit_price: number;
+  currency: string;
+  agreed_quantity?: number;
+  consumed_quantity: number;
+  remaining_quantity?: number;
+  unit: string;
+  valid_from: string;
+  valid_to: string;
+  payment_terms?: string;
+  status: BPAStatus;
+  is_expired: boolean;
+  notes?: string;
+  created_at: string;
+}
+
+export interface AutoReorderPolicy {
+  id: string;
+  material_id?: string;
+  product_id?: string;
+  warehouse_id?: string;
+  reorder_point: number;
+  reorder_quantity: number;
+  max_stock_level?: number;
+  lead_time_days: number;
+  preferred_supplier_id?: string;
+  preferred_supplier_name?: string;
+  auto_create_pr: boolean;
+  active_flag: boolean;
+  notes?: string;
+  created_at: string;
+}
+
 export const procurementApi = {
   // PRs
   async listPRs(params?: { status?: PRStatus }): Promise<PR[]> {
@@ -359,5 +442,58 @@ export const procurementApi = {
   async deliveryAlerts(): Promise<DeliveryAlertRow[]> {
     const res = await apiClient.get<DeliveryAlertRow[]>("/api/v1/procurement/delivery/alerts");
     return res.data;
+  },
+
+  // RFQ
+  async listRFQs(params?: { status?: RFQStatus }): Promise<RFQRead[]> {
+    const res = await apiClient.get<RFQRead[]>("/api/v1/procurement/rfq/", { params });
+    return res.data;
+  },
+  async createRFQ(data: object): Promise<RFQDetail> {
+    const res = await apiClient.post<RFQDetail>("/api/v1/procurement/rfq/", data);
+    return res.data;
+  },
+  async getRFQ(id: string): Promise<RFQDetail> {
+    const res = await apiClient.get<RFQDetail>(`/api/v1/procurement/rfq/${id}`);
+    return res.data;
+  },
+  async updateRFQ(id: string, data: object): Promise<RFQDetail> {
+    const res = await apiClient.patch<RFQDetail>(`/api/v1/procurement/rfq/${id}`, data);
+    return res.data;
+  },
+  async addRFQResponse(rfqId: string, data: object): Promise<RFQResponseRead> {
+    const res = await apiClient.post<RFQResponseRead>(`/api/v1/procurement/rfq/${rfqId}/responses`, data);
+    return res.data;
+  },
+
+  // Blanket Purchase Agreements
+  async listBPAs(params?: { supplier_id?: string; status?: BPAStatus }): Promise<BlanketAgreement[]> {
+    const res = await apiClient.get<BlanketAgreement[]>("/api/v1/procurement/bpa/", { params });
+    return res.data;
+  },
+  async createBPA(data: object): Promise<BlanketAgreement> {
+    const res = await apiClient.post<BlanketAgreement>("/api/v1/procurement/bpa/", data);
+    return res.data;
+  },
+  async updateBPA(id: string, data: object): Promise<BlanketAgreement> {
+    const res = await apiClient.patch<BlanketAgreement>(`/api/v1/procurement/bpa/${id}`, data);
+    return res.data;
+  },
+
+  // Auto Reorder Policies
+  async listReorderPolicies(params?: { active_only?: boolean }): Promise<AutoReorderPolicy[]> {
+    const res = await apiClient.get<AutoReorderPolicy[]>("/api/v1/procurement/reorder-policies/", { params });
+    return res.data;
+  },
+  async createReorderPolicy(data: object): Promise<AutoReorderPolicy> {
+    const res = await apiClient.post<AutoReorderPolicy>("/api/v1/procurement/reorder-policies/", data);
+    return res.data;
+  },
+  async updateReorderPolicy(id: string, data: object): Promise<AutoReorderPolicy> {
+    const res = await apiClient.patch<AutoReorderPolicy>(`/api/v1/procurement/reorder-policies/${id}`, data);
+    return res.data;
+  },
+  async deleteReorderPolicy(id: string): Promise<void> {
+    await apiClient.delete(`/api/v1/procurement/reorder-policies/${id}`);
   },
 };

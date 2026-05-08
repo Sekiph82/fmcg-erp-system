@@ -7,6 +7,7 @@ from app.schemas.custom_fields import (
     FieldOptionCreate, ValidationRuleCreate,
     FieldValueOut, FieldValuesSet, ValidationResult,
     UsageStat, CFAIRecOut, CFAIRecAck,
+    FormLayoutReorder, WorkflowRuleOut, WorkflowRuleCreate, WorkflowRuleUpdate,
 )
 from app.services import custom_fields_service
 
@@ -144,3 +145,52 @@ async def validate_values(
 @router.get("/values/{entity_type}/missing-required")
 async def get_missing_required(entity_type: str, db: AsyncSession = Depends(get_db)):
     return await custom_fields_service.get_missing_required(db, entity_type)
+
+
+# ── Form Layout ───────────────────────────────────────────────────────────────
+
+@router.get("/form-layout/{entity_type}", response_model=List[CustomFieldOut])
+async def get_form_layout(entity_type: str, db: AsyncSession = Depends(get_db)):
+    return await custom_fields_service.get_form_layout(db, entity_type)
+
+
+@router.post("/form-layout/{entity_type}/reorder", response_model=List[CustomFieldOut])
+async def reorder_form_layout(
+    entity_type: str, data: FormLayoutReorder, db: AsyncSession = Depends(get_db)
+):
+    return await custom_fields_service.reorder_form_layout(db, entity_type, data)
+
+
+# ── Workflow Rules ────────────────────────────────────────────────────────────
+
+@router.get("/workflow-rules", response_model=List[WorkflowRuleOut])
+async def list_workflow_rules(
+    entity_type: Optional[str] = None,
+    active_only: bool = False,
+    db: AsyncSession = Depends(get_db),
+):
+    return await custom_fields_service.list_workflow_rules(db, entity_type, active_only)
+
+
+@router.post("/workflow-rules", response_model=WorkflowRuleOut)
+async def create_workflow_rule(data: WorkflowRuleCreate, db: AsyncSession = Depends(get_db)):
+    return await custom_fields_service.create_workflow_rule(db, data)
+
+
+@router.patch("/workflow-rules/{rule_id}", response_model=WorkflowRuleOut)
+async def update_workflow_rule(
+    rule_id: str, data: WorkflowRuleUpdate, db: AsyncSession = Depends(get_db)
+):
+    try:
+        return await custom_fields_service.update_workflow_rule(db, rule_id, data)
+    except ValueError as e:
+        raise HTTPException(404, str(e))
+
+
+@router.delete("/workflow-rules/{rule_id}")
+async def delete_workflow_rule(rule_id: str, db: AsyncSession = Depends(get_db)):
+    try:
+        await custom_fields_service.delete_workflow_rule(db, rule_id)
+        return {"ok": True}
+    except ValueError as e:
+        raise HTTPException(404, str(e))

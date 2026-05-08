@@ -37,6 +37,16 @@ export interface ValidationRule {
   active_flag: boolean;
 }
 
+export type FieldWidth = "full" | "half" | "third";
+
+export type WFTriggerEvent =
+  | "record_created" | "record_updated" | "field_changed"
+  | "value_equals" | "value_gt" | "value_lt";
+
+export type WFActionType =
+  | "send_notification" | "set_field_value" | "assign_tag"
+  | "trigger_workflow" | "webhook_call";
+
 export interface CustomFieldDefinition {
   custom_field_id: string;
   field_code: string;
@@ -57,6 +67,7 @@ export interface CustomFieldDefinition {
   active_flag: boolean;
   display_order: number;
   section_label?: string;
+  field_width?: FieldWidth;
   reference_entity?: string;
   formula?: string;
   created_by?: string;
@@ -64,6 +75,29 @@ export interface CustomFieldDefinition {
   created_at: string;
   options: FieldOption[];
   validation_rules: ValidationRule[];
+}
+
+export interface FormLayoutItem {
+  custom_field_id: string;
+  display_order: number;
+  section_label?: string;
+  field_width?: FieldWidth;
+}
+
+export interface WorkflowRule {
+  rule_id: string;
+  rule_name: string;
+  entity_type: EntityType;
+  trigger_event: WFTriggerEvent;
+  condition_field?: string;
+  condition_operator?: string;
+  condition_value?: string;
+  action_type: WFActionType;
+  action_payload: Record<string, unknown>;
+  active_flag: boolean;
+  created_by?: string;
+  notes?: string;
+  created_at: string;
 }
 
 export interface FieldValueOut {
@@ -152,6 +186,20 @@ export const customFieldsApi = {
     apiClient.post<{ generated: number }>(`${BASE}/ai/run/reporting-assistant`).then(r => r.data),
   ackAIRec: (id: string, data: { status: CFAIRecStatus }) =>
     apiClient.patch<CFAIRec>(`${BASE}/ai/recs/${id}`, data).then(r => r.data),
+
+  getFormLayout: (entityType: string) =>
+    apiClient.get<CustomFieldDefinition[]>(`${BASE}/form-layout/${entityType}`).then(r => r.data),
+  reorderFormLayout: (entityType: string, items: FormLayoutItem[]) =>
+    apiClient.post<CustomFieldDefinition[]>(`${BASE}/form-layout/${entityType}/reorder`, { items }).then(r => r.data),
+
+  listWorkflowRules: (params?: { entity_type?: string; active_only?: boolean }) =>
+    apiClient.get<WorkflowRule[]>(`${BASE}/workflow-rules`, { params }).then(r => r.data),
+  createWorkflowRule: (data: object) =>
+    apiClient.post<WorkflowRule>(`${BASE}/workflow-rules`, data).then(r => r.data),
+  updateWorkflowRule: (id: string, data: object) =>
+    apiClient.patch<WorkflowRule>(`${BASE}/workflow-rules/${id}`, data).then(r => r.data),
+  deleteWorkflowRule: (id: string) =>
+    apiClient.delete<{ ok: boolean }>(`${BASE}/workflow-rules/${id}`).then(r => r.data),
 };
 
 export const ENTITY_LABEL: Record<EntityType, string> = {
@@ -175,4 +223,27 @@ export const FIELD_TYPE_ICON: Record<FieldType, string> = {
   currency: "KES", date: "📅", datetime: "🕐", boolean: "☑",
   select: "▽", multi_select: "☑☑", reference: "🔗",
   file_attachment: "📎", url: "🌐", email: "✉", phone: "📞", computed: "∑",
+};
+
+export const WF_TRIGGER_LABEL: Record<string, string> = {
+  record_created: "Record Created",
+  record_updated: "Record Updated",
+  field_changed: "Field Value Changed",
+  value_equals: "Field Value Equals",
+  value_gt: "Field Value Greater Than",
+  value_lt: "Field Value Less Than",
+};
+
+export const WF_ACTION_LABEL: Record<string, string> = {
+  send_notification: "Send Notification",
+  set_field_value: "Set Field Value",
+  assign_tag: "Assign Tag",
+  trigger_workflow: "Trigger Another Workflow",
+  webhook_call: "Call Webhook",
+};
+
+export const FIELD_WIDTH_LABEL: Record<string, string> = {
+  full: "Full Width",
+  half: "Half Width",
+  third: "One Third",
 };
