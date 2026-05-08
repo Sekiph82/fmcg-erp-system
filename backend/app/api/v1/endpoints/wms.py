@@ -8,7 +8,10 @@ from app.db.session import get_db
 from app.core.deps import get_current_user
 from app.crud import wms as crud
 from app.services import wms_service as svc
-from app.models.wms import StockCountStatus
+from app.models.wms import (
+    StockCountStatus, PickingTaskStatus, PackingStatus, ReplenishmentStatus,
+    PickingTask, PackingRecord, ReplenishmentTask,
+)
 from app.schemas.wms import (
     WarehouseZoneCreate, WarehouseZoneRead,
     StorageLocationCreate, StorageLocationUpdate, StorageLocationRead, ScanLocationResult,
@@ -21,6 +24,9 @@ from app.schemas.wms import (
     PutawayTaskCreate, PutawayTaskRead,
     PutawayExecuteRequest, PutawayExecutionRead,
     SuggestLocationResult,
+    PickingTaskCreate, PickingTaskUpdate, PickingTaskRead,
+    PackingRecordCreate, PackingRecordUpdate, PackingRecordRead,
+    ReplenishmentTaskCreate, ReplenishmentTaskUpdate, ReplenishmentTaskRead,
 )
 from app.models.wms import PutawayTaskStatus
 
@@ -662,3 +668,243 @@ async def ai_putaway_efficiency(
 
 # Fix missing import
 from decimal import Decimal  # noqa: E402
+from datetime import datetime, timezone as _tz
+
+
+# ── Picking Tasks ──────────────────────────────────────────────────────────────
+
+@router.get("/picking/tasks", response_model=List[PickingTaskRead])
+async def list_picking_tasks(
+    warehouse_id: Optional[uuid.UUID] = None,
+    status: Optional[PickingTaskStatus] = None,
+    assigned_to_id: Optional[uuid.UUID] = None,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(get_current_user),
+):
+    from sqlalchemy import select
+    from sqlalchemy.orm import selectinload
+    q = select(PickingTask).options(
+        selectinload(PickingTask.product),
+        selectinload(PickingTask.lot),
+        selectinload(PickingTask.from_location),
+        selectinload(PickingTask.warehouse),
+        selectinload(PickingTask.assigned_to),
+    )
+    if warehouse_id:
+        q = q.where(PickingTask.warehouse_id == warehouse_id)
+    if status:
+        q = q.where(PickingTask.status == status)
+    if assigned_to_id:
+        q = q.where(PickingTask.assigned_to_id == assigned_to_id)
+    result = await db.execute(q.order_by(PickingTask.created_at.desc()))
+    tasks = result.scalars().all()
+    rows = []
+    for t in tasks:
+        r = PickingTaskRead.model_validate(t)
+        r.product_name = t.product.name if t.product else None
+        r.lot_number = t.lot.lot_number if t.lot else None
+        r.from_location_code = t.from_location.code if t.from_location else None
+        r.warehouse_name = t.warehouse.name if t.warehouse else None
+        r.assignee_name = t.assigned_to.full_name if t.assigned_to else None
+        rows.append(r)
+    return rows
+
+
+@router.post("/picking/tasks", response_model=PickingTaskRead, status_code=201)
+async def create_picking_task(
+    body: PickingTaskCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    from sqlalchemy.orm import selectinload
+    task = PickingTask(**body.model_dump())
+    db.add(task)
+    await db.commit()
+    await db.refresh(task)
+    from sqlalchemy import select
+    result = await db.execute(
+        select(PickingTask).options(
+            selectinload(PickingTask.product),
+            selectinload(PickingTask.lot),
+            selectinload(PickingTask.from_location),
+            selectinload(PickingTask.warehouse),
+            selectinload(PickingTask.assigned_to),
+        ).where(PickingTask.id == task.id)
+    )
+    t = result.scalar_one()
+    r = PickingTaskRead.model_validate(t)
+    r.product_name = t.product.name if t.product else None
+    r.warehouse_name = t.warehouse.name if t.warehouse else None
+    return r
+
+
+@router.patch("/picking/tasks/{task_id}", response_model=PickingTaskRead)
+async def update_picking_task(
+    task_id: uuid.UUID,
+    body: PickingTaskUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    from sqlalchemy import select
+    from sqlalchemy.orm import selectinload
+    result = await db.execute(select(PickingTask).where(PickingTask.id == task_id))
+    task = result.scalar_one_or_none()
+    if not task:
+        raise HTTPException(404, "Picking task not found")
+    for k, v in body.model_dump(exclude_none=True).items():
+        setattr(task, k, v)
+    if body.status == PickingTaskStatus.IN_PROGRESS and not task.started_at:
+        task.started_at = datetime.now(_tz.utc)
+    if body.status == PickingTaskStatus.PICKED and not task.completed_at:
+        task.completed_at = datetime.now(_tz.utc)
+    await db.commit()
+    result = await db.execute(
+        select(PickingTask).options(
+            selectinload(PickingTask.product),
+            selectinload(PickingTask.warehouse),
+        ).where(PickingTask.id == task_id)
+    )
+    t = result.scalar_one()
+    r = PickingTaskRead.model_validate(t)
+    r.product_name = t.product.name if t.product else None
+    r.warehouse_name = t.warehouse.name if t.warehouse else None
+    return r
+
+
+# ── Packing Records ────────────────────────────────────────────────────────────
+
+@router.get("/packing/records", response_model=List[PackingRecordRead])
+async def list_packing_records(
+    warehouse_id: Optional[uuid.UUID] = None,
+    status: Optional[PackingStatus] = None,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(get_current_user),
+):
+    from sqlalchemy import select
+    from sqlalchemy.orm import selectinload
+    q = select(PackingRecord).options(selectinload(PackingRecord.warehouse))
+    if warehouse_id:
+        q = q.where(PackingRecord.warehouse_id == warehouse_id)
+    if status:
+        q = q.where(PackingRecord.status == status)
+    result = await db.execute(q.order_by(PackingRecord.created_at.desc()))
+    records = result.scalars().all()
+    rows = []
+    for rec in records:
+        r = PackingRecordRead.model_validate(rec)
+        r.warehouse_name = rec.warehouse.name if rec.warehouse else None
+        rows.append(r)
+    return rows
+
+
+@router.post("/packing/records", response_model=PackingRecordRead, status_code=201)
+async def create_packing_record(
+    body: PackingRecordCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    record = PackingRecord(**body.model_dump(), packed_by_id=current_user.id)
+    db.add(record)
+    await db.commit()
+    await db.refresh(record)
+    r = PackingRecordRead.model_validate(record)
+    return r
+
+
+@router.patch("/packing/records/{record_id}", response_model=PackingRecordRead)
+async def update_packing_record(
+    record_id: uuid.UUID,
+    body: PackingRecordUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    from sqlalchemy import select
+    result = await db.execute(select(PackingRecord).where(PackingRecord.id == record_id))
+    record = result.scalar_one_or_none()
+    if not record:
+        raise HTTPException(404, "Packing record not found")
+    for k, v in body.model_dump(exclude_none=True).items():
+        setattr(record, k, v)
+    if body.status == PackingStatus.CLOSED and not record.packed_at:
+        record.packed_at = datetime.now(_tz.utc)
+        record.packed_by_id = current_user.id
+    await db.commit()
+    await db.refresh(record)
+    return PackingRecordRead.model_validate(record)
+
+
+# ── Replenishment Tasks ────────────────────────────────────────────────────────
+
+@router.get("/replenishment/tasks", response_model=List[ReplenishmentTaskRead])
+async def list_replenishment_tasks(
+    warehouse_id: Optional[uuid.UUID] = None,
+    status: Optional[ReplenishmentStatus] = None,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(get_current_user),
+):
+    from sqlalchemy import select
+    from sqlalchemy.orm import selectinload
+    q = select(ReplenishmentTask).options(
+        selectinload(ReplenishmentTask.warehouse),
+        selectinload(ReplenishmentTask.location),
+        selectinload(ReplenishmentTask.product),
+    )
+    if warehouse_id:
+        q = q.where(ReplenishmentTask.warehouse_id == warehouse_id)
+    if status:
+        q = q.where(ReplenishmentTask.status == status)
+    result = await db.execute(q.order_by(ReplenishmentTask.created_at.desc()))
+    tasks = result.scalars().all()
+    rows = []
+    for t in tasks:
+        r = ReplenishmentTaskRead.model_validate(t)
+        r.warehouse_name = t.warehouse.name if t.warehouse else None
+        r.location_code = t.location.code if t.location else None
+        r.product_name = t.product.name if t.product else None
+        rows.append(r)
+    return rows
+
+
+@router.post("/replenishment/tasks", response_model=ReplenishmentTaskRead, status_code=201)
+async def create_replenishment_task(
+    body: ReplenishmentTaskCreate,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(get_current_user),
+):
+    task = ReplenishmentTask(**body.model_dump())
+    db.add(task)
+    await db.commit()
+    await db.refresh(task)
+    return ReplenishmentTaskRead.model_validate(task)
+
+
+@router.patch("/replenishment/tasks/{task_id}", response_model=ReplenishmentTaskRead)
+async def update_replenishment_task(
+    task_id: uuid.UUID,
+    body: ReplenishmentTaskUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    from sqlalchemy import select
+    from sqlalchemy.orm import selectinload
+    result = await db.execute(
+        select(ReplenishmentTask).options(
+            selectinload(ReplenishmentTask.warehouse),
+            selectinload(ReplenishmentTask.location),
+            selectinload(ReplenishmentTask.product),
+        ).where(ReplenishmentTask.id == task_id)
+    )
+    task = result.scalar_one_or_none()
+    if not task:
+        raise HTTPException(404, "Replenishment task not found")
+    for k, v in body.model_dump(exclude_none=True).items():
+        setattr(task, k, v)
+    if body.status == ReplenishmentStatus.COMPLETED and not task.completed_at:
+        task.completed_at = datetime.now(_tz.utc)
+    await db.commit()
+    await db.refresh(task)
+    r = ReplenishmentTaskRead.model_validate(task)
+    r.warehouse_name = task.warehouse.name if task.warehouse else None
+    r.location_code = task.location.code if task.location else None
+    r.product_name = task.product.name if task.product else None
+    return r

@@ -4,7 +4,11 @@ from decimal import Decimal
 from datetime import datetime, date
 import uuid
 
-from app.models.wms import ZoneType, StockCountType, StockCountStatus, PutawayRuleType, PutawayTaskStatus, LocationType
+from app.models.wms import (
+    ZoneType, StockCountType, StockCountStatus,
+    PutawayRuleType, PutawayTaskStatus, LocationType,
+    PickingTaskStatus, PackingStatus, ReplenishmentStatus,
+)
 
 
 # ── Zones ─────────────────────────────────────────────────────────────────────
@@ -339,3 +343,145 @@ class SuggestLocationResult(BaseModel):
     zone_name: Optional[str] = None
     rule_applied: Optional[str] = None
     confidence: str = "AUTO"
+
+
+# ── Picking Tasks ──────────────────────────────────────────────────────────────
+
+class PickingTaskCreate(BaseModel):
+    task_no: str
+    warehouse_id: uuid.UUID
+    shipment_id: Optional[uuid.UUID] = None
+    product_id: uuid.UUID
+    lot_id: Optional[uuid.UUID] = None
+    from_location_id: Optional[uuid.UUID] = None
+    requested_qty: Decimal
+    unit: str = "PCS"
+    assigned_to_id: Optional[uuid.UUID] = None
+    fefo_enforced: bool = True
+    notes: Optional[str] = None
+
+
+class PickingTaskUpdate(BaseModel):
+    status: Optional[PickingTaskStatus] = None
+    picked_qty: Optional[Decimal] = None
+    assigned_to_id: Optional[uuid.UUID] = None
+    from_location_id: Optional[uuid.UUID] = None
+    notes: Optional[str] = None
+
+
+class PickingTaskRead(BaseModel):
+    id: uuid.UUID
+    task_no: str
+    warehouse_id: uuid.UUID
+    warehouse_name: Optional[str] = None
+    shipment_id: Optional[uuid.UUID]
+    product_id: uuid.UUID
+    product_name: Optional[str] = None
+    lot_id: Optional[uuid.UUID]
+    lot_number: Optional[str] = None
+    from_location_id: Optional[uuid.UUID]
+    from_location_code: Optional[str] = None
+    requested_qty: Decimal
+    unit: str
+    picked_qty: Optional[Decimal]
+    assigned_to_id: Optional[uuid.UUID]
+    assignee_name: Optional[str] = None
+    status: PickingTaskStatus
+    fefo_enforced: bool
+    started_at: Optional[datetime]
+    completed_at: Optional[datetime]
+    notes: Optional[str]
+    created_at: datetime
+    model_config = {"from_attributes": True}
+
+
+# ── Packing Records ────────────────────────────────────────────────────────────
+
+class PackingRecordCreate(BaseModel):
+    packing_no: str
+    warehouse_id: uuid.UUID
+    shipment_id: Optional[uuid.UUID] = None
+    box_count: int = 1
+    pallet_count: int = 0
+    total_weight_kg: Optional[Decimal] = None
+    total_volume_m3: Optional[Decimal] = None
+    carrier: Optional[str] = None
+    tracking_number: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class PackingRecordUpdate(BaseModel):
+    box_count: Optional[int] = None
+    pallet_count: Optional[int] = None
+    total_weight_kg: Optional[Decimal] = None
+    total_volume_m3: Optional[Decimal] = None
+    carrier: Optional[str] = None
+    tracking_number: Optional[str] = None
+    status: Optional[PackingStatus] = None
+    notes: Optional[str] = None
+
+
+class PackingRecordRead(BaseModel):
+    id: uuid.UUID
+    packing_no: str
+    shipment_id: Optional[uuid.UUID]
+    warehouse_id: uuid.UUID
+    warehouse_name: Optional[str] = None
+    box_count: int
+    pallet_count: int
+    total_weight_kg: Optional[Decimal]
+    total_volume_m3: Optional[Decimal]
+    carrier: Optional[str]
+    tracking_number: Optional[str]
+    status: PackingStatus
+    packed_by_id: Optional[uuid.UUID]
+    packed_at: Optional[datetime]
+    notes: Optional[str]
+    created_at: datetime
+    model_config = {"from_attributes": True}
+
+
+# ── Replenishment Tasks ────────────────────────────────────────────────────────
+
+class ReplenishmentTaskCreate(BaseModel):
+    task_no: str
+    warehouse_id: uuid.UUID
+    location_id: uuid.UUID
+    product_id: Optional[uuid.UUID] = None
+    material_id: Optional[uuid.UUID] = None
+    current_qty: Decimal = Decimal("0")
+    min_qty: Decimal
+    requested_qty: Decimal
+    unit: str = "PCS"
+    assigned_to_id: Optional[uuid.UUID] = None
+    notes: Optional[str] = None
+
+
+class ReplenishmentTaskUpdate(BaseModel):
+    status: Optional[ReplenishmentStatus] = None
+    fulfilled_qty: Optional[Decimal] = None
+    assigned_to_id: Optional[uuid.UUID] = None
+    notes: Optional[str] = None
+
+
+class ReplenishmentTaskRead(BaseModel):
+    id: uuid.UUID
+    task_no: str
+    warehouse_id: uuid.UUID
+    warehouse_name: Optional[str] = None
+    location_id: uuid.UUID
+    location_code: Optional[str] = None
+    product_id: Optional[uuid.UUID]
+    product_name: Optional[str] = None
+    material_id: Optional[uuid.UUID]
+    current_qty: Decimal
+    min_qty: Decimal
+    requested_qty: Decimal
+    fulfilled_qty: Decimal
+    unit: str
+    status: ReplenishmentStatus
+    assigned_to_id: Optional[uuid.UUID]
+    completed_at: Optional[datetime]
+    notes: Optional[str]
+    created_at: datetime
+    model_config = {"from_attributes": True}

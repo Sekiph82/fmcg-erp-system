@@ -52,11 +52,39 @@ async def confirm_so(db: AsyncSession, so: SalesOrder, user_id: uuid.UUID) -> Sa
     _assert_so(so, SOStatus.DRAFT)
     if not so.lines:
         raise HTTPException(422, "Sales order must have at least one line")
+    # Credit limit check
+    if so.customer and so.customer.credit_limit is not None:
+        order_value = sum(
+            l.ordered_quantity * l.unit_price * (1 - l.discount_pct) * (1 + l.tax_rate)
+            for l in so.lines
+        )
+        outstanding = await _get_customer_outstanding(db, so.customer_id)
+        if outstanding + order_value > so.customer.credit_limit:
+            available = max(so.customer.credit_limit - outstanding, Decimal("0"))
+            raise HTTPException(
+                422,
+                f"Credit limit exceeded. Limit: {so.customer.credit_limit}, "
+                f"Outstanding: {outstanding:.2f}, Order: {order_value:.2f}, "
+                f"Available: {available:.2f}"
+            )
     so.status = SOStatus.CONFIRMED
     so.confirmed_by_id = user_id
     so.confirmed_at = datetime.now(timezone.utc)
     await db.flush()
     return so
+
+
+async def _get_customer_outstanding(db: AsyncSession, customer_id: uuid.UUID) -> Decimal:
+    result = await db.execute(
+        select(Invoice).where(
+            and_(
+                Invoice.customer_id == customer_id,
+                Invoice.status.notin_([InvoiceStatus.PAID, InvoiceStatus.CANCELLED]),
+            )
+        )
+    )
+    invs = result.scalars().all()
+    return sum(max(i.total_amount - i.paid_amount, Decimal("0")) for i in invs)
 
 
 async def allocate_so(
@@ -441,3 +469,213 @@ async def sync_overdue_invoices(db: AsyncSession) -> int:
         inv.status = InvoiceStatus.OVERDUE
     await db.flush()
     return len(invoices)
+
+
+# ── Customer Statement ─────────────────────────────────────────────────────────
+
+def _age_bucket(days_overdue: Optional[int]) -> str:
+    if days_overdue is None or days_overdue <= 0:
+        return "CURRENT"
+    if days_overdue <= 30:
+        return "1-30"
+    if days_overdue <= 60:
+        return "31-60"
+    if days_overdue <= 90:
+        return "61-90"
+    return "90+"
+
+
+async def get_customer_statement(db: AsyncSession, customer_id: uuid.UUID) -> dict:
+    from app.models.sales import Customer, SalesOrder
+    from app.schemas.sales import (
+        StatementInvoiceRow, AgedBalanceSummary, CustomerStatement,
+    )
+
+    cust_result = await db.execute(select(Customer).where(Customer.id == customer_id))
+    customer = cust_result.scalar_one_or_none()
+    if not customer:
+        return None
+
+    inv_result = await db.execute(
+        select(Invoice)
+        .options(selectinload(Invoice.so))
+        .where(
+            and_(
+                Invoice.customer_id == customer_id,
+                Invoice.status != InvoiceStatus.CANCELLED,
+            )
+        )
+        .order_by(Invoice.due_date)
+    )
+    invoices = inv_result.scalars().all()
+
+    today = date.today()
+    rows = []
+    aged = AgedBalanceSummary()
+
+    for inv in invoices:
+        if inv.status == InvoiceStatus.PAID:
+            continue
+        outstanding = max(inv.total_amount - inv.paid_amount, Decimal("0"))
+        delta = (today - inv.due_date).days
+        days_overdue = delta if delta > 0 else None
+        bucket = _age_bucket(days_overdue)
+
+        rows.append(StatementInvoiceRow(
+            invoice_id=inv.id,
+            invoice_no=inv.invoice_no,
+            so_no=inv.so.order_no if inv.so else None,
+            invoice_date=inv.invoice_date,
+            due_date=inv.due_date,
+            total_amount=inv.total_amount,
+            paid_amount=inv.paid_amount,
+            outstanding_balance=outstanding,
+            status=inv.status,
+            days_overdue=days_overdue,
+            age_bucket=bucket,
+        ))
+
+        if bucket == "CURRENT":
+            aged.current += outstanding
+        elif bucket == "1-30":
+            aged.days_1_30 += outstanding
+        elif bucket == "31-60":
+            aged.days_31_60 += outstanding
+        elif bucket == "61-90":
+            aged.days_61_90 += outstanding
+        else:
+            aged.days_90_plus += outstanding
+
+    aged.total_outstanding = aged.current + aged.days_1_30 + aged.days_31_60 + aged.days_61_90 + aged.days_90_plus
+
+    credit_used = aged.total_outstanding
+    credit_available = (customer.credit_limit - credit_used) if customer.credit_limit else None
+
+    return CustomerStatement(
+        customer_id=customer.id,
+        customer_name=customer.name,
+        customer_code=customer.code,
+        credit_limit=customer.credit_limit,
+        credit_used=credit_used,
+        credit_available=credit_available,
+        as_of_date=today,
+        invoices=rows,
+        aged_balance=aged,
+    )
+
+
+async def get_credit_check(
+    db: AsyncSession, customer_id: uuid.UUID, order_value: Decimal
+) -> dict:
+    from app.models.sales import Customer
+    from app.schemas.sales import CreditCheckResult
+
+    cust_result = await db.execute(select(Customer).where(Customer.id == customer_id))
+    customer = cust_result.scalar_one_or_none()
+    if not customer:
+        return None
+
+    outstanding = await _get_customer_outstanding(db, customer_id)
+    credit_limit = customer.credit_limit
+    if credit_limit is None:
+        return CreditCheckResult(
+            customer_id=customer.id,
+            customer_name=customer.name,
+            credit_limit=None,
+            credit_used=outstanding,
+            credit_available=None,
+            order_value=order_value,
+            would_exceed=False,
+            can_confirm=True,
+            message="No credit limit set for this customer",
+        )
+
+    would_exceed = outstanding + order_value > credit_limit
+    credit_available = max(credit_limit - outstanding, Decimal("0"))
+    return CreditCheckResult(
+        customer_id=customer.id,
+        customer_name=customer.name,
+        credit_limit=credit_limit,
+        credit_used=outstanding,
+        credit_available=credit_available,
+        order_value=order_value,
+        would_exceed=would_exceed,
+        can_confirm=not would_exceed,
+        message=(
+            f"Credit available: {credit_available:.2f}. Order would exceed limit by "
+            f"{(outstanding + order_value - credit_limit):.2f}"
+            if would_exceed
+            else f"Within limit. Credit available after order: "
+                 f"{max(credit_available - order_value, Decimal('0')):.2f}"
+        ),
+    )
+
+
+# ── Order Margin ──────────────────────────────────────────────────────────────
+
+async def get_order_margin(db: AsyncSession, so_id: uuid.UUID) -> dict:
+    from app.schemas.sales import OrderMarginLineRow, OrderMarginSummary
+
+    result = await db.execute(
+        select(SalesOrder)
+        .options(
+            selectinload(SalesOrder.lines).selectinload(SOLine.product),
+            selectinload(SalesOrder.customer),
+        )
+        .where(SalesOrder.id == so_id)
+    )
+    so = result.scalar_one_or_none()
+    if not so:
+        return None
+
+    lines_out = []
+    total_revenue = Decimal("0")
+    total_cost = Decimal("0")
+    lines_with_cost = 0
+    lines_without_cost = 0
+
+    for l in (so.lines or []):
+        net_price = l.unit_price * (1 - l.discount_pct)
+        line_revenue = l.ordered_quantity * net_price * (1 + l.tax_rate)
+        total_revenue += line_revenue
+
+        if l.cost_price is not None:
+            line_cost = l.ordered_quantity * l.cost_price
+            total_cost += line_cost
+            gross_margin_pct = ((net_price - l.cost_price) / net_price * 100) if net_price else None
+            lines_with_cost += 1
+        else:
+            line_cost = None
+            gross_margin_pct = None
+            lines_without_cost += 1
+
+        lines_out.append(OrderMarginLineRow(
+            line_no=l.line_no,
+            product_id=l.product_id,
+            product_name=l.product.name if l.product else None,
+            ordered_quantity=l.ordered_quantity,
+            unit=l.unit,
+            unit_price=l.unit_price,
+            discount_pct=l.discount_pct,
+            net_price=net_price.quantize(Decimal("0.0001")),
+            cost_price=l.cost_price,
+            line_revenue=line_revenue.quantize(Decimal("0.01")),
+            line_cost=line_cost.quantize(Decimal("0.01")) if line_cost is not None else None,
+            gross_margin_pct=gross_margin_pct.quantize(Decimal("0.01")) if gross_margin_pct is not None else None,
+        ))
+
+    gross_profit = (total_revenue - total_cost) if lines_with_cost > 0 else None
+    gross_margin_pct = (gross_profit / total_revenue * 100).quantize(Decimal("0.01")) if (gross_profit is not None and total_revenue > 0) else None
+
+    return OrderMarginSummary(
+        so_id=so.id,
+        order_no=so.order_no,
+        customer_name=so.customer.name if so.customer else None,
+        total_revenue=total_revenue.quantize(Decimal("0.01")),
+        total_cost=total_cost.quantize(Decimal("0.01")) if lines_with_cost > 0 else None,
+        gross_profit=gross_profit.quantize(Decimal("0.01")) if gross_profit is not None else None,
+        gross_margin_pct=gross_margin_pct,
+        lines_with_cost=lines_with_cost,
+        lines_without_cost=lines_without_cost,
+        lines=lines_out,
+    )

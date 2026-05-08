@@ -16,6 +16,76 @@ export type StockCountStatus =
   | "APPROVED"
   | "CANCELLED";
 
+export type PickingTaskStatus = "PENDING" | "IN_PROGRESS" | "PICKED" | "PACKED" | "CANCELLED";
+export type PackingStatus = "OPEN" | "CLOSED";
+export type ReplenishmentStatus = "PENDING" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+
+export interface PickingTask {
+  id: string;
+  task_no: string;
+  warehouse_id: string;
+  warehouse_name?: string;
+  shipment_id?: string;
+  product_id: string;
+  product_name?: string;
+  lot_id?: string;
+  lot_number?: string;
+  from_location_id?: string;
+  from_location_code?: string;
+  requested_qty: number;
+  unit: string;
+  picked_qty?: number;
+  assigned_to_id?: string;
+  assignee_name?: string;
+  status: PickingTaskStatus;
+  fefo_enforced: boolean;
+  started_at?: string;
+  completed_at?: string;
+  notes?: string;
+  created_at: string;
+}
+
+export interface PackingRecord {
+  id: string;
+  packing_no: string;
+  shipment_id?: string;
+  warehouse_id: string;
+  warehouse_name?: string;
+  box_count: number;
+  pallet_count: number;
+  total_weight_kg?: number;
+  total_volume_m3?: number;
+  carrier?: string;
+  tracking_number?: string;
+  status: PackingStatus;
+  packed_by_id?: string;
+  packed_at?: string;
+  notes?: string;
+  created_at: string;
+}
+
+export interface ReplenishmentTask {
+  id: string;
+  task_no: string;
+  warehouse_id: string;
+  warehouse_name?: string;
+  location_id: string;
+  location_code?: string;
+  product_id?: string;
+  product_name?: string;
+  material_id?: string;
+  current_qty: number;
+  min_qty: number;
+  requested_qty: number;
+  fulfilled_qty: number;
+  unit: string;
+  status: ReplenishmentStatus;
+  assigned_to_id?: string;
+  completed_at?: string;
+  notes?: string;
+  created_at: string;
+}
+
 export interface WarehouseZone {
   id: string;
   warehouse_id: string;
@@ -293,6 +363,48 @@ export const wmsApi = {
   },
   async movementLedger(params?: { warehouse_id?: string; date_from?: string; date_to?: string; movement_type?: string; limit?: number }): Promise<MovementLedgerRow[]> {
     const res = await apiClient.get<MovementLedgerRow[]>("/api/v1/wms/reports/movement-ledger", { params });
+    return res.data;
+  },
+
+  // Picking tasks
+  async listPickingTasks(params?: { warehouse_id?: string; status?: PickingTaskStatus; assigned_to_id?: string }): Promise<PickingTask[]> {
+    const res = await apiClient.get<PickingTask[]>("/api/v1/wms/picking/tasks", { params });
+    return res.data;
+  },
+  async createPickingTask(data: object): Promise<PickingTask> {
+    const res = await apiClient.post<PickingTask>("/api/v1/wms/picking/tasks", data);
+    return res.data;
+  },
+  async updatePickingTask(id: string, data: object): Promise<PickingTask> {
+    const res = await apiClient.patch<PickingTask>(`/api/v1/wms/picking/tasks/${id}`, data);
+    return res.data;
+  },
+
+  // Packing records
+  async listPackingRecords(params?: { warehouse_id?: string; status?: PackingStatus }): Promise<PackingRecord[]> {
+    const res = await apiClient.get<PackingRecord[]>("/api/v1/wms/packing/records", { params });
+    return res.data;
+  },
+  async createPackingRecord(data: object): Promise<PackingRecord> {
+    const res = await apiClient.post<PackingRecord>("/api/v1/wms/packing/records", data);
+    return res.data;
+  },
+  async updatePackingRecord(id: string, data: object): Promise<PackingRecord> {
+    const res = await apiClient.patch<PackingRecord>(`/api/v1/wms/packing/records/${id}`, data);
+    return res.data;
+  },
+
+  // Replenishment tasks
+  async listReplenishmentTasks(params?: { warehouse_id?: string; status?: ReplenishmentStatus }): Promise<ReplenishmentTask[]> {
+    const res = await apiClient.get<ReplenishmentTask[]>("/api/v1/wms/replenishment/tasks", { params });
+    return res.data;
+  },
+  async createReplenishmentTask(data: object): Promise<ReplenishmentTask> {
+    const res = await apiClient.post<ReplenishmentTask>("/api/v1/wms/replenishment/tasks", data);
+    return res.data;
+  },
+  async updateReplenishmentTask(id: string, data: object): Promise<ReplenishmentTask> {
+    const res = await apiClient.patch<ReplenishmentTask>(`/api/v1/wms/replenishment/tasks/${id}`, data);
     return res.data;
   },
 };

@@ -23,6 +23,7 @@ from app.schemas.sales import (
     AllocateSORequest, DispatchShipmentRequest, InvoiceFromShipmentRequest,
     OutstandingInvoiceRow, SalesSummary,
     MpesaPaymentRequest, MpesaCallbackPayload, MpesaTransactionRead,
+    CustomerStatement, CreditCheckResult, OrderMarginSummary,
 )
 from app.crud import sales as crud
 from app.services import sales_service as svc
@@ -733,3 +734,85 @@ async def sales_by_campaign(
         }
         for r in rows.all()
     ]
+
+
+# ── Customer Statement & Credit ───────────────────────────────────────────────
+
+@router.get("/customers/{customer_id}/statement", response_model=CustomerStatement)
+async def customer_statement(
+    customer_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    result = await svc.get_customer_statement(db, customer_id)
+    if not result:
+        raise HTTPException(404, "Customer not found")
+    return result
+
+
+@router.get("/customers/{customer_id}/credit-check", response_model=CreditCheckResult)
+async def credit_check(
+    customer_id: uuid.UUID,
+    order_value: Decimal = Query(..., description="Proposed order value to check against credit limit"),
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    result = await svc.get_credit_check(db, customer_id, order_value)
+    if not result:
+        raise HTTPException(404, "Customer not found")
+    return result
+
+
+# ── Order Margin ──────────────────────────────────────────────────────────────
+
+@router.get("/orders/{so_id}/margin", response_model=OrderMarginSummary)
+async def order_margin(
+    so_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    result = await svc.get_order_margin(db, so_id)
+    if not result:
+        raise HTTPException(404, "Sales order not found")
+    return result
+
+
+@router.get("/reports/margin-summary", response_model=list)
+async def margin_summary_report(
+    limit: int = Query(50, ge=1, le=200),
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    from sqlalchemy.orm import selectinload as _sil
+    result = await db.execute(
+        select(SalesOrder)
+        .options(_sil(SalesOrder.lines), _sil(SalesOrder.customer))
+        .where(SalesOrder.status.notin_([SOStatus.CANCELLED, SOStatus.DRAFT]))
+        .order_by(SalesOrder.order_date.desc())
+        .limit(limit)
+    )
+    orders = result.scalars().all()
+    rows = []
+    for so in orders:
+        total_rev = sum(
+            l.ordered_quantity * l.unit_price * (1 - l.discount_pct)
+            for l in (so.lines or [])
+        ) or Decimal("0")
+        lines_with_cost = [l for l in (so.lines or []) if l.cost_price is not None]
+        total_cost = sum(l.ordered_quantity * l.cost_price for l in lines_with_cost) if lines_with_cost else None
+        gross_margin_pct = (
+            ((total_rev - total_cost) / total_rev * 100).quantize(Decimal("0.01"))
+            if total_cost is not None and total_rev > 0
+            else None
+        )
+        rows.append({
+            "so_id": str(so.id),
+            "order_no": so.order_no,
+            "customer_name": so.customer.name if so.customer else None,
+            "order_date": so.order_date.isoformat() if so.order_date else None,
+            "total_revenue": float(total_rev.quantize(Decimal("0.01"))),
+            "total_cost": float(total_cost.quantize(Decimal("0.01"))) if total_cost is not None else None,
+            "gross_margin_pct": float(gross_margin_pct) if gross_margin_pct is not None else None,
+            "lines_with_cost": len(lines_with_cost),
+        })
+    return rows

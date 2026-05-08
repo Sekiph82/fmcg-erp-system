@@ -54,6 +54,26 @@ class PutawayTaskStatus(str, enum.Enum):
     CANCELLED = "CANCELLED"
 
 
+class PickingTaskStatus(str, enum.Enum):
+    PENDING = "PENDING"
+    IN_PROGRESS = "IN_PROGRESS"
+    PICKED = "PICKED"
+    PACKED = "PACKED"
+    CANCELLED = "CANCELLED"
+
+
+class PackingStatus(str, enum.Enum):
+    OPEN = "OPEN"
+    CLOSED = "CLOSED"
+
+
+class ReplenishmentStatus(str, enum.Enum):
+    PENDING = "PENDING"
+    IN_PROGRESS = "IN_PROGRESS"
+    COMPLETED = "COMPLETED"
+    CANCELLED = "CANCELLED"
+
+
 class WarehouseZone(Base, TimestampMixin):
     __tablename__ = "warehouse_zones"
     __table_args__ = (
@@ -92,6 +112,8 @@ class StorageLocation(Base, TimestampMixin):
     max_volume_m3 = Column(Numeric(10, 4), nullable=True)
     location_type = Column(Enum(LocationType), nullable=True)
     current_utilization_pct = Column(Numeric(5, 2), nullable=True, default=0)
+    min_qty = Column(Numeric(14, 3), nullable=True)
+    max_qty = Column(Numeric(14, 3), nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
     is_blocked = Column(Boolean, default=False, nullable=False)
 
@@ -211,3 +233,78 @@ class StockCountLine(Base, TimestampMixin):
     material = relationship("Material")
     lot = relationship("Lot")
     location = relationship("StorageLocation")
+
+
+class PickingTask(Base, TimestampMixin):
+    __tablename__ = "wms_picking_tasks"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    task_no = Column(String(50), unique=True, nullable=False, index=True)
+    warehouse_id = Column(UUID(as_uuid=True), ForeignKey("warehouses.id", ondelete="RESTRICT"), nullable=False)
+    shipment_id = Column(UUID(as_uuid=True), ForeignKey("shipments.id", ondelete="SET NULL"), nullable=True)
+    product_id = Column(UUID(as_uuid=True), ForeignKey("products.id", ondelete="RESTRICT"), nullable=False)
+    lot_id = Column(UUID(as_uuid=True), ForeignKey("lots.id", ondelete="SET NULL"), nullable=True)
+    from_location_id = Column(UUID(as_uuid=True), ForeignKey("storage_locations.id", ondelete="SET NULL"), nullable=True)
+    requested_qty = Column(Numeric(14, 3), nullable=False)
+    unit = Column(String(20), nullable=False, default="PCS")
+    picked_qty = Column(Numeric(14, 3), nullable=True)
+    assigned_to_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    status = Column(Enum(PickingTaskStatus), nullable=False, default=PickingTaskStatus.PENDING)
+    started_at = Column(DateTime(timezone=True), nullable=True)
+    completed_at = Column(DateTime(timezone=True), nullable=True)
+    fefo_enforced = Column(Boolean, default=True, nullable=False)
+    notes = Column(Text, nullable=True)
+
+    warehouse = relationship("Warehouse")
+    product = relationship("Product")
+    lot = relationship("Lot")
+    from_location = relationship("StorageLocation", foreign_keys=[from_location_id])
+    assigned_to = relationship("User", foreign_keys=[assigned_to_id])
+
+
+class PackingRecord(Base, TimestampMixin):
+    __tablename__ = "wms_packing_records"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    packing_no = Column(String(50), unique=True, nullable=False, index=True)
+    shipment_id = Column(UUID(as_uuid=True), ForeignKey("shipments.id", ondelete="SET NULL"), nullable=True)
+    warehouse_id = Column(UUID(as_uuid=True), ForeignKey("warehouses.id", ondelete="RESTRICT"), nullable=False)
+    box_count = Column(Integer, nullable=False, default=1)
+    pallet_count = Column(Integer, nullable=False, default=0)
+    total_weight_kg = Column(Numeric(10, 2), nullable=True)
+    total_volume_m3 = Column(Numeric(10, 4), nullable=True)
+    carrier = Column(String(100), nullable=True)
+    tracking_number = Column(String(100), nullable=True)
+    status = Column(Enum(PackingStatus), nullable=False, default=PackingStatus.OPEN)
+    packed_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    packed_at = Column(DateTime(timezone=True), nullable=True)
+    notes = Column(Text, nullable=True)
+
+    warehouse = relationship("Warehouse")
+    packed_by = relationship("User", foreign_keys=[packed_by_id])
+
+
+class ReplenishmentTask(Base, TimestampMixin):
+    __tablename__ = "wms_replenishment_tasks"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    task_no = Column(String(50), unique=True, nullable=False, index=True)
+    warehouse_id = Column(UUID(as_uuid=True), ForeignKey("warehouses.id", ondelete="RESTRICT"), nullable=False)
+    location_id = Column(UUID(as_uuid=True), ForeignKey("storage_locations.id", ondelete="RESTRICT"), nullable=False)
+    product_id = Column(UUID(as_uuid=True), ForeignKey("products.id", ondelete="SET NULL"), nullable=True)
+    material_id = Column(UUID(as_uuid=True), ForeignKey("materials.id", ondelete="SET NULL"), nullable=True)
+    current_qty = Column(Numeric(14, 3), nullable=False, default=0)
+    min_qty = Column(Numeric(14, 3), nullable=False)
+    requested_qty = Column(Numeric(14, 3), nullable=False)
+    fulfilled_qty = Column(Numeric(14, 3), nullable=False, default=0)
+    unit = Column(String(20), nullable=False, default="PCS")
+    status = Column(Enum(ReplenishmentStatus), nullable=False, default=ReplenishmentStatus.PENDING)
+    assigned_to_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    completed_at = Column(DateTime(timezone=True), nullable=True)
+    notes = Column(Text, nullable=True)
+
+    warehouse = relationship("Warehouse")
+    location = relationship("StorageLocation")
+    product = relationship("Product")
+    material = relationship("Material")
+    assigned_to = relationship("User", foreign_keys=[assigned_to_id])

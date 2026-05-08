@@ -10,17 +10,21 @@ Phase 2 - High Importance (Tier 2)
 
 ## Current Gap
 
-Gap 25 - Sales Order to Cash Full Lifecycle
+Gap 27 - Quality System Completion
 
 
 
 ## In Progress
 
-Gap 25 - Sales Order to Cash Full Lifecycle (inspection started, no files changed yet)
+Not started yet.
 
 
 
 ## Completed in Last Run
+
+Gap 26 - Warehouse Execution Layer
+
+Gap 25 - Sales Order to Cash Full Lifecycle
 
 Gap 24 - Procurement System Depth
 
@@ -122,13 +126,13 @@ Gap 1 - Full Double-Entry General Ledger
 
 24. Procurement System Depth
 
-
-
-## Remaining Gap Items
-
 25. Sales Order to Cash Full Lifecycle
 
 26. Warehouse Execution Layer
+
+
+
+## Remaining Gap Items
 
 27. Quality System Completion
 
@@ -222,25 +226,25 @@ Gap 1 - Full Double-Entry General Ledger
 
 ## Next Immediate Task
 
-Implement Gap 25 - Sales Order to Cash Full Lifecycle.
+Implement Gap 27 - Quality System Completion.
 
 Inspect first:
-- backend/app/models/sales.py - existing SalesOrder, SalesOrderLine models
-- backend/app/api/v1/endpoints/sales.py - current sales endpoints
-- frontend/src/app/dashboard/sales/ - existing sales pages
-- frontend/src/lib/sales.ts - existing sales lib
+- backend/app/models/quality.py - existing quality models
+- backend/app/api/v1/endpoints/quality.py - existing QMS endpoints
+- frontend/src/app/dashboard/quality/ or qms/ - existing quality pages
+- frontend/src/lib/quality.ts - existing quality lib
 
-Expected: Basic sales order exists. Missing: credit limit check on SO creation, Return Management (RMA) workflow, payment allocation to invoices, customer statements (aged balance), overdue collection workflow, margin tracking per order.
+Expected: Strong quality foundation exists (QC tests, batch quality, HACCP). What's likely missing: AQL sampling plan management, Certificate of Analysis (CoA) generation, instrument calibration tracking, non-conformance (NCR) workflow with CAPA root cause analysis, batch release approval workflow, supplier quality scorecard.
 
 Build next coherent slice:
-1. Inspect existing sales backend/frontend.
-2. Add ReturnMerchandiseAuthorization (RMA) model + return lines.
-3. Add credit limit enforcement: check customer credit limit before confirming SO.
-4. Add customer statement endpoint (outstanding invoices + payments + aged balance).
-5. Add margin tracking: extend SO/SOLine with cost_price + gross_margin computed field.
-6. Add RMA frontend page.
-7. Add customer statement page.
-8. Update nav under Sales & Distribution.
+1. Inspect existing quality backend/frontend.
+2. Add InstrumentCalibration model (instrument, calibration date, next due, status, certificate).
+3. Add NonConformanceReport model (NCR) with CAPA root cause (5-why, fishbone fields).
+4. Add AQLSamplingPlan model (acceptance quality limit, sample size, AQL level).
+5. Add Certificate of Analysis (CoA) generation endpoint (from batch + QC tests).
+6. Add batch release approval workflow (PENDING_RELEASE → APPROVED/REJECTED).
+7. Add frontend: Calibration tracker page, NCR/CAPA page.
+8. Wire nav entries under Quality & Compliance.
 
 
 
@@ -254,26 +258,24 @@ Validation environment blocker: this shell has no python/py launcher on PATH, an
 
 ## Files Changed in Last Run
 
-Gap 24 additions:
-backend/app/models/procurement.py - MODIFIED: Added RFQStatus, RFQResponseStatus, BPAStatus enums; added RFQRequest model (rfq_no, title, material_id, product_id, quantity, unit, required_by, response_deadline, status, awarded_supplier_id, notes, created_by_id); added RFQResponse model (rfq_id, supplier_id, quoted_unit_price, quoted_currency, lead_time_days, valid_until, payment_terms, notes, status, score); added BlanketPurchaseAgreement model (bpa_no, supplier_id, material_id, product_id, agreed_unit_price, currency, agreed_quantity, consumed_quantity, unit, valid_from, valid_to, payment_terms, status); added AutoReorderPolicy model (material_id, product_id, warehouse_id, reorder_point, reorder_quantity, max_stock_level, lead_time_days, preferred_supplier_id, auto_create_pr, active_flag)
-backend/app/schemas/procurement.py - MODIFIED: Added RFQStatus/RFQResponseStatus/BPAStatus imports; added RFQResponseCreate, RFQResponseRead, RFQCreate, RFQUpdate, RFQRead, RFQDetailRead, BlanketAgreementCreate, BlanketAgreementUpdate, BlanketAgreementRead (with remaining_quantity + is_expired computed fields), AutoReorderPolicyCreate, AutoReorderPolicyUpdate, AutoReorderPolicyRead schemas
-backend/app/api/v1/endpoints/procurement.py - MODIFIED: Added RFQRequest/RFQResponse/BlanketPurchaseAgreement/AutoReorderPolicy model imports; added all new schema imports; added GET/POST /rfq/ + GET/PATCH /rfq/{id} + POST /rfq/{id}/responses endpoints; added GET/POST /bpa/ + PATCH /bpa/{id} endpoints; added GET/POST /reorder-policies/ + PATCH/DELETE /reorder-policies/{id} endpoints; added _build_rfq_detail() helper
-frontend/src/lib/procurement.ts - MODIFIED: Added RFQStatus, RFQResponseStatus, BPAStatus types; added RFQResponseRead, RFQRead, RFQDetail, BlanketAgreement, AutoReorderPolicy interfaces; added listRFQs/createRFQ/getRFQ/updateRFQ/addRFQResponse, listBPAs/createBPA/updateBPA, listReorderPolicies/createReorderPolicy/updateReorderPolicy/deleteReorderPolicy API methods
-frontend/src/app/dashboard/procurement/rfq/page.tsx - NEW: RFQ management page - list table with status filter, detail panel showing supplier responses with award button, create modal, add-response modal
-frontend/src/app/dashboard/procurement/blanket-agreements/page.tsx - NEW: Blanket agreements page - list with KPI cards (active/expired/total value), create/edit modal, expiring-soon highlight, cancel action
-frontend/src/app/dashboard/procurement/reorder-policies/page.tsx - NEW: Reorder policies page - list with auto_create_pr status, create/edit modal with material/product ID, reorder point/qty, lead time, preferred supplier, active toggle
-frontend/src/components/nav-config.tsx - MODIFIED: Added RFQ, Blanket Agreements, Reorder Policies nav entries under Procurement section
+Gap 26 additions:
+backend/app/models/wms.py - MODIFIED: Added PickingTaskStatus, PackingStatus, ReplenishmentStatus enums; added min_qty/max_qty to StorageLocation; added PickingTask model (task_no, warehouse_id, shipment_id, product_id, lot_id, from_location_id, requested_qty, unit, picked_qty, assigned_to_id, status, started_at, completed_at, fefo_enforced, notes); added PackingRecord model (packing_no, shipment_id, warehouse_id, box_count, pallet_count, total_weight_kg, total_volume_m3, carrier, tracking_number, status, packed_by_id, packed_at); added ReplenishmentTask model (task_no, warehouse_id, location_id, product_id, material_id, current_qty, min_qty, requested_qty, fulfilled_qty, unit, status, assigned_to_id, completed_at)
+backend/app/schemas/wms.py - MODIFIED: Added PickingTaskStatus/PackingStatus/ReplenishmentStatus imports; added PickingTaskCreate/PickingTaskUpdate/PickingTaskRead, PackingRecordCreate/PackingRecordUpdate/PackingRecordRead, ReplenishmentTaskCreate/ReplenishmentTaskUpdate/ReplenishmentTaskRead schemas
+backend/app/api/v1/endpoints/wms.py - MODIFIED: Added new model/schema imports; added GET/POST /wms/picking/tasks + PATCH /wms/picking/tasks/{id} endpoints; added GET/POST /wms/packing/records + PATCH /wms/packing/records/{id} endpoints; added GET/POST /wms/replenishment/tasks + PATCH /wms/replenishment/tasks/{id} endpoints
+frontend/src/lib/wms.ts - MODIFIED: Added PickingTaskStatus/PackingStatus/ReplenishmentStatus types; added PickingTask/PackingRecord/ReplenishmentTask interfaces; added listPickingTasks/createPickingTask/updatePickingTask, listPackingRecords/createPackingRecord/updatePackingRecord, listReplenishmentTasks/createReplenishmentTask/updateReplenishmentTask API methods
+frontend/src/app/dashboard/wms/picking/page.tsx - NEW: Mobile-friendly picking ops page - KPI bar, status filter chips, task cards with one-tap Start/Picked/Packed workflow, FEFO badge indicator, create task modal
+frontend/src/app/dashboard/wms/replenishment/page.tsx - NEW: Bin replenishment page - table with current/min/requested/fulfilled progress bar, status filter, create modal, one-click Start/Complete actions
+frontend/src/components/nav-config.tsx - MODIFIED: Added Picking Ops + Bin Replenishment nav entries under Warehouse & Inventory
 
-Gap 23 additions:
-backend/app/models/custom_fields.py - MODIFIED: Added FieldWidth, WFTriggerEvent, WFActionType enums; added field_width column; added WorkflowTriggerRule model
-backend/app/schemas/custom_fields.py - MODIFIED: Added field_width to schemas; added FormLayoutItem/FormLayoutReorder/WorkflowRuleOut/WorkflowRuleCreate/WorkflowRuleUpdate schemas
-backend/app/services/custom_fields_service.py - MODIFIED: Added get_form_layout/reorder_form_layout/list_workflow_rules/create_workflow_rule/update_workflow_rule/delete_workflow_rule services
-backend/app/api/v1/endpoints/custom_fields.py - MODIFIED: Added form layout and workflow rules endpoints
-frontend/src/lib/custom_fields.ts - MODIFIED: Added new types, interfaces, API methods, and constants
-frontend/src/app/dashboard/custom-fields/form-builder/page.tsx - NEW: Visual form builder with HTML5 drag-and-drop
-frontend/src/app/dashboard/custom-fields/workflow-rules/page.tsx - NEW: Workflow rules CRUD page
-frontend/src/app/dashboard/custom-fields/page.tsx - MODIFIED: Extended quick links
-frontend/src/components/nav-config.tsx - MODIFIED: Added Form Builder + Workflow Rules entries
+Gap 25 additions:
+backend/app/models/sales.py - MODIFIED: Added cost_price to SOLine
+backend/app/schemas/sales.py - MODIFIED: Added cost_price/gross_margin to SOLineRead; added statement/credit/margin schemas
+backend/app/services/sales_service.py - MODIFIED: Credit limit enforcement in confirm_so; added get_customer_statement/get_credit_check/get_order_margin services
+backend/app/api/v1/endpoints/sales.py - MODIFIED: Added customer statement, credit check, order margin, margin summary endpoints
+frontend/src/lib/sales.ts - MODIFIED: Added cost_price/gross_margin to SOLine; added statement/credit/margin interfaces and API methods
+frontend/src/app/dashboard/sales/customer-statement/page.tsx - NEW: Customer statement with aged balance
+frontend/src/app/dashboard/sales/margin/page.tsx - NEW: Sales margin analysis with order-level breakdown
+frontend/src/components/nav-config.tsx - MODIFIED: Added Customer Statement + Margin Analysis nav entries
 
 
 
@@ -289,12 +291,11 @@ Backend import chain: NOT RUN due local Python environment blocker above
 
 ## Notes for Next Claude Run
 
-Gap 24 implementation notes:
-- RFQRequest.status transitions: DRAFT → SENT (via update endpoint) → RESPONSES_RECEIVED (auto-set when first response submitted) → AWARDED (via update with awarded_supplier_id).
-- RFQResponse: one row per RFQ+supplier. On re-submit, updates existing row. Status auto-set to SUBMITTED on addRFQResponse.
-- BlanketPurchaseAgreement: consumed_quantity starts at 0. Future enhancement: auto-increment on PO line creation linked to BPA. BlanketAgreementRead has computed remaining_quantity and is_expired.
-- AutoReorderPolicy: checked by MRP engine (future). auto_create_pr=true means MRP will generate PRs automatically when stock falls below reorder_point.
-- Frontend RFQ page shows split view: list left, detail panel right. Supplier IDs shown as UUID prefix until supplier lookup implemented (needs supplier search endpoint integration in future enhancement).
-- Expiring soon alert: agreements valid_to within 30 days highlighted in amber.
+Gap 26 implementation notes:
+- PickingTask.status transitions: PENDING → IN_PROGRESS (sets started_at) → PICKED (sets completed_at + picked_qty = requested_qty) → PACKED.
+- fefo_enforced flag on PickingTask: when true, picker should use FEFO lot (call GET /wms/fefo endpoint to get suggested lot). Currently stored as intent; actual FEFO enforcement at execution time is left to warehouse operator guided by the UI.
+- StorageLocation.min_qty/max_qty: replenishment trigger fields. When current stock < min_qty, a ReplenishmentTask should be auto-created by MRP/WMS engine. Manual creation available via UI.
+- PackingRecord: linked to shipment_id (optional). Close (status=CLOSED) sets packed_at + packed_by.
+- ReplenishmentTask.fulfilled_qty: updated when marking COMPLETED. Shows progress bar on UI.
 
-Gap 25 start: Inspect backend/app/models/sales.py and backend/app/api/v1/endpoints/sales.py before coding. Check if RMA model exists. Look at existing invoice/payment models to understand credit limit and payment allocation context.
+Gap 27 start: Inspect backend/app/models/quality.py first. Check existing quality models (NCR, CoA, calibration, CAPA may or may not exist). Do not duplicate existing quality models — extend them.

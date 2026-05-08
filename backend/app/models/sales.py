@@ -190,6 +190,7 @@ class SOLine(Base, TimestampMixin):
     tax_rate = Column(Numeric(6, 4), nullable=False, default=0)
     allocated_quantity = Column(Numeric(14, 3), nullable=False, default=0)
     shipped_quantity = Column(Numeric(14, 3), nullable=False, default=0)
+    cost_price = Column(Numeric(14, 4), nullable=True)
     notes = Column(Text, nullable=True)
 
     so = relationship("SalesOrder", back_populates="lines")

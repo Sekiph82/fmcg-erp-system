@@ -89,6 +89,7 @@ class SOLineCreate(BaseModel):
     unit_price: Decimal = Decimal("0")
     discount_pct: Decimal = Decimal("0")
     tax_rate: Decimal = Decimal("0")
+    cost_price: Optional[Decimal] = None
     notes: Optional[str] = None
 
 
@@ -106,6 +107,7 @@ class SOLineRead(BaseModel):
     tax_rate: Decimal
     allocated_quantity: Decimal
     shipped_quantity: Decimal
+    cost_price: Optional[Decimal] = None
     notes: Optional[str]
 
     @computed_field
@@ -127,6 +129,16 @@ class SOLineRead(BaseModel):
     @property
     def unallocated_quantity(self) -> Decimal:
         return max(self.ordered_quantity - self.allocated_quantity, Decimal("0"))
+
+    @computed_field
+    @property
+    def gross_margin(self) -> Optional[Decimal]:
+        if self.cost_price is None:
+            return None
+        revenue = self.net_price
+        if revenue == 0:
+            return None
+        return ((revenue - self.cost_price) / revenue * 100).quantize(Decimal("0.01"))
 
 
 # ── Sales Order ───────────────────────────────────────────────────────────────
@@ -396,3 +408,82 @@ class MpesaTransactionRead(BaseModel):
     result_description: Optional[str]
     created_at: datetime
     updated_at: Optional[datetime] = None
+
+
+# ── Customer Statement ────────────────────────────────────────────────────────
+
+class StatementInvoiceRow(BaseModel):
+    invoice_id: uuid.UUID
+    invoice_no: str
+    so_no: Optional[str]
+    invoice_date: date
+    due_date: date
+    total_amount: Decimal
+    paid_amount: Decimal
+    outstanding_balance: Decimal
+    status: InvoiceStatus
+    days_overdue: Optional[int]
+    age_bucket: str  # CURRENT | 1-30 | 31-60 | 61-90 | 90+
+
+
+class AgedBalanceSummary(BaseModel):
+    current: Decimal = Decimal("0")
+    days_1_30: Decimal = Decimal("0")
+    days_31_60: Decimal = Decimal("0")
+    days_61_90: Decimal = Decimal("0")
+    days_90_plus: Decimal = Decimal("0")
+    total_outstanding: Decimal = Decimal("0")
+
+
+class CustomerStatement(BaseModel):
+    customer_id: uuid.UUID
+    customer_name: str
+    customer_code: str
+    credit_limit: Optional[Decimal]
+    credit_used: Decimal
+    credit_available: Optional[Decimal]
+    as_of_date: date
+    invoices: List[StatementInvoiceRow] = []
+    aged_balance: AgedBalanceSummary
+
+
+class CreditCheckResult(BaseModel):
+    customer_id: uuid.UUID
+    customer_name: str
+    credit_limit: Optional[Decimal]
+    credit_used: Decimal
+    credit_available: Optional[Decimal]
+    order_value: Decimal
+    would_exceed: bool
+    can_confirm: bool
+    message: str
+
+
+# ── Order Margin ──────────────────────────────────────────────────────────────
+
+class OrderMarginLineRow(BaseModel):
+    line_no: int
+    product_id: uuid.UUID
+    product_name: Optional[str]
+    ordered_quantity: Decimal
+    unit: str
+    unit_price: Decimal
+    discount_pct: Decimal
+    net_price: Decimal
+    cost_price: Optional[Decimal]
+    line_revenue: Decimal
+    line_cost: Optional[Decimal]
+    gross_margin_pct: Optional[Decimal]
+
+
+class OrderMarginSummary(BaseModel):
+    so_id: uuid.UUID
+    order_no: str
+    customer_name: Optional[str]
+    total_revenue: Decimal
+    total_cost: Optional[Decimal]
+    gross_profit: Optional[Decimal]
+    gross_margin_pct: Optional[Decimal]
+    lines_with_cost: int
+    lines_without_cost: int
+    lines: List[OrderMarginLineRow] = []

@@ -45,11 +45,13 @@ export interface SOLine {
   tax_rate: number;
   allocated_quantity: number;
   shipped_quantity: number;
+  cost_price?: number;
   notes?: string;
   net_price: number;
   line_total: number;
   pending_quantity: number;
   unallocated_quantity: number;
+  gross_margin?: number;
 }
 
 export interface SalesOrder {
@@ -238,6 +240,92 @@ export interface ShipmentCreate {
   lines: ShipmentLineCreate[];
 }
 
+export interface StatementInvoiceRow {
+  invoice_id: string;
+  invoice_no: string;
+  so_no?: string;
+  invoice_date: string;
+  due_date: string;
+  total_amount: number;
+  paid_amount: number;
+  outstanding_balance: number;
+  status: InvoiceStatus;
+  days_overdue?: number;
+  age_bucket: "CURRENT" | "1-30" | "31-60" | "61-90" | "90+";
+}
+
+export interface AgedBalanceSummary {
+  current: number;
+  days_1_30: number;
+  days_31_60: number;
+  days_61_90: number;
+  days_90_plus: number;
+  total_outstanding: number;
+}
+
+export interface CustomerStatement {
+  customer_id: string;
+  customer_name: string;
+  customer_code: string;
+  credit_limit?: number;
+  credit_used: number;
+  credit_available?: number;
+  as_of_date: string;
+  invoices: StatementInvoiceRow[];
+  aged_balance: AgedBalanceSummary;
+}
+
+export interface CreditCheckResult {
+  customer_id: string;
+  customer_name: string;
+  credit_limit?: number;
+  credit_used: number;
+  credit_available?: number;
+  order_value: number;
+  would_exceed: boolean;
+  can_confirm: boolean;
+  message: string;
+}
+
+export interface OrderMarginLineRow {
+  line_no: number;
+  product_id: string;
+  product_name?: string;
+  ordered_quantity: number;
+  unit: string;
+  unit_price: number;
+  discount_pct: number;
+  net_price: number;
+  cost_price?: number;
+  line_revenue: number;
+  line_cost?: number;
+  gross_margin_pct?: number;
+}
+
+export interface OrderMarginSummary {
+  so_id: string;
+  order_no: string;
+  customer_name?: string;
+  total_revenue: number;
+  total_cost?: number;
+  gross_profit?: number;
+  gross_margin_pct?: number;
+  lines_with_cost: number;
+  lines_without_cost: number;
+  lines: OrderMarginLineRow[];
+}
+
+export interface MarginSummaryRow {
+  so_id: string;
+  order_no: string;
+  customer_name?: string;
+  order_date?: string;
+  total_revenue: number;
+  total_cost?: number;
+  gross_margin_pct?: number;
+  lines_with_cost: number;
+}
+
 export const salesApi = {
   // Customers
   async listCustomers(activeOnly = false): Promise<Customer[]> {
@@ -352,6 +440,30 @@ export const salesApi = {
   },
   async getSalesSummary(): Promise<SalesSummary> {
     const res = await apiClient.get<SalesSummary>("/api/v1/sales/reports/summary");
+    return res.data;
+  },
+
+  // Customer Statement & Credit
+  async getCustomerStatement(customerId: string): Promise<CustomerStatement> {
+    const res = await apiClient.get<CustomerStatement>(`/api/v1/sales/customers/${customerId}/statement`);
+    return res.data;
+  },
+  async getCreditCheck(customerId: string, orderValue: number): Promise<CreditCheckResult> {
+    const res = await apiClient.get<CreditCheckResult>(`/api/v1/sales/customers/${customerId}/credit-check`, {
+      params: { order_value: orderValue },
+    });
+    return res.data;
+  },
+
+  // Margin
+  async getOrderMargin(soId: string): Promise<OrderMarginSummary> {
+    const res = await apiClient.get<OrderMarginSummary>(`/api/v1/sales/orders/${soId}/margin`);
+    return res.data;
+  },
+  async getMarginSummary(limit = 50): Promise<MarginSummaryRow[]> {
+    const res = await apiClient.get<MarginSummaryRow[]>("/api/v1/sales/reports/margin-summary", {
+      params: { limit },
+    });
     return res.data;
   },
 };
