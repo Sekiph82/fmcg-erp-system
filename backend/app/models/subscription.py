@@ -106,6 +106,9 @@ class SubscriptionTemplate(Base, TimestampMixin):
     allow_promotion_eval = Column(Boolean, default=True)
     price_change_threshold_pct = Column(Numeric(5, 2), nullable=True)  # alert if > N%
 
+    auto_invoice_flag = Column(Boolean, default=False, nullable=False)
+    invoice_due_days  = Column(Integer, nullable=False, default=30)
+    email_invoice_flag = Column(Boolean, default=False, nullable=False)
     notes      = Column(Text, nullable=True)
     created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     approved_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)

@@ -581,6 +581,9 @@ export const NAV_CONFIG: NavEntry[] = [
       { label: "Customer Statement",  href: "/dashboard/sales/customer-statement",   permission: "sales.view" },
       { label: "Margin Analysis",     href: "/dashboard/sales/margin",               permission: "sales.view" },
       { label: "Call Center",         href: "/dashboard/calls",                      permission: "sales.view" },
+      { label: "Loyalty Program",     href: "/dashboard/loyalty",                    permission: "sales.view" },
+      { label: "Meetings",            href: "/dashboard/meetings",                   permission: "sales.view" },
+      { label: "NPS Tracking",        href: "/dashboard/nps",                        permission: "sales.view" },
       { label: "Sales Reports",       href: "/dashboard/sales/reports",              permission: "sales.view" },
     ],
   },
@@ -628,6 +631,7 @@ export const NAV_CONFIG: NavEntry[] = [
     items: [
       { label: "Dashboard",           href: "/dashboard/recurring-orders",                  permission: "sales.view" },
       { label: "Templates",           href: "/dashboard/recurring-orders/templates",        permission: "sales.view" },
+      { label: "Billing Queue",       href: "/dashboard/recurring-orders/billing",          permission: "sales.view" },
       { label: "Generation Calendar", href: "/dashboard/recurring-orders/schedule",         permission: "sales.view" },
       { label: "Upcoming Demand",     href: "/dashboard/recurring-orders/upcoming-demand",  permission: "sales.view" },
       { label: "Reports",             href: "/dashboard/recurring-orders/reports",          permission: "sales.view" },

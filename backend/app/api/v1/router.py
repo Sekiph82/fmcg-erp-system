@@ -64,6 +64,9 @@ from app.api.v1.endpoints import (
     knowledge_base,
     surveys,
     voip,
+    loyalty,
+    meetings,
+    nps,
 )
 
 api_router = APIRouter()
@@ -277,3 +280,9 @@ api_router.include_router(knowledge_base.router, prefix="/kb", tags=["knowledge-
 api_router.include_router(surveys.router, prefix="/surveys", tags=["surveys"])
 # ── VoIP / Call Center ────────────────────────────────────────────────────────
 api_router.include_router(voip.router, prefix="/calls", tags=["voip"])
+# ── Customer Loyalty Program ──────────────────────────────────────────────────
+api_router.include_router(loyalty.router, prefix="/loyalty", tags=["loyalty"])
+# ── Video Meetings ────────────────────────────────────────────────────────────
+api_router.include_router(meetings.router, prefix="/meetings", tags=["meetings"])
+# ── NPS Tracking ─────────────────────────────────────────────────────────────
+api_router.include_router(nps.router, prefix="/nps", tags=["nps"])

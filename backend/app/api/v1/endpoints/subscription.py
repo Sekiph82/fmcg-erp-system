@@ -222,3 +222,159 @@ async def ack_rec(rec_id: UUID, payload: SubAIRecAck, db: AsyncSession = Depends
     if not rec:
         raise _404("Recommendation")
     return rec
+
+
+# ── Auto-Invoice / Billing ─────────────────────────────────────────────────────
+
+@router.get("/billing/pending")
+async def billing_pending(db: AsyncSession = Depends(get_db)):
+    """
+    Returns subscriptions with auto_invoice_flag=True that have generated SOs
+    without a corresponding invoice yet.
+    """
+    from sqlalchemy import select, and_
+    from sqlalchemy.orm import selectinload
+    from app.models.subscription import SubscriptionTemplate, SubscriptionGenerationLog
+    from app.models.sales import SalesOrder, Invoice, InvoiceStatus
+
+    r = await db.execute(
+        select(SubscriptionTemplate).where(
+            SubscriptionTemplate.auto_invoice_flag == True,
+            SubscriptionTemplate.status == "ACTIVE",
+        ).options(selectinload(SubscriptionTemplate.generation_logs))
+    )
+    templates = list(r.scalars())
+    pending = []
+    for t in templates:
+        for log in (t.generation_logs or []):
+            if not log.generated_so_id:
+                continue
+            inv_r = await db.execute(
+                select(Invoice).where(
+                    Invoice.so_id == log.generated_so_id,
+                    Invoice.status != InvoiceStatus.CANCELLED,
+                )
+            )
+            existing = inv_r.scalar_one_or_none()
+            if existing:
+                continue
+            so_r = await db.execute(
+                select(SalesOrder).where(SalesOrder.id == log.generated_so_id)
+            )
+            so = so_r.scalar_one_or_none()
+            if not so:
+                continue
+            pending.append({
+                "template_id": str(t.id),
+                "template_code": t.template_code,
+                "template_name": t.template_name,
+                "so_id": str(so.id),
+                "so_no": so.order_no,
+                "customer_id": str(t.customer_id),
+                "invoice_due_days": t.invoice_due_days,
+                "scheduled_date": log.scheduled_date.isoformat() if log.scheduled_date else None,
+            })
+    return pending
+
+
+@router.post("/{template_id}/billing/generate-invoice")
+async def generate_invoice_from_subscription(
+    template_id: UUID,
+    body: dict,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Manually trigger invoice generation for a subscription's most recent SO.
+    """
+    from datetime import timedelta
+    from sqlalchemy import select
+    from app.models.subscription import SubscriptionTemplate, SubscriptionGenerationLog
+    from app.models.sales import SalesOrder, Invoice, InvoiceLine, InvoiceStatus
+
+    r = await db.execute(select(SubscriptionTemplate).where(SubscriptionTemplate.id == template_id))
+    template = r.scalar_one_or_none()
+    if not template:
+        raise HTTPException(404, "Template not found")
+
+    so_id = body.get("so_id")
+    if not so_id:
+        # Get most recent generated SO
+        log_r = await db.execute(
+            select(SubscriptionGenerationLog)
+            .where(
+                SubscriptionGenerationLog.template_id == template_id,
+                SubscriptionGenerationLog.generated_so_id.isnot(None),
+            )
+            .order_by(SubscriptionGenerationLog.scheduled_date.desc())
+        )
+        log = log_r.scalars().first()
+        if not log:
+            raise HTTPException(422, "No generated SO found for this subscription")
+        so_id = log.generated_so_id
+
+    so_r = await db.execute(
+        select(SalesOrder).where(SalesOrder.id == so_id)
+    )
+    so = so_r.scalar_one_or_none()
+    if not so:
+        raise HTTPException(404, "Sales order not found")
+
+    # Check invoice doesn't already exist
+    existing_r = await db.execute(
+        select(Invoice).where(Invoice.so_id == so_id, Invoice.status != InvoiceStatus.CANCELLED)
+    )
+    if existing_r.scalar_one_or_none():
+        raise HTTPException(409, "Invoice already exists for this SO")
+
+    import uuid as _uuid
+    today = date.today()
+    due_date = today + timedelta(days=template.invoice_due_days or 30)
+
+    inv_no = body.get("invoice_no") or f"INV-AUTO-{_uuid.uuid4().hex[:6].upper()}"
+
+    # Compute totals from SO lines
+    from app.models.sales import SOLine
+    lines_r = await db.execute(select(SOLine).where(SOLine.so_id == so_id))
+    so_lines = list(lines_r.scalars())
+    subtotal = sum(l.ordered_quantity * l.unit_price * (1 - l.discount_pct) for l in so_lines)
+    tax_amount = sum(l.ordered_quantity * l.unit_price * (1 - l.discount_pct) * l.tax_rate for l in so_lines)
+    total = subtotal + tax_amount
+
+    invoice = Invoice(
+        invoice_no=inv_no,
+        so_id=so_id,
+        customer_id=so.customer_id,
+        invoice_date=today,
+        due_date=due_date,
+        status=InvoiceStatus.ISSUED,
+        currency=so.currency,
+        subtotal=subtotal.quantize(__import__("decimal").Decimal("0.01")),
+        tax_amount=tax_amount.quantize(__import__("decimal").Decimal("0.01")),
+        total_amount=total.quantize(__import__("decimal").Decimal("0.01")),
+        paid_amount=__import__("decimal").Decimal("0"),
+        notes=f"Auto-generated from subscription {template.template_code}",
+    )
+    db.add(invoice)
+    await db.flush()
+
+    for l in so_lines:
+        il = InvoiceLine(
+            invoice_id=invoice.id,
+            so_line_id=l.id,
+            product_id=l.product_id,
+            quantity=l.ordered_quantity,
+            unit=l.unit,
+            unit_price=l.unit_price,
+            discount_pct=l.discount_pct,
+            tax_rate=l.tax_rate,
+            line_total=(l.ordered_quantity * l.unit_price * (1 - l.discount_pct) * (1 + l.tax_rate)).quantize(__import__("decimal").Decimal("0.01")),
+        )
+        db.add(il)
+
+    await db.commit()
+    return {
+        "invoice_id": str(invoice.id),
+        "invoice_no": invoice.invoice_no,
+        "total_amount": float(invoice.total_amount),
+        "due_date": invoice.due_date.isoformat(),
+    }
