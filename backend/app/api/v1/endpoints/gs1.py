@@ -2,9 +2,12 @@
 from __future__ import annotations
 
 import uuid
+from datetime import datetime
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel as _BM
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
@@ -436,3 +439,111 @@ async def barcode_usage(db: AsyncSession = Depends(get_db)):
     )
     r = await db.execute(q)
     return [dict(row._mapping) for row in r.all()]
+
+
+# ── Dispatch Scan Validation ──────────────────────────────────────────────────
+
+class DispatchScanIn(_BM):
+    barcode: str
+    shipment_ref: Optional[str] = None     # optional shipment reference for context
+    expected_gtins: Optional[list] = None  # list of expected GTINs for the shipment
+
+
+@router.post("/scan/dispatch-validate")
+async def dispatch_validate(
+    payload: DispatchScanIn,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Validate a barcode scan during dispatch.
+    Decodes the barcode, looks up product from GTIN, returns validation result.
+    Checks: known product, expected GTIN (if list provided), expiry date.
+    """
+    from app.models.gs1 import ProductGS1Config, LotBarcodeRecord
+
+    # Decode via existing service
+    decoded = await svc.decode_and_validate(db, payload.barcode)
+
+    result = {
+        "barcode": payload.barcode,
+        "decoded": decoded,
+        "shipment_ref": payload.shipment_ref,
+        "status": "UNKNOWN",
+        "warnings": [],
+        "product_name": None,
+        "gtin": None,
+        "lot_number": None,
+        "expiry_date": None,
+    }
+
+    # Extract GTIN from decoded AIs
+    ais = decoded.get("application_identifiers", {}) if isinstance(decoded, dict) else {}
+    gtin = ais.get("01") or decoded.get("gtin") if isinstance(decoded, dict) else None
+    lot = ais.get("10") or decoded.get("lot_number") if isinstance(decoded, dict) else None
+    expiry_raw = ais.get("17") if isinstance(decoded, dict) else None
+
+    result["gtin"] = gtin
+    result["lot_number"] = lot
+
+    if expiry_raw:
+        result["expiry_date"] = f"20{expiry_raw[:2]}-{expiry_raw[2:4]}-{expiry_raw[4:]}"
+        # Warn if expiry in past
+        try:
+            from datetime import date
+            exp = date(int(f"20{expiry_raw[:2]}"), int(expiry_raw[2:4]), int(expiry_raw[4:]))
+            if exp < date.today():
+                result["warnings"].append(f"EXPIRED: product expired {exp.isoformat()}")
+        except Exception:
+            pass
+
+    # Look up product from GTIN
+    if gtin:
+        r = await db.execute(
+            select(ProductGS1Config).where(ProductGS1Config.gtin == gtin)
+        )
+        cfg = r.scalar_one_or_none()
+        if cfg:
+            result["product_name"] = cfg.product_sku_code or str(cfg.product_id)
+            # Check expected GTINs
+            if payload.expected_gtins and gtin not in payload.expected_gtins:
+                result["status"] = "NOT_EXPECTED"
+                result["warnings"].append(f"GTIN {gtin} not in expected list for this shipment")
+            else:
+                result["status"] = "VALID"
+        else:
+            result["status"] = "UNKNOWN_PRODUCT"
+            result["warnings"].append(f"GTIN {gtin} not found in product registry")
+    else:
+        result["status"] = "DECODE_FAILED"
+        result["warnings"].append("Could not extract GTIN from barcode")
+
+    return result
+
+
+@router.get("/gtin/lookup")
+async def gtin_lookup(
+    gtin: str = Query(..., description="14-digit GTIN"),
+    db: AsyncSession = Depends(get_db),
+):
+    """Look up product details by GTIN."""
+    from app.models.gs1 import ProductGS1Config
+    r = await db.execute(
+        select(ProductGS1Config).where(
+            (ProductGS1Config.gtin == gtin) |
+            (ProductGS1Config.carton_gtin == gtin) |
+            (ProductGS1Config.pallet_gtin == gtin)
+        )
+    )
+    cfg = r.scalar_one_or_none()
+    if not cfg:
+        raise HTTPException(404, f"GTIN {gtin} not found in registry")
+    return {
+        "gtin": cfg.gtin,
+        "carton_gtin": cfg.carton_gtin,
+        "pallet_gtin": cfg.pallet_gtin,
+        "product_id": str(cfg.product_id) if cfg.product_id else None,
+        "product_sku_code": cfg.product_sku_code,
+        "barcode_type": cfg.barcode_type,
+        "net_weight_g": float(cfg.net_weight_g) if cfg.net_weight_g else None,
+        "net_volume_ml": float(cfg.net_volume_ml) if cfg.net_volume_ml else None,
+    }

@@ -449,3 +449,33 @@ class SLAIRecommendation(Base, TimestampMixin):
     material     = relationship("Material", foreign_keys=[material_id])
     warehouse    = relationship("Warehouse",foreign_keys=[warehouse_id])
     reviewed_by  = relationship("User",     foreign_keys=[reviewed_by_id])
+
+
+class ExtensionStatus(str, enum.Enum):
+    PENDING = "PENDING"
+    APPROVED = "APPROVED"
+    REJECTED = "REJECTED"
+
+
+class ShelfLifeExtension(Base):
+    """Formal shelf-life extension request — extends expiry beyond original date."""
+    __tablename__ = "sl_extensions"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    lot_id = Column(UUID(as_uuid=True), ForeignKey("lots.id", ondelete="CASCADE"), nullable=False, index=True)
+    lot_number = Column(String(100), nullable=True)
+    product_name = Column(String(300), nullable=True)
+    original_expiry = Column(Date, nullable=False)
+    proposed_expiry = Column(Date, nullable=False)
+    extension_days = Column(Integer, nullable=False)
+    justification = Column(Text, nullable=False)
+    risk_assessment = Column(Text, nullable=True)
+    test_results_attached = Column(Boolean, default=False, nullable=False)
+    requested_by = Column(String(200), nullable=True)
+    status = Column(Enum(ExtensionStatus), nullable=False, default=ExtensionStatus.PENDING)
+    approved_by = Column(String(200), nullable=True)
+    approved_at = Column(DateTime, nullable=True)
+    rejection_reason = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    lot = relationship("Lot", foreign_keys=[lot_id])

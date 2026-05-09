@@ -2,10 +2,12 @@
 from __future__ import annotations
 
 import uuid
+from datetime import date, datetime
 from typing import List, Optional
-from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel as _BM
+from sqlalchemy import select, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
@@ -310,3 +312,107 @@ async def review_ai_rec(rec_id: uuid.UUID, data: SLAIRecReviewRequest,
         return await svc.review_ai_recommendation(db, rec_id, data)
     except ValueError as e:
         raise HTTPException(404, str(e))
+
+
+# ── Shelf-Life Extension Approval ─────────────────────────────────────────────
+
+class ExtensionIn(_BM):
+    lot_id: str
+    lot_number: Optional[str] = None
+    product_name: Optional[str] = None
+    original_expiry: date
+    proposed_expiry: date
+    justification: str
+    risk_assessment: Optional[str] = None
+    test_results_attached: bool = False
+    requested_by: Optional[str] = None
+
+
+@router.post("/extensions", status_code=201)
+async def request_extension(payload: ExtensionIn, db: AsyncSession = Depends(get_db)):
+    from app.models.shelf_life import ShelfLifeExtension
+    ext_days = (payload.proposed_expiry - payload.original_expiry).days
+    if ext_days <= 0:
+        raise HTTPException(400, "proposed_expiry must be after original_expiry")
+    ext = ShelfLifeExtension(
+        lot_id=uuid.UUID(payload.lot_id),
+        lot_number=payload.lot_number,
+        product_name=payload.product_name,
+        original_expiry=payload.original_expiry,
+        proposed_expiry=payload.proposed_expiry,
+        extension_days=ext_days,
+        justification=payload.justification,
+        risk_assessment=payload.risk_assessment,
+        test_results_attached=payload.test_results_attached,
+        requested_by=payload.requested_by,
+    )
+    db.add(ext)
+    await db.commit()
+    await db.refresh(ext)
+    return {
+        "id": str(ext.id), "lot_number": ext.lot_number,
+        "product_name": ext.product_name,
+        "original_expiry": str(ext.original_expiry),
+        "proposed_expiry": str(ext.proposed_expiry),
+        "extension_days": ext.extension_days,
+        "status": ext.status,
+    }
+
+
+@router.get("/extensions")
+async def list_extensions(
+    status: Optional[str] = None,
+    limit: int = Query(50, le=200),
+    db: AsyncSession = Depends(get_db),
+):
+    from app.models.shelf_life import ShelfLifeExtension
+    q = select(ShelfLifeExtension)
+    if status:
+        q = q.where(ShelfLifeExtension.status == status)
+    q = q.order_by(desc(ShelfLifeExtension.created_at)).limit(limit)
+    rows = (await db.execute(q)).scalars().all()
+    return [
+        {
+            "id": str(r.id), "lot_number": r.lot_number, "product_name": r.product_name,
+            "original_expiry": str(r.original_expiry), "proposed_expiry": str(r.proposed_expiry),
+            "extension_days": r.extension_days, "status": r.status,
+            "requested_by": r.requested_by, "approved_by": r.approved_by,
+            "created_at": r.created_at.isoformat() if r.created_at else "",
+        }
+        for r in rows
+    ]
+
+
+@router.post("/extensions/{ext_id}/approve")
+async def approve_extension(
+    ext_id: str,
+    approved_by: str = Query(...),
+    db: AsyncSession = Depends(get_db),
+):
+    from app.models.shelf_life import ShelfLifeExtension, ExtensionStatus
+    r = await db.execute(select(ShelfLifeExtension).where(ShelfLifeExtension.id == uuid.UUID(ext_id)))
+    ext = r.scalar_one_or_none()
+    if not ext:
+        raise HTTPException(404, "Extension request not found")
+    ext.status = ExtensionStatus.APPROVED
+    ext.approved_by = approved_by
+    ext.approved_at = datetime.utcnow()
+    await db.commit()
+    return {"id": ext_id, "status": "APPROVED", "new_expiry": str(ext.proposed_expiry)}
+
+
+@router.post("/extensions/{ext_id}/reject")
+async def reject_extension(
+    ext_id: str,
+    reason: str = Query(...),
+    db: AsyncSession = Depends(get_db),
+):
+    from app.models.shelf_life import ShelfLifeExtension, ExtensionStatus
+    r = await db.execute(select(ShelfLifeExtension).where(ShelfLifeExtension.id == uuid.UUID(ext_id)))
+    ext = r.scalar_one_or_none()
+    if not ext:
+        raise HTTPException(404, "Extension request not found")
+    ext.status = ExtensionStatus.REJECTED
+    ext.rejection_reason = reason
+    await db.commit()
+    return {"id": ext_id, "status": "REJECTED"}

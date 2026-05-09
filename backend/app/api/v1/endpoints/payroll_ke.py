@@ -418,3 +418,136 @@ async def ai_compliance(
     _=Depends(get_current_user),
 ):
     return await svc.ai_compliance_monitor(db)
+
+
+# ── Gap 60: Kenya eTIMS + SHIF ────────────────────────────────────────────────
+
+from datetime import date as _date, datetime as _dt
+from pydantic import BaseModel as _BM
+
+
+class eTIMSSubmitIn(_BM):
+    invoice_id: str
+    invoice_type: str = "SALES"
+    invoice_date: _date
+    customer_pin: Optional[str] = None
+    supplier_pin: Optional[str] = None
+    taxable_amount: float
+    vat_amount: float
+    total_amount: float
+
+
+@router.post("/etims/submit", status_code=201,
+             dependencies=[Depends(get_current_user)])
+async def etims_submit(payload: eTIMSSubmitIn, db: AsyncSession = Depends(get_db)):
+    """
+    Stub: submit invoice to KRA eTIMS.
+    In production: integrate with KRA eTIMS API (https://etims.kra.go.ke/).
+    """
+    from app.models.payroll_ke import eTIMSInvoiceRecord, eTIMSInvoiceStatus
+    record = eTIMSInvoiceRecord(
+        invoice_id=payload.invoice_id,
+        invoice_type=payload.invoice_type,
+        invoice_date=payload.invoice_date,
+        customer_pin=payload.customer_pin,
+        supplier_pin=payload.supplier_pin,
+        taxable_amount=payload.taxable_amount,
+        vat_amount=payload.vat_amount,
+        total_amount=payload.total_amount,
+        etims_status=eTIMSInvoiceStatus.PENDING,
+        submission_payload=payload.model_dump(),
+        submitted_at=_dt.utcnow(),
+    )
+    db.add(record)
+    await db.commit()
+    await db.refresh(record)
+    return {
+        "id": str(record.id),
+        "invoice_id": record.invoice_id,
+        "status": record.etims_status,
+        "note": "Stub — wire KRA eTIMS API for live submission. VAT 16% applies.",
+    }
+
+
+@router.get("/etims/records",
+            dependencies=[Depends(get_current_user)])
+async def list_etims_records(
+    status: Optional[str] = None,
+    limit: int = Query(50, le=200),
+    db: AsyncSession = Depends(get_db),
+):
+    from app.models.payroll_ke import eTIMSInvoiceRecord
+    from sqlalchemy import desc as _d
+    q = select(eTIMSInvoiceRecord)
+    if status:
+        q = q.where(eTIMSInvoiceRecord.etims_status == status)
+    q = q.order_by(_d(eTIMSInvoiceRecord.created_at)).limit(limit)
+    rows = (await db.execute(q)).scalars().all()
+    return [
+        {"id": str(r.id), "invoice_id": r.invoice_id, "invoice_type": r.invoice_type,
+         "invoice_date": str(r.invoice_date) if r.invoice_date else None,
+         "total_amount": float(r.total_amount) if r.total_amount else None,
+         "vat_amount": float(r.vat_amount) if r.vat_amount else None,
+         "status": r.etims_status, "etims_ref": r.etims_ref,
+         "submitted_at": r.submitted_at.isoformat() if r.submitted_at else None}
+        for r in rows
+    ]
+
+
+class SHIFTierIn(_BM):
+    tier_name: str
+    gross_min: Optional[float] = None
+    gross_max: Optional[float] = None
+    contribution_rate_pct: float = 2.75
+    min_contribution: Optional[float] = None
+    max_contribution: Optional[float] = None
+    effective_date: Optional[_date] = None
+    notes: Optional[str] = None
+
+
+@router.post("/shif-tiers", status_code=201,
+             dependencies=[Depends(get_current_user)])
+async def create_shif_tier(payload: SHIFTierIn, db: AsyncSession = Depends(get_db)):
+    from app.models.payroll_ke import SHIFTier
+    tier = SHIFTier(**payload.model_dump())
+    db.add(tier)
+    await db.commit()
+    await db.refresh(tier)
+    return {"id": str(tier.id), "tier_name": tier.tier_name,
+            "contribution_rate_pct": float(tier.contribution_rate_pct)}
+
+
+@router.get("/shif-tiers",
+            dependencies=[Depends(get_current_user)])
+async def list_shif_tiers(db: AsyncSession = Depends(get_db)):
+    from app.models.payroll_ke import SHIFTier
+    rows = (await db.execute(select(SHIFTier).where(SHIFTier.is_active == True)
+                             .order_by(SHIFTier.gross_min))).scalars().all()
+    return [
+        {"id": str(r.id), "tier_name": r.tier_name,
+         "gross_min": float(r.gross_min) if r.gross_min else None,
+         "gross_max": float(r.gross_max) if r.gross_max else None,
+         "contribution_rate_pct": float(r.contribution_rate_pct),
+         "effective_date": str(r.effective_date) if r.effective_date else None}
+        for r in rows
+    ]
+
+
+@router.post("/shif-tiers/seed-defaults",
+             dependencies=[Depends(get_current_user)])
+async def seed_shif_defaults(db: AsyncSession = Depends(get_db)):
+    """Seed SHIF 2.75% flat-rate tiers per Kenya Finance Act 2023."""
+    from app.models.payroll_ke import SHIFTier
+    from datetime import date
+    existing = (await db.execute(select(SHIFTier))).scalars().first()
+    if existing:
+        return {"message": "SHIF tiers already seeded", "count": 0}
+    tiers = [
+        SHIFTier(tier_name="SHIF Standard Rate", contribution_rate_pct=2.75,
+                 min_contribution=300, effective_date=date(2023, 10, 1),
+                 notes="SHIF 2.75% of gross salary. Min KES 300/month. Replaces NHIF flat rates."),
+    ]
+    for t in tiers:
+        db.add(t)
+    await db.commit()
+    return {"message": "SHIF tiers seeded", "count": len(tiers)}

@@ -181,3 +181,54 @@ class Payslip(Base, TimestampMixin):
     payroll_line = relationship("KePayrollLine", back_populates="payslip")
     employee = relationship("Employee")
     run = relationship("PayrollRun")
+
+
+# ── SHIF Tiers (Social Health Insurance Fund — replaced NHIF Oct 2023) ────────
+
+class SHIFTier(Base, TimestampMixin):
+    """SHIF contribution tiers per Kenya Finance Act 2023."""
+    __tablename__ = "ke_shif_tiers"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    tier_name = Column(String(100), nullable=False)
+    gross_min = Column(Numeric(14, 2), nullable=True)
+    gross_max = Column(Numeric(14, 2), nullable=True)
+    contribution_rate_pct = Column(Numeric(5, 3), nullable=False, default=2.75)  # 2.75% of gross
+    min_contribution = Column(Numeric(10, 2), nullable=True)
+    max_contribution = Column(Numeric(10, 2), nullable=True)
+    effective_date = Column(Date, nullable=True)
+    is_active = Column(Boolean, default=True, nullable=False)
+    notes = Column(Text, nullable=True)
+
+
+# ── Kenya eTIMS Invoice Stub ───────────────────────────────────────────────────
+
+class eTIMSInvoiceStatus(str, enum.Enum):
+    PENDING = "PENDING"
+    SUBMITTED = "SUBMITTED"
+    ACCEPTED = "ACCEPTED"
+    REJECTED = "REJECTED"
+    FAILED = "FAILED"
+
+
+class eTIMSInvoiceRecord(Base, TimestampMixin):
+    """Stub record for KRA eTIMS e-invoicing integration."""
+    __tablename__ = "ke_etims_invoices"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    invoice_id = Column(String(100), nullable=False, index=True)     # internal invoice UUID/ref
+    invoice_type = Column(String(50), nullable=True)                 # SALES | PURCHASE | CREDIT_NOTE
+    invoice_date = Column(Date, nullable=True)
+    customer_pin = Column(String(20), nullable=True)                 # KRA PIN of customer
+    supplier_pin = Column(String(20), nullable=True)                 # our KRA PIN
+    taxable_amount = Column(Numeric(18, 4), nullable=True)
+    vat_amount = Column(Numeric(18, 4), nullable=True)
+    total_amount = Column(Numeric(18, 4), nullable=True)
+    etims_status = Column(SAEnum(eTIMSInvoiceStatus), nullable=False, default=eTIMSInvoiceStatus.PENDING)
+    etims_ref = Column(String(100), nullable=True)                   # KRA confirmation number
+    etims_qr_code = Column(Text, nullable=True)                      # QR code data from KRA
+    submission_payload = Column(JSONB, nullable=True)
+    response_payload = Column(JSONB, nullable=True)
+    error_message = Column(Text, nullable=True)
+    submitted_at = Column(DateTime, nullable=True)
+    accepted_at = Column(DateTime, nullable=True)

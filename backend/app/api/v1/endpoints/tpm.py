@@ -1,8 +1,12 @@
 from __future__ import annotations
+from datetime import datetime
 from typing import Optional, List
 from uuid import UUID
+import uuid as _uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel as _BM
+from sqlalchemy import select, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
@@ -222,3 +226,102 @@ async def ack_ai_rec(rec_id: UUID, req: TPMAIRecAckRequest, db: AsyncSession = D
     if not rec:
         raise HTTPException(404, "Recommendation not found")
     return rec
+
+
+# ── Distributor Rebate Accruals ───────────────────────────────────────────────
+
+class AccrualIn(_BM):
+    distributor_id: str
+    distributor_name: Optional[str] = None
+    promotion_id: Optional[str] = None
+    period_month: str         # YYYY-MM
+    rebate_rate_pct: Optional[float] = None
+    rebate_amount_flat: Optional[float] = None
+    total_sales_value: float = 0.0
+    total_units_sold: float = 0.0
+    notes: Optional[str] = None
+
+
+class AccrualAddIn(_BM):
+    sales_value: float
+    units_sold: float = 0.0
+
+
+@router.post("/rebate-accruals", status_code=201)
+async def create_rebate_accrual(payload: AccrualIn, db: AsyncSession = Depends(get_db)):
+    from app.models.tpm import DistributorRebateAccrual
+    # Compute accrued amount
+    accrued = 0.0
+    if payload.rebate_rate_pct:
+        accrued = payload.total_sales_value * payload.rebate_rate_pct / 100
+    elif payload.rebate_amount_flat:
+        accrued = payload.total_units_sold * payload.rebate_amount_flat
+
+    acc = DistributorRebateAccrual(
+        promotion_id=_uuid.UUID(payload.promotion_id) if payload.promotion_id else None,
+        distributor_id=payload.distributor_id,
+        distributor_name=payload.distributor_name,
+        period_month=payload.period_month,
+        rebate_rate_pct=payload.rebate_rate_pct,
+        rebate_amount_flat=payload.rebate_amount_flat,
+        total_sales_value=payload.total_sales_value,
+        total_units_sold=payload.total_units_sold,
+        accrued_amount=accrued,
+        outstanding_amount=accrued,
+        notes=payload.notes,
+    )
+    db.add(acc)
+    await db.commit()
+    await db.refresh(acc)
+    return {"id": str(acc.id), "distributor_id": acc.distributor_id,
+            "period_month": acc.period_month, "accrued_amount": float(acc.accrued_amount),
+            "status": acc.status}
+
+
+@router.get("/rebate-accruals")
+async def list_rebate_accruals(
+    distributor_id: Optional[str] = None,
+    status: Optional[str] = None,
+    period_month: Optional[str] = None,
+    limit: int = Query(50, le=200),
+    db: AsyncSession = Depends(get_db),
+):
+    from app.models.tpm import DistributorRebateAccrual
+    q = select(DistributorRebateAccrual)
+    if distributor_id:
+        q = q.where(DistributorRebateAccrual.distributor_id == distributor_id)
+    if status:
+        q = q.where(DistributorRebateAccrual.status == status)
+    if period_month:
+        q = q.where(DistributorRebateAccrual.period_month == period_month)
+    q = q.order_by(desc(DistributorRebateAccrual.period_month)).limit(limit)
+    rows = (await db.execute(q)).scalars().all()
+    return [
+        {"id": str(r.id), "distributor_name": r.distributor_name,
+         "period_month": r.period_month, "accrued_amount": float(r.accrued_amount),
+         "settled_amount": float(r.settled_amount), "outstanding_amount": float(r.outstanding_amount),
+         "status": r.status, "claim_ref": r.claim_ref,
+         "total_sales_value": float(r.total_sales_value)}
+        for r in rows
+    ]
+
+
+@router.post("/rebate-accruals/{accrual_id}/settle")
+async def settle_accrual(
+    accrual_id: str,
+    claim_ref: str = Query(...),
+    db: AsyncSession = Depends(get_db),
+):
+    """Mark rebate accrual as settled — links to a claim reference."""
+    from app.models.tpm import DistributorRebateAccrual, RebateAccrualStatus
+    r = await db.execute(select(DistributorRebateAccrual).where(DistributorRebateAccrual.id == _uuid.UUID(accrual_id)))
+    acc = r.scalar_one_or_none()
+    if not acc:
+        raise HTTPException(404, "Accrual not found")
+    acc.settled_amount = acc.accrued_amount
+    acc.outstanding_amount = 0
+    acc.status = RebateAccrualStatus.SETTLED
+    acc.settled_at = datetime.utcnow()
+    acc.claim_ref = claim_ref
+    await db.commit()
+    return {"id": accrual_id, "status": "SETTLED", "settled_amount": float(acc.settled_amount), "claim_ref": claim_ref}

@@ -247,3 +247,72 @@ async def ai_promotion_impact(
     _=Depends(get_current_user),
 ):
     return await svc.ai_promotion_impact(db, promo_start=promo_start, promo_end=promo_end)
+
+
+# ── Gap 59 Expansion: Distributor Aging + SKU Velocity ───────────────────────
+
+from sqlalchemy import func, desc as _desc
+
+@router.get("/analytics/distributor-aging",
+            dependencies=[Depends(get_current_user)])
+async def distributor_aging_analysis(db: AsyncSession = Depends(get_db)):
+    """Days since last sell-through upload per distributor."""
+    from app.models.secondary_sales import SecondarySalesHeader
+    from datetime import datetime
+    today = datetime.utcnow().date()
+    from sqlalchemy import select
+    r = await db.execute(
+        select(
+            SecondarySalesHeader.distributor_id,
+            func.max(SecondarySalesHeader.upload_date).label("last_upload"),
+            func.count().label("total_uploads"),
+        ).group_by(SecondarySalesHeader.distributor_id)
+    )
+    rows = r.all()
+    result = []
+    for row in rows:
+        last = row.last_upload.date() if row.last_upload else None
+        days_since = (today - last).days if last else None
+        bucket = "No Data" if days_since is None else ("0-30d" if days_since <= 30 else "31-60d" if days_since <= 60 else "61-90d" if days_since <= 90 else "91+d")
+        result.append({
+            "distributor_id": str(row.distributor_id) if row.distributor_id else None,
+            "last_upload_date": str(last) if last else None,
+            "days_since_upload": days_since,
+            "aging_bucket": bucket,
+            "total_uploads": row.total_uploads,
+        })
+    result.sort(key=lambda x: x["days_since_upload"] or 9999, reverse=True)
+    return result
+
+
+@router.get("/analytics/sku-velocity",
+            dependencies=[Depends(get_current_user)])
+async def sku_velocity(
+    days: int = Query(30, ge=7, le=365),
+    limit: int = Query(20, le=100),
+    db: AsyncSession = Depends(get_db),
+):
+    """Top SKUs by sell-through velocity (units/day)."""
+    from app.models.secondary_sales import SecondarySalesLine, SecondarySalesHeader
+    from datetime import datetime, timedelta
+    from sqlalchemy import select
+    cutoff = datetime.utcnow().date() - timedelta(days=days)
+    r = await db.execute(
+        select(
+            SecondarySalesLine.product_sku,
+            func.sum(SecondarySalesLine.quantity_sold).label("total_units"),
+            func.sum(SecondarySalesLine.total_value).label("total_value"),
+            func.count(SecondarySalesLine.id).label("txn_count"),
+        )
+        .join(SecondarySalesHeader, SecondarySalesLine.header_id == SecondarySalesHeader.id)
+        .where(SecondarySalesHeader.period_from >= cutoff, SecondarySalesLine.product_sku.isnot(None))
+        .group_by(SecondarySalesLine.product_sku)
+        .order_by(_desc("total_units"))
+        .limit(limit)
+    )
+    return [
+        {"product_sku": row.product_sku, "total_units": float(row.total_units or 0),
+         "units_per_day": round(float(row.total_units or 0) / days, 2),
+         "total_value": float(row.total_value or 0), "txn_count": row.txn_count}
+        for row in r.all()
+    ]

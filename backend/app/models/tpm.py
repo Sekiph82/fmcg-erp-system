@@ -1,8 +1,9 @@
 from __future__ import annotations
 import uuid
 import enum
+from datetime import datetime
 from sqlalchemy import (
-    Column, String, Integer, Numeric, Boolean, Text, Date,
+    Column, String, Integer, Numeric, Boolean, Text, Date, DateTime,
     ForeignKey, Enum, UniqueConstraint,
 )
 from sqlalchemy.dialects.postgresql import UUID
@@ -281,3 +282,41 @@ class TPMAIRecommendation(Base, TimestampMixin):
     severity          = Column(String(20))
     status            = Column(Enum(TPMAIRecStatus), nullable=False, default=TPMAIRecStatus.PENDING)
     actioned_notes    = Column(Text)
+
+
+# ── Distributor Rebate Accruals ───────────────────────────────────────────────
+
+class RebateAccrualStatus(str, enum.Enum):
+    OPEN = "OPEN"
+    SETTLED = "SETTLED"
+    CANCELLED = "CANCELLED"
+
+
+class DistributorRebateAccrual(Base, TimestampMixin):
+    """
+    Running rebate balance earned by a distributor in a period.
+    Accrues as orders are placed; settled into a TPMClaim at period end.
+    """
+    __tablename__ = "tpm_rebate_accruals"
+    __table_args__ = (
+        UniqueConstraint("distributor_id", "promotion_id", "period_month", name="uq_rebate_accr"),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    promotion_id = Column(UUID(as_uuid=True), ForeignKey("tpm_promotions.id", ondelete="SET NULL"), nullable=True)
+    distributor_id = Column(String(100), nullable=False, index=True)
+    distributor_name = Column(String(300), nullable=True)
+    period_month = Column(String(7), nullable=False, index=True)     # YYYY-MM
+    rebate_rate_pct = Column(Numeric(6, 3), nullable=True)           # % of sales
+    rebate_amount_flat = Column(Numeric(14, 2), nullable=True)       # flat per unit
+    total_sales_value = Column(Numeric(18, 2), nullable=False, default=0)
+    total_units_sold = Column(Numeric(14, 3), nullable=False, default=0)
+    accrued_amount = Column(Numeric(14, 2), nullable=False, default=0)
+    settled_amount = Column(Numeric(14, 2), nullable=False, default=0)
+    outstanding_amount = Column(Numeric(14, 2), nullable=False, default=0)
+    status = Column(Enum(RebateAccrualStatus), nullable=False, default=RebateAccrualStatus.OPEN)
+    settled_at = Column(DateTime, nullable=True)
+    claim_ref = Column(String(100), nullable=True)                   # linked TPMClaim ref
+    notes = Column(Text, nullable=True)
+
+    promotion = relationship("TPMPromotion", foreign_keys=[promotion_id])
