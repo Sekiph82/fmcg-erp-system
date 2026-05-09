@@ -1,7 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import select, desc, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional, List
 from datetime import datetime
+from pydantic import BaseModel as _BM
 from app.db.session import get_db
 from app.schemas.calendar import (
     ResourceOut, ResourceCreate, ResourceUpdate,
@@ -184,3 +186,121 @@ async def ack_ai_rec(rec_id: str, data: CAIRecAck, db: AsyncSession = Depends(ge
         return await calendar_service.ack_ai_rec(db, rec_id, data)
     except ValueError as e:
         raise HTTPException(404, str(e))
+
+
+# ── Shift Scheduling ─────────────────────────────────────────────────────────
+
+class ShiftIn(_BM):
+    user_id: str
+    user_name: Optional[str] = None
+    department: Optional[str] = None
+    shift_date: str          # ISO date YYYY-MM-DD
+    shift_type: str = "morning"
+    shift_start: str = "06:00"
+    shift_end: str = "14:00"
+    location: Optional[str] = None
+    notes: Optional[str] = None
+
+
+@router.post("/shifts", status_code=201)
+async def create_shift(payload: ShiftIn, db: AsyncSession = Depends(get_db)):
+    """Create a staff shift schedule entry."""
+    from app.models.calendar import ShiftSchedule, ShiftType
+    shift = ShiftSchedule(
+        user_id=payload.user_id,
+        user_name=payload.user_name,
+        department=payload.department,
+        shift_date=payload.shift_date,
+        shift_type=payload.shift_type,
+        shift_start=payload.shift_start,
+        shift_end=payload.shift_end,
+        location=payload.location,
+        notes=payload.notes,
+    )
+    db.add(shift)
+    await db.commit()
+    await db.refresh(shift)
+    return {
+        "shift_id": shift.shift_id,
+        "user_id": shift.user_id,
+        "user_name": shift.user_name,
+        "department": shift.department,
+        "shift_date": shift.shift_date,
+        "shift_type": shift.shift_type,
+        "shift_start": shift.shift_start,
+        "shift_end": shift.shift_end,
+        "approved_flag": shift.approved_flag,
+        "location": shift.location,
+        "notes": shift.notes,
+    }
+
+
+@router.get("/shifts")
+async def list_shifts(
+    department: Optional[str] = Query(None),
+    user_id: Optional[str] = Query(None),
+    shift_date: Optional[str] = Query(None),
+    date_from: Optional[str] = Query(None),
+    date_to: Optional[str] = Query(None),
+    limit: int = Query(100, le=500),
+    db: AsyncSession = Depends(get_db),
+):
+    """List shift schedules with optional filters."""
+    from app.models.calendar import ShiftSchedule
+    q = select(ShiftSchedule)
+    if department:
+        q = q.where(ShiftSchedule.department == department)
+    if user_id:
+        q = q.where(ShiftSchedule.user_id == user_id)
+    if shift_date:
+        q = q.where(ShiftSchedule.shift_date == shift_date)
+    if date_from:
+        q = q.where(ShiftSchedule.shift_date >= date_from)
+    if date_to:
+        q = q.where(ShiftSchedule.shift_date <= date_to)
+    q = q.order_by(ShiftSchedule.shift_date.asc(), ShiftSchedule.shift_start.asc()).limit(limit)
+    result = await db.execute(q)
+    shifts = result.scalars().all()
+    return [
+        {
+            "shift_id": s.shift_id,
+            "user_id": s.user_id,
+            "user_name": s.user_name,
+            "department": s.department,
+            "shift_date": s.shift_date,
+            "shift_type": s.shift_type,
+            "shift_start": s.shift_start,
+            "shift_end": s.shift_end,
+            "location": s.location,
+            "approved_flag": s.approved_flag,
+            "approved_by": s.approved_by,
+            "notes": s.notes,
+            "created_at": s.created_at.isoformat() if s.created_at else "",
+        }
+        for s in shifts
+    ]
+
+
+@router.patch("/shifts/{shift_id}/approve")
+async def approve_shift(shift_id: str, approved_by: str = Query(...), db: AsyncSession = Depends(get_db)):
+    """Approve a shift entry."""
+    from app.models.calendar import ShiftSchedule
+    result = await db.execute(select(ShiftSchedule).where(ShiftSchedule.shift_id == shift_id))
+    shift = result.scalar_one_or_none()
+    if not shift:
+        raise HTTPException(404, "Shift not found")
+    shift.approved_flag = True
+    shift.approved_by = approved_by
+    await db.commit()
+    return {"shift_id": shift_id, "approved": True, "approved_by": approved_by}
+
+
+@router.delete("/shifts/{shift_id}", status_code=204)
+async def delete_shift(shift_id: str, db: AsyncSession = Depends(get_db)):
+    from app.models.calendar import ShiftSchedule
+    result = await db.execute(select(ShiftSchedule).where(ShiftSchedule.shift_id == shift_id))
+    shift = result.scalar_one_or_none()
+    if not shift:
+        raise HTTPException(404, "Shift not found")
+    await db.delete(shift)
+    await db.commit()

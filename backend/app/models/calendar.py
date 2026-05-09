@@ -192,3 +192,29 @@ class CAIRecommendation(Base):
     rec_metadata = Column(JSON, default=dict)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class ShiftType(str, enum.Enum):
+    MORNING = "morning"
+    AFTERNOON = "afternoon"
+    NIGHT = "night"
+    CUSTOM = "custom"
+
+
+class ShiftSchedule(Base):
+    """Staff shift scheduling — one row per user per date."""
+    __tablename__ = "cal_shift_schedules"
+
+    shift_id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String(100), nullable=False, index=True)
+    user_name = Column(String(200), nullable=True)
+    department = Column(String(100), nullable=True, index=True)
+    shift_date = Column(String(10), nullable=False, index=True)     # ISO date string
+    shift_type = Column(SAEnum(ShiftType), nullable=False, default=ShiftType.MORNING)
+    shift_start = Column(String(5), nullable=False)                 # HH:MM
+    shift_end = Column(String(5), nullable=False)                   # HH:MM
+    location = Column(String(200), nullable=True)
+    approved_flag = Column(Boolean, default=False)
+    approved_by = Column(String(200), nullable=True)
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)

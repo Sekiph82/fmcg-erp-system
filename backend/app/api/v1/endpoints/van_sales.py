@@ -6,7 +6,9 @@ from typing import Any, Dict, List, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import select, desc
 from sqlalchemy.ext.asyncio import AsyncSession
+from pydantic import BaseModel as _BM
 
 from app.db.session import get_db
 from app.schemas.van_sales import (
@@ -254,3 +256,151 @@ async def ack_rec(rec_id: UUID, payload: VSAIRecAck, db: AsyncSession = Depends(
     if not rec:
         raise _404("Recommendation")
     return rec
+
+
+# ── Outlet Photo Capture ──────────────────────────────────────────────────────
+
+class PhotoIn(_BM):
+    photo_url: str
+
+
+@router.post("/visits/{visit_id}/photo")
+async def set_visit_photo(
+    visit_id: UUID,
+    payload: PhotoIn,
+    db: AsyncSession = Depends(get_db),
+):
+    """Record an outlet photo URL against a visit."""
+    from app.models.van_sales import VanVisit
+    visit = await db.get(VanVisit, visit_id)
+    if not visit:
+        raise _404("Visit")
+    visit.outlet_photo_url = payload.photo_url
+    await db.commit()
+    return {"visit_id": str(visit_id), "outlet_photo_url": payload.photo_url}
+
+
+# ── Field Rep Daily GPS Log ───────────────────────────────────────────────────
+
+class RepDayLogIn(_BM):
+    rep_user_id: Optional[str] = None
+    rep_name: Optional[str] = None
+    log_date: date
+    start_time: Optional[str] = None
+    start_gps_lat: Optional[float] = None
+    start_gps_lng: Optional[float] = None
+    start_photo_url: Optional[str] = None
+    end_time: Optional[str] = None
+    end_gps_lat: Optional[float] = None
+    end_gps_lng: Optional[float] = None
+    end_photo_url: Optional[str] = None
+    total_visits: Optional[int] = None
+    total_km_est: Optional[float] = None
+    total_sales: Optional[float] = None
+    notes: Optional[str] = None
+
+
+@router.post("/rep-day-log", status_code=201)
+async def create_rep_day_log(
+    payload: RepDayLogIn,
+    db: AsyncSession = Depends(get_db),
+):
+    """Create or upsert a field rep daily GPS log entry."""
+    from app.models.van_sales import VanRepDayLog
+    from datetime import datetime as _dt
+
+    existing_r = await db.execute(
+        select(VanRepDayLog).where(
+            VanRepDayLog.rep_user_id == (payload.rep_user_id if payload.rep_user_id else None),
+            VanRepDayLog.log_date == payload.log_date,
+        )
+    ) if payload.rep_user_id else None
+
+    existing = existing_r.scalar_one_or_none() if existing_r else None
+
+    def _parse_dt(s: Optional[str]):
+        if not s:
+            return None
+        try:
+            return _dt.fromisoformat(s)
+        except Exception:
+            return None
+
+    if existing:
+        for attr, val in [
+            ("end_time", _parse_dt(payload.end_time)),
+            ("end_gps_lat", payload.end_gps_lat),
+            ("end_gps_lng", payload.end_gps_lng),
+            ("end_photo_url", payload.end_photo_url),
+            ("total_visits", payload.total_visits),
+            ("total_km_est", payload.total_km_est),
+            ("total_sales", payload.total_sales),
+            ("notes", payload.notes),
+        ]:
+            if val is not None:
+                setattr(existing, attr, val)
+        await db.commit()
+        return {"id": str(existing.id), "action": "updated"}
+
+    log = VanRepDayLog(
+        rep_user_id=payload.rep_user_id,
+        rep_name=payload.rep_name,
+        log_date=payload.log_date,
+        start_time=_parse_dt(payload.start_time),
+        start_gps_lat=payload.start_gps_lat,
+        start_gps_lng=payload.start_gps_lng,
+        start_photo_url=payload.start_photo_url,
+        end_time=_parse_dt(payload.end_time),
+        end_gps_lat=payload.end_gps_lat,
+        end_gps_lng=payload.end_gps_lng,
+        end_photo_url=payload.end_photo_url,
+        total_visits=payload.total_visits,
+        total_km_est=payload.total_km_est,
+        total_sales=payload.total_sales,
+        notes=payload.notes,
+    )
+    db.add(log)
+    await db.commit()
+    await db.refresh(log)
+    return {"id": str(log.id), "action": "created"}
+
+
+@router.get("/rep-day-log")
+async def list_rep_day_logs(
+    rep_user_id: Optional[str] = None,
+    log_date: Optional[date] = None,
+    limit: int = Query(50, le=200),
+    db: AsyncSession = Depends(get_db),
+):
+    """List field rep daily logs."""
+    from app.models.van_sales import VanRepDayLog
+    q = select(VanRepDayLog)
+    if rep_user_id:
+        q = q.where(VanRepDayLog.rep_user_id == rep_user_id)
+    if log_date:
+        q = q.where(VanRepDayLog.log_date == log_date)
+    q = q.order_by(desc(VanRepDayLog.log_date)).limit(limit)
+    result = await db.execute(q)
+    logs = result.scalars().all()
+    return [
+        {
+            "id": str(lg.id),
+            "rep_name": lg.rep_name,
+            "rep_user_id": str(lg.rep_user_id) if lg.rep_user_id else None,
+            "log_date": str(lg.log_date),
+            "start_time": lg.start_time.isoformat() if lg.start_time else None,
+            "start_gps_lat": float(lg.start_gps_lat) if lg.start_gps_lat else None,
+            "start_gps_lng": float(lg.start_gps_lng) if lg.start_gps_lng else None,
+            "end_time": lg.end_time.isoformat() if lg.end_time else None,
+            "end_gps_lat": float(lg.end_gps_lat) if lg.end_gps_lat else None,
+            "end_gps_lng": float(lg.end_gps_lng) if lg.end_gps_lng else None,
+            "total_visits": lg.total_visits,
+            "total_km_est": float(lg.total_km_est) if lg.total_km_est else None,
+            "total_sales": float(lg.total_sales) if lg.total_sales else None,
+            "start_photo_url": lg.start_photo_url,
+            "end_photo_url": lg.end_photo_url,
+            "notes": lg.notes,
+            "created_at": lg.created_at.isoformat() if lg.created_at else "",
+        }
+        for lg in logs
+    ]

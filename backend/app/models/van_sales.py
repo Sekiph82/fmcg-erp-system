@@ -156,6 +156,7 @@ class VanVisit(Base, TimestampMixin):
     missed_reason   = Column(Text, nullable=True)
     notes           = Column(Text, nullable=True)
     offline_id      = Column(String(100), unique=True, nullable=True)  # client UUID for dedup
+    outlet_photo_url = Column(Text, nullable=True)   # retail outlet photo capture
 
     transactions = relationship("VanSalesTxn", back_populates="visit")
 
@@ -385,3 +386,34 @@ class VanRiderPerformance(Base, TimestampMixin):
 
     performance_score    = Column(Numeric(5, 2), nullable=True)  # 0–100 composite
     notes                = Column(Text, nullable=True)
+
+
+class VanRepDayLog(Base, TimestampMixin):
+    """Field rep daily GPS check-in / check-out log. One row per rep per day."""
+    __tablename__ = "van_rep_day_logs"
+    __table_args__ = (UniqueConstraint("rep_user_id", "log_date", name="uq_rep_day_log"),)
+
+    id              = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    rep_user_id     = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    rep_name        = Column(String(200), nullable=True)
+    log_date        = Column(Date, nullable=False)
+
+    # Day start
+    start_time      = Column(DateTime, nullable=True)
+    start_gps_lat   = Column(Numeric(10, 7), nullable=True)
+    start_gps_lng   = Column(Numeric(10, 7), nullable=True)
+    start_photo_url = Column(Text, nullable=True)
+
+    # Day end
+    end_time        = Column(DateTime, nullable=True)
+    end_gps_lat     = Column(Numeric(10, 7), nullable=True)
+    end_gps_lng     = Column(Numeric(10, 7), nullable=True)
+    end_photo_url   = Column(Text, nullable=True)
+
+    # Summary
+    total_visits    = Column(Integer, nullable=True)
+    total_km_est    = Column(Numeric(8, 2), nullable=True)
+    total_sales     = Column(Numeric(14, 2), nullable=True)
+    notes           = Column(Text, nullable=True)
+
+    rep = relationship("User", foreign_keys=[rep_user_id])

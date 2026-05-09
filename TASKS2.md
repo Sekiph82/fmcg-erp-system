@@ -4,13 +4,13 @@
 
 ## Current Phase
 
-Phase 3 - Medium Importance (Tier 3)
+Phase 3 - Medium Importance (Tier 3) → Tier 4 (FMCG-Specific)
 
 
 
 ## Current Gap
 
-Gap 41 - Audit Logs & Compliance Trail
+Gap 44 - Integration Marketplace / Connector Hub
 
 
 
@@ -22,33 +22,21 @@ Not started yet.
 
 ## Completed in Last Run
 
-Gap 40 - Customer / Supplier Portal Expansion
+Gap 43 - Resource & Calendar Scheduling System
 
-Gap 39 - Document Management System
+Gap 42 - Mobile-First Field Sales Expansion
 
-Gap 38 - Reporting & BI Layer
-
-Gap 37 - Real-Time Notification Center
-
-Gap 36 - API Developer Portal / GraphQL Layer
-
-Gap 35 - Native Mobile Apps Support Layer
+Gap 41 - Audit Logs & Compliance Trail
 
 
 
 ## Implemented Gap Items
 
-1-40 implemented.
+1-43 implemented.
 
 
 
 ## Remaining Gap Items
-
-41. Audit Logs & Compliance Trail
-
-42. Mobile-First Field Sales Expansion
-
-43. Resource & Calendar Scheduling System
 
 44. Integration Marketplace / Connector Hub
 
@@ -108,30 +96,27 @@ Gap 35 - Native Mobile Apps Support Layer
 
 ## Next Immediate Task
 
-Implement Gap 41 - Audit Logs & Compliance Trail.
+Implement Gap 44 - Integration Marketplace / Connector Hub.
 
 Inspect first:
-- Check backend/app/models/audit_log.py — what model exists
-- Check backend/app/api/v1/endpoints/audit.py — what endpoints exist
-- Check frontend/src/app/dashboard/logs/ for existing audit log pages
+- Check backend/app/api/v1/endpoints/integrations.py — what exists
+- Check frontend/src/app/dashboard/integrations/ — what pages exist
+- Check if connector registry model exists
 
-Gap 41 missing (from ERP_70_GAPS plan):
-- Immutable logs (append-only)
-- Before/after value tracking
-- User/session/IP tracking
-- Exportable audit reports
-- Retention policies
-- Tamper detection
-- Searchable audit UI
+Gap 44 missing (from ERP_70_GAPS plan):
+- Connector registry (list all available integrations)
+- Prebuilt integrations (M-Pesa, email, WhatsApp, webhooks)
+- API key management (already done in Gap 36 /developer)
+- Webhook retry system (check webhooks module)
+- Integration logs (check existing /integrations/logs)
+- External system connectors (accounting, M-Pesa, EDI, WhatsApp)
 
 Build next coherent slice:
-1. Check if existing audit_log model has before_value/after_value fields.
-2. If not: add these fields to the audit model (alter table not needed — create_all will add).
-3. Add export endpoint (GET /audit/export?format=csv) — stream CSV of filtered audit events.
-4. Add retention policy model + endpoint (configurable per module: retain_days).
-5. Add tamper detection: each log row has a hash of (event_type + entity + timestamp + before + after); an audit integrity check endpoint verifies hashes.
-6. Frontend: enhanced audit log page with before/after diff view, export button, retention settings.
-7. Wire nav.
+1. Check what integrations.py endpoint already has.
+2. Add ConnectorRegistry model (connector_code, name, category, status: ACTIVE/COMING_SOON, icon_url, description, auth_type, config_schema JSONB).
+3. Add endpoints: GET /integrations/connectors (list), POST /integrations/connectors/{code}/test (stub test), GET /integrations/connectors/{code}/logs.
+4. Frontend: Integration Marketplace hub page with connector cards (status badges, categories).
+5. Wire nav.
 
 
 
@@ -145,32 +130,30 @@ Validation environment blocker: python not found on PATH.
 
 ## Files Changed in Last Run
 
-Gap 40 additions:
-backend/app/models/portal.py - MODIFIED: Added PortalSellThroughUpload model (portal_account_id FK, period_start, period_end, total_units_sold, total_value, notes, upload_reference, review_status, reviewed_by, reviewed_at)
-backend/app/api/v1/endpoints/portal.py - MODIFIED: Added GET /portal/accounts/{id}/sales-orders (ERP SalesOrder tracking by linked_customer_id); Added POST /portal/sell-through-upload (PortalSellThroughUpload submission); Added SellThroughUploadIn pydantic schema
-frontend/src/app/dashboard/portal/order-tracking/page.tsx - NEW: Order Tracking — account selector, ERP sales orders table (order_no, dates, status badge, payment status, amount), linked via linked_customer_id
-frontend/src/app/dashboard/portal/sell-through/page.tsx - NEW: Sell-Through Upload — portal account selector, period start/end, units sold, total value, reference, notes; POST to /portal/sell-through-upload; success banner with upload_id
-frontend/src/components/nav-config.tsx - MODIFIED: Added Order Tracking + Sell-Through Upload to Customer/Distributor Portal section
+Gap 43 additions:
+backend/app/models/calendar.py - MODIFIED: Added ShiftType enum (morning/afternoon/night/custom); Added ShiftSchedule model (user_id, user_name, department, shift_date ISO string, shift_type, shift_start/end HH:MM, location, approved_flag, approved_by, notes)
+backend/app/api/v1/endpoints/calendar.py - MODIFIED: Added imports (select, desc, and_, Query, pydantic BaseModel); Added POST/GET /calendar/shifts (create + list with dept/date/user filters); PATCH /calendar/shifts/{id}/approve; DELETE /calendar/shifts/{id}
+frontend/src/app/dashboard/calendar/shifts/page.tsx - NEW: Shift Scheduling — add shift form (user/dept/date/type/time), shift type presets (morning/afternoon/night/custom), grouped by date view with approve/delete buttons
+frontend/src/components/nav-config.tsx - MODIFIED: Added Shift Schedule under Calendar & Scheduling
 
-Gap 39 additions:
-backend/app/models/documents.py - MODIFIED: DocumentTag model + tags relationship
-backend/app/api/v1/endpoints/documents.py - MODIFIED: Expiry list endpoint + tagging CRUD endpoints
-frontend/src/app/dashboard/documents/expiring/page.tsx - NEW: Expiry Tracker
-frontend/src/app/dashboard/documents/compliance/page.tsx - NEW: Compliance Docs viewer
-frontend/src/components/nav-config.tsx - MODIFIED: Expiry Tracker + Compliance Docs nav links
+Gap 42 additions:
+backend/app/models/van_sales.py - MODIFIED: outlet_photo_url on VanVisit; VanRepDayLog model
+backend/app/api/v1/endpoints/van_sales.py - MODIFIED: Photo capture + rep day log endpoints
+frontend/src/app/dashboard/van-sales/field-rep/page.tsx - NEW: Field Rep Day Log
+frontend/src/components/nav-config.tsx - MODIFIED: Field Rep Log nav link
 
-Gap 38 additions:
-backend/app/models/report_builder.py - MODIFIED: RLSPolicy model
-backend/app/api/v1/endpoints/report_builder.py - MODIFIED: executive-summary + RLS CRUD endpoints
-frontend/src/app/dashboard/report-builder/executive/page.tsx - NEW: Executive KPI Dashboard
-frontend/src/app/dashboard/report-builder/rls/page.tsx - NEW: RLS management
-frontend/src/components/nav-config.tsx - MODIFIED: Executive KPIs + RLS nav links
+Gap 41 additions:
+backend/app/models/audit_log.py - MODIFIED: Extended AuditLog + AuditRetentionPolicy
+backend/app/api/v1/endpoints/audit.py - MODIFIED: Stats + export + integrity check + retention endpoints
+frontend/src/app/dashboard/logs/compliance/page.tsx - NEW: Compliance Audit Trail
+frontend/src/app/dashboard/logs/retention/page.tsx - NEW: Retention Policies
+frontend/src/components/nav-config.tsx - MODIFIED: Compliance + Retention nav links
 
 
 
 ## Validation Results
 
-Frontend TypeScript: PASS (npm.cmd run type-check, 0 errors — verified after all gaps this run)
+Frontend TypeScript: PASS (npm.cmd run type-check, 0 errors — verified after Gap 43)
 
 Backend Python compile: BLOCKED (python not found)
 
@@ -178,23 +161,14 @@ Backend Python compile: BLOCKED (python not found)
 
 ## Notes for Next Claude Run
 
-Gap 40 notes:
-- Portal statement endpoint already existed (GET /portal/accounts/{id}/statement via portal_service.get_portal_statement) — NOT re-implemented.
-- Order tracking endpoint (GET /portal/accounts/{id}/sales-orders) queries SalesOrder by linked_customer_id cast to string — may need adjustment if linked_customer_id stores UUID format differently vs SalesOrder.customer_id.
-- PortalSellThroughUpload is stored in portal_sell_through_uploads table. Separate from SecondarySalesHeader — portal submissions need manual review before posting to secondary_sales.
-- Sell-through upload returns PENDING status — no auto-integration with secondary_sales. Next step: add a "review and post" endpoint that creates a SecondarySalesHeader from a PortalSellThroughUpload.
+Gap 43 notes:
+- ShiftSchedule.shift_date stored as String(10) — ISO date "YYYY-MM-DD". Easier to filter than DateTime.
+- Shift type presets auto-fill start/end times when selected in UI. Custom type leaves times editable.
+- Approve endpoint: PATCH /calendar/shifts/{id}/approve?approved_by=Manager. Simple flag flip.
+- Calendar module already had: ResourceBooking, CalendarResource (incl. MACHINE type), availability check, conflict resolver AI, events/participants — all complete.
 
-Gap 39 notes:
-- DocumentTag table: id, document_id (FK cascade), tag (lowercase), created_by, created_at.
-- Expiry list endpoint: GET /documents/expiring/list?days=30&include_expired=true. Must be before /{doc_id} route in file (static vs dynamic path conflict).
-- Tag search: GET /documents/tags/search?tag=xxx — also must be before /{doc_id} in routing.
-
-Gap 38 notes:
-- RLS not yet enforced in report runner (report_builder_service.run_report). Next: inject active RLS policies as WHERE clauses in run_report().
-- Executive summary cross-module endpoint at GET /reports-builder/executive-summary.
-
-Gap 41 start:
-- Check audit_log.py model and audit.py endpoint first.
-- audit module is already imported in router at prefix /audit.
-- Focus on: before/after value columns (if missing), export CSV endpoint, tamper hash verification.
-- System audit logs exist at /dashboard/logs in nav — may be separate from the compliance audit trail.
+Gap 44 start:
+- Check integrations.py endpoint and integrations frontend pages.
+- Likely has basic integration list. Need: ConnectorRegistry model, marketplace hub page.
+- The api_portal keys (Gap 36) handle API key management — don't duplicate.
+- Focus: connector catalog with status badges (ACTIVE/BETA/COMING_SOON), test endpoint, usage logs.

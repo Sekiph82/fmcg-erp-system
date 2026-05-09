@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import Column, String, Text, ForeignKey
+from sqlalchemy import Column, String, Text, ForeignKey, Integer, Boolean, DateTime
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 
 from app.db.base import Base, TimestampMixin
@@ -15,18 +15,43 @@ class AuditLog(Base, TimestampMixin):
     # Who did it (nullable for unauthenticated events like LOGIN_FAILED)
     actor_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     actor_email = Column(String(255), nullable=True)  # denormalized
+    actor_name = Column(String(255), nullable=True)   # denormalized full name
+
+    # Session context
+    session_id = Column(String(100), nullable=True, index=True)
+    user_agent = Column(Text, nullable=True)
 
     # What happened
     event_type = Column(String(100), nullable=False, index=True)  # e.g. LOGIN_SUCCESS
+    module = Column(String(100), nullable=True, index=True)       # inventory | sales | finance …
 
     # What was affected
     target_type = Column(String(50), nullable=True)   # user | role | permission | mpesa_payment
     target_id = Column(String(100), nullable=True)    # UUID str of the affected object
     target_name = Column(String(255), nullable=True)  # human-readable name
 
+    # Before / after value tracking
+    before_value = Column(JSONB, nullable=True)   # state before change
+    after_value = Column(JSONB, nullable=True)    # state after change
+
     # Extra context
     details = Column(JSONB, nullable=True)
     ip_address = Column(String(45), nullable=True)
+
+    # Tamper detection — SHA-256 of (id + event_type + actor_email + created_at + before + after)
+    row_hash = Column(String(64), nullable=True)
+
+
+class AuditRetentionPolicy(Base):
+    """Configurable retention rules per module. Older logs auto-purged."""
+    __tablename__ = "audit_retention_policies"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    module = Column(String(100), nullable=False, unique=True)
+    retain_days = Column(Integer, nullable=False, default=365)
+    active_flag = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime, nullable=True)
+    updated_at = Column(DateTime, nullable=True)
 
 
 # ── Event type constants ───────────────────────────────────────────────────────
