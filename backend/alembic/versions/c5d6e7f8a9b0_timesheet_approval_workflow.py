@@ -1,7 +1,7 @@
 """timesheet_approval_workflow
 
-Revision ID: c5d6e7f8a9b0
-Revises: b4c5d6e7f8a9
+Revision ID: c5d6e7f8b0a9
+Revises: b4c5d6e7a8f9
 Create Date: 2026-04-30 14:00:00.000000
 
 """
@@ -9,8 +9,8 @@ from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
-revision = 'c5d6e7f8a9b0'
-down_revision = 'b4c5d6e7f8a9'
+revision = 'c5d6e7f8b0a9'
+down_revision = 'b4c5d6e7a8f9'
 branch_labels = None
 depends_on = None
 

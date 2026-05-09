@@ -554,6 +554,7 @@ ROLE_DEFINITIONS = {
             "finance.view", "finance.create", "finance.edit", "finance.approve", "finance.export",
             "mpesa.initiate_payment", "mpesa.view_transactions", "mpesa.retry_transaction",
             "mpesa.cancel_payment", "mpesa.reconcile_payment", "mpesa.view_payment_logs",
+            "payroll_ke.view", "payroll_ke.approve", "payroll_ke.export",
             "sales.view",
             # Import: own module only
             *_import("finance"),
@@ -587,6 +588,7 @@ ROLE_DEFINITIONS = {
             "warehouses.view", "wms.view", "wms.create", "wms.edit",
             "products.view", "materials.view",
             "stock_movement.edit",
+            "cycle_count.view", "cycle_count.create", "cycle_count.approve",
             # Import: own module only
             *_import("inventory", "warehouses", "wms"),
         ],
@@ -633,6 +635,7 @@ ROLE_DEFINITIONS = {
         "description": "HR operations — employees, attendance, leave and payroll",
         "permissions": [
             "hr.view", "hr.create", "hr.edit", "hr.approve", "hr.export",
+            "payroll_ke.view", "payroll_ke.create", "payroll_ke.approve", "payroll_ke.export",
             "users.view",
             "documents.view", "documents.create",
             # Import: own module only

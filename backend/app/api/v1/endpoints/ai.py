@@ -5,7 +5,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import List, Optional, Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
+from fastapi import APIRouter, Body, Depends, HTTPException, Query, BackgroundTasks, Request
 from pydantic import BaseModel
 from sqlalchemy import select, desc
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -586,6 +586,10 @@ class NLCommandIn(BaseModel):
     user_name: Optional[str] = None
 
 
+class NLCommandExecuteBody(BaseModel):
+    params: Optional[dict] = None
+
+
 # Intent parser — maps NL patterns to structured actions
 _INTENT_PATTERNS = [
     {
@@ -713,15 +717,21 @@ async def submit_nl_command(
 async def execute_nl_command(
     cmd_id: str,
     confirmed_by: str = Query(...),
+    body: Optional[NLCommandExecuteBody] = Body(None),
+    request: Request,
     db: AsyncSession = Depends(get_db),
     _=Depends(require_permission("ai", "approve")),
 ):
     """
     Confirm and execute a parsed NL command.
-    Stub: marks as EXECUTED, returns action plan.
-    Production: actually call target_endpoint with extracted params.
+    Calls the target ERP endpoint when one is defined.
+    Supply params in the request body to satisfy any path or body parameters.
     """
+    import re
+    import os
+    import httpx
     from datetime import datetime
+
     r = await db.execute(select(NLCommandLog).where(NLCommandLog.id == uuid.UUID(cmd_id)))
     cmd = r.scalar_one_or_none()
     if not cmd:
@@ -729,16 +739,52 @@ async def execute_nl_command(
     if cmd.status == NLCommandStatus.EXECUTED:
         raise HTTPException(400, "Already executed")
 
+    params = dict(body.params) if body and body.params else {}
+    result_summary = None
+    call_error = None
+
+    if cmd.target_endpoint:
+        parts = cmd.target_endpoint.split(" ", 1)
+        if len(parts) == 2:
+            method, path = parts[0].upper(), parts[1]
+            path_params_needed = re.findall(r'\{(\w+)\}', path)
+            missing = [p for p in path_params_needed if p not in params]
+            if missing:
+                raise HTTPException(
+                    status_code=422,
+                    detail={
+                        "detail": f"Missing required path parameters: {missing}",
+                        "params_hint": cmd.params_json,
+                    },
+                )
+            for k in path_params_needed:
+                path = path.replace(f"{{{k}}}", str(params.pop(k)))
+
+            base_url = os.environ.get("INTERNAL_API_BASE_URL", "http://localhost:8000")
+            url = base_url.rstrip("/") + path
+            auth_header = request.headers.get("Authorization", "")
+            headers = {"Authorization": auth_header} if auth_header else {}
+            try:
+                async with httpx.AsyncClient(timeout=30.0) as client:
+                    if method == "GET":
+                        resp = await client.get(url, params=params or None, headers=headers)
+                    else:
+                        resp = await client.request(method, url, json=params or None, headers=headers)
+                result_summary = f"HTTP {resp.status_code}: {resp.text[:500]}"
+                if resp.is_error:
+                    call_error = result_summary
+            except Exception as exc:
+                call_error = f"Failed to reach {url}: {exc}"
+                result_summary = call_error
+
     cmd.status = NLCommandStatus.EXECUTED
     cmd.confirmed_by = confirmed_by
     cmd.confirmed_at = datetime.utcnow()
     cmd.executed_at = datetime.utcnow()
-    cmd.result_summary = (
-        f"STUB: Command '{cmd.parsed_intent}' marked as executed. "
-        f"Production: call {cmd.target_endpoint} with appropriate parameters."
-    )
+    cmd.result_summary = result_summary or f"Command '{cmd.parsed_intent}' executed."
     await db.commit()
-    return {
+
+    response: dict = {
         "id": cmd_id,
         "status": "EXECUTED",
         "parsed_intent": cmd.parsed_intent,
@@ -746,6 +792,9 @@ async def execute_nl_command(
         "result_summary": cmd.result_summary,
         "confirmed_by": confirmed_by,
     }
+    if call_error:
+        response["call_error"] = call_error
+    return response
 
 
 @router.post("/nl-command/{cmd_id}/reject")

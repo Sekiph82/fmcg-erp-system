@@ -1,13 +1,13 @@
 """calendar_resource_scheduling
 
-Revision ID: a9b0c1d2e3f4
+Revision ID: a9b0c1d2f3e4
 Revises: f8a9b0c1d2e3
 Create Date: 2026-05-01 00:00:00.000000
 """
 from alembic import op
 import sqlalchemy as sa
 
-revision = 'a9b0c1d2e3f4'
+revision = 'a9b0c1d2f3e4'
 down_revision = 'f8a9b0c1d2e3'
 branch_labels = None
 depends_on = None

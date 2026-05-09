@@ -1,7 +1,7 @@
 """training_skills_management
 
-Revision ID: b4c5d6e7f8a9
-Revises: a3b4c5d6e7f8
+Revision ID: b4c5d6e7a8f9
+Revises: a3b4c5d6e8f7
 Create Date: 2026-04-30 13:00:00.000000
 
 """
@@ -9,8 +9,8 @@ from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
-revision = 'b4c5d6e7f8a9'
-down_revision = 'a3b4c5d6e7f8'
+revision = 'b4c5d6e7a8f9'
+down_revision = 'a3b4c5d6e8f7'
 branch_labels = None
 depends_on = None
 

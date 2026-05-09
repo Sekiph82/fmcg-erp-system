@@ -1224,7 +1224,7 @@ export const NAV_CONFIG: NavEntry[] = [
       { label: "Activity Data",       href: "/dashboard/esg/activities",    permission: "hr.view" },
       { label: "Emission Factors",    href: "/dashboard/esg/factors",       permission: "hr.view" },
       { label: "Carbon Per Product",  href: "/dashboard/esg/carbon",        permission: "hr.view" },
-      { label: "ESG Intelligence",    href: "/dashboard/esg/intelligence",  permission: "hr.view" },
+      { label: "ESG Intelligence",    href: "/dashboard/esg/intelligence",  permission: "esg.view" },
       { label: "ESG Targets",         href: "/dashboard/esg/targets",       permission: "hr.view" },
       { label: "ESG Reports",         href: "/dashboard/esg/reports",       permission: "hr.view" },
     ],

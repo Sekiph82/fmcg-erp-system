@@ -1,7 +1,7 @@
 """kanban_boards
 
-Revision ID: e7f8a9b0c1d2
-Revises: d6e7f8a9b0c1
+Revision ID: e7f8a9b0d1c2
+Revises: d6e7f8a9c0b1
 Create Date: 2026-05-01 10:00:00.000000
 
 """
@@ -9,8 +9,8 @@ from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
-revision = 'e7f8a9b0c1d2'
-down_revision = 'd6e7f8a9b0c1'
+revision = 'e7f8a9b0d1c2'
+down_revision = 'd6e7f8a9c0b1'
 branch_labels = None
 depends_on = None
 

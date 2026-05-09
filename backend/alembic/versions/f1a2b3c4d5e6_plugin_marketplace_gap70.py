@@ -1,6 +1,6 @@
 """plugin_marketplace_gap70
 
-Revision ID: f1a2b3c4d5e6
+Revision ID: f1a2b3c4e5d6
 Revises: f0a1b2c3d4e5
 Create Date: 2026-05-09 00:00:00.000000
 """
@@ -9,7 +9,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 
-revision = "f1a2b3c4d5e6"
+revision = "f1a2b3c4e5d6"
 down_revision = "f0a1b2c3d4e5"
 branch_labels = None
 depends_on = None

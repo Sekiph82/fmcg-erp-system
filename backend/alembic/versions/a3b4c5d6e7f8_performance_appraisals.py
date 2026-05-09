@@ -1,6 +1,6 @@
 """performance_appraisals
 
-Revision ID: a3b4c5d6e7f8
+Revision ID: a3b4c5d6e8f7
 Revises: f2a3b4c5d6e7
 Create Date: 2026-04-30 12:00:00.000000
 
@@ -9,7 +9,7 @@ from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
-revision = 'a3b4c5d6e7f8'
+revision = 'a3b4c5d6e8f7'
 down_revision = 'f2a3b4c5d6e7'
 branch_labels = None
 depends_on = None

@@ -1,7 +1,7 @@
 """custom_report_builder
 
 Revision ID: f8a9b0c1d2e3
-Revises: e7f8a9b0c1d2
+Revises: e7f8a9b0d1c2
 Create Date: 2026-05-01 11:00:00.000000
 
 """
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 revision = 'f8a9b0c1d2e3'
-down_revision = 'e7f8a9b0c1d2'
+down_revision = 'e7f8a9b0d1c2'
 branch_labels = None
 depends_on = None
 

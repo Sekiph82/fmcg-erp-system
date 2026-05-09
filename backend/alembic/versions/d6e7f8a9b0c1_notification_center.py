@@ -1,7 +1,7 @@
 """notification_center
 
-Revision ID: d6e7f8a9b0c1
-Revises: c5d6e7f8a9b0
+Revision ID: d6e7f8a9c0b1
+Revises: c5d6e7f8b0a9
 Create Date: 2026-05-01 09:00:00.000000
 
 """
@@ -9,8 +9,8 @@ from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
-revision = 'd6e7f8a9b0c1'
-down_revision = 'c5d6e7f8a9b0'
+revision = 'd6e7f8a9c0b1'
+down_revision = 'c5d6e7f8b0a9'
 branch_labels = None
 depends_on = None
 

@@ -1,7 +1,7 @@
 """esg_intelligence_gap69
 
 Revision ID: f0a1b2c3d4e5
-Revises: d8e9f0a1b2c3
+Revises: e9f0a1b2c3d4
 Create Date: 2026-05-09 00:00:00.000000
 """
 from alembic import op
@@ -10,7 +10,7 @@ from sqlalchemy.dialects import postgresql
 
 
 revision = "f0a1b2c3d4e5"
-down_revision = "d8e9f0a1b2c3"
+down_revision = "e9f0a1b2c3d4"
 branch_labels = None
 depends_on = None
 
