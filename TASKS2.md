@@ -10,7 +10,7 @@ Phase 3 - Medium Importance (Tier 3)
 
 ## Current Gap
 
-Gap 35 - Native Mobile Apps Support Layer
+Gap 38 - Reporting & BI Layer
 
 
 
@@ -21,6 +21,12 @@ Not started yet.
 
 
 ## Completed in Last Run
+
+Gap 37 - Real-Time Notification Center (bell in Sidebar + mobile header)
+
+Gap 36 - API Developer Portal / GraphQL Layer
+
+Gap 35 - Native Mobile Apps Support Layer
 
 Gap 34 - Customer / Product NPS Tracking
 
@@ -36,17 +42,11 @@ Gap 30 - VoIP / Call Center Integration
 
 ## Implemented Gap Items
 
-1-34 implemented.
+1-37 implemented.
 
 
 
 ## Remaining Gap Items
-
-35. Native Mobile Apps Support Layer
-
-36. API Developer Portal / GraphQL Layer
-
-37. Real-Time Notification Center
 
 38. Reporting & BI Layer
 
@@ -118,22 +118,20 @@ Gap 30 - VoIP / Call Center Integration
 
 ## Next Immediate Task
 
-Implement Gap 35 - Native Mobile Apps Support Layer.
+Implement Gap 38 - Reporting & BI Layer.
 
 Inspect first:
-- Check if any mobile push token or push notification model exists
-- Check backend/app/models/notifications.py or push_tokens.py
-- Check existing notifications module frontend/src/app/dashboard/notification-center/
+- Check backend/app/api/v1/endpoints/report_builder.py for what already exists
+- Check frontend/src/app/dashboard/report-builder/ for existing pages
+- The report_builder endpoint already exists in router (prefix: /reports-builder)
 
-Expected: Basic notification system exists. Mobile support layer means: push notification token registration, mobile-optimized API endpoints, offline sync capability stubs.
-
-Build next coherent slice:
-1. Add MobilePushToken model (user_id, device_id, platform: ios/android/web, token, active_flag).
-2. Add MobileAppSession model (user_id, device_info, last_sync_at, app_version).
-3. Add endpoints: register push token, list user tokens, send push notification stub.
-4. Add mobile-friendly approval inbox page (compact layout for approvals on mobile).
-5. Add mobile dashboard page (simplified KPI view for phone screen).
-6. Wire nav entries.
+Expected: existing report builder has basic structure. Gap 38 = add missing pieces:
+1. Scheduled reports model (ReportSchedule: report_id, user_id, cron_expr, last_run, next_run, output_format, email_to).
+2. Export stub endpoint (GET /reports-builder/{id}/export?format=excel|pdf — returns mock file or CSV).
+3. KPI card builder page (simple drag-drop-style KPI tile configurator).
+4. Cross-module analytics summary endpoint (stitches together key counts from multiple modules).
+5. Saved views/filters — check if already in report_builder, if not add SavedFilter model + endpoints.
+6. Frontend: enhance existing BI hub, add export buttons, add KPI configurator page.
 
 
 
@@ -147,34 +145,36 @@ Validation environment blocker: python not found on PATH.
 
 ## Files Changed in Last Run
 
-Gap 34 additions:
-backend/app/models/nps.py - NEW: NPSSurvey model (title, target_type CUSTOMER/PRODUCT, trigger DELIVERY/PERIODIC/MANUAL, question_text, is_active); NPSResponse model (survey_id, customer_id, product_id nullable, so_id nullable, score 0-10, comment, channel, responded_at)
-backend/app/api/v1/endpoints/nps.py - NEW: GET/POST /nps/surveys; POST /nps/responses; GET /nps/responses (filtered); GET /nps/analytics (NPS score = (promoters-detractors)/total*100, distribution, verbatim feedback); GET /nps/analytics/by-customer
-backend/app/api/v1/router.py - MODIFIED: Added nps import + /nps route
-frontend/src/app/dashboard/nps/page.tsx - NEW: NPS dashboard - large NPS score gauge, score distribution bars (color-coded: red=0-6, amber=7-8, green=9-10), survey list with per-survey NPS, customer NPS table (avg score + classification), promoter/detractor verbatim comments, log response modal (0-10 button grid)
-frontend/src/components/nav-config.tsx - MODIFIED: Added NPS Tracking under Sales & Distribution
+Gap 37 additions:
+frontend/src/components/NotificationBell.tsx - NEW: Real-time notification bell component (polls unread count every 60s, dropdown with 8 most recent unread, mark one/all read, link to notification center, priority color dots, relative timestamps)
+frontend/src/components/DashboardShell.tsx - MODIFIED: Added NotificationBell import + bell in mobile top header (between logo and search button)
+frontend/src/components/Sidebar.tsx - MODIFIED: Added NotificationBell import + bell in collapsed user footer (between avatar tooltip and sign-out) AND in expanded user footer (between avatar info and sign-out)
 
-Gap 33 additions:
-backend/app/models/meetings.py - NEW: MeetingRecord model
-backend/app/api/v1/endpoints/meetings.py - NEW: Meeting CRUD + stats
-backend/app/api/v1/router.py - MODIFIED: meetings route
-frontend/src/app/dashboard/meetings/page.tsx - NEW: Meeting scheduler with platform icons, upcoming strip, complete modal
+Gap 36 additions:
+backend/app/models/api_portal.py - NEW: ApiKey model (user_id, key_name, key_prefix, key_hash SHA-256, scopes, rate_limit_per_min, is_active, last_used_at, expires_at); ApiKeyUsageLog model (key_id FK, endpoint, method, status_code, response_ms, ip_address)
+backend/app/api/v1/endpoints/api_portal.py - NEW: POST /developer/keys (generate, raw_key shown once), GET /developer/keys (list, include_inactive param), DELETE /developer/keys/{id} (revoke), GET /developer/keys/{id}/usage, GET /developer/dashboard (stats), GET /developer/graphql/schema (stub info), GET /developer/resources (auth/rate limit info)
+backend/app/api/v1/router.py - MODIFIED: Added api_portal import + /developer route
+frontend/src/lib/api_portal_api.ts - NEW: Typed API client for developer portal
+frontend/src/app/dashboard/developer/page.tsx - NEW: Developer Portal Hub — KPI strip, scopes, auth info, navigation links
+frontend/src/app/dashboard/developer/keys/page.tsx - NEW: API Keys manager — generate form (name/scopes/rate-limit/description), keys table (prefix shown, revoke button), new-key one-time display with copy button
+frontend/src/app/dashboard/developer/graphql/page.tsx - NEW: GraphQL Layer info — stub status, planned types/queries/mutations, integration guide
+frontend/src/components/nav-config.tsx - MODIFIED: Added Developer Portal, API Keys, GraphQL Layer under Integrations section
 
-Gap 32 additions:
-backend/app/models/subscription.py - MODIFIED: auto_invoice_flag + invoice_due_days + email_invoice_flag
-backend/app/api/v1/endpoints/subscription.py - MODIFIED: billing/pending + generate-invoice endpoints
-frontend/src/app/dashboard/recurring-orders/billing/page.tsx - NEW: Billing queue page
-
-Gap 31 additions:
-backend/app/models/loyalty.py - NEW: LoyaltyTier + CustomerLoyaltyAccount + LoyaltyTransaction
-backend/app/api/v1/endpoints/loyalty.py - NEW: Tier CRUD, enroll, earn (auto-tier upgrade), redeem, stats
-frontend/src/app/dashboard/loyalty/page.tsx - NEW: Loyalty program with tier cards, member list, account panel
+Gap 35 additions:
+backend/app/models/mobile.py - NEW: MobilePushToken (user_id, device_id, platform ios/android/web, token, active_flag, app_version, last_seen_at); MobileAppSession (user_id, device_id, platform, os_version, app_version, is_active, last_sync_at)
+backend/app/api/v1/endpoints/mobile.py - NEW: POST /mobile/devices, GET /mobile/devices, DELETE /mobile/devices/{id}, POST /mobile/push/send (stub), GET /mobile/approvals (compact), GET /mobile/kpis, GET /mobile/devices/stats
+backend/app/api/v1/router.py - MODIFIED: Added mobile route
+frontend/src/lib/mobile_api.ts - NEW: Typed mobile API client
+frontend/src/app/dashboard/mobile/page.tsx - NEW: Mobile Hub
+frontend/src/app/dashboard/mobile/approvals/page.tsx - NEW: Mobile Approvals Inbox
+frontend/src/app/dashboard/mobile/devices/page.tsx - NEW: Device Manager + test push form
+frontend/src/components/nav-config.tsx - MODIFIED: Added Mobile Apps, Mobile Approvals, Device Manager under Admin & System
 
 
 
 ## Validation Results
 
-Frontend TypeScript: PASS (npm.cmd run type-check, 0 errors)
+Frontend TypeScript: PASS (npm.cmd run type-check, 0 errors — verified after all 3 gaps)
 
 Backend Python compile: BLOCKED (python not found)
 
@@ -182,10 +182,20 @@ Backend Python compile: BLOCKED (python not found)
 
 ## Notes for Next Claude Run
 
-Gap 34 notes:
-- NPS score = (promoters - detractors) / total * 100. Range: -100 to +100.
-- Score 0-6 = DETRACTOR, 7-8 = PASSIVE, 9-10 = PROMOTER.
-- Benchmark: >50 = Excellent, >30 = Good, >0 = Fair, <0 = Poor.
-- by-customer analytics: avg score per customer, sorted ascending (worst first for action priority).
+Gap 37 notes:
+- NotificationBell polls GET /api/v1/notifications/unread-count?user_id=... every 60s.
+- unread-count and mark-all-read endpoints take user_id as query param (not from auth token) — this is how the existing endpoint is designed.
+- useAuth() hook returns user object; bell accesses user.id or user.user_id.
+- Bell dropdown shows max 8 unread. Full list at /dashboard/notification-center/list.
+- compact=true → smaller icon (14px), dropdown opens above (bottom-full) for sidebar collapsed use. 
+- compact=false → larger icon (17px), dropdown opens below (top-full) for mobile header use.
 
-Gap 35 start: Check backend/app/models/notifications.py and frontend/src/app/dashboard/notification-center/ before building new mobile models.
+Gap 36 notes:
+- API keys store only SHA-256 hash + first 12 chars as prefix. Raw key shown once only.
+- ApiKeyUsageLog exists but is not auto-populated yet — requires middleware integration in production.
+- GraphQL stub at GET /developer/graphql/schema returns planned types/queries for documentation.
+
+Gap 38 start:
+- Check backend/app/api/v1/endpoints/report_builder.py and frontend/src/app/dashboard/report-builder/ before building.
+- report_builder endpoint is already in router at prefix /reports-builder.
+- Focus on: scheduled reports model + endpoint, export stub, cross-module analytics summary.

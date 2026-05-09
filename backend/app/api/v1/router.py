@@ -67,6 +67,8 @@ from app.api.v1.endpoints import (
     loyalty,
     meetings,
     nps,
+    mobile,
+    api_portal,
 )
 
 api_router = APIRouter()
@@ -286,3 +288,7 @@ api_router.include_router(loyalty.router, prefix="/loyalty", tags=["loyalty"])
 api_router.include_router(meetings.router, prefix="/meetings", tags=["meetings"])
 # ── NPS Tracking ─────────────────────────────────────────────────────────────
 api_router.include_router(nps.router, prefix="/nps", tags=["nps"])
+# ── Mobile Apps Support Layer ─────────────────────────────────────────────────
+api_router.include_router(mobile.router, prefix="/mobile", tags=["mobile"])
+# ── API Developer Portal ──────────────────────────────────────────────────────
+api_router.include_router(api_portal.router, prefix="/developer", tags=["developer-portal"])

@@ -11,6 +11,7 @@ import {
   NavClusterHeader,
   isItemActive,
 } from "./nav-config";
+import { NotificationBell } from "./NotificationBell";
 
 // ── Storage keys ──────────────────────────────────────────────────────────────
 
@@ -639,6 +640,9 @@ export function Sidebar({ mobileOpen, onMobileClose, onOpenSearch }: SidebarProp
             <Tooltip label={user?.full_name ?? "User"}>
               <div className="cursor-default"><Avatar name={user?.full_name ?? "?"} /></div>
             </Tooltip>
+            <Tooltip label="Notifications">
+              <NotificationBell compact />
+            </Tooltip>
             <Tooltip label="Sign out">
               <button
                 onClick={logout}
@@ -658,6 +662,7 @@ export function Sidebar({ mobileOpen, onMobileClose, onOpenSearch }: SidebarProp
               <p className="text-[12px] font-semibold text-slate-300 truncate">{user?.full_name ?? "—"}</p>
               <p className="text-[11px] text-slate-600 mt-[3px] truncate">{user?.email ?? ""}</p>
             </div>
+            <NotificationBell compact />
             <button
               onClick={logout}
               title="Sign out"

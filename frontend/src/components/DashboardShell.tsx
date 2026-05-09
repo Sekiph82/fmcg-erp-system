@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Sidebar } from "./Sidebar";
 import { CommandPalette } from "./CommandPalette";
+import { NotificationBell } from "./NotificationBell";
 import { useCommandPalette } from "@/hooks/useCommandPalette";
 import { useUnsavedChangesContext } from "@/context/UnsavedChangesContext";
 
@@ -89,6 +90,8 @@ export function DashboardShell({ children }: DashboardShellProps) {
             </div>
             <span className="text-[13px] font-semibold text-white tracking-tight">POVU ERP</span>
           </div>
+          {/* Mobile notification bell */}
+          <NotificationBell />
           {/* Mobile search button */}
           <button
             onClick={openPalette}
