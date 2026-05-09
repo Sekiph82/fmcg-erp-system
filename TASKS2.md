@@ -10,7 +10,7 @@ Tier 4 — FMCG-Specific & Regulatory
 
 ## Current Gap
 
-Gap 50 - Dynamic / AI Pricing Engine
+Gap 52 - Market Intelligence / Competitor Tracking
 
 
 
@@ -22,25 +22,19 @@ Not started yet.
 
 ## Completed in Last Run
 
-Gap 49 - Regulatory Certificate Tracking
+Gap 51 - Brand Asset / Label Design Management
 
-Gap 48 - Consumer Complaint Management Linked to Batch
-
-Gap 47 - Route Optimization for Van Sales
+Gap 50 - Dynamic / AI Pricing Engine
 
 
 
 ## Implemented Gap Items
 
-1-49 implemented.
+1-51 implemented.
 
 
 
 ## Remaining Gap Items
-
-50. Dynamic / AI Pricing Engine
-
-51. Brand Asset / Label Design Management
 
 52. Market Intelligence / Competitor Tracking
 
@@ -84,25 +78,23 @@ Gap 47 - Route Optimization for Van Sales
 
 ## Next Immediate Task
 
-Implement Gap 50 - Dynamic / AI Pricing Engine.
+Implement Gap 52 - Market Intelligence / Competitor Tracking.
 
-Inspect first:
-- Check backend/app/models/pricing.py and pricing.py endpoint — static price lists exist
-- Check backend/app/models/price_list.py — enhanced price lists exist (Gap implemented earlier)
+Note: Gap 50 (Dynamic Pricing) added CompetitorPrice model for price tracking. Gap 52 is broader — field-level market intelligence: shelf share, volume estimates, promotions observed, market share.
 
-Gap 50 missing:
-- Competitor price tracking (manual entry or import)
-- Demand-based pricing logic (price elasticity model)
-- AI price recommendations (margin protection)
-- Channel-specific pricing (modern trade / distributor / export)
-- Margin protection automation (floor price enforcement)
+What's needed:
+- Competitor price monitoring (already in Gap 50 dp_competitor_prices — link/extend rather than duplicate)
+- Market share tracking (% estimates per category)
+- Shelf share tracking (field data: how many facings we have vs competitor)
+- Promotion effectiveness vs market
+- External data integration stub (Nielsen/IRI)
 
-Build next coherent slice:
-1. CompetitorPrice model (product_name, competitor_name, price, channel, recorded_date, source).
-2. PriceRecommendation model (product_id, channel, recommended_price, floor_price, current_price, margin_pct, rationale, status PENDING/APPLIED/REJECTED).
-3. Endpoints: add competitor price, list competitor prices, generate price recommendation (simple rule: if competitor < our price × 0.9, recommend price cut; if margin < floor, alert), GET /pricing/ai-recommendations.
-4. Frontend: AI pricing hub page with competitor tracker and recommendations.
-5. Nav under Sales & Distribution.
+Build plan:
+1. MarketObservation model (observer_name, outlet_name, outlet_type, location, observation_date, category, our_brand_facings, total_facings, our_shelf_share_pct, notes).
+2. MarketShareEstimate model (category, period_month, our_share_pct, competitor_shares JSONB, source, notes).
+3. Endpoints: CRUD observations, shelf share analytics, market share tracker.
+4. Frontend: Market Intelligence hub page with shelf share table + market share tracker.
+5. Nav under Sales & Distribution or AI/Analytics.
 
 
 
@@ -116,31 +108,26 @@ Validation environment blocker: python not found on PATH.
 
 ## Files Changed in Last Run
 
-Gap 49 additions:
-backend/app/models/regulatory_certs.py - NEW: RegulatoryCertificate model (cert_ref, authority KEBS/HALAL/ISO/FSCC/etc., entity_type PRODUCT/PLANT/SUPPLIER/COMPANY, entity_id soft link, certificate_number, country, issued_date, expiry_date, status ACTIVE/PENDING_RENEWAL/EXPIRED/SUSPENDED/REVOKED, document_url, alert_sent_30/60/90d flags); CertAuditEntry model (cert_id FK, action, performed_by, notes)
-backend/app/api/v1/endpoints/regulatory_certs.py - NEW: POST/GET /regulatory-certs/ (filter by authority/entity_type/status); GET /regulatory-certs/expiring (days param + include_expired); GET /regulatory-certs/stats (by_authority breakdown); GET /regulatory-certs/{id} (with audit_history); PATCH /regulatory-certs/{id} (auto-adds CertAuditEntry)
-backend/app/api/v1/router.py - MODIFIED: regulatory_certs import + /regulatory-certs route
-frontend/src/app/dashboard/quality/certificates/page.tsx - NEW: Certificate Register — KPI strip (total/expiring_90d/expired/authorities), authority filter chips, status/entity_type filters + expiring-only toggle, certificate table (days_to_expiry color-coded: red<0, amber≤30, orange≤60), add form, document URL link
-frontend/src/components/nav-config.tsx - MODIFIED: Reg. Certificates under Quality Control
+Gap 51 additions:
+backend/app/models/brand_assets.py - NEW: BrandAsset model (asset_ref, name, asset_type LABEL/ARTWORK/PACKAGING_DESIGN/LOGO/BRAND_GUIDELINE/PRODUCT_PHOTO/MARKETING_MATERIAL, brand, product_sku, version int, is_latest, previous_version_id FK, bom_version, bom_id, bom_change_flag, file_url/thumbnail_url/file_format, compliance_checklist JSONB, status DRAFT/IN_REVIEW/APPROVED/REJECTED/PRINT_READY/ARCHIVED); AssetApprovalStage model (asset_id FK, stage_name, stage_order, status PENDING/APPROVED/REJECTED/SKIPPED, approved_by, approved_at)
+backend/app/api/v1/endpoints/brand_assets.py - NEW: POST /brand-assets/ (seeds 4 approval stages R&D/Regulatory/Marketing/Print); GET /brand-assets/ (filter type/status/sku/bom_change_flag); GET /brand-assets/stats; GET /brand-assets/{id} (with approval_stages); POST /brand-assets/{id}/stages/{stage_id}/approve (auto-sets PRINT_READY if all approved); POST /brand-assets/{id}/stages/{stage_id}/reject; PATCH /brand-assets/{id}/compliance; POST /brand-assets/{id}/new-version; POST /brand-assets/{id}/flag-bom-change
+backend/app/api/v1/router.py - MODIFIED: brand_assets route
+frontend/src/app/dashboard/brand-assets/page.tsx - NEW: Brand Asset hub — KPI strip, type/status/BOM-alert filters, asset grid (thumbnail/icon, compliance bar, version badge, BOM changed alert), upload form
+frontend/src/app/dashboard/brand-assets/[id]/page.tsx - NEW: Asset detail — approval pipeline (approve/reject per stage, auto Print Ready when all approved), compliance checklist toggle, BOM change flag button, file link
+frontend/src/components/nav-config.tsx - MODIFIED: Brand Assets / DAM under Quality Control
 
-Gap 48 additions:
-backend/app/models/consumer_complaints.py - NEW: ConsumerComplaint model
-backend/app/api/v1/endpoints/consumer_complaints.py - NEW: Full CRUD + stats + by-lot endpoints
-backend/app/api/v1/router.py - MODIFIED: consumer_complaints route
-frontend/src/app/dashboard/quality/consumer-complaints/page.tsx - NEW: Consumer Complaints
-frontend/src/components/nav-config.tsx - MODIFIED: Consumer Complaints nav link
-
-Gap 47 additions:
-backend/app/models/field_sales.py - MODIFIED: lat_override, lng_override, priority_score on RouteStop
-backend/app/api/v1/endpoints/field_sales.py - MODIFIED: Nearest-neighbor + apply + profitability
-frontend/src/app/dashboard/van-sales/route-optimizer/page.tsx - NEW: Route Optimizer
-frontend/src/components/nav-config.tsx - MODIFIED: Route Optimizer nav link
+Gap 50 additions:
+backend/app/models/dynamic_pricing.py - NEW: CompetitorPrice (product_name, competitor_name, price, channel MODERN_TRADE/DISTRIBUTOR/EXPORT/VAN_SALES/ONLINE/WHOLESALE, observed_date, source); PriceRecommendation (current_price, recommended_price, floor_price, avg_competitor_price, margin_pct, confidence_score, trigger, status PENDING/APPLIED/REJECTED/EXPIRED)
+backend/app/api/v1/endpoints/dynamic_pricing.py - NEW: POST/GET /dynamic-pricing/competitor-prices; GET /dynamic-pricing/competitor-prices/summary (avg/min/max per product×channel); POST /dynamic-pricing/recommendations/generate (rule engine: COMPETITOR_UNDERCUT if competitor avg < current×0.92, LOW_MARGIN if margin < floor); GET /dynamic-pricing/recommendations; POST /dynamic-pricing/recommendations/{id}/apply|reject; GET /dynamic-pricing/dashboard
+backend/app/api/v1/router.py - MODIFIED: dynamic_pricing route
+frontend/src/app/dashboard/dynamic-pricing/page.tsx - NEW: 4-tab page: Price Recommendations (apply/reject cards), Competitor Data (table), Log Price, Generate Recommendation (rule engine form with result)
+frontend/src/components/nav-config.tsx - MODIFIED: AI Pricing Engine under Sales & Distribution
 
 
 
 ## Validation Results
 
-Frontend TypeScript: PASS (npm.cmd run type-check, 0 errors — verified after Gap 49)
+Frontend TypeScript: PASS (npm.cmd run type-check, 0 errors — verified after Gap 51)
 
 Backend Python compile: BLOCKED (python not found)
 
@@ -148,15 +135,15 @@ Backend Python compile: BLOCKED (python not found)
 
 ## Notes for Next Claude Run
 
-Gap 49 notes:
-- RegulatoryCertificate.cert_ref auto-generated CERT-YYYYMM-NNNN.
-- expiry endpoint: filters ACTIVE + PENDING_RENEWAL certs with expiry_date ≤ today+days. include_expired=true shows already-expired.
-- days_to_expiry computed in Python at query time: (expiry_date - today).days. Negative = expired.
-- CertAuditEntry auto-created on POST (action=ISSUED) and PATCH (action=status.value or UPDATED).
-- alert_sent_30/60/90d flags: set to True when alert sent (production: cron job calls /regulatory-certs/expiring and sends email/notification, then updates flags).
-- stats.by_authority: count per authority type for all active certs.
+Gap 51 notes:
+- Approval stages seeded on create: R&D (order 1) → Regulatory (2) → Marketing (3) → Print (4). Auto-set PRINT_READY when all 4 approved.
+- compliance_checklist default keys: allergen_declared, nutrition_label, ingredient_list, net_weight, manufacturer_details, expiry_date_format, barcode_present, kebs_mark.
+- bom_change_flag: manual flag (POST /flag-bom-change) alerts team that BOM changed and label needs review.
+- new-version creates new asset (version=prev+1, previous_version_id=prev.id, prev.is_latest=False), seeds fresh approval stages.
+- Asset grid shows compliance progress bar colored by pct: green=100%, amber≥60%, red<60%.
 
-Gap 50 start:
-- pricing.py endpoint already exists at /pricing. Check what models exist before building.
-- price_list.py also exists. Avoid duplicating existing price list logic.
-- Focus on NEW: competitor price tracking table + AI recommendation engine (rule-based, no ML needed).
+Gap 50 notes:
+- Rule engine: COMPETITOR_UNDERCUT → recommend competitor_avg × 0.98. LOW_MARGIN → floor = cost / (1 - floor_margin_pct/100). Confidence: 80 for undercut, 95 for margin breach.
+- CompetitorPrice and PriceRecommendation are separate models from pricing.py and price_list.py (which handle static price lists/rules).
+
+Gap 52 start: Distinct from Gap 50 (price tracking). Gap 52 = broader market intelligence: shelf share (our facings vs total), market share estimates, promotion observation. Create new market_intelligence.py model + endpoint.

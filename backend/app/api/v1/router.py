@@ -73,6 +73,8 @@ from app.api.v1.endpoints import (
     npd_workflow,
     consumer_complaints,
     regulatory_certs,
+    dynamic_pricing,
+    brand_assets,
 )
 
 api_router = APIRouter()
@@ -304,3 +306,7 @@ api_router.include_router(npd_workflow.router, prefix="/npd-workflow", tags=["np
 api_router.include_router(consumer_complaints.router, prefix="/consumer-complaints", tags=["consumer-complaints"])
 # ── Regulatory Certificate Tracking ──────────────────────────────────────────
 api_router.include_router(regulatory_certs.router, prefix="/regulatory-certs", tags=["regulatory-certs"])
+# ── Dynamic / AI Pricing Engine ───────────────────────────────────────────────
+api_router.include_router(dynamic_pricing.router, prefix="/dynamic-pricing", tags=["dynamic-pricing"])
+# ── Brand Asset / Label Design Management ─────────────────────────────────────
+api_router.include_router(brand_assets.router, prefix="/brand-assets", tags=["brand-assets"])
