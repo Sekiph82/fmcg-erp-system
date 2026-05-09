@@ -102,6 +102,17 @@ export const NAV_CONFIG: NavEntry[] = [
 
   {
     type: "section",
+    id: "npd",
+    label: "New Product Development",
+    permission: "production.view",
+    icon: md("M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"),
+    items: [
+      { label: "NPD Projects",    href: "/dashboard/npd",   permission: "production.view" },
+    ],
+  },
+
+  {
+    type: "section",
     id: "mrp",
     label: "MRP & Forecasting",
     permission: "production.view",
@@ -306,8 +317,10 @@ export const NAV_CONFIG: NavEntry[] = [
       { label: "Picking Ops",       href: "/dashboard/wms/picking",           permission: "wms.view" },
       { label: "Bin Replenishment", href: "/dashboard/wms/replenishment",     permission: "wms.view" },
       { label: "WMS Reports",       href: "/dashboard/wms/reports",           permission: "wms.view" },
-      { label: "Putaway Tasks",     href: "/dashboard/putaway",               permission: "wms.view" },
-      { label: "Putaway Rules",     href: "/dashboard/putaway/rules",         permission: "wms.view" },
+      { label: "Putaway Tasks",          href: "/dashboard/putaway",                  permission: "wms.view" },
+      { label: "Putaway Rules",          href: "/dashboard/putaway/rules",            permission: "wms.view" },
+      { label: "Container Management",   href: "/dashboard/containers",               permission: "inventory.view" },
+      { label: "Outstanding Containers", href: "/dashboard/containers/outstanding",   permission: "inventory.view" },
     ],
   },
 
@@ -1375,6 +1388,7 @@ export const NAV_CONFIG: NavEntry[] = [
     icon: md("M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"),
     items: [
       { label: "Overview",        href: "/dashboard/integrations",               permission: "integrations.view" },
+      { label: "Marketplace",     href: "/dashboard/integrations/marketplace",   permission: "integrations.view" },
       { label: "Email Inbox",     href: "/dashboard/email",                      permission: "integrations.view" },
       { label: "WhatsApp",        href: "/dashboard/whatsapp",                   permission: "integrations.view" },
       { label: "M-Pesa",          href: "/dashboard/integrations/mpesa",         permission: "mpesa.view_transactions" },

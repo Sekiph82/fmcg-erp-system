@@ -4,13 +4,13 @@
 
 ## Current Phase
 
-Phase 3 - Medium Importance (Tier 3) → Tier 4 (FMCG-Specific)
+Tier 4 — FMCG-Specific & Regulatory
 
 
 
 ## Current Gap
 
-Gap 44 - Integration Marketplace / Connector Hub
+Gap 47 - Route Optimization for Van Sales
 
 
 
@@ -22,27 +22,21 @@ Not started yet.
 
 ## Completed in Last Run
 
-Gap 43 - Resource & Calendar Scheduling System
+Gap 46 - New Product Development Workflow
 
-Gap 42 - Mobile-First Field Sales Expansion
+Gap 45 - Returnable Packaging / Container Management
 
-Gap 41 - Audit Logs & Compliance Trail
+Gap 44 - Integration Marketplace / Connector Hub
 
 
 
 ## Implemented Gap Items
 
-1-43 implemented.
+1-46 implemented.
 
 
 
 ## Remaining Gap Items
-
-44. Integration Marketplace / Connector Hub
-
-45. Returnable Packaging / Container Management
-
-46. New Product Development Workflow
 
 47. Route Optimization for Van Sales
 
@@ -96,26 +90,25 @@ Gap 41 - Audit Logs & Compliance Trail
 
 ## Next Immediate Task
 
-Implement Gap 44 - Integration Marketplace / Connector Hub.
+Implement Gap 47 - Route Optimization for Van Sales.
 
 Inspect first:
-- Check backend/app/api/v1/endpoints/integrations.py — what exists
-- Check frontend/src/app/dashboard/integrations/ — what pages exist
-- Check if connector registry model exists
+- Van sales already has route model (SalesRoute, RouteStop in field_sales.py)
+- Check backend/app/api/v1/endpoints/field_sales.py and van_sales.py for existing route endpoints
+- Check frontend/src/app/dashboard/van-sales/route/ for existing route UI
 
-Gap 44 missing (from ERP_70_GAPS plan):
-- Connector registry (list all available integrations)
-- Prebuilt integrations (M-Pesa, email, WhatsApp, webhooks)
-- API key management (already done in Gap 36 /developer)
-- Webhook retry system (check webhooks module)
-- Integration logs (check existing /integrations/logs)
-- External system connectors (accounting, M-Pesa, EDI, WhatsApp)
+Gap 47 missing:
+- Route optimization algorithm (nearest-neighbor / Clarke-Wright)
+- Traffic-aware routing (Google Maps link generation)
+- Visit prioritization (revenue-based ranking of stops)
+- Route profitability analytics
+- Dynamic re-routing (mark customer unavailable, skip)
 
 Build next coherent slice:
-1. Check what integrations.py endpoint already has.
-2. Add ConnectorRegistry model (connector_code, name, category, status: ACTIVE/COMING_SOON, icon_url, description, auth_type, config_schema JSONB).
-3. Add endpoints: GET /integrations/connectors (list), POST /integrations/connectors/{code}/test (stub test), GET /integrations/connectors/{code}/logs.
-4. Frontend: Integration Marketplace hub page with connector cards (status badges, categories).
+1. Add GET /van-sales/routes/{route_id}/optimize endpoint — runs nearest-neighbor algorithm on existing route stops, returns reordered stop sequence.
+2. Add POST /van-sales/routes/{route_id}/apply-optimization — persists reordered sequence_no to RouteStop records.
+3. Add GET /van-sales/routes/profitability — revenue per route, cost estimate (km × fuel rate).
+4. Frontend: route optimizer page — show current vs optimized sequence, apply button, Google Maps link.
 5. Wire nav.
 
 
@@ -130,30 +123,33 @@ Validation environment blocker: python not found on PATH.
 
 ## Files Changed in Last Run
 
-Gap 43 additions:
-backend/app/models/calendar.py - MODIFIED: Added ShiftType enum (morning/afternoon/night/custom); Added ShiftSchedule model (user_id, user_name, department, shift_date ISO string, shift_type, shift_start/end HH:MM, location, approved_flag, approved_by, notes)
-backend/app/api/v1/endpoints/calendar.py - MODIFIED: Added imports (select, desc, and_, Query, pydantic BaseModel); Added POST/GET /calendar/shifts (create + list with dept/date/user filters); PATCH /calendar/shifts/{id}/approve; DELETE /calendar/shifts/{id}
-frontend/src/app/dashboard/calendar/shifts/page.tsx - NEW: Shift Scheduling — add shift form (user/dept/date/type/time), shift type presets (morning/afternoon/night/custom), grouped by date view with approve/delete buttons
-frontend/src/components/nav-config.tsx - MODIFIED: Added Shift Schedule under Calendar & Scheduling
+Gap 46 additions:
+backend/app/models/npd.py - NEW: NPDProject (project_code, name, category, stage IDEA/CONCEPT/DEVELOPMENT/PILOT/LAUNCH/LAUNCHED/CANCELLED, target_launch_date, estimated_cogs/selling_price, bom_recipe_id, regulatory_checklist JSONB, launch_readiness_checklist JSONB); NPDStageGate (project_id, stage, department, approved_flag, approved_by, approved_at); NPDPilotBatch (project_id, batch_ref, batch_no, qty_produced, uom, actual_cogs, outcome PASS/FAIL/CONDITIONAL/IN_PROGRESS)
+backend/app/api/v1/endpoints/npd_workflow.py - NEW: POST/GET /npd-workflow/projects; GET /npd-workflow/projects/{id} (with stage_gates + pilot_batches); PATCH /npd-workflow/projects/{id}; POST /npd-workflow/projects/{id}/advance-stage (checks all current gates approved); POST /npd-workflow/projects/{id}/gates/{gate_id}/approve; PATCH /npd-workflow/projects/{id}/checklist; POST /npd-workflow/projects/{id}/pilot-batches; GET /npd-workflow/dashboard
+backend/app/api/v1/router.py - MODIFIED: npd_workflow import + /npd-workflow route
+frontend/src/app/dashboard/npd/page.tsx - NEW: NPD hub — KPI strip, stage filter bar, project cards (stage badge, COGS, launch date), new project form
+frontend/src/app/dashboard/npd/[id]/page.tsx - NEW: NPD project detail — stage advance button (blocked until all gates approved), gate approval list with approver input, regulatory + launch checklists (checkbox toggle), pilot batches list + add form
+frontend/src/components/nav-config.tsx - MODIFIED: Added New Product Development section under Planning cluster
 
-Gap 42 additions:
-backend/app/models/van_sales.py - MODIFIED: outlet_photo_url on VanVisit; VanRepDayLog model
-backend/app/api/v1/endpoints/van_sales.py - MODIFIED: Photo capture + rep day log endpoints
-frontend/src/app/dashboard/van-sales/field-rep/page.tsx - NEW: Field Rep Day Log
-frontend/src/components/nav-config.tsx - MODIFIED: Field Rep Log nav link
+Gap 45 additions:
+backend/app/models/containers.py - NEW: ContainerType, ContainerIssuance, ContainerReturn
+backend/app/api/v1/endpoints/containers.py - NEW: Full container CRUD + issue/return/write-off/stats
+backend/app/api/v1/router.py - MODIFIED: containers route
+frontend/src/app/dashboard/containers/page.tsx - NEW: Container hub
+frontend/src/app/dashboard/containers/outstanding/page.tsx - NEW: Outstanding tracker
+frontend/src/components/nav-config.tsx - MODIFIED: Container nav links
 
-Gap 41 additions:
-backend/app/models/audit_log.py - MODIFIED: Extended AuditLog + AuditRetentionPolicy
-backend/app/api/v1/endpoints/audit.py - MODIFIED: Stats + export + integrity check + retention endpoints
-frontend/src/app/dashboard/logs/compliance/page.tsx - NEW: Compliance Audit Trail
-frontend/src/app/dashboard/logs/retention/page.tsx - NEW: Retention Policies
-frontend/src/components/nav-config.tsx - MODIFIED: Compliance + Retention nav links
+Gap 44 additions:
+backend/app/models/integrations.py - MODIFIED: ConnectorRegistry model
+backend/app/api/v1/endpoints/integrations.py - MODIFIED: Marketplace endpoints
+frontend/src/app/dashboard/integrations/marketplace/page.tsx - NEW
+frontend/src/components/nav-config.tsx - MODIFIED: Marketplace nav link
 
 
 
 ## Validation Results
 
-Frontend TypeScript: PASS (npm.cmd run type-check, 0 errors — verified after Gap 43)
+Frontend TypeScript: PASS (npm.cmd run type-check, 0 errors — verified after Gap 46)
 
 Backend Python compile: BLOCKED (python not found)
 
@@ -161,14 +157,15 @@ Backend Python compile: BLOCKED (python not found)
 
 ## Notes for Next Claude Run
 
-Gap 43 notes:
-- ShiftSchedule.shift_date stored as String(10) — ISO date "YYYY-MM-DD". Easier to filter than DateTime.
-- Shift type presets auto-fill start/end times when selected in UI. Custom type leaves times editable.
-- Approve endpoint: PATCH /calendar/shifts/{id}/approve?approved_by=Manager. Simple flag flip.
-- Calendar module already had: ResourceBooking, CalendarResource (incl. MACHINE type), availability check, conflict resolver AI, events/participants — all complete.
+Gap 46 notes:
+- NPDProject.project_code auto-generated as NPD-YYYYMM-XXXX (random 4 digits).
+- Stage advancement blocked if any gate in current stage is unapproved. Gate seeding: 5 departments auto-created per stage on project create (IDEA) and on each advance.
+- regulatory_checklist default keys: allergen_review, label_approved, kebs_check, haccp_review, nutritional_calc.
+- launch_readiness_checklist default keys: bom_approved, label_signed_off, production_plan, sales_plan, regulatory_clearance, pricing_approved.
+- Checklist PATCH toggles individual keys; JSONB field updated in-place.
 
-Gap 44 start:
-- Check integrations.py endpoint and integrations frontend pages.
-- Likely has basic integration list. Need: ConnectorRegistry model, marketplace hub page.
-- The api_portal keys (Gap 36) handle API key management — don't duplicate.
-- Focus: connector catalog with status badges (ACTIVE/BETA/COMING_SOON), test endpoint, usage logs.
+Gap 47 start:
+- field_sales.py has SalesRoute (route_id, name, rep_id, status) and RouteStop (route_id, stop_sequence, customer_id, lat, lon, estimated_arrival).
+- Check what lat/lon fields exist on RouteStop — needed for nearest-neighbor distance calc.
+- Nearest-neighbor algorithm: start from first stop, greedily pick closest unvisited stop using Haversine distance.
+- Avoid installing scipy/numpy — implement Haversine in pure Python.

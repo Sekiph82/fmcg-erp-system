@@ -17,6 +17,7 @@ from app.models.integrations import (
     IntegrationConfig, IntegrationLog, IntegrationMpesaTransaction,
     IntegrationProvider, IntegrationLogStatus, BarcodeLabel,
     CrmCustomerMapping, EcommerceOrderMapping, MachineEvent,
+    ConnectorRegistry, ConnectorStatus,
 )
 from app.schemas.integrations import (
     IntegrationConfigCreate, IntegrationConfigUpdate, IntegrationConfigRead,
@@ -716,3 +717,150 @@ async def marketing_sync_status(db: AsyncSession = Depends(get_db)):
             "error": last_log.error_message if last_log else None,
         })
     return results
+
+
+# ── Integration Marketplace ───────────────────────────────────────────────────
+
+# Static connector catalog seeded on first call
+_CONNECTOR_SEED = [
+    # Payment
+    {"code": "mpesa_daraja", "name": "M-Pesa Daraja API", "category": "Payment", "icon": "📱", "auth": "API_KEY", "status": "active", "guide": "Set MPESA_CONSUMER_KEY, MPESA_CONSUMER_SECRET in env. Use sandbox for testing."},
+    {"code": "stripe", "name": "Stripe Payments", "category": "Payment", "icon": "💳", "auth": "API_KEY", "status": "coming_soon"},
+    {"code": "pesapal", "name": "PesaPal", "category": "Payment", "icon": "💰", "auth": "API_KEY", "status": "coming_soon"},
+    # Communication
+    {"code": "twilio_sms", "name": "Twilio SMS", "category": "Communication", "icon": "📨", "auth": "API_KEY", "status": "beta"},
+    {"code": "africas_talking", "name": "Africa's Talking SMS", "category": "Communication", "icon": "📡", "auth": "API_KEY", "status": "beta"},
+    {"code": "whatsapp_cloud", "name": "WhatsApp Cloud API", "category": "Communication", "icon": "💬", "auth": "OAUTH2", "status": "active"},
+    {"code": "sendgrid", "name": "SendGrid Email", "category": "Communication", "icon": "📧", "auth": "API_KEY", "status": "beta"},
+    {"code": "mailgun", "name": "Mailgun", "category": "Communication", "icon": "📮", "auth": "API_KEY", "status": "coming_soon"},
+    # E-Commerce
+    {"code": "shopify", "name": "Shopify", "category": "E-Commerce", "icon": "🛒", "auth": "OAUTH2", "status": "beta"},
+    {"code": "woocommerce", "name": "WooCommerce", "category": "E-Commerce", "icon": "🛍️", "auth": "API_KEY", "status": "beta"},
+    {"code": "jumia_seller", "name": "Jumia Seller API", "category": "E-Commerce", "icon": "🏪", "auth": "API_KEY", "status": "coming_soon"},
+    # Accounting / ERP
+    {"code": "quickbooks", "name": "QuickBooks Online", "category": "Accounting", "icon": "📊", "auth": "OAUTH2", "status": "coming_soon"},
+    {"code": "xero", "name": "Xero", "category": "Accounting", "icon": "📈", "auth": "OAUTH2", "status": "coming_soon"},
+    {"code": "sage", "name": "Sage 300", "category": "Accounting", "icon": "🗂️", "auth": "API_KEY", "status": "coming_soon"},
+    # Logistics
+    {"code": "google_maps", "name": "Google Maps Platform", "category": "Logistics", "icon": "🗺️", "auth": "API_KEY", "status": "beta"},
+    {"code": "dhl_express", "name": "DHL Express API", "category": "Logistics", "icon": "📦", "auth": "API_KEY", "status": "coming_soon"},
+    {"code": "sendy", "name": "Sendy Logistics (Kenya)", "category": "Logistics", "icon": "🚚", "auth": "API_KEY", "status": "coming_soon"},
+    # IoT
+    {"code": "mqtt_broker", "name": "MQTT Broker (Factory IoT)", "category": "IoT", "icon": "🏭", "auth": "BASIC", "status": "beta"},
+    {"code": "opc_ua", "name": "OPC-UA (PLC/SCADA)", "category": "IoT", "icon": "⚙️", "auth": "BASIC", "status": "coming_soon"},
+    # Analytics
+    {"code": "google_analytics", "name": "Google Analytics 4", "category": "Analytics", "icon": "📉", "auth": "OAUTH2", "status": "coming_soon"},
+    {"code": "meta_ads", "name": "Meta Ads Manager", "category": "Analytics", "icon": "📲", "auth": "OAUTH2", "status": "beta"},
+    # KRA / Regulatory
+    {"code": "kra_etims", "name": "KRA eTIMS (e-Invoicing)", "category": "Regulatory", "icon": "🏛️", "auth": "API_KEY", "status": "beta", "guide": "Kenya Revenue Authority eTIMS API for invoice signing. Required for VAT-registered businesses."},
+    {"code": "kebs", "name": "KEBS Standards API", "category": "Regulatory", "icon": "✅", "auth": "API_KEY", "status": "coming_soon"},
+    # Banking
+    {"code": "cbk_forex", "name": "CBK Forex Rates", "category": "Banking", "icon": "💱", "auth": "API_KEY", "status": "coming_soon"},
+    {"code": "equity_bank", "name": "Equity Bank API", "category": "Banking", "icon": "🏦", "auth": "API_KEY", "status": "coming_soon"},
+]
+
+
+async def _ensure_seed(db: AsyncSession):
+    """Seed connector registry if empty."""
+    count_r = await db.execute(select(ConnectorRegistry))
+    existing = {r.connector_code for r in count_r.scalars().all()}
+    if existing:
+        return
+    from datetime import datetime
+    for c in _CONNECTOR_SEED:
+        entry = ConnectorRegistry(
+            connector_code=c["code"],
+            name=c["name"],
+            category=c["category"],
+            icon_emoji=c.get("icon"),
+            auth_type=c.get("auth"),
+            status=ConnectorStatus(c.get("status", "coming_soon")),
+            config_guide=c.get("guide"),
+            created_at=datetime.utcnow(),
+        )
+        db.add(entry)
+    await db.commit()
+
+
+@router.get("/marketplace", dependencies=[Depends(require_permission("integrations", "view"))])
+async def list_marketplace(
+    category: Optional[str] = Query(None),
+    status: Optional[str] = Query(None),
+    db: AsyncSession = Depends(get_db),
+):
+    """List all connectors in the integration marketplace."""
+    await _ensure_seed(db)
+
+    # Mark which connectors are configured
+    cfg_r = await db.execute(select(IntegrationConfig.provider).where(IntegrationConfig.is_active == True))
+    configured_providers = {r[0].value.lower() for r in cfg_r.all()}
+
+    q = select(ConnectorRegistry).order_by(ConnectorRegistry.category, ConnectorRegistry.name)
+    if category:
+        q = q.where(ConnectorRegistry.category == category)
+    if status:
+        q = q.where(ConnectorRegistry.status == status)
+
+    result = await db.execute(q)
+    connectors = result.scalars().all()
+
+    return [
+        {
+            "connector_id": str(c.connector_id),
+            "connector_code": c.connector_code,
+            "name": c.name,
+            "category": c.category,
+            "icon_emoji": c.icon_emoji,
+            "auth_type": c.auth_type,
+            "status": c.status,
+            "is_configured": c.connector_code in configured_providers or c.is_configured,
+            "config_guide": c.config_guide,
+            "docs_url": c.docs_url,
+        }
+        for c in connectors
+    ]
+
+
+@router.get("/marketplace/categories", dependencies=[Depends(require_permission("integrations", "view"))])
+async def marketplace_categories(db: AsyncSession = Depends(get_db)):
+    """List all connector categories with counts."""
+    await _ensure_seed(db)
+    from sqlalchemy import func
+    r = await db.execute(
+        select(ConnectorRegistry.category, func.count().label("total"),
+               func.sum((ConnectorRegistry.status == ConnectorStatus.ACTIVE).cast(Integer)).label("active"))
+        .group_by(ConnectorRegistry.category)
+        .order_by(ConnectorRegistry.category)
+    )
+    return [{"category": row.category, "total": row.total, "active": int(row.active or 0)} for row in r.all()]
+
+
+@router.post("/marketplace/{connector_code}/test",
+             dependencies=[Depends(require_permission("integrations", "view"))])
+async def test_connector(
+    connector_code: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """Test a configured connector (stub — real tests wired per connector)."""
+    r = await db.execute(
+        select(ConnectorRegistry).where(ConnectorRegistry.connector_code == connector_code)
+    )
+    connector = r.scalar_one_or_none()
+    if not connector:
+        raise HTTPException(404, f"Connector '{connector_code}' not found in registry")
+
+    if connector.status == ConnectorStatus.COMING_SOON:
+        return {"connector_code": connector_code, "result": "NOT_AVAILABLE", "message": "Connector not yet available. Coming soon."}
+
+    # Check if configured
+    cfg_r = await db.execute(
+        select(IntegrationConfig).where(
+            IntegrationConfig.provider == connector_code.upper(),
+            IntegrationConfig.is_active == True,
+        )
+    )
+    cfg = cfg_r.scalar_one_or_none()
+    if not cfg:
+        return {"connector_code": connector_code, "result": "NOT_CONFIGURED", "message": "No active configuration found. Set up integration first."}
+
+    return {"connector_code": connector_code, "result": "OK", "message": "Configuration found. Full connection test requires live credentials.", "config_id": str(cfg.id)}

@@ -237,3 +237,28 @@ class BarcodeLabel(Base, TimestampMixin):
     label_template = Column(String(100), nullable=True, default="standard")
     print_count = Column(Integer, nullable=False, default=0)
     last_printed_at = Column(DateTime(timezone=True), nullable=True)
+
+
+class ConnectorStatus(str, enum.Enum):
+    ACTIVE = "active"
+    BETA = "beta"
+    COMING_SOON = "coming_soon"
+    DEPRECATED = "deprecated"
+
+
+class ConnectorRegistry(Base, TimestampMixin):
+    """Marketplace registry of all available / planned integration connectors."""
+    __tablename__ = "integration_connector_registry"
+
+    connector_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    connector_code = Column(String(100), unique=True, nullable=False, index=True)
+    name = Column(String(200), nullable=False)
+    category = Column(String(100), nullable=False)        # Payment | Communication | ERP | IoT | E-Commerce | Logistics | Analytics
+    description = Column(Text, nullable=True)
+    icon_emoji = Column(String(10), nullable=True)
+    auth_type = Column(String(50), nullable=True)         # API_KEY | OAUTH2 | WEBHOOK | BASIC
+    docs_url = Column(String(500), nullable=True)
+    status = Column(Enum(ConnectorStatus), nullable=False, default=ConnectorStatus.COMING_SOON)
+    is_configured = Column(Boolean, default=False)        # updated when IntegrationConfig exists
+    config_guide = Column(Text, nullable=True)
+    created_at = Column(DateTime, nullable=True)

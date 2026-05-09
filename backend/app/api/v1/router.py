@@ -69,6 +69,8 @@ from app.api.v1.endpoints import (
     nps,
     mobile,
     api_portal,
+    containers,
+    npd_workflow,
 )
 
 api_router = APIRouter()
@@ -292,3 +294,7 @@ api_router.include_router(nps.router, prefix="/nps", tags=["nps"])
 api_router.include_router(mobile.router, prefix="/mobile", tags=["mobile"])
 # ── API Developer Portal ──────────────────────────────────────────────────────
 api_router.include_router(api_portal.router, prefix="/developer", tags=["developer-portal"])
+# ── Returnable Container Management ──────────────────────────────────────────
+api_router.include_router(containers.router, prefix="/containers", tags=["containers"])
+# ── NPD Workflow ──────────────────────────────────────────────────────────────
+api_router.include_router(npd_workflow.router, prefix="/npd-workflow", tags=["npd-workflow"])
