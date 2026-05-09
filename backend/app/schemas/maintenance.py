@@ -7,6 +7,7 @@ from pydantic import BaseModel, ConfigDict
 from app.models.maintenance import (
     AssetStatus, PMFrequency, PMStatus,
     BreakdownSeverity, BreakdownStatus,
+    MaintenancePredictionRisk, MaintenancePredictionStatus,
 )
 
 
@@ -258,6 +259,38 @@ class SparePartUsageRead(BaseModel):
     unit_cost: Optional[float] = None
     notes: Optional[str] = None
     created_at: datetime
+
+
+# Predictive Maintenance
+
+class MaintenancePredictionRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    asset_id: Optional[str] = None
+    asset_no: Optional[str] = None
+    asset_name: Optional[str] = None
+    machine_id: str
+    machine_name: Optional[str] = None
+    predicted_failure_date: date
+    confidence: float
+    risk_level: MaintenancePredictionRisk
+    failure_mode: str
+    recommended_action: str
+    evidence_summary: Optional[str] = None
+    source_metrics: Optional[dict] = None
+    status: MaintenancePredictionStatus
+    generated_at: Optional[datetime] = None
+    reviewed_by: Optional[str] = None
+    reviewed_at: Optional[datetime] = None
+    review_notes: Optional[str] = None
+    created_at: datetime
+
+
+class MaintenancePredictionReview(BaseModel):
+    status: MaintenancePredictionStatus = MaintenancePredictionStatus.REVIEWED
+    reviewed_by: str
+    review_notes: Optional[str] = None
 
 
 # ── Reports ────────────────────────────────────────────────────────────────────

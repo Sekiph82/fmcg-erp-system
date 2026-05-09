@@ -19,6 +19,9 @@ export type IntegrationProvider =
 
 export type IntegrationStatus = "ACTIVE" | "INACTIVE" | "ERROR" | "TESTING";
 export type IntegrationLogStatus = "SUCCESS" | "FAILED" | "PENDING" | "RETRYING";
+export type ConnectorStatus = "active" | "beta" | "coming_soon" | "deprecated";
+export type PluginInstallStatus = "installed" | "disabled" | "update_available" | "uninstalled" | "error";
+export type PluginLifecycleAction = "enable" | "disable" | "uninstall" | "update";
 export type MpesaTxStatus =
   | "PENDING"
   | "SUCCESS"
@@ -225,6 +228,74 @@ export interface MachineStatusRow {
   event_count_24h: number;
 }
 
+export interface MarketplaceConnector {
+  connector_id: string;
+  connector_code: string;
+  name: string;
+  category: string;
+  description?: string | null;
+  icon_emoji?: string | null;
+  auth_type?: string | null;
+  status: ConnectorStatus;
+  is_configured: boolean;
+  config_guide?: string | null;
+  docs_url?: string | null;
+  current_version: string;
+  module_key?: string | null;
+  dependency_codes: string[];
+  required_permissions: string[];
+  supports_tenant_config: boolean;
+  is_core: boolean;
+  installation_status?: PluginInstallStatus | null;
+  installed_version?: string | null;
+  tenant_key?: string | null;
+}
+
+export interface MarketplaceCategory {
+  category: string;
+  total: number;
+  active: number;
+}
+
+export interface PluginInstallRequest {
+  tenant_key?: string;
+  environment?: string;
+  config?: Record<string, unknown>;
+  notes?: string;
+}
+
+export interface PluginInstallation {
+  id: string;
+  connector_id?: string | null;
+  connector_code: string;
+  tenant_key: string;
+  installed_version: string;
+  status: PluginInstallStatus;
+  environment: string;
+  config_json?: string | null;
+  installed_by_id?: string | null;
+  installed_at?: string | null;
+  disabled_at?: string | null;
+  last_updated_at?: string | null;
+  notes?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PluginLifecycleEvent {
+  id: string;
+  installation_id?: string | null;
+  connector_code: string;
+  tenant_key: string;
+  action: string;
+  previous_status?: string | null;
+  new_status?: string | null;
+  actor_id?: string | null;
+  message?: string | null;
+  metadata_json?: string | null;
+  created_at: string;
+}
+
 // ── Marketing sync types ──────────────────────────────────────────────────────
 
 export interface MarketingSyncStatus {
@@ -405,6 +476,57 @@ export const integrationsApi = {
 
   getMarketingSyncStatus: async (): Promise<MarketingProviderSyncRow[]> => {
     const res = await apiClient.get<MarketingProviderSyncRow[]>(`${BASE}/marketing/sync-status`);
+    return res.data;
+  },
+
+  // Marketplace / plugin lifecycle
+  listMarketplace: async (params?: {
+    category?: string;
+    status?: string;
+    tenant_key?: string;
+  }): Promise<MarketplaceConnector[]> => {
+    const res = await apiClient.get<MarketplaceConnector[]>(`${BASE}/marketplace`, { params });
+    return res.data;
+  },
+
+  listMarketplaceCategories: async (): Promise<MarketplaceCategory[]> => {
+    const res = await apiClient.get<MarketplaceCategory[]>(`${BASE}/marketplace/categories`);
+    return res.data;
+  },
+
+  installPlugin: async (connectorCode: string, data: PluginInstallRequest = {}): Promise<PluginInstallation> => {
+    const res = await apiClient.post<PluginInstallation>(`${BASE}/marketplace/${connectorCode}/install`, data);
+    return res.data;
+  },
+
+  transitionPlugin: async (
+    connectorCode: string,
+    action: PluginLifecycleAction,
+    tenantKey = "default",
+  ): Promise<PluginInstallation> => {
+    const res = await apiClient.post<PluginInstallation>(
+      `${BASE}/marketplace/${connectorCode}/lifecycle/${action}`,
+      null,
+      { params: { tenant_key: tenantKey } },
+    );
+    return res.data;
+  },
+
+  testMarketplaceConnector: async (connectorCode: string, tenantKey = "default"): Promise<{ result: string; message: string }> => {
+    const res = await apiClient.post<{ result: string; message: string }>(
+      `${BASE}/marketplace/${connectorCode}/test`,
+      null,
+      { params: { tenant_key: tenantKey } },
+    );
+    return res.data;
+  },
+
+  listPluginEvents: async (params?: {
+    connector_code?: string;
+    tenant_key?: string;
+    limit?: number;
+  }): Promise<PluginLifecycleEvent[]> => {
+    const res = await apiClient.get<PluginLifecycleEvent[]>(`${BASE}/marketplace/events`, { params });
     return res.data;
   },
 };

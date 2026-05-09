@@ -246,6 +246,24 @@ class ConnectorStatus(str, enum.Enum):
     DEPRECATED = "deprecated"
 
 
+class PluginInstallStatus(str, enum.Enum):
+    INSTALLED = "installed"
+    DISABLED = "disabled"
+    UPDATE_AVAILABLE = "update_available"
+    UNINSTALLED = "uninstalled"
+    ERROR = "error"
+
+
+class PluginLifecycleAction(str, enum.Enum):
+    INSTALL = "install"
+    ENABLE = "enable"
+    DISABLE = "disable"
+    UNINSTALL = "uninstall"
+    UPDATE = "update"
+    CONFIGURE = "configure"
+    TEST = "test"
+
+
 class ConnectorRegistry(Base, TimestampMixin):
     """Marketplace registry of all available / planned integration connectors."""
     __tablename__ = "integration_connector_registry"
@@ -261,4 +279,57 @@ class ConnectorRegistry(Base, TimestampMixin):
     status = Column(Enum(ConnectorStatus), nullable=False, default=ConnectorStatus.COMING_SOON)
     is_configured = Column(Boolean, default=False)        # updated when IntegrationConfig exists
     config_guide = Column(Text, nullable=True)
+    current_version = Column(String(40), nullable=False, default="1.0.0")
+    module_key = Column(String(100), nullable=True, index=True)
+    dependency_codes = Column(Text, nullable=True)         # JSON list of connector codes
+    required_permissions = Column(Text, nullable=True)     # JSON list like integrations.view
+    supports_tenant_config = Column(Boolean, nullable=False, default=True)
+    is_core = Column(Boolean, nullable=False, default=False)
     created_at = Column(DateTime, nullable=True)
+
+    installations = relationship("PluginInstallation", back_populates="connector")
+
+
+class PluginInstallation(Base, TimestampMixin):
+    """Governed marketplace installation state for a connector/module."""
+    __tablename__ = "integration_plugin_installations"
+    __table_args__ = (
+        UniqueConstraint("connector_code", "tenant_key", name="uq_plugin_install_connector_tenant"),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    connector_id = Column(UUID(as_uuid=True), ForeignKey("integration_connector_registry.connector_id", ondelete="SET NULL"), nullable=True, index=True)
+    connector_code = Column(String(100), nullable=False, index=True)
+    tenant_key = Column(String(100), nullable=False, default="default", index=True)
+    installed_version = Column(String(40), nullable=False, default="1.0.0")
+    status = Column(Enum(PluginInstallStatus), nullable=False, default=PluginInstallStatus.INSTALLED, index=True)
+    environment = Column(String(20), nullable=False, default="sandbox")
+    config_json = Column(Text, nullable=True)
+    installed_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    installed_at = Column(DateTime(timezone=True), nullable=True)
+    disabled_at = Column(DateTime(timezone=True), nullable=True)
+    last_updated_at = Column(DateTime(timezone=True), nullable=True)
+    notes = Column(Text, nullable=True)
+
+    connector = relationship("ConnectorRegistry", back_populates="installations")
+    installed_by = relationship("User", foreign_keys=[installed_by_id])
+    lifecycle_events = relationship("PluginLifecycleEvent", back_populates="installation", cascade="all, delete-orphan")
+
+
+class PluginLifecycleEvent(Base, TimestampMixin):
+    """Audit trail for marketplace lifecycle changes."""
+    __tablename__ = "integration_plugin_lifecycle_events"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    installation_id = Column(UUID(as_uuid=True), ForeignKey("integration_plugin_installations.id", ondelete="CASCADE"), nullable=True, index=True)
+    connector_code = Column(String(100), nullable=False, index=True)
+    tenant_key = Column(String(100), nullable=False, default="default", index=True)
+    action = Column(Enum(PluginLifecycleAction), nullable=False)
+    previous_status = Column(String(40), nullable=True)
+    new_status = Column(String(40), nullable=True)
+    actor_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    message = Column(Text, nullable=True)
+    metadata_json = Column(Text, nullable=True)
+
+    installation = relationship("PluginInstallation", back_populates="lifecycle_events")
+    actor = relationship("User", foreign_keys=[actor_id])

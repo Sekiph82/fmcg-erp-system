@@ -2,7 +2,7 @@ import uuid
 import enum
 from sqlalchemy import (
     Column, String, Text, Numeric, Boolean, Integer,
-    ForeignKey, Enum, DateTime, Date, UniqueConstraint,
+    ForeignKey, Enum, DateTime, Date, UniqueConstraint, JSON,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
@@ -49,6 +49,20 @@ class BreakdownStatus(str, enum.Enum):
     RESOLVED = "RESOLVED"
 
 
+class MaintenancePredictionStatus(str, enum.Enum):
+    OPEN = "OPEN"
+    REVIEWED = "REVIEWED"
+    WORK_ORDER_CREATED = "WORK_ORDER_CREATED"
+    DISMISSED = "DISMISSED"
+
+
+class MaintenancePredictionRisk(str, enum.Enum):
+    LOW = "LOW"
+    MEDIUM = "MEDIUM"
+    HIGH = "HIGH"
+    CRITICAL = "CRITICAL"
+
+
 # ── Asset Register ─────────────────────────────────────────────────────────────
 
 class Asset(Base, TimestampMixin):
@@ -72,6 +86,7 @@ class Asset(Base, TimestampMixin):
     pm_plans = relationship("PMPlan", back_populates="asset", cascade="all, delete-orphan")
     breakdowns = relationship("BreakdownRecord", back_populates="asset", cascade="all, delete-orphan")
     spare_usages = relationship("SparePartUsage", back_populates="asset", cascade="all, delete-orphan")
+    predictions = relationship("MaintenancePrediction", back_populates="asset", cascade="all, delete-orphan")
 
 
 # ── Preventive Maintenance Plans ───────────────────────────────────────────────
@@ -184,3 +199,29 @@ class SparePartUsage(Base, TimestampMixin):
     breakdown = relationship("BreakdownRecord", back_populates="spare_usages")
     pm_work_order = relationship("PMWorkOrder")
     used_by = relationship("User")
+
+
+# Predictive Maintenance
+
+class MaintenancePrediction(Base, TimestampMixin):
+    """Rule-based machine failure prediction from IoT trends and maintenance history."""
+    __tablename__ = "maintenance_predictions"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    asset_id = Column(UUID(as_uuid=True), ForeignKey("assets.id", ondelete="SET NULL"), nullable=True, index=True)
+    machine_id = Column(String(100), nullable=False, index=True)
+    machine_name = Column(String(255), nullable=True)
+    predicted_failure_date = Column(Date, nullable=False, index=True)
+    confidence = Column(Numeric(5, 4), nullable=False, default=0)
+    risk_level = Column(Enum(MaintenancePredictionRisk), nullable=False, default=MaintenancePredictionRisk.MEDIUM, index=True)
+    failure_mode = Column(String(200), nullable=False)
+    recommended_action = Column(Text, nullable=False)
+    evidence_summary = Column(Text, nullable=True)
+    source_metrics = Column(JSON, nullable=True)
+    status = Column(Enum(MaintenancePredictionStatus), nullable=False, default=MaintenancePredictionStatus.OPEN, index=True)
+    generated_at = Column(DateTime, nullable=True)
+    reviewed_by = Column(String(200), nullable=True)
+    reviewed_at = Column(DateTime, nullable=True)
+    review_notes = Column(Text, nullable=True)
+
+    asset = relationship("Asset", back_populates="predictions")

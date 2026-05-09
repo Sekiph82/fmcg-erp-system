@@ -666,7 +666,7 @@ def _parse_intent(command: str) -> dict:
 async def submit_nl_command(
     payload: NLCommandIn,
     db: AsyncSession = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user=Depends(require_permission("ai", "create")),
 ):
     """
     Parse a natural language command into an ERP action plan.
@@ -714,7 +714,7 @@ async def execute_nl_command(
     cmd_id: str,
     confirmed_by: str = Query(...),
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    _=Depends(require_permission("ai", "approve")),
 ):
     """
     Confirm and execute a parsed NL command.
@@ -752,7 +752,7 @@ async def execute_nl_command(
 async def reject_nl_command(
     cmd_id: str,
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    _=Depends(require_permission("ai", "edit")),
 ):
     r = await db.execute(select(NLCommandLog).where(NLCommandLog.id == uuid.UUID(cmd_id)))
     cmd = r.scalar_one_or_none()
@@ -767,7 +767,7 @@ async def reject_nl_command(
 async def nl_command_history(
     limit: int = Query(50, le=200),
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    _=Depends(require_permission("ai", "view")),
 ):
     q = select(NLCommandLog).order_by(desc(NLCommandLog.created_at)).limit(limit)
     rows = (await db.execute(q)).scalars().all()
@@ -781,3 +781,176 @@ async def nl_command_history(
         }
         for r in rows
     ]
+
+
+# ── Gap 67: AI Agent Governance ───────────────────────────────────────────────
+
+from app.models.ai import AIAgentPolicy, AIAgentRun, AIAgentRunStatus
+from datetime import datetime as _dt
+
+
+class PolicyIn(BaseModel):
+    agent_name: str
+    description: Optional[str] = None
+    allowed_actions: Optional[list] = None
+    forbidden_actions: Optional[list] = None
+    max_cost_per_run_tokens: Optional[int] = None
+    requires_human_approval: bool = True
+    max_runs_per_hour: Optional[int] = None
+    allowed_modules: Optional[list] = None
+    hallucination_guardrail: bool = True
+    rag_enabled: bool = False
+    notes: Optional[str] = None
+
+
+class RunLogIn(BaseModel):
+    agent_name: str
+    trigger: Optional[str] = None
+    triggered_by: Optional[str] = None
+    actions_taken: Optional[list] = None
+    tokens_used: Optional[int] = None
+    cost_usd: Optional[float] = None
+    status: str = "COMPLETED"
+    result_summary: Optional[str] = None
+    anomaly_flag: bool = False
+    anomaly_reason: Optional[str] = None
+
+
+def _pol_out(p: AIAgentPolicy) -> dict:
+    return {
+        "id": str(p.id), "agent_name": p.agent_name, "description": p.description,
+        "allowed_actions": p.allowed_actions, "forbidden_actions": p.forbidden_actions,
+        "max_cost_per_run_tokens": p.max_cost_per_run_tokens,
+        "requires_human_approval": p.requires_human_approval,
+        "max_runs_per_hour": p.max_runs_per_hour,
+        "allowed_modules": p.allowed_modules,
+        "hallucination_guardrail": p.hallucination_guardrail,
+        "rag_enabled": p.rag_enabled,
+        "is_active": p.is_active,
+        "created_by": p.created_by,
+        "created_at": p.created_at.isoformat() if p.created_at else "",
+    }
+
+
+@router.post("/governance/policies", status_code=201)
+async def create_policy(payload: PolicyIn, db: AsyncSession = Depends(get_db),
+                        current_user=Depends(require_permission("ai", "create"))):
+    pol = AIAgentPolicy(
+        **payload.model_dump(),
+        created_by=getattr(current_user, "username", None) or str(current_user.id),
+    )
+    db.add(pol)
+    await db.commit()
+    await db.refresh(pol)
+    return _pol_out(pol)
+
+
+@router.get("/governance/policies")
+async def list_policies(active_only: bool = True, db: AsyncSession = Depends(get_db),
+                        _=Depends(require_permission("ai", "view"))):
+    q = select(AIAgentPolicy)
+    if active_only:
+        q = q.where(AIAgentPolicy.is_active == True)
+    q = q.order_by(AIAgentPolicy.agent_name)
+    rows = (await db.execute(q)).scalars().all()
+    return [_pol_out(p) for p in rows]
+
+
+@router.patch("/governance/policies/{policy_id}/toggle")
+async def toggle_policy(policy_id: str, db: AsyncSession = Depends(get_db),
+                        _=Depends(require_permission("ai", "edit"))):
+    r = await db.execute(select(AIAgentPolicy).where(AIAgentPolicy.id == uuid.UUID(policy_id)))
+    pol = r.scalar_one_or_none()
+    if not pol:
+        raise HTTPException(404, "Policy not found")
+    pol.is_active = not pol.is_active
+    await db.commit()
+    return {"id": policy_id, "is_active": pol.is_active}
+
+
+@router.post("/governance/runs", status_code=201)
+async def log_run(payload: RunLogIn, db: AsyncSession = Depends(get_db),
+                  _=Depends(require_permission("ai", "create"))):
+    """Log an AI agent run. Called by agent code after each execution."""
+    # Find policy for this agent
+    pol_r = await db.execute(
+        select(AIAgentPolicy).where(AIAgentPolicy.agent_name == payload.agent_name,
+                                    AIAgentPolicy.is_active == True)
+    )
+    policy = pol_r.scalar_one_or_none()
+
+    run = AIAgentRun(
+        policy_id=policy.id if policy else None,
+        agent_name=payload.agent_name,
+        trigger=payload.trigger,
+        triggered_by=payload.triggered_by,
+        actions_taken=payload.actions_taken,
+        tokens_used=payload.tokens_used,
+        cost_usd=payload.cost_usd,
+        status=AIAgentRunStatus(payload.status),
+        result_summary=payload.result_summary,
+        anomaly_flag=payload.anomaly_flag,
+        anomaly_reason=payload.anomaly_reason,
+        completed_at=_dt.utcnow(),
+    )
+    db.add(run)
+    await db.commit()
+    await db.refresh(run)
+    return {
+        "id": str(run.id), "agent_name": run.agent_name, "status": run.status,
+        "tokens_used": run.tokens_used, "anomaly_flag": run.anomaly_flag,
+    }
+
+
+@router.get("/governance/runs")
+async def list_runs(
+    agent_name: Optional[str] = None,
+    flagged_only: bool = False,
+    limit: int = Query(50, le=200),
+    db: AsyncSession = Depends(get_db),
+    _=Depends(require_permission("ai", "view")),
+):
+    q = select(AIAgentRun)
+    if agent_name:
+        q = q.where(AIAgentRun.agent_name == agent_name)
+    if flagged_only:
+        q = q.where(AIAgentRun.anomaly_flag == True)
+    q = q.order_by(desc(AIAgentRun.started_at)).limit(limit)
+    rows = (await db.execute(q)).scalars().all()
+    return [
+        {
+            "id": str(r.id), "agent_name": r.agent_name, "trigger": r.trigger,
+            "triggered_by": r.triggered_by, "status": r.status,
+            "tokens_used": r.tokens_used,
+            "cost_usd": float(r.cost_usd) if r.cost_usd else None,
+            "anomaly_flag": r.anomaly_flag, "anomaly_reason": r.anomaly_reason,
+            "started_at": r.started_at.isoformat() if r.started_at else "",
+            "result_summary": r.result_summary,
+        }
+        for r in rows
+    ]
+
+
+@router.get("/governance/dashboard")
+async def governance_dashboard(db: AsyncSession = Depends(get_db), _=Depends(require_permission("ai", "view"))):
+    from sqlalchemy import func
+    total_pol_r = await db.execute(
+        select(func.count()).select_from(AIAgentPolicy).where(AIAgentPolicy.is_active == True)
+    )
+    total_runs_r = await db.execute(select(func.count()).select_from(AIAgentRun))
+    flagged_r = await db.execute(
+        select(func.count()).select_from(AIAgentRun).where(AIAgentRun.anomaly_flag == True)
+    )
+    total_tokens_r = await db.execute(
+        select(func.sum(AIAgentRun.tokens_used)).where(AIAgentRun.tokens_used.isnot(None))
+    )
+    by_status_r = await db.execute(
+        select(AIAgentRun.status, func.count().label("cnt")).group_by(AIAgentRun.status)
+    )
+    return {
+        "active_policies": total_pol_r.scalar() or 0,
+        "total_runs": total_runs_r.scalar() or 0,
+        "flagged_runs": flagged_r.scalar() or 0,
+        "total_tokens_consumed": int(total_tokens_r.scalar() or 0),
+        "runs_by_status": {r.status: r.cnt for r in by_status_r.all()},
+    }

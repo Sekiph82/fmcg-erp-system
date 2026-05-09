@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -11,6 +11,7 @@ from app.core.deps import get_db, get_current_user
 from app.models.user import User
 from app.models.maintenance import (
     AssetStatus, PMStatus, BreakdownStatus, BreakdownSeverity,
+    MaintenancePredictionRisk, MaintenancePredictionStatus,
 )
 import app.crud.maintenance as crud
 import app.services.maintenance_service as svc
@@ -21,6 +22,7 @@ from app.schemas.maintenance import (
     BreakdownCreate, BreakdownUpdate, BreakdownRead,
     SparePartCreate, SparePartUpdate, SparePartRead,
     SparePartUsageCreate, SparePartUsageRead,
+    MaintenancePredictionRead, MaintenancePredictionReview,
     MtbfMttrRow, DowntimeByMachineRow, OverduePMRow,
 )
 
@@ -140,6 +142,30 @@ def _usage_read(u) -> SparePartUsageRead:
         unit_cost=float(u.unit_cost) if u.unit_cost else None,
         notes=u.notes,
         created_at=u.created_at,
+    )
+
+
+def _prediction_read(p) -> MaintenancePredictionRead:
+    return MaintenancePredictionRead(
+        id=str(p.id),
+        asset_id=str(p.asset_id) if p.asset_id else None,
+        asset_no=p.asset.asset_no if p.asset else None,
+        asset_name=p.asset.name if p.asset else None,
+        machine_id=p.machine_id,
+        machine_name=p.machine_name,
+        predicted_failure_date=p.predicted_failure_date,
+        confidence=float(p.confidence),
+        risk_level=p.risk_level,
+        failure_mode=p.failure_mode,
+        recommended_action=p.recommended_action,
+        evidence_summary=p.evidence_summary,
+        source_metrics=p.source_metrics,
+        status=p.status,
+        generated_at=p.generated_at,
+        reviewed_by=p.reviewed_by,
+        reviewed_at=p.reviewed_at,
+        review_notes=p.review_notes,
+        created_at=p.created_at,
     )
 
 
@@ -443,6 +469,64 @@ async def list_breakdown_spares(
 
 
 # ── Reports ────────────────────────────────────────────────────────────────────
+
+# Predictive Maintenance
+
+@router.post("/predictions/generate", response_model=List[MaintenancePredictionRead])
+async def generate_predictions(
+    horizon_days: int = Query(30, ge=7, le=90),
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(get_current_user),
+):
+    predictions = await svc.generate_maintenance_predictions(db, horizon_days=horizon_days)
+    await db.commit()
+    fresh = await svc.list_maintenance_predictions(db, limit=200)
+    generated_ids = {p.id for p in predictions}
+    if generated_ids:
+        fresh = [p for p in fresh if p.id in generated_ids]
+    return [_prediction_read(p) for p in fresh]
+
+
+@router.get("/predictions", response_model=List[MaintenancePredictionRead])
+async def list_predictions(
+    status_filter: Optional[MaintenancePredictionStatus] = Query(None, alias="status"),
+    risk_level: Optional[MaintenancePredictionRisk] = None,
+    machine_id: Optional[str] = None,
+    limit: int = Query(100, le=200),
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(get_current_user),
+):
+    predictions = await svc.list_maintenance_predictions(
+        db,
+        status=status_filter,
+        risk_level=risk_level,
+        machine_id=machine_id,
+        limit=limit,
+    )
+    return [_prediction_read(p) for p in predictions]
+
+
+@router.patch("/predictions/{prediction_id}/review", response_model=MaintenancePredictionRead)
+async def review_prediction(
+    prediction_id: uuid.UUID,
+    body: MaintenancePredictionReview,
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(get_current_user),
+):
+    pred = await svc.get_maintenance_prediction(db, prediction_id)
+    if not pred:
+        raise HTTPException(status_code=404, detail="Prediction not found")
+    await svc.review_maintenance_prediction(
+        db,
+        pred,
+        status_value=body.status,
+        reviewed_by=body.reviewed_by,
+        notes=body.review_notes,
+    )
+    await db.commit()
+    pred = await svc.get_maintenance_prediction(db, prediction_id)
+    return _prediction_read(pred)
+
 
 @router.get("/reports/mtbf-mttr", response_model=List[MtbfMttrRow])
 async def report_mtbf_mttr(

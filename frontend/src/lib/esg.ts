@@ -9,6 +9,8 @@ export type SourceType =
 
 export type EmissionScope = "SCOPE1" | "SCOPE2" | "SCOPE3";
 export type ESGMetricType = "ENERGY" | "WATER" | "WASTE" | "RECYCLING" | "EMISSIONS";
+export type SupplierSustainabilityRisk = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+export type SupplierSustainabilityStatus = "DRAFT" | "ACTIVE" | "UNDER_REVIEW" | "ARCHIVED";
 
 export interface Activity {
   id: string;
@@ -133,6 +135,73 @@ export interface FleetImportResult {
   message: string;
 }
 
+export interface SupplierSustainabilityScore {
+  id: string;
+  supplier_id?: string;
+  supplier_name: string;
+  assessment_period_start: string;
+  assessment_period_end: string;
+  overall_score: number;
+  risk_level: SupplierSustainabilityRisk;
+  status: SupplierSustainabilityStatus;
+  emissions_score?: number;
+  energy_score?: number;
+  water_score?: number;
+  waste_score?: number;
+  compliance_score?: number;
+  labor_score?: number;
+  renewable_energy_pct?: number;
+  has_ghg_disclosure: boolean;
+  has_science_based_target: boolean;
+  iso14001_certified: boolean;
+  wastewater_policy_verified: boolean;
+  audit_findings?: string;
+  improvement_plan?: string;
+  notes?: string;
+  assessed_by?: string;
+  reviewed_at?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface EnergyIntensityRow {
+  product_id?: string;
+  product_sku?: string;
+  product_name: string;
+  batches: number;
+  allocation_count: number;
+  total_energy_kwh: number;
+  production_volume_kg: number;
+  kwh_per_kg?: number;
+  kwh_per_ton?: number;
+  total_energy_cost: number;
+  currency_code?: string;
+  data_quality: string;
+}
+
+export interface WastewaterComplianceSnapshot {
+  total_records: number;
+  compliant_records: number;
+  borderline_records: number;
+  non_compliant_records: number;
+  not_tested_records: number;
+  compliance_rate_pct?: number;
+  avg_effluent_cod_mgl?: number;
+  avg_effluent_bod_mgl?: number;
+  avg_effluent_tss_mgl?: number;
+  avg_effluent_ph?: number;
+  total_power_kwh: number;
+  latest_deviations: Array<Record<string, any>>;
+}
+
+export interface ESGIntelligenceDashboard {
+  supplier_score_count: number;
+  average_supplier_score?: number;
+  high_risk_supplier_count: number;
+  energy_intensity_rows: EnergyIntensityRow[];
+  wastewater_compliance: WastewaterComplianceSnapshot;
+}
+
 const BASE = "/api/v1/esg";
 
 export const esgApi = {
@@ -211,6 +280,32 @@ export const esgApi = {
   },
   async targetPerformance(): Promise<any[]> {
     const res = await apiClient.get(`${BASE}/reports/targets`);
+    return res.data?.data ?? res.data;
+  },
+
+  // Intelligence
+  async intelligenceDashboard(params?: { date_from?: string; date_to?: string }): Promise<ESGIntelligenceDashboard> {
+    const res = await apiClient.get(`${BASE}/intelligence/dashboard`, { params });
+    return res.data?.data ?? res.data;
+  },
+  async energyIntensity(params?: { date_from?: string; date_to?: string; limit?: number }): Promise<EnergyIntensityRow[]> {
+    const res = await apiClient.get(`${BASE}/intelligence/energy-intensity`, { params });
+    return res.data?.data ?? res.data;
+  },
+  async wastewaterCompliance(params?: { date_from?: string; date_to?: string }): Promise<WastewaterComplianceSnapshot> {
+    const res = await apiClient.get(`${BASE}/intelligence/wastewater-compliance`, { params });
+    return res.data?.data ?? res.data;
+  },
+  async listSupplierScores(params?: { supplier_id?: string; risk_level?: SupplierSustainabilityRisk; limit?: number }): Promise<SupplierSustainabilityScore[]> {
+    const res = await apiClient.get(`${BASE}/supplier-scores`, { params });
+    return res.data?.data ?? res.data;
+  },
+  async createSupplierScore(data: Omit<SupplierSustainabilityScore, "id" | "assessed_by" | "reviewed_at" | "created_at" | "updated_at">): Promise<SupplierSustainabilityScore> {
+    const res = await apiClient.post(`${BASE}/supplier-scores`, data);
+    return res.data?.data ?? res.data;
+  },
+  async updateSupplierScore(id: string, data: Partial<SupplierSustainabilityScore>): Promise<SupplierSustainabilityScore> {
+    const res = await apiClient.patch(`${BASE}/supplier-scores/${id}`, data);
     return res.data?.data ?? res.data;
   },
 

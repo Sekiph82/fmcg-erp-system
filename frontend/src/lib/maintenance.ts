@@ -5,6 +5,8 @@ export type PMFrequency = "DAILY" | "WEEKLY" | "MONTHLY" | "QUARTERLY" | "BIANNU
 export type PMStatus = "PENDING" | "IN_PROGRESS" | "COMPLETED" | "OVERDUE" | "SKIPPED";
 export type BreakdownSeverity = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
 export type BreakdownStatus = "OPEN" | "IN_REPAIR" | "RESOLVED";
+export type MaintenancePredictionStatus = "OPEN" | "REVIEWED" | "WORK_ORDER_CREATED" | "DISMISSED";
+export type MaintenancePredictionRisk = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
 
 export interface Asset {
   id: string;
@@ -139,6 +141,28 @@ export interface OverduePMRow {
   days_overdue: number;
 }
 
+export interface MaintenancePrediction {
+  id: string;
+  asset_id?: string | null;
+  asset_no?: string | null;
+  asset_name?: string | null;
+  machine_id: string;
+  machine_name?: string | null;
+  predicted_failure_date: string;
+  confidence: number;
+  risk_level: MaintenancePredictionRisk;
+  failure_mode: string;
+  recommended_action: string;
+  evidence_summary?: string | null;
+  source_metrics?: Record<string, any> | null;
+  status: MaintenancePredictionStatus;
+  generated_at?: string | null;
+  reviewed_by?: string | null;
+  reviewed_at?: string | null;
+  review_notes?: string | null;
+  created_at: string;
+}
+
 export const maintenanceApi = {
   // Assets
   async listAssets(params?: { status?: AssetStatus; line?: string }): Promise<Asset[]> {
@@ -229,6 +253,27 @@ export const maintenanceApi = {
   },
   async reportOverduePM(): Promise<OverduePMRow[]> {
     const res = await apiClient.get<OverduePMRow[]>("/api/v1/maintenance/reports/overdue-pm");
+    return res.data;
+  },
+
+  // Predictive maintenance
+  async generatePredictions(horizonDays = 30): Promise<MaintenancePrediction[]> {
+    const res = await apiClient.post<MaintenancePrediction[]>("/api/v1/maintenance/predictions/generate", null, {
+      params: { horizon_days: horizonDays },
+    });
+    return res.data;
+  },
+  async listPredictions(params?: {
+    status?: MaintenancePredictionStatus;
+    risk_level?: MaintenancePredictionRisk;
+    machine_id?: string;
+    limit?: number;
+  }): Promise<MaintenancePrediction[]> {
+    const res = await apiClient.get<MaintenancePrediction[]>("/api/v1/maintenance/predictions", { params });
+    return res.data;
+  },
+  async reviewPrediction(id: string, data: { status: MaintenancePredictionStatus; reviewed_by: string; review_notes?: string }): Promise<MaintenancePrediction> {
+    const res = await apiClient.patch<MaintenancePrediction>(`/api/v1/maintenance/predictions/${id}/review`, data);
     return res.data;
   },
 };

@@ -98,6 +98,9 @@ export default function ESGDashboardPage() {
           <Link href="/dashboard/esg/reports" className="px-3 py-2 text-sm border rounded-lg hover:bg-gray-50">
             Reports
           </Link>
+          <Link href="/dashboard/esg/intelligence" className="px-3 py-2 text-sm border rounded-lg hover:bg-gray-50">
+            Intelligence
+          </Link>
           <button
             onClick={handleSeedFactors}
             className="px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg"

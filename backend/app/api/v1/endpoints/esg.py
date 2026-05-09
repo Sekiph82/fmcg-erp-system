@@ -10,7 +10,7 @@ from app.db.session import get_db
 from app.core.deps import get_current_user
 from app.crud import esg as crud
 from app.services import esg_service as svc
-from app.models.esg import SourceType, EmissionScope, ESGMetricType
+from app.models.esg import SourceType, EmissionScope, ESGMetricType, SupplierSustainabilityRisk
 from app.schemas.esg import (
     ActivityCreate, ActivityRead,
     EmissionFactorCreate, EmissionFactorUpdate, EmissionFactorRead,
@@ -19,6 +19,9 @@ from app.schemas.esg import (
     ESGTargetCreate, ESGTargetRead,
     EmissionSummaryRow, EmissionBySourceRow, ResourceSummaryRow,
     ESGDashboard, ESGInsight, FleetImportResult,
+    SupplierSustainabilityScoreCreate, SupplierSustainabilityScoreUpdate,
+    SupplierSustainabilityScoreRead, EnergyIntensityRow,
+    WastewaterComplianceSnapshot, ESGIntelligenceDashboard,
 )
 
 router = APIRouter()
@@ -270,6 +273,72 @@ async def target_performance_report(
 
 
 # ── Import ────────────────────────────────────────────────────────────────────
+
+@router.get("/intelligence/dashboard", response_model=ESGIntelligenceDashboard)
+async def intelligence_dashboard(
+    date_from: Optional[date] = None,
+    date_to: Optional[date] = None,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(get_current_user),
+):
+    return await svc.get_esg_intelligence_dashboard(db, date_from=date_from, date_to=date_to)
+
+
+@router.get("/intelligence/energy-intensity", response_model=List[EnergyIntensityRow])
+async def energy_intensity_by_sku(
+    date_from: Optional[date] = None,
+    date_to: Optional[date] = None,
+    limit: int = Query(50, le=200),
+    db: AsyncSession = Depends(get_db),
+    _=Depends(get_current_user),
+):
+    return await svc.get_energy_intensity_by_sku(db, date_from=date_from, date_to=date_to, limit=limit)
+
+
+@router.get("/intelligence/wastewater-compliance", response_model=WastewaterComplianceSnapshot)
+async def wastewater_compliance_snapshot(
+    date_from: Optional[date] = None,
+    date_to: Optional[date] = None,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(get_current_user),
+):
+    return await svc.get_wastewater_compliance_snapshot(db, date_from=date_from, date_to=date_to)
+
+
+@router.get("/supplier-scores", response_model=List[SupplierSustainabilityScoreRead])
+async def list_supplier_scores(
+    supplier_id: Optional[uuid.UUID] = None,
+    risk_level: Optional[SupplierSustainabilityRisk] = None,
+    limit: int = Query(100, le=200),
+    db: AsyncSession = Depends(get_db),
+    _=Depends(get_current_user),
+):
+    return await svc.list_supplier_sustainability_scores(db, supplier_id=supplier_id, risk_level=risk_level, limit=limit)
+
+
+@router.post("/supplier-scores", response_model=SupplierSustainabilityScoreRead, status_code=201)
+async def create_supplier_score(
+    data: SupplierSustainabilityScoreCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    obj = await svc.create_supplier_sustainability_score(db, data, user_id=current_user.id)
+    await db.commit()
+    await db.refresh(obj)
+    return obj
+
+
+@router.patch("/supplier-scores/{score_id}", response_model=SupplierSustainabilityScoreRead)
+async def update_supplier_score(
+    score_id: uuid.UUID,
+    data: SupplierSustainabilityScoreUpdate,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(get_current_user),
+):
+    obj = await svc.update_supplier_sustainability_score(db, score_id, data)
+    await db.commit()
+    return obj
+
 
 @router.post("/import/fleet", response_model=FleetImportResult)
 async def import_fleet_fuel(

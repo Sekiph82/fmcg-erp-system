@@ -2,7 +2,7 @@ import uuid
 import enum
 from sqlalchemy import (
     Column, String, Text, Numeric, Boolean, Integer,
-    ForeignKey, Enum, DateTime, Date,
+    ForeignKey, Enum, DateTime, Date, Index,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
@@ -37,6 +37,20 @@ class ESGMetricType(str, enum.Enum):
     WASTE = "WASTE"
     RECYCLING = "RECYCLING"
     EMISSIONS = "EMISSIONS"
+
+
+class SupplierSustainabilityRisk(str, enum.Enum):
+    LOW = "LOW"
+    MEDIUM = "MEDIUM"
+    HIGH = "HIGH"
+    CRITICAL = "CRITICAL"
+
+
+class SupplierSustainabilityStatus(str, enum.Enum):
+    DRAFT = "DRAFT"
+    ACTIVE = "ACTIVE"
+    UNDER_REVIEW = "UNDER_REVIEW"
+    ARCHIVED = "ARCHIVED"
 
 
 class ActivityData(Base, TimestampMixin):
@@ -126,6 +140,52 @@ class ESGTarget(Base, TimestampMixin):
 
 # ── Gap 64: Carbon Footprint Per Product / Batch ──────────────────────────────
 
+# Gap 69: ESG Intelligence & Supplier Sustainability
+class SupplierSustainabilityScore(Base, TimestampMixin):
+    """
+    Periodic supplier ESG scorecard used by procurement and sustainability teams.
+    Keeps scored dimensions explicit so supplier risk can be audited and compared.
+    """
+    __tablename__ = "esg_supplier_sustainability_scores"
+    __table_args__ = (
+        Index("ix_esg_supplier_sustainability_period", "assessment_period_start", "assessment_period_end"),
+        Index("ix_esg_supplier_sustainability_risk", "risk_level", "status"),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    supplier_id = Column(UUID(as_uuid=True), ForeignKey("suppliers.id", ondelete="SET NULL"), nullable=True, index=True)
+    supplier_name = Column(String(255), nullable=False)
+    assessment_period_start = Column(Date, nullable=False)
+    assessment_period_end = Column(Date, nullable=False)
+
+    overall_score = Column(Numeric(5, 2), nullable=False)
+    risk_level = Column(Enum(SupplierSustainabilityRisk), nullable=False, default=SupplierSustainabilityRisk.MEDIUM)
+    status = Column(Enum(SupplierSustainabilityStatus), nullable=False, default=SupplierSustainabilityStatus.ACTIVE)
+
+    emissions_score = Column(Numeric(5, 2), nullable=True)
+    energy_score = Column(Numeric(5, 2), nullable=True)
+    water_score = Column(Numeric(5, 2), nullable=True)
+    waste_score = Column(Numeric(5, 2), nullable=True)
+    compliance_score = Column(Numeric(5, 2), nullable=True)
+    labor_score = Column(Numeric(5, 2), nullable=True)
+
+    renewable_energy_pct = Column(Numeric(6, 2), nullable=True)
+    has_ghg_disclosure = Column(Boolean, default=False, nullable=False)
+    has_science_based_target = Column(Boolean, default=False, nullable=False)
+    iso14001_certified = Column(Boolean, default=False, nullable=False)
+    wastewater_policy_verified = Column(Boolean, default=False, nullable=False)
+
+    audit_findings = Column(Text, nullable=True)
+    improvement_plan = Column(Text, nullable=True)
+    notes = Column(Text, nullable=True)
+    assessed_by = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    reviewed_at = Column(DateTime(timezone=True), nullable=True)
+
+    supplier = relationship("Supplier", foreign_keys=[supplier_id])
+    assessor = relationship("User", foreign_keys=[assessed_by])
+
+
+# Gap 64: Carbon Footprint Per Product / Batch
 class ProductCarbonFootprint(Base, TimestampMixin):
     """
     Granular carbon footprint per production batch and product.

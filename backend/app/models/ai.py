@@ -1,5 +1,6 @@
 import uuid
 import enum
+from datetime import datetime
 from sqlalchemy import (
     Column, String, Text, Numeric, Integer, Boolean,
     ForeignKey, Enum, Date, DateTime, JSON,
@@ -176,3 +177,57 @@ class NLCommandLog(Base, TimestampMixin):
     result_summary = Column(Text, nullable=True)
     error_message = Column(Text, nullable=True)
     executed_at = Column(DateTime, nullable=True)
+
+
+# ── Gap 67: AI Agent Governance Framework ────────────────────────────────────
+
+class AIAgentPolicy(Base, TimestampMixin):
+    """Governance policy defining what an AI agent is allowed to do."""
+    __tablename__ = "ai_agent_policies"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    agent_name = Column(String(200), nullable=False, unique=True, index=True)
+    description = Column(Text, nullable=True)
+    allowed_actions = Column(JSON, nullable=True)           # list of permitted action codes
+    forbidden_actions = Column(JSON, nullable=True)         # explicit deny list
+    max_cost_per_run_tokens = Column(Integer, nullable=True)  # token budget per run
+    requires_human_approval = Column(Boolean, default=True, nullable=False)
+    max_runs_per_hour = Column(Integer, nullable=True)
+    allowed_modules = Column(JSON, nullable=True)           # e.g. ["sales", "inventory"]
+    hallucination_guardrail = Column(Boolean, default=True, nullable=False)
+    rag_enabled = Column(Boolean, default=False, nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
+    created_by = Column(String(200), nullable=True)
+    notes = Column(Text, nullable=True)
+
+
+class AIAgentRunStatus(str, enum.Enum):
+    STARTED = "STARTED"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
+    BLOCKED = "BLOCKED"     # blocked by governance policy
+    FLAGGED = "FLAGGED"     # anomalous behaviour detected
+
+
+class AIAgentRun(Base, TimestampMixin):
+    """Audit log of every AI agent execution."""
+    __tablename__ = "ai_agent_runs"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    policy_id = Column(UUID(as_uuid=True), ForeignKey("ai_agent_policies.id", ondelete="SET NULL"), nullable=True, index=True)
+    agent_name = Column(String(200), nullable=False, index=True)
+    trigger = Column(String(200), nullable=True)             # user_request | scheduled | webhook
+    triggered_by = Column(String(200), nullable=True)
+    actions_taken = Column(JSON, nullable=True)              # list of actions performed
+    tokens_used = Column(Integer, nullable=True)
+    cost_usd = Column(Numeric(10, 6), nullable=True)
+    human_approved = Column(Boolean, nullable=True)
+    approved_by = Column(String(200), nullable=True)
+    status = Column(Enum(AIAgentRunStatus), nullable=False, default=AIAgentRunStatus.STARTED)
+    result_summary = Column(Text, nullable=True)
+    anomaly_flag = Column(Boolean, default=False, nullable=False)
+    anomaly_reason = Column(Text, nullable=True)
+    started_at = Column(DateTime, default=datetime.utcnow)
+    completed_at = Column(DateTime, nullable=True)
+
+    policy = relationship("AIAgentPolicy", foreign_keys=[policy_id])

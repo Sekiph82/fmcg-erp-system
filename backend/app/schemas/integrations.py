@@ -10,6 +10,7 @@ from pydantic import BaseModel, ConfigDict
 from app.models.integrations import (
     IntegrationProvider, IntegrationStatus, IntegrationLogStatus,
     MpesaTxStatus, BarcodeFormat, SyncStatus,
+    ConnectorStatus, PluginInstallStatus, PluginLifecycleAction,
 )
 
 
@@ -287,3 +288,78 @@ class MachineStatusRow(BaseModel):
     last_value: Optional[str]
     last_seen: Optional[datetime]
     event_count_24h: int
+
+
+# Marketplace / plugin architecture
+
+class MarketplaceConnectorRead(BaseModel):
+    connector_id: str
+    connector_code: str
+    name: str
+    category: str
+    description: Optional[str] = None
+    icon_emoji: Optional[str] = None
+    auth_type: Optional[str] = None
+    status: ConnectorStatus
+    is_configured: bool
+    config_guide: Optional[str] = None
+    docs_url: Optional[str] = None
+    current_version: str
+    module_key: Optional[str] = None
+    dependency_codes: List[str] = []
+    required_permissions: List[str] = []
+    supports_tenant_config: bool = True
+    is_core: bool = False
+    installation_status: Optional[PluginInstallStatus] = None
+    installed_version: Optional[str] = None
+    tenant_key: Optional[str] = None
+
+
+class PluginInstallRequest(BaseModel):
+    tenant_key: str = "default"
+    environment: str = "sandbox"
+    config: Dict[str, Any] = {}
+    notes: Optional[str] = None
+
+
+class PluginConfigUpdate(BaseModel):
+    tenant_key: str = "default"
+    environment: Optional[str] = None
+    config: Optional[Dict[str, Any]] = None
+    notes: Optional[str] = None
+
+
+class PluginInstallationRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    connector_id: Optional[str]
+    connector_code: str
+    tenant_key: str
+    installed_version: str
+    status: PluginInstallStatus
+    environment: str
+    config_json: Optional[str]
+    installed_by_id: Optional[str]
+    installed_at: Optional[datetime]
+    disabled_at: Optional[datetime]
+    last_updated_at: Optional[datetime]
+    notes: Optional[str]
+    created_at: datetime
+    updated_at: datetime
+
+
+class PluginLifecycleEventRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    installation_id: Optional[str]
+    connector_code: str
+    tenant_key: str
+    action: PluginLifecycleAction
+    previous_status: Optional[str]
+    new_status: Optional[str]
+    actor_id: Optional[str]
+    message: Optional[str]
+    metadata_json: Optional[str]
+    created_at: datetime

@@ -4,7 +4,10 @@ from decimal import Decimal
 from datetime import datetime, date
 import uuid
 
-from app.models.esg import SourceType, EmissionScope, ESGMetricType
+from app.models.esg import (
+    SourceType, EmissionScope, ESGMetricType,
+    SupplierSustainabilityRisk, SupplierSustainabilityStatus,
+)
 
 
 # ── Activity Data ─────────────────────────────────────────────────────────────
@@ -115,6 +118,102 @@ class ESGTargetRead(ESGTargetCreate):
     actual_value: Optional[Decimal] = None
     progress_pct: Optional[Decimal] = None
     model_config = {"from_attributes": True}
+
+
+# â”€â”€ ESG Intelligence â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+class SupplierSustainabilityScoreCreate(BaseModel):
+    supplier_id: Optional[uuid.UUID] = None
+    supplier_name: str
+    assessment_period_start: date
+    assessment_period_end: date
+    overall_score: Decimal
+    risk_level: SupplierSustainabilityRisk = SupplierSustainabilityRisk.MEDIUM
+    status: SupplierSustainabilityStatus = SupplierSustainabilityStatus.ACTIVE
+    emissions_score: Optional[Decimal] = None
+    energy_score: Optional[Decimal] = None
+    water_score: Optional[Decimal] = None
+    waste_score: Optional[Decimal] = None
+    compliance_score: Optional[Decimal] = None
+    labor_score: Optional[Decimal] = None
+    renewable_energy_pct: Optional[Decimal] = None
+    has_ghg_disclosure: bool = False
+    has_science_based_target: bool = False
+    iso14001_certified: bool = False
+    wastewater_policy_verified: bool = False
+    audit_findings: Optional[str] = None
+    improvement_plan: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class SupplierSustainabilityScoreUpdate(BaseModel):
+    supplier_name: Optional[str] = None
+    assessment_period_start: Optional[date] = None
+    assessment_period_end: Optional[date] = None
+    overall_score: Optional[Decimal] = None
+    risk_level: Optional[SupplierSustainabilityRisk] = None
+    status: Optional[SupplierSustainabilityStatus] = None
+    emissions_score: Optional[Decimal] = None
+    energy_score: Optional[Decimal] = None
+    water_score: Optional[Decimal] = None
+    waste_score: Optional[Decimal] = None
+    compliance_score: Optional[Decimal] = None
+    labor_score: Optional[Decimal] = None
+    renewable_energy_pct: Optional[Decimal] = None
+    has_ghg_disclosure: Optional[bool] = None
+    has_science_based_target: Optional[bool] = None
+    iso14001_certified: Optional[bool] = None
+    wastewater_policy_verified: Optional[bool] = None
+    audit_findings: Optional[str] = None
+    improvement_plan: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class SupplierSustainabilityScoreRead(SupplierSustainabilityScoreCreate):
+    id: uuid.UUID
+    assessed_by: Optional[uuid.UUID] = None
+    reviewed_at: Optional[datetime] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+    model_config = {"from_attributes": True}
+
+
+class EnergyIntensityRow(BaseModel):
+    product_id: Optional[uuid.UUID] = None
+    product_sku: Optional[str] = None
+    product_name: str
+    batches: int
+    allocation_count: int
+    total_energy_kwh: Decimal
+    production_volume_kg: Decimal
+    kwh_per_kg: Optional[Decimal] = None
+    kwh_per_ton: Optional[Decimal] = None
+    total_energy_cost: Decimal
+    currency_code: Optional[str] = None
+    data_quality: str
+
+
+class WastewaterComplianceSnapshot(BaseModel):
+    total_records: int
+    compliant_records: int
+    borderline_records: int
+    non_compliant_records: int
+    not_tested_records: int
+    compliance_rate_pct: Optional[Decimal] = None
+    avg_effluent_cod_mgl: Optional[Decimal] = None
+    avg_effluent_bod_mgl: Optional[Decimal] = None
+    avg_effluent_tss_mgl: Optional[Decimal] = None
+    avg_effluent_ph: Optional[Decimal] = None
+    total_power_kwh: Decimal
+    latest_deviations: List[dict]
+
+
+class ESGIntelligenceDashboard(BaseModel):
+    supplier_score_count: int
+    average_supplier_score: Optional[Decimal] = None
+    high_risk_supplier_count: int
+    energy_intensity_rows: List[EnergyIntensityRow]
+    wastewater_compliance: WastewaterComplianceSnapshot
 
 
 # ── Reports ───────────────────────────────────────────────────────────────────

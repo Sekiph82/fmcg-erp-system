@@ -4,26 +4,33 @@ Handles activity ingestion, emission calculation, reporting, and AI insights.
 """
 from __future__ import annotations
 
-from datetime import datetime, timezone, date, timedelta
+from datetime import datetime, timezone, date, timedelta, time
 from decimal import Decimal
 from typing import Optional, List
 import uuid
 
 from fastapi import HTTPException
-from sqlalchemy import select, and_, func
+from sqlalchemy import select, and_, func, desc, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models.esg import (
     ActivityData, EmissionFactor, EmissionRecord, ResourceMetric, ESGTarget,
+    SupplierSustainabilityScore,
     SourceType, EmissionScope, ESGMetricType,
+    SupplierSustainabilityRisk,
 )
-from app.models.master import Warehouse
+from app.models.master import Supplier, Warehouse
+from app.models.utility_management import (
+    UtilityCostAllocation, UtilityType, WastewaterRecord, ComplianceStatus,
+)
 from app.crud import esg as crud
 from app.schemas.esg import (
     ActivityCreate, EmissionSummaryRow, EmissionBySourceRow,
     EmissionByLocationRow, ResourceSummaryRow, ESGDashboard,
     ESGInsight, FleetImportResult,
+    SupplierSustainabilityScoreCreate, SupplierSustainabilityScoreUpdate,
+    EnergyIntensityRow, WastewaterComplianceSnapshot, ESGIntelligenceDashboard,
 )
 
 _SCOPE_MAP: dict[SourceType, EmissionScope] = {
@@ -328,6 +335,301 @@ async def get_target_performance(db: AsyncSession) -> list:
 
 
 # ── AI Agents ─────────────────────────────────────────────────────────────────
+
+def _date_to_start(dt: Optional[date]) -> Optional[datetime]:
+    return datetime.combine(dt, time.min) if dt else None
+
+
+def _date_to_end(dt: Optional[date]) -> Optional[datetime]:
+    return datetime.combine(dt, time.max) if dt else None
+
+
+def _risk_from_score(score: Decimal) -> SupplierSustainabilityRisk:
+    if score >= Decimal("80"):
+        return SupplierSustainabilityRisk.LOW
+    if score >= Decimal("60"):
+        return SupplierSustainabilityRisk.MEDIUM
+    if score >= Decimal("40"):
+        return SupplierSustainabilityRisk.HIGH
+    return SupplierSustainabilityRisk.CRITICAL
+
+
+async def create_supplier_sustainability_score(
+    db: AsyncSession,
+    data: SupplierSustainabilityScoreCreate,
+    user_id: Optional[uuid.UUID] = None,
+) -> SupplierSustainabilityScore:
+    if data.assessment_period_end < data.assessment_period_start:
+        raise HTTPException(400, "Assessment period end cannot be before start")
+    if data.overall_score < 0 or data.overall_score > 100:
+        raise HTTPException(400, "Overall score must be between 0 and 100")
+
+    supplier_name = data.supplier_name
+    if data.supplier_id:
+        supplier = await db.get(Supplier, data.supplier_id)
+        if not supplier:
+            raise HTTPException(404, "Supplier not found")
+        supplier_name = supplier.name
+
+    payload = data.model_dump(exclude={"supplier_name"})
+    payload["risk_level"] = payload.get("risk_level") or _risk_from_score(data.overall_score)
+    obj = SupplierSustainabilityScore(
+        **payload,
+        supplier_name=supplier_name,
+        assessed_by=user_id,
+    )
+    db.add(obj)
+    await db.flush()
+    await db.refresh(obj)
+    return obj
+
+
+async def list_supplier_sustainability_scores(
+    db: AsyncSession,
+    supplier_id: Optional[uuid.UUID] = None,
+    risk_level: Optional[SupplierSustainabilityRisk] = None,
+    limit: int = 100,
+) -> List[SupplierSustainabilityScore]:
+    q = (
+        select(SupplierSustainabilityScore)
+        .options(selectinload(SupplierSustainabilityScore.supplier))
+        .order_by(desc(SupplierSustainabilityScore.assessment_period_end), desc(SupplierSustainabilityScore.created_at))
+        .limit(limit)
+    )
+    if supplier_id:
+        q = q.where(SupplierSustainabilityScore.supplier_id == supplier_id)
+    if risk_level:
+        q = q.where(SupplierSustainabilityScore.risk_level == risk_level)
+    rows = await db.execute(q)
+    return list(rows.scalars().all())
+
+
+async def update_supplier_sustainability_score(
+    db: AsyncSession,
+    score_id: uuid.UUID,
+    data: SupplierSustainabilityScoreUpdate,
+) -> SupplierSustainabilityScore:
+    obj = await db.get(SupplierSustainabilityScore, score_id)
+    if not obj:
+        raise HTTPException(404, "Supplier sustainability score not found")
+
+    patch = data.model_dump(exclude_unset=True)
+    start = patch.get("assessment_period_start", obj.assessment_period_start)
+    end = patch.get("assessment_period_end", obj.assessment_period_end)
+    if end < start:
+        raise HTTPException(400, "Assessment period end cannot be before start")
+    if "overall_score" in patch and (patch["overall_score"] < 0 or patch["overall_score"] > 100):
+        raise HTTPException(400, "Overall score must be between 0 and 100")
+
+    for key, value in patch.items():
+        setattr(obj, key, value)
+    obj.reviewed_at = _now()
+    await db.flush()
+    await db.refresh(obj)
+    return obj
+
+
+def _allocation_energy_kwh(row: UtilityCostAllocation) -> tuple[Decimal, bool]:
+    qty = Decimal(str(row.allocated_quantity or 0))
+    unit = (row.quantity_unit or "").strip().lower()
+    if qty <= 0:
+        return Decimal("0"), False
+    if "kwh" in unit or "kw h" in unit or "kilowatt" in unit:
+        return qty, True
+    if row.utility_type in (UtilityType.ELECTRICITY, UtilityType.SOLAR) and not unit:
+        return qty, True
+    return Decimal("0"), False
+
+
+async def get_energy_intensity_by_sku(
+    db: AsyncSession,
+    date_from: Optional[date] = None,
+    date_to: Optional[date] = None,
+    limit: int = 50,
+) -> List[EnergyIntensityRow]:
+    q = (
+        select(UtilityCostAllocation)
+        .options(selectinload(UtilityCostAllocation.product))
+        .where(UtilityCostAllocation.product_id.isnot(None))
+        .where(UtilityCostAllocation.utility_type.in_([UtilityType.ELECTRICITY, UtilityType.SOLAR]))
+        .order_by(desc(UtilityCostAllocation.allocation_date))
+        .limit(2000)
+    )
+    if date_from:
+        q = q.where(UtilityCostAllocation.allocation_date >= date_from)
+    if date_to:
+        q = q.where(UtilityCostAllocation.allocation_date <= date_to)
+
+    rows = list((await db.execute(q)).scalars().all())
+    grouped: dict[str, dict] = {}
+    for row in rows:
+        product = row.product
+        key = str(row.product_id)
+        if key not in grouped:
+            grouped[key] = {
+                "product_id": row.product_id,
+                "product_sku": product.sku if product else None,
+                "product_name": product.name if product else row.target_name or "Unlinked product",
+                "batches": set(),
+                "allocation_count": 0,
+                "total_energy_kwh": Decimal("0"),
+                "production_volume_kg": Decimal("0"),
+                "total_energy_cost": Decimal("0"),
+                "currency_code": row.currency_code,
+                "converted": 0,
+                "skipped": 0,
+            }
+        item = grouped[key]
+        energy_kwh, converted = _allocation_energy_kwh(row)
+        item["allocation_count"] += 1
+        item["converted"] += 1 if converted else 0
+        item["skipped"] += 0 if converted else 1
+        item["total_energy_kwh"] += energy_kwh
+        item["production_volume_kg"] += Decimal(str(row.production_volume_kg or 0))
+        item["total_energy_cost"] += Decimal(str(row.allocated_cost or row.total_cost or 0))
+        if row.batch_no:
+            item["batches"].add(row.batch_no)
+
+    out: List[EnergyIntensityRow] = []
+    for item in grouped.values():
+        volume = item["production_volume_kg"]
+        energy = item["total_energy_kwh"]
+        kwh_per_kg = (energy / volume).quantize(Decimal("0.0001")) if volume > 0 else None
+        kwh_per_ton = (energy / (volume / Decimal("1000"))).quantize(Decimal("0.01")) if volume > 0 else None
+        if item["converted"] == 0:
+            quality = "NO_KWH_QUANTITY"
+        elif volume <= 0:
+            quality = "MISSING_PRODUCTION_VOLUME"
+        elif item["skipped"] > 0:
+            quality = "PARTIAL"
+        else:
+            quality = "GOOD"
+        out.append(EnergyIntensityRow(
+            product_id=item["product_id"],
+            product_sku=item["product_sku"],
+            product_name=item["product_name"],
+            batches=len(item["batches"]),
+            allocation_count=item["allocation_count"],
+            total_energy_kwh=energy.quantize(Decimal("0.001")),
+            production_volume_kg=volume.quantize(Decimal("0.001")),
+            kwh_per_kg=kwh_per_kg,
+            kwh_per_ton=kwh_per_ton,
+            total_energy_cost=item["total_energy_cost"].quantize(Decimal("0.01")),
+            currency_code=item["currency_code"],
+            data_quality=quality,
+        ))
+
+    return sorted(out, key=lambda r: r.kwh_per_kg or Decimal("-1"), reverse=True)[:limit]
+
+
+async def get_wastewater_compliance_snapshot(
+    db: AsyncSession,
+    date_from: Optional[date] = None,
+    date_to: Optional[date] = None,
+) -> WastewaterComplianceSnapshot:
+    filters = []
+    start_dt = _date_to_start(date_from)
+    end_dt = _date_to_end(date_to)
+    if start_dt:
+        filters.append(WastewaterRecord.record_datetime >= start_dt)
+    if end_dt:
+        filters.append(WastewaterRecord.record_datetime <= end_dt)
+
+    status_q = select(WastewaterRecord.compliance_status, func.count(WastewaterRecord.id)).group_by(WastewaterRecord.compliance_status)
+    avg_q = select(
+        func.avg(WastewaterRecord.effluent_cod_mgl),
+        func.avg(WastewaterRecord.effluent_bod_mgl),
+        func.avg(WastewaterRecord.effluent_tss_mgl),
+        func.avg(WastewaterRecord.effluent_ph),
+        func.sum(WastewaterRecord.power_consumed_kwh),
+    )
+    deviation_q = (
+        select(WastewaterRecord)
+        .where(or_(
+            WastewaterRecord.compliance_status.in_([ComplianceStatus.NON_COMPLIANT, ComplianceStatus.BORDERLINE]),
+            WastewaterRecord.is_anomaly == True,  # noqa: E712
+        ))
+        .order_by(desc(WastewaterRecord.record_datetime))
+        .limit(8)
+    )
+    if filters:
+        status_q = status_q.where(and_(*filters))
+        avg_q = avg_q.where(and_(*filters))
+        deviation_q = deviation_q.where(and_(*filters))
+
+    counts = {status: count for status, count in (await db.execute(status_q)).all()}
+    compliant = counts.get(ComplianceStatus.COMPLIANT, 0)
+    borderline = counts.get(ComplianceStatus.BORDERLINE, 0)
+    non_compliant = counts.get(ComplianceStatus.NON_COMPLIANT, 0)
+    not_tested = counts.get(ComplianceStatus.NOT_TESTED, 0)
+    total = compliant + borderline + non_compliant + not_tested
+    tested = total - not_tested
+    compliance_rate = (Decimal(compliant) / Decimal(tested) * 100).quantize(Decimal("0.1")) if tested > 0 else None
+
+    avg_row = (await db.execute(avg_q)).one()
+    deviations = list((await db.execute(deviation_q)).scalars().all())
+
+    def dec(value, scale: str = "0.001") -> Optional[Decimal]:
+        return Decimal(str(value)).quantize(Decimal(scale)) if value is not None else None
+
+    return WastewaterComplianceSnapshot(
+        total_records=total,
+        compliant_records=compliant,
+        borderline_records=borderline,
+        non_compliant_records=non_compliant,
+        not_tested_records=not_tested,
+        compliance_rate_pct=compliance_rate,
+        avg_effluent_cod_mgl=dec(avg_row[0]),
+        avg_effluent_bod_mgl=dec(avg_row[1]),
+        avg_effluent_tss_mgl=dec(avg_row[2]),
+        avg_effluent_ph=dec(avg_row[3], "0.01"),
+        total_power_kwh=dec(avg_row[4]) or Decimal("0.000"),
+        latest_deviations=[
+            {
+                "id": str(row.id),
+                "record_no": row.record_no,
+                "record_datetime": row.record_datetime.isoformat(),
+                "status": row.compliance_status.value,
+                "effluent_cod_mgl": float(row.effluent_cod_mgl) if row.effluent_cod_mgl is not None else None,
+                "effluent_bod_mgl": float(row.effluent_bod_mgl) if row.effluent_bod_mgl is not None else None,
+                "effluent_tss_mgl": float(row.effluent_tss_mgl) if row.effluent_tss_mgl is not None else None,
+                "effluent_ph": float(row.effluent_ph) if row.effluent_ph is not None else None,
+                "deviation_reason": row.deviation_reason,
+                "corrective_action": row.corrective_action,
+            }
+            for row in deviations
+        ],
+    )
+
+
+async def get_esg_intelligence_dashboard(
+    db: AsyncSession,
+    date_from: Optional[date] = None,
+    date_to: Optional[date] = None,
+) -> ESGIntelligenceDashboard:
+    scores_q = await db.execute(
+        select(
+            func.count(SupplierSustainabilityScore.id),
+            func.avg(SupplierSustainabilityScore.overall_score),
+        )
+    )
+    count, avg_score = scores_q.one()
+    high_risk_q = await db.execute(
+        select(func.count(SupplierSustainabilityScore.id)).where(
+            SupplierSustainabilityScore.risk_level.in_([
+                SupplierSustainabilityRisk.HIGH,
+                SupplierSustainabilityRisk.CRITICAL,
+            ])
+        )
+    )
+    return ESGIntelligenceDashboard(
+        supplier_score_count=count or 0,
+        average_supplier_score=Decimal(str(avg_score)).quantize(Decimal("0.1")) if avg_score is not None else None,
+        high_risk_supplier_count=high_risk_q.scalar() or 0,
+        energy_intensity_rows=await get_energy_intensity_by_sku(db, date_from=date_from, date_to=date_to, limit=10),
+        wastewater_compliance=await get_wastewater_compliance_snapshot(db, date_from=date_from, date_to=date_to),
+    )
+
 
 async def ai_emission_hotspot(
     db: AsyncSession,

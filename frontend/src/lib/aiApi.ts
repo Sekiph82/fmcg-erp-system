@@ -166,6 +166,101 @@ export interface AILog {
   created_at: string;
 }
 
+export type NLRiskLevel = "LOW" | "MEDIUM" | "HIGH";
+export type NLCommandStatus = "PENDING_CONFIRMATION" | "CONFIRMED" | "EXECUTED" | "REJECTED" | "FAILED";
+
+export interface NLCommandResult {
+  id: string;
+  command: string;
+  parsed_intent: string;
+  parsed_action: string;
+  target_endpoint: string | null;
+  risk_level: NLRiskLevel;
+  requires_confirmation: boolean;
+  status: NLCommandStatus;
+  params_needed: string | null;
+  note: string;
+}
+
+export interface NLCommandHistoryItem {
+  id: string;
+  command_text: string;
+  parsed_intent: string;
+  risk_level: NLRiskLevel;
+  status: NLCommandStatus;
+  confirmed_by: string | null;
+  result_summary: string | null;
+  created_at: string;
+}
+
+export type AIAgentRunStatus = "STARTED" | "COMPLETED" | "FAILED" | "BLOCKED" | "FLAGGED";
+
+export interface AIGovernanceDashboard {
+  active_policies: number;
+  total_runs: number;
+  flagged_runs: number;
+  total_tokens_consumed: number;
+  runs_by_status: Record<string, number>;
+}
+
+export interface AIAgentPolicy {
+  id: string;
+  agent_name: string;
+  description: string | null;
+  allowed_actions: string[] | null;
+  forbidden_actions: string[] | null;
+  max_cost_per_run_tokens: number | null;
+  requires_human_approval: boolean;
+  max_runs_per_hour: number | null;
+  allowed_modules: string[] | null;
+  hallucination_guardrail: boolean;
+  rag_enabled: boolean;
+  is_active: boolean;
+  created_by: string | null;
+  created_at: string;
+}
+
+export interface AIAgentPolicyInput {
+  agent_name: string;
+  description?: string;
+  allowed_actions?: string[];
+  forbidden_actions?: string[];
+  max_cost_per_run_tokens?: number;
+  requires_human_approval: boolean;
+  max_runs_per_hour?: number;
+  allowed_modules?: string[];
+  hallucination_guardrail: boolean;
+  rag_enabled: boolean;
+  notes?: string;
+}
+
+export interface AIAgentRun {
+  id: string;
+  agent_name: string;
+  trigger: string | null;
+  triggered_by: string | null;
+  status: AIAgentRunStatus;
+  tokens_used: number | null;
+  cost_usd: number | null;
+  anomaly_flag: boolean;
+  anomaly_reason: string | null;
+  started_at: string;
+  result_summary: string | null;
+}
+
+export interface AIAgentRunInput {
+  agent_name: string;
+  trigger?: string;
+  triggered_by?: string;
+  actions_taken?: string[];
+  tokens_used?: number;
+  cost_usd?: number;
+  status: AIAgentRunStatus;
+  result_summary?: string;
+  anomaly_flag: boolean;
+  anomaly_reason?: string;
+}
+
 // ── Error helpers ─────────────────────────────────────────────────────────────
 
 export interface AIError {
@@ -270,6 +365,38 @@ export const aiApi = {
   // Logs
   listLogs: (limit?: number): Promise<AILog[]> =>
     apiClient.get<AILog[]>("/api/v1/ai/logs/", { params: { limit } }).then((r) => r.data),
+
+  // Natural Language ERP Control
+  submitNLCommand: (command: string, userName?: string): Promise<NLCommandResult> =>
+    apiClient.post<NLCommandResult>("/api/v1/ai/nl-command", { command, user_name: userName }).then((r) => r.data),
+
+  executeNLCommand: (id: string, confirmedBy: string): Promise<{ id: string; status: NLCommandStatus; result_summary: string }> =>
+    apiClient.post(`/api/v1/ai/nl-command/${id}/execute`, null, { params: { confirmed_by: confirmedBy } }).then((r) => r.data),
+
+  rejectNLCommand: (id: string): Promise<{ id: string; status: NLCommandStatus }> =>
+    apiClient.post(`/api/v1/ai/nl-command/${id}/reject`).then((r) => r.data),
+
+  listNLCommandHistory: (limit?: number): Promise<NLCommandHistoryItem[]> =>
+    apiClient.get<NLCommandHistoryItem[]>("/api/v1/ai/nl-command/history", { params: { limit } }).then((r) => r.data),
+
+  // AI Agent Governance
+  governanceDashboard: (): Promise<AIGovernanceDashboard> =>
+    apiClient.get<AIGovernanceDashboard>("/api/v1/ai/governance/dashboard").then((r) => r.data),
+
+  listAgentPolicies: (activeOnly = false): Promise<AIAgentPolicy[]> =>
+    apiClient.get<AIAgentPolicy[]>("/api/v1/ai/governance/policies", { params: { active_only: activeOnly } }).then((r) => r.data),
+
+  createAgentPolicy: (body: AIAgentPolicyInput): Promise<AIAgentPolicy> =>
+    apiClient.post<AIAgentPolicy>("/api/v1/ai/governance/policies", body).then((r) => r.data),
+
+  toggleAgentPolicy: (id: string): Promise<{ id: string; is_active: boolean }> =>
+    apiClient.patch(`/api/v1/ai/governance/policies/${id}/toggle`).then((r) => r.data),
+
+  listAgentRuns: (params?: { agent_name?: string; flagged_only?: boolean; limit?: number }): Promise<AIAgentRun[]> =>
+    apiClient.get<AIAgentRun[]>("/api/v1/ai/governance/runs", { params }).then((r) => r.data),
+
+  logAgentRun: (body: AIAgentRunInput): Promise<{ id: string; agent_name: string; status: AIAgentRunStatus }> =>
+    apiClient.post("/api/v1/ai/governance/runs", body).then((r) => r.data),
 
   // ERP Copilot Chat
   chat: (message: string, conversation_history?: Array<{ role: string; content: string }>): Promise<AIChatResponse> =>

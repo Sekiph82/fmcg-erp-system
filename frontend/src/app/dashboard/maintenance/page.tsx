@@ -140,6 +140,7 @@ export default function MaintenanceDashboardPage() {
           { label: "Asset Register", desc: "Manage machines, equipment and production lines", href: "/dashboard/maintenance/assets" },
           { label: "PM Plans & Work Orders", desc: "Preventive maintenance schedules and completion tracking", href: "/dashboard/maintenance/plans" },
           { label: "Breakdown Records", desc: "Log and resolve equipment failures with MES linkage", href: "/dashboard/maintenance/breakdowns" },
+          { label: "Predictive Maintenance", desc: "IoT-based failure risk queue and maintenance recommendations", href: "/dashboard/maintenance/predictive" },
           { label: "Spare Parts", desc: "Spare part inventory with reorder alerts", href: "/dashboard/maintenance/spares" },
           { label: "Maintenance Reports", desc: "MTBF, MTTR, downtime by machine, overdue PM list", href: "/dashboard/maintenance/reports" },
         ].map((item) => (

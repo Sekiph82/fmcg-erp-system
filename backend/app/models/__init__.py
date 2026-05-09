@@ -55,6 +55,7 @@ from app.models.secondary_sales import (
 )
 from app.models.esg import (
     ActivityData, EmissionFactor, EmissionRecord, ResourceMetric, ESGTarget,
+    SupplierSustainabilityScore,
 )
 from app.models.payroll_ke import (
     EmployeePayrollProfile, KeTaxBand, KeStatutoryRate, KeNhifTier,
@@ -98,6 +99,7 @@ from app.models.integrations import (
     IntegrationConfig, IntegrationLog, IntegrationMpesaTransaction,
     CrmCustomerMapping, EcommerceOrderMapping, EcommerceProductMapping,
     MachineEvent, BarcodeLabel,
+    ConnectorRegistry, PluginInstallation, PluginLifecycleEvent,
 )
 from app.models.operational_log import OperationalLog, MpesaStatusHistory
 
@@ -641,6 +643,7 @@ __all__ = [
     "VehicleType", "VehicleStatus", "FuelType", "TripStatus",
     "MaintenanceType", "IncidentType", "IncidentStatus", "DriverStatus",
     "Product", "Material", "Supplier", "Warehouse",
+    "SupplierSustainabilityScore",
     "Stock", "Lot", "StockMovement",
     "Recipe", "RecipeItem", "ProcessParameter",
     "ProductionPlan", "ProductionPlanLine", "ProductionOrder",
@@ -680,6 +683,7 @@ __all__ = [
     "IntegrationConfig", "IntegrationLog", "IntegrationMpesaTransaction",
     "CrmCustomerMapping", "EcommerceOrderMapping", "EcommerceProductMapping",
     "MachineEvent", "BarcodeLabel",
+    "ConnectorRegistry", "PluginInstallation", "PluginLifecycleEvent",
     "OperationalLog", "MpesaStatusHistory",
     # Import History
     "ImportHistory", "ImportStatus",

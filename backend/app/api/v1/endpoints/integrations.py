@@ -5,6 +5,7 @@ All external system interactions go through this router.
 from __future__ import annotations
 
 import uuid
+import json
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status, Request
@@ -17,7 +18,8 @@ from app.models.integrations import (
     IntegrationConfig, IntegrationLog, IntegrationMpesaTransaction,
     IntegrationProvider, IntegrationLogStatus, BarcodeLabel,
     CrmCustomerMapping, EcommerceOrderMapping, MachineEvent,
-    ConnectorRegistry, ConnectorStatus,
+    ConnectorRegistry, ConnectorStatus, PluginInstallStatus, PluginLifecycleAction,
+    PluginInstallation,
 )
 from app.schemas.integrations import (
     IntegrationConfigCreate, IntegrationConfigUpdate, IntegrationConfigRead,
@@ -29,6 +31,8 @@ from app.schemas.integrations import (
     CrmSyncRequest, CrmSyncResult, CrmMappingRead,
     EcommerceImportRequest, EcommerceImportResult, EcommerceOrderMappingRead, InventorySyncResult,
     MachineEventCreate, MachineEventRead, MachineStatusRow,
+    MarketplaceConnectorRead, PluginInstallRequest, PluginConfigUpdate,
+    PluginInstallationRead, PluginLifecycleEventRead,
 )
 from app.services import integration_service as svc
 from app.services import mpesa_daraja_service as mpesa_svc
@@ -776,16 +780,70 @@ async def _ensure_seed(db: AsyncSession):
             auth_type=c.get("auth"),
             status=ConnectorStatus(c.get("status", "coming_soon")),
             config_guide=c.get("guide"),
+            current_version=c.get("version", "1.0.0"),
+            module_key=c.get("module_key", c["code"]),
+            dependency_codes=json.dumps(c.get("dependencies", [])),
+            required_permissions=json.dumps(c.get("permissions", ["integrations.view"])),
+            supports_tenant_config=c.get("supports_tenant_config", True),
+            is_core=c.get("is_core", False),
             created_at=datetime.utcnow(),
         )
         db.add(entry)
     await db.commit()
 
 
-@router.get("/marketplace", dependencies=[Depends(require_permission("integrations", "view"))])
+def _json_list(raw: Optional[str]) -> list[str]:
+    if not raw:
+        return []
+    try:
+        parsed = json.loads(raw)
+    except json.JSONDecodeError:
+        return []
+    return [str(item) for item in parsed] if isinstance(parsed, list) else []
+
+
+def _installation_read(obj) -> dict:
+    return {
+        "id": str(obj.id),
+        "connector_id": str(obj.connector_id) if obj.connector_id else None,
+        "connector_code": obj.connector_code,
+        "tenant_key": obj.tenant_key,
+        "installed_version": obj.installed_version,
+        "status": obj.status,
+        "environment": obj.environment,
+        "config_json": obj.config_json,
+        "installed_by_id": str(obj.installed_by_id) if obj.installed_by_id else None,
+        "installed_at": obj.installed_at,
+        "disabled_at": obj.disabled_at,
+        "last_updated_at": obj.last_updated_at,
+        "notes": obj.notes,
+        "created_at": obj.created_at,
+        "updated_at": obj.updated_at,
+    }
+
+
+def _event_read(obj) -> dict:
+    return {
+        "id": str(obj.id),
+        "installation_id": str(obj.installation_id) if obj.installation_id else None,
+        "connector_code": obj.connector_code,
+        "tenant_key": obj.tenant_key,
+        "action": obj.action,
+        "previous_status": obj.previous_status,
+        "new_status": obj.new_status,
+        "actor_id": str(obj.actor_id) if obj.actor_id else None,
+        "message": obj.message,
+        "metadata_json": obj.metadata_json,
+        "created_at": obj.created_at,
+    }
+
+
+@router.get("/marketplace", response_model=List[MarketplaceConnectorRead],
+            dependencies=[Depends(require_permission("integrations", "view"))])
 async def list_marketplace(
     category: Optional[str] = Query(None),
     status: Optional[str] = Query(None),
+    tenant_key: str = "default",
     db: AsyncSession = Depends(get_db),
 ):
     """List all connectors in the integration marketplace."""
@@ -794,6 +852,10 @@ async def list_marketplace(
     # Mark which connectors are configured
     cfg_r = await db.execute(select(IntegrationConfig.provider).where(IntegrationConfig.is_active == True))
     configured_providers = {r[0].value.lower() for r in cfg_r.all()}
+    install_r = await db.execute(
+        select(PluginInstallation).where(PluginInstallation.tenant_key == tenant_key)
+    )
+    installations = {row.connector_code: row for row in install_r.scalars().all()}
 
     q = select(ConnectorRegistry).order_by(ConnectorRegistry.category, ConnectorRegistry.name)
     if category:
@@ -813,9 +875,21 @@ async def list_marketplace(
             "icon_emoji": c.icon_emoji,
             "auth_type": c.auth_type,
             "status": c.status,
-            "is_configured": c.connector_code in configured_providers or c.is_configured,
+            "description": c.description,
+            "is_configured": c.connector_code in configured_providers or c.is_configured or (
+                c.connector_code in installations and installations[c.connector_code].status != PluginInstallStatus.UNINSTALLED
+            ),
             "config_guide": c.config_guide,
             "docs_url": c.docs_url,
+            "current_version": c.current_version,
+            "module_key": c.module_key,
+            "dependency_codes": _json_list(c.dependency_codes),
+            "required_permissions": _json_list(c.required_permissions),
+            "supports_tenant_config": c.supports_tenant_config,
+            "is_core": c.is_core,
+            "installation_status": installations[c.connector_code].status if c.connector_code in installations else None,
+            "installed_version": installations[c.connector_code].installed_version if c.connector_code in installations else None,
+            "tenant_key": tenant_key if c.connector_code in installations else None,
         }
         for c in connectors
     ]
@@ -835,11 +909,108 @@ async def marketplace_categories(db: AsyncSession = Depends(get_db)):
     return [{"category": row.category, "total": row.total, "active": int(row.active or 0)} for row in r.all()]
 
 
+@router.get("/marketplace/installations", response_model=List[PluginInstallationRead],
+            dependencies=[Depends(require_permission("integrations", "view"))])
+async def list_marketplace_installations(
+    tenant_key: Optional[str] = None,
+    status: Optional[PluginInstallStatus] = None,
+    db: AsyncSession = Depends(get_db),
+):
+    rows = await svc.list_installations(db, tenant_key=tenant_key, status=status)
+    return [_installation_read(row) for row in rows]
+
+
+@router.get("/marketplace/events", response_model=List[PluginLifecycleEventRead],
+            dependencies=[Depends(require_permission("integrations", "view"))])
+async def list_marketplace_events(
+    connector_code: Optional[str] = None,
+    tenant_key: Optional[str] = None,
+    limit: int = Query(100, le=500),
+    db: AsyncSession = Depends(get_db),
+):
+    rows = await svc.list_plugin_events(db, connector_code=connector_code, tenant_key=tenant_key, limit=limit)
+    return [_event_read(row) for row in rows]
+
+
+@router.post("/marketplace/{connector_code}/install", response_model=PluginInstallationRead,
+             dependencies=[Depends(require_permission("integrations", "edit"))])
+async def install_marketplace_connector(
+    connector_code: str,
+    payload: PluginInstallRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    row = await svc.install_plugin(
+        db,
+        connector_code=connector_code,
+        tenant_key=payload.tenant_key,
+        environment=payload.environment,
+        config=payload.config,
+        notes=payload.notes,
+        actor_id=current_user.id,
+    )
+    out = _installation_read(row)
+    await db.commit()
+    return out
+
+
+@router.patch("/marketplace/{connector_code}/config", response_model=PluginInstallationRead,
+              dependencies=[Depends(require_permission("integrations", "edit"))])
+async def update_marketplace_connector_config(
+    connector_code: str,
+    payload: PluginConfigUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    row = await svc.update_plugin_config(
+        db,
+        connector_code=connector_code,
+        tenant_key=payload.tenant_key,
+        environment=payload.environment,
+        config=payload.config,
+        notes=payload.notes,
+        actor_id=current_user.id,
+    )
+    out = _installation_read(row)
+    await db.commit()
+    return out
+
+
+@router.post("/marketplace/{connector_code}/lifecycle/{action}", response_model=PluginInstallationRead,
+             dependencies=[Depends(require_permission("integrations", "edit"))])
+async def transition_marketplace_connector(
+    connector_code: str,
+    action: PluginLifecycleAction,
+    tenant_key: str = "default",
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    if action not in (
+        PluginLifecycleAction.ENABLE,
+        PluginLifecycleAction.DISABLE,
+        PluginLifecycleAction.UNINSTALL,
+        PluginLifecycleAction.UPDATE,
+    ):
+        raise HTTPException(400, "Unsupported marketplace lifecycle action")
+    row = await svc.transition_plugin(
+        db,
+        connector_code=connector_code,
+        action=action,
+        tenant_key=tenant_key,
+        actor_id=current_user.id,
+    )
+    out = _installation_read(row)
+    await db.commit()
+    return out
+
+
 @router.post("/marketplace/{connector_code}/test",
              dependencies=[Depends(require_permission("integrations", "view"))])
 async def test_connector(
     connector_code: str,
+    tenant_key: str = "default",
     db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
 ):
     """Test a configured connector (stub — real tests wired per connector)."""
     r = await db.execute(
@@ -852,15 +1023,20 @@ async def test_connector(
     if connector.status == ConnectorStatus.COMING_SOON:
         return {"connector_code": connector_code, "result": "NOT_AVAILABLE", "message": "Connector not yet available. Coming soon."}
 
-    # Check if configured
-    cfg_r = await db.execute(
-        select(IntegrationConfig).where(
-            IntegrationConfig.provider == connector_code.upper(),
-            IntegrationConfig.is_active == True,
-        )
-    )
-    cfg = cfg_r.scalar_one_or_none()
-    if not cfg:
-        return {"connector_code": connector_code, "result": "NOT_CONFIGURED", "message": "No active configuration found. Set up integration first."}
+    installation = await svc.get_installation(db, connector_code, tenant_key=tenant_key)
+    if not installation or installation.status in (PluginInstallStatus.DISABLED, PluginInstallStatus.UNINSTALLED):
+        return {"connector_code": connector_code, "result": "NOT_CONFIGURED", "message": "No active marketplace installation found. Install or enable the connector first."}
 
-    return {"connector_code": connector_code, "result": "OK", "message": "Configuration found. Full connection test requires live credentials.", "config_id": str(cfg.id)}
+    await svc.record_plugin_event(
+        db,
+        installation=installation,
+        connector_code=connector_code,
+        tenant_key=installation.tenant_key,
+        action=PluginLifecycleAction.TEST,
+        previous_status=installation.status.value,
+        new_status=installation.status.value,
+        actor_id=current_user.id,
+        message="Connector configuration metadata test passed",
+    )
+    await db.commit()
+    return {"connector_code": connector_code, "result": "OK", "message": "Marketplace installation is active. Live credential test is connector-specific.", "installation_id": str(installation.id)}
