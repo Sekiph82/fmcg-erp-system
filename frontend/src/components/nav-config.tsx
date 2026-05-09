@@ -1097,6 +1097,7 @@ export const NAV_CONFIG: NavEntry[] = [
       { label: "Advances",       href: "/dashboard/expenses/advances",    permission: "hr.view" },
       { label: "Categories",     href: "/dashboard/expenses/categories",  permission: "hr.view" },
       { label: "Policies",       href: "/dashboard/expenses/policies",    permission: "hr.view" },
+      { label: "Receipt OCR",     href: "/dashboard/expenses/receipt-ocr", permission: "hr.view" },
       { label: "Reports",        href: "/dashboard/expenses/reports",     permission: "hr.view" },
       { label: "AI Insights",    href: "/dashboard/expenses/ai",          permission: "hr.view" },
     ],

@@ -139,3 +139,40 @@ class AIScenario(Base, TimestampMixin):
 
     request = relationship("AIRequest")
     created_by = relationship("User")
+
+
+# ── Gap 66: Natural Language ERP Control ─────────────────────────────────────
+
+class NLCommandStatus(str, enum.Enum):
+    PENDING_CONFIRMATION = "PENDING_CONFIRMATION"
+    CONFIRMED = "CONFIRMED"
+    EXECUTED = "EXECUTED"
+    REJECTED = "REJECTED"
+    FAILED = "FAILED"
+
+
+class NLCommandLog(Base, TimestampMixin):
+    """
+    Log of natural language commands parsed and (optionally) executed.
+    Commands go through: parse → confirm → execute.
+    """
+    __tablename__ = "ai_nl_commands"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(String(100), nullable=True, index=True)
+    user_name = Column(String(200), nullable=True)
+
+    command_text = Column(Text, nullable=False)
+    parsed_intent = Column(String(200), nullable=True)
+    parsed_action = Column(Text, nullable=True)
+    target_endpoint = Column(String(300), nullable=True)
+    params_json = Column(JSON, nullable=True)
+    requires_confirmation = Column(Boolean, default=True, nullable=False)
+    risk_level = Column(String(20), default="MEDIUM", nullable=False)
+
+    status = Column(Enum(NLCommandStatus), nullable=False, default=NLCommandStatus.PENDING_CONFIRMATION)
+    confirmed_by = Column(String(200), nullable=True)
+    confirmed_at = Column(DateTime, nullable=True)
+    result_summary = Column(Text, nullable=True)
+    error_message = Column(Text, nullable=True)
+    executed_at = Column(DateTime, nullable=True)

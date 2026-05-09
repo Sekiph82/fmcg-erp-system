@@ -78,6 +78,7 @@ from app.api.v1.endpoints import (
     market_intelligence,
     copacking,
     iot,
+    receipt_ocr,
 )
 
 api_router = APIRouter()
@@ -319,3 +320,5 @@ api_router.include_router(market_intelligence.router, prefix="/market-intel", ta
 api_router.include_router(iot.router, prefix="/iot", tags=["iot"])
 # ── Co-Packing / Toll Manufacturing ──────────────────────────────────────────
 api_router.include_router(copacking.router, prefix="/copacking", tags=["copacking"])
+# ── AI Receipt OCR ────────────────────────────────────────────────────────────
+api_router.include_router(receipt_ocr.router, prefix="/receipt-ocr", tags=["receipt-ocr"])

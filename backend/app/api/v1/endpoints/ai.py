@@ -574,3 +574,210 @@ async def ai_health():
         }
     except Exception as e:
         return {"status": "error", "error": str(e)}
+
+
+# ── Gap 66: Natural Language ERP Control ─────────────────────────────────────
+
+from app.models.ai import NLCommandLog, NLCommandStatus
+
+
+class NLCommandIn(BaseModel):
+    command: str
+    user_name: Optional[str] = None
+
+
+# Intent parser — maps NL patterns to structured actions
+_INTENT_PATTERNS = [
+    {
+        "keywords": ["approve", "po", "purchase"],
+        "intent": "APPROVE_PO",
+        "action": "Approve pending purchase orders under the specified amount threshold.",
+        "endpoint": "POST /api/v1/approvals/{id}/approve",
+        "risk": "MEDIUM",
+        "params_hint": "threshold_amount, approver_name",
+    },
+    {
+        "keywords": ["run", "mrp"],
+        "intent": "RUN_MRP",
+        "action": "Trigger an MRP run for demand planning.",
+        "endpoint": "POST /api/v1/mrp/runs",
+        "risk": "LOW",
+        "params_hint": "planning_horizon_days",
+    },
+    {
+        "keywords": ["dunning", "overdue", "reminder"],
+        "intent": "SEND_DUNNING",
+        "action": "Send payment reminder emails to overdue customers.",
+        "endpoint": "POST /api/v1/dunning/send-batch",
+        "risk": "MEDIUM",
+        "params_hint": "days_overdue_threshold",
+    },
+    {
+        "keywords": ["reorder", "low stock", "replenish"],
+        "intent": "TRIGGER_REORDER",
+        "action": "Create purchase requisitions for all below-reorder-point items.",
+        "endpoint": "POST /api/v1/procurement/suggestions",
+        "risk": "HIGH",
+        "params_hint": "warehouse_id",
+    },
+    {
+        "keywords": ["recall", "batch", "lot"],
+        "intent": "INITIATE_RECALL",
+        "action": "Initiate a product recall for a specific batch/lot.",
+        "endpoint": "POST /api/v1/traceability/recalls",
+        "risk": "HIGH",
+        "params_hint": "lot_number, recall_reason",
+    },
+    {
+        "keywords": ["payroll", "run payroll"],
+        "intent": "RUN_PAYROLL",
+        "action": "Trigger payroll calculation for a specified period.",
+        "endpoint": "POST /api/v1/payroll-ke/runs",
+        "risk": "HIGH",
+        "params_hint": "period_month",
+    },
+    {
+        "keywords": ["report", "generate", "export"],
+        "intent": "GENERATE_REPORT",
+        "action": "Generate and export a specified report.",
+        "endpoint": "GET /api/v1/reports-builder/reports/{id}/export",
+        "risk": "LOW",
+        "params_hint": "report_name_or_id",
+    },
+]
+
+
+def _parse_intent(command: str) -> dict:
+    """Rule-based intent extraction. Production: use LLM function calling."""
+    lower = command.lower()
+    for pattern in _INTENT_PATTERNS:
+        if any(kw in lower for kw in pattern["keywords"]):
+            return pattern
+    return {
+        "intent": "UNKNOWN",
+        "action": "Could not parse command into a known ERP action.",
+        "endpoint": None,
+        "risk": "LOW",
+        "params_hint": None,
+    }
+
+
+@router.post("/nl-command", status_code=201)
+async def submit_nl_command(
+    payload: NLCommandIn,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    """
+    Parse a natural language command into an ERP action plan.
+    Returns parsed intent + required confirmation before execution.
+    Production: replace _parse_intent() with LLM function-calling (GPT-4 / Claude).
+    """
+    parsed = _parse_intent(payload.command)
+
+    cmd = NLCommandLog(
+        user_id=str(current_user.id),
+        user_name=payload.user_name or getattr(current_user, "full_name", None) or getattr(current_user, "username", None),
+        command_text=payload.command,
+        parsed_intent=parsed["intent"],
+        parsed_action=parsed["action"],
+        target_endpoint=parsed.get("endpoint"),
+        params_json={"params_needed": parsed.get("params_hint")},
+        requires_confirmation=parsed["risk"] in ("MEDIUM", "HIGH"),
+        risk_level=parsed["risk"],
+    )
+    db.add(cmd)
+    await db.commit()
+    await db.refresh(cmd)
+
+    return {
+        "id": str(cmd.id),
+        "command": payload.command,
+        "parsed_intent": cmd.parsed_intent,
+        "parsed_action": cmd.parsed_action,
+        "target_endpoint": cmd.target_endpoint,
+        "risk_level": cmd.risk_level,
+        "requires_confirmation": cmd.requires_confirmation,
+        "status": cmd.status,
+        "params_needed": parsed.get("params_hint"),
+        "note": (
+            "Confirm execution via POST /ai/nl-command/{id}/execute. "
+            "HIGH risk commands require explicit confirmation."
+            if cmd.requires_confirmation else
+            "Low-risk command — auto-executable. Use POST /ai/nl-command/{id}/execute."
+        ),
+    }
+
+
+@router.post("/nl-command/{cmd_id}/execute")
+async def execute_nl_command(
+    cmd_id: str,
+    confirmed_by: str = Query(...),
+    db: AsyncSession = Depends(get_db),
+    _=Depends(get_current_user),
+):
+    """
+    Confirm and execute a parsed NL command.
+    Stub: marks as EXECUTED, returns action plan.
+    Production: actually call target_endpoint with extracted params.
+    """
+    from datetime import datetime
+    r = await db.execute(select(NLCommandLog).where(NLCommandLog.id == uuid.UUID(cmd_id)))
+    cmd = r.scalar_one_or_none()
+    if not cmd:
+        raise HTTPException(404, "Command not found")
+    if cmd.status == NLCommandStatus.EXECUTED:
+        raise HTTPException(400, "Already executed")
+
+    cmd.status = NLCommandStatus.EXECUTED
+    cmd.confirmed_by = confirmed_by
+    cmd.confirmed_at = datetime.utcnow()
+    cmd.executed_at = datetime.utcnow()
+    cmd.result_summary = (
+        f"STUB: Command '{cmd.parsed_intent}' marked as executed. "
+        f"Production: call {cmd.target_endpoint} with appropriate parameters."
+    )
+    await db.commit()
+    return {
+        "id": cmd_id,
+        "status": "EXECUTED",
+        "parsed_intent": cmd.parsed_intent,
+        "parsed_action": cmd.parsed_action,
+        "result_summary": cmd.result_summary,
+        "confirmed_by": confirmed_by,
+    }
+
+
+@router.post("/nl-command/{cmd_id}/reject")
+async def reject_nl_command(
+    cmd_id: str,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(get_current_user),
+):
+    r = await db.execute(select(NLCommandLog).where(NLCommandLog.id == uuid.UUID(cmd_id)))
+    cmd = r.scalar_one_or_none()
+    if not cmd:
+        raise HTTPException(404, "Command not found")
+    cmd.status = NLCommandStatus.REJECTED
+    await db.commit()
+    return {"id": cmd_id, "status": "REJECTED"}
+
+
+@router.get("/nl-command/history")
+async def nl_command_history(
+    limit: int = Query(50, le=200),
+    db: AsyncSession = Depends(get_db),
+    _=Depends(get_current_user),
+):
+    q = select(NLCommandLog).order_by(desc(NLCommandLog.created_at)).limit(limit)
+    rows = (await db.execute(q)).scalars().all()
+    return [
+        {
+            "id": str(r.id), "command_text": r.command_text,
+            "parsed_intent": r.parsed_intent, "risk_level": r.risk_level,
+            "status": r.status, "confirmed_by": r.confirmed_by,
+            "result_summary": r.result_summary,
+            "created_at": r.created_at.isoformat() if r.created_at else "",
+        }
+        for r in rows
+    ]
