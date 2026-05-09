@@ -650,8 +650,8 @@ function CurrenciesTab() {
 
 // ── Page ───────────────────────────────────────────────────────────────────────
 
-export default function UtilitiesPage() {
-  const [activeTab, setActiveTab] = useState<Tab>("configs");
+export default function UtilitiesPage({ defaultTab }: { defaultTab?: Tab } = {}) {
+  const [activeTab, setActiveTab] = useState<Tab>(defaultTab ?? "configs");
 
   return (
     <RequirePermission permission="utilities.view">

@@ -23,7 +23,7 @@ async def get_current_user(
     from app.models.role import Role
 
     # Reject explicitly logged-out tokens
-    if token_blocklist.is_blocked(token):
+    if await token_blocklist.is_blocked(token):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token has been revoked. Please log in again.")
 
     user_id = decode_token(token)

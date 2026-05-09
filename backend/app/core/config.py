@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import model_validator
 from typing import List
 import json
 
@@ -10,6 +11,7 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "FMCG ERP"
     VERSION: str = "0.1.0"
     API_V1_STR: str = "/api/v1"
+    ENVIRONMENT: str = "development"  # set to "production" in prod
 
     # Security
     SECRET_KEY: str = "changeme"
@@ -122,6 +124,15 @@ class Settings(BaseSettings):
         if self.GEMINI_API_KEY:
             return self.GEMINI_MODEL
         return "mock-v1"
+
+    @model_validator(mode="after")
+    def _production_guards(self) -> "Settings":
+        if self.ENVIRONMENT == "production":
+            if self.SECRET_KEY == "changeme":
+                raise ValueError("SECRET_KEY must be changed from the default value in production")
+            if not self.PASSWORD_REQUIRE_SPECIAL:
+                raise ValueError("PASSWORD_REQUIRE_SPECIAL must be True in production")
+        return self
 
     def parse_cors(self, v: str) -> List[str]:
         try:

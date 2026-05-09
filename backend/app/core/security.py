@@ -1,4 +1,5 @@
 import logging
+import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
@@ -26,7 +27,7 @@ def create_access_token(subject: Any, expires_delta: timedelta | None = None) ->
     expire = datetime.now(timezone.utc) + (
         expires_delta or timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     )
-    return jwt.encode({"sub": str(subject), "exp": expire}, settings.SECRET_KEY, algorithm=ALGORITHM)
+    return jwt.encode({"sub": str(subject), "exp": expire, "jti": str(uuid.uuid4())}, settings.SECRET_KEY, algorithm=ALGORITHM)
 
 
 def decode_token(token: str) -> str | None:

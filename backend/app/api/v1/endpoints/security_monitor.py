@@ -86,7 +86,7 @@ async def security_dashboard(
     )).scalar() or 0
 
     # Active blocked tokens
-    blocked_tokens = token_blocklist.store_size()
+    blocked_tokens = await token_blocklist.store_size()
 
     # Top 5 IPs with most failures
     top_ips_rows = (await db.execute(

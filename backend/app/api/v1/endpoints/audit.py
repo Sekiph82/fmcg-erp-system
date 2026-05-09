@@ -266,7 +266,7 @@ async def list_retention_policies(db: AsyncSession = Depends(get_db)):
     ]
 
 
-@router.post("/retention", status_code=201, dependencies=[Depends(require_permission("audit", "view"))])
+@router.post("/retention", status_code=201, dependencies=[Depends(require_permission("audit", "export"))])
 async def create_retention_policy(
     payload: RetentionPolicyIn,
     db: AsyncSession = Depends(get_db),

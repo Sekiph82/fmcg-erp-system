@@ -152,7 +152,7 @@ async def logout(
             datetime.now(timezone.utc) +
             timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
         ).timestamp()
-        token_blocklist.add(token, expire_at)
+        await token_blocklist.add(token, expire_at)
 
     await audit_crud.log_event(
         db,

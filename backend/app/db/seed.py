@@ -554,7 +554,7 @@ ROLE_DEFINITIONS = {
             "finance.view", "finance.create", "finance.edit", "finance.approve", "finance.export",
             "mpesa.initiate_payment", "mpesa.view_transactions", "mpesa.retry_transaction",
             "mpesa.cancel_payment", "mpesa.reconcile_payment", "mpesa.view_payment_logs",
-            "payroll_ke.view", "payroll_ke.approve", "payroll_ke.export",
+            "payroll_ke.view", "payroll_ke.create", "payroll_ke.approve", "payroll_ke.export",
             "sales.view",
             # Import: own module only
             *_import("finance"),
@@ -587,7 +587,7 @@ ROLE_DEFINITIONS = {
             "inventory.view", "inventory.create", "inventory.edit", "inventory.delete",
             "warehouses.view", "wms.view", "wms.create", "wms.edit",
             "products.view", "materials.view",
-            "stock_movement.edit",
+            "stock_movement.edit", "stock_movement.delete",
             "cycle_count.view", "cycle_count.create", "cycle_count.approve",
             # Import: own module only
             *_import("inventory", "warehouses", "wms"),
@@ -596,7 +596,7 @@ ROLE_DEFINITIONS = {
     "production_supervisor": {
         "description": "Production planning and execution",
         "permissions": [
-            "production.view", "production.create", "production.edit",
+            "production.view", "production.create", "production.edit", "production.approve",
             "inventory.view", "materials.view", "quality.view",
             # Import: own module only
             *_import("production", "materials"),

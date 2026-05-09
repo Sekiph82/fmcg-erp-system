@@ -270,8 +270,8 @@ function TicketDetail({ ticket, onClose }: { ticket: Ticket; onClose: () => void
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 
-export default function HelpdeskPage() {
-  const [statusFilter, setStatusFilter] = useState<TicketStatus | "">("");
+export default function HelpdeskPage({ defaultStatus }: { defaultStatus?: TicketStatus | "" } = {}) {
+  const [statusFilter, setStatusFilter] = useState<TicketStatus | "">(defaultStatus ?? "");
   const [catFilter, setCatFilter] = useState<TicketCategory | "">("");
   const [priFilter, setPriFilter] = useState<TicketPriority | "">("");
   const [showCreate, setShowCreate] = useState(false);

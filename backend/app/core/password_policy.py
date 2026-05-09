@@ -20,7 +20,7 @@ MIN_LENGTH = 8
 REQUIRE_UPPERCASE = True
 REQUIRE_LOWERCASE = True
 REQUIRE_DIGIT = True
-REQUIRE_SPECIAL = False      # Enable in production for higher security posture
+REQUIRE_SPECIAL = False      # default; overridden at runtime by settings.PASSWORD_REQUIRE_SPECIAL
 
 _SPECIAL_CHARS = r"!@#$%^&*()_+\-=\[\]{};':\"\\|,.<>\/?`~"
 
@@ -46,6 +46,9 @@ def validate_password(password: str, username: str | None = None) -> None:
     Validate a plaintext password against the policy.
     Raises PasswordPolicyError with list of all violations.
     """
+    from app.core.config import settings  # late import to avoid circular
+    require_special = settings.PASSWORD_REQUIRE_SPECIAL
+
     violations: list[str] = []
 
     if len(password) < MIN_LENGTH:
@@ -60,7 +63,7 @@ def validate_password(password: str, username: str | None = None) -> None:
     if REQUIRE_DIGIT and not re.search(r"\d", password):
         violations.append("Must contain at least one digit.")
 
-    if REQUIRE_SPECIAL and not re.search(rf"[{re.escape(_SPECIAL_CHARS)}]", password):
+    if require_special and not re.search(rf"[{re.escape(_SPECIAL_CHARS)}]", password):
         violations.append("Must contain at least one special character.")
 
     if password.lower() in _COMMON_PASSWORDS or password in _COMMON_PASSWORDS:
