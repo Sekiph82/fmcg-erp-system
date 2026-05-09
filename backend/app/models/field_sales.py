@@ -39,7 +39,7 @@ class SalesRep(Base, TimestampMixin):
     phone = Column(String(50), nullable=True)
     region = Column(String(100), nullable=True)
     territory = Column(Text, nullable=True)
-    vehicle_type = Column(Enum(VehicleType), nullable=False, default=VehicleType.MOTORBIKE)
+    vehicle_type = Column(Enum(VehicleType, name="fieldsales_vehicletype"), nullable=False, default=VehicleType.MOTORBIKE)
     is_active = Column(Boolean, default=True, nullable=False)
 
     user = relationship("User")

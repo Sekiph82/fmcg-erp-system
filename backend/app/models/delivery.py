@@ -40,7 +40,7 @@ class DeliveryTrip(Base, TimestampMixin):
     driver_phone = Column(String(50), nullable=True)
     warehouse_id = Column(UUID(as_uuid=True), ForeignKey("warehouses.id", ondelete="RESTRICT"), nullable=True)
     rep_id = Column(UUID(as_uuid=True), ForeignKey("sales_reps.id", ondelete="SET NULL"), nullable=True)
-    status = Column(Enum(TripStatus), nullable=False, default=TripStatus.PLANNED)
+    status = Column(Enum(TripStatus, name="delivery_tripstatus"), nullable=False, default=TripStatus.PLANNED)
     capacity_kg = Column(Numeric(10, 2), nullable=True)  # max load
     route_notes = Column(Text, nullable=True)
     departed_at = Column(DateTime(timezone=True), nullable=True)

@@ -319,7 +319,7 @@ class ShelfLifeAlert(Base, TimestampMixin):
 
     id           = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     alert_type   = Column(Enum(AlertType),    nullable=False, index=True)
-    severity     = Column(Enum(AlertSeverity),nullable=False)
+    severity     = Column(Enum(AlertSeverity, name="shelflife_alertseverity"),nullable=False)
     is_resolved  = Column(Boolean, default=False, nullable=False)
     resolved_at  = Column(DateTime(timezone=True), nullable=True)
 

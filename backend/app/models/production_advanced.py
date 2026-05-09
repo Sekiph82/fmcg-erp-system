@@ -248,7 +248,7 @@ class ProductionSchedule(Base, TimestampMixin):
     shift_name          = Column(String(100), nullable=True)           # denormalized for CSV import
     start_time          = Column(DateTime(timezone=True), nullable=False)
     end_time            = Column(DateTime(timezone=True), nullable=False)
-    status              = Column(Enum(ScheduleStatus), nullable=False, default=ScheduleStatus.PLANNED)
+    status              = Column(Enum(ScheduleStatus, name="production_schedulestatus"), nullable=False, default=ScheduleStatus.PLANNED)
     priority            = Column(Enum(SchedulePriority), nullable=False, default=SchedulePriority.MEDIUM)
     conflict_flag       = Column(Boolean, nullable=False, default=False)
     notes               = Column(Text, nullable=True)

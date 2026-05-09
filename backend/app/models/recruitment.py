@@ -111,7 +111,7 @@ class RecruitmentStage(Base):
     stage_code = Column(String(50), unique=True, nullable=False)
     stage_name = Column(String(100), nullable=False)
     sequence = Column(Integer, nullable=False, default=1)
-    stage_type = Column(Enum(StageType), default=StageType.ACTIVE)
+    stage_type = Column(Enum(StageType, name="recruitment_stagetype"), default=StageType.ACTIVE)
     active_flag = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 

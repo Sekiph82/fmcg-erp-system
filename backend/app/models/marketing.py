@@ -242,7 +242,7 @@ class Campaign(Base, TimestampMixin):
     actual_revenue   = Column(Numeric(16, 2), nullable=True)
     expected_roi     = Column(Numeric(8, 4), nullable=True)
     actual_roi       = Column(Numeric(8, 4), nullable=True)
-    approval_status  = Column(SAEnum(ApprovalStatus), nullable=False, default=ApprovalStatus.PENDING)
+    approval_status  = Column(SAEnum(ApprovalStatus, name="marketing_approvalstatus"), nullable=False, default=ApprovalStatus.PENDING)
     owner_user_id    = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     approved_by_id   = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     notes            = Column(Text, nullable=True)
@@ -381,7 +381,7 @@ class TradeSpend(Base, TimestampMixin):
     amount          = Column(Numeric(16, 2), nullable=False)
     currency        = Column(String(10), default="KES", nullable=False)
     spend_date      = Column(Date, nullable=False)
-    approval_status = Column(SAEnum(ApprovalStatus), nullable=False, default=ApprovalStatus.PENDING)
+    approval_status = Column(SAEnum(ApprovalStatus, name="marketing_approvalstatus"), nullable=False, default=ApprovalStatus.PENDING)
     approved_by_id  = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     notes           = Column(Text, nullable=True)
 
@@ -400,7 +400,7 @@ class BrandSpend(Base, TimestampMixin):
     amount          = Column(Numeric(16, 2), nullable=False)
     currency        = Column(String(10), default="KES", nullable=False)
     spend_date      = Column(Date, nullable=False)
-    approval_status = Column(SAEnum(ApprovalStatus), nullable=False, default=ApprovalStatus.PENDING)
+    approval_status = Column(SAEnum(ApprovalStatus, name="marketing_approvalstatus"), nullable=False, default=ApprovalStatus.PENDING)
     approved_by_id  = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     notes           = Column(Text, nullable=True)
 

@@ -313,7 +313,7 @@ class MpesaTransaction(Base, TimestampMixin):
     amount = Column(Numeric(16, 4), nullable=False)
     mpesa_request_id = Column(String(100), nullable=True, index=True)   # CheckoutRequestID from Daraja
     mpesa_reference = Column(String(100), nullable=True)                # MpesaReceiptNumber on success
-    status = Column(Enum(MpesaTxStatus), nullable=False, default=MpesaTxStatus.PENDING)
+    status = Column(Enum(MpesaTxStatus, name="sales_mpesatxstatus"), nullable=False, default=MpesaTxStatus.PENDING)
     result_code = Column(Integer, nullable=True)
     result_description = Column(Text, nullable=True)
     initiated_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)

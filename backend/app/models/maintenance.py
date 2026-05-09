@@ -80,7 +80,7 @@ class Asset(Base, TimestampMixin):
     install_date = Column(Date, nullable=True)
     warranty_expiry = Column(Date, nullable=True)
     location = Column(String(255), nullable=True)
-    status = Column(Enum(AssetStatus), nullable=False, default=AssetStatus.ACTIVE)
+    status = Column(Enum(AssetStatus, name="maintenance_assetstatus"), nullable=False, default=AssetStatus.ACTIVE)
     notes = Column(Text, nullable=True)
 
     pm_plans = relationship("PMPlan", back_populates="asset", cascade="all, delete-orphan")

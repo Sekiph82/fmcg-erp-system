@@ -159,7 +159,7 @@ class RegulatoryFlag(Base, TimestampMixin):
     product_id = Column(UUID(as_uuid=True), ForeignKey("products.id", ondelete="CASCADE"), nullable=True, index=True)
     material_id = Column(UUID(as_uuid=True), ForeignKey("materials.id", ondelete="CASCADE"), nullable=True, index=True)
     hs_code = Column(String(20), nullable=True)
-    status = Column(Enum(ComplianceStatus), nullable=False, default=ComplianceStatus.PENDING)
+    status = Column(Enum(ComplianceStatus, name="tax_compliancestatus"), nullable=False, default=ComplianceStatus.PENDING)
     authority = Column(String(255), nullable=True)                 # KRA, KEBS, KEPHIS, etc.
     license_no = Column(String(200), nullable=True)
     issue_date = Column(Date, nullable=True)

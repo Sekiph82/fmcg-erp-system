@@ -63,7 +63,7 @@ class ApprovalRequest(Base, TimestampMixin):
     object_ref    = Column(String(100), nullable=False)           # e.g. "PO-0042"
     amount        = Column(Numeric(18, 2), nullable=True)
     currency      = Column(String(10), nullable=False, default="KES")
-    status        = Column(Enum(ApprovalStatus), nullable=False, default=ApprovalStatus.PENDING)
+    status        = Column(Enum(ApprovalStatus, name="workflow_approvalstatus"), nullable=False, default=ApprovalStatus.PENDING)
     current_level = Column(Integer, nullable=False, default=1)
     max_level     = Column(Integer, nullable=False, default=1)
     description   = Column(Text, nullable=True)
@@ -90,7 +90,7 @@ class ApprovalStep(Base, TimestampMixin):
                            nullable=False, index=True)
     level         = Column(Integer, nullable=False)
     required_role = Column(String(100), nullable=False)
-    status        = Column(Enum(ApprovalStatus), nullable=False, default=ApprovalStatus.PENDING)
+    status        = Column(Enum(ApprovalStatus, name="workflow_approvalstatus"), nullable=False, default=ApprovalStatus.PENDING)
     sla_deadline  = Column(DateTime(timezone=True), nullable=True)
     action_at     = Column(DateTime(timezone=True), nullable=True)
     action_by_id  = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)

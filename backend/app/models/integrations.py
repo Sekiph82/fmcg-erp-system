@@ -131,7 +131,7 @@ class IntegrationMpesaTransaction(Base, TimestampMixin):
     related_entity_type = Column(String(50), nullable=True)    # "sales_order" | "invoice" | "local_cost"
     related_entity_id = Column(UUID(as_uuid=True), nullable=True, index=True)
 
-    status = Column(Enum(MpesaTxStatus), nullable=False, default=MpesaTxStatus.PENDING)
+    status = Column(Enum(MpesaTxStatus, name="integrations_mpesatxstatus"), nullable=False, default=MpesaTxStatus.PENDING)
 
     # Raw Daraja payloads (stored for full traceability)
     request_payload = Column(Text, nullable=True)   # STK Push request body

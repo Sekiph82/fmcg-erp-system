@@ -145,7 +145,7 @@ class FlowStage(Base, TimestampMixin):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     stage_code = Column(String(50), unique=True, nullable=False, index=True)
     stage_name = Column(String(200), nullable=False)
-    stage_type = Column(Enum(StageType), nullable=False)
+    stage_type = Column(Enum(StageType, name="materialflow_stagetype"), nullable=False)
     plant_id = Column(String(50), nullable=True)
     warehouse_id = Column(UUID(as_uuid=True), ForeignKey("warehouses.id", ondelete="SET NULL"), nullable=True)
     location_id = Column(UUID(as_uuid=True), ForeignKey("storage_locations.id", ondelete="SET NULL"), nullable=True)

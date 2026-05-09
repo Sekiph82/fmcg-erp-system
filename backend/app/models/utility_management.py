@@ -1198,7 +1198,7 @@ class WastewaterRecord(Base, TimestampMixin):
     deviation_reason       = Column(Text,           nullable=True)   # reason for limit breach
     corrective_action      = Column(Text,           nullable=True)   # action taken
 
-    compliance_status = Column(SAEnum(ComplianceStatus), nullable=False, default=ComplianceStatus.COMPLIANT, index=True)
+    compliance_status = Column(SAEnum(ComplianceStatus, name="utility_compliancestatus"), nullable=False, default=ComplianceStatus.COMPLIANT, index=True)
     source_method     = Column(SAEnum(SourceMethod), nullable=False, default=SourceMethod.MANUAL)
     is_anomaly        = Column(Boolean, nullable=False, default=False)
     anomaly_note      = Column(Text, nullable=True)

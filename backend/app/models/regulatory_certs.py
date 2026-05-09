@@ -59,7 +59,7 @@ class RegulatoryCertificate(Base):
     scope = Column(Text, nullable=True)                           # what exactly is certified
     issued_date = Column(Date, nullable=True)
     expiry_date = Column(Date, nullable=True, index=True)
-    status = Column(Enum(CertStatus), nullable=False, default=CertStatus.ACTIVE, index=True)
+    status = Column(Enum(CertStatus, name="regulatory_certstatus"), nullable=False, default=CertStatus.ACTIVE, index=True)
     document_id = Column(String(100), nullable=True)              # soft link to documents table
     document_url = Column(Text, nullable=True)
     renewal_notes = Column(Text, nullable=True)

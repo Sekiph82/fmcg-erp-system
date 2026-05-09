@@ -71,7 +71,7 @@ class BrandAsset(Base):
     # Compliance checklist
     compliance_checklist = Column(JSONB, nullable=True)          # {allergen_declared: bool, nutrition_label: bool, ...}
 
-    status = Column(Enum(AssetStatus), nullable=False, default=AssetStatus.DRAFT)
+    status = Column(Enum(AssetStatus, name="brand_assetstatus"), nullable=False, default=AssetStatus.DRAFT)
     created_by = Column(String(200), nullable=True)
     notes = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)

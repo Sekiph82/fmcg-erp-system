@@ -190,7 +190,7 @@ class FADepreciationSchedule(Base, TimestampMixin):
     posted_amount    = Column(Numeric(18, 4), nullable=True)
     posting_date     = Column(Date, nullable=True)
     journal_entry_id = Column(UUID(as_uuid=True), nullable=True)
-    schedule_status  = Column(Enum(ScheduleStatus), nullable=False, default=ScheduleStatus.PLANNED, index=True)
+    schedule_status  = Column(Enum(ScheduleStatus, name="assets_schedulestatus"), nullable=False, default=ScheduleStatus.PLANNED, index=True)
     opening_nbv      = Column(Numeric(18, 4), nullable=False)
     closing_nbv      = Column(Numeric(18, 4), nullable=False)
     actual_production_units = Column(Numeric(18, 4), nullable=True)
