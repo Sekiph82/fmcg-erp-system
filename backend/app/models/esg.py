@@ -122,3 +122,44 @@ class ESGTarget(Base, TimestampMixin):
     target_date = Column(Date, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
     notes = Column(Text, nullable=True)
+
+
+# ── Gap 64: Carbon Footprint Per Product / Batch ──────────────────────────────
+
+class ProductCarbonFootprint(Base, TimestampMixin):
+    """
+    Granular carbon footprint per production batch and product.
+    Scope 1: direct energy (combustion), Scope 2: purchased electricity,
+    Scope 3: raw materials, transport, packaging.
+    """
+    __tablename__ = "esg_product_carbon_footprints"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    product_id = Column(UUID(as_uuid=True), ForeignKey("products.id", ondelete="SET NULL"), nullable=True, index=True)
+    product_name = Column(String(300), nullable=True)
+    production_batch_id = Column(String(100), nullable=True, index=True)  # soft FK to production batch
+    batch_ref = Column(String(100), nullable=True)
+    calculation_date = Column(Date, nullable=False)
+    units_produced = Column(Numeric(14, 3), nullable=False)
+    uom = Column(String(20), default="KG", nullable=False)
+
+    # Scope emissions (kg CO2e)
+    scope1_kg_co2e = Column(Numeric(14, 6), nullable=True)   # direct: gas, diesel used in production
+    scope2_kg_co2e = Column(Numeric(14, 6), nullable=True)   # electricity consumption
+    scope3_kg_co2e = Column(Numeric(14, 6), nullable=True)   # materials, transport, packaging
+    total_kg_co2e = Column(Numeric(14, 6), nullable=False)
+    co2e_per_unit = Column(Numeric(14, 6), nullable=True)    # total / units_produced
+
+    # Breakdown inputs
+    electricity_kwh = Column(Numeric(14, 4), nullable=True)
+    electricity_emission_factor = Column(Numeric(10, 6), nullable=True)  # kg CO2e/kWh
+    fuel_liters = Column(Numeric(14, 4), nullable=True)
+    packaging_kg_co2e = Column(Numeric(14, 6), nullable=True)
+    raw_material_kg_co2e = Column(Numeric(14, 6), nullable=True)
+    transport_kg_co2e = Column(Numeric(14, 6), nullable=True)
+
+    methodology = Column(String(200), nullable=True)  # GHG Protocol | ISO 14067 | custom
+    verified = Column(Boolean, default=False, nullable=False)
+    notes = Column(Text, nullable=True)
+
+    product = relationship("Product", foreign_keys=[product_id])

@@ -98,6 +98,8 @@ class DemandForecast(Base, TimestampMixin):
     is_approved     = Column(Boolean, default=False, nullable=False)
     model_params    = Column(JSON, nullable=True)       # {"alpha": 0.3, "periods": 6, ...}
     mape            = Column(Numeric(7, 3), nullable=True)   # Mean Absolute Percentage Error %
+    rmse            = Column(Numeric(14, 3), nullable=True)  # Root Mean Squared Error
+    promotion_uplift_pct = Column(Numeric(6, 2), nullable=True)  # % uplift applied for active promotions
     notes           = Column(Text, nullable=True)
     created_by      = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     approved_by     = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
@@ -126,14 +128,33 @@ class DemandForecastLine(Base, TimestampMixin):
                           nullable=False, index=True)
     period_date  = Column(Date, nullable=False, index=True)
     forecast_qty = Column(Numeric(14, 3), nullable=False, default=0)
-    adjusted_qty = Column(Numeric(14, 3), nullable=True)   # manual override
-    actual_qty   = Column(Numeric(14, 3), nullable=True)   # back-filled from actuals
-    error_pct    = Column(Numeric(7, 3), nullable=True)    # abs % error vs actual
-    is_spike     = Column(Boolean, default=False, nullable=False)   # demand spike detected
-    is_outlier   = Column(Boolean, default=False, nullable=False)   # statistical outlier
-    notes        = Column(Text, nullable=True)
+    adjusted_qty    = Column(Numeric(14, 3), nullable=True)   # manual override
+    actual_qty      = Column(Numeric(14, 3), nullable=True)   # back-filled from actuals
+    error_pct       = Column(Numeric(7, 3), nullable=True)    # abs % error vs actual
+    squared_error   = Column(Numeric(14, 3), nullable=True)   # (actual - forecast)² for RMSE
+    is_spike        = Column(Boolean, default=False, nullable=False)   # demand spike detected
+    is_outlier      = Column(Boolean, default=False, nullable=False)   # statistical outlier
+    override_reason = Column(Text, nullable=True)
+    override_by     = Column(String(200), nullable=True)
+    override_at     = Column(DateTime, nullable=True)
+    notes           = Column(Text, nullable=True)
 
     forecast = relationship("DemandForecast", back_populates="lines")
+
+
+class ForecastOverrideLog(Base, TimestampMixin):
+    """Audit trail for manual forecast overrides."""
+    __tablename__ = "forecast_override_logs"
+
+    id           = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    forecast_id  = Column(UUID(as_uuid=True), ForeignKey("demand_forecasts.id", ondelete="CASCADE"), nullable=False, index=True)
+    line_id      = Column(UUID(as_uuid=True), ForeignKey("demand_forecast_lines.id", ondelete="CASCADE"), nullable=False, index=True)
+    period_date  = Column(Date, nullable=False)
+    original_qty = Column(Numeric(14, 3), nullable=False)
+    override_qty = Column(Numeric(14, 3), nullable=False)
+    reason       = Column(Text, nullable=True)
+    override_by  = Column(String(200), nullable=True)
+    product_id   = Column(UUID(as_uuid=True), nullable=True)
 
 
 # ── MRP Run ──────────────────────────────────────────────────────────────────

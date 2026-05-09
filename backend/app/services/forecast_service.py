@@ -395,7 +395,107 @@ async def backfill_actuals(
         effective = line.adjusted_qty if line.adjusted_qty is not None else line.forecast_qty
         if actual > 0 and effective > 0:
             line.error_pct = _R(abs(effective - actual) / actual * 100, 2)
+            # Also compute squared error for RMSE
+            sq_err = (float(effective) - float(actual)) ** 2
+            line.squared_error = _R(Decimal(str(sq_err)), 3)
         updated += 1
+
+    # Recompute RMSE on the forecast header
+    if updated > 0:
+        lines_with_se = [
+            ln for ln in forecast.lines
+            if ln.squared_error is not None
+        ]
+        if lines_with_se:
+            mean_sq = sum(float(ln.squared_error) for ln in lines_with_se) / len(lines_with_se)
+            import math
+            forecast.rmse = _R(Decimal(str(math.sqrt(mean_sq))), 3)
 
     await db.flush()
     return updated
+
+
+async def compute_promotion_uplift(
+    db: AsyncSession,
+    product_id: UUID,
+    forecast_period_start: date,
+    forecast_period_end: date,
+) -> Optional[float]:
+    """
+    Check if any active promotions cover this product in the forecast period.
+    Returns estimated uplift % if promotions found (based on historical uplift or default 15%).
+    """
+    from app.models.promotions import Promotion, PromotionProduct
+    from sqlalchemy import and_
+
+    promo_r = await db.execute(
+        select(Promotion).join(PromotionProduct, Promotion.id == PromotionProduct.promotion_id)
+        .where(
+            PromotionProduct.product_id == product_id,
+            Promotion.start_date <= forecast_period_end,
+            Promotion.end_date >= forecast_period_start,
+            Promotion.is_active == True,
+        )
+        .limit(1)
+    )
+    promo = promo_r.scalar_one_or_none()
+    if promo:
+        # Use promotion's own uplift if set, else 15% default
+        return float(getattr(promo, "expected_uplift_pct", None) or 15.0)
+    return None
+
+
+async def cross_sku_correlation(
+    db: AsyncSession,
+    product_ids: list,
+    periods: int = 12,
+) -> list[dict]:
+    """
+    Compute pairwise Pearson correlation of monthly demand histories.
+    Returns top correlated pairs (|r| > 0.6).
+    """
+    import statistics as _stats
+    from app.models.sales import SalesOrder, SOLine, SOStatus
+
+    histories: dict[str, list[float]] = {}
+
+    for pid in product_ids:
+        # Get last N monthly totals
+        r = await db.execute(
+            select(
+                func.date_trunc("month", SalesOrder.order_date).label("month"),
+                func.sum(SOLine.confirmed_qty).label("qty"),
+            )
+            .join(SOLine, SalesOrder.id == SOLine.so_id)
+            .where(SOLine.product_id == pid, SalesOrder.status != "CANCELLED")
+            .group_by("month")
+            .order_by("month")
+            .limit(periods)
+        )
+        rows = r.all()
+        histories[str(pid)] = [float(row.qty or 0) for row in rows]
+
+    # Compute pairwise Pearson r for pairs with same length ≥ 4
+    pairs = []
+    pids = list(histories.keys())
+    for i in range(len(pids)):
+        for j in range(i + 1, len(pids)):
+            a, b = histories[pids[i]], histories[pids[j]]
+            min_len = min(len(a), len(b))
+            if min_len < 4:
+                continue
+            a_trim, b_trim = a[:min_len], b[:min_len]
+            try:
+                r_val = _stats.correlation(a_trim, b_trim)
+            except Exception:
+                continue
+            if abs(r_val) >= 0.6:
+                pairs.append({
+                    "product_a_id": pids[i],
+                    "product_b_id": pids[j],
+                    "pearson_r": round(r_val, 4),
+                    "strength": "strong" if abs(r_val) >= 0.8 else "moderate",
+                    "periods_compared": min_len,
+                })
+    pairs.sort(key=lambda x: abs(x["pearson_r"]), reverse=True)
+    return pairs

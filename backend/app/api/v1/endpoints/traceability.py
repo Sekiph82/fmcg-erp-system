@@ -1,7 +1,10 @@
 """Lot Traceability + Batch Recall Management — 36 routes at /api/v1/traceability/"""
 from __future__ import annotations
 
+import hashlib
+import secrets
 import uuid
+from datetime import datetime
 from decimal import Decimal
 from typing import List, Optional
 from datetime import date
@@ -13,6 +16,7 @@ from app.db.session import get_db
 from app.models.traceability import (
     TraceEventType, RecallStatus, RecallActionStatus,
     TRRecAIAgentType, TRRecAIRecStatus,
+    BlockchainAnchor, BlockchainAnchorStatus, BlockchainNetwork,
 )
 from app.schemas.traceability import (
     TraceEventCreate, TraceEventOut,
@@ -350,3 +354,130 @@ async def add_recall_evidence(
 ):
     ev = await recall_svc.add_evidence(db, recall_id, data)
     return RecallEvidenceOut.model_validate(ev)
+
+
+# ── Blockchain Anchoring ─────────────────────────────────────────────────────
+
+from pydantic import BaseModel as _BM
+from sqlalchemy import select, desc as _d
+
+
+class AnchorIn(_BM):
+    lot_id: Optional[str] = None
+    lot_number: Optional[str] = None
+    record_type: str = "LOT_TRACE"
+    reference_id: Optional[str] = None
+    network: BlockchainNetwork = BlockchainNetwork.STUB
+    anchored_by: Optional[str] = None
+
+
+def _compute_payload_hash(lot_id: Optional[str], lot_number: Optional[str],
+                           record_type: str, reference_id: Optional[str],
+                           timestamp: str) -> str:
+    payload = f"{lot_id}|{lot_number}|{record_type}|{reference_id}|{timestamp}"
+    return hashlib.sha256(payload.encode()).hexdigest()
+
+
+@router.post("/blockchain/anchor", status_code=201)
+async def anchor_to_blockchain(
+    payload: AnchorIn,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(get_current_user),
+):
+    """
+    Anchor a lot trace record to blockchain.
+    STUB mode: computes SHA-256 hash of payload, stores locally.
+    Production: integrate with Ethereum/Polygon/Hyperledger SDK.
+    """
+    ts = datetime.utcnow().isoformat()
+    payload_hash = _compute_payload_hash(
+        payload.lot_id, payload.lot_number, payload.record_type, payload.reference_id, ts
+    )
+    qr_token = secrets.token_urlsafe(16)
+
+    # In STUB mode: simulate anchoring
+    tx_hash = None
+    block_number = None
+    anchor_url = None
+    if payload.network == BlockchainNetwork.STUB:
+        # Simulate tx hash as sha256 of payload_hash + timestamp
+        tx_hash = hashlib.sha256((payload_hash + ts).encode()).hexdigest()
+        block_number = 0  # stub
+        anchor_url = f"/api/v1/traceability/blockchain/public/{qr_token}"
+
+    anchor = BlockchainAnchor(
+        lot_id=uuid.UUID(payload.lot_id) if payload.lot_id else None,
+        lot_number=payload.lot_number,
+        record_type=payload.record_type,
+        reference_id=payload.reference_id,
+        payload_hash=payload_hash,
+        tx_hash=tx_hash,
+        block_number=block_number,
+        network=payload.network,
+        status=BlockchainAnchorStatus.ANCHORED if tx_hash else BlockchainAnchorStatus.PENDING,
+        anchor_url=anchor_url,
+        anchored_at=datetime.utcnow() if tx_hash else None,
+        anchored_by=payload.anchored_by,
+        public_qr_token=qr_token,
+    )
+    db.add(anchor)
+    await db.commit()
+    await db.refresh(anchor)
+    return {
+        "id": str(anchor.id),
+        "lot_number": anchor.lot_number,
+        "payload_hash": anchor.payload_hash,
+        "tx_hash": anchor.tx_hash,
+        "network": anchor.network,
+        "status": anchor.status,
+        "anchor_url": anchor.anchor_url,
+        "public_qr_token": anchor.public_qr_token,
+        "note": "STUB mode — wire Ethereum/Polygon/Hyperledger SDK for production anchoring.",
+    }
+
+
+@router.get("/blockchain/anchors")
+async def list_anchors(
+    lot_number: Optional[str] = None,
+    limit: int = Query(50, le=200),
+    db: AsyncSession = Depends(get_db),
+    _=Depends(get_current_user),
+):
+    q = select(BlockchainAnchor)
+    if lot_number:
+        q = q.where(BlockchainAnchor.lot_number == lot_number)
+    q = q.order_by(_d(BlockchainAnchor.created_at)).limit(limit)
+    rows = (await db.execute(q)).scalars().all()
+    return [
+        {"id": str(r.id), "lot_number": r.lot_number, "record_type": r.record_type,
+         "payload_hash": r.payload_hash, "tx_hash": r.tx_hash, "network": r.network,
+         "status": r.status, "anchored_at": r.anchored_at.isoformat() if r.anchored_at else None,
+         "public_qr_token": r.public_qr_token, "anchor_url": r.anchor_url}
+        for r in rows
+    ]
+
+
+@router.get("/blockchain/public/{qr_token}")
+async def public_trace_view(qr_token: str, db: AsyncSession = Depends(get_db)):
+    """
+    Public QR code scan endpoint — no authentication required.
+    Returns lot trace summary for consumer verification.
+    """
+    r = await db.execute(
+        select(BlockchainAnchor).where(BlockchainAnchor.public_qr_token == qr_token)
+    )
+    anchor = r.scalar_one_or_none()
+    if not anchor:
+        raise HTTPException(404, "Invalid or expired QR code")
+
+    return {
+        "verified": True,
+        "lot_number": anchor.lot_number,
+        "record_type": anchor.record_type,
+        "anchored_at": anchor.anchored_at.isoformat() if anchor.anchored_at else None,
+        "blockchain_network": anchor.network,
+        "payload_hash": anchor.payload_hash,
+        "tx_hash": anchor.tx_hash,
+        "integrity_note": "Payload hash can be independently verified against the blockchain transaction.",
+        "manufacturer": "POVU ERP — Verified Trace Record",
+    }

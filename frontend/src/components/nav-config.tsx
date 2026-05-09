@@ -122,7 +122,9 @@ export const NAV_CONFIG: NavEntry[] = [
       { label: "Planner Workbench",  href: "/dashboard/mrp/workbench",    permission: "production.view" },
       { label: "MRP Runs",           href: "/dashboard/mrp/run",          permission: "production.view" },
       { label: "Suggestions",        href: "/dashboard/mrp/suggestions",  permission: "production.view" },
-      { label: "Demand Forecasting", href: "/dashboard/mrp/forecast",     permission: "production.view" },
+      { label: "Demand Forecasting",    href: "/dashboard/mrp/forecast",             permission: "production.view" },
+      { label: "Forecast Accuracy",     href: "/dashboard/mrp/forecast/accuracy",    permission: "production.view" },
+      { label: "Cross-SKU Correlation", href: "/dashboard/mrp/forecast/correlation", permission: "production.view" },
     ],
   },
 
@@ -1216,11 +1218,12 @@ export const NAV_CONFIG: NavEntry[] = [
     permission: "hr.view",
     icon: md("M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"),
     items: [
-      { label: "ESG Dashboard",    href: "/dashboard/esg",            permission: "hr.view" },
-      { label: "Activity Data",    href: "/dashboard/esg/activities", permission: "hr.view" },
-      { label: "Emission Factors", href: "/dashboard/esg/factors",    permission: "hr.view" },
-      { label: "ESG Targets",      href: "/dashboard/esg/targets",    permission: "hr.view" },
-      { label: "ESG Reports",      href: "/dashboard/esg/reports",    permission: "hr.view" },
+      { label: "ESG Dashboard",       href: "/dashboard/esg",               permission: "hr.view" },
+      { label: "Activity Data",       href: "/dashboard/esg/activities",    permission: "hr.view" },
+      { label: "Emission Factors",    href: "/dashboard/esg/factors",       permission: "hr.view" },
+      { label: "Carbon Per Product",  href: "/dashboard/esg/carbon",        permission: "hr.view" },
+      { label: "ESG Targets",         href: "/dashboard/esg/targets",       permission: "hr.view" },
+      { label: "ESG Reports",         href: "/dashboard/esg/reports",       permission: "hr.view" },
     ],
   },
 

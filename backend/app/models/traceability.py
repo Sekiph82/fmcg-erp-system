@@ -512,3 +512,44 @@ class RecallEvidence(Base, TimestampMixin):
     uploaded_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
 
     uploaded_by = relationship("User", foreign_keys=[uploaded_by_id])
+
+
+# ── Blockchain Anchoring ─────────────────────────────────────────────────────
+
+class BlockchainNetwork(str, enum.Enum):
+    ETHEREUM = "ETHEREUM"
+    POLYGON = "POLYGON"
+    HYPERLEDGER_FABRIC = "HYPERLEDGER_FABRIC"
+    STUB = "STUB"           # for development / demo
+
+
+class BlockchainAnchorStatus(str, enum.Enum):
+    PENDING = "PENDING"
+    ANCHORED = "ANCHORED"
+    FAILED = "FAILED"
+
+
+class BlockchainAnchor(Base, TimestampMixin):
+    """
+    Records anchoring of a lot trace to a blockchain.
+    In production: integrate with chosen blockchain SDK.
+    The tx_hash is a SHA-256 of the trace payload in stub mode.
+    """
+    __tablename__ = "trace_blockchain_anchors"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    lot_id = Column(UUID(as_uuid=True), nullable=True, index=True)
+    lot_number = Column(String(100), nullable=True, index=True)
+    record_type = Column(String(50), nullable=False, default="LOT_TRACE")  # LOT_TRACE | RECALL | QC_CERT
+    reference_id = Column(String(100), nullable=True)            # e.g. trace_event_id, recall_id
+    payload_hash = Column(String(64), nullable=False)            # SHA-256 of anchored payload
+    tx_hash = Column(String(200), nullable=True)                 # blockchain tx hash (null for stub)
+    block_number = Column(Integer, nullable=True)
+    chain_id = Column(String(50), nullable=True)
+    network = Column(Enum(BlockchainNetwork), nullable=False, default=BlockchainNetwork.STUB)
+    status = Column(Enum(BlockchainAnchorStatus), nullable=False, default=BlockchainAnchorStatus.PENDING)
+    anchor_url = Column(Text, nullable=True)                     # block explorer link
+    anchored_at = Column(DateTime, nullable=True)
+    anchored_by = Column(String(200), nullable=True)
+    error_message = Column(Text, nullable=True)
+    public_qr_token = Column(String(100), nullable=True, unique=True, index=True)  # for public QR scan URL

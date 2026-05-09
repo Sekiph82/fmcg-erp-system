@@ -19,7 +19,7 @@ from app.models.master import Material, Product
 from app.models.mrp import (
     DemandForecast, DemandForecastLine, ForecastStatus,
     MRPException, MRPResult, MRPRun, MRPRunStatus, MRPSuggestion,
-    SuggestionStatus, SuggestionType,
+    SuggestionStatus, SuggestionType, ForecastOverrideLog,
 )
 from app.models.user import User
 from app.schemas.mrp import (
@@ -228,13 +228,32 @@ async def override_forecast_line(
     line_id:     UUID,
     body:        ForecastLineOverride,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     line = await db.get(DemandForecastLine, line_id)
     if not line or line.forecast_id != forecast_id:
         raise HTTPException(404, "Forecast line not found")
+
+    original_qty = line.adjusted_qty or line.forecast_qty
+
     if body.adjusted_qty is not None:
+        # Log override audit trail
+        log = ForecastOverrideLog(
+            forecast_id=forecast_id,
+            line_id=line_id,
+            period_date=line.period_date,
+            original_qty=original_qty,
+            override_qty=body.adjusted_qty,
+            reason=body.notes,
+            override_by=current_user.full_name or current_user.username,
+            product_id=line.forecast.product_id if hasattr(line, "forecast") else None,
+        )
+        db.add(log)
         line.adjusted_qty = body.adjusted_qty
+        line.override_reason = body.notes
+        line.override_by = current_user.full_name or current_user.username
+        line.override_at = datetime.now(timezone.utc)
+
     if body.notes is not None:
         line.notes = body.notes
     await db.commit()
@@ -247,6 +266,33 @@ async def override_forecast_line(
     )
 
 
+@router.get("/forecasts/{forecast_id}/override-log")
+async def get_override_log(
+    forecast_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(get_current_user),
+):
+    """Return the full override audit trail for a forecast."""
+    r = await db.execute(
+        select(ForecastOverrideLog)
+        .where(ForecastOverrideLog.forecast_id == forecast_id)
+        .order_by(ForecastOverrideLog.created_at.desc())
+    )
+    logs = r.scalars().all()
+    return [
+        {
+            "id": str(lg.id),
+            "period_date": str(lg.period_date),
+            "original_qty": float(lg.original_qty),
+            "override_qty": float(lg.override_qty),
+            "reason": lg.reason,
+            "override_by": lg.override_by,
+            "created_at": lg.created_at.isoformat() if lg.created_at else "",
+        }
+        for lg in logs
+    ]
+
+
 @router.post("/forecasts/{forecast_id}/backfill", response_model=dict)
 async def backfill_forecast_actuals(
     forecast_id: UUID,
@@ -256,6 +302,45 @@ async def backfill_forecast_actuals(
     updated = await backfill_actuals(db, forecast_id)
     await db.commit()
     return {"updated_lines": updated}
+
+
+@router.get("/forecasts/cross-sku-correlation")
+async def cross_sku_correlation_endpoint(
+    product_ids: str = Query(..., description="Comma-separated product UUIDs"),
+    periods: int = Query(12, ge=4, le=36),
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(get_current_user),
+):
+    """Compute pairwise Pearson correlation of monthly demand across products."""
+    from app.services.forecast_service import cross_sku_correlation
+    ids = [UUID(pid.strip()) for pid in product_ids.split(",") if pid.strip()]
+    if len(ids) < 2:
+        raise HTTPException(400, "Need at least 2 product IDs")
+    if len(ids) > 20:
+        raise HTTPException(400, "Max 20 products per correlation request")
+    pairs = await cross_sku_correlation(db, ids, periods=periods)
+    return {"product_count": len(ids), "correlated_pairs": pairs, "periods": periods}
+
+
+@router.get("/forecasts/promotion-uplift/{product_id}")
+async def promotion_uplift_check(
+    product_id: UUID,
+    period_start: date = Query(...),
+    period_end: date = Query(...),
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(get_current_user),
+):
+    """Check if active promotions exist for this product in the forecast period."""
+    from app.services.forecast_service import compute_promotion_uplift
+    uplift = await compute_promotion_uplift(db, product_id, period_start, period_end)
+    return {
+        "product_id": str(product_id),
+        "period_start": str(period_start),
+        "period_end": str(period_end),
+        "promotion_active": uplift is not None,
+        "estimated_uplift_pct": uplift,
+        "note": "Apply uplift to forecast_qty to account for promotion demand spike." if uplift else "No active promotions in this period.",
+    }
 
 
 # ══════════════════════════════════════════════════════════════════════════════

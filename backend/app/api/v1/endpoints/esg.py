@@ -1,4 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel as _BM
+from sqlalchemy import select, func, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Optional
 from datetime import date
@@ -311,3 +313,138 @@ async def ai_data_quality(
     _=Depends(get_current_user),
 ):
     return await svc.ai_data_quality(db, date_from=date_from, date_to=date_to)
+
+
+# ── Gap 64: Carbon Footprint Per Product ─────────────────────────────────────
+
+class CarbonFootprintIn(_BM):
+    product_id: Optional[str] = None
+    product_name: Optional[str] = None
+    production_batch_id: Optional[str] = None
+    batch_ref: Optional[str] = None
+    calculation_date: date
+    units_produced: float
+    uom: str = "KG"
+    electricity_kwh: Optional[float] = None
+    electricity_emission_factor: float = 0.4971  # Kenya grid factor kg CO2e/kWh (KPLC 2023)
+    fuel_liters: Optional[float] = None
+    packaging_kg_co2e: Optional[float] = None
+    raw_material_kg_co2e: Optional[float] = None
+    transport_kg_co2e: Optional[float] = None
+    methodology: str = "GHG Protocol"
+    notes: Optional[str] = None
+
+
+@router.post("/carbon-footprints", status_code=201,
+             dependencies=[Depends(get_current_user)])
+async def create_carbon_footprint(payload: CarbonFootprintIn, db: AsyncSession = Depends(get_db)):
+    """Calculate and store carbon footprint for a production batch."""
+    from app.models.esg import ProductCarbonFootprint
+
+    # Scope 2: electricity
+    scope2 = 0.0
+    if payload.electricity_kwh:
+        scope2 = payload.electricity_kwh * payload.electricity_emission_factor
+
+    # Scope 1: fuel combustion (diesel: ~2.68 kg CO2e/litre)
+    scope1 = 0.0
+    if payload.fuel_liters:
+        scope1 = payload.fuel_liters * 2.68
+
+    # Scope 3: materials + packaging + transport
+    scope3 = (
+        (payload.raw_material_kg_co2e or 0)
+        + (payload.packaging_kg_co2e or 0)
+        + (payload.transport_kg_co2e or 0)
+    )
+
+    total = scope1 + scope2 + scope3
+    per_unit = total / payload.units_produced if payload.units_produced > 0 else None
+
+    fp = ProductCarbonFootprint(
+        product_id=uuid.UUID(payload.product_id) if payload.product_id else None,
+        product_name=payload.product_name,
+        production_batch_id=payload.production_batch_id,
+        batch_ref=payload.batch_ref,
+        calculation_date=payload.calculation_date,
+        units_produced=payload.units_produced,
+        uom=payload.uom,
+        scope1_kg_co2e=scope1,
+        scope2_kg_co2e=scope2,
+        scope3_kg_co2e=scope3,
+        total_kg_co2e=total,
+        co2e_per_unit=per_unit,
+        electricity_kwh=payload.electricity_kwh,
+        electricity_emission_factor=payload.electricity_emission_factor,
+        fuel_liters=payload.fuel_liters,
+        packaging_kg_co2e=payload.packaging_kg_co2e,
+        raw_material_kg_co2e=payload.raw_material_kg_co2e,
+        transport_kg_co2e=payload.transport_kg_co2e,
+        methodology=payload.methodology,
+        notes=payload.notes,
+    )
+    db.add(fp)
+    await db.commit()
+    await db.refresh(fp)
+    return {
+        "id": str(fp.id),
+        "product_name": fp.product_name,
+        "batch_ref": fp.batch_ref,
+        "scope1_kg_co2e": float(fp.scope1_kg_co2e or 0),
+        "scope2_kg_co2e": float(fp.scope2_kg_co2e or 0),
+        "scope3_kg_co2e": float(fp.scope3_kg_co2e or 0),
+        "total_kg_co2e": float(fp.total_kg_co2e),
+        "co2e_per_unit": float(fp.co2e_per_unit) if fp.co2e_per_unit else None,
+        "units_produced": float(fp.units_produced),
+        "uom": fp.uom,
+    }
+
+
+@router.get("/carbon-footprints",
+            dependencies=[Depends(get_current_user)])
+async def list_carbon_footprints(
+    product_id: Optional[str] = None,
+    limit: int = Query(50, le=200),
+    db: AsyncSession = Depends(get_db),
+):
+    from app.models.esg import ProductCarbonFootprint
+    q = select(ProductCarbonFootprint)
+    if product_id:
+        q = q.where(ProductCarbonFootprint.product_id == uuid.UUID(product_id))
+    q = q.order_by(desc(ProductCarbonFootprint.calculation_date)).limit(limit)
+    rows = (await db.execute(q)).scalars().all()
+    return [
+        {"id": str(r.id), "product_name": r.product_name, "batch_ref": r.batch_ref,
+         "calculation_date": str(r.calculation_date),
+         "total_kg_co2e": float(r.total_kg_co2e),
+         "co2e_per_unit": float(r.co2e_per_unit) if r.co2e_per_unit else None,
+         "units_produced": float(r.units_produced), "uom": r.uom,
+         "scope1": float(r.scope1_kg_co2e or 0), "scope2": float(r.scope2_kg_co2e or 0),
+         "scope3": float(r.scope3_kg_co2e or 0), "methodology": r.methodology}
+        for r in rows
+    ]
+
+
+@router.get("/carbon-footprints/summary",
+            dependencies=[Depends(get_current_user)])
+async def carbon_summary(db: AsyncSession = Depends(get_db)):
+    """Average CO2e per unit by product across all batches."""
+    from app.models.esg import ProductCarbonFootprint
+    r = await db.execute(
+        select(
+            ProductCarbonFootprint.product_name,
+            func.avg(ProductCarbonFootprint.co2e_per_unit).label("avg_co2e_per_unit"),
+            func.sum(ProductCarbonFootprint.total_kg_co2e).label("total_co2e"),
+            func.count().label("batches"),
+        )
+        .where(ProductCarbonFootprint.co2e_per_unit.isnot(None))
+        .group_by(ProductCarbonFootprint.product_name)
+        .order_by(desc("avg_co2e_per_unit"))
+    )
+    return [
+        {"product_name": row.product_name,
+         "avg_co2e_per_unit": round(float(row.avg_co2e_per_unit), 6),
+         "total_co2e": round(float(row.total_co2e), 3),
+         "batches": row.batches}
+        for row in r.all()
+    ]
