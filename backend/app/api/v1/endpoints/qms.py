@@ -18,6 +18,8 @@ from app.models.quality import (
     QCDeviation, DeviationStatus, RiskLevel,
     LotQualityStatus, ReleaseStatus, AllergenValidationRecord,
     QMSAIRecommendation, QMSAIAgentType, QMSAIRecStatus,
+    QualityAuditChecklist, AuditStandard, AuditType, AuditResult,
+    SupplierFoodSafetyApproval, SupplierFoodSafetyStatus,
     InstrumentCalibration, AQLSamplingPlan, CertificateOfAnalysis,
 )
 from app.schemas.qms import (
@@ -1196,3 +1198,343 @@ async def issue_coa(
     coa.approved_by_id = current_user.id
     await db.commit()
     return {"id": str(coa.id), "coa_no": coa.coa_no, "status": coa.status}
+
+
+# ── HACCP Expansion: Audit Checklists ────────────────────────────────────────
+
+from datetime import datetime as _dt
+from pydantic import BaseModel as _BM
+
+_SEQ_AUDIT = 0
+
+
+def _audit_ref() -> str:
+    global _SEQ_AUDIT
+    _SEQ_AUDIT += 1
+    return f"AUD-{_dt.utcnow().strftime('%Y%m%d')}-{_SEQ_AUDIT:04d}"
+
+
+# Default checklist items per standard
+_STANDARD_ITEMS: dict[str, list[dict]] = {
+    "BRC": [
+        {"section": "1", "item": "Senior Management Commitment", "requirement": "Food safety policy signed by senior management"},
+        {"section": "2", "item": "Food Safety Plan (HACCP)", "requirement": "Full HACCP plan documented and verified"},
+        {"section": "3", "item": "Food Safety & Quality Management System", "requirement": "Document control procedures in place"},
+        {"section": "4", "item": "Site Standards", "requirement": "Pest control, maintenance, cleaning schedules active"},
+        {"section": "5", "item": "Product Control", "requirement": "Traceability, labeling, allergen controls documented"},
+        {"section": "6", "item": "Process Control", "requirement": "CCPs monitored, records maintained"},
+        {"section": "7", "item": "Personnel", "requirement": "Training records, hygiene policy, medical screening"},
+    ],
+    "FSSC_22000": [
+        {"section": "4", "item": "Context of organization", "requirement": "Scope defined, interested parties identified"},
+        {"section": "5", "item": "Leadership", "requirement": "Food safety policy established, roles assigned"},
+        {"section": "6", "item": "Planning", "requirement": "Risks and opportunities identified and addressed"},
+        {"section": "8.1", "item": "Operational planning", "requirement": "PRPs established and maintained"},
+        {"section": "8.4", "item": "Hazard analysis", "requirement": "All hazards identified, CCPs determined"},
+        {"section": "8.8", "item": "Verification", "requirement": "Verification activities planned and executed"},
+        {"section": "9", "item": "Performance evaluation", "requirement": "Internal audits, management review conducted"},
+    ],
+    "HALAL": [
+        {"section": "1", "item": "Raw Material Verification", "requirement": "All ingredients verified halal-compliant"},
+        {"section": "2", "item": "Slaughter/Processing", "requirement": "No pork/alcohol in process or ingredients"},
+        {"section": "3", "item": "Cross-contamination Prevention", "requirement": "Dedicated equipment or validated cleaning"},
+        {"section": "4", "item": "Storage", "requirement": "Halal products stored separately from haram"},
+        {"section": "5", "item": "Labeling", "requirement": "Halal mark only on certified products"},
+        {"section": "6", "item": "Certification Validity", "requirement": "Valid halal certificates from all suppliers"},
+    ],
+    "HACCP_CODEX": [
+        {"section": "P1", "item": "Assemble HACCP team", "requirement": "Multi-disciplinary team formed"},
+        {"section": "P2", "item": "Product description", "requirement": "Full product description documented"},
+        {"section": "P3", "item": "Intended use", "requirement": "Consumer group and intended use identified"},
+        {"section": "P4", "item": "Flow diagram", "requirement": "Process flow diagram verified on site"},
+        {"section": "P5", "item": "Hazard analysis", "requirement": "All hazards analyzed with severity/likelihood"},
+        {"section": "P6", "item": "CCPs identified", "requirement": "CCPs determined using decision tree"},
+        {"section": "P7", "item": "Critical limits", "requirement": "Measurable limits set for each CCP"},
+        {"section": "P8", "item": "Monitoring system", "requirement": "Monitoring procedures and frequency defined"},
+        {"section": "P9", "item": "Corrective actions", "requirement": "Actions defined for CCP deviation"},
+        {"section": "P10", "item": "Verification", "requirement": "Verification activities scheduled"},
+        {"section": "P11", "item": "Documentation", "requirement": "HACCP records maintained"},
+        {"section": "P12", "item": "Review", "requirement": "HACCP plan reviewed annually or on change"},
+    ],
+}
+
+
+class AuditChecklistIn(_BM):
+    standard: AuditStandard = AuditStandard.BRC
+    audit_type: AuditType = AuditType.INTERNAL
+    audit_date: date
+    conducted_by: Optional[str] = None
+    lead_auditor: Optional[str] = None
+    scope: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class AuditItemResult(_BM):
+    item_index: int
+    result: str    # pass | fail | na
+    finding: Optional[str] = None
+
+
+@router.post("/audit-checklists", status_code=201)
+async def create_audit_checklist(
+    payload: AuditChecklistIn,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(get_current_user),
+):
+    """Create a new audit checklist with pre-populated items for the chosen standard."""
+    items = [
+        {**item, "result": "pending", "finding": None}
+        for item in _STANDARD_ITEMS.get(payload.standard.value, [])
+    ]
+    checklist = QualityAuditChecklist(
+        audit_ref=_audit_ref(),
+        standard=payload.standard,
+        audit_type=payload.audit_type,
+        audit_date=payload.audit_date,
+        conducted_by=payload.conducted_by,
+        lead_auditor=payload.lead_auditor,
+        scope=payload.scope,
+        items=items,
+        total_items=len(items),
+        passed_items=0,
+        score_pct=0.0,
+        notes=payload.notes,
+    )
+    db.add(checklist)
+    await db.commit()
+    await db.refresh(checklist)
+    return {
+        "id": str(checklist.id),
+        "audit_ref": checklist.audit_ref,
+        "standard": checklist.standard,
+        "audit_type": checklist.audit_type,
+        "audit_date": str(checklist.audit_date),
+        "result": checklist.result,
+        "total_items": checklist.total_items,
+        "items": checklist.items,
+    }
+
+
+@router.get("/audit-checklists")
+async def list_audit_checklists(
+    standard: Optional[str] = None,
+    audit_type: Optional[str] = None,
+    result: Optional[str] = None,
+    limit: int = Query(50, le=200),
+    db: AsyncSession = Depends(get_db),
+    _=Depends(get_current_user),
+):
+    q = select(QualityAuditChecklist)
+    if standard:
+        q = q.where(QualityAuditChecklist.standard == standard)
+    if audit_type:
+        q = q.where(QualityAuditChecklist.audit_type == audit_type)
+    if result:
+        q = q.where(QualityAuditChecklist.result == result)
+    q = q.order_by(QualityAuditChecklist.audit_date.desc()).limit(limit)
+    rows = (await db.execute(q)).scalars().all()
+    return [
+        {
+            "id": str(c.id), "audit_ref": c.audit_ref, "standard": c.standard,
+            "audit_type": c.audit_type, "audit_date": str(c.audit_date),
+            "conducted_by": c.conducted_by, "score_pct": float(c.score_pct) if c.score_pct else None,
+            "result": c.result, "total_items": c.total_items, "passed_items": c.passed_items,
+            "certificate_issued": c.certificate_issued, "next_audit_date": str(c.next_audit_date) if c.next_audit_date else None,
+        }
+        for c in rows
+    ]
+
+
+@router.patch("/audit-checklists/{checklist_id}/items")
+async def update_checklist_items(
+    checklist_id: str,
+    results: list[AuditItemResult],
+    db: AsyncSession = Depends(get_db),
+    _=Depends(get_current_user),
+):
+    """Record pass/fail/na for each checklist item and recompute score."""
+    r = await db.execute(
+        select(QualityAuditChecklist).where(QualityAuditChecklist.id == uuid.UUID(checklist_id))
+    )
+    checklist = r.scalar_one_or_none()
+    if not checklist:
+        raise HTTPException(404, "Checklist not found")
+
+    items = list(checklist.items or [])
+    for res in results:
+        if 0 <= res.item_index < len(items):
+            items[res.item_index]["result"] = res.result
+            if res.finding:
+                items[res.item_index]["finding"] = res.finding
+
+    passed = sum(1 for i in items if i.get("result") == "pass")
+    total_scored = sum(1 for i in items if i.get("result") in ("pass", "fail"))
+    score = round(passed / total_scored * 100, 2) if total_scored > 0 else 0.0
+
+    checklist.items = items
+    checklist.passed_items = passed
+    checklist.score_pct = score
+    if score >= 95:
+        checklist.result = AuditResult.PASS
+    elif score >= 75:
+        checklist.result = AuditResult.CONDITIONAL_PASS
+    elif total_scored > 0:
+        checklist.result = AuditResult.FAIL
+
+    await db.commit()
+    return {"id": checklist_id, "score_pct": score, "passed_items": passed, "result": checklist.result}
+
+
+@router.post("/audit-checklists/{checklist_id}/close")
+async def close_audit(
+    checklist_id: str,
+    major_findings: Optional[str] = None,
+    minor_findings: Optional[str] = None,
+    recommendations: Optional[str] = None,
+    next_audit_date: Optional[date] = None,
+    certificate_issued: bool = False,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(get_current_user),
+):
+    r = await db.execute(
+        select(QualityAuditChecklist).where(QualityAuditChecklist.id == uuid.UUID(checklist_id))
+    )
+    checklist = r.scalar_one_or_none()
+    if not checklist:
+        raise HTTPException(404, "Checklist not found")
+    checklist.major_findings = major_findings
+    checklist.minor_findings = minor_findings
+    checklist.recommendations = recommendations
+    checklist.next_audit_date = next_audit_date
+    checklist.certificate_issued = certificate_issued
+    await db.commit()
+    return {"id": checklist_id, "result": checklist.result, "score_pct": float(checklist.score_pct or 0)}
+
+
+@router.get("/audit-checklists/stats")
+async def audit_stats(db: AsyncSession = Depends(get_db), _=Depends(get_current_user)):
+    by_result_r = await db.execute(
+        select(QualityAuditChecklist.result, func.count().label("cnt"))
+        .group_by(QualityAuditChecklist.result)
+    )
+    by_standard_r = await db.execute(
+        select(QualityAuditChecklist.standard, func.count().label("cnt"))
+        .group_by(QualityAuditChecklist.standard)
+    )
+    avg_score_r = await db.execute(
+        select(func.avg(QualityAuditChecklist.score_pct))
+        .where(QualityAuditChecklist.score_pct.isnot(None))
+    )
+    return {
+        "by_result": {r.result: r.cnt for r in by_result_r.all()},
+        "by_standard": {r.standard: r.cnt for r in by_standard_r.all()},
+        "avg_score_pct": round(float(avg_score_r.scalar()), 2) if avg_score_r.scalar() else None,
+    }
+
+
+# ── HACCP Expansion: Supplier Food Safety Approvals ──────────────────────────
+
+class SupplierFSAIn(_BM):
+    supplier_name: str
+    supplier_id: Optional[str] = None
+    approval_type: str
+    status: SupplierFoodSafetyStatus = SupplierFoodSafetyStatus.PENDING
+    audit_score: Optional[float] = None
+    auditor: Optional[str] = None
+    last_audit_date: Optional[date] = None
+    approval_date: Optional[date] = None
+    expiry_date: Optional[date] = None
+    certificate_number: Optional[str] = None
+    certificate_url: Optional[str] = None
+    critical_findings: int = 0
+    major_findings: int = 0
+    minor_findings: int = 0
+    notes: Optional[str] = None
+
+
+def _fsa_out(f: SupplierFoodSafetyApproval) -> dict:
+    from datetime import date as _d
+    days_to_expiry = None
+    if f.expiry_date:
+        days_to_expiry = (f.expiry_date - _d.today()).days
+    return {
+        "id": str(f.id), "supplier_name": f.supplier_name, "supplier_id": f.supplier_id,
+        "approval_type": f.approval_type, "status": f.status,
+        "audit_score": float(f.audit_score) if f.audit_score else None,
+        "auditor": f.auditor,
+        "last_audit_date": str(f.last_audit_date) if f.last_audit_date else None,
+        "approval_date": str(f.approval_date) if f.approval_date else None,
+        "expiry_date": str(f.expiry_date) if f.expiry_date else None,
+        "days_to_expiry": days_to_expiry,
+        "certificate_number": f.certificate_number,
+        "critical_findings": f.critical_findings,
+        "major_findings": f.major_findings,
+        "minor_findings": f.minor_findings,
+        "notes": f.notes,
+        "created_at": f.created_at.isoformat() if f.created_at else "",
+    }
+
+
+@router.post("/supplier-food-safety", status_code=201)
+async def create_supplier_fsa(
+    payload: SupplierFSAIn,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(get_current_user),
+):
+    fsa = SupplierFoodSafetyApproval(**payload.model_dump())
+    db.add(fsa)
+    await db.commit()
+    await db.refresh(fsa)
+    return _fsa_out(fsa)
+
+
+@router.get("/supplier-food-safety")
+async def list_supplier_fsa(
+    status: Optional[str] = None,
+    approval_type: Optional[str] = None,
+    expiring_days: Optional[int] = Query(None, ge=1, le=365),
+    limit: int = Query(100, le=500),
+    db: AsyncSession = Depends(get_db),
+    _=Depends(get_current_user),
+):
+    from datetime import date as _d, timedelta
+    q = select(SupplierFoodSafetyApproval)
+    if status:
+        q = q.where(SupplierFoodSafetyApproval.status == status)
+    if approval_type:
+        q = q.where(SupplierFoodSafetyApproval.approval_type == approval_type)
+    if expiring_days is not None:
+        cutoff = _d.today() + timedelta(days=expiring_days)
+        q = q.where(
+            SupplierFoodSafetyApproval.expiry_date.isnot(None),
+            SupplierFoodSafetyApproval.expiry_date <= cutoff,
+        )
+    q = q.order_by(SupplierFoodSafetyApproval.supplier_name).limit(limit)
+    rows = (await db.execute(q)).scalars().all()
+    return [_fsa_out(f) for f in rows]
+
+
+@router.patch("/supplier-food-safety/{fsa_id}")
+async def update_supplier_fsa(
+    fsa_id: str,
+    status: Optional[SupplierFoodSafetyStatus] = None,
+    audit_score: Optional[float] = None,
+    expiry_date: Optional[date] = None,
+    notes: Optional[str] = None,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(get_current_user),
+):
+    r = await db.execute(select(SupplierFoodSafetyApproval).where(SupplierFoodSafetyApproval.id == uuid.UUID(fsa_id)))
+    fsa = r.scalar_one_or_none()
+    if not fsa:
+        raise HTTPException(404, "Record not found")
+    if status is not None:
+        fsa.status = status
+    if audit_score is not None:
+        fsa.audit_score = audit_score
+    if expiry_date is not None:
+        fsa.expiry_date = expiry_date
+    if notes is not None:
+        fsa.notes = notes
+    await db.commit()
+    return _fsa_out(fsa)

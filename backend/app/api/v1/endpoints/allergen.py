@@ -2,10 +2,13 @@
 from __future__ import annotations
 
 import uuid
+from datetime import datetime
 from decimal import Decimal
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel as _BM
+from sqlalchemy import select, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
@@ -537,3 +540,94 @@ async def report_missing_statements(db: AsyncSession = Depends(get_db)):
 
 
 from sqlalchemy import func, or_
+
+
+# ── Cleaning Validation Logs ─────────────────────────────────────────────────
+
+_CVL_SEQ = 0
+
+
+def _cvl_ref() -> str:
+    global _CVL_SEQ
+    _CVL_SEQ += 1
+    return f"CLN-{datetime.utcnow().strftime('%Y%m%d')}-{_CVL_SEQ:04d}"
+
+
+class CleaningValIn(_BM):
+    line_id: Optional[str] = None
+    line_name: Optional[str] = None
+    previous_product: Optional[str] = None
+    previous_allergens: Optional[list] = None
+    next_product: Optional[str] = None
+    cleaning_method: Optional[str] = None
+    cleaning_agent: Optional[str] = None
+    cleaned_by: Optional[str] = None
+    cleaned_at: Optional[str] = None
+    validated_by: Optional[str] = None
+    swab_test_result: Optional[str] = None
+    swab_threshold: Optional[str] = None
+    result: str = "PENDING"
+    corrective_action: Optional[str] = None
+    notes: Optional[str] = None
+
+
+@router.post("/cleaning-validations", status_code=201)
+async def create_cleaning_validation(
+    payload: CleaningValIn,
+    db: AsyncSession = Depends(get_db),
+):
+    from app.models.allergen import CleaningValidationLog, CleaningValidationResult
+    log = CleaningValidationLog(
+        validation_ref=_cvl_ref(),
+        line_id=payload.line_id,
+        line_name=payload.line_name,
+        previous_product=payload.previous_product,
+        previous_allergens=payload.previous_allergens,
+        next_product=payload.next_product,
+        cleaning_method=payload.cleaning_method,
+        cleaning_agent=payload.cleaning_agent,
+        cleaned_by=payload.cleaned_by,
+        cleaned_at=datetime.fromisoformat(payload.cleaned_at) if payload.cleaned_at else None,
+        validated_by=payload.validated_by,
+        swab_test_result=payload.swab_test_result,
+        swab_threshold=payload.swab_threshold,
+        result=CleaningValidationResult(payload.result),
+        corrective_action=payload.corrective_action,
+        notes=payload.notes,
+    )
+    db.add(log)
+    await db.commit()
+    await db.refresh(log)
+    return {
+        "id": str(log.id), "validation_ref": log.validation_ref, "line_name": log.line_name,
+        "previous_product": log.previous_product, "next_product": log.next_product,
+        "result": log.result, "cleaned_by": log.cleaned_by,
+    }
+
+
+@router.get("/cleaning-validations")
+async def list_cleaning_validations(
+    line_id: Optional[str] = None,
+    result: Optional[str] = None,
+    limit: int = Query(50, le=200),
+    db: AsyncSession = Depends(get_db),
+):
+    from app.models.allergen import CleaningValidationLog
+    q = select(CleaningValidationLog)
+    if line_id:
+        q = q.where(CleaningValidationLog.line_id == line_id)
+    if result:
+        q = q.where(CleaningValidationLog.result == result)
+    q = q.order_by(desc(CleaningValidationLog.created_at)).limit(limit)
+    rows = (await db.execute(q)).scalars().all()
+    return [
+        {
+            "id": str(r.id), "validation_ref": r.validation_ref, "line_name": r.line_name,
+            "previous_product": r.previous_product, "previous_allergens": r.previous_allergens,
+            "next_product": r.next_product, "cleaning_method": r.cleaning_method,
+            "cleaned_by": r.cleaned_by, "validated_by": r.validated_by,
+            "swab_test_result": r.swab_test_result, "result": r.result,
+            "created_at": r.created_at.isoformat() if r.created_at else "",
+        }
+        for r in rows
+    ]

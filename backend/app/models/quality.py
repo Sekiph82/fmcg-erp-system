@@ -652,3 +652,86 @@ class CertificateOfAnalysis(Base, TimestampMixin):
     inspection = relationship("QCInspection", foreign_keys=[inspection_id])
     issued_by = relationship("User", foreign_keys=[issued_by_id])
     approved_by = relationship("User", foreign_keys=[approved_by_id])
+
+
+# ── HACCP Expansion — Audit Checklists & Supplier Food Safety ─────────────────
+
+class AuditStandard(str, enum.Enum):
+    BRC = "BRC"
+    FSSC_22000 = "FSSC_22000"
+    ISO_22000 = "ISO_22000"
+    HALAL = "HALAL"
+    KOSHER = "KOSHER"
+    HACCP_CODEX = "HACCP_CODEX"
+    SQF = "SQF"
+    CUSTOM = "CUSTOM"
+
+
+class AuditType(str, enum.Enum):
+    INTERNAL = "INTERNAL"
+    MOCK = "MOCK"
+    THIRD_PARTY = "THIRD_PARTY"
+    REGULATORY = "REGULATORY"
+
+
+class AuditResult(str, enum.Enum):
+    PASS = "PASS"
+    CONDITIONAL_PASS = "CONDITIONAL_PASS"
+    FAIL = "FAIL"
+    IN_PROGRESS = "IN_PROGRESS"
+
+
+class QualityAuditChecklist(Base, TimestampMixin):
+    """Structured audit checklist per food safety standard (BRC, FSSC, HALAL, etc.)."""
+    __tablename__ = "qms_audit_checklists"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    audit_ref = Column(String(50), unique=True, nullable=False, index=True)
+    standard = Column(Enum(AuditStandard), nullable=False)
+    audit_type = Column(Enum(AuditType), nullable=False, default=AuditType.INTERNAL)
+    audit_date = Column(Date, nullable=False)
+    conducted_by = Column(String(200), nullable=True)
+    lead_auditor = Column(String(200), nullable=True)
+    scope = Column(Text, nullable=True)
+    # Items: list of {section, item, requirement, result: pass/fail/na, finding, score}
+    items = Column(JSON, nullable=True)
+    total_items = Column(Integer, nullable=True)
+    passed_items = Column(Integer, nullable=True)
+    score_pct = Column(Numeric(6, 2), nullable=True)
+    result = Column(Enum(AuditResult), nullable=False, default=AuditResult.IN_PROGRESS)
+    major_findings = Column(Text, nullable=True)
+    minor_findings = Column(Text, nullable=True)
+    recommendations = Column(Text, nullable=True)
+    next_audit_date = Column(Date, nullable=True)
+    certificate_issued = Column(Boolean, default=False, nullable=False)
+    notes = Column(Text, nullable=True)
+
+
+class SupplierFoodSafetyStatus(str, enum.Enum):
+    APPROVED = "APPROVED"
+    CONDITIONAL = "CONDITIONAL"
+    PENDING = "PENDING"
+    SUSPENDED = "SUSPENDED"
+    REJECTED = "REJECTED"
+
+
+class SupplierFoodSafetyApproval(Base, TimestampMixin):
+    """Food safety approval record per supplier."""
+    __tablename__ = "qms_supplier_food_safety"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    supplier_id = Column(String(100), nullable=True, index=True)   # soft FK
+    supplier_name = Column(String(300), nullable=False, index=True)
+    approval_type = Column(String(100), nullable=False)             # FSSC | HALAL | HACCP | BRC | ISO22000 | GMP
+    status = Column(Enum(SupplierFoodSafetyStatus), nullable=False, default=SupplierFoodSafetyStatus.PENDING)
+    audit_score = Column(Numeric(6, 2), nullable=True)
+    auditor = Column(String(200), nullable=True)
+    last_audit_date = Column(Date, nullable=True)
+    approval_date = Column(Date, nullable=True)
+    expiry_date = Column(Date, nullable=True, index=True)
+    certificate_number = Column(String(200), nullable=True)
+    certificate_url = Column(Text, nullable=True)
+    critical_findings = Column(Integer, default=0, nullable=False)
+    major_findings = Column(Integer, default=0, nullable=False)
+    minor_findings = Column(Integer, default=0, nullable=False)
+    notes = Column(Text, nullable=True)

@@ -282,3 +282,39 @@ class ANAIRecommendation(Base, TimestampMixin):
     reviewed_by          = Column(String(200), nullable=True)
     reviewed_at          = Column(DateTime, nullable=True)
     agent_metadata       = Column(JSON, nullable=True)
+
+
+# ── Cleaning Validation ───────────────────────────────────────────────────────
+
+class CleaningValidationResult(str, enum.Enum):
+    PASS = "PASS"
+    FAIL = "FAIL"
+    CONDITIONAL = "CONDITIONAL"
+    PENDING = "PENDING"
+
+
+class CleaningValidationLog(Base, TimestampMixin):
+    """
+    Records cleaning/sanitation validation between production runs to confirm
+    allergen removal before switching to different allergen profile product.
+    """
+    __tablename__ = "allergen_cleaning_validations"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    validation_ref = Column(String(50), unique=True, nullable=False, index=True)
+    line_id = Column(String(100), nullable=True, index=True)        # production line / equipment ID
+    line_name = Column(String(200), nullable=True)
+    previous_product = Column(String(300), nullable=True)           # product run before cleaning
+    previous_allergens = Column(JSON, nullable=True)                # list of allergen names
+    next_product = Column(String(300), nullable=True)               # product run after cleaning
+    cleaning_method = Column(String(200), nullable=True)            # CIP | dry clean | wet clean | swab
+    cleaning_agent = Column(String(200), nullable=True)
+    cleaned_by = Column(String(200), nullable=True)
+    cleaned_at = Column(DateTime, nullable=True)
+    validated_by = Column(String(200), nullable=True)
+    validated_at = Column(DateTime, nullable=True)
+    swab_test_result = Column(String(100), nullable=True)           # ATP reading or allergen swab result
+    swab_threshold = Column(String(100), nullable=True)             # acceptable limit
+    result = Column(Enum(CleaningValidationResult), nullable=False, default=CleaningValidationResult.PENDING)
+    corrective_action = Column(Text, nullable=True)
+    notes = Column(Text, nullable=True)
