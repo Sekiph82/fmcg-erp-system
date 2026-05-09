@@ -233,8 +233,8 @@ class MRPSuggestion(Base, TimestampMixin):
     id              = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     run_id          = Column(UUID(as_uuid=True), ForeignKey("mrp_runs.id", ondelete="CASCADE"),
                              nullable=False, index=True)
-    suggestion_type = Column(Enum(SuggestionType), nullable=False)
-    status          = Column(Enum(SuggestionStatus), nullable=False, default=SuggestionStatus.DRAFT)
+    suggestion_type = Column(Enum(SuggestionType, name="mrp_suggestiontype"), nullable=False)
+    status          = Column(Enum(SuggestionStatus, name="mrp_suggestionstatus"), nullable=False, default=SuggestionStatus.DRAFT)
 
     # What
     product_id  = Column(UUID(as_uuid=True), ForeignKey("products.id",   ondelete="RESTRICT"), nullable=True)

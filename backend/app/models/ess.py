@@ -227,7 +227,7 @@ class ESSAttendanceRecord(Base):
     attendance_date = Column(Date, nullable=False)
     check_in = Column(DateTime, nullable=True)
     check_out = Column(DateTime, nullable=True)
-    status = Column(Enum(AttendanceStatus), default=AttendanceStatus.PRESENT)
+    status = Column(Enum(AttendanceStatus, name="ess_attendancestatus"), default=AttendanceStatus.PRESENT)
     hours_worked = Column(Numeric(4, 2), nullable=True)
     overtime_hours = Column(Numeric(4, 2), default=0)
     late_minutes = Column(Integer, default=0)
@@ -266,7 +266,7 @@ class ESSNotification(Base):
 
     notification_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     employee_id = Column(UUID(as_uuid=True), nullable=False)
-    notification_type = Column(Enum(NotificationType), nullable=False)
+    notification_type = Column(Enum(NotificationType, name="ess_notificationtype"), nullable=False)
     title = Column(String(255), nullable=False)
     body = Column(Text, nullable=False)
     reference_id = Column(UUID(as_uuid=True), nullable=True)

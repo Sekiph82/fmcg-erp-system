@@ -76,7 +76,7 @@ class Vehicle(Base, TimestampMixin):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     vehicle_code = Column(String(50), unique=True, nullable=False, index=True)
     plate_number = Column(String(50), unique=True, nullable=False, index=True)
-    vehicle_type = Column(Enum(VehicleType), nullable=False)
+    vehicle_type = Column(Enum(VehicleType, name="fleet_vehicletype"), nullable=False)
     make = Column(String(100), nullable=True)
     model = Column(String(100), nullable=True)
     year = Column(Integer, nullable=True)
@@ -134,7 +134,7 @@ class FleetTrip(Base, TimestampMixin):
     actual_distance_km = Column(Numeric(10, 2), nullable=True)
     start_odometer = Column(Numeric(12, 1), nullable=True)
     end_odometer = Column(Numeric(12, 1), nullable=True)
-    status = Column(Enum(TripStatus), default=TripStatus.PLANNED, nullable=False, index=True)
+    status = Column(Enum(TripStatus, name="fleet_tripstatus"), default=TripStatus.PLANNED, nullable=False, index=True)
     purpose = Column(String(255), nullable=True)                # delivery / van_sales / transfer
     delivery_trip_id = Column(UUID(as_uuid=True), ForeignKey("delivery_trips.id", ondelete="SET NULL"), nullable=True)
     cargo_weight_kg = Column(Numeric(10, 2), nullable=True)

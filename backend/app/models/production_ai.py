@@ -180,7 +180,7 @@ class ProductionSuggestion(Base, TimestampMixin):
 
     # Source
     agent_type                 = Column(Enum(AgentType), nullable=False)
-    suggestion_type            = Column(Enum(SuggestionType), nullable=False)
+    suggestion_type            = Column(Enum(SuggestionType, name="ai_suggestiontype"), nullable=False)
     production_order_id        = Column(UUID(as_uuid=True), ForeignKey("production_orders.id", ondelete="SET NULL"), nullable=True)
     product_id                 = Column(UUID(as_uuid=True), ForeignKey("products.id", ondelete="SET NULL"), nullable=True)
     recipe_id                  = Column(UUID(as_uuid=True), ForeignKey("recipes.id", ondelete="SET NULL"), nullable=True)
@@ -205,7 +205,7 @@ class ProductionSuggestion(Base, TimestampMixin):
     supporting_data            = Column(Text, nullable=True)   # JSON-encoded context
 
     # Lifecycle
-    status                     = Column(Enum(SuggestionStatus), nullable=False, default=SuggestionStatus.PENDING)
+    status                     = Column(Enum(SuggestionStatus, name="ai_suggestionstatus"), nullable=False, default=SuggestionStatus.PENDING)
     expires_at                 = Column(DateTime(timezone=True), nullable=True)
     actioned_by                = Column(String(255), nullable=True)
     actioned_at                = Column(DateTime(timezone=True), nullable=True)

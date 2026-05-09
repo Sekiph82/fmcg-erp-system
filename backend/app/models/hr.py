@@ -144,7 +144,7 @@ class AttendanceRecord(Base, TimestampMixin):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     employee_id = Column(UUID(as_uuid=True), ForeignKey("hr_employees.id", ondelete="CASCADE"), nullable=False, index=True)
     attendance_date = Column(Date, nullable=False, index=True)
-    status = Column(SAEnum(AttendanceStatus), nullable=False)
+    status = Column(SAEnum(AttendanceStatus, name="hr_attendancestatus"), nullable=False)
     clock_in = Column(Time, nullable=True)      # placeholder for future device integration
     clock_out = Column(Time, nullable=True)     # placeholder for future device integration
     notes = Column(Text, nullable=True)
@@ -169,7 +169,7 @@ class LeaveRequest(Base, TimestampMixin):
     end_date = Column(Date, nullable=False)
     days_requested = Column(Integer, nullable=False)
     reason = Column(Text, nullable=True)
-    approval_status = Column(SAEnum(ApprovalStatus), nullable=False, default=ApprovalStatus.PENDING)
+    approval_status = Column(SAEnum(ApprovalStatus, name="hr_approvalstatus"), nullable=False, default=ApprovalStatus.PENDING)
 
     # Accountability: who approved/rejected, linked to system user
     reviewed_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
