@@ -517,6 +517,7 @@ export const NAV_CONFIG: NavEntry[] = [
       { label: "Yield Analysis",      href: "/dashboard/subcontracting/yield",      permission: "procurement.view" },
       { label: "Performance",         href: "/dashboard/subcontracting/performance",permission: "procurement.view" },
       { label: "AI Agents",           href: "/dashboard/subcontracting/ai",         permission: "procurement.view" },
+      { label: "Co-Packing / Toll",  href: "/dashboard/copacking",                 permission: "procurement.view" },
     ],
   },
 
@@ -1249,8 +1250,9 @@ export const NAV_CONFIG: NavEntry[] = [
     permission: "analytics.view",
     icon: md("M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"),
     items: [
-      { label: "BI Hub",            href: "/dashboard/analytics",            permission: "analytics.view" },
-      { label: "Inventory BI",      href: "/dashboard/analytics/inventory",  permission: "inventory.view" },
+      { label: "BI Hub",              href: "/dashboard/analytics",              permission: "analytics.view" },
+      { label: "Market Intelligence", href: "/dashboard/market-intelligence",   permission: "analytics.view" },
+      { label: "Inventory BI",        href: "/dashboard/analytics/inventory",   permission: "inventory.view" },
       { label: "Production BI",     href: "/dashboard/analytics/production", permission: "production.view" },
       { label: "Procurement BI",    href: "/dashboard/analytics/procurement",permission: "procurement.view" },
       { label: "Sales BI",          href: "/dashboard/analytics/sales",      permission: "sales.view" },

@@ -75,6 +75,8 @@ from app.api.v1.endpoints import (
     regulatory_certs,
     dynamic_pricing,
     brand_assets,
+    market_intelligence,
+    copacking,
 )
 
 api_router = APIRouter()
@@ -310,3 +312,7 @@ api_router.include_router(regulatory_certs.router, prefix="/regulatory-certs", t
 api_router.include_router(dynamic_pricing.router, prefix="/dynamic-pricing", tags=["dynamic-pricing"])
 # ── Brand Asset / Label Design Management ─────────────────────────────────────
 api_router.include_router(brand_assets.router, prefix="/brand-assets", tags=["brand-assets"])
+# ── Market Intelligence ───────────────────────────────────────────────────────
+api_router.include_router(market_intelligence.router, prefix="/market-intel", tags=["market-intelligence"])
+# ── Co-Packing / Toll Manufacturing ──────────────────────────────────────────
+api_router.include_router(copacking.router, prefix="/copacking", tags=["copacking"])

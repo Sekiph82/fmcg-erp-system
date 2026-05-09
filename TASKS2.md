@@ -10,7 +10,7 @@ Tier 4 — FMCG-Specific & Regulatory
 
 ## Current Gap
 
-Gap 52 - Market Intelligence / Competitor Tracking
+Gap 54 - HACCP System Expansion
 
 
 
@@ -22,23 +22,19 @@ Not started yet.
 
 ## Completed in Last Run
 
-Gap 51 - Brand Asset / Label Design Management
+Gap 53 - Co-Packing / Toll Manufacturing
 
-Gap 50 - Dynamic / AI Pricing Engine
+Gap 52 - Market Intelligence / Competitor Tracking
 
 
 
 ## Implemented Gap Items
 
-1-51 implemented.
+1-53 implemented.
 
 
 
 ## Remaining Gap Items
-
-52. Market Intelligence / Competitor Tracking
-
-53. Co-Packing / Toll Manufacturing
 
 54. HACCP System Expansion
 
@@ -78,23 +74,27 @@ Gap 50 - Dynamic / AI Pricing Engine
 
 ## Next Immediate Task
 
-Implement Gap 52 - Market Intelligence / Competitor Tracking.
+Implement Gap 54 - HACCP System Expansion.
 
-Note: Gap 50 (Dynamic Pricing) added CompetitorPrice model for price tracking. Gap 52 is broader — field-level market intelligence: shelf share, volume estimates, promotions observed, market share.
+Inspect first:
+- Check backend/app/models/quality.py + qms.py for existing HACCP models
+- Check frontend/src/app/dashboard/qms/ for existing QMS pages
 
-What's needed:
-- Competitor price monitoring (already in Gap 50 dp_competitor_prices — link/extend rather than duplicate)
-- Market share tracking (% estimates per category)
-- Shelf share tracking (field data: how many facings we have vs competitor)
-- Promotion effectiveness vs market
-- External data integration stub (Nielsen/IRI)
+Gap 54 missing (from ERP_70_GAPS plan):
+- HACCP plan PDF generation (stub)
+- CCP trend analytics
+- BRC / FSSC 22000 audit checklist
+- HALAL / KOSHER compliance tracking
+- Mock audit workflows
+- Supplier food safety approval tracking
 
-Build plan:
-1. MarketObservation model (observer_name, outlet_name, outlet_type, location, observation_date, category, our_brand_facings, total_facings, our_shelf_share_pct, notes).
-2. MarketShareEstimate model (category, period_month, our_share_pct, competitor_shares JSONB, source, notes).
-3. Endpoints: CRUD observations, shelf share analytics, market share tracker.
-4. Frontend: Market Intelligence hub page with shelf share table + market share tracker.
-5. Nav under Sales & Distribution or AI/Analytics.
+Build next coherent slice:
+1. Inspect qms.py models — likely has CCP, HACCP plan, deviations.
+2. Add AuditChecklist model (checklist_type: BRC/FSSC/HALAL/KOSHER/ISO22000, items JSONB, score, status, conducted_by, audit_date).
+3. Add SupplierFoodSafetyApproval model (supplier_id/name, approval_type, status, expiry_date, auditor, score, notes).
+4. Endpoints: audit checklists CRUD, stats, supplier food safety CRUD.
+5. Frontend: HACCP expansion page with audit checklist runner + supplier approval tracker.
+6. Nav under QMS & HACCP.
 
 
 
@@ -108,26 +108,25 @@ Validation environment blocker: python not found on PATH.
 
 ## Files Changed in Last Run
 
-Gap 51 additions:
-backend/app/models/brand_assets.py - NEW: BrandAsset model (asset_ref, name, asset_type LABEL/ARTWORK/PACKAGING_DESIGN/LOGO/BRAND_GUIDELINE/PRODUCT_PHOTO/MARKETING_MATERIAL, brand, product_sku, version int, is_latest, previous_version_id FK, bom_version, bom_id, bom_change_flag, file_url/thumbnail_url/file_format, compliance_checklist JSONB, status DRAFT/IN_REVIEW/APPROVED/REJECTED/PRINT_READY/ARCHIVED); AssetApprovalStage model (asset_id FK, stage_name, stage_order, status PENDING/APPROVED/REJECTED/SKIPPED, approved_by, approved_at)
-backend/app/api/v1/endpoints/brand_assets.py - NEW: POST /brand-assets/ (seeds 4 approval stages R&D/Regulatory/Marketing/Print); GET /brand-assets/ (filter type/status/sku/bom_change_flag); GET /brand-assets/stats; GET /brand-assets/{id} (with approval_stages); POST /brand-assets/{id}/stages/{stage_id}/approve (auto-sets PRINT_READY if all approved); POST /brand-assets/{id}/stages/{stage_id}/reject; PATCH /brand-assets/{id}/compliance; POST /brand-assets/{id}/new-version; POST /brand-assets/{id}/flag-bom-change
-backend/app/api/v1/router.py - MODIFIED: brand_assets route
-frontend/src/app/dashboard/brand-assets/page.tsx - NEW: Brand Asset hub — KPI strip, type/status/BOM-alert filters, asset grid (thumbnail/icon, compliance bar, version badge, BOM changed alert), upload form
-frontend/src/app/dashboard/brand-assets/[id]/page.tsx - NEW: Asset detail — approval pipeline (approve/reject per stage, auto Print Ready when all approved), compliance checklist toggle, BOM change flag button, file link
-frontend/src/components/nav-config.tsx - MODIFIED: Brand Assets / DAM under Quality Control
+Gap 53 additions:
+backend/app/models/copacking.py - NEW: CoPackingContract (contract_ref, customer_name, contract_type COPACKING/TOLL_MFG/PRIVATE_LABEL, brand_name, start/end_date, MOQ, processing_fee_per_unit, status DRAFT/ACTIVE/SUSPENDED/EXPIRED/TERMINATED); CoPackingRun (run_ref, contract_id FK, run_date, qty_planned/produced, processing_fee_total auto-calc from contract rate); CustomerTool (tool_ref, customer_name, tool_name, tool_type, serial_number, units_produced, max_units_life, life_used_pct, depreciation_per_unit, status ACTIVE/IN_REPAIR/RETIRED/RETURNED)
+backend/app/api/v1/endpoints/copacking.py - NEW: Contracts CRUD + status patch; Runs list/create (auto-calc fee from contract rate); Tools register/list; POST /tools/{id}/log-usage (increments units_produced, auto-RETIRED at max); GET /stats
+backend/app/api/v1/router.py - MODIFIED: copacking route
+frontend/src/app/dashboard/copacking/page.tsx - NEW: 5-tab page (Contracts/Tools/Runs/+Contract/+Tool). Contracts list with status badge. Tools table with life-used % bar (red ≥90%). Runs list with QC pass/fail badge.
+frontend/src/components/nav-config.tsx - MODIFIED: Co-Packing / Toll under Subcontracting section
 
-Gap 50 additions:
-backend/app/models/dynamic_pricing.py - NEW: CompetitorPrice (product_name, competitor_name, price, channel MODERN_TRADE/DISTRIBUTOR/EXPORT/VAN_SALES/ONLINE/WHOLESALE, observed_date, source); PriceRecommendation (current_price, recommended_price, floor_price, avg_competitor_price, margin_pct, confidence_score, trigger, status PENDING/APPLIED/REJECTED/EXPIRED)
-backend/app/api/v1/endpoints/dynamic_pricing.py - NEW: POST/GET /dynamic-pricing/competitor-prices; GET /dynamic-pricing/competitor-prices/summary (avg/min/max per product×channel); POST /dynamic-pricing/recommendations/generate (rule engine: COMPETITOR_UNDERCUT if competitor avg < current×0.92, LOW_MARGIN if margin < floor); GET /dynamic-pricing/recommendations; POST /dynamic-pricing/recommendations/{id}/apply|reject; GET /dynamic-pricing/dashboard
-backend/app/api/v1/router.py - MODIFIED: dynamic_pricing route
-frontend/src/app/dashboard/dynamic-pricing/page.tsx - NEW: 4-tab page: Price Recommendations (apply/reject cards), Competitor Data (table), Log Price, Generate Recommendation (rule engine form with result)
-frontend/src/components/nav-config.tsx - MODIFIED: AI Pricing Engine under Sales & Distribution
+Gap 52 additions:
+backend/app/models/market_intelligence.py - NEW: MarketObservation (obs_ref, outlet_name/type, location, category, our_facings/total_facings → auto shelf_share_pct, our_promo_active, competitor_promo_active, our_oos_flag); MarketShareEstimate (category, period_month YYYY-MM, our_share_pct, competitor_shares JSONB, total_market_value_kes, source)
+backend/app/api/v1/endpoints/market_intelligence.py - NEW: POST/GET /market-intel/observations; GET /market-intel/shelf-share/summary (avg/OOS rate/comp_promo rate per category); GET /market-intel/dashboard; POST/GET /market-intel/market-share
+backend/app/api/v1/router.py - MODIFIED: market_intelligence route
+frontend/src/app/dashboard/market-intelligence/page.tsx - NEW: 5-tab page (Shelf Share Analytics/Field Observations/Market Share/Log Observation/Log Market Share). Shelf share table with color-coded bars. Market share table with competitor shares.
+frontend/src/components/nav-config.tsx - MODIFIED: Market Intelligence under Analytics / BI
 
 
 
 ## Validation Results
 
-Frontend TypeScript: PASS (npm.cmd run type-check, 0 errors — verified after Gap 51)
+Frontend TypeScript: PASS (npm.cmd run type-check, 0 errors — verified after Gap 53)
 
 Backend Python compile: BLOCKED (python not found)
 
@@ -135,15 +134,17 @@ Backend Python compile: BLOCKED (python not found)
 
 ## Notes for Next Claude Run
 
-Gap 51 notes:
-- Approval stages seeded on create: R&D (order 1) → Regulatory (2) → Marketing (3) → Print (4). Auto-set PRINT_READY when all 4 approved.
-- compliance_checklist default keys: allergen_declared, nutrition_label, ingredient_list, net_weight, manufacturer_details, expiry_date_format, barcode_present, kebs_mark.
-- bom_change_flag: manual flag (POST /flag-bom-change) alerts team that BOM changed and label needs review.
-- new-version creates new asset (version=prev+1, previous_version_id=prev.id, prev.is_latest=False), seeds fresh approval stages.
-- Asset grid shows compliance progress bar colored by pct: green=100%, amber≥60%, red<60%.
+Gap 53 notes:
+- CoPackingRun.processing_fee_total auto-calculated: contract.processing_fee_per_unit × qty_produced.
+- CustomerTool.life_used_pct = units_produced / max_units_life × 100. Tool auto-RETIRED when units_produced ≥ max_units_life on log-usage call.
+- stats.tools_near_end_of_life: active tools with units_produced ≥ 90% of max_units_life.
 
-Gap 50 notes:
-- Rule engine: COMPETITOR_UNDERCUT → recommend competitor_avg × 0.98. LOW_MARGIN → floor = cost / (1 - floor_margin_pct/100). Confidence: 80 for undercut, 95 for margin breach.
-- CompetitorPrice and PriceRecommendation are separate models from pricing.py and price_list.py (which handle static price lists/rules).
+Gap 52 notes:
+- shelf_share_pct auto-computed on create: our_facings / total_facings × 100.
+- shelf-share summary groups by category, returns avg_shelf_share, OOS rate, competitor_promo rate per category.
+- MarketShareEstimate.competitor_shares is JSONB: {brand: share_pct} dict.
 
-Gap 52 start: Distinct from Gap 50 (price tracking). Gap 52 = broader market intelligence: shelf share (our facings vs total), market share estimates, promotion observation. Create new market_intelligence.py model + endpoint.
+Gap 54 start:
+- Check backend/app/models/quality.py and qms.py — QMS has HACCP plans, CCPs, deviations.
+- Don't duplicate existing QMS. Add what's MISSING: audit checklists (BRC/FSSC/HALAL/KOSHER) + supplier food safety approvals.
+- AuditChecklist: predefined item sets per standard. Score = passed_items/total × 100.
