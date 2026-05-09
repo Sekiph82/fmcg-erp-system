@@ -1,17 +1,22 @@
 from typing import List, Optional
 from uuid import UUID
+import uuid as _uuid
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
 import io
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, func
 
 from app.db.session import get_db
+from app.core.deps import get_current_user
 from app.schemas.report_builder import (
     ReportCreate, ReportUpdate, ReportOut, RunRequest, RunResult,
     ScheduleCreate, ScheduleOut,
     DashboardCreate, DashboardOut, WidgetCreate, WidgetOut,
     RBAIRecOut, RBAIRecAck,
 )
+from app.models.report_builder import RLSPolicy, RLSPolicyScope, FilterOperator
 import app.services.report_builder_service as svc
 
 router = APIRouter()
@@ -214,3 +219,253 @@ async def ack_ai_rec(rec_id: UUID, data: RBAIRecAck, db: AsyncSession = Depends(
     if not obj:
         raise HTTPException(404, "Recommendation not found")
     return obj
+
+
+# ── Cross-Module Executive Summary ────────────────────────────────────────────
+
+@router.get("/executive-summary")
+async def executive_summary(db: AsyncSession = Depends(get_db)):
+    """
+    Single-call cross-module KPI summary for executive dashboard.
+    Queries Sales, Production, Procurement, Inventory, Approvals, Helpdesk.
+    """
+    from app.models.sales import SalesOrder, SOStatus
+    from app.models.procurement import PurchaseOrder, POStatus
+    from app.models.production import ProductionOrder, ProductionOrderStatus
+    from app.models.inventory import Stock
+    from app.models.workflow import ApprovalRequest, ApprovalStatus
+    from app.models.helpdesk import HelpdeskTicket, TicketStatus
+    from app.models.master import Product, Material
+    from datetime import datetime, timedelta
+
+    today = datetime.utcnow().date()
+    month_start = today.replace(day=1)
+
+    # ── Sales Orders ──
+    so_r = await db.execute(
+        select(SalesOrder.status, func.count().label("cnt"))
+        .group_by(SalesOrder.status)
+    )
+    so_by_status = {r.status: r.cnt for r in so_r.all()}
+    open_so = sum(v for k, v in so_by_status.items() if k not in (SOStatus.SHIPPED, "CANCELLED", "DELIVERED"))
+    so_this_month = await db.execute(
+        select(func.count()).select_from(SalesOrder).where(
+            func.date(SalesOrder.created_at) >= month_start
+        )
+    )
+    so_month_count = so_this_month.scalar() or 0
+
+    # ── Purchase Orders ──
+    po_r = await db.execute(
+        select(PurchaseOrder.status, func.count().label("cnt"))
+        .group_by(PurchaseOrder.status)
+    )
+    po_by_status = {r.status: r.cnt for r in po_r.all()}
+    open_po = sum(v for k, v in po_by_status.items() if k in (POStatus.APPROVED, POStatus.ORDERED, POStatus.PARTIALLY_RECEIVED))
+
+    # ── Production Orders ──
+    prod_r = await db.execute(
+        select(ProductionOrder.status, func.count().label("cnt"))
+        .group_by(ProductionOrder.status)
+    )
+    prod_by_status = {r.status: r.cnt for r in prod_r.all()}
+    in_progress_prod = prod_by_status.get(ProductionOrderStatus.IN_PROGRESS, 0) + prod_by_status.get(ProductionOrderStatus.RELEASED, 0)
+    planned_prod = prod_by_status.get(ProductionOrderStatus.PLANNED, 0)
+
+    # ── Inventory ──
+    stock_r = await db.execute(
+        select(func.count()).select_from(Stock).where(Stock.quantity_on_hand <= 0)
+    )
+    zero_stock = stock_r.scalar() or 0
+
+    low_stock_r = await db.execute(
+        select(func.count()).select_from(Stock)
+        .join(Product, Stock.product_id == Product.id, isouter=True)
+        .where(
+            Stock.product_id.isnot(None),
+            Stock.quantity_on_hand > 0,
+            Stock.quantity_on_hand <= Product.reorder_point,
+        )
+    )
+    low_stock = low_stock_r.scalar() or 0
+
+    # ── Approvals ──
+    appr_r = await db.execute(
+        select(func.count()).select_from(ApprovalRequest).where(
+            ApprovalRequest.status == ApprovalStatus.PENDING
+        )
+    )
+    pending_approvals = appr_r.scalar() or 0
+
+    # ── Helpdesk ──
+    ticket_r = await db.execute(
+        select(func.count()).select_from(HelpdeskTicket).where(
+            HelpdeskTicket.status == TicketStatus.OPEN
+        )
+    )
+    open_tickets = ticket_r.scalar() or 0
+
+    # ── Report counts ──
+    from app.models.report_builder import ReportDefinition, ReportSchedule
+    report_count_r = await db.execute(select(func.count()).select_from(ReportDefinition).where(ReportDefinition.active_flag == True))
+    scheduled_count_r = await db.execute(select(func.count()).select_from(ReportSchedule).where(ReportSchedule.active_flag == True))
+    total_reports = report_count_r.scalar() or 0
+    scheduled_reports = scheduled_count_r.scalar() or 0
+
+    return {
+        "as_of": today.isoformat(),
+        "sales": {
+            "open_orders": open_so,
+            "orders_this_month": so_month_count,
+            "by_status": {k.value if hasattr(k, "value") else k: v for k, v in so_by_status.items()},
+        },
+        "procurement": {
+            "open_purchase_orders": open_po,
+            "by_status": {k.value if hasattr(k, "value") else k: v for k, v in po_by_status.items()},
+        },
+        "production": {
+            "in_progress": in_progress_prod,
+            "planned": planned_prod,
+            "by_status": {k.value if hasattr(k, "value") else k: v for k, v in prod_by_status.items()},
+        },
+        "inventory": {
+            "zero_stock_items": zero_stock,
+            "low_stock_items": low_stock,
+        },
+        "approvals": {
+            "pending": pending_approvals,
+        },
+        "helpdesk": {
+            "open_tickets": open_tickets,
+        },
+        "reports": {
+            "total_active": total_reports,
+            "scheduled": scheduled_reports,
+        },
+    }
+
+
+# ── Row-Level Security (RLS) ──────────────────────────────────────────────────
+
+class RLSPolicyIn(BaseModel):
+    policy_name: str
+    data_source: str
+    scope: RLSPolicyScope = RLSPolicyScope.USER
+    principal: str
+    filter_field: str
+    operator: FilterOperator = FilterOperator.EQ
+    filter_value: str
+    description: Optional[str] = None
+
+
+class RLSPolicyOut(BaseModel):
+    policy_id: str
+    policy_name: str
+    data_source: str
+    scope: str
+    principal: str
+    filter_field: str
+    operator: str
+    filter_value: str
+    active_flag: bool
+    description: Optional[str]
+    created_by: Optional[str]
+    created_at: str
+
+    @classmethod
+    def from_orm(cls, p: RLSPolicy) -> "RLSPolicyOut":
+        return cls(
+            policy_id=str(p.policy_id),
+            policy_name=p.policy_name,
+            data_source=p.data_source,
+            scope=p.scope,
+            principal=p.principal,
+            filter_field=p.filter_field,
+            operator=p.operator,
+            filter_value=p.filter_value,
+            active_flag=p.active_flag,
+            description=p.description,
+            created_by=p.created_by,
+            created_at=p.created_at.isoformat() if p.created_at else "",
+        )
+
+
+@router.post("/rls", response_model=RLSPolicyOut, status_code=201)
+async def create_rls_policy(
+    payload: RLSPolicyIn,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    """Create a row-level security policy for a report data source."""
+    policy = RLSPolicy(
+        policy_name=payload.policy_name,
+        data_source=payload.data_source,
+        scope=payload.scope,
+        principal=payload.principal,
+        filter_field=payload.filter_field,
+        operator=payload.operator,
+        filter_value=payload.filter_value,
+        description=payload.description,
+        created_by=getattr(current_user, "username", None) or str(current_user.id),
+    )
+    db.add(policy)
+    await db.commit()
+    await db.refresh(policy)
+    return RLSPolicyOut.from_orm(policy)
+
+
+@router.get("/rls", response_model=List[RLSPolicyOut])
+async def list_rls_policies(
+    data_source: Optional[str] = None,
+    active_only: bool = True,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(get_current_user),
+):
+    """List row-level security policies."""
+    q = select(RLSPolicy)
+    if data_source:
+        q = q.where(RLSPolicy.data_source == data_source)
+    if active_only:
+        q = q.where(RLSPolicy.active_flag == True)
+    q = q.order_by(RLSPolicy.data_source, RLSPolicy.policy_name)
+    r = await db.execute(q)
+    return [RLSPolicyOut.from_orm(p) for p in r.scalars().all()]
+
+
+@router.patch("/rls/{policy_id}")
+async def update_rls_policy(
+    policy_id: str,
+    active_flag: Optional[bool] = None,
+    policy_name: Optional[str] = None,
+    filter_value: Optional[str] = None,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(get_current_user),
+):
+    """Toggle active flag or update a RLS policy."""
+    r = await db.execute(select(RLSPolicy).where(RLSPolicy.policy_id == _uuid.UUID(policy_id)))
+    policy = r.scalar_one_or_none()
+    if not policy:
+        raise HTTPException(404, "RLS policy not found")
+    if active_flag is not None:
+        policy.active_flag = active_flag
+    if policy_name is not None:
+        policy.policy_name = policy_name
+    if filter_value is not None:
+        policy.filter_value = filter_value
+    await db.commit()
+    return RLSPolicyOut.from_orm(policy)
+
+
+@router.delete("/rls/{policy_id}", status_code=204)
+async def delete_rls_policy(
+    policy_id: str,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(get_current_user),
+):
+    """Delete a RLS policy."""
+    r = await db.execute(select(RLSPolicy).where(RLSPolicy.policy_id == _uuid.UUID(policy_id)))
+    policy = r.scalar_one_or_none()
+    if not policy:
+        raise HTTPException(404, "RLS policy not found")
+    await db.delete(policy)
+    await db.commit()

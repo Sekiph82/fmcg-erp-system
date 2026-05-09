@@ -106,3 +106,16 @@ class Document(Base, TimestampMixin):
     owner = relationship("User", foreign_keys=[owner_user_id])
     approved_by = relationship("User", foreign_keys=[approved_by_id])
     previous_version = relationship("Document", remote_side="Document.id", foreign_keys=[previous_version_id])
+    tags = relationship("DocumentTag", back_populates="document", cascade="all, delete-orphan")
+
+
+class DocumentTag(Base, TimestampMixin):
+    """Freeform tags attached to a document for search and filtering."""
+    __tablename__ = "document_tags"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    document_id = Column(UUID(as_uuid=True), ForeignKey("documents.id", ondelete="CASCADE"), nullable=False, index=True)
+    tag = Column(String(100), nullable=False, index=True)
+    created_by = Column(String(200), nullable=True)
+
+    document = relationship("Document", back_populates="tags")

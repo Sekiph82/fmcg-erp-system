@@ -241,3 +241,22 @@ class PortalAIRecommendation(Base, TimestampMixin):
     status            = Column(Enum(PortalAIRecStatus), default=PortalAIRecStatus.PENDING)
     acknowledged_by   = Column(String(50))
     notes             = Column(Text)
+
+
+class PortalSellThroughUpload(Base, TimestampMixin):
+    """Distributor portal self-service sell-through submission."""
+    __tablename__ = "portal_sell_through_uploads"
+
+    id               = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    portal_account_id = Column(UUID(as_uuid=True), ForeignKey("portal_accounts.id", ondelete="CASCADE"), nullable=False, index=True)
+    period_start     = Column(Date, nullable=False)
+    period_end       = Column(Date, nullable=False)
+    total_units_sold = Column(Integer, nullable=False, default=0)
+    total_value      = Column(Numeric(18, 2), nullable=True)
+    notes            = Column(Text, nullable=True)
+    upload_reference = Column(String(100), nullable=True)
+    review_status    = Column(String(30), default="PENDING", nullable=False)
+    reviewed_by      = Column(String(200), nullable=True)
+    reviewed_at      = Column(DateTime, nullable=True)
+
+    account = relationship("PortalAccount", foreign_keys=[portal_account_id])

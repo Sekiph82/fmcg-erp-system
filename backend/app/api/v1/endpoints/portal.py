@@ -318,3 +318,99 @@ async def ack_recommendation(rec_id: str, data: PortalAIRecAck, db: AsyncSession
     if not rec:
         raise HTTPException(404, "Recommendation not found")
     return rec
+
+
+# ── Order Tracking (confirmed ERP sales orders for portal account) ─────────────
+
+@router.get("/accounts/{account_id}/sales-orders")
+async def portal_sales_orders(
+    account_id: str,
+    limit: int = Query(50, le=200),
+    db: AsyncSession = Depends(get_db),
+):
+    """Return confirmed ERP sales orders linked to the portal account's customer."""
+    from sqlalchemy import select
+    from app.models.portal import PortalAccount
+    from app.models.sales import SalesOrder, SOStatus
+
+    acc = await svc.get_account(db, account_id)
+    if not acc:
+        raise HTTPException(404, "Portal account not found")
+
+    if not acc.linked_customer_id:
+        return []
+
+    result = await db.execute(
+        select(SalesOrder)
+        .where(
+            SalesOrder.customer_id.cast(str) == str(acc.linked_customer_id)
+        )
+        .order_by(SalesOrder.created_at.desc())
+        .limit(limit)
+    )
+    orders = result.scalars().all()
+    return [
+        {
+            "id": str(o.id),
+            "order_no": o.order_no,
+            "order_date": str(o.order_date) if o.order_date else None,
+            "status": o.status,
+            "payment_status": o.payment_status,
+            "total_amount": float(o.total_amount) if hasattr(o, "total_amount") and o.total_amount else None,
+            "currency": getattr(o, "currency", "KES"),
+            "requested_delivery_date": str(o.requested_delivery_date) if o.requested_delivery_date else None,
+            "created_at": o.created_at.isoformat() if o.created_at else "",
+        }
+        for o in orders
+    ]
+
+
+# ── Sell-Through Upload (distributor portal) ──────────────────────────────────
+
+from pydantic import BaseModel as _BaseModel
+
+class SellThroughUploadIn(_BaseModel):
+    account_id: str
+    period_start: str
+    period_end: str
+    total_units_sold: int
+    total_value: Optional[float] = None
+    notes: Optional[str] = None
+    upload_reference: Optional[str] = None
+
+
+@router.post("/sell-through-upload", status_code=201)
+async def submit_sell_through(
+    payload: SellThroughUploadIn,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Distributor self-service sell-through data submission.
+    Creates a portal sell-through upload record for internal review.
+    """
+    from app.models.portal import PortalAccount, PortalSellThroughUpload
+    from datetime import date
+    import uuid as _uuid2
+
+    acc = await svc.get_account(db, payload.account_id)
+    if not acc:
+        raise HTTPException(404, "Portal account not found")
+
+    upload = PortalSellThroughUpload(
+        portal_account_id=acc.id,
+        period_start=date.fromisoformat(payload.period_start),
+        period_end=date.fromisoformat(payload.period_end),
+        total_units_sold=payload.total_units_sold,
+        total_value=payload.total_value,
+        notes=payload.notes,
+        upload_reference=payload.upload_reference,
+    )
+    db.add(upload)
+    await db.commit()
+    await db.refresh(upload)
+    return {
+        "upload_id": str(upload.id),
+        "status": "PENDING",
+        "period": f"{payload.period_start} to {payload.period_end}",
+        "message": "Sell-through data received. Pending review.",
+    }

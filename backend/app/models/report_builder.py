@@ -230,3 +230,27 @@ class RBAIRecommendation(Base):
     actioned_by = Column(String(200), nullable=True)
     actioned_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class RLSPolicyScope(str, PyEnum):
+    USER = "user"
+    ROLE = "role"
+
+
+class RLSPolicy(Base):
+    """Row-Level Security policy — restricts data visible in a report by user/role."""
+    __tablename__ = "rb_rls_policies"
+
+    policy_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    policy_name = Column(String(200), nullable=False)
+    data_source = Column(String(100), nullable=False)
+    scope = Column(Enum(RLSPolicyScope), nullable=False, default=RLSPolicyScope.USER)
+    principal = Column(String(200), nullable=False)   # user_id or role name
+    filter_field = Column(String(200), nullable=False)
+    operator = Column(Enum(FilterOperator), nullable=False, default=FilterOperator.EQ)
+    filter_value = Column(Text, nullable=False)
+    active_flag = Column(Boolean, default=True, nullable=False)
+    description = Column(Text, nullable=True)
+    created_by = Column(String(200), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

@@ -12,7 +12,7 @@ from sqlalchemy.orm import selectinload
 
 from app.core.deps import get_current_user, require_permission
 from app.db.session import get_db
-from app.models.documents import Document, DocumentStatus, DocumentCategory
+from app.models.documents import Document, DocumentStatus, DocumentCategory, DocumentTag
 from app.schemas.documents import (
     DocumentCreate, DocumentUpdate, DocumentApprove,
     DocumentRead, DocumentShort, DocumentVersionHistory,
@@ -316,3 +316,149 @@ async def get_version_history(doc_id: uuid.UUID, db: AsyncSession = Depends(get_
         .order_by(Document.version.desc())
     )
     return result.scalars().all()
+
+
+# ── Expiry tracking ───────────────────────────────────────────────────────────
+
+@router.get("/expiring/list",
+            dependencies=[Depends(require_permission("documents", "view"))])
+async def list_expiring_documents(
+    days: int = Query(30, ge=1, le=365),
+    include_expired: bool = Query(True),
+    db: AsyncSession = Depends(get_db),
+):
+    """List documents expiring within the next N days (plus already expired if requested)."""
+    from datetime import date, timedelta
+    today = date.today()
+    cutoff = today + timedelta(days=days)
+
+    conditions = [
+        Document.status == DocumentStatus.APPROVED,
+        Document.expiry_date.isnot(None),
+        Document.is_latest == True,
+    ]
+    if include_expired:
+        conditions.append(Document.expiry_date <= cutoff)
+    else:
+        conditions.append(Document.expiry_date >= today)
+        conditions.append(Document.expiry_date <= cutoff)
+
+    result = await db.execute(
+        select(Document).where(*conditions).order_by(Document.expiry_date.asc())
+    )
+    docs = result.scalars().all()
+    return [
+        {
+            "id": str(d.id),
+            "title": d.title,
+            "category": d.category,
+            "version": d.version,
+            "expiry_date": str(d.expiry_date) if d.expiry_date else None,
+            "status": d.status,
+            "days_until_expiry": (d.expiry_date - today).days if d.expiry_date else None,
+            "expired": d.expiry_date < today if d.expiry_date else False,
+            "file_name": d.file_name,
+            "related_entity_type": d.related_entity_type,
+            "related_entity_id": d.related_entity_id,
+        }
+        for d in docs
+    ]
+
+
+# ── Tagging ───────────────────────────────────────────────────────────────────
+
+class TagIn(BaseModel):
+    tags: List[str]
+
+
+@router.post("/{doc_id}/tags", status_code=201,
+             dependencies=[Depends(require_permission("documents", "edit"))])
+async def add_tags(
+    doc_id: uuid.UUID,
+    body: TagIn,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    """Add tags to a document. Ignores duplicates."""
+    doc = await db.get(Document, doc_id)
+    if not doc:
+        raise HTTPException(404, "Document not found")
+
+    existing_r = await db.execute(
+        select(DocumentTag.tag).where(DocumentTag.document_id == doc_id)
+    )
+    existing = {r[0] for r in existing_r.all()}
+
+    added = []
+    for tag in body.tags:
+        tag = tag.strip().lower()
+        if tag and tag not in existing:
+            dt = DocumentTag(
+                document_id=doc_id,
+                tag=tag,
+                created_by=getattr(current_user, "username", None) or str(current_user.id),
+            )
+            db.add(dt)
+            added.append(tag)
+
+    await db.commit()
+    return {"added": added, "doc_id": str(doc_id)}
+
+
+@router.delete("/{doc_id}/tags/{tag}",
+               dependencies=[Depends(require_permission("documents", "edit"))])
+async def remove_tag(
+    doc_id: uuid.UUID,
+    tag: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """Remove a tag from a document."""
+    result = await db.execute(
+        select(DocumentTag).where(
+            DocumentTag.document_id == doc_id,
+            DocumentTag.tag == tag.strip().lower(),
+        )
+    )
+    dt = result.scalar_one_or_none()
+    if not dt:
+        raise HTTPException(404, "Tag not found")
+    await db.delete(dt)
+    await db.commit()
+    return {"removed": tag, "doc_id": str(doc_id)}
+
+
+@router.get("/{doc_id}/tags",
+            dependencies=[Depends(require_permission("documents", "view"))])
+async def list_tags(doc_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    """List all tags for a document."""
+    result = await db.execute(
+        select(DocumentTag).where(DocumentTag.document_id == doc_id).order_by(DocumentTag.tag)
+    )
+    return [{"tag": t.tag, "created_by": t.created_by, "created_at": t.created_at.isoformat() if t.created_at else ""} for t in result.scalars().all()]
+
+
+@router.get("/tags/search",
+            dependencies=[Depends(require_permission("documents", "view"))])
+async def search_by_tag(
+    tag: str = Query(...),
+    db: AsyncSession = Depends(get_db),
+):
+    """Return documents that have a given tag."""
+    result = await db.execute(
+        select(Document)
+        .join(DocumentTag, Document.id == DocumentTag.document_id)
+        .where(DocumentTag.tag == tag.strip().lower(), Document.is_latest == True)
+        .order_by(Document.created_at.desc())
+    )
+    docs = result.scalars().all()
+    return [
+        {
+            "id": str(d.id),
+            "title": d.title,
+            "category": d.category,
+            "version": d.version,
+            "status": d.status,
+            "expiry_date": str(d.expiry_date) if d.expiry_date else None,
+        }
+        for d in docs
+    ]
