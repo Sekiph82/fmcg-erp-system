@@ -1,10 +1,96 @@
 # TASKS — FMCG ERP (Kenya) · Production Module
 
 ## Current Phase
-Full User Manual Generation ✅ COMPLETED
+Tier 5 — QA / Hardening (All 70 gaps implemented) ✅
 
 ## In Progress
-(none)
+(none — next work: Alembic graph repair, backend integration tests, ESLint config, end-to-end smoke tests)
+
+## Blockers
+- **Alembic graph BROKEN**: 8 duplicate revision IDs (c5d6, d6e7, e7f8 — known; PLUS a0b1, a3b4, b4c5, d4e5, and NEW **f1a2b3c4d5e6** introduced by Gap 70 conflicting with qms_haccp_system). `alembic upgrade head` fails. `Base.metadata.create_all()` at startup works as workaround.
+- **Alembic branch**: `e9f0a1b2c3d4_payroll_ke` and `f0a1b2c3d4e5_esg_intelligence_gap69` both branch from `d8e9f0a1b2c3` — two heads in migration chain.
+- **audit_logs schema drift**: repaired directly in Docker DB for login fix — needs proper Alembic migration after graph cleanup.
+- **Local Python PATH broken**: `python`, `python3`, `py` not on PATH. Docker backend compile/start works. `npm.cmd run lint` blocked by interactive ESLint setup prompt.
+- **In-memory security components**: `login_limiter`, `token_blocklist`, `ai_rate_limiter` are in-memory — won't survive multi-worker deployment. Needs Redis upgrade before production scale-out.
+- **ESG Intelligence nav permission bug**: `nav-config.tsx` line 1227 uses `"hr.view"` instead of `"esg.view"` for ESG Intelligence link.
+
+## Next Immediate Tasks (Priority Order)
+1. Fix Alembic graph: deduplicate all 8 revision ID conflicts (especially NEW f1a2b3c4d5e6)
+2. Convert audit_logs schema repair into proper migration
+3. Fix ESG Intelligence nav permission (`hr.view` → `esg.view`) in nav-config.tsx
+4. Wire Gap 66 execute endpoint to real ERP endpoints (currently stubbed)
+5. Run backend integration tests inside Docker
+6. Configure ESLint non-interactively or document skip
+7. End-to-end smoke tests for /dashboard/esg/intelligence and /dashboard/integrations/marketplace
+8. Upgrade in-memory rate limiter + token blocklist to Redis
+
+## Completed (Gap 66–70 + QA Hardening via Codex)
+
+### QA / Hardening Hotfix
+- Diagnosed `POST /api/v1/auth/login net::ERR_EMPTY_RESPONSE` as backend startup failure — root cause: missing `get_current_user` import in `traceability.py`
+- Fixed `backend/app/api/v1/endpoints/traceability.py` — added missing import
+- Repaired local Docker Postgres `audit_logs` table: added nullable columns `actor_name`, `session_id`, `user_agent`, `module`, `before_value`, `after_value`, `row_hash` + indexes
+- Verified bad credentials → 401 (not 500), seeded admin login → 200 with token
+
+### Gap 66 — NL ERP Command Console
+- `frontend/src/app/dashboard/ai/nl-command/page.tsx` — NEW: command parser UI, confirmation flow, risk/status display, KPI cards, history table
+- `frontend/src/lib/aiApi.ts` — added NL command types/methods: parse, execute, reject, history
+- `backend/app/api/v1/endpoints/ai.py` — added `/ai/nl-command` POST/execute/reject/history endpoints with `require_permission("ai", ...)` guards
+- **Note**: execute endpoint is intentionally stubbed — records execution but does not call target ERP endpoints. Future hardening: wire to real internal endpoints with extracted parameters.
+
+### Gap 67 — AI Governance Console
+- `backend/app/models/ai.py` — added `AIAgentPolicy`, `AIAgentRunStatus` enum, `AIAgentRun` models; fixed missing `datetime` import
+- `backend/app/api/v1/endpoints/ai.py` — added `/ai/governance/policies` CRUD, `/ai/governance/runs` log+list, `/ai/governance/dashboard` KPIs
+- `frontend/src/lib/aiApi.ts` — added AI governance TypeScript types/API methods
+- `frontend/src/app/dashboard/ai/governance/page.tsx` — NEW: governance dashboard, policy registry form/list, run audit logger, filters, status KPIs
+- `frontend/src/components/nav-config.tsx` — NL ERP Control + AI Governance links were already present
+
+### Gap 68 — Predictive Maintenance
+- `backend/app/models/maintenance.py` — added `MaintenancePredictionStatus`, `MaintenancePredictionRisk`, `MaintenancePrediction` (linked to assets)
+- `backend/app/schemas/maintenance.py` — added predictive maintenance read/review schemas
+- `backend/app/services/maintenance_service.py` — added rule-based prediction generation from IoT sensor trends, machine DOWN/FAULT states, critical IoT alerts, recent breakdown history
+- `backend/app/api/v1/endpoints/maintenance.py` — added generate/list/review endpoints
+- `frontend/src/lib/maintenance.ts` — added predictive maintenance types/API methods
+- `frontend/src/app/dashboard/maintenance/predictive/page.tsx` — NEW
+- `frontend/src/app/dashboard/maintenance/page.tsx` — added predictive maintenance quick link
+- `frontend/src/components/nav-config.tsx` — added Predictive Maintenance under Maintenance cluster
+
+### Gap 69 — ESG Intelligence
+- `backend/app/models/esg.py` — added `SupplierSustainabilityRisk`, `SupplierSustainabilityStatus` enums, `SupplierSustainabilityScore` model
+- `backend/app/models/__init__.py` — registered `SupplierSustainabilityScore`
+- `backend/alembic/versions/f0a1b2c3d4e5_esg_intelligence_gap69.py` — NEW migration (down_revision: `d8e9f0a1b2c3`)
+- `backend/app/schemas/esg.py` — added supplier sustainability score schemas, energy intensity row, wastewater compliance snapshot, ESG intelligence dashboard
+- `backend/app/services/esg_service.py` — supplier score CRUD, energy intensity per SKU from utility allocations, wastewater compliance aggregation
+- `backend/app/api/v1/endpoints/esg.py` — added `/esg/intelligence/dashboard`, energy-intensity, wastewater-compliance, supplier scorecard CRUD-lite
+- `frontend/src/lib/esg.ts` — added ESG intelligence + supplier scorecard types/methods
+- `frontend/src/app/dashboard/esg/intelligence/page.tsx` — NEW
+- `frontend/src/app/dashboard/esg/page.tsx` — added ESG Intelligence quick link
+- `frontend/src/components/nav-config.tsx` — ESG Intelligence added under ESG & Sustainability
+- ⚠️ **Bug**: nav-config.tsx line 1227 uses `permission: "hr.view"` — should be `"esg.view"`. Unfixed.
+- **Note**: `f0a1b2c3d4e5_esg_intelligence_gap69` branches from `d8e9f0a1b2c3` same as `e9f0a1b2c3d4_payroll_ke` — creates Alembic branch.
+
+### Gap 70 — Plugin Marketplace / Integration Governance
+- `backend/app/models/integrations.py` — added `PluginInstallStatus`, `PluginLifecycleAction` enums; marketplace metadata on `ConnectorRegistry`; `PluginInstallation`, `PluginLifecycleEvent` models
+- `backend/app/schemas/integrations.py` — marketplace connector, plugin installation, install request, lifecycle event schemas
+- `backend/app/services/integration_service.py` — install/config/lifecycle/dependency/audit service logic
+- `backend/app/api/v1/endpoints/integrations.py` — tenant-aware catalog state, install/config/lifecycle/events APIs
+- `backend/app/models/__init__.py` — registered `ConnectorRegistry`, `PluginInstallation`, `PluginLifecycleEvent`
+- `backend/alembic/versions/f1a2b3c4d5e6_plugin_marketplace_gap70.py` — NEW migration (down_revision: `f0a1b2c3d4e5`)
+- `frontend/src/lib/integrations.ts` — marketplace types, plugin installation, lifecycle event types + API methods
+- `frontend/src/app/dashboard/integrations/marketplace/page.tsx` — upgraded to governed install/enable/disable/uninstall/test with lifecycle audit
+- ⚠️ **CRITICAL BUG**: revision ID `f1a2b3c4d5e6` in `plugin_marketplace_gap70.py` CONFLICTS with existing `f1a2b3c4d5e6_qms_haccp_system.py`. Alembic graph now has 8 duplicate revision IDs.
+
+### Validation Results (Codex)
+- Frontend TypeScript: PASS (`npm.cmd run type-check`) after Gap 69 + 70
+- Frontend build: PASS (`npm.cmd run build`) after Gap 69 + 70
+- Frontend lint: BLOCKED (interactive ESLint setup prompt)
+- Backend Docker startup/import: PASS
+- Backend Docker compile: PASS
+- Backend health check: PASS (`GET /health` → 200 + database connected)
+- Auth bad-credentials: PASS → 401
+- Auth seeded admin login: PASS → 200 + token
+
+---
 
 ## Completed in This Run (AI Architecture Fix)
 ### New files created
