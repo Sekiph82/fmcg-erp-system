@@ -2,17 +2,26 @@
 
 ## Current Phase
 
-Tier 5 - Advanced / Future Roadmap Complete
+Tier 5 - Advanced / Future Roadmap Complete - QA / Hardening
 
 ## Current Gap
 
-All 70 gap items implemented - QA / hardening next
+All 70 gap items implemented - auth startup/login hardening completed
 
 ## In Progress
 
-No gap implementation in progress. Next work should be validation, migration review, backend compile when Python is available, and production hardening.
+No gap implementation in progress. Next work should continue validation, migration graph review, backend tests, and production hardening.
 
 ## Completed in Last Run
+
+QA / hardening hotfix:
+- Diagnosed `POST /api/v1/auth/login net::ERR_EMPTY_RESPONSE` as a backend startup failure, not a React login payload issue.
+- Fixed `backend/app/api/v1/endpoints/traceability.py` by importing the existing `get_current_user` dependency used by blockchain anchor endpoints.
+- Verified the Docker backend reloader recovered and `/health` returns `{"status":"ok","database":"connected"}`.
+- Diagnosed a follow-on login 500 as running database schema drift in `audit_logs`.
+- Repaired the local Docker Postgres `audit_logs` table with the nullable columns expected by the current `AuditLog` model: `actor_name`, `session_id`, `user_agent`, `module`, `before_value`, `after_value`, and `row_hash`, plus indexes for `session_id` and `module`.
+- Verified bad credentials now return 401 instead of 500.
+- Verified seeded admin login succeeds with username `admin` and password `admin123`.
 
 Gap 66 frontend completion:
 - Built `/dashboard/ai/nl-command` as a usable natural-language ERP command console.
@@ -67,15 +76,17 @@ None.
 ## Next Immediate Task
 
 All planned gap implementations are complete. Next immediate task:
-1. Restore Python availability in the backend shell and run `python -m compileall app` from `backend`.
-2. Review Alembic graph because the repository already had historical duplicate/branching revisions before this run; verify the new Gap 69 and Gap 70 migrations fit the intended deployment path.
-3. Run backend tests if available.
-4. Perform end-to-end UI/API smoke tests for `/dashboard/esg/intelligence` and `/dashboard/integrations/marketplace` against a running backend.
+1. Review and repair the Alembic graph because the repository has historical duplicate/branching revisions and the live Docker database is stamped at `e7f8a9b0c1d2`.
+2. Convert the local `audit_logs` schema repair into a proper migration once the Alembic graph is safe to extend.
+3. Run backend tests inside Docker if available.
+4. Perform end-to-end UI/API smoke tests for `/dashboard/esg/intelligence` and `/dashboard/integrations/marketplace` against the running backend.
 5. Decide whether to configure ESLint non-interactively or keep lint blocked.
 
 ## Blockers
 
-Backend Python compile remains blocked: `python`, `python3`, and `py` are not available on PATH in this shell.
+Local backend Python remains blocked: `python`, `python3`, and `py` are not available on PATH, and `backend/venv/Scripts/python.exe` points to a missing local Python install. Backend compile is available and passing through Docker with `docker compose exec -T backend python -m compileall app`.
+
+Alembic graph remains a blocker for migration discipline: the repository has duplicate revision IDs and the current Docker database is stamped at `e7f8a9b0c1d2`. The running dev DB was repaired directly for `audit_logs` so login works; convert this to a normal migration after graph cleanup.
 
 `npm run lint` is blocked by interactive Next.js ESLint setup prompt because the project does not have a completed ESLint config. Do not accept or generate config automatically unless explicitly requested.
 
@@ -145,6 +156,10 @@ frontend/src/lib/integrations.ts - MODIFIED: added marketplace connector, plugin
 
 frontend/src/app/dashboard/integrations/marketplace/page.tsx - MODIFIED: upgraded marketplace UI to install/enable/disable/uninstall/test connectors with tenant state and lifecycle audit.
 
+backend/app/api/v1/endpoints/traceability.py - MODIFIED: added missing `get_current_user` import so the backend can import traceability routes and start successfully.
+
+Local Docker Postgres schema - UPDATED: added missing nullable `audit_logs` context/integrity columns and indexes to match the current `AuditLog` model.
+
 ## Validation Results
 
 Frontend TypeScript: PASS (`npm.cmd run type-check`) after Gap 69 changes.
@@ -157,13 +172,29 @@ Frontend production build: PASS (`npm.cmd run build`) after Gap 70 marketplace c
 
 Frontend lint: BLOCKED. `npm.cmd run lint` triggers interactive Next.js ESLint configuration prompt.
 
-Backend Python compile: BLOCKED. `python`, `python3`, and `py` are not available on PATH.
+Local backend Python compile: BLOCKED. `python`, `python3`, and `py` are not available on PATH; Docker backend compile passed below.
+
+Backend Docker startup/import: PASS. `docker compose exec -T backend python -c "import app.main; print('import-ok')"` completed successfully.
+
+Backend Docker Python compile: PASS. `docker compose exec -T backend python -m compileall app` completed successfully.
+
+Backend health check: PASS. `GET http://localhost:8000/health` returned HTTP 200 with database connected.
+
+Auth bad-credentials path: PASS. `POST /api/v1/auth/login` with invalid password now returns 401 instead of an empty response or 500.
+
+Auth seeded admin login: PASS. `POST /api/v1/auth/login` with username `admin` and password `admin123` returned HTTP 200 with an access token.
 
 Note: one earlier parallel validation attempt caused `tsc` to read `.next/types` while `next build` was regenerating it, producing transient missing generated type-file errors. Sequential `npm.cmd run type-check` passed afterward.
 
 ## Notes for Next Claude Run
 
 All 70 planned gaps are now marked implemented. The next run should focus on backend validation and hardening, not new gap implementation.
+
+If login shows `ERR_EMPTY_RESPONSE` again, check Docker backend logs first. The last root cause was an import-time crash in `traceability.py`, which left the Uvicorn reloader listening while no worker was serving requests.
+
+The default seeded login is username `admin`, not the email address. `admin@erp.com` is stored as email, but `authenticate()` currently looks up `User.username`.
+
+The live dev DB audit schema has been repaired directly to restore login. Do not forget to normalize this through Alembic after resolving duplicate revision IDs.
 
 Gap 70 marketplace deliberately models plugins/apps as governed connector/module metadata and tenant configuration. It does not load arbitrary code or install executable packages.
 
