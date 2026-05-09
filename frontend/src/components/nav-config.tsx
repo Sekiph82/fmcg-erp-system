@@ -393,9 +393,11 @@ export const NAV_CONFIG: NavEntry[] = [
     permission: "quality.view",
     icon: md("M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"),
     items: [
-      { label: "QC Inspections", href: "/dashboard/quality",            permission: "quality.view" },
-      { label: "QC Parameters",  href: "/dashboard/quality/parameters", permission: "quality.view" },
-      { label: "QC Reports",     href: "/dashboard/quality/reports",    permission: "quality.view" },
+      { label: "QC Inspections",        href: "/dashboard/quality",                        permission: "quality.view" },
+      { label: "QC Parameters",         href: "/dashboard/quality/parameters",             permission: "quality.view" },
+      { label: "Consumer Complaints",   href: "/dashboard/quality/consumer-complaints",    permission: "quality.view" },
+      { label: "Reg. Certificates",     href: "/dashboard/quality/certificates",           permission: "quality.view" },
+      { label: "QC Reports",            href: "/dashboard/quality/reports",                permission: "quality.view" },
     ],
   },
 
@@ -1148,7 +1150,8 @@ export const NAV_CONFIG: NavEntry[] = [
       { label: "Fraud Alerts",      href: "/dashboard/van-sales/fraud",         permission: "sales.view" },
       { label: "Rider Performance", href: "/dashboard/van-sales/performance",   permission: "sales.view" },
       { label: "M-Pesa Payments",   href: "/dashboard/van-sales/mpesa",         permission: "sales.view" },
-      { label: "Field Rep Log",     href: "/dashboard/van-sales/field-rep",     permission: "sales.view" },
+      { label: "Field Rep Log",     href: "/dashboard/van-sales/field-rep",      permission: "sales.view" },
+      { label: "Route Optimizer",   href: "/dashboard/van-sales/route-optimizer", permission: "sales.view" },
     ],
   },
 

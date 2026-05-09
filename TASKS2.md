@@ -10,7 +10,7 @@ Tier 4 — FMCG-Specific & Regulatory
 
 ## Current Gap
 
-Gap 47 - Route Optimization for Van Sales
+Gap 50 - Dynamic / AI Pricing Engine
 
 
 
@@ -22,27 +22,21 @@ Not started yet.
 
 ## Completed in Last Run
 
-Gap 46 - New Product Development Workflow
+Gap 49 - Regulatory Certificate Tracking
 
-Gap 45 - Returnable Packaging / Container Management
+Gap 48 - Consumer Complaint Management Linked to Batch
 
-Gap 44 - Integration Marketplace / Connector Hub
+Gap 47 - Route Optimization for Van Sales
 
 
 
 ## Implemented Gap Items
 
-1-46 implemented.
+1-49 implemented.
 
 
 
 ## Remaining Gap Items
-
-47. Route Optimization for Van Sales
-
-48. Consumer Complaint Management Linked to Batch
-
-49. Regulatory Certificate Tracking
 
 50. Dynamic / AI Pricing Engine
 
@@ -90,26 +84,25 @@ Gap 44 - Integration Marketplace / Connector Hub
 
 ## Next Immediate Task
 
-Implement Gap 47 - Route Optimization for Van Sales.
+Implement Gap 50 - Dynamic / AI Pricing Engine.
 
 Inspect first:
-- Van sales already has route model (SalesRoute, RouteStop in field_sales.py)
-- Check backend/app/api/v1/endpoints/field_sales.py and van_sales.py for existing route endpoints
-- Check frontend/src/app/dashboard/van-sales/route/ for existing route UI
+- Check backend/app/models/pricing.py and pricing.py endpoint — static price lists exist
+- Check backend/app/models/price_list.py — enhanced price lists exist (Gap implemented earlier)
 
-Gap 47 missing:
-- Route optimization algorithm (nearest-neighbor / Clarke-Wright)
-- Traffic-aware routing (Google Maps link generation)
-- Visit prioritization (revenue-based ranking of stops)
-- Route profitability analytics
-- Dynamic re-routing (mark customer unavailable, skip)
+Gap 50 missing:
+- Competitor price tracking (manual entry or import)
+- Demand-based pricing logic (price elasticity model)
+- AI price recommendations (margin protection)
+- Channel-specific pricing (modern trade / distributor / export)
+- Margin protection automation (floor price enforcement)
 
 Build next coherent slice:
-1. Add GET /van-sales/routes/{route_id}/optimize endpoint — runs nearest-neighbor algorithm on existing route stops, returns reordered stop sequence.
-2. Add POST /van-sales/routes/{route_id}/apply-optimization — persists reordered sequence_no to RouteStop records.
-3. Add GET /van-sales/routes/profitability — revenue per route, cost estimate (km × fuel rate).
-4. Frontend: route optimizer page — show current vs optimized sequence, apply button, Google Maps link.
-5. Wire nav.
+1. CompetitorPrice model (product_name, competitor_name, price, channel, recorded_date, source).
+2. PriceRecommendation model (product_id, channel, recommended_price, floor_price, current_price, margin_pct, rationale, status PENDING/APPLIED/REJECTED).
+3. Endpoints: add competitor price, list competitor prices, generate price recommendation (simple rule: if competitor < our price × 0.9, recommend price cut; if margin < floor, alert), GET /pricing/ai-recommendations.
+4. Frontend: AI pricing hub page with competitor tracker and recommendations.
+5. Nav under Sales & Distribution.
 
 
 
@@ -123,33 +116,31 @@ Validation environment blocker: python not found on PATH.
 
 ## Files Changed in Last Run
 
-Gap 46 additions:
-backend/app/models/npd.py - NEW: NPDProject (project_code, name, category, stage IDEA/CONCEPT/DEVELOPMENT/PILOT/LAUNCH/LAUNCHED/CANCELLED, target_launch_date, estimated_cogs/selling_price, bom_recipe_id, regulatory_checklist JSONB, launch_readiness_checklist JSONB); NPDStageGate (project_id, stage, department, approved_flag, approved_by, approved_at); NPDPilotBatch (project_id, batch_ref, batch_no, qty_produced, uom, actual_cogs, outcome PASS/FAIL/CONDITIONAL/IN_PROGRESS)
-backend/app/api/v1/endpoints/npd_workflow.py - NEW: POST/GET /npd-workflow/projects; GET /npd-workflow/projects/{id} (with stage_gates + pilot_batches); PATCH /npd-workflow/projects/{id}; POST /npd-workflow/projects/{id}/advance-stage (checks all current gates approved); POST /npd-workflow/projects/{id}/gates/{gate_id}/approve; PATCH /npd-workflow/projects/{id}/checklist; POST /npd-workflow/projects/{id}/pilot-batches; GET /npd-workflow/dashboard
-backend/app/api/v1/router.py - MODIFIED: npd_workflow import + /npd-workflow route
-frontend/src/app/dashboard/npd/page.tsx - NEW: NPD hub — KPI strip, stage filter bar, project cards (stage badge, COGS, launch date), new project form
-frontend/src/app/dashboard/npd/[id]/page.tsx - NEW: NPD project detail — stage advance button (blocked until all gates approved), gate approval list with approver input, regulatory + launch checklists (checkbox toggle), pilot batches list + add form
-frontend/src/components/nav-config.tsx - MODIFIED: Added New Product Development section under Planning cluster
+Gap 49 additions:
+backend/app/models/regulatory_certs.py - NEW: RegulatoryCertificate model (cert_ref, authority KEBS/HALAL/ISO/FSCC/etc., entity_type PRODUCT/PLANT/SUPPLIER/COMPANY, entity_id soft link, certificate_number, country, issued_date, expiry_date, status ACTIVE/PENDING_RENEWAL/EXPIRED/SUSPENDED/REVOKED, document_url, alert_sent_30/60/90d flags); CertAuditEntry model (cert_id FK, action, performed_by, notes)
+backend/app/api/v1/endpoints/regulatory_certs.py - NEW: POST/GET /regulatory-certs/ (filter by authority/entity_type/status); GET /regulatory-certs/expiring (days param + include_expired); GET /regulatory-certs/stats (by_authority breakdown); GET /regulatory-certs/{id} (with audit_history); PATCH /regulatory-certs/{id} (auto-adds CertAuditEntry)
+backend/app/api/v1/router.py - MODIFIED: regulatory_certs import + /regulatory-certs route
+frontend/src/app/dashboard/quality/certificates/page.tsx - NEW: Certificate Register — KPI strip (total/expiring_90d/expired/authorities), authority filter chips, status/entity_type filters + expiring-only toggle, certificate table (days_to_expiry color-coded: red<0, amber≤30, orange≤60), add form, document URL link
+frontend/src/components/nav-config.tsx - MODIFIED: Reg. Certificates under Quality Control
 
-Gap 45 additions:
-backend/app/models/containers.py - NEW: ContainerType, ContainerIssuance, ContainerReturn
-backend/app/api/v1/endpoints/containers.py - NEW: Full container CRUD + issue/return/write-off/stats
-backend/app/api/v1/router.py - MODIFIED: containers route
-frontend/src/app/dashboard/containers/page.tsx - NEW: Container hub
-frontend/src/app/dashboard/containers/outstanding/page.tsx - NEW: Outstanding tracker
-frontend/src/components/nav-config.tsx - MODIFIED: Container nav links
+Gap 48 additions:
+backend/app/models/consumer_complaints.py - NEW: ConsumerComplaint model
+backend/app/api/v1/endpoints/consumer_complaints.py - NEW: Full CRUD + stats + by-lot endpoints
+backend/app/api/v1/router.py - MODIFIED: consumer_complaints route
+frontend/src/app/dashboard/quality/consumer-complaints/page.tsx - NEW: Consumer Complaints
+frontend/src/components/nav-config.tsx - MODIFIED: Consumer Complaints nav link
 
-Gap 44 additions:
-backend/app/models/integrations.py - MODIFIED: ConnectorRegistry model
-backend/app/api/v1/endpoints/integrations.py - MODIFIED: Marketplace endpoints
-frontend/src/app/dashboard/integrations/marketplace/page.tsx - NEW
-frontend/src/components/nav-config.tsx - MODIFIED: Marketplace nav link
+Gap 47 additions:
+backend/app/models/field_sales.py - MODIFIED: lat_override, lng_override, priority_score on RouteStop
+backend/app/api/v1/endpoints/field_sales.py - MODIFIED: Nearest-neighbor + apply + profitability
+frontend/src/app/dashboard/van-sales/route-optimizer/page.tsx - NEW: Route Optimizer
+frontend/src/components/nav-config.tsx - MODIFIED: Route Optimizer nav link
 
 
 
 ## Validation Results
 
-Frontend TypeScript: PASS (npm.cmd run type-check, 0 errors — verified after Gap 46)
+Frontend TypeScript: PASS (npm.cmd run type-check, 0 errors — verified after Gap 49)
 
 Backend Python compile: BLOCKED (python not found)
 
@@ -157,15 +148,15 @@ Backend Python compile: BLOCKED (python not found)
 
 ## Notes for Next Claude Run
 
-Gap 46 notes:
-- NPDProject.project_code auto-generated as NPD-YYYYMM-XXXX (random 4 digits).
-- Stage advancement blocked if any gate in current stage is unapproved. Gate seeding: 5 departments auto-created per stage on project create (IDEA) and on each advance.
-- regulatory_checklist default keys: allergen_review, label_approved, kebs_check, haccp_review, nutritional_calc.
-- launch_readiness_checklist default keys: bom_approved, label_signed_off, production_plan, sales_plan, regulatory_clearance, pricing_approved.
-- Checklist PATCH toggles individual keys; JSONB field updated in-place.
+Gap 49 notes:
+- RegulatoryCertificate.cert_ref auto-generated CERT-YYYYMM-NNNN.
+- expiry endpoint: filters ACTIVE + PENDING_RENEWAL certs with expiry_date ≤ today+days. include_expired=true shows already-expired.
+- days_to_expiry computed in Python at query time: (expiry_date - today).days. Negative = expired.
+- CertAuditEntry auto-created on POST (action=ISSUED) and PATCH (action=status.value or UPDATED).
+- alert_sent_30/60/90d flags: set to True when alert sent (production: cron job calls /regulatory-certs/expiring and sends email/notification, then updates flags).
+- stats.by_authority: count per authority type for all active certs.
 
-Gap 47 start:
-- field_sales.py has SalesRoute (route_id, name, rep_id, status) and RouteStop (route_id, stop_sequence, customer_id, lat, lon, estimated_arrival).
-- Check what lat/lon fields exist on RouteStop — needed for nearest-neighbor distance calc.
-- Nearest-neighbor algorithm: start from first stop, greedily pick closest unvisited stop using Haversine distance.
-- Avoid installing scipy/numpy — implement Haversine in pure Python.
+Gap 50 start:
+- pricing.py endpoint already exists at /pricing. Check what models exist before building.
+- price_list.py also exists. Avoid duplicating existing price list logic.
+- Focus on NEW: competitor price tracking table + AI recommendation engine (rule-based, no ML needed).

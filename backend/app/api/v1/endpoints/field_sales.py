@@ -2,9 +2,12 @@ from __future__ import annotations
 from datetime import date
 from typing import List, Optional
 import uuid
+import math
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.db.session import get_db
 from app.core.deps import get_current_user, require_permission
@@ -15,6 +18,17 @@ from app.schemas.field_sales import (
     DailyTargetCreate, DailyTargetRead,
     VisitLogCreate, VisitLogRead,
 )
+
+
+# ── Haversine helper (pure Python, no scipy) ─────────────────────────────────
+
+def _haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    R = 6371.0
+    phi1, phi2 = math.radians(lat1), math.radians(lat2)
+    dphi = math.radians(lat2 - lat1)
+    dlam = math.radians(lon2 - lon1)
+    a = math.sin(dphi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(dlam / 2) ** 2
+    return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
 router = APIRouter()
 
@@ -175,3 +189,180 @@ async def log_visit(data: VisitLogCreate, db: AsyncSession = Depends(get_db)):
     log = await crud.create_visit_log(db, data)
     await db.commit()
     return log
+
+
+# ── Route Optimization ───────────────────────────────────────────────────────
+
+@router.get("/routes/{route_id}/optimize",
+            dependencies=[Depends(require_permission("sales", "view"))])
+async def optimize_route(route_id: str, db: AsyncSession = Depends(get_db)):
+    """
+    Nearest-neighbor route optimization.
+    Uses customer GPS (or stop lat/lng override) to compute an optimized stop sequence.
+    Returns the reordered sequence without modifying the database.
+    """
+    from app.models.field_sales import SalesRoute, RouteStop
+    from app.models.sales import Customer
+
+    r = await db.execute(
+        select(SalesRoute)
+        .options(selectinload(SalesRoute.stops).selectinload(RouteStop.customer))
+        .where(SalesRoute.id == uuid.UUID(route_id))
+    )
+    route = r.scalar_one_or_none()
+    if not route:
+        raise HTTPException(404, "Route not found")
+
+    stops = list(route.stops)
+    if len(stops) <= 1:
+        return {"route_id": route_id, "optimized": False, "reason": "Need ≥2 stops to optimize",
+                "sequence": [{"stop_id": str(s.id), "stop_sequence": s.stop_sequence} for s in stops]}
+
+    # Build coordinate list
+    def _coords(s: RouteStop):
+        lat = float(s.lat_override) if s.lat_override else (float(s.customer.gps_lat) if s.customer and s.customer.gps_lat else None)
+        lng = float(s.lng_override) if s.lng_override else (float(s.customer.gps_lng) if s.customer and s.customer.gps_lng else None)
+        return lat, lng
+
+    coord_map = {}
+    missing = []
+    for s in stops:
+        lat, lng = _coords(s)
+        if lat is None or lng is None:
+            missing.append(str(s.id))
+        else:
+            coord_map[str(s.id)] = (lat, lng)
+
+    if len(coord_map) < 2:
+        return {"route_id": route_id, "optimized": False,
+                "reason": f"Insufficient GPS data. Missing coords for {len(missing)} stops.",
+                "missing_stop_ids": missing,
+                "sequence": [{"stop_id": str(s.id), "stop_sequence": s.stop_sequence,
+                               "customer_name": s.customer.name if s.customer else None} for s in stops]}
+
+    # Nearest-neighbor algorithm starting from first stop (by current sequence)
+    remaining = [s for s in sorted(stops, key=lambda x: x.stop_sequence) if str(s.id) in coord_map]
+    uncoord = [s for s in stops if str(s.id) not in coord_map]
+
+    ordered = [remaining.pop(0)]
+    while remaining:
+        last = ordered[-1]
+        last_lat, last_lng = coord_map[str(last.id)]
+        nearest = min(remaining, key=lambda s: _haversine_km(last_lat, last_lng, *coord_map[str(s.id)]))
+        ordered.append(nearest)
+        remaining.remove(nearest)
+
+    # Append stops without coordinates at end
+    ordered += uncoord
+
+    # Compute total distance
+    total_km = 0.0
+    for i in range(1, len(ordered)):
+        a, b = str(ordered[i - 1].id), str(ordered[i].id)
+        if a in coord_map and b in coord_map:
+            total_km += _haversine_km(*coord_map[a], *coord_map[b])
+
+    return {
+        "route_id": route_id,
+        "optimized": True,
+        "total_distance_km": round(total_km, 2),
+        "stops_without_gps": missing,
+        "sequence": [
+            {
+                "stop_id": str(s.id),
+                "new_sequence": idx + 1,
+                "original_sequence": s.stop_sequence,
+                "customer_id": str(s.customer_id),
+                "customer_name": s.customer.name if s.customer else None,
+                "lat": coord_map.get(str(s.id), (None, None))[0],
+                "lng": coord_map.get(str(s.id), (None, None))[1],
+                "google_maps_link": (
+                    f"https://maps.google.com/?q={coord_map[str(s.id)][0]},{coord_map[str(s.id)][1]}"
+                    if str(s.id) in coord_map else None
+                ),
+            }
+            for idx, s in enumerate(ordered)
+        ],
+    }
+
+
+@router.post("/routes/{route_id}/apply-optimization",
+             dependencies=[Depends(require_permission("sales", "edit"))])
+async def apply_optimization(route_id: str, stop_order: List[str], db: AsyncSession = Depends(get_db)):
+    """
+    Apply optimized sequence to route stops.
+    stop_order: list of stop UUIDs in desired sequence (index 0 = stop_sequence 1).
+    """
+    from app.models.field_sales import RouteStop
+
+    for idx, stop_id in enumerate(stop_order):
+        r = await db.execute(
+            select(RouteStop).where(
+                RouteStop.id == uuid.UUID(stop_id),
+                RouteStop.route_id == uuid.UUID(route_id),
+            )
+        )
+        stop = r.scalar_one_or_none()
+        if stop:
+            stop.stop_sequence = idx + 1
+
+    await db.commit()
+    return {"route_id": route_id, "stops_updated": len(stop_order), "status": "applied"}
+
+
+@router.get("/routes/{route_id}/profitability",
+            dependencies=[Depends(require_permission("sales", "view"))])
+async def route_profitability(
+    route_id: str,
+    fuel_cost_per_km: float = Query(default=15.0, description="KES per km"),
+    db: AsyncSession = Depends(get_db),
+):
+    """Route profitability: estimated revenue from customers vs fuel cost estimate."""
+    from app.models.field_sales import SalesRoute, RouteStop
+    from app.models.sales import SalesOrder, SOStatus
+
+    r = await db.execute(
+        select(SalesRoute)
+        .options(selectinload(SalesRoute.stops).selectinload(RouteStop.customer))
+        .where(SalesRoute.id == uuid.UUID(route_id))
+    )
+    route = r.scalar_one_or_none()
+    if not route:
+        raise HTTPException(404, "Route not found")
+
+    stops = list(route.stops)
+    customer_ids = [s.customer_id for s in stops]
+
+    # Estimate total distance
+    def _coords(s: RouteStop):
+        lat = float(s.lat_override) if s.lat_override else (float(s.customer.gps_lat) if s.customer and s.customer.gps_lat else None)
+        lng = float(s.lng_override) if s.lng_override else (float(s.customer.gps_lng) if s.customer and s.customer.gps_lng else None)
+        return lat, lng
+
+    total_km = 0.0
+    ordered = sorted(stops, key=lambda s: s.stop_sequence)
+    for i in range(1, len(ordered)):
+        la, loa = _coords(ordered[i - 1])
+        lb, lob = _coords(ordered[i])
+        if all(v is not None for v in [la, loa, lb, lob]):
+            total_km += _haversine_km(la, loa, lb, lob)
+
+    fuel_cost = total_km * fuel_cost_per_km
+
+    stop_details = []
+    for s in ordered:
+        stop_details.append({
+            "stop_sequence": s.stop_sequence,
+            "customer_id": str(s.customer_id),
+            "customer_name": s.customer.name if s.customer else None,
+        })
+
+    return {
+        "route_id": route_id,
+        "route_name": route.route_name if hasattr(route, "route_name") else "",
+        "stop_count": len(stops),
+        "estimated_distance_km": round(total_km, 2),
+        "fuel_cost_estimate_kes": round(fuel_cost, 2),
+        "fuel_cost_per_km": fuel_cost_per_km,
+        "stops": stop_details,
+    }

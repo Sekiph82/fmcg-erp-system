@@ -81,6 +81,9 @@ class RouteStop(Base, TimestampMixin):
     customer_id = Column(UUID(as_uuid=True), ForeignKey("customers.id", ondelete="CASCADE"), nullable=False)
     stop_sequence = Column(Integer, nullable=False)
     notes = Column(Text, nullable=True)
+    lat_override = Column(Numeric(10, 7), nullable=True)   # overrides customer GPS if set
+    lng_override = Column(Numeric(10, 7), nullable=True)
+    priority_score = Column(Numeric(8, 2), nullable=True)  # higher = visit first
 
     route = relationship("SalesRoute", back_populates="stops")
     customer = relationship("Customer")

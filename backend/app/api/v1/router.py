@@ -71,6 +71,8 @@ from app.api.v1.endpoints import (
     api_portal,
     containers,
     npd_workflow,
+    consumer_complaints,
+    regulatory_certs,
 )
 
 api_router = APIRouter()
@@ -298,3 +300,7 @@ api_router.include_router(api_portal.router, prefix="/developer", tags=["develop
 api_router.include_router(containers.router, prefix="/containers", tags=["containers"])
 # ── NPD Workflow ──────────────────────────────────────────────────────────────
 api_router.include_router(npd_workflow.router, prefix="/npd-workflow", tags=["npd-workflow"])
+# ── Consumer Complaint Management ─────────────────────────────────────────────
+api_router.include_router(consumer_complaints.router, prefix="/consumer-complaints", tags=["consumer-complaints"])
+# ── Regulatory Certificate Tracking ──────────────────────────────────────────
+api_router.include_router(regulatory_certs.router, prefix="/regulatory-certs", tags=["regulatory-certs"])
