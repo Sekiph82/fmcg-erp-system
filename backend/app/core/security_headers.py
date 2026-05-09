@@ -13,9 +13,12 @@ Adds OWASP-recommended HTTP response headers to every response:
 """
 from __future__ import annotations
 
+import logging
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
-from starlette.responses import Response
+from starlette.responses import Response, JSONResponse
+
+log = logging.getLogger(__name__)
 
 # Endpoints whose responses must never be cached
 _NO_CACHE_PREFIXES = ("/api/v1/auth", "/api/v1/users", "/api/v1/roles", "/api/v1/ai")
@@ -23,7 +26,14 @@ _NO_CACHE_PREFIXES = ("/api/v1/auth", "/api/v1/users", "/api/v1/roles", "/api/v1
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next) -> Response:
-        response: Response = await call_next(request)
+        try:
+            response: Response = await call_next(request)
+        except Exception:
+            log.exception("Unhandled exception in SecurityHeadersMiddleware %s %s", request.method, request.url.path)
+            return JSONResponse(
+                status_code=500,
+                content={"error": "internal_server_error", "detail": "An unexpected error occurred.", "path": request.url.path},
+            )
 
         # ── Standard security headers ──────────────────────────────────────────
         response.headers["X-Content-Type-Options"] = "nosniff"

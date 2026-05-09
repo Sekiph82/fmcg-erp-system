@@ -3,6 +3,7 @@ import time
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
+from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 from app.core.security_headers import SecurityHeadersMiddleware
 from app.core.input_sanitizer import InputSanitizerMiddleware
@@ -32,12 +33,14 @@ async def lifespan(app: FastAPI):
             await conn.run_sync(Base.metadata.create_all)
         logger.info("Database tables verified/created successfully")
     except Exception:
-        logger.exception("FATAL: could not connect to database or create tables")
-        raise
+        logger.exception("Database table creation failed — server will start but DB may be unavailable")
 
-    async with AsyncSessionLocal() as db:
-        await seed_admin(db)
+    try:
+        async with AsyncSessionLocal() as db:
+            await seed_admin(db)
         logger.info("Seed completed")
+    except Exception:
+        logger.exception("Seed failed — admin user may not exist yet")
 
     yield
 
@@ -69,7 +72,15 @@ app.add_middleware(
 @app.middleware("http")
 async def add_process_time_header(request: Request, call_next):
     t0 = time.monotonic()
-    response = await call_next(request)
+    try:
+        response = await call_next(request)
+    except Exception:
+        elapsed_ms = int((time.monotonic() - t0) * 1000)
+        logger.exception("Unhandled exception in request pipeline %s %s (%dms)", request.method, request.url.path, elapsed_ms)
+        return JSONResponse(
+            status_code=500,
+            content={"error": "internal_server_error", "detail": "An unexpected error occurred.", "path": request.url.path},
+        )
     elapsed_ms = int((time.monotonic() - t0) * 1000)
     response.headers["X-Process-Time-Ms"] = str(elapsed_ms)
     if elapsed_ms > 500:
