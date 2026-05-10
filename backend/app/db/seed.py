@@ -1,6 +1,7 @@
 import logging
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, insert, delete
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from app.models.user import User, user_role
 from app.models.role import Role, Permission, role_permission
@@ -769,43 +770,50 @@ ROLE_DEFINITIONS = {
 async def seed_admin(db: AsyncSession) -> None:
     """Seed permissions, predefined roles, and the default admin user."""
 
-    # ── 1. Seed permissions ────────────────────────────────────────────────────
-    perm_map: dict[str, Permission] = {}
-    for module, action, name, description, is_mobile in PERMISSIONS:
-        code = f"{module}.{action}"
-        result = await db.execute(select(Permission).where(Permission.code == code))
-        perm = result.scalar_one_or_none()
-        if not perm:
-            perm = Permission(
-                code=code,
-                name=name,
-                description=description,
-                module=module,
-                action=action,
-                is_mobile_visible=is_mobile,
-            )
-            db.add(perm)
-            await db.flush()
-        perm_map[code] = perm
+    # ── 1. Batch-upsert all permissions (single round-trip) ───────────────────
+    perm_rows = [
+        {
+            "code": f"{module}.{action}",
+            "name": name,
+            "description": description,
+            "module": module,
+            "action": action,
+            "is_mobile_visible": is_mobile,
+        }
+        for module, action, name, description, is_mobile in PERMISSIONS
+    ]
+    await db.execute(
+        pg_insert(Permission).values(perm_rows).on_conflict_do_nothing(index_elements=["code"])
+    )
+    await db.flush()
 
-    # ── 2. Seed predefined roles ───────────────────────────────────────────────
+    result = await db.execute(select(Permission))
+    perm_map: dict[str, Permission] = {p.code: p for p in result.scalars().all()}
     all_perm_ids = [p.id for p in perm_map.values()]
-    for role_name, role_def in ROLE_DEFINITIONS.items():
-        result = await db.execute(select(Role).where(Role.name == role_name))
-        role = result.scalar_one_or_none()
-        if not role:
-            role = Role(name=role_name, description=role_def["description"])
-            db.add(role)
-            await db.flush()
 
-        # Determine permission IDs to assign
+    # ── 2. Batch-upsert all roles, then assign permissions ────────────────────
+    role_rows = [
+        {"name": rname, "description": rdef["description"]}
+        for rname, rdef in ROLE_DEFINITIONS.items()
+    ]
+    await db.execute(
+        pg_insert(Role).values(role_rows).on_conflict_do_nothing(index_elements=["name"])
+    )
+    await db.flush()
+
+    result = await db.execute(select(Role))
+    role_map: dict[str, Role] = {r.name: r for r in result.scalars().all()}
+
+    for role_name, role_def in ROLE_DEFINITIONS.items():
+        role = role_map.get(role_name)
+        if not role:
+            continue
+
         if role_def["permissions"] == "*":
             perm_ids = all_perm_ids
         else:
-            codes = role_def["permissions"]
-            perm_ids = [perm_map[c].id for c in codes if c in perm_map]
+            perm_ids = [perm_map[c].id for c in role_def["permissions"] if c in perm_map]
 
-        # Clear existing associations and re-insert via direct table operation
         await db.execute(
             delete(role_permission).where(role_permission.c.role_id == role.id)
         )
