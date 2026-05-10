@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
+import { apiClient } from "@/lib/api";
 
 interface NCNotif {
   notification_id: string;
@@ -52,11 +53,10 @@ export function NotificationBell({ compact = false }: Props) {
   const fetchCount = useCallback(async () => {
     if (!userId) return;
     try {
-      const r = await fetch(`/api/v1/notifications/unread-count?user_id=${encodeURIComponent(userId)}`);
-      if (r.ok) {
-        const data = await r.json();
-        setCount(data.unread_count ?? 0);
-      }
+      const { data } = await apiClient.get<{ unread_count?: number }>("/api/v1/notifications/unread-count", {
+        params: { user_id: userId },
+      });
+      setCount(data.unread_count ?? 0);
     } catch {}
   }, [userId]);
 
@@ -64,10 +64,10 @@ export function NotificationBell({ compact = false }: Props) {
     if (!userId) return;
     setLoading(true);
     try {
-      const r = await fetch(
-        `/api/v1/notifications/?user_id=${encodeURIComponent(userId)}&read_flag=false&limit=8`
-      );
-      if (r.ok) setNotifs(await r.json());
+      const { data } = await apiClient.get<NCNotif[]>("/api/v1/notifications/", {
+        params: { user_id: userId, read_flag: false, limit: 8 },
+      });
+      setNotifs(data);
     } catch {}
     setLoading(false);
   }, [userId]);
@@ -96,7 +96,7 @@ export function NotificationBell({ compact = false }: Props) {
   };
 
   const markOne = async (id: string) => {
-    await fetch(`/api/v1/notifications/${id}/read`, { method: "PATCH" });
+    await apiClient.patch(`/api/v1/notifications/${id}/read`);
     setNotifs((prev) => prev.filter((n) => n.notification_id !== id));
     setCount((c) => Math.max(0, c - 1));
   };
@@ -105,9 +105,7 @@ export function NotificationBell({ compact = false }: Props) {
     if (!userId) return;
     setMarking(true);
     try {
-      await fetch(`/api/v1/notifications/mark-all-read?user_id=${encodeURIComponent(userId)}`, {
-        method: "POST",
-      });
+      await apiClient.post("/api/v1/notifications/mark-all-read", null, { params: { user_id: userId } });
       setNotifs([]);
       setCount(0);
     } finally {
