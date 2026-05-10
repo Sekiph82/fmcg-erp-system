@@ -716,9 +716,9 @@ async def submit_nl_command(
 @router.post("/nl-command/{cmd_id}/execute")
 async def execute_nl_command(
     cmd_id: str,
+    request: Request,
     confirmed_by: str = Query(...),
     body: Optional[NLCommandExecuteBody] = Body(None),
-    request: Request,
     db: AsyncSession = Depends(get_db),
     _=Depends(require_permission("ai", "approve")),
 ):

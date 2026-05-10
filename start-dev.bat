@@ -181,19 +181,25 @@ echo  Waiting for PostgreSQL...
 set DB_READY=0
 for /l %%i in (1,1,30) do (
     if !DB_READY!==0 (
-        netstat -an 2>nul | find "0.0.0.0:5432" >nul 2>&1
+        docker compose --env-file .env.development exec -T db pg_isready >nul 2>&1
         if not errorlevel 1 ( set DB_READY=1 ) else ( <nul set /p "=." & timeout /t 2 /nobreak >nul )
     )
 )
 echo.
-if !DB_READY!==1 ( echo  PostgreSQL is up. ) else ( echo  WARNING: PostgreSQL not ready yet, continuing... )
+if !DB_READY!==1 (
+    echo  PostgreSQL is up.
+) else (
+    echo  ERROR: PostgreSQL did not become ready.
+    docker compose --env-file .env.development logs --tail=80 db
+    goto :error
+)
 
 :: --- Backend ---
 echo  Waiting for Backend API (health check)...
 set BACKEND_READY=0
 for /l %%i in (1,1,60) do (
     if !BACKEND_READY!==0 (
-        curl -s -o nul -w "%%{http_code}" http://localhost:8000/health 2>nul | find "200" >nul 2>&1
+        curl.exe -s -o nul -w "%%{http_code}" http://localhost:8000/health 2>nul | find "200" >nul 2>&1
         if not errorlevel 1 (
             set BACKEND_READY=1
         ) else (
@@ -203,7 +209,9 @@ for /l %%i in (1,1,60) do (
 )
 echo.
 if !BACKEND_READY!==0 (
-    echo  WARNING: Backend health check timed out. Trying to continue...
+    echo  ERROR: Backend health check timed out.
+    docker compose --env-file .env.development logs --tail=120 backend
+    goto :error
 ) else (
     echo  Backend is up.
     :: Brief stability pause — lets uvicorn finish any in-progress reload
@@ -215,17 +223,22 @@ echo  Waiting for Frontend...
 set FRONTEND_READY=0
 for /l %%i in (1,1,60) do (
     if !FRONTEND_READY!==0 (
-        curl -s -o nul -w "%%{http_code}" http://localhost:3000 2>nul | find "200" >nul 2>&1
+        curl.exe -s -o nul -w "%%{http_code}" http://localhost:3000/login 2>nul | find "200" >nul 2>&1
         if not errorlevel 1 (
             set FRONTEND_READY=1
         ) else (
-            netstat -an 2>nul | find "0.0.0.0:3000" >nul 2>&1
-            if not errorlevel 1 ( set FRONTEND_READY=1 ) else ( <nul set /p "=." & timeout /t 2 /nobreak >nul )
+            <nul set /p "=." & timeout /t 2 /nobreak >nul
         )
     )
 )
 echo.
-if !FRONTEND_READY!==1 ( echo  Frontend is up. ) else ( echo  WARNING: Frontend not ready yet, opening browser anyway... )
+if !FRONTEND_READY!==1 (
+    echo  Frontend is up.
+) else (
+    echo  ERROR: Frontend did not become ready.
+    docker compose --env-file .env.development logs --tail=120 frontend
+    goto :error
+)
 
 :: ============================================================
 :: DONE - OPEN BROWSER
