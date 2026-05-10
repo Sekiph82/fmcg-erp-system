@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     AUTH_COOKIE_SECURE: bool = False
     AUTH_COOKIE_SAMESITE: str = "lax"
     AUTH_RETURN_TOKEN_IN_BODY: bool = False
+    ERROR_TRACKING_DSN: str = ""
 
     # Bootstrap / seed controls
     SEED_INITIAL_ADMIN: bool = True

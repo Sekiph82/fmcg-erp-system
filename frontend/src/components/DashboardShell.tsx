@@ -2,10 +2,11 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Sidebar } from "./Sidebar";
 import { CommandPalette } from "./CommandPalette";
 import { NotificationBell } from "./NotificationBell";
+import { AIModeBanner } from "./ai/AIModeBanner";
 import { useCommandPalette } from "@/hooks/useCommandPalette";
 import { useUnsavedChangesContext } from "@/context/UnsavedChangesContext";
 
@@ -17,8 +18,10 @@ export function DashboardShell({ children }: DashboardShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { isDirty, confirmLeave } = useUnsavedChangesContext();
   const router = useRouter();
+  const pathname = usePathname();
   const originalPushRef = useRef<typeof window.history.pushState | null>(null);
   const { open, openPalette, closePalette, recent, recordVisit } = useCommandPalette();
+  const showModuleAIBanner = pathname.includes("/ai") && !pathname.startsWith("/dashboard/ai");
 
   const openMobile = useCallback(() => setMobileOpen(true), []);
   const closeMobile = useCallback(() => setMobileOpen(false), []);
@@ -107,6 +110,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
 
         {/* Main scrollable content */}
         <main className="flex-1 overflow-y-auto">
+          {showModuleAIBanner && <AIModeBanner />}
           <div className="p-6 lg:p-8">{children}</div>
         </main>
       </div>

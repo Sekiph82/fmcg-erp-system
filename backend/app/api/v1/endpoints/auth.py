@@ -152,10 +152,8 @@ async def logout(
 ):
     """Invalidate the current JWT by adding it to the blocklist."""
     from datetime import datetime, timezone, timedelta
-    from app.core.config import settings
 
-    authorization = request.headers.get("Authorization", "")
-    token = authorization.removeprefix("Bearer ").strip() or request.cookies.get(settings.AUTH_COOKIE_NAME)
+    token = request.cookies.get(settings.AUTH_COOKIE_NAME)
     if token:
         expire_at = (
             datetime.now(timezone.utc) +

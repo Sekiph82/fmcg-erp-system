@@ -24,6 +24,28 @@ from app.services import ai_service as svc
 router = APIRouter()
 
 
+def _ai_provider_name() -> str:
+    from app.services.ai_provider import get_ai_provider
+
+    provider = get_ai_provider()
+    return provider.__class__.__name__.replace("Provider", "").lower()
+
+
+def _ai_is_mock_mode() -> bool:
+    return _ai_provider_name() == "mock"
+
+
+def _require_live_ai_for_high_risk(action: str) -> None:
+    if _ai_is_mock_mode():
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                f"{action} is disabled in AI mock mode. Configure a live AI "
+                "provider before approving or executing high-risk AI actions."
+            ),
+        )
+
+
 # ── Request / Response schemas ────────────────────────────────────────────────
 
 class PredictionRequest(BaseModel):
@@ -360,6 +382,7 @@ async def approve_formulation(
     db: AsyncSession = Depends(get_db),
     _=Depends(require_permission("ai", "approve")),
 ):
+    _require_live_ai_for_high_risk("Formulation approval")
     f = (await db.execute(
         select(AIFormulation).where(AIFormulation.id == form_id)
     )).scalar_one_or_none()
@@ -765,6 +788,8 @@ async def execute_nl_command(
     import os
     import httpx
     from datetime import datetime
+
+    _require_live_ai_for_high_risk("Natural-language command execution")
 
     r = await db.execute(select(NLCommandLog).where(NLCommandLog.id == uuid.UUID(cmd_id)))
     cmd = r.scalar_one_or_none()

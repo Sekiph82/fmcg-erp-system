@@ -1,5 +1,4 @@
 import logging
-import time
 import uuid
 from contextlib import asynccontextmanager
 
@@ -13,17 +12,23 @@ from app.api.v1.router import api_router
 from app.core.config import settings
 from app.core.exception_handlers import register_handlers
 from app.core.input_sanitizer import InputSanitizerMiddleware
+from app.core.observability import (
+    PROCESS_TIME_HEADER,
+    REQUEST_ID_HEADER,
+    capture_exception,
+    configure_logging,
+    init_error_tracking,
+    metrics_snapshot,
+    record_request,
+)
 from app.core.security_headers import SecurityHeadersMiddleware
 from app.db.base import Base
 from app.db.seed import seed_admin
 from app.db.session import AsyncSessionLocal, engine
 import app.models  # noqa: F401 - ensure all models are registered
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
-)
+configure_logging(settings.ENVIRONMENT)
+init_error_tracking(settings.ERROR_TRACKING_DSN, settings.ENVIRONMENT)
 logger = logging.getLogger(__name__)
 
 
@@ -76,18 +81,34 @@ app.add_middleware(
 
 @app.middleware("http")
 async def add_process_time_header(request: Request, call_next):
+    import time
+
     t0 = time.monotonic()
-    request_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())
+    request_id = request.headers.get(REQUEST_ID_HEADER) or str(uuid.uuid4())
+    request.state.request_id = request_id
     try:
         response = await call_next(request)
-    except Exception:
+    except Exception as exc:
         elapsed_ms = int((time.monotonic() - t0) * 1000)
+        record_request(request.method, request.url.path, 500, elapsed_ms)
+        capture_exception(
+            exc,
+            {
+                "request_id": request_id,
+                "method": request.method,
+                "path": request.url.path,
+                "duration_ms": elapsed_ms,
+            },
+        )
         logger.exception(
-            "Unhandled exception in request pipeline %s %s request_id=%s (%dms)",
-            request.method,
-            request.url.path,
-            request_id,
-            elapsed_ms,
+            "Unhandled exception in request pipeline",
+            extra={
+                "request_id": request_id,
+                "method": request.method,
+                "path": request.url.path,
+                "status_code": 500,
+                "duration_ms": elapsed_ms,
+            },
         )
         return JSONResponse(
             status_code=500,
@@ -96,13 +117,23 @@ async def add_process_time_header(request: Request, call_next):
                 "detail": "An unexpected error occurred.",
                 "path": request.url.path,
             },
-            headers={"X-Request-ID": request_id},
+            headers={REQUEST_ID_HEADER: request_id},
         )
     elapsed_ms = int((time.monotonic() - t0) * 1000)
-    response.headers["X-Process-Time-Ms"] = str(elapsed_ms)
-    response.headers["X-Request-ID"] = request_id
+    response.headers[PROCESS_TIME_HEADER] = str(elapsed_ms)
+    response.headers[REQUEST_ID_HEADER] = request_id
+    record_request(request.method, request.url.path, response.status_code, elapsed_ms)
     if elapsed_ms > 500:
-        logger.warning("SLOW %s %s request_id=%s -> %dms", request.method, request.url.path, request_id, elapsed_ms)
+        logger.warning(
+            "Slow request",
+            extra={
+                "request_id": request_id,
+                "method": request.method,
+                "path": request.url.path,
+                "status_code": response.status_code,
+                "duration_ms": elapsed_ms,
+            },
+        )
     return response
 
 
@@ -120,6 +151,11 @@ async def health():
         logger.warning("Health check: database unavailable - %s", e)
         db_status = "unavailable"
     return {"status": "ok", "database": db_status}
+
+
+@app.get("/metrics")
+async def metrics():
+    return metrics_snapshot()
 
 
 @app.get("/")

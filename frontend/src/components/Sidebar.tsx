@@ -4,7 +4,9 @@ import React, { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/context/AuthContext";
+import { getModuleManifest } from "@/lib/modules";
 import {
   NAV_CONFIG,
   NavSection,
@@ -433,6 +435,12 @@ interface SidebarProps {
 export function Sidebar({ mobileOpen, onMobileClose, onOpenSearch }: SidebarProps) {
   const pathname = usePathname();
   const { user, logout, hasPermission } = useAuth();
+  const { data: moduleManifest } = useQuery({
+    queryKey: ["module-manifest"],
+    queryFn: getModuleManifest,
+    enabled: Boolean(user),
+    staleTime: 60_000,
+  });
 
   const [collapsed,       setCollapsed]       = useState(false);
   const [expandedCluster, setExpandedCluster] = useState<string | null>(null);
@@ -516,7 +524,16 @@ export function Sidebar({ mobileOpen, onMobileClose, onOpenSearch }: SidebarProp
     onMobileClose();
   }, [onMobileClose]);
 
-  const can = (permission?: string) => !permission || hasPermission(permission);
+  const registryPermissions = new Set(moduleManifest?.permission_codes ?? []);
+  const visibleRegistryPermissions = new Set(moduleManifest?.visible_permission_codes ?? []);
+  const can = (permission?: string) => {
+    if (!permission) return true;
+    if (!hasPermission(permission)) return false;
+    if (registryPermissions.has(permission)) {
+      return visibleRegistryPermissions.has(permission);
+    }
+    return true;
+  };
 
   // ── Render ────────────────────────────────────────────────────────────────────
 

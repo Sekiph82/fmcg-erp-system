@@ -63,12 +63,13 @@ function IngredientRow({ ing }: { ing: FormulationIngredient }) {
   );
 }
 
-function FormulationCard({ f, onApprove, onFavorite, onSelect, isSelected }: {
+function FormulationCard({ f, onApprove, onFavorite, onSelect, isSelected, approvalDisabled }: {
   f: AIFormulation;
   onApprove: () => void;
   onFavorite: () => void;
   onSelect: () => void;
   isSelected: boolean;
+  approvalDisabled: boolean;
 }) {
   return (
     <div
@@ -103,9 +104,11 @@ function FormulationCard({ f, onApprove, onFavorite, onSelect, isSelected }: {
       {!f.is_approved && (
         <button
           onClick={(e) => { e.stopPropagation(); onApprove(); }}
-          className="mt-2 w-full text-xs py-1 bg-green-50 text-green-700 rounded hover:bg-green-100"
+          disabled={approvalDisabled}
+          className="mt-2 w-full text-xs py-1 bg-green-50 text-green-700 rounded hover:bg-green-100 disabled:cursor-not-allowed disabled:opacity-50"
+          title={approvalDisabled ? "Approval is disabled in AI mock mode" : undefined}
         >
-          Approve
+          {approvalDisabled ? "Approval Disabled" : "Approve"}
         </button>
       )}
     </div>
@@ -127,6 +130,12 @@ export default function FormulationsPage() {
   const [selected, setSelected] = useState<AIFormulation | null>(null);
   const [categoryFilter, setCategoryFilter] = useState("");
   const [showApprovedOnly, setShowApprovedOnly] = useState(false);
+  const { data: aiStatus } = useQuery({
+    queryKey: ["ai-status"],
+    queryFn: () => aiApi.status(),
+    staleTime: 30_000,
+  });
+  const approvalDisabled = aiStatus?.mode === "mock";
 
   const { data: formulations = [], isLoading } = useQuery<AIFormulation[]>({
     queryKey: ["ai-formulations", categoryFilter, showApprovedOnly],
@@ -331,6 +340,7 @@ export default function FormulationsPage() {
                     onSelect={() => setSelected(f)}
                     onApprove={() => approve.mutate(f.id)}
                     onFavorite={() => favorite.mutate(f.id)}
+                    approvalDisabled={approvalDisabled}
                   />
                 ))}
               </div>
@@ -378,9 +388,11 @@ export default function FormulationsPage() {
                     {!selected.is_approved && (
                       <button
                         onClick={() => approve.mutate(selected.id)}
-                        className="px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700"
+                        disabled={approvalDisabled}
+                        title={approvalDisabled ? "Approval is disabled in AI mock mode" : undefined}
+                        className="px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
                       >
-                        Approve
+                        {approvalDisabled ? "Approval Disabled" : "Approve"}
                       </button>
                     )}
                     {selected.is_approved && (
