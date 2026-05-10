@@ -313,7 +313,6 @@ export async function downloadWastewaterCsv(
   filename = "wastewater_records.csv",
 ): Promise<void> {
   const base  = process.env.NEXT_PUBLIC_API_URL ?? "";
-  const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
   const qs    = new URLSearchParams(
     Object.entries(params)
       .filter(([, v]) => v !== undefined && v !== "")
@@ -321,7 +320,7 @@ export async function downloadWastewaterCsv(
   ).toString();
   const res = await fetch(
     `${base}/api/v1/wastewater/records/export/csv${qs ? "?" + qs : ""}`,
-    { headers: token ? { Authorization: `Bearer ${token}` } : {} },
+    { credentials: "include" },
   );
   if (!res.ok) throw new Error(`Export failed (${res.status})`);
   const blob      = await res.blob();

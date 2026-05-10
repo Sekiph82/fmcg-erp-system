@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, Suspense } from "react";
+import { useCallback, useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { spApi, SPETALog, SPETAStatus } from "@/lib/supplier_portal";
 
@@ -21,13 +21,13 @@ function ETAContent() {
   const [reviewing, setReviewing] = useState<SPETALog | null>(null);
   const [reviewForm, setReviewForm] = useState({ eta_status: "APPROVED", buyer_notes: "", reviewed_by: "" });
 
-  const loadHistory = () => {
+  const loadHistory = useCallback(() => {
     if (!accountId || !poId) return;
     setLoading(true);
     spApi.getETAHistory(accountId, poId).then(setHistory).finally(() => setLoading(false));
-  };
+  }, [accountId, poId]);
 
-  useEffect(() => { loadHistory(); }, [accountId, poId]);
+  useEffect(() => { loadHistory(); }, [loadHistory]);
 
   const propose = async () => {
     await spApi.proposeETA(accountId, { po_id: form.po_id, proposed_date: form.proposed_date, supplier_reason: form.supplier_reason || undefined });

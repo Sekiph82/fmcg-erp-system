@@ -108,7 +108,7 @@ export default function CrossSKUCorrelationPage() {
             </table>
           )}
           <div className="px-4 py-3 border-t bg-gray-50 text-xs text-gray-500">
-            Strong correlation (|r| ≥ 0.8): use both products' history to refine forecasts. Moderate (0.6–0.8): consider cross-product demand signals.
+            Strong correlation (|r| ≥ 0.8): use both products&apos; history to refine forecasts. Moderate (0.6–0.8): consider cross-product demand signals.
           </div>
         </div>
       )}

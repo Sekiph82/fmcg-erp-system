@@ -125,14 +125,14 @@ function TicketDetail({ ticket, onClose }: { ticket: Ticket; onClose: () => void
   const [showClose, setShowClose] = useState(false);
   const [resNotes, setResNotes] = useState("");
 
-  const mk = (fn: () => Promise<unknown>) =>
+  const useTicketMutation = (fn: () => Promise<unknown>) =>
     useMutation({ mutationFn: fn, onSuccess: () => qc.invalidateQueries({ queryKey: ["helpdesk"] }) });
 
-  const escalateM = mk(() => helpdeskApi.escalate(ticket.id));
-  const resolveM  = mk(() => helpdeskApi.resolve(ticket.id, resNotes || undefined));
-  const closeM    = mk(() => helpdeskApi.close(ticket.id, satScore));
-  const reopenM   = mk(() => helpdeskApi.reopen(ticket.id));
-  const commentM  = mk(() => helpdeskApi.addComment(ticket.id, comment, isInternal).then(r => { setComment(""); return r; }));
+  const escalateM = useTicketMutation(() => helpdeskApi.escalate(ticket.id));
+  const resolveM  = useTicketMutation(() => helpdeskApi.resolve(ticket.id, resNotes || undefined));
+  const closeM    = useTicketMutation(() => helpdeskApi.close(ticket.id, satScore));
+  const reopenM   = useTicketMutation(() => helpdeskApi.reopen(ticket.id));
+  const commentM  = useTicketMutation(() => helpdeskApi.addComment(ticket.id, comment, isInternal).then(r => { setComment(""); return r; }));
 
   const busy = escalateM.isPending || resolveM.isPending || closeM.isPending || reopenM.isPending || commentM.isPending;
 

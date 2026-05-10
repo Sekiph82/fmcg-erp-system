@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   customFieldsApi, WorkflowRule, EntityType,
   ENTITY_LABEL, WF_TRIGGER_LABEL, WF_ACTION_LABEL,
@@ -51,7 +51,7 @@ export default function WorkflowRulesPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const data = await customFieldsApi.listWorkflowRules({
@@ -61,9 +61,9 @@ export default function WorkflowRulesPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filterEntity]);
 
-  useEffect(() => { load(); }, [filterEntity]);
+  useEffect(() => { load(); }, [load]);
 
   const openCreate = () => {
     setForm(BLANK);

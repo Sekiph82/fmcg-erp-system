@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { listVehicles, createVehicle, updateVehicle, Vehicle, VehicleStatus, VehicleType, VEHICLE_STATUS_BADGE } from "@/lib/fleet";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -17,12 +17,13 @@ export default function VehiclesPage() {
   const [form, setForm] = useState<Partial<Vehicle>>({ vehicle_type: "truck", fuel_type: "diesel", status: "active" });
   const [error, setError] = useState("");
 
-  useEffect(() => { load(); }, [filter]);
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     try { setVehicles(await listVehicles(filter === "all" ? undefined : { status: filter })); } catch {}
     setLoading(false);
-  }
+  }, [filter]);
+
+  useEffect(() => { load(); }, [load]);
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault(); setError(""); setSaving(true);

@@ -124,7 +124,7 @@ export default function SCAIPage() {
 
       {isLoading && <div className="text-gray-400">Loading…</div>}
       {!isLoading && filtered.length === 0 && (
-        <div className="text-center py-12 text-gray-400">No recommendations yet. Click "Run All AI Agents" to generate insights.</div>
+        <div className="text-center py-12 text-gray-400">No recommendations yet. Click &quot;Run All AI Agents&quot; to generate insights.</div>
       )}
 
       <div className="space-y-3">

@@ -1,21 +1,36 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import model_validator
+from pydantic import field_validator, model_validator
 from typing import List
 import json
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(env_file=(".env", ".env.development"), extra="ignore")
 
     # App
     PROJECT_NAME: str = "FMCG ERP"
     VERSION: str = "0.1.0"
     API_V1_STR: str = "/api/v1"
     ENVIRONMENT: str = "development"  # set to "production" in prod
+    AUTO_CREATE_TABLES: bool = False
+    RUN_MIGRATIONS_ON_STARTUP: bool = False
 
     # Security
     SECRET_KEY: str = "changeme"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 8  # 8 hours
+    AUTH_COOKIE_NAME: str = "erp_access_token"
+    AUTH_COOKIE_SECURE: bool = False
+    AUTH_COOKIE_SAMESITE: str = "lax"
+    AUTH_RETURN_TOKEN_IN_BODY: bool = False
+
+    # Bootstrap / seed controls
+    SEED_INITIAL_ADMIN: bool = True
+    SEED_DEMO_DATA: bool = False
+    INITIAL_ADMIN_USERNAME: str = "admin"
+    INITIAL_ADMIN_EMAIL: str = "admin@erp.local"
+    INITIAL_ADMIN_PASSWORD: str = ""
+    INITIAL_ADMIN_FULL_NAME: str = "System Administrator"
+    DEMO_USER_PASSWORD: str = ""
 
     # ── Login brute-force protection ───────────────────────────────────────────
     LOGIN_MAX_ATTEMPTS: int = 5          # failures before lockout
@@ -35,13 +50,12 @@ class Settings(BaseSettings):
 
     # Database
     DATABASE_URL: str = "postgresql+asyncpg://erp_user:changeme@localhost:5432/fmcg_erp"
+    REDIS_URL: str = "redis://localhost:6379/0"
 
     # CORS
     BACKEND_CORS_ORIGINS: List[str] = [
         "http://localhost:3000",
         "http://localhost:8000",
-        "https://orange-system-x5p7vqvxrq66f66xw-3000.app.github.dev",
-        "https://orange-system-x5p7vqvxrq66f66xw-8000.app.github.dev",
     ]
 
     # ── M-Pesa / Safaricom Daraja ──────────────────────────────────────────────
@@ -91,6 +105,7 @@ class Settings(BaseSettings):
 
     # ── Hybrid module enhancement (off by default — avoids unexpected LLM cost) ─
     AI_ENABLE_MODULE_LLM_ENHANCEMENT: bool = False
+    AI_NL_COMMAND_EXECUTION_ENABLED: bool = False
 
     @property
     def AI_CONFIGURED(self) -> bool:
@@ -128,17 +143,27 @@ class Settings(BaseSettings):
     @model_validator(mode="after")
     def _production_guards(self) -> "Settings":
         if self.ENVIRONMENT == "production":
-            if self.SECRET_KEY == "changeme":
+            if self.SECRET_KEY in {"changeme", "change-this-to-a-random-secret-key"} or self.SECRET_KEY.startswith("CHANGE_ME"):
                 raise ValueError("SECRET_KEY must be changed from the default value in production")
             if not self.PASSWORD_REQUIRE_SPECIAL:
                 raise ValueError("PASSWORD_REQUIRE_SPECIAL must be True in production")
+            if self.SEED_DEMO_DATA:
+                raise ValueError("SEED_DEMO_DATA must be false in production")
+            if self.SEED_INITIAL_ADMIN and (not self.INITIAL_ADMIN_PASSWORD or self.INITIAL_ADMIN_PASSWORD.startswith("CHANGE_ME")):
+                raise ValueError("INITIAL_ADMIN_PASSWORD is required in production when SEED_INITIAL_ADMIN=true")
+            if not self.AUTH_COOKIE_SECURE:
+                raise ValueError("AUTH_COOKIE_SECURE must be true in production")
         return self
 
-    def parse_cors(self, v: str) -> List[str]:
+    @field_validator("BACKEND_CORS_ORIGINS", mode="before")
+    @classmethod
+    def parse_cors(cls, v):
+        if isinstance(v, list):
+            return v
         try:
             return json.loads(v)
         except Exception:
-            return [i.strip() for i in v.split(",")]
+            return [i.strip() for i in str(v).split(",") if i.strip()]
 
 
 settings = Settings()

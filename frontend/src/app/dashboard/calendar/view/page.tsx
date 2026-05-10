@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { calendarApi, CalendarEvent, EVENT_COLOR } from "@/lib/calendar";
 
 type ViewMode = "week" | "month" | "day";
@@ -59,9 +59,12 @@ export default function CalendarViewPage() {
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<CalendarEvent | null>(null);
 
-  const monday = getMondayOfWeek(view === "week" ? anchor : new Date(anchor.getFullYear(), anchor.getMonth(), 1));
-  const weekDays = getWeekDays(monday);
-  const monthDays = getMonthDays(anchor.getFullYear(), anchor.getMonth());
+  const monday = useMemo(
+    () => getMondayOfWeek(view === "week" ? anchor : new Date(anchor.getFullYear(), anchor.getMonth(), 1)),
+    [view, anchor]
+  );
+  const weekDays = useMemo(() => getWeekDays(monday), [monday]);
+  const monthDays = useMemo(() => getMonthDays(anchor.getFullYear(), anchor.getMonth()), [anchor]);
 
   useEffect(() => {
     setLoading(true);
@@ -81,7 +84,7 @@ export default function CalendarViewPage() {
     }
     calendarApi.listEvents({ start: start.toISOString(), end: end.toISOString() })
       .then(setEvents).finally(() => setLoading(false));
-  }, [view, anchor]);
+  }, [view, anchor, monday]);
 
   const navigate = (dir: number) => {
     const d = new Date(anchor);

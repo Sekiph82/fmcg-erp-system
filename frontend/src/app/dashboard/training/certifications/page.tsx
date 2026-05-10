@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   trainingApi, CertificationRecord, CertificationStatus, TrainingProgram,
   CERT_STATUS_COLOR,
@@ -22,12 +22,12 @@ export default function CertificationsPage() {
   });
   const [editForm, setEditForm] = useState({ certificate_no: "", expiry_date: "", notes: "", status: "" as CertificationStatus | "" });
 
-  const load = () =>
+  const load = useCallback(() =>
     Promise.all([
       trainingApi.listCertifications({ status: statusFilter || undefined, employee_id: empFilter || undefined }),
       trainingApi.listPrograms(),
-    ]).then(([c, p]) => { setCerts(c); setPrograms(p); }).finally(() => setLoading(false));
-  useEffect(() => { load(); }, [statusFilter, empFilter]);
+    ]).then(([c, p]) => { setCerts(c); setPrograms(p); }).finally(() => setLoading(false)), [statusFilter, empFilter]);
+  useEffect(() => { load(); }, [load]);
 
   const submit = async () => {
     await trainingApi.createCertification({

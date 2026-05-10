@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { wmsApi, ReplenishmentTask, ReplenishmentStatus } from "@/lib/wms";
 
 const STATUS_COLORS: Record<ReplenishmentStatus, string> = {
@@ -24,7 +24,7 @@ export default function ReplenishmentPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const data = await wmsApi.listReplenishmentTasks(filterStatus ? { status: filterStatus } : undefined);
@@ -32,9 +32,9 @@ export default function ReplenishmentPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filterStatus]);
 
-  useEffect(() => { load(); }, [filterStatus]);
+  useEffect(() => { load(); }, [load]);
 
   const create = async () => {
     if (!form.task_no || !form.warehouse_id || !form.location_id || !form.requested_qty || !form.min_qty) {

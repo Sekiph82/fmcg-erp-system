@@ -225,13 +225,13 @@ export interface ANDashboard {
 // ── API Client ────────────────────────────────────────────────────────────────
 
 function authHeader(): Record<string, string> {
-  const token = localStorage.getItem("access_token");
-  return token ? { Authorization: `Bearer ${token}` } : {};
+  return {};
 }
 
 async function req<T>(method: string, path: string, body?: unknown): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
     method,
+    credentials: "include",
     headers: { "Content-Type": "application/json", ...authHeader() },
     body: body !== undefined ? JSON.stringify(body) : undefined,
   });

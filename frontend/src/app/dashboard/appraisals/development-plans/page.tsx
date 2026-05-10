@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { appraisalsApi, DevelopmentPlan, DevelopmentPlanStatus, PLAN_STATUS_COLOR } from "@/lib/appraisals";
 
 const STATUSES: DevelopmentPlanStatus[] = ["open","in_progress","completed","cancelled"];
@@ -12,10 +12,10 @@ export default function DevelopmentPlansPage() {
   const [updateStatus, setUpdateStatus] = useState<DevelopmentPlanStatus>("open");
   const [notes, setNotes] = useState("");
 
-  const load = () =>
+  const load = useCallback(() =>
     appraisalsApi.listDevelopmentPlans({ status: statusFilter || undefined })
-      .then(setPlans).finally(() => setLoading(false));
-  useEffect(() => { load(); }, [statusFilter]);
+      .then(setPlans).finally(() => setLoading(false)), [statusFilter]);
+  useEffect(() => { load(); }, [load]);
 
   const save = async () => {
     if (!selected) return;

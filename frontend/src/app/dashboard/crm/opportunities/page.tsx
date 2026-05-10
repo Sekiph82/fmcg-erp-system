@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import {
   crmApi, CRMRecord, CRMStage, fmtCurrency,
@@ -20,16 +20,16 @@ export default function OpportunitiesPage() {
   });
   const [saving, setSaving] = useState(false);
 
-  const load = () => {
+  const load = useCallback(() => {
     setLoading(true);
     Promise.all([
       crmApi.getOpportunities({ status: statusFilter || undefined, stage_id: stageFilter || undefined }),
       crmApi.getStages(true),
     ]).then(([recs, stgs]) => { setRecords(recs); setStages(stgs); })
       .catch(console.error).finally(() => setLoading(false));
-  };
+  }, [statusFilter, stageFilter]);
 
-  useEffect(() => { load(); }, [statusFilter, stageFilter]);
+  useEffect(() => { load(); }, [load]);
 
   const handleCreate = async () => {
     setSaving(true);

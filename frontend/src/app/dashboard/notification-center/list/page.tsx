@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   notificationsApi, NCNotification, NotificationType, NotificationPriority,
   TYPE_COLOR, TYPE_ICON, PRIORITY_COLOR, STATUS_COLOR,
@@ -22,7 +22,7 @@ export default function NotificationListPage() {
     module: "", reference_type: "", reference_id: "",
   });
 
-  const load = () => {
+  const load = useCallback(() => {
     const params: Record<string, string | boolean | undefined> = {};
     if (filters.user_id) params.user_id = filters.user_id;
     if (filters.notification_type) params.notification_type = filters.notification_type;
@@ -30,8 +30,8 @@ export default function NotificationListPage() {
     if (filters.read_flag !== "") params.read_flag = filters.read_flag === "true";
     if (filters.module) params.module = filters.module;
     notificationsApi.list(params).then(setNotifications).finally(() => setLoading(false));
-  };
-  useEffect(() => { load(); }, [filters]);
+  }, [filters]);
+  useEffect(() => { load(); }, [load]);
 
   const markRead = async (id: string) => {
     await notificationsApi.markRead(id);

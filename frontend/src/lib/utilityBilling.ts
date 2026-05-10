@@ -318,12 +318,11 @@ export async function downloadBillsCsv(
   filename = "utility_bills.csv",
 ): Promise<void> {
   const base  = process.env.NEXT_PUBLIC_API_URL ?? "";
-  const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
   const qs    = new URLSearchParams(
     Object.entries(params).filter(([, v]) => v !== undefined && v !== "").map(([k, v]) => [k, String(v)])
   ).toString();
   const res = await fetch(`${base}/api/v1/billing/bills/export/csv${qs ? "?" + qs : ""}`,
-    { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+    { credentials: "include" });
   if (!res.ok) throw new Error(`Export failed (${res.status})`);
   const blob = await res.blob();
   const url  = URL.createObjectURL(blob);
@@ -336,12 +335,11 @@ export async function downloadAllocationsCsv(
   filename = "cost_allocations.csv",
 ): Promise<void> {
   const base  = process.env.NEXT_PUBLIC_API_URL ?? "";
-  const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
   const qs    = new URLSearchParams(
     Object.entries(params).filter(([, v]) => v !== undefined && v !== "").map(([k, v]) => [k, String(v)])
   ).toString();
   const res = await fetch(`${base}/api/v1/billing/allocations/export/csv${qs ? "?" + qs : ""}`,
-    { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+    { credentials: "include" });
   if (!res.ok) throw new Error(`Export failed (${res.status})`);
   const blob = await res.blob();
   const url  = URL.createObjectURL(blob);

@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { spApi, SPPOResponseStatus, SP_PO_RESPONSE_COLORS } from "@/lib/supplier_portal";
 
@@ -17,12 +17,12 @@ export default function SPPurchaseOrders() {
     proposed_eta: "",
   });
 
-  const load = () => {
+  const load = useCallback(() => {
     setLoading(true);
     spApi.listPOs(id, statusFilter || undefined).then(setPOs).finally(() => setLoading(false));
-  };
+  }, [id, statusFilter]);
 
-  useEffect(() => { load(); }, [id, statusFilter]);
+  useEffect(() => { load(); }, [load]);
 
   const ackPO = async () => {
     if (!selected) return;

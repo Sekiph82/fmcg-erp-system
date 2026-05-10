@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { portalApi, PortalAIRec, PortalAIAgentType, AI_AGENT_LABELS } from "@/lib/portal";
 
 const PRIORITY_COLORS: Record<string, string> = {
@@ -15,14 +15,14 @@ export default function PortalAIPage() {
   const [agentFilter, setAgentFilter] = useState<PortalAIAgentType | "">("");
   const [statusFilter, setStatusFilter] = useState("PENDING");
 
-  const loadRecs = () => {
+  const loadRecs = useCallback(() => {
     portalApi.getAIRecs({ agent_type: agentFilter || undefined, status: statusFilter || undefined })
       .then(d => setRecs(d as PortalAIRec[]))
       .catch(console.error)
       .finally(() => setLoading(false));
-  };
+  }, [agentFilter, statusFilter]);
 
-  useEffect(() => { setLoading(true); loadRecs(); }, [agentFilter, statusFilter]);
+  useEffect(() => { setLoading(true); loadRecs(); }, [loadRecs]);
 
   const runAgent = async (agent: PortalAIAgentType) => {
     setRunning(agent);

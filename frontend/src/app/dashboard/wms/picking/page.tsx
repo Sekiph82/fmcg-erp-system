@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { wmsApi, PickingTask, PickingTaskStatus } from "@/lib/wms";
 
 const STATUS_COLORS: Record<PickingTaskStatus, string> = {
@@ -25,7 +25,7 @@ export default function PickingTasksPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const data = await wmsApi.listPickingTasks(filterStatus ? { status: filterStatus } : undefined);
@@ -33,9 +33,9 @@ export default function PickingTasksPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filterStatus]);
 
-  useEffect(() => { load(); }, [filterStatus]);
+  useEffect(() => { load(); }, [load]);
 
   const create = async () => {
     if (!form.task_no || !form.warehouse_id || !form.product_id || !form.requested_qty) {

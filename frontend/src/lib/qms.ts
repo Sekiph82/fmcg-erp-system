@@ -321,12 +321,12 @@ export const RELEASE_BG: Record<ReleaseStatus, string> = {
 // ── API Client ────────────────────────────────────────────────────────────────
 
 function authHeader(): Record<string, string> {
-  const token = localStorage.getItem("access_token");
-  return token ? { Authorization: `Bearer ${token}` } : {};
+  return {};
 }
 
 async function apiFetch<T>(path: string, opts?: RequestInit): Promise<T> {
   const res = await fetch(path, {
+    credentials: "include",
     headers: { "Content-Type": "application/json", ...authHeader() },
     ...opts,
   });

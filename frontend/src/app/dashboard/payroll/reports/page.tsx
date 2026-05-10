@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { payrollKeApi, PayrollRun, MONTH_NAMES } from "@/lib/payrollKe";
 
 export default function PayrollReportsPage() {
@@ -18,12 +18,7 @@ export default function PayrollReportsPage() {
     });
   }, []);
 
-  useEffect(() => {
-    if (!selectedRun) return;
-    loadReport();
-  }, [selectedRun, tab]);
-
-  const loadReport = async () => {
+  const loadReport = useCallback(async () => {
     if (!selectedRun) return;
     setLoading(true);
     try {
@@ -36,7 +31,12 @@ export default function PayrollReportsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedRun, tab]);
+
+  useEffect(() => {
+    if (!selectedRun) return;
+    loadReport();
+  }, [selectedRun, tab, loadReport]);
 
   const exportCSV = () => {
     if (!reportData.length) return;

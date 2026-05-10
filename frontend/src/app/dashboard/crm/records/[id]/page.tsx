@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -38,7 +38,7 @@ export default function RecordDetailPage() {
   const [showActivity, setShowActivity] = useState(false);
   const [actForm, setActForm] = useState({ activity_type: "CALL", subject: "", description: "", due_datetime: "", assigned_to: "" });
 
-  const load = async () => {
+  const load = useCallback(async () => {
     try {
       const [rec, stgs] = await Promise.all([crmApi.getRecord(id), crmApi.getStages(true)]);
       setRecord(rec);
@@ -46,9 +46,9 @@ export default function RecordDetailPage() {
       crmApi.get360(id).then(setView360).catch(() => {});
     } catch (e) { console.error(e); }
     setLoading(false);
-  };
+  }, [id]);
 
-  useEffect(() => { load(); }, [id]);
+  useEffect(() => { load(); }, [load]);
 
   const handleCloseWon = async () => {
     setSaving(true);

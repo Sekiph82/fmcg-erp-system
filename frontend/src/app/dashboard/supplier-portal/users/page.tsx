@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, Suspense } from "react";
+import { useCallback, useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { spApi, SPUser, SPUserRole } from "@/lib/supplier_portal";
 
@@ -22,13 +22,13 @@ function UsersContent() {
   const [form, setForm] = useState({ full_name: "", email: "", phone: "", role_type: "VIEWER" as SPUserRole, notes: "" });
   const [invitedBy, setInvitedBy] = useState("admin");
 
-  const load = () => {
+  const load = useCallback(() => {
     if (!accountId) return;
     setLoading(true);
     spApi.listUsers(accountId).then(setUsers).finally(() => setLoading(false));
-  };
+  }, [accountId]);
 
-  useEffect(() => { load(); }, [accountId]);
+  useEffect(() => { load(); }, [load]);
 
   const invite = async () => {
     await spApi.inviteUser(accountId, form as any, invitedBy);
@@ -48,7 +48,7 @@ function UsersContent() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-gray-900">Supplier Portal Users</h1>
-          <p className="text-sm text-gray-500 mt-1">Manage users with access to this supplier's portal</p>
+          <p className="text-sm text-gray-500 mt-1">Manage users with access to this supplier&apos;s portal</p>
         </div>
         {accountId && (
           <button onClick={() => setInviting(true)} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">

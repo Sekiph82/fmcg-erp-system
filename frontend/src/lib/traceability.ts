@@ -377,9 +377,9 @@ export interface RecallEvidence {
 const _BACKEND = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 async function req<T>(url: string, opts?: RequestInit): Promise<T> {
-  const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
   const r = await fetch(`${_BACKEND}${url}`, {
-    headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
     ...opts,
   });
   if (!r.ok) throw new Error(`${r.status}: ${await r.text()}`);

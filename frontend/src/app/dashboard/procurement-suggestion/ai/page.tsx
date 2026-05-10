@@ -203,7 +203,7 @@ export default function PSAIPage() {
 
       {activeRunId && !isLoading && (!recs || recs.length === 0) && (
         <div className="text-center py-12 text-gray-400">
-          No AI recommendations yet. Click "Run All AI Agents" to generate insights.
+          No AI recommendations yet. Click &quot;Run All AI Agents&quot; to generate insights.
         </div>
       )}
 

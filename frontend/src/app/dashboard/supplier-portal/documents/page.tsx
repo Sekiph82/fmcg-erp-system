@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, Suspense } from "react";
+import { useCallback, useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { spApi, SPDocument, SPDocUploadType, SPDocReviewStatus, SP_DOC_REVIEW_COLORS } from "@/lib/supplier_portal";
 
@@ -22,16 +22,16 @@ function DocumentsContent() {
   const [form, setForm] = useState({ upload_type: "DELIVERY_NOTE" as SPDocUploadType, file_name: "", file_path: "", linked_po_id: "", expiry_date: "", notes: "" });
   const [reviewForm, setReviewForm] = useState({ review_status: "ACCEPTED", reviewed_by: "", notes: "" });
 
-  const load = () => {
+  const load = useCallback(() => {
     if (!accountId) return;
     setLoading(true);
     Promise.all([
       spApi.listDocuments(accountId, typeFilter || undefined, reviewFilter || undefined),
       spApi.expiringDocuments(30),
     ]).then(([d, e]) => { setDocs(d); setExpiring(e); }).finally(() => setLoading(false));
-  };
+  }, [accountId, typeFilter, reviewFilter]);
 
-  useEffect(() => { load(); }, [accountId, typeFilter, reviewFilter]);
+  useEffect(() => { load(); }, [load]);
 
   const upload = async () => {
     if (!accountId) return;

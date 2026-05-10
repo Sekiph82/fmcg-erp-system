@@ -263,7 +263,7 @@ export default function ProductionCostingPage() {
         ) : report.length === 0 ? (
           <div className="p-6 text-center text-slate-500 text-sm">
             No finalized cost data for this period.
-            Use "Finalize Order Cost" to compute and persist costs for completed orders.
+            Use &quot;Finalize Order Cost&quot; to compute and persist costs for completed orders.
           </div>
         ) : (
           <div className="overflow-x-auto">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Sidebar } from "./Sidebar";
 import { CommandPalette } from "./CommandPalette";
@@ -86,7 +87,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
           </button>
           <div className="flex items-center gap-2 flex-1">
             <div className="h-6 w-6 rounded-md overflow-hidden shrink-0">
-              <img src="/povu-logo.jpg" alt="POVU" className="h-full w-full object-cover" />
+              <Image src="/povu-logo.jpg" alt="POVU" width={24} height={24} className="h-full w-full object-cover" />
             </div>
             <span className="text-[13px] font-semibold text-white tracking-tight">POVU ERP</span>
           </div>

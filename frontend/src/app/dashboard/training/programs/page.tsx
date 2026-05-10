@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   trainingApi, TrainingProgram, SkillCategory, TrainingType,
   CATEGORY_COLOR, TRAINING_TYPE_LABEL,
@@ -20,10 +20,10 @@ export default function TrainingProgramsPage() {
   });
   const [effectiveness, setEffectiveness] = useState<Record<string, unknown>>({});
 
-  const load = () =>
+  const load = useCallback(() =>
     trainingApi.listPrograms({ category: filter.category || undefined, mandatory_only: filter.mandatory_only || undefined })
-      .then(setPrograms).finally(() => setLoading(false));
-  useEffect(() => { load(); }, [filter]);
+      .then(setPrograms).finally(() => setLoading(false)), [filter]);
+  useEffect(() => { load(); }, [load]);
 
   const submit = async () => {
     await trainingApi.createProgram({

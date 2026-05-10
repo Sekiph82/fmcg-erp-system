@@ -355,7 +355,7 @@ export default function ProdExecOrderDetailPage() {
         <div className="space-y-3">
           {aiRecs.length === 0 ? (
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-8 text-center text-sm text-gray-400">
-              No AI recommendations. Click "Run AI" to analyze this order.
+              No AI recommendations. Click &quot;Run AI&quot; to analyze this order.
             </div>
           ) : aiRecs.map((rec) => (
             <div key={rec.id} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">

@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { procurementApi, AutoReorderPolicy } from "@/lib/procurement";
 
 const BLANK_FORM = {
@@ -19,7 +19,7 @@ export default function ReorderPoliciesPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const data = await procurementApi.listReorderPolicies({ active_only: activeOnly });
@@ -27,9 +27,9 @@ export default function ReorderPoliciesPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeOnly]);
 
-  useEffect(() => { load(); }, [activeOnly]);
+  useEffect(() => { load(); }, [load]);
 
   const openCreate = () => { setForm({ ...BLANK_FORM }); setEditId(null); setError(""); setShowModal(true); };
 
@@ -121,7 +121,7 @@ export default function ReorderPoliciesPage() {
           The MRP engine checks stock levels against reorder points daily. When a material/product
           falls below its reorder point, the system auto-creates a Purchase Requisition for the
           configured reorder quantity from the preferred supplier.
-          "Auto Create PR" must be enabled for automatic triggering.
+          &quot;Auto Create PR&quot; must be enabled for automatic triggering.
         </p>
       </div>
 

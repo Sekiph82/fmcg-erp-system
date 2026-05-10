@@ -73,7 +73,7 @@ export default function PromoAIPage() {
           <div className="text-gray-400 text-sm p-6 text-center">Loading…</div>
         ) : recs.length === 0 ? (
           <div className="liquid-glass p-8 text-center text-gray-400">
-            No recommendations. Click "Run AI Agents" to analyse the system.
+            No recommendations. Click &quot;Run AI Agents&quot; to analyse the system.
           </div>
         ) : recs.map((rec) => (
           <div key={rec.id} className="liquid-glass p-4 space-y-2">

@@ -70,6 +70,10 @@ export default function NLCommandPage() {
     queryFn: () => aiApi.listNLCommandHistory(40),
     refetchInterval: 20_000,
   });
+  const statusQuery = useQuery({
+    queryKey: ["ai-status"],
+    queryFn: () => aiApi.status(),
+  });
 
   const submit = useMutation({
     mutationFn: () => aiApi.submitNLCommand(command.trim()),
@@ -111,6 +115,7 @@ export default function NLCommandPage() {
   const history = historyQuery.data ?? [];
   const highRisk = history.filter((item) => item.risk_level === "HIGH").length;
   const pending = history.filter((item) => item.status === "PENDING_CONFIRMATION").length;
+  const executionEnabled = statusQuery.data?.nl_command_execution_enabled === true;
 
   return (
     <div className="p-6 space-y-6">
@@ -220,7 +225,9 @@ export default function NLCommandPage() {
             </div>
             <div>
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-1">Mode</p>
-              <p className="text-sm text-gray-700">Execution records audit state; backend endpoint is still stubbed.</p>
+              <p className="text-sm text-gray-700">
+                {executionEnabled ? "Execution requires approval and idempotency." : "Dry-run only. Execution is disabled by configuration."}
+              </p>
             </div>
           </div>
 
@@ -238,10 +245,10 @@ export default function NLCommandPage() {
                 />
                 <button
                   onClick={() => execute.mutate()}
-                  disabled={!confirmedBy.trim() || execute.isPending}
+                  disabled={!executionEnabled || !confirmedBy.trim() || execute.isPending}
                   className="px-4 py-2 text-sm font-medium bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
                 >
-                  {execute.isPending ? "Executing..." : "Confirm & Execute"}
+                  {executionEnabled ? (execute.isPending ? "Executing..." : "Confirm & Execute") : "Execution Disabled"}
                 </button>
                 <button
                   onClick={() => reject.mutate()}

@@ -130,7 +130,7 @@ export default function MarketIntelligencePage() {
             <h2 className="text-sm font-semibold text-gray-700">Shelf Share by Category (Last 90 days)</h2>
           </div>
           {shelf.length === 0 ? (
-            <div className="p-6 text-sm text-gray-400 text-center">No shelf share data. Log observations using "Log Observation".</div>
+            <div className="p-6 text-sm text-gray-400 text-center">No shelf share data. Log observations using &quot;Log Observation&quot;.</div>
           ) : (
             <table className="w-full text-sm">
               <thead className="bg-gray-50 text-xs text-gray-500">
@@ -212,7 +212,7 @@ export default function MarketIntelligencePage() {
             <h2 className="text-sm font-semibold text-gray-700">Market Share Estimates ({shares.length})</h2>
           </div>
           {shares.length === 0 ? (
-            <div className="p-6 text-sm text-gray-400 text-center">No market share data. Use "Log Market Share".</div>
+            <div className="p-6 text-sm text-gray-400 text-center">No market share data. Use &quot;Log Market Share&quot;.</div>
           ) : (
             <table className="w-full text-sm">
               <thead className="bg-gray-50 text-xs text-gray-500">

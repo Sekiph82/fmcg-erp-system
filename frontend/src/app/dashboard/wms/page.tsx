@@ -173,7 +173,7 @@ export default function WMSPage() {
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-6">
           <h2 className="font-semibold text-amber-900 mb-2">Quarantine / Blocked Stock</h2>
           <p className="text-sm text-amber-700 mb-4">
-            Quarantined stock is blocked from issue and transfer. Use "Quarantine Stock" to block a lot, and "Release" to unblock it after inspection.
+            Quarantined stock is blocked from issue and transfer. Use &quot;Quarantine Stock&quot; to block a lot, and &quot;Release&quot; to unblock it after inspection.
           </p>
           <p className="text-sm text-gray-600">
             Blocked stock rows appear in the Inventory summary with <strong>is_blocked = true</strong> and zero available quantity.

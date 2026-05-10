@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import Link from "next/link";
 import {
@@ -68,7 +68,7 @@ export default function ESGIntelligencePage() {
     date_to: dateTo || undefined,
   }), [dateFrom, dateTo]);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const [dash, supplierScores] = await Promise.all([
@@ -80,9 +80,9 @@ export default function ESGIntelligencePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [params]);
 
-  useEffect(() => { load(); }, [params]);
+  useEffect(() => { load(); }, [load]);
 
   const submitScore = async (event: FormEvent) => {
     event.preventDefault();

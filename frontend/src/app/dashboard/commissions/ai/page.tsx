@@ -47,7 +47,7 @@ export default function CommissionsAIPage() {
         {isLoading && <p className="text-slate-500 text-sm">Loading…</p>}
         {!isLoading && recs.length === 0 && (
           <div className="glow-card p-8 text-center text-slate-600">
-            No recommendations — click "Run AI Agents" to generate insights.
+            No recommendations — click &quot;Run AI Agents&quot; to generate insights.
           </div>
         )}
         {recs.map((r) => (

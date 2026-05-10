@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 
@@ -28,11 +28,11 @@ export default function BrandAssetDetailPage() {
   const [approving, setApproving] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const load = () => {
+  const load = useCallback(() => {
     setLoading(true);
     fetch(`/api/v1/brand-assets/${id}`).then((r) => r.json()).then(setAsset).finally(() => setLoading(false));
-  };
-  useEffect(() => { if (id) load(); }, [id]);
+  }, [id]);
+  useEffect(() => { if (id) load(); }, [id, load]);
 
   const approveStage = async (stageId: string, action: "approve" | "reject") => {
     if (!approver.trim()) { setError("Enter approver name first."); return; }

@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { expensesApi, ExpenseClaim, ExpenseStatus, STATUS_LABEL, STATUS_COLOR, fmtCurrency } from "@/lib/expenses";
 
@@ -10,13 +10,13 @@ export default function ClaimsPage() {
   const [filter, setFilter] = useState<ExpenseStatus | "">("");
   const [loading, setLoading] = useState(false);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     const data = await expensesApi.listClaims(filter ? { status: filter as ExpenseStatus } : undefined);
     setClaims(data);
     setLoading(false);
-  };
-  useEffect(() => { load(); }, [filter]);
+  }, [filter]);
+  useEffect(() => { load(); }, [load]);
 
   const handleSubmit = async (id: string) => {
     await expensesApi.submitClaim(id);

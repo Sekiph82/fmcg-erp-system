@@ -128,7 +128,7 @@ export default function CycleCountReportsPage() {
       )}
 
       {!accuracy && !loading && (
-        <div className="text-center py-16 text-gray-400">Click "Load Reports" to fetch analytics and AI insights.</div>
+        <div className="text-center py-16 text-gray-400">Click &quot;Load Reports&quot; to fetch analytics and AI insights.</div>
       )}
     </div>
   );

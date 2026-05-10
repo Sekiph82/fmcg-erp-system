@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import {
   plApi, PLHeader, PLLine, PLTier, PLAssignment, PLChangeHistory, PLApproval,
@@ -28,7 +28,7 @@ export default function PLDetail() {
   const [reviewer, setReviewer] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     const [h, l, asn, hist, approv] = await Promise.all([
       plApi.getHeader(id),
       plApi.listLines(id),
@@ -45,9 +45,9 @@ export default function PLDetail() {
       setSelectedLine(l[0]);
       plApi.listTiers(l[0].id).then(setTiers);
     }
-  };
+  }, [id, selectedLine]);
 
-  useEffect(() => { load(); }, [id]);
+  useEffect(() => { load(); }, [load]);
 
   const loadTiers = (line: PLLine) => {
     setSelectedLine(line);

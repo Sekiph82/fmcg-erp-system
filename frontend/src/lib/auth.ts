@@ -6,6 +6,7 @@ export interface LoginResponse {
   two_fa_required?: boolean;
   session_token?: string;
   method?: string;
+  must_change_password?: boolean;
 }
 
 export interface Permission {
@@ -31,6 +32,7 @@ export interface User {
   full_name: string;
   is_active: boolean;
   is_superuser: boolean;
+  must_change_password: boolean;
   roles: Role[];
   permission_codes: string[];
 }
@@ -56,4 +58,15 @@ export async function login(username: string, password: string): Promise<LoginRe
 export async function getMe(): Promise<User> {
   const res = await apiClient.get<User>("/api/v1/auth/me");
   return res.data;
+}
+
+export async function logout(): Promise<void> {
+  await apiClient.post("/api/v1/auth/logout");
+}
+
+export async function changeOwnPassword(currentPassword: string, newPassword: string): Promise<void> {
+  await apiClient.post("/api/v1/users/me/change-password", {
+    current_password: currentPassword,
+    new_password: newPassword,
+  });
 }

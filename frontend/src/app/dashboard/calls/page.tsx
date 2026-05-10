@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { voipApi, CallLog, CallStats, OUTCOME_COLORS, fmtDuration } from "@/lib/voip";
 
 const BLANK_FORM = {
@@ -18,7 +18,7 @@ export default function CallsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const [c, s] = await Promise.all([
@@ -30,9 +30,9 @@ export default function CallsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filterOutcome]);
 
-  useEffect(() => { load(); }, [filterOutcome]);
+  useEffect(() => { load(); }, [load]);
 
   const logCall = async () => {
     if (!form.phone_number) { setError("Phone number required"); return; }

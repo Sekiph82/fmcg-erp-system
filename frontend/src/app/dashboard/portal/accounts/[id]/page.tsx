@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -22,7 +22,7 @@ export default function PortalAccountDetailPage() {
   const [inviteForm, setInviteForm] = useState({ full_name: "", email: "", phone: "", role_type: "VIEWER" });
   const [inviteSaving, setInviteSaving] = useState(false);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     try {
       const [acc, usrs, dash] = await Promise.all([
         portalApi.getAccount(id),
@@ -34,9 +34,9 @@ export default function PortalAccountDetailPage() {
       setDashboard(dash as PortalDashboard);
     } catch (e) { console.error(e); }
     setLoading(false);
-  };
+  }, [id]);
 
-  useEffect(() => { load(); }, [id]);
+  useEffect(() => { load(); }, [load]);
 
   const handleInvite = async () => {
     setInviteSaving(true);

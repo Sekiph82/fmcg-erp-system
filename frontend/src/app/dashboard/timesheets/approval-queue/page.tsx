@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { timesheetsApi, TimesheetHeader, STATUS_COLOR, STATUS_LABEL } from "@/lib/timesheets";
 
 export default function ApprovalQueuePage() {
@@ -12,12 +12,12 @@ export default function ApprovalQueuePage() {
   const [deptFilter, setDeptFilter] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const load = () =>
+  const load = useCallback(() =>
     Promise.all([
       timesheetsApi.approvalQueue(deptFilter || undefined),
       timesheetsApi.list({ status: "manager_approved" }),
-    ]).then(([q, a]) => { setQueue(q); setApproved(a); }).finally(() => setLoading(false));
-  useEffect(() => { load(); }, [deptFilter]);
+    ]).then(([q, a]) => { setQueue(q); setApproved(a); }).finally(() => setLoading(false)), [deptFilter]);
+  useEffect(() => { load(); }, [load]);
 
   const approve = async () => {
     if (!selected) return;

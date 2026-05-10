@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { crmApi, CRMActivity, ACTIVITY_TYPE_LABELS, ACTIVITY_RESULT_LABELS } from "@/lib/crm_pipeline";
 
@@ -18,15 +18,15 @@ export default function ActivitiesPage() {
   const [overdueOnly, setOverdueOnly] = useState(false);
   const [typeFilter, setTypeFilter] = useState("");
 
-  const load = () => {
+  const load = useCallback(() => {
     setLoading(true);
     crmApi.getActivities({
       result_status: statusFilter || undefined,
       overdue_only: overdueOnly || undefined,
     }).then(setActivities).catch(console.error).finally(() => setLoading(false));
-  };
+  }, [statusFilter, overdueOnly]);
 
-  useEffect(() => { load(); }, [statusFilter, overdueOnly]);
+  useEffect(() => { load(); }, [load]);
 
   const filtered = typeFilter ? activities.filter(a => a.activity_type === typeFilter) : activities;
 

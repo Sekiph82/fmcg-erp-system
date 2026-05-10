@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { procurementApi, BlanketAgreement, BPAStatus } from "@/lib/procurement";
 
 const STATUS_COLORS: Record<BPAStatus, string> = {
@@ -24,7 +24,7 @@ export default function BlanketAgreementsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const data = await procurementApi.listBPAs(filterStatus ? { status: filterStatus as BPAStatus } : undefined);
@@ -32,9 +32,9 @@ export default function BlanketAgreementsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filterStatus]);
 
-  useEffect(() => { load(); }, [filterStatus]);
+  useEffect(() => { load(); }, [load]);
 
   const openCreate = () => { setForm({ ...BLANK_FORM }); setEditId(null); setError(""); setShowModal(true); };
 

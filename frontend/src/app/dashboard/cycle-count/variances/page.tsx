@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { listAdjustments, approveAdjustments, rejectAdjustments, listEntries, CountAdjustment, CountEntry, AdjustmentStatus } from "@/lib/cycleCount";
 import { Button } from "@/components/ui/Button";
 
@@ -14,8 +14,7 @@ export default function VariancesPage() {
   const [processing, setProcessing] = useState(false);
   const [msg, setMsg] = useState("");
 
-  useEffect(() => { load(); }, [statusFilter]);
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const adjs = await listAdjustments(statusFilter === "all" ? undefined : { status: statusFilter });
@@ -28,7 +27,9 @@ export default function VariancesPage() {
     } catch {}
     setLoading(false);
     setSelected(new Set());
-  }
+  }, [statusFilter]);
+
+  useEffect(() => { load(); }, [load]);
 
   function toggleSelect(entryId: string) {
     setSelected((prev) => {

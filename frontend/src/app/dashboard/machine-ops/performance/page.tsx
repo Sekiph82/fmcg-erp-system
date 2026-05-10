@@ -115,7 +115,7 @@ export default function PerformancePage() {
               </tr>
             ))}
             {!isLoading && !(snapshots?.length) && (
-              <tr><td colSpan={15} className="px-4 py-8 text-center text-gray-400 text-sm">No performance snapshots. Select a machine and click "Compute Today".</td></tr>
+              <tr><td colSpan={15} className="px-4 py-8 text-center text-gray-400 text-sm">No performance snapshots. Select a machine and click &quot;Compute Today&quot;.</td></tr>
             )}
           </tbody>
         </table>

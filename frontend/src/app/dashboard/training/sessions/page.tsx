@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { trainingApi, TrainingSession, TrainingProgram, SessionStatus, SESSION_STATUS_COLOR } from "@/lib/training";
 
 export default function TrainingSessionsPage() {
@@ -13,12 +13,12 @@ export default function TrainingSessionsPage() {
     trainer_name: "", capacity: "", notes: "",
   });
 
-  const load = () =>
+  const load = useCallback(() =>
     Promise.all([
       trainingApi.listSessions({ upcoming_only: upcomingOnly }),
       trainingApi.listPrograms({ active_only: true }),
-    ]).then(([s, p]) => { setSessions(s); setPrograms(p); }).finally(() => setLoading(false));
-  useEffect(() => { load(); }, [upcomingOnly]);
+    ]).then(([s, p]) => { setSessions(s); setPrograms(p); }).finally(() => setLoading(false)), [upcomingOnly]);
+  useEffect(() => { load(); }, [load]);
 
   const submit = async () => {
     await trainingApi.createSession({

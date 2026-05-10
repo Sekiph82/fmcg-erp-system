@@ -247,7 +247,7 @@ export default function MessagesPage() {
           {/* Search results overlay */}
           {searchQ.length >= 2 ? (
             <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
-              <p className="text-xs text-gray-500 font-medium">Search results for "{searchQ}"</p>
+              <p className="text-xs text-gray-500 font-medium">Search results for &quot;{searchQ}&quot;</p>
               {searchResults.length === 0 ? (
                 <p className="text-sm text-gray-400">No results</p>
               ) : searchResults.map((m) => (

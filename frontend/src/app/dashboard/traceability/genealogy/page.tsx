@@ -1,6 +1,6 @@
 "use client";
 import { useSearchParams } from "next/navigation";
-import { useState, useEffect, Suspense } from "react";
+import { useCallback, useState, useEffect, Suspense } from "react";
 import { traceApi, GenealogyTree, GenealogyEdge, STAGE_COLOR } from "@/lib/traceability";
 
 function GenealogyContent() {
@@ -13,10 +13,7 @@ function GenealogyContent() {
   const [loading, setLoading] = useState(false);
   const [view, setView] = useState<"graph" | "list">("list");
 
-  useEffect(() => { if (initialLotId) handleLoad(initialLotId); }, []);
-
-  const handleLoad = async (id?: string) => {
-    const traceId = id || lotId;
+  const handleLoad = useCallback(async (traceId: string) => {
     if (!traceId) return;
     setLoading(true);
     setTree(null);
@@ -25,7 +22,9 @@ function GenealogyContent() {
       setTree(r);
     } catch (e: any) { alert(e.message); }
     finally { setLoading(false); }
-  };
+  }, [direction, maxDepth]);
+
+  useEffect(() => { if (initialLotId) handleLoad(initialLotId); }, [initialLotId, handleLoad]);
 
   return (
     <div className="p-6 space-y-6">
@@ -58,7 +57,7 @@ function GenealogyContent() {
           </select>
         </div>
         <div className="flex items-end">
-          <button onClick={() => handleLoad()} disabled={!lotId || loading}
+          <button onClick={() => handleLoad(lotId)} disabled={!lotId || loading}
             className="px-5 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 disabled:opacity-50">
             {loading ? "Loading…" : "Build Genealogy"}
           </button>

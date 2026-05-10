@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { recruitmentApi, CandidatePipeline, RecruitmentStage, JobRequisition, PIPELINE_STATUS_COLOR } from "@/lib/recruitment";
 
@@ -13,17 +13,17 @@ export default function PipelineBoardPage() {
   const [dragging, setDragging] = useState<string | null>(null);
   const [msg, setMsg] = useState("");
 
-  const load = async () => {
+  const load = useCallback(async () => {
     const [s, r] = await Promise.all([recruitmentApi.listStages(), recruitmentApi.listRequisitions()]);
     setStages(s.filter((s) => s.stage_type === "active" || s.stage_type === "final_hire")); setReqs(r);
-  };
-  const loadPipeline = async () => {
+  }, []);
+  const loadPipeline = useCallback(async () => {
     const pl = await recruitmentApi.listPipeline(selectedReq ? { requisition_id: selectedReq } : {});
     setPipeline(pl.filter((p) => p.status !== "rejected"));
-  };
+  }, [selectedReq]);
 
-  useEffect(() => { load(); }, []);
-  useEffect(() => { loadPipeline(); }, [selectedReq]);
+  useEffect(() => { load(); }, [load]);
+  useEffect(() => { loadPipeline(); }, [loadPipeline]);
 
   const stageMap: Record<string, CandidatePipeline[]> = {};
   for (const s of stages) stageMap[s.stage_id] = [];

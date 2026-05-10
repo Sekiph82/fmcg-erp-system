@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { portalApi, PortalClaim, CLAIM_TYPE_LABELS, CLAIM_STATUS_COLORS } from "@/lib/portal";
 
 export default function PortalClaimsReviewPage() {
@@ -10,7 +10,7 @@ export default function PortalClaimsReviewPage() {
   const [resolution, setResolution] = useState("");
   const [resolving, setResolving] = useState(false);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const accs = await portalApi.getAccounts({ status: "ACTIVE" });
@@ -25,9 +25,9 @@ export default function PortalClaimsReviewPage() {
       setAllClaims(claimsAll);
     } catch (e) { console.error(e); }
     setLoading(false);
-  };
+  }, [statusFilter]);
 
-  useEffect(() => { load(); }, [statusFilter]);
+  useEffect(() => { load(); }, [load]);
 
   const handleResolve = async (status: string) => {
     if (!selected) return;

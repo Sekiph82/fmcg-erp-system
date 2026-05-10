@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { portalApi, PortalAccount, ACCOUNT_TYPE_LABELS, ACCOUNT_STATUS_COLORS } from "@/lib/portal";
 
@@ -9,15 +9,15 @@ export default function PortalAccountsPage() {
   const [statusFilter, setStatusFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
 
-  const load = () => {
+  const load = useCallback(() => {
     setLoading(true);
     portalApi.getAccounts({ status: statusFilter || undefined })
       .then(d => setAccounts(d as PortalAccount[]))
       .catch(console.error)
       .finally(() => setLoading(false));
-  };
+  }, [statusFilter]);
 
-  useEffect(() => { load(); }, [statusFilter]);
+  useEffect(() => { load(); }, [load]);
 
   const filtered = typeFilter ? accounts.filter(a => a.account_type === typeFilter) : accounts;
 

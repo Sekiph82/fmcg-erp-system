@@ -49,7 +49,7 @@ export default function ScenariosPage() {
     <div className="p-6 space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Scenario Simulator</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Model "what if" changes before committing to them</p>
+        <p className="text-sm text-gray-500 mt-0.5">Model &quot;what if&quot; changes before committing to them</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">

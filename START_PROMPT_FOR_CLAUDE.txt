@@ -1,1 +1,0 @@
-Read CLAUDE_RUN_INSTRUCTIONS.md, ERP_70_GAPS_AUTONOMOUS_BUILD_PLAN.md, and TASKS2.md. Continue from TASKS2.md. For each gap, generate your own internal implementation prompt, plan, code, validate, update TASKS2.md, and continue if there is enough context. Do not ask me questions. Do not create placeholder-only features.

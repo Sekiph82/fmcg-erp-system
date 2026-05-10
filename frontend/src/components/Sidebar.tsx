@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
@@ -190,8 +191,13 @@ function SectionAccordion({
   hasPermission: (code: string) => boolean;
   onNavigate: () => void;
 }) {
+  if (section.permission && !hasPermission(section.permission)) return null;
   const visibleItems = section.items.filter(
-    (item) => !item.permission || hasPermission(item.permission)
+    (item) => item.permission
+      ? hasPermission(item.permission)
+      : section.permission
+        ? hasPermission(section.permission)
+        : false
   );
   if (visibleItems.length === 0) return null;
 
@@ -294,13 +300,26 @@ function ClusterAccordion({
   collapsed, pathname, hasPermission, onExpandSidebar, onNavigate,
 }: ClusterAccordionProps) {
   const visibleSections = data.sections.filter((sec) =>
-    sec.items.some((item) => !item.permission || hasPermission(item.permission))
+    (!sec.permission || hasPermission(sec.permission)) &&
+    sec.items.some((item) =>
+      item.permission
+        ? hasPermission(item.permission)
+        : sec.permission
+          ? hasPermission(sec.permission)
+          : false
+    )
   );
   if (visibleSections.length === 0) return null;
 
   const hasActiveChild = visibleSections.some((sec) =>
     sec.items.some(
-      (item) => (!item.permission || hasPermission(item.permission)) && isItemActive(item.href, pathname)
+      (item) => (
+        item.permission
+          ? hasPermission(item.permission)
+          : sec.permission
+            ? hasPermission(sec.permission)
+            : false
+      ) && isItemActive(item.href, pathname)
     )
   );
 
@@ -523,9 +542,11 @@ export function Sidebar({ mobileOpen, onMobileClose, onOpenSearch }: SidebarProp
           <button onClick={expandSidebar} title="Expand sidebar" className="group flex items-center justify-center">
             {/* POVU logo icon — circular crop in collapsed mode */}
             <div className="h-8 w-8 rounded-lg overflow-hidden shadow-lg group-hover:opacity-90 transition-opacity">
-              <img
+              <Image
                 src="/povu-logo.jpg"
                 alt="POVU"
+                width={32}
+                height={32}
                 className="h-full w-full object-cover"
               />
             </div>
@@ -535,9 +556,11 @@ export function Sidebar({ mobileOpen, onMobileClose, onOpenSearch }: SidebarProp
             <div className="flex items-center gap-2.5 min-w-0">
               {/* POVU logo — replaces the purple ERP square */}
               <div className="h-[28px] w-[28px] shrink-0 rounded-[7px] overflow-hidden shadow-md">
-                <img
+                <Image
                   src="/povu-logo.jpg"
                   alt="POVU"
+                  width={28}
+                  height={28}
                   className="h-full w-full object-cover"
                 />
               </div>

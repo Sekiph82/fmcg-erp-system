@@ -249,7 +249,7 @@ export default function FormBuilderPage() {
             ) : (
               <div className="text-center py-6 text-gray-400">
                 <p className="text-2xl mb-2">✏️</p>
-                <p className="text-sm">Click "Edit layout" on a field to set its section and width.</p>
+                <p className="text-sm">Click &quot;Edit layout&quot; on a field to set its section and width.</p>
               </div>
             )}
           </div>

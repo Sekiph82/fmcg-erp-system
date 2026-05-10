@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { surveysApi, SurveyDetail, SURVEY_TYPE_LABEL, QUESTION_TYPE_LABEL } from "@/lib/surveys";
 
@@ -8,13 +8,13 @@ export default function SurveyDetailPage() {
   const [survey, setSurvey] = useState<SurveyDetail | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     try { setSurvey(await surveysApi.getSurvey(id)); }
     finally { setLoading(false); }
-  };
+  }, [id]);
 
-  useEffect(() => { load(); }, [id]);
+  useEffect(() => { load(); }, [load]);
 
   const launch = async () => {
     await surveysApi.launchSurvey(id);

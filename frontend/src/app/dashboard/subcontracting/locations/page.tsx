@@ -21,7 +21,7 @@ export default function LocationsPage() {
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-6 w-96 space-y-3 shadow-xl">
             <h2 className="font-semibold">Create Subcontractor Location</h2>
-            <p className="text-xs text-gray-500">A virtual warehouse representing the subcontractor's premises.</p>
+            <p className="text-xs text-gray-500">A virtual warehouse representing the subcontractor&apos;s premises.</p>
             {[["Supplier ID","supplier_id"],["Warehouse ID","warehouse_id"],["Notes","notes"]].map(([label, key]) => (
               <div key={key}><label className="text-xs text-gray-600">{label}</label>
                 <input value={(form as Record<string,string>)[key]} onChange={(e) => setForm((p) => ({ ...p, [key]: e.target.value }))}

@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import {
   crmApi, CRMRecord, CRMStage, fmtCurrency,
@@ -16,7 +16,7 @@ export default function LeadsPage() {
   const [form, setForm] = useState({ company_name: "", contact_person_name: "", contact_email: "", contact_phone: "", source_type: "MANUAL", notes: "" });
   const [saving, setSaving] = useState(false);
 
-  const load = () => {
+  const load = useCallback(() => {
     setLoading(true);
     Promise.all([
       crmApi.getLeads({ status: statusFilter || undefined, temperature: tempFilter || undefined }),
@@ -25,9 +25,9 @@ export default function LeadsPage() {
       setRecords(recs);
       setStages(stgs);
     }).catch(console.error).finally(() => setLoading(false));
-  };
+  }, [statusFilter, tempFilter]);
 
-  useEffect(() => { load(); }, [statusFilter, tempFilter]);
+  useEffect(() => { load(); }, [load]);
 
   const handleCreate = async () => {
     setSaving(true);

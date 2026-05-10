@@ -1,6 +1,6 @@
 "use client";
 import { useSearchParams } from "next/navigation";
-import { useState, useEffect, Suspense } from "react";
+import { useCallback, useState, useEffect, Suspense } from "react";
 import { traceApi, BackwardTraceResult } from "@/lib/traceability";
 
 function BackwardTraceContent() {
@@ -11,12 +11,7 @@ function BackwardTraceContent() {
   const [result, setResult] = useState<BackwardTraceResult | null>(null);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (initialLotId) handleTrace(initialLotId);
-  }, []);
-
-  const handleTrace = async (id?: string) => {
-    const traceId = id || lotId;
+  const handleTrace = useCallback(async (traceId: string) => {
     if (!traceId) return;
     setLoading(true);
     setResult(null);
@@ -25,7 +20,11 @@ function BackwardTraceContent() {
       setResult(r);
     } catch (e: any) { alert(e.message); }
     finally { setLoading(false); }
-  };
+  }, [maxDepth]);
+
+  useEffect(() => {
+    if (initialLotId) handleTrace(initialLotId);
+  }, [initialLotId, handleTrace]);
 
   return (
     <div className="p-6 space-y-6">
@@ -50,7 +49,7 @@ function BackwardTraceContent() {
             </select>
           </div>
           <div className="flex items-end">
-            <button onClick={() => handleTrace()} disabled={!lotId || loading}
+            <button onClick={() => handleTrace(lotId)} disabled={!lotId || loading}
               className="px-5 py-2 bg-gray-800 text-white text-sm rounded-lg hover:bg-gray-900 disabled:opacity-50">
               {loading ? "Tracing…" : "← Trace Backward"}
             </button>

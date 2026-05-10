@@ -64,7 +64,7 @@ export default function AllergenMasterPage() {
             <tr>{["Code", "Name", "Regulatory Name", "Category", "Sort", "Active"].map((h) => <th key={h} className="px-4 py-2 text-left">{h}</th>)}</tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {!allergens?.length && <tr><td colSpan={6} className="px-4 py-6 text-center text-gray-400">No allergens. Click "Seed Defaults" to load standard allergens.</td></tr>}
+            {!allergens?.length && <tr><td colSpan={6} className="px-4 py-6 text-center text-gray-400">No allergens. Click &quot;Seed Defaults&quot; to load standard allergens.</td></tr>}
             {allergens?.map((a) => (
               <tr key={a.id} className="hover:bg-gray-50">
                 <td className="px-4 py-2 font-mono text-xs font-medium">{a.allergen_code}</td>

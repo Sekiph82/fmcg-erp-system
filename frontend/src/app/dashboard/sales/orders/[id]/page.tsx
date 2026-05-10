@@ -384,7 +384,7 @@ export default function SODetailPage() {
       <Modal open={showMpesa} onClose={() => setShowMpesa(false)} title="Request M-Pesa Payment">
         <div className="space-y-4">
           <p className="text-sm text-gray-600">
-            An STK Push will be sent to the customer's phone to prompt payment.
+            An STK Push will be sent to the customer&apos;s phone to prompt payment.
           </p>
           <Input
             label="Phone Number (e.g. 254712345678)"

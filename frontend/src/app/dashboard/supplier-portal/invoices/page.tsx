@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, Suspense } from "react";
+import { useCallback, useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { spApi, SPDocument, SP_DOC_REVIEW_COLORS } from "@/lib/supplier_portal";
 
@@ -14,13 +14,13 @@ function InvoicesContent() {
     notes: "", invoice_number: "", invoice_date: "", currency: "KES", total_amount: "",
   });
 
-  const load = () => {
+  const load = useCallback(() => {
     if (!accountId) return;
     setLoading(true);
     spApi.listDocuments(accountId, "INVOICE").then(setInvoices).finally(() => setLoading(false));
-  };
+  }, [accountId]);
 
-  useEffect(() => { load(); }, [accountId]);
+  useEffect(() => { load(); }, [load]);
 
   const upload = async () => {
     if (!accountId) return;

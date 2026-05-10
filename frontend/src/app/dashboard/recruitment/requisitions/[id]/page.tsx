@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { recruitmentApi, JobRequisition, JobPosting, CandidatePipeline, REQ_STATUS_LABEL, REQ_STATUS_COLOR, PIPELINE_STATUS_COLOR, fmtCurrency } from "@/lib/recruitment";
@@ -14,11 +14,11 @@ export default function RequisitionDetailPage() {
   const [tab, setTab] = useState<Tab>("overview");
   const [msg, setMsg] = useState("");
 
-  const load = async () => {
+  const load = useCallback(async () => {
     const [r, ps, pl] = await Promise.all([recruitmentApi.getRequisition(id), recruitmentApi.listPostings(id), recruitmentApi.listPipeline({ requisition_id: id })]);
     setReq(r); setPostings(ps); setPipeline(pl);
-  };
-  useEffect(() => { load(); }, [id]);
+  }, [id]);
+  useEffect(() => { load(); }, [load]);
 
   const act = async (fn: () => Promise<any>) => {
     try { await fn(); await load(); setMsg("Done"); setTimeout(() => setMsg(""), 2000); }

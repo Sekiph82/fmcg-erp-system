@@ -188,7 +188,7 @@ export default function ArrivalsPage() {
                   saving={updateCost.isPending || deleteCost.isPending}
                 />
               ) : (
-                <p className="px-5 py-8 text-center text-gray-400">No cost records yet — click "+ Add Cost" to start</p>
+                <p className="px-5 py-8 text-center text-gray-400">No cost records yet — click &quot;+ Add Cost&quot; to start</p>
               )}
             </div>
           )}
@@ -204,7 +204,7 @@ export default function ArrivalsPage() {
               {clLoading ? <p className="px-5 py-8 text-center text-gray-400">Loading…</p> : clearance ? (
                 <ClearanceForm clearance={clearance} onSave={(d) => updateClearance.mutate({ id: clearance.id, data: d })} loading={updateClearance.isPending} />
               ) : (
-                <p className="px-5 py-8 text-center text-gray-400">No clearance record — click "Open Clearance" to start</p>
+                <p className="px-5 py-8 text-center text-gray-400">No clearance record — click &quot;Open Clearance&quot; to start</p>
               )}
             </div>
           )}

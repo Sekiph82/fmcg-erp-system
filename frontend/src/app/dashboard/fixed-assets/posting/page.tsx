@@ -134,7 +134,7 @@ export default function FAPostingRunPage() {
           )}
           {result.dry_run && (
             <p className="text-xs text-yellow-600">
-              This was a dry run. Set "Dry Run" off and re-run to post actual entries.
+              This was a dry run. Set &quot;Dry Run&quot; off and re-run to post actual entries.
             </p>
           )}
         </div>

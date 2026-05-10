@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi import APIRouter, Depends, HTTPException, Response, status, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -6,6 +6,8 @@ from app.db.session import get_db
 from app.crud.user import authenticate, get_user_by_username
 from app.crud import audit as audit_crud
 from app.crud import two_factor as tfa_crud
+from app.core.auth_cookies import clear_auth_cookie, set_auth_cookie
+from app.core.config import settings
 from app.core.security import create_access_token
 from app.core.deps import get_current_user
 from app.core import totp as totp_utils
@@ -31,6 +33,7 @@ def _ip(request: Request) -> str | None:
 @router.post("/login", response_model=LoginResponse)
 async def login(
     request: Request,
+    response: Response,
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: AsyncSession = Depends(get_db),
 ):
@@ -132,12 +135,18 @@ async def login(
         ip_address=ip,
     )
     await db.commit()
-    return LoginResponse(access_token=create_access_token(str(user.id)))
+    access_token = create_access_token(str(user.id))
+    set_auth_cookie(response, access_token)
+    return LoginResponse(
+        access_token=access_token if settings.AUTH_RETURN_TOKEN_IN_BODY else None,
+        must_change_password=bool(getattr(user, "must_change_password", False)),
+    )
 
 
 @router.post("/logout")
 async def logout(
     request: Request,
+    response: Response,
     current_user=Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -146,13 +155,14 @@ async def logout(
     from app.core.config import settings
 
     authorization = request.headers.get("Authorization", "")
-    token = authorization.removeprefix("Bearer ").strip()
+    token = authorization.removeprefix("Bearer ").strip() or request.cookies.get(settings.AUTH_COOKIE_NAME)
     if token:
         expire_at = (
             datetime.now(timezone.utc) +
             timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
         ).timestamp()
         await token_blocklist.add(token, expire_at)
+    clear_auth_cookie(response)
 
     await audit_crud.log_event(
         db,

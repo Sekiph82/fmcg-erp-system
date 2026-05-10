@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   customFieldsApi, CustomFieldDefinition, EntityType,
   ENTITY_LABEL, FIELD_TYPE_LABEL, FIELD_TYPE_ICON,
@@ -16,14 +16,14 @@ export default function FieldManagerPage() {
   const [filterEntity, setFilterEntity] = useState("");
   const [filterActive, setFilterActive] = useState("");
 
-  const load = () =>
+  const load = useCallback(() =>
     customFieldsApi.listFields({
       entity_type: filterEntity || undefined,
       active_only: filterActive === "true" ? true : filterActive === "false" ? false : undefined,
     } as Parameters<typeof customFieldsApi.listFields>[0])
-      .then(setFields).finally(() => setLoading(false));
+      .then(setFields).finally(() => setLoading(false)), [filterEntity, filterActive]);
 
-  useEffect(() => { load(); }, [filterEntity, filterActive]);
+  useEffect(() => { load(); }, [load]);
 
   const disable = async (id: string) => {
     if (!confirm("Disable this field? Values will be preserved.")) return;

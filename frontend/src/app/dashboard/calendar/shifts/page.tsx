@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 interface Shift {
   shift_id: string;
@@ -59,23 +59,23 @@ export default function ShiftSchedulePage() {
   const [filterDate, setFilterDate] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  const buildQuery = () => {
+  const buildQuery = useCallback(() => {
     const p = new URLSearchParams({ limit: "200" });
     if (filterDept) p.set("department", filterDept);
     if (filterDate) p.set("shift_date", filterDate);
     return p.toString();
-  };
+  }, [filterDept, filterDate]);
 
-  const load = () => {
+  const load = useCallback(() => {
     setLoading(true);
     fetch(`/api/v1/calendar/shifts?${buildQuery()}`)
       .then((r) => r.json())
       .then(setShifts)
       .catch((e) => setError(String(e)))
       .finally(() => setLoading(false));
-  };
+  }, [buildQuery]);
 
-  useEffect(load, [filterDept, filterDate]);
+  useEffect(() => { load(); }, [load]);
 
   const handleTypeChange = (type: string) => {
     const preset = SHIFT_PRESETS[type];

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { listDeliveries, DeliveryAttempt, DeliveryStatus, STATUS_BADGE, retryDelivery } from "@/lib/webhooks";
 
 const STATUSES: DeliveryStatus[] = ["pending", "sent", "failed", "retrying", "dead_letter"];
@@ -11,9 +11,7 @@ export default function DeliveriesPage() {
   const [loading, setLoading] = useState(true);
   const [retrying, setRetrying] = useState<string | null>(null);
 
-  useEffect(() => { load(); }, [statusFilter]);
-
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       setDeliveries(await listDeliveries({
@@ -22,7 +20,9 @@ export default function DeliveriesPage() {
       }));
     } catch {}
     setLoading(false);
-  }
+  }, [statusFilter]);
+
+  useEffect(() => { load(); }, [load]);
 
   async function handleRetry(id: string) {
     setRetrying(id);

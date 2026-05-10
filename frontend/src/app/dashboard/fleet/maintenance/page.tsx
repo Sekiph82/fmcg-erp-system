@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { listMaintenance, createMaintenance, updateMaintenance, listVehicles, MaintenanceRecord, Vehicle, MaintenanceType } from "@/lib/fleet";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -17,15 +17,16 @@ export default function MaintenancePage() {
   const [filterCompleted, setFilterCompleted] = useState<boolean | undefined>(false);
   const [form, setForm] = useState<Record<string, string>>({ maintenance_date: new Date().toISOString().split("T")[0], maintenance_type: "service" });
 
-  useEffect(() => { load(); }, [filterCompleted]);
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const [r, v] = await Promise.all([listMaintenance({ completed: filterCompleted }), listVehicles()]);
       setRecords(r); setVehicles(v);
     } catch {}
     setLoading(false);
-  }
+  }, [filterCompleted]);
+
+  useEffect(() => { load(); }, [load]);
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault(); setError(""); setSaving(true);

@@ -118,6 +118,7 @@ export default function BarcodesPage() {
               {result.barcode_image_b64 && (
                 <div className="border rounded p-2 bg-white">
                   <p className="text-xs text-gray-500 mb-1">Barcode Image</p>
+                  {/* eslint-disable-next-line @next/next/no-img-element -- Backend-generated barcode data URI must render exactly as returned. */}
                   <img
                     src={`data:image/svg+xml;base64,${result.barcode_image_b64}`}
                     alt="barcode"
@@ -133,6 +134,7 @@ export default function BarcodesPage() {
               {result.qr_image_b64 && (
                 <div className="border rounded p-2 bg-white inline-block">
                   <p className="text-xs text-gray-500 mb-1">QR Code</p>
+                  {/* eslint-disable-next-line @next/next/no-img-element -- Backend-generated QR data URI must render exactly as returned. */}
                   <img src={`data:image/png;base64,${result.qr_image_b64}`} alt="qr code" className="w-32 h-32" />
                 </div>
               )}

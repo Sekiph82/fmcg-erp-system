@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { essApi, ESSAttendanceRecord, AttendanceStatus, ATTENDANCE_STATUS_COLOR } from "@/lib/ess";
 
 const DEMO_EMPLOYEE = "00000000-0000-0000-0000-000000000001";
@@ -17,11 +17,11 @@ export default function AttendancePage() {
   const [showEntry, setShowEntry] = useState(false);
   const [entry, setEntry] = useState({ attendance_date: today.toISOString().slice(0, 10), check_in: "", check_out: "", status: "present" as AttendanceStatus, notes: "" });
 
-  const load = async () => {
+  const load = useCallback(async () => {
     const [recs, sum] = await Promise.all([essApi.listAttendance(DEMO_EMPLOYEE, month, year), essApi.attendanceSummary(DEMO_EMPLOYEE, month, year)]);
     setRecords(recs); setSummary(sum);
-  };
-  useEffect(() => { load(); }, [month, year]);
+  }, [month, year]);
+  useEffect(() => { load(); }, [load]);
 
   const handleEntry = async () => {
     await essApi.upsertAttendance({ employee_id: DEMO_EMPLOYEE, attendance_date: entry.attendance_date, check_in: entry.check_in ? new Date(entry.attendance_date + "T" + entry.check_in).toISOString() : undefined, check_out: entry.check_out ? new Date(entry.attendance_date + "T" + entry.check_out).toISOString() : undefined, status: entry.status, notes: entry.notes || undefined });

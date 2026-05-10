@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   chatterApi, ActivityOut, ActivityType, ReferenceType,
   TYPE_ICON, TYPE_BADGE, TYPE_COLOR, REF_LABEL, timeAgo,
@@ -23,7 +23,7 @@ export default function FeedPage() {
   const [total, setTotal] = useState(0);
   const [pages, setPages] = useState(1);
 
-  const load = () => {
+  const load = useCallback(() => {
     setLoading(true);
     chatterApi.listActivities({
       activity_type: filterType || undefined,
@@ -35,10 +35,10 @@ export default function FeedPage() {
       setTotal(data.total);
       setPages(data.pages);
     }).finally(() => setLoading(false));
-  };
+  }, [filterType, filterRef, page]);
 
   useEffect(() => { setPage(1); }, [filterType, filterRef]);
-  useEffect(() => { load(); }, [filterType, filterRef, page]);
+  useEffect(() => { load(); }, [load]);
 
   return (
     <div className="p-6 space-y-4">

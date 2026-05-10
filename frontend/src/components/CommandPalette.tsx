@@ -100,7 +100,12 @@ function buildNavResults(query: string, hasPermission: (c: string) => boolean): 
       const secMatches = !q || fuzzyMatch(sec.label, q);
 
       for (const item of sec.items) {
-        if (item.permission && !hasPermission(item.permission)) continue;
+        const allowed = item.permission
+          ? hasPermission(item.permission)
+          : sec.permission
+            ? hasPermission(sec.permission)
+            : false;
+        if (!allowed) continue;
         if (secMatches || fuzzyMatch(item.label, q)) {
           results.push({
             type: "nav",
@@ -324,7 +329,7 @@ export function CommandPalette({ open, onClose, onVisit, recent }: Props) {
             <div className="px-4 py-10 text-center">
               <p className="text-sm text-slate-500">
                 No results for{" "}
-                <span className="text-slate-300 font-medium">"{query}"</span>
+                <span className="text-slate-300 font-medium">&quot;{query}&quot;</span>
               </p>
             </div>
           )}

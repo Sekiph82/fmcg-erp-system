@@ -129,7 +129,7 @@ export default function AllocationRunPage() {
             </table>
           </div>
           {result.dry_run && (
-            <p className="text-xs text-yellow-600">Dry run — no entries posted. Uncheck "Dry Run" and re-run to post.</p>
+            <p className="text-xs text-yellow-600">Dry run — no entries posted. Uncheck &quot;Dry Run&quot; and re-run to post.</p>
           )}
         </div>
       )}

@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { portalApi, PortalDraftOrder, fmtCurrency, DRAFT_STATUS_COLORS } from "@/lib/portal";
 
 export default function DraftsQueuePage() {
@@ -8,7 +8,7 @@ export default function DraftsQueuePage() {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("SUBMITTED");
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const accs = await portalApi.getAccounts({ status: "ACTIVE" });
@@ -25,9 +25,9 @@ export default function DraftsQueuePage() {
       setAllDrafts(draftsAll);
     } catch (e) { console.error(e); }
     setLoading(false);
-  };
+  }, [statusFilter]);
 
-  useEffect(() => { load(); }, [statusFilter]);
+  useEffect(() => { load(); }, [load]);
 
   const handleApprove = async (draftId: string) => {
     try {

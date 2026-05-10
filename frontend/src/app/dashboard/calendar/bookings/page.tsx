@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { calendarApi, ResourceBooking, CalendarResource, BookingStatus } from "@/lib/calendar";
 
 const STATUS_COLOR: Record<BookingStatus, string> = {
@@ -20,16 +20,16 @@ export default function BookingsPage() {
   });
   const [checking, setChecking] = useState<{ available?: boolean; checked?: boolean } | null>(null);
 
-  const load = () =>
+  const load = useCallback(() =>
     Promise.all([
       calendarApi.listBookings({
         resource_id: filterResource || undefined,
         status: filterStatus || undefined,
       }),
       calendarApi.listResources(),
-    ]).then(([b, r]) => { setBookings(b); setResources(r); }).finally(() => setLoading(false));
+    ]).then(([b, r]) => { setBookings(b); setResources(r); }).finally(() => setLoading(false)), [filterResource, filterStatus]);
 
-  useEffect(() => { load(); }, [filterResource, filterStatus]);
+  useEffect(() => { load(); }, [load]);
 
   const resourceName = (id: string) => resources.find(r => r.resource_id === id)?.name ?? id;
 

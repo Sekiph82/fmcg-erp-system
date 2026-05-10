@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { qmsApi, CalibrationRecord } from "@/lib/qms";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -28,7 +28,7 @@ export default function CalibrationPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const data = await qmsApi.listCalibrations(filterStatus || undefined);
@@ -36,9 +36,9 @@ export default function CalibrationPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filterStatus]);
 
-  useEffect(() => { load(); }, [filterStatus]);
+  useEffect(() => { load(); }, [load]);
 
   const create = async () => {
     if (!form.instrument_id || !form.instrument_name || !form.instrument_type) {

@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 
@@ -30,11 +30,11 @@ export default function NPDProjectDetailPage() {
   const [batchForm, setBatchForm] = useState({ batch_ref: "", qty_produced: "", outcome: "IN_PROGRESS", notes: "" });
   const [addingBatch, setAddingBatch] = useState(false);
 
-  const load = () => {
+  const load = useCallback(() => {
     setLoading(true);
     fetch(`/api/v1/npd-workflow/projects/${id}`).then((r) => r.json()).then(setProj).finally(() => setLoading(false));
-  };
-  useEffect(() => { if (id) load(); }, [id]);
+  }, [id]);
+  useEffect(() => { if (id) load(); }, [id, load]);
 
   const advance = async () => {
     setAdvancing(true);

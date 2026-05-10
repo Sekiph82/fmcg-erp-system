@@ -21,7 +21,7 @@ export interface TwoFASettingsRead {
 }
 
 export interface LoginVerifyResponse {
-  access_token: string;
+  access_token?: string;
   token_type: string;
 }
 

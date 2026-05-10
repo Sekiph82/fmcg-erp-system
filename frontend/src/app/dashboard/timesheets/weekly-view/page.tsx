@@ -29,7 +29,7 @@ export default function WeeklyViewPage() {
     timesheetsApi.list({ period_start: weekStart })
       .then((ts) => setTimesheets(ts.filter(t => t.period_start <= weekEnd && t.period_end >= weekStart)))
       .finally(() => setLoading(false));
-  }, [weekStart]);
+  }, [weekStart, weekEnd]);
 
   const prevWeek = () => {
     const d = new Date(weekStart);

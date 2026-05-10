@@ -250,7 +250,7 @@ export default function NPSPage() {
                       <span className="text-xs font-medium text-gray-700">{item.customer_name ?? "Anonymous"}</span>
                       <span className={`text-xs font-bold ${section.textColor}`}>{item.score}/10</span>
                     </div>
-                    <p className="text-xs text-gray-600 italic">"{item.comment}"</p>
+                    <p className="text-xs text-gray-600 italic">&quot;{item.comment}&quot;</p>
                   </div>
                 ))}
               </div>

@@ -309,9 +309,8 @@ export const utilityDevicesApi = {
 
 export async function downloadAuthenticatedCsvDevices(path: string, filename: string): Promise<void> {
   const base = process.env.NEXT_PUBLIC_API_URL ?? "";
-  const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
   const res = await fetch(`${base}${path}`, {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    credentials: "include",
   });
   if (!res.ok) throw new Error(`Export failed (${res.status})`);
   const blob = await res.blob();

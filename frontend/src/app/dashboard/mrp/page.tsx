@@ -172,7 +172,7 @@ export default function MRPDashboardPage() {
                 </tr>
               ))}
               {!dash?.recent_runs?.length && (
-                <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400">No MRP runs yet. Click "Run MRP Now" to start.</td></tr>
+                <tr><td colSpan={7} className="px-4 py-8 text-center text-gray-400">No MRP runs yet. Click &quot;Run MRP Now&quot; to start.</td></tr>
               )}
             </tbody>
           </table>

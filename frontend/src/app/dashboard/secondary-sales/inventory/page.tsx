@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { secondarySalesApi, InventorySnapshot } from "@/lib/secondarySales";
 
 export default function DistributorInventoryPage() {
@@ -20,7 +20,7 @@ export default function DistributorInventoryPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const data = await secondarySalesApi.listSnapshots({
@@ -30,11 +30,11 @@ export default function DistributorInventoryPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filterDist]);
 
   useEffect(() => {
     load();
-  }, [filterDist]);
+  }, [load]);
 
   useEffect(() => {
     import("@/lib/api").then(({ apiClient }) => {

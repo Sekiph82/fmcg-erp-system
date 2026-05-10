@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { expensesApi, ExpenseClaim, ExpenseStatus, STATUS_LABEL, STATUS_COLOR, fmtCurrency } from "@/lib/expenses";
 
@@ -8,14 +8,14 @@ export default function ApprovalQueuePage() {
   const [claims, setClaims] = useState<ExpenseClaim[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     const status = activeTab === "manager" ? "submitted" : "manager_approved";
     const data = await expensesApi.listClaims({ status: status as ExpenseStatus });
     setClaims(data);
     setLoading(false);
-  };
-  useEffect(() => { load(); }, [activeTab]);
+  }, [activeTab]);
+  useEffect(() => { load(); }, [load]);
 
   const handleApprove = async (id: string) => {
     if (activeTab === "manager") await expensesApi.managerApprove(id, { approver_id: "00000000-0000-0000-0000-000000000002" });

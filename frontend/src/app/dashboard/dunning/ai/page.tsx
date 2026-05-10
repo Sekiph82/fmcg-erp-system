@@ -103,7 +103,7 @@ export default function DunningAIPage() {
           <div className="text-gray-400 text-sm">Loading…</div>
         ) : filtered.length === 0 ? (
           <div className="bg-white border border-gray-200 rounded-xl p-8 text-center text-gray-400 text-sm">
-            No recommendations. Click "Run AI Agents" to analyze your dunning cases.
+            No recommendations. Click &quot;Run AI Agents&quot; to analyze your dunning cases.
           </div>
         ) : filtered.map((rec) => (
           <div key={rec.id} className={`bg-white border rounded-xl p-4 ${rec.severity === "CRITICAL" ? "border-red-300" : rec.severity === "WARNING" ? "border-yellow-300" : "border-gray-200"}`}>

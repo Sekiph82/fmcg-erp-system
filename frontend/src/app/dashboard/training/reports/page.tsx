@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { trainingApi, EmployeeSkillRow, LEVEL_COLOR, CATEGORY_COLOR } from "@/lib/training";
 
 type ReportTab = "skill_gaps" | "completion" | "cert_expiry" | "cost";
@@ -11,7 +11,7 @@ export default function TrainingReportsPage() {
   const [deptFilter, setDeptFilter] = useState("");
   const [certDays, setCertDays] = useState(60);
 
-  const run = async () => {
+  const run = useCallback(async () => {
     setLoading(true);
     setData(null);
     try {
@@ -22,8 +22,8 @@ export default function TrainingReportsPage() {
     } finally {
       setLoading(false);
     }
-  };
-  useEffect(() => { run(); }, [tab]);
+  }, [tab, deptFilter, certDays]);
+  useEffect(() => { run(); }, [run]);
 
   const tabs: { key: ReportTab; label: string }[] = [
     { key: "skill_gaps", label: "Skill Gap Report" },

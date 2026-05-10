@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { shelfLifeApi, LotShelfLifeProfile, SL_STATUS_BG, fmtDays } from "@/lib/shelfLife";
 
 export default function NearExpiryPage() {
@@ -8,12 +8,12 @@ export default function NearExpiryPage() {
   const [days, setDays] = useState(30);
   const [generating, setGenerating] = useState(false);
 
-  const load = (d: number) => {
+  const load = useCallback((d: number) => {
     setLoading(true);
     shelfLifeApi.getNearExpiry(d).then(setLots).catch(console.error).finally(() => setLoading(false));
-  };
+  }, []);
 
-  useEffect(() => { load(days); }, []);
+  useEffect(() => { load(days); }, [days, load]);
 
   return (
     <div className="p-6 space-y-6">
@@ -25,7 +25,7 @@ export default function NearExpiryPage() {
         <div className="flex gap-2 items-center">
           <label className="text-sm text-gray-600">Within</label>
           <select className="border rounded-lg px-3 py-2 text-sm"
-            value={days} onChange={e => { setDays(Number(e.target.value)); load(Number(e.target.value)); }}>
+            value={days} onChange={e => setDays(Number(e.target.value))}>
             {[7, 14, 30, 60, 90].map(d => <option key={d} value={d}>{d} days</option>)}
           </select>
           <button onClick={() => { setGenerating(true); shelfLifeApi.generateAlerts().finally(() => { setGenerating(false); load(days); }) }}

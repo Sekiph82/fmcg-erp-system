@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { qmsApi, CoARecord } from "@/lib/qms";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -25,7 +25,7 @@ export default function CoAPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const data = await qmsApi.listCoA(filterStatus ? { status: filterStatus } : undefined);
@@ -33,9 +33,9 @@ export default function CoAPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filterStatus]);
 
-  useEffect(() => { load(); }, [filterStatus]);
+  useEffect(() => { load(); }, [load]);
 
   const create = async () => {
     if (!form.coa_no || !form.lot_id || !form.issue_date) {

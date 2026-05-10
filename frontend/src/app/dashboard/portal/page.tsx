@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { portalApi, PortalAccount, ACCOUNT_TYPE_LABELS, ACCOUNT_STATUS_COLORS } from "@/lib/portal";
 
@@ -23,7 +23,7 @@ export default function PortalAdminPage() {
   const [saving, setSaving] = useState(false);
   const [report, setReport] = useState<Record<string, unknown> | null>(null);
 
-  const load = () => {
+  const load = useCallback(() => {
     setLoading(true);
     Promise.all([
       portalApi.getAccounts({ status: statusFilter || undefined }),
@@ -32,9 +32,9 @@ export default function PortalAdminPage() {
       setAccounts(accs as PortalAccount[]);
       setReport(rep as Record<string, unknown>);
     }).catch(console.error).finally(() => setLoading(false));
-  };
+  }, [statusFilter]);
 
-  useEffect(() => { load(); }, [statusFilter]);
+  useEffect(() => { load(); }, [load]);
 
   const handleCreate = async () => {
     setSaving(true);

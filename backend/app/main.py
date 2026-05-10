@@ -1,21 +1,23 @@
 import logging
 import time
+import uuid
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
-from contextlib import asynccontextmanager
-from app.core.security_headers import SecurityHeadersMiddleware
-from app.core.input_sanitizer import InputSanitizerMiddleware
-from app.core.exception_handlers import register_handlers
-
-from app.core.config import settings
-from app.api.v1.router import api_router
-from app.db.base import Base
-from app.db.session import engine, AsyncSessionLocal
-from app.db.seed import seed_admin
 from sqlalchemy import text
-import app.models  # noqa: F401 – ensure all models are registered
+
+from app.api.v1.router import api_router
+from app.core.config import settings
+from app.core.exception_handlers import register_handlers
+from app.core.input_sanitizer import InputSanitizerMiddleware
+from app.core.security_headers import SecurityHeadersMiddleware
+from app.db.base import Base
+from app.db.seed import seed_admin
+from app.db.session import AsyncSessionLocal, engine
+import app.models  # noqa: F401 - ensure all models are registered
 
 logging.basicConfig(
     level=logging.INFO,
@@ -28,19 +30,22 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Starting %s v%s", settings.PROJECT_NAME, settings.VERSION)
-    try:
-        async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
-        logger.info("Database tables verified/created successfully")
-    except Exception:
-        logger.exception("Database table creation failed — server will start but DB may be unavailable")
+    if settings.ENVIRONMENT == "development" and settings.AUTO_CREATE_TABLES:
+        try:
+            async with engine.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
+            logger.info("Database tables verified/created successfully")
+        except Exception:
+            logger.exception("Database table creation failed; server will start but DB may be unavailable")
+    else:
+        logger.info("Automatic table creation disabled; use Alembic migrations for schema changes")
 
     try:
         async with AsyncSessionLocal() as db:
             await seed_admin(db)
         logger.info("Seed completed")
     except Exception:
-        logger.exception("Seed failed — admin user may not exist yet")
+        logger.exception("Seed failed; admin user may not exist yet")
 
     yield
 
@@ -72,19 +77,32 @@ app.add_middleware(
 @app.middleware("http")
 async def add_process_time_header(request: Request, call_next):
     t0 = time.monotonic()
+    request_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())
     try:
         response = await call_next(request)
     except Exception:
         elapsed_ms = int((time.monotonic() - t0) * 1000)
-        logger.exception("Unhandled exception in request pipeline %s %s (%dms)", request.method, request.url.path, elapsed_ms)
+        logger.exception(
+            "Unhandled exception in request pipeline %s %s request_id=%s (%dms)",
+            request.method,
+            request.url.path,
+            request_id,
+            elapsed_ms,
+        )
         return JSONResponse(
             status_code=500,
-            content={"error": "internal_server_error", "detail": "An unexpected error occurred.", "path": request.url.path},
+            content={
+                "error": "internal_server_error",
+                "detail": "An unexpected error occurred.",
+                "path": request.url.path,
+            },
+            headers={"X-Request-ID": request_id},
         )
     elapsed_ms = int((time.monotonic() - t0) * 1000)
     response.headers["X-Process-Time-Ms"] = str(elapsed_ms)
+    response.headers["X-Request-ID"] = request_id
     if elapsed_ms > 500:
-        logger.warning("SLOW %s %s → %dms", request.method, request.url.path, elapsed_ms)
+        logger.warning("SLOW %s %s request_id=%s -> %dms", request.method, request.url.path, request_id, elapsed_ms)
     return response
 
 
@@ -99,7 +117,7 @@ async def health():
             await db.execute(text("SELECT 1"))
         db_status = "connected"
     except Exception as e:
-        logger.warning("Health check: database unavailable – %s", e)
+        logger.warning("Health check: database unavailable - %s", e)
         db_status = "unavailable"
     return {"status": "ok", "database": db_status}
 

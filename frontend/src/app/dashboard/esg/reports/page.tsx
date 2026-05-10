@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { esgApi, EmissionSummary, EmissionBySource, ResourceSummary, SOURCE_TYPE_LABELS } from "@/lib/esg";
 
 const SCOPE_COLORS: Record<string, string> = {
@@ -18,7 +18,7 @@ export default function ESGReportsPage() {
   const [dateTo, setDateTo] = useState("");
   const [tab, setTab] = useState<"scope" | "source" | "resources">("scope");
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const params = { date_from: dateFrom || undefined, date_to: dateTo || undefined };
@@ -33,9 +33,9 @@ export default function ESGReportsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [dateFrom, dateTo]);
 
-  useEffect(() => { load(); }, [dateFrom, dateTo]);
+  useEffect(() => { load(); }, [load]);
 
   const totalKg = summary.reduce((s, r) => s + Number(r.total_kgco2e), 0);
 

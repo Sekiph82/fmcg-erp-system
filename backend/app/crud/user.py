@@ -125,6 +125,7 @@ async def set_user_roles(db: AsyncSession, user: User, role_ids: List[uuid.UUID]
 
 async def reset_password(db: AsyncSession, user: User, new_password: str) -> None:
     user.hashed_password = hash_password(new_password)
+    user.must_change_password = False
     await db.flush()
 
 

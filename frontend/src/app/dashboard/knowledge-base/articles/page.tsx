@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { kbApi, KBArticle, KBCategory } from "@/lib/knowledge_base";
 
@@ -12,28 +12,28 @@ export default function ArticleListPage() {
   const [filterStatus, setFilterStatus] = useState("PUBLISHED");
   const [search, setSearch] = useState("");
 
-  const load = async () => {
+  const load = useCallback(async (filters?: { search?: string }) => {
     setLoading(true);
     try {
       const data = await kbApi.listArticles({
         category_id: filterCat || undefined,
         status: filterStatus || undefined,
-        search: search || undefined,
+        search: filters?.search || undefined,
         limit: 100,
       });
       setArticles(data);
     } finally {
       setLoading(false);
     }
-  };
+  }, [filterCat, filterStatus]);
 
   useEffect(() => {
     kbApi.listCategories().then(setCategories);
   }, []);
 
-  useEffect(() => { load(); }, [filterCat, filterStatus]);
+  useEffect(() => { load(); }, [load]);
 
-  const searchSubmit = (e: React.FormEvent) => { e.preventDefault(); load(); };
+  const searchSubmit = (e: React.FormEvent) => { e.preventDefault(); load({ search }); };
 
   const del = async (id: string) => {
     if (!confirm("Archive this article?")) return;

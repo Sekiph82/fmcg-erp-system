@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { plApi, PLHeader, PLStatus, PLType, PL_STATUS_COLORS, PL_TYPE_COLORS } from "@/lib/price_list";
 
 export default function PriceListDashboard() {
@@ -16,16 +16,16 @@ export default function PriceListDashboard() {
     priority_rank: 50, default_flag: false, created_by: "", notes: "",
   });
 
-  const load = () => {
+  const load = useCallback(() => {
     setLoading(true);
     Promise.all([
       plApi.listHeaders({ status: statusFilter || undefined, pl_type: typeFilter || undefined }),
       plApi.getDashboard(),
       plApi.getExpiring(30),
     ]).then(([h, k, e]) => { setHeaders(h); setKpis(k); setExpiring(e); }).finally(() => setLoading(false));
-  };
+  }, [statusFilter, typeFilter]);
 
-  useEffect(() => { load(); }, [statusFilter, typeFilter]);
+  useEffect(() => { load(); }, [load]);
 
   const create = async (e: React.FormEvent) => {
     e.preventDefault();

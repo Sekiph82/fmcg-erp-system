@@ -122,13 +122,13 @@ echo [3/5] Checking ports...
 
 set PORT_OK=1
 netstat -an 2>nul | find "0.0.0.0:5432" >nul 2>&1
-if not errorlevel 1 ( echo  WARNING: Port 5432 is in use. & set PORT_OK=0 )
+if not errorlevel 1 ( echo  NOTICE: Port 5432 is already in use. This is normal if dev containers are running. & set PORT_OK=0 )
 
 netstat -an 2>nul | find "0.0.0.0:8000" >nul 2>&1
-if not errorlevel 1 ( echo  WARNING: Port 8000 is in use. & set PORT_OK=0 )
+if not errorlevel 1 ( echo  NOTICE: Port 8000 is already in use. This is normal if dev containers are running. & set PORT_OK=0 )
 
 netstat -an 2>nul | find "0.0.0.0:3000" >nul 2>&1
-if not errorlevel 1 ( echo  WARNING: Port 3000 is in use. & set PORT_OK=0 )
+if not errorlevel 1 ( echo  NOTICE: Port 3000 is already in use. This is normal if dev containers are running. & set PORT_OK=0 )
 
 if !PORT_OK!==1 ( echo  All ports are available. )
 
@@ -181,8 +181,12 @@ echo  Waiting for PostgreSQL...
 set DB_READY=0
 for /l %%i in (1,1,30) do (
     if !DB_READY!==0 (
-        docker compose --env-file .env.development exec -T db pg_isready >nul 2>&1
-        if not errorlevel 1 ( set DB_READY=1 ) else ( <nul set /p "=." & timeout /t 2 /nobreak >nul )
+        for /f %%C in ('docker compose --env-file .env.development ps -q db 2^>nul') do (
+            for /f %%H in ('docker inspect -f "{{.State.Health.Status}}" %%C 2^>nul') do (
+                if "%%H"=="healthy" set DB_READY=1
+            )
+        )
+        if !DB_READY!==0 ( <nul set /p "=." & timeout /t 2 /nobreak >nul )
     )
 )
 echo.
@@ -199,7 +203,7 @@ echo  Waiting for Backend API (health check)...
 set BACKEND_READY=0
 for /l %%i in (1,1,60) do (
     if !BACKEND_READY!==0 (
-        curl.exe -s -o nul -w "%%{http_code}" http://localhost:8000/health 2>nul | find "200" >nul 2>&1
+        curl.exe -fsS http://localhost:8000/health >nul 2>&1
         if not errorlevel 1 (
             set BACKEND_READY=1
         ) else (
@@ -223,7 +227,7 @@ echo  Waiting for Frontend...
 set FRONTEND_READY=0
 for /l %%i in (1,1,60) do (
     if !FRONTEND_READY!==0 (
-        curl.exe -s -o nul -w "%%{http_code}" http://localhost:3000/login 2>nul | find "200" >nul 2>&1
+        curl.exe -fsS http://localhost:3000/login >nul 2>&1
         if not errorlevel 1 (
             set FRONTEND_READY=1
         ) else (

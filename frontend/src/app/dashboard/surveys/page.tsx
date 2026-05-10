@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { surveysApi, Survey, SurveyDashboard, SurveyStatus, SURVEY_TYPE_LABEL } from "@/lib/surveys";
 
 const STATUS_COLORS: Record<SurveyStatus, string> = {
@@ -15,7 +15,7 @@ export default function SurveysDashboard() {
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState<SurveyStatus | "">("");
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const [s, d] = await Promise.all([
@@ -27,9 +27,9 @@ export default function SurveysDashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filterStatus]);
 
-  useEffect(() => { load(); }, [filterStatus]);
+  useEffect(() => { load(); }, [load]);
 
   const launch = async (id: string) => {
     await surveysApi.launchSurvey(id);

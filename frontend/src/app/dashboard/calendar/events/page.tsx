@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { calendarApi, CalendarEvent, EventType, EventStatus, EVENT_BADGE, STATUS_BADGE } from "@/lib/calendar";
 
 const EVENT_TYPES: EventType[] = ["meeting", "task", "booking", "production", "maintenance", "other"];
@@ -11,13 +11,13 @@ export default function EventsPage() {
   const [filterType, setFilterType] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
 
-  const load = () =>
+  const load = useCallback(() =>
     calendarApi.listEvents({
       event_type: filterType || undefined,
       status: filterStatus || undefined,
-    }).then(setEvents).finally(() => setLoading(false));
+    }).then(setEvents).finally(() => setLoading(false)), [filterType, filterStatus]);
 
-  useEffect(() => { load(); }, [filterType, filterStatus]);
+  useEffect(() => { load(); }, [load]);
 
   const cancel = async (id: string) => {
     if (!confirm("Cancel this event?")) return;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { listFuelLogs, createFuelLog, listVehicles, FuelLog, Vehicle } from "@/lib/fleet";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -15,8 +15,7 @@ export default function FuelLogPage() {
   const [vehicleFilter, setVehicleFilter] = useState("");
   const [form, setForm] = useState<Record<string, string>>({ fuel_date: new Date().toISOString().split("T")[0] });
 
-  useEffect(() => { load(); }, [vehicleFilter]);
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const [l, v] = await Promise.all([
@@ -26,7 +25,9 @@ export default function FuelLogPage() {
       setLogs(l); setVehicles(v);
     } catch {}
     setLoading(false);
-  }
+  }, [vehicleFilter]);
+
+  useEffect(() => { load(); }, [load]);
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault(); setError(""); setSaving(true);

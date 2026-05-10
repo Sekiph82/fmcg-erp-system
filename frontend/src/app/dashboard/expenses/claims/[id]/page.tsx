@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { expensesApi, ExpenseClaim, STATUS_LABEL, STATUS_COLOR, fmtCurrency } from "@/lib/expenses";
 
@@ -9,8 +9,8 @@ export default function ClaimDetailPage() {
   const [approverNotes, setApproverNotes] = useState("");
   const [msg, setMsg] = useState("");
 
-  const load = () => expensesApi.getClaim(id).then(setClaim).catch(console.error);
-  useEffect(() => { load(); }, [id]);
+  const load = useCallback(() => expensesApi.getClaim(id).then(setClaim).catch(console.error), [id]);
+  useEffect(() => { load(); }, [load]);
 
   const action = async (fn: () => Promise<ExpenseClaim>) => {
     try { const updated = await fn(); setClaim(updated); setMsg("Done"); setTimeout(() => setMsg(""), 2000); }

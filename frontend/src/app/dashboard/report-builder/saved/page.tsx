@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { reportBuilderApi, Report, DataSource } from "@/lib/report_builder";
 
@@ -11,13 +11,13 @@ export default function SavedReportsPage() {
   const [cloning, setCloning] = useState<string | null>(null);
   const [cloneForm, setCloneForm] = useState({ code: "", name: "" });
 
-  const load = () =>
+  const load = useCallback(() =>
     Promise.all([
       reportBuilderApi.listReports({ template_only: filter.template || undefined, data_source: filter.ds || undefined }),
       reportBuilderApi.getCatalog(),
-    ]).then(([r, c]) => { setReports(r); setCatalog(c); }).finally(() => setLoading(false));
+    ]).then(([r, c]) => { setReports(r); setCatalog(c); }).finally(() => setLoading(false)), [filter]);
 
-  useEffect(() => { load(); }, [filter]);
+  useEffect(() => { load(); }, [load]);
 
   const del = async (id: string) => {
     if (!confirm("Archive this report?")) return;

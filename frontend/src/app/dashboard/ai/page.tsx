@@ -155,7 +155,7 @@ export default function AIDashboardPage() {
           </div>
           <div className="divide-y divide-gray-50">
             {data?.recent_predictions?.length === 0 && (
-              <p className="px-5 py-8 text-sm text-gray-400 text-center">No predictions yet. Click "Generate Predictions" above.</p>
+              <p className="px-5 py-8 text-sm text-gray-400 text-center">No predictions yet. Click &quot;Generate Predictions&quot; above.</p>
             )}
             {data?.recent_predictions?.map((p: AIPrediction) => (
               <div key={p.id} className="px-5 py-3 flex items-start justify-between gap-3">
@@ -188,7 +188,7 @@ export default function AIDashboardPage() {
           </div>
           <div className="divide-y divide-gray-50">
             {data?.critical_recommendations?.length === 0 && (
-              <p className="px-5 py-8 text-sm text-gray-400 text-center">No critical recommendations. Click "Generate Recommendations" above.</p>
+              <p className="px-5 py-8 text-sm text-gray-400 text-center">No critical recommendations. Click &quot;Generate Recommendations&quot; above.</p>
             )}
             {data?.critical_recommendations?.map((r: AIRecommendation) => (
               <div key={r.id} className="px-5 py-3 flex items-start justify-between gap-3">

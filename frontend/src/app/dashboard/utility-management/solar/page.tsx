@@ -874,7 +874,7 @@ export default function SolarPage() {
                   <tr><td colSpan={11} className="px-4 py-8 text-center text-xs text-slate-500">Loading…</td></tr>
                 )}
                 {!recLoading && solarRecords.length === 0 && (
-                  <tr><td colSpan={11} className="px-4 py-8 text-center text-xs text-slate-500">No operational records. Use "+ Operational Record" to log inverter data.</td></tr>
+                  <tr><td colSpan={11} className="px-4 py-8 text-center text-xs text-slate-500">No operational records. Use &quot;+ Operational Record&quot; to log inverter data.</td></tr>
                 )}
                 {solarRecords.map((rec) => (
                   <tr key={rec.id} className={`hover:bg-slate-800/40 transition-colors ${rec.is_anomaly ? "border-l-2 border-l-red-500/60" : ""}`}>

@@ -128,7 +128,7 @@ export default function EmissionFactorsPage() {
             {loading ? (
               <tr><td colSpan={10} className="px-4 py-8 text-center text-gray-400">Loading…</td></tr>
             ) : factors.length === 0 ? (
-              <tr><td colSpan={10} className="px-4 py-8 text-center text-gray-400">No factors. Click "Seed Defaults" to load GHG Protocol factors.</td></tr>
+              <tr><td colSpan={10} className="px-4 py-8 text-center text-gray-400">No factors. Click &quot;Seed Defaults&quot; to load GHG Protocol factors.</td></tr>
             ) : (
               factors.map((f) => (
                 <tr key={f.id} className="hover:bg-gray-50">

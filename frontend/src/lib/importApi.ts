@@ -4,10 +4,8 @@ import { apiClient } from "./api";
 
 async function _downloadBlob(path: string, filename: string): Promise<void> {
   const base = process.env.NEXT_PUBLIC_API_URL ?? "";
-  const token =
-    typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
   const res = await fetch(`${base}${path}`, {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    credentials: "include",
   });
   if (!res.ok) {
     const text = await res.text().catch(() => res.statusText);

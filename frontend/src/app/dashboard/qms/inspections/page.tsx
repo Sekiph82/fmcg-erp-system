@@ -39,9 +39,8 @@ export default function QCInspectionsPage() {
     const q = new URLSearchParams();
     if (typeFilter) q.set("qc_type", typeFilter);
     if (statusFilter) q.set("status", statusFilter);
-    const token = localStorage.getItem("access_token");
     fetch(`/api/v1/quality/inspections/?${q}`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      credentials: "include",
     })
       .then(r => r.json())
       .then(setInspections)

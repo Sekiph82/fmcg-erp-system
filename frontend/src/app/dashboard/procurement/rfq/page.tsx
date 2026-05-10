@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { procurementApi, RFQRead, RFQDetail, RFQStatus } from "@/lib/procurement";
 
 const STATUS_COLORS: Record<RFQStatus, string> = {
@@ -31,7 +31,7 @@ export default function RFQPage() {
     lead_time_days: "", valid_until: "", payment_terms: "", notes: "",
   });
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const data = await procurementApi.listRFQs(filterStatus ? { status: filterStatus as RFQStatus } : undefined);
@@ -39,9 +39,9 @@ export default function RFQPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filterStatus]);
 
-  useEffect(() => { load(); }, [filterStatus]);
+  useEffect(() => { load(); }, [load]);
 
   const openDetail = async (id: string) => {
     setDetailLoading(true);

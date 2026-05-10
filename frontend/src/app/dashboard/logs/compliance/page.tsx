@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 interface AuditEntry {
   id: string;
@@ -39,6 +39,8 @@ const EVENT_COLOR: Record<string, string> = {
   PAYMENT_RECEIVED: "text-green-700 bg-green-100",
 };
 
+const DEFAULT_AUDIT_FILTERS = { event_type: "", target_type: "", module: "", limit: "200" };
+
 function DiffView({ before, after }: { before: Record<string, unknown> | null; after: Record<string, unknown> | null }) {
   if (!before && !after) return null;
   const keysArr = Array.from(new Set([...Object.keys(before ?? {}), ...Object.keys(after ?? {})]));
@@ -66,25 +68,25 @@ export default function ComplianceAuditPage() {
   const [stats, setStats] = useState<AuditStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<string | null>(null);
-  const [filters, setFilters] = useState({ event_type: "", target_type: "", module: "", limit: "200" });
+  const [filters, setFilters] = useState(DEFAULT_AUDIT_FILTERS);
   const [error, setError] = useState<string | null>(null);
   const [integrity, setIntegrity] = useState<{ status: string; verified: number; tampered_count: number } | null>(null);
 
-  const buildParams = () => {
+  const buildParams = useCallback((source: typeof DEFAULT_AUDIT_FILTERS) => {
     const p = new URLSearchParams();
-    if (filters.event_type) p.set("event_type", filters.event_type);
-    if (filters.target_type) p.set("target_type", filters.target_type);
-    if (filters.module) p.set("module", filters.module);
-    p.set("limit", filters.limit);
+    if (source.event_type) p.set("event_type", source.event_type);
+    if (source.target_type) p.set("target_type", source.target_type);
+    if (source.module) p.set("module", source.module);
+    p.set("limit", source.limit);
     return p.toString();
-  };
+  }, []);
 
-  const load = async () => {
+  const load = useCallback(async (source: typeof DEFAULT_AUDIT_FILTERS) => {
     setLoading(true);
     setError(null);
     try {
       const [logRes, statRes] = await Promise.all([
-        fetch(`/api/v1/audit/?${buildParams()}`),
+        fetch(`/api/v1/audit/?${buildParams(source)}`),
         fetch("/api/v1/audit/stats?days=30"),
       ]);
       if (!logRes.ok) throw new Error(await logRes.text());
@@ -95,7 +97,7 @@ export default function ComplianceAuditPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [buildParams]);
 
   const runIntegrityCheck = async () => {
     const r = await fetch("/api/v1/audit/integrity-check?limit=1000");
@@ -103,10 +105,10 @@ export default function ComplianceAuditPage() {
   };
 
   const exportCsv = () => {
-    window.open(`/api/v1/audit/export?${buildParams()}`, "_blank");
+    window.open(`/api/v1/audit/export?${buildParams(filters)}`, "_blank");
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(DEFAULT_AUDIT_FILTERS); }, [load]);
 
   const fmtDt = (iso: string) =>
     new Date(iso).toLocaleString("en-GB", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
@@ -127,7 +129,7 @@ export default function ComplianceAuditPage() {
             className="border border-green-300 bg-green-50 rounded px-3 py-1.5 text-sm text-green-700 hover:bg-green-100">
             Export CSV
           </button>
-          <button onClick={load} disabled={loading}
+          <button onClick={() => load(filters)} disabled={loading}
             className="border border-blue-300 bg-blue-50 rounded px-3 py-1.5 text-sm text-blue-700 hover:bg-blue-100 disabled:opacity-50">
             Refresh
           </button>
@@ -196,7 +198,7 @@ export default function ComplianceAuditPage() {
           </select>
         </div>
         <div className="flex items-end">
-          <button onClick={load} className="bg-blue-600 text-white text-xs px-3 py-1 rounded hover:bg-blue-700">
+          <button onClick={() => load(filters)} className="bg-blue-600 text-white text-xs px-3 py-1 rounded hover:bg-blue-700">
             Apply
           </button>
         </div>

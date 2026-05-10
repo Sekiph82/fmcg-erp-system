@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { payrollKeApi, PayrollRun, PayrollLine, Payslip, MONTH_NAMES, STATUS_COLORS, PayrollInsight } from "@/lib/payrollKe";
 
@@ -19,7 +19,7 @@ export default function PayrollRunDetailPage() {
   const [aiLoading, setAiLoading] = useState(false);
   const [tab, setTab] = useState<"lines" | "payslips" | "ai">("lines");
 
-  const reload = async () => {
+  const reload = useCallback(async () => {
     const [r, ls, ps] = await Promise.all([
       payrollKeApi.getRun(runId),
       payrollKeApi.getRunLines(runId),
@@ -28,11 +28,11 @@ export default function PayrollRunDetailPage() {
     setRun(r);
     setLines(ls);
     setPayslips(ps);
-  };
+  }, [runId]);
 
   useEffect(() => {
     reload().finally(() => setLoading(false));
-  }, [runId]);
+  }, [runId, reload]);
 
   const handleCalculate = async () => {
     setCalculating(true);
@@ -147,7 +147,7 @@ export default function PayrollRunDetailPage() {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {lines.length === 0 ? (
-                <tr><td colSpan={11} className="px-3 py-6 text-center text-gray-400">No lines. Click "Calculate Payroll" to run computation.</td></tr>
+                <tr><td colSpan={11} className="px-3 py-6 text-center text-gray-400">No lines. Click &quot;Calculate Payroll&quot; to run computation.</td></tr>
               ) : (
                 lines.map((l) => (
                   <tr key={l.id} className="hover:bg-gray-50">

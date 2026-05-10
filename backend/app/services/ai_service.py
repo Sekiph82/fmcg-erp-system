@@ -13,6 +13,7 @@ from datetime import date, timedelta
 from typing import Any, Optional
 import uuid
 
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -33,6 +34,61 @@ from app.prompts.scenarios import SCENARIO_SCHEMA, build_scenario_prompt
 from app.prompts.formulations import FORMULATION_SCHEMA, build_formulation_prompt
 
 log = logging.getLogger(__name__)
+
+
+class _AIModel(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+
+class _PredictionItem(_AIModel):
+    type: str = "unknown"
+    subject: Optional[str] = None
+    period: Optional[str] = None
+    forecast_value: Optional[float] = None
+    confidence: Optional[float] = None
+    risk_level: Optional[str] = None
+    trend: Optional[str] = None
+    summary: Optional[str] = None
+
+
+class _PredictionOutput(_AIModel):
+    predictions: list[_PredictionItem] = Field(default_factory=list)
+
+
+class _RecommendationItem(_AIModel):
+    category: str = "general"
+    title: str
+    reason: Optional[str] = None
+    expected_impact: Optional[Any] = None
+    confidence_level: Optional[str] = None
+    priority: str = "medium"
+
+
+class _RecommendationOutput(_AIModel):
+    recommendations: list[_RecommendationItem] = Field(default_factory=list)
+
+
+class _ScenarioOutput(_AIModel):
+    scenario: dict[str, Any]
+
+
+class _FormulationOutput(_AIModel):
+    formulation: dict[str, Any]
+
+
+async def _generate_validated_output(provider, prompt: str, system: str, schema: type[_AIModel]) -> tuple[dict[str, Any], AIResponse]:
+    obj, resp = await provider.generate_structured_output(prompt, system=system)
+    try:
+        return schema.model_validate(obj).model_dump(), resp
+    except ValidationError as first_error:
+        repair_prompt = (
+            "Repair this AI response so it exactly matches the requested JSON schema. "
+            "Return valid JSON only; do not add commentary.\n\n"
+            f"Validation error:\n{first_error}\n\n"
+            f"Original response JSON:\n{json.dumps(obj, default=str)}"
+        )
+        repaired, repair_resp = await provider.generate_structured_output(repair_prompt, system=system)
+        return schema.model_validate(repaired).model_dump(), repair_resp
 
 
 # ── ERP Data Gatherer ─────────────────────────────────────────────────────────
@@ -208,7 +264,7 @@ async def generate_predictions(
     resp = None
     try:
         provider = get_ai_provider()
-        obj, resp = await provider.generate_structured_output(prompt, system=safe_system)
+        obj, resp = await _generate_validated_output(provider, prompt, safe_system, _PredictionOutput)
         await _finish_request(db, req, resp, obj)
 
         results = []
@@ -253,17 +309,18 @@ async def generate_recommendations(
     resp = None
     try:
         provider = get_ai_provider()
-        obj, resp = await provider.generate_structured_output(prompt, system=safe_system)
+        obj, resp = await _generate_validated_output(provider, prompt, safe_system, _RecommendationOutput)
         await _finish_request(db, req, resp, obj)
 
         results = []
         for r in obj.get("recommendations", []):
+            expected_impact = r.get("expected_impact")
             rec = AIRecommendation(
                 request_id=req.id,
                 category=r.get("category", "general"),
                 title=r.get("title", ""),
                 reason=r.get("reason"),
-                expected_impact=r.get("expected_impact"),
+                expected_impact=json.dumps(expected_impact) if isinstance(expected_impact, (dict, list)) else expected_impact,
                 confidence_level=r.get("confidence_level"),
                 priority=r.get("priority", "medium"),
                 action_data=r,
@@ -304,7 +361,7 @@ async def simulate_scenario(
     resp = None
     try:
         provider = get_ai_provider()
-        obj, resp = await provider.generate_structured_output(prompt, system=safe_system)
+        obj, resp = await _generate_validated_output(provider, prompt, safe_system, _ScenarioOutput)
         await _finish_request(db, req, resp, obj)
 
         scenario_data = obj.get("scenario", obj)
@@ -361,7 +418,7 @@ async def generate_formulation(
     resp = None
     try:
         provider = get_ai_provider()
-        obj, resp = await provider.generate_structured_output(prompt, system=safe_system)
+        obj, resp = await _generate_validated_output(provider, prompt, safe_system, _FormulationOutput)
         await _finish_request(db, req, resp, obj)
 
         form_data = obj.get("formulation", obj)

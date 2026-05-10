@@ -11,6 +11,7 @@ class UserBase(BaseModel):
     full_name: str
     is_active: bool = True
     is_superuser: bool = False
+    must_change_password: bool = False
 
 
 class UserCreate(UserBase):

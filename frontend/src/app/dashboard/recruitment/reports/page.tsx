@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { recruitmentApi } from "@/lib/recruitment";
 
 type Tab = "pipeline" | "source" | "offers";
@@ -9,14 +9,14 @@ export default function RecruitmentReportsPage() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     if (tab === "pipeline") setData(await recruitmentApi.reportPipelineByStage());
     else if (tab === "source") setData(await recruitmentApi.reportSourceEffectiveness());
     else setData(await recruitmentApi.reportOfferAcceptance());
     setLoading(false);
-  };
-  useEffect(() => { load(); }, [tab]);
+  }, [tab]);
+  useEffect(() => { load(); }, [load]);
 
   const tabs = [{ id: "pipeline" as Tab, label: "Pipeline by Stage" }, { id: "source" as Tab, label: "Source Effectiveness" }, { id: "offers" as Tab, label: "Offer Acceptance" }];
 

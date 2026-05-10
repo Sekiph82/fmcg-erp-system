@@ -231,7 +231,7 @@ export default function QCInspectionDetailPage() {
         <h2 className="text-lg font-semibold text-gray-800 mb-3">Test Results</h2>
         {inspection.test_results.length === 0 ? (
           <div className="rounded-xl border border-dashed border-gray-300 p-8 text-center text-gray-500 text-sm">
-            No test results recorded yet. Click "Add Test Result" to start.
+            No test results recorded yet. Click &quot;Add Test Result&quot; to start.
           </div>
         ) : (
           <Table

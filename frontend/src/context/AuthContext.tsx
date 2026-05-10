@@ -2,15 +2,15 @@
 
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { getMe, login as apiLogin, User } from "@/lib/auth";
+import { getMe, login as apiLogin, logout as apiLogout, User } from "@/lib/auth";
 
 interface AuthContextValue {
   user: User | null;
   loading: boolean;
   login: (username: string, password: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   hasPermission: (code: string) => boolean;
-  completeTwoFA: (accessToken: string) => Promise<void>;
+  completeTwoFA: (accessToken?: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -21,13 +21,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   const loadUser = useCallback(async () => {
-    const token = localStorage.getItem("access_token");
-    if (!token) { setLoading(false); return; }
     try {
       const me = await getMe();
       setUser(me);
     } catch {
-      localStorage.removeItem("access_token");
+      setUser(null);
     } finally {
       setLoading(false);
     }
@@ -43,25 +41,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       router.push("/auth/2fa");
       return;
     }
-    if (res.access_token) {
-      localStorage.setItem("access_token", res.access_token);
-      const me = await getMe();
-      setUser(me);
-      router.push("/dashboard");
-    }
+    const me = await getMe();
+    setUser(me);
+    router.push(res.must_change_password || me.must_change_password ? "/auth/change-password" : "/dashboard");
   };
 
-  const completeTwoFA = async (accessToken: string) => {
-    localStorage.setItem("access_token", accessToken);
+  const completeTwoFA = async (_accessToken?: string) => {
     sessionStorage.removeItem("2fa_session_token");
     sessionStorage.removeItem("2fa_method");
     const me = await getMe();
     setUser(me);
-    router.push("/dashboard");
+    router.push(me.must_change_password ? "/auth/change-password" : "/dashboard");
   };
 
-  const logout = () => {
-    localStorage.removeItem("access_token");
+  const logout = async () => {
+    try {
+      await apiLogout();
+    } catch {
+      // Local cleanup still matters if the server session is already gone.
+    }
     setUser(null);
     router.push("/login");
   };

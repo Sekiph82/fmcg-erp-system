@@ -67,7 +67,7 @@ export default function RecurringBillingPage() {
         <p className="text-xs text-blue-600">
           Enable <code className="bg-blue-100 px-1 rounded">auto_invoice_flag</code> on a subscription template.
           After each recurring SO is generated, this page shows it as pending billing.
-          Click "Generate Invoice" to create and issue the invoice. Due date =
+          Click &quot;Generate Invoice&quot; to create and issue the invoice. Due date =
           today + <code className="bg-blue-100 px-1 rounded">invoice_due_days</code>.
         </p>
       </div>

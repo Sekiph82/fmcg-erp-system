@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { kanbanApi, KanbanBoard, BoardModuleType, BoardVisibility, MODULE_LABEL, MODULE_TYPES, STAGE_COLOR } from "@/lib/kanban";
 
@@ -13,10 +13,10 @@ export default function BoardsPage() {
     visibility: "team" as BoardVisibility, description: "", owner_name: "",
   });
 
-  const load = () =>
+  const load = useCallback(() =>
     kanbanApi.listBoards({ module_type: moduleFilter || undefined })
-      .then(setBoards).finally(() => setLoading(false));
-  useEffect(() => { load(); }, [moduleFilter]);
+      .then(setBoards).finally(() => setLoading(false)), [moduleFilter]);
+  useEffect(() => { load(); }, [load]);
 
   const submit = async () => {
     await kanbanApi.createBoard({ ...form, description: form.description || undefined, owner_name: form.owner_name || undefined });

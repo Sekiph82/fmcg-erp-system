@@ -93,7 +93,7 @@ export default function PODPage() {
                   </div>
                   <p className="text-xs text-gray-500 mt-1">
                     Received by: <span className="font-medium">{pod.received_by ?? "—"}</span>
-                    {pod.signature_text && <span> · Signature: "{pod.signature_text}"</span>}
+                    {pod.signature_text && <span> · Signature: &quot;{pod.signature_text}&quot;</span>}
                   </p>
                   {pod.notes && <p className="text-xs text-gray-400 mt-1">{pod.notes}</p>}
                 </div>

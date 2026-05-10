@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { loyaltyApi, LoyaltyAccount, LoyaltyTier, LoyaltyStats, TXN_COLORS, LoyaltyAccountDetail } from "@/lib/loyalty";
 
 export default function LoyaltyPage() {
@@ -21,7 +21,7 @@ export default function LoyaltyPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const [s, t, a] = await Promise.all([
@@ -31,9 +31,9 @@ export default function LoyaltyPage() {
       ]);
       setStats(s); setTiers(t); setAccounts(a);
     } finally { setLoading(false); }
-  };
+  }, [filterTier]);
 
-  useEffect(() => { load(); }, [filterTier]);
+  useEffect(() => { load(); }, [load]);
 
   const openAccount = async (customerId: string) => {
     setDetailLoading(true);

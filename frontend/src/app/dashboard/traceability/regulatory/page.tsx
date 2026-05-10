@@ -1,6 +1,6 @@
 "use client";
 import { useSearchParams } from "next/navigation";
-import { useState, useEffect, Suspense } from "react";
+import { useCallback, useState, useEffect, Suspense } from "react";
 import { traceApi, RecallRegulatoryReport, RecallHeader, SEVERITY_BG } from "@/lib/traceability";
 
 function RegulatoryContent() {
@@ -11,13 +11,7 @@ function RegulatoryContent() {
   const [report, setReport] = useState<RecallRegulatoryReport | null>(null);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    traceApi.listRecalls().then(setRecalls).catch(console.error);
-    if (initialRecallId) handleLoad(initialRecallId);
-  }, []);
-
-  const handleLoad = async (id?: string) => {
-    const rid = id || recallId;
+  const handleLoad = useCallback(async (rid: string) => {
     if (!rid) return;
     setLoading(true);
     setReport(null);
@@ -26,7 +20,12 @@ function RegulatoryContent() {
       setReport(r);
     } catch (e: any) { alert(e.message); }
     finally { setLoading(false); }
-  };
+  }, []);
+
+  useEffect(() => {
+    traceApi.listRecalls().then(setRecalls).catch(console.error);
+    if (initialRecallId) handleLoad(initialRecallId);
+  }, [initialRecallId, handleLoad]);
 
   return (
     <div className="p-6 space-y-6">
@@ -47,7 +46,7 @@ function RegulatoryContent() {
           </select>
         </div>
         <div className="flex items-end">
-          <button onClick={() => handleLoad()} disabled={!recallId || loading}
+          <button onClick={() => handleLoad(recallId)} disabled={!recallId || loading}
             className="px-5 py-2 bg-teal-600 text-white text-sm rounded-lg hover:bg-teal-700 disabled:opacity-50">
             {loading ? "Loading…" : "Generate Report"}
           </button>

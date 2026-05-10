@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { trainingApi, TrainingFeedback, TrainingProgram } from "@/lib/training";
 
 function Stars({ value }: { value: number }) {
@@ -21,12 +21,12 @@ export default function FeedbackPage() {
     rating: "5", content_rating: "", trainer_rating: "", relevance_rating: "", comments: "",
   });
 
-  const load = () =>
+  const load = useCallback(() =>
     Promise.all([
       trainingApi.listFeedback(filterProgram || undefined),
       trainingApi.listPrograms(),
-    ]).then(([f, p]) => { setFeedbacks(f); setPrograms(p); }).finally(() => setLoading(false));
-  useEffect(() => { load(); }, [filterProgram]);
+    ]).then(([f, p]) => { setFeedbacks(f); setPrograms(p); }).finally(() => setLoading(false)), [filterProgram]);
+  useEffect(() => { load(); }, [load]);
 
   const submit = async () => {
     await trainingApi.submitFeedback({

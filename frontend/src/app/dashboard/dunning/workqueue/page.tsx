@@ -24,7 +24,7 @@ export default function WorkQueuePage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-gray-900">Collector Work Queue</h1>
-          <p className="text-sm text-gray-500 mt-1">Priority-sorted collection cases for today's action</p>
+          <p className="text-sm text-gray-500 mt-1">Priority-sorted collection cases for today&apos;s action</p>
         </div>
         <div className="flex gap-2">
           <button onClick={checkPTPs} className="px-3 py-2 bg-orange-500 text-white rounded-lg text-sm font-medium hover:bg-orange-600">

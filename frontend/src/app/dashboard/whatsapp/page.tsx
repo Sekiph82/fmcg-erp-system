@@ -275,7 +275,7 @@ export default function WhatsAppPage() {
             </Button>
           </div>
           {templates.length === 0 ? (
-            <p className="px-5 py-8 text-center text-gray-400">No templates — click "Seed Demo Templates" to add FMCG defaults</p>
+            <p className="px-5 py-8 text-center text-gray-400">No templates — click &quot;Seed Demo Templates&quot; to add FMCG defaults</p>
           ) : (
             <div className="divide-y">
               {templates.map((t) => (
@@ -414,7 +414,7 @@ export default function WhatsAppPage() {
                 <select className="w-full border rounded px-3 py-2 text-sm" value={newConfigForm.provider} onChange={(e) => setNewConfigForm((f) => ({ ...f, provider: e.target.value }))}>
                   <option value="META">Meta (WhatsApp Cloud API)</option>
                   <option value="TWILIO">Twilio</option>
-                  <option value="AFRICASTALKING">Africa's Talking</option>
+                  <option value="AFRICASTALKING">Africa&apos;s Talking</option>
                 </select>
               </div>
               <p className="text-xs text-gray-400">Starts in Demo mode — messages simulated locally.</p>

@@ -14,6 +14,7 @@ export interface AIStatus {
   mode: "llm" | "mock";
   fallback_active: boolean;
   ai_mode_label: string;
+  nl_command_execution_enabled: boolean;
 }
 
 export interface AIChatResponse {
@@ -179,6 +180,22 @@ export interface NLCommandResult {
   requires_confirmation: boolean;
   status: NLCommandStatus;
   params_needed: string | null;
+  execution_enabled: boolean;
+  note: string;
+}
+
+export interface NLCommandPreview {
+  id: string;
+  parsed_intent: string;
+  parsed_action: string;
+  target_endpoint: string | null;
+  risk_level: NLRiskLevel;
+  requires_confirmation: boolean;
+  params_needed: Record<string, any> | null;
+  execution_enabled: boolean;
+  approval_required: boolean;
+  dry_run: boolean;
+  state_change: string;
   note: string;
 }
 
@@ -370,8 +387,15 @@ export const aiApi = {
   submitNLCommand: (command: string, userName?: string): Promise<NLCommandResult> =>
     apiClient.post<NLCommandResult>("/api/v1/ai/nl-command", { command, user_name: userName }).then((r) => r.data),
 
+  previewNLCommand: (id: string): Promise<NLCommandPreview> =>
+    apiClient.get<NLCommandPreview>(`/api/v1/ai/nl-command/${id}/preview`).then((r) => r.data),
+
   executeNLCommand: (id: string, confirmedBy: string): Promise<{ id: string; status: NLCommandStatus; result_summary: string }> =>
-    apiClient.post(`/api/v1/ai/nl-command/${id}/execute`, null, { params: { confirmed_by: confirmedBy } }).then((r) => r.data),
+    apiClient.post(
+      `/api/v1/ai/nl-command/${id}/execute`,
+      { idempotency_key: crypto.randomUUID() },
+      { params: { confirmed_by: confirmedBy } },
+    ).then((r) => r.data),
 
   rejectNLCommand: (id: string): Promise<{ id: string; status: NLCommandStatus }> =>
     apiClient.post(`/api/v1/ai/nl-command/${id}/reject`).then((r) => r.data),

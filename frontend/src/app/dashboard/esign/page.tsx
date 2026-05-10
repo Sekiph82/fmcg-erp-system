@@ -10,6 +10,7 @@ import {
   CreateSignatureRequest,
 } from "@/lib/esign";
 import { apiClient } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/Button";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -481,6 +482,7 @@ function SignersPopover({ req }: { req: SignatureRequest }) {
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function ESignPage() {
+  const { user } = useAuth();
   const [tab, setTab] = useState<"all" | "mine">("mine");
   const [statusFilter, setStatusFilter] = useState("");
   const [showCreate, setShowCreate] = useState(false);
@@ -507,19 +509,7 @@ export default function ESignPage() {
   const requests = tab === "all" ? allRequests : mineRequests;
   const loading = tab === "all" ? loadingAll : loadingMine;
 
-  // Current user id from token (decode without library)
-  const currentUserId = (() => {
-    try {
-      if (typeof window === "undefined") return null;
-      const token = document.cookie.match(/access_token=([^;]+)/)?.[1]
-        ?? localStorage.getItem("access_token");
-      if (!token) return null;
-      const payload = JSON.parse(atob(token.split(".")[1]));
-      return payload.sub as string;
-    } catch {
-      return null;
-    }
-  })();
+  const currentUserId = user?.id ?? null;
 
   return (
     <div className="p-6 flex flex-col gap-6 min-h-screen bg-gray-50">

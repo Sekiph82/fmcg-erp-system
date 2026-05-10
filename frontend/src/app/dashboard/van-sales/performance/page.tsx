@@ -134,7 +134,7 @@ export default function RiderPerformancePage() {
                   </tr>
                 ))}
                 {leaderboard.length === 0 && (
-                  <tr><td colSpan={8} className="text-center py-8 text-slate-600">No performance data for this period. Use "Compute" to generate records.</td></tr>
+                  <tr><td colSpan={8} className="text-center py-8 text-slate-600">No performance data for this period. Use &quot;Compute&quot; to generate records.</td></tr>
                 )}
               </tbody>
             </table>

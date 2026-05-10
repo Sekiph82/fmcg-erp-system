@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import {
   timesheetsApi, TimesheetHeader, TimesheetStatus,
@@ -16,10 +16,10 @@ export default function MyTimesheetsPage() {
   const [selected, setSelected] = useState<TimesheetHeader | null>(null);
   const [submitNotes, setSubmitNotes] = useState("");
 
-  const load = () =>
+  const load = useCallback(() =>
     timesheetsApi.list({ status: statusFilter || undefined, employee_id: empId || undefined })
-      .then(setTimesheets).finally(() => setLoading(false));
-  useEffect(() => { load(); }, [statusFilter, empId]);
+      .then(setTimesheets).finally(() => setLoading(false)), [statusFilter, empId]);
+  useEffect(() => { load(); }, [load]);
 
   const submit = async (id: string) => {
     await timesheetsApi.submit(id, { notes: submitNotes || undefined });

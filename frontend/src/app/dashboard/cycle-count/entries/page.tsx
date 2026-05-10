@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
+import { useCallback, useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { listEntries, createEntry, CountEntry } from "@/lib/cycleCount";
 import { Button } from "@/components/ui/Button";
@@ -17,12 +17,13 @@ function EntriesContent() {
   const [error, setError] = useState("");
   const [form, setForm] = useState<Record<string, string>>({ task_id: taskId, unit: "KG" });
 
-  useEffect(() => { load(); }, [taskId]);
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     try { setEntries(await listEntries(taskId ? { task_id: taskId } : undefined)); } catch {}
     setLoading(false);
-  }
+  }, [taskId]);
+
+  useEffect(() => { load(); }, [load]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault(); setError(""); setSaving(true);

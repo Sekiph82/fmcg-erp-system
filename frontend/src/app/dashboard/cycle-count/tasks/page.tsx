@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { listTasks, updateTask, CycleCountTask, TaskStatus, TASK_STATUS_BADGE, ABC_BADGE } from "@/lib/cycleCount";
 
@@ -12,8 +12,7 @@ export default function TasksPage() {
   const [statusFilter, setStatusFilter] = useState<TaskStatus | "all">("all");
   const [dateFilter, setDateFilter] = useState(new Date().toISOString().split("T")[0]);
 
-  useEffect(() => { load(); }, [statusFilter, dateFilter]);
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       setTasks(await listTasks({
@@ -22,7 +21,9 @@ export default function TasksPage() {
       }));
     } catch {}
     setLoading(false);
-  }
+  }, [statusFilter, dateFilter]);
+
+  useEffect(() => { load(); }, [load]);
 
   async function handleStatusChange(id: string, status: TaskStatus) {
     await updateTask(id, { status });

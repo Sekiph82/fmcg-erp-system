@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { listTrips, createTrip, updateTrip, listVehicles, listDrivers, FleetTrip, TripStatus, TRIP_STATUS_BADGE } from "@/lib/fleet";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -18,8 +18,7 @@ export default function TripsPage() {
   const [error, setError] = useState("");
   const [form, setForm] = useState<Record<string, string>>({ trip_date: new Date().toISOString().split("T")[0], purpose: "delivery" });
 
-  useEffect(() => { load(); }, [filter]);
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const [t, v, d] = await Promise.all([
@@ -30,7 +29,9 @@ export default function TripsPage() {
       setTrips(t); setVehicles(v); setDrivers(d);
     } catch {}
     setLoading(false);
-  }
+  }, [filter]);
+
+  useEffect(() => { load(); }, [load]);
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault(); setError(""); setSaving(true);

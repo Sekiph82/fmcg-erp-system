@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { crmApi, fmtCurrency } from "@/lib/crm_pipeline";
 
 interface ForecastRow {
@@ -15,7 +15,7 @@ export default function ForecastPage() {
   const [loading, setLoading] = useState(true);
   const [months, setMonths] = useState(6);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const [fc, pp] = await Promise.all([
@@ -26,9 +26,9 @@ export default function ForecastPage() {
       setPipeline(pp);
     } catch (e) { console.error(e); }
     setLoading(false);
-  };
+  }, [months]);
 
-  useEffect(() => { load(); }, [months]);
+  useEffect(() => { load(); }, [load]);
 
   const totalExpected = forecast.reduce((s, r) => s + r.expected_revenue, 0);
   const totalWeighted = forecast.reduce((s, r) => s + r.weighted_revenue, 0);

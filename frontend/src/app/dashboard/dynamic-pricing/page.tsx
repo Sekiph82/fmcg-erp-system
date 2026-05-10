@@ -191,7 +191,7 @@ export default function DynamicPricingPage() {
           {loading && <p className="text-gray-400 text-sm">Loading…</p>}
           {recs.length === 0 && !loading && (
             <div className="bg-gray-50 border rounded-lg p-6 text-center text-sm text-gray-400">
-              No recommendations yet. Use "Generate Recommendation" to run the pricing engine.
+              No recommendations yet. Use &quot;Generate Recommendation&quot; to run the pricing engine.
             </div>
           )}
           {recs.map((r) => (
@@ -238,7 +238,7 @@ export default function DynamicPricingPage() {
             <h2 className="text-sm font-semibold text-gray-700">Recent Competitor Observations ({obs.length})</h2>
           </div>
           {obs.length === 0 ? (
-            <div className="p-6 text-sm text-gray-400 text-center">No observations yet. Use "Log Price" to record competitor prices.</div>
+            <div className="p-6 text-sm text-gray-400 text-center">No observations yet. Use &quot;Log Price&quot; to record competitor prices.</div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">

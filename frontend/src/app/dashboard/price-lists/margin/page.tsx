@@ -146,7 +146,7 @@ export default function MarginChecker() {
             </tbody>
           </table>
         ) : (
-          <div className="p-6 text-center text-gray-400 text-sm">Click "Load Report" to identify below-margin price lines.</div>
+          <div className="p-6 text-center text-gray-400 text-sm">Click &quot;Load Report&quot; to identify below-margin price lines.</div>
         )}
       </div>
     </div>

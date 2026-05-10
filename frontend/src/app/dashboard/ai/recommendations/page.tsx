@@ -123,7 +123,7 @@ export default function RecommendationsPage() {
         <p className="text-center text-gray-400 py-8">Loading recommendations…</p>
       ) : data.length === 0 ? (
         <div className="bg-white rounded-xl border border-gray-100 p-12 text-center">
-          <p className="text-gray-400 mb-4">No recommendations yet. Click "Generate Recommendations" to get AI-powered insights.</p>
+          <p className="text-gray-400 mb-4">No recommendations yet. Click &quot;Generate Recommendations&quot; to get AI-powered insights.</p>
           <button
             onClick={() => generate.mutate()}
             disabled={generate.isPending}

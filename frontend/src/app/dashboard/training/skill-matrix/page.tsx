@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   trainingApi, EmployeeSkillRow, Skill, SkillCategory, SkillLevel,
   CATEGORY_COLOR, LEVEL_COLOR,
@@ -23,13 +23,13 @@ export default function SkillMatrixPage() {
   });
   const [showSeedBtn, setShowSeedBtn] = useState(true);
 
-  const load = () => {
+  const load = useCallback(() => {
     Promise.all([
       trainingApi.getSkillMatrix(empFilter || undefined, deptFilter || undefined),
       trainingApi.listSkills(undefined, true),
     ]).then(([m, s]) => { setMatrix(m); setSkills(s); }).finally(() => setLoading(false));
-  };
-  useEffect(() => { load(); }, [empFilter, deptFilter]);
+  }, [empFilter, deptFilter]);
+  useEffect(() => { load(); }, [load]);
 
   const seed = async () => {
     await trainingApi.seedSkills();

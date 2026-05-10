@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { kanbanApi, KanbanCard, CardPriority, CardStatus, PRIORITY_COLOR, STATUS_COLOR, PRIORITIES } from "@/lib/kanban";
 
 const STATUSES: CardStatus[] = ["active","blocked","done","archived"];
@@ -10,15 +10,15 @@ export default function AllCardsPage() {
   const [filters, setFilters] = useState({ priority: "", status: "", assigned_user_id: "", overdue_only: false });
   const [selected, setSelected] = useState<KanbanCard | null>(null);
 
-  const load = () =>
+  const load = useCallback(() =>
     kanbanApi.listCards({
       priority: filters.priority || undefined,
       status: filters.status || undefined,
       assigned_user_id: filters.assigned_user_id || undefined,
       overdue_only: filters.overdue_only || undefined,
-    }).then(setCards).finally(() => setLoading(false));
+    }).then(setCards).finally(() => setLoading(false)), [filters]);
 
-  useEffect(() => { load(); }, [filters]);
+  useEffect(() => { load(); }, [load]);
 
   const isOverdue = (c: KanbanCard) => c.due_date && new Date(c.due_date) < new Date() && c.status === "active";
 

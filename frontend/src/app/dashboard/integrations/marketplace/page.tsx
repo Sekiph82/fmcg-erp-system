@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import {
   integrationsApi,
@@ -45,7 +45,7 @@ export default function IntegrationMarketplacePage() {
   const [testResult, setTestResult] = useState<Record<string, { result: string; message: string }>>({});
   const [error, setError] = useState<string | null>(null);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -66,9 +66,9 @@ export default function IntegrationMarketplacePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filterCat, filterStatus, tenantKey]);
 
-  useEffect(() => { load(); }, [filterCat, filterStatus, tenantKey]);
+  useEffect(() => { load(); }, [load]);
 
   const runAction = async (connector: MarketplaceConnector, action: "install" | PluginLifecycleAction) => {
     setBusy(`${connector.connector_code}:${action}`);

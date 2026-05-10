@@ -158,7 +158,7 @@ export default function ProcurementSuggestionDashboard() {
                 </tr>
               ))}
               {!runs?.length && (
-                <tr><td colSpan={6} className="px-4 py-6 text-center text-gray-400">No runs yet — click "Run Procurement Engine" to start.</td></tr>
+                <tr><td colSpan={6} className="px-4 py-6 text-center text-gray-400">No runs yet — click &quot;Run Procurement Engine&quot; to start.</td></tr>
               )}
             </tbody>
           </table>

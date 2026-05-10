@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import {
   dunningApi, DunningCase, DunningCaseInvoice, DunningActionLog, DunningPTP,
@@ -22,7 +22,7 @@ export default function DunningCaseDetail() {
   const [holdForm, setHoldForm] = useState({ reason: "", applied_by: "" });
   const [saving, setSaving] = useState(false);
 
-  const load = () => {
+  const load = useCallback(() => {
     Promise.all([
       dunningApi.getCase(id),
       dunningApi.getCaseInvoices(id),
@@ -30,9 +30,9 @@ export default function DunningCaseDetail() {
       dunningApi.listPTPs(id),
       dunningApi.listExceptions(id),
     ]).then(([c, inv, act, p, exc]) => { setDC(c); setInvoices(inv); setActions(act); setPTPs(p); setExceptions(exc); });
-  };
+  }, [id]);
 
-  useEffect(() => { load(); }, [id]);
+  useEffect(() => { load(); }, [load]);
 
   const sendReminder = async () => {
     setSaving(true);

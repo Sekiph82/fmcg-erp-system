@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -351,14 +351,14 @@ function PortalStatementView({ accountId }: { accountId: string }) {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
 
-  const load = () => {
+  const load = useCallback((filters?: { from?: string; to?: string }) => {
     portalApi.getStatement(accountId, {
-      from_date: from || undefined,
-      to_date: to || undefined,
+      from_date: filters?.from || undefined,
+      to_date: filters?.to || undefined,
     }).then(d => setStatement(d as Record<string, unknown>)).catch(console.error);
-  };
+  }, [accountId]);
 
-  useEffect(() => { load(); }, [accountId]);
+  useEffect(() => { load(); }, [load]);
 
   return (
     <div className="space-y-4">
@@ -368,7 +368,7 @@ function PortalStatementView({ accountId }: { accountId: string }) {
         <span className="text-gray-400 text-sm">to</span>
         <input type="date" value={to} onChange={e => setTo(e.target.value)}
           className="text-sm border rounded-lg px-2 py-1.5 bg-white" />
-        <button onClick={load} className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+        <button onClick={() => load({ from, to })} className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700">
           Generate Statement
         </button>
       </div>
@@ -417,11 +417,11 @@ function PortalClaimsView({ accountId }: { accountId: string }) {
   const [claimForm, setClaimForm] = useState({ claim_type: "SHORTAGE_CLAIM", linked_order_id: "", reason: "", description: "" });
   const [saving, setSaving] = useState(false);
 
-  const load = () => {
+  const load = useCallback(() => {
     portalApi.getClaims(accountId).then(d => setClaims(d as PortalClaim[])).catch(console.error);
-  };
+  }, [accountId]);
 
-  useEffect(() => { load(); }, [accountId]);
+  useEffect(() => { load(); }, [load]);
 
   const handleSubmit = async () => {
     setSaving(true);

@@ -220,14 +220,13 @@ export async function downloadBoilerCsv(
   filename: string,
 ): Promise<void> {
   const base  = process.env.NEXT_PUBLIC_API_URL ?? "";
-  const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
   const qs    = new URLSearchParams(
     Object.entries(params)
       .filter(([, v]) => v !== undefined && v !== "")
       .map(([k, v]) => [k, String(v)]),
   ).toString();
   const res = await fetch(`${base}/api/v1/steam/records/export/csv${qs ? "?" + qs : ""}`, {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    credentials: "include",
   });
   if (!res.ok) {
     const text = await res.text().catch(() => res.statusText);
@@ -246,9 +245,8 @@ export async function downloadBoilerCsv(
 
 export async function downloadSteamTxCsv(filename: string): Promise<void> {
   const base  = process.env.NEXT_PUBLIC_API_URL ?? "";
-  const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
   const res = await fetch(`${base}/api/v1/steam/transactions/export/csv`, {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    credentials: "include",
   });
   if (!res.ok) throw new Error(`Export failed (${res.status})`);
   const blob      = await res.blob();

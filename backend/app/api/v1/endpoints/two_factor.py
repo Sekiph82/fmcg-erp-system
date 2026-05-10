@@ -4,11 +4,13 @@ import uuid
 from datetime import datetime, timezone
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy import select, func, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
+from app.core.auth_cookies import set_auth_cookie
+from app.core.config import settings
 from app.core.deps import get_current_user
 from app.core.security import create_access_token, verify_password
 from app.core import totp as totp_utils
@@ -199,6 +201,7 @@ async def disable_2fa(
 async def login_verify_2fa(
     body: TwoFALoginVerifyRequest,
     request: Request,
+    response: Response,
     db: AsyncSession = Depends(get_db),
 ):
     """Verify 2FA code during login flow. Returns full access_token on success."""
@@ -272,7 +275,11 @@ async def login_verify_2fa(
     await db.commit()
 
     access_token = create_access_token(str(user_id))
-    return {"access_token": access_token, "token_type": "bearer"}
+    set_auth_cookie(response, access_token)
+    return {
+        "access_token": access_token if settings.AUTH_RETURN_TOKEN_IN_BODY else None,
+        "token_type": "bearer",
+    }
 
 
 # ── GET /auth/2fa/recovery-codes ─────────────────────────────────────────────
@@ -320,6 +327,7 @@ async def regenerate_recovery_codes(
 async def use_recovery_code(
     body: UseRecoveryCodeRequest,
     request: Request,
+    response: Response,
     db: AsyncSession = Depends(get_db),
 ):
     """Use a backup recovery code instead of OTP during login."""
@@ -359,7 +367,11 @@ async def use_recovery_code(
     await db.commit()
 
     access_token = create_access_token(str(user_id))
-    return {"access_token": access_token, "token_type": "bearer"}
+    set_auth_cookie(response, access_token)
+    return {
+        "access_token": access_token if settings.AUTH_RETURN_TOKEN_IN_BODY else None,
+        "token_type": "bearer",
+    }
 
 
 # ── POST /auth/2fa/step-up ────────────────────────────────────────────────────

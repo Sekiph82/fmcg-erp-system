@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { reportBuilderApi, Report, RunResult } from "@/lib/report_builder";
 
@@ -24,9 +24,9 @@ export default function ReportViewerPage() {
 
   useEffect(() => {
     if (reportId && reportId !== selectedId) setSelectedId(reportId);
-  }, [reportId]);
+  }, [reportId, selectedId]);
 
-  const run = async () => {
+  const run = useCallback(async () => {
     if (!selectedId) return;
     setRunning(true);
     setError("");
@@ -38,11 +38,11 @@ export default function ReportViewerPage() {
     } finally {
       setRunning(false);
     }
-  };
+  }, [selectedId, limit, offset]);
 
   useEffect(() => {
     if (selectedId) run();
-  }, [selectedId]);
+  }, [selectedId, run]);
 
   const exportCsv = () => {
     if (!selectedId) return;

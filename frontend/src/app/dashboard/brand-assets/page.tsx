@@ -211,6 +211,7 @@ export default function BrandAssetsPage() {
                 {/* Thumbnail or placeholder */}
                 <div className="h-32 bg-gray-100 flex items-center justify-center relative">
                   {a.thumbnail_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- Uploaded asset thumbnails can be backend/data URLs outside Next image optimization.
                     <img src={a.thumbnail_url} alt={a.name} className="h-full w-full object-cover" />
                   ) : (
                     <span className="text-4xl">{TYPE_ICON[a.asset_type] ?? "📄"}</span>

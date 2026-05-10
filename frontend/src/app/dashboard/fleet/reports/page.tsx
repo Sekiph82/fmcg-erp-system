@@ -146,7 +146,7 @@ export default function FleetReportsPage() {
       )}
 
       {!utilization.length && !loading && (
-        <div className="text-center py-16 text-gray-400">Click "Load Reports" to fetch data and AI insights.</div>
+        <div className="text-center py-16 text-gray-400">Click &quot;Load Reports&quot; to fetch data and AI insights.</div>
       )}
     </div>
   );

@@ -103,7 +103,7 @@ export default function ResultsPage() {
                 <div className="space-y-1 mt-2">
                   {q.sample_responses.map((r, j) => (
                     <p key={j} className="text-xs text-gray-600 bg-gray-50 rounded px-3 py-2 border-l-2 border-blue-300">
-                      "{r}"
+                      &quot;{r}&quot;
                     </p>
                   ))}
                 </div>

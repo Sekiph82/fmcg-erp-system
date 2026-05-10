@@ -1,6 +1,6 @@
 "use client";
 import { useSearchParams } from "next/navigation";
-import { useState, useEffect, Suspense } from "react";
+import { useCallback, useState, useEffect, Suspense } from "react";
 import { traceApi, ForwardTraceResult } from "@/lib/traceability";
 
 function ForwardTraceContent() {
@@ -10,10 +10,7 @@ function ForwardTraceContent() {
   const [result, setResult] = useState<ForwardTraceResult | null>(null);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => { if (initialLotId) handleTrace(initialLotId); }, []);
-
-  const handleTrace = async (id?: string) => {
-    const traceId = id || lotId;
+  const handleTrace = useCallback(async (traceId: string) => {
     if (!traceId) return;
     setLoading(true);
     setResult(null);
@@ -22,7 +19,9 @@ function ForwardTraceContent() {
       setResult(r);
     } catch (e: any) { alert(e.message); }
     finally { setLoading(false); }
-  };
+  }, []);
+
+  useEffect(() => { if (initialLotId) handleTrace(initialLotId); }, [initialLotId, handleTrace]);
 
   const fmtQty = (q: string) => parseFloat(q).toLocaleString(undefined, { maximumFractionDigits: 2 });
 
@@ -41,7 +40,7 @@ function ForwardTraceContent() {
             onChange={e => setLotId(e.target.value)} />
         </div>
         <div className="flex items-end">
-          <button onClick={() => handleTrace()} disabled={!lotId || loading}
+          <button onClick={() => handleTrace(lotId)} disabled={!lotId || loading}
             className="px-5 py-2 bg-green-700 text-white text-sm rounded-lg hover:bg-green-800 disabled:opacity-50">
             {loading ? "Tracing…" : "Forward Trace →"}
           </button>

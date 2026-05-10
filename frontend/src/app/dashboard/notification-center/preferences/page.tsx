@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   notificationsApi, NCPreference, NotificationType, NotificationChannel,
   NOTIFICATION_TYPES, CHANNELS, CHANNEL_LABEL,
@@ -11,11 +11,11 @@ export default function PreferencesPage() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState<string | null>(null);
 
-  const load = () => {
+  const load = useCallback(() => {
     setLoading(true);
     notificationsApi.listPreferences(userId).then(setPrefs).finally(() => setLoading(false));
-  };
-  useEffect(() => { if (userId) load(); }, [userId]);
+  }, [userId]);
+  useEffect(() => { if (userId) load(); }, [userId, load]);
 
   const seed = async () => {
     await notificationsApi.seedPreferences(userId);

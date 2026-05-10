@@ -1,6 +1,6 @@
 "use client";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   traceApi, RecallDetail, RECALL_STATUS_BG, SEVERITY_BG,
   RISK_BG, ACTION_STATUS_BG, RECALL_ACTION_LABEL, AI_AGENT_LABEL,
@@ -27,12 +27,12 @@ export default function RecallDetailPage() {
   const [evidenceForm, setEvidenceForm] = useState({ title: "", description: "", file_url: "", evidence_type: "" });
   const [addingEvidence, setAddingEvidence] = useState(false);
 
-  const load = () => {
+  const load = useCallback(() => {
     setLoading(true);
     traceApi.getRecallDetail(id).then(setRecall).catch(console.error).finally(() => setLoading(false));
-  };
+  }, [id]);
 
-  useEffect(() => { load(); }, [id]);
+  useEffect(() => { load(); }, [load]);
 
   const handleCalculateScope = async () => {
     setCalculating(true);
@@ -153,7 +153,7 @@ export default function RecallDetailPage() {
             <h2 className="font-semibold text-gray-800">Recall Scope Lines ({recall.scope_lines.length})</h2>
           </div>
           {recall.scope_lines.length === 0 ? (
-            <p className="px-5 py-8 text-gray-400 text-sm">No scope lines — run "Calculate Scope" first</p>
+            <p className="px-5 py-8 text-gray-400 text-sm">No scope lines — run &quot;Calculate Scope&quot; first</p>
           ) : (
             <table className="w-full text-sm">
               <thead className="bg-gray-50 text-xs uppercase text-gray-500">
@@ -256,7 +256,7 @@ export default function RecallDetailPage() {
           </div>
           {recall.customer_impacts.length === 0 ? (
             <div className="bg-gray-50 rounded-xl border border-gray-200 p-8 text-center text-gray-400">
-              No customer impacts — run "Rebuild Impact List" after scope calculation
+              No customer impacts — run &quot;Rebuild Impact List&quot; after scope calculation
             </div>
           ) : (
             <div className="bg-white rounded-xl border border-gray-200 overflow-x-auto">
@@ -339,7 +339,7 @@ export default function RecallDetailPage() {
         <div className="space-y-3">
           {recall.ai_recs.length === 0 ? (
             <div className="bg-gray-50 rounded-xl border border-gray-200 p-8 text-center text-gray-400">
-              No AI recommendations — click "Run AI Agents" to generate
+              No AI recommendations — click &quot;Run AI Agents&quot; to generate
             </div>
           ) : recall.ai_recs.map(r => (
             <div key={r.id} className="bg-white rounded-xl border border-gray-200 p-5">

@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { dunningApi, DunningCase, DunningCaseStatus, CASE_STATUS_COLORS } from "@/lib/dunning";
 
 export default function DunningCaseList() {
@@ -8,16 +8,16 @@ export default function DunningCaseList() {
   const [statusFilter, setStatusFilter] = useState("");
   const [creditHoldFilter, setCreditHoldFilter] = useState<"" | "true" | "false">("");
 
-  const load = () => {
+  const load = useCallback(() => {
     setLoading(true);
     dunningApi.listCases({
       status: statusFilter || undefined,
       credit_hold: creditHoldFilter === "" ? undefined : creditHoldFilter === "true",
       limit: 200,
     }).then(setCases).finally(() => setLoading(false));
-  };
+  }, [statusFilter, creditHoldFilter]);
 
-  useEffect(() => { load(); }, [statusFilter, creditHoldFilter]);
+  useEffect(() => { load(); }, [load]);
 
   const STATUSES: DunningCaseStatus[] = ["OPEN", "ON_HOLD", "DISPUTED", "PROMISE_TO_PAY", "RESOLVED", "CLOSED", "ESCALATED"];
 

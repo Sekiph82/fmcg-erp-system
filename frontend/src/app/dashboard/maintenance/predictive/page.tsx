@@ -93,7 +93,7 @@ export default function PredictiveMaintenancePage() {
     onError: (err) => setError(err instanceof Error ? err.message : "Failed to review prediction"),
   });
 
-  const predictions = predictionsQuery.data ?? [];
+  const predictions = useMemo(() => predictionsQuery.data ?? [], [predictionsQuery.data]);
   const summary = useMemo(() => {
     const open = predictions.filter((p) => p.status === "OPEN").length;
     const critical = predictions.filter((p) => p.risk_level === "CRITICAL" || p.risk_level === "HIGH").length;

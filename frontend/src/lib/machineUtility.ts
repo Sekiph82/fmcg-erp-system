@@ -283,7 +283,6 @@ export async function downloadMachineUtilityCsv(
   filename = "machine_consumption.csv",
 ): Promise<void> {
   const base  = process.env.NEXT_PUBLIC_API_URL ?? "";
-  const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
   const qs    = new URLSearchParams(
     Object.entries(params)
       .filter(([, v]) => v !== undefined && v !== "")
@@ -291,7 +290,7 @@ export async function downloadMachineUtilityCsv(
   ).toString();
   const res = await fetch(
     `${base}/api/v1/machine-utility/records/export/csv${qs ? "?" + qs : ""}`,
-    { headers: token ? { Authorization: `Bearer ${token}` } : {} },
+    { credentials: "include" },
   );
   if (!res.ok) throw new Error(`Export failed (${res.status})`);
   const blob = await res.blob();

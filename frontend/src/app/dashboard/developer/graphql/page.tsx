@@ -71,7 +71,7 @@ export default function GraphQLInfoPage() {
           </li>
           <li>Define types and resolvers in <code className="bg-gray-100 px-1 rounded text-xs">backend/app/graphql/schema.py</code></li>
           <li>
-            Mount in main.py: <code className="bg-gray-100 px-1 rounded text-xs">app.include_router(strawberry.fastapi.GraphQLRouter(schema), prefix="/graphql")</code>
+            Mount in main.py: <code className="bg-gray-100 px-1 rounded text-xs">app.include_router(strawberry.fastapi.GraphQLRouter(schema), prefix=&quot;/graphql&quot;)</code>
           </li>
           <li>Reuse existing SQLAlchemy models and service functions as resolvers.</li>
           <li>Add authentication middleware: validate Bearer token from HTTP headers inside context.</li>

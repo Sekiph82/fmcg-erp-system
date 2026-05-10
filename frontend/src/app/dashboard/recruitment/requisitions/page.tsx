@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { recruitmentApi, JobRequisition, RequisitionStatus, REQ_STATUS_LABEL, REQ_STATUS_COLOR } from "@/lib/recruitment";
 
@@ -9,11 +9,11 @@ export default function RequisitionsPage() {
   const [reqs, setReqs] = useState<JobRequisition[]>([]);
   const [filter, setFilter] = useState<RequisitionStatus | "">("");
 
-  const load = async () => {
+  const load = useCallback(async () => {
     const data = await recruitmentApi.listRequisitions(filter ? { status: filter as RequisitionStatus } : undefined);
     setReqs(data);
-  };
-  useEffect(() => { load(); }, [filter]);
+  }, [filter]);
+  useEffect(() => { load(); }, [load]);
 
   const handleApprove = async (id: string) => { await recruitmentApi.approveRequisition(id, { approver_id: "00000000-0000-0000-0000-000000000001" }); load(); };
   const handleOpen = async (id: string) => { await recruitmentApi.openRequisition(id); load(); };

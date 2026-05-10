@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { spApi, SPAccount, SPAccountStatus, SP_STATUS_COLORS } from "@/lib/supplier_portal";
 
 export default function SupplierPortalAdmin() {
@@ -9,12 +9,12 @@ export default function SupplierPortalAdmin() {
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({ supplier_id: "", primary_contact_name: "", primary_contact_email: "", primary_contact_phone: "", notes: "" });
 
-  const load = () => {
+  const load = useCallback(() => {
     setLoading(true);
     spApi.listAccounts(statusFilter || undefined).then(setAccounts).finally(() => setLoading(false));
-  };
+  }, [statusFilter]);
 
-  useEffect(() => { load(); }, [statusFilter]);
+  useEffect(() => { load(); }, [load]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();

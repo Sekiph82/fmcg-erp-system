@@ -247,13 +247,12 @@ export async function downloadWaterCsv(
   filename: string,
 ): Promise<void> {
   const base  = process.env.NEXT_PUBLIC_API_URL ?? "";
-  const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
   const qs = new URLSearchParams();
   for (const [k, v] of Object.entries(params)) {
     if (v !== undefined && v !== "") qs.set(k, String(v));
   }
   const res = await fetch(`${base}/api/v1/water/transactions/export/csv?${qs}`, {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    credentials: "include",
   });
   if (!res.ok) throw new Error(`Export failed (${res.status})`);
   const blob = await res.blob();
@@ -270,13 +269,12 @@ export async function downloadSoftWaterCsv(
   filename: string,
 ): Promise<void> {
   const base  = process.env.NEXT_PUBLIC_API_URL ?? "";
-  const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
   const qs = new URLSearchParams();
   for (const [k, v] of Object.entries(params)) {
     if (v !== undefined && v !== "") qs.set(k, String(v));
   }
   const res = await fetch(`${base}/api/v1/soft-water/records/export/csv?${qs}`, {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    credentials: "include",
   });
   if (!res.ok) throw new Error(`Export failed (${res.status})`);
   const blob = await res.blob();

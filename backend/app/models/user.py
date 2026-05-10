@@ -24,6 +24,7 @@ class User(Base, TimestampMixin):
     hashed_password = Column(String(255), nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
     is_superuser = Column(Boolean, default=False, nullable=False)
+    must_change_password = Column(Boolean, default=False, nullable=False)
 
     roles = relationship("Role", secondary=user_role, back_populates="users")
     two_fa_settings = relationship("User2FASettings", back_populates="user", uselist=False)

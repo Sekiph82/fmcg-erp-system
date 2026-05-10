@@ -79,6 +79,7 @@ async def ai_status():
         "mode": "llm" if not is_mock else "mock",
         "fallback_active": is_mock and settings.AI_CONFIGURED is False,
         "ai_mode_label": "Mock / Dev Mode" if is_mock else "LLM-Powered",
+        "nl_command_execution_enabled": settings.AI_NL_COMMAND_EXECUTION_ENABLED,
     }
 
 
@@ -588,6 +589,7 @@ class NLCommandIn(BaseModel):
 
 class NLCommandExecuteBody(BaseModel):
     params: Optional[dict] = None
+    idempotency_key: Optional[str] = None
 
 
 # Intent parser — maps NL patterns to structured actions
@@ -704,12 +706,44 @@ async def submit_nl_command(
         "requires_confirmation": cmd.requires_confirmation,
         "status": cmd.status,
         "params_needed": parsed.get("params_hint"),
+        "execution_enabled": settings.AI_NL_COMMAND_EXECUTION_ENABLED,
         "note": (
             "Confirm execution via POST /ai/nl-command/{id}/execute. "
             "HIGH risk commands require explicit confirmation."
             if cmd.requires_confirmation else
             "Low-risk command — auto-executable. Use POST /ai/nl-command/{id}/execute."
         ),
+    }
+
+
+@router.get("/nl-command/{cmd_id}/preview")
+async def preview_nl_command(
+    cmd_id: str,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(require_permission("ai", "view")),
+):
+    """
+    Return a dry-run execution preview for an NL command.
+    This endpoint never mutates ERP state and is safe to use while execution is disabled.
+    """
+    r = await db.execute(select(NLCommandLog).where(NLCommandLog.id == uuid.UUID(cmd_id)))
+    cmd = r.scalar_one_or_none()
+    if not cmd:
+        raise HTTPException(404, "Command not found")
+
+    return {
+        "id": cmd_id,
+        "parsed_intent": cmd.parsed_intent,
+        "parsed_action": cmd.parsed_action,
+        "target_endpoint": cmd.target_endpoint,
+        "risk_level": cmd.risk_level,
+        "requires_confirmation": cmd.requires_confirmation,
+        "params_needed": cmd.params_json,
+        "execution_enabled": settings.AI_NL_COMMAND_EXECUTION_ENABLED,
+        "approval_required": cmd.risk_level in ("MEDIUM", "HIGH"),
+        "dry_run": True,
+        "state_change": "none",
+        "note": "Preview only. No ERP action has been executed.",
     }
 
 
@@ -738,6 +772,19 @@ async def execute_nl_command(
         raise HTTPException(404, "Command not found")
     if cmd.status == NLCommandStatus.EXECUTED:
         raise HTTPException(400, "Already executed")
+    if not settings.AI_NL_COMMAND_EXECUTION_ENABLED:
+        cmd.status = NLCommandStatus.FAILED
+        cmd.error_message = "NL command execution is disabled by AI_NL_COMMAND_EXECUTION_ENABLED=false."
+        await db.commit()
+        raise HTTPException(
+            status_code=403,
+            detail="NL command execution is disabled. Use the preview endpoint for dry-run review.",
+        )
+    if not body or not body.idempotency_key:
+        raise HTTPException(
+            status_code=422,
+            detail="idempotency_key is required for NL command execution.",
+        )
 
     params = dict(body.params) if body and body.params else {}
     result_summary = None

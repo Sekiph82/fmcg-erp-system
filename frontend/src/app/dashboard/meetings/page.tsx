@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { apiClient } from "@/lib/api";
 
 interface Meeting {
@@ -58,7 +58,7 @@ export default function MeetingsPage() {
   const [editNotes, setEditNotes] = useState("");
   const [editOutcome, setEditOutcome] = useState("");
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const [m, s] = await Promise.all([
@@ -67,9 +67,9 @@ export default function MeetingsPage() {
       ]);
       setMeetings(m.data); setStats(s.data);
     } finally { setLoading(false); }
-  };
+  }, [filterStatus]);
 
-  useEffect(() => { load(); }, [filterStatus]);
+  useEffect(() => { load(); }, [load]);
 
   const create = async () => {
     if (!form.title || !form.scheduled_at) { setError("Title and date required"); return; }

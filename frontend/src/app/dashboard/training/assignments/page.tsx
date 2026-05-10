@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   trainingApi, TrainingAssignment, TrainingProgram, TrainingSession, AssignmentStatus,
   ASSIGNMENT_STATUS_COLOR,
@@ -22,13 +22,13 @@ export default function AssignmentsPage() {
   const [completing, setCompleting] = useState<string | null>(null);
   const [completeForm, setCompleteForm] = useState({ completion_date: "", score: "", notes: "" });
 
-  const load = () =>
+  const load = useCallback(() =>
     Promise.all([
       trainingApi.listAssignments({ status: statusFilter || undefined, employee_id: empFilter || undefined }),
       trainingApi.listPrograms(),
       trainingApi.listSessions(),
-    ]).then(([a, p, s]) => { setAssignments(a); setPrograms(p); setSessions(s); }).finally(() => setLoading(false));
-  useEffect(() => { load(); }, [statusFilter, empFilter]);
+    ]).then(([a, p, s]) => { setAssignments(a); setPrograms(p); setSessions(s); }).finally(() => setLoading(false)), [statusFilter, empFilter]);
+  useEffect(() => { load(); }, [load]);
 
   const submit = async () => {
     await trainingApi.createAssignment({

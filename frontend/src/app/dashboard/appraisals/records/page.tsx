@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import {
   appraisalsApi, AppraisalRecord, AppraisalStatus,
@@ -15,13 +15,13 @@ export default function AppraisalRecordsPage() {
   const [empFilter, setEmpFilter] = useState("");
   const [selected, setSelected] = useState<AppraisalRecord | null>(null);
 
-  const load = () => {
+  const load = useCallback(() => {
     appraisalsApi.listRecords({
       status: statusFilter || undefined,
       employee_id: empFilter || undefined,
     }).then(setRecords).finally(() => setLoading(false));
-  };
-  useEffect(() => { load(); }, [statusFilter, empFilter]);
+  }, [statusFilter, empFilter]);
+  useEffect(() => { load(); }, [load]);
 
   const calc = async (id: string) => {
     await appraisalsApi.calculateScores(id);

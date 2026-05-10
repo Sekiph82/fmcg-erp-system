@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { useAuth } from "@/context/AuthContext";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
@@ -31,10 +32,13 @@ export default function LoginPage() {
         <div className="mb-8 text-center">
           {/* POVU logo replacing the purple ERP square */}
           <div className="flex justify-center mb-3">
-            <img
+            <Image
               src="/povu-logo.jpg"
               alt="POVU"
+              width={64}
+              height={64}
               className="h-16 w-auto object-contain"
+              priority
             />
           </div>
           <h1 className="text-2xl font-bold text-gray-900">POVU ERP</h1>

@@ -72,7 +72,7 @@ export default function StageConfigPage() {
             {loading && <tr><td colSpan={8} className="px-3 py-6 text-center text-gray-400">Loading…</td></tr>}
             {!loading && stages.length === 0 && (
               <tr><td colSpan={8} className="px-3 py-6 text-center text-gray-400">
-                No stages configured. Click "Seed Defaults" to add default stages.
+                No stages configured. Click &quot;Seed Defaults&quot; to add default stages.
               </td></tr>
             )}
             {stages.map(stage => (

@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import {
   customFieldsApi, CustomFieldDefinition, FieldOption,
@@ -26,7 +26,7 @@ export default function FieldDetailPage() {
   const [newOptValue, setNewOptValue] = useState("");
   const [newOptLabel, setNewOptLabel] = useState("");
 
-  const load = () => {
+  const load = useCallback(() => {
     setLoading(true);
     customFieldsApi.getField(id).then(f => {
       setField(f);
@@ -39,9 +39,9 @@ export default function FieldDetailPage() {
       setSensitive(f.sensitive_flag);
       setNotes(f.notes ?? "");
     }).finally(() => setLoading(false));
-  };
+  }, [id]);
 
-  useEffect(() => { if (id) load(); }, [id]);
+  useEffect(() => { if (id) load(); }, [id, load]);
 
   const save = async () => {
     setSaving(true);

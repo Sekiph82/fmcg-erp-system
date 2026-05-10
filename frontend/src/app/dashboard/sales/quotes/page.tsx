@@ -250,14 +250,14 @@ function RejectModal({ quote, onClose }: { quote: Quotation; onClose: () => void
 
 function QuoteActions({ quote, onReject }: { quote: Quotation; onReject: () => void }) {
   const qc = useQueryClient();
-  const mk = (fn: () => Promise<unknown>) =>
+  const useQuoteMutation = (fn: () => Promise<unknown>) =>
     useMutation({ mutationFn: fn, onSuccess: () => qc.invalidateQueries({ queryKey: ["quotes"] }) });
 
-  const sendM = mk(() => quoteApi.send(quote.id));
-  const acceptM = mk(() => quoteApi.accept(quote.id));
-  const expireM = mk(() => quoteApi.expire(quote.id));
-  const reviseM = mk(() => quoteApi.revise(quote.id));
-  const convertM = mk(() => quoteApi.convert(quote.id));
+  const sendM = useQuoteMutation(() => quoteApi.send(quote.id));
+  const acceptM = useQuoteMutation(() => quoteApi.accept(quote.id));
+  const expireM = useQuoteMutation(() => quoteApi.expire(quote.id));
+  const reviseM = useQuoteMutation(() => quoteApi.revise(quote.id));
+  const convertM = useQuoteMutation(() => quoteApi.convert(quote.id));
 
   const busy = sendM.isPending || acceptM.isPending || expireM.isPending || reviseM.isPending || convertM.isPending;
 

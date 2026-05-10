@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { shelfLifeApi, BulkHoldRecord } from "@/lib/shelfLife";
 
 export default function BulkHoldMonitorPage() {
@@ -15,12 +15,12 @@ export default function BulkHoldMonitorPage() {
     location_ref: "", max_hold_hours: "", notes: "",
   });
 
-  const load = (ao: boolean) => {
+  const load = useCallback((ao: boolean) => {
     setLoading(true);
     shelfLifeApi.listBulkHolds(ao).then(setHolds).catch(console.error).finally(() => setLoading(false));
-  };
+  }, []);
 
-  useEffect(() => { load(activeOnly); }, []);
+  useEffect(() => { load(activeOnly); }, [activeOnly, load]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -85,7 +85,7 @@ export default function BulkHoldMonitorPage() {
       <div className="flex items-center gap-3">
         <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
           <input type="checkbox" checked={activeOnly}
-            onChange={e => { setActiveOnly(e.target.checked); load(e.target.checked); }} />
+            onChange={e => setActiveOnly(e.target.checked)} />
           Active Only
         </label>
       </div>

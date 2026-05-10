@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { crmApi, CRMAIRec, CRMAIAgentType, AI_AGENT_LABELS } from "@/lib/crm_pipeline";
 
@@ -16,12 +16,12 @@ export default function CRMAIAgentsPage() {
   const [filter, setFilter] = useState<CRMAIAgentType | "">("");
   const [statusFilter, setStatusFilter] = useState("PENDING");
 
-  const loadRecs = () => {
+  const loadRecs = useCallback(() => {
     crmApi.getAIRecs({ agent_type: filter || undefined, status: statusFilter || undefined })
       .then(setRecs).catch(console.error).finally(() => setLoading(false));
-  };
+  }, [filter, statusFilter]);
 
-  useEffect(() => { setLoading(true); loadRecs(); }, [filter, statusFilter]);
+  useEffect(() => { setLoading(true); loadRecs(); }, [loadRecs]);
 
   const runAgent = async (agent: CRMAIAgentType) => {
     setRunning(agent);

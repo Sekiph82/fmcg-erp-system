@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { esgApi, ESGDashboard, EmissionSummary, ESGInsight } from "@/lib/esg";
 import Link from "next/link";
 
@@ -27,7 +27,7 @@ export default function ESGDashboardPage() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const params = { date_from: dateFrom || undefined, date_to: dateTo || undefined };
@@ -40,9 +40,9 @@ export default function ESGDashboardPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [dateFrom, dateTo]);
 
-  useEffect(() => { load(); }, [dateFrom, dateTo]);
+  useEffect(() => { load(); }, [load]);
 
   const runAI = async () => {
     setAiLoading(true);

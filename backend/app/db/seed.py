@@ -5,61 +5,51 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from app.models.user import User, user_role
 from app.models.role import Role, Permission, role_permission
+from app.core.config import settings
+from app.core.module_registry import MODULE_DEFINITIONS
 from app.core.security import hash_password
 
 logger = logging.getLogger(__name__)
 
-ADMIN_USERNAME = "admin"
-ADMIN_PASSWORD = "admin123"
-ADMIN_EMAIL = "admin@erp.com"
-ADMIN_FULL_NAME = "System Administrator"
-
 DEMO_USERS = [
     {
         "username": "ceo",
-        "password": "ceo123",
         "email": "ceo@erp.com",
         "full_name": "Chief Executive Officer",
         "role": "ceo",
     },
     {
         "username": "coo",
-        "password": "coo123",
         "email": "coo@erp.com",
         "full_name": "Chief Operating Officer",
         "role": "coo",
     },
     {
         "username": "cfo",
-        "password": "cfo123",
         "email": "cfo@erp.com",
         "full_name": "Chief Financial Officer",
         "role": "cfo",
     },
     {
         "username": "cto",
-        "password": "cto123",
         "email": "cto@erp.com",
         "full_name": "Chief Technology Officer",
         "role": "cto",
     },
     {
         "username": "cmo",
-        "password": "cmo123",
         "email": "cmo@erp.com",
         "full_name": "Chief Marketing Officer",
         "role": "cmo",
     },
     {
         "username": "mkt_manager",
-        "password": "mkt123",
         "email": "mktmanager@erp.com",
         "full_name": "Marketing Manager",
         "role": "marketing_manager",
     },
     {
         "username": "data_manager",
-        "password": "data123",
         "email": "data@erp.com",
         "full_name": "Data Manager",
         "role": "data_manager",
@@ -771,6 +761,24 @@ async def seed_admin(db: AsyncSession) -> None:
     """Seed permissions, predefined roles, and the default admin user."""
 
     # ── 1. Batch-upsert all permissions (single round-trip) ───────────────────
+    permission_defs = {
+        f"{module}.{action}": (module, action, name, description, is_mobile)
+        for module, action, name, description, is_mobile in PERMISSIONS
+    }
+    for module in MODULE_DEFINITIONS:
+        for action in module.permission_actions:
+            code = f"{module.key}.{action}"
+            permission_defs.setdefault(
+                code,
+                (
+                    module.key,
+                    action,
+                    f"{action.replace('_', ' ').title()} {module.label}",
+                    f"{action.replace('_', ' ').title()} permission for {module.label}",
+                    False,
+                ),
+            )
+
     perm_rows = [
         {
             "code": f"{module}.{action}",
@@ -780,7 +788,7 @@ async def seed_admin(db: AsyncSession) -> None:
             "action": action,
             "is_mobile_visible": is_mobile,
         }
-        for module, action, name, description, is_mobile in PERMISSIONS
+        for module, action, name, description, is_mobile in permission_defs.values()
     ]
     await db.execute(
         pg_insert(Permission).values(perm_rows).on_conflict_do_nothing(index_elements=["code"])
@@ -831,17 +839,24 @@ async def seed_admin(db: AsyncSession) -> None:
     if user_count > 0:
         await db.commit()
         return
+    if not settings.SEED_INITIAL_ADMIN:
+        logger.info("Initial admin seed disabled; no user accounts were created.")
+        await db.commit()
+        return
+    if not settings.INITIAL_ADMIN_PASSWORD:
+        raise RuntimeError("INITIAL_ADMIN_PASSWORD is required before creating the first admin user.")
 
     owner_result = await db.execute(select(Role).where(Role.name == "owner"))
     owner_role = owner_result.scalar_one_or_none()
 
     admin = User(
-        email=ADMIN_EMAIL,
-        username=ADMIN_USERNAME,
-        full_name=ADMIN_FULL_NAME,
-        hashed_password=hash_password(ADMIN_PASSWORD),
+        email=settings.INITIAL_ADMIN_EMAIL,
+        username=settings.INITIAL_ADMIN_USERNAME,
+        full_name=settings.INITIAL_ADMIN_FULL_NAME,
+        hashed_password=hash_password(settings.INITIAL_ADMIN_PASSWORD),
         is_active=True,
         is_superuser=True,
+        must_change_password=True,
     )
     db.add(admin)
     await db.flush()
@@ -852,13 +867,18 @@ async def seed_admin(db: AsyncSession) -> None:
         )
 
     logger.info("=" * 50)
-    logger.info("  DEFAULT ADMIN USER CREATED")
-    logger.info("  username : %s", ADMIN_USERNAME)
-    logger.info("  password : %s", ADMIN_PASSWORD)
-    logger.info("  email    : %s", ADMIN_EMAIL)
+    logger.info("  INITIAL ADMIN USER CREATED")
+    logger.info("  username : %s", settings.INITIAL_ADMIN_USERNAME)
+    logger.info("  email    : %s", settings.INITIAL_ADMIN_EMAIL)
+    logger.info("  password : configured via INITIAL_ADMIN_PASSWORD")
     logger.info("=" * 50)
 
     # ── 4. Seed demo C-suite users ─────────────────────────────────────────────
+    if not settings.SEED_DEMO_DATA:
+        await db.commit()
+        return
+    if not settings.DEMO_USER_PASSWORD:
+        raise RuntimeError("DEMO_USER_PASSWORD is required when SEED_DEMO_DATA=true.")
     for demo in DEMO_USERS:
         role_result = await db.execute(select(Role).where(Role.name == demo["role"]))
         demo_role = role_result.scalar_one_or_none()
@@ -867,9 +887,10 @@ async def seed_admin(db: AsyncSession) -> None:
             email=demo["email"],
             username=demo["username"],
             full_name=demo["full_name"],
-            hashed_password=hash_password(demo["password"]),
+            hashed_password=hash_password(settings.DEMO_USER_PASSWORD),
             is_active=True,
             is_superuser=False,
+            must_change_password=True,
         )
         db.add(demo_user)
         await db.flush()
@@ -879,7 +900,6 @@ async def seed_admin(db: AsyncSession) -> None:
                 insert(user_role).values(user_id=demo_user.id, role_id=demo_role.id)
             )
 
-        logger.info("  DEMO USER: username=%s  password=%s  role=%s",
-                    demo["username"], demo["password"], demo["role"])
+        logger.info("  DEMO USER: username=%s  role=%s", demo["username"], demo["role"])
 
     await db.commit()

@@ -144,7 +144,7 @@ export default function ESGActivitiesPage() {
             {loading ? (
               <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">Loading…</td></tr>
             ) : activities.length === 0 ? (
-              <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">No activities logged. Use "Log Activity" or import fleet fuel data.</td></tr>
+              <tr><td colSpan={8} className="px-4 py-8 text-center text-gray-400">No activities logged. Use &quot;Log Activity&quot; or import fleet fuel data.</td></tr>
             ) : (
               activities.map((a) => (
                 <tr key={a.id} className="hover:bg-gray-50">

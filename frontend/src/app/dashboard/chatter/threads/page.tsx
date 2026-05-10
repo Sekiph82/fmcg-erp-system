@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { chatterApi, ActivityOut, TimelineResponse, timeAgo, TYPE_BADGE } from "@/lib/chatter";
 
 const REF_OPTIONS = [
@@ -44,13 +44,13 @@ export default function CrossModuleThreadsPage() {
   const [slaOnly, setSlaOnly] = useState(false);
   const [page, setPage] = useState(1);
 
-  const load = async () => {
+  const load = useCallback(async (filters?: { search?: string }) => {
     setLoading(true);
     try {
       const [tl, sla] = await Promise.all([
         chatterApi.getTimeline({
           reference_types: refType || undefined,
-          search: search || undefined,
+          search: filters?.search || undefined,
           sla_overdue_only: slaOnly || undefined,
           page,
           per_page: 30,
@@ -61,14 +61,14 @@ export default function CrossModuleThreadsPage() {
       setSlaBreached(sla);
     } catch (e) { console.error(e); }
     setLoading(false);
-  };
+  }, [refType, slaOnly, page]);
 
-  useEffect(() => { load(); }, [refType, slaOnly, page]);
+  useEffect(() => { load(); }, [load]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setPage(1);
-    load();
+    load({ search });
   };
 
   const refLabel = (rt: string) => REF_OPTIONS.find(o => o.value === rt)?.label || rt;

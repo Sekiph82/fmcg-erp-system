@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { expensesApi, fmtCurrency } from "@/lib/expenses";
 
 type Tab = "employee" | "category" | "violations";
@@ -9,14 +9,14 @@ export default function ExpenseReportsPage() {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     if (tab === "employee") setData(await expensesApi.reportByEmployee());
     else if (tab === "category") setData(await expensesApi.reportByCategory());
     else setData(await expensesApi.reportViolations());
     setLoading(false);
-  };
-  useEffect(() => { load(); }, [tab]);
+  }, [tab]);
+  useEffect(() => { load(); }, [load]);
 
   const tabs: { id: Tab; label: string }[] = [
     { id: "employee", label: "By Employee" },
