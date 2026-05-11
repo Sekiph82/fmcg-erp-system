@@ -237,6 +237,7 @@ export type InvoiceStatus = "DRAFT" | "ISSUED" | "PARTIALLY_PAID" | "PAID" | "OV
 export type PurchaseInvoiceStatus = "DRAFT" | "RECEIVED" | "PARTIALLY_PAID" | "PAID" | "OVERDUE" | "CANCELLED";
 export type FiscalYearStatus = "OPEN" | "CLOSING" | "CLOSED" | "LOCKED";
 export type PostingBatchStatus = "DRAFT" | "POSTED" | "FAILED" | "REVERSED";
+export type OperationalPostingStatus = "PENDING" | "POSTED" | "FAILED" | "REVERSED" | "NOT_REQUIRED";
 export type CurrencyRevaluationStatus = "DRAFT" | "POSTED" | "REVERSED";
 
 export interface FiscalYear {
@@ -276,6 +277,47 @@ export interface AccountingPostingRule {
   credit_account_id?: string;
   tax_account_id?: string;
   clearing_account_id?: string;
+  is_active: boolean;
+  priority: number;
+  notes?: string;
+  created_at: string;
+}
+
+export interface OperationalPostingEvent {
+  id: string;
+  source_module: string;
+  source_event: string;
+  source_id: string;
+  source_line_id?: string;
+  stock_movement_id?: string;
+  posting_batch_id?: string;
+  journal_entry_id?: string;
+  status: OperationalPostingStatus;
+  event_date: string;
+  amount?: number;
+  currency?: string;
+  idempotency_key: string;
+  reversal_event_id?: string;
+  error_message?: string;
+  created_by_id?: string;
+  created_at: string;
+}
+
+export interface InventoryAccountMapping {
+  id: string;
+  stock_type?: string;
+  product_id?: string;
+  material_id?: string;
+  category_key?: string;
+  valuation_method?: string;
+  inventory_account_id?: string;
+  wip_account_id?: string;
+  finished_goods_account_id?: string;
+  cogs_account_id?: string;
+  grni_account_id?: string;
+  landed_cost_clearing_account_id?: string;
+  variance_account_id?: string;
+  scrap_account_id?: string;
   is_active: boolean;
   priority: number;
   notes?: string;
@@ -856,8 +898,18 @@ export const financeApi = {
     return res.data;
   },
 
-  async listPostingBatches(params?: { source_module?: string; limit?: number }): Promise<AccountingPostingBatch[]> {
+  async listPostingBatches(params?: { source_module?: string; source_event?: string; limit?: number }): Promise<AccountingPostingBatch[]> {
     const res = await apiClient.get<AccountingPostingBatch[]>("/api/v1/finance/accounting/posting-batches/", { params });
+    return res.data;
+  },
+
+  async listOperationalPostingEvents(params?: {
+    source_module?: string; source_event?: string; status?: OperationalPostingStatus; limit?: number;
+  }): Promise<OperationalPostingEvent[]> {
+    const res = await apiClient.get<OperationalPostingEvent[]>(
+      "/api/v1/finance/accounting/operational-posting-events/",
+      { params }
+    );
     return res.data;
   },
 
@@ -872,6 +924,30 @@ export const financeApi = {
     clearing_account_id?: string; priority?: number; notes?: string;
   }): Promise<AccountingPostingRule> {
     const res = await apiClient.post<AccountingPostingRule>("/api/v1/finance/accounting/posting-rules/", data);
+    return res.data;
+  },
+
+  async listInventoryAccountMappings(params?: {
+    stock_type?: string; product_id?: string; material_id?: string; active_only?: boolean;
+  }): Promise<InventoryAccountMapping[]> {
+    const res = await apiClient.get<InventoryAccountMapping[]>(
+      "/api/v1/finance/accounting/inventory-account-mappings/",
+      { params }
+    );
+    return res.data;
+  },
+
+  async createInventoryAccountMapping(data: {
+    stock_type?: string; product_id?: string; material_id?: string; category_key?: string;
+    valuation_method?: string; inventory_account_id?: string; wip_account_id?: string;
+    finished_goods_account_id?: string; cogs_account_id?: string; grni_account_id?: string;
+    landed_cost_clearing_account_id?: string; variance_account_id?: string; scrap_account_id?: string;
+    is_active?: boolean; priority?: number; notes?: string;
+  }): Promise<InventoryAccountMapping> {
+    const res = await apiClient.post<InventoryAccountMapping>(
+      "/api/v1/finance/accounting/inventory-account-mappings/",
+      data
+    );
     return res.data;
   },
 

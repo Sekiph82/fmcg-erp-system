@@ -8,6 +8,8 @@ import {
   AccountingPostingRule,
   CurrencyRevaluationRun,
   FiscalYear,
+  InventoryAccountMapping,
+  OperationalPostingEvent,
   PaymentAllocation,
   financeApi,
 } from "@/lib/finance";
@@ -21,6 +23,8 @@ const STATUS_PILL: Record<string, string> = {
   POSTED: "bg-green-100 text-green-700",
   FAILED: "bg-red-100 text-red-700",
   REVERSED: "bg-orange-100 text-orange-700",
+  PENDING: "bg-yellow-100 text-yellow-700",
+  NOT_REQUIRED: "bg-gray-100 text-gray-600",
 };
 
 function statusClass(status?: string) {
@@ -62,6 +66,17 @@ export default function AccountingControlsPage() {
     credit_account_id: "",
     priority: "100",
   });
+  const [accountMapping, setAccountMapping] = useState({
+    stock_type: "MATERIAL",
+    category_key: "",
+    valuation_method: "WEIGHTED_AVG",
+    inventory_account_id: "",
+    wip_account_id: "",
+    finished_goods_account_id: "",
+    grni_account_id: "",
+    variance_account_id: "",
+    priority: "100",
+  });
 
   const fiscalYears = useQuery<FiscalYear[]>({
     queryKey: ["accounting-fiscal-years"],
@@ -76,6 +91,16 @@ export default function AccountingControlsPage() {
   const postingBatches = useQuery<AccountingPostingBatch[]>({
     queryKey: ["accounting-posting-batches"],
     queryFn: () => financeApi.listPostingBatches({ limit: 25 }),
+    staleTime: 30_000,
+  });
+  const operationalPostingEvents = useQuery<OperationalPostingEvent[]>({
+    queryKey: ["accounting-operational-posting-events"],
+    queryFn: () => financeApi.listOperationalPostingEvents({ limit: 25 }),
+    staleTime: 30_000,
+  });
+  const inventoryAccountMappings = useQuery<InventoryAccountMapping[]>({
+    queryKey: ["accounting-inventory-account-mappings"],
+    queryFn: () => financeApi.listInventoryAccountMappings({ active_only: true }),
     staleTime: 30_000,
   });
   const paymentAllocations = useQuery<PaymentAllocation[]>({
@@ -107,6 +132,23 @@ export default function AccountingControlsPage() {
         rule_name: "",
         debit_account_id: "",
         credit_account_id: "",
+        priority: "100",
+      });
+    },
+  });
+  const createAccountMapping = useMutation({
+    mutationFn: financeApi.createInventoryAccountMapping,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["accounting-inventory-account-mappings"] });
+      setAccountMapping({
+        stock_type: "MATERIAL",
+        category_key: "",
+        valuation_method: "WEIGHTED_AVG",
+        inventory_account_id: "",
+        wip_account_id: "",
+        finished_goods_account_id: "",
+        grni_account_id: "",
+        variance_account_id: "",
         priority: "100",
       });
     },
@@ -260,6 +302,98 @@ export default function AccountingControlsPage() {
               status: run.status,
             }))} />
         </div>
+      </section>
+
+      <section className="grid lg:grid-cols-2 gap-6">
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+          <div className="mb-4">
+            <h2 className="font-semibold text-gray-800">Inventory Account Mapping</h2>
+            <p className="text-xs text-gray-400 mt-1">
+              Configures account resolution for future inventory, GRNI, WIP, finished goods, and variance postings.
+            </p>
+          </div>
+          <div className="grid md:grid-cols-2 gap-3 mb-5">
+            <Field label="Stock Type">
+              <select className={inputClass()} value={accountMapping.stock_type}
+                onChange={(e) => setAccountMapping({ ...accountMapping, stock_type: e.target.value })}>
+                <option value="MATERIAL">MATERIAL</option>
+                <option value="PRODUCT">PRODUCT</option>
+              </select>
+            </Field>
+            <Field label="Category Key">
+              <input className={inputClass()} value={accountMapping.category_key}
+                onChange={(e) => setAccountMapping({ ...accountMapping, category_key: e.target.value })} />
+            </Field>
+            <Field label="Valuation Method">
+              <select className={inputClass()} value={accountMapping.valuation_method}
+                onChange={(e) => setAccountMapping({ ...accountMapping, valuation_method: e.target.value })}>
+                <option value="WEIGHTED_AVG">WEIGHTED_AVG</option>
+                <option value="FIFO">FIFO</option>
+                <option value="STANDARD">STANDARD</option>
+              </select>
+            </Field>
+            <Field label="Priority">
+              <input className={inputClass()} type="number" value={accountMapping.priority}
+                onChange={(e) => setAccountMapping({ ...accountMapping, priority: e.target.value })} />
+            </Field>
+            <Field label="Inventory Account ID">
+              <input className={inputClass()} value={accountMapping.inventory_account_id}
+                onChange={(e) => setAccountMapping({ ...accountMapping, inventory_account_id: e.target.value })} />
+            </Field>
+            <Field label="WIP Account ID">
+              <input className={inputClass()} value={accountMapping.wip_account_id}
+                onChange={(e) => setAccountMapping({ ...accountMapping, wip_account_id: e.target.value })} />
+            </Field>
+            <Field label="Finished Goods Account ID">
+              <input className={inputClass()} value={accountMapping.finished_goods_account_id}
+                onChange={(e) => setAccountMapping({ ...accountMapping, finished_goods_account_id: e.target.value })} />
+            </Field>
+            <Field label="GRNI Account ID">
+              <input className={inputClass()} value={accountMapping.grni_account_id}
+                onChange={(e) => setAccountMapping({ ...accountMapping, grni_account_id: e.target.value })} />
+            </Field>
+          </div>
+          <button
+            className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50"
+            disabled={!accountMapping.stock_type || !accountMapping.inventory_account_id || createAccountMapping.isPending}
+            onClick={() => createAccountMapping.mutate({
+              stock_type: accountMapping.stock_type || undefined,
+              category_key: accountMapping.category_key || undefined,
+              valuation_method: accountMapping.valuation_method || undefined,
+              inventory_account_id: accountMapping.inventory_account_id || undefined,
+              wip_account_id: accountMapping.wip_account_id || undefined,
+              finished_goods_account_id: accountMapping.finished_goods_account_id || undefined,
+              grni_account_id: accountMapping.grni_account_id || undefined,
+              variance_account_id: accountMapping.variance_account_id || undefined,
+              priority: Number(accountMapping.priority || 100),
+            })}
+          >
+            {createAccountMapping.isPending ? "Creating..." : "Create Mapping"}
+          </button>
+          <div className="mt-5 divide-y divide-gray-50">
+            {(inventoryAccountMappings.data ?? []).slice(0, 6).map((mapping) => (
+              <div key={mapping.id} className="py-3">
+                <p className="text-sm font-semibold text-gray-900">
+                  {mapping.stock_type || "Any Stock"} {mapping.category_key ? `/ ${mapping.category_key}` : ""}
+                </p>
+                <p className="text-xs text-gray-400">
+                  valuation {mapping.valuation_method || "-"} / priority {mapping.priority} / inventory {mapping.inventory_account_id || "-"}
+                </p>
+              </div>
+            ))}
+            {!inventoryAccountMappings.isLoading && (inventoryAccountMappings.data ?? []).length === 0 && (
+              <p className="text-sm text-gray-400 py-4">No account mappings found.</p>
+            )}
+          </div>
+        </div>
+
+        <SummaryList title="Operational Posting Events" empty="No operational posting events found yet."
+          rows={(operationalPostingEvents.data ?? []).map((event) => ({
+            id: event.id,
+            title: `${event.source_module} / ${event.source_event}`,
+            detail: event.error_message || event.source_line_id || event.source_id,
+            status: event.status,
+          }))} />
       </section>
     </div>
   );

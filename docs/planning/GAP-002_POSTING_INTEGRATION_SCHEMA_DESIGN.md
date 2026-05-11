@@ -4,239 +4,204 @@
 
 `GAP-002B: Design data model/schema: Accounting-to-Inventory-to-Manufacturing Posting Integration`
 
-This is a design-only checkpoint. It does not change database schema, ORM models, services, API behavior, or frontend behavior. The next task, `GAP-002C`, should turn the accepted design into an additive Alembic migration.
+This is a design-only checkpoint. No database migration, ORM model, service, API, or frontend behavior is changed in this task.
 
-## Design Goals
+## Design Goal
 
-The current repo already has real operational ledgers:
+Connect operational inventory, procurement, production, and landed-cost events to auditable finance postings without replacing the existing stock ledger or GAP-001 accounting foundation.
 
-- `StockMovement` for inventory movement
-- `GoodsReceipt` and `GRNLine` for procurement receipts
-- `MaterialConsumption` and `FinishedGoodsReceipt` for production execution
-- `ProductionCostEntry` and `ProductCost` for costing rollups
-- `LandedCostHeader`, allocation lines, and inventory adjustments
-- GAP-001 `AccountingPostingBatch` and `AccountingPostingRule`
+The target design must support:
 
-GAP-002 should connect those operational events to accounting without replacing the operational services.
+- idempotent operational posting batches
+- journal linkage from stock and source documents
+- GRNI, WIP, finished-goods, landed-cost, variance, and adjustment postings
+- accounting-period enforcement before operational events create GL impact
+- reversal by linked journal/reversal batch, not direct mutation
+- additive migration steps that preserve current development data
 
-The design should:
+## Current Model Facts Reviewed
 
-- add traceable links from operational events to accounting posting batches and journals
-- keep posting idempotent by source module, source event, and source ID
-- support reversals without deleting posted accounting evidence
-- allow period-close checks before operational accounting impact
-- support GRNI, WIP, finished goods, variance, landed cost, and adjustment posting
-- stay additive and nullable first so existing development data remains safe
-
-## Proposed New Enum Additions
-
-| Enum | Values | Purpose |
+| Area | Existing Field / Model | Design Impact |
 |---|---|---|
-| `OperationalPostingStatus` | `NOT_REQUIRED`, `PENDING`, `POSTED`, `FAILED`, `REVERSED` | Standard status for operational records that may create accounting impact. |
-| `OperationalPostingEventType` | `GRN_POSTED`, `SUPPLIER_INVOICE_POSTED`, `MATERIAL_ISSUED`, `FG_RECEIVED`, `INVENTORY_ADJUSTED`, `LANDED_COST_POSTED`, `CYCLE_COUNT_VARIANCE_POSTED`, `PRODUCTION_VARIANCE_POSTED` | Source-event vocabulary for accounting posting batches. |
-| `InventoryValuationSource` | `STANDARD`, `FIFO_LAYER`, `WEIGHTED_AVERAGE`, `MANUAL` | Records how movement accounting value was derived. |
+| Stock ledger | `StockMovement` has `unit_cost` and `total_cost` but no finance linkage. | Add nullable accounting linkage to stock movements. |
+| Procurement receipt | `GRNLine.stock_movement_id` exists. | GRN line can be linked to both movement and posting batch/journal. |
+| Production material issue | `MaterialConsumption.stock_movement_id` exists. | Material issue can be tied to WIP/raw-material posting. |
+| Finished goods receipt | `FinishedGoodsReceipt.stock_movement_id` exists. | Finished-goods receipt can be tied to FG/WIP posting. |
+| Landed cost | `LCInventoryAdjustment.journal_ref` exists, but no FK journal/batch linkage. | Replace string-only traceability with nullable accounting FKs. |
+| Accounting foundation | `AccountingPostingBatch` and `AccountingPostingRule` exist from GAP-001. | Reuse these instead of creating a parallel posting engine. |
 
-These can live in `backend/app/models/finance.py` or in a new small integration model module if the migration grows too large. Prefer the smallest consistent extension.
+## Additive Schema Design
 
-## Proposed New Tables
+### 1. Stock Movement Accounting Linkage
 
-### `operational_posting_links`
+Add nullable fields to `stock_movements`:
 
-This table provides a generic cross-module audit link from source document/movement to posting batch and journal entry.
-
-Suggested fields:
-
-| Field | Type | Notes |
+| Field | Type | Purpose |
 |---|---|---|
-| `id` | UUID | Primary key. |
-| `source_module` | string | `inventory`, `procurement`, `production`, `landed_cost`, `cycle_count`, etc. |
-| `source_event` | `OperationalPostingEventType` or string | Use enum if practical; string is more flexible for future modules. |
-| `source_id` | string | Source record ID as text for cross-module flexibility. |
-| `source_ref` | string, nullable | Human-readable reference like GRN number, production order number, movement reference. |
-| `stock_movement_id` | FK `stock_movements.id`, nullable | Set when the source event is movement-based. |
-| `posting_batch_id` | FK `accounting_posting_batches.id`, nullable | Links to GAP-001 idempotency/posting status. |
-| `journal_entry_id` | FK `journal_entries.id`, nullable | Final GL entry created by the batch. |
-| `status` | `OperationalPostingStatus` | Default `PENDING`. |
-| `valuation_source` | `InventoryValuationSource`, nullable | How inventory value was calculated. |
-| `posting_amount` | numeric, nullable | Amount posted in base currency. |
-| `currency` | string | Default `KES`. |
-| `error_message` | text, nullable | Last posting failure. |
-| `posted_at` | datetime, nullable | Audit field. |
-| `reversed_by_link_id` | FK self, nullable | Reversal trace. |
-| `created_at`, `updated_at` | datetime | Standard timestamp mixin fields. |
+| `posting_batch_id` | UUID FK to `accounting_posting_batches.id`, nullable | Links the movement to the idempotent finance posting batch. |
+| `journal_entry_id` | UUID FK to `journal_entries.id`, nullable | Direct journal trace for reconciliation/reporting. |
+| `accounting_status` | enum, nullable/default `NOT_REQUIRED` or `PENDING` | Shows whether the movement is pending, posted, failed, reversed, or exempt. |
+| `valuation_method` | enum/string, nullable | Captures the costing basis used at posting time. |
+| `valuation_amount` | Numeric(18, 4), nullable | Accounting value posted for the movement. |
+| `valuation_currency` | String(10), nullable/default company currency | Currency of the posted value. |
+| `posting_error` | Text, nullable | Last posting failure, safe for operational diagnostics. |
 
-Recommended constraints:
+Indexes:
 
-- Unique `(source_module, source_event, source_id)` for one-time posting events.
-- Index `(stock_movement_id)`.
-- Index `(posting_batch_id)`.
-- Index `(journal_entry_id)`.
+- `stock_movements.posting_batch_id`
+- `stock_movements.journal_entry_id`
+- `stock_movements.accounting_status`
+- composite index on `movement_date`, `stock_type`, `movement_type`
 
-### `operational_posting_rule_defaults`
+Rationale: `StockMovement` remains the operational ledger. Accounting links are nullable so existing development rows and non-financial movements remain valid.
 
-Optional table for factory defaults that sit above the generic `AccountingPostingRule`.
+### 2. Source Document Posting Linkage
 
-Use only if the code needs structured manufacturing-specific mappings that are awkward in `accounting_posting_rules`.
+Add nullable fields to source line tables that already produce inventory/accounting impact:
 
-Suggested fields:
+| Table | Fields |
+|---|---|
+| `grn_lines` | `posting_batch_id`, `journal_entry_id`, `accounting_status`, `posting_error` |
+| `material_consumptions` | `posting_batch_id`, `journal_entry_id`, `accounting_status`, `posting_error` |
+| `finished_goods_receipts` | `posting_batch_id`, `journal_entry_id`, `accounting_status`, `posting_error` |
+| `lc_allocation_lines` | `posting_batch_id`, `journal_entry_id`, `accounting_status`, `posting_error` |
+| `lc_inventory_adjustments` | `posting_batch_id`, `journal_entry_id`, `accounting_status`, `posting_error` |
 
-| Field | Type | Notes |
+Rationale: finance users often reconcile from the source document, not only the stock ledger. These fields keep traceability visible without changing current workflow status fields.
+
+### 3. Operational Posting Event Detail Table
+
+Add a new table named `operational_posting_events`.
+
+Suggested columns:
+
+| Field | Type | Purpose |
 |---|---|---|
-| `id` | UUID | Primary key. |
-| `event_type` | string | Example: `MATERIAL_ISSUED`. |
-| `stock_type` | string, nullable | `MATERIAL` or `PRODUCT`. |
-| `item_category` | string, nullable | Optional product/material category discriminator. |
-| `inventory_account_id` | FK `chart_of_accounts.id`, nullable | Inventory account. |
-| `wip_account_id` | FK `chart_of_accounts.id`, nullable | WIP account. |
-| `grni_account_id` | FK `chart_of_accounts.id`, nullable | Received-not-invoiced clearing account. |
-| `variance_account_id` | FK `chart_of_accounts.id`, nullable | Production or inventory variance account. |
-| `scrap_account_id` | FK `chart_of_accounts.id`, nullable | Scrap/waste account. |
-| `is_active` | boolean | Default true. |
+| `id` | UUID PK | Event row identity. |
+| `source_module` | String(80), indexed | `procurement`, `production`, `inventory`, `landed_cost`, `sales`, etc. |
+| `source_event` | String(80), indexed | Event type, such as `GRN_RECEIPT_POSTED` or `MATERIAL_ISSUED_TO_WIP`. |
+| `source_id` | String(80), indexed | Source document/header ID. |
+| `source_line_id` | String(80), nullable/indexed | Source line ID when posting is line-level. |
+| `stock_movement_id` | UUID FK to `stock_movements.id`, nullable | Associated inventory ledger movement. |
+| `posting_batch_id` | UUID FK to `accounting_posting_batches.id`, nullable | Batch created or reused for idempotency. |
+| `journal_entry_id` | UUID FK to `journal_entries.id`, nullable | Journal created by the event. |
+| `status` | enum | `PENDING`, `POSTED`, `FAILED`, `REVERSED`, `NOT_REQUIRED`. |
+| `event_date` | Date | Accounting period validation date. |
+| `amount` | Numeric(18, 4), nullable | Amount posted. |
+| `currency` | String(10), nullable | Posting currency. |
+| `idempotency_key` | String(220), unique | Prevents double posting on retry. |
+| `reversal_event_id` | UUID FK to `operational_posting_events.id`, nullable | Links reversal/correction events. |
+| `error_message` | Text, nullable | Last safe posting error. |
+| `created_by_id` | UUID FK to `users.id`, nullable | Actor/system user. |
 
-Recommendation:
+Rationale: `AccountingPostingBatch` handles one source event at the finance level. The event table adds line-level operational traceability when one source document generates multiple movements or journal lines.
 
-- Prefer using `accounting_posting_rules` first.
-- Add this table only if GAP-002C/D needs more structure than the generic posting rules can support.
+### 4. Inventory Account Mapping
 
-## Proposed Changes To Existing Tables
+Add a new table named `inventory_account_mappings`.
 
-### `stock_movements`
+Suggested columns:
 
-Add nullable fields:
-
-- `posting_status`
-- `posting_batch_id` FK `accounting_posting_batches.id`
-- `journal_entry_id` FK `journal_entries.id`
-- `valuation_source`
-- `base_value_amount`
-- `reversal_of_movement_id` self-FK, nullable
-- `reversed_by_movement_id` self-FK, nullable
-
-Why:
-
-- every quantity/value movement can be reconciled to accounting where required
-- not every transfer needs GL impact, so nullable fields and `NOT_REQUIRED` status are important
-
-### `grn_lines`
-
-Add nullable fields:
-
-- `posting_link_id` FK `operational_posting_links.id`
-- `grni_posted_amount`
-- `inventory_posted_amount`
-
-Why:
-
-- GRN line is the natural bridge between procurement receipt, stock movement, and GRNI accounting
-
-### `purchase_invoice_lines`
-
-Add nullable fields:
-
-- `grn_line_id` FK `grn_lines.id`, nullable
-- `posting_link_id` FK `operational_posting_links.id`, nullable
-- `grni_cleared_amount`
-
-Why:
-
-- supplier invoice posting needs to clear GRNI against received goods where possible
-
-### `material_consumptions`
-
-Add nullable fields:
-
-- `posting_link_id` FK `operational_posting_links.id`
-- `wip_posted_amount`
-- `inventory_credit_amount`
-
-Why:
-
-- material issue to production should post WIP debit and material inventory credit
-
-### `finished_goods_receipts`
-
-Add nullable fields:
-
-- `posting_link_id` FK `operational_posting_links.id`
-- `wip_credit_amount`
-- `fg_inventory_posted_amount`
-
-Why:
-
-- finished goods receipt should post finished goods inventory debit and WIP credit
-
-### `landed_cost_allocation_lines`
-
-Add nullable fields:
-
-- `posting_link_id` FK `operational_posting_links.id`
-- `journal_entry_id` FK `journal_entries.id`, nullable
-
-Why:
-
-- landed cost should be traceable to inventory valuation and GL posting
-
-## Source Event Posting Map
-
-| Event | Source Record | Expected Journal |
+| Field | Type | Purpose |
 |---|---|---|
-| `GRN_POSTED` | `GRNLine` / `StockMovement` | Debit inventory, credit GRNI. |
-| `SUPPLIER_INVOICE_POSTED` | `PurchaseInvoiceLine` | Debit GRNI/tax recoverable/expense as needed, credit AP. |
-| `MATERIAL_ISSUED` | `MaterialConsumption` / `StockMovement` | Debit WIP, credit raw material inventory. |
-| `FG_RECEIVED` | `FinishedGoodsReceipt` / `StockMovement` | Debit finished goods inventory, credit WIP. |
-| `INVENTORY_ADJUSTED` | `StockMovement` | Debit/credit inventory and variance/write-off account based on direction. |
-| `LANDED_COST_POSTED` | `LandedCostAllocationLine` | Debit inventory, credit landed cost clearing/AP. |
-| `PRODUCTION_VARIANCE_POSTED` | `ProductionOrder` / cost rollup | Debit/credit production variance accounts. |
+| `id` | UUID PK | Mapping identity. |
+| `stock_type` | enum/string, nullable | Raw material, packaging, finished goods, etc. |
+| `product_id` | UUID FK to `products.id`, nullable | Product-specific override. |
+| `material_id` | UUID FK to `materials.id`, nullable | Material-specific override. |
+| `category_key` | String(120), nullable | Category-level fallback if product/material category models are inconsistent. |
+| `valuation_method` | enum/string, nullable | Standard, weighted average, FIFO, or current project enum. |
+| `inventory_account_id` | UUID FK to `chart_of_accounts.id`, nullable | Inventory asset account. |
+| `wip_account_id` | UUID FK to `chart_of_accounts.id`, nullable | WIP account for production consumption. |
+| `finished_goods_account_id` | UUID FK to `chart_of_accounts.id`, nullable | Finished goods inventory account. |
+| `cogs_account_id` | UUID FK to `chart_of_accounts.id`, nullable | COGS account for sales/issue flows. |
+| `grni_account_id` | UUID FK to `chart_of_accounts.id`, nullable | Goods received not invoiced / receipts clearing. |
+| `landed_cost_clearing_account_id` | UUID FK to `chart_of_accounts.id`, nullable | Landed cost clearing account. |
+| `variance_account_id` | UUID FK to `chart_of_accounts.id`, nullable | Production/inventory variance account. |
+| `scrap_account_id` | UUID FK to `chart_of_accounts.id`, nullable | Scrap/write-off expense account. |
+| `is_active` | Boolean | Enables phased rollout without deletion. |
+| `priority` | Integer | Allows item-specific rules to beat category/default rules. |
+| `notes` | Text, nullable | Configuration notes. |
 
-## Service Design For GAP-002F
+Unique/index guidance:
 
-Add a focused service layer, likely `backend/app/services/accounting_posting_service.py`, with functions such as:
+- Do not over-constrain nullable product/material/category combinations in the first migration.
+- Add indexes on `product_id`, `material_id`, `stock_type`, `is_active`, and `priority`.
+- Service logic should choose the most specific active mapping first.
 
-- `post_grn_line_to_gl(db, grn_line, user_id)`
-- `post_supplier_invoice_line_to_gl(db, invoice_line, user_id)`
-- `post_material_issue_to_wip(db, consumption, user_id)`
-- `post_finished_goods_receipt_to_gl(db, receipt, user_id)`
-- `post_inventory_adjustment_to_gl(db, movement, user_id)`
-- `post_landed_cost_allocation_to_gl(db, allocation_line, user_id)`
-- `reverse_operational_posting(db, posting_link, user_id)`
+Rationale: `AccountingPostingRule` defines event-level debit/credit behavior. `inventory_account_mappings` supplies item/category account selection for inventory valuation and WIP/FG flows.
 
-Each function should:
+## Posting Event Types
 
-1. derive source module/event/source ID
-2. create or reuse `AccountingPostingBatch`
-3. call `assert_posting_period_open`
-4. resolve accounts from posting rules
-5. derive valuation amount from standard/FIFO/weighted average/manual source
-6. create balanced journal entry lines
-7. mark journal posted through `mark_journal_posted`
-8. update operational posting link fields
-9. leave a clear error message if posting fails
+Introduce a shared enum or string constants for operational event names:
+
+| Event | Expected Posting |
+|---|---|
+| `GRN_RECEIPT_POSTED` | Dr Inventory, Cr GRNI |
+| `SUPPLIER_INVOICE_POSTED` | Dr GRNI and tax recoverable, Cr AP |
+| `MATERIAL_ISSUED_TO_WIP` | Dr WIP, Cr Raw Material Inventory |
+| `FINISHED_GOODS_RECEIVED` | Dr Finished Goods Inventory, Cr WIP |
+| `LAND_COST_ALLOCATED` | Dr Inventory/Landed Cost Asset, Cr Landed Cost Clearing/AP |
+| `INVENTORY_ADJUSTMENT_GAIN` | Dr Inventory, Cr Inventory Variance |
+| `INVENTORY_ADJUSTMENT_LOSS` | Dr Inventory Variance/Scrap, Cr Inventory |
+| `CYCLE_COUNT_VARIANCE_POSTED` | Dr/Cr Inventory and variance according to sign |
+| `SALES_DISPATCH_COGS_POSTED` | Dr COGS, Cr Finished Goods Inventory |
+| `OPERATIONAL_POSTING_REVERSED` | Reversal journal created by GAP-001 helper |
+
+## Period And Idempotency Rules
+
+- Every posting-capable operational service must call `assert_posting_period_open(event_date)` before creating journal impact.
+- Every posting event must use a deterministic idempotency key.
+- Suggested key format: `{source_module}:{source_event}:{source_id}:{source_line_id or header}`.
+- Re-running a posting call must return the existing `AccountingPostingBatch` and journal instead of creating duplicates.
+- If a source document can be unposted/cancelled, create a reversal event and reversal journal; do not mutate the original journal to hide history.
+
+## Service Boundary Design
+
+The next business-logic task should preserve this split:
+
+| Layer | Responsibility |
+|---|---|
+| Inventory/procurement/production/landed-cost services | Create operational rows and stock movements. |
+| Finance posting service | Resolve account mappings, validate period, create balanced journal entries, update posting batch status. |
+| API endpoints | Trigger existing service workflows and return source document plus posting status. |
+| Frontend | Display posting state and safe error messages; never calculate GL entries directly. |
 
 ## Migration Strategy For GAP-002C
 
-Use additive migration steps:
+The first migration should be additive only:
 
-1. Create enum types if using enums.
-2. Create `operational_posting_links`.
-3. Add nullable posting/link fields to `stock_movements`.
-4. Add nullable posting/link fields to GRN, purchase invoice, material consumption, finished goods receipt, and landed cost allocation tables.
-5. Add indexes and foreign keys.
-6. Do not backfill accounting journals automatically.
-7. Do not make nullable fields required until production posting behavior has run safely.
+1. Create the operational posting status enum.
+2. Create `operational_posting_events`.
+3. Create `inventory_account_mappings`.
+4. Add nullable posting/journal/status/error columns to `stock_movements`.
+5. Add nullable posting/journal/status/error columns to `grn_lines`.
+6. Add nullable posting/journal/status/error columns to `material_consumptions`.
+7. Add nullable posting/journal/status/error columns to `finished_goods_receipts`.
+8. Add nullable posting/journal/status/error columns to landed-cost allocation and adjustment tables.
+9. Add indexes and foreign keys with `ondelete="SET NULL"` where appropriate.
+10. Do not backfill journals automatically in the migration.
 
-## Test Requirements For Later Tasks
+Existing rows should remain valid. If needed, mark old operational rows as `PENDING` or `NOT_REQUIRED` through a later reconciliation/admin task, not an irreversible migration.
 
-`GAP-002J` should include tests for:
+## Acceptance Criteria For Later Implementation
 
-- GRN posting creates stock movement and accounting posting link
-- GRN posting is idempotent
-- material consumption creates WIP posting link
-- finished goods receipt creates FG/WIP posting link
-- posting is blocked in closed/locked accounting periods
-- missing posting rules produce a safe failure and no partial journal
-- reversing a source posting creates a reversal journal and marks the link reversed
-- inventory movement with `NOT_REQUIRED` status does not require a journal
+GAP-002 implementation should not be considered complete until tests prove:
 
-## Acceptance Criteria Result
+- GRN posting creates or reuses one idempotent accounting batch and balanced journal.
+- Material issue creates WIP/raw-material accounting impact.
+- Finished goods receipt creates FG/WIP accounting impact.
+- Landed cost posting links allocation/adjustment rows to journal impact.
+- Closed accounting periods block operational GL posting.
+- Missing account mappings return a clear safe error.
+- Retrying a posting action does not double-post.
+- Reversal creates linked reversal events and reversal journals.
 
-`GAP-002B` is complete when this design is captured and the task queue points to `GAP-002C` for an additive migration.
+## Design Decision Summary
+
+- Reuse `AccountingPostingBatch` and `AccountingPostingRule`.
+- Add nullable journal/posting links to existing source rows.
+- Add `operational_posting_events` for line-level traceability and reversals.
+- Add `inventory_account_mappings` for item/category-level account resolution.
+- Keep migrations additive and non-destructive.
+- Keep frontend out of accounting calculations.
+

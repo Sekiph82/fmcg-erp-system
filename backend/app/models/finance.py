@@ -2,7 +2,7 @@ import uuid
 import enum
 from sqlalchemy import (
     Column, String, Text, Numeric, Integer, Boolean,
-    ForeignKey, Enum, Date, DateTime, UniqueConstraint, CheckConstraint,
+    ForeignKey, Enum, Date, DateTime, UniqueConstraint, CheckConstraint, Index,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
@@ -98,6 +98,14 @@ class PostingBatchStatus(str, enum.Enum):
     POSTED = "POSTED"
     FAILED = "FAILED"
     REVERSED = "REVERSED"
+
+
+class OperationalPostingStatus(str, enum.Enum):
+    PENDING = "PENDING"
+    POSTED = "POSTED"
+    FAILED = "FAILED"
+    REVERSED = "REVERSED"
+    NOT_REQUIRED = "NOT_REQUIRED"
 
 
 class PaymentAllocationPartyType(str, enum.Enum):
@@ -311,6 +319,99 @@ class AccountingPostingRule(Base, TimestampMixin):
     credit_account = relationship("ChartOfAccount", foreign_keys=[credit_account_id])
     tax_account = relationship("ChartOfAccount", foreign_keys=[tax_account_id])
     clearing_account = relationship("ChartOfAccount", foreign_keys=[clearing_account_id])
+
+
+class OperationalPostingEvent(Base, TimestampMixin):
+    __tablename__ = "operational_posting_events"
+    __table_args__ = (
+        UniqueConstraint("idempotency_key", name="uq_operational_posting_events_idempotency_key"),
+        Index("ix_operational_posting_events_source", "source_module", "source_event", "source_id"),
+        Index("ix_operational_posting_events_source_line", "source_module", "source_event", "source_line_id"),
+        Index("ix_operational_posting_events_status", "status"),
+        Index("ix_operational_posting_events_event_date", "event_date"),
+        Index("ix_operational_posting_events_stock_movement_id", "stock_movement_id"),
+        Index("ix_operational_posting_events_posting_batch_id", "posting_batch_id"),
+        Index("ix_operational_posting_events_journal_entry_id", "journal_entry_id"),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    source_module = Column(String(80), nullable=False)
+    source_event = Column(String(80), nullable=False)
+    source_id = Column(String(80), nullable=False)
+    source_line_id = Column(String(80), nullable=True)
+    stock_movement_id = Column(UUID(as_uuid=True), ForeignKey("stock_movements.id", ondelete="SET NULL"), nullable=True)
+    posting_batch_id = Column(UUID(as_uuid=True), ForeignKey("accounting_posting_batches.id", ondelete="SET NULL"),
+                              nullable=True)
+    journal_entry_id = Column(UUID(as_uuid=True), ForeignKey("journal_entries.id", ondelete="SET NULL"), nullable=True)
+    status = Column(Enum(OperationalPostingStatus, name="operational_posting_status"), nullable=False,
+                    default=OperationalPostingStatus.PENDING)
+    event_date = Column(Date, nullable=False)
+    amount = Column(Numeric(18, 4), nullable=True)
+    currency = Column(String(10), nullable=True)
+    idempotency_key = Column(String(220), nullable=False)
+    reversal_event_id = Column(UUID(as_uuid=True), ForeignKey("operational_posting_events.id", ondelete="SET NULL"),
+                               nullable=True)
+    error_message = Column(Text, nullable=True)
+    created_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+
+    stock_movement = relationship("StockMovement", foreign_keys=[stock_movement_id])
+    posting_batch = relationship("AccountingPostingBatch", foreign_keys=[posting_batch_id])
+    journal_entry = relationship("JournalEntry", foreign_keys=[journal_entry_id])
+    reversal_event = relationship("OperationalPostingEvent", remote_side=[id], foreign_keys=[reversal_event_id])
+    created_by = relationship("User", foreign_keys=[created_by_id])
+
+
+class InventoryAccountMapping(Base, TimestampMixin):
+    __tablename__ = "inventory_account_mappings"
+    __table_args__ = (
+        CheckConstraint(
+            "product_id IS NOT NULL OR material_id IS NOT NULL OR stock_type IS NOT NULL OR category_key IS NOT NULL",
+            name="ck_inventory_account_mappings_scope",
+        ),
+        Index(
+            "ix_inventory_account_mappings_lookup",
+            "is_active", "priority", "stock_type", "product_id", "material_id", "category_key",
+        ),
+        Index("ix_inventory_account_mappings_product_id", "product_id"),
+        Index("ix_inventory_account_mappings_material_id", "material_id"),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    stock_type = Column(String(40), nullable=True)
+    product_id = Column(UUID(as_uuid=True), ForeignKey("products.id", ondelete="SET NULL"), nullable=True)
+    material_id = Column(UUID(as_uuid=True), ForeignKey("materials.id", ondelete="SET NULL"), nullable=True)
+    category_key = Column(String(120), nullable=True)
+    valuation_method = Column(String(40), nullable=True)
+    inventory_account_id = Column(UUID(as_uuid=True), ForeignKey("chart_of_accounts.id", ondelete="SET NULL"),
+                                  nullable=True)
+    wip_account_id = Column(UUID(as_uuid=True), ForeignKey("chart_of_accounts.id", ondelete="SET NULL"),
+                            nullable=True)
+    finished_goods_account_id = Column(UUID(as_uuid=True), ForeignKey("chart_of_accounts.id", ondelete="SET NULL"),
+                                       nullable=True)
+    cogs_account_id = Column(UUID(as_uuid=True), ForeignKey("chart_of_accounts.id", ondelete="SET NULL"),
+                             nullable=True)
+    grni_account_id = Column(UUID(as_uuid=True), ForeignKey("chart_of_accounts.id", ondelete="SET NULL"),
+                             nullable=True)
+    landed_cost_clearing_account_id = Column(UUID(as_uuid=True), ForeignKey("chart_of_accounts.id", ondelete="SET NULL"),
+                                             nullable=True)
+    variance_account_id = Column(UUID(as_uuid=True), ForeignKey("chart_of_accounts.id", ondelete="SET NULL"),
+                                 nullable=True)
+    scrap_account_id = Column(UUID(as_uuid=True), ForeignKey("chart_of_accounts.id", ondelete="SET NULL"),
+                              nullable=True)
+    is_active = Column(Boolean, default=True, nullable=False)
+    priority = Column(Integer, default=100, nullable=False)
+    notes = Column(Text, nullable=True)
+
+    product = relationship("Product", foreign_keys=[product_id])
+    material = relationship("Material", foreign_keys=[material_id])
+    inventory_account = relationship("ChartOfAccount", foreign_keys=[inventory_account_id])
+    wip_account = relationship("ChartOfAccount", foreign_keys=[wip_account_id])
+    finished_goods_account = relationship("ChartOfAccount", foreign_keys=[finished_goods_account_id])
+    cogs_account = relationship("ChartOfAccount", foreign_keys=[cogs_account_id])
+    grni_account = relationship("ChartOfAccount", foreign_keys=[grni_account_id])
+    landed_cost_clearing_account = relationship("ChartOfAccount", foreign_keys=[landed_cost_clearing_account_id])
+    variance_account = relationship("ChartOfAccount", foreign_keys=[variance_account_id])
+    scrap_account = relationship("ChartOfAccount", foreign_keys=[scrap_account_id])
 
 
 # ── Cash / Bank / M-Pesa Accounts ─────────────────────────────────────────────

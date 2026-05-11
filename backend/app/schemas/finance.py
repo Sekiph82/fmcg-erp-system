@@ -5,7 +5,7 @@ from decimal import Decimal
 from typing import Optional, List
 import uuid
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, model_validator
 
 from app.models.finance import (
     AccountType, CashAccountType, TxDirection, FinTxStatus,
@@ -396,6 +396,7 @@ from app.models.finance import (  # noqa: E402
     RecurringJournalFrequency, RecurringJournalStatus,
     PostingBatchStatus, PaymentAllocationPartyType,
     CurrencyRevaluationStatus, AccountingCloseCheckStatus,
+    OperationalPostingStatus,
 )
 
 
@@ -578,6 +579,115 @@ class AccountingPostingRuleRead(BaseModel):
     is_active: bool
     priority: int
     notes: Optional[str]
+    created_at: datetime
+
+
+class OperationalPostingLinkRead(BaseModel):
+    posting_batch_id: Optional[uuid.UUID] = None
+    journal_entry_id: Optional[uuid.UUID] = None
+    accounting_status: Optional[OperationalPostingStatus] = None
+    posting_error: Optional[str] = None
+
+
+class OperationalPostingEventCreate(BaseModel):
+    source_module: str
+    source_event: str
+    source_id: str
+    source_line_id: Optional[str] = None
+    stock_movement_id: Optional[uuid.UUID] = None
+    posting_batch_id: Optional[uuid.UUID] = None
+    journal_entry_id: Optional[uuid.UUID] = None
+    status: OperationalPostingStatus = OperationalPostingStatus.PENDING
+    event_date: date
+    amount: Optional[Decimal] = None
+    currency: Optional[str] = None
+    idempotency_key: str
+    reversal_event_id: Optional[uuid.UUID] = None
+    error_message: Optional[str] = None
+
+
+class OperationalPostingEventUpdate(BaseModel):
+    posting_batch_id: Optional[uuid.UUID] = None
+    journal_entry_id: Optional[uuid.UUID] = None
+    status: Optional[OperationalPostingStatus] = None
+    amount: Optional[Decimal] = None
+    currency: Optional[str] = None
+    reversal_event_id: Optional[uuid.UUID] = None
+    error_message: Optional[str] = None
+
+
+class OperationalPostingEventRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: uuid.UUID
+    source_module: str
+    source_event: str
+    source_id: str
+    source_line_id: Optional[str]
+    stock_movement_id: Optional[uuid.UUID]
+    posting_batch_id: Optional[uuid.UUID]
+    journal_entry_id: Optional[uuid.UUID]
+    status: OperationalPostingStatus
+    event_date: date
+    amount: Optional[Decimal]
+    currency: Optional[str]
+    idempotency_key: str
+    reversal_event_id: Optional[uuid.UUID]
+    error_message: Optional[str]
+    created_by_id: Optional[uuid.UUID]
+    created_at: datetime
+
+
+class InventoryAccountMappingBase(BaseModel):
+    stock_type: Optional[str] = None
+    product_id: Optional[uuid.UUID] = None
+    material_id: Optional[uuid.UUID] = None
+    category_key: Optional[str] = None
+    valuation_method: Optional[str] = None
+    inventory_account_id: Optional[uuid.UUID] = None
+    wip_account_id: Optional[uuid.UUID] = None
+    finished_goods_account_id: Optional[uuid.UUID] = None
+    cogs_account_id: Optional[uuid.UUID] = None
+    grni_account_id: Optional[uuid.UUID] = None
+    landed_cost_clearing_account_id: Optional[uuid.UUID] = None
+    variance_account_id: Optional[uuid.UUID] = None
+    scrap_account_id: Optional[uuid.UUID] = None
+    is_active: bool = True
+    priority: int = 100
+    notes: Optional[str] = None
+
+    @model_validator(mode="after")
+    def check_mapping_scope(self):
+        if not any([self.stock_type, self.product_id, self.material_id, self.category_key]):
+            raise ValueError("At least one mapping scope is required")
+        return self
+
+
+class InventoryAccountMappingCreate(InventoryAccountMappingBase):
+    pass
+
+
+class InventoryAccountMappingUpdate(BaseModel):
+    stock_type: Optional[str] = None
+    product_id: Optional[uuid.UUID] = None
+    material_id: Optional[uuid.UUID] = None
+    category_key: Optional[str] = None
+    valuation_method: Optional[str] = None
+    inventory_account_id: Optional[uuid.UUID] = None
+    wip_account_id: Optional[uuid.UUID] = None
+    finished_goods_account_id: Optional[uuid.UUID] = None
+    cogs_account_id: Optional[uuid.UUID] = None
+    grni_account_id: Optional[uuid.UUID] = None
+    landed_cost_clearing_account_id: Optional[uuid.UUID] = None
+    variance_account_id: Optional[uuid.UUID] = None
+    scrap_account_id: Optional[uuid.UUID] = None
+    is_active: Optional[bool] = None
+    priority: Optional[int] = None
+    notes: Optional[str] = None
+
+
+class InventoryAccountMappingRead(InventoryAccountMappingBase):
+    model_config = ConfigDict(from_attributes=True)
+    id: uuid.UUID
     created_at: datetime
 
 

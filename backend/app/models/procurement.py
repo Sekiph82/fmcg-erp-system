@@ -3,12 +3,13 @@ import enum
 from datetime import date
 from sqlalchemy import (
     Column, String, Text, Numeric, Integer, Boolean,
-    ForeignKey, Enum, Date, DateTime, UniqueConstraint,
+    ForeignKey, Enum, Date, DateTime, UniqueConstraint, Index,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
 from app.db.base import Base, TimestampMixin
+from app.models.finance import OperationalPostingStatus
 
 
 class POPaymentStatus(str, enum.Enum):
@@ -170,6 +171,11 @@ class GoodsReceipt(Base, TimestampMixin):
 
 class GRNLine(Base, TimestampMixin):
     __tablename__ = "grn_lines"
+    __table_args__ = (
+        Index("ix_grn_lines_posting_batch_id", "posting_batch_id"),
+        Index("ix_grn_lines_journal_entry_id", "journal_entry_id"),
+        Index("ix_grn_lines_accounting_status", "accounting_status"),
+    )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     grn_id = Column(UUID(as_uuid=True), ForeignKey("goods_receipts.id", ondelete="CASCADE"), nullable=False)
@@ -184,11 +190,18 @@ class GRNLine(Base, TimestampMixin):
     expiry_date = Column(Date, nullable=True)
     notes = Column(Text, nullable=True)
     stock_movement_id = Column(UUID(as_uuid=True), ForeignKey("stock_movements.id", ondelete="SET NULL"), nullable=True)
+    posting_batch_id = Column(UUID(as_uuid=True), ForeignKey("accounting_posting_batches.id", ondelete="SET NULL"),
+                              nullable=True)
+    journal_entry_id = Column(UUID(as_uuid=True), ForeignKey("journal_entries.id", ondelete="SET NULL"), nullable=True)
+    accounting_status = Column(Enum(OperationalPostingStatus, name="operational_posting_status"), nullable=True)
+    posting_error = Column(Text, nullable=True)
 
     grn = relationship("GoodsReceipt", back_populates="lines")
     po_line = relationship("POLine")
     material = relationship("Material")
     product = relationship("Product")
+    posting_batch = relationship("AccountingPostingBatch", foreign_keys=[posting_batch_id])
+    journal_entry = relationship("JournalEntry", foreign_keys=[journal_entry_id])
 
 
 class ImportShipment(Base, TimestampMixin):

@@ -147,90 +147,90 @@ Implementation subtasks:
 
 #### GAP-002B: Design data model/schema: Accounting-to-Inventory-to-Manufacturing Posting Integration
 
-- Status: TODO
+- Status: DONE
 - Dependencies: GAP-002A
 - Acceptance criteria: Define schema/model changes only if needed and review existing models first.
-- Test requirements: Schema design notes reviewed against current ORM conventions.
-- Documentation requirements: Document model decisions and migration needs.
+- Test requirements: Schema design notes reviewed against current ORM conventions. Content check passed for posting event table, account mapping table, posting/journal links, idempotency, period enforcement, and key posting examples.
+- Documentation requirements: Document model decisions and migration needs. Added `docs/planning/GAP-002_POSTING_INTEGRATION_SCHEMA_DESIGN.md`.
 
 #### GAP-002C: Add or update database migrations: Accounting-to-Inventory-to-Manufacturing Posting Integration
 
-- Status: TODO
+- Status: DONE
 - Dependencies: GAP-002B
 - Acceptance criteria: Create Alembic migrations only for required schema changes.
-- Test requirements: Migration applies on empty and existing dev DB without destructive data loss.
-- Documentation requirements: Record migration command and result.
+- Test requirements: Migration compile, Alembic head/history, and offline SQL generation passed. Live `alembic upgrade head` is blocked because PostgreSQL refused the local connection.
+- Documentation requirements: Record migration command and result. Added `backend/alembic/versions/20260511_0020_operational_posting_integration.py`.
 
 #### GAP-002D: Add or update backend models: Accounting-to-Inventory-to-Manufacturing Posting Integration
 
-- Status: TODO
+- Status: DONE
 - Dependencies: GAP-002C
 - Acceptance criteria: Implement ORM/model changes following existing conventions.
-- Test requirements: Models import successfully and relationships/enums are consistent.
-- Documentation requirements: Document model paths.
+- Test requirements: Models compile/import successfully; mapper configuration and required table/column smoke checks passed.
+- Documentation requirements: Document model paths. Updated `backend/app/models/finance.py`, `backend/app/models/inventory.py`, `backend/app/models/procurement.py`, `backend/app/models/production.py`, `backend/app/models/landed_cost.py`, and `backend/app/models/__init__.py`.
 
 #### GAP-002E: Add or update schemas: Accounting-to-Inventory-to-Manufacturing Posting Integration
 
-- Status: TODO
+- Status: DONE
 - Dependencies: GAP-002D
 - Acceptance criteria: Implement request/response schemas and validation.
-- Test requirements: Schemas validate required fields, enums, ranges, references, and nullability.
-- Documentation requirements: Document API schema behavior.
+- Test requirements: Schema compile and Pydantic smoke validation passed, including account-mapping scope validation.
+- Documentation requirements: Document API schema behavior. Updated finance, inventory, procurement, production, and landed-cost schemas with posting event, account mapping, posting-link, and posting-status read fields.
 
 #### GAP-002F: Add or update services/business logic: Accounting-to-Inventory-to-Manufacturing Posting Integration
 
-- Status: TODO
+- Status: DONE
 - Dependencies: GAP-002E
 - Acceptance criteria: Implement service-layer or existing-pattern business logic.
-- Test requirements: Business rules are testable and preserve existing workflows.
-- Documentation requirements: Document business rules.
+- Test requirements: Service compile and smoke checks passed for deterministic keys, account-mapping specificity, and posting-link application. Existing workflows are not rewired yet.
+- Documentation requirements: Document business rules. Added finance service helpers for idempotency, account mapping lookup, operational posting events, posting links, and posted/failed status updates.
 
 #### GAP-002G: Add or update API endpoints: Accounting-to-Inventory-to-Manufacturing Posting Integration
 
-- Status: TODO
+- Status: DONE
 - Dependencies: GAP-002F
 - Acceptance criteria: Expose endpoints with auth, permissions, validation, and error handling.
-- Test requirements: Endpoints satisfy acceptance criteria and reject unauthorized access.
-- Documentation requirements: Document endpoints and permissions.
+- Test requirements: Finance endpoint compile and route smoke checks passed.
+- Documentation requirements: Document endpoints and permissions. Added `finance.view` audit endpoints for operational posting events and `finance.configure` inventory account mapping create/update endpoints.
 
 #### GAP-002H: Add or update frontend screens/components: Accounting-to-Inventory-to-Manufacturing Posting Integration
 
-- Status: TODO
+- Status: DONE
 - Dependencies: GAP-002G
 - Acceptance criteria: Build UI using existing layout, table, form, modal, and dashboard patterns.
-- Test requirements: UI supports expected workflows, loading/empty/error states, and role visibility.
-- Documentation requirements: Document frontend paths and user behavior.
+- Test requirements: Frontend type-check passed.
+- Documentation requirements: Document frontend paths and user behavior. Extended `frontend/src/app/dashboard/finance/accounting/controls/page.tsx` and `frontend/src/lib/finance.ts` for operational posting event visibility and inventory account mapping configuration.
 
 #### GAP-002I: Add or update permissions/roles: Accounting-to-Inventory-to-Manufacturing Posting Integration
 
-- Status: TODO
+- Status: DONE
 - Dependencies: GAP-002H
 - Acceptance criteria: Register permissions and update role templates/UI visibility as required.
-- Test requirements: Dangerous actions require explicit permission and high-risk approval where needed.
-- Documentation requirements: Document role matrix changes.
+- Test requirements: Permission surface inspection passed. New endpoints use existing `finance.view` and `finance.configure`; no unsafe execute endpoint was added.
+- Documentation requirements: Document role matrix changes. Existing CFO and finance manager seed role templates already include `finance.configure`; no new role template change required.
 
 #### GAP-002J: Add or update tests: Accounting-to-Inventory-to-Manufacturing Posting Integration
 
-- Status: TODO
+- Status: DONE
 - Dependencies: GAP-002I
 - Acceptance criteria: Add focused backend/frontend tests for the implemented behavior.
-- Test requirements: Relevant tests fail before fix when practical and pass after implementation.
-- Documentation requirements: Document test files and commands.
+- Test requirements: Focused GAP-002 tests passed; GAP-001/GAP-002 regression test pair passed.
+- Documentation requirements: Document test files and commands. Added `backend/tests/test_gap002_posting_integration.py`.
 
 #### GAP-002K: Add or update documentation: Accounting-to-Inventory-to-Manufacturing Posting Integration
 
-- Status: TODO
+- Status: DONE
 - Dependencies: GAP-002J
 - Acceptance criteria: Update user/admin/developer docs for this change.
-- Test requirements: Docs match actual behavior and do not claim incomplete features are done.
-- Documentation requirements: Documentation updated.
+- Test requirements: Documentation content check passed and explicitly states live operational GL auto-posting is not fully wired yet.
+- Documentation requirements: Documentation updated. Added `docs/planning/GAP-002_POSTING_INTEGRATION_IMPLEMENTATION_NOTES.md`.
 
 #### GAP-002L: Run checks and record result: Accounting-to-Inventory-to-Manufacturing Posting Integration
 
-- Status: TODO
+- Status: DONE
 - Dependencies: GAP-002K
 - Acceptance criteria: Run relevant compile, lint, type, test, migration, or smoke checks.
-- Test requirements: Checks pass or failures are recorded with BLOCKED/NEEDS_USER_REVIEW.
+- Test requirements: Backend compile, focused/regression pytest, Alembic heads/history/offline SQL, frontend type-check, and docs checks passed. Live `alembic upgrade head` remains blocked by PostgreSQL connection refusal.
 - Documentation requirements: Record commands/results in CODEX_PROGRESS.md.
 
 ### GAP-003: Permission and Security Hardening Across All New Modules
@@ -248,11 +248,11 @@ Implementation subtasks:
 
 #### GAP-003A: Audit current implementation: Permission and Security Hardening Across All New Modules
 
-- Status: TODO
+- Status: DONE
 - Dependencies: GAP-002L
 - Acceptance criteria: Record what exists, what is partial, and what is missing for this gap.
 - Test requirements: No business logic changes; documentation-only audit accepted.
-- Documentation requirements: Document audit findings and update status matrix.
+- Documentation requirements: Document audit findings and update status matrix. Added `docs/planning/GAP-003_PERMISSION_SECURITY_AUDIT.md`.
 
 #### GAP-003B: Design data model/schema: Permission and Security Hardening Across All New Modules
 

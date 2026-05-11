@@ -1,12 +1,13 @@
 import uuid
 from datetime import date
-from sqlalchemy import Column, String, Numeric, Integer, ForeignKey, Enum, Date, Text, Boolean, DateTime
+from sqlalchemy import Column, String, Numeric, Integer, ForeignKey, Enum, Date, Text, Boolean, DateTime, Index
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 import enum
 from datetime import datetime, timezone
 
 from app.db.base import Base, TimestampMixin
+from app.models.finance import OperationalPostingStatus
 
 
 class InventoryValuationMethod(str, enum.Enum):
@@ -76,6 +77,12 @@ class Lot(Base, TimestampMixin):
 class StockMovement(Base, TimestampMixin):
     """Every quantity change is recorded here as an immutable ledger entry."""
     __tablename__ = "stock_movements"
+    __table_args__ = (
+        Index("ix_stock_movements_posting_batch_id", "posting_batch_id"),
+        Index("ix_stock_movements_journal_entry_id", "journal_entry_id"),
+        Index("ix_stock_movements_accounting_status", "accounting_status"),
+        Index("ix_stock_movements_accounting_scan", "movement_date", "stock_type", "movement_type"),
+    )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     reference_number = Column(String(100), nullable=False, index=True)
@@ -93,6 +100,14 @@ class StockMovement(Base, TimestampMixin):
     quantity = Column(Numeric(14, 3), nullable=False)
     unit_cost = Column(Numeric(14, 4), nullable=True)
     total_cost = Column(Numeric(16, 4), nullable=True)
+    posting_batch_id = Column(UUID(as_uuid=True), ForeignKey("accounting_posting_batches.id", ondelete="SET NULL"),
+                              nullable=True)
+    journal_entry_id = Column(UUID(as_uuid=True), ForeignKey("journal_entries.id", ondelete="SET NULL"), nullable=True)
+    accounting_status = Column(Enum(OperationalPostingStatus, name="operational_posting_status"), nullable=True)
+    valuation_method = Column(String(40), nullable=True)
+    valuation_amount = Column(Numeric(18, 4), nullable=True)
+    valuation_currency = Column(String(10), nullable=True)
+    posting_error = Column(Text, nullable=True)
 
     notes = Column(Text, nullable=True)
     created_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
@@ -101,6 +116,8 @@ class StockMovement(Base, TimestampMixin):
     source_warehouse = relationship("Warehouse", foreign_keys=[source_warehouse_id], back_populates="movements_from")
     destination_warehouse = relationship("Warehouse", foreign_keys=[destination_warehouse_id], back_populates="movements_to")
     created_by = relationship("User")
+    posting_batch = relationship("AccountingPostingBatch", foreign_keys=[posting_batch_id])
+    journal_entry = relationship("JournalEntry", foreign_keys=[journal_entry_id])
 
 
 # ── Serial Number Tracking ────────────────────────────────────────────────────

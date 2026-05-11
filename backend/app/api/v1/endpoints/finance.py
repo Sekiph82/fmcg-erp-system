@@ -19,6 +19,7 @@ from app.models.finance import (
     RecurringJournalTemplate, RecurringJournalTemplateLine,
     AccountingPostingBatch, AccountingPostingRule, PaymentAllocation,
     CurrencyRevaluationRun, CurrencyRevaluationLine,
+    OperationalPostingEvent, InventoryAccountMapping,
 )
 from app.schemas.finance import (
     COACreate, COAUpdate, COARead,
@@ -40,6 +41,8 @@ from app.schemas.finance import (
     AccountingPeriodCloseCheckCreate, AccountingPeriodCloseCheckUpdate, AccountingPeriodCloseCheckRead,
     RecurringJournalTemplateCreate, RecurringJournalTemplateRead,
     AccountingPostingBatchRead, AccountingPostingRuleCreate, AccountingPostingRuleRead,
+    OperationalPostingEventRead,
+    InventoryAccountMappingCreate, InventoryAccountMappingUpdate, InventoryAccountMappingRead,
     PaymentAllocationCreate, PaymentAllocationRead,
     CurrencyRevaluationRunCreate, CurrencyRevaluationRunRead,
     ExchangeRateCreate, ExchangeRateRead, FXConvertResult,
@@ -773,6 +776,7 @@ async def create_recurring_journal(
             dependencies=[Depends(require_permission("finance", "view"))])
 async def list_posting_batches(
     source_module: Optional[str] = None,
+    source_event: Optional[str] = None,
     limit: int = Query(100, le=500),
     db: AsyncSession = Depends(get_db),
 ):
@@ -780,8 +784,43 @@ async def list_posting_batches(
     q = _sel(AccountingPostingBatch).order_by(AccountingPostingBatch.created_at.desc()).limit(limit)
     if source_module:
         q = q.where(AccountingPostingBatch.source_module == source_module)
+    if source_event:
+        q = q.where(AccountingPostingBatch.source_event == source_event)
     rows = (await db.execute(q)).scalars().all()
     return [AccountingPostingBatchRead.model_validate(r) for r in rows]
+
+
+@router.get("/accounting/operational-posting-events/", response_model=List[OperationalPostingEventRead],
+            dependencies=[Depends(require_permission("finance", "view"))])
+async def list_operational_posting_events(
+    source_module: Optional[str] = None,
+    source_event: Optional[str] = None,
+    status: Optional[str] = None,
+    limit: int = Query(100, le=500),
+    db: AsyncSession = Depends(get_db),
+):
+    from sqlalchemy import select as _sel
+    q = _sel(OperationalPostingEvent).order_by(OperationalPostingEvent.created_at.desc()).limit(limit)
+    if source_module:
+        q = q.where(OperationalPostingEvent.source_module == source_module)
+    if source_event:
+        q = q.where(OperationalPostingEvent.source_event == source_event)
+    if status:
+        q = q.where(OperationalPostingEvent.status == status)
+    rows = (await db.execute(q)).scalars().all()
+    return [OperationalPostingEventRead.model_validate(r) for r in rows]
+
+
+@router.get("/accounting/operational-posting-events/{event_id}", response_model=OperationalPostingEventRead,
+            dependencies=[Depends(require_permission("finance", "view"))])
+async def get_operational_posting_event(
+    event_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    event = await db.get(OperationalPostingEvent, event_id)
+    if not event:
+        raise HTTPException(404, "Operational posting event not found")
+    return OperationalPostingEventRead.model_validate(event)
 
 
 @router.get("/accounting/posting-rules/", response_model=List[AccountingPostingRuleRead],
@@ -813,6 +852,63 @@ async def create_posting_rule(
     await db.commit()
     await db.refresh(rule)
     return AccountingPostingRuleRead.model_validate(rule)
+
+
+@router.get("/accounting/inventory-account-mappings/", response_model=List[InventoryAccountMappingRead],
+            dependencies=[Depends(require_permission("finance", "view"))])
+async def list_inventory_account_mappings(
+    stock_type: Optional[str] = None,
+    product_id: Optional[uuid.UUID] = None,
+    material_id: Optional[uuid.UUID] = None,
+    active_only: bool = True,
+    db: AsyncSession = Depends(get_db),
+):
+    from sqlalchemy import select as _sel
+    q = _sel(InventoryAccountMapping).order_by(
+        InventoryAccountMapping.is_active.desc(),
+        InventoryAccountMapping.priority,
+        InventoryAccountMapping.created_at.desc(),
+    )
+    if active_only:
+        q = q.where(InventoryAccountMapping.is_active.is_(True))
+    if stock_type:
+        q = q.where(InventoryAccountMapping.stock_type == stock_type)
+    if product_id:
+        q = q.where(InventoryAccountMapping.product_id == product_id)
+    if material_id:
+        q = q.where(InventoryAccountMapping.material_id == material_id)
+    rows = (await db.execute(q)).scalars().all()
+    return [InventoryAccountMappingRead.model_validate(r) for r in rows]
+
+
+@router.post("/accounting/inventory-account-mappings/", response_model=InventoryAccountMappingRead, status_code=201)
+async def create_inventory_account_mapping(
+    body: InventoryAccountMappingCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(require_permission("finance", "configure")),
+):
+    mapping = InventoryAccountMapping(**body.model_dump())
+    db.add(mapping)
+    await db.commit()
+    await db.refresh(mapping)
+    return InventoryAccountMappingRead.model_validate(mapping)
+
+
+@router.patch("/accounting/inventory-account-mappings/{mapping_id}", response_model=InventoryAccountMappingRead)
+async def update_inventory_account_mapping(
+    mapping_id: uuid.UUID,
+    body: InventoryAccountMappingUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(require_permission("finance", "configure")),
+):
+    mapping = await db.get(InventoryAccountMapping, mapping_id)
+    if not mapping:
+        raise HTTPException(404, "Inventory account mapping not found")
+    for key, value in body.model_dump(exclude_unset=True).items():
+        setattr(mapping, key, value)
+    await db.commit()
+    await db.refresh(mapping)
+    return InventoryAccountMappingRead.model_validate(mapping)
 
 
 @router.get("/accounting/payment-allocations/", response_model=List[PaymentAllocationRead],

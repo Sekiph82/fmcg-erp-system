@@ -11,10 +11,10 @@ from __future__ import annotations
 
 from datetime import date, datetime, timezone
 from decimal import Decimal
-from typing import List, Optional, Sequence, Tuple
+from typing import Any, List, Optional, Sequence, Tuple
 import uuid
 
-from sqlalchemy import select, and_, func
+from sqlalchemy import select, and_, func, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -25,6 +25,7 @@ from app.models.finance import (
     CashAccountType, TxDirection, FinTxStatus, ReconciliationStatus, CostType, BudgetStatus,
     AccountType, AccountingPeriod, FiscalYear, PeriodStatus, FiscalYearStatus,
     JournalStatus, AccountingPostingBatch, PostingBatchStatus,
+    InventoryAccountMapping, OperationalPostingEvent, OperationalPostingStatus,
 )
 from app.models.production import ProductionOrder, MaterialConsumption
 from app.models.sales import Invoice, SalesOrder, InvoiceStatus
@@ -233,6 +234,177 @@ async def get_or_create_posting_batch(
     db.add(batch)
     await db.flush()
     return batch, True
+
+
+def build_operational_idempotency_key(
+    source_module: str,
+    source_event: str,
+    source_id: str | uuid.UUID,
+    source_line_id: str | uuid.UUID | None = None,
+) -> str:
+    parts = [source_module, source_event, str(source_id)]
+    if source_line_id:
+        parts.append(str(source_line_id))
+    return ":".join(parts)
+
+
+def _account_mapping_specificity(mapping: InventoryAccountMapping) -> tuple[int, int]:
+    score = 0
+    if mapping.product_id:
+        score += 8
+    if mapping.material_id:
+        score += 8
+    if mapping.category_key:
+        score += 4
+    if mapping.stock_type:
+        score += 2
+    return score, -(mapping.priority or 100)
+
+
+async def find_inventory_account_mapping(
+    db: AsyncSession,
+    *,
+    stock_type: Optional[str] = None,
+    product_id: Optional[uuid.UUID] = None,
+    material_id: Optional[uuid.UUID] = None,
+    category_key: Optional[str] = None,
+) -> Optional[InventoryAccountMapping]:
+    filters = [InventoryAccountMapping.is_active.is_(True)]
+    scope_filters = []
+    if product_id:
+        scope_filters.append(InventoryAccountMapping.product_id == product_id)
+    if material_id:
+        scope_filters.append(InventoryAccountMapping.material_id == material_id)
+    if category_key:
+        scope_filters.append(InventoryAccountMapping.category_key == category_key)
+    if stock_type:
+        scope_filters.append(InventoryAccountMapping.stock_type == stock_type)
+    if not scope_filters:
+        return None
+
+    result = await db.execute(select(InventoryAccountMapping).where(and_(*filters), or_(*scope_filters)))
+    mappings = list(result.scalars().all())
+    if not mappings:
+        return None
+    return sorted(mappings, key=_account_mapping_specificity, reverse=True)[0]
+
+
+async def get_or_create_operational_posting_event(
+    db: AsyncSession,
+    *,
+    source_module: str,
+    source_event: str,
+    source_id: str | uuid.UUID,
+    event_date: date,
+    source_line_id: str | uuid.UUID | None = None,
+    source_ref: Optional[str] = None,
+    stock_movement_id: Optional[uuid.UUID] = None,
+    amount: Optional[Decimal] = None,
+    currency: Optional[str] = None,
+    created_by_id: Optional[uuid.UUID] = None,
+    require_period: bool = False,
+) -> tuple[OperationalPostingEvent, AccountingPostingBatch, bool]:
+    await assert_posting_period_open(db, event_date, require_period=require_period)
+
+    idempotency_key = build_operational_idempotency_key(
+        source_module,
+        source_event,
+        source_id,
+        source_line_id,
+    )
+    result = await db.execute(
+        select(OperationalPostingEvent).where(OperationalPostingEvent.idempotency_key == idempotency_key)
+    )
+    existing_event = result.scalar_one_or_none()
+
+    batch_source_id = source_line_id or source_id
+    batch, created_batch = await get_or_create_posting_batch(
+        db,
+        source_module=source_module,
+        source_event=source_event,
+        source_id=batch_source_id,
+        source_ref=source_ref,
+        idempotency_key=idempotency_key,
+    )
+    if existing_event:
+        return existing_event, batch, False
+
+    event = OperationalPostingEvent(
+        source_module=source_module,
+        source_event=source_event,
+        source_id=str(source_id),
+        source_line_id=str(source_line_id) if source_line_id else None,
+        stock_movement_id=stock_movement_id,
+        posting_batch_id=batch.id,
+        status=OperationalPostingStatus.PENDING,
+        event_date=event_date,
+        amount=amount,
+        currency=currency,
+        idempotency_key=idempotency_key,
+        created_by_id=created_by_id,
+    )
+    db.add(event)
+    await db.flush()
+    return event, batch, created_batch
+
+
+def apply_operational_posting_link(
+    target: Any,
+    event: OperationalPostingEvent,
+    *,
+    journal_entry_id: Optional[uuid.UUID] = None,
+    status: Optional[OperationalPostingStatus] = None,
+    error_message: Optional[str] = None,
+) -> None:
+    if hasattr(target, "posting_batch_id"):
+        target.posting_batch_id = event.posting_batch_id
+    if hasattr(target, "journal_entry_id"):
+        target.journal_entry_id = journal_entry_id or event.journal_entry_id
+    if hasattr(target, "accounting_status"):
+        target.accounting_status = status or event.status
+    if hasattr(target, "posting_error"):
+        target.posting_error = error_message or event.error_message
+
+
+async def mark_operational_posting_posted(
+    db: AsyncSession,
+    event: OperationalPostingEvent,
+    batch: AccountingPostingBatch,
+    *,
+    journal_entry_id: uuid.UUID,
+    posted_by_id: Optional[uuid.UUID] = None,
+) -> OperationalPostingEvent:
+    now = datetime.now(timezone.utc)
+    event.status = OperationalPostingStatus.POSTED
+    event.journal_entry_id = journal_entry_id
+    event.error_message = None
+
+    batch.status = PostingBatchStatus.POSTED
+    batch.journal_entry_id = journal_entry_id
+    batch.error_message = None
+    batch.posted_by_id = posted_by_id
+    batch.posted_at = now
+
+    await db.flush()
+    return event
+
+
+async def mark_operational_posting_failed(
+    db: AsyncSession,
+    event: OperationalPostingEvent,
+    batch: AccountingPostingBatch,
+    *,
+    error_message: str,
+) -> OperationalPostingEvent:
+    safe_error = error_message[:2000]
+    event.status = OperationalPostingStatus.FAILED
+    event.error_message = safe_error
+
+    batch.status = PostingBatchStatus.FAILED
+    batch.error_message = safe_error
+
+    await db.flush()
+    return event
 
 
 # ── Production Cost Rollup ────────────────────────────────────────────────────

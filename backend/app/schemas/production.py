@@ -7,6 +7,7 @@ import uuid
 from app.models.production import (
     ProductionPlanStatus, ProductionOrderStatus, DowntimeReason,
 )
+from app.models.finance import OperationalPostingStatus
 
 
 # ── Production Plan Line ──────────────────────────────────────────────────────
@@ -119,6 +120,10 @@ class MaterialConsumptionRead(BaseModel):
     unit: str
     source_warehouse_id: uuid.UUID
     stock_movement_id: Optional[uuid.UUID] = None
+    posting_batch_id: Optional[uuid.UUID] = None
+    journal_entry_id: Optional[uuid.UUID] = None
+    accounting_status: Optional[OperationalPostingStatus] = None
+    posting_error: Optional[str] = None
     notes: Optional[str] = None
     material_name: Optional[str] = None
     material_code: Optional[str] = None
@@ -139,6 +144,10 @@ class FinishedGoodsReceiptRead(BaseModel):
     batch_no: Optional[str] = None
     warehouse_id: uuid.UUID
     stock_movement_id: Optional[uuid.UUID] = None
+    posting_batch_id: Optional[uuid.UUID] = None
+    journal_entry_id: Optional[uuid.UUID] = None
+    accounting_status: Optional[OperationalPostingStatus] = None
+    posting_error: Optional[str] = None
     notes: Optional[str] = None
     warehouse_name: Optional[str] = None
     model_config = {"from_attributes": True}

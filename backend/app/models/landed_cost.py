@@ -2,12 +2,13 @@ import uuid
 import enum
 from sqlalchemy import (
     Column, String, Text, Numeric, Integer, Boolean,
-    ForeignKey, Date, DateTime, JSON,
+    ForeignKey, Date, DateTime, JSON, Enum, Index,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
 from app.db.base import Base, TimestampMixin
+from app.models.finance import OperationalPostingStatus
 
 
 # ── Enums ─────────────────────────────────────────────────────────────────────
@@ -136,6 +137,11 @@ class LandedCostGRNLink(Base, TimestampMixin):
 class LandedCostAllocationLine(Base, TimestampMixin):
     """Per-GRN-line allocation result after running the allocation engine."""
     __tablename__ = "lc_allocation_lines"
+    __table_args__ = (
+        Index("ix_lc_allocation_lines_posting_batch_id", "posting_batch_id"),
+        Index("ix_lc_allocation_lines_journal_entry_id", "journal_entry_id"),
+        Index("ix_lc_allocation_lines_accounting_status", "accounting_status"),
+    )
 
     id            = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     header_id     = Column(UUID(as_uuid=True), ForeignKey("lc_headers.id"), nullable=False)
@@ -155,14 +161,26 @@ class LandedCostAllocationLine(Base, TimestampMixin):
     per_unit_lc_cost= Column(Numeric(14, 6), nullable=True)
     is_posted       = Column(Boolean, nullable=False, default=False)
     inventory_adj_id= Column(UUID(as_uuid=True), ForeignKey("lc_inventory_adjustments.id"), nullable=True)
+    posting_batch_id = Column(UUID(as_uuid=True), ForeignKey("accounting_posting_batches.id", ondelete="SET NULL"),
+                              nullable=True)
+    journal_entry_id = Column(UUID(as_uuid=True), ForeignKey("journal_entries.id", ondelete="SET NULL"), nullable=True)
+    accounting_status = Column(Enum(OperationalPostingStatus, name="operational_posting_status"), nullable=True)
+    posting_error = Column(Text, nullable=True)
 
     header   = relationship("LandedCostHeader", back_populates="allocation_lines")
     inv_adj  = relationship("LCInventoryAdjustment", back_populates="allocation_line", foreign_keys=[inventory_adj_id])
+    posting_batch = relationship("AccountingPostingBatch", foreign_keys=[posting_batch_id])
+    journal_entry = relationship("JournalEntry", foreign_keys=[journal_entry_id])
 
 
 class LCInventoryAdjustment(Base, TimestampMixin):
     """Inventory valuation adjustment record created when posting a landed cost."""
     __tablename__ = "lc_inventory_adjustments"
+    __table_args__ = (
+        Index("ix_lc_inventory_adjustments_posting_batch_id", "posting_batch_id"),
+        Index("ix_lc_inventory_adjustments_journal_entry_id", "journal_entry_id"),
+        Index("ix_lc_inventory_adjustments_accounting_status", "accounting_status"),
+    )
 
     id              = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     header_id       = Column(UUID(as_uuid=True), ForeignKey("lc_headers.id"), nullable=False)
@@ -175,6 +193,11 @@ class LCInventoryAdjustment(Base, TimestampMixin):
     old_avg_cost      = Column(Numeric(14, 6), nullable=True)
     new_avg_cost      = Column(Numeric(14, 6), nullable=True)
     journal_ref       = Column(String(100), nullable=True)
+    posting_batch_id  = Column(UUID(as_uuid=True), ForeignKey("accounting_posting_batches.id", ondelete="SET NULL"),
+                               nullable=True)
+    journal_entry_id  = Column(UUID(as_uuid=True), ForeignKey("journal_entries.id", ondelete="SET NULL"), nullable=True)
+    accounting_status = Column(Enum(OperationalPostingStatus, name="operational_posting_status"), nullable=True)
+    posting_error     = Column(Text, nullable=True)
     posted_at         = Column(DateTime, nullable=True)
 
     allocation_line = relationship(
@@ -182,6 +205,8 @@ class LCInventoryAdjustment(Base, TimestampMixin):
         back_populates="inv_adj",
         foreign_keys="[LandedCostAllocationLine.inventory_adj_id]",
     )
+    posting_batch = relationship("AccountingPostingBatch", foreign_keys=[posting_batch_id])
+    journal_entry = relationship("JournalEntry", foreign_keys=[journal_entry_id])
 
 
 class LCAIRecommendation(Base, TimestampMixin):

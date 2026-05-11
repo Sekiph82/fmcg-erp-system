@@ -83,6 +83,7 @@ from app.models.finance import (
     Budget, BudgetLine,
     PurchaseInvoice, PurchaseInvoiceLine, PurchasePayment,
     PurchaseInvoiceStatus,
+    OperationalPostingStatus, OperationalPostingEvent, InventoryAccountMapping,
 )
 from app.models.maintenance import (
     Asset, PMPlan, PMWorkOrder, BreakdownRecord, SparePart, SparePartUsage,
@@ -675,6 +676,7 @@ __all__ = [
     "Budget", "BudgetLine",
     "PurchaseInvoice", "PurchaseInvoiceLine", "PurchasePayment",
     "PurchaseInvoiceStatus",
+    "OperationalPostingStatus", "OperationalPostingEvent", "InventoryAccountMapping",
     "Asset", "PMPlan", "PMWorkOrder", "BreakdownRecord", "SparePart", "SparePartUsage",
     "InternationalShipment", "ShipmentContainer", "ShipmentPOLink",
     "CustomsDocument", "CustomsClearance", "ArrivalNotification",

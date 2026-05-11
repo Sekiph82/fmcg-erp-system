@@ -5,6 +5,7 @@ from datetime import date
 import uuid
 
 from app.models.inventory import MovementType, StockType
+from app.models.finance import OperationalPostingStatus
 
 
 class LotBase(BaseModel):
@@ -80,6 +81,13 @@ class StockMovementCreate(StockMovementBase):
 class StockMovementRead(StockMovementBase):
     id: uuid.UUID
     created_by_id: Optional[uuid.UUID] = None
+    posting_batch_id: Optional[uuid.UUID] = None
+    journal_entry_id: Optional[uuid.UUID] = None
+    accounting_status: Optional[OperationalPostingStatus] = None
+    valuation_method: Optional[str] = None
+    valuation_amount: Optional[Decimal] = None
+    valuation_currency: Optional[str] = None
+    posting_error: Optional[str] = None
 
     model_config = {"from_attributes": True}
 

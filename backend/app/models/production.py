@@ -3,12 +3,13 @@ import enum
 from datetime import datetime
 from sqlalchemy import (
     Column, String, Text, Numeric, Boolean, Integer,
-    ForeignKey, Enum, DateTime, UniqueConstraint,
+    ForeignKey, Enum, DateTime, UniqueConstraint, Index,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
 from app.db.base import Base, TimestampMixin
+from app.models.finance import OperationalPostingStatus
 
 
 class ProductionPlanStatus(str, enum.Enum):
@@ -139,6 +140,11 @@ class ProductionOrder(Base, TimestampMixin):
 
 class MaterialConsumption(Base, TimestampMixin):
     __tablename__ = "material_consumptions"
+    __table_args__ = (
+        Index("ix_material_consumptions_posting_batch_id", "posting_batch_id"),
+        Index("ix_material_consumptions_journal_entry_id", "journal_entry_id"),
+        Index("ix_material_consumptions_accounting_status", "accounting_status"),
+    )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     production_order_id = Column(UUID(as_uuid=True), ForeignKey("production_orders.id", ondelete="CASCADE"), nullable=False, index=True)
@@ -150,6 +156,11 @@ class MaterialConsumption(Base, TimestampMixin):
     unit = Column(String(20), nullable=False)
     source_warehouse_id = Column(UUID(as_uuid=True), ForeignKey("warehouses.id", ondelete="RESTRICT"), nullable=False)
     stock_movement_id = Column(UUID(as_uuid=True), ForeignKey("stock_movements.id", ondelete="SET NULL"), nullable=True)
+    posting_batch_id = Column(UUID(as_uuid=True), ForeignKey("accounting_posting_batches.id", ondelete="SET NULL"),
+                              nullable=True)
+    journal_entry_id = Column(UUID(as_uuid=True), ForeignKey("journal_entries.id", ondelete="SET NULL"), nullable=True)
+    accounting_status = Column(Enum(OperationalPostingStatus, name="operational_posting_status"), nullable=True)
+    posting_error = Column(Text, nullable=True)
     notes = Column(Text, nullable=True)
 
     production_order = relationship("ProductionOrder", back_populates="consumptions")
@@ -157,10 +168,17 @@ class MaterialConsumption(Base, TimestampMixin):
     lot = relationship("Lot")
     source_warehouse = relationship("Warehouse")
     stock_movement = relationship("StockMovement")
+    posting_batch = relationship("AccountingPostingBatch", foreign_keys=[posting_batch_id])
+    journal_entry = relationship("JournalEntry", foreign_keys=[journal_entry_id])
 
 
 class FinishedGoodsReceipt(Base, TimestampMixin):
     __tablename__ = "finished_goods_receipts"
+    __table_args__ = (
+        Index("ix_finished_goods_receipts_posting_batch_id", "posting_batch_id"),
+        Index("ix_finished_goods_receipts_journal_entry_id", "journal_entry_id"),
+        Index("ix_finished_goods_receipts_accounting_status", "accounting_status"),
+    )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     production_order_id = Column(UUID(as_uuid=True), ForeignKey("production_orders.id", ondelete="CASCADE"), nullable=False, index=True)
@@ -171,12 +189,19 @@ class FinishedGoodsReceipt(Base, TimestampMixin):
     batch_no = Column(String(100), nullable=True)
     warehouse_id = Column(UUID(as_uuid=True), ForeignKey("warehouses.id", ondelete="RESTRICT"), nullable=False)
     stock_movement_id = Column(UUID(as_uuid=True), ForeignKey("stock_movements.id", ondelete="SET NULL"), nullable=True)
+    posting_batch_id = Column(UUID(as_uuid=True), ForeignKey("accounting_posting_batches.id", ondelete="SET NULL"),
+                              nullable=True)
+    journal_entry_id = Column(UUID(as_uuid=True), ForeignKey("journal_entries.id", ondelete="SET NULL"), nullable=True)
+    accounting_status = Column(Enum(OperationalPostingStatus, name="operational_posting_status"), nullable=True)
+    posting_error = Column(Text, nullable=True)
     notes = Column(Text, nullable=True)
 
     production_order = relationship("ProductionOrder", back_populates="fg_receipts")
     product = relationship("Product")
     warehouse = relationship("Warehouse")
     stock_movement = relationship("StockMovement")
+    posting_batch = relationship("AccountingPostingBatch", foreign_keys=[posting_batch_id])
+    journal_entry = relationship("JournalEntry", foreign_keys=[journal_entry_id])
 
 
 class DowntimeLog(Base, TimestampMixin):

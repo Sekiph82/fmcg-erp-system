@@ -10,6 +10,7 @@ from app.models.procurement import (
     PRStatus, POStatus, GRNStatus, ImportShipmentStatus, POPaymentStatus,
     RFQStatus, RFQResponseStatus, BPAStatus,
 )
+from app.models.finance import OperationalPostingStatus
 
 
 # ── PR Lines ───────────────────────────────────────────────────────────────────
@@ -233,6 +234,10 @@ class GRNLineRead(BaseModel):
     expiry_date: Optional[date]
     notes: Optional[str]
     stock_movement_id: Optional[uuid.UUID]
+    posting_batch_id: Optional[uuid.UUID] = None
+    journal_entry_id: Optional[uuid.UUID] = None
+    accounting_status: Optional[OperationalPostingStatus] = None
+    posting_error: Optional[str] = None
 
 
 class GRNRead(BaseModel):

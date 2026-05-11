@@ -6,6 +6,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.models.finance import OperationalPostingStatus
+
 
 # ── Cost Line ─────────────────────────────────────────────────────────────────
 
@@ -66,6 +68,10 @@ class LandedCostAllocationLineOut(BaseModel):
     allocated_amount: Decimal
     per_unit_lc_cost: Optional[Decimal] = None
     is_posted: bool
+    posting_batch_id: Optional[UUID] = None
+    journal_entry_id: Optional[UUID] = None
+    accounting_status: Optional[OperationalPostingStatus] = None
+    posting_error: Optional[str] = None
 
 
 # ── Inventory Adjustment ──────────────────────────────────────────────────────
@@ -80,6 +86,10 @@ class LCInventoryAdjustmentOut(BaseModel):
     per_unit_amount: Optional[Decimal] = None
     old_avg_cost: Optional[Decimal] = None
     new_avg_cost: Optional[Decimal] = None
+    posting_batch_id: Optional[UUID] = None
+    journal_entry_id: Optional[UUID] = None
+    accounting_status: Optional[OperationalPostingStatus] = None
+    posting_error: Optional[str] = None
     posted_at: Optional[datetime] = None
 
 
