@@ -73,6 +73,7 @@ class JournalEntryCreate(BaseModel):
     entry_date: date
     description: str
     source_module: Optional[str] = None
+    source_event: Optional[str] = None
     source_ref: Optional[str] = None
     notes: Optional[str] = None
     lines: List[JournalLineCreate] = []
@@ -85,9 +86,15 @@ class JournalEntryRead(BaseModel):
     entry_date: date
     description: str
     source_module: Optional[str]
+    source_event: Optional[str] = None
     source_ref: Optional[str]
+    status: Optional["JournalStatus"] = None
+    reversal_of_entry_id: Optional[uuid.UUID] = None
+    reversed_by_entry_id: Optional[uuid.UUID] = None
+    posting_batch_id: Optional[uuid.UUID] = None
     is_posted: bool
     posted_at: Optional[datetime]
+    locked_at: Optional[datetime] = None
     created_at: datetime
     total_debit: Optional[Decimal] = None
     total_credit: Optional[Decimal] = None
@@ -95,6 +102,12 @@ class JournalEntryRead(BaseModel):
 
 class JournalEntryDetailRead(JournalEntryRead):
     lines: List[JournalLineRead] = []
+
+
+class JournalReversalCreate(BaseModel):
+    reversal_entry_no: str
+    reversal_date: date
+    description: Optional[str] = None
 
 
 # ── Cash Accounts ─────────────────────────────────────────────────────────────
@@ -377,7 +390,268 @@ class BudgetAlertRow(BaseModel):
 
 # ── Purchase Invoices (Accounting module) ─────────────────────────────────────
 
-from app.models.finance import PurchaseInvoiceStatus, PeriodStatus, RateSource  # noqa: E402
+from app.models.finance import (  # noqa: E402
+    PurchaseInvoiceStatus, PeriodStatus, RateSource,
+    FiscalYearStatus, JournalStatus,
+    RecurringJournalFrequency, RecurringJournalStatus,
+    PostingBatchStatus, PaymentAllocationPartyType,
+    CurrencyRevaluationStatus, AccountingCloseCheckStatus,
+)
+
+
+# --- Enterprise accounting core foundations ---
+
+class FiscalYearCreate(BaseModel):
+    year_code: str
+    start_date: date
+    end_date: date
+    base_currency: str = "KES"
+    retained_earnings_account_id: Optional[uuid.UUID] = None
+    notes: Optional[str] = None
+
+
+class FiscalYearUpdate(BaseModel):
+    status: Optional[FiscalYearStatus] = None
+    retained_earnings_account_id: Optional[uuid.UUID] = None
+    notes: Optional[str] = None
+
+
+class FiscalYearRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: uuid.UUID
+    year_code: str
+    start_date: date
+    end_date: date
+    status: FiscalYearStatus
+    base_currency: str
+    retained_earnings_account_id: Optional[uuid.UUID]
+    closed_by_id: Optional[uuid.UUID]
+    closed_at: Optional[datetime]
+    locked_by_id: Optional[uuid.UUID]
+    locked_at: Optional[datetime]
+    notes: Optional[str]
+    created_at: datetime
+
+
+class AccountingPeriodCloseCheckCreate(BaseModel):
+    period_id: uuid.UUID
+    check_code: str
+    label: str
+    status: AccountingCloseCheckStatus = AccountingCloseCheckStatus.PENDING
+    result_summary: Optional[str] = None
+
+
+class AccountingPeriodCloseCheckUpdate(BaseModel):
+    status: AccountingCloseCheckStatus
+    result_summary: Optional[str] = None
+
+
+class AccountingPeriodCloseCheckRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: uuid.UUID
+    period_id: uuid.UUID
+    check_code: str
+    label: str
+    status: AccountingCloseCheckStatus
+    result_summary: Optional[str]
+    checked_by_id: Optional[uuid.UUID]
+    checked_at: Optional[datetime]
+    created_at: datetime
+
+
+class RecurringJournalTemplateLineCreate(BaseModel):
+    account_id: uuid.UUID
+    description: Optional[str] = None
+    debit: Decimal = Decimal("0")
+    credit: Decimal = Decimal("0")
+    cost_center_id: Optional[uuid.UUID] = None
+
+
+class RecurringJournalTemplateLineRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: uuid.UUID
+    template_id: uuid.UUID
+    account_id: uuid.UUID
+    description: Optional[str]
+    debit: Decimal
+    credit: Decimal
+    cost_center_id: Optional[uuid.UUID]
+
+
+class RecurringJournalTemplateCreate(BaseModel):
+    template_no: str
+    name: str
+    description: Optional[str] = None
+    frequency: RecurringJournalFrequency
+    start_date: date
+    end_date: Optional[date] = None
+    next_run_date: date
+    default_memo: Optional[str] = None
+    lines: List[RecurringJournalTemplateLineCreate] = []
+
+
+class RecurringJournalTemplateUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    frequency: Optional[RecurringJournalFrequency] = None
+    status: Optional[RecurringJournalStatus] = None
+    end_date: Optional[date] = None
+    next_run_date: Optional[date] = None
+    default_memo: Optional[str] = None
+
+
+class RecurringJournalTemplateRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: uuid.UUID
+    template_no: str
+    name: str
+    description: Optional[str]
+    frequency: RecurringJournalFrequency
+    status: RecurringJournalStatus
+    start_date: date
+    end_date: Optional[date]
+    next_run_date: date
+    last_run_date: Optional[date]
+    default_memo: Optional[str]
+    created_by_id: Optional[uuid.UUID]
+    created_at: datetime
+    lines: List[RecurringJournalTemplateLineRead] = []
+
+
+class AccountingPostingBatchCreate(BaseModel):
+    source_module: str
+    source_event: str
+    source_id: str
+    source_ref: Optional[str] = None
+    idempotency_key: str
+
+
+class AccountingPostingBatchRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: uuid.UUID
+    source_module: str
+    source_event: str
+    source_id: str
+    source_ref: Optional[str]
+    status: PostingBatchStatus
+    journal_entry_id: Optional[uuid.UUID]
+    idempotency_key: str
+    error_message: Optional[str]
+    posted_by_id: Optional[uuid.UUID]
+    posted_at: Optional[datetime]
+    created_at: datetime
+
+
+class AccountingPostingRuleCreate(BaseModel):
+    source_module: str
+    source_event: str
+    rule_name: str
+    debit_account_id: Optional[uuid.UUID] = None
+    credit_account_id: Optional[uuid.UUID] = None
+    tax_account_id: Optional[uuid.UUID] = None
+    clearing_account_id: Optional[uuid.UUID] = None
+    priority: int = 100
+    notes: Optional[str] = None
+
+
+class AccountingPostingRuleUpdate(BaseModel):
+    rule_name: Optional[str] = None
+    debit_account_id: Optional[uuid.UUID] = None
+    credit_account_id: Optional[uuid.UUID] = None
+    tax_account_id: Optional[uuid.UUID] = None
+    clearing_account_id: Optional[uuid.UUID] = None
+    is_active: Optional[bool] = None
+    priority: Optional[int] = None
+    notes: Optional[str] = None
+
+
+class AccountingPostingRuleRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: uuid.UUID
+    source_module: str
+    source_event: str
+    rule_name: str
+    debit_account_id: Optional[uuid.UUID]
+    credit_account_id: Optional[uuid.UUID]
+    tax_account_id: Optional[uuid.UUID]
+    clearing_account_id: Optional[uuid.UUID]
+    is_active: bool
+    priority: int
+    notes: Optional[str]
+    created_at: datetime
+
+
+class PaymentAllocationCreate(BaseModel):
+    party_type: PaymentAllocationPartyType
+    customer_payment_id: Optional[uuid.UUID] = None
+    supplier_payment_id: Optional[uuid.UUID] = None
+    sales_invoice_id: Optional[uuid.UUID] = None
+    purchase_invoice_id: Optional[uuid.UUID] = None
+    allocated_amount: Decimal
+    allocation_date: date
+    notes: Optional[str] = None
+
+
+class PaymentAllocationRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: uuid.UUID
+    party_type: PaymentAllocationPartyType
+    customer_payment_id: Optional[uuid.UUID]
+    supplier_payment_id: Optional[uuid.UUID]
+    sales_invoice_id: Optional[uuid.UUID]
+    purchase_invoice_id: Optional[uuid.UUID]
+    allocated_amount: Decimal
+    allocation_date: date
+    notes: Optional[str]
+    created_by_id: Optional[uuid.UUID]
+    created_at: datetime
+
+
+class CurrencyRevaluationLineCreate(BaseModel):
+    account_id: uuid.UUID
+    foreign_currency_balance: Decimal = Decimal("0")
+    book_base_balance: Decimal = Decimal("0")
+    revalued_base_balance: Decimal = Decimal("0")
+    gain_loss_amount: Decimal = Decimal("0")
+
+
+class CurrencyRevaluationLineRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: uuid.UUID
+    run_id: uuid.UUID
+    account_id: uuid.UUID
+    foreign_currency_balance: Decimal
+    book_base_balance: Decimal
+    revalued_base_balance: Decimal
+    gain_loss_amount: Decimal
+
+
+class CurrencyRevaluationRunCreate(BaseModel):
+    run_no: str
+    as_of_date: date
+    currency: str
+    rate_id: Optional[uuid.UUID] = None
+    unrealized_gain_account_id: Optional[uuid.UUID] = None
+    unrealized_loss_account_id: Optional[uuid.UUID] = None
+    lines: List[CurrencyRevaluationLineCreate] = []
+
+
+class CurrencyRevaluationRunRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: uuid.UUID
+    run_no: str
+    as_of_date: date
+    currency: str
+    rate_id: Optional[uuid.UUID]
+    status: CurrencyRevaluationStatus
+    journal_entry_id: Optional[uuid.UUID]
+    unrealized_gain_account_id: Optional[uuid.UUID]
+    unrealized_loss_account_id: Optional[uuid.UUID]
+    created_by_id: Optional[uuid.UUID]
+    posted_by_id: Optional[uuid.UUID]
+    posted_at: Optional[datetime]
+    created_at: datetime
+    lines: List[CurrencyRevaluationLineRead] = []
 
 
 class PurchaseInvoiceLineCreate(BaseModel):
@@ -595,6 +869,9 @@ class BalanceSheetStatement(BaseModel):
 
 class PeriodCreate(BaseModel):
     period_ym: str   # "YYYY-MM"
+    fiscal_year_id: Optional[uuid.UUID] = None
+    period_start: Optional[date] = None
+    period_end: Optional[date] = None
     notes: Optional[str] = None
 
 
@@ -602,8 +879,14 @@ class PeriodRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: uuid.UUID
     period_ym: str
+    fiscal_year_id: Optional[uuid.UUID] = None
+    period_start: Optional[date] = None
+    period_end: Optional[date] = None
     status: PeriodStatus
     closed_at: Optional[datetime]
+    close_notes: Optional[str] = None
+    locked_by_id: Optional[uuid.UUID] = None
+    locked_at: Optional[datetime] = None
     notes: Optional[str]
     created_at: datetime
 

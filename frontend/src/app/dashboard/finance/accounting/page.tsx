@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { financeApi, AccountingDashboard } from "@/lib/finance";
+import { useAuth } from "@/context/AuthContext";
 
 function fmt(n: number) {
   return n.toLocaleString(undefined, { maximumFractionDigits: 0 });
@@ -36,6 +37,7 @@ const STATUS_PILL: Record<string, string> = {
 };
 
 export default function AccountingDashboardPage() {
+  const { hasPermission } = useAuth();
   const { data, isLoading } = useQuery<AccountingDashboard>({
     queryKey: ["accounting-dashboard"],
     queryFn: financeApi.accountingDashboard,
@@ -94,7 +96,8 @@ export default function AccountingDashboardPage() {
           { label: "Sales Invoices",   href: "/dashboard/finance/accounting/sales-invoices",   icon: "📄" },
           { label: "Purchase Invoices",href: "/dashboard/finance/accounting/purchase-invoices",icon: "📦" },
           { label: "Payments",         href: "/dashboard/finance/accounting/payments",          icon: "💳" },
-        ].map((item) => (
+          { label: "Accounting Controls", href: "/dashboard/finance/accounting/controls",       icon: "AC", permission: "finance.configure" },
+        ].filter((item) => !item.permission || hasPermission(item.permission)).map((item) => (
           <Link
             key={item.href}
             href={item.href}

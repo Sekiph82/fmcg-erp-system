@@ -117,6 +117,7 @@ PERMISSIONS = [
     ("finance",     "edit",   "Edit Finance",          "Edit financial records",                   False),
     ("finance",     "approve","Approve Finance",       "Approve journal entries and payments",     False),
     ("finance",     "export", "Export Finance",        "Export financial reports",                 False),
+    ("finance",     "configure", "Configure Finance",   "Configure fiscal years, periods, and posting rules", False),
 
     # M-Pesa specific
     ("mpesa",       "initiate_payment",   "Initiate M-Pesa Payment",    "Trigger M-Pesa STK push",              True),
@@ -434,7 +435,7 @@ ROLE_DEFINITIONS = {
     "cfo": {
         "description": "Chief Financial Officer — full financial and compliance oversight",
         "permissions": [
-            "finance.view", "finance.create", "finance.edit", "finance.approve", "finance.export",
+            "finance.view", "finance.create", "finance.edit", "finance.approve", "finance.export", "finance.configure",
             "mpesa.initiate_payment", "mpesa.view_transactions", "mpesa.retry_transaction",
             "mpesa.cancel_payment", "mpesa.reconcile_payment", "mpesa.view_payment_logs",
             "tax.view", "tax.edit",
@@ -542,7 +543,7 @@ ROLE_DEFINITIONS = {
     "finance_manager": {
         "description": "Full finance and M-Pesa access",
         "permissions": [
-            "finance.view", "finance.create", "finance.edit", "finance.approve", "finance.export",
+            "finance.view", "finance.create", "finance.edit", "finance.approve", "finance.export", "finance.configure",
             "mpesa.initiate_payment", "mpesa.view_transactions", "mpesa.retry_transaction",
             "mpesa.cancel_payment", "mpesa.reconcile_payment", "mpesa.view_payment_logs",
             "payroll_ke.view", "payroll_ke.create", "payroll_ke.approve", "payroll_ke.export",

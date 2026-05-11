@@ -828,6 +828,7 @@ export const NAV_CONFIG: NavEntry[] = [
       { label: "Profit & Loss",      href: "/dashboard/finance/accounting/profit-loss",              permission: "finance.view" },
       { label: "Balance Sheet",      href: "/dashboard/finance/accounting/balance-sheet",            permission: "finance.view" },
       { label: "Period Closing",     href: "/dashboard/finance/accounting/period-closing",           permission: "finance.view" },
+      { label: "Accounting Controls", href: "/dashboard/finance/accounting/controls",                permission: "finance.configure" },
       { label: "Customers Ledger",   href: "/dashboard/finance/accounting/customers-ledger",         permission: "finance.view" },
       { label: "Suppliers Ledger",   href: "/dashboard/finance/accounting/suppliers-ledger",         permission: "finance.view" },
       { label: "Sales Invoices",     href: "/dashboard/finance/accounting/sales-invoices",           permission: "finance.view" },

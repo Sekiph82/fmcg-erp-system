@@ -2,7 +2,7 @@ import uuid
 import enum
 from sqlalchemy import (
     Column, String, Text, Numeric, Integer, Boolean,
-    ForeignKey, Enum, Date, DateTime, UniqueConstraint,
+    ForeignKey, Enum, Date, DateTime, UniqueConstraint, CheckConstraint,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
@@ -66,6 +66,58 @@ class CostType(str, enum.Enum):
     MARKETING_BRAND = "MARKETING_BRAND"  # brand spend (media, agency, events, sampling)
 
 
+class FiscalYearStatus(str, enum.Enum):
+    OPEN = "OPEN"
+    CLOSING = "CLOSING"
+    CLOSED = "CLOSED"
+    LOCKED = "LOCKED"
+
+
+class JournalStatus(str, enum.Enum):
+    DRAFT = "DRAFT"
+    POSTED = "POSTED"
+    REVERSED = "REVERSED"
+    VOID = "VOID"
+
+
+class RecurringJournalFrequency(str, enum.Enum):
+    MONTHLY = "MONTHLY"
+    QUARTERLY = "QUARTERLY"
+    ANNUALLY = "ANNUALLY"
+    CUSTOM = "CUSTOM"
+
+
+class RecurringJournalStatus(str, enum.Enum):
+    ACTIVE = "ACTIVE"
+    PAUSED = "PAUSED"
+    CLOSED = "CLOSED"
+
+
+class PostingBatchStatus(str, enum.Enum):
+    DRAFT = "DRAFT"
+    POSTED = "POSTED"
+    FAILED = "FAILED"
+    REVERSED = "REVERSED"
+
+
+class PaymentAllocationPartyType(str, enum.Enum):
+    CUSTOMER = "CUSTOMER"
+    SUPPLIER = "SUPPLIER"
+
+
+class CurrencyRevaluationStatus(str, enum.Enum):
+    DRAFT = "DRAFT"
+    POSTED = "POSTED"
+    REVERSED = "REVERSED"
+
+
+class AccountingCloseCheckStatus(str, enum.Enum):
+    PENDING = "PENDING"
+    PASSED = "PASSED"
+    FAILED = "FAILED"
+    WAIVED = "WAIVED"
+
+
 # ── General Ledger ────────────────────────────────────────────────────────────
 
 class ChartOfAccount(Base, TimestampMixin):
@@ -90,6 +142,35 @@ class ChartOfAccount(Base, TimestampMixin):
     journal_lines = relationship("JournalLine", back_populates="account")
 
 
+class FiscalYear(Base, TimestampMixin):
+    __tablename__ = "fiscal_years"
+    __table_args__ = (
+        UniqueConstraint("year_code", name="uq_fiscal_years_year_code"),
+        CheckConstraint("start_date <= end_date", name="ck_fiscal_years_date_range"),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    year_code = Column(String(20), nullable=False, index=True)
+    start_date = Column(Date, nullable=False)
+    end_date = Column(Date, nullable=False)
+    status = Column(Enum(FiscalYearStatus, name="finance_fiscal_year_status"), nullable=False,
+                    default=FiscalYearStatus.OPEN)
+    base_currency = Column(String(10), nullable=False, default="KES")
+    retained_earnings_account_id = Column(
+        UUID(as_uuid=True), ForeignKey("chart_of_accounts.id", ondelete="SET NULL"), nullable=True
+    )
+    closed_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    closed_at = Column(DateTime(timezone=True), nullable=True)
+    locked_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    locked_at = Column(DateTime(timezone=True), nullable=True)
+    notes = Column(Text, nullable=True)
+
+    retained_earnings_account = relationship("ChartOfAccount")
+    closed_by = relationship("User", foreign_keys=[closed_by_id])
+    locked_by = relationship("User", foreign_keys=[locked_by_id])
+    periods = relationship("AccountingPeriod", back_populates="fiscal_year")
+
+
 class JournalEntry(Base, TimestampMixin):
     __tablename__ = "journal_entries"
 
@@ -98,15 +179,27 @@ class JournalEntry(Base, TimestampMixin):
     entry_date = Column(Date, nullable=False)
     description = Column(String(255), nullable=False)
     source_module = Column(String(50), nullable=True)   # sales | procurement | production | finance
+    source_event = Column(String(80), nullable=True)
     source_id = Column(UUID(as_uuid=True), nullable=True)
     source_ref = Column(String(100), nullable=True)     # human-readable reference
+    status = Column(Enum(JournalStatus, name="finance_journal_status"), nullable=False, default=JournalStatus.DRAFT)
     is_posted = Column(Boolean, default=False, nullable=False)
+    reversal_of_entry_id = Column(UUID(as_uuid=True), ForeignKey("journal_entries.id", ondelete="SET NULL"), nullable=True)
+    reversed_by_entry_id = Column(UUID(as_uuid=True), ForeignKey("journal_entries.id", ondelete="SET NULL"), nullable=True)
+    posting_batch_id = Column(UUID(as_uuid=True), ForeignKey("accounting_posting_batches.id", ondelete="SET NULL"),
+                              nullable=True)
     posted_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     posted_at = Column(DateTime(timezone=True), nullable=True)
+    locked_at = Column(DateTime(timezone=True), nullable=True)
     created_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     notes = Column(Text, nullable=True)
 
     lines = relationship("JournalLine", back_populates="entry", cascade="all, delete-orphan")
+    reversal_of_entry = relationship("JournalEntry", remote_side=[id], foreign_keys=[reversal_of_entry_id],
+                                     post_update=True)
+    reversed_by_entry = relationship("JournalEntry", remote_side=[id], foreign_keys=[reversed_by_entry_id],
+                                     post_update=True)
+    posting_batch = relationship("AccountingPostingBatch", foreign_keys=[posting_batch_id], post_update=True)
     posted_by = relationship("User", foreign_keys=[posted_by_id])
     created_by = relationship("User", foreign_keys=[created_by_id])
 
@@ -124,6 +217,100 @@ class JournalLine(Base, TimestampMixin):
 
     entry = relationship("JournalEntry", back_populates="lines")
     account = relationship("ChartOfAccount", back_populates="journal_lines")
+
+
+class RecurringJournalTemplate(Base, TimestampMixin):
+    __tablename__ = "recurring_journal_templates"
+    __table_args__ = (
+        UniqueConstraint("template_no", name="uq_recurring_journal_templates_template_no"),
+        CheckConstraint("end_date IS NULL OR start_date <= end_date", name="ck_recurring_journals_date_range"),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    template_no = Column(String(50), nullable=False)
+    name = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
+    frequency = Column(Enum(RecurringJournalFrequency, name="finance_recurring_journal_frequency"), nullable=False)
+    status = Column(Enum(RecurringJournalStatus, name="finance_recurring_journal_status"), nullable=False,
+                    default=RecurringJournalStatus.ACTIVE)
+    start_date = Column(Date, nullable=False)
+    end_date = Column(Date, nullable=True)
+    next_run_date = Column(Date, nullable=False, index=True)
+    last_run_date = Column(Date, nullable=True)
+    default_memo = Column(String(255), nullable=True)
+    created_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+
+    created_by = relationship("User")
+    lines = relationship("RecurringJournalTemplateLine", back_populates="template", cascade="all, delete-orphan")
+
+
+class RecurringJournalTemplateLine(Base, TimestampMixin):
+    __tablename__ = "recurring_journal_template_lines"
+    __table_args__ = (
+        CheckConstraint("debit >= 0 AND credit >= 0", name="ck_recurring_journal_lines_non_negative"),
+        CheckConstraint("NOT (debit > 0 AND credit > 0)", name="ck_recurring_journal_lines_single_side"),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    template_id = Column(UUID(as_uuid=True), ForeignKey("recurring_journal_templates.id", ondelete="CASCADE"),
+                         nullable=False)
+    account_id = Column(UUID(as_uuid=True), ForeignKey("chart_of_accounts.id", ondelete="RESTRICT"), nullable=False)
+    description = Column(String(255), nullable=True)
+    debit = Column(Numeric(18, 4), nullable=False, default=0)
+    credit = Column(Numeric(18, 4), nullable=False, default=0)
+    cost_center_id = Column(UUID(as_uuid=True), ForeignKey("cost_centers.id", ondelete="SET NULL"), nullable=True)
+
+    template = relationship("RecurringJournalTemplate", back_populates="lines")
+    account = relationship("ChartOfAccount")
+    cost_center = relationship("CostCenter")
+
+
+class AccountingPostingBatch(Base, TimestampMixin):
+    __tablename__ = "accounting_posting_batches"
+    __table_args__ = (
+        UniqueConstraint("idempotency_key", name="uq_accounting_posting_batches_idempotency_key"),
+        UniqueConstraint("source_module", "source_event", "source_id", name="uq_accounting_posting_batches_source"),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    source_module = Column(String(80), nullable=False)
+    source_event = Column(String(80), nullable=False)
+    source_id = Column(String(80), nullable=False)
+    source_ref = Column(String(120), nullable=True)
+    status = Column(Enum(PostingBatchStatus, name="finance_posting_batch_status"), nullable=False,
+                    default=PostingBatchStatus.DRAFT)
+    journal_entry_id = Column(UUID(as_uuid=True), ForeignKey("journal_entries.id", ondelete="SET NULL"), nullable=True)
+    idempotency_key = Column(String(200), nullable=False)
+    error_message = Column(Text, nullable=True)
+    posted_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    posted_at = Column(DateTime(timezone=True), nullable=True)
+
+    journal_entry = relationship("JournalEntry", foreign_keys=[journal_entry_id], post_update=True)
+    posted_by = relationship("User")
+
+
+class AccountingPostingRule(Base, TimestampMixin):
+    __tablename__ = "accounting_posting_rules"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    source_module = Column(String(80), nullable=False)
+    source_event = Column(String(80), nullable=False)
+    rule_name = Column(String(160), nullable=False)
+    debit_account_id = Column(UUID(as_uuid=True), ForeignKey("chart_of_accounts.id", ondelete="SET NULL"),
+                              nullable=True)
+    credit_account_id = Column(UUID(as_uuid=True), ForeignKey("chart_of_accounts.id", ondelete="SET NULL"),
+                               nullable=True)
+    tax_account_id = Column(UUID(as_uuid=True), ForeignKey("chart_of_accounts.id", ondelete="SET NULL"), nullable=True)
+    clearing_account_id = Column(UUID(as_uuid=True), ForeignKey("chart_of_accounts.id", ondelete="SET NULL"),
+                                 nullable=True)
+    is_active = Column(Boolean, default=True, nullable=False)
+    priority = Column(Integer, default=100, nullable=False)
+    notes = Column(Text, nullable=True)
+
+    debit_account = relationship("ChartOfAccount", foreign_keys=[debit_account_id])
+    credit_account = relationship("ChartOfAccount", foreign_keys=[credit_account_id])
+    tax_account = relationship("ChartOfAccount", foreign_keys=[tax_account_id])
+    clearing_account = relationship("ChartOfAccount", foreign_keys=[clearing_account_id])
 
 
 # ── Cash / Bank / M-Pesa Accounts ─────────────────────────────────────────────
@@ -330,6 +517,51 @@ class ExchangeRate(Base, TimestampMixin):
     created_by = relationship("User")
 
 
+class CurrencyRevaluationRun(Base, TimestampMixin):
+    __tablename__ = "currency_revaluation_runs"
+    __table_args__ = (UniqueConstraint("run_no", name="uq_currency_revaluation_runs_run_no"),)
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    run_no = Column(String(50), nullable=False)
+    as_of_date = Column(Date, nullable=False, index=True)
+    currency = Column(String(10), nullable=False, index=True)
+    rate_id = Column(UUID(as_uuid=True), ForeignKey("exchange_rates.id", ondelete="SET NULL"), nullable=True)
+    status = Column(Enum(CurrencyRevaluationStatus, name="finance_currency_revaluation_status"), nullable=False,
+                    default=CurrencyRevaluationStatus.DRAFT)
+    journal_entry_id = Column(UUID(as_uuid=True), ForeignKey("journal_entries.id", ondelete="SET NULL"), nullable=True)
+    unrealized_gain_account_id = Column(UUID(as_uuid=True), ForeignKey("chart_of_accounts.id", ondelete="SET NULL"),
+                                        nullable=True)
+    unrealized_loss_account_id = Column(UUID(as_uuid=True), ForeignKey("chart_of_accounts.id", ondelete="SET NULL"),
+                                        nullable=True)
+    created_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    posted_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    posted_at = Column(DateTime(timezone=True), nullable=True)
+
+    rate = relationship("ExchangeRate")
+    journal_entry = relationship("JournalEntry")
+    unrealized_gain_account = relationship("ChartOfAccount", foreign_keys=[unrealized_gain_account_id])
+    unrealized_loss_account = relationship("ChartOfAccount", foreign_keys=[unrealized_loss_account_id])
+    created_by = relationship("User", foreign_keys=[created_by_id])
+    posted_by = relationship("User", foreign_keys=[posted_by_id])
+    lines = relationship("CurrencyRevaluationLine", back_populates="run", cascade="all, delete-orphan")
+
+
+class CurrencyRevaluationLine(Base, TimestampMixin):
+    __tablename__ = "currency_revaluation_lines"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    run_id = Column(UUID(as_uuid=True), ForeignKey("currency_revaluation_runs.id", ondelete="CASCADE"),
+                    nullable=False)
+    account_id = Column(UUID(as_uuid=True), ForeignKey("chart_of_accounts.id", ondelete="RESTRICT"), nullable=False)
+    foreign_currency_balance = Column(Numeric(18, 4), nullable=False, default=0)
+    book_base_balance = Column(Numeric(18, 4), nullable=False, default=0)
+    revalued_base_balance = Column(Numeric(18, 4), nullable=False, default=0)
+    gain_loss_amount = Column(Numeric(18, 4), nullable=False, default=0)
+
+    run = relationship("CurrencyRevaluationRun", back_populates="lines")
+    account = relationship("ChartOfAccount")
+
+
 class PeriodStatus(str, enum.Enum):
     OPEN = "OPEN"
     CLOSED = "CLOSED"
@@ -345,12 +577,38 @@ class AccountingPeriod(Base, TimestampMixin):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     period_ym = Column(String(7), nullable=False, index=True)   # "2026-04"
+    fiscal_year_id = Column(UUID(as_uuid=True), ForeignKey("fiscal_years.id", ondelete="SET NULL"), nullable=True)
+    period_start = Column(Date, nullable=True)
+    period_end = Column(Date, nullable=True)
     status = Column(Enum(PeriodStatus), nullable=False, default=PeriodStatus.OPEN)
     closed_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     closed_at = Column(DateTime(timezone=True), nullable=True)
+    close_notes = Column(Text, nullable=True)
+    locked_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    locked_at = Column(DateTime(timezone=True), nullable=True)
     notes = Column(Text, nullable=True)
 
-    closed_by = relationship("User")
+    fiscal_year = relationship("FiscalYear", back_populates="periods")
+    closed_by = relationship("User", foreign_keys=[closed_by_id])
+    locked_by = relationship("User", foreign_keys=[locked_by_id])
+
+
+class AccountingPeriodCloseCheck(Base, TimestampMixin):
+    __tablename__ = "accounting_period_close_checks"
+    __table_args__ = (UniqueConstraint("period_id", "check_code", name="uq_accounting_period_close_check"),)
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    period_id = Column(UUID(as_uuid=True), ForeignKey("accounting_periods.id", ondelete="CASCADE"), nullable=False)
+    check_code = Column(String(80), nullable=False)
+    label = Column(String(255), nullable=False)
+    status = Column(Enum(AccountingCloseCheckStatus, name="finance_accounting_close_check_status"), nullable=False,
+                    default=AccountingCloseCheckStatus.PENDING)
+    result_summary = Column(Text, nullable=True)
+    checked_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    checked_at = Column(DateTime(timezone=True), nullable=True)
+
+    period = relationship("AccountingPeriod")
+    checked_by = relationship("User")
 
 
 class PurchaseInvoiceStatus(str, enum.Enum):
@@ -421,4 +679,51 @@ class PurchasePayment(Base, TimestampMixin):
     created_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
 
     invoice = relationship("PurchaseInvoice", back_populates="payments")
+    created_by = relationship("User")
+
+
+class PaymentAllocation(Base, TimestampMixin):
+    __tablename__ = "payment_allocations"
+    __table_args__ = (
+        CheckConstraint("allocated_amount > 0", name="ck_payment_allocations_positive_amount"),
+        CheckConstraint(
+            """
+            (
+                party_type = 'CUSTOMER'
+                AND customer_payment_id IS NOT NULL
+                AND sales_invoice_id IS NOT NULL
+                AND supplier_payment_id IS NULL
+                AND purchase_invoice_id IS NULL
+            )
+            OR
+            (
+                party_type = 'SUPPLIER'
+                AND supplier_payment_id IS NOT NULL
+                AND purchase_invoice_id IS NOT NULL
+                AND customer_payment_id IS NULL
+                AND sales_invoice_id IS NULL
+            )
+            """,
+            name="ck_payment_allocations_party_refs",
+        ),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    party_type = Column(Enum(PaymentAllocationPartyType, name="finance_payment_allocation_party_type"),
+                        nullable=False)
+    customer_payment_id = Column(UUID(as_uuid=True), ForeignKey("payments.id", ondelete="CASCADE"), nullable=True)
+    supplier_payment_id = Column(UUID(as_uuid=True), ForeignKey("purchase_payments.id", ondelete="CASCADE"),
+                                 nullable=True)
+    sales_invoice_id = Column(UUID(as_uuid=True), ForeignKey("invoices.id", ondelete="RESTRICT"), nullable=True)
+    purchase_invoice_id = Column(UUID(as_uuid=True), ForeignKey("purchase_invoices.id", ondelete="RESTRICT"),
+                                 nullable=True)
+    allocated_amount = Column(Numeric(16, 4), nullable=False)
+    allocation_date = Column(Date, nullable=False, index=True)
+    notes = Column(Text, nullable=True)
+    created_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+
+    customer_payment = relationship("Payment", foreign_keys=[customer_payment_id])
+    supplier_payment = relationship("PurchasePayment", foreign_keys=[supplier_payment_id])
+    sales_invoice = relationship("Invoice", foreign_keys=[sales_invoice_id])
+    purchase_invoice = relationship("PurchaseInvoice", foreign_keys=[purchase_invoice_id])
     created_by = relationship("User")

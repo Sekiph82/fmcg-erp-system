@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from datetime import date, datetime, timezone
 from decimal import Decimal
-from typing import List, Optional, Tuple
+from typing import List, Optional, Sequence, Tuple
 import uuid
 
 from sqlalchemy import select, and_, func
@@ -23,7 +23,8 @@ from app.models.finance import (
     ProductCost, ProductionCostEntry, BudgetLine,
     ChartOfAccount, JournalEntry, JournalLine, ExchangeRate,
     CashAccountType, TxDirection, FinTxStatus, ReconciliationStatus, CostType, BudgetStatus,
-    AccountType,
+    AccountType, AccountingPeriod, FiscalYear, PeriodStatus, FiscalYearStatus,
+    JournalStatus, AccountingPostingBatch, PostingBatchStatus,
 )
 from app.models.production import ProductionOrder, MaterialConsumption
 from app.models.sales import Invoice, SalesOrder, InvoiceStatus
@@ -36,6 +37,202 @@ from app.schemas.finance import (
     PLStatement, PLLineItem, BalanceSheetStatement, BSLineItem,
     FXConvertResult,
 )
+
+
+def _period_ym(value: date) -> str:
+    return value.strftime("%Y-%m")
+
+
+def validate_journal_lines_balance(
+    lines: Sequence[JournalLine | dict],
+    tolerance: Decimal = Decimal("0.005"),
+) -> tuple[Decimal, Decimal]:
+    if not lines:
+        raise ValueError("Journal entry must include at least one line")
+
+    total_debit = Decimal("0")
+    total_credit = Decimal("0")
+    for line in lines:
+        debit = Decimal(str(line.get("debit", 0) if isinstance(line, dict) else line.debit or 0))
+        credit = Decimal(str(line.get("credit", 0) if isinstance(line, dict) else line.credit or 0))
+        if debit < 0 or credit < 0:
+            raise ValueError("Journal line debit and credit amounts cannot be negative")
+        if debit > 0 and credit > 0:
+            raise ValueError("Journal line cannot have both debit and credit amounts")
+        if debit == 0 and credit == 0:
+            raise ValueError("Journal line must have either a debit or credit amount")
+        total_debit += debit
+        total_credit += credit
+
+    if abs(total_debit - total_credit) > tolerance:
+        raise ValueError(f"Journal entry is unbalanced: debit={total_debit} credit={total_credit}")
+    return total_debit, total_credit
+
+
+async def get_accounting_period_for_date(db: AsyncSession, posting_date: date) -> Optional[AccountingPeriod]:
+    range_result = await db.execute(
+        select(AccountingPeriod).where(
+            AccountingPeriod.period_start.is_not(None),
+            AccountingPeriod.period_end.is_not(None),
+            AccountingPeriod.period_start <= posting_date,
+            AccountingPeriod.period_end >= posting_date,
+        )
+    )
+    period = range_result.scalars().first()
+    if period:
+        return period
+
+    ym_result = await db.execute(
+        select(AccountingPeriod).where(AccountingPeriod.period_ym == _period_ym(posting_date))
+    )
+    return ym_result.scalar_one_or_none()
+
+
+async def assert_posting_period_open(
+    db: AsyncSession,
+    posting_date: date,
+    *,
+    require_period: bool = False,
+) -> Optional[AccountingPeriod]:
+    period = await get_accounting_period_for_date(db, posting_date)
+    if not period:
+        if require_period:
+            raise ValueError(f"No accounting period exists for {posting_date.isoformat()}")
+        return None
+
+    if period.status in {PeriodStatus.CLOSED, PeriodStatus.LOCKED}:
+        raise ValueError(f"Accounting period {period.period_ym} is {period.status.value}")
+
+    if period.fiscal_year_id:
+        fiscal_year = await db.get(FiscalYear, period.fiscal_year_id)
+        if fiscal_year and fiscal_year.status in {FiscalYearStatus.CLOSED, FiscalYearStatus.LOCKED}:
+            raise ValueError(f"Fiscal year {fiscal_year.year_code} is {fiscal_year.status.value}")
+
+    return period
+
+
+async def assert_journal_lines_postable(db: AsyncSession, lines: Sequence[JournalLine | dict]) -> None:
+    account_ids: set[uuid.UUID] = set()
+    for line in lines:
+        account_id = line.get("account_id") if isinstance(line, dict) else line.account_id
+        if account_id:
+            account_ids.add(account_id)
+
+    if not account_ids:
+        raise ValueError("Journal entry must include posting accounts")
+
+    result = await db.execute(select(ChartOfAccount).where(ChartOfAccount.id.in_(account_ids)))
+    accounts = {account.id: account for account in result.scalars().all()}
+    missing = account_ids - set(accounts)
+    if missing:
+        raise ValueError("One or more journal line accounts do not exist")
+
+    for account in accounts.values():
+        if not account.is_active:
+            raise ValueError(f"Account {account.code} is inactive")
+        if account.is_control:
+            raise ValueError(f"Account {account.code} is a control account and cannot be posted to directly")
+
+
+async def mark_journal_posted(
+    db: AsyncSession,
+    entry: JournalEntry,
+    user_id: uuid.UUID,
+    *,
+    require_period: bool = False,
+) -> JournalEntry:
+    if entry.is_posted or entry.status == JournalStatus.POSTED:
+        raise ValueError("Entry already posted")
+    if entry.status in {JournalStatus.REVERSED, JournalStatus.VOID}:
+        raise ValueError(f"Entry cannot be posted from status {entry.status.value}")
+
+    validate_journal_lines_balance(entry.lines)
+    await assert_journal_lines_postable(db, entry.lines)
+    await assert_posting_period_open(db, entry.entry_date, require_period=require_period)
+
+    posted_at = datetime.now(timezone.utc)
+    entry.is_posted = True
+    entry.status = JournalStatus.POSTED
+    entry.posted_by_id = user_id
+    entry.posted_at = posted_at
+    entry.locked_at = posted_at
+    return entry
+
+
+async def create_reversal_journal(
+    db: AsyncSession,
+    entry: JournalEntry,
+    *,
+    reversal_entry_no: str,
+    reversal_date: date,
+    user_id: uuid.UUID,
+    description: Optional[str] = None,
+) -> JournalEntry:
+    if not entry.is_posted:
+        raise ValueError("Only posted journal entries can be reversed")
+    if entry.reversed_by_entry_id:
+        raise ValueError("Journal entry already has a reversal entry")
+
+    validate_journal_lines_balance(entry.lines)
+    await assert_posting_period_open(db, reversal_date)
+
+    reversal = JournalEntry(
+        entry_no=reversal_entry_no,
+        entry_date=reversal_date,
+        description=description or f"Reversal of {entry.entry_no}",
+        source_module="finance",
+        source_event="journal_reversal",
+        source_id=entry.id,
+        source_ref=entry.entry_no,
+        status=JournalStatus.DRAFT,
+        reversal_of_entry_id=entry.id,
+        created_by_id=user_id,
+        notes=f"System-generated reversal draft for journal entry {entry.entry_no}.",
+    )
+    for line in entry.lines:
+        reversal.lines.append(
+            JournalLine(
+                account_id=line.account_id,
+                description=f"Reversal: {line.description or entry.entry_no}",
+                debit=line.credit,
+                credit=line.debit,
+                currency=line.currency,
+            )
+        )
+
+    db.add(reversal)
+    await db.flush()
+    entry.reversed_by_entry_id = reversal.id
+    return reversal
+
+
+async def get_or_create_posting_batch(
+    db: AsyncSession,
+    *,
+    source_module: str,
+    source_event: str,
+    source_id: str | uuid.UUID,
+    idempotency_key: str,
+    source_ref: Optional[str] = None,
+) -> tuple[AccountingPostingBatch, bool]:
+    result = await db.execute(
+        select(AccountingPostingBatch).where(AccountingPostingBatch.idempotency_key == idempotency_key)
+    )
+    existing = result.scalar_one_or_none()
+    if existing:
+        return existing, False
+
+    batch = AccountingPostingBatch(
+        source_module=source_module,
+        source_event=source_event,
+        source_id=str(source_id),
+        source_ref=source_ref,
+        idempotency_key=idempotency_key,
+        status=PostingBatchStatus.DRAFT,
+    )
+    db.add(batch)
+    await db.flush()
+    return batch, True
 
 
 # ── Production Cost Rollup ────────────────────────────────────────────────────

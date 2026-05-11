@@ -235,6 +235,76 @@ export interface BudgetAlertRow {
 
 export type InvoiceStatus = "DRAFT" | "ISSUED" | "PARTIALLY_PAID" | "PAID" | "OVERDUE" | "CANCELLED";
 export type PurchaseInvoiceStatus = "DRAFT" | "RECEIVED" | "PARTIALLY_PAID" | "PAID" | "OVERDUE" | "CANCELLED";
+export type FiscalYearStatus = "OPEN" | "CLOSING" | "CLOSED" | "LOCKED";
+export type PostingBatchStatus = "DRAFT" | "POSTED" | "FAILED" | "REVERSED";
+export type CurrencyRevaluationStatus = "DRAFT" | "POSTED" | "REVERSED";
+
+export interface FiscalYear {
+  id: string;
+  year_code: string;
+  start_date: string;
+  end_date: string;
+  status: FiscalYearStatus;
+  base_currency: string;
+  retained_earnings_account_id?: string;
+  closed_at?: string;
+  locked_at?: string;
+  notes?: string;
+  created_at: string;
+}
+
+export interface AccountingPostingBatch {
+  id: string;
+  source_module: string;
+  source_event: string;
+  source_id: string;
+  source_ref?: string;
+  status: PostingBatchStatus;
+  journal_entry_id?: string;
+  idempotency_key: string;
+  error_message?: string;
+  posted_at?: string;
+  created_at: string;
+}
+
+export interface AccountingPostingRule {
+  id: string;
+  source_module: string;
+  source_event: string;
+  rule_name: string;
+  debit_account_id?: string;
+  credit_account_id?: string;
+  tax_account_id?: string;
+  clearing_account_id?: string;
+  is_active: boolean;
+  priority: number;
+  notes?: string;
+  created_at: string;
+}
+
+export interface PaymentAllocation {
+  id: string;
+  party_type: "CUSTOMER" | "SUPPLIER";
+  customer_payment_id?: string;
+  supplier_payment_id?: string;
+  sales_invoice_id?: string;
+  purchase_invoice_id?: string;
+  allocated_amount: number;
+  allocation_date: string;
+  notes?: string;
+  created_at: string;
+}
+
+export interface CurrencyRevaluationRun {
+  id: string;
+  run_no: string;
+  as_of_date: string;
+  currency: string;
+  status: CurrencyRevaluationStatus;
+  journal_entry_id?: string;
+  posted_at?: string;
+  created_at: string;
+}
 
 export interface SalesInvoice {
   id: string;
@@ -455,8 +525,14 @@ export type PeriodStatus = "OPEN" | "CLOSED" | "LOCKED";
 export interface AccountingPeriod {
   id: string;
   period_ym: string;
+  fiscal_year_id?: string;
+  period_start?: string;
+  period_end?: string;
   status: PeriodStatus;
   closed_at?: string;
+  close_notes?: string;
+  locked_by_id?: string;
+  locked_at?: string;
   notes?: string;
   created_at: string;
 }
@@ -765,6 +841,47 @@ export const financeApi = {
 
   async lockPeriod(id: string): Promise<AccountingPeriod> {
     const res = await apiClient.post<AccountingPeriod>(`/api/v1/finance/accounting/periods/${id}/lock`);
+    return res.data;
+  },
+
+  async listFiscalYears(): Promise<FiscalYear[]> {
+    const res = await apiClient.get<FiscalYear[]>("/api/v1/finance/accounting/fiscal-years/");
+    return res.data;
+  },
+
+  async createFiscalYear(data: {
+    year_code: string; start_date: string; end_date: string; base_currency?: string; notes?: string;
+  }): Promise<FiscalYear> {
+    const res = await apiClient.post<FiscalYear>("/api/v1/finance/accounting/fiscal-years/", data);
+    return res.data;
+  },
+
+  async listPostingBatches(params?: { source_module?: string; limit?: number }): Promise<AccountingPostingBatch[]> {
+    const res = await apiClient.get<AccountingPostingBatch[]>("/api/v1/finance/accounting/posting-batches/", { params });
+    return res.data;
+  },
+
+  async listPostingRules(params?: { source_module?: string }): Promise<AccountingPostingRule[]> {
+    const res = await apiClient.get<AccountingPostingRule[]>("/api/v1/finance/accounting/posting-rules/", { params });
+    return res.data;
+  },
+
+  async createPostingRule(data: {
+    source_module: string; source_event: string; rule_name: string;
+    debit_account_id?: string; credit_account_id?: string; tax_account_id?: string;
+    clearing_account_id?: string; priority?: number; notes?: string;
+  }): Promise<AccountingPostingRule> {
+    const res = await apiClient.post<AccountingPostingRule>("/api/v1/finance/accounting/posting-rules/", data);
+    return res.data;
+  },
+
+  async listPaymentAllocations(params?: { party_type?: "CUSTOMER" | "SUPPLIER"; limit?: number }): Promise<PaymentAllocation[]> {
+    const res = await apiClient.get<PaymentAllocation[]>("/api/v1/finance/accounting/payment-allocations/", { params });
+    return res.data;
+  },
+
+  async listCurrencyRevaluations(params?: { currency?: string; limit?: number }): Promise<CurrencyRevaluationRun[]> {
+    const res = await apiClient.get<CurrencyRevaluationRun[]>("/api/v1/finance/accounting/currency-revaluations/", { params });
     return res.data;
   },
 

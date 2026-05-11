@@ -15,11 +15,14 @@ from app.models.finance import (
     ProductCost, ProductionCostEntry, Budget, BudgetLine,
     BudgetStatus, BudgetType, FinTxStatus, ReconciliationStatus,
     PurchaseInvoice, PurchaseInvoiceLine, PurchasePayment,
-    PurchaseInvoiceStatus,
+    PurchaseInvoiceStatus, FiscalYear, AccountingPeriodCloseCheck,
+    RecurringJournalTemplate, RecurringJournalTemplateLine,
+    AccountingPostingBatch, AccountingPostingRule, PaymentAllocation,
+    CurrencyRevaluationRun, CurrencyRevaluationLine,
 )
 from app.schemas.finance import (
     COACreate, COAUpdate, COARead,
-    JournalEntryCreate, JournalEntryRead, JournalEntryDetailRead, JournalLineRead,
+    JournalEntryCreate, JournalEntryRead, JournalEntryDetailRead, JournalLineRead, JournalReversalCreate,
     CashAccountCreate, CashAccountUpdate, CashAccountRead,
     CashTransactionCreate, CashTransactionRead,
     ManualMatchRequest, ReconciliationRead,
@@ -33,7 +36,12 @@ from app.schemas.finance import (
     CustomerPaymentCreate, CustomerPaymentRead,
     CustomerLedgerRow, SupplierLedgerRow, AccountingDashboard,
     TrialBalanceRow, GLAccountDrillDown, PLStatement, BalanceSheetStatement,
-    PeriodCreate, PeriodRead,
+    PeriodCreate, PeriodRead, FiscalYearCreate, FiscalYearRead,
+    AccountingPeriodCloseCheckCreate, AccountingPeriodCloseCheckUpdate, AccountingPeriodCloseCheckRead,
+    RecurringJournalTemplateCreate, RecurringJournalTemplateRead,
+    AccountingPostingBatchRead, AccountingPostingRuleCreate, AccountingPostingRuleRead,
+    PaymentAllocationCreate, PaymentAllocationRead,
+    CurrencyRevaluationRunCreate, CurrencyRevaluationRunRead,
     ExchangeRateCreate, ExchangeRateRead, FXConvertResult,
 )
 from app.crud import finance as crud
@@ -108,11 +116,11 @@ async def create_journal_entry(
 ):
     data = body.model_dump()
     data["lines"] = [l.model_dump() for l in body.lines]
-    # Validate balanced entry
-    total_debit = sum(Decimal(str(l.get("debit", 0))) for l in data["lines"])
-    total_credit = sum(Decimal(str(l.get("credit", 0))) for l in data["lines"])
-    if abs(total_debit - total_credit) > Decimal("0.005"):
-        raise HTTPException(422, f"Journal entry is unbalanced: debit={total_debit} credit={total_credit}")
+    try:
+        svc.validate_journal_lines_balance(data["lines"])
+        await svc.assert_journal_lines_postable(db, data["lines"])
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
     entry = await crud.create_journal_entry(db, data, current_user.id)
     await db.commit()
     entry = await crud.get_journal_entry(db, entry.id)
@@ -140,13 +148,38 @@ async def post_journal_entry(
     entry = await crud.get_journal_entry(db, entry_id)
     if not entry:
         raise HTTPException(404, "Journal entry not found")
-    if entry.is_posted:
-        raise HTTPException(422, "Entry already posted")
-    entry.is_posted = True
-    entry.posted_by_id = current_user.id
-    entry.posted_at = datetime.now(timezone.utc)
+    try:
+        await svc.mark_journal_posted(db, entry, current_user.id)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
     await db.commit()
     return JournalEntryRead.model_validate(entry)
+
+
+@router.post("/journal/{entry_id}/reverse", response_model=JournalEntryDetailRead)
+async def reverse_journal_entry(
+    entry_id: uuid.UUID,
+    body: JournalReversalCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(require_permission("finance", "approve")),
+):
+    entry = await crud.get_journal_entry(db, entry_id)
+    if not entry:
+        raise HTTPException(404, "Journal entry not found")
+    try:
+        reversal = await svc.create_reversal_journal(
+            db,
+            entry,
+            reversal_entry_no=body.reversal_entry_no,
+            reversal_date=body.reversal_date,
+            user_id=current_user.id,
+            description=body.description,
+        )
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+    await db.commit()
+    reversal = await crud.get_journal_entry(db, reversal.id)
+    return _build_journal_detail(reversal)
 
 
 # ── Cash Accounts ─────────────────────────────────────────────────────────────
@@ -621,6 +654,238 @@ async def report_general_ledger(
 from app.models.finance import AccountingPeriod, PeriodStatus
 
 
+@router.get("/accounting/fiscal-years/", response_model=List[FiscalYearRead],
+            dependencies=[Depends(require_permission("finance", "view"))])
+async def list_fiscal_years(db: AsyncSession = Depends(get_db)):
+    from sqlalchemy import select as _sel
+    rows = (await db.execute(
+        _sel(FiscalYear).order_by(FiscalYear.start_date.desc())
+    )).scalars().all()
+    return [FiscalYearRead.model_validate(r) for r in rows]
+
+
+@router.post("/accounting/fiscal-years/", response_model=FiscalYearRead, status_code=201)
+async def create_fiscal_year(
+    body: FiscalYearCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(require_permission("finance", "configure")),
+):
+    if body.start_date > body.end_date:
+        raise HTTPException(422, "Fiscal year start_date must be on or before end_date")
+    fiscal_year = FiscalYear(**body.model_dump())
+    db.add(fiscal_year)
+    await db.commit()
+    await db.refresh(fiscal_year)
+    return FiscalYearRead.model_validate(fiscal_year)
+
+
+@router.get("/accounting/period-close-checks/", response_model=List[AccountingPeriodCloseCheckRead],
+            dependencies=[Depends(require_permission("finance", "view"))])
+async def list_period_close_checks(
+    period_id: uuid.UUID = Query(...),
+    db: AsyncSession = Depends(get_db),
+):
+    from sqlalchemy import select as _sel
+    rows = (await db.execute(
+        _sel(AccountingPeriodCloseCheck)
+        .where(AccountingPeriodCloseCheck.period_id == period_id)
+        .order_by(AccountingPeriodCloseCheck.check_code)
+    )).scalars().all()
+    return [AccountingPeriodCloseCheckRead.model_validate(r) for r in rows]
+
+
+@router.post("/accounting/period-close-checks/", response_model=AccountingPeriodCloseCheckRead, status_code=201)
+async def create_period_close_check(
+    body: AccountingPeriodCloseCheckCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(require_permission("finance", "configure")),
+):
+    check = AccountingPeriodCloseCheck(**body.model_dump())
+    db.add(check)
+    await db.commit()
+    await db.refresh(check)
+    return AccountingPeriodCloseCheckRead.model_validate(check)
+
+
+@router.patch("/accounting/period-close-checks/{check_id}", response_model=AccountingPeriodCloseCheckRead)
+async def update_period_close_check(
+    check_id: uuid.UUID,
+    body: AccountingPeriodCloseCheckUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(require_permission("finance", "configure")),
+):
+    from sqlalchemy import select as _sel
+    check = (await db.execute(
+        _sel(AccountingPeriodCloseCheck).where(AccountingPeriodCloseCheck.id == check_id)
+    )).scalar_one_or_none()
+    if not check:
+        raise HTTPException(404, "Period close check not found")
+    check.status = body.status
+    check.result_summary = body.result_summary
+    check.checked_by_id = current_user.id
+    check.checked_at = datetime.now(timezone.utc)
+    await db.commit()
+    await db.refresh(check)
+    return AccountingPeriodCloseCheckRead.model_validate(check)
+
+
+@router.get("/accounting/recurring-journals/", response_model=List[RecurringJournalTemplateRead],
+            dependencies=[Depends(require_permission("finance", "view"))])
+async def list_recurring_journals(db: AsyncSession = Depends(get_db)):
+    from sqlalchemy import select as _sel
+    from sqlalchemy.orm import selectinload as _selectinload
+    rows = (await db.execute(
+        _sel(RecurringJournalTemplate)
+        .options(_selectinload(RecurringJournalTemplate.lines))
+        .order_by(RecurringJournalTemplate.template_no)
+    )).scalars().all()
+    return [RecurringJournalTemplateRead.model_validate(r) for r in rows]
+
+
+@router.post("/accounting/recurring-journals/", response_model=RecurringJournalTemplateRead, status_code=201)
+async def create_recurring_journal(
+    body: RecurringJournalTemplateCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(require_permission("finance", "configure")),
+):
+    lines = [line.model_dump() for line in body.lines]
+    try:
+        svc.validate_journal_lines_balance(lines)
+        await svc.assert_journal_lines_postable(db, lines)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+    data = body.model_dump(exclude={"lines"})
+    template = RecurringJournalTemplate(**data, created_by_id=current_user.id)
+    template.lines = [RecurringJournalTemplateLine(**line) for line in lines]
+    db.add(template)
+    await db.commit()
+    from sqlalchemy import select as _sel
+    from sqlalchemy.orm import selectinload as _selectinload
+    template = (await db.execute(
+        _sel(RecurringJournalTemplate)
+        .options(_selectinload(RecurringJournalTemplate.lines))
+        .where(RecurringJournalTemplate.id == template.id)
+    )).scalar_one()
+    return RecurringJournalTemplateRead.model_validate(template)
+
+
+@router.get("/accounting/posting-batches/", response_model=List[AccountingPostingBatchRead],
+            dependencies=[Depends(require_permission("finance", "view"))])
+async def list_posting_batches(
+    source_module: Optional[str] = None,
+    limit: int = Query(100, le=500),
+    db: AsyncSession = Depends(get_db),
+):
+    from sqlalchemy import select as _sel
+    q = _sel(AccountingPostingBatch).order_by(AccountingPostingBatch.created_at.desc()).limit(limit)
+    if source_module:
+        q = q.where(AccountingPostingBatch.source_module == source_module)
+    rows = (await db.execute(q)).scalars().all()
+    return [AccountingPostingBatchRead.model_validate(r) for r in rows]
+
+
+@router.get("/accounting/posting-rules/", response_model=List[AccountingPostingRuleRead],
+            dependencies=[Depends(require_permission("finance", "view"))])
+async def list_posting_rules(
+    source_module: Optional[str] = None,
+    db: AsyncSession = Depends(get_db),
+):
+    from sqlalchemy import select as _sel
+    q = _sel(AccountingPostingRule).order_by(
+        AccountingPostingRule.source_module,
+        AccountingPostingRule.source_event,
+        AccountingPostingRule.priority,
+    )
+    if source_module:
+        q = q.where(AccountingPostingRule.source_module == source_module)
+    rows = (await db.execute(q)).scalars().all()
+    return [AccountingPostingRuleRead.model_validate(r) for r in rows]
+
+
+@router.post("/accounting/posting-rules/", response_model=AccountingPostingRuleRead, status_code=201)
+async def create_posting_rule(
+    body: AccountingPostingRuleCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(require_permission("finance", "configure")),
+):
+    rule = AccountingPostingRule(**body.model_dump())
+    db.add(rule)
+    await db.commit()
+    await db.refresh(rule)
+    return AccountingPostingRuleRead.model_validate(rule)
+
+
+@router.get("/accounting/payment-allocations/", response_model=List[PaymentAllocationRead],
+            dependencies=[Depends(require_permission("finance", "view"))])
+async def list_payment_allocations(
+    party_type: Optional[str] = None,
+    limit: int = Query(100, le=500),
+    db: AsyncSession = Depends(get_db),
+):
+    from sqlalchemy import select as _sel
+    q = _sel(PaymentAllocation).order_by(PaymentAllocation.allocation_date.desc()).limit(limit)
+    if party_type:
+        q = q.where(PaymentAllocation.party_type == party_type)
+    rows = (await db.execute(q)).scalars().all()
+    return [PaymentAllocationRead.model_validate(r) for r in rows]
+
+
+@router.post("/accounting/payment-allocations/", response_model=PaymentAllocationRead, status_code=201)
+async def create_payment_allocation(
+    body: PaymentAllocationCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(require_permission("finance", "create")),
+):
+    allocation = PaymentAllocation(**body.model_dump(), created_by_id=current_user.id)
+    db.add(allocation)
+    await db.commit()
+    await db.refresh(allocation)
+    return PaymentAllocationRead.model_validate(allocation)
+
+
+@router.get("/accounting/currency-revaluations/", response_model=List[CurrencyRevaluationRunRead],
+            dependencies=[Depends(require_permission("finance", "view"))])
+async def list_currency_revaluations(
+    currency: Optional[str] = None,
+    limit: int = Query(100, le=500),
+    db: AsyncSession = Depends(get_db),
+):
+    from sqlalchemy import select as _sel
+    from sqlalchemy.orm import selectinload as _selectinload
+    q = (
+        _sel(CurrencyRevaluationRun)
+        .options(_selectinload(CurrencyRevaluationRun.lines))
+        .order_by(CurrencyRevaluationRun.as_of_date.desc())
+        .limit(limit)
+    )
+    if currency:
+        q = q.where(CurrencyRevaluationRun.currency == currency)
+    rows = (await db.execute(q)).scalars().all()
+    return [CurrencyRevaluationRunRead.model_validate(r) for r in rows]
+
+
+@router.post("/accounting/currency-revaluations/", response_model=CurrencyRevaluationRunRead, status_code=201)
+async def create_currency_revaluation(
+    body: CurrencyRevaluationRunCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(require_permission("finance", "create")),
+):
+    lines = [line.model_dump() for line in body.lines]
+    data = body.model_dump(exclude={"lines"})
+    run = CurrencyRevaluationRun(**data, created_by_id=current_user.id)
+    run.lines = [CurrencyRevaluationLine(**line) for line in lines]
+    db.add(run)
+    await db.commit()
+    from sqlalchemy import select as _sel
+    from sqlalchemy.orm import selectinload as _selectinload
+    run = (await db.execute(
+        _sel(CurrencyRevaluationRun)
+        .options(_selectinload(CurrencyRevaluationRun.lines))
+        .where(CurrencyRevaluationRun.id == run.id)
+    )).scalar_one()
+    return CurrencyRevaluationRunRead.model_validate(run)
+
+
 @router.get("/accounting/periods/", response_model=List[PeriodRead],
             dependencies=[Depends(require_permission("finance", "view"))])
 async def list_periods(db: AsyncSession = Depends(get_db)):
@@ -635,9 +900,15 @@ async def list_periods(db: AsyncSession = Depends(get_db)):
 async def create_period(
     body: PeriodCreate,
     db: AsyncSession = Depends(get_db),
-    current_user=Depends(require_permission("finance", "create")),
+    current_user=Depends(require_permission("finance", "configure")),
 ):
-    period = AccountingPeriod(period_ym=body.period_ym, notes=body.notes)
+    period = AccountingPeriod(
+        period_ym=body.period_ym,
+        fiscal_year_id=body.fiscal_year_id,
+        period_start=body.period_start,
+        period_end=body.period_end,
+        notes=body.notes,
+    )
     db.add(period)
     await db.commit()
     await db.refresh(period)
@@ -681,6 +952,8 @@ async def lock_period(
     period.status = PeriodStatus.LOCKED
     period.closed_by_id = current_user.id
     period.closed_at = datetime.now(timezone.utc)
+    period.locked_by_id = current_user.id
+    period.locked_at = period.closed_at
     await db.commit()
     await db.refresh(period)
     return PeriodRead.model_validate(period)
