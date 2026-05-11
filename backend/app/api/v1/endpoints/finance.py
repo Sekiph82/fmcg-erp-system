@@ -9,6 +9,13 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import get_current_user, get_db, require_permission
+from app.core.access_control import (
+    can_modify_scope,
+    can_view_scope,
+    forbidden_detail,
+    has_any_permission,
+    require_any_permission,
+)
 from app.models.finance import (
     ChartOfAccount, JournalEntry, JournalLine,
     CashAccount, CashTransaction, MpesaReconciliation,
@@ -51,6 +58,52 @@ from app.crud import finance as crud
 from app.services import finance_service as svc
 
 router = APIRouter()
+
+FINANCE_VIEW_PERMISSIONS = (
+    "finance.view",
+    "finance.view_all",
+    "finance.view_own_scope",
+)
+
+
+def _finance_forbidden(detail: str) -> HTTPException:
+    return HTTPException(status_code=403, detail=forbidden_detail(detail))
+
+
+def _has_broad_finance_view(user) -> bool:
+    return has_any_permission(user, ("finance.view", "finance.view_all"))
+
+
+def _finance_scopes(record) -> list[tuple[str, str]]:
+    scopes: list[tuple[str, str]] = []
+    for field_name, scope_type in (
+        ("company_id", "company"),
+        ("branch_id", "branch"),
+        ("cost_center_id", "cost_center"),
+    ):
+        value = getattr(record, field_name, None)
+        if value:
+            scopes.append((scope_type, str(value)))
+    return list(dict.fromkeys(scopes))
+
+
+def _can_view_finance_record(user, record) -> bool:
+    if _has_broad_finance_view(user):
+        return True
+    return any(can_view_scope(user, "finance", scope_type, scope_id) for scope_type, scope_id in _finance_scopes(record))
+
+
+def _require_finance_view(user, record) -> None:
+    if not _can_view_finance_record(user, record):
+        raise _finance_forbidden("You can view finance records only inside your assigned company, branch, or cost-center scope.")
+
+
+def _require_finance_action(user, record, action: str) -> None:
+    if has_any_permission(user, (f"finance.{action}_all",)):
+        return
+    if any(can_modify_scope(user, "finance", action, scope_type, scope_id) for scope_type, scope_id in _finance_scopes(record)):
+        return
+    raise _finance_forbidden("You can view this finance record but cannot modify it in this scope.")
 
 
 # ── Chart of Accounts ─────────────────────────────────────────────────────────
@@ -95,15 +148,17 @@ async def update_account(
 
 # ── Journal Entries ───────────────────────────────────────────────────────────
 
-@router.get("/journal/", response_model=List[JournalEntryRead],
-            dependencies=[Depends(require_permission("finance", "view"))])
+@router.get("/journal/", response_model=List[JournalEntryRead])
 async def list_journal(
     source_module: Optional[str] = None,
     is_posted: Optional[bool] = None,
     limit: int = Query(100, le=500),
     db: AsyncSession = Depends(get_db),
+    current_user=Depends(require_any_permission(FINANCE_VIEW_PERMISSIONS)),
 ):
     entries = await crud.list_journal_entries(db, source_module=source_module, is_posted=is_posted, limit=limit)
+    if not _has_broad_finance_view(current_user):
+        entries = [entry for entry in entries if _can_view_finance_record(current_user, entry)]
     out = []
     for e in entries:
         r = JournalEntryRead.model_validate(e)
@@ -115,9 +170,10 @@ async def list_journal(
 async def create_journal_entry(
     body: JournalEntryCreate,
     db: AsyncSession = Depends(get_db),
-    current_user=Depends(require_permission("finance", "create")),
+    current_user=Depends(get_current_user),
 ):
     data = body.model_dump()
+    _require_finance_action(current_user, JournalEntry(**{key: data.get(key) for key in ("company_id", "branch_id", "cost_center_id")}), "create")
     data["lines"] = [l.model_dump() for l in body.lines]
     try:
         svc.validate_journal_lines_balance(data["lines"])
@@ -130,15 +186,16 @@ async def create_journal_entry(
     return _build_journal_detail(entry)
 
 
-@router.get("/journal/{entry_id}", response_model=JournalEntryDetailRead,
-            dependencies=[Depends(require_permission("finance", "view"))])
+@router.get("/journal/{entry_id}", response_model=JournalEntryDetailRead)
 async def get_journal_entry(
     entry_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
+    current_user=Depends(require_any_permission(FINANCE_VIEW_PERMISSIONS)),
 ):
     entry = await crud.get_journal_entry(db, entry_id)
     if not entry:
         raise HTTPException(404, "Journal entry not found")
+    _require_finance_view(current_user, entry)
     return _build_journal_detail(entry)
 
 
@@ -146,11 +203,12 @@ async def get_journal_entry(
 async def post_journal_entry(
     entry_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    current_user=Depends(require_permission("finance", "approve")),
+    current_user=Depends(get_current_user),
 ):
     entry = await crud.get_journal_entry(db, entry_id)
     if not entry:
         raise HTTPException(404, "Journal entry not found")
+    _require_finance_action(current_user, entry, "post")
     try:
         await svc.mark_journal_posted(db, entry, current_user.id)
     except ValueError as exc:
@@ -164,11 +222,12 @@ async def reverse_journal_entry(
     entry_id: uuid.UUID,
     body: JournalReversalCreate,
     db: AsyncSession = Depends(get_db),
-    current_user=Depends(require_permission("finance", "approve")),
+    current_user=Depends(get_current_user),
 ):
     entry = await crud.get_journal_entry(db, entry_id)
     if not entry:
         raise HTTPException(404, "Journal entry not found")
+    _require_finance_action(current_user, entry, "post")
     try:
         reversal = await svc.create_reversal_journal(
             db,
@@ -178,6 +237,9 @@ async def reverse_journal_entry(
             user_id=current_user.id,
             description=body.description,
         )
+        reversal.company_id = entry.company_id
+        reversal.branch_id = entry.branch_id
+        reversal.cost_center_id = entry.cost_center_id
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
     await db.commit()

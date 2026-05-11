@@ -75,6 +75,9 @@ class JournalEntryCreate(BaseModel):
     source_module: Optional[str] = None
     source_event: Optional[str] = None
     source_ref: Optional[str] = None
+    company_id: Optional[uuid.UUID] = None
+    branch_id: Optional[uuid.UUID] = None
+    cost_center_id: Optional[uuid.UUID] = None
     notes: Optional[str] = None
     lines: List[JournalLineCreate] = []
 
@@ -88,6 +91,9 @@ class JournalEntryRead(BaseModel):
     source_module: Optional[str]
     source_event: Optional[str] = None
     source_ref: Optional[str]
+    company_id: Optional[uuid.UUID] = None
+    branch_id: Optional[uuid.UUID] = None
+    cost_center_id: Optional[uuid.UUID] = None
     status: Optional["JournalStatus"] = None
     reversal_of_entry_id: Optional[uuid.UUID] = None
     reversed_by_entry_id: Optional[uuid.UUID] = None

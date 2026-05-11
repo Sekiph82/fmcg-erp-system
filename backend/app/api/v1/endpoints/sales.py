@@ -10,6 +10,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_
 
 from app.core.deps import get_current_user, get_db
+from app.core.access_control import (
+    can_modify_scope,
+    can_view_scope,
+    forbidden_detail,
+    has_any_permission,
+    require_any_permission,
+)
 from app.models.sales import (
     Customer, SalesOrder, SOLine, Shipment, ShipmentLine,
     Invoice, InvoiceLine, Payment,
@@ -30,6 +37,79 @@ from app.services import sales_service as svc
 from app.services import mpesa_service as mpesa_svc
 
 router = APIRouter()
+
+SALES_VIEW_PERMISSIONS = (
+    "sales.view",
+    "sales.view_all",
+    "sales.view_own_scope",
+    "crm.view_all",
+    "crm.view_own_region",
+)
+
+
+def _sales_forbidden(detail: str) -> HTTPException:
+    return HTTPException(status_code=403, detail=forbidden_detail(detail))
+
+
+def _has_broad_sales_view(user) -> bool:
+    return has_any_permission(user, ("sales.view", "sales.view_all", "crm.view_all"))
+
+
+def _customer_region(customer: Customer | None) -> str | None:
+    region = getattr(customer, "region", None)
+    return str(region) if region else None
+
+
+def _can_view_customer(user, customer: Customer | None) -> bool:
+    if _has_broad_sales_view(user):
+        return True
+    region = _customer_region(customer)
+    if region and (
+        can_view_scope(user, "sales", "sales_region", region)
+        or can_view_scope(user, "crm", "sales_region", region)
+    ):
+        return True
+    return False
+
+
+def _require_customer_view(user, customer: Customer | None) -> None:
+    if not _can_view_customer(user, customer):
+        raise _sales_forbidden("You can view sales records only inside your assigned customer or region scope.")
+
+
+def _require_customer_action(user, customer: Customer | None, action: str = "edit") -> None:
+    if has_any_permission(user, (f"sales.{action}_all", f"crm.{action}_all")):
+        return
+    region = _customer_region(customer)
+    if region and (
+        can_modify_scope(user, "sales", action, "sales_region", region)
+        or can_modify_scope(user, "crm", action, "sales_region", region)
+    ):
+        return
+    raise _sales_forbidden("You can view this customer but cannot modify it in this region scope.")
+
+
+def _can_view_so(user, so: SalesOrder) -> bool:
+    if _can_view_customer(user, getattr(so, "customer", None)):
+        return True
+    warehouse_id = getattr(so, "warehouse_id", None)
+    return bool(warehouse_id and can_view_scope(user, "sales", "warehouse", warehouse_id))
+
+
+def _require_so_view(user, so: SalesOrder) -> None:
+    if not _can_view_so(user, so):
+        raise _sales_forbidden("You can view sales orders only inside your assigned operational scope.")
+
+
+def _require_so_action(user, so: SalesOrder, action: str = "edit") -> None:
+    customer = getattr(so, "customer", None)
+    region = _customer_region(customer)
+    if region and can_modify_scope(user, "sales", action, "sales_region", region):
+        return
+    warehouse_id = getattr(so, "warehouse_id", None)
+    if warehouse_id and can_modify_scope(user, "sales", action, "warehouse", warehouse_id):
+        return
+    raise _sales_forbidden("You can view this sales order but cannot modify it in this scope.")
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -152,9 +232,12 @@ def _build_invoice_detail(inv: Invoice) -> InvoiceDetailRead:
 async def list_customers(
     active_only: bool = False,
     db: AsyncSession = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user=Depends(require_any_permission(SALES_VIEW_PERMISSIONS)),
 ):
-    return await crud.list_customers(db, active_only=active_only)
+    customers = await crud.list_customers(db, active_only=active_only)
+    if not _has_broad_sales_view(current_user):
+        customers = [customer for customer in customers if _can_view_customer(current_user, customer)]
+    return customers
 
 
 @router.post("/customers/", response_model=CustomerRead, status_code=201)
@@ -163,6 +246,7 @@ async def create_customer(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
+    _require_customer_action(current_user, Customer(region=getattr(body, "region", None)), "create")
     c = await crud.create_customer(db, body.model_dump())
     await db.commit()
     await db.refresh(c)
@@ -173,11 +257,12 @@ async def create_customer(
 async def get_customer(
     customer_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user=Depends(require_any_permission(SALES_VIEW_PERMISSIONS)),
 ):
     c = await crud.get_customer(db, customer_id)
     if not c:
         raise HTTPException(404, "Customer not found")
+    _require_customer_view(current_user, c)
     return c
 
 
@@ -191,7 +276,11 @@ async def update_customer(
     c = await crud.get_customer(db, customer_id)
     if not c:
         raise HTTPException(404, "Customer not found")
-    for k, v in body.model_dump(exclude_unset=True).items():
+    _require_customer_action(current_user, c, "edit")
+    updates = body.model_dump(exclude_unset=True)
+    if "region" in updates and updates["region"] != c.region:
+        _require_customer_action(current_user, Customer(region=updates["region"]), "edit")
+    for k, v in updates.items():
         setattr(c, k, v)
     await db.commit()
     await db.refresh(c)
@@ -210,9 +299,11 @@ async def list_orders(
     crm_segment_id: Optional[uuid.UUID] = Query(None, description="Filter by CRM segment"),
     source: Optional[str] = Query(None, description="Filter by order source (MANUAL/FIELD_SALES/ECOMMERCE/...)"),
     db: AsyncSession = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user=Depends(require_any_permission(SALES_VIEW_PERMISSIONS)),
 ):
     sos = await crud.list_sos(db, status=status, customer_id=customer_id)
+    if not _has_broad_sales_view(current_user):
+        sos = [so for so in sos if _can_view_so(current_user, so)]
     # Apply marketing filters in-memory (avoids altering crud layer)
     if campaign_id:
         sos = [s for s in sos if str(getattr(s, "campaign_id", None)) == str(campaign_id)]
@@ -231,6 +322,10 @@ async def create_order(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
+    customer = await crud.get_customer(db, body.customer_id)
+    if not customer:
+        raise HTTPException(404, "Customer not found")
+    _require_customer_action(current_user, customer, "create")
     data = body.model_dump()
     data["lines"] = [l.model_dump() for l in body.lines]
     so = await crud.create_so(db, data, created_by_id=current_user.id)
@@ -243,11 +338,12 @@ async def create_order(
 async def get_order(
     so_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user=Depends(require_any_permission(SALES_VIEW_PERMISSIONS)),
 ):
     so = await crud.get_so(db, so_id)
     if not so:
         raise HTTPException(404, "Sales order not found")
+    _require_so_view(current_user, so)
     return _build_so_detail(so)
 
 
@@ -261,6 +357,7 @@ async def update_order(
     so = await crud.get_so(db, so_id)
     if not so:
         raise HTTPException(404, "Sales order not found")
+    _require_so_action(current_user, so, "edit")
     if so.status not in (SOStatus.DRAFT,):
         raise HTTPException(422, "Only DRAFT orders can be updated")
     for k, v in body.model_dump(exclude_unset=True).items():
@@ -279,6 +376,7 @@ async def confirm_order(
     so = await crud.get_so(db, so_id)
     if not so:
         raise HTTPException(404, "Sales order not found")
+    _require_so_action(current_user, so, "edit")
     so = await svc.confirm_so(db, so, current_user.id)
     await db.commit()
     so = await crud.get_so(db, so_id)
@@ -295,6 +393,7 @@ async def allocate_order(
     so = await crud.get_so(db, so_id)
     if not so:
         raise HTTPException(404, "Sales order not found")
+    _require_so_action(current_user, so, "edit")
     so = await svc.allocate_so(db, so, body.warehouse_id, current_user.id)
     await db.commit()
     so = await crud.get_so(db, so_id)
@@ -310,6 +409,7 @@ async def cancel_order(
     so = await crud.get_so(db, so_id)
     if not so:
         raise HTTPException(404, "Sales order not found")
+    _require_so_action(current_user, so, "edit")
     so = await svc.cancel_so(db, so)
     await db.commit()
     so = await crud.get_so(db, so_id)

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
-import { rolesApi, groupByModule, STANDARD_ACTIONS } from "@/lib/roles";
+import { AccessScopeAssign, rolesApi, groupByModule, STANDARD_ACTIONS } from "@/lib/roles";
 import { auditApi, EVENT_LABELS, eventBadgeColor } from "@/lib/audit";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -19,7 +19,10 @@ export default function RoleDetailPage() {
   const [editName, setEditName] = useState("");
   const [editDesc, setEditDesc] = useState("");
   const [permOpen, setPermOpen] = useState(false);
+  const [scopesOpen, setScopesOpen] = useState(false);
   const [selectedPermIds, setSelectedPermIds] = useState<string[]>([]);
+  const [scopeJson, setScopeJson] = useState("[]");
+  const [scopeError, setScopeError] = useState<string | null>(null);
 
   const { data: role, isLoading } = useQuery({
     queryKey: ["role", id],
@@ -36,6 +39,12 @@ export default function RoleDetailPage() {
     queryKey: ["audit-role", id],
     queryFn: () =>
       auditApi.list({ target_type: "role", target_id: id, limit: 30 }),
+    enabled: !!id,
+  });
+
+  const { data: roleScopes = [] } = useQuery({
+    queryKey: ["role-scopes", id],
+    queryFn: () => rolesApi.listScopes(id),
     enabled: !!id,
   });
 
@@ -57,6 +66,14 @@ export default function RoleDetailPage() {
     mutationFn: () => rolesApi.assignPermissions(id, selectedPermIds),
     onSuccess: () => { invalidate(); setPermOpen(false); },
   });
+  const assignScopesMutation = useMutation({
+    mutationFn: (scopes: AccessScopeAssign[]) => rolesApi.assignScopes(id, scopes),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["role-scopes", id] });
+      setScopesOpen(false);
+      setScopeError(null);
+    },
+  });
 
   const openEdit = () => {
     setEditName(role?.name ?? "");
@@ -69,10 +86,30 @@ export default function RoleDetailPage() {
     setPermOpen(true);
   };
 
+  const openScopes = () => {
+    const editableScopes = roleScopes.map(({ id: _id, user_id: _userId, role_id: _roleId, ...scope }) => scope);
+    setScopeJson(JSON.stringify(editableScopes, null, 2));
+    setScopeError(null);
+    setScopesOpen(true);
+  };
+
   const togglePerm = (pid: string) =>
     setSelectedPermIds((prev) =>
       prev.includes(pid) ? prev.filter((x) => x !== pid) : [...prev, pid],
     );
+
+  const saveScopes = () => {
+    try {
+      const parsed = JSON.parse(scopeJson) as AccessScopeAssign[];
+      if (!Array.isArray(parsed)) {
+        setScopeError("Scope payload must be a JSON array.");
+        return;
+      }
+      assignScopesMutation.mutate(parsed);
+    } catch {
+      setScopeError("Scope payload is not valid JSON.");
+    }
+  };
 
   const grouped = groupByModule(allPerms);
 
@@ -114,6 +151,7 @@ export default function RoleDetailPage() {
       <div className="flex flex-wrap gap-2">
         <Button variant="secondary" onClick={openEdit}>Edit Role</Button>
         <Button variant="secondary" onClick={openPerms}>Manage Permissions</Button>
+        <Button variant="secondary" onClick={openScopes}>Manage Scopes</Button>
         {role.is_active ? (
           <Button
             variant="danger"
@@ -168,6 +206,61 @@ export default function RoleDetailPage() {
                   </div>
                 </div>
               ))}
+          </div>
+        )}
+      </section>
+
+      {/* Role scopes */}
+      <section className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h2 className="text-sm font-semibold text-gray-700">Default Scopes</h2>
+          <button onClick={openScopes} className="text-xs text-indigo-500 hover:underline">
+            Edit
+          </button>
+        </div>
+        {roleScopes.length === 0 ? (
+          <p className="text-sm text-gray-400">No default scopes assigned.</p>
+        ) : (
+          <div className="space-y-2">
+            {roleScopes.map((scope) => {
+              const actions = [
+                ["View", scope.can_view],
+                ["Create", scope.can_create],
+                ["Edit", scope.can_edit],
+                ["Delete", scope.can_delete],
+                ["Approve", scope.can_approve],
+                ["Post", scope.can_post],
+                ["Release", scope.can_release],
+                ["Cancel", scope.can_cancel],
+                ["Export", scope.can_export],
+                ["Import", scope.can_import],
+                ["Transfer", scope.can_transfer],
+                ["Adjust", scope.can_adjust],
+                ["Receive", scope.can_receive],
+                ["Dispatch", scope.can_dispatch],
+              ].filter(([, enabled]) => enabled);
+              return (
+                <div key={scope.id} className="rounded-lg bg-gray-50 px-3 py-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-sm font-medium text-gray-800">{scope.scope_type}</span>
+                    <span className="font-mono text-xs text-gray-500">{scope.scope_id}</span>
+                    {scope.scope_name && <span className="text-xs text-gray-400">{scope.scope_name}</span>}
+                    <Badge label={scope.is_active ? "Active" : "Inactive"} variant={scope.is_active ? "green" : "red"} />
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {actions.length === 0 ? (
+                      <span className="text-xs text-gray-400">No actions</span>
+                    ) : (
+                      actions.map(([label]) => (
+                        <span key={String(label)} className="rounded bg-indigo-50 px-2 py-0.5 text-xs text-indigo-700">
+                          {label}
+                        </span>
+                      ))
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </section>
@@ -271,6 +364,29 @@ export default function RoleDetailPage() {
               loading={assignPermsMutation.isPending}
             >
               Save Permissions
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Scopes Modal */}
+      <Modal open={scopesOpen} onClose={() => setScopesOpen(false)} title="Manage Role Scopes">
+        <div className="space-y-4">
+          <textarea
+            value={scopeJson}
+            onChange={(e) => setScopeJson(e.target.value)}
+            rows={14}
+            className="w-full rounded-lg border border-gray-200 px-3 py-2 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            spellCheck={false}
+          />
+          {scopeError && <p className="text-sm text-red-600">{scopeError}</p>}
+          {assignScopesMutation.error && (
+            <p className="text-sm text-red-600">Failed to save scopes.</p>
+          )}
+          <div className="flex justify-end gap-3 pt-2">
+            <Button variant="secondary" type="button" onClick={() => setScopesOpen(false)}>Cancel</Button>
+            <Button onClick={saveScopes} loading={assignScopesMutation.isPending}>
+              Save Scopes
             </Button>
           </div>
         </div>

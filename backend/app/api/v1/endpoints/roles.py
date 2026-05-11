@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import delete, insert, select
 from typing import List, Optional
 import uuid
 
@@ -7,11 +8,13 @@ from app.db.session import get_db
 from app.core.deps import get_current_user, require_permission
 from app.crud import role as crud
 from app.crud import audit as audit_crud
+from app.schemas.access_control import AccessScopeAssignList, AccessScopeRead
 from app.schemas.role import (
     RoleCreate, RoleUpdate, RoleRead, RoleReadShort,
     PermissionCreate, PermissionRead, PermissionAssign,
 )
 from app.models.audit_log import AuditEvent
+from app.models.role import AccessScope
 
 router = APIRouter()
 
@@ -234,3 +237,74 @@ async def assign_permissions(
         )
     await db.commit()
     return role
+
+
+@router.get(
+    "/{role_id}/scopes",
+    response_model=List[AccessScopeRead],
+    dependencies=[Depends(require_permission("roles", "view"))],
+)
+async def list_role_scopes(role_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    role = await crud.get_role(db, role_id)
+    if not role:
+        raise HTTPException(status_code=404, detail="Role not found")
+    result = await db.execute(
+        select(AccessScope)
+        .where(AccessScope.role_id == role_id)
+        .order_by(AccessScope.scope_type, AccessScope.scope_name, AccessScope.scope_id)
+    )
+    return result.scalars().all()
+
+
+@router.put(
+    "/{role_id}/scopes",
+    response_model=List[AccessScopeRead],
+    dependencies=[Depends(require_permission("roles", "manage"))],
+)
+async def assign_role_scopes(
+    role_id: uuid.UUID,
+    data: AccessScopeAssignList,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    role = await crud.get_role(db, role_id)
+    if not role:
+        raise HTTPException(status_code=404, detail="Role not found")
+
+    old_result = await db.execute(select(AccessScope).where(AccessScope.role_id == role_id))
+    old_scopes = old_result.scalars().all()
+    old_keys = {(scope.scope_type, scope.scope_id) for scope in old_scopes}
+
+    await db.execute(delete(AccessScope).where(AccessScope.role_id == role_id))
+    rows = [
+        {"id": uuid.uuid4(), "role_id": role_id, **scope.model_dump()}
+        for scope in data.scopes
+    ]
+    if rows:
+        await db.execute(insert(AccessScope), rows)
+
+    new_keys = {(scope.scope_type, scope.scope_id) for scope in data.scopes}
+    await audit_crud.log_event(
+        db,
+        event_type=AuditEvent.ROLE_SCOPE_ASSIGNED if new_keys else AuditEvent.ROLE_SCOPE_REMOVED,
+        actor_id=current_user.id,
+        actor_email=current_user.email,
+        target_type="role",
+        target_id=str(role.id),
+        target_name=role.name,
+        details={
+            "added": sorted([f"{scope_type}:{scope_id}" for scope_type, scope_id in new_keys - old_keys]),
+            "removed": sorted([f"{scope_type}:{scope_id}" for scope_type, scope_id in old_keys - new_keys]),
+            "scope_count": len(rows),
+        },
+        ip_address=_ip(request),
+    )
+    await db.commit()
+
+    result = await db.execute(
+        select(AccessScope)
+        .where(AccessScope.role_id == role_id)
+        .order_by(AccessScope.scope_type, AccessScope.scope_name, AccessScope.scope_id)
+    )
+    return result.scalars().all()

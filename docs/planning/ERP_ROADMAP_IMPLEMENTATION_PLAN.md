@@ -233,6 +233,120 @@ Implementation subtasks:
 - Test requirements: Backend compile, focused/regression pytest, Alembic heads/history/offline SQL, frontend type-check, and docs checks passed. Live `alembic upgrade head` remains blocked by PostgreSQL connection refusal.
 - Documentation requirements: Record commands/results in CODEX_PROGRESS.md.
 
+### GAP-SEC-001: ERP-wide Permission + Scope-Based Access Control
+
+- Tier: Security Foundation
+- Phase: Phase 2 - Critical ERP foundations
+- Business priority: Critical / High-priority user override
+- Technical area: Security / RBAC / Access scopes
+- Files likely involved: `backend/app/models/role.py`, `backend/app/models/user.py`, `backend/app/core/deps.py`, `backend/app/core/access_control.py`, `backend/app/schemas`, `backend/app/api/v1/endpoints/auth.py`, `backend/app/db/seed.py`, `backend/tests`, `frontend/src/lib/auth.ts`, `frontend/src/context/AuthContext.tsx`, `frontend/src/components/Sidebar.tsx`
+
+Requirements from user override:
+- Implement ERP-wide permission + scope-based access control.
+- Allow broad/global view access when granted.
+- Restrict create/edit/delete/approve/post/release/mutation actions by permission, scope, and workflow status.
+- Use existing auth, role, and permission models; do not create a competing RBAC system.
+- Backend must be the source of truth; frontend visibility is UX only.
+- Pause GAP-003B and resume it after GAP-SEC-001 is complete.
+
+Implementation subtasks:
+
+#### GAP-SEC-001A: Audit current implementation: ERP-wide permission + scope-based access control
+
+- Status: DONE
+- Dependencies: GAP-003A
+- Acceptance criteria: Current auth, user, role, permission, company, branch, warehouse, frontend auth, and endpoint protection patterns are recorded.
+- Test requirements: No business logic changes; documentation-only audit accepted for this subtask.
+- Documentation requirements: Created `docs/planning/GAP-SEC-001_ACCESS_CONTROL_AUDIT.md` and updated task tracking.
+
+#### GAP-SEC-001B: Design data model/schema: ERP-wide permission + scope-based access control
+
+- Status: DONE
+- Dependencies: GAP-SEC-001A
+- Acceptance criteria: Define additive schema and service architecture for generic role/user access scopes, scope-aware permissions, record scope resolution, and workflow status locks.
+- Test requirements: Design must map to existing ORM and migration conventions.
+- Documentation requirements: Created `docs/planning/GAP-SEC-001_ACCESS_CONTROL_SCHEMA_DESIGN.md`.
+
+#### GAP-SEC-001C: Add or update database migrations: ERP-wide permission + scope-based access control
+
+- Status: DONE
+- Dependencies: GAP-SEC-001B
+- Acceptance criteria: Add generic access scope migration with indexes and constraints without destructive auth changes.
+- Test requirements: Migration compiles; Alembic heads/history/offline SQL pass.
+- Documentation requirements: Added `backend/alembic/versions/20260511_0030_access_scopes.py`; offline SQL passed and live DB upgrade remains blocked by PostgreSQL connection refusal.
+
+#### GAP-SEC-001D: Add or update backend models: ERP-wide permission + scope-based access control
+
+- Status: DONE
+- Dependencies: GAP-SEC-001C
+- Acceptance criteria: Add ORM model/relationships for generic access scopes using existing User and Role models.
+- Test requirements: Model import and mapper configuration pass.
+- Documentation requirements: Added `AccessScope`, `Permission.is_active`, `Role.is_system_role`, and relationships on `User`/`Role`.
+
+#### GAP-SEC-001E: Add or update schemas and `/auth/me`: ERP-wide permission + scope-based access control
+
+- Status: DONE
+- Dependencies: GAP-SEC-001D
+- Acceptance criteria: Authenticated user payload returns effective roles, permissions, modules, scopes, and feature flags while remaining backward-compatible.
+- Test requirements: Auth schema tests and `/auth/me` smoke checks pass.
+- Documentation requirements: Added access-control schemas and extended `/api/v1/auth/me` with effective modules, scopes, and feature flags.
+
+#### GAP-SEC-001F: Add backend access-control service/helpers: ERP-wide permission + scope-based access control
+
+- Status: DONE
+- Dependencies: GAP-SEC-001E
+- Acceptance criteria: Implement centralized helpers for permissions, scoped action checks, record access, record-scope resolution, and workflow status locking.
+- Test requirements: Unit tests cover broad view, scoped mutation allow/deny, user override precedence, role scopes, admin bypass, and status locks.
+- Documentation requirements: Added `backend/app/core/access_control.py` and implementation notes.
+
+#### GAP-SEC-001G: Apply scoped enforcement to first critical modules
+
+- Status: DONE
+- Dependencies: GAP-SEC-001F
+- Acceptance criteria: Critical module mutations begin using the central helpers in small safe slices.
+- Test requirements: Focused API tests for inventory/WMS, production, quality, finance, sales, procurement, and admin patterns where practical.
+- Documentation requirements: Admin role/user scope APIs and first-pass operational enforcement are implemented for inventory/WMS, production, sales, procurement, quality, and finance journal slices.
+
+#### GAP-SEC-001H: Update frontend auth helpers and sidebar/action UX
+
+- Status: DONE
+- Dependencies: GAP-SEC-001G
+- Acceptance criteria: Frontend auth context exposes permission and scope helpers; sidebar and important actions reflect access-control data.
+- Test requirements: Frontend type-check and targeted smoke checks pass.
+- Documentation requirements: Auth context aliases, frontend scope API clients, inventory view-only/action UX, and user/role scope management panels are added.
+
+#### GAP-SEC-001I: Add or update seed roles, permissions, and default scopes
+
+- Status: DONE
+- Dependencies: GAP-SEC-001H
+- Acceptance criteria: Idempotent scope-aware permissions and default role templates exist without duplicate grants.
+- Test requirements: Seed smoke tests prove repeat startup does not duplicate permissions/scopes.
+- Documentation requirements: Scope-aware permission/role seed contracts added; operational role scopes remain intentionally unassigned until admin/user configuration.
+
+#### GAP-SEC-001J: Add tests and smoke checks for scoped access control
+
+- Status: DONE
+- Dependencies: GAP-SEC-001I
+- Acceptance criteria: Tests cover unauthenticated access, module denial, view-only denial, scoped mutation, admin bypass, `/auth/me`, and frontend access helpers.
+- Test requirements: Focused backend pytest and frontend type-check pass.
+- Documentation requirements: Focused tests and route-enforcement contract tests added; deeper DB-backed endpoint integration coverage remains future work.
+
+#### GAP-SEC-001K: Add or update documentation for scoped access control
+
+- Status: DONE
+- Dependencies: GAP-SEC-001J
+- Acceptance criteria: Architecture, admin usage, module rollout rules, endpoint behavior, and known remaining work are documented.
+- Test requirements: Documentation content check passes.
+- Documentation requirements: Added `docs/planning/GAP-SEC-001_ACCESS_CONTROL_IMPLEMENTATION_NOTES.md`.
+
+#### GAP-SEC-001L: Run checks and record result: ERP-wide permission + scope-based access control
+
+- Status: DONE
+- Dependencies: GAP-SEC-001K
+- Acceptance criteria: Relevant compile, import, pytest, Alembic, frontend, and docs checks pass or blockers are recorded.
+- Test requirements: Commands/results recorded in `CODEX_PROGRESS.md`.
+- Documentation requirements: GAP-SEC-001 is complete as a foundation; live DB migration remains blocked by PostgreSQL connection refusal and is recorded in `CODEX_PROGRESS.md`.
+
 ### GAP-003: Permission and Security Hardening Across All New Modules
 
 - Tier: Tier 1 - Critical Gaps
@@ -256,8 +370,8 @@ Implementation subtasks:
 
 #### GAP-003B: Design data model/schema: Permission and Security Hardening Across All New Modules
 
-- Status: TODO
-- Dependencies: GAP-003A
+- Status: PAUSED
+- Dependencies: GAP-SEC-001L
 - Acceptance criteria: Define schema/model changes only if needed and review existing models first.
 - Test requirements: Schema design notes reviewed against current ORM conventions.
 - Documentation requirements: Document model decisions and migration needs.

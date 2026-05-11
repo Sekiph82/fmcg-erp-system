@@ -8,6 +8,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app.core.deps import get_current_user, get_db
+from app.core.access_control import (
+    can_modify_scope,
+    can_view_scope,
+    forbidden_detail,
+    has_any_permission,
+    require_any_permission,
+)
 from app.models.quality import QCInspection, QCTestResult, QCParameter, QCType, QCStatus
 from app.models.master import Supplier, Material, Product
 from app.schemas.quality import (
@@ -21,6 +28,57 @@ from app.crud import quality as crud
 from app.services import quality_service as svc
 
 router = APIRouter()
+
+QUALITY_VIEW_PERMISSIONS = (
+    "quality.view",
+    "quality.view_all",
+    "quality.view_own_scope",
+)
+
+
+def _quality_forbidden(detail: str) -> HTTPException:
+    return HTTPException(status_code=403, detail=forbidden_detail(detail))
+
+
+def _has_broad_quality_view(user) -> bool:
+    return has_any_permission(user, ("quality.view", "quality.view_all"))
+
+
+def _product_category(product) -> str | None:
+    category = getattr(product, "category", None)
+    if category is None:
+        return None
+    return str(getattr(category, "value", category))
+
+
+def _quality_scopes(inspection: QCInspection) -> list[tuple[str, str]]:
+    scopes: list[tuple[str, str]] = []
+    warehouse_id = getattr(inspection, "warehouse_id", None)
+    if warehouse_id:
+        scopes.append(("warehouse", str(warehouse_id)))
+    category = _product_category(getattr(inspection, "product", None))
+    if category:
+        scopes.append(("product_category", category))
+    return list(dict.fromkeys(scopes))
+
+
+def _can_view_inspection(user, inspection: QCInspection) -> bool:
+    if _has_broad_quality_view(user):
+        return True
+    return any(can_view_scope(user, "quality", scope_type, scope_id) for scope_type, scope_id in _quality_scopes(inspection))
+
+
+def _require_inspection_view(user, inspection: QCInspection) -> None:
+    if not _can_view_inspection(user, inspection):
+        raise _quality_forbidden("You can view quality records only inside your assigned quality scope.")
+
+
+def _require_inspection_action(user, inspection: QCInspection, action: str) -> None:
+    if has_any_permission(user, (f"quality.{action}_all",)):
+        return
+    if any(can_modify_scope(user, "quality", action, scope_type, scope_id) for scope_type, scope_id in _quality_scopes(inspection)):
+        return
+    raise _quality_forbidden("You can view this quality record but cannot modify it in this scope.")
 
 
 # ── QC Parameters ─────────────────────────────────────────────────────────────
@@ -94,12 +152,14 @@ async def list_inspections(
     material_id: Optional[uuid.UUID] = None,
     product_id: Optional[uuid.UUID] = None,
     db: AsyncSession = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user=Depends(require_any_permission(QUALITY_VIEW_PERMISSIONS)),
 ):
     inspections = await crud.list_inspections(
         db, qc_type=qc_type, status=status,
         supplier_id=supplier_id, material_id=material_id, product_id=product_id,
     )
+    if not _has_broad_quality_view(current_user):
+        inspections = [inspection for inspection in inspections if _can_view_inspection(current_user, inspection)]
     return [_build_read(i) for i in inspections]
 
 
@@ -109,6 +169,7 @@ async def create_inspection(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
+    _require_inspection_action(current_user, QCInspection(warehouse_id=body.warehouse_id), "create")
     insp = await crud.create_inspection(db, body.model_dump(), current_user.id)
     await db.commit()
     insp = await crud.get_inspection(db, insp.id)
@@ -116,10 +177,11 @@ async def create_inspection(
 
 
 @router.get("/inspections/{inspection_id}", response_model=QCInspectionDetailRead)
-async def get_inspection(inspection_id: uuid.UUID, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+async def get_inspection(inspection_id: uuid.UUID, db: AsyncSession = Depends(get_db), current_user=Depends(require_any_permission(QUALITY_VIEW_PERMISSIONS))):
     insp = await crud.get_inspection(db, inspection_id)
     if not insp:
         raise HTTPException(404, "Inspection not found")
+    _require_inspection_view(current_user, insp)
     return _build_detail(insp)
 
 
@@ -133,6 +195,7 @@ async def update_inspection(
     insp = await crud.get_inspection(db, inspection_id)
     if not insp:
         raise HTTPException(404, "Inspection not found")
+    _require_inspection_action(current_user, insp, "edit")
     if insp.status not in (QCStatus.PENDING, QCStatus.IN_PROGRESS):
         raise HTTPException(422, "Cannot edit a completed inspection")
     for k, v in body.model_dump(exclude_unset=True).items():
@@ -152,6 +215,7 @@ async def add_test_result(
     insp = await crud.get_inspection(db, inspection_id)
     if not insp:
         raise HTTPException(404, "Inspection not found")
+    _require_inspection_action(current_user, insp, "edit")
     if insp.status not in (QCStatus.PENDING, QCStatus.IN_PROGRESS):
         raise HTTPException(422, "Cannot add results to a completed inspection")
 
@@ -177,6 +241,7 @@ async def delete_test_result(
     insp = await crud.get_inspection(db, inspection_id)
     if not insp or insp.status not in (QCStatus.PENDING, QCStatus.IN_PROGRESS):
         raise HTTPException(422, "Cannot modify a completed inspection")
+    _require_inspection_action(current_user, insp, "edit")
     tr = await crud.get_test_result(db, result_id)
     if not tr or tr.inspection_id != inspection_id:
         raise HTTPException(404, "Result not found")
@@ -194,6 +259,7 @@ async def decide_inspection(
     insp = await crud.get_inspection(db, inspection_id)
     if not insp:
         raise HTTPException(404, "Inspection not found")
+    _require_inspection_action(current_user, insp, "approve")
     insp = await svc.make_decision(
         db, insp,
         decision=body.decision,
@@ -217,6 +283,7 @@ async def release_quarantine(
     insp = await crud.get_inspection(db, inspection_id)
     if not insp:
         raise HTTPException(404, "Inspection not found")
+    _require_inspection_action(current_user, insp, "release")
     await svc.release_qc_quarantine(db, insp, current_user.id, notes)
     await db.commit()
     insp = await crud.get_inspection(db, inspection_id)
@@ -237,6 +304,7 @@ async def create_inspection_for_grn(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
+    _require_inspection_action(current_user, QCInspection(warehouse_id=warehouse_id), "create")
     insp = await svc.create_qc_for_grn_line(
         db, grn_id=grn_id, grn_line_id=grn_line_id,
         material_id=material_id, supplier_id=supplier_id,
@@ -260,6 +328,7 @@ async def create_inspection_for_order(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
+    _require_inspection_action(current_user, QCInspection(warehouse_id=warehouse_id), "create")
     insp = await svc.create_qc_for_order(
         db, production_order_id=production_order_id,
         product_id=product_id, warehouse_id=warehouse_id,
@@ -278,11 +347,12 @@ async def create_inspection_for_order(
 async def get_coa(
     inspection_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user=Depends(require_any_permission(QUALITY_VIEW_PERMISSIONS)),
 ):
     insp = await crud.get_inspection(db, inspection_id)
     if not insp:
         raise HTTPException(404, "Inspection not found")
+    _require_inspection_view(current_user, insp)
     return svc.generate_coa(insp)
 
 

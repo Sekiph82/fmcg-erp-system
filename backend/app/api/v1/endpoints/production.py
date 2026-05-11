@@ -6,6 +6,13 @@ import uuid
 
 from app.db.session import get_db
 from app.core.deps import get_current_user
+from app.core.access_control import (
+    can_modify_scope,
+    can_view_scope,
+    forbidden_detail,
+    has_any_permission,
+    require_any_permission,
+)
 from app.crud import production as crud
 from app.services import production_service as svc
 from app.models.production import (
@@ -23,6 +30,53 @@ from app.schemas.production import (
 )
 
 router = APIRouter()
+
+PRODUCTION_VIEW_PERMISSIONS = (
+    "production.view",
+    "production.view_all",
+    "production.view_own_scope",
+)
+
+
+def _production_forbidden(detail: str) -> HTTPException:
+    return HTTPException(status_code=403, detail=forbidden_detail(detail))
+
+
+def _has_broad_production_view(user) -> bool:
+    return has_any_permission(user, ("production.view", "production.view_all"))
+
+
+def _order_warehouse_scope_ids(order) -> list[uuid.UUID]:
+    values = [getattr(order, "target_warehouse_id", None), getattr(order, "source_warehouse_id", None)]
+    return list(dict.fromkeys(value for value in values if value is not None))
+
+
+def _can_view_order(user, order) -> bool:
+    if _has_broad_production_view(user):
+        return True
+    return any(can_view_scope(user, "production", "warehouse", warehouse_id) for warehouse_id in _order_warehouse_scope_ids(order))
+
+
+def _require_order_view(user, order) -> None:
+    if not _can_view_order(user, order):
+        raise _production_forbidden("You can view production only inside your assigned operational scope.")
+
+
+def _require_order_action(user, order, action: str) -> None:
+    if not any(
+        can_modify_scope(user, "production", action, "warehouse", warehouse_id)
+        for warehouse_id in _order_warehouse_scope_ids(order)
+    ):
+        raise _production_forbidden("You can view this production order but cannot modify it in this scope.")
+
+
+def _require_order_create_scope(user, data: ProductionOrderCreate) -> None:
+    scope_ids = [data.target_warehouse_id, data.source_warehouse_id]
+    if not any(
+        can_modify_scope(user, "production", "create", "warehouse", warehouse_id)
+        for warehouse_id in dict.fromkeys(scope_id for scope_id in scope_ids if scope_id is not None)
+    ):
+        raise _production_forbidden("You cannot create production orders outside your assigned operational scope.")
 
 
 def _enrich_plan_read(plan) -> ProductionPlanRead:
@@ -209,9 +263,11 @@ async def list_orders(
     product_id: Optional[uuid.UUID] = None,
     skip: int = 0, limit: int = 50,
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    current_user=Depends(require_any_permission(PRODUCTION_VIEW_PERMISSIONS)),
 ):
     orders = await crud.list_orders(db, status=status, product_id=product_id, skip=skip, limit=limit)
+    if not _has_broad_production_view(current_user):
+        orders = [order for order in orders if _can_view_order(current_user, order)]
     return [_enrich_order(o) for o in orders]
 
 
@@ -221,6 +277,7 @@ async def create_order(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
+    _require_order_create_scope(current_user, data)
     obj = await crud.create_order(db, data, current_user.id)
     await db.commit()
     order = await crud.get_order(db, obj.id)
@@ -231,11 +288,12 @@ async def create_order(
 async def get_order(
     order_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    current_user=Depends(require_any_permission(PRODUCTION_VIEW_PERMISSIONS)),
 ):
     order = await crud.get_order(db, order_id)
     if not order:
         raise HTTPException(404, detail="Production order not found")
+    _require_order_view(current_user, order)
     return _enrich_order_detail(order)
 
 
@@ -245,11 +303,12 @@ async def get_order(
 async def release_order(
     order_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    current_user=Depends(get_current_user),
 ):
     order = await crud.get_order(db, order_id)
     if not order:
         raise HTTPException(404, detail="Order not found")
+    _require_order_action(current_user, order, "release")
     order = await svc.release_order(db, order)
     await db.commit()
     order = await crud.get_order(db, order_id)
@@ -261,11 +320,12 @@ async def start_order(
     order_id: uuid.UUID,
     actual_start: Optional[datetime] = None,
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    current_user=Depends(get_current_user),
 ):
     order = await crud.get_order(db, order_id)
     if not order:
         raise HTTPException(404, detail="Order not found")
+    _require_order_action(current_user, order, "edit")
     order = await svc.start_order(db, order, actual_start)
     await db.commit()
     order = await crud.get_order(db, order_id)
@@ -276,11 +336,12 @@ async def start_order(
 async def pause_order(
     order_id: uuid.UUID, req: DowntimeLogCreate,
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    current_user=Depends(get_current_user),
 ):
     order = await crud.get_order(db, order_id)
     if not order:
         raise HTTPException(404, detail="Order not found")
+    _require_order_action(current_user, order, "edit")
     log = await svc.pause_order(db, order, req)
     await db.commit()
     await db.refresh(log)
@@ -291,11 +352,12 @@ async def pause_order(
 async def resume_order(
     order_id: uuid.UUID, req: DowntimeLogClose,
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    current_user=Depends(get_current_user),
 ):
     order = await crud.get_order(db, order_id)
     if not order:
         raise HTTPException(404, detail="Order not found")
+    _require_order_action(current_user, order, "edit")
     log = await svc.resume_order(db, order, req)
     await db.commit()
     await db.refresh(log)
@@ -311,6 +373,7 @@ async def complete_order(
     order = await crud.get_order(db, order_id)
     if not order:
         raise HTTPException(404, detail="Order not found")
+    _require_order_action(current_user, order, "close")
     await svc.complete_order(db, order, req, current_user.id)
     await db.commit()
     order = await crud.get_order(db, order_id)
@@ -321,11 +384,12 @@ async def complete_order(
 async def cancel_order(
     order_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    current_user=Depends(get_current_user),
 ):
     order = await crud.get_order(db, order_id)
     if not order:
         raise HTTPException(404, detail="Order not found")
+    _require_order_action(current_user, order, "cancel")
     order = await svc.cancel_order(db, order)
     await db.commit()
     order = await crud.get_order(db, order_id)
@@ -338,8 +402,12 @@ async def cancel_order(
 async def get_oee(
     order_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    current_user=Depends(require_any_permission(PRODUCTION_VIEW_PERMISSIONS)),
 ):
+    order = await crud.get_order(db, order_id)
+    if not order:
+        raise HTTPException(404, detail="Order not found")
+    _require_order_view(current_user, order)
     return await svc.get_order_oee(db, order_id)
 
 

@@ -8,7 +8,7 @@ from pydantic import BaseModel, ConfigDict, computed_field
 
 from app.models.sales import (
     CustomerChannel, SOStatus, ShipmentStatus, InvoiceStatus,
-    PaymentMethod, SOPaymentStatus, MpesaTxStatus,
+    PaymentMethod, SOPaymentStatus, MpesaTxStatus, CustomerType,
 )
 
 
@@ -32,6 +32,9 @@ class CustomerCreate(BaseModel):
     tax_id: Optional[str] = None
     currency: str = "USD"
     notes: Optional[str] = None
+    customer_type: Optional[CustomerType] = None
+    region: Optional[str] = None
+    segment: Optional[str] = None
 
 
 class CustomerUpdate(BaseModel):
@@ -52,6 +55,9 @@ class CustomerUpdate(BaseModel):
     notes: Optional[str] = None
     is_active: Optional[bool] = None
     is_prepaid: Optional[bool] = None
+    customer_type: Optional[CustomerType] = None
+    region: Optional[str] = None
+    segment: Optional[str] = None
 
 
 class CustomerRead(BaseModel):
@@ -76,6 +82,9 @@ class CustomerRead(BaseModel):
     notes: Optional[str]
     is_active: bool
     is_prepaid: bool
+    customer_type: Optional[CustomerType] = None
+    region: Optional[str] = None
+    segment: Optional[str] = None
     created_at: datetime
 
 

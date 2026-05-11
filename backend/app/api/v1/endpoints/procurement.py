@@ -11,6 +11,13 @@ from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
 
 from app.core.deps import get_current_user, get_db
+from app.core.access_control import (
+    can_modify_scope,
+    can_view_scope,
+    forbidden_detail,
+    has_any_permission,
+    require_any_permission,
+)
 from app.models.procurement import (
     PurchaseRequisition, PRLine, PurchaseOrder, POLine,
     GoodsReceipt, GRNLine, ImportShipment, SupplierEvaluation,
@@ -37,6 +44,50 @@ from app.services import procurement_service as svc
 
 router = APIRouter()
 
+PROCUREMENT_VIEW_PERMISSIONS = (
+    "procurement.view",
+    "procurement.view_all",
+    "procurement.view_own_scope",
+)
+
+
+def _procurement_forbidden(detail: str) -> HTTPException:
+    return HTTPException(status_code=403, detail=forbidden_detail(detail))
+
+
+def _has_broad_procurement_view(user) -> bool:
+    return has_any_permission(user, ("procurement.view", "procurement.view_all"))
+
+
+def _procurement_department(record) -> str | None:
+    department = getattr(record, "department", None)
+    if department:
+        return str(department)
+    pr = getattr(record, "pr", None)
+    department = getattr(pr, "department", None)
+    return str(department) if department else None
+
+
+def _can_view_procurement_record(user, record) -> bool:
+    if _has_broad_procurement_view(user):
+        return True
+    department = _procurement_department(record)
+    return bool(department and can_view_scope(user, "procurement", "department", department))
+
+
+def _require_procurement_view(user, record) -> None:
+    if not _can_view_procurement_record(user, record):
+        raise _procurement_forbidden("You can view procurement records only inside your assigned operational scope.")
+
+
+def _require_procurement_action(user, record, action: str) -> None:
+    if has_any_permission(user, (f"procurement.{action}_all",)):
+        return
+    department = _procurement_department(record)
+    if department and can_modify_scope(user, "procurement", action, "department", department):
+        return
+    raise _procurement_forbidden("You can view this procurement record but cannot modify it in this scope.")
+
 
 # ── Purchase Requisitions ─────────────────────────────────────────────────────
 
@@ -44,9 +95,11 @@ router = APIRouter()
 async def list_prs(
     status: Optional[PRStatus] = None,
     db: AsyncSession = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user=Depends(require_any_permission(PROCUREMENT_VIEW_PERMISSIONS)),
 ):
     prs = await crud.list_prs(db, status=status)
+    if not _has_broad_procurement_view(current_user):
+        prs = [pr for pr in prs if _can_view_procurement_record(current_user, pr)]
     rows = []
     for pr in prs:
         r = PRRead.model_validate(pr)
@@ -62,6 +115,7 @@ async def create_pr(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
+    _require_procurement_action(current_user, PurchaseRequisition(department=body.department), "create")
     pr = await crud.create_pr(db, body.model_dump(), current_user.id)
     await db.commit()
     pr = await crud.get_pr(db, pr.id)
@@ -69,10 +123,11 @@ async def create_pr(
 
 
 @router.get("/pr/{pr_id}", response_model=PRDetailRead)
-async def get_pr(pr_id: uuid.UUID, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+async def get_pr(pr_id: uuid.UUID, db: AsyncSession = Depends(get_db), current_user=Depends(require_any_permission(PROCUREMENT_VIEW_PERMISSIONS))):
     pr = await crud.get_pr(db, pr_id)
     if not pr:
         raise HTTPException(404, "PR not found")
+    _require_procurement_view(current_user, pr)
     return _build_pr_detail(pr)
 
 
@@ -86,9 +141,13 @@ async def update_pr(
     pr = await crud.get_pr(db, pr_id)
     if not pr:
         raise HTTPException(404, "PR not found")
+    _require_procurement_action(current_user, pr, "edit")
     if pr.status not in (PRStatus.DRAFT,):
         raise HTTPException(422, "Only DRAFT PRs can be edited")
-    for k, v in body.model_dump(exclude_unset=True).items():
+    updates = body.model_dump(exclude_unset=True)
+    if "department" in updates and updates["department"] != pr.department:
+        _require_procurement_action(current_user, PurchaseRequisition(department=updates["department"]), "edit")
+    for k, v in updates.items():
         setattr(pr, k, v)
     await db.commit()
     pr = await crud.get_pr(db, pr_id)
@@ -100,6 +159,7 @@ async def submit_pr(pr_id: uuid.UUID, db: AsyncSession = Depends(get_db), curren
     pr = await crud.get_pr(db, pr_id)
     if not pr:
         raise HTTPException(404, "PR not found")
+    _require_procurement_action(current_user, pr, "edit")
     pr = await svc.submit_pr(db, pr)
     await db.commit()
     return _build_pr_read(pr)
@@ -115,6 +175,7 @@ async def approve_pr(
     pr = await crud.get_pr(db, pr_id)
     if not pr:
         raise HTTPException(404, "PR not found")
+    _require_procurement_action(current_user, pr, "approve")
     if body.approve:
         pr = await svc.approve_pr(db, pr, current_user.id)
     else:
@@ -135,6 +196,7 @@ async def convert_pr_to_po(
     pr = await crud.get_pr(db, pr_id)
     if not pr:
         raise HTTPException(404, "PR not found")
+    _require_procurement_action(current_user, pr, "create")
     po = await svc.convert_pr_to_po(db, pr, body.model_dump(), current_user.id)
     await db.commit()
     po = await crud.get_po(db, po.id)
@@ -151,6 +213,7 @@ async def add_pr_line(
     pr = await crud.get_pr(db, pr_id)
     if not pr:
         raise HTTPException(404, "PR not found")
+    _require_procurement_action(current_user, pr, "edit")
     if pr.status != PRStatus.DRAFT:
         raise HTTPException(422, "Only DRAFT PRs can be modified")
     await crud.add_pr_line(db, pr, body.model_dump())
@@ -169,6 +232,7 @@ async def delete_pr_line(
     pr = await crud.get_pr(db, pr_id)
     if not pr or pr.status != PRStatus.DRAFT:
         raise HTTPException(422, "Only DRAFT PRs can be modified")
+    _require_procurement_action(current_user, pr, "edit")
     line = await crud.get_pr_line(db, line_id)
     if not line or line.pr_id != pr_id:
         raise HTTPException(404, "Line not found")
@@ -183,9 +247,11 @@ async def list_pos(
     status: Optional[POStatus] = None,
     supplier_id: Optional[uuid.UUID] = None,
     db: AsyncSession = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user=Depends(require_any_permission(PROCUREMENT_VIEW_PERMISSIONS)),
 ):
     pos = await crud.list_pos(db, status=status, supplier_id=supplier_id)
+    if not _has_broad_procurement_view(current_user):
+        pos = [po for po in pos if _can_view_procurement_record(current_user, po)]
     return [_build_po_read(po) for po in pos]
 
 
@@ -195,6 +261,7 @@ async def create_po(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
+    _require_procurement_action(current_user, PurchaseOrder(), "create")
     po = await crud.create_po(db, body.model_dump(), current_user.id)
     await db.commit()
     po = await crud.get_po(db, po.id)
@@ -202,10 +269,11 @@ async def create_po(
 
 
 @router.get("/po/{po_id}", response_model=PODetailRead)
-async def get_po(po_id: uuid.UUID, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+async def get_po(po_id: uuid.UUID, db: AsyncSession = Depends(get_db), current_user=Depends(require_any_permission(PROCUREMENT_VIEW_PERMISSIONS))):
     po = await crud.get_po(db, po_id)
     if not po:
         raise HTTPException(404, "PO not found")
+    _require_procurement_view(current_user, po)
     return _build_po_detail(po)
 
 
@@ -219,6 +287,7 @@ async def update_po(
     po = await crud.get_po(db, po_id)
     if not po:
         raise HTTPException(404, "PO not found")
+    _require_procurement_action(current_user, po, "edit")
     if po.status not in (POStatus.DRAFT,):
         raise HTTPException(422, "Only DRAFT POs can be edited")
     for k, v in body.model_dump(exclude_unset=True).items():
@@ -233,6 +302,7 @@ async def approve_po(po_id: uuid.UUID, db: AsyncSession = Depends(get_db), curre
     po = await crud.get_po(db, po_id)
     if not po:
         raise HTTPException(404, "PO not found")
+    _require_procurement_action(current_user, po, "approve")
     po = await svc.approve_po(db, po, current_user.id)
     await db.commit()
     return _build_po_read(po)
@@ -243,6 +313,7 @@ async def mark_ordered(po_id: uuid.UUID, db: AsyncSession = Depends(get_db), cur
     po = await crud.get_po(db, po_id)
     if not po:
         raise HTTPException(404, "PO not found")
+    _require_procurement_action(current_user, po, "edit")
     po = await svc.mark_ordered(db, po)
     await db.commit()
     return _build_po_read(po)
@@ -253,6 +324,7 @@ async def cancel_po(po_id: uuid.UUID, db: AsyncSession = Depends(get_db), curren
     po = await crud.get_po(db, po_id)
     if not po:
         raise HTTPException(404, "PO not found")
+    _require_procurement_action(current_user, po, "edit")
     po = await svc.cancel_po(db, po)
     await db.commit()
     return _build_po_read(po)
@@ -268,6 +340,7 @@ async def add_po_line(
     po = await crud.get_po(db, po_id)
     if not po or po.status != POStatus.DRAFT:
         raise HTTPException(422, "Only DRAFT POs can be modified")
+    _require_procurement_action(current_user, po, "edit")
     from app.models.procurement import POLine as POLineModel
     db.add(POLineModel(po_id=po_id, **body.model_dump()))
     await db.commit()

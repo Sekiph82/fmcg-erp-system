@@ -2,6 +2,7 @@ from pydantic import BaseModel, EmailStr, field_validator, computed_field
 from typing import Optional, List
 import uuid
 
+from app.schemas.access_control import EffectiveAccessScopeRead
 from app.schemas.role import RoleRead, RoleReadShort
 
 
@@ -36,6 +37,9 @@ class UserUpdate(BaseModel):
 class UserRead(UserBase):
     id: uuid.UUID
     roles: List[RoleRead] = []
+    modules: List[str] = []
+    scopes: List[EffectiveAccessScopeRead] = []
+    feature_flags: dict[str, bool] = {}
 
     @computed_field
     @property
@@ -44,7 +48,8 @@ class UserRead(UserBase):
         for role in self.roles:
             if role.is_active:
                 for perm in role.permissions:
-                    codes.add(perm.code)
+                    if perm.is_active:
+                        codes.add(perm.code)
         return sorted(codes)
 
     model_config = {"from_attributes": True}

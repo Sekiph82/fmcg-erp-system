@@ -23,6 +23,7 @@ export interface Permission {
   description?: string;
   module: string;
   action: string;
+  is_active: boolean;
   is_mobile_visible: boolean;
 }
 
@@ -30,6 +31,7 @@ export interface Role {
   id: string;
   name: string;
   description?: string;
+  is_system_role: boolean;
   is_active: boolean;
   permissions: Permission[];
 }
@@ -64,6 +66,32 @@ export interface PasswordReset {
   new_password: string;
 }
 
+export interface AccessScope {
+  id: string;
+  user_id?: string | null;
+  role_id?: string | null;
+  scope_type: string;
+  scope_id: string;
+  scope_name?: string | null;
+  can_view: boolean;
+  can_create: boolean;
+  can_edit: boolean;
+  can_delete: boolean;
+  can_approve: boolean;
+  can_post: boolean;
+  can_release: boolean;
+  can_cancel: boolean;
+  can_export: boolean;
+  can_import: boolean;
+  can_transfer: boolean;
+  can_adjust: boolean;
+  can_receive: boolean;
+  can_dispatch: boolean;
+  is_active: boolean;
+}
+
+export type AccessScopeAssign = Omit<AccessScope, "id" | "user_id" | "role_id">;
+
 export const usersApi = {
   list: (params?: {
     skip?: number;
@@ -97,5 +125,13 @@ export const usersApi = {
   assignRoles: (id: string, role_ids: string[]) =>
     apiClient
       .put<UserDetail>(`/api/v1/users/${id}/roles`, { role_ids })
+      .then((r) => r.data),
+
+  listScopes: (id: string) =>
+    apiClient.get<AccessScope[]>(`/api/v1/users/${id}/scopes`).then((r) => r.data),
+
+  assignScopes: (id: string, scopes: AccessScopeAssign[]) =>
+    apiClient
+      .put<AccessScope[]>(`/api/v1/users/${id}/scopes`, { scopes })
       .then((r) => r.data),
 };

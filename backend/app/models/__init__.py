@@ -6,7 +6,7 @@ from app.models.ai import (
     AIRequest, AIPrediction, AIRecommendation, AIFormulation, AIScenario,
     AIRequestStatus, AIRequestType, AIProvider as AIProviderEnum,
 )
-from app.models.role import Role, Permission, role_permission
+from app.models.role import AccessScope, Role, Permission, role_permission
 from app.models.user import User, user_role
 from app.models.audit_log import AuditLog
 from app.models.two_factor import User2FASettings, TwoFASession, RecoveryCode, TwoFAMethod, TwoFASessionStatus

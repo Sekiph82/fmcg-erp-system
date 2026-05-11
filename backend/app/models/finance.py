@@ -8,6 +8,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
 from app.db.base import Base, TimestampMixin
+from app.models.company import Branch, Company
 
 
 # ── Enums ─────────────────────────────────────────────────────────────────────
@@ -190,6 +191,9 @@ class JournalEntry(Base, TimestampMixin):
     source_event = Column(String(80), nullable=True)
     source_id = Column(UUID(as_uuid=True), nullable=True)
     source_ref = Column(String(100), nullable=True)     # human-readable reference
+    company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="SET NULL"), nullable=True, index=True)
+    branch_id = Column(UUID(as_uuid=True), ForeignKey("branches.id", ondelete="SET NULL"), nullable=True, index=True)
+    cost_center_id = Column(UUID(as_uuid=True), ForeignKey("cost_centers.id", ondelete="SET NULL"), nullable=True, index=True)
     status = Column(Enum(JournalStatus, name="finance_journal_status"), nullable=False, default=JournalStatus.DRAFT)
     is_posted = Column(Boolean, default=False, nullable=False)
     reversal_of_entry_id = Column(UUID(as_uuid=True), ForeignKey("journal_entries.id", ondelete="SET NULL"), nullable=True)
@@ -208,6 +212,9 @@ class JournalEntry(Base, TimestampMixin):
     reversed_by_entry = relationship("JournalEntry", remote_side=[id], foreign_keys=[reversed_by_entry_id],
                                      post_update=True)
     posting_batch = relationship("AccountingPostingBatch", foreign_keys=[posting_batch_id], post_update=True)
+    company = relationship("Company")
+    branch = relationship("Branch")
+    cost_center = relationship("CostCenter", foreign_keys=[cost_center_id])
     posted_by = relationship("User", foreign_keys=[posted_by_id])
     created_by = relationship("User", foreign_keys=[created_by_id])
 

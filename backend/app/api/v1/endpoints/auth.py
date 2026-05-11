@@ -10,6 +10,7 @@ from app.core.auth_cookies import clear_auth_cookie, set_auth_cookie
 from app.core.config import settings
 from app.core.security import create_access_token
 from app.core.deps import get_current_user
+from app.core.access_control import get_effective_modules, get_effective_scopes
 from app.core import totp as totp_utils
 from app.core import token_blocklist
 from app.core.login_limiter import (
@@ -178,4 +179,8 @@ async def logout(
 
 @router.get("/me", response_model=UserRead)
 async def get_me(current_user=Depends(get_current_user)):
-    return current_user
+    payload = UserRead.model_validate(current_user).model_dump()
+    payload["modules"] = get_effective_modules(current_user)
+    payload["scopes"] = get_effective_scopes(current_user)
+    payload["feature_flags"] = {}
+    return payload

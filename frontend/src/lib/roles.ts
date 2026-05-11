@@ -1,7 +1,7 @@
 import { apiClient } from "./api";
-import type { Permission, Role } from "./users";
+import type { AccessScope, AccessScopeAssign, Permission, Role } from "./users";
 
-export type { Permission, Role };
+export type { AccessScope, AccessScopeAssign, Permission, Role };
 
 export interface RoleCreate {
   name: string;
@@ -38,6 +38,14 @@ export const rolesApi = {
   assignPermissions: (id: string, permission_ids: string[]) =>
     apiClient
       .put<Role>(`/api/v1/roles/${id}/permissions`, { permission_ids })
+      .then((r) => r.data),
+
+  listScopes: (id: string) =>
+    apiClient.get<AccessScope[]>(`/api/v1/roles/${id}/scopes`).then((r) => r.data),
+
+  assignScopes: (id: string, scopes: AccessScopeAssign[]) =>
+    apiClient
+      .put<AccessScope[]>(`/api/v1/roles/${id}/scopes`, { scopes })
       .then((r) => r.data),
 
   listPermissions: (module?: string) =>

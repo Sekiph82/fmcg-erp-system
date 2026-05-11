@@ -9,6 +9,7 @@ class PermissionBase(BaseModel):
     description: Optional[str] = None
     module: str
     action: str
+    is_active: bool = True
     is_mobile_visible: bool = True
 
 
@@ -25,6 +26,7 @@ class PermissionRead(PermissionBase):
 class RoleBase(BaseModel):
     name: str
     description: Optional[str] = None
+    is_system_role: bool = False
 
 
 class RoleCreate(RoleBase):

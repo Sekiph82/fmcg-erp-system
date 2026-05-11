@@ -15,14 +15,38 @@ export interface Permission {
   name: string;
   module: string;
   action: string;
+  is_active: boolean;
   is_mobile_visible: boolean;
 }
 
 export interface Role {
   id: string;
   name: string;
+  is_system_role: boolean;
   is_active: boolean;
   permissions: Permission[];
+}
+
+export interface AccessScope {
+  scope_type: string;
+  scope_id: string;
+  scope_name?: string | null;
+  can_view: boolean;
+  can_create: boolean;
+  can_edit: boolean;
+  can_delete: boolean;
+  can_approve: boolean;
+  can_post: boolean;
+  can_release: boolean;
+  can_cancel: boolean;
+  can_export: boolean;
+  can_import: boolean;
+  can_transfer: boolean;
+  can_adjust: boolean;
+  can_receive: boolean;
+  can_dispatch: boolean;
+  is_active: boolean;
+  source: "user" | "role";
 }
 
 export interface User {
@@ -35,6 +59,9 @@ export interface User {
   must_change_password: boolean;
   roles: Role[];
   permission_codes: string[];
+  modules: string[];
+  scopes: AccessScope[];
+  feature_flags: Record<string, boolean>;
 }
 
 export async function login(username: string, password: string): Promise<LoginResponse> {

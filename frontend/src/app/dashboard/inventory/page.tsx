@@ -19,8 +19,9 @@ import { Select } from "@/components/ui/Select";
 import { Modal } from "@/components/ui/Modal";
 import { ToastContainer } from "@/components/ui/Toast";
 import { useToast } from "@/hooks/useToast";
-import { RequirePermission, PermissionGuard } from "@/components/PermissionGuard";
+import { RequirePermission } from "@/components/PermissionGuard";
 import { ImportModal } from "@/components/import/ImportModal";
+import { useAuth } from "@/context/AuthContext";
 
 type Tab = "stock" | "entry" | "issue" | "transfer";
 
@@ -45,6 +46,7 @@ const TABS: { key: Tab; label: string; color?: string }[] = [
 function InventoryContent() {
   const qc = useQueryClient();
   const { toasts, toast, dismiss } = useToast();
+  const { hasPermission, canPerformInScope } = useAuth();
   const [tab, setTab] = useState<Tab>("stock");
 
   // ── Edit/Delete state ────────────────────────────────────────────────────────
@@ -70,6 +72,12 @@ function InventoryContent() {
     { value: "", label: "— Select warehouse —" },
     ...warehouses.map((w) => ({ value: w.id, label: `${w.code} — ${w.name}` })),
   ];
+  const canAdjustStock = (stock: StockSummary) =>
+    hasPermission("inventory.adjust_all") ||
+    (hasPermission("inventory.adjust") && canPerformInScope("warehouse", stock.warehouse_id, "adjust"));
+  const canDeleteStock = (stock: StockSummary) =>
+    hasPermission("inventory.delete_all") ||
+    (hasPermission("inventory.delete") && canPerformInScope("warehouse", stock.warehouse_id, "delete"));
 
   // ── Stock Entry ──────────────────────────────────────────────────────────────
   const [entry, setEntry] = useState<Partial<StockEntryRequest>>({ reference: `GR-${today}` });
@@ -111,6 +119,20 @@ function InventoryContent() {
   // ── Stock Transfer ───────────────────────────────────────────────────────────
   const [transfer, setTransfer] = useState<Partial<StockTransferRequest>>({ reference: `TRF-${today}` });
   const setT = (k: keyof StockTransferRequest, v: unknown) => setTransfer((f) => ({ ...f, [k]: v }));
+
+  const canReceiveTarget = !entry.warehouse_id
+    ? hasPermission("inventory.receive_all")
+    : hasPermission("inventory.receive_all") || canPerformInScope("warehouse", entry.warehouse_id, "receive");
+  const canDispatchTarget = !issue.warehouse_id
+    ? hasPermission("inventory.dispatch_all")
+    : hasPermission("inventory.dispatch_all") || canPerformInScope("warehouse", issue.warehouse_id, "dispatch");
+  const canTransferTarget = !transfer.from_warehouse_id || !transfer.to_warehouse_id
+    ? hasPermission("inventory.transfer_all")
+    : hasPermission("inventory.transfer_all") ||
+      (
+        canPerformInScope("warehouse", transfer.from_warehouse_id, "transfer") &&
+        canPerformInScope("warehouse", transfer.to_warehouse_id, "transfer")
+      );
 
   const transferMut = useMutation({
     mutationFn: (d: StockTransferRequest) => inventoryApi.stockTransfer(d),
@@ -238,7 +260,7 @@ function InventoryContent() {
                 header: "Actions",
                 accessor: (r) => (
                   <div className="flex items-center gap-2">
-                    <PermissionGuard permission="inventory.edit">
+                    {canAdjustStock(r) ? (
                       <button
                         onClick={() => {
                           setAdjustingStock(r);
@@ -249,15 +271,17 @@ function InventoryContent() {
                       >
                         Adjust
                       </button>
-                    </PermissionGuard>
-                    <PermissionGuard permission="inventory.delete">
+                    ) : (
+                      <Badge label="View only" variant="gray" />
+                    )}
+                    {canDeleteStock(r) && (
                       <button
                         onClick={() => setDeletingStockId(r.id)}
                         className="text-xs text-red-500 hover:text-red-700 hover:underline"
                       >
                         Delete
                       </button>
-                    </PermissionGuard>
+                    )}
                   </div>
                 ),
               },
@@ -272,8 +296,8 @@ function InventoryContent() {
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              entryMut.mutate(entry as StockEntryRequest);
-            }}
+                if (canReceiveTarget) entryMut.mutate(entry as StockEntryRequest);
+              }}
             className="space-y-4 max-w-lg"
           >
             <Select label="Product *" options={productOptions} value={entry.product_id ?? ""}
@@ -300,7 +324,14 @@ function InventoryContent() {
               onChange={(e) => setE("reference", e.target.value)} required />
             <Input label="Notes" onChange={(e) => setE("notes", e.target.value || undefined)} />
             <div className="flex gap-3 pt-2">
-              <Button type="submit" loading={entryMut.isPending}>Receive Stock</Button>
+              <Button
+                type="submit"
+                loading={entryMut.isPending}
+                disabled={!canReceiveTarget}
+                title={!canReceiveTarget ? "You can view this warehouse but cannot receive stock in this scope." : undefined}
+              >
+                Receive Stock
+              </Button>
               <Button variant="secondary" type="button" onClick={() => setEntry({ reference: `GR-${today}` })}>Reset</Button>
             </div>
           </form>
@@ -313,8 +344,8 @@ function InventoryContent() {
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              issueMut.mutate(issue as StockIssueRequest);
-            }}
+                if (canDispatchTarget) issueMut.mutate(issue as StockIssueRequest);
+              }}
             className="space-y-4 max-w-lg"
           >
             <Select label="Product *" options={productOptions} value={issue.product_id ?? ""}
@@ -336,7 +367,14 @@ function InventoryContent() {
               The system will reject this if available stock is insufficient.
             </div>
             <div className="flex gap-3 pt-2">
-              <Button type="submit" loading={issueMut.isPending}>Issue Stock</Button>
+              <Button
+                type="submit"
+                loading={issueMut.isPending}
+                disabled={!canDispatchTarget}
+                title={!canDispatchTarget ? "You can view this warehouse but cannot dispatch stock in this scope." : undefined}
+              >
+                Issue Stock
+              </Button>
               <Button variant="secondary" type="button" onClick={() => setIssue({ reference: `SO-${today}` })}>Reset</Button>
             </div>
           </form>
@@ -349,8 +387,8 @@ function InventoryContent() {
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              transferMut.mutate(transfer as StockTransferRequest);
-            }}
+                if (canTransferTarget) transferMut.mutate(transfer as StockTransferRequest);
+              }}
             className="space-y-4 max-w-lg"
           >
             <Select label="Product *" options={productOptions} value={transfer.product_id ?? ""}
@@ -373,7 +411,14 @@ function InventoryContent() {
               onChange={(e) => setT("reference", e.target.value)} required />
             <Input label="Notes" onChange={(e) => setT("notes", e.target.value || undefined)} />
             <div className="flex gap-3 pt-2">
-              <Button type="submit" loading={transferMut.isPending}>Transfer Stock</Button>
+              <Button
+                type="submit"
+                loading={transferMut.isPending}
+                disabled={!canTransferTarget}
+                title={!canTransferTarget ? "You can view this stock but cannot transfer it in this scope." : undefined}
+              >
+                Transfer Stock
+              </Button>
               <Button variant="secondary" type="button" onClick={() => setTransfer({ reference: `TRF-${today}` })}>Reset</Button>
             </div>
           </form>

@@ -1,7 +1,7 @@
 # TASKS
 
 ## Current Phase
-PHASE 2 - Critical ERP foundations is in progress by explicit user override. GAP-028K remains blocked, GAP-001A through GAP-001L, GAP-002A through GAP-002L, and GAP-003A are complete; the next task is GAP-003B.
+PHASE 2 - Critical ERP foundations is in progress by explicit user override. GAP-028K remains blocked. GAP-001A through GAP-001L, GAP-002A through GAP-002L, GAP-003A, and GAP-SEC-001 are complete. GAP-003B is ready to resume from its saved checkpoint.
 
 ## Execution Rules
 - Always read this file before starting work.
@@ -16,10 +16,10 @@ PHASE 2 - Critical ERP foundations is in progress by explicit user override. GAP
 - If context/usage limit is near, stop after updating TASKS.md and CODEX_PROGRESS.md.
 
 ## In Progress
-None.
+GAP-003B: Design data model/schema: Permission and Security Hardening Across All New Modules.
 
 ## Next Immediate Task
-GAP-003B: Design data model/schema: Permission and Security Hardening Across All New Modules.
+GAP-003B: Resume the paused security hardening design task using the GAP-SEC-001 implementation as the new foundation.
 
 ## Roadmap Task Queue
 | ID | Tier | Task | Status | Dependencies | Acceptance Criteria | Notes |
@@ -63,7 +63,19 @@ GAP-003B: Design data model/schema: Permission and Security Hardening Across All
 | GAP-002K | Tier 1 - Critical Gaps | Add or update documentation: Accounting-to-Inventory-to-Manufacturing Posting Integration | DONE | GAP-002J | Update user/admin/developer docs for this change. | Added `docs/planning/GAP-002_POSTING_INTEGRATION_IMPLEMENTATION_NOTES.md`; documentation content check passed. |
 | GAP-002L | Tier 1 - Critical Gaps | Run checks and record result: Accounting-to-Inventory-to-Manufacturing Posting Integration | DONE | GAP-002K | Run relevant compile, lint, type, test, migration, or smoke checks. | Final GAP-002 checks passed: backend compile, focused/regression pytest, Alembic heads/history/offline SQL, frontend type-check, and docs checks. Live `alembic upgrade head` remains blocked until PostgreSQL is available. |
 | GAP-003A | Tier 1 - Critical Gaps | Audit current implementation: Permission and Security Hardening Across All New Modules | DONE | GAP-002L | Record what exists, what is partial, and what is missing for this gap. | Created `docs/planning/GAP-003_PERMISSION_SECURITY_AUDIT.md`; audited auth dependency, RBAC dependency, module registry coverage, seed roles, finance controls, and sidebar permission filtering. |
-| GAP-003B | Tier 1 - Critical Gaps | Design data model/schema: Permission and Security Hardening Across All New Modules | TODO | GAP-003A | Define schema/model changes only if needed and review existing models first. | Phase: Phase 2 - Critical ERP foundations; Priority: Critical; Area: Security / RBAC; Files: `backend/app/core/deps.py`, `backend/app/core/module_registry.py`, `backend/app/api/v1`, `backend/tests`, `frontend/src/components/Sidebar.tsx` |
+| GAP-SEC-001A | Security Foundation | Audit current implementation: ERP-wide permission + scope-based access control | DONE | GAP-003A | Current auth, role, permission, company, branch, warehouse, frontend auth, and endpoint protection patterns are recorded. | Added `docs/planning/GAP-SEC-001_ACCESS_CONTROL_AUDIT.md`. GAP-003B is paused and must resume after GAP-SEC-001 is complete. |
+| GAP-SEC-001B | Security Foundation | Design data model/schema: ERP-wide permission + scope-based access control | DONE | GAP-SEC-001A | Define minimal additive schema and service architecture for permission + scope + status access rules without creating a competing RBAC system. | Added `docs/planning/GAP-SEC-001_ACCESS_CONTROL_SCHEMA_DESIGN.md`. |
+| GAP-SEC-001C | Security Foundation | Add or update database migrations: ERP-wide permission + scope-based access control | DONE | GAP-SEC-001B | Create additive Alembic migration for generic access scopes and any required indexes/constraints. | Added `backend/alembic/versions/20260511_0030_access_scopes.py`; offline SQL passed, live DB upgrade blocked by PostgreSQL connection refusal. |
+| GAP-SEC-001D | Security Foundation | Add or update backend models: ERP-wide permission + scope-based access control | DONE | GAP-SEC-001C | Add ORM model/relationships for generic access scopes using existing User, Role, and Permission models. | Added `AccessScope`, `Permission.is_active`, `Role.is_system_role`, and user/role relationships. |
+| GAP-SEC-001E | Security Foundation | Add or update schemas and `/auth/me`: ERP-wide permission + scope-based access control | DONE | GAP-SEC-001D | Expose effective permissions, modules, scopes, and feature flags from the authenticated user endpoint without leaking secrets. | Added access-control schemas and extended `/api/v1/auth/me` payload while preserving `permission_codes`. |
+| GAP-SEC-001F | Security Foundation | Add backend access-control service/helpers: ERP-wide permission + scope-based access control | DONE | GAP-SEC-001E | Implement reusable helpers for permission checks, scoped checks, record scope resolution, and workflow status locking. | Added `backend/app/core/access_control.py`; `require_permission` now delegates to shared permission logic. |
+| GAP-SEC-001G | Security Foundation | Apply scoped enforcement to first critical modules | DONE | GAP-SEC-001F | Apply helper patterns to inventory/WMS, production, quality, finance, sales, procurement, and admin surfaces in small safe slices. | Admin scope assignment endpoints are implemented. Inventory/WMS stock/movement mutations enforce warehouse scopes. Production order lifecycle operations enforce broad-view vs scoped mutation using warehouse scope until factory/line IDs exist. Sales customer/order flows enforce broad-view vs region-scoped mutation. Procurement PR/PO flows enforce broad-view vs department-scoped mutation. Quality inspection decisions/releases enforce scoped approval/release. Finance journal create/view/post/reversal now uses nullable company/branch/cost-center scope fields. |
+| GAP-SEC-001H | Security Foundation | Update frontend auth helpers and sidebar/action UX | DONE | GAP-SEC-001G | Frontend auth context exposes permission/scope helpers; sidebar and buttons reflect backend access data. | Scoped permission aliases now satisfy base permission checks for sidebar/guards/command palette. Inventory rows show `View only` and action buttons/forms disable by warehouse mutation scope. User and role detail pages include scope management panels. |
+| GAP-SEC-001I | Security Foundation | Add or update seed roles, permissions, and default scopes | DONE | GAP-SEC-001H | Seed idempotent scope-aware permissions and role templates without duplicate grants. | Scope-aware permissions and conservative role templates added. Owner/admin receive global scopes; operational roles require explicit `AccessScope` assignment. |
+| GAP-SEC-001J | Security Foundation | Add tests and smoke checks for scoped access control | DONE | GAP-SEC-001I | Cover unauthenticated access, broad view, view-only mutation denial, scoped mutation allow/deny, admin bypass, and auth/me access payload. | Added focused helper tests, seed-contract tests, finance/status-lock tests, module source contract tests, and ran hardening/RBAC regressions. |
+| GAP-SEC-001K | Security Foundation | Add or update documentation for scoped access control | DONE | GAP-SEC-001J | Document architecture, role/scope behavior, admin workflow, and module rollout rules. | Updated GAP-SEC-001 implementation notes with backend rollout, frontend UX, admin scope management, checks, and remaining follow-up improvements. |
+| GAP-SEC-001L | Security Foundation | Run checks and record result: ERP-wide permission + scope-based access control | DONE | GAP-SEC-001K | Run relevant compile, import, pytest, Alembic, frontend type-check, and docs checks; record any blockers honestly. | Compile passed, focused/regression pytest passed, frontend type-check passed, Alembic heads/offline SQL passed. Live `alembic upgrade head` remains blocked by local PostgreSQL connection refusal. |
+| GAP-003B | Tier 1 - Critical Gaps | Design data model/schema: Permission and Security Hardening Across All New Modules | IN_PROGRESS | GAP-SEC-001L | Define schema/model changes only if needed and review existing models first. | Resumed after GAP-SEC-001 completion. Use the new AccessScope, scoped helpers, and frontend auth helpers as the security-hardening foundation. |
 | GAP-003C | Tier 1 - Critical Gaps | Add or update database migrations: Permission and Security Hardening Across All New Modules | TODO | GAP-003B | Create Alembic migrations only for required schema changes. | Phase: Phase 2 - Critical ERP foundations; Priority: Critical; Area: Security / RBAC; Files: `backend/app/core/deps.py`, `backend/app/core/module_registry.py`, `backend/app/api/v1`, `backend/tests`, `frontend/src/components/Sidebar.tsx` |
 | GAP-003D | Tier 1 - Critical Gaps | Add or update backend models: Permission and Security Hardening Across All New Modules | TODO | GAP-003C | Implement ORM/model changes following existing conventions. | Phase: Phase 2 - Critical ERP foundations; Priority: Critical; Area: Security / RBAC; Files: `backend/app/core/deps.py`, `backend/app/core/module_registry.py`, `backend/app/api/v1`, `backend/tests`, `frontend/src/components/Sidebar.tsx` |
 | GAP-003E | Tier 1 - Critical Gaps | Add or update schemas: Permission and Security Hardening Across All New Modules | TODO | GAP-003D | Implement request/response schemas and validation. | Phase: Phase 2 - Critical ERP foundations; Priority: Critical; Area: Security / RBAC; Files: `backend/app/core/deps.py`, `backend/app/core/module_registry.py`, `backend/app/api/v1`, `backend/tests`, `frontend/src/components/Sidebar.tsx` |
@@ -379,6 +391,18 @@ GAP-003B: Design data model/schema: Permission and Security Hardening Across All
 - Verified GAP-002K with documentation content and file-size checks.
 - Verified GAP-002L with backend compile, GAP-001/GAP-002 pytest, Alembic head/history/offline SQL, frontend type-check, docs checks, and live migration attempt.
 - Verified GAP-003A with documentation content and file-size checks.
+- GAP-SEC-001A: Added `docs/planning/GAP-SEC-001_ACCESS_CONTROL_AUDIT.md`.
+- GAP-SEC-001B: Added `docs/planning/GAP-SEC-001_ACCESS_CONTROL_SCHEMA_DESIGN.md`.
+- GAP-SEC-001C: Added additive migration `backend/alembic/versions/20260511_0030_access_scopes.py`.
+- GAP-SEC-001D: Added `AccessScope`, permission active flag, role system flag, and access-scope relationships.
+- GAP-SEC-001E: Extended access schemas and `/api/v1/auth/me` with effective modules/scopes/feature flags.
+- GAP-SEC-001F: Added centralized backend access-control helper/service functions.
+- GAP-SEC-001G: Applied first-pass backend scoped enforcement to inventory/WMS, production, sales, procurement, quality, finance journals, and admin scope APIs.
+- GAP-SEC-001H: Updated frontend permission alias handling, inventory scoped actions/view-only badges, and user/role scope management panels.
+- GAP-SEC-001I: Added idempotent scope-aware permission codes, conservative role templates, and owner/admin global scope seeds.
+- GAP-SEC-001J: Added helper/seed/route-contract tests and ran hardening/RBAC regression checks.
+- GAP-SEC-001K: Updated GAP-SEC-001 implementation documentation.
+- GAP-SEC-001L: Ran final compile, pytest, frontend type-check, Alembic head/offline SQL checks, and recorded the live DB blocker.
 - Recorded explicit user override to start GAP-001 while GAP-028K remains blocked.
 
 ## Blockers

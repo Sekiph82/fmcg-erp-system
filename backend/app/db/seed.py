@@ -1,10 +1,11 @@
 import logging
+import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, insert, delete
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from app.models.user import User, user_role
-from app.models.role import Role, Permission, role_permission
+from app.models.role import AccessScope, Role, Permission, role_permission
 from app.core.config import settings
 from app.core.module_registry import MODULE_DEFINITIONS
 from app.core.security import hash_password
@@ -329,6 +330,113 @@ PERMISSIONS = [
     ("payroll_ke", "export",  "Export Payroll",    "Export statutory reports and payslips",               False),
 ]
 
+SCOPE_AWARE_PERMISSIONS = [
+    # Inventory / warehouse scoped access
+    ("inventory", "view_all", "View All Inventory", "View inventory across all allowed companies and warehouses", True),
+    ("inventory", "view_own_scope", "View Scoped Inventory", "View inventory inside assigned operational scopes", True),
+    ("inventory", "edit_all", "Edit All Inventory", "Edit inventory across all warehouses", False),
+    ("inventory", "edit_own_scope", "Edit Scoped Inventory", "Edit inventory inside assigned warehouses only", False),
+    ("inventory", "adjust_all", "Adjust All Inventory", "Adjust stock in all warehouses", False),
+    ("inventory", "adjust_own_scope", "Adjust Scoped Inventory", "Adjust stock inside assigned warehouses only", False),
+    ("inventory", "receive_all", "Receive All Inventory", "Receive stock into all warehouses", False),
+    ("inventory", "receive_own_scope", "Receive Scoped Inventory", "Receive stock into assigned warehouses only", False),
+    ("inventory", "dispatch_all", "Dispatch All Inventory", "Dispatch stock from all warehouses", False),
+    ("inventory", "dispatch_own_scope", "Dispatch Scoped Inventory", "Dispatch stock from assigned warehouses only", False),
+    ("inventory", "transfer_all", "Transfer All Inventory", "Transfer stock between all warehouses", False),
+    ("inventory", "transfer_own_scope", "Transfer Scoped Inventory", "Transfer stock between assigned warehouses only", False),
+    ("warehouses", "view_all", "View All Warehouses", "View all warehouse configuration", True),
+    ("warehouses", "view_own_scope", "View Scoped Warehouses", "View assigned warehouse configuration", True),
+    ("cycle_count", "perform_own_scope", "Perform Scoped Cycle Counts", "Perform cycle counts in assigned warehouses only", False),
+
+    # Procurement
+    ("procurement", "view_all", "View All Procurement", "View procurement across companies and branches", True),
+    ("procurement", "view_own_scope", "View Scoped Procurement", "View procurement in assigned scope", True),
+    ("procurement", "create_all", "Create All Procurement", "Create procurement documents across all scopes", False),
+    ("procurement", "create_own_scope", "Create Scoped Procurement", "Create purchase documents in assigned scope", False),
+    ("procurement", "edit_all", "Edit All Procurement", "Edit procurement documents across all scopes", False),
+    ("procurement", "edit_own_scope", "Edit Scoped Procurement", "Edit purchase documents in assigned scope", False),
+    ("procurement", "approve_all", "Approve All Procurement", "Approve procurement documents across all scopes", False),
+    ("procurement", "approve_own_scope", "Approve Scoped Procurement", "Approve purchase documents in assigned scope", False),
+
+    # Sales / CRM
+    ("sales", "view_all", "View All Sales", "View all sales records", True),
+    ("sales", "view_own_scope", "View Scoped Sales", "View sales records in assigned scope", True),
+    ("sales", "create_own_region", "Create Scoped Sales Region", "Create sales records in assigned region/team/customer scope", False),
+    ("sales", "edit_own_region", "Edit Scoped Sales Region", "Edit sales records in assigned region/team/customer scope", False),
+    ("crm", "view_all", "View All CRM", "View all CRM/customer records", True),
+    ("crm", "view_own_region", "View Scoped CRM Region", "View CRM records in assigned region/team/customer scope", True),
+    ("crm", "edit_own_region", "Edit Scoped CRM Region", "Edit CRM records in assigned region/team/customer scope", False),
+    ("pricing", "request_discount", "Request Discount", "Request a sales discount approval", False),
+    ("pricing", "approve", "Approve Pricing", "Approve pricing and discount exceptions", False),
+
+    # Production / MRP
+    ("production", "view_all", "View All Production", "View all production orders and plans", True),
+    ("production", "view_own_scope", "View Scoped Production", "View production in assigned factory/line scope", True),
+    ("production", "create_all", "Create All Production", "Create production orders in any factory/warehouse scope", False),
+    ("production", "create_own_scope", "Create Scoped Production", "Create production orders in assigned factory/line scope", False),
+    ("production", "edit_own_scope", "Edit Scoped Production", "Edit production in assigned factory/line scope", False),
+    ("production", "release_own_scope", "Release Scoped Production", "Release production orders in assigned factory/line scope", False),
+    ("production", "close_own_scope", "Close Scoped Production", "Close production orders in assigned factory/line scope", False),
+    ("production", "cancel_own_scope", "Cancel Scoped Production", "Cancel production orders in assigned factory/line scope", False),
+    ("mrp", "view_all", "View All MRP", "View MRP runs and suggestions across factories", True),
+    ("mrp", "run_own_scope", "Run Scoped MRP", "Run MRP in assigned factory/warehouse scope", False),
+    ("bom", "view_all", "View All BOM", "View all BOM/formula records", True),
+    ("recipe", "view_all", "View All Recipes", "View all recipe records", True),
+
+    # Quality / traceability
+    ("quality", "view_all", "View All Quality", "View all quality records", True),
+    ("quality", "view_own_scope", "View Scoped Quality", "View quality records in assigned scope", True),
+    ("quality", "create_all", "Create All Quality", "Create quality records across all scopes", False),
+    ("quality", "create_own_scope", "Create Scoped Quality", "Create quality records in assigned scope", False),
+    ("quality", "edit_all", "Edit All Quality", "Edit quality records across all scopes", False),
+    ("quality", "edit_own_scope", "Edit Scoped Quality", "Edit quality records in assigned scope", False),
+    ("quality", "approve_own_scope", "Approve Scoped Quality", "Approve quality records in assigned scope", False),
+    ("quality", "release_own_scope", "Release Scoped Quality", "Release lots in assigned quality scope", False),
+    ("qms", "view_all", "View All QMS", "View all QMS records", True),
+    ("qms", "edit_own_scope", "Edit Scoped QMS", "Edit QMS records in assigned scope", False),
+    ("qms", "manage_haccp", "Manage HACCP", "Manage HACCP configuration and controls", False),
+    ("traceability", "view_all", "View All Traceability", "View all traceability records", True),
+    ("traceability", "recall_initiate", "Initiate Recall", "Initiate product recall workflows", False),
+    ("traceability", "recall_close", "Close Recall", "Close product recall workflows", False),
+    ("traceability", "regulatory_export", "Export Regulatory Traceability", "Export regulatory traceability reports", False),
+
+    # Finance
+    ("finance", "view_all", "View All Finance", "View finance records across companies", False),
+    ("finance", "view_own_scope", "View Scoped Finance", "View finance records inside assigned company/branch/cost center", False),
+    ("finance", "create_all", "Create All Finance", "Create finance records across companies", False),
+    ("finance", "create_own_scope", "Create Scoped Finance", "Create finance records inside assigned company/branch/cost center", False),
+    ("finance", "edit_all", "Edit All Finance", "Edit finance records across companies", False),
+    ("finance", "edit_own_scope", "Edit Scoped Finance", "Edit finance records inside assigned company/branch/cost center", False),
+    ("finance", "post_all", "Post All Finance", "Post finance records across companies", False),
+    ("finance", "post_own_scope", "Post Scoped Finance", "Post finance records inside assigned company/branch/cost center", False),
+    ("bank_reconciliation", "manage_own_scope", "Manage Scoped Bank Reconciliation", "Manage bank reconciliation in assigned company/bank scope", False),
+    ("invoice_match", "approve_own_scope", "Approve Scoped Invoice Match", "Approve matched invoices in assigned company scope", False),
+
+    # HR / payroll
+    ("hr", "view_own_scope", "View Scoped HR", "View HR records inside assigned company/branch/department", False),
+    ("hr", "edit_own_scope", "Edit Scoped HR", "Edit HR records inside assigned company/branch/department", False),
+    ("employees", "view_own_scope", "View Scoped Employees", "View employees inside assigned department scope", False),
+    ("payroll", "view", "View Payroll", "View payroll records", False),
+    ("payroll", "manage_own_scope", "Manage Scoped Payroll", "Manage payroll in assigned company/branch/department", False),
+
+    # Maintenance / utilities / IoT
+    ("maintenance", "view_all", "View All Maintenance", "View all maintenance assets and work orders", True),
+    ("maintenance", "edit_own_scope", "Edit Scoped Maintenance", "Edit maintenance records in assigned machine/factory scope", False),
+    ("utilities", "view_all", "View All Utilities", "View all utility assets/readings", False),
+    ("utilities", "edit_own_scope", "Edit Scoped Utilities", "Edit utility records in assigned utility area/factory scope", False),
+    ("iot", "manage", "Manage IoT", "Manage IoT device configuration", False),
+
+    # Administration / audit
+    ("users", "manage", "Manage Users", "Manage user lifecycle and assignments", False),
+    ("roles", "manage", "Manage Roles", "Manage roles, permissions, and scopes", False),
+    ("company", "manage", "Manage Company Setup", "Manage company and branch setup", False),
+    ("auditor", "export", "Export Audit Reports", "Export auditor-approved reports", False),
+    ("shop_floor", "view_own_scope", "View Scoped Shop Floor", "View assigned shop-floor execution scope", True),
+    ("production_execution", "update_own_line", "Update Own Production Line", "Update execution records on assigned line", False),
+]
+
+PERMISSIONS.extend(SCOPE_AWARE_PERMISSIONS)
+
 
 # ── Import permission helpers ─────────────────────────────────────────────────
 # Modules that support bulk import. Used to build per-role import grants.
@@ -436,6 +544,7 @@ ROLE_DEFINITIONS = {
         "description": "Chief Financial Officer — full financial and compliance oversight",
         "permissions": [
             "finance.view", "finance.create", "finance.edit", "finance.approve", "finance.export", "finance.configure",
+            "finance.post_all",
             "mpesa.initiate_payment", "mpesa.view_transactions", "mpesa.retry_transaction",
             "mpesa.cancel_payment", "mpesa.reconcile_payment", "mpesa.view_payment_logs",
             "tax.view", "tax.edit",
@@ -544,6 +653,7 @@ ROLE_DEFINITIONS = {
         "description": "Full finance and M-Pesa access",
         "permissions": [
             "finance.view", "finance.create", "finance.edit", "finance.approve", "finance.export", "finance.configure",
+            "finance.post_all",
             "mpesa.initiate_payment", "mpesa.view_transactions", "mpesa.retry_transaction",
             "mpesa.cancel_payment", "mpesa.reconcile_payment", "mpesa.view_payment_logs",
             "payroll_ke.view", "payroll_ke.create", "payroll_ke.approve", "payroll_ke.export",
@@ -632,6 +742,101 @@ ROLE_DEFINITIONS = {
             "documents.view", "documents.create",
             # Import: own module only
             *_import("hr"),
+        ],
+    },
+
+    "company_admin": {
+        "description": "Company administrator with company-scoped administrative authority",
+        "permissions": [
+            "users.view", "users.manage", "roles.view", "company.manage",
+            "inventory.view_all", "production.view_all", "quality.view_all",
+            "sales.view_all", "finance.view_own_scope", "procurement.view_all",
+            "hr.view_own_scope", "maintenance.view_all", "utilities.view_all",
+        ],
+    },
+    "factory_manager": {
+        "description": "Factory manager with broad operational visibility and scoped factory mutation",
+        "permissions": [
+            "production.view_all", "inventory.view_all", "quality.view_all",
+            "maintenance.view_all", "utilities.view_all",
+            "production.create_own_scope", "production.edit_own_scope", "production.release_own_scope",
+            "production.close_own_scope", "production.cancel_own_scope",
+            "quality.approve_own_scope", "maintenance.edit_own_scope",
+        ],
+    },
+    "warehouse_manager": {
+        "description": "Warehouse manager with all-stock visibility and assigned-warehouse mutation",
+        "permissions": [
+            "inventory.view_all", "warehouses.view_all", "products.view", "materials.view",
+            "inventory.edit_own_scope", "inventory.adjust_own_scope",
+            "inventory.receive_own_scope", "inventory.dispatch_own_scope",
+            "inventory.transfer_own_scope",
+            "cycle_count.perform_own_scope",
+        ],
+    },
+    "production_manager": {
+        "description": "Production manager with all-order visibility and assigned factory/line control",
+        "permissions": [
+            "production.view_all", "mrp.view_all", "bom.view_all", "recipe.view_all",
+            "production.create_own_scope", "production.edit_own_scope", "production.release_own_scope",
+            "production.close_own_scope", "production.cancel_own_scope", "mrp.run_own_scope",
+        ],
+    },
+    "quality_manager": {
+        "description": "Quality manager with broad QMS visibility and scoped release approval",
+        "permissions": [
+            "quality.view_all", "qms.view_all", "traceability.view_all",
+            "quality.create_own_scope", "quality.edit_own_scope",
+            "quality.approve_own_scope", "quality.release_own_scope",
+            "qms.edit_own_scope", "traceability.recall_initiate",
+        ],
+    },
+    "procurement_manager": {
+        "description": "Procurement manager with supplier visibility and scoped purchasing control",
+        "permissions": [
+            "procurement.view_all", "procurement.create_own_scope",
+            "procurement.edit_own_scope", "procurement.approve_own_scope",
+            "materials.view", "inventory.view_all",
+        ],
+    },
+    "regional_sales_manager": {
+        "description": "Sales manager with all-customer visibility and scoped regional mutation",
+        "permissions": [
+            "sales.view_all", "crm.view_all",
+            "sales.create_own_region",
+            "sales.edit_own_region", "crm.edit_own_region",
+            "pricing.request_discount",
+        ],
+    },
+    "scoped_finance_manager": {
+        "description": "Finance manager with scoped company/branch posting authority",
+        "permissions": [
+            "finance.view_own_scope", "finance.create_own_scope", "finance.edit_own_scope",
+            "finance.post_own_scope",
+            "bank_reconciliation.manage_own_scope", "invoice_match.approve_own_scope",
+            "finance.export",
+        ],
+    },
+    "scoped_hr_manager": {
+        "description": "HR manager with scoped department and payroll authority",
+        "permissions": [
+            "hr.view_own_scope", "employees.view_own_scope",
+            "hr.edit_own_scope", "payroll.view", "payroll.manage_own_scope",
+        ],
+    },
+    "read_only_auditor": {
+        "description": "Read-only auditor with assigned-scope visibility and optional export",
+        "permissions": [
+            "inventory.view_own_scope", "production.view_own_scope", "quality.view_own_scope",
+            "sales.view_own_scope", "finance.view_own_scope", "procurement.view_own_scope",
+            "audit.view", "auditor.export",
+        ],
+    },
+    "shop_floor_operator": {
+        "description": "Operator with limited assigned-line execution authority",
+        "permissions": [
+            "shop_floor.view_own_scope", "production_execution.update_own_line",
+            "production.view_own_scope",
         ],
     },
 
@@ -758,6 +963,33 @@ ROLE_DEFINITIONS = {
 }
 
 
+FULL_SCOPE_ACTIONS = {
+    "can_view": True,
+    "can_create": True,
+    "can_edit": True,
+    "can_delete": True,
+    "can_approve": True,
+    "can_post": True,
+    "can_release": True,
+    "can_cancel": True,
+    "can_export": True,
+    "can_import": True,
+    "can_transfer": True,
+    "can_adjust": True,
+    "can_receive": True,
+    "can_dispatch": True,
+}
+
+DEFAULT_ROLE_ACCESS_SCOPES = {
+    "owner": [
+        {"scope_type": "global", "scope_id": "ALL", "scope_name": "All ERP scopes", **FULL_SCOPE_ACTIONS},
+    ],
+    "admin": [
+        {"scope_type": "global", "scope_id": "ALL", "scope_name": "All ERP scopes", **FULL_SCOPE_ACTIONS},
+    ],
+}
+
+
 async def seed_admin(db: AsyncSession) -> None:
     """Seed permissions, predefined roles, and the default admin user."""
 
@@ -787,6 +1019,7 @@ async def seed_admin(db: AsyncSession) -> None:
             "description": description,
             "module": module,
             "action": action,
+            "is_active": True,
             "is_mobile_visible": is_mobile,
         }
         for module, action, name, description, is_mobile in permission_defs.values()
@@ -802,11 +1035,18 @@ async def seed_admin(db: AsyncSession) -> None:
 
     # ── 2. Batch-upsert all roles, then assign permissions ────────────────────
     role_rows = [
-        {"name": rname, "description": rdef["description"]}
+        {"name": rname, "description": rdef["description"], "is_system_role": True}
         for rname, rdef in ROLE_DEFINITIONS.items()
     ]
+    role_insert = pg_insert(Role).values(role_rows)
     await db.execute(
-        pg_insert(Role).values(role_rows).on_conflict_do_nothing(index_elements=["name"])
+        role_insert.on_conflict_do_update(
+            index_elements=["name"],
+            set_={
+                "description": role_insert.excluded.description,
+                "is_system_role": True,
+            },
+        )
     )
     await db.flush()
 
@@ -835,6 +1075,31 @@ async def seed_admin(db: AsyncSession) -> None:
     await db.flush()
 
     # ── 3. Seed admin user ─────────────────────────────────────────────────────
+    default_scope_role_ids = [
+        role_map[role_name].id
+        for role_name in DEFAULT_ROLE_ACCESS_SCOPES
+        if role_name in role_map
+    ]
+    if default_scope_role_ids:
+        await db.execute(
+            delete(AccessScope).where(
+                AccessScope.role_id.in_(default_scope_role_ids),
+                AccessScope.user_id.is_(None),
+                AccessScope.scope_type == "global",
+                AccessScope.scope_id == "ALL",
+            )
+        )
+        scope_rows = []
+        for role_name, scopes in DEFAULT_ROLE_ACCESS_SCOPES.items():
+            role = role_map.get(role_name)
+            if not role:
+                continue
+            for scope in scopes:
+                scope_rows.append({"id": uuid.uuid4(), "role_id": role.id, **scope})
+        if scope_rows:
+            await db.execute(insert(AccessScope), scope_rows)
+        await db.flush()
+
     count_result = await db.execute(select(func.count()).select_from(User))
     user_count = count_result.scalar_one()
     if user_count > 0:

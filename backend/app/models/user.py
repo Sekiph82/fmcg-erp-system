@@ -27,4 +27,5 @@ class User(Base, TimestampMixin):
     must_change_password = Column(Boolean, default=False, nullable=False)
 
     roles = relationship("Role", secondary=user_role, back_populates="users")
+    access_scopes = relationship("AccessScope", back_populates="user", cascade="all, delete-orphan")
     two_fa_settings = relationship("User2FASettings", back_populates="user", uselist=False)

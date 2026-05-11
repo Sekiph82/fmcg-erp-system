@@ -8,6 +8,7 @@ import uuid
 from app.core.config import settings
 from app.core.security import decode_token
 from app.core import token_blocklist
+from app.core.access_control import forbidden_detail, has_permission
 from app.db.session import get_db
 
 logger = logging.getLogger(__name__)
@@ -36,6 +37,8 @@ async def get_current_user(
         result = await db.execute(
             select(User)
             .options(selectinload(User.roles).selectinload(Role.permissions))
+            .options(selectinload(User.roles).selectinload(Role.access_scopes))
+            .options(selectinload(User.access_scopes))
             .where(User.id == uuid.UUID(user_id))
         )
     except Exception:
@@ -65,18 +68,10 @@ def require_permission(module: str, action: str):
     permission_code = f"{module}.{action}"
 
     async def _check(current_user=Depends(get_current_user)):
-        if current_user.is_superuser:
-            return current_user
-        user_permissions = {
-            perm.code
-            for role in current_user.roles
-            if role.is_active
-            for perm in role.permissions
-        }
-        if permission_code not in user_permissions:
+        if not has_permission(current_user, permission_code):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Permission '{permission_code}' required",
+                detail=forbidden_detail(f"Permission '{permission_code}' required"),
             )
         return current_user
 
