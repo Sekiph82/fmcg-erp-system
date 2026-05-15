@@ -37,6 +37,12 @@ from app.schemas.quotation import (
     QuotationCreate, QuotationUpdate, QuotationRead, QuotationLineRead,
     QuoteRejectRequest, QuoteDashboard,
 )
+from app.services.commercial_access_service import (
+    build_commercial_access_hint,
+    can_view_record,
+    ensure_commercial_action_allowed,
+    inherit_commercial_scope,
+)
 
 router = APIRouter()
 
@@ -63,7 +69,7 @@ def _compute_totals(lines: List[QuotationLine], overall_disc: Decimal) -> tuple[
     return after_disc, tax, grand
 
 
-async def _build_read(db: AsyncSession, q: Quotation) -> QuotationRead:
+async def _build_read(db: AsyncSession, q: Quotation, user: User | None = None) -> QuotationRead:
     row = QuotationRead.model_validate(q)
     if q.customer:
         row.customer_name = q.customer.name
@@ -75,6 +81,8 @@ async def _build_read(db: AsyncSession, q: Quotation) -> QuotationRead:
             lr.product_sku = l.product.sku
             lr.product_name = l.product.name
         row.lines.append(lr)
+    if user is not None:
+        row.access = build_commercial_access_hint(user, q, "sales")
     return row
 
 
@@ -103,7 +111,7 @@ async def list_quotes(
     skip: int = 0,
     limit: int = Query(50, le=200),
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     q = (
         select(Quotation)
@@ -119,7 +127,8 @@ async def list_quotes(
     if status:
         q = q.where(Quotation.status == status)
     quotes = list((await db.execute(q)).scalars().all())
-    return [await _build_read(db, qt) for qt in quotes]
+    quotes = [qt for qt in quotes if can_view_record(current_user, "sales", qt)]
+    return [await _build_read(db, qt, current_user) for qt in quotes]
 
 
 # ── Dashboard ──────────────────────────────────────────────────────────────────
@@ -166,6 +175,13 @@ async def create_quote(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    customer = await db.get(Customer, body.customer_id)
+    if not customer:
+        raise HTTPException(404, "Customer not found")
+    target = Quotation(**body.model_dump(exclude={"lines"}), quote_no="PENDING", version=1, status=QuoteStatus.DRAFT)
+    inherit_commercial_scope(target, customer)
+    ensure_commercial_action_allowed(current_user, target, "create", "sales")
+
     # Generate quote_no
     count_r = await db.execute(select(func.count(Quotation.id)))
     count = count_r.scalar() or 0
@@ -175,7 +191,13 @@ async def create_quote(
         quote_no=quote_no,
         version=1,
         customer_id=body.customer_id,
+        crm_record_id=body.crm_record_id,
         status=QuoteStatus.DRAFT,
+        company_id=target.company_id,
+        branch_id=target.branch_id,
+        sales_region_id=target.sales_region_id,
+        sales_team_id=target.sales_team_id,
+        customer_group_id=target.customer_group_id,
         quote_date=body.quote_date,
         valid_until=body.valid_until,
         currency=body.currency,
@@ -206,14 +228,16 @@ async def create_quote(
     quote.grand_total = grand
     await db.commit()
 
-    return await _build_read(db, await _get_or_404(db, quote.id))
+    return await _build_read(db, await _get_or_404(db, quote.id), current_user)
 
 
 # ── Get ───────────────────────────────────────────────────────────────────────
 
 @router.get("/{quote_id}", response_model=QuotationRead)
-async def get_quote(quote_id: uuid.UUID, db: AsyncSession = Depends(get_db), _: User = Depends(get_current_user)):
-    return await _build_read(db, await _get_or_404(db, quote_id))
+async def get_quote(quote_id: uuid.UUID, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    q = await _get_or_404(db, quote_id)
+    ensure_commercial_action_allowed(current_user, q, "view", "sales")
+    return await _build_read(db, q, current_user)
 
 
 # ── Update ────────────────────────────────────────────────────────────────────
@@ -223,9 +247,10 @@ async def update_quote(
     quote_id: uuid.UUID,
     body: QuotationUpdate,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     q = await _get_or_404(db, quote_id)
+    ensure_commercial_action_allowed(current_user, q, "edit", "sales")
     if q.status not in (QuoteStatus.DRAFT,):
         raise HTTPException(422, "Only DRAFT quotes can be updated")
 
@@ -258,31 +283,33 @@ async def update_quote(
         q.grand_total = grand
 
     await db.commit()
-    return await _build_read(db, await _get_or_404(db, quote_id))
+    return await _build_read(db, await _get_or_404(db, quote_id), current_user)
 
 
 # ── Status Actions ────────────────────────────────────────────────────────────
 
 @router.post("/{quote_id}/send", response_model=QuotationRead)
-async def send_quote(quote_id: uuid.UUID, db: AsyncSession = Depends(get_db), _: User = Depends(get_current_user)):
+async def send_quote(quote_id: uuid.UUID, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     q = await _get_or_404(db, quote_id)
+    ensure_commercial_action_allowed(current_user, q, "edit", "sales")
     if q.status not in (QuoteStatus.DRAFT,):
         raise HTTPException(422, "Only DRAFT quotes can be sent")
     q.status = QuoteStatus.SENT
     q.sent_at = datetime.now(tz=timezone.utc)
     await db.commit()
-    return await _build_read(db, await _get_or_404(db, quote_id))
+    return await _build_read(db, await _get_or_404(db, quote_id), current_user)
 
 
 @router.post("/{quote_id}/accept", response_model=QuotationRead)
-async def accept_quote(quote_id: uuid.UUID, db: AsyncSession = Depends(get_db), _: User = Depends(get_current_user)):
+async def accept_quote(quote_id: uuid.UUID, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     q = await _get_or_404(db, quote_id)
+    ensure_commercial_action_allowed(current_user, q, "approve", "sales")
     if q.status not in (QuoteStatus.SENT,):
         raise HTTPException(422, "Only SENT quotes can be accepted")
     q.status = QuoteStatus.ACCEPTED
     q.accepted_at = datetime.now(tz=timezone.utc)
     await db.commit()
-    return await _build_read(db, await _get_or_404(db, quote_id))
+    return await _build_read(db, await _get_or_404(db, quote_id), current_user)
 
 
 @router.post("/{quote_id}/reject", response_model=QuotationRead)
@@ -290,26 +317,28 @@ async def reject_quote(
     quote_id: uuid.UUID,
     body: QuoteRejectRequest = QuoteRejectRequest(),
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     q = await _get_or_404(db, quote_id)
+    ensure_commercial_action_allowed(current_user, q, "cancel", "sales")
     if q.status not in (QuoteStatus.SENT, QuoteStatus.ACCEPTED):
         raise HTTPException(422, "Cannot reject at current status")
     q.status = QuoteStatus.REJECTED
     q.rejected_at = datetime.now(tz=timezone.utc)
     q.lost_reason = body.lost_reason
     await db.commit()
-    return await _build_read(db, await _get_or_404(db, quote_id))
+    return await _build_read(db, await _get_or_404(db, quote_id), current_user)
 
 
 @router.post("/{quote_id}/expire", response_model=QuotationRead)
-async def expire_quote(quote_id: uuid.UUID, db: AsyncSession = Depends(get_db), _: User = Depends(get_current_user)):
+async def expire_quote(quote_id: uuid.UUID, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     q = await _get_or_404(db, quote_id)
+    ensure_commercial_action_allowed(current_user, q, "cancel", "sales")
     if q.status not in (QuoteStatus.DRAFT, QuoteStatus.SENT):
         raise HTTPException(422, "Cannot expire at current status")
     q.status = QuoteStatus.EXPIRED
     await db.commit()
-    return await _build_read(db, await _get_or_404(db, quote_id))
+    return await _build_read(db, await _get_or_404(db, quote_id), current_user)
 
 
 # ── Revise (new version) ──────────────────────────────────────────────────────
@@ -322,6 +351,7 @@ async def revise_quote(
 ):
     """Create a new version of the quote. Old version locked (EXPIRED)."""
     old = await _get_or_404(db, quote_id)
+    ensure_commercial_action_allowed(current_user, old, "edit", "sales")
     if old.status in (QuoteStatus.CONVERTED,):
         raise HTTPException(422, "Cannot revise a converted quote")
 
@@ -332,7 +362,13 @@ async def revise_quote(
         quote_no=old.quote_no,
         version=old.version + 1,
         customer_id=old.customer_id,
+        crm_record_id=old.crm_record_id,
         status=QuoteStatus.DRAFT,
+        company_id=old.company_id,
+        branch_id=old.branch_id,
+        sales_region_id=old.sales_region_id,
+        sales_team_id=old.sales_team_id,
+        customer_group_id=old.customer_group_id,
         quote_date=date.today(),
         valid_until=old.valid_until,
         currency=old.currency,
@@ -356,7 +392,7 @@ async def revise_quote(
         ))
 
     await db.commit()
-    return await _build_read(db, await _get_or_404(db, new_q.id))
+    return await _build_read(db, await _get_or_404(db, new_q.id), current_user)
 
 
 # ── Convert to Sales Order ────────────────────────────────────────────────────
@@ -369,6 +405,7 @@ async def convert_to_so(
 ):
     """Convert an ACCEPTED quotation into a Sales Order."""
     q = await _get_or_404(db, quote_id)
+    ensure_commercial_action_allowed(current_user, q, "convert", "sales")
     if q.status != QuoteStatus.ACCEPTED:
         raise HTTPException(422, "Only ACCEPTED quotes can be converted to Sales Orders")
 
@@ -385,6 +422,11 @@ async def convert_to_so(
         requested_delivery_date=today + timedelta(days=7),
         status=SOStatus.DRAFT,
         currency=q.currency,
+        company_id=q.company_id,
+        branch_id=q.branch_id,
+        sales_region_id=q.sales_region_id,
+        sales_team_id=q.sales_team_id,
+        customer_group_id=q.customer_group_id,
         notes=f"Converted from Quote {q.quote_no} v{q.version}",
         created_by_id=current_user.id,
         source=OrderSource.MANUAL,

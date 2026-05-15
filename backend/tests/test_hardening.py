@@ -9,7 +9,7 @@ from fastapi import APIRouter, Response
 from pydantic import ValidationError
 from starlette.requests import Request
 
-from app.api.v1.endpoints.modules import get_module_manifest
+from app.api.v1.endpoints.modules import get_module_manifest, get_permission_coverage
 from app.api.v1.endpoints.ai import _require_live_ai_for_high_risk
 from app.core.auth_cookies import clear_auth_cookie, set_auth_cookie
 from app.core.config import Settings, settings
@@ -18,6 +18,8 @@ from app.core.module_registry import (
     EndpointRouteDefinition,
     MODULE_DEFINITIONS,
     ModuleDefinition,
+    permission_coverage_report,
+    permission_is_covered,
     register_endpoint_routes,
     register_module_routes,
     registry_permission_codes,
@@ -397,3 +399,45 @@ async def test_module_manifest_is_filtered_by_user_permissions():
 
     assert visible_keys == {"inventory"}
     assert manifest["visible_permission_codes"] == ["inventory.view"]
+
+
+@pytest.mark.asyncio
+async def test_module_manifest_treats_scoped_view_permissions_as_module_visibility():
+    inventory_perm = SimpleNamespace(code="inventory.view_all", is_active=True)
+    role = SimpleNamespace(is_active=True, permissions=[inventory_perm])
+    user = SimpleNamespace(is_superuser=False, roles=[role])
+
+    db = FakePermissionDb(["inventory.view_all", "users.view"])
+    manifest = await get_module_manifest(user, db=db)
+    visible_keys = {module["key"] for module in manifest["modules"]}
+
+    assert visible_keys == {"inventory"}
+    assert "inventory.view" in manifest["visible_permission_codes"]
+    assert "inventory.view_all" in manifest["visible_permission_codes"]
+
+
+def test_permission_coverage_report_supports_scoped_aliases():
+    report = permission_coverage_report(
+        ["inventory.view", "inventory.edit", "finance.post", "roles.view"],
+        ["inventory.view_own_scope", "finance.post_own_company"],
+    )
+
+    assert permission_is_covered("inventory.view", ["inventory.view_all"])
+    assert report["covered"] == ["finance.post", "inventory.view"]
+    assert report["missing"] == ["inventory.edit", "roles.view"]
+
+
+@pytest.mark.asyncio
+async def test_permission_coverage_endpoint_reports_registry_drift(monkeypatch):
+    monkeypatch.setattr(
+        "app.api.v1.endpoints.modules.registry_permission_codes",
+        lambda: {"finance.post", "inventory.view", "roles.view"},
+    )
+
+    result = await get_permission_coverage(db=FakePermissionDb(["custom.legacy", "inventory.view_all"]))
+
+    assert result["registry_permission_count"] == 3
+    assert result["database_permission_count"] == 2
+    assert result["covered_registry_permissions"] == ["inventory.view"]
+    assert result["missing_registry_permissions"] == ["finance.post", "roles.view"]
+    assert result["database_only_permissions"] == ["custom.legacy", "inventory.view_all"]

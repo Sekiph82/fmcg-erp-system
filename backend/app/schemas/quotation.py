@@ -8,6 +8,7 @@ import uuid
 from pydantic import BaseModel, ConfigDict
 
 from app.models.quotation import QuoteStatus
+from app.schemas.sales import CommercialAccessHint, CommercialScopeFields
 
 
 class QuotationLineCreate(BaseModel):
@@ -37,8 +38,9 @@ class QuotationLineRead(BaseModel):
     line_total:   Decimal
 
 
-class QuotationCreate(BaseModel):
+class QuotationCreate(CommercialScopeFields):
     customer_id:   uuid.UUID
+    crm_record_id: Optional[uuid.UUID] = None
     quote_date:    date
     valid_until:   Optional[date]    = None
     currency:      str               = "KES"
@@ -48,7 +50,8 @@ class QuotationCreate(BaseModel):
     lines:         List[QuotationLineCreate] = []
 
 
-class QuotationUpdate(BaseModel):
+class QuotationUpdate(CommercialScopeFields):
+    crm_record_id: Optional[uuid.UUID] = None
     valid_until:   Optional[date]   = None
     currency:      Optional[str]    = None
     discount_pct:  Optional[Decimal] = None
@@ -63,9 +66,15 @@ class QuotationRead(BaseModel):
     quote_no:        str
     version:         int
     customer_id:     uuid.UUID
+    crm_record_id:   Optional[uuid.UUID] = None
     customer_name:   Optional[str]  = None
     customer_code:   Optional[str]  = None
     status:          QuoteStatus
+    company_id:      Optional[uuid.UUID] = None
+    branch_id:       Optional[uuid.UUID] = None
+    sales_region_id: Optional[str] = None
+    sales_team_id:   Optional[str] = None
+    customer_group_id: Optional[str] = None
     quote_date:      date
     valid_until:     Optional[date]
     currency:        str
@@ -77,9 +86,14 @@ class QuotationRead(BaseModel):
     accepted_at:     Optional[datetime]
     rejected_at:     Optional[datetime]
     lost_reason:     Optional[str]
+    approval_status: Optional[str] = None
+    discount_approval_required: bool = False
+    discount_approved_by_id: Optional[uuid.UUID] = None
+    discount_approved_at: Optional[datetime] = None
     converted_so_id: Optional[uuid.UUID]
     created_by_id:   Optional[uuid.UUID]
     notes:           Optional[str]
+    access:          Optional[CommercialAccessHint] = None
     created_at:      datetime
     lines:           List[QuotationLineRead] = []
 

@@ -14,6 +14,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import get_db, get_current_user, require_permission
 from app.core.config import settings
+from app.core.integration_capabilities import (
+    can_execute_in_environment,
+    effective_capability_status,
+    list_integration_capabilities,
+    production_block_reason,
+)
 from app.models.integrations import (
     IntegrationConfig, IntegrationLog, IntegrationMpesaTransaction,
     IntegrationProvider, IntegrationLogStatus, BarcodeLabel,
@@ -115,6 +121,21 @@ def _label_read(label: BarcodeLabel, svg: Optional[str] = None) -> BarcodeLabelR
     )
 
 
+def _capability_read(capability) -> dict:
+    data = capability.to_dict()
+    data["effective_status"] = effective_capability_status(capability).value
+    data["can_execute_in_development"] = can_execute_in_environment(
+        capability,
+        environment="development",
+    )
+    data["can_execute_in_production"] = can_execute_in_environment(
+        capability,
+        environment="production",
+    )
+    data["production_blocked_reason"] = production_block_reason(capability)
+    return data
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # INTEGRATION CONFIG
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -179,6 +200,12 @@ async def provider_summary(
             recent_failures=stats["failed"],
         ))
     return rows
+
+
+@router.get("/capabilities", dependencies=[Depends(require_permission("integrations", "view"))])
+async def integration_capabilities():
+    """Return source-owned provider capability status without exposing secrets."""
+    return [_capability_read(capability) for capability in list_integration_capabilities()]
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

@@ -10,6 +10,7 @@ from app.models.crm import (
     CRMTemperature, CRMStatus, CRMActivityType, CRMActivityResult,
     CRMLossReason, CRMWinReason, CRMAIAgentType, CRMAIRecStatus,
 )
+from app.schemas.sales import CommercialAccessHint, CommercialScopeFields
 
 
 # ── Stage ─────────────────────────────────────────────────────────────────────
@@ -125,7 +126,7 @@ class CRMCompetitorRead(CRMCompetitorCreate):
 
 # ── Record (Lead / Opportunity) ───────────────────────────────────────────────
 
-class CRMRecordCreate(BaseModel):
+class CRMRecordCreate(CommercialScopeFields):
     record_type: CRMRecordType = CRMRecordType.LEAD
     company_name: str
     account_type: CRMAccountType = CRMAccountType.PROSPECT
@@ -145,6 +146,7 @@ class CRMRecordCreate(BaseModel):
     assigned_team_id: Optional[str] = None
     stage_id: Optional[uuid.UUID] = None
     territory_id: Optional[uuid.UUID] = None
+    assigned_customer_id: Optional[uuid.UUID] = None
     probability_pct: Optional[Decimal] = Decimal("0")
     expected_close_date: Optional[date] = None
     expected_revenue: Optional[Decimal] = Decimal("0")
@@ -156,7 +158,7 @@ class CRMRecordCreate(BaseModel):
     notes: Optional[str] = None
 
 
-class CRMRecordUpdate(BaseModel):
+class CRMRecordUpdate(CommercialScopeFields):
     company_name: Optional[str] = None
     account_type: Optional[CRMAccountType] = None
     contact_person_name: Optional[str] = None
@@ -173,6 +175,7 @@ class CRMRecordUpdate(BaseModel):
     next_action_date: Optional[date] = None
     assigned_rep_id: Optional[str] = None
     assigned_team_id: Optional[str] = None
+    assigned_customer_id: Optional[uuid.UUID] = None
     linked_quotation_id: Optional[str] = None
     linked_order_id: Optional[str] = None
     updated_by: Optional[str] = None
@@ -199,6 +202,12 @@ class CRMRecordRead(BaseModel):
     assigned_team_id: Optional[str] = None
     stage_id: Optional[uuid.UUID] = None
     territory_id: Optional[uuid.UUID] = None
+    assigned_customer_id: Optional[uuid.UUID] = None
+    company_id: Optional[uuid.UUID] = None
+    branch_id: Optional[uuid.UUID] = None
+    sales_region_id: Optional[str] = None
+    sales_team_id: Optional[str] = None
+    customer_group_id: Optional[str] = None
     probability_pct: Optional[Decimal] = None
     expected_close_date: Optional[date] = None
     expected_revenue: Optional[Decimal] = None
@@ -215,6 +224,7 @@ class CRMRecordRead(BaseModel):
     linked_order_id: Optional[str] = None
     created_by: Optional[str] = None
     notes: Optional[str] = None
+    access: Optional[CommercialAccessHint] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
@@ -302,7 +312,7 @@ class CRMAIRecAck(BaseModel):
 
 # ── Territory ─────────────────────────────────────────────────────────────────
 
-class CRMTerritoryCreate(BaseModel):
+class CRMTerritoryCreate(CommercialScopeFields):
     territory_code: str
     territory_name: str
     region: Optional[str] = None
@@ -315,10 +325,11 @@ class CRMTerritoryCreate(BaseModel):
 class CRMTerritoryRead(CRMTerritoryCreate):
     model_config = ConfigDict(from_attributes=True)
     id: uuid.UUID
+    access: Optional[CommercialAccessHint] = None
     created_at: Optional[datetime] = None
 
 
-class CRMTerritoryUpdate(BaseModel):
+class CRMTerritoryUpdate(CommercialScopeFields):
     territory_name: Optional[str] = None
     region: Optional[str] = None
     parent_territory_id: Optional[uuid.UUID] = None
@@ -413,4 +424,3 @@ class CRMWinLossRow(BaseModel):
     count: int
     total_revenue: Decimal
     pct_of_total: float
-

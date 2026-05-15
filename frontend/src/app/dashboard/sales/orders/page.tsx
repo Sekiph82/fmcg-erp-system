@@ -161,7 +161,14 @@ export default function SalesOrdersPage() {
       r.total_value !== undefined ? `${r.currency} ${Number(r.total_value).toLocaleString(undefined, { minimumFractionDigits: 2 })}` : "—"
     },
     { header: "Status", accessor: (r: typeof orders[0]) => (
-      <Badge label={r.status} variant={statusVariant(r.status)} />
+      <div className="flex flex-col gap-1">
+        <Badge label={r.status} variant={statusVariant(r.status)} />
+        {r.access?.view_only && (
+          <span title={r.access.reason ?? "You can view this record but cannot modify it in this scope."} className="text-xs text-gray-500">
+            View only
+          </span>
+        )}
+      </div>
     )},
   ];
 

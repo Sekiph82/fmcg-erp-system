@@ -36,6 +36,8 @@ ACTION_FIELD_BY_ACTION = {
     "release": "can_release",
     "close": "can_release",
     "cancel": "can_cancel",
+    "convert": "can_create",
+    "discount_approve": "can_approve",
     "export": "can_export",
     "import": "can_import",
     "transfer": "can_transfer",

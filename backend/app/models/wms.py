@@ -2,7 +2,7 @@ import uuid
 import enum
 from sqlalchemy import (
     Column, String, Text, Numeric, Boolean, Integer,
-    ForeignKey, Enum, DateTime, UniqueConstraint,
+    ForeignKey, Enum, DateTime, UniqueConstraint, CheckConstraint,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
@@ -72,6 +72,32 @@ class ReplenishmentStatus(str, enum.Enum):
     IN_PROGRESS = "IN_PROGRESS"
     COMPLETED = "COMPLETED"
     CANCELLED = "CANCELLED"
+
+
+class HandlingUnitType(str, enum.Enum):
+    PALLET = "PALLET"
+    CARTON = "CARTON"
+    TOTE = "TOTE"
+    CRATE = "CRATE"
+    CONTAINER = "CONTAINER"
+
+
+class HandlingUnitStatus(str, enum.Enum):
+    OPEN = "OPEN"
+    CLOSED = "CLOSED"
+    ON_HOLD = "ON_HOLD"
+    SHIPPED = "SHIPPED"
+    CONSUMED = "CONSUMED"
+    VOID = "VOID"
+
+
+class PickWaveStatus(str, enum.Enum):
+    DRAFT = "DRAFT"
+    RELEASED = "RELEASED"
+    IN_PROGRESS = "IN_PROGRESS"
+    PICKED = "PICKED"
+    CANCELLED = "CANCELLED"
+    CLOSED = "CLOSED"
 
 
 class WarehouseZone(Base, TimestampMixin):
@@ -185,6 +211,81 @@ class PutawayExecution(Base, TimestampMixin):
     executor = relationship("User", foreign_keys=[executed_by])
 
 
+class HandlingUnit(Base, TimestampMixin):
+    __tablename__ = "wms_handling_units"
+    __table_args__ = (
+        UniqueConstraint("license_plate", name="uq_wms_handling_units_license_plate"),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    license_plate = Column(String(100), nullable=False, unique=True, index=True)
+    warehouse_id = Column(UUID(as_uuid=True), ForeignKey("warehouses.id", ondelete="RESTRICT"), nullable=False, index=True)
+    location_id = Column(UUID(as_uuid=True), ForeignKey("storage_locations.id", ondelete="SET NULL"), nullable=True, index=True)
+    parent_hu_id = Column(UUID(as_uuid=True), ForeignKey("wms_handling_units.id", ondelete="SET NULL"), nullable=True, index=True)
+    hu_type = Column(Enum(HandlingUnitType, name="wms_handling_unit_type"), nullable=False)
+    status = Column(Enum(HandlingUnitStatus, name="wms_handling_unit_status"), nullable=False, default=HandlingUnitStatus.OPEN, index=True)
+    gross_weight_kg = Column(Numeric(12, 3), nullable=True)
+    net_weight_kg = Column(Numeric(12, 3), nullable=True)
+    volume_m3 = Column(Numeric(12, 4), nullable=True)
+    created_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    closed_at = Column(DateTime(timezone=True), nullable=True)
+    notes = Column(Text, nullable=True)
+
+    warehouse = relationship("Warehouse")
+    location = relationship("StorageLocation", foreign_keys=[location_id])
+    parent = relationship("HandlingUnit", remote_side=[id], foreign_keys=[parent_hu_id])
+    created_by = relationship("User", foreign_keys=[created_by_id])
+    items = relationship("HandlingUnitItem", back_populates="handling_unit", cascade="all, delete-orphan")
+
+
+class HandlingUnitItem(Base, TimestampMixin):
+    __tablename__ = "wms_handling_unit_items"
+    __table_args__ = (
+        CheckConstraint(
+            "(stock_type = 'PRODUCT' AND product_id IS NOT NULL AND material_id IS NULL) OR "
+            "(stock_type = 'MATERIAL' AND material_id IS NOT NULL AND product_id IS NULL)",
+            name="ck_wms_hu_items_stock_type_item",
+        ),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    handling_unit_id = Column(UUID(as_uuid=True), ForeignKey("wms_handling_units.id", ondelete="CASCADE"), nullable=False, index=True)
+    stock_type = Column(Enum("PRODUCT", "MATERIAL", name="stocktype"), nullable=False)
+    product_id = Column(UUID(as_uuid=True), ForeignKey("products.id", ondelete="RESTRICT"), nullable=True, index=True)
+    material_id = Column(UUID(as_uuid=True), ForeignKey("materials.id", ondelete="RESTRICT"), nullable=True, index=True)
+    lot_id = Column(UUID(as_uuid=True), ForeignKey("lots.id", ondelete="SET NULL"), nullable=True, index=True)
+    quantity = Column(Numeric(14, 3), nullable=False)
+    unit = Column(String(20), nullable=False)
+
+    handling_unit = relationship("HandlingUnit", back_populates="items")
+    product = relationship("Product")
+    material = relationship("Material")
+    lot = relationship("Lot")
+
+
+class PickWave(Base, TimestampMixin):
+    __tablename__ = "wms_pick_waves"
+    __table_args__ = (
+        UniqueConstraint("wave_no", name="uq_wms_pick_waves_wave_no"),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    wave_no = Column(String(50), nullable=False, unique=True, index=True)
+    warehouse_id = Column(UUID(as_uuid=True), ForeignKey("warehouses.id", ondelete="RESTRICT"), nullable=False, index=True)
+    status = Column(Enum(PickWaveStatus, name="wms_pick_wave_status"), nullable=False, default=PickWaveStatus.DRAFT, index=True)
+    priority = Column(Integer, nullable=False, default=100)
+    planned_start_at = Column(DateTime(timezone=True), nullable=True, index=True)
+    planned_end_at = Column(DateTime(timezone=True), nullable=True)
+    released_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    released_at = Column(DateTime(timezone=True), nullable=True)
+    closed_at = Column(DateTime(timezone=True), nullable=True)
+    notes = Column(Text, nullable=True)
+
+    warehouse = relationship("Warehouse")
+    released_by = relationship("User", foreign_keys=[released_by_id])
+    tasks = relationship("PickingTask", back_populates="wave")
+
+
 class StockCount(Base, TimestampMixin):
     __tablename__ = "stock_counts"
 
@@ -245,6 +346,7 @@ class PickingTask(Base, TimestampMixin):
     product_id = Column(UUID(as_uuid=True), ForeignKey("products.id", ondelete="RESTRICT"), nullable=False)
     lot_id = Column(UUID(as_uuid=True), ForeignKey("lots.id", ondelete="SET NULL"), nullable=True)
     from_location_id = Column(UUID(as_uuid=True), ForeignKey("storage_locations.id", ondelete="SET NULL"), nullable=True)
+    wave_id = Column(UUID(as_uuid=True), ForeignKey("wms_pick_waves.id", ondelete="SET NULL"), nullable=True, index=True)
     requested_qty = Column(Numeric(14, 3), nullable=False)
     unit = Column(String(20), nullable=False, default="PCS")
     picked_qty = Column(Numeric(14, 3), nullable=True)
@@ -260,6 +362,7 @@ class PickingTask(Base, TimestampMixin):
     lot = relationship("Lot")
     from_location = relationship("StorageLocation", foreign_keys=[from_location_id])
     assigned_to = relationship("User", foreign_keys=[assigned_to_id])
+    wave = relationship("PickWave", back_populates="tasks")
 
 
 class PackingRecord(Base, TimestampMixin):

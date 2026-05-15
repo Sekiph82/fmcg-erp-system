@@ -220,7 +220,7 @@ class AIRecOut(BaseModel):
 
 class AIRecAction(BaseModel):
     status: PlanningRecStatus
-    actioned_by_id: UUID
+    actioned_by_id: Optional[UUID] = None
 
 
 # ── PlanningSimulation ─────────────────────────────────────────────────────────

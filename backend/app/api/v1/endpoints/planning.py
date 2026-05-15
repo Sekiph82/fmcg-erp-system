@@ -1,14 +1,15 @@
 """Advanced Production Planning Suite — REST endpoints."""
 from __future__ import annotations
-import uuid
 from typing import List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
+from app.core.access_control import require_any_permission
 from app.db.session import get_db
+from app.models.user import User
 from app.models.planning import (
     PlanningScenario, ResourceCalendar, OperationQueue, CapacityLoadSnapshot,
     ChangeoverMatrix, PlanningBottleneck, PlanningAIRec, PlanningSimulation,
@@ -35,13 +36,40 @@ from app.services import (
 router = APIRouter()
 
 
-def _user_id() -> UUID:
-    return uuid.uuid4()  # auth integration point
+PLANNING_VIEW_PERMISSIONS = (
+    "planning.view",
+    "planning.view_all",
+    "planning.view_own_scope",
+)
+PLANNING_CREATE_PERMISSIONS = (
+    "planning.create",
+    "planning.create_all",
+    "planning.create_own_scope",
+)
+PLANNING_EDIT_PERMISSIONS = (
+    "planning.edit",
+    "planning.edit_all",
+    "planning.edit_own_scope",
+)
+PLANNING_CALCULATE_PERMISSIONS = (
+    "planning.calculate",
+    "planning.calculate_all",
+    "planning.calculate_own_scope",
+)
+PLANNING_APPROVE_PERMISSIONS = (
+    "planning.approve",
+    "planning.approve_all",
+    "planning.approve_own_scope",
+)
 
 
 # ── Dashboard ──────────────────────────────────────────────────────────────────
 
-@router.get("/dashboard", response_model=PlanningDashboard)
+@router.get(
+    "/dashboard",
+    response_model=PlanningDashboard,
+    dependencies=[Depends(require_any_permission(PLANNING_VIEW_PERMISSIONS))],
+)
 async def get_dashboard(db: AsyncSession = Depends(get_db)):
     data = await svc.get_dashboard_data(db)
     return PlanningDashboard(**data)
@@ -50,14 +78,22 @@ async def get_dashboard(db: AsyncSession = Depends(get_db)):
 # ── Scenarios ──────────────────────────────────────────────────────────────────
 
 @router.post("/scenarios", response_model=ScenarioOut, status_code=201)
-async def create_scenario(body: ScenarioCreate, db: AsyncSession = Depends(get_db)):
-    scenario = await svc.create_scenario(db, body, _user_id())
+async def create_scenario(
+    body: ScenarioCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_any_permission(PLANNING_CREATE_PERMISSIONS)),
+):
+    scenario = await svc.create_scenario(db, body, current_user.id)
     await db.commit()
     await db.refresh(scenario)
     return scenario
 
 
-@router.get("/scenarios", response_model=List[ScenarioSummary])
+@router.get(
+    "/scenarios",
+    response_model=List[ScenarioSummary],
+    dependencies=[Depends(require_any_permission(PLANNING_VIEW_PERMISSIONS))],
+)
 async def list_scenarios(
     status: Optional[ScenarioStatus] = None,
     db: AsyncSession = Depends(get_db),
@@ -65,7 +101,11 @@ async def list_scenarios(
     return await svc.list_scenarios(db, status)
 
 
-@router.get("/scenarios/{scenario_id}", response_model=ScenarioOut)
+@router.get(
+    "/scenarios/{scenario_id}",
+    response_model=ScenarioOut,
+    dependencies=[Depends(require_any_permission(PLANNING_VIEW_PERMISSIONS))],
+)
 async def get_scenario(scenario_id: UUID, db: AsyncSession = Depends(get_db)):
     scenario = await svc.get_scenario(db, scenario_id)
     if not scenario:
@@ -73,7 +113,11 @@ async def get_scenario(scenario_id: UUID, db: AsyncSession = Depends(get_db)):
     return scenario
 
 
-@router.patch("/scenarios/{scenario_id}", response_model=ScenarioOut)
+@router.patch(
+    "/scenarios/{scenario_id}",
+    response_model=ScenarioOut,
+    dependencies=[Depends(require_any_permission(PLANNING_EDIT_PERMISSIONS))],
+)
 async def update_scenario(
     scenario_id: UUID, body: ScenarioUpdate, db: AsyncSession = Depends(get_db)
 ):
@@ -86,7 +130,11 @@ async def update_scenario(
     return updated
 
 
-@router.post("/scenarios/{scenario_id}/activate", response_model=ScenarioOut)
+@router.post(
+    "/scenarios/{scenario_id}/activate",
+    response_model=ScenarioOut,
+    dependencies=[Depends(require_any_permission(PLANNING_APPROVE_PERMISSIONS))],
+)
 async def activate_scenario(scenario_id: UUID, db: AsyncSession = Depends(get_db)):
     scenario = await svc.get_scenario(db, scenario_id)
     if not scenario:
@@ -97,7 +145,11 @@ async def activate_scenario(scenario_id: UUID, db: AsyncSession = Depends(get_db
     return updated
 
 
-@router.post("/scenarios/{scenario_id}/lock", response_model=ScenarioOut)
+@router.post(
+    "/scenarios/{scenario_id}/lock",
+    response_model=ScenarioOut,
+    dependencies=[Depends(require_any_permission(PLANNING_APPROVE_PERMISSIONS))],
+)
 async def lock_scenario(scenario_id: UUID, db: AsyncSession = Depends(get_db)):
     scenario = await svc.get_scenario(db, scenario_id)
     if not scenario:
@@ -110,7 +162,10 @@ async def lock_scenario(scenario_id: UUID, db: AsyncSession = Depends(get_db)):
 
 # ── Calculate (run full scheduling engine) ────────────────────────────────────
 
-@router.post("/scenarios/{scenario_id}/calculate")
+@router.post(
+    "/scenarios/{scenario_id}/calculate",
+    dependencies=[Depends(require_any_permission(PLANNING_CALCULATE_PERMISSIONS))],
+)
 async def calculate_scenario(scenario_id: UUID, db: AsyncSession = Depends(get_db)):
     scenario = await svc.get_scenario(db, scenario_id)
     if not scenario:
@@ -123,7 +178,11 @@ async def calculate_scenario(scenario_id: UUID, db: AsyncSession = Depends(get_d
 
 # ── Operations ─────────────────────────────────────────────────────────────────
 
-@router.get("/scenarios/{scenario_id}/operations", response_model=List[OpQueueOut])
+@router.get(
+    "/scenarios/{scenario_id}/operations",
+    response_model=List[OpQueueOut],
+    dependencies=[Depends(require_any_permission(PLANNING_VIEW_PERMISSIONS))],
+)
 async def list_operations(
     scenario_id: UUID,
     status: Optional[str] = None,
@@ -139,19 +198,30 @@ async def list_operations(
 
 # ── Capacity Board ─────────────────────────────────────────────────────────────
 
-@router.get("/scenarios/{scenario_id}/capacity")
+@router.get(
+    "/scenarios/{scenario_id}/capacity",
+    dependencies=[Depends(require_any_permission(PLANNING_VIEW_PERMISSIONS))],
+)
 async def get_capacity_board(scenario_id: UUID, db: AsyncSession = Depends(get_db)):
     return await cap_svc.get_capacity_board(db, scenario_id)
 
 
 # ── Bottlenecks ────────────────────────────────────────────────────────────────
 
-@router.get("/scenarios/{scenario_id}/bottlenecks", response_model=List[BottleneckOut])
+@router.get(
+    "/scenarios/{scenario_id}/bottlenecks",
+    response_model=List[BottleneckOut],
+    dependencies=[Depends(require_any_permission(PLANNING_VIEW_PERMISSIONS))],
+)
 async def list_bottlenecks(scenario_id: UUID, db: AsyncSession = Depends(get_db)):
     return await bn_svc.list_bottlenecks(db, scenario_id)
 
 
-@router.post("/bottlenecks/{bn_id}/resolve", response_model=BottleneckOut)
+@router.post(
+    "/bottlenecks/{bn_id}/resolve",
+    response_model=BottleneckOut,
+    dependencies=[Depends(require_any_permission(PLANNING_EDIT_PERMISSIONS))],
+)
 async def resolve_bottleneck(bn_id: UUID, db: AsyncSession = Depends(get_db)):
     try:
         bn = await bn_svc.resolve_bottleneck(db, bn_id)
@@ -164,24 +234,34 @@ async def resolve_bottleneck(bn_id: UUID, db: AsyncSession = Depends(get_db)):
 
 # ── AI Recommendations ─────────────────────────────────────────────────────────
 
-@router.post("/scenarios/{scenario_id}/run-ai")
+@router.post(
+    "/scenarios/{scenario_id}/run-ai",
+    dependencies=[Depends(require_any_permission(PLANNING_CALCULATE_PERMISSIONS))],
+)
 async def run_ai_agents(scenario_id: UUID, db: AsyncSession = Depends(get_db)):
     result = await ai_svc.run_all_agents(db, scenario_id)
     await db.commit()
     return result
 
 
-@router.get("/scenarios/{scenario_id}/ai-recommendations", response_model=List[AIRecOut])
+@router.get(
+    "/scenarios/{scenario_id}/ai-recommendations",
+    response_model=List[AIRecOut],
+    dependencies=[Depends(require_any_permission(PLANNING_VIEW_PERMISSIONS))],
+)
 async def list_ai_recs(scenario_id: UUID, db: AsyncSession = Depends(get_db)):
     return await ai_svc.list_recs(db, scenario_id)
 
 
 @router.post("/ai-recommendations/{rec_id}/action", response_model=AIRecOut)
 async def action_ai_rec(
-    rec_id: UUID, body: AIRecAction, db: AsyncSession = Depends(get_db)
+    rec_id: UUID,
+    body: AIRecAction,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_any_permission(PLANNING_APPROVE_PERMISSIONS)),
 ):
     try:
-        rec = await ai_svc.action_rec(db, rec_id, body.status, body.actioned_by_id)
+        rec = await ai_svc.action_rec(db, rec_id, body.status, current_user.id)
         await db.commit()
         await db.refresh(rec)
         return rec
@@ -191,7 +271,12 @@ async def action_ai_rec(
 
 # ── Simulations ────────────────────────────────────────────────────────────────
 
-@router.post("/scenarios/{scenario_id}/simulations", response_model=SimulationOut, status_code=201)
+@router.post(
+    "/scenarios/{scenario_id}/simulations",
+    response_model=SimulationOut,
+    status_code=201,
+    dependencies=[Depends(require_any_permission(PLANNING_CREATE_PERMISSIONS))],
+)
 async def create_simulation(
     scenario_id: UUID, body: SimulationCreate, db: AsyncSession = Depends(get_db)
 ):
@@ -201,7 +286,11 @@ async def create_simulation(
     return sim
 
 
-@router.post("/simulations/{sim_id}/compute", response_model=SimulationOut)
+@router.post(
+    "/simulations/{sim_id}/compute",
+    response_model=SimulationOut,
+    dependencies=[Depends(require_any_permission(PLANNING_CALCULATE_PERMISSIONS))],
+)
 async def compute_simulation(sim_id: UUID, db: AsyncSession = Depends(get_db)):
     try:
         sim = await sim_svc.compute_simulation(db, sim_id)
@@ -213,9 +302,13 @@ async def compute_simulation(sim_id: UUID, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/simulations/{sim_id}/publish", response_model=SimulationOut)
-async def publish_simulation(sim_id: UUID, db: AsyncSession = Depends(get_db)):
+async def publish_simulation(
+    sim_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_any_permission(PLANNING_APPROVE_PERMISSIONS)),
+):
     try:
-        sim = await sim_svc.publish_simulation(db, sim_id, _user_id())
+        sim = await sim_svc.publish_simulation(db, sim_id, current_user.id)
         await db.commit()
         await db.refresh(sim)
         return sim
@@ -223,14 +316,23 @@ async def publish_simulation(sim_id: UUID, db: AsyncSession = Depends(get_db)):
         raise HTTPException(404, str(e))
 
 
-@router.get("/scenarios/{scenario_id}/simulations", response_model=List[SimulationOut])
+@router.get(
+    "/scenarios/{scenario_id}/simulations",
+    response_model=List[SimulationOut],
+    dependencies=[Depends(require_any_permission(PLANNING_VIEW_PERMISSIONS))],
+)
 async def list_simulations(scenario_id: UUID, db: AsyncSession = Depends(get_db)):
     return await sim_svc.list_simulations(db, scenario_id)
 
 
 # ── Resource Calendars ─────────────────────────────────────────────────────────
 
-@router.post("/calendars", response_model=CalendarOut, status_code=201)
+@router.post(
+    "/calendars",
+    response_model=CalendarOut,
+    status_code=201,
+    dependencies=[Depends(require_any_permission(PLANNING_EDIT_PERMISSIONS))],
+)
 async def create_calendar(body: CalendarCreate, db: AsyncSession = Depends(get_db)):
     cal = ResourceCalendar(**body.model_dump())
     db.add(cal)
@@ -244,6 +346,7 @@ async def create_calendar(body: CalendarCreate, db: AsyncSession = Depends(get_d
 async def list_calendars(
     work_center_id: Optional[UUID] = None,
     db: AsyncSession = Depends(get_db),
+    _: User = Depends(require_any_permission(PLANNING_VIEW_PERMISSIONS)),
 ):
     q = select(ResourceCalendar).order_by(ResourceCalendar.calendar_date.desc())
     if work_center_id:
@@ -254,7 +357,12 @@ async def list_calendars(
 
 # ── Changeover Matrix ──────────────────────────────────────────────────────────
 
-@router.post("/changeover-matrix", response_model=ChangeoverOut, status_code=201)
+@router.post(
+    "/changeover-matrix",
+    response_model=ChangeoverOut,
+    status_code=201,
+    dependencies=[Depends(require_any_permission(PLANNING_EDIT_PERMISSIONS))],
+)
 async def create_changeover(body: ChangeoverCreate, db: AsyncSession = Depends(get_db)):
     row = ChangeoverMatrix(**body.model_dump())
     db.add(row)
@@ -268,6 +376,7 @@ async def create_changeover(body: ChangeoverCreate, db: AsyncSession = Depends(g
 async def list_changeover(
     work_center_id: Optional[UUID] = None,
     db: AsyncSession = Depends(get_db),
+    _: User = Depends(require_any_permission(PLANNING_VIEW_PERMISSIONS)),
 ):
     q = select(ChangeoverMatrix).where(ChangeoverMatrix.is_active == True)
     if work_center_id:

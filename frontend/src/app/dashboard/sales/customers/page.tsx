@@ -158,10 +158,24 @@ export default function CustomersPage() {
       r.credit_limit != null ? `${r.currency} ${Number(r.credit_limit).toLocaleString()}` : "—"
     },
     { header: "Status", accessor: (r: typeof customers[0]) => (
-      <Badge label={r.is_active ? "Active" : "Inactive"} variant={r.is_active ? "green" : "red"} />
+      <div className="flex flex-col gap-1">
+        <Badge label={r.is_active ? "Active" : "Inactive"} variant={r.is_active ? "green" : "red"} />
+        {r.access?.view_only && (
+          <span title={r.access.reason ?? "You can view this record but cannot modify it in this scope."} className="text-xs text-gray-500">
+            View only
+          </span>
+        )}
+      </div>
     )},
     { header: "", accessor: (r: typeof customers[0]) => (
-      <Button variant="secondary" onClick={() => openEdit(r)}>Edit</Button>
+      <Button
+        variant="secondary"
+        onClick={() => openEdit(r)}
+        disabled={r.access?.can_edit === false}
+        title={r.access?.can_edit === false ? (r.access.reason ?? "You can view this record but cannot modify it in this scope.") : undefined}
+      >
+        Edit
+      </Button>
     )},
   ];
 
@@ -186,7 +200,7 @@ export default function CustomersPage() {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="sales-customers-page">
       <ToastContainer toasts={toasts} onDismiss={dismiss} />
 
       <div className="flex items-center justify-between">
@@ -194,13 +208,15 @@ export default function CustomersPage() {
           <h1 className="text-2xl font-bold text-gray-900">Customers</h1>
           <p className="text-sm text-gray-500 mt-1">{customers.length} customers</p>
         </div>
-        <Button onClick={() => setShowCreate(true)}>+ Add Customer</Button>
+        <Button onClick={() => setShowCreate(true)} data-testid="sales-create-customer-button">+ Add Customer</Button>
       </div>
 
       {isLoading ? (
         <div className="text-center py-12 text-gray-500">Loading...</div>
       ) : (
-        <Table columns={columns} data={customers} keyField="id" emptyMessage="No customers found." />
+        <div data-testid="sales-customers-list">
+          <Table columns={columns} data={customers} keyField="id" emptyMessage="No customers found." />
+        </div>
       )}
 
       {/* Create Modal */}

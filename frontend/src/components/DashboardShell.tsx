@@ -64,7 +64,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
   }, [isDirty, confirmLeave]);
 
   return (
-    <div className="flex h-screen bg-[#030d1a] overflow-hidden">
+    <div className="flex h-screen bg-[#030d1a] overflow-hidden" data-testid="dashboard-shell">
       {/* Mobile overlay backdrop */}
       {mobileOpen && (
         <div
@@ -109,7 +109,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
         </header>
 
         {/* Main scrollable content */}
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto" data-testid="dashboard-main">
           {showModuleAIBanner && <AIModeBanner />}
           <div className="p-6 lg:p-8">{children}</div>
         </main>

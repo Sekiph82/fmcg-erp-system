@@ -1,8 +1,9 @@
 import axios from "axios";
+import type { CommercialAccessHint, CommercialScopeFields } from "@/lib/sales";
 
 const API = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000") + "/api/v1";
 const r = <T>(p: Promise<{ data: T }>) => p.then((res) => res.data);
-const ax = axios.create({ baseURL: API });
+const ax = axios.create({ baseURL: API, withCredentials: true });
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -94,7 +95,7 @@ export interface CRMWinLoss {
   notes?: string;
 }
 
-export interface CRMRecord {
+export interface CRMRecord extends CommercialScopeFields {
   id: string;
   record_type: CRMRecordType;
   lead_code?: string;
@@ -105,6 +106,7 @@ export interface CRMRecord {
   contact_email?: string;
   contact_phone?: string;
   customer_id?: string;
+  assigned_customer_id?: string;
   distributor_id?: string;
   source_type: CRMSourceType;
   region_id?: string;
@@ -112,6 +114,7 @@ export interface CRMRecord {
   assigned_rep_id?: string;
   assigned_team_id?: string;
   stage_id?: string;
+  territory_id?: string;
   stage?: CRMStage;
   probability_pct?: number;
   expected_close_date?: string;
@@ -135,6 +138,7 @@ export interface CRMRecord {
   activities?: CRMActivity[];
   competitors?: CRMCompetitor[];
   win_loss?: CRMWinLoss;
+  access?: CommercialAccessHint | null;
 }
 
 export interface CRMAIRec {
@@ -151,7 +155,7 @@ export interface CRMAIRec {
   created_at?: string;
 }
 
-export interface CRMTerritory {
+export interface CRMTerritory extends CommercialScopeFields {
   id: string;
   territory_code: string;
   territory_name: string;
@@ -161,6 +165,7 @@ export interface CRMTerritory {
   active_flag: boolean;
   notes?: string;
   created_at?: string;
+  access?: CommercialAccessHint | null;
 }
 
 export interface CRMTerritoryPerformance {

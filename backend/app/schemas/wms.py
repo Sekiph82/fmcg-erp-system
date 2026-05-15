@@ -8,10 +8,24 @@ from app.models.wms import (
     ZoneType, StockCountType, StockCountStatus,
     PutawayRuleType, PutawayTaskStatus, LocationType,
     PickingTaskStatus, PackingStatus, ReplenishmentStatus,
+    HandlingUnitType, HandlingUnitStatus, PickWaveStatus,
 )
 
 
 # ── Zones ─────────────────────────────────────────────────────────────────────
+
+class WMSAccessHint(BaseModel):
+    can_view: bool = True
+    can_edit: bool = False
+    can_putaway: bool = False
+    can_pick: bool = False
+    can_pack: bool = False
+    can_replenish: bool = False
+    can_quarantine: bool = False
+    can_release: bool = False
+    can_approve: bool = False
+    can_export: bool = False
+
 
 class WarehouseZoneCreate(BaseModel):
     warehouse_id: uuid.UUID
@@ -26,6 +40,7 @@ class WarehouseZoneRead(WarehouseZoneCreate):
     id: uuid.UUID
     warehouse_name: Optional[str] = None
     location_count: int = 0
+    access: Optional[WMSAccessHint] = None
     model_config = {"from_attributes": True}
 
 
@@ -62,6 +77,7 @@ class StorageLocationRead(StorageLocationCreate):
     warehouse_id: Optional[uuid.UUID] = None
     warehouse_name: Optional[str] = None
     current_utilization_pct: Optional[Decimal] = None
+    access: Optional[WMSAccessHint] = None
     model_config = {"from_attributes": True}
 
 
@@ -71,6 +87,107 @@ class ScanLocationResult(BaseModel):
 
 
 # ── Stock Count ───────────────────────────────────────────────────────────────
+
+class HandlingUnitItemCreate(BaseModel):
+    stock_type: str
+    product_id: Optional[uuid.UUID] = None
+    material_id: Optional[uuid.UUID] = None
+    lot_id: Optional[uuid.UUID] = None
+    quantity: Decimal
+    unit: str
+
+
+class HandlingUnitItemRead(HandlingUnitItemCreate):
+    id: uuid.UUID
+    handling_unit_id: uuid.UUID
+    product_name: Optional[str] = None
+    material_name: Optional[str] = None
+    lot_number: Optional[str] = None
+    model_config = {"from_attributes": True}
+
+
+class HandlingUnitCreate(BaseModel):
+    license_plate: str
+    warehouse_id: uuid.UUID
+    location_id: Optional[uuid.UUID] = None
+    parent_hu_id: Optional[uuid.UUID] = None
+    hu_type: HandlingUnitType = HandlingUnitType.PALLET
+    gross_weight_kg: Optional[Decimal] = None
+    net_weight_kg: Optional[Decimal] = None
+    volume_m3: Optional[Decimal] = None
+    notes: Optional[str] = None
+    items: List[HandlingUnitItemCreate] = []
+
+
+class HandlingUnitUpdate(BaseModel):
+    location_id: Optional[uuid.UUID] = None
+    parent_hu_id: Optional[uuid.UUID] = None
+    status: Optional[HandlingUnitStatus] = None
+    gross_weight_kg: Optional[Decimal] = None
+    net_weight_kg: Optional[Decimal] = None
+    volume_m3: Optional[Decimal] = None
+    closed_at: Optional[datetime] = None
+    notes: Optional[str] = None
+
+
+class HandlingUnitRead(BaseModel):
+    id: uuid.UUID
+    license_plate: str
+    warehouse_id: uuid.UUID
+    warehouse_name: Optional[str] = None
+    location_id: Optional[uuid.UUID] = None
+    location_code: Optional[str] = None
+    parent_hu_id: Optional[uuid.UUID] = None
+    parent_license_plate: Optional[str] = None
+    hu_type: HandlingUnitType
+    status: HandlingUnitStatus
+    gross_weight_kg: Optional[Decimal] = None
+    net_weight_kg: Optional[Decimal] = None
+    volume_m3: Optional[Decimal] = None
+    created_by_id: Optional[uuid.UUID] = None
+    closed_at: Optional[datetime] = None
+    notes: Optional[str] = None
+    items: List[HandlingUnitItemRead] = []
+    access: Optional[WMSAccessHint] = None
+    model_config = {"from_attributes": True}
+
+
+class PickWaveCreate(BaseModel):
+    wave_no: str
+    warehouse_id: uuid.UUID
+    priority: int = 100
+    planned_start_at: Optional[datetime] = None
+    planned_end_at: Optional[datetime] = None
+    notes: Optional[str] = None
+
+
+class PickWaveUpdate(BaseModel):
+    status: Optional[PickWaveStatus] = None
+    priority: Optional[int] = None
+    planned_start_at: Optional[datetime] = None
+    planned_end_at: Optional[datetime] = None
+    released_at: Optional[datetime] = None
+    closed_at: Optional[datetime] = None
+    notes: Optional[str] = None
+
+
+class PickWaveRead(BaseModel):
+    id: uuid.UUID
+    wave_no: str
+    warehouse_id: uuid.UUID
+    warehouse_name: Optional[str] = None
+    status: PickWaveStatus
+    priority: int
+    planned_start_at: Optional[datetime] = None
+    planned_end_at: Optional[datetime] = None
+    released_by_id: Optional[uuid.UUID] = None
+    released_at: Optional[datetime] = None
+    closed_at: Optional[datetime] = None
+    notes: Optional[str] = None
+    task_count: int = 0
+    access: Optional[WMSAccessHint] = None
+    model_config = {"from_attributes": True}
+
 
 class StockCountCreate(BaseModel):
     count_no: str
@@ -97,6 +214,7 @@ class StockCountRead(BaseModel):
     zone_name: Optional[str] = None
     total_lines: int = 0
     counted_lines: int = 0
+    access: Optional[WMSAccessHint] = None
     model_config = {"from_attributes": True}
 
 
@@ -273,6 +391,7 @@ class PutawayRuleRead(PutawayRuleCreate):
     zone_name: Optional[str] = None
     location_code: Optional[str] = None
     product_name: Optional[str] = None
+    access: Optional[WMSAccessHint] = None
     model_config = {"from_attributes": True}
 
 
@@ -312,6 +431,7 @@ class PutawayTaskRead(BaseModel):
     suggested_location_code: Optional[str] = None
     warehouse_name: Optional[str] = None
     assignee_name: Optional[str] = None
+    access: Optional[WMSAccessHint] = None
     model_config = {"from_attributes": True}
 
 
@@ -351,6 +471,7 @@ class PickingTaskCreate(BaseModel):
     task_no: str
     warehouse_id: uuid.UUID
     shipment_id: Optional[uuid.UUID] = None
+    wave_id: Optional[uuid.UUID] = None
     product_id: uuid.UUID
     lot_id: Optional[uuid.UUID] = None
     from_location_id: Optional[uuid.UUID] = None
@@ -363,6 +484,7 @@ class PickingTaskCreate(BaseModel):
 
 class PickingTaskUpdate(BaseModel):
     status: Optional[PickingTaskStatus] = None
+    wave_id: Optional[uuid.UUID] = None
     picked_qty: Optional[Decimal] = None
     assigned_to_id: Optional[uuid.UUID] = None
     from_location_id: Optional[uuid.UUID] = None
@@ -375,6 +497,8 @@ class PickingTaskRead(BaseModel):
     warehouse_id: uuid.UUID
     warehouse_name: Optional[str] = None
     shipment_id: Optional[uuid.UUID]
+    wave_id: Optional[uuid.UUID] = None
+    wave_no: Optional[str] = None
     product_id: uuid.UUID
     product_name: Optional[str] = None
     lot_id: Optional[uuid.UUID]
@@ -392,6 +516,7 @@ class PickingTaskRead(BaseModel):
     completed_at: Optional[datetime]
     notes: Optional[str]
     created_at: datetime
+    access: Optional[WMSAccessHint] = None
     model_config = {"from_attributes": True}
 
 
@@ -438,6 +563,7 @@ class PackingRecordRead(BaseModel):
     packed_at: Optional[datetime]
     notes: Optional[str]
     created_at: datetime
+    access: Optional[WMSAccessHint] = None
     model_config = {"from_attributes": True}
 
 
@@ -484,4 +610,5 @@ class ReplenishmentTaskRead(BaseModel):
     completed_at: Optional[datetime]
     notes: Optional[str]
     created_at: datetime
+    access: Optional[WMSAccessHint] = None
     model_config = {"from_attributes": True}

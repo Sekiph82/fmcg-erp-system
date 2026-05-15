@@ -17,12 +17,16 @@ from sqlalchemy import select, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.core.access_control import can_modify_scope, can_view_scope, has_permission
 from app.models.inventory import Stock, Lot, StockMovement, MovementType, StockType
 from app.models.master import Product, Material, Warehouse
 from app.models.wms import (
     WarehouseZone, StorageLocation, StockCount, StockCountLine,
     StockCountStatus, PutawayRule, PutawayRuleType, PutawayTask,
     PutawayExecution, PutawayTaskStatus,
+    HandlingUnit, HandlingUnitItem, HandlingUnitStatus,
+    PickWave, PickWaveStatus, PickingTaskStatus,
+    PackingStatus, ReplenishmentStatus,
 )
 from app.models.production import MaterialConsumption, FinishedGoodsReceipt
 from app.crud import wms as crud
@@ -31,11 +35,204 @@ from app.schemas.wms import (
     FEFOSuggestion, NearExpiryRow, LowStockRow, StockAgingRow,
     LotTraceRow, LotTraceResult, RecordCountRequest,
     PutawayTaskCreate, PutawayExecuteRequest, SuggestLocationResult,
+    HandlingUnitCreate, HandlingUnitUpdate, PickWaveCreate, PickWaveUpdate,
+    WMSAccessHint,
 )
 
 
 def _now() -> datetime:
     return datetime.now(tz=timezone.utc)
+
+
+def build_wms_access_hint(user, warehouse_id: uuid.UUID | str) -> WMSAccessHint:
+    """Return per-warehouse UI hints without replacing backend authorization."""
+    return WMSAccessHint(
+        can_view=(
+            has_permission(user, "inventory.view")
+            or has_permission(user, "inventory.view_all")
+            or has_permission(user, "warehouses.view_all")
+            or can_view_scope(user, "inventory", "warehouse", warehouse_id)
+            or can_view_scope(user, "warehouses", "warehouse", warehouse_id)
+        ),
+        can_edit=can_modify_scope(user, "inventory", "edit", "warehouse", warehouse_id),
+        can_putaway=can_modify_scope(user, "inventory", "receive", "warehouse", warehouse_id),
+        can_pick=can_modify_scope(user, "inventory", "dispatch", "warehouse", warehouse_id),
+        can_pack=can_modify_scope(user, "inventory", "dispatch", "warehouse", warehouse_id),
+        can_replenish=(
+            can_modify_scope(user, "inventory", "transfer", "warehouse", warehouse_id)
+            or can_modify_scope(user, "inventory", "edit", "warehouse", warehouse_id)
+        ),
+        can_quarantine=can_modify_scope(user, "inventory", "adjust", "warehouse", warehouse_id),
+        can_release=can_modify_scope(user, "inventory", "adjust", "warehouse", warehouse_id),
+        can_approve=can_modify_scope(user, "cycle_count", "perform", "warehouse", warehouse_id),
+        can_export=can_modify_scope(user, "inventory", "export", "warehouse", warehouse_id),
+    )
+
+
+def ensure_wms_action_allowed(user, warehouse_id: uuid.UUID | str, action: str) -> WMSAccessHint:
+    hint = build_wms_access_hint(user, warehouse_id)
+    action_field = {
+        "view": "can_view",
+        "edit": "can_edit",
+        "putaway": "can_putaway",
+        "pick": "can_pick",
+        "pack": "can_pack",
+        "replenish": "can_replenish",
+        "quarantine": "can_quarantine",
+        "release": "can_release",
+        "approve": "can_approve",
+        "export": "can_export",
+    }.get(action)
+    if action_field is None or not getattr(hint, action_field):
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "error": "forbidden",
+                "detail": "You can view this record but cannot modify it in this warehouse scope.",
+            },
+        )
+    return hint
+
+
+def can_change_wms_status(record_type: str, current_status, next_status=None) -> bool:
+    current = str(getattr(current_status, "value", current_status)).upper()
+    target = str(getattr(next_status, "value", next_status)).upper() if next_status is not None else None
+    if record_type == "handling_unit":
+        return current in {HandlingUnitStatus.OPEN.value, HandlingUnitStatus.ON_HOLD.value}
+    if record_type == "pick_wave":
+        if current in {PickWaveStatus.CANCELLED.value, PickWaveStatus.CLOSED.value}:
+            return False
+        if current == PickWaveStatus.PICKED.value and target not in {PickWaveStatus.CLOSED.value, PickWaveStatus.CANCELLED.value, None}:
+            return False
+        return True
+    if record_type == "picking_task":
+        return current not in {PickingTaskStatus.PACKED.value, PickingTaskStatus.CANCELLED.value}
+    if record_type == "packing_record":
+        return current != PackingStatus.CLOSED.value
+    if record_type == "replenishment_task":
+        return current not in {ReplenishmentStatus.COMPLETED.value, ReplenishmentStatus.CANCELLED.value}
+    if record_type == "putaway_task":
+        return current not in {PutawayTaskStatus.COMPLETED.value, PutawayTaskStatus.CANCELLED.value}
+    return True
+
+
+async def _require_warehouse(db: AsyncSession, warehouse_id: uuid.UUID) -> Warehouse:
+    result = await db.execute(select(Warehouse).where(Warehouse.id == warehouse_id))
+    warehouse = result.scalar_one_or_none()
+    if not warehouse:
+        raise HTTPException(404, "Warehouse not found")
+    return warehouse
+
+
+async def _require_location_in_warehouse(
+    db: AsyncSession,
+    location_id: uuid.UUID,
+    warehouse_id: uuid.UUID,
+) -> StorageLocation:
+    result = await db.execute(
+        select(StorageLocation)
+        .join(WarehouseZone, StorageLocation.zone_id == WarehouseZone.id)
+        .where(StorageLocation.id == location_id, WarehouseZone.warehouse_id == warehouse_id)
+    )
+    location = result.scalar_one_or_none()
+    if not location:
+        raise HTTPException(422, "Location does not belong to the selected warehouse")
+    if location.is_blocked:
+        raise HTTPException(422, "Location is blocked")
+    return location
+
+
+def _validate_hu_item(item) -> None:
+    if item.quantity <= 0:
+        raise HTTPException(422, "Handling unit item quantity must be greater than zero")
+    has_product = item.product_id is not None
+    has_material = item.material_id is not None
+    if item.stock_type == "PRODUCT" and not (has_product and not has_material):
+        raise HTTPException(422, "PRODUCT handling unit items require product_id only")
+    if item.stock_type == "MATERIAL" and not (has_material and not has_product):
+        raise HTTPException(422, "MATERIAL handling unit items require material_id only")
+
+
+async def create_handling_unit(
+    db: AsyncSession,
+    data: HandlingUnitCreate,
+    user_id: uuid.UUID,
+) -> HandlingUnit:
+    await _require_warehouse(db, data.warehouse_id)
+    if data.location_id:
+        await _require_location_in_warehouse(db, data.location_id, data.warehouse_id)
+
+    if data.parent_hu_id:
+        parent_result = await db.execute(
+            select(HandlingUnit).where(
+                HandlingUnit.id == data.parent_hu_id,
+                HandlingUnit.warehouse_id == data.warehouse_id,
+            )
+        )
+        if not parent_result.scalar_one_or_none():
+            raise HTTPException(422, "Parent handling unit must belong to the same warehouse")
+
+    payload = data.model_dump(exclude={"items"})
+    handling_unit = HandlingUnit(**payload, created_by_id=user_id)
+    db.add(handling_unit)
+    await db.flush()
+
+    for item_data in data.items:
+        _validate_hu_item(item_data)
+        db.add(HandlingUnitItem(handling_unit_id=handling_unit.id, **item_data.model_dump()))
+
+    await db.flush()
+    await db.refresh(handling_unit)
+    return handling_unit
+
+
+async def update_handling_unit(
+    db: AsyncSession,
+    handling_unit: HandlingUnit,
+    data: HandlingUnitUpdate,
+) -> HandlingUnit:
+    if not can_change_wms_status("handling_unit", handling_unit.status, data.status):
+        raise HTTPException(422, "Closed, shipped, consumed, or void handling units are locked")
+    if data.location_id:
+        await _require_location_in_warehouse(db, data.location_id, handling_unit.warehouse_id)
+    for field, value in data.model_dump(exclude_none=True).items():
+        setattr(handling_unit, field, value)
+    await db.flush()
+    await db.refresh(handling_unit)
+    return handling_unit
+
+
+async def create_pick_wave(
+    db: AsyncSession,
+    data: PickWaveCreate,
+    user_id: uuid.UUID,
+) -> PickWave:
+    await _require_warehouse(db, data.warehouse_id)
+    wave = PickWave(**data.model_dump())
+    db.add(wave)
+    await db.flush()
+    await db.refresh(wave)
+    return wave
+
+
+async def update_pick_wave(
+    db: AsyncSession,
+    wave: PickWave,
+    data: PickWaveUpdate,
+    user_id: uuid.UUID,
+) -> PickWave:
+    if data.status and not can_change_wms_status("pick_wave", wave.status, data.status):
+        raise HTTPException(422, "Pick wave status transition is locked")
+    for field, value in data.model_dump(exclude_none=True).items():
+        setattr(wave, field, value)
+    if data.status == PickWaveStatus.RELEASED and not wave.released_at:
+        wave.released_at = _now()
+        wave.released_by_id = user_id
+    if data.status == PickWaveStatus.CLOSED and not wave.closed_at:
+        wave.closed_at = _now()
+    await db.flush()
+    await db.refresh(wave)
+    return wave
 
 
 # ── Putaway ───────────────────────────────────────────────────────────────────

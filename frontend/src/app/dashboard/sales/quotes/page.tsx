@@ -32,6 +32,17 @@ function StatusBadge({ status }: { status: QuoteStatus }) {
   );
 }
 
+function ViewOnlyBadge({ reason }: { reason?: string | null }) {
+  return (
+    <span
+      title={reason ?? "You can view this record but cannot modify it in this scope."}
+      className="inline-flex items-center rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600"
+    >
+      View only
+    </span>
+  );
+}
+
 // ── Line editor ───────────────────────────────────────────────────────────────
 
 interface LineEditorProps {
@@ -260,14 +271,19 @@ function QuoteActions({ quote, onReject }: { quote: Quotation; onReject: () => v
   const convertM = useQuoteMutation(() => quoteApi.convert(quote.id));
 
   const busy = sendM.isPending || acceptM.isPending || expireM.isPending || reviseM.isPending || convertM.isPending;
+  const access = quote.access;
+
+  if (access?.view_only) {
+    return <ViewOnlyBadge reason={access.reason} />;
+  }
 
   return (
     <div className="flex flex-wrap gap-1">
-      {quote.status === "DRAFT" && (
+      {quote.status === "DRAFT" && (access?.can_edit ?? true) && (
         <button disabled={busy} onClick={() => sendM.mutate()}
           className="text-xs px-2 py-1 rounded bg-blue-50 text-blue-700 hover:bg-blue-100">Send</button>
       )}
-      {quote.status === "SENT" && (
+      {quote.status === "SENT" && (access?.can_approve ?? true) && (
         <>
           <button disabled={busy} onClick={() => acceptM.mutate()}
             className="text-xs px-2 py-1 rounded bg-green-50 text-green-700 hover:bg-green-100">Accept</button>
@@ -275,17 +291,20 @@ function QuoteActions({ quote, onReject }: { quote: Quotation; onReject: () => v
             className="text-xs px-2 py-1 rounded bg-red-50 text-red-700 hover:bg-red-100">Reject</button>
         </>
       )}
-      {quote.status === "ACCEPTED" && (
+      {quote.status === "ACCEPTED" && (access?.can_convert ?? true) && (
         <button disabled={busy} onClick={() => convertM.mutate()}
           className="text-xs px-2 py-1 rounded bg-purple-50 text-purple-700 hover:bg-purple-100">Convert to SO</button>
       )}
-      {(quote.status === "DRAFT" || quote.status === "SENT") && (
+      {(quote.status === "DRAFT" || quote.status === "SENT") && (access?.can_cancel ?? true) && (
         <button disabled={busy} onClick={() => expireM.mutate()}
           className="text-xs px-2 py-1 rounded bg-yellow-50 text-yellow-700 hover:bg-yellow-100">Expire</button>
       )}
-      {quote.status !== "CONVERTED" && quote.status !== "DRAFT" && (
+      {quote.status !== "CONVERTED" && quote.status !== "DRAFT" && (access?.can_edit ?? true) && (
         <button disabled={busy} onClick={() => reviseM.mutate()}
           className="text-xs px-2 py-1 rounded bg-gray-100 text-gray-700 hover:bg-gray-200">Revise</button>
+      )}
+      {access && !access.view_only && !(access.can_edit || access.can_approve || access.can_convert || access.can_cancel) && (
+        <ViewOnlyBadge reason={access.reason} />
       )}
       {(convertM.isSuccess) && (
         <span className="text-xs text-purple-700">SO created</span>
@@ -381,7 +400,12 @@ export default function QuotesPage() {
                     </td>
                     <td className="px-4 py-3 text-gray-600">{fmtDate(q.quote_date)}</td>
                     <td className="px-4 py-3 text-gray-600">{fmtDate(q.valid_until)}</td>
-                    <td className="px-4 py-3"><StatusBadge status={q.status} /></td>
+                    <td className="px-4 py-3">
+                      <div className="flex flex-col gap-1">
+                        <StatusBadge status={q.status} />
+                        {q.access?.view_only && <ViewOnlyBadge reason={q.access.reason} />}
+                      </div>
+                    </td>
                     <td className="px-4 py-3 font-semibold text-gray-900 text-right">
                       {fmtCcy(q.grand_total, q.currency)}
                     </td>

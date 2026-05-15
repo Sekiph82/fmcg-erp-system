@@ -108,6 +108,13 @@ class Customer(Base, TimestampMixin):
     is_active = Column(Boolean, default=True, nullable=False)
     is_prepaid = Column(Boolean, default=False, nullable=False)
 
+    # Commercial scope fields for broad-view / scoped-mutation access control.
+    company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="SET NULL"), nullable=True, index=True)
+    branch_id = Column(UUID(as_uuid=True), ForeignKey("branches.id", ondelete="SET NULL"), nullable=True, index=True)
+    sales_region_id = Column(String(100), nullable=True, index=True)
+    sales_team_id = Column(String(100), nullable=True, index=True)
+    customer_group_id = Column(String(100), nullable=True, index=True)
+
     # Distribution extensions
     customer_type = Column(Enum(CustomerType), nullable=True)
     region = Column(String(100), nullable=True)
@@ -121,6 +128,8 @@ class Customer(Base, TimestampMixin):
     distributor = relationship("Distributor", back_populates="customers",
                                 foreign_keys=[distributor_id],
                                 primaryjoin="Customer.distributor_id == Distributor.id")
+    company = relationship("Company", foreign_keys=[company_id])
+    branch = relationship("Branch", foreign_keys=[branch_id])
     route = relationship("SalesRoute")
     orders = relationship("SalesOrder", back_populates="customer")
     invoices = relationship("Invoice", back_populates="customer")
@@ -136,11 +145,20 @@ class SalesOrder(Base, TimestampMixin):
     requested_delivery_date = Column(Date, nullable=False)
     status = Column(Enum(SOStatus), nullable=False, default=SOStatus.DRAFT)
     warehouse_id = Column(UUID(as_uuid=True), ForeignKey("warehouses.id", ondelete="RESTRICT"), nullable=True)
+    company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="SET NULL"), nullable=True, index=True)
+    branch_id = Column(UUID(as_uuid=True), ForeignKey("branches.id", ondelete="SET NULL"), nullable=True, index=True)
+    sales_region_id = Column(String(100), nullable=True, index=True)
+    sales_team_id = Column(String(100), nullable=True, index=True)
+    customer_group_id = Column(String(100), nullable=True, index=True)
     currency = Column(String(10), nullable=False, default="USD")
     notes = Column(Text, nullable=True)
     created_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     confirmed_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     confirmed_at = Column(DateTime(timezone=True), nullable=True)
+    approval_status = Column(String(50), nullable=True, index=True)
+    discount_approval_required = Column(Boolean, nullable=False, default=False)
+    discount_approved_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    discount_approved_at = Column(DateTime(timezone=True), nullable=True)
     payment_method = Column(Enum(PaymentMethod), nullable=False, default=PaymentMethod.CASH)
     payment_status = Column(Enum(SOPaymentStatus), nullable=False, default=SOPaymentStatus.PENDING)
     mpesa_reference = Column(String(100), nullable=True)
@@ -161,8 +179,11 @@ class SalesOrder(Base, TimestampMixin):
 
     customer = relationship("Customer", back_populates="orders")
     warehouse = relationship("Warehouse")
+    company = relationship("Company", foreign_keys=[company_id])
+    branch = relationship("Branch", foreign_keys=[branch_id])
     created_by = relationship("User", foreign_keys=[created_by_id])
     confirmed_by = relationship("User", foreign_keys=[confirmed_by_id])
+    discount_approved_by = relationship("User", foreign_keys=[discount_approved_by_id])
     sales_rep = relationship("SalesRep")
     distributor = relationship("Distributor")
     lines = relationship("SOLine", back_populates="so", cascade="all, delete-orphan", order_by="SOLine.line_no")

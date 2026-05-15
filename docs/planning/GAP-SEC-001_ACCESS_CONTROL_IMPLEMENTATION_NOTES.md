@@ -85,7 +85,6 @@ Still required:
 - Improve the initial JSON-based scope assignment UI into a friendlier form-driven scope picker and add the permission debugger.
 - Add deeper endpoint-level tests for inventory/WMS, production, quality, finance, sales, procurement, HR, maintenance, and utilities.
 - Extend scoped enforcement beyond the first-pass routes into remaining secondary endpoints, reports, and analytics pages.
-- Rerun live `alembic upgrade head` when PostgreSQL is accepting connections.
 
 ## Checks Run
 
@@ -100,9 +99,13 @@ Passed:
 - Alembic offline SQL for `20260511_0030:head` after adding finance journal scope fields.
 - Frontend type-check after scoped auth/sidebar/inventory action UX changes.
 
-Blocked:
+Live migration verification:
 
-- Live `alembic upgrade head` still fails because local PostgreSQL refuses the connection.
+- Verified on local development PostgreSQL at `2026-05-14T17:43:57+03:00`.
+- `alembic upgrade head` succeeded.
+- `alembic current` and `alembic heads` both reported `20260511_0040 (head)`.
+- Live schema checks confirmed `access_scopes`, `permissions.is_active`, `roles.is_system_role`, and finance journal scope fields.
+- Details are recorded in `docs/planning/GAP-DB-001_LIVE_MIGRATION_VERIFICATION.md`.
 
 Known unrelated import warnings/errors observed during a broad app route smoke:
 

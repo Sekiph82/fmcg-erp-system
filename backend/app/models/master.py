@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import Column, String, Text, Numeric, Boolean, Integer, ForeignKey, Enum
+from sqlalchemy import Column, String, Text, Numeric, Boolean, Integer, ForeignKey, Enum, Date, DateTime
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 import enum
@@ -9,6 +9,21 @@ class SupplierPaymentMethod(str, enum.Enum):
     BANK = "bank"
     CASH = "cash"
     MPESA = "mpesa"
+
+
+class SupplierQualificationStatus(str, enum.Enum):
+    PENDING = "PENDING"
+    APPROVED = "APPROVED"
+    CONDITIONAL = "CONDITIONAL"
+    SUSPENDED = "SUSPENDED"
+    REJECTED = "REJECTED"
+
+
+class SupplierRiskLevel(str, enum.Enum):
+    LOW = "LOW"
+    MEDIUM = "MEDIUM"
+    HIGH = "HIGH"
+    CRITICAL = "CRITICAL"
 
 from app.db.base import Base, TimestampMixin
 
@@ -67,8 +82,16 @@ class Supplier(Base, TimestampMixin):
     compliance_notes = Column(Text, nullable=True)
     preferred_payment_method = Column(Enum(SupplierPaymentMethod), nullable=True)
     mpesa_phone_number = Column(String(20), nullable=True)
+    supplier_category = Column(String(100), nullable=True, index=True)
+    qualification_status = Column(Enum(SupplierQualificationStatus), nullable=True, index=True)
+    risk_level = Column(Enum(SupplierRiskLevel), nullable=True, index=True)
+    approved_from = Column(Date, nullable=True)
+    approved_until = Column(Date, nullable=True)
+    approved_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    approved_at = Column(DateTime(timezone=True), nullable=True)
 
     materials = relationship("Material", back_populates="supplier")
+    approved_by = relationship("User", foreign_keys=[approved_by_id])
 
 
 class Product(Base, TimestampMixin):

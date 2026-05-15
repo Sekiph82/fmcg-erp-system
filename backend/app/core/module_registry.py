@@ -13,6 +13,46 @@ from app.core.ai_modes import AIMode, MODULE_AI_MODES
 logger = logging.getLogger(__name__)
 DEFAULT_ACTIONS = ("view", "create", "edit", "delete", "export")
 
+SCOPED_PERMISSION_ACTION_ALIASES: dict[str, tuple[str, ...]] = {
+    "view": (
+        "view_all",
+        "view_own_scope",
+        "view_own_company",
+        "view_own_branch",
+        "view_own_warehouse",
+        "view_own_factory",
+        "view_own_line",
+        "view_own_department",
+        "view_own_region",
+        "view_own_category",
+    ),
+    "create": ("create_all", "create_own_scope"),
+    "edit": (
+        "edit_all",
+        "edit_own_scope",
+        "edit_own_company",
+        "edit_own_branch",
+        "edit_own_warehouse",
+        "edit_own_factory",
+        "edit_own_line",
+        "edit_own_department",
+        "edit_own_region",
+        "edit_own_category",
+    ),
+    "delete": ("delete_all", "delete_own_scope"),
+    "approve": ("approve_all", "approve_own_scope"),
+    "post": ("post_all", "post_own_scope", "post_own_company"),
+    "release": ("release_all", "release_own_scope", "release_own_factory"),
+    "close": ("close_all", "close_own_scope", "close_own_factory"),
+    "cancel": ("cancel_all", "cancel_own_scope"),
+    "adjust": ("adjust_all", "adjust_own_scope"),
+    "receive": ("receive_all", "receive_own_scope"),
+    "dispatch": ("dispatch_all", "dispatch_own_scope"),
+    "transfer": ("transfer_all", "transfer_own_scope"),
+    "export": ("export_all", "export_own_scope"),
+    "import": ("import_all", "import_own_scope"),
+}
+
 
 @dataclass(frozen=True)
 class ModuleDefinition:
@@ -94,11 +134,22 @@ MODULE_DEFINITIONS: tuple[ModuleDefinition, ...] = (
         critical=True,
     ),
     ModuleDefinition(
+        key="planning",
+        label="Advanced Planning",
+        route_prefix="/planning",
+        import_path="app.api.v1.endpoints.planning",
+        permission_actions=("view", "create", "edit", "approve", "calculate", "export"),
+        sidebar_group="Manufacturing",
+        icon_key="calendar-range",
+        ai_mode=MODULE_AI_MODES.get("planning", AIMode.STATISTICAL),
+        critical=True,
+    ),
+    ModuleDefinition(
         key="procurement",
         label="Procurement",
         route_prefix="/procurement",
         import_path="app.api.v1.endpoints.procurement",
-        permission_actions=("view", "create", "edit", "approve", "export"),
+        permission_actions=("view", "create", "edit", "delete", "approve", "receive", "post", "cancel", "export", "import"),
         sidebar_group="Supply Chain",
         icon_key="shopping-cart",
         ai_mode=MODULE_AI_MODES.get("procurement", AIMode.RULE_BASED),
@@ -109,10 +160,21 @@ MODULE_DEFINITIONS: tuple[ModuleDefinition, ...] = (
         label="Sales",
         route_prefix="/sales",
         import_path="app.api.v1.endpoints.sales",
-        permission_actions=("view", "create", "edit", "approve", "export"),
+        permission_actions=("view", "create", "edit", "approve", "cancel", "convert", "export", "import"),
         sidebar_group="Commercial",
         icon_key="receipt",
         ai_mode=MODULE_AI_MODES.get("sales", AIMode.RULE_BASED),
+        critical=True,
+    ),
+    ModuleDefinition(
+        key="crm",
+        label="CRM",
+        route_prefix="/crm",
+        import_path="app.api.v1.endpoints.crm_pipeline",
+        permission_actions=("view", "create", "edit", "delete", "approve", "cancel", "convert", "export", "import"),
+        sidebar_group="Commercial",
+        icon_key="handshake",
+        ai_mode=MODULE_AI_MODES.get("crm", AIMode.HYBRID),
         critical=True,
     ),
     ModuleDefinition(
@@ -225,7 +287,6 @@ ENDPOINT_ROUTE_DEFINITIONS: tuple[EndpointRouteDefinition, ...] = (
     EndpointRouteDefinition(key="utility_kpi", route_prefix="/utility-kpi", import_path="app.api.v1.endpoints.utility_kpi", tags=('utility-kpi',)),
     EndpointRouteDefinition(key="mrp", route_prefix="/mrp", import_path="app.api.v1.endpoints.mrp", tags=('mrp',)),
     EndpointRouteDefinition(key="mps", route_prefix="/mps", import_path="app.api.v1.endpoints.mps", tags=('mps',)),
-    EndpointRouteDefinition(key="planning", route_prefix="/planning", import_path="app.api.v1.endpoints.planning", tags=('planning',)),
     EndpointRouteDefinition(key="bom", route_prefix="/bom", import_path="app.api.v1.endpoints.bom", tags=('bom',)),
     EndpointRouteDefinition(key="production_execution", route_prefix="/production-execution", import_path="app.api.v1.endpoints.production_execution", tags=('production-execution',)),
     EndpointRouteDefinition(key="shop_floor", route_prefix="/shop-floor", import_path="app.api.v1.endpoints.shop_floor", tags=('shop-floor',)),
@@ -245,7 +306,6 @@ ENDPOINT_ROUTE_DEFINITIONS: tuple[EndpointRouteDefinition, ...] = (
     EndpointRouteDefinition(key="dimensions", route_prefix="/dimensions", import_path="app.api.v1.endpoints.dimensions", tags=('dimensions',)),
     EndpointRouteDefinition(key="promotions", route_prefix="/promotions", import_path="app.api.v1.endpoints.promotions", tags=('promotions',)),
     EndpointRouteDefinition(key="tpm", route_prefix="/tpm", import_path="app.api.v1.endpoints.tpm", tags=('tpm',)),
-    EndpointRouteDefinition(key="crm_pipeline", route_prefix="/crm", import_path="app.api.v1.endpoints.crm_pipeline", tags=('crm-pipeline',)),
     EndpointRouteDefinition(key="portal", route_prefix="/portal", import_path="app.api.v1.endpoints.portal", tags=('portal',)),
     EndpointRouteDefinition(key="supplier_portal", route_prefix="/supplier-portal", import_path="app.api.v1.endpoints.supplier_portal", tags=('supplier-portal',)),
     EndpointRouteDefinition(key="dunning", route_prefix="/dunning", import_path="app.api.v1.endpoints.dunning", tags=('dunning',)),
@@ -312,6 +372,52 @@ def module_manifest() -> list[dict]:
 
 def registry_permission_codes() -> set[str]:
     return {code for module in MODULE_DEFINITIONS for code in module.permission_codes}
+
+
+def permission_coverage_candidates(permission: str) -> set[str]:
+    """Return permission codes that should satisfy a base module action."""
+    if "." not in permission:
+        return {permission}
+    module, action = permission.split(".", 1)
+    candidates = {permission}
+    candidates.update(f"{module}.{alias}" for alias in SCOPED_PERMISSION_ACTION_ALIASES.get(action, ()))
+    return candidates
+
+
+def permission_is_covered(required_permission: str, granted_permissions: Iterable[str]) -> bool:
+    """Treat scoped all/own permissions as satisfying their base action for visibility."""
+    granted = set(granted_permissions)
+    if "*" in granted or required_permission in granted:
+        return True
+    return bool(permission_coverage_candidates(required_permission) & granted)
+
+
+def covered_registry_permission_codes(granted_permissions: Iterable[str]) -> set[str]:
+    """Return registry permissions visible through exact or scoped permission grants."""
+    granted = set(granted_permissions)
+    return {
+        required
+        for required in registry_permission_codes()
+        if permission_is_covered(required, granted)
+    }
+
+
+def permission_coverage_report(
+    required_permissions: Iterable[str],
+    granted_permissions: Iterable[str],
+) -> dict[str, list[str]]:
+    """Build a deterministic permission coverage report for drift/audit checks."""
+    covered: list[str] = []
+    missing: list[str] = []
+    granted = set(granted_permissions)
+
+    for permission in sorted(set(required_permissions)):
+        if permission_is_covered(permission, granted):
+            covered.append(permission)
+        else:
+            missing.append(permission)
+
+    return {"covered": covered, "missing": missing}
 
 
 def _register_routes(

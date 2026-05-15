@@ -155,7 +155,7 @@ export default function AccountingControlsPage() {
   });
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6 pb-10">
+    <div className="max-w-6xl mx-auto space-y-6 pb-10" data-testid="finance-accounting-controls-page">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Accounting Controls</h1>
         <p className="text-sm text-gray-400 mt-0.5">
@@ -189,6 +189,7 @@ export default function AccountingControlsPage() {
             className="self-end bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50"
             disabled={!fiscalYear.year_code || !fiscalYear.start_date || !fiscalYear.end_date || createFiscalYear.isPending}
             onClick={() => createFiscalYear.mutate(fiscalYear)}
+            data-testid="finance-create-fiscal-year-button"
           >
             {createFiscalYear.isPending ? "Creating..." : "Create"}
           </button>
@@ -263,6 +264,7 @@ export default function AccountingControlsPage() {
               credit_account_id: postingRule.credit_account_id || undefined,
               priority: Number(postingRule.priority || 100),
             })}
+            data-testid="finance-create-posting-rule-button"
           >
             {createPostingRule.isPending ? "Creating..." : "Create Rule"}
           </button>
@@ -367,6 +369,7 @@ export default function AccountingControlsPage() {
               variance_account_id: accountMapping.variance_account_id || undefined,
               priority: Number(accountMapping.priority || 100),
             })}
+            data-testid="finance-create-account-mapping-button"
           >
             {createAccountMapping.isPending ? "Creating..." : "Create Mapping"}
           </button>
@@ -387,13 +390,15 @@ export default function AccountingControlsPage() {
           </div>
         </div>
 
-        <SummaryList title="Operational Posting Events" empty="No operational posting events found yet."
-          rows={(operationalPostingEvents.data ?? []).map((event) => ({
-            id: event.id,
-            title: `${event.source_module} / ${event.source_event}`,
-            detail: event.error_message || event.source_line_id || event.source_id,
-            status: event.status,
-          }))} />
+        <div data-testid="finance-operational-posting-events">
+          <SummaryList title="Operational Posting Events" empty="No operational posting events found yet."
+            rows={(operationalPostingEvents.data ?? []).map((event) => ({
+              id: event.id,
+              title: `${event.source_module} / ${event.source_event}`,
+              detail: event.error_message || event.source_line_id || event.source_id,
+              status: event.status,
+            }))} />
+        </div>
       </section>
     </div>
   );

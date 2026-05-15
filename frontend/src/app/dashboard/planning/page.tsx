@@ -5,12 +5,16 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   planningApi, PlanningDashboard, ScenarioSummary,
   SCENARIO_STATUS_COLOR, BN_SEVERITY_COLOR, AGENT_COLOR, AGENT_LABEL,
+  PLANNING_CREATE_PERMISSIONS,
 } from "@/lib/planning";
+import { useAuth } from "@/context/AuthContext";
 
 export default function PlanningDashboardPage() {
   const qc = useQueryClient();
+  const { hasAnyPermission } = useAuth();
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState({ scenario_name: "", mode: "FINITE" as "FINITE" | "INFINITE", description: "" });
+  const canCreateScenario = hasAnyPermission(PLANNING_CREATE_PERMISSIONS);
 
   const { data, isLoading } = useQuery<PlanningDashboard>({
     queryKey: ["planning-dashboard"],
@@ -36,12 +40,14 @@ export default function PlanningDashboardPage() {
           <h1 className="text-2xl font-bold text-gray-900">Advanced Production Planning</h1>
           <p className="text-sm text-gray-500 mt-0.5">Finite capacity scheduling · Bottleneck detection · AI optimization</p>
         </div>
-        <button
-          onClick={() => setShowCreate(true)}
-          className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700"
-        >
-          + New Scenario
-        </button>
+        {canCreateScenario && (
+          <button
+            onClick={() => setShowCreate(true)}
+            className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700"
+          >
+            + New Scenario
+          </button>
+        )}
       </div>
 
       {/* KPI Cards */}

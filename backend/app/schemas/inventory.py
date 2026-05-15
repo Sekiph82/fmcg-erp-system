@@ -46,6 +46,9 @@ class StockRead(BaseModel):
     quantity_on_hand: Decimal
     quantity_reserved: Decimal
     quantity_available: Decimal
+    is_blocked: bool = False
+    location_id: Optional[uuid.UUID] = None
+    access: Optional[dict[str, bool]] = None
 
     model_config = {"from_attributes": True}
 
@@ -60,6 +63,10 @@ class StockMovementBase(BaseModel):
     lot_id: Optional[uuid.UUID] = None
     source_warehouse_id: Optional[uuid.UUID] = None
     destination_warehouse_id: Optional[uuid.UUID] = None
+    source_location_id: Optional[uuid.UUID] = None
+    destination_location_id: Optional[uuid.UUID] = None
+    source_handling_unit_id: Optional[uuid.UUID] = None
+    destination_handling_unit_id: Optional[uuid.UUID] = None
     quantity: Decimal
     unit_cost: Optional[Decimal] = None
     total_cost: Optional[Decimal] = None
@@ -142,6 +149,10 @@ class StockSummaryRead(BaseModel):
     lot_id: Optional[uuid.UUID] = None
     lot_number: Optional[str] = None
     expiry_date: Optional[date] = None
+    is_blocked: bool = False
+    location_id: Optional[uuid.UUID] = None
+    location_code: Optional[str] = None
+    access: Optional[dict[str, bool]] = None
     quantity_on_hand: Decimal
     quantity_reserved: Decimal
     quantity_available: Decimal
@@ -156,6 +167,10 @@ class MovementDetailRead(StockMovementRead):
     product_name: Optional[str] = None
     source_warehouse_name: Optional[str] = None
     destination_warehouse_name: Optional[str] = None
+    source_location_code: Optional[str] = None
+    destination_location_code: Optional[str] = None
+    source_license_plate: Optional[str] = None
+    destination_license_plate: Optional[str] = None
     created_by_username: Optional[str] = None
 
 

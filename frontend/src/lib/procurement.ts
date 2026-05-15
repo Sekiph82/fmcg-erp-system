@@ -9,6 +9,29 @@ export type GRNStatus = "DRAFT" | "POSTED";
 export type ImportShipmentStatus = "PENDING" | "IN_TRANSIT" | "ARRIVED" | "CUSTOMS_CLEARED" | "DELIVERED";
 export type SupplierPaymentMethod = "bank" | "cash" | "mpesa";
 export type POPaymentStatus = "pending" | "partially_paid" | "paid";
+export type ProcurementApprovalDocumentType = "PR" | "PO" | "RFQ" | "BPA";
+
+export interface ProcurementScopeFields {
+  company_id?: string;
+  branch_id?: string;
+  cost_center_id?: string;
+  department?: string;
+}
+
+export interface ProcurementAccessHint {
+  can_view: boolean;
+  can_create: boolean;
+  can_edit: boolean;
+  can_delete: boolean;
+  can_approve: boolean;
+  can_receive: boolean;
+  can_post: boolean;
+  can_cancel: boolean;
+  can_export: boolean;
+  can_import: boolean;
+  view_only: boolean;
+  reason?: string;
+}
 
 export interface PRLine {
   id: string;
@@ -28,12 +51,11 @@ export interface PRLine {
   notes?: string;
 }
 
-export interface PR {
+export interface PR extends ProcurementScopeFields {
   id: string;
   pr_no: string;
   requester_id: string;
   requester_name?: string;
-  department?: string;
   required_date: string;
   notes?: string;
   status: PRStatus;
@@ -42,6 +64,7 @@ export interface PR {
   rejection_reason?: string;
   created_at: string;
   line_count: number;
+  access?: ProcurementAccessHint;
 }
 
 export interface PRDetail extends PR {
@@ -68,7 +91,7 @@ export interface POLine {
   pending_quantity: number;
 }
 
-export interface SupplierPayment {
+export interface SupplierPayment extends ProcurementScopeFields {
   id: string;
   po_id: string;
   supplier_id: string;
@@ -78,9 +101,10 @@ export interface SupplierPayment {
   reference?: string;
   notes?: string;
   created_at: string;
+  access?: ProcurementAccessHint;
 }
 
-export interface PO {
+export interface PO extends ProcurementScopeFields {
   id: string;
   po_no: string;
   supplier_id: string;
@@ -103,6 +127,7 @@ export interface PO {
   payment_method?: string;
   mpesa_reference?: string;
   paid_amount?: number;
+  access?: ProcurementAccessHint;
 }
 
 export interface PODetail extends PO {
@@ -126,7 +151,7 @@ export interface GRNLine {
   stock_movement_id?: string;
 }
 
-export interface GRN {
+export interface GRN extends ProcurementScopeFields {
   id: string;
   grn_no: string;
   po_id: string;
@@ -138,13 +163,14 @@ export interface GRN {
   notes?: string;
   status: GRNStatus;
   created_at: string;
+  access?: ProcurementAccessHint;
 }
 
 export interface GRNDetail extends GRN {
   lines: GRNLine[];
 }
 
-export interface ImportShipment {
+export interface ImportShipment extends ProcurementScopeFields {
   id: string;
   shipment_no: string;
   po_id: string;
@@ -166,9 +192,10 @@ export interface ImportShipment {
   status: ImportShipmentStatus;
   notes?: string;
   created_at: string;
+  access?: ProcurementAccessHint;
 }
 
-export interface SupplierEvaluation {
+export interface SupplierEvaluation extends ProcurementScopeFields {
   id: string;
   supplier_id: string;
   evaluation_date: string;
@@ -182,9 +209,10 @@ export interface SupplierEvaluation {
   evaluator_id?: string;
   notes?: string;
   created_at: string;
+  access?: ProcurementAccessHint;
 }
 
-export interface SupplierDashboardRow {
+export interface SupplierDashboardRow extends ProcurementScopeFields {
   supplier_id: string;
   supplier_name: string;
   supplier_code: string;
@@ -199,6 +227,7 @@ export interface SupplierDashboardRow {
   avg_quality?: number;
   avg_overall?: number;
   last_evaluation_date?: string;
+  access?: ProcurementAccessHint;
 }
 
 export interface InboundScheduleRow {
@@ -240,7 +269,7 @@ export interface RFQResponseRead {
   created_at: string;
 }
 
-export interface RFQRead {
+export interface RFQRead extends ProcurementScopeFields {
   id: string;
   rfq_no: string;
   pr_id?: string;
@@ -258,13 +287,14 @@ export interface RFQRead {
   notes?: string;
   created_at: string;
   response_count: number;
+  access?: ProcurementAccessHint;
 }
 
 export interface RFQDetail extends RFQRead {
   responses: RFQResponseRead[];
 }
 
-export interface BlanketAgreement {
+export interface BlanketAgreement extends ProcurementScopeFields {
   id: string;
   bpa_no: string;
   supplier_id: string;
@@ -285,9 +315,10 @@ export interface BlanketAgreement {
   is_expired: boolean;
   notes?: string;
   created_at: string;
+  access?: ProcurementAccessHint;
 }
 
-export interface AutoReorderPolicy {
+export interface AutoReorderPolicy extends ProcurementScopeFields {
   id: string;
   material_id?: string;
   product_id?: string;
@@ -300,6 +331,27 @@ export interface AutoReorderPolicy {
   preferred_supplier_name?: string;
   auto_create_pr: boolean;
   active_flag: boolean;
+  notes?: string;
+  created_at: string;
+  access?: ProcurementAccessHint;
+}
+
+export interface ProcurementApprovalRule extends ProcurementScopeFields {
+  id: string;
+  rule_name: string;
+  document_type: ProcurementApprovalDocumentType;
+  supplier_category?: string;
+  product_category?: string;
+  min_amount?: number;
+  max_amount?: number;
+  currency?: string;
+  approval_level: number;
+  approver_user_id?: string;
+  approver_role_id?: string;
+  requires_all_matching_approvers: boolean;
+  is_active: boolean;
+  effective_from?: string;
+  effective_to?: string;
   notes?: string;
   created_at: string;
 }
@@ -441,6 +493,19 @@ export const procurementApi = {
   },
   async deliveryAlerts(): Promise<DeliveryAlertRow[]> {
     const res = await apiClient.get<DeliveryAlertRow[]>("/api/v1/procurement/delivery/alerts");
+    return res.data;
+  },
+
+  async listApprovalRules(params?: { active_only?: boolean }): Promise<ProcurementApprovalRule[]> {
+    const res = await apiClient.get<ProcurementApprovalRule[]>("/api/v1/procurement/approval-rules", { params });
+    return res.data;
+  },
+  async createApprovalRule(data: object): Promise<ProcurementApprovalRule> {
+    const res = await apiClient.post<ProcurementApprovalRule>("/api/v1/procurement/approval-rules", data);
+    return res.data;
+  },
+  async updateApprovalRule(id: string, data: object): Promise<ProcurementApprovalRule> {
+    const res = await apiClient.patch<ProcurementApprovalRule>(`/api/v1/procurement/approval-rules/${id}`, data);
     return res.data;
   },
 

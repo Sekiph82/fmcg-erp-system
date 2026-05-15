@@ -34,6 +34,12 @@ class Quotation(Base, TimestampMixin):
     version        = Column(Integer, nullable=False, default=1)
     customer_id    = Column(UUID(as_uuid=True), ForeignKey("customers.id", ondelete="RESTRICT"), nullable=False, index=True)
     status         = Column(Enum(QuoteStatus), nullable=False, default=QuoteStatus.DRAFT, index=True)
+    company_id     = Column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="SET NULL"), nullable=True, index=True)
+    branch_id      = Column(UUID(as_uuid=True), ForeignKey("branches.id", ondelete="SET NULL"), nullable=True, index=True)
+    sales_region_id = Column(String(100), nullable=True, index=True)
+    sales_team_id  = Column(String(100), nullable=True, index=True)
+    customer_group_id = Column(String(100), nullable=True, index=True)
+    crm_record_id  = Column(UUID(as_uuid=True), ForeignKey("crm_records.id", ondelete="SET NULL"), nullable=True, index=True)
 
     # Validity
     quote_date     = Column(Date, nullable=False)
@@ -51,6 +57,10 @@ class Quotation(Base, TimestampMixin):
     accepted_at    = Column(DateTime(timezone=True), nullable=True)
     rejected_at    = Column(DateTime(timezone=True), nullable=True)
     lost_reason    = Column(Text, nullable=True)
+    approval_status = Column(String(50), nullable=True, index=True)
+    discount_approval_required = Column(Boolean, nullable=False, default=False)
+    discount_approved_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    discount_approved_at = Column(DateTime(timezone=True), nullable=True)
 
     # Conversion
     converted_so_id = Column(UUID(as_uuid=True), ForeignKey("sales_orders.id", ondelete="SET NULL"), nullable=True)
@@ -61,7 +71,11 @@ class Quotation(Base, TimestampMixin):
     internal_notes = Column(Text, nullable=True)
 
     customer     = relationship("Customer", foreign_keys=[customer_id])
+    company      = relationship("Company", foreign_keys=[company_id])
+    branch       = relationship("Branch", foreign_keys=[branch_id])
+    crm_record   = relationship("CRMRecord", foreign_keys=[crm_record_id])
     created_by   = relationship("User", foreign_keys=[created_by_id])
+    discount_approved_by = relationship("User", foreign_keys=[discount_approved_by_id])
     converted_so = relationship("SalesOrder", foreign_keys=[converted_so_id])
     lines        = relationship("QuotationLine", back_populates="quote",
                                 cascade="all, delete-orphan",

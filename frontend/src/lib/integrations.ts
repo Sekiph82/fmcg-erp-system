@@ -19,6 +19,12 @@ export type IntegrationProvider =
 
 export type IntegrationStatus = "ACTIVE" | "INACTIVE" | "ERROR" | "TESTING";
 export type IntegrationLogStatus = "SUCCESS" | "FAILED" | "PENDING" | "RETRYING";
+export type IntegrationCapabilityStatus =
+  | "LIVE_READY"
+  | "SANDBOX_READY"
+  | "SIMULATED_ONLY"
+  | "STUB_ONLY"
+  | "DISABLED";
 export type ConnectorStatus = "active" | "beta" | "coming_soon" | "deprecated";
 export type PluginInstallStatus = "installed" | "disabled" | "update_available" | "uninstalled" | "error";
 export type PluginLifecycleAction = "enable" | "disable" | "uninstall" | "update";
@@ -54,6 +60,23 @@ export interface ProviderStatus {
   last_tested_at?: string;
   recent_success: number;
   recent_failures: number;
+}
+
+export interface IntegrationCapability {
+  provider: string;
+  label: string;
+  status: IntegrationCapabilityStatus;
+  effective_status: IntegrationCapabilityStatus;
+  live_env_vars: string[];
+  sandbox_supported: boolean;
+  simulation_supported: boolean;
+  production_execution_allowed: boolean;
+  requires_signature_validation: boolean;
+  frontend_route?: string | null;
+  notes: string;
+  can_execute_in_development: boolean;
+  can_execute_in_production: boolean;
+  production_blocked_reason?: string | null;
 }
 
 // ── Integration Logs ──────────────────────────────────────────────────────────
@@ -321,6 +344,11 @@ export const integrationsApi = {
   // Providers
   getProviders: async (): Promise<ProviderStatus[]> => {
     const res = await apiClient.get<ProviderStatus[]>(`${BASE}/providers`);
+    return res.data;
+  },
+
+  getCapabilities: async (): Promise<IntegrationCapability[]> => {
+    const res = await apiClient.get<IntegrationCapability[]>(`${BASE}/capabilities`);
     return res.data;
   },
 

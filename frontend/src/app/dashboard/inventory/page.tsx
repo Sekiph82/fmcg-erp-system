@@ -193,7 +193,7 @@ function InventoryContent() {
   });
 
   return (
-    <div>
+    <div data-testid="inventory-page">
       <ToastContainer toasts={toasts} onDismiss={dismiss} />
 
       <div className="mb-6 flex items-center justify-between">
@@ -216,6 +216,7 @@ function InventoryContent() {
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
+            data-testid={`inventory-tab-${t.key}`}
             className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
               tab === t.key
                 ? "bg-white shadow-sm text-gray-900"
@@ -232,6 +233,7 @@ function InventoryContent() {
         loadingSummary ? (
           <div className="flex justify-center py-16"><div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent" /></div>
         ) : (
+          <div data-testid="inventory-stock-table">
           <Table
             keyField="id"
             data={summary}
@@ -267,16 +269,20 @@ function InventoryContent() {
                           setAdjustQty(String(Number(r.quantity_on_hand)));
                           setAdjustReason("");
                         }}
+                        data-testid="inventory-adjust-button"
                         className="text-xs text-indigo-600 hover:text-indigo-800 hover:underline"
                       >
                         Adjust
                       </button>
                     ) : (
-                      <Badge label="View only" variant="gray" />
+                      <span data-testid="inventory-view-only-badge">
+                        <Badge label="View only" variant="gray" />
+                      </span>
                     )}
                     {canDeleteStock(r) && (
                       <button
                         onClick={() => setDeletingStockId(r.id)}
+                        data-testid="inventory-delete-button"
                         className="text-xs text-red-500 hover:text-red-700 hover:underline"
                       >
                         Delete
@@ -287,6 +293,7 @@ function InventoryContent() {
               },
             ]}
           />
+          </div>
         )
       )}
 

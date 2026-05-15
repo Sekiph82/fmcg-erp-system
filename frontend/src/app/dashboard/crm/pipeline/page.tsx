@@ -28,6 +28,8 @@ export default function PipelineBoardPage() {
     e.preventDefault();
     const recordId = e.dataTransfer.getData("recordId");
     if (!recordId || movingId) return;
+    const record = records.find(r => r.id === recordId);
+    if (record?.access?.can_edit === false) return;
     setMovingId(recordId);
     try {
       await crmApi.updateRecord(recordId, { stage_id: targetStageId });
@@ -83,9 +85,9 @@ export default function PipelineBoardPage() {
                 {stageRecs.map(rec => (
                   <div
                     key={rec.id}
-                    draggable
+                    draggable={rec.access?.can_edit !== false}
                     onDragStart={e => e.dataTransfer.setData("recordId", rec.id)}
-                    className="bg-white rounded-lg border shadow-sm p-3 cursor-grab hover:shadow-md transition-shadow"
+                    className={`bg-white rounded-lg border shadow-sm p-3 transition-shadow ${rec.access?.can_edit === false ? "cursor-not-allowed opacity-80" : "cursor-grab hover:shadow-md"}`}
                   >
                     <div className="flex items-start justify-between gap-1">
                       <div className="font-medium text-xs text-gray-800 leading-snug">{rec.company_name}</div>
@@ -95,6 +97,11 @@ export default function PipelineBoardPage() {
                     <div className="text-xs text-gray-400 mt-0.5">
                       {rec.lead_code || rec.opportunity_code}
                     </div>
+                    {rec.access?.view_only && (
+                      <div title={rec.access.reason ?? "You can view this record but cannot modify it in this scope."} className="mt-1 inline-flex rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
+                        View only
+                      </div>
+                    )}
                     {rec.expected_revenue ? (
                       <div className="text-xs font-semibold text-indigo-700 mt-1">
                         {fmtCurrency(rec.expected_revenue, rec.currency)}

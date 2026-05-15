@@ -78,7 +78,7 @@ export default function ProductionPlansPage() {
   );
 
   return (
-    <div>
+    <div data-testid="production-page">
       <ToastContainer toasts={toasts} onDismiss={dismiss} />
 
       <div className="mb-6 flex items-center justify-between">
@@ -86,7 +86,7 @@ export default function ProductionPlansPage() {
           <h1 className="text-2xl font-bold text-gray-900">Production Plans</h1>
           <p className="text-sm text-gray-500 mt-1">{plans.length} total</p>
         </div>
-        <Button onClick={() => setPlanOpen(true)}>+ New Plan</Button>
+        <Button onClick={() => setPlanOpen(true)} data-testid="production-create-plan-button">+ New Plan</Button>
       </div>
 
       <div className="mb-4 flex gap-3">
@@ -109,11 +109,12 @@ export default function ProductionPlansPage() {
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent" />
         </div>
       ) : (
-        <Table
-          keyField="id"
-          data={filtered}
-          emptyMessage="No production plans yet."
-          columns={[
+        <div data-testid="production-plan-list">
+          <Table
+            keyField="id"
+            data={filtered}
+            emptyMessage="No production plans yet."
+            columns={[
             {
               header: "Plan No",
               accessor: (p) => (
@@ -142,6 +143,7 @@ export default function ProductionPlansPage() {
                     <Button
                       variant="secondary"
                       onClick={() => confirmPlan.mutate(p.id)}
+                      data-testid="production-confirm-plan-button"
                     >
                       Confirm
                     </Button>
@@ -155,8 +157,9 @@ export default function ProductionPlansPage() {
                 </div>
               ),
             },
-          ]}
-        />
+            ]}
+          />
+        </div>
       )}
 
       <Modal

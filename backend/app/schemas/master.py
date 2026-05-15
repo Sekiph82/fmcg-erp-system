@@ -1,9 +1,18 @@
 from pydantic import BaseModel, EmailStr
 from typing import Optional
 from decimal import Decimal
+from datetime import date, datetime
 import uuid
 
-from app.models.master import UnitOfMeasure, ProductCategory, MaterialType, WarehouseType, SupplierPaymentMethod
+from app.models.master import (
+    UnitOfMeasure,
+    ProductCategory,
+    MaterialType,
+    WarehouseType,
+    SupplierPaymentMethod,
+    SupplierQualificationStatus,
+    SupplierRiskLevel,
+)
 
 
 # ── Supplier ──────────────────────────────────────────────────────────────────
@@ -22,6 +31,11 @@ class SupplierBase(BaseModel):
     is_active: bool = True
     preferred_payment_method: Optional[SupplierPaymentMethod] = None
     mpesa_phone_number: Optional[str] = None
+    supplier_category: Optional[str] = None
+    qualification_status: Optional[SupplierQualificationStatus] = None
+    risk_level: Optional[SupplierRiskLevel] = None
+    approved_from: Optional[date] = None
+    approved_until: Optional[date] = None
 
 
 class SupplierCreate(SupplierBase):
@@ -41,10 +55,19 @@ class SupplierUpdate(BaseModel):
     is_active: Optional[bool] = None
     preferred_payment_method: Optional[SupplierPaymentMethod] = None
     mpesa_phone_number: Optional[str] = None
+    supplier_category: Optional[str] = None
+    qualification_status: Optional[SupplierQualificationStatus] = None
+    risk_level: Optional[SupplierRiskLevel] = None
+    approved_from: Optional[date] = None
+    approved_until: Optional[date] = None
+    approved_by_id: Optional[uuid.UUID] = None
+    approved_at: Optional[datetime] = None
 
 
 class SupplierRead(SupplierBase):
     id: uuid.UUID
+    approved_by_id: Optional[uuid.UUID] = None
+    approved_at: Optional[datetime] = None
     model_config = {"from_attributes": True}
 
 

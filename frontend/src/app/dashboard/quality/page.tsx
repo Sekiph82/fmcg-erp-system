@@ -98,7 +98,7 @@ export default function QCInspectionsPage() {
   const criticalFails = inspections.filter((i) => i.critical_fail).length;
 
   return (
-    <div>
+    <div data-testid="quality-page">
       <ToastContainer toasts={toasts} onDismiss={dismiss} />
 
       <div className="mb-6 flex items-center justify-between">
@@ -106,7 +106,7 @@ export default function QCInspectionsPage() {
           <h1 className="text-2xl font-bold text-gray-900">QC Inspections</h1>
           <p className="text-sm text-gray-500 mt-1">{inspections.length} total · {pending} open · {failed} failed</p>
         </div>
-        <Button onClick={() => setOpen(true)}>+ New Inspection</Button>
+        <Button onClick={() => setOpen(true)} data-testid="quality-create-inspection-button">+ New Inspection</Button>
       </div>
 
       {/* Summary cards */}
@@ -132,11 +132,12 @@ export default function QCInspectionsPage() {
       {isLoading ? (
         <div className="flex justify-center py-16"><div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent" /></div>
       ) : (
-        <Table
-          keyField="id"
-          data={inspections}
-          emptyMessage="No QC inspections yet."
-          columns={[
+        <div data-testid="quality-inspection-list">
+          <Table
+            keyField="id"
+            data={inspections}
+            emptyMessage="No QC inspections yet."
+            columns={[
             {
               header: "Inspection No",
               accessor: (i) => (
@@ -189,8 +190,9 @@ export default function QCInspectionsPage() {
               header: "",
               accessor: (i) => <Button variant="secondary" onClick={() => router.push(`/dashboard/quality/${i.id}`)}>View</Button>,
             },
-          ]}
-        />
+            ]}
+          />
+        </div>
       )}
 
       <Modal open={open} onClose={() => setOpen(false)} title="New QC Inspection">

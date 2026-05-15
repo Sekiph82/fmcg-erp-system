@@ -19,6 +19,74 @@ export type StockCountStatus =
 export type PickingTaskStatus = "PENDING" | "IN_PROGRESS" | "PICKED" | "PACKED" | "CANCELLED";
 export type PackingStatus = "OPEN" | "CLOSED";
 export type ReplenishmentStatus = "PENDING" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+export type HandlingUnitStatus = "OPEN" | "CLOSED" | "ON_HOLD" | "SHIPPED" | "CONSUMED" | "VOID";
+export type HandlingUnitType = "PALLET" | "CARTON" | "TOTE" | "CRATE" | "CONTAINER";
+export type PickWaveStatus = "DRAFT" | "RELEASED" | "IN_PROGRESS" | "PICKED" | "CANCELLED" | "CLOSED";
+
+export interface WMSAccessHint {
+  can_view: boolean;
+  can_edit: boolean;
+  can_putaway: boolean;
+  can_pick: boolean;
+  can_pack: boolean;
+  can_replenish: boolean;
+  can_quarantine: boolean;
+  can_release: boolean;
+  can_approve: boolean;
+  can_export: boolean;
+}
+
+export interface HandlingUnitItem {
+  id: string;
+  handling_unit_id: string;
+  stock_type: "PRODUCT" | "MATERIAL";
+  product_id?: string;
+  product_name?: string;
+  material_id?: string;
+  material_name?: string;
+  lot_id?: string;
+  lot_number?: string;
+  quantity: number;
+  unit: string;
+}
+
+export interface HandlingUnit {
+  id: string;
+  license_plate: string;
+  warehouse_id: string;
+  warehouse_name?: string;
+  location_id?: string;
+  location_code?: string;
+  parent_hu_id?: string;
+  parent_license_plate?: string;
+  hu_type: HandlingUnitType;
+  status: HandlingUnitStatus;
+  gross_weight_kg?: number;
+  net_weight_kg?: number;
+  volume_m3?: number;
+  created_by_id?: string;
+  closed_at?: string;
+  notes?: string;
+  items: HandlingUnitItem[];
+  access?: WMSAccessHint;
+}
+
+export interface PickWave {
+  id: string;
+  wave_no: string;
+  warehouse_id: string;
+  warehouse_name?: string;
+  status: PickWaveStatus;
+  priority: number;
+  planned_start_at?: string;
+  planned_end_at?: string;
+  released_by_id?: string;
+  released_at?: string;
+  closed_at?: string;
+  notes?: string;
+  task_count: number;
+  access?: WMSAccessHint;
+}
 
 export interface PickingTask {
   id: string;
@@ -26,6 +94,8 @@ export interface PickingTask {
   warehouse_id: string;
   warehouse_name?: string;
   shipment_id?: string;
+  wave_id?: string;
+  wave_no?: string;
   product_id: string;
   product_name?: string;
   lot_id?: string;
@@ -43,6 +113,7 @@ export interface PickingTask {
   completed_at?: string;
   notes?: string;
   created_at: string;
+  access?: WMSAccessHint;
 }
 
 export interface PackingRecord {
@@ -62,6 +133,7 @@ export interface PackingRecord {
   packed_at?: string;
   notes?: string;
   created_at: string;
+  access?: WMSAccessHint;
 }
 
 export interface ReplenishmentTask {
@@ -84,6 +156,7 @@ export interface ReplenishmentTask {
   completed_at?: string;
   notes?: string;
   created_at: string;
+  access?: WMSAccessHint;
 }
 
 export interface WarehouseZone {
@@ -96,6 +169,7 @@ export interface WarehouseZone {
   description?: string;
   is_active: boolean;
   location_count: number;
+  access?: WMSAccessHint;
 }
 
 export interface StorageLocation {
@@ -114,6 +188,7 @@ export interface StorageLocation {
   location_type?: string;
   is_active: boolean;
   is_blocked: boolean;
+  access?: WMSAccessHint;
 }
 
 export interface StockCount {
@@ -132,6 +207,7 @@ export interface StockCount {
   notes?: string;
   total_lines: number;
   counted_lines: number;
+  access?: WMSAccessHint;
 }
 
 export interface StockCountLine {
@@ -301,6 +377,34 @@ export const wmsApi = {
   },
   async releaseQuarantine(data: { warehouse_id: string; product_id?: string; material_id?: string; lot_number?: string; notes?: string }) {
     const res = await apiClient.post("/api/v1/wms/release", data);
+    return res.data;
+  },
+
+  // Handling units
+  async listHandlingUnits(params?: { warehouse_id?: string; status?: HandlingUnitStatus }): Promise<HandlingUnit[]> {
+    const res = await apiClient.get<HandlingUnit[]>("/api/v1/wms/handling-units", { params });
+    return res.data;
+  },
+  async createHandlingUnit(data: object): Promise<HandlingUnit> {
+    const res = await apiClient.post<HandlingUnit>("/api/v1/wms/handling-units", data);
+    return res.data;
+  },
+  async updateHandlingUnit(id: string, data: object): Promise<HandlingUnit> {
+    const res = await apiClient.patch<HandlingUnit>(`/api/v1/wms/handling-units/${id}`, data);
+    return res.data;
+  },
+
+  // Pick waves
+  async listPickWaves(params?: { warehouse_id?: string; status?: PickWaveStatus }): Promise<PickWave[]> {
+    const res = await apiClient.get<PickWave[]>("/api/v1/wms/pick-waves", { params });
+    return res.data;
+  },
+  async createPickWave(data: object): Promise<PickWave> {
+    const res = await apiClient.post<PickWave>("/api/v1/wms/pick-waves", data);
+    return res.data;
+  },
+  async updatePickWave(id: string, data: object): Promise<PickWave> {
+    const res = await apiClient.patch<PickWave>(`/api/v1/wms/pick-waves/${id}`, data);
     return res.data;
   },
 

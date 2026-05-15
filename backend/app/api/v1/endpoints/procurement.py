@@ -12,8 +12,6 @@ from sqlalchemy.orm import selectinload
 
 from app.core.deps import get_current_user, get_db
 from app.core.access_control import (
-    can_modify_scope,
-    can_view_scope,
     forbidden_detail,
     has_any_permission,
     require_any_permission,
@@ -22,15 +20,16 @@ from app.models.procurement import (
     PurchaseRequisition, PRLine, PurchaseOrder, POLine,
     GoodsReceipt, GRNLine, ImportShipment, SupplierEvaluation,
     RFQRequest, RFQResponse, BlanketPurchaseAgreement, AutoReorderPolicy,
+    ProcurementApprovalRule,
     PRStatus, POStatus, RFQStatus, RFQResponseStatus, BPAStatus,
 )
 from decimal import Decimal as _Decimal
 from app.models.master import Supplier
 from app.schemas.procurement import (
-    PRCreate, PRUpdate, PRRead, PRDetailRead, PRLineCreate,
+    PRCreate, PRUpdate, PRRead, PRDetailRead, PRLineCreate, PRLineRead,
     ApprovePRRequest, ConvertPRToPORequest,
-    POCreate, POUpdate, PORead, PODetailRead, POLineCreate,
-    GRNCreate, GRNRead, GRNDetailRead,
+    POCreate, POUpdate, PORead, PODetailRead, POLineCreate, POLineRead,
+    GRNCreate, GRNRead, GRNDetailRead, GRNLineRead,
     ImportShipmentCreate, ImportShipmentUpdate, ImportShipmentRead,
     SupplierEvaluationCreate, SupplierEvaluationRead, SupplierDashboardRow,
     InboundScheduleRow, DeliveryAlertRow,
@@ -38,6 +37,7 @@ from app.schemas.procurement import (
     RFQCreate, RFQUpdate, RFQRead, RFQDetailRead, RFQResponseCreate, RFQResponseRead,
     BlanketAgreementCreate, BlanketAgreementUpdate, BlanketAgreementRead,
     AutoReorderPolicyCreate, AutoReorderPolicyUpdate, AutoReorderPolicyRead,
+    ProcurementApprovalRuleCreate, ProcurementApprovalRuleUpdate, ProcurementApprovalRuleRead,
 )
 from app.crud import procurement as crud
 from app.services import procurement_service as svc
@@ -69,24 +69,15 @@ def _procurement_department(record) -> str | None:
 
 
 def _can_view_procurement_record(user, record) -> bool:
-    if _has_broad_procurement_view(user):
-        return True
-    department = _procurement_department(record)
-    return bool(department and can_view_scope(user, "procurement", "department", department))
+    return svc.build_procurement_access_hint(user, record).can_view
 
 
 def _require_procurement_view(user, record) -> None:
-    if not _can_view_procurement_record(user, record):
-        raise _procurement_forbidden("You can view procurement records only inside your assigned operational scope.")
+    svc.ensure_procurement_action_allowed(user, record, "view")
 
 
 def _require_procurement_action(user, record, action: str) -> None:
-    if has_any_permission(user, (f"procurement.{action}_all",)):
-        return
-    department = _procurement_department(record)
-    if department and can_modify_scope(user, "procurement", action, "department", department):
-        return
-    raise _procurement_forbidden("You can view this procurement record but cannot modify it in this scope.")
+    svc.ensure_procurement_action_allowed(user, record, action)
 
 
 # ── Purchase Requisitions ─────────────────────────────────────────────────────
@@ -105,6 +96,7 @@ async def list_prs(
         r = PRRead.model_validate(pr)
         r.requester_name = pr.requester.full_name if pr.requester else None
         r.line_count = len(pr.lines)
+        r.access = svc.build_procurement_access_hint(current_user, pr)
         rows.append(r)
     return rows
 
@@ -115,11 +107,11 @@ async def create_pr(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    _require_procurement_action(current_user, PurchaseRequisition(department=body.department), "create")
+    _require_procurement_action(current_user, PurchaseRequisition(**body.model_dump(exclude={"lines"})), "create")
     pr = await crud.create_pr(db, body.model_dump(), current_user.id)
     await db.commit()
     pr = await crud.get_pr(db, pr.id)
-    return _build_pr_detail(pr)
+    return _build_pr_detail(pr, current_user)
 
 
 @router.get("/pr/{pr_id}", response_model=PRDetailRead)
@@ -128,7 +120,7 @@ async def get_pr(pr_id: uuid.UUID, db: AsyncSession = Depends(get_db), current_u
     if not pr:
         raise HTTPException(404, "PR not found")
     _require_procurement_view(current_user, pr)
-    return _build_pr_detail(pr)
+    return _build_pr_detail(pr, current_user)
 
 
 @router.patch("/pr/{pr_id}", response_model=PRDetailRead)
@@ -151,7 +143,7 @@ async def update_pr(
         setattr(pr, k, v)
     await db.commit()
     pr = await crud.get_pr(db, pr_id)
-    return _build_pr_detail(pr)
+    return _build_pr_detail(pr, current_user)
 
 
 @router.post("/pr/{pr_id}/submit", response_model=PRRead)
@@ -162,7 +154,7 @@ async def submit_pr(pr_id: uuid.UUID, db: AsyncSession = Depends(get_db), curren
     _require_procurement_action(current_user, pr, "edit")
     pr = await svc.submit_pr(db, pr)
     await db.commit()
-    return _build_pr_read(pr)
+    return _build_pr_read(pr, current_user)
 
 
 @router.post("/pr/{pr_id}/approve", response_model=PRRead)
@@ -183,7 +175,7 @@ async def approve_pr(
             raise HTTPException(422, "Rejection reason required")
         pr = await svc.reject_pr(db, pr, current_user.id, body.rejection_reason)
     await db.commit()
-    return _build_pr_read(pr)
+    return _build_pr_read(pr, current_user)
 
 
 @router.post("/pr/{pr_id}/convert", response_model=PODetailRead, status_code=201)
@@ -200,7 +192,7 @@ async def convert_pr_to_po(
     po = await svc.convert_pr_to_po(db, pr, body.model_dump(), current_user.id)
     await db.commit()
     po = await crud.get_po(db, po.id)
-    return _build_po_detail(po)
+    return _build_po_detail(po, current_user)
 
 
 @router.post("/pr/{pr_id}/lines", response_model=PRDetailRead, status_code=201)
@@ -219,7 +211,7 @@ async def add_pr_line(
     await crud.add_pr_line(db, pr, body.model_dump())
     await db.commit()
     pr = await crud.get_pr(db, pr_id)
-    return _build_pr_detail(pr)
+    return _build_pr_detail(pr, current_user)
 
 
 @router.delete("/pr/{pr_id}/lines/{line_id}", status_code=204)
@@ -252,7 +244,7 @@ async def list_pos(
     pos = await crud.list_pos(db, status=status, supplier_id=supplier_id)
     if not _has_broad_procurement_view(current_user):
         pos = [po for po in pos if _can_view_procurement_record(current_user, po)]
-    return [_build_po_read(po) for po in pos]
+    return [_build_po_read(po, current_user) for po in pos]
 
 
 @router.post("/po/", response_model=PODetailRead, status_code=201)
@@ -261,11 +253,12 @@ async def create_po(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    _require_procurement_action(current_user, PurchaseOrder(), "create")
+    target = PurchaseOrder(**body.model_dump(exclude={"lines"}))
+    _require_procurement_action(current_user, target, "create")
     po = await crud.create_po(db, body.model_dump(), current_user.id)
     await db.commit()
     po = await crud.get_po(db, po.id)
-    return _build_po_detail(po)
+    return _build_po_detail(po, current_user)
 
 
 @router.get("/po/{po_id}", response_model=PODetailRead)
@@ -274,7 +267,7 @@ async def get_po(po_id: uuid.UUID, db: AsyncSession = Depends(get_db), current_u
     if not po:
         raise HTTPException(404, "PO not found")
     _require_procurement_view(current_user, po)
-    return _build_po_detail(po)
+    return _build_po_detail(po, current_user)
 
 
 @router.patch("/po/{po_id}", response_model=PODetailRead)
@@ -294,7 +287,7 @@ async def update_po(
         setattr(po, k, v)
     await db.commit()
     po = await crud.get_po(db, po_id)
-    return _build_po_detail(po)
+    return _build_po_detail(po, current_user)
 
 
 @router.post("/po/{po_id}/approve", response_model=PORead)
@@ -305,7 +298,7 @@ async def approve_po(po_id: uuid.UUID, db: AsyncSession = Depends(get_db), curre
     _require_procurement_action(current_user, po, "approve")
     po = await svc.approve_po(db, po, current_user.id)
     await db.commit()
-    return _build_po_read(po)
+    return _build_po_read(po, current_user)
 
 
 @router.post("/po/{po_id}/order", response_model=PORead)
@@ -316,7 +309,7 @@ async def mark_ordered(po_id: uuid.UUID, db: AsyncSession = Depends(get_db), cur
     _require_procurement_action(current_user, po, "edit")
     po = await svc.mark_ordered(db, po)
     await db.commit()
-    return _build_po_read(po)
+    return _build_po_read(po, current_user)
 
 
 @router.post("/po/{po_id}/cancel", response_model=PORead)
@@ -327,7 +320,7 @@ async def cancel_po(po_id: uuid.UUID, db: AsyncSession = Depends(get_db), curren
     _require_procurement_action(current_user, po, "edit")
     po = await svc.cancel_po(db, po)
     await db.commit()
-    return _build_po_read(po)
+    return _build_po_read(po, current_user)
 
 
 @router.post("/po/{po_id}/lines", response_model=PODetailRead, status_code=201)
@@ -345,7 +338,7 @@ async def add_po_line(
     db.add(POLineModel(po_id=po_id, **body.model_dump()))
     await db.commit()
     po = await crud.get_po(db, po_id)
-    return _build_po_detail(po)
+    return _build_po_detail(po, current_user)
 
 
 # ── Goods Receipts ────────────────────────────────────────────────────────────
@@ -357,7 +350,8 @@ async def list_grns(
     current_user=Depends(get_current_user),
 ):
     grns = await crud.list_grns(db, po_id=po_id)
-    return [_build_grn_read(g) for g in grns]
+    grns = [g for g in grns if _can_view_procurement_record(current_user, g)]
+    return [_build_grn_read(g, current_user) for g in grns]
 
 
 @router.post("/grn/", response_model=GRNDetailRead, status_code=201)
@@ -366,10 +360,12 @@ async def create_grn(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
+    target = GoodsReceipt(**body.model_dump(exclude={"lines"}))
+    _require_procurement_action(current_user, target, "receive")
     grn = await crud.create_grn(db, body.model_dump(), current_user.id)
     await db.commit()
     grn = await crud.get_grn(db, grn.id)
-    return _build_grn_detail(grn)
+    return _build_grn_detail(grn, current_user)
 
 
 @router.get("/grn/{grn_id}", response_model=GRNDetailRead)
@@ -377,7 +373,8 @@ async def get_grn(grn_id: uuid.UUID, db: AsyncSession = Depends(get_db), current
     grn = await crud.get_grn(db, grn_id)
     if not grn:
         raise HTTPException(404, "GRN not found")
-    return _build_grn_detail(grn)
+    _require_procurement_view(current_user, grn)
+    return _build_grn_detail(grn, current_user)
 
 
 @router.post("/grn/{grn_id}/post", response_model=GRNDetailRead)
@@ -385,10 +382,11 @@ async def post_grn(grn_id: uuid.UUID, db: AsyncSession = Depends(get_db), curren
     grn = await crud.get_grn(db, grn_id)
     if not grn:
         raise HTTPException(404, "GRN not found")
+    _require_procurement_action(current_user, grn, "post")
     grn = await svc.post_grn(db, grn, current_user.id)
     await db.commit()
     grn = await crud.get_grn(db, grn_id)
-    return _build_grn_detail(grn)
+    return _build_grn_detail(grn, current_user)
 
 
 # ── Import Shipments ──────────────────────────────────────────────────────────
@@ -400,7 +398,8 @@ async def list_shipments(
     current_user=Depends(get_current_user),
 ):
     ships = await crud.list_shipments(db, po_id=po_id)
-    return [_build_shipment_read(s) for s in ships]
+    ships = [s for s in ships if _can_view_procurement_record(current_user, s)]
+    return [_build_shipment_read(s, current_user) for s in ships]
 
 
 @router.post("/shipments/", response_model=ImportShipmentRead, status_code=201)
@@ -409,10 +408,12 @@ async def create_shipment(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
+    target = ImportShipment(**body.model_dump())
+    _require_procurement_action(current_user, target, "create")
     ship = await crud.create_shipment(db, body.model_dump())
     await db.commit()
     ship = await crud.get_shipment(db, ship.id)
-    return _build_shipment_read(ship)
+    return _build_shipment_read(ship, current_user)
 
 
 @router.get("/shipments/{shipment_id}", response_model=ImportShipmentRead)
@@ -420,7 +421,8 @@ async def get_shipment(shipment_id: uuid.UUID, db: AsyncSession = Depends(get_db
     ship = await crud.get_shipment(db, shipment_id)
     if not ship:
         raise HTTPException(404, "Shipment not found")
-    return _build_shipment_read(ship)
+    _require_procurement_view(current_user, ship)
+    return _build_shipment_read(ship, current_user)
 
 
 @router.patch("/shipments/{shipment_id}", response_model=ImportShipmentRead)
@@ -433,11 +435,12 @@ async def update_shipment(
     ship = await crud.get_shipment(db, shipment_id)
     if not ship:
         raise HTTPException(404, "Shipment not found")
+    _require_procurement_action(current_user, ship, "edit")
     for k, v in body.model_dump(exclude_unset=True).items():
         setattr(ship, k, v)
     await db.commit()
     ship = await crud.get_shipment(db, shipment_id)
-    return _build_shipment_read(ship)
+    return _build_shipment_read(ship, current_user)
 
 
 # ── Supplier Payments ───────────────────────────────��────────────────────────
@@ -454,6 +457,7 @@ async def record_supplier_payment(
         raise HTTPException(404, "PO not found")
     if po.status == POStatus.CANCELLED:
         raise HTTPException(422, "Cannot record payment for a cancelled PO")
+    _require_procurement_action(current_user, po, "post")
     payment = await crud.create_supplier_payment(db, po, body.model_dump(), current_user.id)
     await db.commit()
     await db.refresh(payment)
@@ -469,6 +473,7 @@ async def list_supplier_payments(
     po = await crud.get_po(db, po_id)
     if not po:
         raise HTTPException(404, "PO not found")
+    _require_procurement_view(current_user, po)
     return await crud.get_supplier_payments(db, po_id)
 
 
@@ -481,7 +486,8 @@ async def list_evaluations(
     current_user=Depends(get_current_user),
 ):
     evals = await crud.list_evaluations(db, supplier_id=supplier_id)
-    return [_build_eval_read(e) for e in evals]
+    evals = [e for e in evals if _can_view_procurement_record(current_user, e)]
+    return [_build_eval_read(e, current_user) for e in evals]
 
 
 @router.post("/evaluations/", response_model=SupplierEvaluationRead, status_code=201)
@@ -490,10 +496,12 @@ async def create_evaluation(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
+    target = SupplierEvaluation(**body.model_dump(), evaluator_id=current_user.id)
+    _require_procurement_action(current_user, target, "edit")
     ev = await crud.create_evaluation(db, body.model_dump(), current_user.id)
     await db.commit()
     ev = (await crud.list_evaluations(db, supplier_id=body.supplier_id))[0]
-    return _build_eval_read(ev)
+    return _build_eval_read(ev, current_user)
 
 
 @router.get("/suppliers/dashboard", response_model=List[SupplierDashboardRow])
@@ -579,14 +587,72 @@ async def delivery_alerts(
 
 # ── Builder helpers ───────────────────────────────────────────────────────────
 
-def _build_pr_read(pr: PurchaseRequisition) -> PRRead:
+@router.get("/approval-rules", response_model=List[ProcurementApprovalRuleRead])
+async def list_approval_rules(
+    active_only: bool = True,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(require_any_permission(("procurement.approve_all", "roles.manage"))),
+):
+    query = select(ProcurementApprovalRule).order_by(
+        ProcurementApprovalRule.document_type,
+        ProcurementApprovalRule.approval_level,
+        ProcurementApprovalRule.rule_name,
+    )
+    if active_only:
+        query = query.where(ProcurementApprovalRule.is_active.is_(True))
+    result = await db.execute(query)
+    return list(result.scalars().all())
+
+
+@router.post("/approval-rules", response_model=ProcurementApprovalRuleRead, status_code=201)
+async def create_approval_rule(
+    body: ProcurementApprovalRuleCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(require_any_permission(("procurement.approve_all", "roles.manage"))),
+):
+    if not body.approver_user_id and not body.approver_role_id:
+        raise HTTPException(422, "Approval rule requires approver_user_id or approver_role_id")
+    rule = ProcurementApprovalRule(**body.model_dump())
+    db.add(rule)
+    await db.commit()
+    await db.refresh(rule)
+    return rule
+
+
+@router.patch("/approval-rules/{rule_id}", response_model=ProcurementApprovalRuleRead)
+async def update_approval_rule(
+    rule_id: uuid.UUID,
+    body: ProcurementApprovalRuleUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(require_any_permission(("procurement.approve_all", "roles.manage"))),
+):
+    result = await db.execute(select(ProcurementApprovalRule).where(ProcurementApprovalRule.id == rule_id))
+    rule = result.scalar_one_or_none()
+    if not rule:
+        raise HTTPException(404, "Approval rule not found")
+    for key, value in body.model_dump(exclude_unset=True).items():
+        setattr(rule, key, value)
+    if not rule.approver_user_id and not rule.approver_role_id:
+        raise HTTPException(422, "Approval rule requires approver_user_id or approver_role_id")
+    await db.commit()
+    await db.refresh(rule)
+    return rule
+
+
+def _with_access(row, current_user, record):
+    if current_user is not None:
+        row.access = svc.build_procurement_access_hint(current_user, record)
+    return row
+
+
+def _build_pr_read(pr: PurchaseRequisition, current_user=None) -> PRRead:
     r = PRRead.model_validate(pr)
     r.requester_name = pr.requester.full_name if pr.requester else None
     r.line_count = len(pr.lines) if pr.lines else 0
-    return r
+    return _with_access(r, current_user, pr)
 
 
-def _build_pr_detail(pr: PurchaseRequisition) -> PRDetailRead:
+def _build_pr_detail(pr: PurchaseRequisition, current_user=None) -> PRDetailRead:
     r = PRDetailRead.model_validate(pr)
     r.requester_name = pr.requester.full_name if pr.requester else None
     r.line_count = len(pr.lines) if pr.lines else 0
@@ -600,10 +666,10 @@ def _build_pr_detail(pr: PurchaseRequisition) -> PRDetailRead:
         lr.preferred_supplier_name = l.preferred_supplier.name if l.preferred_supplier else None
         lines.append(lr)
     r.lines = lines
-    return r
+    return _with_access(r, current_user, pr)
 
 
-def _build_po_read(po: PurchaseOrder) -> PORead:
+def _build_po_read(po: PurchaseOrder, current_user=None) -> PORead:
     from datetime import date as date_cls
     r = PORead.model_validate(po)
     r.supplier_name = po.supplier.name if po.supplier else None
@@ -614,10 +680,10 @@ def _build_po_read(po: PurchaseOrder) -> PORead:
         r.total_value = sum(l.ordered_quantity * l.unit_price for l in po.lines)
     if po.supplier_payments:
         r.paid_amount = sum(p.amount for p in po.supplier_payments)
-    return r
+    return _with_access(r, current_user, po)
 
 
-def _build_po_detail(po: PurchaseOrder) -> PODetailRead:
+def _build_po_detail(po: PurchaseOrder, current_user=None) -> PODetailRead:
     r = PODetailRead.model_validate(po)
     r.supplier_name = po.supplier.name if po.supplier else None
     r.pr_no = po.pr.pr_no if po.pr else None
@@ -637,17 +703,17 @@ def _build_po_detail(po: PurchaseOrder) -> PODetailRead:
         r.total_value = sum(l.line_total for l in lines)
     if po.supplier_payments:
         r.paid_amount = sum(p.amount for p in po.supplier_payments)
-    return r
+    return _with_access(r, current_user, po)
 
 
-def _build_grn_read(grn: GoodsReceipt) -> GRNRead:
+def _build_grn_read(grn: GoodsReceipt, current_user=None) -> GRNRead:
     r = GRNRead.model_validate(grn)
     r.po_no = grn.po.po_no if grn.po else None
     r.warehouse_name = grn.warehouse.name if grn.warehouse else None
-    return r
+    return _with_access(r, current_user, grn)
 
 
-def _build_grn_detail(grn: GoodsReceipt) -> GRNDetailRead:
+def _build_grn_detail(grn: GoodsReceipt, current_user=None) -> GRNDetailRead:
     r = GRNDetailRead.model_validate(grn)
     r.po_no = grn.po.po_no if grn.po else None
     r.warehouse_name = grn.warehouse.name if grn.warehouse else None
@@ -658,21 +724,21 @@ def _build_grn_detail(grn: GoodsReceipt) -> GRNDetailRead:
         lr.product_name = l.product.name if l.product else None
         lines.append(lr)
     r.lines = lines
-    return r
+    return _with_access(r, current_user, grn)
 
 
-def _build_shipment_read(ship: ImportShipment) -> ImportShipmentRead:
+def _build_shipment_read(ship: ImportShipment, current_user=None) -> ImportShipmentRead:
     r = ImportShipmentRead.model_validate(ship)
     if ship.po:
         r.po_no = ship.po.po_no
         r.supplier_name = ship.po.supplier.name if ship.po.supplier else None
-    return r
+    return _with_access(r, current_user, ship)
 
 
-def _build_eval_read(ev: SupplierEvaluation) -> SupplierEvaluationRead:
+def _build_eval_read(ev: SupplierEvaluation, current_user=None) -> SupplierEvaluationRead:
     r = SupplierEvaluationRead.model_validate(ev)
     r.po_no = ev.po.po_no if ev.po else None
-    return r
+    return _with_access(r, current_user, ev)
 
 
 # ── RFQ ────────────────────────────────────────────────────────────────────────
@@ -688,11 +754,13 @@ async def list_rfqs(
         q = q.where(RFQRequest.status == status)
     result = await db.execute(q.order_by(RFQRequest.created_at.desc()))
     rfqs = result.scalars().all()
+    rfqs = [rfq for rfq in rfqs if _can_view_procurement_record(current_user, rfq)]
     rows = []
     for r in rfqs:
         row = RFQRead.model_validate(r)
         row.awarded_supplier_name = r.awarded_supplier.name if r.awarded_supplier else None
         row.response_count = len(r.responses)
+        row.access = svc.build_procurement_access_hint(current_user, r)
         rows.append(row)
     return rows
 
@@ -705,6 +773,7 @@ async def create_rfq(
 ):
     rfq_data = body.model_dump(exclude={"supplier_ids"})
     rfq = RFQRequest(**rfq_data, created_by_id=current_user.id)
+    _require_procurement_action(current_user, rfq, "create")
     db.add(rfq)
     await db.flush()
     for sid in body.supplier_ids:
@@ -718,7 +787,7 @@ async def create_rfq(
         ).where(RFQRequest.id == rfq.id)
     )
     rfq = result.scalar_one()
-    return _build_rfq_detail(rfq)
+    return _build_rfq_detail(rfq, current_user)
 
 
 @router.get("/rfq/{rfq_id}", response_model=RFQDetailRead)
@@ -736,7 +805,8 @@ async def get_rfq(
     rfq = result.scalar_one_or_none()
     if not rfq:
         raise HTTPException(404, "RFQ not found")
-    return _build_rfq_detail(rfq)
+    _require_procurement_view(current_user, rfq)
+    return _build_rfq_detail(rfq, current_user)
 
 
 @router.patch("/rfq/{rfq_id}", response_model=RFQDetailRead)
@@ -750,6 +820,7 @@ async def update_rfq(
     rfq = result.scalar_one_or_none()
     if not rfq:
         raise HTTPException(404, "RFQ not found")
+    _require_procurement_action(current_user, rfq, "edit")
     for k, v in body.model_dump(exclude_unset=True).items():
         setattr(rfq, k, v)
     await db.commit()
@@ -759,7 +830,7 @@ async def update_rfq(
             selectinload(RFQRequest.awarded_supplier),
         ).where(RFQRequest.id == rfq_id)
     )
-    return _build_rfq_detail(result.scalar_one())
+    return _build_rfq_detail(result.scalar_one(), current_user)
 
 
 @router.post("/rfq/{rfq_id}/responses", response_model=RFQResponseRead, status_code=201)
@@ -773,6 +844,7 @@ async def add_rfq_response(
     rfq = result.scalar_one_or_none()
     if not rfq:
         raise HTTPException(404, "RFQ not found")
+    _require_procurement_action(current_user, rfq, "edit")
     existing = await db.execute(
         select(RFQResponse).where(
             RFQResponse.rfq_id == rfq_id,
@@ -798,7 +870,7 @@ async def add_rfq_response(
     return rr
 
 
-def _build_rfq_detail(rfq: RFQRequest) -> RFQDetailRead:
+def _build_rfq_detail(rfq: RFQRequest, current_user=None) -> RFQDetailRead:
     r = RFQDetailRead.model_validate(rfq)
     r.awarded_supplier_name = rfq.awarded_supplier.name if rfq.awarded_supplier else None
     r.response_count = len(rfq.responses)
@@ -808,7 +880,7 @@ def _build_rfq_detail(rfq: RFQRequest) -> RFQDetailRead:
         rr.supplier_name = resp.supplier.name if resp.supplier else None
         responses.append(rr)
     r.responses = responses
-    return r
+    return _with_access(r, current_user, rfq)
 
 
 # ── Blanket Purchase Agreements ───────────────────────────────────────────────
@@ -829,10 +901,12 @@ async def list_bpas(
         q = q.where(BlanketPurchaseAgreement.status == status)
     result = await db.execute(q.order_by(BlanketPurchaseAgreement.valid_to.desc()))
     bpas = result.scalars().all()
+    bpas = [b for b in bpas if _can_view_procurement_record(current_user, b)]
     rows = []
     for b in bpas:
         row = BlanketAgreementRead.model_validate(b)
         row.supplier_name = b.supplier.name if b.supplier else None
+        row.access = svc.build_procurement_access_hint(current_user, b)
         rows.append(row)
     return rows
 
@@ -844,6 +918,7 @@ async def create_bpa(
     current_user=Depends(get_current_user),
 ):
     bpa = BlanketPurchaseAgreement(**body.model_dump(), created_by_id=current_user.id)
+    _require_procurement_action(current_user, bpa, "create")
     db.add(bpa)
     await db.commit()
     await db.refresh(bpa)
@@ -855,6 +930,7 @@ async def create_bpa(
     bpa = result.scalar_one()
     row = BlanketAgreementRead.model_validate(bpa)
     row.supplier_name = bpa.supplier.name if bpa.supplier else None
+    row.access = svc.build_procurement_access_hint(current_user, bpa)
     return row
 
 
@@ -873,12 +949,14 @@ async def update_bpa(
     bpa = result.scalar_one_or_none()
     if not bpa:
         raise HTTPException(404, "Agreement not found")
+    _require_procurement_action(current_user, bpa, "edit")
     for k, v in body.model_dump(exclude_unset=True).items():
         setattr(bpa, k, v)
     await db.commit()
     await db.refresh(bpa)
     row = BlanketAgreementRead.model_validate(bpa)
     row.supplier_name = bpa.supplier.name if bpa.supplier else None
+    row.access = svc.build_procurement_access_hint(current_user, bpa)
     return row
 
 
@@ -897,10 +975,12 @@ async def list_reorder_policies(
         q = q.where(AutoReorderPolicy.active_flag == True)
     result = await db.execute(q.order_by(AutoReorderPolicy.created_at.desc()))
     policies = result.scalars().all()
+    policies = [p for p in policies if _can_view_procurement_record(current_user, p)]
     rows = []
     for p in policies:
         row = AutoReorderPolicyRead.model_validate(p)
         row.preferred_supplier_name = p.preferred_supplier.name if p.preferred_supplier else None
+        row.access = svc.build_procurement_access_hint(current_user, p)
         rows.append(row)
     return rows
 
@@ -912,6 +992,7 @@ async def create_reorder_policy(
     current_user=Depends(get_current_user),
 ):
     policy = AutoReorderPolicy(**body.model_dump())
+    _require_procurement_action(current_user, policy, "create")
     db.add(policy)
     await db.commit()
     await db.refresh(policy)
@@ -923,6 +1004,7 @@ async def create_reorder_policy(
     policy = result.scalar_one()
     row = AutoReorderPolicyRead.model_validate(policy)
     row.preferred_supplier_name = policy.preferred_supplier.name if policy.preferred_supplier else None
+    row.access = svc.build_procurement_access_hint(current_user, policy)
     return row
 
 
@@ -941,12 +1023,14 @@ async def update_reorder_policy(
     policy = result.scalar_one_or_none()
     if not policy:
         raise HTTPException(404, "Reorder policy not found")
+    _require_procurement_action(current_user, policy, "edit")
     for k, v in body.model_dump(exclude_unset=True).items():
         setattr(policy, k, v)
     await db.commit()
     await db.refresh(policy)
     row = AutoReorderPolicyRead.model_validate(policy)
     row.preferred_supplier_name = policy.preferred_supplier.name if policy.preferred_supplier else None
+    row.access = svc.build_procurement_access_hint(current_user, policy)
     return row
 
 
@@ -960,6 +1044,7 @@ async def delete_reorder_policy(
     policy = result.scalar_one_or_none()
     if not policy:
         raise HTTPException(404, "Reorder policy not found")
+    _require_procurement_action(current_user, policy, "delete")
     await db.delete(policy)
     await db.commit()
     return {"ok": True}

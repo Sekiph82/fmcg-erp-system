@@ -357,15 +357,42 @@ SCOPE_AWARE_PERMISSIONS = [
     ("procurement", "edit_own_scope", "Edit Scoped Procurement", "Edit purchase documents in assigned scope", False),
     ("procurement", "approve_all", "Approve All Procurement", "Approve procurement documents across all scopes", False),
     ("procurement", "approve_own_scope", "Approve Scoped Procurement", "Approve purchase documents in assigned scope", False),
+    ("procurement", "receive_all", "Receive All Procurement", "Receive procurement goods across all scopes", False),
+    ("procurement", "receive_own_scope", "Receive Scoped Procurement", "Receive procurement goods in assigned scope", False),
+    ("procurement", "post_all", "Post All Procurement", "Post procurement receipts/payments across all scopes", False),
+    ("procurement", "post_own_scope", "Post Scoped Procurement", "Post procurement receipts/payments in assigned scope", False),
+    ("procurement", "cancel_all", "Cancel All Procurement", "Cancel procurement documents across all scopes", False),
+    ("procurement", "cancel_own_scope", "Cancel Scoped Procurement", "Cancel procurement documents in assigned scope", False),
+    ("procurement", "delete_all", "Delete All Procurement", "Delete procurement setup records across all scopes", False),
+    ("procurement", "delete_own_scope", "Delete Scoped Procurement", "Delete procurement setup records in assigned scope", False),
+    ("procurement", "export_all", "Export All Procurement", "Export procurement records across all scopes", False),
+    ("procurement", "export_own_scope", "Export Scoped Procurement", "Export procurement records in assigned scope", False),
+    ("procurement", "import_all", "Import All Procurement", "Import procurement records across all scopes", False),
+    ("procurement", "import_own_scope", "Import Scoped Procurement", "Import procurement records in assigned scope", False),
 
     # Sales / CRM
     ("sales", "view_all", "View All Sales", "View all sales records", True),
     ("sales", "view_own_scope", "View Scoped Sales", "View sales records in assigned scope", True),
+    ("sales", "create_all", "Create All Sales", "Create sales records across all commercial scopes", False),
     ("sales", "create_own_region", "Create Scoped Sales Region", "Create sales records in assigned region/team/customer scope", False),
+    ("sales", "edit_all", "Edit All Sales", "Edit sales records across all commercial scopes", False),
     ("sales", "edit_own_region", "Edit Scoped Sales Region", "Edit sales records in assigned region/team/customer scope", False),
+    ("sales", "approve_all", "Approve All Sales", "Approve commercial sales records across all scopes", False),
+    ("sales", "approve_own_region", "Approve Scoped Sales Region", "Approve commercial sales records in assigned region/team/customer scope", False),
+    ("sales", "cancel_all", "Cancel All Sales", "Cancel sales records across all commercial scopes", False),
+    ("sales", "cancel_own_region", "Cancel Scoped Sales Region", "Cancel sales records in assigned region/team/customer scope", False),
+    ("sales", "convert_all", "Convert All Sales", "Convert commercial documents across all commercial scopes", False),
+    ("sales", "convert_own_region", "Convert Scoped Sales Region", "Convert commercial documents in assigned region/team/customer scope", False),
     ("crm", "view_all", "View All CRM", "View all CRM/customer records", True),
     ("crm", "view_own_region", "View Scoped CRM Region", "View CRM records in assigned region/team/customer scope", True),
+    ("crm", "create_all", "Create All CRM", "Create CRM records across all commercial scopes", False),
+    ("crm", "create_own_region", "Create Scoped CRM Region", "Create CRM records in assigned region/team/customer scope", False),
+    ("crm", "edit_all", "Edit All CRM", "Edit CRM records across all commercial scopes", False),
     ("crm", "edit_own_region", "Edit Scoped CRM Region", "Edit CRM records in assigned region/team/customer scope", False),
+    ("crm", "cancel_all", "Cancel All CRM", "Cancel CRM records across all commercial scopes", False),
+    ("crm", "cancel_own_region", "Cancel Scoped CRM Region", "Cancel CRM records in assigned region/team/customer scope", False),
+    ("crm", "convert_all", "Convert All CRM", "Convert CRM records across all commercial scopes", False),
+    ("crm", "convert_own_region", "Convert Scoped CRM Region", "Convert CRM records in assigned region/team/customer scope", False),
     ("pricing", "request_discount", "Request Discount", "Request a sales discount approval", False),
     ("pricing", "approve", "Approve Pricing", "Approve pricing and discount exceptions", False),
 
@@ -380,6 +407,16 @@ SCOPE_AWARE_PERMISSIONS = [
     ("production", "cancel_own_scope", "Cancel Scoped Production", "Cancel production orders in assigned factory/line scope", False),
     ("mrp", "view_all", "View All MRP", "View MRP runs and suggestions across factories", True),
     ("mrp", "run_own_scope", "Run Scoped MRP", "Run MRP in assigned factory/warehouse scope", False),
+    ("planning", "view_all", "View All APS Planning", "View APS scenarios, capacity boards, and bottlenecks across factories", True),
+    ("planning", "view_own_scope", "View Scoped APS Planning", "View APS planning data in assigned factory/line scope", True),
+    ("planning", "create_all", "Create All APS Planning", "Create APS scenarios across all planning scopes", False),
+    ("planning", "create_own_scope", "Create Scoped APS Planning", "Create APS scenarios in assigned planning scope", False),
+    ("planning", "edit_all", "Edit All APS Planning", "Edit APS scenarios, calendars, and changeover rules across all scopes", False),
+    ("planning", "edit_own_scope", "Edit Scoped APS Planning", "Edit APS planning records in assigned scope", False),
+    ("planning", "calculate_all", "Calculate All APS Planning", "Run APS scheduling calculations across all scopes", False),
+    ("planning", "calculate_own_scope", "Calculate Scoped APS Planning", "Run APS scheduling calculations in assigned scope", False),
+    ("planning", "approve_all", "Approve All APS Planning", "Activate, lock, publish, and approve APS planning outputs across all scopes", False),
+    ("planning", "approve_own_scope", "Approve Scoped APS Planning", "Activate, lock, publish, and approve APS planning outputs in assigned scope", False),
     ("bom", "view_all", "View All BOM", "View all BOM/formula records", True),
     ("recipe", "view_all", "View All Recipes", "View all recipe records", True),
 
@@ -505,6 +542,7 @@ ROLE_DEFINITIONS = {
             "analytics.view", "analytics.export",
             "marketing_analytics.view",
             "ai.view", "ai.create", "ai.edit", "ai.approve",
+            "planning.view_all", "planning.calculate_all", "planning.approve_all",
             "utility_management.view",
             "fleet.view",
             "cycle_count.view",
@@ -518,6 +556,8 @@ ROLE_DEFINITIONS = {
         "description": "Chief Operating Officer — broad operational oversight",
         "permissions": [
             "production.view", "production.create", "production.edit", "production.approve",
+            "planning.view_all", "planning.create_own_scope", "planning.edit_own_scope",
+            "planning.calculate_own_scope", "planning.approve_own_scope",
             "procurement.view", "procurement.create", "procurement.edit", "procurement.approve",
             "inventory.view", "inventory.create", "inventory.edit", "inventory.delete",
             "stock_movement.edit", "stock_movement.delete",
@@ -576,6 +616,7 @@ ROLE_DEFINITIONS = {
             "ai.view", "ai.create", "ai.edit", "ai.approve",
             # Read-only visibility across all operational modules
             "production.view", "procurement.view", "inventory.view",
+            "planning.view_all",
             "logistics.view", "quality.view", "maintenance.view",
             "warehouses.view", "wms.view", "materials.view", "products.view",
             "sales.view", "finance.view", "tax.view", "hr.view",
@@ -598,6 +639,7 @@ ROLE_DEFINITIONS = {
             "promotions.view", "promotions.create", "promotions.edit", "promotions.approve",
             "marketing_analytics.view", "marketing_analytics.export",
             "crm.view", "crm.create", "crm.edit",
+            "crm.view_all", "crm.create_all", "crm.edit_all", "crm.cancel_all", "crm.convert_all",
             "trade_spend.view", "trade_spend.create", "trade_spend.edit", "trade_spend.approve",
             "brand_spend.view", "brand_spend.create", "brand_spend.edit", "brand_spend.approve",
             "influencers.view", "influencers.create", "influencers.edit",
@@ -617,6 +659,7 @@ ROLE_DEFINITIONS = {
             "integrations.marketing_sync",
             # Cross-functional visibility
             "sales.view", "sales.create", "sales.edit", "sales.approve",
+            "sales.view_all", "sales.create_all", "sales.edit_all", "sales.approve_all", "sales.cancel_all", "sales.convert_all",
             "products.view", "products.create", "products.edit",
             "inventory.view",
             "mpesa.initiate_payment", "mpesa.view_transactions",
@@ -634,7 +677,7 @@ ROLE_DEFINITIONS = {
         "permissions": [
             # Read access to every module (needed to validate imports)
             "inventory.view", "products.view", "materials.view",
-            "production.view", "procurement.view", "sales.view",
+            "production.view", "planning.view_all", "procurement.view", "sales.view",
             "finance.view", "logistics.view", "quality.view",
             "maintenance.view", "warehouses.view", "wms.view",
             "hr.view", "tax.view", "users.view",
@@ -666,6 +709,10 @@ ROLE_DEFINITIONS = {
         "description": "Sales operations and limited payment initiation",
         "permissions": [
             "sales.view", "sales.create", "sales.edit",
+            "sales.view_all", "sales.create_own_region", "sales.edit_own_region",
+            "sales.approve_own_region", "sales.cancel_own_region", "sales.convert_own_region",
+            "crm.view_all", "crm.create_own_region", "crm.edit_own_region",
+            "crm.cancel_own_region", "crm.convert_own_region",
             "mpesa.initiate_payment", "mpesa.view_transactions",
             "inventory.view", "products.view",
             # Import: own module only
@@ -699,6 +746,8 @@ ROLE_DEFINITIONS = {
         "description": "Production planning and execution",
         "permissions": [
             "production.view", "production.create", "production.edit", "production.approve",
+            "planning.view_own_scope", "planning.create_own_scope", "planning.edit_own_scope",
+            "planning.calculate_own_scope",
             "inventory.view", "materials.view", "quality.view",
             # Import: own module only
             *_import("production", "materials"),
@@ -750,6 +799,7 @@ ROLE_DEFINITIONS = {
         "permissions": [
             "users.view", "users.manage", "roles.view", "company.manage",
             "inventory.view_all", "production.view_all", "quality.view_all",
+            "planning.view_all",
             "sales.view_all", "finance.view_own_scope", "procurement.view_all",
             "hr.view_own_scope", "maintenance.view_all", "utilities.view_all",
         ],
@@ -759,6 +809,8 @@ ROLE_DEFINITIONS = {
         "permissions": [
             "production.view_all", "inventory.view_all", "quality.view_all",
             "maintenance.view_all", "utilities.view_all",
+            "planning.view_all", "planning.create_own_scope", "planning.edit_own_scope",
+            "planning.calculate_own_scope", "planning.approve_own_scope",
             "production.create_own_scope", "production.edit_own_scope", "production.release_own_scope",
             "production.close_own_scope", "production.cancel_own_scope",
             "quality.approve_own_scope", "maintenance.edit_own_scope",
@@ -767,7 +819,7 @@ ROLE_DEFINITIONS = {
     "warehouse_manager": {
         "description": "Warehouse manager with all-stock visibility and assigned-warehouse mutation",
         "permissions": [
-            "inventory.view_all", "warehouses.view_all", "products.view", "materials.view",
+            "inventory.view_all", "warehouses.view_all", "wms.view", "products.view", "materials.view",
             "inventory.edit_own_scope", "inventory.adjust_own_scope",
             "inventory.receive_own_scope", "inventory.dispatch_own_scope",
             "inventory.transfer_own_scope",
@@ -778,6 +830,8 @@ ROLE_DEFINITIONS = {
         "description": "Production manager with all-order visibility and assigned factory/line control",
         "permissions": [
             "production.view_all", "mrp.view_all", "bom.view_all", "recipe.view_all",
+            "planning.view_all", "planning.create_own_scope", "planning.edit_own_scope",
+            "planning.calculate_own_scope", "planning.approve_own_scope",
             "production.create_own_scope", "production.edit_own_scope", "production.release_own_scope",
             "production.close_own_scope", "production.cancel_own_scope", "mrp.run_own_scope",
         ],
@@ -796,6 +850,9 @@ ROLE_DEFINITIONS = {
         "permissions": [
             "procurement.view_all", "procurement.create_own_scope",
             "procurement.edit_own_scope", "procurement.approve_own_scope",
+            "procurement.receive_own_scope", "procurement.post_own_scope",
+            "procurement.cancel_own_scope", "procurement.export_own_scope",
+            "procurement.import_own_scope",
             "materials.view", "inventory.view_all",
         ],
     },
@@ -803,8 +860,10 @@ ROLE_DEFINITIONS = {
         "description": "Sales manager with all-customer visibility and scoped regional mutation",
         "permissions": [
             "sales.view_all", "crm.view_all",
-            "sales.create_own_region",
-            "sales.edit_own_region", "crm.edit_own_region",
+            "sales.create_own_region", "sales.edit_own_region",
+            "sales.approve_own_region", "sales.cancel_own_region", "sales.convert_own_region",
+            "crm.create_own_region", "crm.edit_own_region",
+            "crm.cancel_own_region", "crm.convert_own_region",
             "pricing.request_discount",
         ],
     },
@@ -828,7 +887,7 @@ ROLE_DEFINITIONS = {
         "description": "Read-only auditor with assigned-scope visibility and optional export",
         "permissions": [
             "inventory.view_own_scope", "production.view_own_scope", "quality.view_own_scope",
-            "sales.view_own_scope", "finance.view_own_scope", "procurement.view_own_scope",
+            "planning.view_own_scope", "sales.view_own_scope", "finance.view_own_scope", "procurement.view_own_scope",
             "audit.view", "auditor.export",
         ],
     },
@@ -836,7 +895,7 @@ ROLE_DEFINITIONS = {
         "description": "Operator with limited assigned-line execution authority",
         "permissions": [
             "shop_floor.view_own_scope", "production_execution.update_own_line",
-            "production.view_own_scope",
+            "production.view_own_scope", "planning.view_own_scope",
         ],
     },
 

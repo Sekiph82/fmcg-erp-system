@@ -11,6 +11,8 @@ from app.services import wms_service as svc
 from app.models.wms import (
     StockCountStatus, PickingTaskStatus, PackingStatus, ReplenishmentStatus,
     PickingTask, PackingRecord, ReplenishmentTask,
+    HandlingUnit, HandlingUnitItem,
+    PickWave,
 )
 from app.schemas.wms import (
     WarehouseZoneCreate, WarehouseZoneRead,
@@ -27,21 +29,30 @@ from app.schemas.wms import (
     PickingTaskCreate, PickingTaskUpdate, PickingTaskRead,
     PackingRecordCreate, PackingRecordUpdate, PackingRecordRead,
     ReplenishmentTaskCreate, ReplenishmentTaskUpdate, ReplenishmentTaskRead,
+    HandlingUnitCreate, HandlingUnitUpdate, HandlingUnitRead, HandlingUnitItemRead,
+    PickWaveCreate, PickWaveUpdate, PickWaveRead,
 )
-from app.models.wms import PutawayTaskStatus
+from app.models.wms import PutawayTaskStatus, HandlingUnitStatus, PickWaveStatus
 
 router = APIRouter()
 
 
-def _zone_read(zone) -> WarehouseZoneRead:
+def _with_access(row, user, warehouse_id):
+    row.access = svc.build_wms_access_hint(user, warehouse_id)
+    return row
+
+
+def _zone_read(zone, user=None) -> WarehouseZoneRead:
     r = WarehouseZoneRead.model_validate(zone)
     if zone.warehouse:
         r.warehouse_name = zone.warehouse.name
     r.location_count = len(zone.locations)
+    if user:
+        _with_access(r, user, zone.warehouse_id)
     return r
 
 
-def _location_read(loc) -> StorageLocationRead:
+def _location_read(loc, user=None) -> StorageLocationRead:
     r = StorageLocationRead.model_validate(loc)
     if loc.zone:
         r.zone_code = loc.zone.code
@@ -50,10 +61,12 @@ def _location_read(loc) -> StorageLocationRead:
         if loc.zone.warehouse:
             r.warehouse_id = loc.zone.warehouse.id
             r.warehouse_name = loc.zone.warehouse.name
+            if user:
+                _with_access(r, user, loc.zone.warehouse.id)
     return r
 
 
-def _count_read(c) -> StockCountRead:
+def _count_read(c, user=None) -> StockCountRead:
     r = StockCountRead.model_validate(c)
     if c.warehouse:
         r.warehouse_name = c.warehouse.name
@@ -61,10 +74,12 @@ def _count_read(c) -> StockCountRead:
         r.zone_name = c.zone.name
     r.total_lines = len(c.lines)
     r.counted_lines = sum(1 for l in c.lines if l.is_counted)
+    if user:
+        _with_access(r, user, c.warehouse_id)
     return r
 
 
-def _count_detail(c) -> StockCountDetailRead:
+def _count_detail(c, user=None) -> StockCountDetailRead:
     r = StockCountDetailRead.model_validate(c)
     if c.warehouse:
         r.warehouse_name = c.warehouse.name
@@ -72,6 +87,8 @@ def _count_detail(c) -> StockCountDetailRead:
         r.zone_name = c.zone.name
     r.total_lines = len(c.lines)
     r.counted_lines = sum(1 for l in c.lines if l.is_counted)
+    if user:
+        _with_access(r, user, c.warehouse_id)
     lines = []
     for line in c.lines:
         lr = StockCountLineRead.model_validate(line)
@@ -90,6 +107,40 @@ def _count_detail(c) -> StockCountDetailRead:
     return r
 
 
+def _handling_unit_read(hu, user=None) -> HandlingUnitRead:
+    r = HandlingUnitRead.model_validate(hu)
+    if hu.warehouse:
+        r.warehouse_name = hu.warehouse.name
+    if hu.location:
+        r.location_code = hu.location.code
+    if hu.parent:
+        r.parent_license_plate = hu.parent.license_plate
+    items = []
+    for item in hu.items or []:
+        ir = HandlingUnitItemRead.model_validate(item)
+        if item.product:
+            ir.product_name = item.product.name
+        if item.material:
+            ir.material_name = item.material.name
+        if item.lot:
+            ir.lot_number = item.lot.lot_number
+        items.append(ir)
+    r.items = items
+    if user:
+        _with_access(r, user, hu.warehouse_id)
+    return r
+
+
+def _pick_wave_read(wave, user=None) -> PickWaveRead:
+    r = PickWaveRead.model_validate(wave)
+    if wave.warehouse:
+        r.warehouse_name = wave.warehouse.name
+    r.task_count = len(wave.tasks or [])
+    if user:
+        _with_access(r, user, wave.warehouse_id)
+    return r
+
+
 # ── Zones ─────────────────────────────────────────────────────────────────────
 
 @router.get("/zones/", response_model=List[WarehouseZoneRead])
@@ -97,34 +148,36 @@ async def list_zones(
     warehouse_id: Optional[uuid.UUID] = None,
     skip: int = 0, limit: int = 100,
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    current_user=Depends(get_current_user),
 ):
     zones = await crud.list_zones(db, warehouse_id=warehouse_id, skip=skip, limit=limit)
-    return [_zone_read(z) for z in zones]
+    return [_zone_read(z, current_user) for z in zones]
 
 
 @router.post("/zones/", response_model=WarehouseZoneRead, status_code=201)
 async def create_zone(
     data: WarehouseZoneCreate,
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    current_user=Depends(get_current_user),
 ):
+    svc.ensure_wms_action_allowed(current_user, data.warehouse_id, "edit")
     obj = await crud.create_zone(db, data)
     await db.commit()
     zone = await crud.get_zone(db, obj.id)
-    return _zone_read(zone)
+    return _zone_read(zone, current_user)
 
 
 @router.get("/zones/{zone_id}", response_model=WarehouseZoneRead)
 async def get_zone(
     zone_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    current_user=Depends(get_current_user),
 ):
     zone = await crud.get_zone(db, zone_id)
     if not zone:
         raise HTTPException(404, "Zone not found")
-    return _zone_read(zone)
+    svc.ensure_wms_action_allowed(current_user, zone.warehouse_id, "view")
+    return _zone_read(zone, current_user)
 
 
 # ── Locations ─────────────────────────────────────────────────────────────────
@@ -135,22 +188,26 @@ async def list_locations(
     warehouse_id: Optional[uuid.UUID] = None,
     skip: int = 0, limit: int = 200,
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    current_user=Depends(get_current_user),
 ):
     locs = await crud.list_locations(db, zone_id=zone_id, warehouse_id=warehouse_id, skip=skip, limit=limit)
-    return [_location_read(l) for l in locs]
+    return [_location_read(l, current_user) for l in locs]
 
 
 @router.post("/locations/", response_model=StorageLocationRead, status_code=201)
 async def create_location(
     data: StorageLocationCreate,
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    current_user=Depends(get_current_user),
 ):
+    zone = await crud.get_zone(db, data.zone_id)
+    if not zone:
+        raise HTTPException(404, "Zone not found")
+    svc.ensure_wms_action_allowed(current_user, zone.warehouse_id, "edit")
     obj = await crud.create_location(db, data)
     await db.commit()
     loc = await crud.get_location(db, obj.id)
-    return _location_read(loc)
+    return _location_read(loc, current_user)
 
 
 @router.patch("/locations/{location_id}", response_model=StorageLocationRead)
@@ -158,15 +215,17 @@ async def update_location(
     location_id: uuid.UUID,
     data: StorageLocationUpdate,
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    current_user=Depends(get_current_user),
 ):
     loc = await crud.get_location(db, location_id)
     if not loc:
         raise HTTPException(404, "Location not found")
+    if loc.zone:
+        svc.ensure_wms_action_allowed(current_user, loc.zone.warehouse_id, "edit")
     loc = await crud.update_location(db, loc, data)
     await db.commit()
     loc = await crud.get_location(db, location_id)
-    return _location_read(loc)
+    return _location_read(loc, current_user)
 
 
 # ── Scan endpoints ─────────────────────────────────────────────────────────────
@@ -176,7 +235,7 @@ async def update_location(
 async def scan_location(
     barcode: str,
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    current_user=Depends(get_current_user),
 ):
     loc = await crud.get_location_by_barcode(db, barcode)
     if not loc:
@@ -199,7 +258,7 @@ async def scan_location(
         }
         for s in stocks.scalars()
     ]
-    return ScanLocationResult(location=_location_read(loc), stock_lines=stock_lines)
+    return ScanLocationResult(location=_location_read(loc, current_user), stock_lines=stock_lines)
 
 
 @router.get("/scan/lot/{lot_number}", summary="Look up a lot by number/barcode")
@@ -279,6 +338,7 @@ async def putaway(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
+    svc.ensure_wms_action_allowed(current_user, req.warehouse_id, "putaway")
     stock = await svc.putaway(db, req, current_user.id)
     await db.commit()
     return {"message": "Stock assigned to location", "location_id": str(stock.location_id)}
@@ -290,6 +350,7 @@ async def quarantine(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
+    svc.ensure_wms_action_allowed(current_user, req.warehouse_id, "quarantine")
     rows = await svc.quarantine_stock(db, req, current_user.id)
     await db.commit()
     return {"message": f"{len(rows)} stock row(s) quarantined", "blocked_rows": len(rows)}
@@ -301,6 +362,7 @@ async def release(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
+    svc.ensure_wms_action_allowed(current_user, req.warehouse_id, "release")
     rows = await svc.release_quarantine(db, req, current_user.id)
     await db.commit()
     return {"message": f"{len(rows)} stock row(s) released", "released_rows": len(rows)}
@@ -313,8 +375,9 @@ async def fefo_suggestions(
     warehouse_id: uuid.UUID,
     quantity: float = Query(...),
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    current_user=Depends(get_current_user),
 ):
+    svc.ensure_wms_action_allowed(current_user, warehouse_id, "view")
     return await svc.get_fefo_suggestions(db, product_id, warehouse_id, Decimal(str(quantity)))
 
 
@@ -326,10 +389,10 @@ async def list_counts(
     status: Optional[StockCountStatus] = None,
     skip: int = 0, limit: int = 50,
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    current_user=Depends(get_current_user),
 ):
     counts = await crud.list_counts(db, warehouse_id=warehouse_id, status=status, skip=skip, limit=limit)
-    return [_count_read(c) for c in counts]
+    return [_count_read(c, current_user) for c in counts]
 
 
 @router.post("/counts/", response_model=StockCountRead, status_code=201)
@@ -338,37 +401,40 @@ async def create_count(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
+    svc.ensure_wms_action_allowed(current_user, data.warehouse_id, "approve")
     obj = await crud.create_count(db, data, current_user.id)
     await db.commit()
     c = await crud.get_count(db, obj.id)
-    return _count_read(c)
+    return _count_read(c, current_user)
 
 
 @router.get("/counts/{count_id}", response_model=StockCountDetailRead)
 async def get_count(
     count_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    current_user=Depends(get_current_user),
 ):
     c = await crud.get_count(db, count_id)
     if not c:
         raise HTTPException(404, "Stock count not found")
-    return _count_detail(c)
+    svc.ensure_wms_action_allowed(current_user, c.warehouse_id, "view")
+    return _count_detail(c, current_user)
 
 
 @router.post("/counts/{count_id}/start", response_model=StockCountRead)
 async def start_count(
     count_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    current_user=Depends(get_current_user),
 ):
     c = await crud.get_count(db, count_id)
     if not c:
         raise HTTPException(404, "Count not found")
+    svc.ensure_wms_action_allowed(current_user, c.warehouse_id, "approve")
     c = await svc.start_count(db, c)
     await db.commit()
     c = await crud.get_count(db, count_id)
-    return _count_read(c)
+    return _count_read(c, current_user)
 
 
 @router.post("/counts/{count_id}/lines/{line_id}/record", response_model=StockCountLineRead)
@@ -376,11 +442,12 @@ async def record_count_line(
     count_id: uuid.UUID, line_id: uuid.UUID,
     req: RecordCountRequest,
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    current_user=Depends(get_current_user),
 ):
     c = await crud.get_count(db, count_id)
     if not c:
         raise HTTPException(404, "Count not found")
+    svc.ensure_wms_action_allowed(current_user, c.warehouse_id, "approve")
     if c.status != StockCountStatus.IN_PROGRESS:
         raise HTTPException(422, "Count is not IN_PROGRESS")
     line = await crud.get_count_line(db, line_id)
@@ -395,15 +462,16 @@ async def record_count_line(
 async def submit_count(
     count_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    current_user=Depends(get_current_user),
 ):
     c = await crud.get_count(db, count_id)
     if not c:
         raise HTTPException(404, "Count not found")
+    svc.ensure_wms_action_allowed(current_user, c.warehouse_id, "approve")
     c = await svc.submit_count(db, c)
     await db.commit()
     c = await crud.get_count(db, count_id)
-    return _count_read(c)
+    return _count_read(c, current_user)
 
 
 @router.post("/counts/{count_id}/approve", response_model=StockCountRead)
@@ -415,25 +483,27 @@ async def approve_count(
     c = await crud.get_count(db, count_id)
     if not c:
         raise HTTPException(404, "Count not found")
+    svc.ensure_wms_action_allowed(current_user, c.warehouse_id, "approve")
     c = await svc.approve_count(db, c, current_user.id)
     await db.commit()
     c = await crud.get_count(db, count_id)
-    return _count_read(c)
+    return _count_read(c, current_user)
 
 
 @router.post("/counts/{count_id}/cancel", response_model=StockCountRead)
 async def cancel_count(
     count_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    current_user=Depends(get_current_user),
 ):
     c = await crud.get_count(db, count_id)
     if not c:
         raise HTTPException(404, "Count not found")
+    svc.ensure_wms_action_allowed(current_user, c.warehouse_id, "approve")
     c = await svc.cancel_count(db, c)
     await db.commit()
     c = await crud.get_count(db, count_id)
-    return _count_read(c)
+    return _count_read(c, current_user)
 
 
 # ── Reports ───────────────────────────────────────────────────────────────────
@@ -673,22 +743,195 @@ from datetime import datetime, timezone as _tz
 
 # ── Picking Tasks ──────────────────────────────────────────────────────────────
 
+# Handling Units
+
+def _handling_unit_options():
+    from sqlalchemy.orm import selectinload
+
+    return (
+        selectinload(HandlingUnit.warehouse),
+        selectinload(HandlingUnit.location),
+        selectinload(HandlingUnit.parent),
+        selectinload(HandlingUnit.items).selectinload(HandlingUnitItem.product),
+        selectinload(HandlingUnit.items).selectinload(HandlingUnitItem.material),
+        selectinload(HandlingUnit.items).selectinload(HandlingUnitItem.lot),
+    )
+
+
+@router.get("/handling-units", response_model=List[HandlingUnitRead])
+async def list_handling_units(
+    warehouse_id: Optional[uuid.UUID] = None,
+    status: Optional[HandlingUnitStatus] = None,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    from sqlalchemy import select
+
+    if warehouse_id:
+        svc.ensure_wms_action_allowed(current_user, warehouse_id, "view")
+    q = select(HandlingUnit).options(*_handling_unit_options())
+    if warehouse_id:
+        q = q.where(HandlingUnit.warehouse_id == warehouse_id)
+    if status:
+        q = q.where(HandlingUnit.status == status)
+    result = await db.execute(q.order_by(HandlingUnit.created_at.desc()))
+    rows = [_handling_unit_read(hu, current_user) for hu in result.scalars().all()]
+    return [row for row in rows if row.access and row.access.can_view]
+
+
+@router.post("/handling-units", response_model=HandlingUnitRead, status_code=201)
+async def create_handling_unit(
+    body: HandlingUnitCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    from sqlalchemy import select
+
+    svc.ensure_wms_action_allowed(current_user, body.warehouse_id, "putaway")
+    hu = await svc.create_handling_unit(db, body, current_user.id)
+    await db.commit()
+    result = await db.execute(select(HandlingUnit).options(*_handling_unit_options()).where(HandlingUnit.id == hu.id))
+    return _handling_unit_read(result.scalar_one(), current_user)
+
+
+@router.get("/handling-units/{handling_unit_id}", response_model=HandlingUnitRead)
+async def get_handling_unit(
+    handling_unit_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    from sqlalchemy import select
+
+    result = await db.execute(select(HandlingUnit).options(*_handling_unit_options()).where(HandlingUnit.id == handling_unit_id))
+    hu = result.scalar_one_or_none()
+    if not hu:
+        raise HTTPException(404, "Handling unit not found")
+    svc.ensure_wms_action_allowed(current_user, hu.warehouse_id, "view")
+    return _handling_unit_read(hu, current_user)
+
+
+@router.patch("/handling-units/{handling_unit_id}", response_model=HandlingUnitRead)
+async def update_handling_unit(
+    handling_unit_id: uuid.UUID,
+    body: HandlingUnitUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    from sqlalchemy import select
+
+    result = await db.execute(select(HandlingUnit).options(*_handling_unit_options()).where(HandlingUnit.id == handling_unit_id))
+    hu = result.scalar_one_or_none()
+    if not hu:
+        raise HTTPException(404, "Handling unit not found")
+    svc.ensure_wms_action_allowed(current_user, hu.warehouse_id, "edit")
+    hu = await svc.update_handling_unit(db, hu, body)
+    await db.commit()
+    result = await db.execute(select(HandlingUnit).options(*_handling_unit_options()).where(HandlingUnit.id == hu.id))
+    return _handling_unit_read(result.scalar_one(), current_user)
+
+
+# Pick Waves
+
+def _pick_wave_options():
+    from sqlalchemy.orm import selectinload
+
+    return (
+        selectinload(PickWave.warehouse),
+        selectinload(PickWave.tasks),
+    )
+
+
+@router.get("/pick-waves", response_model=List[PickWaveRead])
+async def list_pick_waves(
+    warehouse_id: Optional[uuid.UUID] = None,
+    status: Optional[PickWaveStatus] = None,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    from sqlalchemy import select
+
+    if warehouse_id:
+        svc.ensure_wms_action_allowed(current_user, warehouse_id, "view")
+    q = select(PickWave).options(*_pick_wave_options())
+    if warehouse_id:
+        q = q.where(PickWave.warehouse_id == warehouse_id)
+    if status:
+        q = q.where(PickWave.status == status)
+    result = await db.execute(q.order_by(PickWave.created_at.desc()))
+    rows = [_pick_wave_read(wave, current_user) for wave in result.scalars().all()]
+    return [row for row in rows if row.access and row.access.can_view]
+
+
+@router.post("/pick-waves", response_model=PickWaveRead, status_code=201)
+async def create_pick_wave(
+    body: PickWaveCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    from sqlalchemy import select
+
+    svc.ensure_wms_action_allowed(current_user, body.warehouse_id, "pick")
+    wave = await svc.create_pick_wave(db, body, current_user.id)
+    await db.commit()
+    result = await db.execute(select(PickWave).options(*_pick_wave_options()).where(PickWave.id == wave.id))
+    return _pick_wave_read(result.scalar_one(), current_user)
+
+
+@router.get("/pick-waves/{wave_id}", response_model=PickWaveRead)
+async def get_pick_wave(
+    wave_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    from sqlalchemy import select
+
+    result = await db.execute(select(PickWave).options(*_pick_wave_options()).where(PickWave.id == wave_id))
+    wave = result.scalar_one_or_none()
+    if not wave:
+        raise HTTPException(404, "Pick wave not found")
+    svc.ensure_wms_action_allowed(current_user, wave.warehouse_id, "view")
+    return _pick_wave_read(wave, current_user)
+
+
+@router.patch("/pick-waves/{wave_id}", response_model=PickWaveRead)
+async def update_pick_wave(
+    wave_id: uuid.UUID,
+    body: PickWaveUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    from sqlalchemy import select
+
+    result = await db.execute(select(PickWave).options(*_pick_wave_options()).where(PickWave.id == wave_id))
+    wave = result.scalar_one_or_none()
+    if not wave:
+        raise HTTPException(404, "Pick wave not found")
+    svc.ensure_wms_action_allowed(current_user, wave.warehouse_id, "pick")
+    wave = await svc.update_pick_wave(db, wave, body, current_user.id)
+    await db.commit()
+    result = await db.execute(select(PickWave).options(*_pick_wave_options()).where(PickWave.id == wave.id))
+    return _pick_wave_read(result.scalar_one(), current_user)
+
+
 @router.get("/picking/tasks", response_model=List[PickingTaskRead])
 async def list_picking_tasks(
     warehouse_id: Optional[uuid.UUID] = None,
     status: Optional[PickingTaskStatus] = None,
     assigned_to_id: Optional[uuid.UUID] = None,
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    current_user=Depends(get_current_user),
 ):
     from sqlalchemy import select
     from sqlalchemy.orm import selectinload
+    if warehouse_id:
+        svc.ensure_wms_action_allowed(current_user, warehouse_id, "view")
     q = select(PickingTask).options(
         selectinload(PickingTask.product),
         selectinload(PickingTask.lot),
         selectinload(PickingTask.from_location),
         selectinload(PickingTask.warehouse),
         selectinload(PickingTask.assigned_to),
+        selectinload(PickingTask.wave),
     )
     if warehouse_id:
         q = q.where(PickingTask.warehouse_id == warehouse_id)
@@ -706,7 +949,10 @@ async def list_picking_tasks(
         r.from_location_code = t.from_location.code if t.from_location else None
         r.warehouse_name = t.warehouse.name if t.warehouse else None
         r.assignee_name = t.assigned_to.full_name if t.assigned_to else None
-        rows.append(r)
+        r.wave_no = t.wave.wave_no if t.wave else None
+        _with_access(r, current_user, t.warehouse_id)
+        if r.access.can_view:
+            rows.append(r)
     return rows
 
 
@@ -717,6 +963,7 @@ async def create_picking_task(
     current_user=Depends(get_current_user),
 ):
     from sqlalchemy.orm import selectinload
+    svc.ensure_wms_action_allowed(current_user, body.warehouse_id, "pick")
     task = PickingTask(**body.model_dump())
     db.add(task)
     await db.commit()
@@ -729,12 +976,15 @@ async def create_picking_task(
             selectinload(PickingTask.from_location),
             selectinload(PickingTask.warehouse),
             selectinload(PickingTask.assigned_to),
+            selectinload(PickingTask.wave),
         ).where(PickingTask.id == task.id)
     )
     t = result.scalar_one()
     r = PickingTaskRead.model_validate(t)
     r.product_name = t.product.name if t.product else None
     r.warehouse_name = t.warehouse.name if t.warehouse else None
+    r.wave_no = t.wave.wave_no if t.wave else None
+    _with_access(r, current_user, t.warehouse_id)
     return r
 
 
@@ -751,6 +1001,9 @@ async def update_picking_task(
     task = result.scalar_one_or_none()
     if not task:
         raise HTTPException(404, "Picking task not found")
+    svc.ensure_wms_action_allowed(current_user, task.warehouse_id, "pick")
+    if not svc.can_change_wms_status("picking_task", task.status, body.status):
+        raise HTTPException(422, "Packed or cancelled picking tasks are locked")
     for k, v in body.model_dump(exclude_none=True).items():
         setattr(task, k, v)
     if body.status == PickingTaskStatus.IN_PROGRESS and not task.started_at:
@@ -762,12 +1015,15 @@ async def update_picking_task(
         select(PickingTask).options(
             selectinload(PickingTask.product),
             selectinload(PickingTask.warehouse),
+            selectinload(PickingTask.wave),
         ).where(PickingTask.id == task_id)
     )
     t = result.scalar_one()
     r = PickingTaskRead.model_validate(t)
     r.product_name = t.product.name if t.product else None
     r.warehouse_name = t.warehouse.name if t.warehouse else None
+    r.wave_no = t.wave.wave_no if t.wave else None
+    _with_access(r, current_user, t.warehouse_id)
     return r
 
 
@@ -778,10 +1034,12 @@ async def list_packing_records(
     warehouse_id: Optional[uuid.UUID] = None,
     status: Optional[PackingStatus] = None,
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    current_user=Depends(get_current_user),
 ):
     from sqlalchemy import select
     from sqlalchemy.orm import selectinload
+    if warehouse_id:
+        svc.ensure_wms_action_allowed(current_user, warehouse_id, "view")
     q = select(PackingRecord).options(selectinload(PackingRecord.warehouse))
     if warehouse_id:
         q = q.where(PackingRecord.warehouse_id == warehouse_id)
@@ -793,7 +1051,9 @@ async def list_packing_records(
     for rec in records:
         r = PackingRecordRead.model_validate(rec)
         r.warehouse_name = rec.warehouse.name if rec.warehouse else None
-        rows.append(r)
+        _with_access(r, current_user, rec.warehouse_id)
+        if r.access.can_view:
+            rows.append(r)
     return rows
 
 
@@ -803,11 +1063,13 @@ async def create_packing_record(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
+    svc.ensure_wms_action_allowed(current_user, body.warehouse_id, "pack")
     record = PackingRecord(**body.model_dump(), packed_by_id=current_user.id)
     db.add(record)
     await db.commit()
     await db.refresh(record)
     r = PackingRecordRead.model_validate(record)
+    _with_access(r, current_user, record.warehouse_id)
     return r
 
 
@@ -823,6 +1085,9 @@ async def update_packing_record(
     record = result.scalar_one_or_none()
     if not record:
         raise HTTPException(404, "Packing record not found")
+    svc.ensure_wms_action_allowed(current_user, record.warehouse_id, "pack")
+    if not svc.can_change_wms_status("packing_record", record.status, body.status):
+        raise HTTPException(422, "Closed packing records are locked")
     for k, v in body.model_dump(exclude_none=True).items():
         setattr(record, k, v)
     if body.status == PackingStatus.CLOSED and not record.packed_at:
@@ -830,7 +1095,9 @@ async def update_packing_record(
         record.packed_by_id = current_user.id
     await db.commit()
     await db.refresh(record)
-    return PackingRecordRead.model_validate(record)
+    r = PackingRecordRead.model_validate(record)
+    _with_access(r, current_user, record.warehouse_id)
+    return r
 
 
 # ── Replenishment Tasks ────────────────────────────────────────────────────────
@@ -840,10 +1107,12 @@ async def list_replenishment_tasks(
     warehouse_id: Optional[uuid.UUID] = None,
     status: Optional[ReplenishmentStatus] = None,
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    current_user=Depends(get_current_user),
 ):
     from sqlalchemy import select
     from sqlalchemy.orm import selectinload
+    if warehouse_id:
+        svc.ensure_wms_action_allowed(current_user, warehouse_id, "view")
     q = select(ReplenishmentTask).options(
         selectinload(ReplenishmentTask.warehouse),
         selectinload(ReplenishmentTask.location),
@@ -861,7 +1130,9 @@ async def list_replenishment_tasks(
         r.warehouse_name = t.warehouse.name if t.warehouse else None
         r.location_code = t.location.code if t.location else None
         r.product_name = t.product.name if t.product else None
-        rows.append(r)
+        _with_access(r, current_user, t.warehouse_id)
+        if r.access.can_view:
+            rows.append(r)
     return rows
 
 
@@ -869,13 +1140,16 @@ async def list_replenishment_tasks(
 async def create_replenishment_task(
     body: ReplenishmentTaskCreate,
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    current_user=Depends(get_current_user),
 ):
+    svc.ensure_wms_action_allowed(current_user, body.warehouse_id, "replenish")
     task = ReplenishmentTask(**body.model_dump())
     db.add(task)
     await db.commit()
     await db.refresh(task)
-    return ReplenishmentTaskRead.model_validate(task)
+    r = ReplenishmentTaskRead.model_validate(task)
+    _with_access(r, current_user, task.warehouse_id)
+    return r
 
 
 @router.patch("/replenishment/tasks/{task_id}", response_model=ReplenishmentTaskRead)
@@ -897,6 +1171,9 @@ async def update_replenishment_task(
     task = result.scalar_one_or_none()
     if not task:
         raise HTTPException(404, "Replenishment task not found")
+    svc.ensure_wms_action_allowed(current_user, task.warehouse_id, "replenish")
+    if not svc.can_change_wms_status("replenishment_task", task.status, body.status):
+        raise HTTPException(422, "Completed or cancelled replenishment tasks are locked")
     for k, v in body.model_dump(exclude_none=True).items():
         setattr(task, k, v)
     if body.status == ReplenishmentStatus.COMPLETED and not task.completed_at:
@@ -907,4 +1184,5 @@ async def update_replenishment_task(
     r.warehouse_name = task.warehouse.name if task.warehouse else None
     r.location_code = task.location.code if task.location else None
     r.product_name = task.product.name if task.product else None
+    _with_access(r, current_user, task.warehouse_id)
     return r

@@ -96,6 +96,10 @@ class StockMovement(Base, TimestampMixin):
 
     source_warehouse_id = Column(UUID(as_uuid=True), ForeignKey("warehouses.id", ondelete="RESTRICT"), nullable=True)
     destination_warehouse_id = Column(UUID(as_uuid=True), ForeignKey("warehouses.id", ondelete="RESTRICT"), nullable=True)
+    source_location_id = Column(UUID(as_uuid=True), ForeignKey("storage_locations.id", ondelete="SET NULL"), nullable=True)
+    destination_location_id = Column(UUID(as_uuid=True), ForeignKey("storage_locations.id", ondelete="SET NULL"), nullable=True)
+    source_handling_unit_id = Column(UUID(as_uuid=True), ForeignKey("wms_handling_units.id", ondelete="SET NULL"), nullable=True)
+    destination_handling_unit_id = Column(UUID(as_uuid=True), ForeignKey("wms_handling_units.id", ondelete="SET NULL"), nullable=True)
 
     quantity = Column(Numeric(14, 3), nullable=False)
     unit_cost = Column(Numeric(14, 4), nullable=True)
@@ -115,6 +119,10 @@ class StockMovement(Base, TimestampMixin):
     lot = relationship("Lot", back_populates="movements")
     source_warehouse = relationship("Warehouse", foreign_keys=[source_warehouse_id], back_populates="movements_from")
     destination_warehouse = relationship("Warehouse", foreign_keys=[destination_warehouse_id], back_populates="movements_to")
+    source_location = relationship("StorageLocation", foreign_keys=[source_location_id])
+    destination_location = relationship("StorageLocation", foreign_keys=[destination_location_id])
+    source_handling_unit = relationship("HandlingUnit", foreign_keys=[source_handling_unit_id])
+    destination_handling_unit = relationship("HandlingUnit", foreign_keys=[destination_handling_unit_id])
     created_by = relationship("User")
     posting_batch = relationship("AccountingPostingBatch", foreign_keys=[posting_batch_id])
     journal_entry = relationship("JournalEntry", foreign_keys=[journal_entry_id])

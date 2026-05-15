@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { rolesApi, groupByModule, STANDARD_ACTIONS } from "@/lib/roles";
+import { getPermissionCoverage } from "@/lib/modules";
 
 const MODULE_ORDER = [
   "users", "roles", "audit",
@@ -37,6 +38,11 @@ export default function PermissionsPage() {
     queryFn: () => rolesApi.list(),
   });
 
+  const { data: coverage, isLoading: coverageLoading } = useQuery({
+    queryKey: ["permission-coverage"],
+    queryFn: getPermissionCoverage,
+  });
+
   const grouped = groupByModule(allPerms);
 
   // Sort modules by MODULE_ORDER, then alphabetically for any extras
@@ -61,6 +67,97 @@ export default function PermissionsPage() {
           {allPerms.length} permissions · {roles.length} roles
         </p>
       </div>
+
+      {coverage && (
+        <div className="mb-6 rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-semibold text-gray-800">Registry Coverage</h2>
+              <p className="mt-1 text-xs text-gray-500">
+                Backend registry permissions compared with database permissions.
+              </p>
+            </div>
+            {coverage.missing_registry_permissions.length === 0 ? (
+              <span className="rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-700">
+                In sync
+              </span>
+            ) : (
+              <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
+                Review needed
+              </span>
+            )}
+          </div>
+
+          <div className="grid gap-3 md:grid-cols-4">
+            <div className="rounded-lg border border-gray-100 bg-gray-50 p-3">
+              <div className="text-xs font-medium text-gray-500">Registry</div>
+              <div className="mt-1 text-xl font-semibold text-gray-900">
+                {coverage.registry_permission_count}
+              </div>
+            </div>
+            <div className="rounded-lg border border-gray-100 bg-gray-50 p-3">
+              <div className="text-xs font-medium text-gray-500">Database</div>
+              <div className="mt-1 text-xl font-semibold text-gray-900">
+                {coverage.database_permission_count}
+              </div>
+            </div>
+            <div className="rounded-lg border border-gray-100 bg-gray-50 p-3">
+              <div className="text-xs font-medium text-gray-500">Covered</div>
+              <div className="mt-1 text-xl font-semibold text-green-700">
+                {coverage.covered_registry_permissions.length}
+              </div>
+            </div>
+            <div className="rounded-lg border border-gray-100 bg-gray-50 p-3">
+              <div className="text-xs font-medium text-gray-500">Missing</div>
+              <div className="mt-1 text-xl font-semibold text-amber-700">
+                {coverage.missing_registry_permissions.length}
+              </div>
+            </div>
+          </div>
+
+          {(coverage.missing_registry_permissions.length > 0 ||
+            coverage.database_only_permissions.length > 0) && (
+            <div className="mt-4 grid gap-4 lg:grid-cols-2">
+              <div>
+                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  Missing Registry Permissions
+                </h3>
+                <div className="flex max-h-36 flex-wrap gap-1.5 overflow-auto rounded-lg border border-gray-100 bg-gray-50 p-3">
+                  {coverage.missing_registry_permissions.slice(0, 24).map((code) => (
+                    <span key={code} className="rounded bg-amber-100 px-2 py-0.5 font-mono text-xs text-amber-800">
+                      {code}
+                    </span>
+                  ))}
+                  {coverage.missing_registry_permissions.length === 0 && (
+                    <span className="text-xs text-gray-400">None</span>
+                  )}
+                </div>
+              </div>
+              <div>
+                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  Database-Only Permissions
+                </h3>
+                <div className="flex max-h-36 flex-wrap gap-1.5 overflow-auto rounded-lg border border-gray-100 bg-gray-50 p-3">
+                  {coverage.database_only_permissions.slice(0, 24).map((code) => (
+                    <span key={code} className="rounded bg-blue-100 px-2 py-0.5 font-mono text-xs text-blue-800">
+                      {code}
+                    </span>
+                  ))}
+                  {coverage.database_only_permissions.length === 0 && (
+                    <span className="text-xs text-gray-400">None</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {coverageLoading && (
+        <div className="mb-6 rounded-xl border border-gray-100 bg-white p-5 text-sm text-gray-500 shadow-sm">
+          Loading permission coverage...
+        </div>
+      )}
 
       {/* Per-module breakdown */}
       <div className="space-y-8">

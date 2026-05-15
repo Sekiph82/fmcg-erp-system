@@ -29,7 +29,17 @@ const zoneVariant = (t: ZoneType) =>
   : t === "RETURNS" ? "red"
   : "blue";
 
-type Tab = "zones" | "locations" | "quarantine";
+const statusVariant = (status: string): "green" | "red" | "yellow" | "blue" | "gray" =>
+  ["OPEN", "DRAFT", "PENDING", "IN_PROGRESS", "RELEASED"].includes(status) ? "blue"
+  : ["CLOSED", "COMPLETED", "PICKED", "PACKED", "SHIPPED"].includes(status) ? "green"
+  : ["ON_HOLD", "CANCELLED", "VOID", "CONSUMED"].includes(status) ? "red"
+  : "gray";
+
+function AccessBadge({ canEdit }: { canEdit?: boolean }) {
+  return canEdit ? <Badge label="Editable" variant="green" /> : <Badge label="View Only" variant="gray" />;
+}
+
+type Tab = "zones" | "locations" | "handlingUnits" | "pickWaves" | "quarantine";
 
 export default function WMSPage() {
   const qc = useQueryClient();
@@ -54,6 +64,14 @@ export default function WMSPage() {
   const { data: locations = [], isLoading: loadingLocs } = useQuery({
     queryKey: ["wms-locations", warehouseFilter],
     queryFn: () => wmsApi.listLocations(warehouseFilter ? { warehouse_id: warehouseFilter } : undefined),
+  });
+  const { data: handlingUnits = [], isLoading: loadingHus } = useQuery({
+    queryKey: ["wms-handling-units", warehouseFilter],
+    queryFn: () => wmsApi.listHandlingUnits(warehouseFilter ? { warehouse_id: warehouseFilter } : undefined),
+  });
+  const { data: pickWaves = [], isLoading: loadingWaves } = useQuery({
+    queryKey: ["wms-pick-waves", warehouseFilter],
+    queryFn: () => wmsApi.listPickWaves(warehouseFilter ? { warehouse_id: warehouseFilter } : undefined),
   });
 
   const whOpts = [{ value: "", label: "All Warehouses" }, ...warehouses.map((w) => ({ value: w.id, label: w.name }))];
@@ -86,6 +104,8 @@ export default function WMSPage() {
   const TABS = [
     { key: "zones" as Tab, label: "Zones" },
     { key: "locations" as Tab, label: "Locations / Bins" },
+    { key: "handlingUnits" as Tab, label: "Handling Units" },
+    { key: "pickWaves" as Tab, label: "Pick Waves" },
     { key: "quarantine" as Tab, label: "Quarantine" },
   ];
 
@@ -96,7 +116,9 @@ export default function WMSPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Warehouse Management</h1>
-          <p className="text-sm text-gray-500 mt-1">{zones.length} zones · {locations.length} locations</p>
+          <p className="text-sm text-gray-500 mt-1">
+            {zones.length} zones · {locations.length} locations · {handlingUnits.length} handling units · {pickWaves.length} waves
+          </p>
         </div>
         <div className="flex gap-2">
           {tab === "zones" && <Button onClick={() => setZoneModal(true)}>+ New Zone</Button>}
@@ -137,6 +159,7 @@ export default function WMSPage() {
             { header: "Warehouse", accessor: (z) => z.warehouse_name ?? "—" },
             { header: "Locations", accessor: (z) => z.location_count },
             { header: "Status", accessor: (z) => <Badge label={z.is_active ? "Active" : "Inactive"} variant={z.is_active ? "green" : "red"} /> },
+            { header: "Access", accessor: (z) => <AccessBadge canEdit={z.access?.can_edit} /> },
           ]}
         />
       )}
@@ -155,6 +178,7 @@ export default function WMSPage() {
             { header: "Type", accessor: (l) => l.zone_type ? <Badge label={l.zone_type.replace(/_/g, " ")} variant={zoneVariant(l.zone_type)} /> : null },
             { header: "Warehouse", accessor: (l) => l.warehouse_name ?? "—" },
             { header: "Barcode", accessor: (l) => l.barcode ? <span className="font-mono text-xs">{l.barcode}</span> : "—" },
+            { header: "Access", accessor: (l) => <AccessBadge canEdit={l.access?.can_edit} /> },
             {
               header: "Status",
               accessor: (l) => (
@@ -164,6 +188,41 @@ export default function WMSPage() {
                 </div>
               ),
             },
+          ]}
+        />
+      )}
+
+      {tab === "handlingUnits" && (
+        loadingHus ? <div className="flex justify-center py-16"><div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent" /></div> :
+        <Table
+          keyField="id"
+          data={handlingUnits}
+          emptyMessage="No handling units yet."
+          columns={[
+            { header: "License Plate", accessor: "license_plate", className: "font-mono text-xs font-medium" },
+            { header: "Type", accessor: (hu) => <Badge label={hu.hu_type.replace(/_/g, " ")} variant="blue" /> },
+            { header: "Warehouse", accessor: (hu) => hu.warehouse_name ?? "—" },
+            { header: "Location", accessor: (hu) => hu.location_code ?? "—" },
+            { header: "Items", accessor: (hu) => hu.items?.length ?? 0 },
+            { header: "Status", accessor: (hu) => <Badge label={hu.status.replace(/_/g, " ")} variant={statusVariant(hu.status)} /> },
+            { header: "Access", accessor: (hu) => <AccessBadge canEdit={hu.access?.can_edit || hu.access?.can_putaway} /> },
+          ]}
+        />
+      )}
+
+      {tab === "pickWaves" && (
+        loadingWaves ? <div className="flex justify-center py-16"><div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent" /></div> :
+        <Table
+          keyField="id"
+          data={pickWaves}
+          emptyMessage="No pick waves yet."
+          columns={[
+            { header: "Wave", accessor: "wave_no", className: "font-mono text-xs font-medium" },
+            { header: "Warehouse", accessor: (w) => w.warehouse_name ?? "—" },
+            { header: "Priority", accessor: "priority" },
+            { header: "Tasks", accessor: "task_count" },
+            { header: "Status", accessor: (w) => <Badge label={w.status.replace(/_/g, " ")} variant={statusVariant(w.status)} /> },
+            { header: "Access", accessor: (w) => <AccessBadge canEdit={w.access?.can_pick} /> },
           ]}
         />
       )}

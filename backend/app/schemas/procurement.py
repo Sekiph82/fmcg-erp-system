@@ -8,9 +8,31 @@ from pydantic import BaseModel, computed_field, ConfigDict
 
 from app.models.procurement import (
     PRStatus, POStatus, GRNStatus, ImportShipmentStatus, POPaymentStatus,
-    RFQStatus, RFQResponseStatus, BPAStatus,
+    RFQStatus, RFQResponseStatus, BPAStatus, ProcurementApprovalDocumentType,
 )
 from app.models.finance import OperationalPostingStatus
+
+
+class ProcurementScopeFields(BaseModel):
+    company_id: Optional[uuid.UUID] = None
+    branch_id: Optional[uuid.UUID] = None
+    cost_center_id: Optional[uuid.UUID] = None
+    department: Optional[str] = None
+
+
+class ProcurementAccessHint(BaseModel):
+    can_view: bool = True
+    can_create: bool = False
+    can_edit: bool = False
+    can_delete: bool = False
+    can_approve: bool = False
+    can_receive: bool = False
+    can_post: bool = False
+    can_cancel: bool = False
+    can_export: bool = False
+    can_import: bool = False
+    view_only: bool = False
+    reason: Optional[str] = None
 
 
 # ── PR Lines ───────────────────────────────────────────────────────────────────
@@ -48,7 +70,7 @@ class PRLineRead(BaseModel):
 
 # ── PR ─────────────────────────────────────────────────────────────────────────
 
-class PRCreate(BaseModel):
+class PRCreate(ProcurementScopeFields):
     pr_no: str
     department: Optional[str] = None
     required_date: date
@@ -56,13 +78,13 @@ class PRCreate(BaseModel):
     lines: List[PRLineCreate] = []
 
 
-class PRUpdate(BaseModel):
+class PRUpdate(ProcurementScopeFields):
     department: Optional[str] = None
     required_date: Optional[date] = None
     notes: Optional[str] = None
 
 
-class PRRead(BaseModel):
+class PRRead(ProcurementScopeFields):
     model_config = {"from_attributes": True}
     id: uuid.UUID
     pr_no: str
@@ -77,6 +99,7 @@ class PRRead(BaseModel):
     rejection_reason: Optional[str]
     created_at: datetime
     line_count: int = 0
+    access: Optional[ProcurementAccessHint] = None
 
 
 class PRDetailRead(PRRead):
@@ -146,7 +169,7 @@ class POLineRead(BaseModel):
 
 # ── PO ─────────────────────────────────────────────────────────────────────────
 
-class POCreate(BaseModel):
+class POCreate(ProcurementScopeFields):
     po_no: str
     supplier_id: uuid.UUID
     order_date: date
@@ -158,13 +181,13 @@ class POCreate(BaseModel):
     lines: List[POLineCreate] = []
 
 
-class POUpdate(BaseModel):
+class POUpdate(ProcurementScopeFields):
     expected_delivery_date: Optional[date] = None
     payment_terms: Optional[str] = None
     notes: Optional[str] = None
 
 
-class PORead(BaseModel):
+class PORead(ProcurementScopeFields):
     model_config = {"from_attributes": True}
     id: uuid.UUID
     po_no: str
@@ -188,6 +211,7 @@ class PORead(BaseModel):
     payment_method: Optional[str] = None
     mpesa_reference: Optional[str] = None
     paid_amount: Optional[Decimal] = None
+    access: Optional[ProcurementAccessHint] = None
 
 
 class PODetailRead(PORead):
@@ -209,7 +233,7 @@ class GRNLineCreate(BaseModel):
     notes: Optional[str] = None
 
 
-class GRNCreate(BaseModel):
+class GRNCreate(ProcurementScopeFields):
     grn_no: str
     po_id: uuid.UUID
     received_date: date
@@ -240,7 +264,7 @@ class GRNLineRead(BaseModel):
     posting_error: Optional[str] = None
 
 
-class GRNRead(BaseModel):
+class GRNRead(ProcurementScopeFields):
     model_config = {"from_attributes": True}
     id: uuid.UUID
     grn_no: str
@@ -253,6 +277,7 @@ class GRNRead(BaseModel):
     notes: Optional[str]
     status: GRNStatus
     created_at: datetime
+    access: Optional[ProcurementAccessHint] = None
 
 
 class GRNDetailRead(GRNRead):
@@ -261,7 +286,7 @@ class GRNDetailRead(GRNRead):
 
 # ── Import Shipment ────────────────────────────────────────────────────────────
 
-class ImportShipmentCreate(BaseModel):
+class ImportShipmentCreate(ProcurementScopeFields):
     shipment_no: str
     po_id: uuid.UUID
     bl_number: Optional[str] = None
@@ -277,7 +302,7 @@ class ImportShipmentCreate(BaseModel):
     notes: Optional[str] = None
 
 
-class ImportShipmentUpdate(BaseModel):
+class ImportShipmentUpdate(ProcurementScopeFields):
     bl_number: Optional[str] = None
     vessel_name: Optional[str] = None
     eta: Optional[date] = None
@@ -292,7 +317,7 @@ class ImportShipmentUpdate(BaseModel):
     notes: Optional[str] = None
 
 
-class ImportShipmentRead(BaseModel):
+class ImportShipmentRead(ProcurementScopeFields):
     model_config = {"from_attributes": True}
     id: uuid.UUID
     shipment_no: str
@@ -314,6 +339,7 @@ class ImportShipmentRead(BaseModel):
     status: ImportShipmentStatus
     notes: Optional[str]
     created_at: datetime
+    access: Optional[ProcurementAccessHint] = None
 
     @computed_field
     @property
@@ -328,7 +354,7 @@ class ImportShipmentRead(BaseModel):
 
 # ── Supplier Evaluation ────────────────────────────────────────────────────────
 
-class SupplierEvaluationCreate(BaseModel):
+class SupplierEvaluationCreate(ProcurementScopeFields):
     supplier_id: uuid.UUID
     evaluation_date: date
     po_id: Optional[uuid.UUID] = None
@@ -339,7 +365,7 @@ class SupplierEvaluationCreate(BaseModel):
     notes: Optional[str] = None
 
 
-class SupplierEvaluationRead(BaseModel):
+class SupplierEvaluationRead(ProcurementScopeFields):
     model_config = {"from_attributes": True}
     id: uuid.UUID
     supplier_id: uuid.UUID
@@ -354,9 +380,10 @@ class SupplierEvaluationRead(BaseModel):
     evaluator_id: Optional[uuid.UUID]
     notes: Optional[str]
     created_at: datetime
+    access: Optional[ProcurementAccessHint] = None
 
 
-class SupplierDashboardRow(BaseModel):
+class SupplierDashboardRow(ProcurementScopeFields):
     supplier_id: uuid.UUID
     supplier_name: str
     supplier_code: str
@@ -371,6 +398,7 @@ class SupplierDashboardRow(BaseModel):
     avg_quality: Optional[Decimal]
     avg_overall: Optional[Decimal]
     last_evaluation_date: Optional[date]
+    access: Optional[ProcurementAccessHint] = None
 
 
 # ── Delivery Planning ─────────────────────────────────────────────────────────
@@ -400,7 +428,7 @@ class DeliveryAlertRow(BaseModel):
 
 # ── Supplier Payments ─────────────────────────────────────────────────────────
 
-class SupplierPaymentCreate(BaseModel):
+class SupplierPaymentCreate(ProcurementScopeFields):
     payment_date: date
     amount: Decimal
     method: str = "bank"        # bank | cash | mpesa
@@ -408,7 +436,7 @@ class SupplierPaymentCreate(BaseModel):
     notes: Optional[str] = None
 
 
-class SupplierPaymentRead(BaseModel):
+class SupplierPaymentRead(ProcurementScopeFields):
     model_config = {"from_attributes": True}
     id: uuid.UUID
     po_id: uuid.UUID
@@ -419,6 +447,7 @@ class SupplierPaymentRead(BaseModel):
     reference: Optional[str]
     notes: Optional[str]
     created_at: datetime
+    access: Optional[ProcurementAccessHint] = None
 
 
 # ── RFQ ───────────────────────────────────────────────────────────────────────
@@ -450,7 +479,7 @@ class RFQResponseRead(BaseModel):
     created_at: datetime
 
 
-class RFQCreate(BaseModel):
+class RFQCreate(ProcurementScopeFields):
     rfq_no: str
     title: str
     pr_id: Optional[uuid.UUID] = None
@@ -465,7 +494,7 @@ class RFQCreate(BaseModel):
     supplier_ids: List[uuid.UUID] = []
 
 
-class RFQUpdate(BaseModel):
+class RFQUpdate(ProcurementScopeFields):
     title: Optional[str] = None
     description: Optional[str] = None
     response_deadline: Optional[date] = None
@@ -475,7 +504,7 @@ class RFQUpdate(BaseModel):
     awarded_supplier_id: Optional[uuid.UUID] = None
 
 
-class RFQRead(BaseModel):
+class RFQRead(ProcurementScopeFields):
     model_config = {"from_attributes": True}
     id: uuid.UUID
     rfq_no: str
@@ -494,6 +523,7 @@ class RFQRead(BaseModel):
     notes: Optional[str]
     created_at: datetime
     response_count: int = 0
+    access: Optional[ProcurementAccessHint] = None
 
 
 class RFQDetailRead(RFQRead):
@@ -502,7 +532,7 @@ class RFQDetailRead(RFQRead):
 
 # ── Blanket Purchase Agreement ─────────────────────────────────────────────────
 
-class BlanketAgreementCreate(BaseModel):
+class BlanketAgreementCreate(ProcurementScopeFields):
     bpa_no: str
     supplier_id: uuid.UUID
     material_id: Optional[uuid.UUID] = None
@@ -518,7 +548,7 @@ class BlanketAgreementCreate(BaseModel):
     notes: Optional[str] = None
 
 
-class BlanketAgreementUpdate(BaseModel):
+class BlanketAgreementUpdate(ProcurementScopeFields):
     agreed_unit_price: Optional[Decimal] = None
     agreed_quantity: Optional[Decimal] = None
     valid_to: Optional[date] = None
@@ -527,7 +557,7 @@ class BlanketAgreementUpdate(BaseModel):
     status: Optional[BPAStatus] = None
 
 
-class BlanketAgreementRead(BaseModel):
+class BlanketAgreementRead(ProcurementScopeFields):
     model_config = {"from_attributes": True}
     id: uuid.UUID
     bpa_no: str
@@ -547,6 +577,7 @@ class BlanketAgreementRead(BaseModel):
     status: BPAStatus
     notes: Optional[str]
     created_at: datetime
+    access: Optional[ProcurementAccessHint] = None
 
     @computed_field
     @property
@@ -564,7 +595,7 @@ class BlanketAgreementRead(BaseModel):
 
 # ── Auto Reorder Policy ────────────────────────────────────────────────────────
 
-class AutoReorderPolicyCreate(BaseModel):
+class AutoReorderPolicyCreate(ProcurementScopeFields):
     material_id: Optional[uuid.UUID] = None
     product_id: Optional[uuid.UUID] = None
     warehouse_id: Optional[uuid.UUID] = None
@@ -578,7 +609,7 @@ class AutoReorderPolicyCreate(BaseModel):
     notes: Optional[str] = None
 
 
-class AutoReorderPolicyUpdate(BaseModel):
+class AutoReorderPolicyUpdate(ProcurementScopeFields):
     reorder_point: Optional[Decimal] = None
     reorder_quantity: Optional[Decimal] = None
     max_stock_level: Optional[Decimal] = None
@@ -589,7 +620,7 @@ class AutoReorderPolicyUpdate(BaseModel):
     notes: Optional[str] = None
 
 
-class AutoReorderPolicyRead(BaseModel):
+class AutoReorderPolicyRead(ProcurementScopeFields):
     model_config = {"from_attributes": True}
     id: uuid.UUID
     material_id: Optional[uuid.UUID]
@@ -604,4 +635,55 @@ class AutoReorderPolicyRead(BaseModel):
     auto_create_pr: bool
     active_flag: bool
     notes: Optional[str]
+    created_at: datetime
+    access: Optional[ProcurementAccessHint] = None
+
+
+class ProcurementApprovalRuleBase(ProcurementScopeFields):
+    rule_name: str
+    document_type: ProcurementApprovalDocumentType
+    supplier_category: Optional[str] = None
+    product_category: Optional[str] = None
+    min_amount: Optional[Decimal] = None
+    max_amount: Optional[Decimal] = None
+    currency: Optional[str] = None
+    approval_level: int = 1
+    approver_user_id: Optional[uuid.UUID] = None
+    approver_role_id: Optional[uuid.UUID] = None
+    requires_all_matching_approvers: bool = False
+    is_active: bool = True
+    effective_from: Optional[date] = None
+    effective_to: Optional[date] = None
+    notes: Optional[str] = None
+
+
+class ProcurementApprovalRuleCreate(ProcurementApprovalRuleBase):
+    pass
+
+
+class ProcurementApprovalRuleUpdate(BaseModel):
+    rule_name: Optional[str] = None
+    document_type: Optional[ProcurementApprovalDocumentType] = None
+    company_id: Optional[uuid.UUID] = None
+    branch_id: Optional[uuid.UUID] = None
+    cost_center_id: Optional[uuid.UUID] = None
+    department: Optional[str] = None
+    supplier_category: Optional[str] = None
+    product_category: Optional[str] = None
+    min_amount: Optional[Decimal] = None
+    max_amount: Optional[Decimal] = None
+    currency: Optional[str] = None
+    approval_level: Optional[int] = None
+    approver_user_id: Optional[uuid.UUID] = None
+    approver_role_id: Optional[uuid.UUID] = None
+    requires_all_matching_approvers: Optional[bool] = None
+    is_active: Optional[bool] = None
+    effective_from: Optional[date] = None
+    effective_to: Optional[date] = None
+    notes: Optional[str] = None
+
+
+class ProcurementApprovalRuleRead(ProcurementApprovalRuleBase):
+    model_config = {"from_attributes": True}
+    id: uuid.UUID
     created_at: datetime

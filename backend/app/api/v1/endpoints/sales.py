@@ -35,6 +35,11 @@ from app.schemas.sales import (
 from app.crud import sales as crud
 from app.services import sales_service as svc
 from app.services import mpesa_service as mpesa_svc
+from app.services.commercial_access_service import (
+    build_commercial_access_hint,
+    ensure_commercial_action_allowed,
+    inherit_commercial_scope,
+)
 
 router = APIRouter()
 
@@ -56,7 +61,7 @@ def _has_broad_sales_view(user) -> bool:
 
 
 def _customer_region(customer: Customer | None) -> str | None:
-    region = getattr(customer, "region", None)
+    region = getattr(customer, "sales_region_id", None) or getattr(customer, "region", None)
     return str(region) if region else None
 
 
@@ -114,7 +119,14 @@ def _require_so_action(user, so: SalesOrder, action: str = "edit") -> None:
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
-def _build_so_read(so: SalesOrder) -> SORead:
+def _build_customer_read(customer: Customer, user=None) -> CustomerRead:
+    row = CustomerRead.model_validate(customer)
+    if user is not None:
+        row.access = build_commercial_access_hint(user, customer, "sales")
+    return row
+
+
+def _build_so_read(so: SalesOrder, user=None) -> SORead:
     d = SORead.model_validate(so)
     if so.customer:
         d.customer_name = so.customer.name
@@ -130,10 +142,12 @@ def _build_so_read(so: SalesOrder) -> SORead:
     today = date.today()
     delta = (so.requested_delivery_date - today).days
     d.days_until_delivery = delta
+    if user is not None:
+        d.access = build_commercial_access_hint(user, so, "sales")
     return d
 
 
-def _build_so_detail(so: SalesOrder) -> SODetailRead:
+def _build_so_detail(so: SalesOrder, user=None) -> SODetailRead:
     d = SODetailRead.model_validate(so)
     if so.customer:
         d.customer_name = so.customer.name
@@ -157,6 +171,8 @@ def _build_so_detail(so: SalesOrder) -> SODetailRead:
     today = date.today()
     delta = (so.requested_delivery_date - today).days
     d.days_until_delivery = delta
+    if user is not None:
+        d.access = build_commercial_access_hint(user, so, "sales")
     return d
 
 
@@ -237,7 +253,7 @@ async def list_customers(
     customers = await crud.list_customers(db, active_only=active_only)
     if not _has_broad_sales_view(current_user):
         customers = [customer for customer in customers if _can_view_customer(current_user, customer)]
-    return customers
+    return [_build_customer_read(customer, current_user) for customer in customers]
 
 
 @router.post("/customers/", response_model=CustomerRead, status_code=201)
@@ -246,11 +262,12 @@ async def create_customer(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    _require_customer_action(current_user, Customer(region=getattr(body, "region", None)), "create")
+    target = Customer(**body.model_dump())
+    ensure_commercial_action_allowed(current_user, target, "create", "sales")
     c = await crud.create_customer(db, body.model_dump())
     await db.commit()
     await db.refresh(c)
-    return c
+    return _build_customer_read(c, current_user)
 
 
 @router.get("/customers/{customer_id}", response_model=CustomerRead)
@@ -263,7 +280,7 @@ async def get_customer(
     if not c:
         raise HTTPException(404, "Customer not found")
     _require_customer_view(current_user, c)
-    return c
+    return _build_customer_read(c, current_user)
 
 
 @router.patch("/customers/{customer_id}", response_model=CustomerRead)
@@ -276,7 +293,7 @@ async def update_customer(
     c = await crud.get_customer(db, customer_id)
     if not c:
         raise HTTPException(404, "Customer not found")
-    _require_customer_action(current_user, c, "edit")
+    ensure_commercial_action_allowed(current_user, c, "edit", "sales")
     updates = body.model_dump(exclude_unset=True)
     if "region" in updates and updates["region"] != c.region:
         _require_customer_action(current_user, Customer(region=updates["region"]), "edit")
@@ -284,7 +301,7 @@ async def update_customer(
         setattr(c, k, v)
     await db.commit()
     await db.refresh(c)
-    return c
+    return _build_customer_read(c, current_user)
 
 
 # ── Sales Orders ──────────────────────────────────────────────────────────────
@@ -313,7 +330,7 @@ async def list_orders(
         sos = [s for s in sos if str(getattr(s, "crm_segment_id", None)) == str(crm_segment_id)]
     if source:
         sos = [s for s in sos if str(getattr(s, "source", "")).upper() == source.upper()]
-    return [_build_so_read(so) for so in sos]
+    return [_build_so_read(so, current_user) for so in sos]
 
 
 @router.post("/orders/", response_model=SODetailRead, status_code=201)
@@ -327,11 +344,17 @@ async def create_order(
         raise HTTPException(404, "Customer not found")
     _require_customer_action(current_user, customer, "create")
     data = body.model_dump()
+    for field_name in ("company_id", "branch_id", "sales_region_id", "sales_team_id", "customer_group_id"):
+        if data.get(field_name) is None:
+            data[field_name] = getattr(customer, field_name, None)
     data["lines"] = [l.model_dump() for l in body.lines]
+    target = SalesOrder(**{k: v for k, v in data.items() if k != "lines"})
+    inherit_commercial_scope(target, customer)
+    ensure_commercial_action_allowed(current_user, target, "create", "sales")
     so = await crud.create_so(db, data, created_by_id=current_user.id)
     await db.commit()
     so = await crud.get_so(db, so.id)
-    return _build_so_detail(so)
+    return _build_so_detail(so, current_user)
 
 
 @router.get("/orders/{so_id}", response_model=SODetailRead)
@@ -344,7 +367,7 @@ async def get_order(
     if not so:
         raise HTTPException(404, "Sales order not found")
     _require_so_view(current_user, so)
-    return _build_so_detail(so)
+    return _build_so_detail(so, current_user)
 
 
 @router.patch("/orders/{so_id}", response_model=SODetailRead)
@@ -357,14 +380,14 @@ async def update_order(
     so = await crud.get_so(db, so_id)
     if not so:
         raise HTTPException(404, "Sales order not found")
-    _require_so_action(current_user, so, "edit")
+    ensure_commercial_action_allowed(current_user, so, "edit", "sales")
     if so.status not in (SOStatus.DRAFT,):
         raise HTTPException(422, "Only DRAFT orders can be updated")
     for k, v in body.model_dump(exclude_unset=True).items():
         setattr(so, k, v)
     await db.commit()
     so = await crud.get_so(db, so_id)
-    return _build_so_detail(so)
+    return _build_so_detail(so, current_user)
 
 
 @router.post("/orders/{so_id}/confirm", response_model=SODetailRead)

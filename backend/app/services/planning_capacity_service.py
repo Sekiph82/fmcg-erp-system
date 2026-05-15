@@ -26,9 +26,8 @@ from app.models.planning import (
     PlanningScenario, OperationQueue, CapacityLoadSnapshot, ResourceCalendar,
     ChangeoverMatrix, OpQueueStatus, CapacitySlotType,
 )
-from app.models.mps import MPSLine, MPSPlan
+from app.models.mps import MPSLine
 from app.models.production_advanced import WorkCenter, Routing, RoutingStep
-from app.models.recipe import Recipe
 from app.models.master import Product
 
 
@@ -91,6 +90,24 @@ def _product_family(code: Optional[str]) -> str:
     return "MISC"
 
 
+def _product_display(product: Optional[Product]) -> tuple[Optional[str], Optional[str]]:
+    if not product:
+        return None, None
+    return product.name, product.sku
+
+
+def _work_center_rate(work_center: Optional[WorkCenter]) -> Decimal:
+    if work_center and work_center.capacity:
+        return _D(work_center.capacity)
+    return _DEFAULT_RATE
+
+
+def _operation_minutes(planned_qty: Decimal, step: Optional[RoutingStep], rate: Decimal) -> int:
+    if step and step.standard_time_minutes:
+        return int(step.standard_time_minutes)
+    return int(float(planned_qty or 0) / float(rate) * 60) if rate > 0 else 0
+
+
 async def run_capacity_scheduling(db: AsyncSession, scenario_id: UUID) -> dict:
     scenario_r = await db.execute(
         select(PlanningScenario).where(PlanningScenario.id == scenario_id)
@@ -113,6 +130,7 @@ async def run_capacity_scheduling(db: AsyncSession, scenario_id: UUID) -> dict:
     if scenario.mps_plan_id:
         lines_r = await db.execute(
             select(MPSLine)
+            .options(selectinload(MPSLine.product), selectinload(MPSLine.work_center))
             .where(MPSLine.mps_id == scenario.mps_plan_id)
             .order_by(MPSLine.priority_score.desc(), MPSLine.period_start)
         )
@@ -128,6 +146,7 @@ async def run_capacity_scheduling(db: AsyncSession, scenario_id: UUID) -> dict:
             if routing:
                 steps_r = await db.execute(
                     select(RoutingStep)
+                    .options(selectinload(RoutingStep.work_center))
                     .where(RoutingStep.routing_id == routing.id)
                     .order_by(RoutingStep.step_number)
                 )
@@ -138,17 +157,18 @@ async def run_capacity_scheduling(db: AsyncSession, scenario_id: UUID) -> dict:
             if steps:
                 for step in steps:
                     wc_id = step.work_center_id
-                    rate = _D(step.output_qty_per_hour) if getattr(step, "output_qty_per_hour", None) else _DEFAULT_RATE
-                    setup_min = step.setup_time_minutes or 0
-                    run_min = int(float(line.planned_production_qty) / float(rate) * 60) if rate > 0 else 0
+                    product_name, product_code = _product_display(line.product)
+                    rate = _work_center_rate(step.work_center)
+                    setup_min = step.setup_time_minutes or (step.work_center.setup_time_min if step.work_center else 0) or 0
+                    run_min = _operation_minutes(line.planned_production_qty, step, rate)
                     ops_to_schedule.append({
                         "mps_line_id": line.id,
                         "product_id": line.product_id,
-                        "product_name": line.product_name,
-                        "product_code": line.product_code,
+                        "product_name": product_name,
+                        "product_code": product_code,
                         "work_center_id": wc_id,
                         "routing_step_id": step.id,
-                        "step_name": step.step_name,
+                        "step_name": step.operation,
                         "planned_qty": line.planned_production_qty,
                         "rate_per_hour": rate,
                         "setup_minutes": setup_min,
@@ -161,13 +181,14 @@ async def run_capacity_scheduling(db: AsyncSession, scenario_id: UUID) -> dict:
             else:
                 # No routing — create one generic op on the line's work center
                 wc_id = line.work_center_id
-                rate = _DEFAULT_RATE
-                run_min = int(float(line.planned_production_qty or 0) / float(rate) * 60)
+                product_name, product_code = _product_display(line.product)
+                rate = _work_center_rate(line.work_center)
+                run_min = _operation_minutes(line.planned_production_qty, None, rate)
                 ops_to_schedule.append({
                     "mps_line_id": line.id,
                     "product_id": line.product_id,
-                    "product_name": line.product_name,
-                    "product_code": line.product_code,
+                    "product_name": product_name,
+                    "product_code": product_code,
                     "work_center_id": wc_id,
                     "routing_step_id": None,
                     "step_name": "Production",
@@ -210,36 +231,37 @@ async def run_capacity_scheduling(db: AsyncSession, scenario_id: UUID) -> dict:
         placed = False
         scheduled_start_dt = None
         scheduled_end_dt = None
-        accumulated = Decimal("0")
-        placement_date = period_start
+        block_reason = None
 
-        work_days = _working_days(period_start, horizon_end)
-        for wd in work_days:
-            avail = await _calendar_hours(db, wc_id, wd) if wc_id else _DEFAULT_HOURS
-            if avail <= 0:
-                continue
-            already = slot_map.get((wc_id, wd), Decimal("0"))
-            free = avail - already
-            if free <= 0:
-                continue
+        if not wc_id:
+            block_reason = "No work center assigned"
+        else:
+            accumulated = Decimal("0")
+            work_days = _working_days(period_start, horizon_end)
+            for wd in work_days:
+                avail = await _calendar_hours(db, wc_id, wd)
+                if avail <= 0:
+                    continue
+                already = slot_map.get((wc_id, wd), Decimal("0"))
+                free = avail - already
+                if free <= 0:
+                    continue
 
-            take = min(free, total_with_co - accumulated)
-            accumulated += take
-            slot_map[(wc_id, wd)] = already + take
+                take = min(free, total_with_co - accumulated)
+                accumulated += take
+                slot_map[(wc_id, wd)] = already + take
 
-            if take >= co_hrs:
-                co_placed = True
-                changeover_map[(wc_id, wd)] = changeover_map.get((wc_id, wd), Decimal("0")) + co_hrs
-                co_hrs = Decimal("0")
+                if take >= co_hrs:
+                    changeover_map[(wc_id, wd)] = changeover_map.get((wc_id, wd), Decimal("0")) + co_hrs
+                    co_hrs = Decimal("0")
 
-            if scheduled_start_dt is None:
-                scheduled_start_dt = datetime(wd.year, wd.month, wd.day, 6, 0, tzinfo=timezone.utc)
-            placement_date = wd
+                if scheduled_start_dt is None:
+                    scheduled_start_dt = datetime(wd.year, wd.month, wd.day, 6, 0, tzinfo=timezone.utc)
 
-            if accumulated >= total_with_co:
-                placed = True
-                scheduled_end_dt = datetime(wd.year, wd.month, wd.day, 6, 0, tzinfo=timezone.utc) + timedelta(hours=float(total_with_co))
-                break
+                if accumulated >= total_with_co:
+                    placed = True
+                    scheduled_end_dt = datetime(wd.year, wd.month, wd.day, 6, 0, tzinfo=timezone.utc) + timedelta(hours=float(total_with_co))
+                    break
 
         op_status = OpQueueStatus.SCHEDULED if placed else OpQueueStatus.BLOCKED
         if placed:
@@ -247,6 +269,7 @@ async def run_capacity_scheduling(db: AsyncSession, scenario_id: UUID) -> dict:
             last_family_on_wc[wc_id] = to_fam
         else:
             blocked += 1
+            block_reason = block_reason or "No capacity in horizon"
 
         # Look up WC name
         wc_name = None
@@ -277,7 +300,7 @@ async def run_capacity_scheduling(db: AsyncSession, scenario_id: UUID) -> dict:
             scheduled_end=scheduled_end_dt,
             priority=op_data["priority"],
             status=op_status,
-            block_reason="No capacity in horizon" if not placed else None,
+            block_reason=block_reason if not placed else None,
         )
         db.add(op)
         created_ops.append(op)

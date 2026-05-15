@@ -108,7 +108,7 @@ export default function PRsPage() {
     setLines((ls) => ls.map((l, idx) => idx === i ? { ...l, [field]: val } : l));
 
   return (
-    <div>
+    <div data-testid="procurement-page">
       <ToastContainer toasts={toasts} onDismiss={dismiss} />
 
       <div className="mb-6 flex items-center justify-between">
@@ -116,7 +116,7 @@ export default function PRsPage() {
           <h1 className="text-2xl font-bold text-gray-900">Purchase Requisitions</h1>
           <p className="text-sm text-gray-500 mt-1">{prs.length} total</p>
         </div>
-        <Button onClick={() => setOpen(true)}>+ New PR</Button>
+        <Button onClick={() => setOpen(true)} data-testid="procurement-create-pr-button">+ New PR</Button>
       </div>
 
       <div className="mb-4">
@@ -126,11 +126,12 @@ export default function PRsPage() {
       {isLoading ? (
         <div className="flex justify-center py-16"><div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent" /></div>
       ) : (
-        <Table
-          keyField="id"
-          data={prs}
-          emptyMessage="No purchase requisitions yet."
-          columns={[
+        <div data-testid="procurement-pr-list">
+          <Table
+            keyField="id"
+            data={prs}
+            emptyMessage="No purchase requisitions yet."
+            columns={[
             {
               header: "PR No",
               accessor: (p) => (
@@ -145,13 +146,26 @@ export default function PRsPage() {
             { header: "Lines", accessor: (p) => p.line_count },
             { header: "Status", accessor: (p) => <Badge label={p.status.replace(/_/g, " ")} variant={statusVariant(p.status)} /> },
             {
+              header: "Access",
+              accessor: (p) => (
+                p.access?.view_only ? (
+                  <span title={p.access.reason || "You can view this record but cannot modify it in this scope."}>
+                    <Badge label="View only" variant="gray" />
+                  </span>
+                ) : (
+                  <Badge label="Actionable" variant="green" />
+                )
+              ),
+            },
+            {
               header: "",
               accessor: (p) => (
                 <Button variant="secondary" onClick={() => router.push(`/dashboard/procurement/${p.id}`)}>View</Button>
               ),
             },
-          ]}
-        />
+            ]}
+          />
+        </div>
       )}
 
       <Modal open={open} onClose={() => setOpen(false)} title="New Purchase Requisition">

@@ -5,12 +5,18 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   planningApi, ScenarioSummary, BottleneckOut,
   BN_SEVERITY_COLOR, AGENT_COLOR, AGENT_LABEL, AIRecOut,
+  PLANNING_APPROVE_PERMISSIONS, PLANNING_CALCULATE_PERMISSIONS, PLANNING_EDIT_PERMISSIONS,
 } from "@/lib/planning";
+import { useAuth } from "@/context/AuthContext";
 
 export default function BottlenecksPage() {
   const qc = useQueryClient();
+  const { hasAnyPermission } = useAuth();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [viewBn, setViewBn] = useState<BottleneckOut | null>(null);
+  const canRunAI = hasAnyPermission(PLANNING_CALCULATE_PERMISSIONS);
+  const canResolveBottleneck = hasAnyPermission(PLANNING_EDIT_PERMISSIONS);
+  const canActionAI = hasAnyPermission(PLANNING_APPROVE_PERMISSIONS);
 
   const { data: scenarios = [] } = useQuery<ScenarioSummary[]>({
     queryKey: ["planning-scenarios"],
@@ -44,7 +50,7 @@ export default function BottlenecksPage() {
 
   const actionAI = useMutation({
     mutationFn: ({ recId, status }: { recId: string; status: "ACCEPTED" | "REJECTED" }) =>
-      planningApi.actionAI(recId, status, ""),
+      planningApi.actionAI(recId, status),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["planning-ai", selectedId] }),
   });
 
@@ -70,7 +76,7 @@ export default function BottlenecksPage() {
             <option key={s.id} value={s.id}>{s.scenario_no} — {s.scenario_name}</option>
           ))}
         </select>
-        {selectedId && (
+        {selectedId && canRunAI && (
           <button
             onClick={() => runAI.mutate()}
             disabled={runAI.isPending}
@@ -172,7 +178,7 @@ export default function BottlenecksPage() {
                             <p className="text-xs text-gray-500 mt-0.5">{rec.impact_summary}</p>
                           )}
                         </div>
-                        {rec.status === "PENDING" && (
+                        {rec.status === "PENDING" && canActionAI && (
                           <div className="flex gap-1 shrink-0">
                             <button
                               onClick={() => actionAI.mutate({ recId: rec.id, status: "ACCEPTED" })}
@@ -232,7 +238,7 @@ export default function BottlenecksPage() {
                 <p className="text-sm text-blue-800">{viewBn.recommendation}</p>
               </div>
             )}
-            {!viewBn.is_resolved && (
+            {!viewBn.is_resolved && canResolveBottleneck && (
               <button
                 onClick={() => resolvebn.mutate(viewBn.id)}
                 disabled={resolvebn.isPending}

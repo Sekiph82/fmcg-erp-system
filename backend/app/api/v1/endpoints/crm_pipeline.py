@@ -3,7 +3,10 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.access_control import can_view_record, require_any_permission
+from app.core.deps import get_current_user
 from app.db.session import get_db
+from app.models.crm import CRMRecord, CRMRecordType, CRMTerritory
 from app.schemas.crm import (
     CRMStageCreate, CRMStageRead, CRMStageUpdate,
     CRMRecordCreate, CRMRecordRead, CRMRecordUpdate,
@@ -16,9 +19,26 @@ from app.schemas.crm import (
     CRMAIRecRead, CRMAIRecAck,
     CRMTerritoryCreate, CRMTerritoryRead, CRMTerritoryUpdate,
 )
+from app.services.commercial_access_service import build_commercial_access_hint, ensure_commercial_action_allowed
 import app.services.crm_pipeline_service as svc
 
-router = APIRouter()
+CRM_VIEW_PERMISSIONS = ("crm.view", "crm.view_all", "crm.view_own_scope", "crm.view_own_region")
+CRM_CREATE_PERMISSIONS = ("crm.create", "crm.create_all", "crm.create_own_scope", "crm.create_own_region")
+CRM_EDIT_PERMISSIONS = ("crm.edit", "crm.edit_all", "crm.edit_own_scope", "crm.edit_own_region")
+
+router = APIRouter(dependencies=[Depends(require_any_permission(CRM_VIEW_PERMISSIONS))])
+
+
+def _record_read(record: CRMRecord, user) -> CRMRecordRead:
+    row = CRMRecordRead.model_validate(record)
+    row.access = build_commercial_access_hint(user, record, "crm")
+    return row
+
+
+def _territory_read(territory: CRMTerritory, user) -> CRMTerritoryRead:
+    row = CRMTerritoryRead.model_validate(territory)
+    row.access = build_commercial_access_hint(user, territory, "crm")
+    return row
 
 
 # ── Stages ────────────────────────────────────────────────────────────────────
@@ -57,17 +77,23 @@ async def list_leads(
     skip: int = 0,
     limit: int = 100,
     db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
 ):
-    return await svc.get_records(db, record_type="LEAD", status=status,
-                                  assigned_rep_id=assigned_rep_id, stage_id=stage_id,
-                                  temperature=temperature, skip=skip, limit=limit)
+    records = await svc.get_records(db, record_type="LEAD", status=status,
+                                    assigned_rep_id=assigned_rep_id, stage_id=stage_id,
+                                    temperature=temperature, skip=skip, limit=limit)
+    return [_record_read(record, current_user) for record in records if can_view_record(current_user, "crm", record)]
 
 
 @router.post("/leads", response_model=CRMRecordRead, status_code=201)
-async def create_lead(data: CRMRecordCreate, db: AsyncSession = Depends(get_db)):
-    from app.models.crm import CRMRecordType
+async def create_lead(
+    data: CRMRecordCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(require_any_permission(CRM_CREATE_PERMISSIONS)),
+):
     data.record_type = CRMRecordType.LEAD
-    return await svc.create_record(db, data)
+    ensure_commercial_action_allowed(current_user, CRMRecord(**data.model_dump()), "create", "crm")
+    return _record_read(await svc.create_record(db, data), current_user)
 
 
 @router.get("/opportunities", response_model=List[CRMRecordRead])
@@ -79,17 +105,23 @@ async def list_opportunities(
     skip: int = 0,
     limit: int = 100,
     db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
 ):
-    return await svc.get_records(db, record_type="OPPORTUNITY", status=status,
-                                  assigned_rep_id=assigned_rep_id, stage_id=stage_id,
-                                  temperature=temperature, skip=skip, limit=limit)
+    records = await svc.get_records(db, record_type="OPPORTUNITY", status=status,
+                                    assigned_rep_id=assigned_rep_id, stage_id=stage_id,
+                                    temperature=temperature, skip=skip, limit=limit)
+    return [_record_read(record, current_user) for record in records if can_view_record(current_user, "crm", record)]
 
 
 @router.post("/opportunities", response_model=CRMRecordRead, status_code=201)
-async def create_opportunity(data: CRMRecordCreate, db: AsyncSession = Depends(get_db)):
-    from app.models.crm import CRMRecordType
+async def create_opportunity(
+    data: CRMRecordCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(require_any_permission(CRM_CREATE_PERMISSIONS)),
+):
     data.record_type = CRMRecordType.OPPORTUNITY
-    return await svc.create_record(db, data)
+    ensure_commercial_action_allowed(current_user, CRMRecord(**data.model_dump()), "create", "crm")
+    return _record_read(await svc.create_record(db, data), current_user)
 
 
 @router.get("/records", response_model=List[CRMRecordRead])
@@ -102,79 +134,120 @@ async def list_all_records(
     skip: int = 0,
     limit: int = 100,
     db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
 ):
-    return await svc.get_records(db, record_type=record_type, status=status,
-                                  assigned_rep_id=assigned_rep_id, stage_id=stage_id,
-                                  temperature=temperature, skip=skip, limit=limit)
+    records = await svc.get_records(db, record_type=record_type, status=status,
+                                    assigned_rep_id=assigned_rep_id, stage_id=stage_id,
+                                    temperature=temperature, skip=skip, limit=limit)
+    return [_record_read(record, current_user) for record in records if can_view_record(current_user, "crm", record)]
 
 
 @router.post("/records", response_model=CRMRecordRead, status_code=201)
-async def create_record(data: CRMRecordCreate, db: AsyncSession = Depends(get_db)):
-    return await svc.create_record(db, data)
+async def create_record(
+    data: CRMRecordCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(require_any_permission(CRM_CREATE_PERMISSIONS)),
+):
+    ensure_commercial_action_allowed(current_user, CRMRecord(**data.model_dump()), "create", "crm")
+    return _record_read(await svc.create_record(db, data), current_user)
 
 
 @router.get("/records/{record_id}", response_model=CRMRecordRead)
-async def get_record(record_id: str, db: AsyncSession = Depends(get_db)):
+async def get_record(record_id: str, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
     rec = await svc.get_record(db, record_id)
     if not rec:
         raise HTTPException(404, "Record not found")
-    return rec
+    ensure_commercial_action_allowed(current_user, rec, "view", "crm")
+    return _record_read(rec, current_user)
 
 
 @router.patch("/records/{record_id}", response_model=CRMRecordRead)
-async def update_record(record_id: str, data: CRMRecordUpdate, db: AsyncSession = Depends(get_db)):
+async def update_record(
+    record_id: str,
+    data: CRMRecordUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(require_any_permission(CRM_EDIT_PERMISSIONS)),
+):
+    existing = await svc.get_record(db, record_id)
+    if not existing:
+        raise HTTPException(404, "Record not found")
+    ensure_commercial_action_allowed(current_user, existing, "edit", "crm")
     rec = await svc.update_record(db, record_id, data)
     if not rec:
         raise HTTPException(404, "Record not found")
-    return rec
+    return _record_read(rec, current_user)
 
 
 @router.post("/records/{record_id}/qualify", response_model=CRMRecordRead)
-async def qualify_record(record_id: str, data: CRMQualifyRequest, db: AsyncSession = Depends(get_db)):
+async def qualify_record(record_id: str, data: CRMQualifyRequest, db: AsyncSession = Depends(get_db), current_user=Depends(require_any_permission(CRM_EDIT_PERMISSIONS))):
+    existing = await svc.get_record(db, record_id)
+    if not existing:
+        raise HTTPException(404, "Record not found")
+    ensure_commercial_action_allowed(current_user, existing, "edit", "crm")
     rec = await svc.qualify_record(db, record_id, data)
     if not rec:
         raise HTTPException(404, "Record not found")
-    return rec
+    return _record_read(rec, current_user)
 
 
 @router.post("/records/{record_id}/convert-to-opportunity", response_model=CRMRecordRead)
-async def convert_to_opportunity(record_id: str, data: CRMConvertRequest, db: AsyncSession = Depends(get_db)):
+async def convert_to_opportunity(record_id: str, data: CRMConvertRequest, db: AsyncSession = Depends(get_db), current_user=Depends(require_any_permission(CRM_EDIT_PERMISSIONS))):
+    existing = await svc.get_record(db, record_id)
+    if not existing:
+        raise HTTPException(404, "Record not found")
+    ensure_commercial_action_allowed(current_user, existing, "convert", "crm")
     rec = await svc.convert_to_opportunity(db, record_id, data)
     if not rec:
         raise HTTPException(404, "Record not found")
-    return rec
+    return _record_read(rec, current_user)
 
 
 @router.post("/records/{record_id}/close-won", response_model=CRMRecordRead)
-async def close_won(record_id: str, data: CRMCloseWonRequest, db: AsyncSession = Depends(get_db)):
+async def close_won(record_id: str, data: CRMCloseWonRequest, db: AsyncSession = Depends(get_db), current_user=Depends(require_any_permission(CRM_EDIT_PERMISSIONS))):
+    existing = await svc.get_record(db, record_id)
+    if not existing:
+        raise HTTPException(404, "Record not found")
+    ensure_commercial_action_allowed(current_user, existing, "edit", "crm")
     rec = await svc.close_won(db, record_id, data)
     if not rec:
         raise HTTPException(404, "Record not found")
-    return rec
+    return _record_read(rec, current_user)
 
 
 @router.post("/records/{record_id}/close-lost", response_model=CRMRecordRead)
-async def close_lost(record_id: str, data: CRMCloseLostRequest, db: AsyncSession = Depends(get_db)):
+async def close_lost(record_id: str, data: CRMCloseLostRequest, db: AsyncSession = Depends(get_db), current_user=Depends(require_any_permission(CRM_EDIT_PERMISSIONS))):
+    existing = await svc.get_record(db, record_id)
+    if not existing:
+        raise HTTPException(404, "Record not found")
+    ensure_commercial_action_allowed(current_user, existing, "edit", "crm")
     rec = await svc.close_lost(db, record_id, data)
     if not rec:
         raise HTTPException(404, "Record not found")
-    return rec
+    return _record_read(rec, current_user)
 
 
 @router.post("/records/{record_id}/on-hold", response_model=CRMRecordRead)
-async def put_on_hold(record_id: str, notes: Optional[str] = None, db: AsyncSession = Depends(get_db)):
+async def put_on_hold(record_id: str, notes: Optional[str] = None, db: AsyncSession = Depends(get_db), current_user=Depends(require_any_permission(CRM_EDIT_PERMISSIONS))):
+    existing = await svc.get_record(db, record_id)
+    if not existing:
+        raise HTTPException(404, "Record not found")
+    ensure_commercial_action_allowed(current_user, existing, "edit", "crm")
     rec = await svc.put_on_hold(db, record_id, notes)
     if not rec:
         raise HTTPException(404, "Record not found")
-    return rec
+    return _record_read(rec, current_user)
 
 
 @router.post("/records/{record_id}/reopen", response_model=CRMRecordRead)
-async def reopen_record(record_id: str, db: AsyncSession = Depends(get_db)):
+async def reopen_record(record_id: str, db: AsyncSession = Depends(get_db), current_user=Depends(require_any_permission(CRM_EDIT_PERMISSIONS))):
+    existing = await svc.get_record(db, record_id)
+    if not existing:
+        raise HTTPException(404, "Record not found")
+    ensure_commercial_action_allowed(current_user, existing, "edit", "crm")
     rec = await svc.reopen_record(db, record_id)
     if not rec:
         raise HTTPException(404, "Record not found")
-    return rec
+    return _record_read(rec, current_user)
 
 
 @router.post("/records/{record_id}/update-score", response_model=CRMRecordRead)
@@ -309,21 +382,36 @@ async def ack_recommendation(rec_id: str, data: CRMAIRecAck, db: AsyncSession = 
 # ── Territory Management ──────────────────────────────────────────────────────
 
 @router.get("/territories", response_model=List[CRMTerritoryRead])
-async def list_territories(active_only: bool = False, db: AsyncSession = Depends(get_db)):
-    return await svc.get_territories(db, active_only=active_only)
+async def list_territories(active_only: bool = False, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+    territories = await svc.get_territories(db, active_only=active_only)
+    return [_territory_read(territory, current_user) for territory in territories if can_view_record(current_user, "crm", territory)]
 
 
 @router.post("/territories", response_model=CRMTerritoryRead, status_code=201)
-async def create_territory(data: CRMTerritoryCreate, db: AsyncSession = Depends(get_db)):
-    return await svc.create_territory(db, data)
+async def create_territory(
+    data: CRMTerritoryCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(require_any_permission(CRM_CREATE_PERMISSIONS)),
+):
+    ensure_commercial_action_allowed(current_user, CRMTerritory(**data.model_dump()), "create", "crm")
+    return _territory_read(await svc.create_territory(db, data), current_user)
 
 
 @router.patch("/territories/{territory_id}", response_model=CRMTerritoryRead)
-async def update_territory(territory_id: str, data: CRMTerritoryUpdate, db: AsyncSession = Depends(get_db)):
+async def update_territory(
+    territory_id: str,
+    data: CRMTerritoryUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(require_any_permission(CRM_EDIT_PERMISSIONS)),
+):
+    existing = next((territory for territory in await svc.get_territories(db, active_only=False) if str(territory.id) == str(territory_id)), None)
+    if not existing:
+        raise HTTPException(404, "Territory not found")
+    ensure_commercial_action_allowed(current_user, existing, "edit", "crm")
     result = await svc.update_territory(db, territory_id, data)
     if not result:
         raise HTTPException(404, "Territory not found")
-    return result
+    return _territory_read(result, current_user)
 
 
 @router.get("/territories/performance")

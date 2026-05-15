@@ -12,9 +12,32 @@ from app.models.sales import (
 )
 
 
+class CommercialScopeFields(BaseModel):
+    company_id: Optional[uuid.UUID] = None
+    branch_id: Optional[uuid.UUID] = None
+    sales_region_id: Optional[str] = None
+    sales_team_id: Optional[str] = None
+    customer_group_id: Optional[str] = None
+
+
+class CommercialAccessHint(BaseModel):
+    can_view: bool = True
+    can_create: bool = False
+    can_edit: bool = False
+    can_delete: bool = False
+    can_approve: bool = False
+    can_convert: bool = False
+    can_discount_approve: bool = False
+    can_cancel: bool = False
+    can_export: bool = False
+    can_import: bool = False
+    view_only: bool = False
+    reason: Optional[str] = None
+
+
 # ── Customer ──────────────────────────────────────────────────────────────────
 
-class CustomerCreate(BaseModel):
+class CustomerCreate(CommercialScopeFields):
     code: str
     name: str
     contact_person: Optional[str] = None
@@ -37,7 +60,7 @@ class CustomerCreate(BaseModel):
     segment: Optional[str] = None
 
 
-class CustomerUpdate(BaseModel):
+class CustomerUpdate(CommercialScopeFields):
     name: Optional[str] = None
     contact_person: Optional[str] = None
     email: Optional[str] = None
@@ -85,6 +108,12 @@ class CustomerRead(BaseModel):
     customer_type: Optional[CustomerType] = None
     region: Optional[str] = None
     segment: Optional[str] = None
+    company_id: Optional[uuid.UUID] = None
+    branch_id: Optional[uuid.UUID] = None
+    sales_region_id: Optional[str] = None
+    sales_team_id: Optional[str] = None
+    customer_group_id: Optional[str] = None
+    access: Optional[CommercialAccessHint] = None
     created_at: datetime
 
 
@@ -152,7 +181,7 @@ class SOLineRead(BaseModel):
 
 # ── Sales Order ───────────────────────────────────────────────────────────────
 
-class SOCreate(BaseModel):
+class SOCreate(CommercialScopeFields):
     order_no: str
     customer_id: uuid.UUID
     order_date: date
@@ -168,7 +197,7 @@ class SOCreate(BaseModel):
     crm_segment_id: Optional[uuid.UUID] = None
 
 
-class SOUpdate(BaseModel):
+class SOUpdate(CommercialScopeFields):
     requested_delivery_date: Optional[date] = None
     warehouse_id: Optional[uuid.UUID] = None
     notes: Optional[str] = None
@@ -185,9 +214,18 @@ class SORead(BaseModel):
     status: SOStatus
     warehouse_id: Optional[uuid.UUID]
     warehouse_name: Optional[str] = None
+    company_id: Optional[uuid.UUID] = None
+    branch_id: Optional[uuid.UUID] = None
+    sales_region_id: Optional[str] = None
+    sales_team_id: Optional[str] = None
+    customer_group_id: Optional[str] = None
     currency: str
     notes: Optional[str]
     confirmed_at: Optional[datetime]
+    approval_status: Optional[str] = None
+    discount_approval_required: bool = False
+    discount_approved_by_id: Optional[uuid.UUID] = None
+    discount_approved_at: Optional[datetime] = None
     created_at: datetime
     total_value: Optional[Decimal] = None
     line_count: int = 0
@@ -201,6 +239,7 @@ class SORead(BaseModel):
     promotion_id: Optional[uuid.UUID] = None
     crm_segment_id: Optional[uuid.UUID] = None
     source: Optional[str] = None
+    access: Optional[CommercialAccessHint] = None
 
 
 class SODetailRead(SORead):

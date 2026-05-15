@@ -22,6 +22,13 @@ const STORAGE_COLLAPSED = "erp_sidebar_collapsed";
 const STORAGE_CLUSTER   = "erp_sidebar_cluster_v1";  // which of the 14 clusters is open
 const STORAGE_SECTION   = "erp_sidebar_section_v1";  // which section inside that cluster is open
 
+function testIdPart(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 // ── Pre-process NAV_CONFIG into grouped structure (runs once at module level) ─
 
 interface ClusterData {
@@ -146,6 +153,7 @@ function StandaloneLink({
         <Link
           href={entry.href}
           onClick={onNavigate}
+          data-testid={`sidebar-link-${testIdPart(entry.label)}`}
           className={[
             "flex h-9 w-9 items-center justify-center rounded-lg transition-all duration-200",
             active
@@ -164,6 +172,7 @@ function StandaloneLink({
     <Link
       href={entry.href}
       onClick={onNavigate}
+      data-testid={`sidebar-link-${testIdPart(entry.label)}`}
       className={[
         "flex items-center gap-2.5 rounded-lg px-2.5 py-[8px] text-[12.5px] font-medium transition-all duration-200",
         active
@@ -211,6 +220,7 @@ function SectionAccordion({
       <button
         onClick={onToggle}
         aria-expanded={isExpanded}
+        data-testid={`sidebar-section-${testIdPart(section.label)}`}
         className={[
           "group/sec flex w-full items-center gap-2 rounded-lg px-2.5 py-[6px] pl-[14px] text-left transition-all duration-150",
           hasActiveChild
@@ -259,6 +269,7 @@ function SectionAccordion({
                   key={item.href}
                   href={item.href}
                   onClick={onNavigate}
+                  data-testid={`sidebar-link-${testIdPart(item.label)}`}
                   className={[
                     "relative flex items-center border-l-[2px] py-[5px] pl-[34px] pr-2.5",
                     "text-[11.5px] leading-snug rounded-r-lg transition-all duration-150",
@@ -337,6 +348,7 @@ function ClusterAccordion({
             onExpandSidebar();
             if (!isExpanded) onToggleCluster();
           }}
+          data-testid={`sidebar-cluster-${testIdPart(data.label)}`}
           className={[
             "flex h-9 w-9 items-center justify-center rounded-lg transition-all duration-200",
             hasActiveChild
@@ -358,6 +370,7 @@ function ClusterAccordion({
       <button
         onClick={onToggleCluster}
         aria-expanded={isExpanded}
+        data-testid={`sidebar-cluster-${testIdPart(data.label)}`}
         className={[
           "group/cl flex w-full items-center gap-2.5 rounded-lg px-2.5 py-[7px] text-left transition-all duration-150",
           hasActiveChild
@@ -547,6 +560,7 @@ export function Sidebar({ mobileOpen, onMobileClose, onOpenSearch }: SidebarProp
         mobileOpen ? "max-lg:translate-x-0" : "max-lg:-translate-x-full",
       ].join(" ")}
       style={{ flexShrink: 0 }}
+      data-testid="sidebar"
     >
       {/* ── Logo / Header ─────────────────────────────────────────────────────── */}
       <div
@@ -630,6 +644,7 @@ export function Sidebar({ mobileOpen, onMobileClose, onOpenSearch }: SidebarProp
             : "px-2 space-y-[1px]",
         ].join(" ")}
         style={{ scrollbarWidth: "none" }}
+        data-testid="sidebar-nav"
       >
         {GROUPS.map((group) => {
           if (group.kind === "standalone") {

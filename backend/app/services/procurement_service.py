@@ -20,12 +20,46 @@ from sqlalchemy import select, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.core.access_control import (
+    can_modify_record,
+    can_view_record,
+    forbidden_detail,
+)
 from app.models.procurement import (
     PurchaseRequisition, PRLine, PurchaseOrder, POLine,
     GoodsReceipt, GRNLine, PRStatus, POStatus, GRNStatus,
+    ProcurementApprovalDocumentType, ProcurementApprovalRule,
 )
 from app.models.inventory import Stock, Lot, StockMovement, MovementType, StockType
 from app.models.master import Material, Warehouse
+from app.schemas.procurement import ProcurementAccessHint
+
+
+PROCUREMENT_SCOPE_FIELDS = ("company_id", "branch_id", "cost_center_id", "department")
+
+
+PROCUREMENT_ACTION_STATUSES: dict[str, dict[str, set[str]]] = {
+    "pr": {
+        "edit": {PRStatus.DRAFT.value},
+        "submit": {PRStatus.DRAFT.value},
+        "approve": {PRStatus.PENDING_APPROVAL.value},
+        "convert": {PRStatus.APPROVED.value},
+        "cancel": {PRStatus.DRAFT.value, PRStatus.PENDING_APPROVAL.value},
+    },
+    "po": {
+        "edit": {POStatus.DRAFT.value},
+        "approve": {POStatus.DRAFT.value},
+        "order": {POStatus.APPROVED.value},
+        "receive": {POStatus.ORDERED.value, POStatus.PARTIALLY_RECEIVED.value},
+        "cancel": {POStatus.DRAFT.value, POStatus.APPROVED.value, POStatus.ORDERED.value},
+    },
+    "grn": {
+        "edit": {GRNStatus.DRAFT.value},
+        "receive": {GRNStatus.DRAFT.value},
+        "post": {GRNStatus.DRAFT.value},
+        "cancel": {GRNStatus.DRAFT.value},
+    },
+}
 
 
 # ── Guards ────────────────────────────────────────────────────────────────────
@@ -47,6 +81,133 @@ def _assert_po_status(po: PurchaseOrder, *allowed: POStatus) -> None:
 
 
 # ── PR lifecycle ──────────────────────────────────────────────────────────────
+
+def _status_value(record) -> str | None:
+    status_value = getattr(record, "status", None)
+    if status_value is None:
+        return None
+    return str(getattr(status_value, "value", status_value))
+
+
+def procurement_document_key(record) -> str:
+    if isinstance(record, PurchaseRequisition):
+        return "pr"
+    if isinstance(record, PurchaseOrder):
+        return "po"
+    if isinstance(record, GoodsReceipt):
+        return "grn"
+    name = record.__class__.__name__.lower()
+    if "requisition" in name:
+        return "pr"
+    if "order" in name:
+        return "po"
+    if "receipt" in name or "grn" in name:
+        return "grn"
+    return name
+
+
+def inherit_procurement_scope(target, source, overwrite: bool = False) -> None:
+    for field_name in PROCUREMENT_SCOPE_FIELDS:
+        if not hasattr(target, field_name) or not hasattr(source, field_name):
+            continue
+        if overwrite or getattr(target, field_name, None) is None:
+            setattr(target, field_name, getattr(source, field_name, None))
+
+
+def can_change_procurement_status(record, action: str) -> bool:
+    document_key = procurement_document_key(record)
+    allowed_statuses = PROCUREMENT_ACTION_STATUSES.get(document_key, {}).get(action)
+    if not allowed_statuses:
+        return True
+    return _status_value(record) in allowed_statuses
+
+
+def build_procurement_access_hint(user, record) -> ProcurementAccessHint:
+    can_view = can_view_record(user, "procurement", record)
+    actions = {
+        "can_create": can_modify_record(user, "procurement", "create", record),
+        "can_edit": can_change_procurement_status(record, "edit") and can_modify_record(user, "procurement", "edit", record),
+        "can_delete": can_change_procurement_status(record, "delete") and can_modify_record(user, "procurement", "delete", record),
+        "can_approve": can_change_procurement_status(record, "approve") and can_modify_record(user, "procurement", "approve", record),
+        "can_receive": can_change_procurement_status(record, "receive") and can_modify_record(user, "procurement", "receive", record),
+        "can_post": can_change_procurement_status(record, "post") and can_modify_record(user, "procurement", "post", record),
+        "can_cancel": can_change_procurement_status(record, "cancel") and can_modify_record(user, "procurement", "cancel", record),
+        "can_export": can_modify_record(user, "procurement", "export", record),
+        "can_import": can_modify_record(user, "procurement", "import", record),
+    }
+    mutation_allowed = any(actions.values())
+    reason = None
+    if can_view and not mutation_allowed:
+        reason = "You can view this procurement record but cannot modify it in this scope or status."
+    return ProcurementAccessHint(
+        can_view=can_view,
+        view_only=can_view and not mutation_allowed,
+        reason=reason,
+        **actions,
+    )
+
+
+def ensure_procurement_action_allowed(user, record, action: str) -> None:
+    if not can_change_procurement_status(record, action):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Procurement record status does not allow {action}.",
+        )
+    allowed = can_view_record(user, "procurement", record) if action == "view" else can_modify_record(user, "procurement", action, record)
+    if not allowed:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=forbidden_detail("You can view this procurement record only if your permissions and scopes allow it."),
+        )
+
+
+def procurement_document_amount(record) -> Decimal | None:
+    lines = getattr(record, "lines", None)
+    if not lines:
+        return None
+    total = Decimal("0")
+    has_amount = False
+    for line in lines:
+        quantity = getattr(line, "ordered_quantity", None) or getattr(line, "quantity", None)
+        unit_price = getattr(line, "unit_price", None) or getattr(line, "estimated_unit_cost", None)
+        if quantity is None or unit_price is None:
+            continue
+        total += Decimal(str(quantity)) * Decimal(str(unit_price))
+        has_amount = True
+    return total if has_amount else None
+
+
+async def find_procurement_approval_rules(
+    db: AsyncSession,
+    document_type: ProcurementApprovalDocumentType,
+    record,
+    amount: Decimal | None = None,
+) -> list[ProcurementApprovalRule]:
+    today = date.today()
+    amount_value = amount if amount is not None else procurement_document_amount(record)
+
+    filters = [
+        ProcurementApprovalRule.document_type == document_type,
+        ProcurementApprovalRule.is_active.is_(True),
+        (ProcurementApprovalRule.effective_from.is_(None) | (ProcurementApprovalRule.effective_from <= today)),
+        (ProcurementApprovalRule.effective_to.is_(None) | (ProcurementApprovalRule.effective_to >= today)),
+    ]
+    for field_name in PROCUREMENT_SCOPE_FIELDS:
+        value = getattr(record, field_name, None)
+        if value is not None:
+            rule_field = getattr(ProcurementApprovalRule, field_name)
+            filters.append(rule_field.is_(None) | (rule_field == value))
+    if amount_value is not None:
+        filters.append(ProcurementApprovalRule.min_amount.is_(None) | (ProcurementApprovalRule.min_amount <= amount_value))
+        filters.append(ProcurementApprovalRule.max_amount.is_(None) | (ProcurementApprovalRule.max_amount >= amount_value))
+
+    result = await db.execute(
+        select(ProcurementApprovalRule)
+        .where(*filters)
+        .order_by(ProcurementApprovalRule.approval_level, ProcurementApprovalRule.rule_name)
+    )
+    return list(result.scalars().all())
+
 
 async def approve_pr(
     db: AsyncSession,
@@ -102,6 +263,7 @@ async def convert_pr_to_po(
         pr_id=pr.id,
         created_by_id=created_by_id,
     )
+    inherit_procurement_scope(po, pr)
     db.add(po)
     await db.flush()
 

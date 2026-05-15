@@ -18,6 +18,13 @@ class POPaymentStatus(str, enum.Enum):
     PAID = "paid"
 
 
+class ProcurementApprovalDocumentType(str, enum.Enum):
+    PR = "PR"
+    PO = "PO"
+    RFQ = "RFQ"
+    BPA = "BPA"
+
+
 class PRStatus(str, enum.Enum):
     DRAFT = "DRAFT"
     PENDING_APPROVAL = "PENDING_APPROVAL"
@@ -55,6 +62,9 @@ class PurchaseRequisition(Base, TimestampMixin):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     pr_no = Column(String(50), unique=True, nullable=False, index=True)
     requester_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
+    company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="SET NULL"), nullable=True, index=True)
+    branch_id = Column(UUID(as_uuid=True), ForeignKey("branches.id", ondelete="SET NULL"), nullable=True, index=True)
+    cost_center_id = Column(UUID(as_uuid=True), ForeignKey("cost_centers.id", ondelete="SET NULL"), nullable=True, index=True)
     department = Column(String(100), nullable=True)
     required_date = Column(Date, nullable=False)
     notes = Column(Text, nullable=True)
@@ -65,6 +75,9 @@ class PurchaseRequisition(Base, TimestampMixin):
 
     requester = relationship("User", foreign_keys=[requester_id])
     approver = relationship("User", foreign_keys=[approved_by_id])
+    company = relationship("Company")
+    branch = relationship("Branch")
+    cost_center = relationship("CostCenter")
     lines = relationship("PRLine", back_populates="pr", cascade="all, delete-orphan",
                          order_by="PRLine.line_no")
 
@@ -98,6 +111,10 @@ class PurchaseOrder(Base, TimestampMixin):
     po_no = Column(String(50), unique=True, nullable=False, index=True)
     supplier_id = Column(UUID(as_uuid=True), ForeignKey("suppliers.id", ondelete="RESTRICT"), nullable=False)
     pr_id = Column(UUID(as_uuid=True), ForeignKey("purchase_requisitions.id", ondelete="SET NULL"), nullable=True)
+    company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="SET NULL"), nullable=True, index=True)
+    branch_id = Column(UUID(as_uuid=True), ForeignKey("branches.id", ondelete="SET NULL"), nullable=True, index=True)
+    cost_center_id = Column(UUID(as_uuid=True), ForeignKey("cost_centers.id", ondelete="SET NULL"), nullable=True, index=True)
+    department = Column(String(100), nullable=True, index=True)
     order_date = Column(Date, nullable=False)
     expected_delivery_date = Column(Date, nullable=False)
     payment_terms = Column(String(100), nullable=True)
@@ -115,6 +132,9 @@ class PurchaseOrder(Base, TimestampMixin):
 
     supplier = relationship("Supplier")
     pr = relationship("PurchaseRequisition")
+    company = relationship("Company")
+    branch = relationship("Branch")
+    cost_center = relationship("CostCenter")
     approver = relationship("User", foreign_keys=[approved_by_id])
     created_by = relationship("User", foreign_keys=[created_by_id])
     lines = relationship("POLine", back_populates="po", cascade="all, delete-orphan",
@@ -157,6 +177,10 @@ class GoodsReceipt(Base, TimestampMixin):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     grn_no = Column(String(50), unique=True, nullable=False, index=True)
     po_id = Column(UUID(as_uuid=True), ForeignKey("purchase_orders.id", ondelete="RESTRICT"), nullable=False)
+    company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="SET NULL"), nullable=True, index=True)
+    branch_id = Column(UUID(as_uuid=True), ForeignKey("branches.id", ondelete="SET NULL"), nullable=True, index=True)
+    cost_center_id = Column(UUID(as_uuid=True), ForeignKey("cost_centers.id", ondelete="SET NULL"), nullable=True, index=True)
+    department = Column(String(100), nullable=True, index=True)
     received_date = Column(Date, nullable=False)
     received_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     warehouse_id = Column(UUID(as_uuid=True), ForeignKey("warehouses.id", ondelete="RESTRICT"), nullable=False)
@@ -164,6 +188,9 @@ class GoodsReceipt(Base, TimestampMixin):
     status = Column(Enum(GRNStatus), nullable=False, default=GRNStatus.DRAFT)
 
     po = relationship("PurchaseOrder", back_populates="goods_receipts")
+    company = relationship("Company")
+    branch = relationship("Branch")
+    cost_center = relationship("CostCenter")
     received_by = relationship("User")
     warehouse = relationship("Warehouse")
     lines = relationship("GRNLine", back_populates="grn", cascade="all, delete-orphan")
@@ -210,6 +237,10 @@ class ImportShipment(Base, TimestampMixin):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     shipment_no = Column(String(50), unique=True, nullable=False, index=True)
     po_id = Column(UUID(as_uuid=True), ForeignKey("purchase_orders.id", ondelete="RESTRICT"), nullable=False)
+    company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="SET NULL"), nullable=True, index=True)
+    branch_id = Column(UUID(as_uuid=True), ForeignKey("branches.id", ondelete="SET NULL"), nullable=True, index=True)
+    cost_center_id = Column(UUID(as_uuid=True), ForeignKey("cost_centers.id", ondelete="SET NULL"), nullable=True, index=True)
+    department = Column(String(100), nullable=True, index=True)
     bl_number = Column(String(100), nullable=True)
     vessel_name = Column(String(255), nullable=True)
     port_of_loading = Column(String(100), nullable=True)
@@ -226,6 +257,9 @@ class ImportShipment(Base, TimestampMixin):
     notes = Column(Text, nullable=True)
 
     po = relationship("PurchaseOrder", back_populates="import_shipment")
+    company = relationship("Company")
+    branch = relationship("Branch")
+    cost_center = relationship("CostCenter")
 
 
 class SupplierPayment(Base, TimestampMixin):
@@ -239,6 +273,10 @@ class SupplierPayment(Base, TimestampMixin):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     po_id = Column(UUID(as_uuid=True), ForeignKey("purchase_orders.id", ondelete="RESTRICT"), nullable=False)
     supplier_id = Column(UUID(as_uuid=True), ForeignKey("suppliers.id", ondelete="RESTRICT"), nullable=False)
+    company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="SET NULL"), nullable=True, index=True)
+    branch_id = Column(UUID(as_uuid=True), ForeignKey("branches.id", ondelete="SET NULL"), nullable=True, index=True)
+    cost_center_id = Column(UUID(as_uuid=True), ForeignKey("cost_centers.id", ondelete="SET NULL"), nullable=True, index=True)
+    department = Column(String(100), nullable=True, index=True)
     payment_date = Column(Date, nullable=False)
     amount = Column(Numeric(16, 4), nullable=False)
     method = Column(String(20), nullable=False, default="bank")   # bank | cash | mpesa
@@ -248,6 +286,9 @@ class SupplierPayment(Base, TimestampMixin):
 
     po = relationship("PurchaseOrder", back_populates="supplier_payments")
     supplier = relationship("Supplier")
+    company = relationship("Company")
+    branch = relationship("Branch")
+    cost_center = relationship("CostCenter")
     created_by = relationship("User")
 
 
@@ -278,6 +319,10 @@ class RFQRequest(Base, TimestampMixin):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     rfq_no = Column(String(50), unique=True, nullable=False, index=True)
     pr_id = Column(UUID(as_uuid=True), ForeignKey("purchase_requisitions.id", ondelete="SET NULL"), nullable=True)
+    company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="SET NULL"), nullable=True, index=True)
+    branch_id = Column(UUID(as_uuid=True), ForeignKey("branches.id", ondelete="SET NULL"), nullable=True, index=True)
+    cost_center_id = Column(UUID(as_uuid=True), ForeignKey("cost_centers.id", ondelete="SET NULL"), nullable=True, index=True)
+    department = Column(String(100), nullable=True, index=True)
     title = Column(String(300), nullable=False)
     material_id = Column(UUID(as_uuid=True), ForeignKey("materials.id", ondelete="SET NULL"), nullable=True)
     product_id = Column(UUID(as_uuid=True), ForeignKey("products.id", ondelete="SET NULL"), nullable=True)
@@ -292,6 +337,9 @@ class RFQRequest(Base, TimestampMixin):
     created_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
 
     pr = relationship("PurchaseRequisition")
+    company = relationship("Company")
+    branch = relationship("Branch")
+    cost_center = relationship("CostCenter")
     awarded_supplier = relationship("Supplier", foreign_keys=[awarded_supplier_id])
     responses = relationship("RFQResponse", back_populates="rfq", cascade="all, delete-orphan")
 
@@ -321,6 +369,10 @@ class BlanketPurchaseAgreement(Base, TimestampMixin):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     bpa_no = Column(String(50), unique=True, nullable=False, index=True)
     supplier_id = Column(UUID(as_uuid=True), ForeignKey("suppliers.id", ondelete="RESTRICT"), nullable=False)
+    company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="SET NULL"), nullable=True, index=True)
+    branch_id = Column(UUID(as_uuid=True), ForeignKey("branches.id", ondelete="SET NULL"), nullable=True, index=True)
+    cost_center_id = Column(UUID(as_uuid=True), ForeignKey("cost_centers.id", ondelete="SET NULL"), nullable=True, index=True)
+    department = Column(String(100), nullable=True, index=True)
     material_id = Column(UUID(as_uuid=True), ForeignKey("materials.id", ondelete="SET NULL"), nullable=True)
     product_id = Column(UUID(as_uuid=True), ForeignKey("products.id", ondelete="SET NULL"), nullable=True)
     description = Column(String(300), nullable=True)
@@ -337,6 +389,9 @@ class BlanketPurchaseAgreement(Base, TimestampMixin):
     created_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
 
     supplier = relationship("Supplier")
+    company = relationship("Company")
+    branch = relationship("Branch")
+    cost_center = relationship("CostCenter")
 
 
 class AutoReorderPolicy(Base, TimestampMixin):
@@ -346,6 +401,10 @@ class AutoReorderPolicy(Base, TimestampMixin):
     material_id = Column(UUID(as_uuid=True), ForeignKey("materials.id", ondelete="SET NULL"), nullable=True)
     product_id = Column(UUID(as_uuid=True), ForeignKey("products.id", ondelete="SET NULL"), nullable=True)
     warehouse_id = Column(UUID(as_uuid=True), ForeignKey("warehouses.id", ondelete="SET NULL"), nullable=True)
+    company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="SET NULL"), nullable=True, index=True)
+    branch_id = Column(UUID(as_uuid=True), ForeignKey("branches.id", ondelete="SET NULL"), nullable=True, index=True)
+    cost_center_id = Column(UUID(as_uuid=True), ForeignKey("cost_centers.id", ondelete="SET NULL"), nullable=True, index=True)
+    department = Column(String(100), nullable=True, index=True)
     reorder_point = Column(Numeric(14, 3), nullable=False)
     reorder_quantity = Column(Numeric(14, 3), nullable=False)
     max_stock_level = Column(Numeric(14, 3), nullable=True)
@@ -356,6 +415,9 @@ class AutoReorderPolicy(Base, TimestampMixin):
     notes = Column(String(500), nullable=True)
 
     preferred_supplier = relationship("Supplier")
+    company = relationship("Company")
+    branch = relationship("Branch")
+    cost_center = relationship("CostCenter")
 
 
 class SupplierEvaluation(Base, TimestampMixin):
@@ -363,6 +425,10 @@ class SupplierEvaluation(Base, TimestampMixin):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     supplier_id = Column(UUID(as_uuid=True), ForeignKey("suppliers.id", ondelete="CASCADE"), nullable=False)
+    company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="SET NULL"), nullable=True, index=True)
+    branch_id = Column(UUID(as_uuid=True), ForeignKey("branches.id", ondelete="SET NULL"), nullable=True, index=True)
+    cost_center_id = Column(UUID(as_uuid=True), ForeignKey("cost_centers.id", ondelete="SET NULL"), nullable=True, index=True)
+    department = Column(String(100), nullable=True, index=True)
     evaluation_date = Column(Date, nullable=False)
     po_id = Column(UUID(as_uuid=True), ForeignKey("purchase_orders.id", ondelete="SET NULL"), nullable=True)
     on_time_delivery_score = Column(Numeric(5, 2), nullable=False)
@@ -374,5 +440,39 @@ class SupplierEvaluation(Base, TimestampMixin):
     notes = Column(Text, nullable=True)
 
     supplier = relationship("Supplier")
+    company = relationship("Company")
+    branch = relationship("Branch")
+    cost_center = relationship("CostCenter")
     evaluator = relationship("User")
     po = relationship("PurchaseOrder")
+
+
+class ProcurementApprovalRule(Base, TimestampMixin):
+    __tablename__ = "procurement_approval_rules"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    rule_name = Column(String(255), nullable=False)
+    document_type = Column(Enum(ProcurementApprovalDocumentType), nullable=False, index=True)
+    company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="SET NULL"), nullable=True, index=True)
+    branch_id = Column(UUID(as_uuid=True), ForeignKey("branches.id", ondelete="SET NULL"), nullable=True, index=True)
+    cost_center_id = Column(UUID(as_uuid=True), ForeignKey("cost_centers.id", ondelete="SET NULL"), nullable=True, index=True)
+    department = Column(String(100), nullable=True, index=True)
+    supplier_category = Column(String(100), nullable=True, index=True)
+    product_category = Column(String(100), nullable=True, index=True)
+    min_amount = Column(Numeric(16, 4), nullable=True)
+    max_amount = Column(Numeric(16, 4), nullable=True)
+    currency = Column(String(10), nullable=True)
+    approval_level = Column(Integer, nullable=False, default=1)
+    approver_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    approver_role_id = Column(UUID(as_uuid=True), ForeignKey("roles.id", ondelete="SET NULL"), nullable=True)
+    requires_all_matching_approvers = Column(Boolean, nullable=False, default=False)
+    is_active = Column(Boolean, nullable=False, default=True)
+    effective_from = Column(Date, nullable=True)
+    effective_to = Column(Date, nullable=True)
+    notes = Column(Text, nullable=True)
+
+    company = relationship("Company")
+    branch = relationship("Branch")
+    cost_center = relationship("CostCenter")
+    approver_user = relationship("User", foreign_keys=[approver_user_id])
+    approver_role = relationship("Role", foreign_keys=[approver_role_id])

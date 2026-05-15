@@ -10,6 +10,12 @@ export type PlanningAgentType = "CAPACITY_OPTIMIZER" | "SEQUENCING_OPTIMIZER" | 
 export type PlanningRecStatus = "PENDING" | "ACCEPTED" | "REJECTED";
 export type SimulationStatus = "DRAFT" | "COMPUTED" | "PUBLISHED" | "DISCARDED";
 
+export const PLANNING_VIEW_PERMISSIONS = ["planning.view", "planning.view_all", "planning.view_own_scope"];
+export const PLANNING_CREATE_PERMISSIONS = ["planning.create", "planning.create_all", "planning.create_own_scope"];
+export const PLANNING_EDIT_PERMISSIONS = ["planning.edit", "planning.edit_all", "planning.edit_own_scope"];
+export const PLANNING_CALCULATE_PERMISSIONS = ["planning.calculate", "planning.calculate_all", "planning.calculate_own_scope"];
+export const PLANNING_APPROVE_PERMISSIONS = ["planning.approve", "planning.approve_all", "planning.approve_own_scope"];
+
 // ── Types ──────────────────────────────────────────────────────────────────────
 
 export interface ScenarioSummary {
@@ -239,8 +245,8 @@ export const planningApi = {
   // AI
   runAI:    (scenarioId: string) => apiClient.post<{ total: number }>(`/planning/scenarios/${scenarioId}/run-ai`, {}).then((r) => r.data),
   listAI:   (scenarioId: string) => apiClient.get<AIRecOut[]>(`/planning/scenarios/${scenarioId}/ai-recommendations`).then((r) => r.data),
-  actionAI: (recId: string, status: PlanningRecStatus, userId: string) =>
-    apiClient.post<AIRecOut>(`/planning/ai-recommendations/${recId}/action`, { status, actioned_by_id: userId }).then((r) => r.data),
+  actionAI: (recId: string, status: PlanningRecStatus) =>
+    apiClient.post<AIRecOut>(`/planning/ai-recommendations/${recId}/action`, { status }).then((r) => r.data),
 
   // Simulations
   createSim:  (scenarioId: string, body: { sim_name: string; description?: string; changes: Record<string, unknown>[] }) =>

@@ -1,3 +1,5 @@
+import type { CommercialAccessHint, CommercialScopeFields } from "@/lib/sales";
+
 const BASE = "/api/v1/quotes";
 
 export type QuoteStatus = "DRAFT" | "SENT" | "ACCEPTED" | "REJECTED" | "EXPIRED" | "CONVERTED";
@@ -17,11 +19,12 @@ export interface QuotationLine {
   line_total: number;
 }
 
-export interface Quotation {
+export interface Quotation extends CommercialScopeFields {
   id: string;
   quote_no: string;
   version: number;
   customer_id: string;
+  crm_record_id?: string | null;
   customer_name: string | null;
   customer_code: string | null;
   status: QuoteStatus;
@@ -36,11 +39,16 @@ export interface Quotation {
   accepted_at: string | null;
   rejected_at: string | null;
   lost_reason: string | null;
+  approval_status?: string | null;
+  discount_approval_required?: boolean;
+  discount_approved_by_id?: string | null;
+  discount_approved_at?: string | null;
   converted_so_id: string | null;
   created_by_id: string | null;
   notes: string | null;
   created_at: string;
   lines: QuotationLine[];
+  access?: CommercialAccessHint | null;
 }
 
 export interface QuoteDashboard {
@@ -66,8 +74,9 @@ export interface QuoteLineCreate {
   tax_rate: number;
 }
 
-export interface QuoteCreate {
+export interface QuoteCreate extends CommercialScopeFields {
   customer_id: string;
+  crm_record_id?: string;
   quote_date: string;
   valid_until?: string;
   currency: string;

@@ -8,7 +8,30 @@ export type PaymentMethod = "cash" | "mpesa" | "bank_transfer" | "credit";
 export type SOPaymentStatus = "pending" | "partially_paid" | "paid" | "failed";
 export type MpesaTxStatus = "pending" | "completed" | "failed" | "cancelled";
 
-export interface Customer {
+export interface CommercialAccessHint {
+  can_view: boolean;
+  can_create: boolean;
+  can_edit: boolean;
+  can_delete: boolean;
+  can_approve: boolean;
+  can_convert: boolean;
+  can_discount_approve: boolean;
+  can_cancel: boolean;
+  can_export: boolean;
+  can_import: boolean;
+  view_only: boolean;
+  reason?: string | null;
+}
+
+export interface CommercialScopeFields {
+  company_id?: string | null;
+  branch_id?: string | null;
+  sales_region_id?: string | null;
+  sales_team_id?: string | null;
+  customer_group_id?: string | null;
+}
+
+export interface Customer extends CommercialScopeFields {
   id: string;
   code: string;
   name: string;
@@ -29,6 +52,7 @@ export interface Customer {
   notes?: string;
   is_active: boolean;
   is_prepaid: boolean;
+  access?: CommercialAccessHint | null;
   created_at: string;
 }
 
@@ -54,7 +78,7 @@ export interface SOLine {
   gross_margin?: number;
 }
 
-export interface SalesOrder {
+export interface SalesOrder extends CommercialScopeFields {
   id: string;
   order_no: string;
   customer_id: string;
@@ -67,6 +91,10 @@ export interface SalesOrder {
   currency: string;
   notes?: string;
   confirmed_at?: string;
+  approval_status?: string | null;
+  discount_approval_required?: boolean;
+  discount_approved_by_id?: string | null;
+  discount_approved_at?: string | null;
   created_at: string;
   total_value?: number;
   line_count: number;
@@ -78,6 +106,7 @@ export interface SalesOrder {
   lines?: SOLine[];
   shipments?: any[];
   invoices?: any[];
+  access?: CommercialAccessHint | null;
 }
 
 export interface ShipmentLine {
