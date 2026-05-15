@@ -1,13 +1,13 @@
 # CODEX PROGRESS
 
 ## Last Updated
-2026-05-15T20:30:00+03:00
+2026-05-15T21:30:00+03:00
 
 ## Last Completed Task
-GAP-019L: shelf_life module promoted to MODULE_DEFINITIONS with 7 permission codes; 10/10 tests passed; nav-config.tsx fixed.
+GAP-020A: Audit complete — Consumer Complaint and Recall Linkage. Created `docs/planning/GAP-020_CONSUMER_COMPLAINT_RECALL_AUDIT.md`.
 
 ## Current Working Task
-GAP-020A: Audit complete — Consumer Complaint and Recall Linkage. GAP-020B onwards pending.
+GAP-020B: Schema design for Consumer Complaint and Recall Linkage. Decision: no new tables; consumer_complaints needs MODULE_DEFINITIONS promotion and seed permissions.
 
 ## Alembic Migration Chain (This Worktree)
 - `20260511_0010` — Enterprise Accounting Core

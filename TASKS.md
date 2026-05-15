@@ -1,7 +1,7 @@
 # TASKS
 
 ## Current Phase
-PHASE 5 - FMCG-specific and regulatory polish. Currently on GAP-020A: Consumer Complaint and Recall Linkage.
+PHASE 5 - FMCG-specific and regulatory polish. Currently on GAP-020B: Schema design for Consumer Complaint and Recall Linkage (audit GAP-020A done).
 
 ## Execution Rules
 - Always read this file before starting work.
@@ -16,10 +16,10 @@ PHASE 5 - FMCG-specific and regulatory polish. Currently on GAP-020A: Consumer C
 - If context/usage limit is near, stop after updating TASKS.md and CODEX_PROGRESS.md.
 
 ## In Progress
-GAP-020A: Audit current implementation: Consumer Complaint and Recall Linkage.
+GAP-020B: Design data model/schema: Consumer Complaint and Recall Linkage.
 
 ## Next Immediate Task
-GAP-020A: Read consumer_complaints.py and recall.py endpoints and models; record what complaint handling, recall workflow, and quality linkage exists, what is partial, and what is missing.
+GAP-020B: No new tables needed; document module promotion decision for consumer_complaints; assess whether service layer extraction is in scope.
 
 ## Roadmap Task Queue
 | ID | Tier | Task | Status | Dependencies | Acceptance Criteria | Notes |
@@ -268,7 +268,7 @@ GAP-020A: Read consumer_complaints.py and recall.py endpoints and models; record
 | GAP-019J | Tier 4 - FMCG-Specific & Regulatory | Add or update tests: Shelf-Life / FEFO / Expiry Control | DONE | GAP-019I | Add focused backend/frontend tests for the implemented behavior. | Added `backend/tests/test_gap019_shelf_life_fefo.py`; 10/10 passed. |
 | GAP-019K | Tier 4 - FMCG-Specific & Regulatory | Add or update documentation: Shelf-Life / FEFO / Expiry Control | DONE | GAP-019J | Update user/admin/developer docs for this change. | Added `docs/planning/GAP-019_SHELF_LIFE_FEFO_IMPLEMENTATION_NOTES.md`. |
 | GAP-019L | Tier 4 - FMCG-Specific & Regulatory | Run checks and record result: Shelf-Life / FEFO / Expiry Control | DONE | GAP-019K | Run relevant compile, lint, type, test, migration, or smoke checks. | Backend compile OK; 10/10 focused tests passed; Alembic head unchanged at 20260515_0040; no migration needed. |
-| GAP-020A | Tier 4 - FMCG-Specific & Regulatory | Audit current implementation: Consumer Complaint and Recall Linkage | TODO | GAP-019L | Record what exists, what is partial, and what is missing for this gap. | Phase: Phase 5 - FMCG/regulatory polish; Priority: High; Area: Quality / Recall / Customer Care; Files: `backend/app/api/v1/endpoints/consumer_complaints.py`, `backend/app/api/v1/endpoints/recall.py`, `frontend/src/app/dashboard`, `backend/tests` |
+| GAP-020A | Tier 4 - FMCG-Specific & Regulatory | Audit current implementation: Consumer Complaint and Recall Linkage | DONE | GAP-019L | Record what exists, what is partial, and what is missing for this gap. | Created `docs/planning/GAP-020_CONSUMER_COMPLAINT_RECALL_AUDIT.md`; 1 complaint model (6 endpoints), 9 recall models (26 endpoints), recall service 30+ functions; gaps: consumer_complaints not in MODULE_DEFINITIONS, no seed permissions, one-way UUID bridge only, no auto-recall trigger. |
 | GAP-020B | Tier 4 - FMCG-Specific & Regulatory | Design data model/schema: Consumer Complaint and Recall Linkage | TODO | GAP-020A | Define schema/model changes only if needed and review existing models first. | Phase: Phase 5 - FMCG/regulatory polish; Priority: High; Area: Quality / Recall / Customer Care; Files: `backend/app/api/v1/endpoints/consumer_complaints.py`, `backend/app/api/v1/endpoints/recall.py`, `frontend/src/app/dashboard`, `backend/tests` |
 | GAP-020C | Tier 4 - FMCG-Specific & Regulatory | Add or update database migrations: Consumer Complaint and Recall Linkage | TODO | GAP-020B | Create Alembic migrations only for required schema changes. | Phase: Phase 5 - FMCG/regulatory polish; Priority: High; Area: Quality / Recall / Customer Care; Files: `backend/app/api/v1/endpoints/consumer_complaints.py`, `backend/app/api/v1/endpoints/recall.py`, `frontend/src/app/dashboard`, `backend/tests` |
 | GAP-020D | Tier 4 - FMCG-Specific & Regulatory | Add or update backend models: Consumer Complaint and Recall Linkage | TODO | GAP-020C | Implement ORM/model changes following existing conventions. | Phase: Phase 5 - FMCG/regulatory polish; Priority: High; Area: Quality / Recall / Customer Care; Files: `backend/app/api/v1/endpoints/consumer_complaints.py`, `backend/app/api/v1/endpoints/recall.py`, `frontend/src/app/dashboard`, `backend/tests` |
