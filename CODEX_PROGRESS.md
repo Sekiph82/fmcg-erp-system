@@ -1,15 +1,20 @@
 # CODEX PROGRESS
 
 ## Last Updated
-2026-05-15T13:47:00+03:00
+2026-05-15T17:24:00+03:00
 
 ## Last Completed Task
-GAP-012I: Updated permissions/roles for Document Management and Internal Knowledge System.
+GAP-013B: Designed schema/model direction for Custom Report Builder Depth.
 
 ## Current Working Task
-GAP-012J: Add or update tests for Document Management and Internal Knowledge System.
+GAP-013C: Add or update database migrations for Custom Report Builder Depth.
 
 ## Files Changed in Last Run
+- `docs/planning/GAP-013_CUSTOM_REPORT_BUILDER_SCHEMA_DESIGN.md`
+- `docs/planning/GAP-013_CUSTOM_REPORT_BUILDER_AUDIT.md`
+- `docs/planning/GAP-012_DOCUMENT_KNOWLEDGE_IMPLEMENTATION_NOTES.md`
+- `TASKS.md`
+- `CODEX_PROGRESS.md`
 - `backend/app/core/module_registry.py`
 - `backend/app/db/seed.py`
 - `backend/app/services/document_access_service.py`
@@ -157,6 +162,36 @@ GAP-012J: Add or update tests for Document Management and Internal Knowledge Sys
 - `backend/app/db/seed.py`
 
 ## Tests/Checks Run
+- `rg "Summary|Current Schema Baseline|Design Goals|Module Ownership Design|Permission Design|Underlying Data-Source Access Design|Report Visibility Design|RLS Schema Design|Migration Reconciliation Scope for GAP-013C|Model Design|Schema/API Contract Design|Service Design|API Endpoint Design|Frontend Design Implications|Test Strategy|Documentation Requirements|Acceptance Criteria for GAP-013B" docs\planning\GAP-013_CUSTOM_REPORT_BUILDER_SCHEMA_DESIGN.md` - passed.
+- `(Get-Item docs\planning\GAP-013_CUSTOM_REPORT_BUILDER_SCHEMA_DESIGN.md).Length` - passed, 14173 bytes.
+- `rg -n "password|secret|token|api[_-]?key" docs\planning\GAP-013_CUSTOM_REPORT_BUILDER_SCHEMA_DESIGN.md` - no matches.
+- `rg --files backend\app | rg -i "report|analytics|dashboard|kpi|builder"` - reviewed report-builder/backend reporting surfaces.
+- `rg --files frontend\src | rg -i "report|analytics|dashboard|kpi|builder"` - reviewed report-builder/frontend reporting surfaces.
+- `rg --files backend\tests | rg -i "report|analytics|dashboard|kpi|builder|gap013"` - reviewed existing test coverage; no focused GAP-013 report-builder tests found.
+- `rg -n "reports|report_builder|analytics|dashboard|kpi|export" backend\app\core\module_registry.py backend\app\db\seed.py frontend\src\components\nav-config.tsx` - reviewed registry, seed, and nav permission coverage.
+- `Get-Content backend\app\api\v1\endpoints\report_builder.py` - reviewed report-builder endpoint groups and auth/permission gaps.
+- `Get-Content backend\app\models\report_builder.py` - reviewed report-builder ORM models.
+- `Get-Content backend\app\schemas\report_builder.py` - reviewed report-builder schemas.
+- `Get-Content backend\app\services\report_builder_service.py` - reviewed report-builder data catalog, query runner, export, schedule, dashboard, and AI helper behavior.
+- `rg -n "rb_report|report_builder|reports-builder|report-builder|analytics" backend\alembic\versions` - found existing report-builder migration and missing RLS migration ownership.
+- `Get-Content frontend\src\lib\report_builder.ts` - reviewed frontend client and direct fetch usage.
+- `rg -n "RequirePermission|PermissionGuard|analytics\.view|report_builder|reports-builder|apiClient|fetch\(" frontend\src\app\dashboard\report-builder frontend\src\lib\report_builder.ts` - reviewed frontend guard/client gaps.
+- `rg "Summary|Business Importance|Files Inspected|Existing Backend Coverage|Existing Model and Migration Coverage|Existing Frontend Coverage|Existing Permissions / Roles / Scopes|Missing Pieces|Partial Pieces|Risks|Recommended GAP-013B Design Direction|Acceptance Criteria for GAP-013 Completion" docs\planning\GAP-013_CUSTOM_REPORT_BUILDER_AUDIT.md` - passed.
+- `(Get-Item docs\planning\GAP-013_CUSTOM_REPORT_BUILDER_AUDIT.md).Length` - passed, 14739 bytes.
+- `rg -n "password|secret|token|api[_-]?key" docs\planning\GAP-013_CUSTOM_REPORT_BUILDER_AUDIT.md` - no matches.
+- `rg "Summary|Audit Findings From GAP-012A|Design Decision From GAP-012B|Migration and Schema Changes|Backend Service Behavior|API Endpoint Behavior|Module Registry and Permissions|Frontend Behavior|Tests Added|Known Limitations and Follow-Up|Acceptance Criteria Snapshot" docs\planning\GAP-012_DOCUMENT_KNOWLEDGE_IMPLEMENTATION_NOTES.md` - passed.
+- `(Get-Item docs\planning\GAP-012_DOCUMENT_KNOWLEDGE_IMPLEMENTATION_NOTES.md).Length` - passed, 10534 bytes.
+- `rg -n "password|secret|token|api[_-]?key" docs\planning\GAP-012_DOCUMENT_KNOWLEDGE_IMPLEMENTATION_NOTES.md` - no matches.
+- `cd backend; .\venv\Scripts\python.exe -m py_compile app\models\documents.py app\models\knowledge_base.py app\models\esign.py app\schemas\documents.py app\schemas\knowledge_base.py app\schemas\esign.py app\services\document_access_service.py app\services\knowledge_base_service.py app\services\esignature_service.py app\api\v1\endpoints\documents.py app\api\v1\endpoints\knowledge_base.py app\api\v1\endpoints\esign.py app\core\module_registry.py app\db\seed.py tests\test_gap012_document_knowledge_access.py alembic\versions\20260515_0030_document_knowledge_reconciliation.py` - passed.
+- `cd backend; .\venv\Scripts\python.exe -m pytest tests\test_gap012_document_knowledge_access.py -q` - passed, 5 tests with 2 existing Pydantic deprecation warnings.
+- `cd backend; .\venv\Scripts\python.exe -c "import app.api.v1.endpoints.documents; import app.api.v1.endpoints.knowledge_base; import app.api.v1.endpoints.esign; import app.main; print('gap012 endpoint and app imports ok')"` - exited 0 and printed `gap012 endpoint and app imports ok`; local venv still logs existing optional dependency diagnostics for missing `pyotp` and `dateutil` plus unrelated SQLAlchemy/Pydantic warnings.
+- `cd frontend; npm.cmd run type-check` - passed.
+- `cd frontend; npm.cmd run lint` - passed with no warnings/errors.
+- `cd backend; .\venv\Scripts\python.exe -m alembic heads` - passed, current head shown as `20260515_0060`.
+- `cd backend; .\venv\Scripts\python.exe -m alembic history -r 20260515_0020:20260515_0030` - passed.
+- `cd backend; .\venv\Scripts\python.exe -m alembic upgrade 20260515_0020:20260515_0030 --sql > $env:TEMP\gap012_document_knowledge_final_upgrade.sql` - passed.
+- `docker compose --env-file .env.development ps` - skipped live migration verification because Docker daemon is unavailable (`dockerDesktopLinuxEngine` pipe not found).
+- `git status --short --untracked-files=all` - reviewed; only GAP-012 documentation/tracker edits from this run are dirty.
 - `cd backend; .\venv\Scripts\python.exe -m py_compile app\core\module_registry.py app\db\seed.py app\services\document_access_service.py` - passed.
 - Registry/seed contract smoke check confirmed `documents`, `knowledge_base`, and `esign` are module-owned, not duplicate endpoint-route owned, required permission codes exist in registry and seed definitions, admin role has KB/e-sign permissions, and route registration includes `/documents`, `/kb`, and `/esign` - passed.
 - `cd frontend; npm.cmd run type-check` - passed.
@@ -422,7 +457,9 @@ GAP-012J: Add or update tests for Document Management and Internal Knowledge Sys
 - `cd frontend; npm.cmd run lint` - passed with no warnings/errors.
 
 ## Known Issues
-- GAP-012J is active. GAP-012C migration passed compile/head/history/offline SQL checks, but live DB migration was skipped because Docker daemon is unavailable in this session.
+- GAP-013C is active.
+- GAP-013A found that the report builder has substantial existing coverage but most `/api/v1/reports-builder` endpoints lack authentication/permission dependencies, `report_builder` is only a loose endpoint-route definition, no dedicated report-builder permission family exists, RLS policies are not applied to report execution, and RLS table ownership is not visible in the existing migration.
+- GAP-012 is complete for this roadmap slice. GAP-012C/GAP-012L migration checks passed compile/head/history/offline SQL checks, but live DB migration remains pending because Docker daemon is unavailable in this session.
 - GAP-012A/B found real document, knowledge-base, and e-signature surfaces, but also found unclear Alembic ownership for core tables, uneven permission enforcement, missing scope enforcement, metadata-only file handling, weak e-sign evidence governance, and frontend/client parity gaps.
 - GAP-011C added the additive migration, but live DB upgrade was skipped because Docker daemon is unavailable. Core HR still needs deeper record-level scope filtering beyond its existing coarse permission guards.
 - GAP-010 is complete for this roadmap slice. GAP-010 follow-up remains: deeper CRM sub-resources such as activities, interest lines, competitors, reports, and AI recommendation actions still need inherited scoped guards in a later hardening slice.
@@ -434,7 +471,7 @@ GAP-012J: Add or update tests for Document Management and Internal Knowledge Sys
 - GAP-008C reconciled the likely WMS migration ownership gaps for `wms_picking_tasks`, `wms_packing_records`, and `wms_replenishment_tasks`.
 
 ## Next Resume Point
-Continue from GAP-012J. Add focused non-destructive backend tests for document lifecycle access, KB permissions, e-sign signer eligibility, and registry/seed contracts.
+Continue from GAP-013C. Add a safe additive report-builder reconciliation migration after current Alembic head `20260515_0060`.
 
 ## User Action Needed
-None for GAP-012J.
+None for GAP-013C.

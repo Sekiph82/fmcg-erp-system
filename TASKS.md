@@ -1,7 +1,7 @@
 # TASKS
 
 ## Current Phase
-PHASE 3 - High-importance operational modules is in GAP-012 Document Management and Internal Knowledge System.
+PHASE 4 - UX/reporting/extensibility is in GAP-013 Custom Report Builder Depth.
 
 ## Execution Rules
 - Always read this file before starting work.
@@ -16,10 +16,10 @@ PHASE 3 - High-importance operational modules is in GAP-012 Document Management 
 - If context/usage limit is near, stop after updating TASKS.md and CODEX_PROGRESS.md.
 
 ## In Progress
-GAP-012K: Add or update documentation: Document Management and Internal Knowledge System.
+GAP-013C: Add or update database migrations: Custom Report Builder Depth.
 
 ## Next Immediate Task
-GAP-012K: Document actual GAP-012 implementation behavior, permissions, migrations, services, frontend changes, checks, limitations, and follow-ups.
+GAP-013C: Add a safe additive report-builder reconciliation migration for RLS, constraints, indexes, and governance fields.
 
 ## Roadmap Task Queue
 | ID | Tier | Task | Status | Dependencies | Acceptance Criteria | Notes |
@@ -182,11 +182,11 @@ GAP-012K: Document actual GAP-012 implementation behavior, permissions, migratio
 | GAP-012H | Tier 2 - High Importance | Add or update frontend screens/components: Document Management and Internal Knowledge System | DONE | GAP-012G | Build UI using existing layout, table, form, modal, and dashboard patterns. | Updated nav permission keys, KB page guards/action visibility, and e-sign API client/page guards; frontend type-check passed. |
 | GAP-012I | Tier 2 - High Importance | Add or update permissions/roles: Document Management and Internal Knowledge System | DONE | GAP-012H | Register permissions and update role templates/UI visibility as required. | Promoted `documents`, `knowledge_base`, and `esign` to module definitions, removed duplicate loose route registrations, and updated seed permission/role contracts; compile and registry contract checks passed. |
 | GAP-012J | Tier 2 - High Importance | Add or update tests: Document Management and Internal Knowledge System | DONE | GAP-012I | Add focused backend/frontend tests for the implemented behavior. | Added `backend/tests/test_gap012_document_knowledge_access.py`; py_compile passed and focused pytest passed, 5 tests. |
-| GAP-012K | Tier 2 - High Importance | Add or update documentation: Document Management and Internal Knowledge System | IN_PROGRESS | GAP-012J | Update user/admin/developer docs for this change. | Next: document the actual implemented GAP-012 behavior and remaining limitations. |
-| GAP-012L | Tier 2 - High Importance | Run checks and record result: Document Management and Internal Knowledge System | TODO | GAP-012K | Run relevant compile, lint, type, test, migration, or smoke checks. | Phase: Phase 3 - High-importance operational modules; Priority: High; Area: Documents / Knowledge; Files: `backend/app/api/v1/endpoints/documents.py`, `frontend/src/app/dashboard/documents`, `docs`, `backend/tests` |
-| GAP-013A | Tier 3 - Medium Importance | Audit current implementation: Custom Report Builder Depth | TODO | GAP-012L | Record what exists, what is partial, and what is missing for this gap. | Phase: Phase 4 - UX/reporting/extensibility; Priority: Medium; Area: Reporting / Analytics; Files: `backend/app/api/v1/endpoints/reports.py`, `frontend/src/app/dashboard/reports`, `backend/tests` |
-| GAP-013B | Tier 3 - Medium Importance | Design data model/schema: Custom Report Builder Depth | TODO | GAP-013A | Define schema/model changes only if needed and review existing models first. | Phase: Phase 4 - UX/reporting/extensibility; Priority: Medium; Area: Reporting / Analytics; Files: `backend/app/api/v1/endpoints/reports.py`, `frontend/src/app/dashboard/reports`, `backend/tests` |
-| GAP-013C | Tier 3 - Medium Importance | Add or update database migrations: Custom Report Builder Depth | TODO | GAP-013B | Create Alembic migrations only for required schema changes. | Phase: Phase 4 - UX/reporting/extensibility; Priority: Medium; Area: Reporting / Analytics; Files: `backend/app/api/v1/endpoints/reports.py`, `frontend/src/app/dashboard/reports`, `backend/tests` |
+| GAP-012K | Tier 2 - High Importance | Add or update documentation: Document Management and Internal Knowledge System | DONE | GAP-012J | Update user/admin/developer docs for this change. | Added `docs/planning/GAP-012_DOCUMENT_KNOWLEDGE_IMPLEMENTATION_NOTES.md`; heading, size, and secret-pattern checks passed. |
+| GAP-012L | Tier 2 - High Importance | Run checks and record result: Document Management and Internal Knowledge System | DONE | GAP-012K | Run relevant compile, lint, type, test, migration, or smoke checks. | Final GAP-012 checks passed: backend py_compile, focused pytest, endpoint/app import, Alembic history/offline SQL for 20260515_0030, frontend type-check/lint, docs checks, and git status review. Live Docker/PostgreSQL check skipped because Docker daemon is unavailable. |
+| GAP-013A | Tier 3 - Medium Importance | Audit current implementation: Custom Report Builder Depth | DONE | GAP-012L | Record what exists, what is partial, and what is missing for this gap. | Added `docs/planning/GAP-013_CUSTOM_REPORT_BUILDER_AUDIT.md`; documented existing report-builder backend/frontend/migration coverage, auth/RLS/export/schema risks, and next design direction. |
+| GAP-013B | Tier 3 - Medium Importance | Design data model/schema: Custom Report Builder Depth | DONE | GAP-013A | Define schema/model changes only if needed and review existing models first. | Added `docs/planning/GAP-013_CUSTOM_REPORT_BUILDER_SCHEMA_DESIGN.md`; designed additive RLS/schema ownership, permission, visibility, source-access, service/API/frontend, and test strategy. |
+| GAP-013C | Tier 3 - Medium Importance | Add or update database migrations: Custom Report Builder Depth | IN_PROGRESS | GAP-013B | Create Alembic migrations only for required schema changes. | Next: add safe additive migration after current Alembic head `20260515_0060`; verify py_compile, heads/history, and offline SQL. |
 | GAP-013D | Tier 3 - Medium Importance | Add or update backend models: Custom Report Builder Depth | TODO | GAP-013C | Implement ORM/model changes following existing conventions. | Phase: Phase 4 - UX/reporting/extensibility; Priority: Medium; Area: Reporting / Analytics; Files: `backend/app/api/v1/endpoints/reports.py`, `frontend/src/app/dashboard/reports`, `backend/tests` |
 | GAP-013E | Tier 3 - Medium Importance | Add or update schemas: Custom Report Builder Depth | TODO | GAP-013D | Implement request/response schemas and validation. | Phase: Phase 4 - UX/reporting/extensibility; Priority: Medium; Area: Reporting / Analytics; Files: `backend/app/api/v1/endpoints/reports.py`, `frontend/src/app/dashboard/reports`, `backend/tests` |
 | GAP-013F | Tier 3 - Medium Importance | Add or update services/business logic: Custom Report Builder Depth | TODO | GAP-013E | Implement service-layer or existing-pattern business logic. | Phase: Phase 4 - UX/reporting/extensibility; Priority: Medium; Area: Reporting / Analytics; Files: `backend/app/api/v1/endpoints/reports.py`, `frontend/src/app/dashboard/reports`, `backend/tests` |
@@ -355,6 +355,10 @@ GAP-012K: Document actual GAP-012 implementation behavior, permissions, migratio
 | GAP-028L | Manual Workflow | Run checks and record result: Full User Manual Generation | TODO | GAP-028K | Run relevant compile, lint, type, test, migration, or smoke checks. | Phase: Phase 1 - Documentation manual workflow; Priority: Critical; Area: Documentation / User Manual; Files: `docs/user-manual`, `docs/user-manual/MANUAL_AUDIT.md`, `docs/user-manual/screenshots/screenshots-index.json` |
 
 ## Completed in Last Run
+- GAP-013B: Added `docs/planning/GAP-013_CUSTOM_REPORT_BUILDER_SCHEMA_DESIGN.md`; heading, size, and secret-pattern checks passed.
+- GAP-013A: Added `docs/planning/GAP-013_CUSTOM_REPORT_BUILDER_AUDIT.md`; heading, size, and secret-pattern checks passed.
+- GAP-012L: Ran final document/KB/e-sign checks; backend compile/import, focused pytest, Alembic offline SQL, frontend type-check/lint, docs checks, and git status review passed. Live Docker/PostgreSQL verification skipped because Docker daemon is unavailable.
+- GAP-012K: Added `docs/planning/GAP-012_DOCUMENT_KNOWLEDGE_IMPLEMENTATION_NOTES.md`; heading, size, and secret-pattern checks passed.
 - GAP-012J: Added focused document/KB/e-sign service and registry contract tests; 5 focused tests passed.
 - GAP-012I: Registered document, knowledge-base, and e-signature module/permission seed contracts; py_compile and registry contract checks passed.
 - GAP-012H: Updated frontend nav guards, KB action visibility, and e-sign shared API client; frontend type-check passed.
