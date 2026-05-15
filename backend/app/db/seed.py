@@ -138,6 +138,15 @@ PERMISSIONS = [
     ("quality",     "create", "Create Quality",        "Create QC inspection records",             False),
     ("quality",     "approve","Approve Quality",       "Approve or reject QC results",             False),
 
+    # GS1 / Label Printing
+    ("gs1", "view",    "View GS1",    "View GS1 configs, barcodes, label templates",           True),
+    ("gs1", "create",  "Create GS1",  "Create product GS1 configs and generate barcodes",      False),
+    ("gs1", "edit",    "Edit GS1",    "Edit GS1 configs and label templates",                  False),
+    ("gs1", "approve", "Approve GS1", "Approve label templates for production use",            False),
+    ("gs1", "print",   "Print GS1",   "Trigger label print jobs",                              False),
+    ("gs1", "report",  "Report GS1",  "View GS1 print history and SSCC tracking reports",      False),
+    ("gs1", "admin",   "Admin GS1",   "Run GS1 AI agents and manage company-level config",     False),
+
     # Maintenance
     ("maintenance", "view",   "View Maintenance",      "View assets and work orders",              True),
     ("maintenance", "create", "Create Maintenance",    "Create work orders",                       False),
@@ -531,6 +540,7 @@ ROLE_DEFINITIONS = {
             "documents.view", "documents.create", "documents.edit", "documents.approve", "documents.archive", "documents.export",
             "knowledge_base.view", "knowledge_base.create", "knowledge_base.edit", "knowledge_base.publish", "knowledge_base.delete", "knowledge_base.admin",
             "esign.view", "esign.request", "esign.sign", "esign.cancel", "esign.admin",
+            "gs1.view", "gs1.create", "gs1.edit", "gs1.approve", "gs1.print", "gs1.report", "gs1.admin",
             # Admin can import users and manage import templates for user onboarding
             *_import("users"),
         ],

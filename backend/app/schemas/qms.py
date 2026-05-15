@@ -13,6 +13,7 @@ from app.models.quality import (
     SamplingMethod, HazardType, RiskLevel,
     DeviationStatus, CorrectiveActionStatus, ReleaseStatus,
     QMSAIAgentType, QMSAIRecStatus,
+    AuditStandard, AuditType, AuditResult,
 )
 
 
@@ -276,6 +277,7 @@ class CorrectiveActionUpdate(BaseModel):
     root_cause_analysis: Optional[str] = None
     effectiveness_check: Optional[str] = None
     preventive_measures: Optional[str] = None
+    pdca_closed_at: Optional[datetime] = None
     notes: Optional[str] = None
 
 
@@ -287,6 +289,7 @@ class CorrectiveActionRead(CorrectiveActionBase):
     steps: List[CorrectiveActionStepRead] = []
     completed_at: Optional[datetime] = None
     verified_at: Optional[datetime] = None
+    pdca_closed_at: Optional[datetime] = None
     created_at: datetime
     assigned_to_name: Optional[str] = None
     product_name: Optional[str] = None
@@ -463,3 +466,55 @@ class QCGateCheck(BaseModel):
     inspection_id: Optional[uuid.UUID] = None
     inspection_no: Optional[str] = None
     inspection_status: Optional[str] = None
+
+
+# ── Quality Audit Checklist ────────────────────────────────────────────────────
+
+class AuditChecklistBase(BaseModel):
+    standard: AuditStandard
+    audit_type: AuditType = AuditType.INTERNAL
+    audit_date: date
+    scheduled_date: Optional[date] = None
+    recurrence_days: Optional[int] = None
+    conducted_by: Optional[str] = None
+    lead_auditor: Optional[str] = None
+    scope: Optional[str] = None
+    items: Optional[Any] = None
+    major_findings: Optional[str] = None
+    minor_findings: Optional[str] = None
+    recommendations: Optional[str] = None
+    next_audit_date: Optional[date] = None
+    notes: Optional[str] = None
+
+
+class AuditChecklistCreate(AuditChecklistBase):
+    pass
+
+
+class AuditChecklistUpdate(BaseModel):
+    audit_date: Optional[date] = None
+    scheduled_date: Optional[date] = None
+    recurrence_days: Optional[int] = None
+    conducted_by: Optional[str] = None
+    lead_auditor: Optional[str] = None
+    scope: Optional[str] = None
+    items: Optional[Any] = None
+    result: Optional[AuditResult] = None
+    major_findings: Optional[str] = None
+    minor_findings: Optional[str] = None
+    recommendations: Optional[str] = None
+    next_audit_date: Optional[date] = None
+    certificate_issued: Optional[bool] = None
+    notes: Optional[str] = None
+
+
+class AuditChecklistRead(AuditChecklistBase):
+    model_config = ConfigDict(from_attributes=True)
+    id: uuid.UUID
+    audit_ref: str
+    total_items: Optional[int] = None
+    passed_items: Optional[int] = None
+    score_pct: Optional[Decimal] = None
+    result: AuditResult
+    certificate_issued: bool
+    created_at: datetime

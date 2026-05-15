@@ -222,6 +222,17 @@ MODULE_DEFINITIONS: tuple[ModuleDefinition, ...] = (
         critical=True,
     ),
     ModuleDefinition(
+        key="gs1",
+        label="GS1 / Label Printing",
+        route_prefix="/gs1",
+        import_path="app.api.v1.endpoints.gs1",
+        permission_actions=("view", "create", "edit", "approve", "print", "report", "admin"),
+        sidebar_group="Compliance",
+        icon_key="barcode",
+        ai_mode=MODULE_AI_MODES.get("gs1", AIMode.RULE_BASED),
+        critical=False,
+    ),
+    ModuleDefinition(
         key="maintenance",
         label="Maintenance",
         route_prefix="/maintenance",
@@ -348,7 +359,7 @@ ENDPOINT_ROUTE_DEFINITIONS: tuple[EndpointRouteDefinition, ...] = (
     EndpointRouteDefinition(key="shelf_life", route_prefix="/shelf-life", import_path="app.api.v1.endpoints.shelf_life", tags=('shelf-life',)),
     EndpointRouteDefinition(key="traceability", route_prefix="/traceability", import_path="app.api.v1.endpoints.traceability", tags=('traceability',)),
     EndpointRouteDefinition(key="qms", route_prefix="/qms", import_path="app.api.v1.endpoints.qms", tags=('qms',)),
-    EndpointRouteDefinition(key="gs1", route_prefix="/gs1", import_path="app.api.v1.endpoints.gs1", tags=('gs1',)),
+    # gs1 promoted to MODULE_DEFINITIONS — see above
     EndpointRouteDefinition(key="allergen", route_prefix="/allergen", import_path="app.api.v1.endpoints.allergen", tags=('allergen',)),
     EndpointRouteDefinition(key="procurement_suggestion", route_prefix="/procurement/suggestions", import_path="app.api.v1.endpoints.procurement_suggestion", tags=('procurement-suggestions',)),
     EndpointRouteDefinition(key="subcontracting", route_prefix="/subcontracting", import_path="app.api.v1.endpoints.subcontracting", tags=('subcontracting',)),

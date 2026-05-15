@@ -739,3 +739,56 @@ async def run_haccp_assistant(db: AsyncSession, product_id: Optional[uuid.UUID] 
         recs.append(rec)
 
     return recs
+
+
+# -- PDCA Closure
+
+async def close_pdca(db, ca_id):
+    from datetime import timezone, datetime as _dt
+    from sqlalchemy import select
+    from app.models.quality import CorrectiveAction, CorrectiveActionStatus
+    r = await db.execute(select(CorrectiveAction).where(CorrectiveAction.id == ca_id))
+    ca = r.scalar_one_or_none()
+    if ca is None:
+        raise ValueError('CorrectiveAction not found')
+    if ca.status != CorrectiveActionStatus.VERIFIED:
+        raise ValueError('PDCA closure requires status VERIFIED; current status is ' + ca.status.value)
+    ca.pdca_closed_at = _dt.now(timezone.utc)
+    await db.flush()
+    return ca
+
+
+# -- Batch CCP Monitoring Report
+
+async def ccp_monitoring_batch_report(db, production_order_id):
+    from sqlalchemy import select
+    from app.models.quality import CCPMonitoringLog
+    q = (
+        select(CCPMonitoringLog)
+        .where(CCPMonitoringLog.production_order_id == production_order_id)
+        .order_by(CCPMonitoringLog.monitored_at)
+    )
+    r = await db.execute(q)
+    logs = list(r.scalars())
+    total = len(logs)
+    deviations = [lg for lg in logs if lg.is_deviation]
+    corrective_triggered = [lg for lg in logs if lg.auto_corrective_action]
+    return {
+        "production_order_id": str(production_order_id),
+        "total_measurements": total,
+        "deviation_count": len(deviations),
+        "corrective_action_triggered_count": len(corrective_triggered),
+        "deviation_rate_pct": round(len(deviations) / total * 100, 2) if total else 0.0,
+        "measurements": [
+            {
+                "id": str(lg.id),
+                "ccp_id": str(lg.ccp_id),
+                "measured_value": str(lg.measured_value),
+                "is_deviation": lg.is_deviation,
+                "auto_corrective_action": lg.auto_corrective_action,
+                "monitored_at": lg.monitored_at.isoformat() if lg.monitored_at else None,
+                "monitored_by_id": str(lg.monitored_by_id) if lg.monitored_by_id else None,
+            }
+            for lg in logs
+        ],
+    }

@@ -55,6 +55,9 @@ class ProductGS1ConfigCreate(_Base):
     cartons_per_pallet: Optional[int] = None
     carton_gtin: Optional[str] = None
     pallet_gtin: Optional[str] = None
+    product_sku_code: Optional[str] = None
+    net_weight_g: Optional[Decimal] = None
+    net_volume_ml: Optional[Decimal] = None
     notes: Optional[str] = None
 
 
@@ -71,6 +74,9 @@ class ProductGS1ConfigUpdate(_Base):
     cartons_per_pallet: Optional[int] = None
     carton_gtin: Optional[str] = None
     pallet_gtin: Optional[str] = None
+    product_sku_code: Optional[str] = None
+    net_weight_g: Optional[Decimal] = None
+    net_volume_ml: Optional[Decimal] = None
     notes: Optional[str] = None
 
 
@@ -91,6 +97,9 @@ class ProductGS1ConfigOut(_Base):
     cartons_per_pallet: Optional[int]
     carton_gtin: Optional[str]
     pallet_gtin: Optional[str]
+    product_sku_code: Optional[str] = None
+    net_weight_g: Optional[Decimal] = None
+    net_volume_ml: Optional[Decimal] = None
     is_active: bool
     notes: Optional[str]
     product_name: Optional[str] = None

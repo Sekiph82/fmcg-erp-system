@@ -112,6 +112,9 @@ class ProductGS1Config(Base, TimestampMixin):
     cartons_per_pallet       = Column(Integer, nullable=True)
     carton_gtin              = Column(String(14), nullable=True)
     pallet_gtin              = Column(String(14), nullable=True)
+    product_sku_code         = Column(String(100), nullable=True)
+    net_weight_g             = Column(Numeric(12, 4), nullable=True)
+    net_volume_ml            = Column(Numeric(12, 4), nullable=True)
     is_active                = Column(Boolean, default=True, nullable=False)
     notes                    = Column(Text, nullable=True)
 

@@ -1538,3 +1538,89 @@ async def update_supplier_fsa(
         fsa.notes = notes
     await db.commit()
     return _fsa_out(fsa)
+
+
+# -- Audit Checklist: Get by ID & Update scheduled_date/recurrence_days
+
+@router.get('/audit-checklists/{checklist_id}')
+async def get_audit_checklist(
+    checklist_id: str,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(get_current_user),
+):
+    r = await db.execute(
+        select(QualityAuditChecklist).where(QualityAuditChecklist.id == uuid.UUID(checklist_id))
+    )
+    c = r.scalar_one_or_none()
+    if not c:
+        raise HTTPException(404, 'Checklist not found')
+    return {
+        'id': str(c.id), 'audit_ref': c.audit_ref, 'standard': c.standard,
+        'audit_type': c.audit_type, 'audit_date': str(c.audit_date),
+        'scheduled_date': str(c.scheduled_date) if c.scheduled_date else None,
+        'recurrence_days': c.recurrence_days,
+        'conducted_by': c.conducted_by, 'lead_auditor': c.lead_auditor,
+        'scope': c.scope, 'items': c.items,
+        'total_items': c.total_items, 'passed_items': c.passed_items,
+        'score_pct': float(c.score_pct) if c.score_pct else None,
+        'result': c.result, 'major_findings': c.major_findings,
+        'minor_findings': c.minor_findings, 'recommendations': c.recommendations,
+        'next_audit_date': str(c.next_audit_date) if c.next_audit_date else None,
+        'certificate_issued': c.certificate_issued, 'notes': c.notes,
+        'created_at': c.created_at.isoformat() if c.created_at else None,
+    }
+
+
+@router.patch('/audit-checklists/{checklist_id}')
+async def patch_audit_checklist(
+    checklist_id: str,
+    scheduled_date: Optional[date] = None,
+    recurrence_days: Optional[int] = Query(None, ge=1),
+    notes: Optional[str] = None,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(get_current_user),
+):
+    r = await db.execute(
+        select(QualityAuditChecklist).where(QualityAuditChecklist.id == uuid.UUID(checklist_id))
+    )
+    c = r.scalar_one_or_none()
+    if not c:
+        raise HTTPException(404, 'Checklist not found')
+    if scheduled_date is not None:
+        c.scheduled_date = scheduled_date
+    if recurrence_days is not None:
+        c.recurrence_days = recurrence_days
+    if notes is not None:
+        c.notes = notes
+    await db.commit()
+    return {'id': str(c.id), 'audit_ref': c.audit_ref, 'scheduled_date': str(c.scheduled_date) if c.scheduled_date else None, 'recurrence_days': c.recurrence_days}
+
+
+# -- PDCA Closure Endpoint
+
+@router.post('/corrective-actions/{ca_id}/close-pdca', response_model=CorrectiveActionRead)
+async def close_pdca(
+    ca_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(get_current_user),
+):
+    from app.services.qms_service import close_pdca as _close_pdca
+    try:
+        ca = await _close_pdca(db, ca_id)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc))
+    await db.commit()
+    r = await db.execute(select(CorrectiveAction).where(CorrectiveAction.id == ca_id))
+    return _build_ca_read(r.scalar_one())
+
+
+# -- Batch CCP Monitoring Report
+
+@router.get('/reports/ccp-batch/{production_order_id}')
+async def ccp_batch_report(
+    production_order_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(get_current_user),
+):
+    from app.services.qms_service import ccp_monitoring_batch_report
+    return await ccp_monitoring_batch_report(db, production_order_id)

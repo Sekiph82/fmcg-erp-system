@@ -412,6 +412,7 @@ class CorrectiveAction(Base, TimestampMixin):
     root_cause_analysis = Column(Text, nullable=True)
     effectiveness_check = Column(Text, nullable=True)
     preventive_measures = Column(Text, nullable=True)
+    pdca_closed_at = Column(DateTime(timezone=True), nullable=True)
     notes = Column(Text, nullable=True)
 
     steps = relationship("CorrectiveActionStep", back_populates="corrective_action",
@@ -698,6 +699,8 @@ class QualityAuditChecklist(Base, TimestampMixin):
     total_items = Column(Integer, nullable=True)
     passed_items = Column(Integer, nullable=True)
     score_pct = Column(Numeric(6, 2), nullable=True)
+    scheduled_date = Column(Date, nullable=True)
+    recurrence_days = Column(Integer, nullable=True)
     result = Column(Enum(AuditResult), nullable=False, default=AuditResult.IN_PROGRESS)
     major_findings = Column(Text, nullable=True)
     minor_findings = Column(Text, nullable=True)
