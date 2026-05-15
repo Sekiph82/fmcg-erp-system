@@ -176,6 +176,8 @@ class ReportSchedule(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     report = relationship("ReportDefinition", back_populates="schedules")
+    run_logs = relationship("ScheduleRunLog", back_populates="schedule", cascade="all, delete-orphan",
+                            foreign_keys="ScheduleRunLog.schedule_id")
 
 
 class ReportDashboard(Base):
@@ -230,6 +232,41 @@ class RBAIRecommendation(Base):
     actioned_by = Column(String(200), nullable=True)
     actioned_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class ScheduleRunStatus(str, PyEnum):
+    RUNNING = "running"
+    SUCCESS = "success"
+    FAILED = "failed"
+    SKIPPED = "skipped"
+
+
+class ScheduleRunLog(Base):
+    """Execution history for scheduled report runs."""
+    __tablename__ = "rb_schedule_run_log"
+
+    run_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    schedule_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("rb_report_schedules.schedule_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    report_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("rb_report_definitions.report_id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    started_at = Column(DateTime(timezone=True), nullable=False)
+    completed_at = Column(DateTime(timezone=True), nullable=True)
+    status = Column(Enum(ScheduleRunStatus), nullable=False, default=ScheduleRunStatus.RUNNING)
+    row_count = Column(Integer, nullable=True)
+    export_format = Column(String(10), nullable=True)
+    recipients_sent = Column(Text, nullable=True)
+    error_message = Column(Text, nullable=True)
+
+    schedule = relationship("ReportSchedule", back_populates="run_logs", foreign_keys=[schedule_id])
+    report = relationship("ReportDefinition", foreign_keys=[report_id])
 
 
 class RLSPolicyScope(str, PyEnum):

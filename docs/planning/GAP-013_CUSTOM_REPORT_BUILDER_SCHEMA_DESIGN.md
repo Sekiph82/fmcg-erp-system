@@ -1,429 +1,273 @@
-# GAP-013 Custom Report Builder Schema Design
+# GAP-013 Custom Report Builder Depth Schema Design
 
 ## Summary
 
-GAP-013 should harden the existing report builder rather than replace it. The repository already has a report-builder model set, service, endpoint, frontend route group, and an older migration. The next implementation slice should reconcile missing schema ownership, add explicit module permissions, enforce report visibility and data-source access, and make row-level security real during report execution.
+GAP-013A found that the report builder's 9 DB tables (`rb_*`) are already well-structured. The critical gaps are in code, not schema: no permission guards, no SQL-level filter/aggregation, no RLS enforcement at query time, no schedule execution. This design document records what schema changes are needed (minimal), what code changes each GAP-013 task will make, and why.
 
-The correct approach is additive:
-
-- keep `/api/v1/reports-builder`
-- keep `/dashboard/report-builder/*`
-- keep existing `rb_*` table names where practical
-- add only missing columns/tables/indexes/constraints
-- avoid deleting existing report definitions, schedules, dashboards, or templates
-- move security and execution decisions into services before adding advanced features
-
-## Current Schema Baseline
-
-Existing ORM models:
-
-- `ReportDefinition`
-- `ReportField`
-- `ReportFilter`
-- `ReportCalculatedField`
-- `ReportSchedule`
-- `ReportDashboard`
-- `DashboardWidget`
-- `RBAIRecommendation`
-- `RLSPolicy`
-
-Existing migration:
-
-- `backend/alembic/versions/f8a9b0c1d2e3_custom_report_builder.py`
-
-Known migration ownership gap:
-
-- `rb_rls_policies` exists in ORM usage but was not found in the inspected migration.
-- Some ORM child relationships are not fully reflected by explicit migration foreign keys.
-- Existing migration is not reconciliation-style and may not be duplicate-safe against dirty development databases.
+---
 
 ## Design Goals
 
-- Make report-builder schema deterministic under Alembic.
-- Preserve existing report definitions and dashboards.
-- Add explicit security metadata for ownership, visibility, execution, export, and scheduling.
-- Apply ERP permission/scope rules before data leaves the backend.
-- Keep SQL generation metadata-driven and whitelist-based.
-- Avoid arbitrary user-written SQL in this slice.
-- Support CSV now while preparing cleanly for XLSX/PDF later.
-- Support schedules as auditable definitions even if worker delivery remains a later task.
+1. **Security first** — add `require_permission` to all endpoints; promote to MODULE_DEFINITIONS.
+2. **Query correctness** — push filters into SQL `WHERE`, implement GROUP BY + aggregations in SQL.
+3. **RLS enforcement** — consult `rb_rls_policies` on every query execution.
+4. **Schedule tracking** — add a run-log table so schedule execution history is auditable.
+5. **Migration ownership** — verify and document `f8a9b0c1d2e3` chain position; GAP-013C migration adds only the schedule run log table.
+6. **No DB reset** — all changes are additive; existing data is preserved.
+
+---
+
+## Current Model Baseline
+
+All 9 `rb_*` tables already exist and are well-designed (see GAP-013A for full field list). Key baseline facts:
+
+| Table | Status |
+|---|---|
+| `rb_report_definitions` | Complete. Has `owner_user_id`, `visibility`, `run_count`, `last_run_at`. |
+| `rb_report_fields` | Complete. Has `aggregation`, `is_group_by`, `sort_direction`. Aggregation logic not wired. |
+| `rb_report_filters` | Complete. Has `operator`, `value`, `value_to`, `logical_op`. Filter pushdown not wired. |
+| `rb_calculated_fields` | Complete. `expression` stored but not evaluated. No change needed at schema level. |
+| `rb_report_schedules` | Complete. Has `frequency`, `next_run_at`, `last_run_at`. No run log table exists. |
+| `rb_dashboards` | Complete. |
+| `rb_dashboard_widgets` | Complete. |
+| `rb_ai_recommendations` | Complete. |
+| `rb_rls_policies` | Complete. Has `data_source`, `scope`, `principal`, `filter_field`, `operator`, `filter_value`. Not consulted at query time. |
+
+Migration `f8a9b0c1d2e3` creates all 9 tables. Alembic history confirms it is the parent of `20260515_0030` (current head) — it is in the active chain.
+
+---
+
+## Required Schema Changes
+
+### Only One New Table: `rb_schedule_run_log`
+
+The existing `rb_report_schedules` table records intent but no execution history. A run log is needed for:
+- Auditing when a schedule actually ran
+- Detecting stuck/failed scheduled runs
+- Showing last execution status in the UI
+
+**New table: `rb_schedule_run_log`**
+
+```
+rb_schedule_run_log
+───────────────────
+run_id          UUID PK default uuid4
+schedule_id     UUID FK→rb_report_schedules(schedule_id) ON DELETE CASCADE
+report_id       UUID FK→rb_report_definitions(report_id) ON DELETE CASCADE
+started_at      TIMESTAMP NOT NULL
+completed_at    TIMESTAMP nullable
+status          VARCHAR(20) NOT NULL default 'running'  -- running/success/failed/skipped
+row_count       INTEGER nullable
+export_format   VARCHAR(10) nullable
+recipients_sent TEXT nullable  -- JSON list of email addresses notified
+error_message   TEXT nullable
+```
+
+No other new tables needed. All other improvements are code-only.
+
+### No Changes to Existing Tables
+
+The existing `rb_*` tables do not need new columns for:
+- Permission enforcement — handled via service/endpoint code
+- SQL aggregation — handled in `_execute_query()` logic
+- RLS enforcement — handled in service code reading `rb_rls_policies`
+- Calculated field evaluation — deferred; no schema change needed
+
+---
+
+## Module Registry and Permission Design
+
+### Promote from ENDPOINT_ROUTE_DEFINITIONS to MODULE_DEFINITIONS
+
+**Current (must change):**
+```python
+EndpointRouteDefinition(
+    key="report_builder",
+    route_prefix="/reports-builder",
+    import_path="app.api.v1.endpoints.report_builder",
+    tags=('report-builder',),
+)
+```
+
+**Target:**
+```python
+ModuleDefinition(
+    key="reports",
+    label="Report Builder",
+    route_prefix="/reports-builder",
+    import_path="app.api.v1.endpoints.report_builder",
+    permission_actions=("view", "create", "edit", "run", "export", "admin"),
+    sidebar_group="Analytics",
+    icon_key="bar-chart",
+    ai_mode=AIMode.RULE_BASED,
+    critical=False,
+)
+```
+
+### Permission Action Definitions
+
+| Permission Code | What it gates |
+|---|---|
+| `reports.view` | GET /catalog, GET /reports, GET /reports/{id}, GET /dashboards, GET /ai/recommendations |
+| `reports.create` | POST /reports, POST /dashboards, POST /reports/{id}/schedule |
+| `reports.edit` | PATCH /reports/{id}, PATCH /rls/{id} |
+| `reports.run` | POST /reports/{id}/run, POST /preview |
+| `reports.export` | GET /reports/{id}/export |
+| `reports.admin` | POST /reports/seed-templates, POST /rls, DELETE /rls/{id}, POST /ai/run-*, GET /executive-summary |
+
+### Seed Role Assignments
+
+| Role | Permissions |
+|---|---|
+| admin | All 6 permission codes |
+| analyst (if exists) | view, create, edit, run, export |
+| viewer / readonly | view, run |
+
+`utilities_reports` remains a loose `ENDPOINT_ROUTE_DEFINITIONS` entry for now — it is a monitoring surface, not a builder. Permission guard is a separate follow-up.
+
+---
+
+## Query Engine Design
+
+No schema changes needed. All improvements are in `_execute_query()` in `report_builder_service.py`.
+
+### SQL Filter Pushdown (GAP-013G)
 
-## Module Ownership Design
+Currently filters are applied post-fetch in Python. Target: generate `WHERE` clause.
+
+Design approach:
+- Map `FilterOperator` to SQL operators.
+- Build parameterized conditions using `sqlalchemy.text` with bound parameters — never string interpolation.
+- Handle `logical_op` as `AND`/`OR` grouping.
+- Apply only to fields in `allowed_fields` (whitelist already exists).
 
-Promote `report_builder` into `MODULE_DEFINITIONS`.
+Operator mapping:
+```
+eq          → col = :val
+neq         → col != :val
+gt          → col > :val
+lt          → col < :val
+gte         → col >= :val
+lte         → col <= :val
+between     → col BETWEEN :val AND :val_to
+in          → col IN (:val)  (comma-split value string)
+like        → col ILIKE :val
+is_null     → col IS NULL
+is_not_null → col IS NOT NULL
+```
 
-Module route:
+### SQL Aggregation and GROUP BY (GAP-013G)
 
-- route prefix: `/reports-builder`
-- import path: `app.api.v1.endpoints.report_builder`
-- frontend base: `/dashboard/report-builder`
+Currently all queries do `SELECT col1, col2 FROM table`. Target: detect group-by intent and emit proper SQL.
 
-Recommended module actions:
+Design approach:
+- If ANY `ReportField` has `is_group_by=True` or `aggregation != NONE`:
+  - GROUP BY fields: emit as plain columns in SELECT + GROUP BY clause.
+  - Aggregated fields: wrap in aggregate function (`SUM("col")`, `COUNT("col")`, etc.).
+  - `COUNT_DISTINCT` → `COUNT(DISTINCT "col")`.
+- If no group-by fields, fall back to flat SELECT (current behavior).
+- Only fields in `allowed_fields` can appear in the query (whitelist enforced).
 
-- `view`
-- `create`
-- `edit`
-- `delete`
-- `run`
-- `export`
-- `schedule`
-- `dashboard`
-- `rls_admin`
-- `ai`
-- `manage_templates`
+### RLS Enforcement (GAP-013G)
 
-Keep `analytics.view` as a compatibility navigation fallback only if needed, but backend report-builder access should use `report_builder.*` permissions.
+Design approach:
+- Before executing any query, load active `RLSPolicy` records for the current user:
+  - `scope=USER` → match `principal == str(user.id)`
+  - `scope=ROLE` → match `principal in [role.name for role in user.roles]`
+- Filter policies by `data_source == current_data_source`.
+- Translate each active RLS policy into an additional `WHERE` condition using the same operator mapping as filter pushdown.
+- Append RLS conditions to the query using `AND` (most restrictive).
+- This requires passing `user` into `_execute_query()` and `run_report()`.
 
-## Permission Design
+---
 
-Recommended permission keys:
+## Schedule Execution Design (Deferred to Later GAP)
 
-- `report_builder.view`: view report-builder catalog and permitted report metadata
-- `report_builder.create`: create saved reports
-- `report_builder.edit`: edit owned or permitted reports
-- `report_builder.delete`: deactivate saved reports
-- `report_builder.run`: execute permitted reports
-- `report_builder.export`: export permitted report results
-- `report_builder.schedule`: create/deactivate report schedules
-- `report_builder.dashboard`: create dashboards and dashboard widgets
-- `report_builder.rls_admin`: manage report row-level security policies
-- `report_builder.ai`: run rule-based report-builder recommendations
-- `report_builder.manage_templates`: seed and maintain template reports
+`rb_schedule_run_log` table (defined above) is the schema foundation. Actual background job execution (Celery task, APScheduler, or cron) is deferred beyond GAP-013 — it requires a task runner infrastructure decision. GAP-013C adds the table only. The background trigger is a follow-up.
 
-Role grants should be conservative:
+---
 
-- Admin / Owner / Super Admin: full report-builder permission set
-- CFO / Finance Manager / Data Manager / Auditor: view, run, export, and dashboard where appropriate
-- Functional managers: view/run reports only when they also have underlying module access
-- Normal analytics viewers: view/run limited reports, not delete, RLS admin, template seeding, or broad export
+## Migration Scope for GAP-013C
 
-## Underlying Data-Source Access Design
+Single additive migration:
 
-A user should need two layers of access to use a report data source:
+```
+revision: 20260515_0040
+parent:   20260515_0030
+message:  report_builder_schedule_run_log
+```
 
-1. report-builder action permission
-2. underlying module permission for the data source
+DDL:
+```sql
+CREATE TABLE rb_schedule_run_log (
+    run_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    schedule_id UUID NOT NULL REFERENCES rb_report_schedules(schedule_id) ON DELETE CASCADE,
+    report_id UUID NOT NULL REFERENCES rb_report_definitions(report_id) ON DELETE CASCADE,
+    started_at TIMESTAMP NOT NULL,
+    completed_at TIMESTAMP,
+    status VARCHAR(20) NOT NULL DEFAULT 'running',
+    row_count INTEGER,
+    export_format VARCHAR(10),
+    recipients_sent TEXT,
+    error_message TEXT
+);
+CREATE INDEX ix_rb_schedule_run_log_schedule_id ON rb_schedule_run_log(schedule_id);
+CREATE INDEX ix_rb_schedule_run_log_started_at ON rb_schedule_run_log(started_at);
+```
 
-Examples:
+Migration uses `_has_table` guard (offline-safe pattern from GAP-012C).
 
-- `sales_orders` requires `report_builder.run` plus `sales.view` or a scoped sales view permission.
-- `purchase_orders` requires `report_builder.run` plus procurement visibility.
-- `timesheets` requires `report_builder.run` plus timesheet/HR visibility according to the module convention.
-- payroll or finance sources should require their specific module permissions and should not be exposed through generic analytics access alone.
+---
 
-Add a source access helper in service code:
+## Schema and API Compatibility
 
-- `report_data_source_module(data_source)`
-- `can_view_report_data_source(user, data_source)`
-- `ensure_report_builder_action(user, action, report_or_source)`
+- All existing `rb_*` tables unchanged — no column renames, no type changes.
+- Existing report definitions, fields, filters, schedules, dashboards, widgets, and AI recommendations are unaffected.
+- Migration `f8a9b0c1d2e3` confirmed in chain (parent of `20260515_0030`). No re-creation needed.
+- Module registry change: removing `report_builder` from `ENDPOINT_ROUTE_DEFINITIONS` and adding `reports` to `MODULE_DEFINITIONS` changes the route registration logic. Routes remain at `/reports-builder`. Permission codes `reports.*` are new; no existing codes are removed.
 
-The static catalog should remain the source-owned whitelist for tables and fields, but each source entry should define:
+---
 
-- `module`
-- `view_permission`
-- `export_permission` where different
-- optional `scope_type`
-- optional `sensitive` flag
-- optional `default_date_field`
+## Service Layer Design
 
-## Report Visibility Design
+### `report_builder_service.py` Changes (GAP-013F/G)
 
-Existing visibility values should remain:
-
-- `private`
-- `team`
-- `global`
-
-Recommended behavior:
+1. `_execute_query(db, data_source, fields, filters, limit, offset, user=None)` — add `user` parameter for RLS.
+2. `_build_where_clause(filters, allowed_fields)` — new helper; returns SQLAlchemy `WHERE` fragment.
+3. `_build_rls_conditions(db, user, data_source, allowed_fields)` — new helper; queries `RLSPolicy` and returns conditions.
+4. `_build_select_columns(fields, allowed_fields)` — new helper; detects aggregation intent, returns SELECT expressions and GROUP BY fields.
+5. `run_report(db, report_id, req, user)` — add `user` parameter; pass to `_execute_query`.
 
-- private: owner, admin, or explicit share can view/run
-- team: owner, team/role share, or admin can view/run
-- global: users with report-builder permission and underlying data-source permission can view/run
+All changes are additive to existing functions; no existing public API surface removed.
 
-Additive schema options:
+---
 
-- keep `owner_user_id`
-- add `owner_role_id` nullable where role/team ownership is needed
-- add `shared_role_ids` JSONB nullable for a lightweight first slice
-- add `shared_user_ids` JSONB nullable only if current project patterns favor JSON list sharing
+## Frontend Design Implications (Not in GAP-013 Scope)
 
-Preferred first slice:
+The frontend `report_builder.ts` client is complete and correct. No frontend changes are in scope for GAP-013B through GAP-013L. A dedicated frontend builder UI (field picker, filter editor, chart config, dashboard editor) is a future Phase 4+ deliverable.
 
-- avoid a full report-sharing join table unless immediate UI use needs it
-- add only `owner_role_id` and `shared_role_ids` if team visibility must become enforceable now
-- enforce owner/global behavior first, document team sharing as role-based follow-up if needed
-
-## RLS Schema Design
-
-`RLSPolicy` should be schema-owned with table:
-
-- `rb_rls_policies`
-
-Columns:
-
-- `policy_id` UUID primary key
-- `policy_name` string required
-- `data_source` string required
-- `scope` enum/string: `user`, `role`
-- `principal` string required
-- `filter_field` string required
-- `operator` enum/string using existing filter operators
-- `filter_value` text required
-- `active_flag` boolean required default true
-- `description` text nullable
-- `created_by` string nullable
-- `created_at` datetime
-- `updated_at` datetime
-
-Recommended indexes:
-
-- `(data_source, active_flag)`
-- `(scope, principal)`
-- `(data_source, scope, principal, active_flag)`
-
-Recommended constraints:
-
-- `policy_name` not empty where project migration helpers support it
-- `filter_field` should be validated in service against the data-source catalog
-- `operator` should be validated against allowed operators
-
-RLS execution rule:
-
-- RLS policies are not just administrative records; they must be appended to the query plan before data retrieval.
-- If a source is sensitive and no applicable RLS exists, default should be deny or require broad all-scope permission.
-- RLS filters must be validated against the source catalog before use.
-
-## Migration Reconciliation Scope for GAP-013C
-
-GAP-013C should add a new additive reconciliation migration.
-
-Suggested migration name:
-
-- `20260515_0070_report_builder_hardening.py`
-
-The migration should:
-
-1. Create `rb_rls_policies` if missing.
-2. Add missing foreign keys where safe:
-   - `rb_report_fields.report_id -> rb_report_definitions.report_id`
-   - `rb_report_filters.report_id -> rb_report_definitions.report_id`
-   - `rb_calculated_fields.report_id -> rb_report_definitions.report_id`
-   - `rb_report_schedules.report_id -> rb_report_definitions.report_id`
-   - `rb_dashboard_widgets.dashboard_id -> rb_dashboards.dashboard_id`
-   - `rb_dashboard_widgets.report_id -> rb_report_definitions.report_id`
-3. Add missing indexes for common lookups:
-   - report `data_source`
-   - report `owner_user_id`
-   - report `visibility`
-   - active report definitions
-   - schedule active/next-run fields
-   - dashboard owner/visibility
-   - AI recommendation status/type
-   - RLS data-source/principal fields
-4. Add optional additive columns where the service needs them:
-   - `owner_role_id`
-   - `shared_role_ids`
-   - `last_exported_at`
-   - `last_exported_by`
-   - `last_scheduled_run_at`
-   - `last_scheduled_status`
-   - `last_error`
-5. Avoid dropping or renaming existing report-builder tables.
-6. Avoid changing enum storage destructively.
-7. Use `table_exists`, `column_exists`, `index_exists`, and `foreign_key_exists` helpers to support dirty dev DBs.
-
-Do not implement an advanced schedule worker or binary export table in GAP-013C unless later tasks require it.
-
-## Model Design
-
-Keep existing models and extend them only as needed.
-
-Recommended first-slice model additions:
-
-`ReportDefinition`:
-
-- `owner_role_id`
-- `shared_role_ids`
-- `last_exported_at`
-- `last_exported_by`
-
-`ReportSchedule`:
-
-- `last_scheduled_run_at`
-- `last_scheduled_status`
-- `last_error`
-
-`RLSPolicy`:
-
-- ensure ORM matches the migration exactly
-
-Avoid adding a full report execution history table in this slice unless the team wants audit logging now. Existing audit infrastructure can be used later for export/run event logging.
-
-## Schema/API Contract Design
-
-Add or extend schemas to expose:
-
-- report access hints:
-  - `can_view`
-  - `can_edit`
-  - `can_delete`
-  - `can_run`
-  - `can_export`
-  - `can_schedule`
-  - `view_only`
-  - `reason`
-- catalog source access:
-  - `module`
-  - `view_permission`
-  - `can_use`
-  - `can_export`
-  - `sensitive`
-- RLS policy create/read/update schemas in `backend/app/schemas/report_builder.py`
-- export format validation
-- schedule recipient validation where possible
-- limit/offset bounds on run requests
-
-Recommended `RunRequest` bounds:
-
-- `limit`: minimum 1, maximum 1000 for UI runs
-- export can use a larger service-controlled cap, such as 10000, only with export permission
-- `offset`: minimum 0
-
-## Service Design
-
-Add or extend service helpers rather than growing `report_builder.py`.
-
-Recommended services:
-
-- keep `backend/app/services/report_builder_service.py`
-- add `backend/app/services/report_builder_access_service.py` if separation keeps the file readable
-
-Core helper responsibilities:
-
-- action permission checks
-- report visibility checks
-- data-source module permission checks
-- RLS policy lookup and validation
-- safe query plan creation
-- export gating
-- schedule gating
-- access hint generation
-
-The query runner should:
-
-- validate data source
-- validate selected fields
-- validate filters
-- merge saved filters, runtime filters, and RLS filters
-- push safe filters into SQL where possible
-- cap limit/offset
-- return clear errors instead of swallowing every exception into an empty result
-
-Arbitrary SQL input should remain out of scope.
-
-## API Endpoint Design
-
-Apply permission dependencies consistently:
-
-- catalog:
-  - `report_builder.view`
-  - filter sources by underlying module permission
-- create report:
-  - `report_builder.create`
-- list/detail:
-  - `report_builder.view`
-  - service enforces report visibility
-- update:
-  - `report_builder.edit`
-  - service enforces owner/admin/visibility rules
-- delete:
-  - `report_builder.delete`
-- clone:
-  - `report_builder.create` plus source report visibility
-- seed templates:
-  - `report_builder.manage_templates`
-- run:
-  - `report_builder.run` plus underlying source permission and RLS
-- export:
-  - `report_builder.export` plus run permission and underlying source permission
-- preview:
-  - `report_builder.view` plus underlying source permission
-- schedules:
-  - `report_builder.schedule`
-- dashboards/widgets:
-  - `report_builder.dashboard`
-- AI recommendations:
-  - `report_builder.ai`
-- executive summary:
-  - either `report_builder.view` plus relevant underlying module permissions or keep as analytics-owned with explicit analytics permission
-- RLS:
-  - `report_builder.rls_admin`
-
-Endpoint response paths should remain stable.
-
-## Frontend Design Implications
-
-GAP-013H should:
-
-- keep the existing report-builder page group
-- replace direct `fetch` in `frontend/src/lib/report_builder.ts` with shared API client conventions
-- move RLS and executive-summary calls into `report_builder.ts`
-- guard pages with dedicated report-builder permissions
-- hide/disable actions based on permission:
-  - create report
-  - delete report
-  - clone report
-  - run report
-  - export
-  - schedule
-  - dashboard/widget management
-  - seed templates
-  - RLS management
-  - AI generation
-- show view-only state for reports returned with limited access
-- keep current table/list layout unless deeper UX work is explicitly required
+---
 
 ## Test Strategy
 
-GAP-013J should add focused tests for:
+GAP-013J will add focused tests:
+- Permission enforcement: unauthenticated request → 401/403; correct permission → 200.
+- Data source validation: unknown data source → 400.
+- SQL filter pushdown: filter on a known field reduces rows; filter on unknown field is rejected.
+- RLS enforcement: user with RLS policy sees fewer rows than admin with no policy.
+- Aggregation: report with SUM field returns aggregated rows, not raw rows.
 
-- registry includes `report_builder` as a module-owned route
-- seed permissions include all required report-builder actions
-- report-builder endpoint imports cleanly
-- catalog/run/export endpoints declare dedicated permission dependencies
-- RLS table/model/migration ownership exists
-- source access helper denies use of a data source when underlying module view is absent
-- export requires export permission
-- template seeding requires manage-template permission
-- normal analytics viewer does not get `rls_admin`, `delete`, or `manage_templates`
-- frontend nav/page source uses dedicated report-builder permissions instead of only `analytics.view`
-
-Prefer pure contract/service tests first so no live PostgreSQL is required.
-
-## Documentation Requirements
-
-GAP-013K should document:
-
-- report builder permission model
-- data-source catalog rules
-- report visibility rules
-- RLS behavior and limits
-- run/export behavior
-- schedule behavior and current worker limitations
-- dashboard/widget behavior
-- AI recommendation behavior as rule-based
-- commands and checks run
-- known limitations and follow-ups
+---
 
 ## Acceptance Criteria for GAP-013B
 
-GAP-013B is complete when:
-
-- Current schema baseline is documented.
-- Additive migration scope is clear.
-- Permission and module ownership design is explicit.
-- Report visibility and source-access rules are defined.
-- RLS ownership and execution design are defined.
-- Service/API/frontend implications are documented.
-- Test strategy is ready for implementation tasks.
-- No production DB or destructive schema action has been run.
+| Item | Status |
+|---|---|
+| Migration scope defined (`rb_schedule_run_log`) | DONE |
+| Permission action set defined | DONE |
+| Module registry promotion plan documented | DONE |
+| SQL filter pushdown design documented | DONE |
+| SQL aggregation design documented | DONE |
+| RLS enforcement design documented | DONE |
+| Backward compatibility confirmed | DONE |
+| `f8a9b0c1d2e3` chain position verified | DONE (parent of 20260515_0030) |

@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 
 from app.db.session import get_db
-from app.core.deps import get_current_user
+from app.core.deps import get_current_user, require_permission
 from app.schemas.report_builder import (
     ReportCreate, ReportUpdate, ReportOut, RunRequest, RunResult,
     ScheduleCreate, ScheduleOut,
@@ -24,7 +24,7 @@ router = APIRouter()
 
 # ── Metadata ──────────────────────────────────────────────────────────────────
 
-@router.get("/catalog")
+@router.get("/catalog", dependencies=[Depends(require_permission("reports", "view"))])
 async def get_catalog():
     return {
         k: {
@@ -37,7 +37,7 @@ async def get_catalog():
     }
 
 
-@router.get("/catalog/{data_source}")
+@router.get("/catalog/{data_source}", dependencies=[Depends(require_permission("reports", "view"))])
 async def get_data_source(data_source: str):
     ds = svc.DATA_SOURCES.get(data_source)
     if not ds:
@@ -47,14 +47,16 @@ async def get_data_source(data_source: str):
 
 # ── Reports ───────────────────────────────────────────────────────────────────
 
-@router.post("/reports", response_model=ReportOut, status_code=201)
+@router.post("/reports", response_model=ReportOut, status_code=201,
+             dependencies=[Depends(require_permission("reports", "create"))])
 async def create_report(data: ReportCreate, db: AsyncSession = Depends(get_db)):
     if data.data_source not in svc.DATA_SOURCES:
         raise HTTPException(400, f"Unknown data source: {data.data_source}")
     return await svc.create_report(db, data)
 
 
-@router.get("/reports", response_model=List[ReportOut])
+@router.get("/reports", response_model=List[ReportOut],
+            dependencies=[Depends(require_permission("reports", "view"))])
 async def list_reports(
     data_source: Optional[str] = None,
     owner: Optional[str] = None,
@@ -64,7 +66,8 @@ async def list_reports(
     return await svc.list_reports(db, data_source, owner, template_only)
 
 
-@router.get("/reports/{report_id}", response_model=ReportOut)
+@router.get("/reports/{report_id}", response_model=ReportOut,
+            dependencies=[Depends(require_permission("reports", "view"))])
 async def get_report(report_id: UUID, db: AsyncSession = Depends(get_db)):
     obj = await svc.get_report(db, report_id)
     if not obj:
@@ -72,7 +75,8 @@ async def get_report(report_id: UUID, db: AsyncSession = Depends(get_db)):
     return obj
 
 
-@router.patch("/reports/{report_id}", response_model=ReportOut)
+@router.patch("/reports/{report_id}", response_model=ReportOut,
+              dependencies=[Depends(require_permission("reports", "edit"))])
 async def update_report(report_id: UUID, data: ReportUpdate, db: AsyncSession = Depends(get_db)):
     obj = await svc.update_report(db, report_id, data)
     if not obj:
@@ -80,14 +84,16 @@ async def update_report(report_id: UUID, data: ReportUpdate, db: AsyncSession = 
     return obj
 
 
-@router.delete("/reports/{report_id}", status_code=204)
+@router.delete("/reports/{report_id}", status_code=204,
+               dependencies=[Depends(require_permission("reports", "admin"))])
 async def delete_report(report_id: UUID, db: AsyncSession = Depends(get_db)):
     ok = await svc.delete_report(db, report_id)
     if not ok:
         raise HTTPException(404, "Report not found")
 
 
-@router.post("/reports/{report_id}/clone", response_model=ReportOut, status_code=201)
+@router.post("/reports/{report_id}/clone", response_model=ReportOut, status_code=201,
+             dependencies=[Depends(require_permission("reports", "create"))])
 async def clone_report(
     report_id: UUID,
     new_code: str = Query(...),
@@ -100,7 +106,8 @@ async def clone_report(
     return obj
 
 
-@router.post("/reports/seed-templates")
+@router.post("/reports/seed-templates",
+             dependencies=[Depends(require_permission("reports", "admin"))])
 async def seed_templates(db: AsyncSession = Depends(get_db)):
     count = await svc.seed_templates(db)
     return {"created": count}
@@ -108,12 +115,14 @@ async def seed_templates(db: AsyncSession = Depends(get_db)):
 
 # ── Run ───────────────────────────────────────────────────────────────────────
 
-@router.post("/reports/{report_id}/run", response_model=RunResult)
+@router.post("/reports/{report_id}/run", response_model=RunResult,
+             dependencies=[Depends(require_permission("reports", "run"))])
 async def run_report(report_id: UUID, req: RunRequest, db: AsyncSession = Depends(get_db)):
     return await svc.run_report(db, report_id, req)
 
 
-@router.get("/reports/{report_id}/export")
+@router.get("/reports/{report_id}/export",
+            dependencies=[Depends(require_permission("reports", "export"))])
 async def export_report(report_id: UUID, db: AsyncSession = Depends(get_db)):
     csv_data = await svc.export_report_csv(db, report_id)
     return StreamingResponse(
@@ -125,7 +134,7 @@ async def export_report(report_id: UUID, db: AsyncSession = Depends(get_db)):
 
 # ── Preview ───────────────────────────────────────────────────────────────────
 
-@router.post("/preview")
+@router.post("/preview", dependencies=[Depends(require_permission("reports", "run"))])
 async def preview_query(
     data_source: str,
     fields: Optional[List[str]] = None,
@@ -142,17 +151,20 @@ async def preview_query(
 
 # ── Schedules ─────────────────────────────────────────────────────────────────
 
-@router.post("/reports/{report_id}/schedule", response_model=ScheduleOut, status_code=201)
+@router.post("/reports/{report_id}/schedule", response_model=ScheduleOut, status_code=201,
+             dependencies=[Depends(require_permission("reports", "create"))])
 async def create_schedule(report_id: UUID, data: ScheduleCreate, db: AsyncSession = Depends(get_db)):
     return await svc.create_schedule(db, report_id, data)
 
 
-@router.get("/schedules", response_model=List[ScheduleOut])
+@router.get("/schedules", response_model=List[ScheduleOut],
+            dependencies=[Depends(require_permission("reports", "view"))])
 async def list_schedules(report_id: Optional[UUID] = None, db: AsyncSession = Depends(get_db)):
     return await svc.list_schedules(db, report_id)
 
 
-@router.delete("/schedules/{schedule_id}", status_code=204)
+@router.delete("/schedules/{schedule_id}", status_code=204,
+               dependencies=[Depends(require_permission("reports", "admin"))])
 async def deactivate_schedule(schedule_id: UUID, db: AsyncSession = Depends(get_db)):
     ok = await svc.deactivate_schedule(db, schedule_id)
     if not ok:
@@ -161,17 +173,20 @@ async def deactivate_schedule(schedule_id: UUID, db: AsyncSession = Depends(get_
 
 # ── Dashboards ────────────────────────────────────────────────────────────────
 
-@router.post("/dashboards", response_model=DashboardOut, status_code=201)
+@router.post("/dashboards", response_model=DashboardOut, status_code=201,
+             dependencies=[Depends(require_permission("reports", "create"))])
 async def create_dashboard(data: DashboardCreate, db: AsyncSession = Depends(get_db)):
     return await svc.create_dashboard(db, data)
 
 
-@router.get("/dashboards", response_model=List[DashboardOut])
+@router.get("/dashboards", response_model=List[DashboardOut],
+            dependencies=[Depends(require_permission("reports", "view"))])
 async def list_dashboards(db: AsyncSession = Depends(get_db)):
     return await svc.list_dashboards(db)
 
 
-@router.get("/dashboards/{dashboard_id}", response_model=DashboardOut)
+@router.get("/dashboards/{dashboard_id}", response_model=DashboardOut,
+            dependencies=[Depends(require_permission("reports", "view"))])
 async def get_dashboard(dashboard_id: UUID, db: AsyncSession = Depends(get_db)):
     obj = await svc.get_dashboard(db, dashboard_id)
     if not obj:
@@ -179,12 +194,14 @@ async def get_dashboard(dashboard_id: UUID, db: AsyncSession = Depends(get_db)):
     return obj
 
 
-@router.post("/dashboards/{dashboard_id}/widgets", response_model=WidgetOut, status_code=201)
+@router.post("/dashboards/{dashboard_id}/widgets", response_model=WidgetOut, status_code=201,
+             dependencies=[Depends(require_permission("reports", "edit"))])
 async def add_widget(dashboard_id: UUID, data: WidgetCreate, db: AsyncSession = Depends(get_db)):
     return await svc.add_widget(db, dashboard_id, data)
 
 
-@router.delete("/widgets/{widget_id}", status_code=204)
+@router.delete("/widgets/{widget_id}", status_code=204,
+               dependencies=[Depends(require_permission("reports", "admin"))])
 async def delete_widget(widget_id: UUID, db: AsyncSession = Depends(get_db)):
     ok = await svc.delete_widget(db, widget_id)
     if not ok:
@@ -193,27 +210,32 @@ async def delete_widget(widget_id: UUID, db: AsyncSession = Depends(get_db)):
 
 # ── AI ────────────────────────────────────────────────────────────────────────
 
-@router.post("/ai/run-builder-assistant", response_model=List[RBAIRecOut])
+@router.post("/ai/run-builder-assistant", response_model=List[RBAIRecOut],
+             dependencies=[Depends(require_permission("reports", "admin"))])
 async def run_builder_assistant(db: AsyncSession = Depends(get_db)):
     return await svc.run_builder_assistant(db)
 
 
-@router.post("/ai/run-insight-generator", response_model=List[RBAIRecOut])
+@router.post("/ai/run-insight-generator", response_model=List[RBAIRecOut],
+             dependencies=[Depends(require_permission("reports", "admin"))])
 async def run_insight_generator(db: AsyncSession = Depends(get_db)):
     return await svc.run_insight_generator(db)
 
 
-@router.post("/ai/run-performance-optimizer", response_model=List[RBAIRecOut])
+@router.post("/ai/run-performance-optimizer", response_model=List[RBAIRecOut],
+             dependencies=[Depends(require_permission("reports", "admin"))])
 async def run_performance_optimizer(db: AsyncSession = Depends(get_db)):
     return await svc.run_performance_optimizer(db)
 
 
-@router.get("/ai/recommendations", response_model=List[RBAIRecOut])
+@router.get("/ai/recommendations", response_model=List[RBAIRecOut],
+            dependencies=[Depends(require_permission("reports", "view"))])
 async def list_ai_recs(status: Optional[str] = None, db: AsyncSession = Depends(get_db)):
     return await svc.list_ai_recs(db, status)
 
 
-@router.patch("/ai/recommendations/{rec_id}", response_model=RBAIRecOut)
+@router.patch("/ai/recommendations/{rec_id}", response_model=RBAIRecOut,
+              dependencies=[Depends(require_permission("reports", "view"))])
 async def ack_ai_rec(rec_id: UUID, data: RBAIRecAck, db: AsyncSession = Depends(get_db)):
     obj = await svc.ack_ai_rec(db, rec_id, data)
     if not obj:
@@ -223,7 +245,8 @@ async def ack_ai_rec(rec_id: UUID, data: RBAIRecAck, db: AsyncSession = Depends(
 
 # ── Cross-Module Executive Summary ────────────────────────────────────────────
 
-@router.get("/executive-summary")
+@router.get("/executive-summary",
+            dependencies=[Depends(require_permission("reports", "admin"))])
 async def executive_summary(db: AsyncSession = Depends(get_db)):
     """
     Single-call cross-module KPI summary for executive dashboard.
@@ -390,7 +413,8 @@ class RLSPolicyOut(BaseModel):
         )
 
 
-@router.post("/rls", response_model=RLSPolicyOut, status_code=201)
+@router.post("/rls", response_model=RLSPolicyOut, status_code=201,
+             dependencies=[Depends(require_permission("reports", "admin"))])
 async def create_rls_policy(
     payload: RLSPolicyIn,
     db: AsyncSession = Depends(get_db),
@@ -414,7 +438,8 @@ async def create_rls_policy(
     return RLSPolicyOut.from_orm(policy)
 
 
-@router.get("/rls", response_model=List[RLSPolicyOut])
+@router.get("/rls", response_model=List[RLSPolicyOut],
+            dependencies=[Depends(require_permission("reports", "admin"))])
 async def list_rls_policies(
     data_source: Optional[str] = None,
     active_only: bool = True,
@@ -432,7 +457,8 @@ async def list_rls_policies(
     return [RLSPolicyOut.from_orm(p) for p in r.scalars().all()]
 
 
-@router.patch("/rls/{policy_id}")
+@router.patch("/rls/{policy_id}",
+              dependencies=[Depends(require_permission("reports", "admin"))])
 async def update_rls_policy(
     policy_id: str,
     active_flag: Optional[bool] = None,
@@ -456,7 +482,8 @@ async def update_rls_policy(
     return RLSPolicyOut.from_orm(policy)
 
 
-@router.delete("/rls/{policy_id}", status_code=204)
+@router.delete("/rls/{policy_id}", status_code=204,
+               dependencies=[Depends(require_permission("reports", "admin"))])
 async def delete_rls_policy(
     policy_id: str,
     db: AsyncSession = Depends(get_db),

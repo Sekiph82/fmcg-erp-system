@@ -2,284 +2,262 @@
 
 ## Summary
 
-GAP-013 is not starting from zero. The repository already has a custom report-builder module with ORM models, schemas, a backend service, an API endpoint, an Alembic migration, frontend pages, a data-source catalog, saved reports, report execution, CSV export, schedules, dashboard widgets, row-level security policy screens, AI recommendation helpers, and an executive summary page.
+A custom report builder exists with database models, Pydantic schemas, a service layer, and API endpoints covering report CRUD, execution, CSV export, schedules, dashboards/widgets, RLS policy management, AI recommendations, and an executive summary. The frontend has domain-specific report pages (sales, procurement, finance, etc.) that are independent of the builder API.
 
-The current implementation is useful as a foundation, but it is not yet enterprise-grade for an ERP/MES report engine. The most important risks are missing authentication and permission dependencies on most report-builder endpoints, weak module ownership, no dedicated report-builder permission contract, incomplete row-level security enforcement, raw SQL execution without database-level filter pushdown, partial export/schedule behavior, frontend direct `fetch` usage, and lack of focused tests.
+**Critical finding:** Almost all report builder endpoints lack authentication and permission guards. The route is registered as a loose `ENDPOINT_ROUTE_DEFINITIONS` entry — not a `MODULE_DEFINITIONS` module — so no `require_permission` dependency is generated for it. Every endpoint beyond the execution layer is effectively unauthenticated.
+
+---
 
 ## Business Importance
 
-ERP users expect reports to be controlled operational artifacts, not just ad hoc queries. A factory reporting layer needs:
+Custom reporting depth is a Phase 4 / Tier 3 priority. Allows finance, operations, and management users to slice ERP data without developer involvement. The executive summary and AI recommendations elevate it toward a BI-light capability. However, the security and completeness gaps identified below must be closed before this feature can be used safely in production.
 
-- role and scope-aware access to sensitive finance, HR, payroll, quality, production, sales, procurement, and inventory data
-- reusable report definitions and templates
-- safe query generation from whitelisted data sources and fields
-- scheduled report delivery
-- export governance
-- dashboard widgets and drill-down
-- auditability around report creation, execution, export, and sharing
-- reliable KPI definitions that managers can use for real decisions
-
-Without deeper hardening, the current report builder can expose broad operational data and allow high-impact report actions without the permission discipline used elsewhere in the ERP.
+---
 
 ## Files Inspected
 
-Backend files inspected:
+| Path | Purpose |
+|---|---|
+| `backend/app/api/v1/endpoints/report_builder.py` | API endpoints |
+| `backend/app/services/report_builder_service.py` | Business logic, query engine, AI agents |
+| `backend/app/models/report_builder.py` | ORM models (9 tables) |
+| `backend/app/schemas/report_builder.py` | Pydantic schemas |
+| `backend/alembic/versions/f8a9b0c1d2e3_custom_report_builder.py` | Migration |
+| `backend/app/core/module_registry.py` | Route/module registration |
+| `backend/app/api/v1/endpoints/utilities_reports.py` | Pre-built utility reports (separate surface) |
+| `backend/app/services/utilities_reports_service.py` | Utility reports logic |
+| `frontend/src/lib/report_builder.ts` | Frontend API client |
+| `frontend/src/app/dashboard/reports/` | 8 domain-specific report pages |
+| `backend/tests/` | Test file search |
 
-- `backend/app/api/v1/endpoints/report_builder.py`
-- `backend/app/services/report_builder_service.py`
-- `backend/app/models/report_builder.py`
-- `backend/app/schemas/report_builder.py`
-- `backend/app/api/v1/endpoints/analytics.py`
-- `backend/app/api/v1/endpoints/dashboard.py`
-- `backend/app/core/module_registry.py`
-- `backend/app/db/seed.py`
-- `backend/alembic/versions/f8a9b0c1d2e3_custom_report_builder.py`
-- `backend/tests/*` search results for report-builder coverage
-
-Frontend files inspected:
-
-- `frontend/src/lib/report_builder.ts`
-- `frontend/src/app/dashboard/report-builder/page.tsx`
-- `frontend/src/app/dashboard/report-builder/builder/page.tsx`
-- `frontend/src/app/dashboard/report-builder/catalog/page.tsx`
-- `frontend/src/app/dashboard/report-builder/saved/page.tsx`
-- `frontend/src/app/dashboard/report-builder/viewer/page.tsx`
-- `frontend/src/app/dashboard/report-builder/dashboards/page.tsx`
-- `frontend/src/app/dashboard/report-builder/schedules/page.tsx`
-- `frontend/src/app/dashboard/report-builder/rls/page.tsx`
-- `frontend/src/app/dashboard/report-builder/ai/page.tsx`
-- `frontend/src/app/dashboard/report-builder/executive/page.tsx`
-- `frontend/src/components/nav-config.tsx`
-
-Planning/tracker files inspected:
-
-- `TASKS.md`
-- `CODEX_PROGRESS.md`
-- `docs/planning/ERP_ROADMAP_AND_MANUAL_PLAN.md`
-- `docs/planning/ERP_ROADMAP_IMPLEMENTATION_PLAN.md`
-- `docs/planning/ERP_ROADMAP_STATUS_MATRIX.md`
+---
 
 ## Existing Backend Coverage
 
-The report-builder backend route is registered as:
+### Models (`backend/app/models/report_builder.py`)
 
-- `/api/v1/reports-builder`
-- endpoint file: `backend/app/api/v1/endpoints/report_builder.py`
+9 tables fully defined:
 
-Implemented endpoint groups include:
+| Model | Table | Key fields |
+|---|---|---|
+| `ReportDefinition` | `rb_report_definitions` | report_code, report_name, visibility, data_source, query_definition (JSON), is_template, run_count, last_run_at |
+| `ReportField` | `rb_report_fields` | report_id, field_path, aggregation, is_group_by, sort_direction, position, visible |
+| `ReportFilter` | `rb_report_filters` | report_id, field_path, operator, value, value_to, logical_op, position |
+| `ReportCalculatedField` | `rb_calculated_fields` | report_id, expression, alias, data_type |
+| `ReportSchedule` | `rb_report_schedules` | report_id, frequency, run_time, recipients (JSON), export_format, active_flag, last_run_at, next_run_at |
+| `ReportDashboard` | `rb_dashboards` | dashboard_code, dashboard_name, visibility, owner_user_id |
+| `DashboardWidget` | `rb_dashboard_widgets` | dashboard_id, report_id, chart_type, position, width/height, x/y/color axis fields |
+| `RBAIRecommendation` | `rb_ai_recommendations` | agent_type, title, body, report_id, score, status, actioned_by, actioned_at |
+| `RLSPolicy` | `rb_rls_policies` | report_id, policy_scope (user/role), scope_id, field_path, operator, value |
 
-- data catalog:
-  - `GET /catalog`
-  - `GET /catalog/{data_source}`
-- report definitions:
-  - create, list, detail, patch, delete, clone
-  - seed template reports
-- execution/export:
-  - run report
-  - CSV export
-  - preview data source
-- schedules:
-  - create, list, deactivate
-- dashboards/widgets:
-  - create/list/detail dashboard
-  - add/delete widget
-- AI recommendations:
-  - builder assistant
-  - insight generator
-  - performance optimizer
-  - list and acknowledge recommendations
-- executive summary:
-  - cross-module KPI summary
-- RLS policy CRUD:
-  - create/list/update/delete row-level security policies
+Enums: `ReportVisibility`, `AggregationType`, `FilterOperator`, `LogicalOperator`, `SortDirection`, `ChartType`, `ScheduleFrequency`, `ExportFormat`, `RBAIAgentType`, `RBAIRecStatus`, `RLSPolicyScope`.
 
-The service defines a static `DATA_SOURCES` catalog for sales orders, customers, products, stock, invoices, purchase orders, expenses, timesheets, appraisals, CRM records, kanban cards, training assignments, certifications, notifications, and skill matrix data.
+### Schemas (`backend/app/schemas/report_builder.py`)
 
-The query runner uses a whitelist of data-source table names and allowed field paths. It constructs simple `SELECT` and `COUNT` SQL from catalog metadata and applies filters in Python after retrieving rows.
+Full schema coverage: Create/Update/Out for reports, fields, filters, calculated fields, schedules, dashboards, widgets, AI recommendations. `RunRequest` and `RunResult` (columns/rows/metadata). `RBAIRecAck` for status updates.
 
-## Existing Model and Migration Coverage
+### Service (`backend/app/services/report_builder_service.py`)
 
-Existing ORM model file:
+| Function | Reality |
+|---|---|
+| `_execute_query()` | Executes real SQL (`text(SELECT ...)`) against the DB; fields whitelisted to `DATA_SOURCES` catalog; filters applied post-DB in Python |
+| `create_report / get / update / delete / clone / list` | Full DB CRUD against `rb_report_definitions` + child tables |
+| `run_report()` | Real execution; increments `run_count`; returns paginated rows |
+| `export_report_csv()` | Real CSV generation from query results |
+| `seed_templates()` | Inserts seed report definitions from `DATA_SOURCES` |
+| `create_schedule / list_schedules / deactivate_schedule` | DB CRUD only; **no background execution** — schedules are stored but never triggered |
+| `create_dashboard / list / get / add_widget / delete_widget` | Full DB CRUD |
+| `run_builder_assistant()` | Heuristic only — flags reports with `run_count == 0`; not LLM-backed |
+| `run_insight_generator()` | Heuristic only — flags high-usage reports (run_count > 5) |
+| `run_performance_optimizer()` | Heuristic only — flags reports with no filters |
+| `ack_ai_rec()` | DB status update |
 
-- `backend/app/models/report_builder.py`
+### Data Source Catalog
 
-Existing models:
+Hardcoded in `DATA_SOURCES` dict (not DB-driven). 10+ sources covering: `sales_orders`, `customers`, `products`, `stock`, `invoices`, `purchase_orders`, and others. Each source maps to a single DB table with a flat field list (no joins, no related fields).
 
-- `ReportDefinition`
-- `ReportField`
-- `ReportFilter`
-- `ReportCalculatedField`
-- `ReportSchedule`
-- `ReportDashboard`
-- `DashboardWidget`
-- `RBAIRecommendation`
-- `RLSPolicy`
+### API Endpoints (`backend/app/api/v1/endpoints/report_builder.py`)
 
-Existing enums:
+30+ endpoints registered under `/reports-builder` prefix. **Critical issue: no `require_permission` dependencies on any endpoint.** `get_current_user` is imported but not used. `get_db` is the only dependency on most routes.
 
-- `ReportVisibility`
-- `AggregationType`
-- `FilterOperator`
-- `LogicalOperator`
-- `SortDirection`
-- `ChartType`
-- `ScheduleFrequency`
-- `ExportFormat`
-- `RBAIAgentType`
-- `RBAIRecStatus`
-- `RLSPolicyScope`
+Specific gaps:
+- `GET /catalog` — public (no auth at all)
+- `GET /catalog/{data_source}` — public
+- `POST /reports`, `GET /reports`, `GET /reports/{id}` — no auth
+- `POST /reports/{id}/run`, `GET /reports/{id}/export` — no auth (anyone can run/export any report)
+- `POST /ai/run-*` — no auth (anyone can trigger AI agent runs)
+- `POST /rls`, `PATCH /rls/{id}`, `DELETE /rls/{id}` — no auth (anyone can create/modify RLS policies)
+- `GET /executive-summary` — no auth (exposes cross-module KPIs)
 
-Existing migration:
+### Module Registry
 
-- `backend/alembic/versions/f8a9b0c1d2e3_custom_report_builder.py`
+`report_builder` registered as `ENDPOINT_ROUTE_DEFINITIONS` (loose route), **not** `MODULE_DEFINITIONS`. This means:
+- No permission actions defined for the report builder module
+- No `require_permission("reports", "view")` is generated anywhere
+- No seed permissions exist for report builder
+- No role-based access control path for report builder
 
-The migration creates the main report-builder tables and several enum types. It does not appear to create the `rb_rls_policies` table even though the ORM and endpoint now use `RLSPolicy`. It also does not define all foreign keys reflected by the ORM relationships, such as report-to-field/filter/schedule relationships and dashboard widget report references. GAP-013B/C should reconcile this carefully rather than assuming the schema is complete.
+### Utilities Reports
+
+`utilities_reports.py` registered as a separate `ENDPOINT_ROUTE_DEFINITIONS` entry. 15 pre-built utility monitoring reports. These also lack `require_permission` guards based on inspection of the registry entry (loose route, not module-owned).
+
+### Migration
+
+`f8a9b0c1d2e3_custom_report_builder.py` — creates all 9 `rb_*` tables. Migration revision ID is not in the `20260515_*` date-prefixed sequence. Needs verification that it is in the Alembic chain and that the head reflects it.
+
+---
 
 ## Existing Frontend Coverage
 
-The frontend has a substantial report-builder route group:
+### Frontend API Client (`frontend/src/lib/report_builder.ts`)
 
-- `/dashboard/report-builder`
-- `/dashboard/report-builder/builder`
-- `/dashboard/report-builder/catalog`
-- `/dashboard/report-builder/saved`
-- `/dashboard/report-builder/viewer`
-- `/dashboard/report-builder/dashboards`
-- `/dashboard/report-builder/schedules`
-- `/dashboard/report-builder/rls`
-- `/dashboard/report-builder/ai`
-- `/dashboard/report-builder/executive`
+Complete client covering all backend surfaces: catalog, CRUD, run/export, schedules, dashboards, widgets, AI recommendations. Uses `apiClient` (auth-aware).
 
-Implemented UI behavior includes:
+### Frontend Report Pages (`frontend/src/app/dashboard/reports/`)
 
-- report-builder home with KPI cards and quick navigation
-- template seeding button
-- data catalog browser and preview
-- report builder form for data source, fields, aggregation, sort, filters, and visibility
-- saved reports list with clone/delete/export links
-- report viewer with run/export behavior
-- dashboard and widget management
-- schedule creation/deactivation
-- RLS policy management
-- AI recommendation generation and acknowledgement
-- executive KPI cards
+8 domain-specific pages: finance, inventory, marketing, payments, procurement, production, sales, and a main reports index. These pages appear to be standalone domain report views, **not connected to the custom report builder API**. They likely call domain-specific endpoints (e.g., `/api/v1/sales/orders`) directly rather than using `report_builder.ts`.
 
-The navigation section exists under `analytics.view`, and all report-builder child pages currently use `analytics.view` for visibility.
+There is **no dedicated report builder UI** — no drag-and-drop field selection, no builder canvas, no filter construction UI, no dashboard editor. The `report_builder.ts` client exists but no frontend page consumes it.
+
+---
 
 ## Existing Permissions / Roles / Scopes
 
-Current permission facts:
+**None.** The report builder has no entries in `MODULE_DEFINITIONS`, no permission actions, and no seed permission codes. RLS policies are defined at the data level (field-level row filtering) but there is no role-based access control at the API surface level.
 
-- Seed permissions include `analytics.view` and `analytics.export`.
-- The sidebar report-builder section is guarded by `analytics.view`.
-- `backend/app/core/module_registry.py` registers `report_builder` as a loose `EndpointRouteDefinition`, not as a full module definition.
-- There is no dedicated `report_builder.*` permission family in seed data.
-- Most report-builder API endpoints do not depend on `get_current_user` or `require_permission`.
-- RLS policy endpoints use `get_current_user`, but not a dedicated admin/configure permission.
+---
 
-This is the largest security gap in the current slice. The report builder can reach sensitive source tables across modules, so API protection must be stronger than generic navigation visibility.
+## Existing Migrations
 
-## Existing Analytics / Dashboard Context
+- `f8a9b0c1d2e3_custom_report_builder.py` — creates `rb_*` tables. Not in the `20260515_*` date-prefixed sequence; relationship to current head unknown without running `alembic heads`.
 
-The separate analytics endpoint already uses module-specific permissions for many operational BI surfaces. For example, the inspected analytics endpoint imports `require_permission` and applies module permissions such as inventory view for inventory analytics.
+---
 
-The dashboard summary endpoint uses authenticated-user dependency but not a broad analytics permission dependency. It is separate from the report builder but relevant because the report-builder executive summary performs similar cross-module aggregation directly inside `report_builder.py`.
+## Existing Tests
+
+**None** for the report builder. No test file in `backend/tests/` covers `report_builder` functionality. The 5 test files that exist cover security hardening, attack simulation, GAP-006 integrations, and GAP-011 HR/payroll.
+
+---
+
+## Existing Documentation
+
+No implementation notes file exists for GAP-013 prior to this audit.
+
+---
+
+## Key Finding 1: No Authentication or Permission Guards
+
+Every endpoint in `report_builder.py` is effectively public. An unauthenticated or unpermissioned user can:
+- Browse all report definitions
+- Run any report and see its data
+- Export full CSV datasets
+- Create, modify, and delete reports and dashboards
+- Create and delete RLS policies
+- Trigger AI agent runs
+- View the executive summary with cross-module KPIs
+
+This is a **critical security gap** for any production deployment.
+
+## Key Finding 2: Route Registered as Loose ENDPOINT_ROUTE_DEFINITION
+
+`report_builder` is not in `MODULE_DEFINITIONS`. It has no permission actions, no seed codes, no role assignments. Upgrading to `MODULE_DEFINITIONS` would require defining permission actions (e.g., view, create, edit, run, export, admin), adding seed codes, and assigning roles.
+
+## Key Finding 3: Query Engine Has Significant Limitations
+
+The `_execute_query()` function executes real SQL but:
+- **No JOINs** — each report queries exactly one table; no cross-table or multi-source queries
+- **No SQL-level aggregation** — `AggregationType` fields (SUM, AVG, COUNT, etc.) are defined in the model/schema but ignored in `_execute_query()`; it always does `SELECT col1, col2 FROM table LIMIT N OFFSET M`
+- **Filters applied in Python post-fetch** — not pushed into SQL `WHERE`; for large tables this fetches all rows then filters in memory
+- **No GROUP BY** — `is_group_by` field defined but not implemented
+- **Calculated fields ignored** — `ReportCalculatedField.expression` is stored but never evaluated during query execution
+- **No LIMIT enforcement on aggregation** — if a report has aggregation-type fields, execution silently returns raw rows as if it were a non-aggregated query
+
+## Key Finding 4: RLS Policies Not Enforced During Execution
+
+`rb_rls_policies` table exists and CRUD endpoints allow creating `user`/`role`-scope policies with field-level filtering. However, `_execute_query()` does not consult `RLSPolicy` records at all during execution. RLS policies are stored but never applied.
+
+## Key Finding 5: Schedules Not Executed
+
+`rb_report_schedules` records are created with `frequency`, `run_time`, and `next_run_at` but no background scheduler (Celery, APScheduler, Cron) reads these records and triggers report execution. Schedules are a stub — they describe intent but do nothing.
+
+## Key Finding 6: AI Features Are Heuristic Stubs
+
+The three AI agents (`builder_assistant`, `insight_generator`, `performance_optimizer`) produce recommendations based on simple DB queries (unused reports, high-run-count reports, reports without filters). They do not invoke any LLM or ML model. The `RBAIAgentType` enum and recommendation structure are designed for LLM integration but the implementation is fully heuristic.
+
+## Key Finding 7: Frontend Report Builder UI Missing
+
+The `report_builder.ts` client is fully implemented, but no frontend page uses it. The existing `/dashboard/reports/*` pages are domain-specific views that do not connect to the report builder API. A builder canvas (field picker, filter editor, aggregation config, chart type selector, dashboard editor) would need to be created.
+
+## Key Finding 8: Migration Revision ID Is Not Date-Prefixed
+
+The migration uses revision `f8a9b0c1d2e3` (a hash-style ID), unlike the rest of the migration chain which uses `YYYYMMDD_NNNN` prefixes. Its position in the Alembic chain needs to be verified.
+
+---
 
 ## Missing Pieces
 
-- Dedicated module definition for `report_builder`.
-- Dedicated permission contract, likely:
-  - `report_builder.view`
-  - `report_builder.create`
-  - `report_builder.edit`
-  - `report_builder.delete`
-  - `report_builder.run`
-  - `report_builder.export`
-  - `report_builder.schedule`
-  - `report_builder.dashboard`
-  - `report_builder.rls_admin`
-  - `report_builder.ai`
-  - `report_builder.manage_templates`
-- Permission dependencies on catalog, report CRUD, run, export, preview, schedules, dashboards, AI, executive summary, and RLS endpoints.
-- Role grants that do not make every analytics viewer a report admin.
-- Schema/migration reconciliation for `rb_rls_policies`.
-- Foreign key/index reconciliation for report builder child tables and dashboard widgets.
-- Execution-time module permission checks for underlying data sources.
-- Enforcement of saved report visibility (`private`, `team`, `global`).
-- Actual RLS policy application inside `_execute_query` or a dedicated query planning service.
-- Export permission separation and auditability.
-- Schedule runner/delivery implementation; current schedules are stored but not executed by a worker.
-- XLSX/PDF export support; current export is CSV only despite enum support for more formats.
-- Pivot-table support.
-- Drill-down dashboard behavior.
-- Calculated-field execution. Calculated fields are stored but not used by the run engine.
-- Aggregation/group-by execution. Aggregation fields are stored but the current SQL path selects raw columns.
-- Runtime filter validation beyond simple request shape.
-- Query limits and guardrails for expensive reports beyond the passed limit.
-- Frontend permission/action gating beyond navigation.
-- Shared API client usage. `frontend/src/lib/report_builder.ts`, RLS page, and executive page use direct `fetch`.
-- Focused backend tests for permissions, query safety, RLS, export, schedule, and schema ownership.
-- Focused frontend tests for page guards and action visibility.
+- Permission guards on all report builder endpoints
+- `MODULE_DEFINITIONS` registration with permission actions and seed codes
+- Role assignments for report builder permissions
+- SQL-level aggregation (GROUP BY + aggregate functions)
+- SQL-level filter pushdown (WHERE clause generation)
+- Calculated field evaluation at query time
+- RLS policy enforcement in query execution
+- Schedule background execution (Celery task or APScheduler job)
+- Frontend report builder UI (field picker, filter builder, chart config, dashboard editor)
+- Tests for report CRUD, execution, export, and permission checks
+- Verification that migration `f8a9b0c1d2e3` is in the active Alembic chain
+
+---
 
 ## Partial Pieces
 
-- SQL safety is partially addressed by static data-source and field whitelists, but filters are applied after the database query and RLS is not enforced in the query path.
-- Templates exist and can be seeded, but template management is not permission-protected.
-- Schedules exist in schema/service/API, but no execution worker or delivery flow was found in this audit.
-- Dashboards and widgets exist, but no clear drill-down contract or widget-level permission filtering was found.
-- AI recommendations are rule-based helpers, not true predictive AI. This is acceptable if documented, but the UI should not imply deeper AI capability than implemented.
-- Export exists as CSV, but it is not protected by `analytics.export` or a dedicated report export permission.
-- The frontend route group is broad and useful, but it lacks page-level guards and action-level permission gating.
+- Data source catalog — defined but static/hardcoded, not DB-driven
+- AI recommendations — data layer complete, recommendation logic is heuristic stubs
+- RLS — data layer complete, enforcement logic missing
+- Schedules — data layer complete, execution trigger missing
+- Executive summary — works for cross-module KPI read but unauthenticated
+- Frontend API client — complete implementation, no UI consuming it
+- Aggregation fields — defined in model/schema, not implemented in query engine
+
+---
 
 ## Risks
 
-- Unauthenticated callers may be able to create, list, run, export, schedule, and delete reports because most report-builder endpoints lack auth dependencies.
-- Analytics viewers can see the report-builder navigation, but backend routes are not protected consistently by equivalent permissions.
-- Sensitive finance, HR, payroll, customer, supplier, quality, and inventory data can become visible through generic report execution unless data-source permissions and scopes are enforced.
-- Row-level security policies can be managed through authenticated-only endpoints and are not applied to report execution.
-- CSV export can return up to 10,000 rows without explicit export permission.
-- Schedule definitions could be created without permission if endpoint auth remains absent.
-- Missing migration ownership for RLS policies can cause runtime failures in a fresh database.
-- Report field/filter child rows may not be fully protected by database constraints if foreign keys remain incomplete in migration history.
-- Frontend direct `fetch` calls may bypass shared API client auth/error conventions.
-- Source files contain garbled separator/comment glyphs in report-builder code and client files, which is cosmetic but should be cleaned when files are touched.
+| Risk | Severity |
+|---|---|
+| Unauthenticated access to all report data and export | Critical |
+| No role-based gating on executive summary | High |
+| RLS policies stored but not enforced — false sense of data isolation | High |
+| Python-level filter on full table fetch — performance risk on large tables | Medium |
+| Aggregation/GROUP BY not implemented — users expect SUM/COUNT but get raw rows | Medium |
+| Schedules stored but never triggered — scheduled delivery silently does nothing | Medium |
+| No tests — any regression invisible | Medium |
+
+---
 
 ## Recommended GAP-013B Design Direction
 
-GAP-013B should design a hardening slice rather than replacing the report builder.
+1. **Promote to MODULE_DEFINITIONS** — add permission actions: `view`, `create`, `edit`, `run`, `export`, `admin`. Add seed codes. Assign to admin and analyst roles.
+2. **Add `require_permission` to all endpoints** — minimum `reports.view` on GET routes, `reports.run` on execution, `reports.export` on export, `reports.admin` on RLS/seed.
+3. **SQL aggregation** — implement GROUP BY + aggregate function translation in `_execute_query()` based on `ReportField.aggregation` and `is_group_by` flags.
+4. **SQL filter pushdown** — generate `WHERE` clause from `ReportFilter` records instead of Python post-filtering.
+5. **RLS enforcement** — consult `RLSPolicy` for the current user/role before executing any query.
+6. **Migration verification** — confirm `f8a9b0c1d2e3` is in the Alembic chain and run `alembic heads` to verify.
+7. **Tests** — add focused tests for permission enforcement, data source validation, and execution output.
 
-Recommended direction:
+Frontend builder UI is deferred — that is a significant UI effort beyond this roadmap slice.
 
-- Promote `report_builder` into `MODULE_DEFINITIONS`.
-- Keep `/api/v1/reports-builder` and `/dashboard/report-builder/*` routes stable.
-- Add dedicated report-builder permission keys and seed role grants.
-- Reconcile migration ownership for `rb_rls_policies`, child-table foreign keys, indexes, and enum duplicate-safety.
-- Move permission and execution guard logic into a report-builder access/query service.
-- Require both report-builder permission and underlying data-source module permission before catalog/run/export access.
-- Enforce report visibility:
-  - private: owner/admin only
-  - team: owner/team/role policy
-  - global: users with view/run and underlying data-source permission
-- Apply RLS policies during query planning before data is returned.
-- Keep SQL generation whitelist-based; avoid arbitrary SQL entry.
-- Push safe filters into SQL where possible instead of filtering only after limited row retrieval.
-- Separate `run`, `export`, `schedule`, `dashboard`, `rls_admin`, `ai`, and template-management permissions.
-- Standardize frontend calls on the shared API client and add page/action guards.
-- Add focused contract tests before expanding advanced features.
+---
 
 ## Acceptance Criteria for GAP-013 Completion
 
-GAP-013 should be considered complete only when:
-
-- `report_builder` is module-owned and exposed in the registry/manifest consistently.
-- Dedicated report-builder permissions are seeded idempotently.
-- Report-builder routes require authentication and appropriate permissions.
-- Run/export operations require both report-builder permission and underlying module visibility.
-- RLS policies are schema-owned and applied to report execution.
-- Saved report visibility is enforced.
-- Dangerous actions such as delete, export, schedule, template seeding, AI generation, and RLS management are not available to normal analytics viewers by default.
-- Frontend nav/pages/actions use dedicated permissions and shared API client conventions.
-- Migration ownership is deterministic for all report-builder tables used by the ORM.
-- Focused backend tests cover permission contracts, query safety, RLS enforcement, export gating, and route imports.
-- Frontend type-check/lint pass after report-builder UI changes.
-- Documentation explains current report-builder behavior, limitations, permissions, RLS, export, schedule, and follow-up boundaries.
+| Item | Status |
+|---|---|
+| All report builder endpoints gated by `require_permission` | TODO |
+| `MODULE_DEFINITIONS` registration with permission actions and seed codes | TODO |
+| SQL-level filters and aggregation in query engine | TODO |
+| RLS policies enforced during execution | TODO |
+| Migration `f8a9b0c1d2e3` verified in Alembic chain | TODO |
+| Tests for permission enforcement and execution behavior | TODO |
+| Audit doc (this file) | DONE |

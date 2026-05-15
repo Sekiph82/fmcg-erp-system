@@ -255,6 +255,28 @@ MODULE_DEFINITIONS: tuple[ModuleDefinition, ...] = (
         critical=True,
     ),
     ModuleDefinition(
+        key="reports",
+        label="Report Builder",
+        route_prefix="/reports-builder",
+        import_path="app.api.v1.endpoints.report_builder",
+        permission_actions=("view", "create", "edit", "run", "export", "admin"),
+        sidebar_group="Analytics",
+        icon_key="bar-chart",
+        ai_mode=MODULE_AI_MODES.get("reports", AIMode.RULE_BASED),
+        critical=False,
+    ),
+    ModuleDefinition(
+        key="notifications",
+        label="Notification Center",
+        route_prefix="/notifications",
+        import_path="app.api.v1.endpoints.notifications",
+        permission_actions=("view", "manage", "send", "configure", "report", "admin"),
+        sidebar_group="Communication",
+        icon_key="bell",
+        ai_mode=MODULE_AI_MODES.get("notifications", AIMode.RULE_BASED),
+        critical=False,
+    ),
+    ModuleDefinition(
         key="documents",
         label="Documents",
         route_prefix="/documents",
@@ -297,6 +319,17 @@ MODULE_DEFINITIONS: tuple[ModuleDefinition, ...] = (
         icon_key="brain",
         ai_mode=AIMode.LLM_POWERED,
         critical=False,
+    ),
+    ModuleDefinition(
+        key="shelf_life",
+        label="Shelf-Life / FEFO",
+        route_prefix="/shelf-life",
+        import_path="app.api.v1.endpoints.shelf_life",
+        permission_actions=("view", "create", "edit", "approve", "hold", "dispose", "report"),
+        sidebar_group="Supply Chain",
+        icon_key="calendar-clock",
+        ai_mode=MODULE_AI_MODES.get("shelf_life", AIMode.RULE_BASED),
+        critical=True,
     ),
 )
 
@@ -356,7 +389,7 @@ ENDPOINT_ROUTE_DEFINITIONS: tuple[EndpointRouteDefinition, ...] = (
     EndpointRouteDefinition(key="shop_floor", route_prefix="/shop-floor", import_path="app.api.v1.endpoints.shop_floor", tags=('shop-floor',)),
     EndpointRouteDefinition(key="material_flow", route_prefix="/material-flow", import_path="app.api.v1.endpoints.material_flow", tags=('material-flow',)),
     EndpointRouteDefinition(key="machine_operator", route_prefix="/machine-ops", import_path="app.api.v1.endpoints.machine_operator", tags=('machine-operator',)),
-    EndpointRouteDefinition(key="shelf_life", route_prefix="/shelf-life", import_path="app.api.v1.endpoints.shelf_life", tags=('shelf-life',)),
+    # shelf_life promoted to MODULE_DEFINITIONS — see above
     EndpointRouteDefinition(key="traceability", route_prefix="/traceability", import_path="app.api.v1.endpoints.traceability", tags=('traceability',)),
     EndpointRouteDefinition(key="qms", route_prefix="/qms", import_path="app.api.v1.endpoints.qms", tags=('qms',)),
     # gs1 promoted to MODULE_DEFINITIONS — see above
@@ -385,9 +418,9 @@ ENDPOINT_ROUTE_DEFINITIONS: tuple[EndpointRouteDefinition, ...] = (
     EndpointRouteDefinition(key="appraisals", route_prefix="/appraisals", import_path="app.api.v1.endpoints.appraisals", tags=('appraisals',)),
     EndpointRouteDefinition(key="training", route_prefix="/training", import_path="app.api.v1.endpoints.training", tags=('training',)),
     EndpointRouteDefinition(key="timesheets", route_prefix="/timesheets", import_path="app.api.v1.endpoints.timesheets", tags=('timesheets',)),
-    EndpointRouteDefinition(key="notifications", route_prefix="/notifications", import_path="app.api.v1.endpoints.notifications", tags=('notifications',)),
+    # notifications promoted to MODULE_DEFINITIONS — see above
     EndpointRouteDefinition(key="kanban", route_prefix="/kanban", import_path="app.api.v1.endpoints.kanban", tags=('kanban',)),
-    EndpointRouteDefinition(key="report_builder", route_prefix="/reports-builder", import_path="app.api.v1.endpoints.report_builder", tags=('report-builder',)),
+    # report_builder promoted to MODULE_DEFINITIONS — see below
     EndpointRouteDefinition(key="calendar", route_prefix="/calendar", import_path="app.api.v1.endpoints.calendar", tags=('calendar',)),
     EndpointRouteDefinition(key="chatter", route_prefix="/chatter", import_path="app.api.v1.endpoints.chatter", tags=('chatter',)),
     EndpointRouteDefinition(key="custom_fields", route_prefix="/custom-fields", import_path="app.api.v1.endpoints.custom_fields", tags=('custom-fields',)),

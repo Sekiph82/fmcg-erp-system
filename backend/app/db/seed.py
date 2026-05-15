@@ -138,14 +138,14 @@ PERMISSIONS = [
     ("quality",     "create", "Create Quality",        "Create QC inspection records",             False),
     ("quality",     "approve","Approve Quality",       "Approve or reject QC results",             False),
 
-    # GS1 / Label Printing
-    ("gs1", "view",    "View GS1",    "View GS1 configs, barcodes, label templates",           True),
-    ("gs1", "create",  "Create GS1",  "Create product GS1 configs and generate barcodes",      False),
-    ("gs1", "edit",    "Edit GS1",    "Edit GS1 configs and label templates",                  False),
-    ("gs1", "approve", "Approve GS1", "Approve label templates for production use",            False),
-    ("gs1", "print",   "Print GS1",   "Trigger label print jobs",                              False),
-    ("gs1", "report",  "Report GS1",  "View GS1 print history and SSCC tracking reports",      False),
-    ("gs1", "admin",   "Admin GS1",   "Run GS1 AI agents and manage company-level config",     False),
+    # Shelf-Life / FEFO
+    ("shelf_life", "view",    "View Shelf-Life",    "View FEFO rankings, batch records, and expiry alerts",      True),
+    ("shelf_life", "create",  "Create Shelf-Life",  "Create batch shelf-life records and customer SL rules",     False),
+    ("shelf_life", "edit",    "Edit Shelf-Life",    "Edit shelf-life rules and batch records",                   False),
+    ("shelf_life", "approve", "Approve Shelf-Life", "Approve retest outcomes and disposition decisions",         False),
+    ("shelf_life", "hold",    "Hold Batches",       "Place individual or bulk holds on near-expiry batches",     False),
+    ("shelf_life", "dispose", "Dispose Batches",    "Record disposal and write-off of expired stock",            False),
+    ("shelf_life", "report",  "Report Shelf-Life",  "View FEFO compliance and stock-value-at-risk reports",      False),
 
     # Maintenance
     ("maintenance", "view",   "View Maintenance",      "View assets and work orders",              True),
@@ -182,6 +182,22 @@ PERMISSIONS = [
     ("documents",   "approve","Approve Documents",     "Approve and publish documents",            False),
     ("documents",   "archive","Archive Documents",     "Archive or obsolete controlled documents", False),
     ("documents",   "export", "Export Documents",      "Export document metadata and files",       False),
+
+    # Report builder
+    ("reports", "view",   "View Reports",   "View report definitions and dashboards",      False),
+    ("reports", "create", "Create Reports", "Create report definitions and schedules",     False),
+    ("reports", "edit",   "Edit Reports",   "Edit report definitions and dashboards",      False),
+    ("reports", "run",    "Run Reports",    "Execute report queries and preview data",     False),
+    ("reports", "export", "Export Reports", "Export report data to CSV or XLSX",          False),
+    ("reports", "admin",  "Admin Reports",  "Administer report builder, RLS, and AI agents", False),
+
+    # Notification center
+    ("notifications", "view",      "View Notifications",      "View notifications and dashboard",                False),
+    ("notifications", "manage",    "Manage Notifications",    "Mark read, delete, and manage preferences",       False),
+    ("notifications", "send",      "Send Notifications",      "Create and send notifications or bulk sends",     False),
+    ("notifications", "configure", "Configure Notifications", "Manage templates and schedules",                  False),
+    ("notifications", "report",    "Report Notifications",    "View delivery, unread, and failed reports",       False),
+    ("notifications", "admin",     "Admin Notifications",     "Run AI agents, process schedules, admin actions", False),
 
     # Knowledge base and e-signature
     ("knowledge_base", "view",    "View Knowledge Base",    "View internal knowledge articles",         False),
@@ -540,7 +556,8 @@ ROLE_DEFINITIONS = {
             "documents.view", "documents.create", "documents.edit", "documents.approve", "documents.archive", "documents.export",
             "knowledge_base.view", "knowledge_base.create", "knowledge_base.edit", "knowledge_base.publish", "knowledge_base.delete", "knowledge_base.admin",
             "esign.view", "esign.request", "esign.sign", "esign.cancel", "esign.admin",
-            "gs1.view", "gs1.create", "gs1.edit", "gs1.approve", "gs1.print", "gs1.report", "gs1.admin",
+            "reports.view", "reports.create", "reports.edit", "reports.run", "reports.export", "reports.admin",
+            "notifications.view", "notifications.manage", "notifications.send", "notifications.configure", "notifications.report", "notifications.admin",
             # Admin can import users and manage import templates for user onboarding
             *_import("users"),
         ],
@@ -566,6 +583,8 @@ ROLE_DEFINITIONS = {
             "hr.view", "hr.approve",
             "documents.view", "documents.approve", "documents.archive", "documents.export",
             "knowledge_base.view", "esign.view",
+            "reports.view", "reports.run", "reports.export",
+            "notifications.view", "notifications.manage", "notifications.send", "notifications.report",
             "audit.view", "audit.export",
             "integrations.view",
             "analytics.view", "analytics.export",
@@ -594,6 +613,8 @@ ROLE_DEFINITIONS = {
             "utilities.view", "utilities.edit",
             "logistics.view", "logistics.create", "logistics.edit",
             "quality.view", "quality.create", "quality.approve",
+            "shelf_life.view", "shelf_life.create", "shelf_life.edit",
+            "shelf_life.approve", "shelf_life.hold", "shelf_life.dispose", "shelf_life.report",
             "maintenance.view", "maintenance.create", "maintenance.edit",
             "warehouses.view", "warehouses.create", "warehouses.edit",
             "wms.view", "wms.create", "wms.edit",
