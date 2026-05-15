@@ -171,6 +171,21 @@ PERMISSIONS = [
     ("documents",   "create", "Create Documents",      "Upload and create documents",              False),
     ("documents",   "edit",   "Edit Documents",        "Edit and version documents",               False),
     ("documents",   "approve","Approve Documents",     "Approve and publish documents",            False),
+    ("documents",   "archive","Archive Documents",     "Archive or obsolete controlled documents", False),
+    ("documents",   "export", "Export Documents",      "Export document metadata and files",       False),
+
+    # Knowledge base and e-signature
+    ("knowledge_base", "view",    "View Knowledge Base",    "View internal knowledge articles",         False),
+    ("knowledge_base", "create",  "Create Knowledge Base",  "Create knowledge categories and articles", False),
+    ("knowledge_base", "edit",    "Edit Knowledge Base",    "Edit knowledge articles",                  False),
+    ("knowledge_base", "publish", "Publish Knowledge Base", "Publish knowledge articles",               False),
+    ("knowledge_base", "delete",  "Archive Knowledge Base", "Archive knowledge articles",               False),
+    ("knowledge_base", "admin",   "Admin Knowledge Base",   "Administer knowledge-base structure",      False),
+    ("esign", "view",    "View E-Signatures",   "View electronic signature requests",       False),
+    ("esign", "request", "Request E-Signature", "Create electronic signature requests",     False),
+    ("esign", "sign",    "Sign Electronically", "Sign assigned electronic signature tasks", False),
+    ("esign", "cancel",  "Cancel E-Signature",  "Cancel own signature requests",            False),
+    ("esign", "admin",   "Admin E-Signatures",  "Administer electronic signature workflow", False),
 
     # ── Bulk Import permissions ────────────────────────────────────────────────
     # Each module gets:  <module>.import  (run the import) and
@@ -513,6 +528,9 @@ ROLE_DEFINITIONS = {
             "stock_movement.edit", "stock_movement.delete",
             # Admin can manage all utilities
             "utilities.view", "utilities.edit", "utilities.manage",
+            "documents.view", "documents.create", "documents.edit", "documents.approve", "documents.archive", "documents.export",
+            "knowledge_base.view", "knowledge_base.create", "knowledge_base.edit", "knowledge_base.publish", "knowledge_base.delete", "knowledge_base.admin",
+            "esign.view", "esign.request", "esign.sign", "esign.cancel", "esign.admin",
             # Admin can import users and manage import templates for user onboarding
             *_import("users"),
         ],
@@ -536,7 +554,8 @@ ROLE_DEFINITIONS = {
             "mpesa.view_transactions",
             "tax.view",
             "hr.view", "hr.approve",
-            "documents.view", "documents.approve",
+            "documents.view", "documents.approve", "documents.archive", "documents.export",
+            "knowledge_base.view", "esign.view",
             "audit.view", "audit.export",
             "integrations.view",
             "analytics.view", "analytics.export",
@@ -573,7 +592,7 @@ ROLE_DEFINITIONS = {
             "sales.view",
             "finance.view",
             "hr.view",
-            "documents.view",
+            "documents.view", "knowledge_base.view", "esign.view",
             "analytics.view",
             "audit.view",
             # Full bulk-import authority across all modules
@@ -592,7 +611,7 @@ ROLE_DEFINITIONS = {
             "sales.view",
             "inventory.view",
             "hr.view", "hr.approve",
-            "documents.view",
+            "documents.view", "knowledge_base.view", "esign.view",
             "audit.view", "audit.export",
             # Marketing spend visibility for finance oversight
             "finance.view_marketing", "marketing_analytics.view", "marketing_bi.view",
@@ -620,7 +639,9 @@ ROLE_DEFINITIONS = {
             "logistics.view", "quality.view", "maintenance.view",
             "warehouses.view", "wms.view", "materials.view", "products.view",
             "sales.view", "finance.view", "tax.view", "hr.view",
-            "documents.view",
+            "documents.view", "knowledge_base.view", "knowledge_base.create", "knowledge_base.edit",
+            "knowledge_base.publish", "knowledge_base.admin",
+            "esign.view", "esign.request", "esign.sign", "esign.cancel", "esign.admin",
             "mpesa.view_transactions", "mpesa.view_payment_logs",
             "analytics.view",
             "utility_management.view",
@@ -681,7 +702,7 @@ ROLE_DEFINITIONS = {
             "finance.view", "logistics.view", "quality.view",
             "maintenance.view", "warehouses.view", "wms.view",
             "hr.view", "tax.view", "users.view",
-            "documents.view",
+            "documents.view", "knowledge_base.view", "esign.view",
             "audit.view",
             "analytics.view",
             "ai.view", "ai.create",
@@ -758,7 +779,7 @@ ROLE_DEFINITIONS = {
         "permissions": [
             "quality.view", "quality.create", "quality.approve",
             "production.view", "inventory.view", "products.view",
-            "documents.view", "documents.create",
+            "documents.view", "documents.create", "knowledge_base.view", "esign.sign",
             # Import: own module only
             *_import("quality"),
         ],
@@ -768,7 +789,7 @@ ROLE_DEFINITIONS = {
         "permissions": [
             "logistics.view", "logistics.create", "logistics.edit",
             "procurement.view", "inventory.view",
-            "documents.view", "documents.create",
+            "documents.view", "documents.create", "knowledge_base.view", "esign.sign",
             # Import: own module only
             *_import("logistics"),
         ],
@@ -788,7 +809,7 @@ ROLE_DEFINITIONS = {
             "hr.view", "hr.create", "hr.edit", "hr.approve", "hr.export",
             "payroll_ke.view", "payroll_ke.create", "payroll_ke.approve", "payroll_ke.export",
             "users.view",
-            "documents.view", "documents.create",
+            "documents.view", "documents.create", "knowledge_base.view", "esign.sign",
             # Import: own module only
             *_import("hr"),
         ],

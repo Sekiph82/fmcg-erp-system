@@ -103,6 +103,8 @@ class ESSAccount(Base):
 
     ess_account_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     employee_id = Column(UUID(as_uuid=True), unique=True, nullable=False)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    hr_employee_id = Column(UUID(as_uuid=True), ForeignKey("hr_employees.id", ondelete="SET NULL"), nullable=True, index=True)
     email = Column(String(200), unique=True, nullable=False)
     password_hash = Column(String(200), nullable=False)
     status = Column(Enum(ESSAccountStatus), default=ESSAccountStatus.ACTIVE)
@@ -115,6 +117,8 @@ class ESSAccount(Base):
 
     profile = relationship("ESSEmployeeProfile", back_populates="account", uselist=False)
     activity_logs = relationship("ESSActivityLog", back_populates="account")
+    user = relationship("User", foreign_keys=[user_id])
+    hr_employee = relationship("Employee", foreign_keys=[hr_employee_id])
 
 
 # ── Employee Profile ──────────────────────────────────────────────────────────
@@ -124,6 +128,7 @@ class ESSEmployeeProfile(Base):
 
     profile_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     employee_id = Column(UUID(as_uuid=True), ForeignKey("ess_accounts.employee_id"), unique=True, nullable=False)
+    hr_employee_id = Column(UUID(as_uuid=True), ForeignKey("hr_employees.id", ondelete="SET NULL"), nullable=True, index=True)
     full_name = Column(String(150), nullable=False)
     email = Column(String(200), nullable=False)
     personal_email = Column(String(200), nullable=True)
@@ -146,6 +151,7 @@ class ESSEmployeeProfile(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     account = relationship("ESSAccount", back_populates="profile")
+    hr_employee = relationship("Employee", foreign_keys=[hr_employee_id])
 
 
 # ── Leave Type ────────────────────────────────────────────────────────────────

@@ -1273,27 +1273,30 @@ Implementation subtasks:
 
 #### GAP-010J: Add or update tests: CRM / Sales Pipeline Depth
 
-- Status: IN_PROGRESS
+- Status: DONE
 - Dependencies: GAP-010I
 - Acceptance criteria: Add focused backend/frontend tests for the implemented behavior.
 - Test requirements: Relevant tests fail before fix when practical and pass after implementation.
 - Documentation requirements: Document test files and commands.
+- Completion notes: Added `backend/tests/test_gap010_crm_sales_commercial_access.py` covering commercial access helper behavior, scoped quote conversion, CRM superuser bypass, module registry/seed contracts, and frontend view-only wiring; py_compile and focused pytest passed.
 
 #### GAP-010K: Add or update documentation: CRM / Sales Pipeline Depth
 
-- Status: TODO
+- Status: DONE
 - Dependencies: GAP-010J
 - Acceptance criteria: Update user/admin/developer docs for this change.
 - Test requirements: Docs match actual behavior and do not claim incomplete features are done.
 - Documentation requirements: Documentation updated.
+- Completion notes: Added `docs/planning/GAP-010_CRM_SALES_PIPELINE_IMPLEMENTATION_NOTES.md` with implemented behavior, permissions, admin setup, tests, checks, and known follow-ups; documentation checks passed.
 
 #### GAP-010L: Run checks and record result: CRM / Sales Pipeline Depth
 
-- Status: TODO
+- Status: DONE
 - Dependencies: GAP-010K
 - Acceptance criteria: Run relevant compile, lint, type, test, migration, or smoke checks.
 - Test requirements: Checks pass or failures are recorded with BLOCKED/NEEDS_USER_REVIEW.
 - Documentation requirements: Record commands/results in CODEX_PROGRESS.md.
+- Completion notes: Final GAP-010 checks passed for backend compile/import, focused pytest, Alembic heads/history/offline SQL, frontend type-check, frontend lint, docs checks, and tracker checks. Docker live current check was unavailable because Docker daemon was not running; prior GAP-010C live migration verification remains recorded.
 
 ### GAP-011: HRMS and Payroll Completeness
 
@@ -1310,99 +1313,111 @@ Implementation subtasks:
 
 #### GAP-011A: Audit current implementation: HRMS and Payroll Completeness
 
-- Status: TODO
+- Status: DONE
 - Dependencies: GAP-010L
 - Acceptance criteria: Record what exists, what is partial, and what is missing for this gap.
 - Test requirements: No business logic changes; documentation-only audit accepted.
 - Documentation requirements: Document audit findings and update status matrix.
+- Completion notes: Added `docs/planning/GAP-011_HRMS_PAYROLL_AUDIT.md`; documented existing HR, Kenya payroll, timesheets, ESS, recruitment, appraisals, training, and expenses coverage plus migration ownership, auth/permission, scope, duplicate payroll surface, frontend parity, test, and documentation gaps.
 
 #### GAP-011B: Design data model/schema: HRMS and Payroll Completeness
 
-- Status: TODO
+- Status: DONE
 - Dependencies: GAP-011A
 - Acceptance criteria: Define schema/model changes only if needed and review existing models first.
 - Test requirements: Schema design notes reviewed against current ORM conventions.
 - Documentation requirements: Document model decisions and migration needs.
+- Completion notes: Added `docs/planning/GAP-011_HRMS_PAYROLL_SCHEMA_DESIGN.md`; design defines canonical employee ownership, Kenya payroll statutory ownership, compatibility for lightweight HR payroll, additive scope/lifecycle/payroll privacy/ESS/timesheet bridge fields, permissions/scopes, audit logging, and migration strategy.
 
 #### GAP-011C: Add or update database migrations: HRMS and Payroll Completeness
 
-- Status: TODO
+- Status: DONE
 - Dependencies: GAP-011B
 - Acceptance criteria: Create Alembic migrations only for required schema changes.
 - Test requirements: Migration applies on empty and existing dev DB without destructive data loss.
 - Documentation requirements: Record migration command and result.
+- Completion notes: Added `backend/alembic/versions/20260515_0020_hrms_payroll_reconciliation.py`; py_compile, Alembic heads/history, and offline SQL generation passed. Live DB upgrade was skipped because Docker daemon was unavailable.
 
 #### GAP-011D: Add or update backend models: HRMS and Payroll Completeness
 
-- Status: TODO
+- Status: DONE
 - Dependencies: GAP-011C
 - Acceptance criteria: Implement ORM/model changes following existing conventions.
 - Test requirements: Models import successfully and relationships/enums are consistent.
 - Documentation requirements: Document model paths.
+- Completion notes: Updated HR, Kenya payroll, timesheets, and ESS ORM models to match the additive reconciliation migration. Py_compile and mapper smoke checks passed with existing unrelated relationship warnings.
 
 #### GAP-011E: Add or update schemas: HRMS and Payroll Completeness
 
-- Status: TODO
+- Status: DONE
 - Dependencies: GAP-011D
 - Acceptance criteria: Implement request/response schemas and validation.
 - Test requirements: Schemas validate required fields, enums, ranges, references, and nullability.
 - Documentation requirements: Document API schema behavior.
+- Completion notes: Updated HR, Kenya payroll, timesheet, and ESS schemas for scope fields, canonical employee bridges, payroll privacy/distribution fields, and validation. Py_compile and Pydantic smoke checks passed.
 
 #### GAP-011F: Add or update services/business logic: HRMS and Payroll Completeness
 
-- Status: TODO
+- Status: DONE
 - Dependencies: GAP-011E
 - Acceptance criteria: Implement service-layer or existing-pattern business logic.
 - Test requirements: Business rules are testable and preserve existing workflows.
 - Documentation requirements: Document business rules.
+- Completion notes: Added centralized HR/payroll access service helpers for scope inheritance, status locks, payroll compatibility handling, ESS ownership checks, access hints, and enforce-or-403 behavior. Py_compile and service smoke checks passed.
 
 #### GAP-011G: Add or update API endpoints: HRMS and Payroll Completeness
 
-- Status: TODO
+- Status: DONE
 - Dependencies: GAP-011F
 - Acceptance criteria: Expose endpoints with auth, permissions, validation, and error handling.
 - Test requirements: Endpoints satisfy acceptance criteria and reject unauthorized access.
 - Documentation requirements: Document endpoints and permissions.
+- Completion notes: Hardened Kenya payroll, timesheets, and ESS non-login endpoints with existing permission dependencies while preserving paths. Endpoint py_compile and import smoke checks passed.
 
 #### GAP-011H: Add or update frontend screens/components: HRMS and Payroll Completeness
 
-- Status: TODO
+- Status: DONE
 - Dependencies: GAP-011G
 - Acceptance criteria: Build UI using existing layout, table, form, modal, and dashboard patterns.
 - Test requirements: UI supports expected workflows, loading/empty/error states, and role visibility.
 - Documentation requirements: Document frontend paths and user behavior.
+- Completion notes: Updated HR/payroll frontend API types with new scope, lifecycle, payroll lock, payslip distribution, and statutory effective-date fields. Kenya payroll navigation and pages now use `payroll_ke.view`, and create/profile-edit/calculate/approve/export actions are hidden unless the user has the matching payroll action permission. Frontend type-check passed.
 
 #### GAP-011I: Add or update permissions/roles: HRMS and Payroll Completeness
 
-- Status: TODO
+- Status: DONE
 - Dependencies: GAP-011H
 - Acceptance criteria: Register permissions and update role templates/UI visibility as required.
 - Test requirements: Dangerous actions require explicit permission and high-risk approval where needed.
 - Documentation requirements: Document role matrix changes.
+- Completion notes: Moved `hr` and `payroll_ke` into backend module registry ownership, removed their duplicate endpoint-route entries, added the frontend first-route mapping for `payroll_ke`, and verified seed permission/role contracts keep Kenya payroll separate from generic HR.
 
 #### GAP-011J: Add or update tests: HRMS and Payroll Completeness
 
-- Status: TODO
+- Status: DONE
 - Dependencies: GAP-011I
 - Acceptance criteria: Add focused backend/frontend tests for the implemented behavior.
 - Test requirements: Relevant tests fail before fix when practical and pass after implementation.
 - Documentation requirements: Document test files and commands.
+- Completion notes: Added `backend/tests/test_gap011_hrms_payroll_access.py`; 7 focused tests passed for HR scoped edit, payroll privacy separation, scoped payroll management, payroll status locks, HR/payroll registry and seed contracts, and frontend permission wiring.
 
 #### GAP-011K: Add or update documentation: HRMS and Payroll Completeness
 
-- Status: TODO
+- Status: DONE
 - Dependencies: GAP-011J
 - Acceptance criteria: Update user/admin/developer docs for this change.
 - Test requirements: Docs match actual behavior and do not claim incomplete features are done.
 - Documentation requirements: Documentation updated.
+- Completion notes: Added `docs/planning/GAP-011_HRMS_PAYROLL_IMPLEMENTATION_NOTES.md` with actual architecture, Kenya payroll surface, permissions/scopes, migration, endpoint/frontend behavior, tests, and known limitations. Heading, size, and secret-pattern docs checks passed.
 
 #### GAP-011L: Run checks and record result: HRMS and Payroll Completeness
 
-- Status: TODO
+- Status: DONE
 - Dependencies: GAP-011K
 - Acceptance criteria: Run relevant compile, lint, type, test, migration, or smoke checks.
 - Test requirements: Checks pass or failures are recorded with BLOCKED/NEEDS_USER_REVIEW.
 - Documentation requirements: Record commands/results in CODEX_PROGRESS.md.
+- Completion notes: Final checks passed: git status reviewed, backend compile/import, focused GAP-011 pytest, Alembic heads/history/offline SQL, frontend type-check/lint, docs heading/size/secret checks. Live migration was skipped because Docker daemon was unavailable.
 
 ### GAP-012: Document Management and Internal Knowledge System
 
@@ -1419,79 +1434,88 @@ Implementation subtasks:
 
 #### GAP-012A: Audit current implementation: Document Management and Internal Knowledge System
 
-- Status: TODO
+- Status: DONE
 - Dependencies: GAP-011L
 - Acceptance criteria: Record what exists, what is partial, and what is missing for this gap.
 - Test requirements: No business logic changes; documentation-only audit accepted.
 - Documentation requirements: Document audit findings and update status matrix.
+- Completion notes: Added `docs/planning/GAP-012_DOCUMENT_KNOWLEDGE_AUDIT.md`; documented existing document, knowledge-base, and e-signature coverage plus migration ownership, permission, scope, file governance, frontend parity, and test gaps.
 
 #### GAP-012B: Design data model/schema: Document Management and Internal Knowledge System
 
-- Status: TODO
+- Status: DONE
 - Dependencies: GAP-012A
 - Acceptance criteria: Define schema/model changes only if needed and review existing models first.
 - Test requirements: Schema design notes reviewed against current ORM conventions.
 - Documentation requirements: Document model decisions and migration needs.
+- Completion notes: Added `docs/planning/GAP-012_DOCUMENT_KNOWLEDGE_SCHEMA_DESIGN.md`; design is additive and reconciliation-first, preserving existing document, KB, and e-sign concepts while planning governance, scope, permission, storage, lifecycle, and compatibility changes.
 
 #### GAP-012C: Add or update database migrations: Document Management and Internal Knowledge System
 
-- Status: TODO
+- Status: DONE
 - Dependencies: GAP-012B
 - Acceptance criteria: Create Alembic migrations only for required schema changes.
 - Test requirements: Migration applies on empty and existing dev DB without destructive data loss.
 - Documentation requirements: Record migration command and result.
+- Completion notes: Added `backend/alembic/versions/20260515_0030_document_knowledge_reconciliation.py`; py_compile, Alembic heads/history, and offline SQL generation passed. Live DB migration was skipped because Docker daemon is unavailable in this session.
 
 #### GAP-012D: Add or update backend models: Document Management and Internal Knowledge System
 
-- Status: TODO
+- Status: DONE
 - Dependencies: GAP-012C
 - Acceptance criteria: Implement ORM/model changes following existing conventions.
 - Test requirements: Models import successfully and relationships/enums are consistent.
 - Documentation requirements: Document model paths.
+- Completion notes: Updated `backend/app/models/documents.py`, `backend/app/models/knowledge_base.py`, and `backend/app/models/esign.py` for governance, scope, storage, lifecycle, and evidence fields. Py_compile and mapper smoke checks passed.
 
 #### GAP-012E: Add or update schemas: Document Management and Internal Knowledge System
 
-- Status: TODO
+- Status: DONE
 - Dependencies: GAP-012D
 - Acceptance criteria: Implement request/response schemas and validation.
 - Test requirements: Schemas validate required fields, enums, ranges, references, and nullability.
 - Documentation requirements: Document API schema behavior.
+- Completion notes: Updated document and e-sign schemas and added `backend/app/schemas/knowledge_base.py`; py_compile and Pydantic smoke checks passed.
 
 #### GAP-012F: Add or update services/business logic: Document Management and Internal Knowledge System
 
-- Status: TODO
+- Status: DONE
 - Dependencies: GAP-012E
 - Acceptance criteria: Implement service-layer or existing-pattern business logic.
 - Test requirements: Business rules are testable and preserve existing workflows.
 - Documentation requirements: Document business rules.
+- Completion notes: Added focused `document_access_service.py`, `knowledge_base_service.py`, and `esignature_service.py` helpers for access hints, lifecycle/status rules, and signer/requester eligibility; py_compile and pure service smoke checks passed.
 
 #### GAP-012G: Add or update API endpoints: Document Management and Internal Knowledge System
 
-- Status: TODO
+- Status: DONE
 - Dependencies: GAP-012F
 - Acceptance criteria: Expose endpoints with auth, permissions, validation, and error handling.
 - Test requirements: Endpoints satisfy acceptance criteria and reject unauthorized access.
 - Documentation requirements: Document endpoints and permissions.
+- Completion notes: Updated document lifecycle endpoints to use service checks, added dedicated knowledge-base permission dependencies, and added e-signature permission/service eligibility checks. Py_compile and route import checks passed.
 
 #### GAP-012H: Add or update frontend screens/components: Document Management and Internal Knowledge System
 
-- Status: TODO
+- Status: DONE
 - Dependencies: GAP-012G
 - Acceptance criteria: Build UI using existing layout, table, form, modal, and dashboard patterns.
 - Test requirements: UI supports expected workflows, loading/empty/error states, and role visibility.
 - Documentation requirements: Document frontend paths and user behavior.
+- Completion notes: Updated frontend navigation permission keys, added KB page guards/action visibility, and moved e-sign client calls to the shared API client. Frontend type-check passed.
 
 #### GAP-012I: Add or update permissions/roles: Document Management and Internal Knowledge System
 
-- Status: TODO
+- Status: DONE
 - Dependencies: GAP-012H
 - Acceptance criteria: Register permissions and update role templates/UI visibility as required.
 - Test requirements: Dangerous actions require explicit permission and high-risk approval where needed.
 - Documentation requirements: Document role matrix changes.
+- Completion notes: Promoted `documents`, `knowledge_base`, and `esign` to module definitions, removed duplicate loose route registrations, and updated seed permission/role contracts. Compile and registry contract checks passed.
 
 #### GAP-012J: Add or update tests: Document Management and Internal Knowledge System
 
-- Status: TODO
+- Status: IN_PROGRESS
 - Dependencies: GAP-012I
 - Acceptance criteria: Add focused backend/frontend tests for the implemented behavior.
 - Test requirements: Relevant tests fail before fix when practical and pass after implementation.

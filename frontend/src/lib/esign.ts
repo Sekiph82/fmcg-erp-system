@@ -1,3 +1,5 @@
+import { apiClient } from "@/lib/api";
+
 const BASE = "/api/v1/esign";
 
 export type SignatureRequestStatus = "PENDING" | "SIGNED" | "DECLINED" | "EXPIRED";
@@ -15,6 +17,12 @@ export interface SignatureRecord {
   ip_address:     string | null;
   user_agent:     string | null;
   signature_data: string | null;
+  signed_payload_hash_sha256?: string | null;
+  decline_reason?: string | null;
+  evidence_hash_sha256?: string | null;
+  auth_method?: string | null;
+  signed_document_version?: number | null;
+  signed_document_id?: string | null;
 }
 
 export interface SignatureRequest {
@@ -32,6 +40,21 @@ export interface SignatureRequest {
   required_count:   number;
   signed_count:     number;
   declined_count:   number;
+  company_id?:       string | null;
+  branch_id?:        string | null;
+  department_id?:    string | null;
+  factory_id?:       string | null;
+  module_key?:       string | null;
+  related_entity_type?: string | null;
+  related_entity_id?:   string | null;
+  document_hash_sha256?: string | null;
+  payload_hash_sha256?:  string | null;
+  completed_at?:     string | null;
+  expired_at?:       string | null;
+  cancelled_at?:     string | null;
+  cancelled_by_id?:  string | null;
+  evidence_summary?: unknown;
+  audit_request_id?: string | null;
   created_at:       string;
   signature_records: SignatureRecord[];
 }
@@ -52,50 +75,42 @@ export interface CreateSignatureRequest {
   message?:      string;
   signer_ids:    string[];
   expires_at?:   string;
-}
-
-async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(path, {
-    headers: { "Content-Type": "application/json" },
-    ...init,
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.detail || res.statusText);
-  }
-  return res.json();
+  document_id?:   string;
+  company_id?:    string;
+  branch_id?:     string;
+  department_id?: string;
+  factory_id?:    string;
+  module_key?:    string;
+  related_entity_type?: string;
+  related_entity_id?:   string;
+  document_hash_sha256?: string;
+  payload_hash_sha256?:  string;
 }
 
 export const esignApi = {
   dashboard: () =>
-    apiFetch<ESignDashboard>(`${BASE}/dashboard`),
+    apiClient.get<ESignDashboard>(`${BASE}/dashboard`).then(res => res.data),
 
   listRequests: (status?: string) =>
-    apiFetch<SignatureRequest[]>(`${BASE}/requests${status ? `?status=${status}` : ""}`),
+    apiClient.get<SignatureRequest[]>(`${BASE}/requests${status ? `?status=${status}` : ""}`).then(res => res.data),
 
   pendingForMe: () =>
-    apiFetch<SignatureRequest[]>(`${BASE}/requests/pending-for-me`),
+    apiClient.get<SignatureRequest[]>(`${BASE}/requests/pending-for-me`).then(res => res.data),
 
   getRequest: (id: string) =>
-    apiFetch<SignatureRequest>(`${BASE}/requests/${id}`),
+    apiClient.get<SignatureRequest>(`${BASE}/requests/${id}`).then(res => res.data),
 
   createRequest: (body: CreateSignatureRequest) =>
-    apiFetch<SignatureRequest>(`${BASE}/requests`, {
-      method: "POST",
-      body: JSON.stringify(body),
-    }),
+    apiClient.post<SignatureRequest>(`${BASE}/requests`, body).then(res => res.data),
 
-  sign: (id: string, signatureData: string) =>
-    apiFetch<SignatureRequest>(`${BASE}/requests/${id}/sign`, {
-      method: "POST",
-      body: JSON.stringify({ signature_data: signatureData }),
-    }),
+  sign: (id: string, signatureData: string, signedPayloadHash?: string) =>
+    apiClient.post<SignatureRequest>(`${BASE}/requests/${id}/sign`, {
+      signature_data: signatureData,
+      signed_payload_hash_sha256: signedPayloadHash,
+    }).then(res => res.data),
 
   decline: (id: string, reason?: string) =>
-    apiFetch<SignatureRequest>(`${BASE}/requests/${id}/decline`, {
-      method: "POST",
-      body: JSON.stringify({ reason }),
-    }),
+    apiClient.post<SignatureRequest>(`${BASE}/requests/${id}/decline`, { reason }).then(res => res.data),
 };
 
 export function statusColor(s: SignatureRequestStatus | SignatureRecordStatus): string {

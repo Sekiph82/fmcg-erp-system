@@ -1,15 +1,45 @@
 # CODEX PROGRESS
 
 ## Last Updated
-2026-05-15T07:30:21+03:00
+2026-05-15T13:47:00+03:00
 
 ## Last Completed Task
-GAP-010I: Registered scoped commercial CRM/Sales permissions and role grants.
+GAP-012I: Updated permissions/roles for Document Management and Internal Knowledge System.
 
 ## Current Working Task
-GAP-010J: Add or update tests: CRM / Sales Pipeline Depth.
+GAP-012J: Add or update tests for Document Management and Internal Knowledge System.
 
 ## Files Changed in Last Run
+- `backend/app/core/module_registry.py`
+- `backend/app/db/seed.py`
+- `backend/app/services/document_access_service.py`
+- `frontend/src/components/nav-config.tsx`
+- `frontend/src/lib/esign.ts`
+- `frontend/src/lib/knowledge_base.ts`
+- `frontend/src/app/dashboard/knowledge-base/page.tsx`
+- `frontend/src/app/dashboard/knowledge-base/articles/page.tsx`
+- `frontend/src/app/dashboard/knowledge-base/articles/new/page.tsx`
+- `frontend/src/app/dashboard/knowledge-base/[id]/page.tsx`
+- `frontend/src/app/dashboard/esign/page.tsx`
+- `backend/app/api/v1/endpoints/documents.py`
+- `backend/app/api/v1/endpoints/knowledge_base.py`
+- `backend/app/api/v1/endpoints/esign.py`
+- `backend/app/services/document_access_service.py`
+- `backend/app/services/knowledge_base_service.py`
+- `backend/app/services/esignature_service.py`
+- `backend/app/schemas/documents.py`
+- `backend/app/schemas/esign.py`
+- `backend/app/schemas/knowledge_base.py`
+- `backend/app/models/documents.py`
+- `backend/app/models/knowledge_base.py`
+- `backend/app/models/esign.py`
+- `backend/alembic/versions/20260515_0030_document_knowledge_reconciliation.py`
+- `docs/planning/GAP-012_DOCUMENT_KNOWLEDGE_SCHEMA_DESIGN.md`
+- `docs/planning/GAP-012_DOCUMENT_KNOWLEDGE_AUDIT.md`
+- `TASKS.md`
+- `CODEX_PROGRESS.md`
+- `docs/planning/ERP_ROADMAP_IMPLEMENTATION_PLAN.md`
+- `docs/planning/ERP_ROADMAP_STATUS_MATRIX.md`
 - `docs/planning/GAP-010_CRM_SALES_PIPELINE_SCHEMA_DESIGN.md`
 - `docs/planning/GAP-010_CRM_SALES_PIPELINE_AUDIT.md`
 - `backend/alembic/versions/20260515_0010_crm_sales_scope_reconciliation.py`
@@ -33,6 +63,35 @@ GAP-010J: Add or update tests: CRM / Sales Pipeline Depth.
 - `backend/app/core/access_control.py`
 - `backend/app/core/module_registry.py`
 - `backend/app/db/seed.py`
+- `backend/tests/test_gap010_crm_sales_commercial_access.py`
+- `docs/planning/GAP-010_CRM_SALES_PIPELINE_IMPLEMENTATION_NOTES.md`
+- `docs/planning/GAP-011_HRMS_PAYROLL_AUDIT.md`
+- `docs/planning/GAP-011_HRMS_PAYROLL_SCHEMA_DESIGN.md`
+- `backend/alembic/versions/20260515_0020_hrms_payroll_reconciliation.py`
+- `backend/app/models/hr.py`
+- `backend/app/models/payroll_ke.py`
+- `backend/app/models/timesheets.py`
+- `backend/app/models/ess.py`
+- `backend/app/schemas/hr.py`
+- `backend/app/schemas/payroll_ke.py`
+- `backend/app/schemas/timesheets.py`
+- `backend/app/schemas/ess.py`
+- `backend/app/services/hr_payroll_access_service.py`
+- `backend/app/api/v1/endpoints/payroll_ke.py`
+- `backend/app/api/v1/endpoints/timesheets.py`
+- `backend/app/api/v1/endpoints/ess.py`
+- `frontend/src/lib/hr.ts`
+- `frontend/src/lib/payrollKe.ts`
+- `frontend/src/components/nav-config.tsx`
+- `frontend/src/app/dashboard/payroll/page.tsx`
+- `frontend/src/app/dashboard/payroll/profiles/page.tsx`
+- `frontend/src/app/dashboard/payroll/reports/page.tsx`
+- `frontend/src/app/dashboard/payroll/runs/[id]/page.tsx`
+- `frontend/src/context/AuthContext.tsx`
+- `backend/app/core/module_registry.py`
+- `backend/tests/test_gap011_hrms_payroll_access.py`
+- `backend/app/services/hr_payroll_access_service.py`
+- `docs/planning/GAP-011_HRMS_PAYROLL_IMPLEMENTATION_NOTES.md`
 - `TASKS.md`
 - `CODEX_PROGRESS.md`
 - `docs/planning/ERP_ROADMAP_IMPLEMENTATION_PLAN.md`
@@ -98,6 +157,90 @@ GAP-010J: Add or update tests: CRM / Sales Pipeline Depth.
 - `backend/app/db/seed.py`
 
 ## Tests/Checks Run
+- `cd backend; .\venv\Scripts\python.exe -m py_compile app\core\module_registry.py app\db\seed.py app\services\document_access_service.py` - passed.
+- Registry/seed contract smoke check confirmed `documents`, `knowledge_base`, and `esign` are module-owned, not duplicate endpoint-route owned, required permission codes exist in registry and seed definitions, admin role has KB/e-sign permissions, and route registration includes `/documents`, `/kb`, and `/esign` - passed.
+- `cd frontend; npm.cmd run type-check` - passed.
+- `rg -n 'knowledge_base\.view|knowledge_base\.create|knowledge_base\.edit|knowledge_base\.delete|esign\.view|esign\.request' frontend\src\components\nav-config.tsx frontend\src\app\dashboard\knowledge-base frontend\src\app\dashboard\esign` - passed.
+- `rg -n 'apiClient|fetch\(' frontend\src\lib\esign.ts` - passed, confirming e-sign uses `apiClient` and no direct `fetch` remains.
+- `cd backend; .\venv\Scripts\python.exe -m py_compile app\api\v1\endpoints\documents.py app\api\v1\endpoints\knowledge_base.py app\api\v1\endpoints\esign.py app\services\document_access_service.py app\services\knowledge_base_service.py app\services\esignature_service.py` - passed.
+- `cd backend; .\venv\Scripts\python.exe -c "import app.api.v1.endpoints.documents; import app.api.v1.endpoints.knowledge_base; import app.api.v1.endpoints.esign; print('gap012 endpoints import ok')"` - passed.
+- `cd backend; .\venv\Scripts\python.exe -m py_compile app\services\document_access_service.py app\services\knowledge_base_service.py app\services\esignature_service.py` - passed.
+- Pure service smoke check for document lifecycle/access hints, knowledge-base publication permissions, and e-sign signer eligibility - passed.
+- `cd backend; .\venv\Scripts\python.exe -m py_compile app\schemas\documents.py app\schemas\esign.py app\schemas\knowledge_base.py` - passed.
+- Pydantic smoke check for `DocumentCreate`, `DocumentUpdate`, `KBCategoryCreate`, `KBArticleCreate`, `KBArticleUpdate`, `SignatureRequestCreate`, `SignAction`, and `DeclineAction` - passed.
+- `cd backend; .\venv\Scripts\python.exe -m py_compile app\models\documents.py app\models\knowledge_base.py app\models\esign.py alembic\versions\20260515_0030_document_knowledge_reconciliation.py` - passed.
+- Mapper smoke check importing document, knowledge-base, and e-signature models then running `configure_mappers()` - passed with existing unrelated relationship overlap warnings for dimension/cost-center/project models.
+- `cd backend; .\venv\Scripts\python.exe -m py_compile alembic\versions\20260515_0030_document_knowledge_reconciliation.py` - passed.
+- `cd backend; .\venv\Scripts\python.exe -m alembic heads` - passed, `20260515_0030 (head)`.
+- `cd backend; .\venv\Scripts\python.exe -m alembic history -r 20260515_0020:20260515_0030` - passed.
+- `cd backend; .\venv\Scripts\python.exe -m alembic upgrade 20260515_0020:20260515_0030 --sql > $env:TEMP\gap012_document_knowledge_upgrade.sql` - passed.
+- `docker compose --env-file .env.development ps` - skipped live migration verification because Docker daemon is unavailable in this session (`dockerDesktopLinuxEngine` pipe not found).
+- `rg "# GAP-012 Document Management / Knowledge System Schema Design|## Summary|## Design Goals|## Current Model Baseline|## Alembic Reconciliation Strategy|## Document Model Extensions|## Document Status Lifecycle|## Document Scope Model|## Knowledge Base Model Extensions|## E-Signature Model Extensions|## File Storage and Download Governance|## Module Registry and Permission Design|## Schema and API Compatibility|## Service Layer Design|## Frontend Design Implications|## Migration Scope for GAP-012C|## Test Strategy|## Documentation Requirements|## Acceptance Criteria for GAP-012B" docs\planning\GAP-012_DOCUMENT_KNOWLEDGE_SCHEMA_DESIGN.md` - passed.
+- `(Get-Item docs\planning\GAP-012_DOCUMENT_KNOWLEDGE_SCHEMA_DESIGN.md).Length` - passed, 16875 bytes.
+- `rg -n "password|secret|token|api[_-]?key" docs\planning\GAP-012_DOCUMENT_KNOWLEDGE_SCHEMA_DESIGN.md` - no matches.
+- `rg "# GAP-012 Document Management / Knowledge System Audit|## Summary|## Business Importance|## Files Inspected|## Existing Backend Coverage|## Existing Frontend Coverage|## Existing Permissions / Roles / Scopes|## Existing Migrations|## Existing Tests|## Existing Documentation|## Key Finding 1: Document Management Exists but Migration Ownership Is Unclear|## Key Finding 2: Knowledge Base Exists but Permission Model Is Too Broad|## Key Finding 3: E-Signature Exists but Needs Governance and Evidence Hardening|## Key Finding 4: File Storage / Upload Pipeline Is Still Metadata-Only|## Key Finding 5: Frontend Coverage Exists but Has Permission and Client Gaps|## Missing Pieces|## Partial Pieces|## Risks|## Recommended GAP-012B Design Direction|## Acceptance Criteria for GAP-012 Completion" docs\planning\GAP-012_DOCUMENT_KNOWLEDGE_AUDIT.md` - passed.
+- `(Get-Item docs\planning\GAP-012_DOCUMENT_KNOWLEDGE_AUDIT.md).Length` - passed, 18179 bytes.
+- `rg -n "password|secret|token|api[_-]?key" docs\planning\GAP-012_DOCUMENT_KNOWLEDGE_AUDIT.md` - no matches.
+- `rg "# GAP-011 HR / Payroll Audit|## Summary|## Business Importance|## Files Inspected|## Existing Backend Coverage|## Existing Frontend Coverage|## Existing Permissions / Roles / Scopes|## Existing Migrations|## Existing Tests|## Existing Documentation|## Key Finding 1: HR Module Exists but Needs Hardening|## Key Finding 2: Kenya Payroll Exists but Needs Ownership Cleanup|## Key Finding 3: Duplicate Payroll Surfaces / Route Conflicts|## Key Finding 4: Auth and Permission Enforcement Gaps|## Key Finding 5: Scope Enforcement Gaps|## Key Finding 6: Migration Ownership and Schema Consistency Risks|## Missing Pieces|## Partial Pieces|## Risks|## Recommended GAP-011B Design Direction|## Acceptance Criteria for GAP-011 Completion" docs\planning\GAP-011_HRMS_PAYROLL_AUDIT.md` - passed.
+- `(Get-Item docs\planning\GAP-011_HRMS_PAYROLL_AUDIT.md).Length` - passed, 16084 bytes.
+- `rg -n "password|secret|token|api[_-]?key" docs\planning\GAP-011_HRMS_PAYROLL_AUDIT.md` - no matches.
+- `rg "Summary|HR / Payroll Ownership Boundaries|Employee Master Ownership|Department / Branch / Company Scope Model|Payroll Period Model|Payslip Model|Payroll Run Model|Deductions / Allowances / Tax Rules|Timesheet To Payroll Relationship|Expense Reimbursement To Payroll Relationship|ESS Boundaries|Recruitment / Appraisal / Training Relations|Permissions And Scopes|Audit Logging|Migration Strategy|Backward Compatibility|GAP-011C Migration Scope|Acceptance Criteria For GAP-011B" docs\planning\GAP-011_HRMS_PAYROLL_SCHEMA_DESIGN.md` - passed.
+- `(Get-Item docs\planning\GAP-011_HRMS_PAYROLL_SCHEMA_DESIGN.md).Length` - passed, 16643 bytes.
+- `rg -n "password|secret|token|api[_-]?key" docs\planning\GAP-011_HRMS_PAYROLL_SCHEMA_DESIGN.md` - no matches.
+- `cd backend; .\venv\Scripts\python.exe -m py_compile alembic\versions\20260515_0020_hrms_payroll_reconciliation.py` - passed.
+- `cd backend; .\venv\Scripts\python.exe -m alembic heads` - passed, `20260515_0020 (head)`.
+- `cd backend; .\venv\Scripts\python.exe -m alembic history -r 20260515_0010:20260515_0020` - passed.
+- `cd backend; .\venv\Scripts\python.exe -m alembic upgrade 20260515_0010:20260515_0020 --sql > $env:TEMP\gap011_hrms_payroll_upgrade.sql` - passed.
+- `docker compose --env-file .env.development ps` - not available because Docker daemon is not running in this session.
+- `cd backend; .\venv\Scripts\python.exe -m py_compile app\models\hr.py app\models\payroll_ke.py app\models\timesheets.py app\models\ess.py alembic\versions\20260515_0020_hrms_payroll_reconciliation.py` - passed.
+- `cd backend; .\venv\Scripts\python.exe -m alembic heads` - passed, `20260515_0020 (head)`.
+- `cd backend; .\venv\Scripts\python.exe -m alembic upgrade 20260515_0010:20260515_0020 --sql > $env:TEMP\gap011_hrms_payroll_upgrade_after_models.sql` - passed.
+- Mapper smoke check importing HR, Kenya payroll, timesheets, and ESS models then running `configure_mappers()` - passed with existing unrelated relationship warnings for dimension/cost-center/project models.
+- `cd backend; .\venv\Scripts\python.exe -m py_compile app\schemas\hr.py app\schemas\payroll_ke.py app\schemas\timesheets.py app\schemas\ess.py` - passed.
+- Pydantic smoke check for HR employee, HR payroll period, Kenya payroll profile/run/tax band, timesheet, ESS account, and ESS profile payloads with new scope/bridge fields - passed.
+- `cd backend; .\venv\Scripts\python.exe -m py_compile app\services\hr_payroll_access_service.py` - passed.
+- HR/payroll access service smoke check for scope inheritance, payroll status locks, employee self-ownership, and superuser payroll access hints - passed.
+- `cd backend; .\venv\Scripts\python.exe -m py_compile app\api\v1\endpoints\payroll_ke.py app\api\v1\endpoints\timesheets.py app\api\v1\endpoints\ess.py` - passed.
+- `cd backend; .\venv\Scripts\python.exe -c "import app.api.v1.endpoints.payroll_ke; import app.api.v1.endpoints.timesheets; import app.api.v1.endpoints.ess; print('gap011 endpoints import ok')"` - passed.
+- `cd frontend; npm.cmd run type-check` - passed after GAP-011H frontend type and permission wiring updates.
+- `rg -n "payroll_ke\.view|payroll_ke\.create|payroll_ke\.approve|payroll_ke\.export|HRScopeFields|PayrollScopeFields|View only|Export restricted" frontend\src\app\dashboard\payroll frontend\src\lib\hr.ts frontend\src\lib\payrollKe.ts frontend\src\components\nav-config.tsx` - passed.
+- `cd backend; .\venv\Scripts\python.exe -m py_compile app\core\module_registry.py app\db\seed.py` - passed.
+- `cd backend; .\venv\Scripts\python.exe -c "from app.core.module_registry import MODULE_DEFINITIONS, ENDPOINT_ROUTE_DEFINITIONS, registry_permission_codes; ..."` - passed, confirming HR and Kenya payroll are module-registry owned and their required permission codes exist.
+- `cd backend; .\venv\Scripts\python.exe -c "from app.core.module_registry import register_module_routes; from fastapi import APIRouter; ..."` - passed, confirming HR and Kenya payroll routes register from module definitions.
+- `cd backend; .\venv\Scripts\python.exe -c "from app.db.seed import PERMISSIONS, ROLE_DEFINITIONS; ..."` - passed, confirming HR manager gets explicit Kenya payroll permissions while scoped HR manager is not granted broad Kenya payroll create/approve.
+- `cd frontend; npm.cmd run type-check` - passed after GAP-011I route mapping.
+- `cd backend; .\venv\Scripts\python.exe -m py_compile tests\test_gap011_hrms_payroll_access.py app\services\hr_payroll_access_service.py app\core\module_registry.py app\db\seed.py` - passed.
+- `cd backend; .\venv\Scripts\python.exe -m pytest tests\test_gap011_hrms_payroll_access.py -q` - passed, 7 tests.
+- `rg "Summary|Canonical HR / Payroll Architecture|Kenya Payroll Surface|Permissions and Scopes|Admin / Role / Seed Setup|Migration and Schema Changes|Backend Service Behavior|API Endpoint Behavior|Frontend Screens|Tests and Checks|Known Limitations and Follow-Up|Acceptance Criteria Snapshot" docs\planning\GAP-011_HRMS_PAYROLL_IMPLEMENTATION_NOTES.md` - passed.
+- `(Get-Item docs\planning\GAP-011_HRMS_PAYROLL_IMPLEMENTATION_NOTES.md).Length` - passed, 9092 bytes.
+- `rg -n "password|secret|token|api[_-]?key" docs\planning\GAP-011_HRMS_PAYROLL_IMPLEMENTATION_NOTES.md` - no matches.
+- `git status --short` - reviewed; broad dirty GAP work remains, no unrelated reset/revert performed.
+- `cd backend; .\venv\Scripts\python.exe -m py_compile app\models\hr.py app\models\payroll_ke.py app\models\timesheets.py app\models\ess.py app\schemas\hr.py app\schemas\payroll_ke.py app\schemas\timesheets.py app\schemas\ess.py app\services\hr_payroll_access_service.py app\api\v1\endpoints\payroll_ke.py app\api\v1\endpoints\timesheets.py app\api\v1\endpoints\ess.py app\core\module_registry.py app\db\seed.py tests\test_gap011_hrms_payroll_access.py alembic\versions\20260515_0020_hrms_payroll_reconciliation.py` - passed.
+- `cd backend; .\venv\Scripts\python.exe -m pytest tests\test_gap011_hrms_payroll_access.py -q` - passed, 7 tests.
+- `cd backend; .\venv\Scripts\python.exe -c "import app.main; print('backend import ok')"` - exited 0 and printed `backend import ok`; local venv still logs existing missing optional dependency diagnostics for `pyotp` and `dateutil` plus unrelated SQLAlchemy/Pydantic warnings.
+- `cd backend; .\venv\Scripts\python.exe -m alembic heads; .\venv\Scripts\python.exe -m alembic history -r 20260515_0010:20260515_0020; .\venv\Scripts\python.exe -m alembic upgrade 20260515_0010:20260515_0020 --sql > $env:TEMP\gap011_final_upgrade.sql` - passed; current head is `20260515_0020`.
+- `cd frontend; npm.cmd run type-check` - passed.
+- `cd frontend; npm.cmd run lint` - passed with no warnings/errors.
+- `docker compose --env-file .env.development ps` - skipped live migration verification because Docker daemon is unavailable in this session (`dockerDesktopLinuxEngine` pipe not found).
+- `rg -n "GAP-011[HILJK]|GAP-012A" TASKS.md docs\planning\ERP_ROADMAP_IMPLEMENTATION_PLAN.md docs\planning\ERP_ROADMAP_STATUS_MATRIX.md` - passed before moving the tracker to GAP-012A.
+- `git status --short` - reviewed; GAP-010 added `backend/tests/test_gap010_crm_sales_commercial_access.py` and `docs/planning/GAP-010_CRM_SALES_PIPELINE_IMPLEMENTATION_NOTES.md` plus tracker updates; no unrelated reset/revert performed.
+- `cd backend; .\venv\Scripts\python.exe -m py_compile app\models\sales.py app\models\crm.py app\models\quotation.py app\schemas\sales.py app\schemas\crm.py app\schemas\quotation.py app\services\commercial_access_service.py app\api\v1\endpoints\sales.py app\api\v1\endpoints\quotation.py app\api\v1\endpoints\crm_pipeline.py app\core\access_control.py app\core\module_registry.py app\db\seed.py tests\test_gap010_crm_sales_commercial_access.py alembic\versions\20260515_0010_crm_sales_scope_reconciliation.py` - passed.
+- `cd backend; .\venv\Scripts\python.exe -m pytest tests\test_gap010_crm_sales_commercial_access.py -q` - passed, 6 tests with existing unrelated SQLAlchemy relationship overlap warnings.
+- `cd backend; .\venv\Scripts\python.exe -c "import app.api.v1.endpoints.sales; import app.api.v1.endpoints.quotation; import app.api.v1.endpoints.crm_pipeline; import app.services.commercial_access_service; print('gap010 imports ok')"` - passed.
+- `cd backend; .\venv\Scripts\python.exe -c "import app.main; print('backend import ok')"` - exited 0; local venv still logs existing missing optional dependency diagnostics for `pyotp` and `dateutil` plus unrelated SQLAlchemy/Pydantic warnings.
+- `cd backend; .\venv\Scripts\python.exe -m alembic heads` - passed, `20260515_0010 (head)`.
+- `cd backend; .\venv\Scripts\python.exe -m alembic history -r 20260514_0030:20260515_0010` - passed.
+- `cd backend; .\venv\Scripts\python.exe -m alembic upgrade 20260514_0030:20260515_0010 --sql > $env:TEMP\gap010_final_upgrade.sql` - passed.
+- `cd frontend; npm.cmd run type-check` - passed.
+- `cd frontend; npm.cmd run lint` - passed with no warnings/errors.
+- `docker compose --env-file .env.development ps; docker compose --env-file .env.development exec -T backend python -m alembic current` - not run successfully because Docker daemon was unavailable in this session; prior GAP-010C live migration verification is already recorded.
+- `rg "Summary|Implemented Scope|Permissions And Roles|Tests And Checks|Known Limitations And Follow-Ups|Acceptance Criteria Snapshot" docs\planning\GAP-010_CRM_SALES_PIPELINE_IMPLEMENTATION_NOTES.md` - passed.
+- `rg -n "GAP-010J|GAP-010K|GAP-010L|GAP-011A" TASKS.md docs\planning\ERP_ROADMAP_IMPLEMENTATION_PLAN.md docs\planning\ERP_ROADMAP_STATUS_MATRIX.md` - passed before final tracker update.
+- `rg "Summary|Implemented Scope|Permissions And Roles|Tests And Checks|Known Limitations And Follow-Ups|Acceptance Criteria Snapshot" docs\planning\GAP-010_CRM_SALES_PIPELINE_IMPLEMENTATION_NOTES.md` - passed.
+- `(Get-Item docs\planning\GAP-010_CRM_SALES_PIPELINE_IMPLEMENTATION_NOTES.md).Length` - passed, 10002 bytes.
+- `rg -n "password|secret|token|api[_-]?key" docs\planning\GAP-010_CRM_SALES_PIPELINE_IMPLEMENTATION_NOTES.md` - no matches.
+- `cd backend; .\venv\Scripts\python.exe -m py_compile tests\test_gap010_crm_sales_commercial_access.py` - passed.
+- `cd backend; .\venv\Scripts\python.exe -m pytest tests\test_gap010_crm_sales_commercial_access.py -q` - passed, 6 tests with existing unrelated SQLAlchemy relationship overlap warnings.
 - `cd backend; .\venv\Scripts\python.exe -m py_compile app\core\access_control.py app\core\module_registry.py app\db\seed.py` - passed.
 - `cd backend; .\venv\Scripts\python.exe -c "from app.core.module_registry import MODULE_DEFINITIONS, ENDPOINT_ROUTE_DEFINITIONS; print([m.key for m in MODULE_DEFINITIONS if m.key in ('sales','crm')]); print(any(r.key == 'crm_pipeline' for r in ENDPOINT_ROUTE_DEFINITIONS))"` - passed, confirming Sales and CRM module definitions and no duplicate CRM endpoint-route entry.
 - `rg -n "crm" backend\app\core\module_registry.py` - passed, confirming CRM module-owned route registration.
@@ -279,7 +422,10 @@ GAP-010J: Add or update tests: CRM / Sales Pipeline Depth.
 - `cd frontend; npm.cmd run lint` - passed with no warnings/errors.
 
 ## Known Issues
-- GAP-010I is complete; GAP-010J must add focused tests for service helpers, endpoint/frontend contracts, registry ownership, and seed permission coverage.
+- GAP-012J is active. GAP-012C migration passed compile/head/history/offline SQL checks, but live DB migration was skipped because Docker daemon is unavailable in this session.
+- GAP-012A/B found real document, knowledge-base, and e-signature surfaces, but also found unclear Alembic ownership for core tables, uneven permission enforcement, missing scope enforcement, metadata-only file handling, weak e-sign evidence governance, and frontend/client parity gaps.
+- GAP-011C added the additive migration, but live DB upgrade was skipped because Docker daemon is unavailable. Core HR still needs deeper record-level scope filtering beyond its existing coarse permission guards.
+- GAP-010 is complete for this roadmap slice. GAP-010 follow-up remains: deeper CRM sub-resources such as activities, interest lines, competitors, reports, and AI recommendation actions still need inherited scoped guards in a later hardening slice.
 - GAP-010G is complete as a first endpoint hardening slice; deeper CRM sub-resources such as activities, interest lines, competitors, reports, and AI recommendation actions still need full record-inherited scoped guards in later hardening/tests.
 - GAP-010A found `/api/v1/crm/*` endpoints are currently unauthenticated/unscoped and CRM territory schema ownership is not clearly discoverable in Alembic; these are design inputs for GAP-010B, not blockers to the audit.
 - GAP-028K remains blocked because `docs/user-manual/screenshots/screenshots-index.json` is empty.
@@ -288,7 +434,7 @@ GAP-010J: Add or update tests: CRM / Sales Pipeline Depth.
 - GAP-008C reconciled the likely WMS migration ownership gaps for `wms_picking_tasks`, `wms_packing_records`, and `wms_replenishment_tasks`.
 
 ## Next Resume Point
-Continue from GAP-010J. Add focused backend/frontend contract tests for CRM / Sales Pipeline Depth scoped commercial access behavior.
+Continue from GAP-012J. Add focused non-destructive backend tests for document lifecycle access, KB permissions, e-sign signer eligibility, and registry/seed contracts.
 
 ## User Action Needed
-None for GAP-010J.
+None for GAP-012J.

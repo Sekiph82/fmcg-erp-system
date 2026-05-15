@@ -5,7 +5,14 @@ export type PayrollRunStatus = "DRAFT" | "CALCULATED" | "APPROVED" | "PAID" | "C
 export type KeComponentType = "NHIF" | "NSSF" | "HOUSING_LEVY" | "PERSONAL_RELIEF";
 export type EmissionScope = "SCOPE1" | "SCOPE2" | "SCOPE3";
 
-export interface PayrollProfile {
+export interface PayrollScopeFields {
+  company_id?: string | null;
+  branch_id?: string | null;
+  department_id?: string | null;
+  cost_center_id?: string | null;
+}
+
+export interface PayrollProfile extends PayrollScopeFields {
   id: string;
   employee_id: string;
   employee_name?: string;
@@ -28,6 +35,8 @@ export interface PayrollProfile {
 export interface TaxBand {
   id: string;
   tax_year: number;
+  effective_from?: string | null;
+  effective_to?: string | null;
   lower_limit: number;
   upper_limit?: number;
   rate: number;
@@ -39,6 +48,8 @@ export interface StatutoryRate {
   id: string;
   component: KeComponentType;
   rate_year: number;
+  effective_from?: string | null;
+  effective_to?: string | null;
   rate_value: number;
   is_percentage: boolean;
   max_amount?: number;
@@ -46,7 +57,7 @@ export interface StatutoryRate {
   is_active: boolean;
 }
 
-export interface PayrollRun {
+export interface PayrollRun extends PayrollScopeFields {
   id: string;
   run_no: string;
   period_month: number;
@@ -63,9 +74,11 @@ export interface PayrollRun {
   total_net: number;
   employee_count: number;
   notes?: string;
+  locked_at?: string | null;
+  locked_by_id?: string | null;
 }
 
-export interface PayrollLine {
+export interface PayrollLine extends PayrollScopeFields {
   id: string;
   run_id: string;
   employee_id: string;
@@ -96,7 +109,7 @@ export interface PayrollLine {
   };
 }
 
-export interface Payslip {
+export interface Payslip extends PayrollScopeFields {
   id: string;
   payroll_line_id: string;
   employee_id: string;
@@ -115,6 +128,9 @@ export interface Payslip {
   nssf_employee?: number;
   housing_levy?: number;
   components_json?: PayrollLine["components_json"];
+  viewed_at?: string | null;
+  sent_at?: string | null;
+  sent_by_id?: string | null;
 }
 
 export interface PayrollInsight {

@@ -6,7 +6,7 @@ import enum
 from datetime import date, time
 
 from sqlalchemy import (
-    Column, String, Boolean, Date, Time, Text, Integer,
+    Column, String, Boolean, Date, Time, Text, Integer, DateTime,
     ForeignKey, Enum as SAEnum, UniqueConstraint,
 )
 from sqlalchemy.dialects.postgresql import UUID, JSONB
@@ -80,15 +80,25 @@ class Employee(Base, TimestampMixin):
 
     # Link to system user (nullable – not every employee has a system login)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="SET NULL"), nullable=True, index=True)
+    branch_id = Column(UUID(as_uuid=True), ForeignKey("branches.id", ondelete="SET NULL"), nullable=True, index=True)
+    department_id = Column(String(100), nullable=True, index=True)
+    cost_center_id = Column(UUID(as_uuid=True), ForeignKey("cost_centers.id", ondelete="SET NULL"), nullable=True, index=True)
+    manager_employee_id = Column(UUID(as_uuid=True), ForeignKey("hr_employees.id", ondelete="SET NULL"), nullable=True, index=True)
 
     # Payroll info (lightweight placeholder – no separate payment engine)
     payment_method = Column(SAEnum(PaymentMethod, name="hr_paymentmethod"), nullable=True)
     mpesa_number = Column(String(20), nullable=True)        # M-Pesa shortcode / phone
     bank_account = Column(String(50), nullable=True)
     salary_grade = Column(String(30), nullable=True)        # e.g. "G5", "Manager"
+    terminated_at = Column(Date, nullable=True)
+    archived_at = Column(DateTime(timezone=True), nullable=True)
+    archived_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
 
     # Relationships
     user = relationship("User", foreign_keys=[user_id])
+    manager_employee = relationship("Employee", remote_side=[id], foreign_keys=[manager_employee_id])
+    archived_by = relationship("User", foreign_keys=[archived_by_id])
     shift_assignments = relationship("EmployeeShiftAssignment", foreign_keys="EmployeeShiftAssignment.employee_id", back_populates="employee", cascade="all, delete-orphan")
     attendance_records = relationship("AttendanceRecord", back_populates="employee", cascade="all, delete-orphan")
     leave_requests = relationship("LeaveRequest", back_populates="employee", cascade="all, delete-orphan")
@@ -106,6 +116,10 @@ class ShiftTemplate(Base, TimestampMixin):
     start_time = Column(Time, nullable=False)
     end_time = Column(Time, nullable=False)
     department = Column(String(100), nullable=True)   # null = company-wide
+    company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="SET NULL"), nullable=True, index=True)
+    branch_id = Column(UUID(as_uuid=True), ForeignKey("branches.id", ondelete="SET NULL"), nullable=True, index=True)
+    department_id = Column(String(100), nullable=True, index=True)
+    cost_center_id = Column(UUID(as_uuid=True), ForeignKey("cost_centers.id", ondelete="SET NULL"), nullable=True, index=True)
     notes = Column(Text, nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
 
@@ -118,6 +132,10 @@ class EmployeeShiftAssignment(Base, TimestampMixin):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     employee_id = Column(UUID(as_uuid=True), ForeignKey("hr_employees.id", ondelete="CASCADE"), nullable=False, index=True)
+    company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="SET NULL"), nullable=True, index=True)
+    branch_id = Column(UUID(as_uuid=True), ForeignKey("branches.id", ondelete="SET NULL"), nullable=True, index=True)
+    department_id = Column(String(100), nullable=True, index=True)
+    cost_center_id = Column(UUID(as_uuid=True), ForeignKey("cost_centers.id", ondelete="SET NULL"), nullable=True, index=True)
     shift_template_id = Column(UUID(as_uuid=True), ForeignKey("hr_shift_templates.id", ondelete="CASCADE"), nullable=False)
     effective_from = Column(Date, nullable=False)
     effective_to = Column(Date, nullable=True)    # null = open-ended
@@ -143,6 +161,10 @@ class AttendanceRecord(Base, TimestampMixin):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     employee_id = Column(UUID(as_uuid=True), ForeignKey("hr_employees.id", ondelete="CASCADE"), nullable=False, index=True)
+    company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="SET NULL"), nullable=True, index=True)
+    branch_id = Column(UUID(as_uuid=True), ForeignKey("branches.id", ondelete="SET NULL"), nullable=True, index=True)
+    department_id = Column(String(100), nullable=True, index=True)
+    cost_center_id = Column(UUID(as_uuid=True), ForeignKey("cost_centers.id", ondelete="SET NULL"), nullable=True, index=True)
     attendance_date = Column(Date, nullable=False, index=True)
     status = Column(SAEnum(AttendanceStatus, name="hr_attendancestatus"), nullable=False)
     clock_in = Column(Time, nullable=True)      # placeholder for future device integration
@@ -164,6 +186,10 @@ class LeaveRequest(Base, TimestampMixin):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     employee_id = Column(UUID(as_uuid=True), ForeignKey("hr_employees.id", ondelete="CASCADE"), nullable=False, index=True)
+    company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="SET NULL"), nullable=True, index=True)
+    branch_id = Column(UUID(as_uuid=True), ForeignKey("branches.id", ondelete="SET NULL"), nullable=True, index=True)
+    department_id = Column(String(100), nullable=True, index=True)
+    cost_center_id = Column(UUID(as_uuid=True), ForeignKey("cost_centers.id", ondelete="SET NULL"), nullable=True, index=True)
     leave_type = Column(SAEnum(LeaveType), nullable=False)
     start_date = Column(Date, nullable=False)
     end_date = Column(Date, nullable=False)
@@ -188,6 +214,10 @@ class LeaveBalance(Base, TimestampMixin):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     employee_id = Column(UUID(as_uuid=True), ForeignKey("hr_employees.id", ondelete="CASCADE"), nullable=False, index=True)
+    company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="SET NULL"), nullable=True, index=True)
+    branch_id = Column(UUID(as_uuid=True), ForeignKey("branches.id", ondelete="SET NULL"), nullable=True, index=True)
+    department_id = Column(String(100), nullable=True, index=True)
+    cost_center_id = Column(UUID(as_uuid=True), ForeignKey("cost_centers.id", ondelete="SET NULL"), nullable=True, index=True)
     leave_type = Column(SAEnum(LeaveType), nullable=False)
     year = Column(Integer, nullable=False)
     entitled_days = Column(Integer, nullable=False, default=0)
@@ -211,6 +241,10 @@ class PayrollPeriod(Base, TimestampMixin):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     period_month = Column(Integer, nullable=False)   # 1-12
     period_year = Column(Integer, nullable=False)
+    company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="SET NULL"), nullable=True, index=True)
+    branch_id = Column(UUID(as_uuid=True), ForeignKey("branches.id", ondelete="SET NULL"), nullable=True, index=True)
+    department_id = Column(String(100), nullable=True, index=True)
+    cost_center_id = Column(UUID(as_uuid=True), ForeignKey("cost_centers.id", ondelete="SET NULL"), nullable=True, index=True)
     status = Column(SAEnum(PayrollStatus), nullable=False, default=PayrollStatus.DRAFT)
     notes = Column(Text, nullable=True)
 
@@ -236,6 +270,10 @@ class PayrollLine(Base, TimestampMixin):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     period_id = Column(UUID(as_uuid=True), ForeignKey("hr_payroll_periods.id", ondelete="CASCADE"), nullable=False, index=True)
     employee_id = Column(UUID(as_uuid=True), ForeignKey("hr_employees.id", ondelete="CASCADE"), nullable=False, index=True)
+    company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="SET NULL"), nullable=True, index=True)
+    branch_id = Column(UUID(as_uuid=True), ForeignKey("branches.id", ondelete="SET NULL"), nullable=True, index=True)
+    department_id = Column(String(100), nullable=True, index=True)
+    cost_center_id = Column(UUID(as_uuid=True), ForeignKey("cost_centers.id", ondelete="SET NULL"), nullable=True, index=True)
 
     # Salary structure (placeholder – flexible JSONB)
     salary_components = Column(JSONB, nullable=True)

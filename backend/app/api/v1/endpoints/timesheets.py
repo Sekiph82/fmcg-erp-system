@@ -4,6 +4,7 @@ from datetime import date
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.deps import require_permission
 from app.db.session import get_db
 from app.schemas.timesheets import (
     TimesheetCreate, TimesheetSubmit, TimesheetApprove, TimesheetReject,
@@ -13,7 +14,7 @@ from app.schemas.timesheets import (
 )
 import app.services.timesheets_service as svc
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(require_permission("hr", "view"))])
 
 
 # ── Dashboard ─────────────────────────────────────────────────────────────────
@@ -25,7 +26,8 @@ async def dashboard(db: AsyncSession = Depends(get_db)):
 
 # ── Timesheets ────────────────────────────────────────────────────────────────
 
-@router.post("/", response_model=TimesheetOut, status_code=201)
+@router.post("/", response_model=TimesheetOut, status_code=201,
+             dependencies=[Depends(require_permission("hr", "create"))])
 async def create_timesheet(data: TimesheetCreate, db: AsyncSession = Depends(get_db)):
     return await svc.create_timesheet(db, data)
 
@@ -49,7 +51,8 @@ async def get_timesheet(timesheet_id: UUID, db: AsyncSession = Depends(get_db)):
     return obj
 
 
-@router.post("/{timesheet_id}/submit", response_model=TimesheetOut)
+@router.post("/{timesheet_id}/submit", response_model=TimesheetOut,
+             dependencies=[Depends(require_permission("hr", "edit"))])
 async def submit(timesheet_id: UUID, data: TimesheetSubmit, db: AsyncSession = Depends(get_db)):
     obj = await svc.submit_timesheet(db, timesheet_id, data)
     if not obj:
@@ -57,7 +60,8 @@ async def submit(timesheet_id: UUID, data: TimesheetSubmit, db: AsyncSession = D
     return obj
 
 
-@router.post("/{timesheet_id}/approve", response_model=TimesheetOut)
+@router.post("/{timesheet_id}/approve", response_model=TimesheetOut,
+             dependencies=[Depends(require_permission("hr", "approve"))])
 async def approve(timesheet_id: UUID, data: TimesheetApprove, db: AsyncSession = Depends(get_db)):
     obj = await svc.approve_timesheet(db, timesheet_id, data)
     if not obj:
@@ -65,7 +69,8 @@ async def approve(timesheet_id: UUID, data: TimesheetApprove, db: AsyncSession =
     return obj
 
 
-@router.post("/{timesheet_id}/reject", response_model=TimesheetOut)
+@router.post("/{timesheet_id}/reject", response_model=TimesheetOut,
+             dependencies=[Depends(require_permission("hr", "approve"))])
 async def reject(timesheet_id: UUID, data: TimesheetReject, db: AsyncSession = Depends(get_db)):
     obj = await svc.reject_timesheet(db, timesheet_id, data)
     if not obj:
@@ -73,7 +78,8 @@ async def reject(timesheet_id: UUID, data: TimesheetReject, db: AsyncSession = D
     return obj
 
 
-@router.post("/{timesheet_id}/finalize", response_model=TimesheetOut)
+@router.post("/{timesheet_id}/finalize", response_model=TimesheetOut,
+             dependencies=[Depends(require_permission("hr", "approve"))])
 async def finalize(timesheet_id: UUID, data: TimesheetFinalize, db: AsyncSession = Depends(get_db)):
     obj = await svc.finalize_timesheet(db, timesheet_id, data)
     if not obj:
@@ -83,7 +89,8 @@ async def finalize(timesheet_id: UUID, data: TimesheetFinalize, db: AsyncSession
 
 # ── Lines ─────────────────────────────────────────────────────────────────────
 
-@router.post("/{timesheet_id}/lines", response_model=TimesheetLineOut, status_code=201)
+@router.post("/{timesheet_id}/lines", response_model=TimesheetLineOut, status_code=201,
+             dependencies=[Depends(require_permission("hr", "edit"))])
 async def add_line(timesheet_id: UUID, data: TimesheetLineCreate, db: AsyncSession = Depends(get_db)):
     try:
         obj = await svc.add_line(db, timesheet_id, data)
@@ -94,7 +101,8 @@ async def add_line(timesheet_id: UUID, data: TimesheetLineCreate, db: AsyncSessi
     return obj
 
 
-@router.patch("/lines/{line_id}", response_model=TimesheetLineOut)
+@router.patch("/lines/{line_id}", response_model=TimesheetLineOut,
+              dependencies=[Depends(require_permission("hr", "edit"))])
 async def update_line(line_id: UUID, data: TimesheetLineUpdate, db: AsyncSession = Depends(get_db)):
     obj = await svc.update_line(db, line_id, data)
     if not obj:
@@ -102,14 +110,16 @@ async def update_line(line_id: UUID, data: TimesheetLineUpdate, db: AsyncSession
     return obj
 
 
-@router.delete("/lines/{line_id}", status_code=204)
+@router.delete("/lines/{line_id}", status_code=204,
+               dependencies=[Depends(require_permission("hr", "edit"))])
 async def delete_line(line_id: UUID, db: AsyncSession = Depends(get_db)):
     ok = await svc.delete_line(db, line_id)
     if not ok:
         raise HTTPException(404, "Line not found")
 
 
-@router.post("/{timesheet_id}/auto-fill")
+@router.post("/{timesheet_id}/auto-fill",
+             dependencies=[Depends(require_permission("hr", "edit"))])
 async def auto_fill(timesheet_id: UUID, attendance_hours: List[dict], db: AsyncSession = Depends(get_db)):
     count = await svc.auto_fill_from_attendance(db, timesheet_id, attendance_hours)
     return {"lines_added": count}
@@ -160,12 +170,14 @@ async def payroll_input(
 
 # ── AI ────────────────────────────────────────────────────────────────────────
 
-@router.post("/ai/run-utilization-analyzer", response_model=List[TSAIRecOut])
+@router.post("/ai/run-utilization-analyzer", response_model=List[TSAIRecOut],
+             dependencies=[Depends(require_permission("hr", "approve"))])
 async def run_utilization_analyzer(db: AsyncSession = Depends(get_db)):
     return await svc.run_utilization_analyzer(db)
 
 
-@router.post("/ai/run-anomaly-detector", response_model=List[TSAIRecOut])
+@router.post("/ai/run-anomaly-detector", response_model=List[TSAIRecOut],
+             dependencies=[Depends(require_permission("hr", "approve"))])
 async def run_anomaly_detector(db: AsyncSession = Depends(get_db)):
     return await svc.run_anomaly_detector(db)
 
@@ -175,7 +187,8 @@ async def list_ai_recs(status: Optional[str] = None, db: AsyncSession = Depends(
     return await svc.list_ai_recs(db, status)
 
 
-@router.patch("/ai/recommendations/{rec_id}", response_model=TSAIRecOut)
+@router.patch("/ai/recommendations/{rec_id}", response_model=TSAIRecOut,
+              dependencies=[Depends(require_permission("hr", "edit"))])
 async def ack_ai_rec(rec_id: UUID, data: TSAIRecAck, db: AsyncSession = Depends(get_db)):
     obj = await svc.ack_ai_rec(db, rec_id, data)
     if not obj:

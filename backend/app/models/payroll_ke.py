@@ -39,6 +39,10 @@ class EmployeePayrollProfile(Base, TimestampMixin):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     employee_id = Column(UUID(as_uuid=True), ForeignKey("hr_employees.id", ondelete="CASCADE"),
                          nullable=False, unique=True, index=True)
+    company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="SET NULL"), nullable=True, index=True)
+    branch_id = Column(UUID(as_uuid=True), ForeignKey("branches.id", ondelete="SET NULL"), nullable=True, index=True)
+    department_id = Column(String(100), nullable=True, index=True)
+    cost_center_id = Column(UUID(as_uuid=True), ForeignKey("cost_centers.id", ondelete="SET NULL"), nullable=True, index=True)
     basic_salary = Column(Numeric(14, 2), nullable=False)
     pay_frequency = Column(SAEnum(PayFrequency), nullable=False, default=PayFrequency.MONTHLY)
     housing_allowance = Column(Numeric(14, 2), nullable=False, default=0)
@@ -65,6 +69,8 @@ class KeTaxBand(Base, TimestampMixin):
     lower_limit = Column(Numeric(14, 2), nullable=False)
     upper_limit = Column(Numeric(14, 2), nullable=True)  # NULL = no upper limit
     rate = Column(Numeric(6, 4), nullable=False)  # 0.10 = 10%
+    effective_from = Column(Date, nullable=True)
+    effective_to = Column(Date, nullable=True)
     description = Column(String(100), nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
 
@@ -79,6 +85,8 @@ class KeStatutoryRate(Base, TimestampMixin):
     rate_value = Column(Numeric(10, 6), nullable=False)  # percentage as decimal OR fixed KES
     is_percentage = Column(Boolean, default=True, nullable=False)  # True=%, False=fixed KES
     max_amount = Column(Numeric(14, 2), nullable=True)  # cap
+    effective_from = Column(Date, nullable=True)
+    effective_to = Column(Date, nullable=True)
     notes = Column(Text, nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
 
@@ -92,6 +100,8 @@ class KeNhifTier(Base, TimestampMixin):
     gross_from = Column(Numeric(14, 2), nullable=False)
     gross_to = Column(Numeric(14, 2), nullable=True)  # NULL = no upper
     contribution = Column(Numeric(10, 2), nullable=False)
+    effective_from = Column(Date, nullable=True)
+    effective_to = Column(Date, nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
 
 
@@ -106,6 +116,10 @@ class PayrollRun(Base, TimestampMixin):
     run_no = Column(String(30), unique=True, nullable=False, index=True)
     period_month = Column(Integer, nullable=False)
     period_year = Column(Integer, nullable=False)
+    company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="SET NULL"), nullable=True, index=True)
+    branch_id = Column(UUID(as_uuid=True), ForeignKey("branches.id", ondelete="SET NULL"), nullable=True, index=True)
+    department_id = Column(String(100), nullable=True, index=True)
+    cost_center_id = Column(UUID(as_uuid=True), ForeignKey("cost_centers.id", ondelete="SET NULL"), nullable=True, index=True)
     period_start = Column(Date, nullable=False)
     period_end = Column(Date, nullable=False)
     run_date = Column(Date, nullable=True)
@@ -121,9 +135,12 @@ class PayrollRun(Base, TimestampMixin):
     created_by = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     approved_by = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     approved_at = Column(DateTime(timezone=True), nullable=True)
+    locked_at = Column(DateTime(timezone=True), nullable=True)
+    locked_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
 
     creator = relationship("User", foreign_keys=[created_by])
     approver = relationship("User", foreign_keys=[approved_by])
+    locked_by = relationship("User", foreign_keys=[locked_by_id])
     lines = relationship("KePayrollLine", back_populates="run", cascade="all, delete-orphan")
 
 
@@ -139,6 +156,10 @@ class KePayrollLine(Base, TimestampMixin):
                     nullable=False, index=True)
     employee_id = Column(UUID(as_uuid=True), ForeignKey("hr_employees.id", ondelete="RESTRICT"),
                          nullable=False, index=True)
+    company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="SET NULL"), nullable=True, index=True)
+    branch_id = Column(UUID(as_uuid=True), ForeignKey("branches.id", ondelete="SET NULL"), nullable=True, index=True)
+    department_id = Column(String(100), nullable=True, index=True)
+    cost_center_id = Column(UUID(as_uuid=True), ForeignKey("cost_centers.id", ondelete="SET NULL"), nullable=True, index=True)
     basic_salary = Column(Numeric(14, 2), nullable=False)
     housing_allowance = Column(Numeric(14, 2), nullable=False, default=0)
     transport_allowance = Column(Numeric(14, 2), nullable=False, default=0)
@@ -172,15 +193,22 @@ class Payslip(Base, TimestampMixin):
                               nullable=False, unique=True, index=True)
     employee_id = Column(UUID(as_uuid=True), ForeignKey("hr_employees.id", ondelete="RESTRICT"),
                           nullable=False, index=True)
+    company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="SET NULL"), nullable=True, index=True)
+    branch_id = Column(UUID(as_uuid=True), ForeignKey("branches.id", ondelete="SET NULL"), nullable=True, index=True)
+    department_id = Column(String(100), nullable=True, index=True)
     run_id = Column(UUID(as_uuid=True), ForeignKey("ke_payroll_runs.id", ondelete="CASCADE"),
                     nullable=False)
     issue_date = Column(Date, nullable=False)
     is_sent = Column(Boolean, default=False, nullable=False)
+    viewed_at = Column(DateTime(timezone=True), nullable=True)
+    sent_at = Column(DateTime(timezone=True), nullable=True)
+    sent_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
     notes = Column(Text, nullable=True)
 
     payroll_line = relationship("KePayrollLine", back_populates="payslip")
     employee = relationship("Employee")
     run = relationship("PayrollRun")
+    sent_by = relationship("User", foreign_keys=[sent_by_id])
 
 
 # ── SHIF Tiers (Social Health Insurance Fund — replaced NHIF Oct 2023) ────────
@@ -197,6 +225,7 @@ class SHIFTier(Base, TimestampMixin):
     min_contribution = Column(Numeric(10, 2), nullable=True)
     max_contribution = Column(Numeric(10, 2), nullable=True)
     effective_date = Column(Date, nullable=True)
+    effective_to = Column(Date, nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
     notes = Column(Text, nullable=True)
 

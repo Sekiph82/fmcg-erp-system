@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { kbApi, KBStats, KBCategory, KBArticle } from "@/lib/knowledge_base";
+import { RequirePermission } from "@/components/PermissionGuard";
 
 export default function KBHomePage() {
   const [stats, setStats] = useState<KBStats | null>(null);
@@ -35,6 +36,7 @@ export default function KBHomePage() {
   };
 
   return (
+    <RequirePermission permission="knowledge_base.view">
     <div className="p-6 space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Knowledge Base</h1>
@@ -185,5 +187,6 @@ export default function KBHomePage() {
         </div>
       )}
     </div>
+    </RequirePermission>
   );
 }

@@ -9,7 +9,14 @@ from app.models.payroll_ke import PayFrequency, KeComponentType, PayrollRunStatu
 
 # ── Payroll Profile ───────────────────────────────────────────────────────────
 
-class PayrollProfileCreate(BaseModel):
+class PayrollScopeFields(BaseModel):
+    company_id: Optional[uuid.UUID] = None
+    branch_id: Optional[uuid.UUID] = None
+    department_id: Optional[str] = None
+    cost_center_id: Optional[uuid.UUID] = None
+
+
+class PayrollProfileCreate(PayrollScopeFields):
     employee_id: uuid.UUID
     basic_salary: Decimal
     pay_frequency: PayFrequency = PayFrequency.MONTHLY
@@ -26,7 +33,7 @@ class PayrollProfileCreate(BaseModel):
     notes: Optional[str] = None
 
 
-class PayrollProfileUpdate(BaseModel):
+class PayrollProfileUpdate(PayrollScopeFields):
     basic_salary: Optional[Decimal] = None
     housing_allowance: Optional[Decimal] = None
     transport_allowance: Optional[Decimal] = None
@@ -55,6 +62,8 @@ class TaxBandCreate(BaseModel):
     lower_limit: Decimal
     upper_limit: Optional[Decimal] = None
     rate: Decimal
+    effective_from: Optional[date] = None
+    effective_to: Optional[date] = None
     description: Optional[str] = None
     is_active: bool = True
 
@@ -72,6 +81,8 @@ class StatutoryRateCreate(BaseModel):
     rate_value: Decimal
     is_percentage: bool = True
     max_amount: Optional[Decimal] = None
+    effective_from: Optional[date] = None
+    effective_to: Optional[date] = None
     notes: Optional[str] = None
     is_active: bool = True
 
@@ -83,7 +94,7 @@ class StatutoryRateRead(StatutoryRateCreate):
 
 # ── Payroll Run ───────────────────────────────────────────────────────────────
 
-class PayrollRunCreate(BaseModel):
+class PayrollRunCreate(PayrollScopeFields):
     period_month: int
     period_year: int
     period_start: date
@@ -96,6 +107,10 @@ class PayrollRunRead(BaseModel):
     run_no: str
     period_month: int
     period_year: int
+    company_id: Optional[uuid.UUID] = None
+    branch_id: Optional[uuid.UUID] = None
+    department_id: Optional[str] = None
+    cost_center_id: Optional[uuid.UUID] = None
     period_start: date
     period_end: date
     run_date: Optional[date] = None
@@ -108,6 +123,8 @@ class PayrollRunRead(BaseModel):
     total_net: Decimal
     employee_count: int
     notes: Optional[str] = None
+    locked_at: Optional[datetime] = None
+    locked_by_id: Optional[uuid.UUID] = None
     model_config = {"from_attributes": True}
 
 
@@ -117,6 +134,10 @@ class KePayrollLineRead(BaseModel):
     id: uuid.UUID
     run_id: uuid.UUID
     employee_id: uuid.UUID
+    company_id: Optional[uuid.UUID] = None
+    branch_id: Optional[uuid.UUID] = None
+    department_id: Optional[str] = None
+    cost_center_id: Optional[uuid.UUID] = None
     employee_name: Optional[str] = None
     employee_code: Optional[str] = None
     tax_pin: Optional[str] = None
@@ -149,9 +170,15 @@ class PayslipRead(BaseModel):
     id: uuid.UUID
     payroll_line_id: uuid.UUID
     employee_id: uuid.UUID
+    company_id: Optional[uuid.UUID] = None
+    branch_id: Optional[uuid.UUID] = None
+    department_id: Optional[str] = None
     run_id: uuid.UUID
     issue_date: date
     is_sent: bool
+    viewed_at: Optional[datetime] = None
+    sent_at: Optional[datetime] = None
+    sent_by_id: Optional[uuid.UUID] = None
     notes: Optional[str] = None
     employee_name: Optional[str] = None
     employee_code: Optional[str] = None

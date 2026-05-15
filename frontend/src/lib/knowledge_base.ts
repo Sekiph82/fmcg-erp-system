@@ -27,12 +27,21 @@ export interface KBArticle {
   view_count: number;
   is_featured: boolean;
   published_at?: string;
+  archived_at?: string;
+  review_due_date?: string;
   updated_at?: string;
+  access_level?: string;
+  is_internal_only?: boolean;
+  company_id?: string;
+  department_id?: string;
+  factory_id?: string;
+  module_key?: string;
+  access_scope_type?: string;
+  access_scope_id?: string;
 }
 
 export interface KBArticleDetail extends KBArticle {
   content_md: string;
-  access_level: string;
 }
 
 export interface KBRevision {

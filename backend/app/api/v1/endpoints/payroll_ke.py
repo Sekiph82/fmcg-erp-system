@@ -6,7 +6,7 @@ from typing import List, Optional
 import uuid
 
 from app.db.session import get_db
-from app.core.deps import get_current_user
+from app.core.deps import get_current_user, require_permission
 from app.models.payroll_ke import (
     EmployeePayrollProfile, KeTaxBand, KeStatutoryRate, KeNhifTier,
     PayrollRun, KePayrollLine, Payslip, PayrollRunStatus,
@@ -22,7 +22,7 @@ from app.schemas.payroll_ke import (
 )
 from app.services import payroll_ke_service as svc
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(require_permission("payroll_ke", "view"))])
 
 
 # ── Payroll Profiles ──────────────────────────────────────────────────────────
@@ -72,7 +72,8 @@ async def get_profile(
     return r
 
 
-@router.post("/profiles", response_model=PayrollProfileRead, status_code=201)
+@router.post("/profiles", response_model=PayrollProfileRead, status_code=201,
+             dependencies=[Depends(require_permission("payroll_ke", "create"))])
 async def create_profile(
     data: PayrollProfileCreate,
     db: AsyncSession = Depends(get_db),
@@ -99,7 +100,8 @@ async def create_profile(
     return r
 
 
-@router.patch("/profiles/{profile_id}", response_model=PayrollProfileRead)
+@router.patch("/profiles/{profile_id}", response_model=PayrollProfileRead,
+              dependencies=[Depends(require_permission("payroll_ke", "create"))])
 async def update_profile(
     profile_id: uuid.UUID,
     data: PayrollProfileUpdate,
@@ -140,7 +142,8 @@ async def list_tax_bands(
     return list(result.scalars().all())
 
 
-@router.post("/tax-bands", response_model=TaxBandRead, status_code=201)
+@router.post("/tax-bands", response_model=TaxBandRead, status_code=201,
+             dependencies=[Depends(require_permission("payroll_ke", "create"))])
 async def create_tax_band(
     data: TaxBandCreate,
     db: AsyncSession = Depends(get_db),
@@ -166,7 +169,8 @@ async def list_statutory_rates(
     return list(result.scalars().all())
 
 
-@router.post("/statutory-rates", response_model=StatutoryRateRead, status_code=201)
+@router.post("/statutory-rates", response_model=StatutoryRateRead, status_code=201,
+             dependencies=[Depends(require_permission("payroll_ke", "create"))])
 async def create_statutory_rate(
     data: StatutoryRateCreate,
     db: AsyncSession = Depends(get_db),
@@ -181,7 +185,8 @@ async def create_statutory_rate(
 
 # ── Seed Rates ────────────────────────────────────────────────────────────────
 
-@router.post("/seed-rates", response_model=SeedResult)
+@router.post("/seed-rates", response_model=SeedResult,
+             dependencies=[Depends(require_permission("payroll_ke", "create"))])
 async def seed_rates(
     tax_year: int = Query(2024),
     db: AsyncSession = Depends(get_db),
@@ -205,7 +210,8 @@ async def list_runs(
     return [PayrollRunRead.model_validate(r) for r in result.scalars().all()]
 
 
-@router.post("/runs", response_model=PayrollRunRead, status_code=201)
+@router.post("/runs", response_model=PayrollRunRead, status_code=201,
+             dependencies=[Depends(require_permission("payroll_ke", "create"))])
 async def create_run(
     data: PayrollRunCreate,
     db: AsyncSession = Depends(get_db),
@@ -230,7 +236,8 @@ async def get_run(
     return PayrollRunRead.model_validate(run)
 
 
-@router.post("/runs/{run_id}/calculate", response_model=PayrollRunRead)
+@router.post("/runs/{run_id}/calculate", response_model=PayrollRunRead,
+             dependencies=[Depends(require_permission("payroll_ke", "create"))])
 async def calculate_run(
     run_id: uuid.UUID,
     tax_year: Optional[int] = None,
@@ -246,7 +253,8 @@ async def calculate_run(
     return PayrollRunRead.model_validate(run)
 
 
-@router.post("/runs/{run_id}/approve", response_model=PayrollRunRead)
+@router.post("/runs/{run_id}/approve", response_model=PayrollRunRead,
+             dependencies=[Depends(require_permission("payroll_ke", "approve"))])
 async def approve_run(
     run_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),

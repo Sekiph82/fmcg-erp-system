@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { kbApi, KBArticleDetail, KBRevision } from "@/lib/knowledge_base";
+import { PermissionGuard, RequirePermission } from "@/components/PermissionGuard";
 
 function renderMarkdown(md: string): string {
   // Basic markdown rendering without external lib
@@ -41,6 +42,7 @@ export default function ArticleViewPage() {
   if (!article) return <div className="p-6 text-sm text-red-500">Article not found.</div>;
 
   return (
+    <RequirePermission permission="knowledge_base.view">
     <div className="p-6 max-w-4xl">
       <div className="mb-6">
         <div className="flex items-start justify-between gap-4 flex-wrap">
@@ -66,10 +68,12 @@ export default function ArticleViewPage() {
             {article.summary && <p className="text-sm text-gray-500 mt-1">{article.summary}</p>}
           </div>
           <div className="flex gap-2 flex-shrink-0">
-            <a href={`/dashboard/knowledge-base/${id}/edit`}
-              className="rounded border px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-50">
-              Edit
-            </a>
+            <PermissionGuard permission="knowledge_base.edit">
+              <a href={`/dashboard/knowledge-base/${id}/edit`}
+                className="rounded border px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-50">
+                Edit
+              </a>
+            </PermissionGuard>
             <button onClick={loadRevisions}
               className="rounded border px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-50">
               History ({article.version})
@@ -127,5 +131,6 @@ export default function ArticleViewPage() {
         <a href="/dashboard/knowledge-base/articles" className="text-blue-600 hover:underline">All Articles</a>
       </div>
     </div>
+    </RequirePermission>
   );
 }

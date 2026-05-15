@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { kbApi, KBCategory } from "@/lib/knowledge_base";
+import { RequirePermission } from "@/components/PermissionGuard";
 
 export default function NewArticlePage() {
   const router = useRouter();
@@ -45,6 +46,7 @@ export default function NewArticlePage() {
   };
 
   return (
+    <RequirePermission permission="knowledge_base.create">
     <div className="p-6 space-y-5 max-w-4xl">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
@@ -149,5 +151,6 @@ export default function NewArticlePage() {
         </div>
       </div>
     </div>
+    </RequirePermission>
   );
 }

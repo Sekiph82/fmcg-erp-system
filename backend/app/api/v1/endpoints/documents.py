@@ -1,6 +1,7 @@
 """Document Management endpoints."""
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from typing import List, Optional, Dict
 import uuid
 
@@ -17,6 +18,7 @@ from app.schemas.documents import (
     DocumentCreate, DocumentUpdate, DocumentApprove,
     DocumentRead, DocumentShort, DocumentVersionHistory,
 )
+from app.services.document_access_service import ensure_document_action_allowed
 
 router = APIRouter()
 
@@ -89,6 +91,7 @@ async def create_document(
 ):
     data = body.model_dump()
     prev_id = data.pop("previous_version_id", None)
+    owner_user_id = data.pop("owner_user_id", None)
 
     # If superseding, mark previous version as not-latest
     if prev_id:
@@ -99,7 +102,9 @@ async def create_document(
     doc = Document(
         **data,
         previous_version_id=prev_id,
-        owner_user_id=data.get("owner_user_id") or current_user.id,
+        owner_user_id=owner_user_id or current_user.id,
+        created_by_id=current_user.id,
+        updated_by_id=current_user.id,
     )
     db.add(doc)
     await db.commit()
@@ -126,14 +131,17 @@ async def update_document(
     doc_id: uuid.UUID,
     body: DocumentUpdate,
     db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
 ):
     doc = await db.get(Document, doc_id)
     if not doc:
         raise HTTPException(404, "Document not found")
-    if doc.status in (DocumentStatus.OBSOLETE, DocumentStatus.ARCHIVED):
-        raise HTTPException(400, f"Cannot edit a {doc.status.value} document")
+    ensure_document_action_allowed(current_user, doc, "edit")
     for k, v in body.model_dump(exclude_none=True).items():
+        if k == "status":
+            raise HTTPException(422, "Use explicit document lifecycle endpoints to change status")
         setattr(doc, k, v)
+    doc.updated_by_id = current_user.id
     await db.commit()
     await db.refresh(doc)
     return doc
@@ -152,10 +160,12 @@ async def approve_document(
     doc = await db.get(Document, doc_id)
     if not doc:
         raise HTTPException(404, "Document not found")
+    ensure_document_action_allowed(current_user, doc, "approve")
     if doc.status != DocumentStatus.DRAFT:
         raise HTTPException(400, f"Document is already {doc.status.value}")
     doc.status = DocumentStatus.APPROVED
     doc.approved_by_id = current_user.id
+    doc.approved_at = datetime.now(timezone.utc)
     if body.effective_date:
         doc.effective_date = body.effective_date
     if body.expiry_date:
@@ -169,12 +179,19 @@ async def approve_document(
 
 @router.post("/{doc_id}/obsolete", response_model=DocumentRead,
              dependencies=[Depends(require_permission("documents", "approve"))])
-async def obsolete_document(doc_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+async def obsolete_document(
+    doc_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
     doc = await db.get(Document, doc_id)
     if not doc:
         raise HTTPException(404, "Document not found")
+    ensure_document_action_allowed(current_user, doc, "obsolete")
     doc.status = DocumentStatus.OBSOLETE
     doc.is_latest = False
+    doc.obsolete_at = datetime.now(timezone.utc)
+    doc.updated_by_id = current_user.id
     await db.commit()
     await db.refresh(doc)
     return doc
@@ -184,12 +201,19 @@ async def obsolete_document(doc_id: uuid.UUID, db: AsyncSession = Depends(get_db
 
 @router.post("/{doc_id}/archive", response_model=DocumentRead,
              dependencies=[Depends(require_permission("documents", "approve"))])
-async def archive_document(doc_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+async def archive_document(
+    doc_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
     doc = await db.get(Document, doc_id)
     if not doc:
         raise HTTPException(404, "Document not found")
+    ensure_document_action_allowed(current_user, doc, "archive")
     doc.status = DocumentStatus.ARCHIVED
     doc.is_latest = False
+    doc.archived_at = datetime.now(timezone.utc)
+    doc.updated_by_id = current_user.id
     await db.commit()
     await db.refresh(doc)
     return doc
@@ -213,6 +237,7 @@ async def create_new_version(
     prev = await db.get(Document, doc_id)
     if not prev:
         raise HTTPException(404, "Parent document not found")
+    ensure_document_action_allowed(current_user, prev, "new_version")
 
     # Mark old version as superseded
     prev.is_latest = False
@@ -223,6 +248,8 @@ async def create_new_version(
     data["version"] = prev.version + 1
     data["previous_version_id"] = prev.id
     data["owner_user_id"] = data.get("owner_user_id") or current_user.id
+    data["created_by_id"] = current_user.id
+    data["updated_by_id"] = current_user.id
     data["is_latest"] = True
     data["status"] = DocumentStatus.DRAFT
 

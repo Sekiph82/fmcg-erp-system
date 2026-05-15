@@ -2,8 +2,19 @@
 
 import { useState, useEffect } from "react";
 import { payrollKeApi, PayrollProfile } from "@/lib/payrollKe";
+import { RequirePermission } from "@/components/PermissionGuard";
+import { useAuth } from "@/context/AuthContext";
 
 export default function PayrollProfilesPage() {
+  return (
+    <RequirePermission permission="payroll_ke.view">
+      <PayrollProfilesContent />
+    </RequirePermission>
+  );
+}
+
+function PayrollProfilesContent() {
+  const { hasPermission } = useAuth();
   const [profiles, setProfiles] = useState<PayrollProfile[]>([]);
   const [employees, setEmployees] = useState<{ id: string; full_name: string; employee_code: string }[]>([]);
   const [loading, setLoading] = useState(false);
@@ -103,6 +114,7 @@ export default function PayrollProfilesPage() {
       setSaving(false);
     }
   };
+  const canManageProfiles = hasPermission("payroll_ke.create");
 
   return (
     <div className="p-6 space-y-6">
@@ -111,7 +123,9 @@ export default function PayrollProfilesPage() {
           <h1 className="text-2xl font-bold text-gray-900">Payroll Profiles</h1>
           <p className="text-sm text-gray-500 mt-1">Kenya statutory data per employee — KRA PIN, NHIF, NSSF, salary structure</p>
         </div>
-        <button onClick={openCreate} className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700">+ New Profile</button>
+        {canManageProfiles && (
+          <button onClick={openCreate} className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700">+ New Profile</button>
+        )}
       </div>
 
       <div className="bg-white rounded-lg border overflow-hidden">
@@ -153,7 +167,11 @@ export default function PayrollProfilesPage() {
                     </span>
                   </td>
                   <td className="px-4 py-2">
-                    <button onClick={() => openEdit(p)} className="text-blue-600 hover:underline text-xs">Edit</button>
+                    {canManageProfiles ? (
+                      <button onClick={() => openEdit(p)} className="text-blue-600 hover:underline text-xs">Edit</button>
+                    ) : (
+                      <span className="text-xs text-gray-400">View only</span>
+                    )}
                   </td>
                 </tr>
               ))

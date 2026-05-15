@@ -3,8 +3,19 @@
 import { useCallback, useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { payrollKeApi, PayrollRun, PayrollLine, Payslip, MONTH_NAMES, STATUS_COLORS, PayrollInsight } from "@/lib/payrollKe";
+import { RequirePermission } from "@/components/PermissionGuard";
+import { useAuth } from "@/context/AuthContext";
 
 export default function PayrollRunDetailPage() {
+  return (
+    <RequirePermission permission="payroll_ke.view">
+      <PayrollRunDetailContent />
+    </RequirePermission>
+  );
+}
+
+function PayrollRunDetailContent() {
+  const { hasPermission } = useAuth();
   const params = useParams();
   const router = useRouter();
   const runId = params.id as string;
@@ -68,6 +79,8 @@ export default function PayrollRunDetailPage() {
   if (!run) return <div className="p-6 text-red-600">Run not found</div>;
 
   const fmt = (v: number) => `KES ${Number(v).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
+  const canCalculatePayroll = hasPermission("payroll_ke.create");
+  const canApprovePayroll = hasPermission("payroll_ke.approve");
 
   return (
     <div className="p-6 space-y-6">
@@ -80,12 +93,12 @@ export default function PayrollRunDetailPage() {
           </div>
           <div className="flex gap-2 flex-wrap">
             <span className={`px-3 py-1 rounded-full text-sm font-medium ${STATUS_COLORS[run.status]}`}>{run.status}</span>
-            {(run.status === "DRAFT" || run.status === "CALCULATED") && (
+            {canCalculatePayroll && (run.status === "DRAFT" || run.status === "CALCULATED") && (
               <button onClick={handleCalculate} disabled={calculating} className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg disabled:opacity-50">
                 {calculating ? "Calculating…" : "Calculate Payroll"}
               </button>
             )}
-            {run.status === "CALCULATED" && (
+            {canApprovePayroll && run.status === "CALCULATED" && (
               <button onClick={handleApprove} disabled={approving} className="px-4 py-2 text-sm bg-green-600 text-white rounded-lg disabled:opacity-50">
                 {approving ? "Approving…" : "Approve & Generate Payslips"}
               </button>

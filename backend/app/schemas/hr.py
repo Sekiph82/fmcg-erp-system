@@ -14,7 +14,14 @@ from app.models.hr import (
 
 # ── Employee ──────────────────────────────────────────────────────────────────
 
-class EmployeeBase(BaseModel):
+class HRScopeFields(BaseModel):
+    company_id: Optional[uuid.UUID] = None
+    branch_id: Optional[uuid.UUID] = None
+    department_id: Optional[str] = None
+    cost_center_id: Optional[uuid.UUID] = None
+
+
+class EmployeeBase(HRScopeFields):
     employee_code: str
     full_name: str
     department: str
@@ -24,6 +31,7 @@ class EmployeeBase(BaseModel):
     hire_date: date
     status: EmployeeStatus = EmployeeStatus.ACTIVE
     user_id: Optional[uuid.UUID] = None
+    manager_employee_id: Optional[uuid.UUID] = None
     payment_method: Optional[PaymentMethod] = None
     mpesa_number: Optional[str] = None
     bank_account: Optional[str] = None
@@ -34,7 +42,7 @@ class EmployeeCreate(EmployeeBase):
     pass
 
 
-class EmployeeUpdate(BaseModel):
+class EmployeeUpdate(HRScopeFields):
     full_name: Optional[str] = None
     department: Optional[str] = None
     role: Optional[str] = None
@@ -42,14 +50,21 @@ class EmployeeUpdate(BaseModel):
     email: Optional[str] = None
     status: Optional[EmployeeStatus] = None
     user_id: Optional[uuid.UUID] = None
+    manager_employee_id: Optional[uuid.UUID] = None
     payment_method: Optional[PaymentMethod] = None
     mpesa_number: Optional[str] = None
     bank_account: Optional[str] = None
     salary_grade: Optional[str] = None
+    terminated_at: Optional[date] = None
+    archived_at: Optional[Any] = None
+    archived_by_id: Optional[uuid.UUID] = None
 
 
 class EmployeeRead(EmployeeBase):
     id: uuid.UUID
+    terminated_at: Optional[date] = None
+    archived_at: Optional[Any] = None
+    archived_by_id: Optional[uuid.UUID] = None
     created_at: Any
     updated_at: Any
 
@@ -69,7 +84,7 @@ class EmployeeShort(BaseModel):
 
 # ── Shift Template ────────────────────────────────────────────────────────────
 
-class ShiftTemplateBase(BaseModel):
+class ShiftTemplateBase(HRScopeFields):
     name: str
     start_time: time
     end_time: time
@@ -82,7 +97,7 @@ class ShiftTemplateCreate(ShiftTemplateBase):
     pass
 
 
-class ShiftTemplateUpdate(BaseModel):
+class ShiftTemplateUpdate(HRScopeFields):
     name: Optional[str] = None
     start_time: Optional[time] = None
     end_time: Optional[time] = None
@@ -100,7 +115,7 @@ class ShiftTemplateRead(ShiftTemplateBase):
 
 # ── Shift Assignment ──────────────────────────────────────────────────────────
 
-class ShiftAssignmentCreate(BaseModel):
+class ShiftAssignmentCreate(HRScopeFields):
     employee_id: uuid.UUID
     shift_template_id: uuid.UUID
     effective_from: date
@@ -109,7 +124,7 @@ class ShiftAssignmentCreate(BaseModel):
     notes: Optional[str] = None
 
 
-class ShiftAssignmentUpdate(BaseModel):
+class ShiftAssignmentUpdate(HRScopeFields):
     effective_to: Optional[date] = None
     supervisor_id: Optional[uuid.UUID] = None
     notes: Optional[str] = None
@@ -118,6 +133,10 @@ class ShiftAssignmentUpdate(BaseModel):
 class ShiftAssignmentRead(BaseModel):
     id: uuid.UUID
     employee_id: uuid.UUID
+    company_id: Optional[uuid.UUID] = None
+    branch_id: Optional[uuid.UUID] = None
+    department_id: Optional[str] = None
+    cost_center_id: Optional[uuid.UUID] = None
     shift_template_id: uuid.UUID
     effective_from: date
     effective_to: Optional[date]
@@ -131,7 +150,7 @@ class ShiftAssignmentRead(BaseModel):
 
 # ── Attendance ────────────────────────────────────────────────────────────────
 
-class AttendanceCreate(BaseModel):
+class AttendanceCreate(HRScopeFields):
     employee_id: uuid.UUID
     attendance_date: date
     status: AttendanceStatus
@@ -144,7 +163,7 @@ class AttendanceBulkCreate(BaseModel):
     records: List[AttendanceCreate]
 
 
-class AttendanceUpdate(BaseModel):
+class AttendanceUpdate(HRScopeFields):
     status: Optional[AttendanceStatus] = None
     clock_in: Optional[time] = None
     clock_out: Optional[time] = None
@@ -154,6 +173,10 @@ class AttendanceUpdate(BaseModel):
 class AttendanceRead(BaseModel):
     id: uuid.UUID
     employee_id: uuid.UUID
+    company_id: Optional[uuid.UUID] = None
+    branch_id: Optional[uuid.UUID] = None
+    department_id: Optional[str] = None
+    cost_center_id: Optional[uuid.UUID] = None
     attendance_date: date
     status: AttendanceStatus
     clock_in: Optional[time]
@@ -167,7 +190,7 @@ class AttendanceRead(BaseModel):
 
 # ── Leave ─────────────────────────────────────────────────────────────────────
 
-class LeaveRequestCreate(BaseModel):
+class LeaveRequestCreate(HRScopeFields):
     employee_id: uuid.UUID
     leave_type: LeaveType
     start_date: date
@@ -189,6 +212,10 @@ class LeaveReview(BaseModel):
 class LeaveRequestRead(BaseModel):
     id: uuid.UUID
     employee_id: uuid.UUID
+    company_id: Optional[uuid.UUID] = None
+    branch_id: Optional[uuid.UUID] = None
+    department_id: Optional[str] = None
+    cost_center_id: Optional[uuid.UUID] = None
     leave_type: LeaveType
     start_date: date
     end_date: date
@@ -205,6 +232,10 @@ class LeaveRequestRead(BaseModel):
 class LeaveBalanceRead(BaseModel):
     id: uuid.UUID
     employee_id: uuid.UUID
+    company_id: Optional[uuid.UUID] = None
+    branch_id: Optional[uuid.UUID] = None
+    department_id: Optional[str] = None
+    cost_center_id: Optional[uuid.UUID] = None
     leave_type: LeaveType
     year: int
     entitled_days: int
@@ -228,7 +259,7 @@ class LeaveBalanceRead(BaseModel):
 
 # ── Payroll ───────────────────────────────────────────────────────────────────
 
-class PayrollPeriodCreate(BaseModel):
+class PayrollPeriodCreate(HRScopeFields):
     period_month: int
     period_year: int
     notes: Optional[str] = None
@@ -238,6 +269,10 @@ class PayrollPeriodRead(BaseModel):
     id: uuid.UUID
     period_month: int
     period_year: int
+    company_id: Optional[uuid.UUID] = None
+    branch_id: Optional[uuid.UUID] = None
+    department_id: Optional[str] = None
+    cost_center_id: Optional[uuid.UUID] = None
     status: PayrollStatus
     notes: Optional[str]
     approved_by_id: Optional[uuid.UUID]
@@ -245,7 +280,7 @@ class PayrollPeriodRead(BaseModel):
     model_config = {"from_attributes": True}
 
 
-class PayrollLineCreate(BaseModel):
+class PayrollLineCreate(HRScopeFields):
     employee_id: uuid.UUID
     salary_components: Optional[Dict[str, Any]] = None
     gross_pay: int = 0
@@ -253,7 +288,7 @@ class PayrollLineCreate(BaseModel):
     payment_method: Optional[PaymentMethod] = None
 
 
-class PayrollLineUpdate(BaseModel):
+class PayrollLineUpdate(HRScopeFields):
     salary_components: Optional[Dict[str, Any]] = None
     gross_pay: Optional[int] = None
     net_pay: Optional[int] = None
@@ -266,6 +301,10 @@ class PayrollLineRead(BaseModel):
     id: uuid.UUID
     period_id: uuid.UUID
     employee_id: uuid.UUID
+    company_id: Optional[uuid.UUID] = None
+    branch_id: Optional[uuid.UUID] = None
+    department_id: Optional[str] = None
+    cost_center_id: Optional[uuid.UUID] = None
     salary_components: Optional[Dict[str, Any]]
     gross_pay: int
     net_pay: int

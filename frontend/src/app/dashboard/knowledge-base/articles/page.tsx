@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { kbApi, KBArticle, KBCategory } from "@/lib/knowledge_base";
+import { PermissionGuard, RequirePermission } from "@/components/PermissionGuard";
 
 export default function ArticleListPage() {
   const params = useSearchParams();
@@ -42,13 +43,16 @@ export default function ArticleListPage() {
   };
 
   return (
+    <RequirePermission permission="knowledge_base.view">
     <div className="p-6 space-y-5">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h1 className="text-xl font-bold text-gray-900">Articles</h1>
-        <a href="/dashboard/knowledge-base/articles/new"
-          className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
-          + New Article
-        </a>
+        <PermissionGuard permission="knowledge_base.create">
+          <a href="/dashboard/knowledge-base/articles/new"
+            className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
+            + New Article
+          </a>
+        </PermissionGuard>
       </div>
 
       <div className="flex gap-3 flex-wrap">
@@ -123,10 +127,14 @@ export default function ArticleListPage() {
                   <td className="px-4 py-3">
                     <div className="flex gap-2">
                       <a href={`/dashboard/knowledge-base/${a.id}`} className="text-xs text-blue-600 hover:underline">View</a>
-                      <a href={`/dashboard/knowledge-base/${a.id}/edit`} className="text-xs text-gray-600 hover:underline">Edit</a>
-                      {a.status !== "ARCHIVED" && (
-                        <button onClick={() => del(a.id)} className="text-xs text-red-500 hover:underline">Archive</button>
-                      )}
+                      <PermissionGuard permission="knowledge_base.edit">
+                        <a href={`/dashboard/knowledge-base/${a.id}/edit`} className="text-xs text-gray-600 hover:underline">Edit</a>
+                      </PermissionGuard>
+                      <PermissionGuard permission="knowledge_base.delete">
+                        {a.status !== "ARCHIVED" && (
+                          <button onClick={() => del(a.id)} className="text-xs text-red-500 hover:underline">Archive</button>
+                        )}
+                      </PermissionGuard>
                     </div>
                   </td>
                 </tr>
@@ -136,5 +144,6 @@ export default function ArticleListPage() {
         </div>
       )}
     </div>
+    </RequirePermission>
   );
 }

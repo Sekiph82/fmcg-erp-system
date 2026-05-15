@@ -5,7 +5,7 @@ import uuid
 import enum
 
 from sqlalchemy import (
-    Column, String, Text, Integer, Boolean, Date,
+    Column, String, Text, Integer, Boolean, Date, DateTime,
     ForeignKey, Enum as SAEnum,
 )
 from sqlalchemy.dialects.postgresql import UUID
@@ -63,6 +63,9 @@ class Document(Base, TimestampMixin):
     description = Column(Text, nullable=True)
 
     # Versioning
+    document_no = Column(String(80), nullable=True, index=True)
+    lineage_id = Column(UUID(as_uuid=True), nullable=True, index=True)
+    document_type = Column(String(100), nullable=True)
     version = Column(Integer, nullable=False, default=1)
     revision_note = Column(Text, nullable=True)          # what changed in this version
     previous_version_id = Column(
@@ -89,6 +92,37 @@ class Document(Base, TimestampMixin):
         ForeignKey("users.id", ondelete="SET NULL"),
         nullable=True,
     )
+    created_by_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    updated_by_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    approved_at = Column(DateTime(timezone=True), nullable=True)
+    obsolete_at = Column(DateTime(timezone=True), nullable=True)
+    archived_at = Column(DateTime(timezone=True), nullable=True)
+
+    # ERP scope hints for permission + scope access checks
+    company_id = Column(UUID(as_uuid=True), nullable=True, index=True)
+    branch_id = Column(UUID(as_uuid=True), nullable=True, index=True)
+    department_id = Column(String(100), nullable=True, index=True)
+    factory_id = Column(String(100), nullable=True, index=True)
+    product_category_id = Column(String(100), nullable=True)
+    supplier_id = Column(UUID(as_uuid=True), nullable=True, index=True)
+    customer_id = Column(UUID(as_uuid=True), nullable=True, index=True)
+    confidentiality_level = Column(String(30), nullable=False, default="INTERNAL")
+    retention_until = Column(Date, nullable=True)
+    legal_hold = Column(Boolean, default=False, nullable=False)
+    review_due_date = Column(Date, nullable=True, index=True)
+    next_review_owner_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+    )
 
     # Soft polymorphic entity link
     # e.g. related_entity_type="mpesa_transaction", related_entity_id="<uuid>"
@@ -101,10 +135,26 @@ class Document(Base, TimestampMixin):
     file_name = Column(String(255), nullable=True)
     file_size_bytes = Column(Integer, nullable=True)
     mime_type = Column(String(100), nullable=True)
+    storage_provider = Column(String(30), nullable=True)
+    storage_key = Column(Text, nullable=True)
+    file_checksum_sha256 = Column(String(64), nullable=True, index=True)
+    file_scan_status = Column(String(30), nullable=False, default="NOT_SCANNED")
+    file_scan_result = Column(Text, nullable=True)
+    file_locked = Column(Boolean, default=False, nullable=False)
+    locked_at = Column(DateTime(timezone=True), nullable=True)
+    locked_by_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+    )
 
     # Relationships
     owner = relationship("User", foreign_keys=[owner_user_id])
     approved_by = relationship("User", foreign_keys=[approved_by_id])
+    created_by = relationship("User", foreign_keys=[created_by_id])
+    updated_by = relationship("User", foreign_keys=[updated_by_id])
+    next_review_owner = relationship("User", foreign_keys=[next_review_owner_id])
+    locked_by = relationship("User", foreign_keys=[locked_by_id])
     previous_version = relationship("Document", remote_side="Document.id", foreign_keys=[previous_version_id])
     tags = relationship("DocumentTag", back_populates="document", cascade="all, delete-orphan")
 

@@ -21,6 +21,8 @@ class ESSLoginRequest(BaseModel):
 class ESSLoginResponse(BaseModel):
     ess_account_id: UUID
     employee_id: UUID
+    hr_employee_id: Optional[UUID] = None
+    user_id: Optional[UUID] = None
     email: str
     token: str
     status: ESSAccountStatus
@@ -28,6 +30,8 @@ class ESSLoginResponse(BaseModel):
 
 class ESSAccountCreate(BaseModel):
     employee_id: UUID
+    hr_employee_id: Optional[UUID] = None
+    user_id: Optional[UUID] = None
     email: str
     password: str
 
@@ -35,6 +39,8 @@ class ESSAccountCreate(BaseModel):
 class ESSAccountRead(BaseModel):
     ess_account_id: UUID
     employee_id: UUID
+    hr_employee_id: Optional[UUID]
+    user_id: Optional[UUID]
     email: str
     status: ESSAccountStatus
     last_login: Optional[datetime]
@@ -55,6 +61,7 @@ class ESSPasswordChange(BaseModel):
 
 class ESSProfileCreate(BaseModel):
     employee_id: UUID
+    hr_employee_id: Optional[UUID] = None
     full_name: str
     email: str
     personal_email: Optional[str] = None

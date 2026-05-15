@@ -57,10 +57,14 @@ class TimesheetHeader(Base):
 
     timesheet_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     employee_id = Column(String(100), nullable=False)
+    hr_employee_id = Column(UUID(as_uuid=True), ForeignKey("hr_employees.id", ondelete="SET NULL"), nullable=True, index=True)
+    company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="SET NULL"), nullable=True, index=True)
+    branch_id = Column(UUID(as_uuid=True), ForeignKey("branches.id", ondelete="SET NULL"), nullable=True, index=True)
     employee_name = Column(String(200), nullable=True)
     department_id = Column(String(100), nullable=True)
     department_name = Column(String(200), nullable=True)
     manager_id = Column(String(100), nullable=True)
+    manager_employee_id = Column(UUID(as_uuid=True), ForeignKey("hr_employees.id", ondelete="SET NULL"), nullable=True, index=True)
     manager_name = Column(String(200), nullable=True)
     period_start = Column(Date, nullable=False)
     period_end = Column(Date, nullable=False)
@@ -71,6 +75,8 @@ class TimesheetHeader(Base):
     submitted_at = Column(DateTime, nullable=True)
     approved_by = Column(String(200), nullable=True)
     approved_at = Column(DateTime, nullable=True)
+    payroll_run_id = Column(UUID(as_uuid=True), ForeignKey("ke_payroll_runs.id", ondelete="SET NULL"), nullable=True, index=True)
+    finalized_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
     finalized_at = Column(DateTime, nullable=True)
     rejection_count = Column(Integer, default=0)
     notes = Column(Text, nullable=True)
@@ -79,6 +85,10 @@ class TimesheetHeader(Base):
 
     lines = relationship("TimesheetLine", back_populates="timesheet", cascade="all, delete-orphan")
     approval_logs = relationship("TimesheetApprovalLog", back_populates="timesheet", cascade="all, delete-orphan")
+    hr_employee = relationship("Employee", foreign_keys=[hr_employee_id])
+    manager_employee = relationship("Employee", foreign_keys=[manager_employee_id])
+    payroll_run = relationship("PayrollRun", foreign_keys=[payroll_run_id])
+    finalized_by = relationship("User", foreign_keys=[finalized_by_id])
 
     __table_args__ = (
         UniqueConstraint("employee_id", "period_start", "period_end", name="uq_timesheet_employee_period"),

@@ -197,6 +197,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       sales: "/dashboard/sales",
       finance: "/dashboard/finance",
       hr: "/dashboard/hr",
+      payroll_ke: "/dashboard/payroll",
       maintenance: "/dashboard/maintenance",
       utilities: "/dashboard/utilities",
       reports: "/dashboard/reports",

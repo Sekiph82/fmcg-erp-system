@@ -2,8 +2,19 @@
 
 import { useCallback, useState, useEffect } from "react";
 import { payrollKeApi, PayrollRun, MONTH_NAMES } from "@/lib/payrollKe";
+import { RequirePermission } from "@/components/PermissionGuard";
+import { useAuth } from "@/context/AuthContext";
 
 export default function PayrollReportsPage() {
+  return (
+    <RequirePermission permission="payroll_ke.view">
+      <PayrollReportsContent />
+    </RequirePermission>
+  );
+}
+
+function PayrollReportsContent() {
+  const { hasPermission } = useAuth();
   const [runs, setRuns] = useState<PayrollRun[]>([]);
   const [selectedRun, setSelectedRun] = useState("");
   const [tab, setTab] = useState<"paye" | "nhif" | "nssf" | "summary">("summary");
@@ -52,6 +63,7 @@ export default function PayrollReportsPage() {
   };
 
   const currentRun = runs.find((r) => r.id === selectedRun);
+  const canExportPayroll = hasPermission("payroll_ke.export");
 
   const COLUMNS: Record<string, string[]> = {
     paye: ["employee_name", "employee_code", "tax_pin", "gross_salary", "taxable_income", "paye_amount", "personal_relief"],
@@ -125,7 +137,11 @@ export default function PayrollReportsPage() {
       {/* Table */}
       <div className="bg-white rounded-lg border overflow-hidden">
         <div className="flex justify-end px-4 py-2 border-b">
-          <button onClick={exportCSV} className="text-xs text-blue-600 hover:underline">Export CSV</button>
+          {canExportPayroll ? (
+            <button onClick={exportCSV} className="text-xs text-blue-600 hover:underline">Export CSV</button>
+          ) : (
+            <span className="text-xs text-gray-400">Export restricted</span>
+          )}
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">

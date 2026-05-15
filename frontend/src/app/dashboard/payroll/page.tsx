@@ -3,8 +3,19 @@
 import { useState, useEffect } from "react";
 import { payrollKeApi, PayrollRun, STATUS_COLORS, MONTH_NAMES, PayrollInsight } from "@/lib/payrollKe";
 import Link from "next/link";
+import { RequirePermission } from "@/components/PermissionGuard";
+import { useAuth } from "@/context/AuthContext";
 
 export default function PayrollDashboard() {
+  return (
+    <RequirePermission permission="payroll_ke.view">
+      <PayrollDashboardContent />
+    </RequirePermission>
+  );
+}
+
+function PayrollDashboardContent() {
+  const { hasPermission } = useAuth();
   const [runs, setRuns] = useState<PayrollRun[]>([]);
   const [loading, setLoading] = useState(true);
   const [compliance, setCompliance] = useState<PayrollInsight | null>(null);
@@ -62,6 +73,7 @@ export default function PayrollDashboard() {
   const latest = runs[0];
   const totalNet = runs.filter((r) => r.status === "APPROVED" || r.status === "PAID")
     .reduce((s, r) => s + r.total_net, 0);
+  const canCreatePayroll = hasPermission("payroll_ke.create");
 
   return (
     <div className="p-6 space-y-6">
@@ -73,13 +85,17 @@ export default function PayrollDashboard() {
         <div className="flex gap-2 flex-wrap">
           <Link href="/dashboard/payroll/profiles" className="px-3 py-2 text-sm border rounded-lg hover:bg-gray-50">Payroll Profiles</Link>
           <Link href="/dashboard/payroll/reports" className="px-3 py-2 text-sm border rounded-lg hover:bg-gray-50">Reports</Link>
-          <button onClick={handleSeed} className="px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg">Seed 2024 Rates</button>
+          {canCreatePayroll && (
+            <button onClick={handleSeed} className="px-3 py-2 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg">Seed 2024 Rates</button>
+          )}
           <button onClick={handleCompliance} disabled={aiLoading} className="px-3 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50">
             {aiLoading ? "Checking…" : "Compliance Check"}
           </button>
-          <button onClick={() => setShowCreate(true)} className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-            + New Payroll Run
-          </button>
+          {canCreatePayroll && (
+            <button onClick={() => setShowCreate(true)} className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+              + New Payroll Run
+            </button>
+          )}
         </div>
       </div>
 

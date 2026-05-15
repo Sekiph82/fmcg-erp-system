@@ -5,7 +5,7 @@ import uuid
 import enum
 
 from sqlalchemy import (
-    Column, String, Text, Integer, DateTime, ForeignKey, Enum as SAEnum,
+    Column, String, Text, Integer, DateTime, ForeignKey, Enum as SAEnum, JSON,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
@@ -62,7 +62,31 @@ class SignatureRequest(Base, TimestampMixin):
     signed_count = Column(Integer, nullable=False, default=0)
     declined_count = Column(Integer, nullable=False, default=0)
 
+    # ERP scope and related-record hints for permission checks and dashboards.
+    company_id = Column(UUID(as_uuid=True), nullable=True, index=True)
+    branch_id = Column(UUID(as_uuid=True), nullable=True)
+    department_id = Column(String(100), nullable=True)
+    factory_id = Column(String(100), nullable=True)
+    module_key = Column(String(100), nullable=True, index=True)
+    related_entity_type = Column(String(100), nullable=True)
+    related_entity_id = Column(String(100), nullable=True)
+
+    # Evidence and lifecycle hardening fields.
+    document_hash_sha256 = Column(String(64), nullable=True)
+    payload_hash_sha256 = Column(String(64), nullable=True)
+    completed_at = Column(DateTime(timezone=True), nullable=True)
+    expired_at = Column(DateTime(timezone=True), nullable=True)
+    cancelled_at = Column(DateTime(timezone=True), nullable=True)
+    cancelled_by_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    evidence_summary = Column(JSON, nullable=True)
+    audit_request_id = Column(String(100), nullable=True)
+
     requester = relationship("User", foreign_keys=[requester_id])
+    cancelled_by = relationship("User", foreign_keys=[cancelled_by_id])
     signature_records = relationship(
         "SignatureRecord", back_populates="request", cascade="all, delete-orphan"
     )
@@ -96,6 +120,17 @@ class SignatureRecord(Base, TimestampMixin):
     ip_address = Column(String(45), nullable=True)
     user_agent = Column(String(500), nullable=True)
     signature_data = Column(Text, nullable=True)
+    signed_payload_hash_sha256 = Column(String(64), nullable=True)
+    decline_reason = Column(Text, nullable=True)
+    evidence_hash_sha256 = Column(String(64), nullable=True)
+    auth_method = Column(String(50), nullable=True)
+    signed_document_version = Column(Integer, nullable=True)
+    signed_document_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("documents.id", ondelete="SET NULL"),
+        nullable=True,
+    )
 
     request = relationship("SignatureRequest", back_populates="signature_records")
     signer = relationship("User", foreign_keys=[signer_id])
+    signed_document = relationship("Document", foreign_keys=[signed_document_id])

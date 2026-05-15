@@ -7,6 +7,13 @@ export type ApprovalStatus = "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED";
 export type PaymentMethod = "MPESA" | "BANK" | "CASH";
 export type PayrollStatus = "DRAFT" | "APPROVED" | "PAID" | "CANCELLED";
 
+export interface HRScopeFields {
+  company_id?: string | null;
+  branch_id?: string | null;
+  department_id?: string | null;
+  cost_center_id?: string | null;
+}
+
 export interface EmployeeShort {
   id: string;
   employee_code: string;
@@ -16,20 +23,24 @@ export interface EmployeeShort {
   status: EmployeeStatus;
 }
 
-export interface Employee extends EmployeeShort {
+export interface Employee extends EmployeeShort, HRScopeFields {
   phone: string | null;
   email: string | null;
   hire_date: string;
   user_id: string | null;
+  manager_employee_id?: string | null;
   payment_method: PaymentMethod | null;
   mpesa_number: string | null;
   bank_account: string | null;
   salary_grade: string | null;
+  terminated_at?: string | null;
+  archived_at?: string | null;
+  archived_by_id?: string | null;
   created_at: string;
   updated_at: string;
 }
 
-export interface ShiftTemplate {
+export interface ShiftTemplate extends HRScopeFields {
   id: string;
   name: string;
   start_time: string;
@@ -40,7 +51,7 @@ export interface ShiftTemplate {
   created_at: string;
 }
 
-export interface ShiftAssignment {
+export interface ShiftAssignment extends HRScopeFields {
   id: string;
   employee_id: string;
   shift_template_id: string;
@@ -52,7 +63,7 @@ export interface ShiftAssignment {
   employee: EmployeeShort | null;
 }
 
-export interface AttendanceRecord {
+export interface AttendanceRecord extends HRScopeFields {
   id: string;
   employee_id: string;
   attendance_date: string;
@@ -64,7 +75,7 @@ export interface AttendanceRecord {
   employee: EmployeeShort | null;
 }
 
-export interface LeaveRequest {
+export interface LeaveRequest extends HRScopeFields {
   id: string;
   employee_id: string;
   leave_type: LeaveType;
@@ -78,7 +89,7 @@ export interface LeaveRequest {
   employee: EmployeeShort | null;
 }
 
-export interface LeaveBalance {
+export interface LeaveBalance extends HRScopeFields {
   id: string;
   employee_id: string;
   leave_type: LeaveType;
@@ -88,7 +99,7 @@ export interface LeaveBalance {
   remaining: number;
 }
 
-export interface PayrollPeriod {
+export interface PayrollPeriod extends HRScopeFields {
   id: string;
   period_month: number;
   period_year: number;
@@ -97,7 +108,7 @@ export interface PayrollPeriod {
   approved_by_id: string | null;
 }
 
-export interface PayrollLine {
+export interface PayrollLine extends HRScopeFields {
   id: string;
   period_id: string;
   employee_id: string;

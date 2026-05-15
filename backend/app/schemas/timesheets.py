@@ -82,10 +82,14 @@ class ApprovalLogOut(BaseModel):
 
 class TimesheetCreate(BaseModel):
     employee_id: str
+    hr_employee_id: Optional[UUID] = None
+    company_id: Optional[UUID] = None
+    branch_id: Optional[UUID] = None
     employee_name: Optional[str] = None
     department_id: Optional[str] = None
     department_name: Optional[str] = None
     manager_id: Optional[str] = None
+    manager_employee_id: Optional[UUID] = None
     manager_name: Optional[str] = None
     period_start: date
     period_end: date
@@ -104,28 +108,36 @@ class TimesheetSubmit(BaseModel):
 
 class TimesheetApprove(BaseModel):
     approver_id: Optional[str] = None
+    approver_user_id: Optional[UUID] = None
     approver_name: Optional[str] = None
     comments: Optional[str] = None
 
 
 class TimesheetReject(BaseModel):
     approver_id: Optional[str] = None
+    approver_user_id: Optional[UUID] = None
     approver_name: Optional[str] = None
     comments: str
 
 
 class TimesheetFinalize(BaseModel):
     finalized_by: Optional[str] = None
+    finalized_by_id: Optional[UUID] = None
+    payroll_run_id: Optional[UUID] = None
     comments: Optional[str] = None
 
 
 class TimesheetOut(BaseModel):
     timesheet_id: UUID
     employee_id: str
+    hr_employee_id: Optional[UUID]
+    company_id: Optional[UUID]
+    branch_id: Optional[UUID]
     employee_name: Optional[str]
     department_id: Optional[str]
     department_name: Optional[str]
     manager_id: Optional[str]
+    manager_employee_id: Optional[UUID]
     manager_name: Optional[str]
     period_start: date
     period_end: date
@@ -136,6 +148,8 @@ class TimesheetOut(BaseModel):
     submitted_at: Optional[datetime]
     approved_by: Optional[str]
     approved_at: Optional[datetime]
+    payroll_run_id: Optional[UUID]
+    finalized_by_id: Optional[UUID]
     finalized_at: Optional[datetime]
     rejection_count: int
     notes: Optional[str]

@@ -2,22 +2,32 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select, or_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.core.deps import get_current_user, get_db
+from app.core.deps import get_current_user, get_db, require_permission
 from app.models.knowledge_base import KBCategory, KBArticle, KBArticleRevision
+from app.services.knowledge_base_service import ensure_article_action_allowed
 
 router = APIRouter()
 
 
+def _date_or_none(value):
+    if not value:
+        return None
+    if isinstance(value, date):
+        return value
+    return date.fromisoformat(str(value))
+
+
 # ── Categories ────────────────────────────────────────────────────────────────
 
-@router.get("/categories", response_model=list)
+@router.get("/categories", response_model=list,
+            dependencies=[Depends(require_permission("knowledge_base", "view"))])
 async def list_categories(
     parent_id: Optional[uuid.UUID] = None,
     db: AsyncSession = Depends(get_db),
@@ -50,7 +60,8 @@ async def list_categories(
     return rows
 
 
-@router.post("/categories", status_code=201)
+@router.post("/categories", status_code=201,
+             dependencies=[Depends(require_permission("knowledge_base", "create"))])
 async def create_category(body: dict, db: AsyncSession = Depends(get_db), _=Depends(get_current_user)):
     cat = KBCategory(
         slug=body["slug"],
@@ -66,7 +77,8 @@ async def create_category(body: dict, db: AsyncSession = Depends(get_db), _=Depe
     return {"id": str(cat.id), "slug": cat.slug, "name": cat.name}
 
 
-@router.patch("/categories/{cat_id}")
+@router.patch("/categories/{cat_id}",
+              dependencies=[Depends(require_permission("knowledge_base", "edit"))])
 async def update_category(
     cat_id: uuid.UUID, body: dict,
     db: AsyncSession = Depends(get_db), _=Depends(get_current_user),
@@ -84,7 +96,8 @@ async def update_category(
 
 # ── Articles ──────────────────────────────────────────────────────────────────
 
-@router.get("/articles", response_model=list)
+@router.get("/articles", response_model=list,
+            dependencies=[Depends(require_permission("knowledge_base", "view"))])
 async def list_articles(
     category_id: Optional[uuid.UUID] = None,
     status: Optional[str] = None,
@@ -132,7 +145,8 @@ async def list_articles(
     return rows
 
 
-@router.get("/articles/{article_id}", response_model=dict)
+@router.get("/articles/{article_id}", response_model=dict,
+            dependencies=[Depends(require_permission("knowledge_base", "view"))])
 async def get_article(
     article_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
@@ -169,7 +183,8 @@ async def get_article(
     }
 
 
-@router.post("/articles", status_code=201)
+@router.post("/articles", status_code=201,
+             dependencies=[Depends(require_permission("knowledge_base", "create"))])
 async def create_article(
     body: dict,
     db: AsyncSession = Depends(get_db),
@@ -187,9 +202,18 @@ async def create_article(
         last_editor_id=current_user.id,
         is_featured=body.get("is_featured", False),
         access_level=body.get("access_level", "all"),
+        is_internal_only=body.get("is_internal_only", True),
+        company_id=uuid.UUID(body["company_id"]) if body.get("company_id") else None,
+        department_id=body.get("department_id"),
+        factory_id=body.get("factory_id"),
+        module_key=body.get("module_key"),
+        review_due_date=_date_or_none(body.get("review_due_date")),
+        access_scope_type=body.get("access_scope_type"),
+        access_scope_id=body.get("access_scope_id"),
     )
     if article.status == "PUBLISHED":
         article.published_at = datetime.utcnow()
+        article.published_by_id = current_user.id
     db.add(article)
     await db.flush()
     rev = KBArticleRevision(
@@ -206,7 +230,8 @@ async def create_article(
     return {"id": str(article.id), "slug": article.slug, "status": article.status}
 
 
-@router.patch("/articles/{article_id}")
+@router.patch("/articles/{article_id}",
+              dependencies=[Depends(require_permission("knowledge_base", "edit"))])
 async def update_article(
     article_id: uuid.UUID,
     body: dict,
@@ -217,14 +242,29 @@ async def update_article(
     a = r.scalar_one_or_none()
     if not a:
         raise HTTPException(404, "Article not found")
+    ensure_article_action_allowed(current_user, a, "edit")
     content_changed = False
     if "content_md" in body and body["content_md"] != a.content_md:
         content_changed = True
-    for k in ["title", "summary", "content_md", "category_id", "tags", "status", "is_featured", "access_level"]:
+    for k in [
+        "title", "summary", "content_md", "category_id", "tags", "status",
+        "is_featured", "access_level", "is_internal_only", "company_id",
+        "department_id", "factory_id", "module_key", "review_due_date",
+        "access_scope_type", "access_scope_id",
+    ]:
         if k in body:
-            setattr(a, k, body[k])
+            if k in {"category_id", "company_id"} and body[k]:
+                setattr(a, k, uuid.UUID(body[k]))
+            elif k == "review_due_date":
+                setattr(a, k, _date_or_none(body[k]))
+            else:
+                setattr(a, k, body[k])
     if body.get("status") == "PUBLISHED" and not a.published_at:
         a.published_at = datetime.utcnow()
+        a.published_by_id = current_user.id
+    if body.get("status") == "ARCHIVED":
+        a.archived_at = datetime.utcnow()
+        a.archived_by_id = current_user.id
     a.last_editor_id = current_user.id
     if content_changed:
         a.version = (a.version or 1) + 1
@@ -241,22 +281,25 @@ async def update_article(
     return {"id": str(a.id), "slug": a.slug, "version": a.version, "status": a.status}
 
 
-@router.delete("/articles/{article_id}")
+@router.delete("/articles/{article_id}",
+               dependencies=[Depends(require_permission("knowledge_base", "delete"))])
 async def delete_article(
     article_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    current_user=Depends(get_current_user),
 ):
     r = await db.execute(select(KBArticle).where(KBArticle.id == article_id))
     a = r.scalar_one_or_none()
     if not a:
         raise HTTPException(404, "Article not found")
+    ensure_article_action_allowed(current_user, a, "delete")
     a.status = "ARCHIVED"
     await db.commit()
     return {"ok": True}
 
 
-@router.get("/articles/{article_id}/revisions", response_model=list)
+@router.get("/articles/{article_id}/revisions", response_model=list,
+            dependencies=[Depends(require_permission("knowledge_base", "view"))])
 async def list_revisions(
     article_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
@@ -283,7 +326,8 @@ async def list_revisions(
 
 # ── Search ────────────────────────────────────────────────────────────────────
 
-@router.get("/search", response_model=list)
+@router.get("/search", response_model=list,
+            dependencies=[Depends(require_permission("knowledge_base", "view"))])
 async def search_kb(
     q: str = Query(..., min_length=2),
     limit: int = Query(20, ge=1, le=50),
@@ -317,7 +361,7 @@ async def search_kb(
 
 # ── Dashboard / Stats ─────────────────────────────────────────────────────────
 
-@router.get("/stats")
+@router.get("/stats", dependencies=[Depends(require_permission("knowledge_base", "view"))])
 async def kb_stats(db: AsyncSession = Depends(get_db), _=Depends(get_current_user)):
     total_r = await db.execute(select(func.count()).select_from(KBArticle))
     published_r = await db.execute(
