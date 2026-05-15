@@ -1,7 +1,7 @@
 # TASKS
 
 ## Current Phase
-PHASE 3 - High-importance operational modules is in GAP-012 Document Management and Internal Knowledge System.
+PHASE 5 - FMCG-specific and regulatory polish. Currently on GAP-020A: Consumer Complaint and Recall Linkage.
 
 ## Execution Rules
 - Always read this file before starting work.
