@@ -34,7 +34,11 @@ async def _database_permission_codes(db: AsyncSession) -> set[str]:
     return set(result.scalars().all())
 
 
-@router.get("/manifest")
+@router.get(
+    "/manifest",
+    summary="Module manifest for authenticated user",
+    description="Returns the list of ERP modules this user has access to, including permission codes, route prefix, sidebar group, and AI mode. Frontend uses this to build sidebar navigation and permission guards.",
+)
 async def get_module_manifest(
     current_user=Depends(get_current_user),
     db: AsyncSession = Depends(get_db),

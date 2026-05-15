@@ -31,7 +31,17 @@ def _ip(request: Request) -> str | None:
     )
 
 
-@router.post("/login", response_model=LoginResponse)
+@router.post(
+    "/login",
+    response_model=LoginResponse,
+    summary="Authenticate user",
+    description=(
+        "Authenticate with username and password. Returns a JWT access token and user profile. "
+        "If 2FA is enabled the response instead returns a `tfa_session_id` — "
+        "pass this to `POST /auth/2fa/verify` to complete login. "
+        "Subject to IP and username rate limiting; repeated failures trigger a lock-out."
+    ),
+)
 async def login(
     request: Request,
     response: Response,
@@ -144,7 +154,7 @@ async def login(
     )
 
 
-@router.post("/logout")
+@router.post("/logout", summary="Revoke access token", description="Adds the current JWT to the token blocklist. The token is invalid for all subsequent requests until it expires naturally.")
 async def logout(
     request: Request,
     response: Response,
@@ -177,7 +187,7 @@ async def logout(
     return {"detail": "Logged out successfully"}
 
 
-@router.get("/me", response_model=UserRead)
+@router.get("/me", response_model=UserRead, summary="Current user profile", description="Returns the authenticated user's profile, roles, permission codes, effective modules, and access scopes. Use this to bootstrap frontend auth context.")
 async def get_me(current_user=Depends(get_current_user)):
     payload = UserRead.model_validate(current_user).model_dump()
     payload["modules"] = get_effective_modules(current_user)

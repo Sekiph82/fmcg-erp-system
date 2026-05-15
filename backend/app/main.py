@@ -60,6 +60,32 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
+    description=(
+        "## FMCG ERP REST API\n\n"
+        "Full-suite enterprise resource planning API for fast-moving consumer goods companies. "
+        "Covers inventory, sales, procurement, manufacturing, finance, HR, quality, CRM, "
+        "logistics, reporting, and notifications.\n\n"
+        "### Authentication\n"
+        "All protected endpoints require a Bearer token obtained from `POST /api/v1/auth/login`. "
+        "Include the token as `Authorization: Bearer <token>`.\n\n"
+        "### Permissions\n"
+        "Access is role-based. Each endpoint declares the required permission code "
+        "(e.g. `inventory.view`, `sales.create`). See `GET /api/v1/modules/manifest` "
+        "for the full permission code registry.\n\n"
+        "### Rate Limits\n"
+        "Default: 1000 requests/minute per authenticated user. "
+        "Bulk endpoints may have lower individual limits.\n\n"
+        "### Environments\n"
+        "- Development: `http://localhost:8000`\n"
+        "- Staging/Production: configured via `BACKEND_CORS_ORIGINS`"
+    ),
+    contact={
+        "name": "ERP Support",
+        "email": "support@erp.internal",
+    },
+    license_info={
+        "name": "Proprietary",
+    },
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
     docs_url="/docs",
     redoc_url="/redoc",

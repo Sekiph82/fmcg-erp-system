@@ -258,5 +258,21 @@ class RBAIRecAck(BaseModel):
     actioned_by: Optional[str] = None
 
 
+class ScheduleRunLogRead(BaseModel):
+    run_id: UUID
+    schedule_id: UUID
+    report_id: UUID
+    started_at: datetime
+    completed_at: Optional[datetime] = None
+    status: str
+    row_count: Optional[int] = None
+    export_format: Optional[str] = None
+    recipients_sent: Optional[str] = None
+    error_message: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
 ReportOut.model_rebuild()
 DashboardOut.model_rebuild()
