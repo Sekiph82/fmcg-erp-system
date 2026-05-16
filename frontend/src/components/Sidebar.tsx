@@ -11,6 +11,7 @@ import {
   NAV_CONFIG,
   NavSection,
   NavStandaloneLink,
+  NavWorkspaceLink,
   NavClusterHeader,
   isItemActive,
 } from "./nav-config";
@@ -35,6 +36,7 @@ interface ClusterData {
   clusterId: string;
   label: string;
   sections: NavSection[];
+  workspaces: NavWorkspaceLink[];
 }
 
 type Group =
@@ -51,10 +53,12 @@ const GROUPS: Group[] = (() => {
       result.push({ kind: "standalone", entry: entry as NavStandaloneLink });
     } else if (entry.type === "cluster-header") {
       const ch = entry as NavClusterHeader;
-      cur = { clusterId: ch.id, label: ch.label, sections: [] };
+      cur = { clusterId: ch.id, label: ch.label, sections: [], workspaces: [] };
       result.push({ kind: "cluster", data: cur });
     } else if (entry.type === "section" && cur) {
       cur.sections.push(entry as NavSection);
+    } else if (entry.type === "workspace" && cur) {
+      cur.workspaces.push(entry as NavWorkspaceLink);
     }
   }
 
@@ -65,6 +69,11 @@ const GROUPS: Group[] = (() => {
 function findActive(pathname: string): { clusterId: string | null; sectionId: string | null } {
   for (const group of GROUPS) {
     if (group.kind !== "cluster") continue;
+    for (const ws of group.data.workspaces) {
+      if (isItemActive(ws.href, pathname)) {
+        return { clusterId: group.data.clusterId, sectionId: ws.id };
+      }
+    }
     for (const section of group.data.sections) {
       if (section.items.some((item) => isItemActive(item.href, pathname))) {
         return { clusterId: group.data.clusterId, sectionId: section.id };
@@ -322,22 +331,26 @@ function ClusterAccordion({
           : false
     )
   );
-  if (visibleSections.length === 0) return null;
-
-  const hasActiveChild = visibleSections.some((sec) =>
-    sec.items.some(
-      (item) => (
-        item.permission
-          ? hasPermission(item.permission)
-          : sec.permission
-            ? hasPermission(sec.permission)
-            : false
-      ) && isItemActive(item.href, pathname)
-    )
+  const visibleWorkspaces = data.workspaces.filter(
+    (ws) => !ws.permission || hasPermission(ws.permission)
   );
+  if (visibleSections.length === 0 && visibleWorkspaces.length === 0) return null;
 
-  // Use the first section's icon as representative cluster icon
-  const clusterIcon = visibleSections[0]?.icon;
+  const hasActiveChild =
+    visibleSections.some((sec) =>
+      sec.items.some(
+        (item) => (
+          item.permission
+            ? hasPermission(item.permission)
+            : sec.permission
+              ? hasPermission(sec.permission)
+              : false
+        ) && isItemActive(item.href, pathname)
+      )
+    ) || visibleWorkspaces.some((ws) => isItemActive(ws.href, pathname));
+
+  // Icon: prefer first section, fall back to first workspace
+  const clusterIcon = visibleSections[0]?.icon ?? visibleWorkspaces[0]?.icon;
 
   // ── Collapsed icon rail (sidebar fully collapsed) ─────────────────────────
   if (collapsed) {
@@ -419,6 +432,31 @@ function ClusterAccordion({
       >
         <div style={{ overflow: "hidden" }}>
           <div className="pb-1 pt-0.5 ml-[3px] border-l border-white/[0.06]">
+            {visibleWorkspaces.map((ws) => {
+              const active = isItemActive(ws.href, pathname);
+              return (
+                <Link
+                  key={ws.id}
+                  href={ws.href}
+                  onClick={onNavigate}
+                  data-testid={`sidebar-link-${testIdPart(ws.label)}`}
+                  className={[
+                    "flex items-center gap-2 rounded-lg px-2.5 py-[7px] pl-[14px]",
+                    "text-[12px] font-medium transition-all duration-150",
+                    active
+                      ? "bg-cyan-500/[0.12] text-cyan-100 border border-cyan-500/[0.30]"
+                      : "text-slate-400 hover:bg-white/[0.045] hover:text-slate-200 border border-transparent",
+                  ].join(" ")}
+                  style={active ? {
+                    boxShadow: "0 0 12px rgba(0,180,255,0.25), inset 0 1px 0 rgba(0,200,255,0.08)",
+                    textShadow: "0 0 8px rgba(0,200,255,0.30)",
+                  } : undefined}
+                >
+                  <span className={active ? "text-cyan-300 shrink-0" : "text-slate-500 shrink-0"}>{ws.icon}</span>
+                  {ws.label}
+                </Link>
+              );
+            })}
             {visibleSections.map((section) => (
               <SectionAccordion
                 key={section.id}
