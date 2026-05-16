@@ -275,8 +275,8 @@ export const NAV_CONFIG: NavEntry[] = [
       { label: "Water",               tab: "water" },
       { label: "ESG",                 tab: "esg" },
       { label: "IoT",                 tab: "iot" },
-      { label: "Alarms",              tab: "alarms" },
-      { label: "KPI Center",          tab: "kpi" },
+      { label: "Alarms",              tab: "alarm-center" },
+      { label: "KPI Center",          tab: "kpi-center" },
     ]}),
 
   // ── Logistics ───────────────────────────────────────────────────────────────
@@ -316,7 +316,6 @@ export const NAV_CONFIG: NavEntry[] = [
     { permission: "documents.view", searchHints: [
       { label: "Knowledge Base",      tab: "knowledge-base" },
       { label: "E-Signatures",        tab: "esign" },
-      { label: "Contracts",           tab: "contracts" },
     ]}),
 
   ws("communication","Communication",  "/dashboard/communication",
@@ -349,7 +348,6 @@ export const NAV_CONFIG: NavEntry[] = [
     { permission: "analytics.view", searchHints: [
       { label: "Report Builder",      tab: "report-builder" },
       { label: "Saved Reports",       tab: "reports" },
-      { label: "Market Intelligence", tab: "market-intel" },
     ]}),
 
   // ── Administration ───────────────────────────────────────────────────────────

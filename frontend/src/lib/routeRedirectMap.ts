@@ -178,8 +178,23 @@ export const EXACT_REDIRECTS: Record<string, RedirectTarget> = {
   "/dashboard/promotions/analytics":            { pathname: "/dashboard/marketing", tab: "promotions-schemes" },
   "/dashboard/promotions/ai":                   { pathname: "/dashboard/marketing", tab: "promotions-schemes" },
   "/dashboard/market-intelligence":             { pathname: "/dashboard/marketing", tab: "market-intel" },
+  // Marketing workspace child routes
+  "/dashboard/marketing/campaigns":             { pathname: "/dashboard/marketing", tab: "campaigns" },
+  "/dashboard/marketing/ads":                   { pathname: "/dashboard/marketing", tab: "ads" },
+  "/dashboard/marketing/brand-spend":           { pathname: "/dashboard/marketing", tab: "brand-spend" },
+  "/dashboard/marketing/crm":                   { pathname: "/dashboard/marketing", tab: "overview" },
+  "/dashboard/marketing/ecommerce":             { pathname: "/dashboard/marketing", tab: "ecommerce" },
+  "/dashboard/marketing/influencers":           { pathname: "/dashboard/marketing", tab: "influencers" },
+  "/dashboard/marketing/promotions":            { pathname: "/dashboard/marketing", tab: "promotions" },
+  "/dashboard/marketing/segments":              { pathname: "/dashboard/marketing", tab: "segments" },
+  "/dashboard/marketing/social-media":          { pathname: "/dashboard/marketing", tab: "social-media" },
+  "/dashboard/marketing/surveys":               { pathname: "/dashboard/marketing", tab: "overview" },
+  "/dashboard/marketing/trade-spend":           { pathname: "/dashboard/marketing", tab: "trade-spend" },
+  "/dashboard/marketing/visits":                { pathname: "/dashboard/marketing", tab: "visits" },
+  "/dashboard/marketing/ai-optimizer":          { pathname: "/dashboard/marketing", tab: "analytics" },
 
   // ── Finance ───────────────────────────────────────────────────────────────
+  "/dashboard/finance/accounting":              { pathname: "/dashboard/finance", tab: "accounting" },
   "/dashboard/bank-reconciliation":             { pathname: "/dashboard/finance", tab: "bank-recon" },
   "/dashboard/bank-reconciliation/import":      { pathname: "/dashboard/finance", tab: "bank-recon" },
   "/dashboard/bank-reconciliation/statements":  { pathname: "/dashboard/finance", tab: "bank-recon" },
@@ -247,6 +262,13 @@ export const EXACT_REDIRECTS: Record<string, RedirectTarget> = {
   "/dashboard/expenses/ai":                     { pathname: "/dashboard/hr", tab: "expenses" },
 
   // ── Production ─────────────────────────────────────────────────────────────
+  // Production workspace child routes
+  "/dashboard/production/advanced":             { pathname: "/dashboard/production", tab: "scheduling" },
+  "/dashboard/production/ai":                   { pathname: "/dashboard/production", tab: "plans" },
+  "/dashboard/production/orders":               { pathname: "/dashboard/production", tab: "orders" },
+  "/dashboard/production/plans":                { pathname: "/dashboard/production", tab: "plans" },
+  "/dashboard/production/shifts":               { pathname: "/dashboard/production", tab: "scheduling" },
+  "/dashboard/production/work-orders":          { pathname: "/dashboard/production", tab: "orders" },
   "/dashboard/production-execution":            { pathname: "/dashboard/production", tab: "execution" },
   "/dashboard/production-execution/work-orders":{ pathname: "/dashboard/production", tab: "execution" },
   "/dashboard/machine-ops":                     { pathname: "/dashboard/production", tab: "machine-ops" },
@@ -347,6 +369,10 @@ export const EXACT_REDIRECTS: Record<string, RedirectTarget> = {
   // ── Utilities ──────────────────────────────────────────────────────────────
   "/dashboard/iot":                             { pathname: "/dashboard/utility-management", tab: "iot" },
   "/dashboard/esg":                             { pathname: "/dashboard/utility-management", tab: "esg" },
+  // Utility-management workspace child routes
+  "/dashboard/utility-management/categories":   { pathname: "/dashboard/utility-management", tab: "assets" },
+  "/dashboard/utility-management/kpi-center":   { pathname: "/dashboard/utility-management", tab: "kpi-center" },
+  "/dashboard/utility-management/reports":      { pathname: "/dashboard/utility-management", tab: "reports" },
   "/dashboard/esg/activities":                  { pathname: "/dashboard/utility-management", tab: "esg" },
   "/dashboard/esg/factors":                     { pathname: "/dashboard/utility-management", tab: "esg" },
   "/dashboard/esg/carbon":                      { pathname: "/dashboard/utility-management", tab: "esg" },

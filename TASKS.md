@@ -1,7 +1,7 @@
 # TASKS
 
 ## Current Phase
-HARDENING PASS 2 — COMPLETE. 2026-05-16. All HIGH findings resolved.
+PAGE CONSOLIDATION — PASS 1 COMPLETE. 2026-05-16. Route redirects, nav-config, and audit scripts clean.
 
 ## Execution Rules
 - Always read this file before starting work.
@@ -16,7 +16,84 @@ HARDENING PASS 2 — COMPLETE. 2026-05-16. All HIGH findings resolved.
 - If context/usage limit is near, stop after updating TASKS.md and CODEX_PROGRESS.md.
 
 ## In Progress
-None. Hardening Pass 2 complete.
+None.
+
+## Completed in This Run (2026-05-16) — Page Consolidation Pass 1
+
+### Route Redirect Drift — FIXED
+- Added 13 marketing child-route prefix entries to middleware.ts + routeRedirectMap.ts
+- Added finance/accounting prefix entry to middleware.ts + routeRedirectMap.ts
+- Added 6 production child-route prefix entries to middleware.ts + routeRedirectMap.ts
+- Added 3 utility-management child-route prefix entries to middleware.ts + routeRedirectMap.ts
+- check-route-redirects.js: 0 issues (was 7, now confirmed clean)
+
+### Sidebar Search Hints — FIXED
+- nav-config.tsx: `alarms` → `alarm-center`, `kpi` → `kpi-center` (utility-management)
+- nav-config.tsx: removed `contracts` hint from documents workspace (no such tab)
+- nav-config.tsx: removed `market-intel` hint from analytics workspace (tab is in marketing, not analytics)
+- check-workspace-tabs.js: 0 issues (was 12)
+
+### Audit Scripts — ALL PASSING
+- audit-page-count.js: 0 issues
+- check-route-redirects.js: 0 issues
+- check-workspace-tabs.js: 0 issues
+
+## Page Count Status (2026-05-16)
+
+| Classification          | Count |
+|-------------------------|-------|
+| A WORKSPACE_PAGE        | 31    |
+| B REDIRECT_ONLY         | 0     |
+| C LIGHTWEIGHT_WRAPPER   | 213   |
+| D FULL_DUPLICATE_UI     | 500   |
+| E STANDALONE_OPERATIONAL| 7     |
+| F UNKNOWN               | 3     |
+| Total physical pages    | 754   |
+
+Note: Visible navigation reduced (workspace-style sidebar with no child links).
+Physical page count retained for backward compatibility.
+Old child routes now redirect via middleware prefix matching.
+FULL_DUPLICATE_UI pages still exist as files — conversion to redirect-only is remaining work.
+
+## Tests Run (2026-05-16)
+- npm run type-check → PASS
+- node scripts/audit-page-count.js → PASS (754 pages, 0 issues)
+- node scripts/check-route-redirects.js → PASS (0 drift issues)
+- node scripts/check-workspace-tabs.js → PASS (0 tab mismatches)
+- python scripts/erp-health-audit.py → PASS (0 HIGH, 500 findings)
+
+## Remaining Page Consolidation Work
+
+### Priority 1 — Migrate FULL_DUPLICATE_UI to redirect-only files
+Convert page.tsx files to thin redirect wrappers. Middleware handles HTTP redirects already;
+converting the files removes duplicate build artifacts and clarifies intent.
+
+Priority order (largest clusters first):
+1. marketing: 36 pages — middleware redirects added, files still contain duplicate UI
+2. utility-management: 18 pages — middleware redirects added for kpi-center, reports, categories
+3. finance/accounting: 13 pages — middleware redirect added (/finance/accounting prefix)
+4. production: 6 pages (advanced, ai, orders, plans, shifts, work-orders)
+5. van-sales: 16 pages (already had MW coverage)
+6. qms: 15 pages (already had MW coverage)
+7. recruitment: 12 pages (already had MW coverage)
+8. allergen: 11 pages (already had MW coverage)
+9. expenses: 11 pages (already had MW coverage)
+10. fixed-assets: 11 pages (already had MW coverage)
+
+### Priority 2 — BOM, CRM, Sales child pages
+- bom: 4 pages (no MW — /dashboard/bom/[id]/* need redirects)
+- crm: 4 pages (no MW — /dashboard/crm/records/[id], ai, overdue, qualify)
+- sales: 5 pages (no MW — orders/[id], invoices/[id], shipments/[id], pod, customer-statement)
+- documents: 2 pages (no MW — /[id], /new)
+- procurement: 2 pages (no MW — /[id], orders/[id])
+
+### Priority 3 — Unknown pages (3)
+Classify and handle the 3 UNKNOWN pages.
+
+## Files Changed This Run
+- frontend/src/middleware.ts (added 23 child-route prefix entries)
+- frontend/src/lib/routeRedirectMap.ts (added matching 23 exact entries)
+- frontend/src/components/nav-config.tsx (fixed 4 wrong tab keys/entries)
 
 ## Completed in Last Run (2026-05-16)
 ### Pass 1

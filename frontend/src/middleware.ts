@@ -38,7 +38,22 @@ const REDIRECTS: Record<string, { p: string; t?: string; d?: string }> = {
   "/dashboard/tpm":                             { p: "/dashboard/marketing", t: "tpm" },
   "/dashboard/promotions":                      { p: "/dashboard/marketing", t: "promotions-schemes" },
   "/dashboard/market-intelligence":             { p: "/dashboard/marketing", t: "market-intel" },
+  // Marketing workspace child routes (prefix match covers /[id], /new, etc.)
+  "/dashboard/marketing/campaigns":             { p: "/dashboard/marketing", t: "campaigns" },
+  "/dashboard/marketing/ads":                   { p: "/dashboard/marketing", t: "ads" },
+  "/dashboard/marketing/brand-spend":           { p: "/dashboard/marketing", t: "brand-spend" },
+  "/dashboard/marketing/crm":                   { p: "/dashboard/marketing", t: "overview" },
+  "/dashboard/marketing/ecommerce":             { p: "/dashboard/marketing", t: "ecommerce" },
+  "/dashboard/marketing/influencers":           { p: "/dashboard/marketing", t: "influencers" },
+  "/dashboard/marketing/promotions":            { p: "/dashboard/marketing", t: "promotions" },
+  "/dashboard/marketing/segments":              { p: "/dashboard/marketing", t: "segments" },
+  "/dashboard/marketing/social-media":          { p: "/dashboard/marketing", t: "social-media" },
+  "/dashboard/marketing/surveys":               { p: "/dashboard/marketing", t: "overview" },
+  "/dashboard/marketing/trade-spend":           { p: "/dashboard/marketing", t: "trade-spend" },
+  "/dashboard/marketing/visits":                { p: "/dashboard/marketing", t: "visits" },
+  "/dashboard/marketing/ai-optimizer":          { p: "/dashboard/marketing", t: "analytics" },
   // Finance
+  "/dashboard/finance/accounting":              { p: "/dashboard/finance", t: "accounting" },
   "/dashboard/bank-reconciliation":             { p: "/dashboard/finance", t: "bank-recon" },
   "/dashboard/invoice-match":                   { p: "/dashboard/finance", t: "invoice-match" },
   "/dashboard/fixed-assets":                    { p: "/dashboard/finance", t: "fixed-assets" },
@@ -47,7 +62,14 @@ const REDIRECTS: Record<string, { p: string; t?: string; d?: string }> = {
   "/dashboard/tax":                             { p: "/dashboard/finance", t: "tax" },
   "/dashboard/bank-api":                        { p: "/dashboard/finance", t: "bank-api" },
   "/dashboard/expenses":                        { p: "/dashboard/hr", t: "expenses" },
-  // Production
+  // Production workspace child routes
+  "/dashboard/production/advanced":             { p: "/dashboard/production", t: "scheduling" },
+  "/dashboard/production/ai":                   { p: "/dashboard/production", t: "plans" },
+  "/dashboard/production/orders":               { p: "/dashboard/production", t: "orders" },
+  "/dashboard/production/plans":                { p: "/dashboard/production", t: "plans" },
+  "/dashboard/production/shifts":               { p: "/dashboard/production", t: "scheduling" },
+  "/dashboard/production/work-orders":          { p: "/dashboard/production", t: "orders" },
+  // Production sub-modules
   "/dashboard/production-execution":            { p: "/dashboard/production", t: "execution" },
   "/dashboard/machine-ops":                     { p: "/dashboard/production", t: "machine-ops" },
   "/dashboard/material-flow":                   { p: "/dashboard/production", t: "material-flow" },
@@ -72,6 +94,10 @@ const REDIRECTS: Record<string, { p: string; t?: string; d?: string }> = {
   // Utilities
   "/dashboard/iot":                             { p: "/dashboard/utility-management", t: "iot" },
   "/dashboard/esg":                             { p: "/dashboard/utility-management", t: "esg" },
+  // Utility-management workspace child routes
+  "/dashboard/utility-management/categories":   { p: "/dashboard/utility-management", t: "assets" },
+  "/dashboard/utility-management/kpi-center":   { p: "/dashboard/utility-management", t: "kpi-center" },
+  "/dashboard/utility-management/reports":      { p: "/dashboard/utility-management", t: "reports" },
   // Logistics
   "/dashboard/fleet":                           { p: "/dashboard/logistics", t: "fleet" },
   "/dashboard/logistics/containers":            { p: "/dashboard/logistics", t: "containers" },

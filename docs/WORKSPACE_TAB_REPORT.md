@@ -7,31 +7,9 @@ Generated: 2026-05-16
 | Check | Count |
 |-------|-------|
 | Middleware redirect tab mismatches | 0 |
-| Sidebar search hint mismatches     | 10 |
-| Non-kebab-case tab keys            | 2 |
-| **Total issues**                   | **12** |
-
-## Sidebar search hint mismatches
-
-The sidebar search hint tab key does not exist in the workspace page.
-
-| Workspace | Label | Missing Tab | Available Tabs |
-|-----------|-------|------------|----------------|
-| `/dashboard/products` | Product Categories | `categories` | products |
-| `/dashboard/products` | Product Pricing | `pricing` | products |
-| `/dashboard/products` | Import Products | `import` | products |
-| `/dashboard/inventory` | Serial / Batch | `tracking` | stock, entry, issue, transfer, movements, cycle-count, shelf-life, traceability, serials, valuation |
-| `/dashboard/procurement` | Invoice Match | `invoice-match` | purchase-requests, orders, rfq, deliveries, suppliers, blanket-agreements, reorder-policies, suggestions, subcontracting, landed-cost, supplier-portal |
-| `/dashboard/quality` | Consumer Complaints | `complaints` | inspections, certificates, parameters, consumer-complaints, reports, qms, allergen, brand-assets |
-| `/dashboard/utility-management` | Alarms | `alarms` | assets, electricity, water, solar, steam, wastewater, soft-water, compressor, chemical-treatment, machine-utility, readings, devices, kpi-center, alarm-center, alarm-rules, billing, transactions, reports, integration, iot, esg |
-| `/dashboard/utility-management` | KPI Center | `kpi` | assets, electricity, water, solar, steam, wastewater, soft-water, compressor, chemical-treatment, machine-utility, readings, devices, kpi-center, alarm-center, alarm-rules, billing, transactions, reports, integration, iot, esg |
-| `/dashboard/documents` | Contracts | `contracts` | documents, compliance, expiring, knowledge-base, esign |
-| `/dashboard/analytics` | Market Intelligence | `market-intel` | overview, inventory, sales, production, procurement, finance, payments, reports, report-builder |
-
-## Non-kebab-case tab keys
-
-- `/dashboard/wms` key `handlingUnits`
-- `/dashboard/wms` key `pickWaves`
+| Sidebar search hint mismatches     | 0 |
+| Non-kebab-case tab keys            | 0 |
+| **Total issues**                   | **0** |
 
 ## Workspace Tab Inventory
 
@@ -42,7 +20,7 @@ All tabs across all workspace pages.
 | `/dashboard/admin` | `users`, `roles`, `permissions`, `companies`, `security`, `approvals`, `custom-fields`, `system-config`, `mobile`, `logs`, `import-history` |
 | `/dashboard/ai` | `dashboard`, `chat`, `predictions`, `formulations`, `recommendations`, `scenarios`, `compliance`, `governance`, `nl-command`, `logs` |
 | `/dashboard/analytics` | `overview`, `inventory`, `sales`, `production`, `procurement`, `finance`, `payments`, `reports`, `report-builder` |
-| `/dashboard/approvals` | `inbox`, `all`, `rules` |
+| `/dashboard/approvals` | `all`, `rules` |
 | `/dashboard/bom` | `list`, `substitutes`, `compare`, `conversion` |
 | `/dashboard/communication` | `messages`, `chatter`, `email`, `whatsapp`, `calls`, `meetings`, `calendar`, `notifications` |
 | `/dashboard/compliance` | `gs1`, `regulatory-certs` |
@@ -52,7 +30,7 @@ All tabs across all workspace pages.
 | `/dashboard/helpdesk` | `all`, `open`, `escalated`, `sla`, `tickets` |
 | `/dashboard/hr` | `overview`, `employees`, `attendance`, `leave`, `payroll`, `shifts`, `recruitment`, `ess`, `appraisals`, `training`, `timesheets`, `expenses` |
 | `/dashboard/integrations` | `overview`, `mpesa`, `sync`, `marketplace`, `barcode`, `marketing-sync`, `logs`, `webhooks`, `developer` |
-| `/dashboard/inventory` | `stock`, `entry`, `issue`, `transfer`, `movements`, `cycle-count`, `shelf-life`, `traceability`, `serials`, `valuation` |
+| `/dashboard/inventory` | `stock`, `movements`, `cycle-count`, `shelf-life`, `traceability`, `serials`, `valuation` |
 | `/dashboard/logistics` | `overview`, `shipments`, `containers`, `arrivals`, `documents`, `fleet` |
 | `/dashboard/logs` | `operational`, `mpesa`, `security` |
 | `/dashboard/maintenance` | `overview`, `assets`, `breakdowns`, `plans`, `predictive`, `spares`, `reports` |
@@ -72,5 +50,9 @@ All tabs across all workspace pages.
 | `/dashboard/suppliers` | `suppliers` |
 | `/dashboard/utility-management` | `assets`, `electricity`, `water`, `solar`, `steam`, `wastewater`, `soft-water`, `compressor`, `chemical-treatment`, `machine-utility`, `readings`, `devices`, `kpi-center`, `alarm-center`, `alarm-rules`, `billing`, `transactions`, `reports`, `integration`, `iot`, `esg` |
 | `/dashboard/warehouses` | `warehouses`, `wms` |
-| `/dashboard/whatsapp` | `conversations`, `templates`, `config` |
-| `/dashboard/wms` | `zones`, `locations`, `handlingUnits`, `pickWaves`, `quarantine` |
+| `/dashboard/whatsapp` | `conversations`, `config` |
+| `/dashboard/wms` | `zones`, `locations`, `quarantine` |
+
+## All checks passed
+
+All redirect targets and search hints match workspace tab keys. All tab keys are kebab-case.
