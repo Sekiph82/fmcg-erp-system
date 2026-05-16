@@ -61,12 +61,26 @@ async def _get_or_404(db: AsyncSession, company_id: uuid.UUID) -> Company:
     return c
 
 
+async def _check_company_access(db: AsyncSession, user: User, company_id: uuid.UUID) -> None:
+    """Raise 403 if user has no UserCompanyAccess row and is not superuser."""
+    if user.is_superuser:
+        return
+    access = (await db.execute(
+        select(UserCompanyAccess).where(
+            UserCompanyAccess.user_id == user.id,
+            UserCompanyAccess.company_id == company_id,
+        )
+    )).scalar_one_or_none()
+    if not access:
+        raise HTTPException(403, "No access to this company")
+
+
 # ── Companies ─────────────────────────────────────────────────────────────────
 
 @router.get("/", response_model=List[CompanyRead])
 async def list_companies(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("company", "view")),
 ):
     """List companies the current user has access to. Superusers see all."""
     if current_user.is_superuser:
@@ -81,12 +95,11 @@ async def list_companies(
     return [await _build_company_read(db, c) for c in companies]
 
 
-@router.post("/", response_model=CompanyRead, status_code=201,
-             dependencies=[Depends(require_permission("admin", "manage"))])
+@router.post("/", response_model=CompanyRead, status_code=201)
 async def create_company(
     body: CompanyCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("company", "create")),
 ):
     existing = (await db.execute(
         select(Company).where(Company.short_code == body.short_code)
@@ -115,20 +128,21 @@ async def create_company(
 async def get_company(
     company_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("company", "view")),
 ):
+    await _check_company_access(db, current_user, company_id)
     c = await _get_or_404(db, company_id)
     return await _build_company_read(db, c)
 
 
-@router.patch("/{company_id}", response_model=CompanyRead,
-              dependencies=[Depends(require_permission("admin", "manage"))])
+@router.patch("/{company_id}", response_model=CompanyRead)
 async def update_company(
     company_id: uuid.UUID,
     body: CompanyUpdate,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("company", "edit")),
 ):
+    await _check_company_access(db, current_user, company_id)
     c = await _get_or_404(db, company_id)
     for k, v in body.model_dump(exclude_none=True).items():
         setattr(c, k, v)
@@ -141,7 +155,7 @@ async def update_company(
 async def set_default_company(
     company_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("company", "view")),
 ):
     """Set this company as the current user's default."""
     access = (await db.execute(
@@ -171,8 +185,9 @@ async def set_default_company(
 async def list_branches(
     company_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("company", "view")),
 ):
+    await _check_company_access(db, current_user, company_id)
     q = select(Branch).where(Branch.company_id == company_id).order_by(Branch.name)
     return [BranchRead.model_validate(b) for b in (await db.execute(q)).scalars().all()]
 
@@ -182,8 +197,9 @@ async def add_branch(
     company_id: uuid.UUID,
     body: BranchCreate,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("company", "edit")),
 ):
+    await _check_company_access(db, current_user, company_id)
     await _get_or_404(db, company_id)
     branch = Branch(**body.model_dump(), company_id=company_id)
     db.add(branch)
@@ -197,7 +213,7 @@ async def update_branch(
     branch_id: uuid.UUID,
     body: BranchCreate,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    _=Depends(require_permission("company", "edit")),
 ):
     branch = await db.get(Branch, branch_id)
     if not branch:
@@ -215,8 +231,9 @@ async def update_branch(
 async def list_company_users(
     company_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("company", "manage")),
 ):
+    await _check_company_access(db, current_user, company_id)
     q = select(UserCompanyAccess).options(selectinload(UserCompanyAccess.user)).where(
         UserCompanyAccess.company_id == company_id
     )
@@ -231,14 +248,14 @@ async def list_company_users(
     return result
 
 
-@router.post("/{company_id}/users", response_model=UserAccessRead, status_code=201,
-             dependencies=[Depends(require_permission("admin", "manage"))])
+@router.post("/{company_id}/users", response_model=UserAccessRead, status_code=201)
 async def grant_access(
     company_id: uuid.UUID,
     body: GrantUserAccess,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("company", "manage")),
 ):
+    await _check_company_access(db, current_user, company_id)
     await _get_or_404(db, company_id)
     existing = (await db.execute(
         select(UserCompanyAccess).where(
@@ -276,14 +293,14 @@ async def grant_access(
     return row
 
 
-@router.delete("/{company_id}/users/{user_id}", status_code=204,
-               dependencies=[Depends(require_permission("admin", "manage"))])
+@router.delete("/{company_id}/users/{user_id}", status_code=204)
 async def revoke_access(
     company_id: uuid.UUID,
     user_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("company", "manage")),
 ):
+    await _check_company_access(db, current_user, company_id)
     access = (await db.execute(
         select(UserCompanyAccess).where(
             UserCompanyAccess.company_id == company_id,
@@ -302,9 +319,10 @@ async def revoke_access(
 async def company_summary(
     company_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("company", "view")),
 ):
     """Aggregated KPI snapshot for a company (best-effort from shared data)."""
+    await _check_company_access(db, current_user, company_id)
     c = await _get_or_404(db, company_id)
 
     branch_count = (await db.execute(
@@ -320,10 +338,6 @@ async def company_summary(
     from app.models.master import Product, Warehouse
     from app.models.procurement import PurchaseOrder, POStatus
     from app.models.sales import SalesOrder, SOStatus
-
-    total_budgeted = (await db.execute(
-        select(func.coalesce(func.sum(Budget.lines), Decimal("0")))
-    )).scalar() or Decimal("0")
 
     product_count = (await db.execute(
         select(func.count(Product.id)).where(Product.is_active.is_(True))

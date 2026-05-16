@@ -1,13 +1,13 @@
 # CODEX PROGRESS
 
 ## Last Updated
-2026-05-16T12:00:00+03:00
+2026-05-16T14:30:00+03:00
 
 ## Last Completed Task
-GAP-024L: Final checks complete - AI Agent Governance and Prompt Registry. GAP-024 is complete.
+GAP-025L: Final checks complete — Multi-Company / Multi-Branch / Franchise Scaling. GAP-025 is complete.
 
 ## Current Working Task
-GAP-025A: Audit next gap (check TASKS.md roadmap for next unimplemented gap).
+GAP-028L: Run checks and record result: Full User Manual Generation. (GAP-026/027 already DONE; GAP-028K BLOCKED — skip per user override.)
 
 ## Alembic Migration Chain (This Worktree)
 - `20260511_0010` - Enterprise Accounting Core
@@ -22,7 +22,8 @@ GAP-025A: Audit next gap (check TASKS.md roadmap for next unimplemented gap).
 - `20260516_0010` - NPD Formula Governance Reconciliation
 - `20260516_0020` - IoT Machine Streaming Reconciliation (GAP-022C)
 - `20260516_0030` - Maintenance Predictive Reconciliation (GAP-023C)
-- `20260516_0040` - AI Prompt Registry Reconciliation (GAP-024C, current head)
+- `20260516_0040` - AI Prompt Registry Reconciliation (GAP-024C)
+- `20260516_0050` - Multi-Company Warehouse Reconciliation (GAP-025C, current head)
 
 ## Completed GAPs In This Worktree Slice
 | GAP | Title | Key Output |
@@ -41,29 +42,20 @@ GAP-025A: Audit next gap (check TASKS.md roadmap for next unimplemented gap).
 | GAP-022A-L | True IoT / Machine Streaming | IoT promoted to ModuleDefinition, 6 permissions, ORM aligned, endpoint guards, frontend guards, nav guard, migration 20260516_0020, 22 tests |
 | GAP-023A-L | ML-Based Predictive Maintenance | Reconciliation migration 20260516_0030, 7 permissions (predict/review_prediction/export added), endpoint guards, 7 page guards, 25 tests |
 | GAP-024A-L | AI Agent Governance and Prompt Registry | ai_prompts table (migration 20260516_0040), AIPrompt ORM, schemas/ai.py, resolve_prompt() helper, 5 prompt CRUD endpoints, ai.export+ai.configure permissions, 9 frontend page guards, 28 tests |
+| GAP-025A-L | Multi-Company / Multi-Branch / Franchise Scaling | company promoted to ModuleDefinition, 6 company.* permissions, _check_company_access helper, 12 endpoints rewritten with company.* guards, Warehouse company_id/branch_id (migration 20260516_0050), WarehouseBase schema fields, companies page RequirePermission guard, 22 tests |
 
-## Files Changed In This Turn (GAP-024)
-- `backend/alembic/versions/20260516_0040_ai_prompt_registry_reconciliation.py`
-- `backend/app/models/ai.py` (AIPrompt model added)
-- `backend/app/schemas/ai.py` (new file: AIPromptCreate/Update/Read)
-- `backend/app/services/ai_service.py` (resolve_prompt helper + AIPrompt import)
-- `backend/app/api/v1/endpoints/ai.py` (prompt CRUD endpoints, forecast-baseline guard fix)
-- `backend/app/core/module_registry.py` (ai configure action added)
-- `backend/app/db/seed.py` (ai.export, ai.configure tuples; admin/cto/ceo/coo grants)
-- `frontend/src/app/dashboard/ai/page.tsx`
-- `frontend/src/app/dashboard/ai/chat/page.tsx`
-- `frontend/src/app/dashboard/ai/compliance/page.tsx`
-- `frontend/src/app/dashboard/ai/formulations/page.tsx`
-- `frontend/src/app/dashboard/ai/governance/page.tsx`
-- `frontend/src/app/dashboard/ai/logs/page.tsx`
-- `frontend/src/app/dashboard/ai/nl-command/page.tsx`
-- `frontend/src/app/dashboard/ai/predictions/page.tsx`
-- `frontend/src/app/dashboard/ai/recommendations/page.tsx`
-- `frontend/src/app/dashboard/ai/scenarios/page.tsx`
-- `backend/tests/test_gap024_ai_agent_governance.py`
-- `docs/planning/GAP-024_AI_AGENT_GOVERNANCE_AUDIT.md`
-- `docs/planning/GAP-024_AI_AGENT_GOVERNANCE_SCHEMA_DESIGN.md`
-- `docs/planning/GAP-024_AI_AGENT_GOVERNANCE_IMPLEMENTATION_NOTES.md`
+## Files Changed In This Turn (GAP-025)
+- `backend/alembic/versions/20260516_0050_multi_company_warehouse_reconciliation.py`
+- `backend/app/models/master.py` (Warehouse company_id/branch_id columns added)
+- `backend/app/schemas/master.py` (WarehouseBase company_id/branch_id fields added)
+- `backend/app/core/module_registry.py` (company promoted to ModuleDefinition)
+- `backend/app/db/seed.py` (6 company.* permissions + role grants for admin/company_admin/ceo/coo/cto)
+- `backend/app/api/v1/endpoints/company.py` (full rewrite: company.* guards + _check_company_access)
+- `frontend/src/app/dashboard/companies/page.tsx` (RequirePermission company.view guard added)
+- `backend/tests/test_gap025_multi_company_branch.py`
+- `docs/planning/GAP-025_MULTI_COMPANY_BRANCH_AUDIT.md`
+- `docs/planning/GAP-025_MULTI_COMPANY_BRANCH_SCHEMA_DESIGN.md`
+- `docs/planning/GAP-025_MULTI_COMPANY_BRANCH_IMPLEMENTATION_NOTES.md`
 - `TASKS.md`
 - `CODEX_PROGRESS.md`
 
@@ -105,14 +97,12 @@ GAP-025A: Audit next gap (check TASKS.md roadmap for next unimplemented gap).
 - Added `backend/tests/test_gap021_npd_formula_governance.py` with 11 focused contract tests.
 - Added `docs/planning/GAP-021_NPD_FORMULA_GOVERNANCE_IMPLEMENTATION_NOTES.md`.
 
-## Tests/Checks Run This Turn (GAP-024)
-- `py_compile` on all GAP-024 files (migration, model, schemas, service, endpoints, registry, seed, tests) - all passed.
-- `alembic heads` - single head `20260516_0040` confirmed.
-- `alembic upgrade 20260516_0040 --sql` - offline SQL passes, includes ai_prompts CREATE TABLE.
-- `import app.api.v1.endpoints.ai, app.models.ai, app.schemas.ai, app.services.ai_service, app.core.module_registry, app.db.seed` - all imports ok.
-- `pytest tests\test_gap024_ai_agent_governance.py -q` - passed, 28 tests.
-- `npm.cmd run type-check` - passed after all 9 AI page guard updates.
-- `npm.cmd run lint` - passed with no warnings/errors.
+## Tests/Checks Run This Turn (GAP-025)
+- `py_compile` on 7 GAP-025 files (migration, master model, master schema, module_registry, seed, company endpoints, company model) - all passed.
+- `alembic heads` - single head `20260516_0050` confirmed.
+- `pytest tests/test_gap025_multi_company_branch.py -q` - passed, 22 tests.
+- `npm.cmd run type-check` - passed (no type errors).
+- `npm.cmd run lint --max-warnings=0` - passed with no warnings/errors.
 
 ## Known Blockers
 - Docker daemon unavailable in the recent session context, so live `alembic upgrade head` remains blocked when migrations are involved.

@@ -162,6 +162,8 @@ class WarehouseBase(BaseModel):
     country: Optional[str] = None
     capacity_sqm: Optional[Decimal] = None
     is_active: bool = True
+    company_id: Optional[uuid.UUID] = None
+    branch_id: Optional[uuid.UUID] = None
 
 
 class WarehouseCreate(WarehouseBase):

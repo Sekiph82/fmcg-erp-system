@@ -386,6 +386,17 @@ MODULE_DEFINITIONS: tuple[ModuleDefinition, ...] = (
         ai_mode=MODULE_AI_MODES.get("iot", AIMode.RULE_BASED),
         critical=False,
     ),
+    ModuleDefinition(
+        key="company",
+        label="Company & Branches",
+        route_prefix="/companies",
+        import_path="app.api.v1.endpoints.company",
+        permission_actions=("view", "create", "edit", "delete", "export", "manage"),
+        sidebar_group="Administration",
+        icon_key="building",
+        ai_mode=AIMode.RULE_BASED,
+        critical=True,
+    ),
 )
 
 
@@ -483,7 +494,7 @@ ENDPOINT_ROUTE_DEFINITIONS: tuple[EndpointRouteDefinition, ...] = (
     EndpointRouteDefinition(key="approvals", route_prefix="/approvals", import_path="app.api.v1.endpoints.approvals", tags=('approvals',)),
     EndpointRouteDefinition(key="messaging", route_prefix="/messaging", import_path="app.api.v1.endpoints.messaging", tags=('messaging',)),
     EndpointRouteDefinition(key="email_integration", route_prefix="/email", import_path="app.api.v1.endpoints.email_integration", tags=('email',)),
-    EndpointRouteDefinition(key="company", route_prefix="/companies", import_path="app.api.v1.endpoints.company", tags=('companies',)),
+    # company promoted to ModuleDefinition (GAP-025G)
     EndpointRouteDefinition(key="whatsapp", route_prefix="/whatsapp", import_path="app.api.v1.endpoints.whatsapp", tags=('whatsapp',)),
     EndpointRouteDefinition(key="quotation", route_prefix="/quotes", import_path="app.api.v1.endpoints.quotation", tags=('quotes',)),
     EndpointRouteDefinition(key="helpdesk", route_prefix="/helpdesk", import_path="app.api.v1.endpoints.helpdesk", tags=('helpdesk',)),

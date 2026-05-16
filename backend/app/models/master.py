@@ -150,6 +150,9 @@ class Warehouse(Base, TimestampMixin):
     capacity_sqm = Column(Numeric(10, 2), nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
 
+    company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="SET NULL"), nullable=True, index=True)
+    branch_id  = Column(UUID(as_uuid=True), ForeignKey("branches.id",  ondelete="SET NULL"), nullable=True)
+
     stocks = relationship("Stock", back_populates="warehouse")
     movements_from = relationship("StockMovement", foreign_keys="StockMovement.source_warehouse_id", back_populates="source_warehouse")
     movements_to = relationship("StockMovement", foreign_keys="StockMovement.destination_warehouse_id", back_populates="destination_warehouse")

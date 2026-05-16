@@ -8,6 +8,7 @@ import {
 } from "@/lib/company";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { RequirePermission } from "@/components/PermissionGuard";
 
 const ROLE_COLOR: Record<CompanyUserRole, "green" | "blue" | "gray"> = {
   ADMIN:  "green",
@@ -66,6 +67,7 @@ export default function CompaniesPage() {
   });
 
   return (
+    <RequirePermission permission="company.view">
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
@@ -287,6 +289,7 @@ export default function CompaniesPage() {
         />
       )}
     </div>
+    </RequirePermission>
   );
 }
 

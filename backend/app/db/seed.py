@@ -575,7 +575,12 @@ SCOPE_AWARE_PERMISSIONS = [
     # Administration / audit
     ("users", "manage", "Manage Users", "Manage user lifecycle and assignments", False),
     ("roles", "manage", "Manage Roles", "Manage roles, permissions, and scopes", False),
-    ("company", "manage", "Manage Company Setup", "Manage company and branch setup", False),
+    ("company", "view",   "View Companies",        "List and view company and branch details",                   True),
+    ("company", "create", "Create Company",        "Create new company entities",                                False),
+    ("company", "edit",   "Edit Company",          "Update company and branch details",                          False),
+    ("company", "delete", "Delete Company",        "Soft-delete companies or branches",                          False),
+    ("company", "export", "Export Company",        "Export company summary and user access reports",             False),
+    ("company", "manage", "Manage Company Access", "Grant/revoke user access and set company defaults",          False),
     ("auditor", "export", "Export Audit Reports", "Export auditor-approved reports", False),
     ("shop_floor", "view_own_scope", "View Scoped Shop Floor", "View assigned shop-floor execution scope", True),
     ("production_execution", "update_own_line", "Update Own Production Line", "Update execution records on assigned line", False),
@@ -640,6 +645,8 @@ ROLE_DEFINITIONS = {
             # Admin has full maintenance access
             "maintenance.view", "maintenance.create", "maintenance.edit", "maintenance.delete",
             "maintenance.predict", "maintenance.review_prediction", "maintenance.export",
+            # Admin has full company/branch management
+            "company.view", "company.create", "company.edit", "company.delete", "company.export", "company.manage",
             # Admin has full AI access including prompt configuration
             "ai.view", "ai.create", "ai.edit", "ai.approve", "ai.export", "ai.configure",
             # Admin can import users and manage import templates for user onboarding
@@ -678,6 +685,7 @@ ROLE_DEFINITIONS = {
             "analytics.view", "analytics.export",
             "marketing_analytics.view",
             "ai.view", "ai.create", "ai.edit", "ai.approve", "ai.export",
+            "company.view", "company.export",
             "planning.view_all", "planning.calculate_all", "planning.approve_all",
             "utility_management.view",
             "fleet.view",
@@ -723,6 +731,7 @@ ROLE_DEFINITIONS = {
             "analytics.view",
             "audit.view",
             "ai.view", "ai.create", "ai.export",
+            "company.view",
             # Full bulk-import authority across all modules
             *_ALL_IMPORT_PERMS,
         ],
@@ -761,6 +770,7 @@ ROLE_DEFINITIONS = {
             "utilities.view", "utilities.edit", "utilities.manage",
             # Full AI access including export and prompt configuration
             "ai.view", "ai.create", "ai.edit", "ai.approve", "ai.export", "ai.configure",
+            "company.view",
             # Read-only visibility across all operational modules
             "production.view", "procurement.view", "inventory.view",
             "planning.view_all",
@@ -953,7 +963,8 @@ ROLE_DEFINITIONS = {
     "company_admin": {
         "description": "Company administrator with company-scoped administrative authority",
         "permissions": [
-            "users.view", "users.manage", "roles.view", "company.manage",
+            "users.view", "users.manage", "roles.view",
+            "company.view", "company.edit", "company.export", "company.manage",
             "inventory.view_all", "production.view_all", "quality.view_all",
             "planning.view_all",
             "sales.view_all", "finance.view_own_scope", "procurement.view_all",
