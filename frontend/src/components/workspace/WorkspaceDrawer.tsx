@@ -53,20 +53,21 @@ export function WorkspaceDrawer({
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/30 z-40 transition-opacity"
+        className="fixed inset-0 bg-black/60 backdrop-blur-[2px] z-40 transition-opacity"
         onClick={close}
       />
 
-      {/* Drawer panel */}
+      {/* Drawer panel — glass-modal */}
       <div
-        className={`fixed right-0 top-0 bottom-0 ${widthClass[width]} bg-white shadow-xl z-50 flex flex-col`}
+        className={`fixed right-0 top-0 bottom-0 ${widthClass[width]} glass-modal z-50 flex flex-col border-l border-cyan-500/25`}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 shrink-0">
-          <h2 className="text-base font-semibold text-gray-900">{title}</h2>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-cyan-500/20 shrink-0">
+          <h2 className="text-base font-semibold text-slate-100">{title}</h2>
           <button
             onClick={close}
-            className="rounded-md p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+            className="rounded-lg p-1.5 text-slate-400 hover:text-slate-200 hover:bg-white/[0.06] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50"
+            aria-label="Close drawer"
           >
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

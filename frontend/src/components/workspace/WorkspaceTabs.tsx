@@ -65,10 +65,10 @@ export function WorkspaceTabs({ tabs, defaultTab }: WorkspaceTabsProps) {
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
-      {/* Tab bar */}
+      {/* Tab bar — neon liquid glass */}
       <div
         ref={tabBarRef}
-        className="relative flex items-center border-b border-gray-200 bg-white overflow-x-auto scrollbar-hide"
+        className="relative flex items-center border-b border-cyan-500/20 bg-[rgba(15,23,42,0.65)] backdrop-blur-xl overflow-x-auto scrollbar-hide"
       >
         <div className="flex items-center gap-0 min-w-0 flex-1">
           {visibleTabs.map((tab) => {
@@ -77,12 +77,11 @@ export function WorkspaceTabs({ tabs, defaultTab }: WorkspaceTabsProps) {
               <button
                 key={tab.key}
                 onClick={() => navigate(tab.key)}
-                className={[
-                  "relative flex items-center whitespace-nowrap px-4 py-3 text-sm font-medium transition-colors shrink-0",
+                className={
                   active
-                    ? "text-blue-700 after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-blue-600"
-                    : "text-gray-500 hover:text-gray-800 hover:bg-gray-50",
-                ].join(" ")}
+                    ? "relative flex items-center whitespace-nowrap px-4 py-3 text-sm font-medium transition-colors duration-150 shrink-0 text-cyan-300 after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-gradient-to-r after:from-cyan-500 after:to-blue-500"
+                    : "relative flex items-center whitespace-nowrap px-4 py-3 text-sm font-medium transition-colors duration-150 shrink-0 text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]"
+                }
               >
                 {tab.label}
               </button>

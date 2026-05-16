@@ -7,9 +7,9 @@ Generated: 2026-05-16
 | Classification            | Code | Count |
 |---------------------------|------|-------|
 | WORKSPACE_PAGE            | A    | 31   |
-| REDIRECT_ONLY             | B    | 0   |
+| REDIRECT_ONLY             | B    | 73   |
 | LIGHTWEIGHT_WRAPPER       | C    | 213   |
-| FULL_DUPLICATE_UI         | D    | 500   |
+| FULL_DUPLICATE_UI         | D    | 427   |
 | STANDALONE_OPERATIONAL    | E    | 7   |
 | UNKNOWN                   | F    | 3   |
 | **Total**                 |      | **754** |
@@ -25,66 +25,6 @@ Generated: 2026-05-16
 - **F UNKNOWN** — could not classify from content heuristics.
 
 ## FULL_DUPLICATE_UI pages by module
-
-### marketing (36 pages)
-
-- `/dashboard/marketing/ads/[id]` ✅ MW
-- `/dashboard/marketing/ads/new` ✅ MW
-- `/dashboard/marketing/ai-optimizer` ✅ MW
-- `/dashboard/marketing/brand-spend/[id]` ✅ MW
-- `/dashboard/marketing/brand-spend/new` ✅ MW
-- `/dashboard/marketing/campaigns/[id]` ✅ MW
-- `/dashboard/marketing/campaigns/new` ✅ MW
-- `/dashboard/marketing/crm/[id]` ✅ MW
-- `/dashboard/marketing/crm/followup` ✅ MW
-- `/dashboard/marketing/crm` ✅ MW
-- `/dashboard/marketing/ecommerce/analytics` ✅ MW
-- `/dashboard/marketing/ecommerce/performance/[id]` ✅ MW
-- `/dashboard/marketing/ecommerce/performance/new` ✅ MW
-- `/dashboard/marketing/ecommerce/performance` ✅ MW
-- `/dashboard/marketing/ecommerce/products/[id]` ✅ MW
-- `/dashboard/marketing/ecommerce/products/new` ✅ MW
-- `/dashboard/marketing/ecommerce/products` ✅ MW
-- `/dashboard/marketing/ecommerce/returns` ✅ MW
-- `/dashboard/marketing/ecommerce/stores/[id]` ✅ MW
-- `/dashboard/marketing/ecommerce/stores/new` ✅ MW
-- `/dashboard/marketing/ecommerce/stores` ✅ MW
-- `/dashboard/marketing/influencers/[id]` ✅ MW
-- `/dashboard/marketing/influencers/new` ✅ MW
-- `/dashboard/marketing/promotions/[id]` ✅ MW
-- `/dashboard/marketing/promotions/new` ✅ MW
-- `/dashboard/marketing/segments/[id]` ✅ MW
-- `/dashboard/marketing/segments/new` ✅ MW
-- `/dashboard/marketing/social-media/[id]` ✅ MW
-- `/dashboard/marketing/social-media/new` ✅ MW
-- `/dashboard/marketing/surveys/[id]` ✅ MW
-- `/dashboard/marketing/surveys/new` ✅ MW
-- `/dashboard/marketing/surveys` ✅ MW
-- `/dashboard/marketing/trade-spend/[id]` ✅ MW
-- `/dashboard/marketing/trade-spend/new` ✅ MW
-- `/dashboard/marketing/visits/[id]` ✅ MW
-- `/dashboard/marketing/visits/new` ✅ MW
-
-### utility-management (18 pages)
-
-- `/dashboard/utility-management/categories` ✅ MW
-- `/dashboard/utility-management/kpi-center/boiler` ✅ MW
-- `/dashboard/utility-management/kpi-center/chemicals` ✅ MW
-- `/dashboard/utility-management/kpi-center/compressor` ✅ MW
-- `/dashboard/utility-management/kpi-center/electricity` ✅ MW
-- `/dashboard/utility-management/kpi-center/machine-utility` ✅ MW
-- `/dashboard/utility-management/kpi-center/soft-water` ✅ MW
-- `/dashboard/utility-management/kpi-center/solar` ✅ MW
-- `/dashboard/utility-management/kpi-center/utility-cost` ✅ MW
-- `/dashboard/utility-management/kpi-center/wastewater` ✅ MW
-- `/dashboard/utility-management/kpi-center/water` ✅ MW
-- `/dashboard/utility-management/reports/anomalies` ✅ MW
-- `/dashboard/utility-management/reports/cost-allocation` ✅ MW
-- `/dashboard/utility-management/reports/daily-consumption` ✅ MW
-- `/dashboard/utility-management/reports/equipment-efficiency` ✅ MW
-- `/dashboard/utility-management/reports/load-analysis` ✅ MW
-- `/dashboard/utility-management/reports/sustainability` ✅ MW
-- `/dashboard/utility-management/reports/treatment` ✅ MW
 
 ### van-sales (16 pages)
 
@@ -122,22 +62,6 @@ Generated: 2026-05-16
 - `/dashboard/qms/reports` ✅ MW
 - `/dashboard/qms/supplier-safety` ✅ MW
 - `/dashboard/qms/templates` ✅ MW
-
-### finance (13 pages)
-
-- `/dashboard/finance/accounting/balance-sheet` ✅ MW
-- `/dashboard/finance/accounting/chart-of-accounts` ✅ MW
-- `/dashboard/finance/accounting/controls` ✅ MW
-- `/dashboard/finance/accounting/customers-ledger` ✅ MW
-- `/dashboard/finance/accounting/general-ledger` ✅ MW
-- `/dashboard/finance/accounting/journal` ✅ MW
-- `/dashboard/finance/accounting/payments` ✅ MW
-- `/dashboard/finance/accounting/period-closing` ✅ MW
-- `/dashboard/finance/accounting/profit-loss` ✅ MW
-- `/dashboard/finance/accounting/purchase-invoices` ✅ MW
-- `/dashboard/finance/accounting/sales-invoices` ✅ MW
-- `/dashboard/finance/accounting/suppliers-ledger` ✅ MW
-- `/dashboard/finance/accounting/trial-balance` ✅ MW
 
 ### recruitment (12 pages)
 
@@ -529,15 +453,6 @@ Generated: 2026-05-16
 - `/dashboard/procurement-suggestion/suggestions` ✅ MW
 - `/dashboard/procurement-suggestion/supplier-compare` ✅ MW
 - `/dashboard/procurement-suggestion/supplier-prices` ✅ MW
-
-### production (6 pages)
-
-- `/dashboard/production/advanced` ✅ MW
-- `/dashboard/production/ai` ✅ MW
-- `/dashboard/production/orders/[id]` ✅ MW
-- `/dashboard/production/plans/[id]` ✅ MW
-- `/dashboard/production/shifts` ✅ MW
-- `/dashboard/production/work-orders` ✅ MW
 
 ### subcontracting (6 pages)
 

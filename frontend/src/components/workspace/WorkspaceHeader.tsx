@@ -24,18 +24,18 @@ export function WorkspaceHeader({ title, description, actions = [], badge }: Wor
   );
 
   return (
-    <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-white shrink-0">
+    <div className="flex items-center justify-between px-6 py-4 shrink-0 border-b border-cyan-500/20 bg-[rgba(15,23,42,0.70)] backdrop-blur-xl">
       <div className="min-w-0">
         <div className="flex items-center gap-2">
-          <h1 className="text-lg font-semibold text-gray-900 truncate">{title}</h1>
+          <h1 className="text-lg font-semibold text-slate-100 truncate">{title}</h1>
           {badge && (
-            <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">
+            <span className="inline-flex items-center rounded-full border border-blue-500/30 bg-blue-500/10 px-2 py-0.5 text-xs font-medium text-blue-300">
               {badge}
             </span>
           )}
         </div>
         {description && (
-          <p className="mt-0.5 text-sm text-gray-500 truncate">{description}</p>
+          <p className="mt-0.5 text-sm text-slate-400 truncate">{description}</p>
         )}
       </div>
 

@@ -1,7 +1,7 @@
 # TASKS
 
 ## Current Phase
-PAGE CONSOLIDATION — PASS 1 COMPLETE. 2026-05-16. Route redirects, nav-config, and audit scripts clean.
+PAGE CONSOLIDATION — PASS 2 IN PROGRESS. 2026-05-16. Theme preserved, 73 pages converted to redirect-only. Next: van-sales, qms, recruitment, allergen, expenses, fixed-assets clusters.
 
 ## Execution Rules
 - Always read this file before starting work.
@@ -17,6 +17,32 @@ PAGE CONSOLIDATION — PASS 1 COMPLETE. 2026-05-16. Route redirects, nav-config,
 
 ## In Progress
 None.
+
+## Completed in This Run (2026-05-16) — Page Consolidation Pass 2
+
+### Theme Preservation — DONE
+- docs/UI_THEME_AUDIT.md created (NEON LIQUID GLASS design audit)
+- frontend/src/lib/ui-theme.ts created (reusable theme constants)
+- WorkspaceHeader: dark glass bg, cyan border, slate text
+- WorkspaceTabs: cyan active tab with gradient underline, dark glass tab bar
+- WorkspaceDrawer: glass-modal panel, black/60 backdrop
+- WorkspaceEmptyState: blue glow icon container
+- ModuleWorkspace: red glow for permission-denied state
+
+### Page Conversion — DONE (73 pages)
+- scripts/convert-redirects.js created and executed
+- marketing: 36 pages → redirect-only (B REDIRECT_ONLY)
+- finance/accounting: 13 pages → redirect-only
+- production: 6 pages → redirect-only
+- utility-management: 18 pages → redirect-only
+- FULL_DUPLICATE_UI: 500 → 427 (-73)
+
+### All Checks Passing (2026-05-16 post-conversion)
+- npm run type-check → PASS (0 errors)
+- node scripts/audit-page-count.js → PASS (B=73, D=427)
+- node scripts/check-route-redirects.js → PASS (0 drift)
+- node scripts/check-workspace-tabs.js → PASS (0 mismatches)
+- python scripts/erp-health-audit.py → PASS (0 HIGH)
 
 ## Completed in This Run (2026-05-16) — Page Consolidation Pass 1
 
@@ -38,47 +64,31 @@ None.
 - check-route-redirects.js: 0 issues
 - check-workspace-tabs.js: 0 issues
 
-## Page Count Status (2026-05-16)
+## Page Count Status (2026-05-16 — post Pass 2)
 
-| Classification          | Count |
-|-------------------------|-------|
-| A WORKSPACE_PAGE        | 31    |
-| B REDIRECT_ONLY         | 0     |
-| C LIGHTWEIGHT_WRAPPER   | 213   |
-| D FULL_DUPLICATE_UI     | 500   |
-| E STANDALONE_OPERATIONAL| 7     |
-| F UNKNOWN               | 3     |
-| Total physical pages    | 754   |
+| Classification          | Count | Delta |
+|-------------------------|-------|-------|
+| A WORKSPACE_PAGE        | 31    | —     |
+| B REDIRECT_ONLY         | 73    | +73   |
+| C LIGHTWEIGHT_WRAPPER   | 213   | —     |
+| D FULL_DUPLICATE_UI     | 427   | -73   |
+| E STANDALONE_OPERATIONAL| 7     | —     |
+| F UNKNOWN               | 3     | —     |
+| Total physical pages    | 754   | —     |
 
-Note: Visible navigation reduced (workspace-style sidebar with no child links).
-Physical page count retained for backward compatibility.
-Old child routes now redirect via middleware prefix matching.
-FULL_DUPLICATE_UI pages still exist as files — conversion to redirect-only is remaining work.
-
-## Tests Run (2026-05-16)
-- npm run type-check → PASS
-- node scripts/audit-page-count.js → PASS (754 pages, 0 issues)
-- node scripts/check-route-redirects.js → PASS (0 drift issues)
-- node scripts/check-workspace-tabs.js → PASS (0 tab mismatches)
-- python scripts/erp-health-audit.py → PASS (0 HIGH, 500 findings)
+Converted clusters: marketing(36), finance/accounting(13), utility-management(18), production(6).
+Remaining FULL_DUPLICATE_UI: van-sales(16), qms(15), recruitment(12), allergen(11), expenses(11), fixed-assets(11), + others.
 
 ## Remaining Page Consolidation Work
 
-### Priority 1 — Migrate FULL_DUPLICATE_UI to redirect-only files
-Convert page.tsx files to thin redirect wrappers. Middleware handles HTTP redirects already;
-converting the files removes duplicate build artifacts and clarifies intent.
-
-Priority order (largest clusters first):
-1. marketing: 36 pages — middleware redirects added, files still contain duplicate UI
-2. utility-management: 18 pages — middleware redirects added for kpi-center, reports, categories
-3. finance/accounting: 13 pages — middleware redirect added (/finance/accounting prefix)
-4. production: 6 pages (advanced, ai, orders, plans, shifts, work-orders)
-5. van-sales: 16 pages (already had MW coverage)
-6. qms: 15 pages (already had MW coverage)
-7. recruitment: 12 pages (already had MW coverage)
-8. allergen: 11 pages (already had MW coverage)
-9. expenses: 11 pages (already had MW coverage)
-10. fixed-assets: 11 pages (already had MW coverage)
+### Priority 1 — Next FULL_DUPLICATE_UI clusters (MW coverage already exists)
+Need to audit each cluster's tab destinations before writing convert script entries.
+1. van-sales: 16 pages
+2. qms: 15 pages
+3. recruitment: 12 pages
+4. allergen: 11 pages
+5. expenses: 11 pages
+6. fixed-assets: 11 pages
 
 ### Priority 2 — BOM, CRM, Sales child pages
 - bom: 4 pages (no MW — /dashboard/bom/[id]/* need redirects)
