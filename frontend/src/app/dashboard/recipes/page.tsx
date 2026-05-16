@@ -15,6 +15,7 @@ import { Select } from "@/components/ui/Select";
 import { ToastContainer } from "@/components/ui/Toast";
 import { useToast } from "@/hooks/useToast";
 import { RecipeBulkImportModal } from "@/components/import/RecipeBulkImportModal";
+import { PermissionGuard, RequirePermission } from "@/components/PermissionGuard";
 
 const STATUS_FILTER_OPTIONS = [
   { value: "", label: "All Statuses" },
@@ -95,6 +96,7 @@ export default function RecipesPage() {
   );
 
   return (
+    <RequirePermission permission="recipe.view">
     <div>
       <ToastContainer toasts={toasts} onDismiss={dismiss} />
 
@@ -104,10 +106,14 @@ export default function RecipesPage() {
           <p className="text-sm text-gray-500 mt-1">{recipes.length} total</p>
         </div>
         <div className="flex items-center gap-2">
-          <RecipeBulkImportModal
-            onSuccess={() => qc.invalidateQueries({ queryKey: ["recipes"] })}
-          />
-          <Button onClick={() => setOpen(true)}>+ New Recipe</Button>
+          <PermissionGuard permission="recipe.create">
+            <RecipeBulkImportModal
+              onSuccess={() => qc.invalidateQueries({ queryKey: ["recipes"] })}
+            />
+          </PermissionGuard>
+          <PermissionGuard permission="recipe.create">
+            <Button onClick={() => setOpen(true)}>+ New Recipe</Button>
+          </PermissionGuard>
         </div>
       </div>
 
@@ -189,12 +195,14 @@ export default function RecipesPage() {
                     View
                   </Button>
                   {r.status === "DRAFT" && (
+                    <PermissionGuard permission="recipe.delete">
                     <button
                       onClick={() => setDeletingId(r.id)}
                       className="text-xs text-red-500 hover:text-red-700 hover:underline"
                     >
                       Delete
                     </button>
+                    </PermissionGuard>
                   )}
                 </div>
               ),
@@ -204,6 +212,7 @@ export default function RecipesPage() {
       )}
 
       {/* Delete Confirm Modal */}
+      <PermissionGuard permission="recipe.delete">
       <Modal open={!!deletingId} onClose={() => setDeletingId(null)} title="Delete Recipe">
         <p className="text-sm text-gray-600 mb-4">
           Are you sure you want to delete the DRAFT recipe{" "}
@@ -222,7 +231,9 @@ export default function RecipesPage() {
           </Button>
         </div>
       </Modal>
+      </PermissionGuard>
 
+      <PermissionGuard permission="recipe.create">
       <Modal
         open={open}
         onClose={() => {
@@ -297,6 +308,8 @@ export default function RecipesPage() {
           </div>
         </form>
       </Modal>
+      </PermissionGuard>
     </div>
+    </RequirePermission>
   );
 }

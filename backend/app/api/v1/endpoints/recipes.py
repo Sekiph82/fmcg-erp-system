@@ -4,7 +4,7 @@ from typing import List, Optional
 import uuid
 
 from app.db.session import get_db
-from app.core.deps import get_current_user
+from app.core.deps import require_permission
 from app.crud import recipe as crud
 from app.models.recipe import RecipeStatus
 from app.schemas.recipe import (
@@ -34,7 +34,7 @@ async def list_recipes(
     skip: int = 0,
     limit: int = 50,
     db: AsyncSession = Depends(get_db),
-    current_user=Depends(get_current_user),
+    _=Depends(require_permission("recipe", "view")),
 ):
     recipes = await crud.list_recipes(db, product_id=product_id, status=status, skip=skip, limit=limit)
     result = []
@@ -51,7 +51,7 @@ async def list_recipes(
 async def create_recipe(
     data: RecipeCreate,
     db: AsyncSession = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user=Depends(require_permission("recipe", "create")),
 ):
     obj = await crud.create_recipe(db, data, current_user.id)
     await db.commit()
@@ -63,7 +63,7 @@ async def create_recipe(
 async def get_recipe(
     recipe_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    _=Depends(require_permission("recipe", "view")),
 ):
     obj = await crud.get_recipe(db, recipe_id)
     if not obj:
@@ -90,7 +90,7 @@ async def update_recipe(
     recipe_id: uuid.UUID,
     data: RecipeUpdate,
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    _=Depends(require_permission("recipe", "edit")),
 ):
     obj = await crud.get_recipe(db, recipe_id)
     if not obj:
@@ -108,7 +108,7 @@ async def update_recipe(
 async def delete_recipe(
     recipe_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    _=Depends(require_permission("recipe", "delete")),
 ):
     from fastapi import Response
     obj = await crud.get_recipe(db, recipe_id)
@@ -126,7 +126,7 @@ async def delete_recipe(
 async def approve_recipe(
     recipe_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user=Depends(require_permission("recipe", "approve")),
 ):
     obj = await crud.get_recipe(db, recipe_id)
     if not obj:
@@ -145,7 +145,7 @@ async def approve_recipe(
 async def obsolete_recipe(
     recipe_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    _=Depends(require_permission("recipe", "obsolete")),
 ):
     obj = await crud.get_recipe(db, recipe_id)
     if not obj:
@@ -163,7 +163,7 @@ async def duplicate_recipe(
     recipe_id: uuid.UUID,
     req: RecipeDuplicateRequest,
     db: AsyncSession = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user=Depends(require_permission("recipe", "create")),
 ):
     source = await crud.get_recipe(db, recipe_id)
     if not source:
@@ -183,7 +183,7 @@ async def add_recipe_item(
     recipe_id: uuid.UUID,
     data: RecipeItemCreate,
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    _=Depends(require_permission("recipe", "edit")),
 ):
     recipe = await crud.get_recipe(db, recipe_id)
     if not recipe:
@@ -205,7 +205,7 @@ async def update_recipe_item(
     item_id: uuid.UUID,
     data: RecipeItemUpdate,
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    _=Depends(require_permission("recipe", "edit")),
 ):
     recipe = await crud.get_recipe(db, recipe_id)
     if not recipe:
@@ -229,7 +229,7 @@ async def delete_recipe_item(
     recipe_id: uuid.UUID,
     item_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    _=Depends(require_permission("recipe", "delete")),
 ):
     recipe = await crud.get_recipe(db, recipe_id)
     if not recipe:
@@ -249,7 +249,7 @@ async def add_process_parameter(
     recipe_id: uuid.UUID,
     data: ProcessParameterCreate,
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    _=Depends(require_permission("recipe", "edit")),
 ):
     recipe = await crud.get_recipe(db, recipe_id)
     if not recipe:
@@ -267,7 +267,7 @@ async def update_process_parameter(
     param_id: uuid.UUID,
     data: ProcessParameterUpdate,
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    _=Depends(require_permission("recipe", "edit")),
 ):
     recipe = await crud.get_recipe(db, recipe_id)
     if not recipe:
@@ -287,7 +287,7 @@ async def delete_process_parameter(
     recipe_id: uuid.UUID,
     param_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    _=Depends(require_permission("recipe", "delete")),
 ):
     recipe = await crud.get_recipe(db, recipe_id)
     if not recipe:

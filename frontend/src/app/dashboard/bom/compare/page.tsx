@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { bomApi, BOMSummary, fmtKES } from "@/lib/bom";
+import { RequirePermission } from "@/components/PermissionGuard";
 
 export default function BOMComparePage() {
   const [bomA, setBomA] = useState("");
@@ -30,6 +31,7 @@ export default function BOMComparePage() {
   const bomBDetail = boms.find((b) => b.id === bomB);
 
   return (
+    <RequirePermission permission="bom.view">
     <div className="p-6 space-y-6">
       <div className="flex items-center gap-3">
         <a href="/dashboard/bom" className="text-sm text-gray-400 hover:text-gray-600">← BOMs</a>
@@ -174,5 +176,6 @@ export default function BOMComparePage() {
         </div>
       )}
     </div>
+    </RequirePermission>
   );
 }

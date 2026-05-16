@@ -3,6 +3,7 @@
 import { useParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { bomApi, ComplianceSummary } from "@/lib/bom";
+import { RequirePermission } from "@/components/PermissionGuard";
 
 const ALLERGEN_ICONS: Record<string, string> = {
   dairy: "🥛", soy: "🫘", nuts: "🥜", gluten: "🌾", eggs: "🥚",
@@ -24,6 +25,7 @@ export default function CompliancePage() {
   const absentAllergens = Object.entries(data.allergen_flags).filter(([, v]) => !v).map(([k]) => k);
 
   return (
+    <RequirePermission permission="bom.view">
     <div className="p-6 space-y-6">
       <div className="flex items-center gap-3">
         <a href={`/dashboard/bom/${id}`} className="text-sm text-gray-400 hover:text-gray-600">← BOM Detail</a>
@@ -119,5 +121,6 @@ export default function CompliancePage() {
         </div>
       )}
     </div>
+    </RequirePermission>
   );
 }

@@ -9,6 +9,7 @@ import {
   LIFECYCLE_COLOR, BOM_TYPE_COLOR, COMPONENT_COLOR, AGENT_COLOR, AGENT_LABEL,
   LIFECYCLE_NEXT, fmtKES,
 } from "@/lib/bom";
+import { PermissionGuard, RequirePermission } from "@/components/PermissionGuard";
 
 const TABS = ["Overview", "Formula", "Yield", "AI Recs"] as const;
 type Tab = typeof TABS[number];
@@ -119,8 +120,13 @@ export default function BOMDetailPage() {
   if (!bom) return <div className="p-8 text-center text-red-400">BOM not found.</div>;
 
   const nextAction = LIFECYCLE_NEXT[bom.lifecycle];
+  const lifecyclePermission =
+    bom.lifecycle === "UNDER_REVIEW" ? "bom.approve" :
+    bom.lifecycle === "APPROVED" ? "bom.release" :
+    "bom.edit";
 
   return (
+    <RequirePermission permission="bom.view">
     <div className="p-6 space-y-5">
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
@@ -140,19 +146,29 @@ export default function BOMDetailPage() {
         </div>
         <div className="flex items-center gap-2 flex-wrap justify-end">
           <a href={`/dashboard/bom/${id}/explode`} className="px-3 py-1.5 text-xs border rounded-lg text-gray-600 hover:bg-gray-50">Explode</a>
-          <a href={`/dashboard/bom/${id}/costing`} className="px-3 py-1.5 text-xs border rounded-lg text-gray-600 hover:bg-gray-50">Costing</a>
+          <PermissionGuard permission="bom.cost">
+            <a href={`/dashboard/bom/${id}/costing`} className="px-3 py-1.5 text-xs border rounded-lg text-gray-600 hover:bg-gray-50">Costing</a>
+          </PermissionGuard>
           <a href={`/dashboard/bom/${id}/compliance`} className="px-3 py-1.5 text-xs border rounded-lg text-gray-600 hover:bg-gray-50">Compliance</a>
-          <button onClick={() => { setCloneVersion(""); setShowClone(true); }} className="px-3 py-1.5 text-xs border rounded-lg text-gray-600 hover:bg-gray-50">Clone</button>
-          <button onClick={() => runAI.mutate()} disabled={runAI.isPending} className="px-3 py-1.5 text-xs bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-40">
-            {runAI.isPending ? "Running AI…" : "Run AI"}
-          </button>
-          {nextAction && (
-            <button onClick={() => advance.mutate()} disabled={advance.isPending} className="px-3 py-1.5 text-xs bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-40">
-              {advance.isPending ? "…" : nextAction}
+          <PermissionGuard permission="bom.create">
+            <button onClick={() => { setCloneVersion(""); setShowClone(true); }} className="px-3 py-1.5 text-xs border rounded-lg text-gray-600 hover:bg-gray-50">Clone</button>
+          </PermissionGuard>
+          <PermissionGuard permission="bom.ai">
+            <button onClick={() => runAI.mutate()} disabled={runAI.isPending} className="px-3 py-1.5 text-xs bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-40">
+              {runAI.isPending ? "Running AI…" : "Run AI"}
             </button>
+          </PermissionGuard>
+          {nextAction && (
+            <PermissionGuard permission={lifecyclePermission}>
+              <button onClick={() => advance.mutate()} disabled={advance.isPending} className="px-3 py-1.5 text-xs bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-40">
+                {advance.isPending ? "…" : nextAction}
+              </button>
+            </PermissionGuard>
           )}
           {!["ARCHIVED"].includes(bom.lifecycle) && (
-            <button onClick={() => archive.mutate()} disabled={archive.isPending} className="px-3 py-1.5 text-xs border border-red-200 text-red-500 rounded-lg hover:bg-red-50">Archive</button>
+            <PermissionGuard permission="bom.archive">
+              <button onClick={() => archive.mutate()} disabled={archive.isPending} className="px-3 py-1.5 text-xs border border-red-200 text-red-500 rounded-lg hover:bg-red-50">Archive</button>
+            </PermissionGuard>
           )}
         </div>
       </div>
@@ -258,7 +274,9 @@ export default function BOMDetailPage() {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <p className="text-sm text-gray-500">{bom.lines?.length ?? 0} component lines</p>
-            <button onClick={() => { setLineForm(emptyLine); setShowAddLine(true); }} className="px-3 py-1.5 text-xs bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">+ Add Line</button>
+            <PermissionGuard permission="bom.edit">
+              <button onClick={() => { setLineForm(emptyLine); setShowAddLine(true); }} className="px-3 py-1.5 text-xs bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">+ Add Line</button>
+            </PermissionGuard>
           </div>
           <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-x-auto">
             <table className="w-full text-xs">
@@ -298,7 +316,9 @@ export default function BOMDetailPage() {
                       <td className="px-3 py-2 text-gray-400">—</td>
                       <td className="px-3 py-2">
                         <div className="flex gap-1">
-                          <button onClick={() => updateLine.mutate({ lineId: line.id, body: lineForm })} className="text-xs text-green-600 hover:underline">Save</button>
+                          <PermissionGuard permission="bom.edit">
+                            <button onClick={() => updateLine.mutate({ lineId: line.id, body: lineForm })} className="text-xs text-green-600 hover:underline">Save</button>
+                          </PermissionGuard>
                           <button onClick={() => setEditLineId(null)} className="text-xs text-gray-400 hover:underline">Cancel</button>
                         </div>
                       </td>
@@ -323,8 +343,12 @@ export default function BOMDetailPage() {
                       <td className="px-3 py-2 text-right">{line.extended_cost ? fmtKES(Number(line.extended_cost)) : "—"}</td>
                       <td className="px-3 py-2">
                         <div className="flex gap-2">
-                          <button onClick={() => { setLineForm(line); setEditLineId(line.id); }} className="text-xs text-blue-600 hover:underline">Edit</button>
-                          <button onClick={() => deleteLine.mutate(line.id)} className="text-xs text-red-400 hover:text-red-600 hover:underline">Del</button>
+                          <PermissionGuard permission="bom.edit">
+                            <button onClick={() => { setLineForm(line); setEditLineId(line.id); }} className="text-xs text-blue-600 hover:underline">Edit</button>
+                          </PermissionGuard>
+                          <PermissionGuard permission="bom.delete">
+                            <button onClick={() => deleteLine.mutate(line.id)} className="text-xs text-red-400 hover:text-red-600 hover:underline">Del</button>
+                          </PermissionGuard>
                         </div>
                       </td>
                     </tr>
@@ -341,7 +365,9 @@ export default function BOMDetailPage() {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <p className="text-sm text-gray-500">Yield & loss configuration</p>
-            <button onClick={() => setShowAddYield(true)} className="px-3 py-1.5 text-xs bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">+ Add Yield Config</button>
+            <PermissionGuard permission="bom.edit">
+              <button onClick={() => setShowAddYield(true)} className="px-3 py-1.5 text-xs bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">+ Add Yield Config</button>
+            </PermissionGuard>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {(bom.yield_configs ?? []).map((yc) => (
@@ -381,10 +407,12 @@ export default function BOMDetailPage() {
                   {rec.impact_summary && <p className="text-xs text-indigo-600 mt-1">Impact: {rec.impact_summary}</p>}
                 </div>
                 {rec.status === "PENDING" && (
-                  <div className="flex gap-2">
-                    <button onClick={() => actionAI.mutate({ recId: rec.id, status: "ACCEPTED" })} className="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700">Accept</button>
-                    <button onClick={() => actionAI.mutate({ recId: rec.id, status: "REJECTED" })} className="px-2 py-1 text-xs border text-gray-600 rounded hover:bg-gray-50">Reject</button>
-                  </div>
+                  <PermissionGuard permission="bom.ai">
+                    <div className="flex gap-2">
+                      <button onClick={() => actionAI.mutate({ recId: rec.id, status: "ACCEPTED" })} className="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700">Accept</button>
+                      <button onClick={() => actionAI.mutate({ recId: rec.id, status: "REJECTED" })} className="px-2 py-1 text-xs border text-gray-600 rounded hover:bg-gray-50">Reject</button>
+                    </div>
+                  </PermissionGuard>
                 )}
               </div>
             </div>
@@ -394,6 +422,7 @@ export default function BOMDetailPage() {
 
       {/* Add Line Modal */}
       {showAddLine && (
+        <PermissionGuard permission="bom.edit">
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6">
             <div className="flex items-center justify-between mb-4">
@@ -466,10 +495,12 @@ export default function BOMDetailPage() {
             </div>
           </div>
         </div>
+        </PermissionGuard>
       )}
 
       {/* Add Yield Modal */}
       {showAddYield && (
+        <PermissionGuard permission="bom.edit">
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
             <div className="flex items-center justify-between mb-4">
@@ -504,10 +535,12 @@ export default function BOMDetailPage() {
             </div>
           </div>
         </div>
+        </PermissionGuard>
       )}
 
       {/* Clone Modal */}
       {showClone && (
+        <PermissionGuard permission="bom.create">
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
             <h2 className="text-lg font-semibold mb-3">Clone BOM</h2>
@@ -526,7 +559,9 @@ export default function BOMDetailPage() {
             </div>
           </div>
         </div>
+        </PermissionGuard>
       )}
     </div>
+    </RequirePermission>
   );
 }

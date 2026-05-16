@@ -91,7 +91,7 @@ export const NAV_CONFIG: NavEntry[] = [
       { label: "Suppliers",     href: "/dashboard/suppliers",       permission: "procurement.view" },
       { label: "Warehouses",    href: "/dashboard/warehouses",      permission: "warehouses.view" },
       { label: "Customers",     href: "/dashboard/sales/customers", permission: "sales.view" },
-      { label: "Recipes / BOM", href: "/dashboard/recipes",         permission: "production.view" },
+      { label: "Recipes / BOM", href: "/dashboard/recipes",         permission: "recipe.view" },
     ],
   },
 
@@ -104,10 +104,10 @@ export const NAV_CONFIG: NavEntry[] = [
     type: "section",
     id: "npd",
     label: "New Product Development",
-    permission: "production.view",
+    permission: "npd.view",
     icon: md("M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"),
     items: [
-      { label: "NPD Projects",    href: "/dashboard/npd",   permission: "production.view" },
+      { label: "NPD Projects",    href: "/dashboard/npd",   permission: "npd.view" },
     ],
   },
 
@@ -231,13 +231,13 @@ export const NAV_CONFIG: NavEntry[] = [
     type: "section",
     id: "bom",
     label: "BOM & Formula",
-    permission: "production.view",
+    permission: "bom.view",
     icon: md("M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"),
     items: [
-      { label: "BOM Master",          href: "/dashboard/bom",            permission: "production.view" },
-      { label: "Conversion Profiles", href: "/dashboard/bom/conversion", permission: "production.view" },
-      { label: "Substitute Manager",  href: "/dashboard/bom/substitutes",permission: "production.view" },
-      { label: "Version Compare",     href: "/dashboard/bom/compare",    permission: "production.view" },
+      { label: "BOM Master",          href: "/dashboard/bom",            permission: "bom.view" },
+      { label: "Conversion Profiles", href: "/dashboard/bom/conversion", permission: "bom.view" },
+      { label: "Substitute Manager",  href: "/dashboard/bom/substitutes",permission: "bom.view" },
+      { label: "Version Compare",     href: "/dashboard/bom/compare",    permission: "bom.view" },
     ],
   },
 
@@ -398,7 +398,7 @@ export const NAV_CONFIG: NavEntry[] = [
     items: [
       { label: "QC Inspections",        href: "/dashboard/quality",                        permission: "quality.view" },
       { label: "QC Parameters",         href: "/dashboard/quality/parameters",             permission: "quality.view" },
-      { label: "Consumer Complaints",   href: "/dashboard/quality/consumer-complaints",    permission: "quality.view" },
+      { label: "Consumer Complaints",   href: "/dashboard/quality/consumer-complaints",    permission: "consumer_complaints.view" },
       { label: "Reg. Certificates",     href: "/dashboard/quality/certificates",           permission: "quality.view" },
       { label: "Brand Assets / DAM",   href: "/dashboard/brand-assets",                   permission: "quality.view" },
       { label: "QC Reports",            href: "/dashboard/quality/reports",                permission: "quality.view" },

@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { PermissionGuard, RequirePermission } from "@/components/PermissionGuard";
 
 interface NPDProject {
   id: string;
@@ -96,16 +97,19 @@ export default function NPDPage() {
   };
 
   return (
+    <RequirePermission permission="npd.view">
     <div className="p-6 space-y-6 max-w-6xl mx-auto">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">New Product Development</h1>
           <p className="text-sm text-gray-500 mt-0.5">Idea → Concept → Development → Pilot → Launch pipeline</p>
         </div>
-        <button onClick={() => setShowForm(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded">
-          + New Project
-        </button>
+        <PermissionGuard permission="npd.create">
+          <button onClick={() => setShowForm(true)}
+            className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded">
+            + New Project
+          </button>
+        </PermissionGuard>
       </div>
 
       {error && <div className="bg-red-50 border border-red-200 rounded p-3 text-sm text-red-700">{error}</div>}
@@ -225,5 +229,6 @@ export default function NPDPage() {
         </div>
       )}
     </div>
+    </RequirePermission>
   );
 }

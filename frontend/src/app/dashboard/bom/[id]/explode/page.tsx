@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { bomApi, ExplosionResult, ExplosionNode } from "@/lib/bom";
+import { RequirePermission } from "@/components/PermissionGuard";
 
 function TreeNode({ node, depth = 0 }: { node: ExplosionNode; depth?: number }) {
   const [expanded, setExpanded] = useState(true);
@@ -52,6 +53,7 @@ export default function ExplodePage() {
   });
 
   return (
+    <RequirePermission permission="bom.view">
     <div className="p-6 space-y-5">
       <div className="flex items-center gap-3">
         <a href={`/dashboard/bom/${id}`} className="text-sm text-gray-400 hover:text-gray-600">← BOM Detail</a>
@@ -130,5 +132,6 @@ export default function ExplodePage() {
         </>
       )}
     </div>
+    </RequirePermission>
   );
 }

@@ -14,7 +14,7 @@ from sqlalchemy import select, func, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.core.deps import get_current_user, get_db
+from app.core.deps import get_db, require_permission
 from app.models.npd import (
     NPDProject, NPDStageGate, NPDPilotBatch,
     NPDStage, NPDCategory, NPDPilotBatchOutcome,
@@ -76,7 +76,11 @@ class ProjectIn(BaseModel):
 
 
 @router.post("/projects", status_code=201)
-async def create_project(payload: ProjectIn, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+async def create_project(
+    payload: ProjectIn,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(require_permission("npd", "create")),
+):
     proj = NPDProject(
         project_code=_counter(),
         name=payload.name,
@@ -110,7 +114,7 @@ async def list_projects(
     active_only: bool = True,
     limit: int = Query(50, le=200),
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    _=Depends(require_permission("npd", "view")),
 ):
     q = select(NPDProject)
     if active_only:
@@ -125,7 +129,7 @@ async def list_projects(
 
 
 @router.get("/projects/{project_id}")
-async def get_project(project_id: str, db: AsyncSession = Depends(get_db), _=Depends(get_current_user)):
+async def get_project(project_id: str, db: AsyncSession = Depends(get_db), _=Depends(require_permission("npd", "view"))):
     r = await db.execute(
         select(NPDProject)
         .options(selectinload(NPDProject.stage_gates), selectinload(NPDProject.pilot_batches))
@@ -160,7 +164,7 @@ async def update_project(
     project_id: str,
     payload: ProjectIn,
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    _=Depends(require_permission("npd", "edit")),
 ):
     r = await db.execute(select(NPDProject).where(NPDProject.id == uuid.UUID(project_id)))
     proj = r.scalar_one_or_none()
@@ -178,7 +182,7 @@ async def update_project(
 async def advance_stage(
     project_id: str,
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    _=Depends(require_permission("npd", "advance")),
 ):
     """Advance project to next stage if all gates for current stage approved."""
     r = await db.execute(
@@ -225,7 +229,7 @@ async def approve_gate(
     gate_id: str,
     payload: GateApproveIn,
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    _=Depends(require_permission("npd", "approve")),
 ):
     r = await db.execute(
         select(NPDStageGate).where(
@@ -257,7 +261,7 @@ async def update_checklist(
     project_id: str,
     payload: ChecklistUpdate,
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    _=Depends(require_permission("npd", "edit")),
 ):
     r = await db.execute(select(NPDProject).where(NPDProject.id == uuid.UUID(project_id)))
     proj = r.scalar_one_or_none()
@@ -293,7 +297,7 @@ async def add_pilot_batch(
     project_id: str,
     payload: PilotBatchIn,
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    _=Depends(require_permission("npd", "pilot")),
 ):
     r = await db.execute(
         select(func.count()).select_from(NPDPilotBatch).where(NPDPilotBatch.project_id == uuid.UUID(project_id))
@@ -324,7 +328,7 @@ async def add_pilot_batch(
 # ── Dashboard ─────────────────────────────────────────────────────────────────
 
 @router.get("/dashboard")
-async def npd_dashboard(db: AsyncSession = Depends(get_db), _=Depends(get_current_user)):
+async def npd_dashboard(db: AsyncSession = Depends(get_db), _=Depends(require_permission("npd", "view"))):
     by_stage_r = await db.execute(
         select(NPDProject.stage, func.count().label("cnt"))
         .where(NPDProject.is_active == True)

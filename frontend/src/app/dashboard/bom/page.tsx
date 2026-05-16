@@ -6,6 +6,7 @@ import {
   bomApi, BOMDashboard, BOMSummary, BOMType, BOMLifecycle,
   LIFECYCLE_COLOR, BOM_TYPE_COLOR, fmtKES,
 } from "@/lib/bom";
+import { PermissionGuard, RequirePermission } from "@/components/PermissionGuard";
 
 const BOM_TYPES: BOMType[] = ["FORMULA", "INTERMEDIATE", "PACKAGING", "MULTILEVEL", "PHANTOM", "REWORK", "COPRODUCT"];
 
@@ -37,6 +38,7 @@ export default function BOMPage() {
   });
 
   return (
+    <RequirePermission permission="bom.view">
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -44,9 +46,11 @@ export default function BOMPage() {
           <h1 className="text-2xl font-bold text-gray-900">BOM Master</h1>
           <p className="text-sm text-gray-500 mt-0.5">Formula · Packaging · Multi-Level · Co-Product · Rework BOMs</p>
         </div>
-        <button onClick={() => setShowCreate(true)} className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700">
-          + New BOM
-        </button>
+        <PermissionGuard permission="bom.create">
+          <button onClick={() => setShowCreate(true)} className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700">
+            + New BOM
+          </button>
+        </PermissionGuard>
       </div>
 
       {/* KPIs */}
@@ -155,6 +159,7 @@ export default function BOMPage() {
 
       {/* Create Modal */}
       {showCreate && (
+        <PermissionGuard permission="bom.create">
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
             <div className="flex items-center justify-between mb-4">
@@ -212,7 +217,9 @@ export default function BOMPage() {
             </div>
           </div>
         </div>
+        </PermissionGuard>
       )}
     </div>
+    </RequirePermission>
   );
 }

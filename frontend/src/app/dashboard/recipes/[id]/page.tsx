@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { ToastContainer } from "@/components/ui/Toast";
 import { useToast } from "@/hooks/useToast";
+import { PermissionGuard, RequirePermission } from "@/components/PermissionGuard";
 
 const UOMS = [
   { value: "KG", label: "KG" }, { value: "G", label: "G" },
@@ -146,6 +147,7 @@ export default function RecipeDetailPage() {
   }
 
   return (
+    <RequirePermission permission="recipe.view">
     <div className="space-y-8">
       <ToastContainer toasts={toasts} onDismiss={dismiss} />
 
@@ -180,6 +182,7 @@ export default function RecipeDetailPage() {
             <Badge label={recipe.status} variant={statusVariant(recipe.status)} />
             <div className="flex gap-2 flex-wrap justify-end">
               {isDraft && (
+                <PermissionGuard permission="recipe.approve">
                 <Button
                   variant="secondary"
                   onClick={() => approve.mutate()}
@@ -187,8 +190,10 @@ export default function RecipeDetailPage() {
                 >
                   Approve
                 </Button>
+                </PermissionGuard>
               )}
               {recipe.status !== "OBSOLETE" && (
+                <PermissionGuard permission="recipe.obsolete">
                 <Button
                   variant="secondary"
                   onClick={() => obsolete.mutate()}
@@ -196,10 +201,13 @@ export default function RecipeDetailPage() {
                 >
                   Mark Obsolete
                 </Button>
+                </PermissionGuard>
               )}
-              <Button variant="secondary" onClick={() => setDupOpen(true)}>
-                Duplicate as New Version
-              </Button>
+              <PermissionGuard permission="recipe.create">
+                <Button variant="secondary" onClick={() => setDupOpen(true)}>
+                  Duplicate as New Version
+                </Button>
+              </PermissionGuard>
             </div>
           </div>
         </div>
@@ -215,7 +223,9 @@ export default function RecipeDetailPage() {
             </span>
           </h2>
           {isDraft && (
+            <PermissionGuard permission="recipe.edit">
             <Button onClick={() => setItemOpen(true)}>+ Add Item</Button>
+            </PermissionGuard>
           )}
         </div>
         <Table
@@ -256,12 +266,14 @@ export default function RecipeDetailPage() {
               header: "",
               accessor: (r) =>
                 isDraft ? (
+                  <PermissionGuard permission="recipe.delete">
                   <Button
                     variant="secondary"
                     onClick={() => deleteItem.mutate(r.id)}
                   >
                     Remove
                   </Button>
+                  </PermissionGuard>
                 ) : null,
             },
           ]}
@@ -278,7 +290,9 @@ export default function RecipeDetailPage() {
             </span>
           </h2>
           {isDraft && (
+            <PermissionGuard permission="recipe.edit">
             <Button onClick={() => setParamOpen(true)}>+ Add Step</Button>
+            </PermissionGuard>
           )}
         </div>
         <Table
@@ -317,12 +331,14 @@ export default function RecipeDetailPage() {
               header: "",
               accessor: (r) =>
                 isDraft ? (
+                  <PermissionGuard permission="recipe.delete">
                   <Button
                     variant="secondary"
                     onClick={() => deleteParam.mutate(r.id)}
                   >
                     Remove
                   </Button>
+                  </PermissionGuard>
                 ) : null,
             },
           ]}
@@ -547,5 +563,6 @@ export default function RecipeDetailPage() {
         </form>
       </Modal>
     </div>
+    </RequirePermission>
   );
 }

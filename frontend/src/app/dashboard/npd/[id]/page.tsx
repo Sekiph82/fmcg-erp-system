@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { PermissionGuard, RequirePermission } from "@/components/PermissionGuard";
 
 interface Gate { id: string; stage: string; department: string; approved_flag: boolean; approved_by: string | null; approved_at: string | null; notes: string | null; }
 interface PilotBatch { id: string; batch_ref: string; batch_no: number; qty_produced: number | null; uom: string; outcome: string; actual_cogs: number | null; started_at: string | null; completed_at: string | null; notes: string | null; }
@@ -89,6 +90,7 @@ export default function NPDProjectDetailPage() {
   const allGatesApproved = currentGates.length > 0 && currentGates.every((g) => g.approved_flag);
 
   return (
+    <RequirePermission permission="npd.view">
     <div className="p-6 space-y-6 max-w-5xl mx-auto">
       <div className="flex items-center gap-3">
         <Link href="/dashboard/npd" className="text-sm text-blue-600 hover:text-blue-800">← NPD Projects</Link>
@@ -107,10 +109,12 @@ export default function NPDProjectDetailPage() {
           </div>
           <div className="flex items-center gap-3">
             <span className={`text-sm font-semibold rounded-full px-3 py-1 ${STAGE_COLOR[proj.stage] ?? "bg-gray-100 text-gray-600"}`}>{proj.stage}</span>
-            <button onClick={advance} disabled={advancing || !allGatesApproved}
-              className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded disabled:opacity-40">
-              {advancing ? "Advancing…" : "Advance Stage →"}
-            </button>
+            <PermissionGuard permission="npd.advance">
+              <button onClick={advance} disabled={advancing || !allGatesApproved}
+                className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded disabled:opacity-40">
+                {advancing ? "Advancing…" : "Advance Stage →"}
+              </button>
+            </PermissionGuard>
           </div>
         </div>
         {!allGatesApproved && currentGates.length > 0 && (
@@ -148,10 +152,12 @@ export default function NPDProjectDetailPage() {
               {g.approved_flag ? (
                 <span className="text-xs text-green-600 bg-green-100 rounded-full px-3 py-1 font-medium">✓ Approved</span>
               ) : (
-                <button onClick={() => approveGate(g.id)} disabled={approving === g.id || !approver.trim()}
-                  className="text-xs bg-blue-600 hover:bg-blue-700 text-white rounded px-3 py-1 disabled:opacity-50">
-                  {approving === g.id ? "…" : "Approve"}
-                </button>
+                <PermissionGuard permission="npd.approve">
+                  <button onClick={() => approveGate(g.id)} disabled={approving === g.id || !approver.trim()}
+                    className="text-xs bg-blue-600 hover:bg-blue-700 text-white rounded px-3 py-1 disabled:opacity-50">
+                    {approving === g.id ? "…" : "Approve"}
+                  </button>
+                </PermissionGuard>
               )}
             </div>
           ))}
@@ -169,10 +175,21 @@ export default function NPDProjectDetailPage() {
             <div className="px-4 py-3 border-b bg-gray-50"><h2 className="text-sm font-semibold text-gray-700">{title}</h2></div>
             <div className="px-4 py-3 space-y-2">
               {Object.entries(data ?? {}).map(([key, val]) => (
-                <label key={key} className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" checked={val} onChange={(e) => toggleChecklist(type, key, e.target.checked)} className="h-4 w-4" />
-                  <span className="text-sm text-gray-700 capitalize">{key.replace(/_/g, " ")}</span>
-                </label>
+                <PermissionGuard
+                  key={key}
+                  permission="npd.edit"
+                  fallback={
+                    <label className="flex items-center gap-2 cursor-not-allowed opacity-70">
+                      <input type="checkbox" checked={val} disabled className="h-4 w-4" />
+                      <span className="text-sm text-gray-700 capitalize">{key.replace(/_/g, " ")}</span>
+                    </label>
+                  }
+                >
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={val} onChange={(e) => toggleChecklist(type, key, e.target.checked)} className="h-4 w-4" />
+                    <span className="text-sm text-gray-700 capitalize">{key.replace(/_/g, " ")}</span>
+                  </label>
+                </PermissionGuard>
               ))}
             </div>
           </div>
@@ -198,6 +215,7 @@ export default function NPDProjectDetailPage() {
           {proj.pilot_batches.length === 0 && <div className="px-4 py-4 text-sm text-gray-400">No pilot batches yet.</div>}
         </div>
         {/* Add batch */}
+        <PermissionGuard permission="npd.pilot">
         <div className="px-4 py-3 border-t bg-gray-50 flex items-end gap-3 flex-wrap">
           <div>
             <label className="text-xs text-gray-500 block mb-1">Batch Ref</label>
@@ -224,7 +242,9 @@ export default function NPDProjectDetailPage() {
             {addingBatch ? "Adding…" : "Add Batch"}
           </button>
         </div>
+        </PermissionGuard>
       </div>
     </div>
+    </RequirePermission>
   );
 }

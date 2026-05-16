@@ -13,13 +13,15 @@ from pydantic import BaseModel
 from sqlalchemy import select, func, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import get_current_user, get_db
+from app.core.access_control import forbidden_detail, has_permission
+from app.core.deps import get_db, require_permission
 from app.models.consumer_complaints import (
     ConsumerComplaint, ComplaintSeverity, ComplaintChannel, ComplaintStatus,
 )
 
 router = APIRouter()
 _SEQ = 0
+MODULE_KEY = "consumer_complaints"
 
 
 def _ref() -> str:
@@ -57,6 +59,15 @@ def _out(c: ConsumerComplaint) -> dict:
     }
 
 
+def _require_user_permission(user, action: str) -> None:
+    permission_code = f"{MODULE_KEY}.{action}"
+    if not has_permission(user, permission_code):
+        raise HTTPException(
+            status_code=403,
+            detail=forbidden_detail(f"Permission '{permission_code}' required"),
+        )
+
+
 # ── Schemas ───────────────────────────────────────────────────────────────────
 
 class ComplaintIn(BaseModel):
@@ -87,7 +98,11 @@ class ComplaintUpdate(BaseModel):
 # ── CRUD ──────────────────────────────────────────────────────────────────────
 
 @router.post("/", status_code=201)
-async def create_complaint(payload: ComplaintIn, db: AsyncSession = Depends(get_db), _=Depends(get_current_user)):
+async def create_complaint(
+    payload: ComplaintIn,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(require_permission(MODULE_KEY, "create")),
+):
     auto_recall = payload.severity == ComplaintSeverity.SAFETY
     complaint = ConsumerComplaint(
         complaint_ref=_ref(),
@@ -123,7 +138,7 @@ async def list_complaints(
     recall_only: bool = False,
     limit: int = Query(100, le=500),
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    _=Depends(require_permission(MODULE_KEY, "view")),
 ):
     q = select(ConsumerComplaint)
     if severity:
@@ -142,7 +157,10 @@ async def list_complaints(
 
 
 @router.get("/stats")
-async def complaint_stats(db: AsyncSession = Depends(get_db), _=Depends(get_current_user)):
+async def complaint_stats(
+    db: AsyncSession = Depends(get_db),
+    _=Depends(require_permission(MODULE_KEY, "view")),
+):
     by_sev_r = await db.execute(
         select(ConsumerComplaint.severity, func.count().label("cnt"))
         .group_by(ConsumerComplaint.severity)
@@ -174,7 +192,11 @@ async def complaint_stats(db: AsyncSession = Depends(get_db), _=Depends(get_curr
 
 
 @router.get("/{complaint_id}")
-async def get_complaint(complaint_id: str, db: AsyncSession = Depends(get_db), _=Depends(get_current_user)):
+async def get_complaint(
+    complaint_id: str,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(require_permission(MODULE_KEY, "view")),
+):
     r = await db.execute(select(ConsumerComplaint).where(ConsumerComplaint.id == uuid.UUID(complaint_id)))
     c = r.scalar_one_or_none()
     if not c:
@@ -187,12 +209,17 @@ async def update_complaint(
     complaint_id: str,
     payload: ComplaintUpdate,
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    current_user=Depends(require_permission(MODULE_KEY, "edit")),
 ):
     r = await db.execute(select(ConsumerComplaint).where(ConsumerComplaint.id == uuid.UUID(complaint_id)))
     c = r.scalar_one_or_none()
     if not c:
         raise HTTPException(404, "Complaint not found")
+
+    if payload.status in (ComplaintStatus.RESOLVED, ComplaintStatus.COMPENSATED, ComplaintStatus.CLOSED):
+        _require_user_permission(current_user, "close")
+    if payload.status == ComplaintStatus.ESCALATED or payload.recall_triggered_flag is True or payload.recall_ref:
+        _require_user_permission(current_user, "link_recall")
 
     for field, val in payload.model_dump(exclude_none=True).items():
         setattr(c, field, val)
@@ -208,7 +235,11 @@ async def update_complaint(
 
 
 @router.get("/by-lot/{lot_number}")
-async def complaints_by_lot(lot_number: str, db: AsyncSession = Depends(get_db), _=Depends(get_current_user)):
+async def complaints_by_lot(
+    lot_number: str,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(require_permission(MODULE_KEY, "view")),
+):
     """All complaints linked to a specific lot/batch number."""
     r = await db.execute(
         select(ConsumerComplaint)

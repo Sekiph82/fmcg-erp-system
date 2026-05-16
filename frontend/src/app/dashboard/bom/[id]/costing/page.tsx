@@ -3,6 +3,7 @@
 import { useParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { bomApi, CostingResult, fmtKES } from "@/lib/bom";
+import { RequirePermission } from "@/components/PermissionGuard";
 
 function CostBar({ label, value, total, color }: { label: string; value: number; total: number; color: string }) {
   const pct = total > 0 ? (value / total) * 100 : 0;
@@ -33,6 +34,7 @@ export default function CostingPage() {
   const gross = data.raw_material_cost + data.intermediate_cost + data.packaging_cost + data.utility_cost;
 
   return (
+    <RequirePermission permission="bom.cost">
     <div className="p-6 space-y-6">
       <div className="flex items-center gap-3">
         <a href={`/dashboard/bom/${id}`} className="text-sm text-gray-400 hover:text-gray-600">← BOM Detail</a>
@@ -107,5 +109,6 @@ export default function CostingPage() {
         </div>
       </div>
     </div>
+    </RequirePermission>
   );
 }

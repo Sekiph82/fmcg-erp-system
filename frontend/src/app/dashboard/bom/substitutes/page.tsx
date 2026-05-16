@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { bomApi, SubstGroupOut, SubstituteOut, SubstitutionPolicy } from "@/lib/bom";
+import { PermissionGuard, RequirePermission } from "@/components/PermissionGuard";
 
 const POLICIES: SubstitutionPolicy[] = ["NO_SUB", "PLANNER_APPROVAL", "QA_APPROVAL", "BOTH_REQUIRED", "SHORTAGE_ONLY", "EMERGENCY_ONLY"];
 
@@ -51,15 +52,18 @@ export default function SubstituteManagerPage() {
   const selectedGroup = groups.find((g) => g.id === selectedGroupId);
 
   return (
+    <RequirePermission permission="bom.view">
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <a href="/dashboard/bom" className="text-sm text-gray-400 hover:text-gray-600">← BOMs</a>
           <h1 className="text-xl font-bold text-gray-900">Substitute Material Manager</h1>
         </div>
-        <button onClick={() => setShowCreateGroup(true)} className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700">
-          + New Group
-        </button>
+        <PermissionGuard permission="bom.create">
+          <button onClick={() => setShowCreateGroup(true)} className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700">
+            + New Group
+          </button>
+        </PermissionGuard>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -103,9 +107,11 @@ export default function SubstituteManagerPage() {
                     {selectedGroup.notes && <span className="text-xs text-gray-400">{selectedGroup.notes}</span>}
                   </div>
                 </div>
-                <button onClick={() => setShowAddSub(true)} className="px-3 py-1.5 text-xs bg-teal-600 text-white rounded-lg hover:bg-teal-700">
-                  + Add Substitute
-                </button>
+                <PermissionGuard permission="bom.create">
+                  <button onClick={() => setShowAddSub(true)} className="px-3 py-1.5 text-xs bg-teal-600 text-white rounded-lg hover:bg-teal-700">
+                    + Add Substitute
+                  </button>
+                </PermissionGuard>
               </div>
 
               {selectedGroup.substitutes.length === 0 ? (
@@ -151,6 +157,7 @@ export default function SubstituteManagerPage() {
 
       {/* Create Group Modal */}
       {showCreateGroup && (
+        <PermissionGuard permission="bom.create">
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
             <div className="flex items-center justify-between mb-4">
@@ -172,10 +179,12 @@ export default function SubstituteManagerPage() {
             </div>
           </div>
         </div>
+        </PermissionGuard>
       )}
 
       {/* Add Substitute Modal */}
       {showAddSub && selectedGroup && (
+        <PermissionGuard permission="bom.create">
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
             <div className="flex items-center justify-between mb-4">
@@ -220,7 +229,9 @@ export default function SubstituteManagerPage() {
             </div>
           </div>
         </div>
+        </PermissionGuard>
       )}
     </div>
+    </RequirePermission>
   );
 }

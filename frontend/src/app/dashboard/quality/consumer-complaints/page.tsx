@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { PermissionGuard, RequirePermission } from "@/components/PermissionGuard";
 
 interface Complaint {
   id: string;
@@ -150,16 +151,19 @@ export default function ConsumerComplaintsPage() {
   const fmtDt = (iso: string) => new Date(iso).toLocaleString("en-GB", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
 
   return (
+    <RequirePermission permission="consumer_complaints.view">
     <div className="p-6 space-y-6 max-w-6xl mx-auto">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Consumer Complaint Management</h1>
           <p className="text-sm text-gray-500 mt-0.5">End-consumer complaints linked to product batches and lots</p>
         </div>
-        <button onClick={() => setShowForm(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded">
-          + Log Complaint
-        </button>
+        <PermissionGuard permission="consumer_complaints.create">
+          <button onClick={() => setShowForm(true)}
+            className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded">
+            + Log Complaint
+          </button>
+        </PermissionGuard>
       </div>
 
       {error && <div className="bg-red-50 border border-red-200 rounded p-3 text-sm text-red-700">{error}</div>}
@@ -292,8 +296,10 @@ export default function ConsumerComplaintsPage() {
                       {c.assigned_to && <span>→ {c.assigned_to}</span>}
                     </div>
                   </div>
-                  <button onClick={() => { setSelected(c); setUpdateForm({ status: c.status, assigned_to: c.assigned_to ?? "", root_cause: c.root_cause ?? "", corrective_action: c.corrective_action ?? "" }); }}
-                    className="text-xs text-blue-600 hover:text-blue-800 shrink-0">Update</button>
+                  <PermissionGuard permission="consumer_complaints.edit">
+                    <button onClick={() => { setSelected(c); setUpdateForm({ status: c.status, assigned_to: c.assigned_to ?? "", root_cause: c.root_cause ?? "", corrective_action: c.corrective_action ?? "" }); }}
+                      className="text-xs text-blue-600 hover:text-blue-800 shrink-0">Update</button>
+                  </PermissionGuard>
                 </div>
               </div>
             ))}
@@ -341,5 +347,6 @@ export default function ConsumerComplaintsPage() {
         </div>
       )}
     </div>
+    </RequirePermission>
   );
 }

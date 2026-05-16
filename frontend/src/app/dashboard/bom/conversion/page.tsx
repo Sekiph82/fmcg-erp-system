@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { bomApi, ConversionProfileOut, ConversionCalcResult, fmtKES } from "@/lib/bom";
+import { PermissionGuard, RequirePermission } from "@/components/PermissionGuard";
 
 const emptyProfile: Partial<ConversionProfileOut> = {
   profile_code: "", profile_name: "",
@@ -50,15 +51,18 @@ export default function ConversionProfilePage() {
   const selected = profiles.find((p) => p.id === selectedId);
 
   return (
+    <RequirePermission permission="bom.view">
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <a href="/dashboard/bom" className="text-sm text-gray-400 hover:text-gray-600">← BOMs</a>
           <h1 className="text-xl font-bold text-gray-900">Bulk-to-Pack Conversion Profiles</h1>
         </div>
-        <button onClick={() => setShowCreate(true)} className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700">
-          + New Profile
-        </button>
+        <PermissionGuard permission="bom.create">
+          <button onClick={() => setShowCreate(true)} className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700">
+            + New Profile
+          </button>
+        </PermissionGuard>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -154,6 +158,7 @@ export default function ConversionProfilePage() {
 
       {/* Create Modal */}
       {showCreate && (
+        <PermissionGuard permission="bom.create">
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 overflow-y-auto max-h-[90vh]">
             <div className="flex items-center justify-between mb-4">
@@ -203,7 +208,9 @@ export default function ConversionProfilePage() {
             </div>
           </div>
         </div>
+        </PermissionGuard>
       )}
     </div>
+    </RequirePermission>
   );
 }
