@@ -1,4 +1,5 @@
 import logging
+import time
 import uuid
 from contextlib import asynccontextmanager
 
@@ -107,8 +108,6 @@ app.add_middleware(
 
 @app.middleware("http")
 async def add_process_time_header(request: Request, call_next):
-    import time
-
     t0 = time.monotonic()
     request_id = request.headers.get(REQUEST_ID_HEADER) or str(uuid.uuid4())
     request.state.request_id = request_id
@@ -167,15 +166,43 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
 register_handlers(app)
 
 
-@app.get("/health")
-async def health():
+_db_health_cache: dict = {"status": "unknown", "checked_at": 0.0}
+_DB_HEALTH_TTL = 8.0  # seconds
+
+
+async def _check_db_health() -> str:
+    now = time.monotonic()
+    if now - _db_health_cache["checked_at"] < _DB_HEALTH_TTL:
+        return _db_health_cache["status"]
     try:
         async with AsyncSessionLocal() as db:
             await db.execute(text("SELECT 1"))
-        db_status = "connected"
-    except Exception as e:
-        logger.warning("Health check: database unavailable - %s", e)
-        db_status = "unavailable"
+        _db_health_cache["status"] = "connected"
+    except Exception as exc:
+        logger.warning("Health check: database unavailable - %s", exc)
+        _db_health_cache["status"] = "unavailable"
+    _db_health_cache["checked_at"] = time.monotonic()
+    return _db_health_cache["status"]
+
+
+@app.get("/live")
+async def liveness():
+    """Kubernetes liveness probe — no external dependencies checked."""
+    return {"status": "ok"}
+
+
+@app.get("/ready")
+async def readiness():
+    """Kubernetes readiness probe — checks DB (cached)."""
+    db_status = await _check_db_health()
+    code = 200 if db_status == "connected" else 503
+    return JSONResponse({"status": "ok" if code == 200 else "degraded", "database": db_status}, status_code=code)
+
+
+@app.get("/health")
+async def health():
+    """Legacy combined health endpoint with cached DB check."""
+    db_status = await _check_db_health()
     return {"status": "ok", "database": db_status}
 
 

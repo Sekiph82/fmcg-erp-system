@@ -53,6 +53,13 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "postgresql+asyncpg://erp_user:changeme@localhost:5432/fmcg_erp"
     REDIS_URL: str = "redis://localhost:6379/0"
 
+    # Connection pool
+    DATABASE_POOL_SIZE: int = 5
+    DATABASE_MAX_OVERFLOW: int = 10
+    DATABASE_POOL_RECYCLE_SECONDS: int = 1800
+    DATABASE_POOL_TIMEOUT_SECONDS: int = 30
+    DATABASE_POOL_PRE_PING: bool = True
+
     # CORS
     BACKEND_CORS_ORIGINS: List[str] = [
         "http://localhost:3000",

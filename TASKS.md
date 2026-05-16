@@ -1,7 +1,7 @@
 # TASKS
 
 ## Current Phase
-PHASE 6 - Advanced/future roadmap. GAP-022 complete. GAP-023 complete. GAP-024 complete. GAP-025 complete. Next: GAP-028L (GAP-026/027 already done; GAP-028K blocked — skip per user override).
+HARDENING PASS 2 — production-readiness fixes. 2026-05-16.
 
 ## Execution Rules
 - Always read this file before starting work.
@@ -16,10 +16,68 @@ PHASE 6 - Advanced/future roadmap. GAP-022 complete. GAP-023 complete. GAP-024 c
 - If context/usage limit is near, stop after updating TASKS.md and CODEX_PROGRESS.md.
 
 ## In Progress
-GAP-028L: Run checks and record result: Full User Manual Generation.
+HARDENING-PASS-2: Fix all confirmed and mostly-fixed issues from Issue Fix Verification Report.
+
+## Completed in Last Run (2026-05-16)
+- DB connection pool: added pool_size, max_overflow, pool_recycle, pool_timeout, pool_pre_ping to session.py + config.py
+- Finance CRUD unbounded queries: list_coa, list_cash_accounts, list_production_cost_entries, list_product_costs, list_budgets — all paginated
+- Finance balance updates: replaced with_for_update + Python arithmetic with atomic SQL UPDATE
+- Bulk inserts: create_journal_entry and create_budget now use db.add_all()
+- Health checks: /live (zero DB cost), /ready (DB cached), /health (DB cached 8s TTL)
+- Middleware: moved `import time` to module level
+- Docker dev: resource limits added to all services
+- Docker prod: resource limits+reservations added; DB/Redis not port-exposed; prod healthcheck uses /live; prod pool size set via env
+- Alembic migration: 20260516_0060_performance_indexes.py — 35 indexes for FK/date/status fields
+- Audit script: scripts/erp-health-audit.py — repeatable automated scan
+- Verification report: docs/ISSUE_FIX_VERIFICATION_REPORT.md
+- All compile checks passed: backend app/ + alembic migration
 
 ## Next Immediate Task
-GAP-028L: Run compile, lint, type, test, and docs checks for Full User Manual Generation. GAP-028K is BLOCKED (empty screenshots-index.json); skip per user override and run GAP-028L checks on existing artifacts.
+1. Fix remaining 52 unbounded CRUD queries (priority: procurement.py, sales.py, quality.py, role.py)
+2. Verify auth audit logging in auth.py
+3. Review AI mock mode UI visibility
+4. Add docs/DEPLOYMENT.md
+
+## Blockers
+- Live alembic upgrade head blocked until Docker/PostgreSQL running
+- pytest blocked until Docker running (DB required)
+- Frontend type-check not run in this session
+
+## Issues Fixed
+See docs/ISSUE_FIX_VERIFICATION_REPORT.md for full status of all 64 issues.
+
+## Issues Still Open
+- A.9: 52 unbounded CRUD queries in non-finance modules
+- A.14: Large export streaming not implemented
+- A.15: Reference data caching not implemented
+- B.23: No request timeout middleware
+- C.31: Multi-replica migration race
+- C.34: No DEPLOYMENT.md
+- D.47: Auth audit logging not verified
+- E.47-56: AI mock mode UI safety not verified
+
+## Tests Run
+- python -m compileall backend/app/ → PASS
+- python -m compileall backend/alembic/versions/20260516_0060_performance_indexes.py → PASS
+- python scripts/erp-health-audit.py → 52 HIGH / 624 MEDIUM findings
+
+## Files Changed
+- backend/app/core/config.py (added 5 pool settings)
+- backend/app/db/session.py (added pool_size/max_overflow/recycle/timeout/pre_ping)
+- backend/app/main.py (import time module-level; /live /ready; cached /health)
+- backend/app/crud/finance.py (limits on 5 list_* funcs; atomic balance update; db.add_all)
+- docker-compose.yml (resource limits)
+- docker-compose.prod.yml (resource limits+reservations; no DB/Redis port exposure; /live healthcheck)
+- backend/alembic/versions/20260516_0060_performance_indexes.py (NEW: 35 indexes)
+- scripts/erp-health-audit.py (NEW: repeatable audit script)
+- docs/ISSUE_FIX_VERIFICATION_REPORT.md (NEW)
+- docs/AUTOMATED_HEALTH_AUDIT.md (updated by audit script)
+
+## Risks / Manual Decisions
+- pool_pre_ping=True adds one extra round-trip per new connection acquired; acceptable for reliability
+- Atomic balance UPDATE removes the Python-side with_for_update; transactions still roll back on error
+- upsert_product_cost still uses with_for_update — this is correct (read-then-upsert pattern needs lock)
+- Alembic index migration is idempotent (checks pg_indexes before creating) — safe to run multiple times
 
 ## Roadmap Task Queue
 | ID | Tier | Task | Status | Dependencies | Acceptance Criteria | Notes |

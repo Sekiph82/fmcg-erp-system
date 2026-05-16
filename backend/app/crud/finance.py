@@ -4,7 +4,7 @@ from decimal import Decimal
 from typing import Optional, List
 import uuid
 
-from sqlalchemy import select, and_, func
+from sqlalchemy import select, and_, func, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -19,11 +19,16 @@ from app.models.finance import (
 
 # ── Chart of Accounts ─────────────────────────────────────────────────────────
 
-async def list_coa(db: AsyncSession, active_only: bool = False) -> List[ChartOfAccount]:
+async def list_coa(
+    db: AsyncSession,
+    active_only: bool = False,
+    limit: int = 500,
+    offset: int = 0,
+) -> List[ChartOfAccount]:
     q = select(ChartOfAccount).options(selectinload(ChartOfAccount.parent))
     if active_only:
         q = q.where(ChartOfAccount.is_active == True)  # noqa: E712
-    q = q.order_by(ChartOfAccount.code)
+    q = q.order_by(ChartOfAccount.code).offset(offset).limit(min(limit, 1000))
     return list((await db.execute(q)).scalars().all())
 
 
@@ -76,20 +81,24 @@ async def create_journal_entry(
     entry = JournalEntry(**data, created_by_id=user_id)
     db.add(entry)
     await db.flush()
-    for ld in lines_data:
-        db.add(JournalLine(entry_id=entry.id, **ld))
-    await db.flush()
+    if lines_data:
+        db.add_all([JournalLine(entry_id=entry.id, **ld) for ld in lines_data])
+        await db.flush()
     await db.refresh(entry)
     return entry
 
 
 # ── Cash Accounts ─────────────────────────────────────────────────────────────
 
-async def list_cash_accounts(db: AsyncSession, active_only: bool = True) -> List[CashAccount]:
+async def list_cash_accounts(
+    db: AsyncSession,
+    active_only: bool = True,
+    limit: int = 200,
+) -> List[CashAccount]:
     q = select(CashAccount)
     if active_only:
         q = q.where(CashAccount.is_active == True)  # noqa: E712
-    q = q.order_by(CashAccount.account_type, CashAccount.name)
+    q = q.order_by(CashAccount.account_type, CashAccount.name).limit(min(limit, 500))
     return list((await db.execute(q)).scalars().all())
 
 
@@ -152,18 +161,19 @@ async def create_cash_transaction(
     tx = CashTransaction(**data, created_by_id=user_id)
     db.add(tx)
     await db.flush()
-    # Update account balance
+    # Atomic balance update avoids row-lock + Python race condition
+    if tx.status == FinTxStatus.CLEARED:
+        delta = tx.amount if tx.direction == TxDirection.RECEIPT else -tx.amount
+        await db.execute(
+            update(CashAccount)
+            .where(CashAccount.id == tx.cash_account_id)
+            .values(current_balance=CashAccount.current_balance + delta)
+        )
+    # For M-Pesa receipts, auto-create reconciliation record
     acct_result = await db.execute(
-        select(CashAccount).where(CashAccount.id == tx.cash_account_id).with_for_update()
+        select(CashAccount).where(CashAccount.id == tx.cash_account_id)
     )
     acct = acct_result.scalar_one_or_none()
-    if acct and tx.status == FinTxStatus.CLEARED:
-        if tx.direction == TxDirection.RECEIPT:
-            acct.current_balance += tx.amount
-        else:
-            acct.current_balance -= tx.amount
-    await db.flush()
-    # For M-Pesa receipts, auto-create reconciliation record
     if acct and acct.account_type == CashAccountType.MPESA and tx.direction == TxDirection.RECEIPT:
         recon = MpesaReconciliation(
             cash_transaction_id=tx.id,
@@ -176,19 +186,16 @@ async def create_cash_transaction(
 
 
 async def clear_transaction(db: AsyncSession, tx: CashTransaction) -> CashTransaction:
-    """Mark a PENDING transaction as CLEARED and update account balance."""
+    """Mark a PENDING transaction as CLEARED and atomically update account balance."""
     if tx.status != FinTxStatus.PENDING:
         return tx
     tx.status = FinTxStatus.CLEARED
-    acct_result = await db.execute(
-        select(CashAccount).where(CashAccount.id == tx.cash_account_id).with_for_update()
+    delta = tx.amount if tx.direction == TxDirection.RECEIPT else -tx.amount
+    await db.execute(
+        update(CashAccount)
+        .where(CashAccount.id == tx.cash_account_id)
+        .values(current_balance=CashAccount.current_balance + delta)
     )
-    acct = acct_result.scalar_one_or_none()
-    if acct:
-        if tx.direction == TxDirection.RECEIPT:
-            acct.current_balance += tx.amount
-        else:
-            acct.current_balance -= tx.amount
     await db.flush()
     return tx
 
@@ -236,6 +243,8 @@ async def list_production_cost_entries(
     production_order_id: Optional[uuid.UUID] = None,
     product_id: Optional[uuid.UUID] = None,
     period_ym: Optional[str] = None,
+    limit: int = 200,
+    offset: int = 0,
 ) -> List[ProductionCostEntry]:
     q = select(ProductionCostEntry).options(selectinload(ProductionCostEntry.product))
     if production_order_id:
@@ -244,7 +253,7 @@ async def list_production_cost_entries(
         q = q.where(ProductionCostEntry.product_id == product_id)
     if period_ym:
         q = q.where(ProductionCostEntry.period_ym == period_ym)
-    q = q.order_by(ProductionCostEntry.created_at.desc())
+    q = q.order_by(ProductionCostEntry.created_at.desc()).offset(offset).limit(min(limit, 1000))
     return list((await db.execute(q)).scalars().all())
 
 
@@ -262,13 +271,15 @@ async def list_product_costs(
     db: AsyncSession,
     product_id: Optional[uuid.UUID] = None,
     period_ym: Optional[str] = None,
+    limit: int = 200,
+    offset: int = 0,
 ) -> List[ProductCost]:
     q = select(ProductCost).options(selectinload(ProductCost.product))
     if product_id:
         q = q.where(ProductCost.product_id == product_id)
     if period_ym:
         q = q.where(ProductCost.period_ym == period_ym)
-    q = q.order_by(ProductCost.period_ym.desc())
+    q = q.order_by(ProductCost.period_ym.desc()).offset(offset).limit(min(limit, 1000))
     return list((await db.execute(q)).scalars().all())
 
 
@@ -296,8 +307,18 @@ async def upsert_product_cost(
 
 # ── Budgets ───────────────────────────────────────────────────────────────────
 
-async def list_budgets(db: AsyncSession) -> List[Budget]:
-    q = select(Budget).options(selectinload(Budget.created_by)).order_by(Budget.year.desc(), Budget.department)
+async def list_budgets(
+    db: AsyncSession,
+    limit: int = 100,
+    offset: int = 0,
+) -> List[Budget]:
+    q = (
+        select(Budget)
+        .options(selectinload(Budget.created_by))
+        .order_by(Budget.year.desc(), Budget.department)
+        .offset(offset)
+        .limit(min(limit, 500))
+    )
     return list((await db.execute(q)).scalars().all())
 
 
@@ -319,8 +340,8 @@ async def create_budget(db: AsyncSession, data: dict, user_id: uuid.UUID) -> Bud
     budget = Budget(**data, created_by_id=user_id)
     db.add(budget)
     await db.flush()
-    for ld in lines_data:
-        db.add(BudgetLine(budget_id=budget.id, **ld))
-    await db.flush()
+    if lines_data:
+        db.add_all([BudgetLine(budget_id=budget.id, **ld) for ld in lines_data])
+        await db.flush()
     await db.refresh(budget)
     return budget
