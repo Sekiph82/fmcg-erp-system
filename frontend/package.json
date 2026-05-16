@@ -13,7 +13,10 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
-    "test:e2e:report": "playwright show-report"
+    "test:e2e:report": "playwright show-report",
+    "audit:pages": "node ../scripts/audit-page-count.js",
+    "audit:redirects": "node ../scripts/check-route-redirects.js",
+    "audit:workspace-tabs": "node ../scripts/check-workspace-tabs.js"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.35.1",

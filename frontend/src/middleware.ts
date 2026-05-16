@@ -52,15 +52,21 @@ const REDIRECTS: Record<string, { p: string; t?: string; d?: string }> = {
   "/dashboard/machine-ops":                     { p: "/dashboard/production", t: "machine-ops" },
   "/dashboard/material-flow":                   { p: "/dashboard/production", t: "material-flow" },
   "/dashboard/projects":                        { p: "/dashboard/production", t: "projects" },
-  // Planning
+  // Planning (no /dashboard/planning entry — it IS the workspace, would cause a loop)
+  // Child pages of the planning workspace redirect to specific tabs:
+  "/dashboard/planning/schedule":               { p: "/dashboard/planning", t: "advanced" },
+  "/dashboard/planning/capacity":               { p: "/dashboard/planning", t: "advanced" },
+  "/dashboard/planning/bottlenecks":            { p: "/dashboard/planning", t: "advanced" },
+  "/dashboard/planning/simulation":             { p: "/dashboard/planning", t: "advanced" },
+  "/dashboard/planning/changeover":             { p: "/dashboard/planning", t: "advanced" },
   "/dashboard/mrp":                             { p: "/dashboard/planning", t: "mrp" },
   "/dashboard/mps":                             { p: "/dashboard/planning", t: "mps" },
-  "/dashboard/planning":                        { p: "/dashboard/planning", t: "advanced" },
   "/dashboard/kanban":                          { p: "/dashboard/planning", t: "kanban" },
   // Quality
   "/dashboard/qms":                             { p: "/dashboard/quality", t: "qms" },
   "/dashboard/allergen":                        { p: "/dashboard/quality", t: "allergen" },
   "/dashboard/brand-assets":                    { p: "/dashboard/quality", t: "brand-assets" },
+  "/dashboard/quality/consumer-complaints":     { p: "/dashboard/quality", t: "consumer-complaints" },
   // Compliance
   "/dashboard/gs1":                             { p: "/dashboard/compliance", t: "gs1" },
   // Utilities
@@ -68,6 +74,7 @@ const REDIRECTS: Record<string, { p: string; t?: string; d?: string }> = {
   "/dashboard/esg":                             { p: "/dashboard/utility-management", t: "esg" },
   // Logistics
   "/dashboard/fleet":                           { p: "/dashboard/logistics", t: "fleet" },
+  "/dashboard/logistics/containers":            { p: "/dashboard/logistics", t: "containers" },
   // HR
   "/dashboard/recruitment":                     { p: "/dashboard/hr", t: "recruitment" },
   "/dashboard/ess":                             { p: "/dashboard/hr", t: "ess" },

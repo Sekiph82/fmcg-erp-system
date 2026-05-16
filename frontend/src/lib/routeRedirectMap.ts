@@ -287,7 +287,8 @@ export const EXACT_REDIRECTS: Record<string, RedirectTarget> = {
   "/dashboard/mps/capacity":                    { pathname: "/dashboard/planning", tab: "mps" },
   "/dashboard/mps/campaigns":                   { pathname: "/dashboard/planning", tab: "mps" },
   "/dashboard/mps/whatif":                      { pathname: "/dashboard/planning", tab: "mps" },
-  "/dashboard/planning":                        { pathname: "/dashboard/planning", tab: "advanced" },
+  // NOTE: /dashboard/planning itself is the workspace — no self-redirect (would loop).
+  // Child routes redirect to specific tabs:
   "/dashboard/planning/schedule":               { pathname: "/dashboard/planning", tab: "advanced" },
   "/dashboard/planning/capacity":               { pathname: "/dashboard/planning", tab: "advanced" },
   "/dashboard/planning/bottlenecks":            { pathname: "/dashboard/planning", tab: "advanced" },
@@ -330,7 +331,7 @@ export const EXACT_REDIRECTS: Record<string, RedirectTarget> = {
   "/dashboard/allergen/reports":                { pathname: "/dashboard/quality", tab: "allergen" },
   "/dashboard/allergen/ai":                     { pathname: "/dashboard/quality", tab: "allergen" },
   "/dashboard/brand-assets":                    { pathname: "/dashboard/quality", tab: "brand-assets" },
-  "/dashboard/quality/consumer-complaints":     { pathname: "/dashboard/quality", tab: "complaints" },
+  "/dashboard/quality/consumer-complaints":     { pathname: "/dashboard/quality", tab: "consumer-complaints" },
 
   // ── Compliance ─────────────────────────────────────────────────────────────
   "/dashboard/gs1":                             { pathname: "/dashboard/compliance", tab: "gs1" },

@@ -104,11 +104,7 @@ export const NAV_CONFIG: NavEntry[] = [
 
   ws("products",    "Products",        "/dashboard/products",
     md("M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10"),
-    { permission: "products.view", searchHints: [
-      { label: "Product Categories", tab: "categories" },
-      { label: "Product Pricing",    tab: "pricing" },
-      { label: "Import Products",    tab: "import" },
-    ]}),
+    { permission: "products.view" }),
 
   ws("materials",   "Materials",       "/dashboard/materials",
     md("M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"),
@@ -124,7 +120,7 @@ export const NAV_CONFIG: NavEntry[] = [
       { label: "Cycle Count",         tab: "cycle-count" },
       { label: "Shelf Life / FEFO",   tab: "shelf-life" },
       { label: "Lot Traceability",    tab: "traceability" },
-      { label: "Serial / Batch",      tab: "tracking" },
+      { label: "Serial / Batch",      tab: "serials" },
       { label: "Stock Movements",     tab: "movements" },
     ]}),
 
@@ -143,7 +139,6 @@ export const NAV_CONFIG: NavEntry[] = [
       { label: "Landed Cost",         tab: "landed-cost" },
       { label: "Supplier Portal",     tab: "supplier-portal" },
       { label: "AI Suggestions",      tab: "suggestions" },
-      { label: "Invoice Match",       tab: "invoice-match" },
     ]}),
 
   // ── Manufacturing ───────────────────────────────────────────────────────────
@@ -190,7 +185,7 @@ export const NAV_CONFIG: NavEntry[] = [
     { permission: "quality.view", searchHints: [
       { label: "QMS & HACCP",         tab: "qms" },
       { label: "Allergen Matrix",     tab: "allergen" },
-      { label: "Consumer Complaints", tab: "complaints" },
+      { label: "Consumer Complaints", tab: "consumer-complaints" },
       { label: "CAPA",                tab: "qms" },
       { label: "COA",                 tab: "qms" },
     ]}),
