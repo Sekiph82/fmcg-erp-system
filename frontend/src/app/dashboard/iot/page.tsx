@@ -1,7 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
+import { PermissionGuard, RequirePermission } from "@/components/PermissionGuard";
 
-interface Dash { readings_last_1h: number; open_alerts: number; critical_alerts: number; active_machines_24h: number; }
+interface Dash { readings_last_1h: number; open_alerts: number; critical_alerts: number; active_machines_24h: number; registered_devices?: number; }
 interface MachineState { machine_id: string; machine_name: string | null; state: string; changed_at: string; minutes_in_state: number | null; }
 interface Alert { id: string; machine_id: string; machine_name: string | null; metric_name: string; triggered_value: number; severity: string; status: string; triggered_at: string; acknowledged_by: string | null; }
 interface SensorReading { machine_id: string; machine_name: string | null; metric_name: string; avg: number; min: number; max: number; unit: string | null; readings: number; }
@@ -90,6 +91,7 @@ export default function IoTDashboardPage() {
   };
 
   return (
+    <RequirePermission permission="iot.view">
     <div className="p-6 space-y-6 max-w-6xl mx-auto">
       <div className="flex items-center justify-between">
         <div>
@@ -216,6 +218,7 @@ export default function IoTDashboardPage() {
 
       {/* Manual ingest */}
       {tab === "ingest" && (
+        <PermissionGuard permission="iot.ingest">
         <div className="bg-white border rounded-lg p-5 shadow-sm space-y-3 max-w-lg">
           <h2 className="text-sm font-semibold text-gray-700">Manual Sensor Data Ingest</h2>
           <p className="text-xs text-gray-400">For testing. In production, devices POST to <code className="bg-gray-100 px-1 rounded">/api/v1/iot/ingest</code> directly.</p>
@@ -233,10 +236,12 @@ export default function IoTDashboardPage() {
           <button onClick={ingest} disabled={saving || !ingestForm.machine_id || !ingestForm.metric_name || !ingestForm.value}
             className="bg-blue-600 text-white text-sm px-4 py-2 rounded disabled:opacity-50">{saving ? "Ingesting…" : "Ingest Reading"}</button>
         </div>
+        </PermissionGuard>
       )}
 
       {/* Add threshold */}
       {tab === "thresholds" && (
+        <PermissionGuard permission="iot.configure">
         <div className="bg-white border rounded-lg p-5 shadow-sm space-y-3 max-w-lg">
           <h2 className="text-sm font-semibold text-gray-700">Add Alert Threshold</h2>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -259,6 +264,7 @@ export default function IoTDashboardPage() {
           <button onClick={addThreshold} disabled={saving || !thresholdForm.machine_id || !thresholdForm.metric_name}
             className="bg-blue-600 text-white text-sm px-4 py-2 rounded disabled:opacity-50">{saving ? "Adding…" : "Add Threshold"}</button>
         </div>
+        </PermissionGuard>
       )}
 
       {/* Info */}
@@ -271,5 +277,6 @@ export default function IoTDashboardPage() {
         </p>
       </div>
     </div>
+    </RequirePermission>
   );
 }

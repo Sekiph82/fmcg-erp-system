@@ -9,6 +9,7 @@ import {
   parseAIError,
 } from "@/lib/aiApi";
 import { useState } from "react";
+import { RequirePermission } from "@/components/PermissionGuard";
 
 const RISK_PILL: Record<NLRiskLevel, string> = {
   LOW: "bg-green-100 text-green-700 border-green-200",
@@ -118,6 +119,7 @@ export default function NLCommandPage() {
   const executionEnabled = statusQuery.data?.nl_command_execution_enabled === true;
 
   return (
+    <RequirePermission permission="ai.view">
     <div className="p-6 space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
@@ -321,5 +323,6 @@ export default function NLCommandPage() {
         )}
       </div>
     </div>
+    </RequirePermission>
   );
 }

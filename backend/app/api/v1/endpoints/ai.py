@@ -17,8 +17,9 @@ from app.core.ai_rate_limiter import check_rate_limit
 from app.core.ai_safety import detect_prompt_injection, sanitize_user_prompt, is_clearly_malicious
 from app.models.ai import (
     AIRequest, AIPrediction, AIRecommendation, AIFormulation, AIScenario,
-    AIRequestStatus,
+    AIRequestStatus, AIPrompt,
 )
+from app.schemas.ai import AIPromptCreate, AIPromptUpdate, AIPromptRead
 from app.services import ai_service as svc
 
 router = APIRouter()
@@ -575,7 +576,7 @@ async def chat(
 @router.get("/forecast-baseline/")
 async def get_forecast_baseline(
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    _=Depends(require_permission("ai", "view")),
 ):
     """Deterministic moving-average sales baseline — no LLM required."""
     return await svc.compute_sales_baseline(db)
@@ -1075,3 +1076,96 @@ async def governance_dashboard(db: AsyncSession = Depends(get_db), _=Depends(req
         "total_tokens_consumed": int(total_tokens_r.scalar() or 0),
         "runs_by_status": {r.status: r.cnt for r in by_status_r.all()},
     }
+
+
+# ── Gap 24: Prompt Registry ───────────────────────────────────────────────────
+
+def _prompt_out(p: AIPrompt) -> dict:
+    return {
+        "id": str(p.id),
+        "key": p.key,
+        "version": p.version,
+        "title": p.title,
+        "module": p.module,
+        "prompt_type": p.prompt_type,
+        "content": p.content,
+        "variables": p.variables,
+        "is_active": p.is_active,
+        "notes": p.notes,
+        "created_by": p.created_by,
+        "created_at": p.created_at.isoformat() if p.created_at else None,
+    }
+
+
+@router.get("/prompts/",
+            dependencies=[Depends(require_permission("ai", "configure"))])
+async def list_prompts(
+    key: Optional[str] = None,
+    module: Optional[str] = None,
+    active_only: bool = False,
+    db: AsyncSession = Depends(get_db),
+):
+    q = select(AIPrompt).order_by(AIPrompt.key, AIPrompt.version.desc())
+    if key:
+        q = q.where(AIPrompt.key == key)
+    if module:
+        q = q.where(AIPrompt.module == module)
+    if active_only:
+        q = q.where(AIPrompt.is_active == True)  # noqa: E712
+    rows = (await db.execute(q)).scalars().all()
+    return [_prompt_out(p) for p in rows]
+
+
+@router.post("/prompts/", status_code=201)
+async def create_prompt(
+    body: AIPromptCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(require_permission("ai", "configure")),
+):
+    p = AIPrompt(
+        **body.model_dump(),
+        created_by=getattr(current_user, "username", None) or str(current_user.id),
+    )
+    db.add(p)
+    await db.commit()
+    await db.refresh(p)
+    return _prompt_out(p)
+
+
+@router.get("/prompts/{prompt_id}/",
+            dependencies=[Depends(require_permission("ai", "configure"))])
+async def get_prompt(prompt_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    p = (await db.execute(select(AIPrompt).where(AIPrompt.id == prompt_id))).scalar_one_or_none()
+    if not p:
+        raise HTTPException(404, "Prompt not found")
+    return _prompt_out(p)
+
+
+@router.put("/prompts/{prompt_id}/",
+            dependencies=[Depends(require_permission("ai", "configure"))])
+async def update_prompt(
+    prompt_id: uuid.UUID,
+    body: AIPromptUpdate,
+    db: AsyncSession = Depends(get_db),
+):
+    p = (await db.execute(select(AIPrompt).where(AIPrompt.id == prompt_id))).scalar_one_or_none()
+    if not p:
+        raise HTTPException(404, "Prompt not found")
+    for field, value in body.model_dump(exclude_unset=True).items():
+        setattr(p, field, value)
+    await db.commit()
+    await db.refresh(p)
+    return _prompt_out(p)
+
+
+@router.post("/prompts/{key}/deactivate",
+             dependencies=[Depends(require_permission("ai", "configure"))])
+async def deactivate_prompt_key(key: str, db: AsyncSession = Depends(get_db)):
+    """Deactivate all versions for a prompt key."""
+    rows = (await db.execute(
+        select(AIPrompt).where(AIPrompt.key == key, AIPrompt.is_active == True)  # noqa: E712
+    )).scalars().all()
+    for p in rows:
+        p.is_active = False
+    await db.commit()
+    return {"key": key, "deactivated": len(rows)}

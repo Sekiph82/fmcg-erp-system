@@ -281,7 +281,7 @@ MODULE_DEFINITIONS: tuple[ModuleDefinition, ...] = (
         label="Maintenance",
         route_prefix="/maintenance",
         import_path="app.api.v1.endpoints.maintenance",
-        permission_actions=DEFAULT_ACTIONS,
+        permission_actions=("view", "create", "edit", "delete", "predict", "review_prediction", "export"),
         sidebar_group="Factory Operations",
         icon_key="wrench",
         ai_mode=MODULE_AI_MODES.get("maintenance", AIMode.RULE_BASED),
@@ -358,7 +358,7 @@ MODULE_DEFINITIONS: tuple[ModuleDefinition, ...] = (
         label="AI & Intelligence",
         route_prefix="/ai",
         import_path="app.api.v1.endpoints.ai",
-        permission_actions=("view", "create", "edit", "approve", "export"),
+        permission_actions=("view", "create", "edit", "approve", "export", "configure"),
         sidebar_group="Intelligence",
         icon_key="brain",
         ai_mode=AIMode.LLM_POWERED,
@@ -374,6 +374,17 @@ MODULE_DEFINITIONS: tuple[ModuleDefinition, ...] = (
         icon_key="calendar-clock",
         ai_mode=MODULE_AI_MODES.get("shelf_life", AIMode.RULE_BASED),
         critical=True,
+    ),
+    ModuleDefinition(
+        key="iot",
+        label="IoT / Machine Streaming",
+        route_prefix="/iot",
+        import_path="app.api.v1.endpoints.iot",
+        permission_actions=("view", "ingest", "configure", "acknowledge", "export", "admin"),
+        sidebar_group="Operations",
+        icon_key="radio-tower",
+        ai_mode=MODULE_AI_MODES.get("iot", AIMode.RULE_BASED),
+        critical=False,
     ),
 )
 
@@ -492,7 +503,7 @@ ENDPOINT_ROUTE_DEFINITIONS: tuple[EndpointRouteDefinition, ...] = (
     EndpointRouteDefinition(key="dynamic_pricing", route_prefix="/dynamic-pricing", import_path="app.api.v1.endpoints.dynamic_pricing", tags=('dynamic-pricing',)),
     EndpointRouteDefinition(key="brand_assets", route_prefix="/brand-assets", import_path="app.api.v1.endpoints.brand_assets", tags=('brand-assets',)),
     EndpointRouteDefinition(key="market_intelligence", route_prefix="/market-intel", import_path="app.api.v1.endpoints.market_intelligence", tags=('market-intelligence',)),
-    EndpointRouteDefinition(key="iot", route_prefix="/iot", import_path="app.api.v1.endpoints.iot", tags=('iot',)),
+    # iot promoted to MODULE_DEFINITIONS - see above
     EndpointRouteDefinition(key="copacking", route_prefix="/copacking", import_path="app.api.v1.endpoints.copacking", tags=('copacking',)),
     EndpointRouteDefinition(key="receipt_ocr", route_prefix="/receipt-ocr", import_path="app.api.v1.endpoints.receipt_ocr", tags=('receipt-ocr',)),
 )

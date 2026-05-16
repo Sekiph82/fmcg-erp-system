@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { aiApi, AIScenario } from "@/lib/aiApi";
+import { RequirePermission } from "@/components/PermissionGuard";
 
 const SCENARIO_TYPES = [
   { value: "price_change", label: "Price Change", icon: "💰", params: ["product_name", "current_price", "proposed_price", "market_segment"] },
@@ -46,6 +47,7 @@ export default function ScenariosPage() {
   };
 
   return (
+    <RequirePermission permission="ai.view">
     <div className="p-6 space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Scenario Simulator</h1>
@@ -228,5 +230,6 @@ export default function ScenariosPage() {
         </div>
       </div>
     </div>
+    </RequirePermission>
   );
 }

@@ -231,3 +231,22 @@ class AIAgentRun(Base, TimestampMixin):
     completed_at = Column(DateTime, nullable=True)
 
     policy = relationship("AIAgentPolicy", foreign_keys=[policy_id])
+
+
+# ── Gap 24: AI Prompt Registry ────────────────────────────────────────────────
+
+class AIPrompt(Base, TimestampMixin):
+    """Versioned prompt registry. One active version per key at a time."""
+    __tablename__ = "ai_prompts"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    key = Column(String(100), nullable=False, index=True)          # e.g. "predictions.demand_forecast"
+    version = Column(Integer, nullable=False, default=1)
+    title = Column(String(255), nullable=False)
+    module = Column(String(50), nullable=True)                     # owning module key
+    prompt_type = Column(String(50), nullable=False, default="system")   # system | user | few_shot | rag_context
+    content = Column(Text, nullable=False)
+    variables = Column(JSON, nullable=True)                        # list of placeholder names
+    is_active = Column(Boolean, default=True, nullable=False)
+    notes = Column(Text, nullable=True)
+    created_by = Column(String(200), nullable=True)

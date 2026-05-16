@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { aiApi, AIRecommendation } from "@/lib/aiApi";
+import { RequirePermission } from "@/components/PermissionGuard";
 
 const PRIORITY_PILL: Record<string, string> = {
   low: "bg-gray-100 text-gray-600",
@@ -58,6 +59,7 @@ export default function RecommendationsPage() {
   });
 
   return (
+    <RequirePermission permission="ai.view">
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
@@ -196,5 +198,6 @@ export default function RecommendationsPage() {
         </div>
       )}
     </div>
+    </RequirePermission>
   );
 }

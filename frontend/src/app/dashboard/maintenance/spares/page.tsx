@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { maintenanceApi, SparePart } from "@/lib/maintenance";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { RequirePermission } from "@/components/PermissionGuard";
 
 export default function SparesPage() {
   const qc = useQueryClient();
@@ -42,6 +43,7 @@ export default function SparesPage() {
   const filtered = filterLow ? lowStock : parts;
 
   return (
+    <RequirePermission permission="maintenance.view">
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
@@ -147,6 +149,7 @@ export default function SparesPage() {
         />
       )}
     </div>
+    </RequirePermission>
   );
 }
 

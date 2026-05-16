@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { maintenanceApi, BreakdownRecord, BreakdownStatus, BreakdownSeverity } from "@/lib/maintenance";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { RequirePermission } from "@/components/PermissionGuard";
 
 const severityBadge = (s: BreakdownSeverity) =>
   s === "CRITICAL" ? "red" : s === "HIGH" ? "red" : s === "MEDIUM" ? "yellow" : "gray";
@@ -43,6 +44,7 @@ export default function BreakdownsPage() {
   const totalDowntime = filtered.reduce((s, b) => s + (b.downtime_minutes || 0), 0);
 
   return (
+    <RequirePermission permission="maintenance.view">
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
@@ -140,6 +142,7 @@ export default function BreakdownsPage() {
         />
       )}
     </div>
+    </RequirePermission>
   );
 }
 

@@ -21,6 +21,7 @@ from app.services.ai_provider import get_ai_provider, AIResponse
 from app.models.ai import (
     AIRequest, AIRequestType, AIProvider as AIProviderEnum,
     AIRequestStatus, AIPrediction, AIRecommendation, AIFormulation, AIScenario,
+    AIPrompt,
 )
 from app.core.config import settings
 from app.core.ai_safety import mask_sensitive_context, build_safe_system_prompt
@@ -637,3 +638,19 @@ async def compute_sales_baseline(db: AsyncSession) -> dict:
         "monthly_history_kes": rows,
         "note": "Baseline uses weighted 3-month moving average (weights: 1,2,3). LLM interprets this baseline.",
     }
+
+
+async def resolve_prompt(db: AsyncSession, key: str, default: str) -> str:
+    """Return active prompt content from ai_prompts table, falling back to default."""
+    try:
+        row = (await db.execute(
+            select(AIPrompt)
+            .where(AIPrompt.key == key, AIPrompt.is_active == True)  # noqa: E712
+            .order_by(AIPrompt.version.desc())
+            .limit(1)
+        )).scalar_one_or_none()
+        if row:
+            return row.content
+    except Exception:
+        pass
+    return default

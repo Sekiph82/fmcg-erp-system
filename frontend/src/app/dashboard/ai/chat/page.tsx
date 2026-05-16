@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { aiApi, AIChatResponse, parseAIError } from "@/lib/aiApi";
 import { Button } from "@/components/ui/Button";
+import { RequirePermission } from "@/components/PermissionGuard";
 
 interface Message {
   role: "user" | "assistant";
@@ -79,6 +80,7 @@ export default function ERPChatPage() {
   const isMock = status?.mode === "mock" || !status?.configured;
 
   return (
+    <RequirePermission permission="ai.create">
     <div className="flex flex-col h-[calc(100vh-120px)] max-w-4xl mx-auto px-4 py-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
@@ -199,5 +201,6 @@ export default function ERPChatPage() {
         {isMock && " · Running in mock mode — no API key configured"}
       </p>
     </div>
+    </RequirePermission>
   );
 }

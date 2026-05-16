@@ -3,6 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { aiApi, AIDashboard, AIPrediction, AIRecommendation, parseAIError } from "@/lib/aiApi";
+import { RequirePermission } from "@/components/PermissionGuard";
 
 const RISK_PILL: Record<string, string> = {
   low: "bg-green-100 text-green-700",
@@ -81,7 +82,8 @@ export default function AIDashboardPage() {
   const stats = data?.stats;
 
   return (
-    <div className="p-6 space-y-6">
+    <RequirePermission permission="ai.view">
+    <div className="space-y-6 p-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -222,5 +224,6 @@ export default function AIDashboardPage() {
         </div>
       </div>
     </div>
+    </RequirePermission>
   );
 }

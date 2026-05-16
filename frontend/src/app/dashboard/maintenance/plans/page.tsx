@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { maintenanceApi, PMPlan, PMWorkOrder, PMFrequency, PMStatus } from "@/lib/maintenance";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { RequirePermission } from "@/components/PermissionGuard";
 
 const statusBadge = (s: PMStatus) =>
   s === "COMPLETED" ? "green" : s === "OVERDUE" ? "red" : s === "IN_PROGRESS" ? "blue" : s === "SKIPPED" ? "gray" : "yellow";
@@ -50,6 +51,7 @@ export default function PMPlansPage() {
   const today = new Date().toISOString().slice(0, 10);
 
   return (
+    <RequirePermission permission="maintenance.view">
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
@@ -194,6 +196,7 @@ export default function PMPlansPage() {
         />
       )}
     </div>
+    </RequirePermission>
   );
 }
 

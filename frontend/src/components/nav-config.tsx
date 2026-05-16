@@ -1211,7 +1211,7 @@ export const NAV_CONFIG: NavEntry[] = [
       { label: "KPI Center",          href: "/dashboard/utility-management/kpi-center",        permission: "utility_management.view" },
       { label: "Reports & Analytics", href: "/dashboard/utility-management/reports",           permission: "utility_management.view" },
       { label: "Integration Hub",     href: "/dashboard/utility-management/integration",       permission: "utility_management.view" },
-      { label: "IoT Machine Data",    href: "/dashboard/iot",                                  permission: "utility_management.view" },
+      { label: "IoT Machine Data",    href: "/dashboard/iot",                                  permission: "iot.view" },
     ],
   },
 

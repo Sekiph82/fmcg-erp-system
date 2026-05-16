@@ -13,16 +13,17 @@ from pydantic import BaseModel
 from sqlalchemy import select, func, desc, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import get_current_user, get_db
+from app.core.deps import get_current_user, get_db, require_permission
 from app.models.iot import (
     SensorDataPoint, MachineStateEvent, IoTAlertThreshold, IoTAlert,
+    IoTDevice, IoTChannel,
     MachineState, AlertSeverity, AlertStatus,
 )
 
 router = APIRouter()
 
 
-# ── Schemas ───────────────────────────────────────────────────────────────────
+# ── Request Schemas ───────────────────────────────────────────────────────────
 
 class SensorIn(BaseModel):
     machine_id: str
@@ -63,8 +64,12 @@ class ThresholdIn(BaseModel):
 # ── Sensor Data Ingest ────────────────────────────────────────────────────────
 
 @router.post("/ingest", status_code=201)
-async def ingest_sensor(payload: SensorIn, db: AsyncSession = Depends(get_db)):
-    """Ingest single sensor reading. No auth required — designed for device push."""
+async def ingest_sensor(
+    payload: SensorIn,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(require_permission("iot", "ingest")),
+):
+    """Ingest single sensor reading. Requires iot.ingest permission."""
     recorded = datetime.fromisoformat(payload.recorded_at) if payload.recorded_at else datetime.utcnow()
     dp = SensorDataPoint(
         machine_id=payload.machine_id,
@@ -113,8 +118,12 @@ async def ingest_sensor(payload: SensorIn, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/ingest/batch", status_code=201)
-async def ingest_batch(payload: SensorBatchIn, db: AsyncSession = Depends(get_db)):
-    """Batch ingest up to 1000 sensor readings."""
+async def ingest_batch(
+    payload: SensorBatchIn,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(require_permission("iot", "ingest")),
+):
+    """Batch ingest up to 1000 sensor readings. Requires iot.ingest permission."""
     if len(payload.readings) > 1000:
         raise HTTPException(400, "Max 1000 readings per batch")
     ingested = 0
@@ -137,7 +146,7 @@ async def latest_readings(
     metric_name: Optional[str] = None,
     limit: int = Query(50, le=500),
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    _=Depends(require_permission("iot", "view")),
 ):
     """Latest N sensor readings."""
     q = select(SensorDataPoint).where(SensorDataPoint.quality_flag == True)
@@ -159,7 +168,7 @@ async def latest_readings(
 async def sensor_summary(
     hours: int = Query(1, ge=1, le=720),
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    _=Depends(require_permission("iot", "view")),
 ):
     """Avg/min/max per machine+metric over last N hours."""
     cutoff = datetime.utcnow() - timedelta(hours=hours)
@@ -191,9 +200,12 @@ async def sensor_summary(
 # ── Machine State ─────────────────────────────────────────────────────────────
 
 @router.post("/machines/state", status_code=201)
-async def record_state(payload: StateIn, db: AsyncSession = Depends(get_db)):
-    """Record machine state change. Computes duration in previous state."""
-    # Get last state for duration calc
+async def record_state(
+    payload: StateIn,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(require_permission("iot", "ingest")),
+):
+    """Record machine state change. Requires iot.ingest permission."""
     prev_r = await db.execute(
         select(MachineStateEvent)
         .where(MachineStateEvent.machine_id == payload.machine_id)
@@ -222,9 +234,11 @@ async def record_state(payload: StateIn, db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/machines/current-states")
-async def current_machine_states(db: AsyncSession = Depends(get_db), _=Depends(get_current_user)):
+async def current_machine_states(
+    db: AsyncSession = Depends(get_db),
+    _=Depends(require_permission("iot", "view")),
+):
     """Current state per machine (latest state event per machine_id)."""
-    # Get max changed_at per machine
     latest_r = await db.execute(
         select(MachineStateEvent.machine_id, func.max(MachineStateEvent.changed_at).label("latest"))
         .group_by(MachineStateEvent.machine_id)
@@ -256,7 +270,7 @@ async def state_history(
     machine_id: str,
     limit: int = Query(50, le=200),
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    _=Depends(require_permission("iot", "view")),
 ):
     q = select(MachineStateEvent).where(MachineStateEvent.machine_id == machine_id)
     q = q.order_by(desc(MachineStateEvent.changed_at)).limit(limit)
@@ -272,7 +286,11 @@ async def state_history(
 # ── Alert Thresholds ──────────────────────────────────────────────────────────
 
 @router.post("/thresholds", status_code=201)
-async def create_threshold(payload: ThresholdIn, db: AsyncSession = Depends(get_db), _=Depends(get_current_user)):
+async def create_threshold(
+    payload: ThresholdIn,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(require_permission("iot", "configure")),
+):
     t = IoTAlertThreshold(**payload.model_dump())
     db.add(t)
     await db.commit()
@@ -287,7 +305,7 @@ async def create_threshold(payload: ThresholdIn, db: AsyncSession = Depends(get_
 async def list_thresholds(
     machine_id: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    _=Depends(require_permission("iot", "view")),
 ):
     q = select(IoTAlertThreshold).where(IoTAlertThreshold.is_active == True)
     if machine_id:
@@ -311,7 +329,7 @@ async def list_alerts(
     machine_id: Optional[str] = None,
     limit: int = Query(50, le=200),
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    _=Depends(require_permission("iot", "view")),
 ):
     q = select(IoTAlert)
     if status:
@@ -337,7 +355,7 @@ async def acknowledge_alert(
     alert_id: str,
     acknowledged_by: str = Query(...),
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    _=Depends(require_permission("iot", "acknowledge")),
 ):
     r = await db.execute(select(IoTAlert).where(IoTAlert.id == uuid.UUID(alert_id)))
     alert = r.scalar_one_or_none()
@@ -350,8 +368,57 @@ async def acknowledge_alert(
     return {"alert_id": alert_id, "status": "ACKNOWLEDGED", "acknowledged_by": acknowledged_by}
 
 
+# ── Device Registry (read-only) ───────────────────────────────────────────────
+
+@router.get("/devices")
+async def list_devices(
+    status: Optional[str] = None,
+    limit: int = Query(50, le=200),
+    db: AsyncSession = Depends(get_db),
+    _=Depends(require_permission("iot", "view")),
+):
+    """List registered IoT devices."""
+    q = select(IoTDevice)
+    if status:
+        q = q.where(IoTDevice.status == status)
+    q = q.order_by(IoTDevice.name).limit(limit)
+    rows = (await db.execute(q)).scalars().all()
+    return [
+        {"id": str(r.id), "device_code": r.device_code, "name": r.name,
+         "protocol": r.protocol, "device_type": r.device_type, "status": r.status,
+         "machine_id": r.machine_id, "last_seen_at": r.last_seen_at.isoformat() if r.last_seen_at else None}
+        for r in rows
+    ]
+
+
+@router.get("/devices/{device_id}/channels")
+async def list_device_channels(
+    device_id: str,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(require_permission("iot", "view")),
+):
+    """List channels for a registered IoT device."""
+    q = select(IoTChannel).where(
+        IoTChannel.device_id == uuid.UUID(device_id),
+        IoTChannel.is_active == True,
+    ).order_by(IoTChannel.metric_name)
+    rows = (await db.execute(q)).scalars().all()
+    return [
+        {"id": str(r.id), "channel_code": r.channel_code, "metric_name": r.metric_name,
+         "unit": r.unit, "value_type": r.value_type,
+         "min_valid_value": float(r.min_valid_value) if r.min_valid_value is not None else None,
+         "max_valid_value": float(r.max_valid_value) if r.max_valid_value is not None else None}
+        for r in rows
+    ]
+
+
+# ── Dashboard ─────────────────────────────────────────────────────────────────
+
 @router.get("/dashboard")
-async def iot_dashboard(db: AsyncSession = Depends(get_db), _=Depends(get_current_user)):
+async def iot_dashboard(
+    db: AsyncSession = Depends(get_db),
+    _=Depends(require_permission("iot", "view")),
+):
     """IoT system overview."""
     cutoff_1h = datetime.utcnow() - timedelta(hours=1)
     cutoff_24h = datetime.utcnow() - timedelta(hours=24)
@@ -372,10 +439,15 @@ async def iot_dashboard(db: AsyncSession = Depends(get_db), _=Depends(get_curren
         select(func.count(func.distinct(SensorDataPoint.machine_id)))
         .where(SensorDataPoint.recorded_at >= cutoff_24h)
     )
+    devices_r = await db.execute(
+        select(func.count()).select_from(IoTDevice)
+        .where(IoTDevice.status == "ACTIVE")
+    )
 
     return {
         "readings_last_1h": readings_1h_r.scalar() or 0,
         "open_alerts": open_alerts_r.scalar() or 0,
         "critical_alerts": critical_r.scalar() or 0,
         "active_machines_24h": machines_r.scalar() or 0,
+        "registered_devices": devices_r.scalar() or 0,
     }

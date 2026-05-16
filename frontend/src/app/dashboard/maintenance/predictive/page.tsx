@@ -8,6 +8,7 @@ import {
   MaintenancePredictionStatus,
 } from "@/lib/maintenance";
 import { useMemo, useState } from "react";
+import { RequirePermission, PermissionGuard } from "@/components/PermissionGuard";
 
 const RISK_PILL: Record<MaintenancePredictionRisk, string> = {
   LOW: "bg-green-100 text-green-700 border-green-200",
@@ -105,6 +106,7 @@ export default function PredictiveMaintenancePage() {
   }, [predictions]);
 
   return (
+    <RequirePermission permission="maintenance.view">
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
@@ -121,6 +123,7 @@ export default function PredictiveMaintenancePage() {
           >
             {[14, 30, 60, 90].map((days) => <option key={days} value={days}>{days} days</option>)}
           </select>
+          <PermissionGuard permission="maintenance.predict">
           <button
             onClick={() => generate.mutate()}
             disabled={generate.isPending}
@@ -128,6 +131,7 @@ export default function PredictiveMaintenancePage() {
           >
             {generate.isPending ? "Analyzing..." : "Generate Predictions"}
           </button>
+          </PermissionGuard>
         </div>
       </div>
 
@@ -251,6 +255,7 @@ export default function PredictiveMaintenancePage() {
                   )}
 
                   {prediction.status === "OPEN" && (
+                    <PermissionGuard permission="maintenance.review_prediction">
                     <div className="flex flex-col lg:flex-row gap-2">
                       <input
                         value={reviewNotes[prediction.id] ?? ""}
@@ -280,6 +285,7 @@ export default function PredictiveMaintenancePage() {
                         Dismiss
                       </button>
                     </div>
+                    </PermissionGuard>
                   )}
                 </div>
               );
@@ -288,5 +294,6 @@ export default function PredictiveMaintenancePage() {
         )}
       </div>
     </div>
+    </RequirePermission>
   );
 }

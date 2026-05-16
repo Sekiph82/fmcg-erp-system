@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { maintenanceApi } from "@/lib/maintenance";
 import { Badge } from "@/components/ui/Badge";
+import { RequirePermission } from "@/components/PermissionGuard";
 
 export default function MaintenanceReportsPage() {
   const { data: mtbfData = [], isLoading: mtbfLoading } = useQuery({
@@ -26,6 +27,7 @@ export default function MaintenanceReportsPage() {
   const bestMtbf = mtbfData.reduce((best, r) => (!best || (r.mtbf_days ?? 0) > (best.mtbf_days ?? 0) ? r : best), mtbfData[0] as typeof mtbfData[0] | undefined);
 
   return (
+    <RequirePermission permission="maintenance.export">
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Maintenance Reports</h1>
@@ -207,5 +209,6 @@ export default function MaintenanceReportsPage() {
         )}
       </div>
     </div>
+    </RequirePermission>
   );
 }

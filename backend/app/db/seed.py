@@ -184,9 +184,13 @@ PERMISSIONS = [
     ("shelf_life", "report",  "Report Shelf-Life",  "View FEFO compliance and stock-value-at-risk reports",      False),
 
     # Maintenance
-    ("maintenance", "view",   "View Maintenance",      "View assets and work orders",              True),
-    ("maintenance", "create", "Create Maintenance",    "Create work orders",                       False),
-    ("maintenance", "edit",   "Edit Maintenance",      "Edit maintenance records",                 False),
+    ("maintenance", "view",              "View Maintenance",              "View assets, PM plans, breakdowns, spare parts, predictions, reports", True),
+    ("maintenance", "create",            "Create Maintenance",            "Create assets, PM plans, PM work orders, breakdown records",           False),
+    ("maintenance", "edit",              "Edit Maintenance",              "Edit assets, PM plans, work orders, breakdown records, spare parts",    False),
+    ("maintenance", "delete",            "Delete Maintenance",            "Delete assets or decommission",                                        False),
+    ("maintenance", "predict",           "Generate Maintenance Predictions", "Generate ML/rule-based predictive maintenance analysis",            False),
+    ("maintenance", "review_prediction", "Review Maintenance Predictions","Review, dismiss, or escalate predictive maintenance results",          False),
+    ("maintenance", "export",            "Export Maintenance",            "Export MTBF/MTTR, downtime and overdue PM reports",                    False),
 
     # Warehouses & WMS
     ("warehouses",  "view",   "View Warehouses",       "View warehouse configuration",             True),
@@ -370,10 +374,12 @@ PERMISSIONS = [
     ("utilities",  "manage", "Manage Utilities", "Full admin — create/delete system configs, number series, currencies", False),
 
     # ── AI & Intelligence ─────────────────────────────────────────────────────
-    ("ai",  "view",    "View AI",            "View AI dashboard, predictions, recommendations, logs",          False),
-    ("ai",  "create",  "Run AI",             "Generate AI predictions, recommendations, scenarios, formulations, chat", False),
-    ("ai",  "edit",    "Action AI",          "Mark AI recommendations as actioned or dismissed",               False),
-    ("ai",  "approve", "Approve AI",         "Approve AI-generated formulations and high-risk recommendations", False),
+    ("ai",  "view",      "View AI",             "View AI dashboard, predictions, recommendations, logs",           False),
+    ("ai",  "create",    "Run AI",              "Generate AI predictions, recommendations, scenarios, formulations, chat", False),
+    ("ai",  "edit",      "Action AI",           "Mark AI recommendations as actioned or dismissed",                False),
+    ("ai",  "approve",   "Approve AI",          "Approve AI-generated formulations and high-risk recommendations",  False),
+    ("ai",  "export",    "Export AI",           "Export AI audit logs and governance reports",                     False),
+    ("ai",  "configure", "Configure AI Prompts","Create, update, and deactivate versioned prompt templates",       False),
 
     # ── Utility Management (factory infrastructure) ────────────────────────────
     ("utility_management", "view",   "View Utility Management",   "View utility assets, meters, readings, consumption", False),
@@ -559,7 +565,12 @@ SCOPE_AWARE_PERMISSIONS = [
     ("maintenance", "edit_own_scope", "Edit Scoped Maintenance", "Edit maintenance records in assigned machine/factory scope", False),
     ("utilities", "view_all", "View All Utilities", "View all utility assets/readings", False),
     ("utilities", "edit_own_scope", "Edit Scoped Utilities", "Edit utility records in assigned utility area/factory scope", False),
-    ("iot", "manage", "Manage IoT", "Manage IoT device configuration", False),
+    ("iot", "view",        "View IoT",             "View IoT dashboard, sensor readings, machine states, thresholds, and alerts", True),
+    ("iot", "ingest",     "Ingest IoT Data",       "Submit sensor readings and machine state events via HTTP ingest", False),
+    ("iot", "configure",  "Configure IoT",         "Create and manage alert thresholds and IoT device/channel configuration", False),
+    ("iot", "acknowledge","Acknowledge IoT Alerts","Acknowledge and resolve IoT alerts", False),
+    ("iot", "export",     "Export IoT Data",       "Export IoT telemetry, alerts, and configuration reports", False),
+    ("iot", "admin",      "Administer IoT",        "Manage device credentials, registry, and dangerous IoT configuration", False),
 
     # Administration / audit
     ("users", "manage", "Manage Users", "Manage user lifecycle and assignments", False),
@@ -624,6 +635,13 @@ ROLE_DEFINITIONS = {
             "bom.archive", "bom.cost", "bom.ai", "bom.export",
             "recipe.view", "recipe.create", "recipe.edit", "recipe.delete", "recipe.approve",
             "recipe.obsolete", "recipe.export",
+            # Admin manages IoT registry and configuration
+            "iot.view", "iot.ingest", "iot.configure", "iot.acknowledge", "iot.export", "iot.admin",
+            # Admin has full maintenance access
+            "maintenance.view", "maintenance.create", "maintenance.edit", "maintenance.delete",
+            "maintenance.predict", "maintenance.review_prediction", "maintenance.export",
+            # Admin has full AI access including prompt configuration
+            "ai.view", "ai.create", "ai.edit", "ai.approve", "ai.export", "ai.configure",
             # Admin can import users and manage import templates for user onboarding
             *_import("users"),
         ],
@@ -659,7 +677,7 @@ ROLE_DEFINITIONS = {
             "integrations.view",
             "analytics.view", "analytics.export",
             "marketing_analytics.view",
-            "ai.view", "ai.create", "ai.edit", "ai.approve",
+            "ai.view", "ai.create", "ai.edit", "ai.approve", "ai.export",
             "planning.view_all", "planning.calculate_all", "planning.approve_all",
             "utility_management.view",
             "fleet.view",
@@ -681,6 +699,7 @@ ROLE_DEFINITIONS = {
             "stock_movement.edit", "stock_movement.delete",
             "products.delete",
             "utilities.view", "utilities.edit",
+            "iot.view", "iot.acknowledge", "iot.export",
             "logistics.view", "logistics.create", "logistics.edit",
             "quality.view", "quality.create", "quality.approve",
             "consumer_complaints.view", "consumer_complaints.create", "consumer_complaints.edit",
@@ -692,6 +711,7 @@ ROLE_DEFINITIONS = {
             "shelf_life.view", "shelf_life.create", "shelf_life.edit",
             "shelf_life.approve", "shelf_life.hold", "shelf_life.dispose", "shelf_life.report",
             "maintenance.view", "maintenance.create", "maintenance.edit",
+            "maintenance.predict", "maintenance.review_prediction", "maintenance.export",
             "warehouses.view", "warehouses.create", "warehouses.edit",
             "wms.view", "wms.create", "wms.edit",
             "materials.view", "materials.create", "materials.edit",
@@ -702,6 +722,7 @@ ROLE_DEFINITIONS = {
             "documents.view", "knowledge_base.view", "esign.view",
             "analytics.view",
             "audit.view",
+            "ai.view", "ai.create", "ai.export",
             # Full bulk-import authority across all modules
             *_ALL_IMPORT_PERMS,
         ],
@@ -738,8 +759,8 @@ ROLE_DEFINITIONS = {
             "audit.view", "audit.export",
             # CTO manages system utilities (configs, UOM, number series, currencies)
             "utilities.view", "utilities.edit", "utilities.manage",
-            # Full AI access
-            "ai.view", "ai.create", "ai.edit", "ai.approve",
+            # Full AI access including export and prompt configuration
+            "ai.view", "ai.create", "ai.edit", "ai.approve", "ai.export", "ai.configure",
             # Read-only visibility across all operational modules
             "production.view", "procurement.view", "inventory.view",
             "planning.view_all",
@@ -754,6 +775,10 @@ ROLE_DEFINITIONS = {
             "utility_management.view",
             "fleet.view", "cycle_count.view",
             "esg.view",
+            # CTO manages IoT infrastructure and device registry
+            "iot.view", "iot.configure", "iot.acknowledge", "iot.export", "iot.admin",
+            # CTO can view and export maintenance data
+            "maintenance.export",
             # Full bulk-import authority across all modules
             *_ALL_IMPORT_PERMS,
         ],
@@ -907,6 +932,7 @@ ROLE_DEFINITIONS = {
         "description": "Asset maintenance and work order execution",
         "permissions": [
             "maintenance.view", "maintenance.create", "maintenance.edit",
+            "iot.view",
             "inventory.view",
             # Import: own module only
             *_import("maintenance"),
@@ -939,12 +965,15 @@ ROLE_DEFINITIONS = {
         "permissions": [
             "production.view_all", "inventory.view_all", "quality.view_all",
             "maintenance.view_all", "utilities.view_all",
+            "iot.view", "iot.acknowledge",
             "planning.view_all", "planning.create_own_scope", "planning.edit_own_scope",
             "planning.calculate_own_scope", "planning.approve_own_scope",
             "production.create_own_scope", "production.edit_own_scope", "production.release_own_scope",
             "production.close_own_scope", "production.cancel_own_scope",
             "npd.view", "bom.view", "bom.cost", "recipe.view",
             "quality.approve_own_scope", "maintenance.edit_own_scope",
+            # Factory manager can run and review predictive maintenance
+            "maintenance.predict", "maintenance.review_prediction",
         ],
     },
     "warehouse_manager": {
@@ -968,6 +997,8 @@ ROLE_DEFINITIONS = {
             "planning.calculate_own_scope", "planning.approve_own_scope",
             "production.create_own_scope", "production.edit_own_scope", "production.release_own_scope",
             "production.close_own_scope", "production.cancel_own_scope", "mrp.run_own_scope",
+            # Production manager can view maintenance status and reports
+            "maintenance.view", "maintenance.export",
         ],
     },
     "quality_manager": {

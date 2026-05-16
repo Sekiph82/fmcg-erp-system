@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { aiApi, AIFormulation, FormulationIngredient } from "@/lib/aiApi";
+import { RequirePermission } from "@/components/PermissionGuard";
 
 const PRODUCT_CATEGORIES = [
   "liquid_detergent",
@@ -187,6 +188,7 @@ export default function FormulationsPage() {
   const totalPct = fd?.ingredients?.reduce((s, i) => s + i.percentage, 0) ?? 0;
 
   return (
+    <RequirePermission permission="ai.view">
     <div className="p-6 space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Formulation Engine</h1>
@@ -582,5 +584,6 @@ export default function FormulationsPage() {
         </div>
       </div>
     </div>
+    </RequirePermission>
   );
 }

@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import get_db, get_current_user
+from app.core.deps import get_db, require_permission
 from app.models.user import User
 from app.models.maintenance import (
     AssetStatus, PMStatus, BreakdownStatus, BreakdownSeverity,
@@ -176,7 +176,7 @@ async def list_assets(
     status: Optional[AssetStatus] = None,
     line: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    _=Depends(require_permission("maintenance", "view")),
 ):
     assets = await crud.list_assets(db, status=status, line=line)
     return [_asset_read(a) for a in assets]
@@ -186,7 +186,7 @@ async def list_assets(
 async def create_asset(
     body: AssetCreate,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    _=Depends(require_permission("maintenance", "create")),
 ):
     asset = await crud.create_asset(db, body.model_dump())
     await db.commit()
@@ -197,7 +197,7 @@ async def create_asset(
 async def get_asset(
     asset_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    _=Depends(require_permission("maintenance", "view")),
 ):
     asset = await crud.get_asset(db, asset_id)
     if not asset:
@@ -210,7 +210,7 @@ async def update_asset(
     asset_id: uuid.UUID,
     body: AssetUpdate,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    _=Depends(require_permission("maintenance", "edit")),
 ):
     asset = await crud.get_asset(db, asset_id)
     if not asset:
@@ -227,7 +227,7 @@ async def list_pm_plans(
     asset_id: Optional[uuid.UUID] = None,
     active_only: bool = False,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    _=Depends(require_permission("maintenance", "view")),
 ):
     plans = await crud.list_pm_plans(db, asset_id=asset_id, active_only=active_only)
     return [_plan_read(p) for p in plans]
@@ -237,7 +237,7 @@ async def list_pm_plans(
 async def create_pm_plan(
     body: PMPlanCreate,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    _=Depends(require_permission("maintenance", "create")),
 ):
     data = body.model_dump()
     data["asset_id"] = uuid.UUID(data["asset_id"])
@@ -253,7 +253,7 @@ async def update_pm_plan(
     plan_id: uuid.UUID,
     body: PMPlanUpdate,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    _=Depends(require_permission("maintenance", "edit")),
 ):
     plan = await crud.get_pm_plan(db, plan_id)
     if not plan:
@@ -271,7 +271,7 @@ async def list_work_orders(
     plan_id: Optional[uuid.UUID] = None,
     status: Optional[PMStatus] = None,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    _=Depends(require_permission("maintenance", "view")),
 ):
     wos = await crud.list_work_orders(db, plan_id=plan_id, status=status)
     return [_wo_read(wo) for wo in wos]
@@ -281,7 +281,7 @@ async def list_work_orders(
 async def create_work_order(
     body: PMWorkOrderCreate,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    _=Depends(require_permission("maintenance", "create")),
 ):
     count_res = await db.execute(select(func.count()).select_from(__import__("app.models.maintenance", fromlist=["PMWorkOrder"]).PMWorkOrder))
     count = count_res.scalar() or 0
@@ -298,7 +298,7 @@ async def complete_work_order(
     wo_id: uuid.UUID,
     body: PMWorkOrderUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("maintenance", "edit")),
 ):
     wo = await crud.get_work_order(db, wo_id)
     if not wo:
@@ -316,7 +316,7 @@ async def list_breakdowns(
     asset_id: Optional[uuid.UUID] = None,
     status: Optional[BreakdownStatus] = None,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    _=Depends(require_permission("maintenance", "view")),
 ):
     bds = await crud.list_breakdowns(db, asset_id=asset_id, status=status)
     return [_bd_read(bd) for bd in bds]
@@ -326,7 +326,7 @@ async def list_breakdowns(
 async def create_breakdown(
     body: BreakdownCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("maintenance", "create")),
 ):
     from app.models.maintenance import BreakdownRecord
     count_res = await db.execute(select(func.count()).select_from(BreakdownRecord))
@@ -345,7 +345,7 @@ async def create_breakdown(
 async def get_breakdown(
     bd_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    _=Depends(require_permission("maintenance", "view")),
 ):
     bd = await crud.get_breakdown(db, bd_id)
     if not bd:
@@ -358,7 +358,7 @@ async def resolve_breakdown(
     bd_id: uuid.UUID,
     body: BreakdownUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("maintenance", "edit")),
 ):
     bd = await crud.get_breakdown(db, bd_id)
     if not bd:
@@ -374,7 +374,7 @@ async def update_breakdown(
     bd_id: uuid.UUID,
     body: BreakdownUpdate,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    _=Depends(require_permission("maintenance", "edit")),
 ):
     bd = await crud.get_breakdown(db, bd_id)
     if not bd:
@@ -393,7 +393,7 @@ async def update_breakdown(
 async def list_spare_parts(
     active_only: bool = True,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    _=Depends(require_permission("maintenance", "view")),
 ):
     parts = await crud.list_spare_parts(db, active_only=active_only)
     return [_sp_read(sp) for sp in parts]
@@ -403,7 +403,7 @@ async def list_spare_parts(
 async def create_spare_part(
     body: SparePartCreate,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    _=Depends(require_permission("maintenance", "create")),
 ):
     data = body.model_dump()
     if data.get("material_id"):
@@ -418,7 +418,7 @@ async def update_spare_part(
     part_id: uuid.UUID,
     body: SparePartUpdate,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    _=Depends(require_permission("maintenance", "edit")),
 ):
     sp = await crud.get_spare_part(db, part_id)
     if not sp:
@@ -432,7 +432,7 @@ async def update_spare_part(
 async def list_part_usages(
     part_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    _=Depends(require_permission("maintenance", "view")),
 ):
     usages = await crud.list_spare_usages(db)
     filtered = [u for u in usages if u.spare_part_id == part_id]
@@ -443,7 +443,7 @@ async def list_part_usages(
 async def record_spare_usage(
     body: SparePartUsageCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("maintenance", "create")),
 ):
     data = body.model_dump()
     for field in ["spare_part_id", "asset_id"]:
@@ -462,7 +462,7 @@ async def record_spare_usage(
 async def list_breakdown_spares(
     bd_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    _=Depends(require_permission("maintenance", "view")),
 ):
     usages = await crud.list_spare_usages(db, breakdown_id=bd_id)
     return [_usage_read(u) for u in usages]
@@ -476,7 +476,7 @@ async def list_breakdown_spares(
 async def generate_predictions(
     horizon_days: int = Query(30, ge=7, le=90),
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    _=Depends(require_permission("maintenance", "predict")),
 ):
     predictions = await svc.generate_maintenance_predictions(db, horizon_days=horizon_days)
     await db.commit()
@@ -494,7 +494,7 @@ async def list_predictions(
     machine_id: Optional[str] = None,
     limit: int = Query(100, le=200),
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    _=Depends(require_permission("maintenance", "view")),
 ):
     predictions = await svc.list_maintenance_predictions(
         db,
@@ -511,7 +511,7 @@ async def review_prediction(
     prediction_id: uuid.UUID,
     body: MaintenancePredictionReview,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    _=Depends(require_permission("maintenance", "review_prediction")),
 ):
     pred = await svc.get_maintenance_prediction(db, prediction_id)
     if not pred:
@@ -531,7 +531,7 @@ async def review_prediction(
 @router.get("/reports/mtbf-mttr", response_model=List[MtbfMttrRow])
 async def report_mtbf_mttr(
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    _=Depends(require_permission("maintenance", "export")),
 ):
     return await svc.compute_mtbf_mttr(db)
 
@@ -539,7 +539,7 @@ async def report_mtbf_mttr(
 @router.get("/reports/downtime-by-machine", response_model=List[DowntimeByMachineRow])
 async def report_downtime_by_machine(
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    _=Depends(require_permission("maintenance", "export")),
 ):
     return await svc.compute_downtime_by_machine(db)
 
@@ -547,6 +547,6 @@ async def report_downtime_by_machine(
 @router.get("/reports/overdue-pm", response_model=List[OverduePMRow])
 async def report_overdue_pm(
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    _=Depends(require_permission("maintenance", "view")),
 ):
     return await svc.overdue_pm_list(db)

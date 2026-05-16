@@ -10,6 +10,7 @@ import {
   parseAIError,
 } from "@/lib/aiApi";
 import { useMemo, useState } from "react";
+import { RequirePermission } from "@/components/PermissionGuard";
 
 const RUN_STATUS: AIAgentRunStatus[] = ["COMPLETED", "FAILED", "BLOCKED", "FLAGGED", "STARTED"];
 
@@ -197,6 +198,7 @@ export default function AIGovernancePage() {
   const statusCounts = dash?.runs_by_status ?? {};
 
   return (
+    <RequirePermission permission="ai.view">
     <div className="p-6 space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
@@ -602,5 +604,6 @@ export default function AIGovernancePage() {
         )}
       </div>
     </div>
+    </RequirePermission>
   );
 }

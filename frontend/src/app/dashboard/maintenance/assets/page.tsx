@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { maintenanceApi, Asset, AssetStatus } from "@/lib/maintenance";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { RequirePermission } from "@/components/PermissionGuard";
 
 const statusBadge = (s: AssetStatus) =>
   s === "ACTIVE" ? "green" : s === "UNDER_MAINTENANCE" ? "yellow" : s === "DECOMMISSIONED" ? "gray" : "blue";
@@ -35,6 +36,7 @@ export default function AssetsPage() {
   const lines = Array.from(new Set(assets.map((a) => a.line).filter(Boolean)));
 
   return (
+    <RequirePermission permission="maintenance.view">
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
@@ -122,6 +124,7 @@ export default function AssetsPage() {
         />
       )}
     </div>
+    </RequirePermission>
   );
 }
 

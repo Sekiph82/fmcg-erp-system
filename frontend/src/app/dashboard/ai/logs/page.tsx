@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { aiApi, AILog } from "@/lib/aiApi";
+import { RequirePermission } from "@/components/PermissionGuard";
 
 const STATUS_PILL: Record<string, string> = {
   COMPLETED: "bg-green-100 text-green-700",
@@ -24,6 +25,7 @@ export default function AILogsPage() {
   const failCount = data.filter((l) => l.status === "FAILED").length;
 
   return (
+    <RequirePermission permission="ai.view">
     <div className="p-6 space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">AI Request Logs</h1>
@@ -99,5 +101,6 @@ export default function AILogsPage() {
         )}
       </div>
     </div>
+    </RequirePermission>
   );
 }

@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { RequirePermission } from "@/components/PermissionGuard";
 
 export default function CompliancePage() {
   return (
+    <RequirePermission permission="ai.view">
     <div className="p-6 space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Compliance & Documents</h1>
@@ -79,5 +81,6 @@ export default function CompliancePage() {
         </p>
       </div>
     </div>
+    </RequirePermission>
   );
 }

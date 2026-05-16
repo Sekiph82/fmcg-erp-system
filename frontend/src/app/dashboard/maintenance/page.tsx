@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { maintenanceApi } from "@/lib/maintenance";
 import { Badge } from "@/components/ui/Badge";
+import { RequirePermission } from "@/components/PermissionGuard";
 
 export default function MaintenanceDashboardPage() {
   const router = useRouter();
@@ -43,6 +44,7 @@ export default function MaintenanceDashboardPage() {
     s === "CRITICAL" ? "red" : s === "HIGH" ? "red" : s === "MEDIUM" ? "yellow" : "gray";
 
   return (
+    <RequirePermission permission="maintenance.view">
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
@@ -155,5 +157,6 @@ export default function MaintenanceDashboardPage() {
         ))}
       </div>
     </div>
+    </RequirePermission>
   );
 }

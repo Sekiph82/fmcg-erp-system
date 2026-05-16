@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { aiApi, AIPrediction } from "@/lib/aiApi";
+import { RequirePermission } from "@/components/PermissionGuard";
 
 const RISK_PILL: Record<string, string> = {
   low: "bg-green-100 text-green-700",
@@ -52,6 +53,7 @@ export default function PredictionsPage() {
   });
 
   return (
+    <RequirePermission permission="ai.view">
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
@@ -196,5 +198,6 @@ export default function PredictionsPage() {
         )}
       </div>
     </div>
+    </RequirePermission>
   );
 }
