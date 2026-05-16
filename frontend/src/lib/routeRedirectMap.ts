@@ -131,6 +131,7 @@ export const EXACT_REDIRECTS: Record<string, RedirectTarget> = {
   "/dashboard/secondary-sales/upload":          { pathname: "/dashboard/sales", tab: "secondary" },
   "/dashboard/van-sales":                       { pathname: "/dashboard/sales", tab: "van-sales" },
   "/dashboard/van-sales/vans":                  { pathname: "/dashboard/sales", tab: "van-sales" },
+  "/dashboard/van-sales/vans/new":              { pathname: "/dashboard/sales", tab: "van-sales", drawer: "create" },
   "/dashboard/van-sales/route":                 { pathname: "/dashboard/sales", tab: "van-sales" },
   "/dashboard/van-sales/pos":                   { pathname: "/dashboard/sales", tab: "van-sales" },
   "/dashboard/van-sales/stock":                 { pathname: "/dashboard/sales", tab: "van-sales" },
@@ -394,7 +395,9 @@ export const EXACT_REDIRECTS: Record<string, RedirectTarget> = {
   // ── HR ─────────────────────────────────────────────────────────────────────
   "/dashboard/recruitment":                     { pathname: "/dashboard/hr", tab: "recruitment" },
   "/dashboard/recruitment/requisitions":        { pathname: "/dashboard/hr", tab: "recruitment" },
+  "/dashboard/recruitment/requisitions/new":    { pathname: "/dashboard/hr", tab: "recruitment", drawer: "create" },
   "/dashboard/recruitment/candidates":          { pathname: "/dashboard/hr", tab: "recruitment" },
+  "/dashboard/recruitment/candidates/new":      { pathname: "/dashboard/hr", tab: "recruitment", drawer: "create" },
   "/dashboard/recruitment/pipeline":            { pathname: "/dashboard/hr", tab: "recruitment" },
   "/dashboard/recruitment/interviews":          { pathname: "/dashboard/hr", tab: "recruitment" },
   "/dashboard/recruitment/offers":              { pathname: "/dashboard/hr", tab: "recruitment" },

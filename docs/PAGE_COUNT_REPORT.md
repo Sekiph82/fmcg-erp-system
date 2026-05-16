@@ -7,9 +7,9 @@ Generated: 2026-05-16
 | Classification            | Code | Count |
 |---------------------------|------|-------|
 | WORKSPACE_PAGE            | A    | 31   |
-| REDIRECT_ONLY             | B    | 73   |
+| REDIRECT_ONLY             | B    | 149   |
 | LIGHTWEIGHT_WRAPPER       | C    | 213   |
-| FULL_DUPLICATE_UI         | D    | 427   |
+| FULL_DUPLICATE_UI         | D    | 351   |
 | STANDALONE_OPERATIONAL    | E    | 7   |
 | UNKNOWN                   | F    | 3   |
 | **Total**                 |      | **754** |
@@ -25,100 +25,6 @@ Generated: 2026-05-16
 - **F UNKNOWN** — could not classify from content heuristics.
 
 ## FULL_DUPLICATE_UI pages by module
-
-### van-sales (16 pages)
-
-- `/dashboard/van-sales/ai` ✅ MW
-- `/dashboard/van-sales/field-rep` ✅ MW
-- `/dashboard/van-sales/fraud` ✅ MW
-- `/dashboard/van-sales/mpesa` ✅ MW
-- `/dashboard/van-sales/performance` ✅ MW
-- `/dashboard/van-sales/pos` ✅ MW
-- `/dashboard/van-sales/reconciliation` ✅ MW
-- `/dashboard/van-sales/reports` ✅ MW
-- `/dashboard/van-sales/returns` ✅ MW
-- `/dashboard/van-sales/route-optimizer` ✅ MW
-- `/dashboard/van-sales/route` ✅ MW
-- `/dashboard/van-sales/stock` ✅ MW
-- `/dashboard/van-sales/vans/[id]` ✅ MW
-- `/dashboard/van-sales/vans/new` ✅ MW
-- `/dashboard/van-sales/vans` ✅ MW
-- `/dashboard/van-sales/visits` ✅ MW
-
-### qms (15 pages)
-
-- `/dashboard/qms/ai` ✅ MW
-- `/dashboard/qms/allergen` ✅ MW
-- `/dashboard/qms/aql` ✅ MW
-- `/dashboard/qms/audit-checklists` ✅ MW
-- `/dashboard/qms/calibration` ✅ MW
-- `/dashboard/qms/ccp` ✅ MW
-- `/dashboard/qms/coa` ✅ MW
-- `/dashboard/qms/corrective-actions` ✅ MW
-- `/dashboard/qms/deviations` ✅ MW
-- `/dashboard/qms/haccp` ✅ MW
-- `/dashboard/qms/inspections` ✅ MW
-- `/dashboard/qms/quarantine` ✅ MW
-- `/dashboard/qms/reports` ✅ MW
-- `/dashboard/qms/supplier-safety` ✅ MW
-- `/dashboard/qms/templates` ✅ MW
-
-### recruitment (12 pages)
-
-- `/dashboard/recruitment/ai` ✅ MW
-- `/dashboard/recruitment/candidates/[id]` ✅ MW
-- `/dashboard/recruitment/candidates/new` ✅ MW
-- `/dashboard/recruitment/candidates` ✅ MW
-- `/dashboard/recruitment/interviews` ✅ MW
-- `/dashboard/recruitment/offers` ✅ MW
-- `/dashboard/recruitment/pipeline` ✅ MW
-- `/dashboard/recruitment/reports` ✅ MW
-- `/dashboard/recruitment/requisitions/[id]` ✅ MW
-- `/dashboard/recruitment/requisitions/new` ✅ MW
-- `/dashboard/recruitment/requisitions` ✅ MW
-- `/dashboard/recruitment/stages` ✅ MW
-
-### allergen (11 pages)
-
-- `/dashboard/allergen/ai` ✅ MW
-- `/dashboard/allergen/allergens` ✅ MW
-- `/dashboard/allergen/change-logs` ✅ MW
-- `/dashboard/allergen/cleaning` ✅ MW
-- `/dashboard/allergen/label-readiness` ✅ MW
-- `/dashboard/allergen/material-profiles` ✅ MW
-- `/dashboard/allergen/nutrition` ✅ MW
-- `/dashboard/allergen/product-allergens` ✅ MW
-- `/dashboard/allergen/product-nutrition` ✅ MW
-- `/dashboard/allergen/reports` ✅ MW
-- `/dashboard/allergen/rollup` ✅ MW
-
-### expenses (11 pages)
-
-- `/dashboard/expenses/advances` ✅ MW
-- `/dashboard/expenses/ai` ✅ MW
-- `/dashboard/expenses/approval` ✅ MW
-- `/dashboard/expenses/categories` ✅ MW
-- `/dashboard/expenses/claims/[id]` ✅ MW
-- `/dashboard/expenses/claims/new` ✅ MW
-- `/dashboard/expenses/claims` ✅ MW
-- `/dashboard/expenses/policies` ✅ MW
-- `/dashboard/expenses/receipt-ocr` ✅ MW
-- `/dashboard/expenses/reimbursement` ✅ MW
-- `/dashboard/expenses/reports` ✅ MW
-
-### fixed-assets (11 pages)
-
-- `/dashboard/fixed-assets/ai` ✅ MW
-- `/dashboard/fixed-assets/assets/[id]/add-component` ✅ MW
-- `/dashboard/fixed-assets/assets/[id]` ✅ MW
-- `/dashboard/fixed-assets/assets/new` ✅ MW
-- `/dashboard/fixed-assets/assets` ✅ MW
-- `/dashboard/fixed-assets/categories` ✅ MW
-- `/dashboard/fixed-assets/depreciation` ✅ MW
-- `/dashboard/fixed-assets/disposal` ✅ MW
-- `/dashboard/fixed-assets/import` ✅ MW
-- `/dashboard/fixed-assets/posting` ✅ MW
-- `/dashboard/fixed-assets/transfer` ✅ MW
 
 ### material-flow (11 pages)
 

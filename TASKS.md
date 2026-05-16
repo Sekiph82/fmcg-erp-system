@@ -1,7 +1,7 @@
 # TASKS
 
 ## Current Phase
-PAGE CONSOLIDATION — PASS 2 IN PROGRESS. 2026-05-16. Theme preserved, 73 pages converted to redirect-only. Next: van-sales, qms, recruitment, allergen, expenses, fixed-assets clusters.
+PAGE CONSOLIDATION — PASS 3 COMPLETE. 2026-05-16. 149 total pages now redirect-only. FULL_DUPLICATE_UI: 500 → 351. Next remaining clusters: see below.
 
 ## Execution Rules
 - Always read this file before starting work.
@@ -17,6 +17,29 @@ PAGE CONSOLIDATION — PASS 2 IN PROGRESS. 2026-05-16. Theme preserved, 73 pages
 
 ## In Progress
 None.
+
+## Completed in This Run (2026-05-16) — Page Consolidation Pass 3
+
+### Clusters Converted (76 pages)
+- van-sales: 16 pages → /dashboard/sales?tab=van-sales
+- qms: 15 pages → /dashboard/quality?tab=qms (allergen→tab=allergen, inspections→tab=inspections, reports→tab=reports)
+- recruitment: 12 pages → /dashboard/hr?tab=recruitment
+- allergen: 11 pages → /dashboard/quality?tab=allergen
+- expenses: 11 pages → /dashboard/hr?tab=expenses
+- fixed-assets: 11 pages → /dashboard/finance?tab=fixed-assets
+
+### routeRedirectMap additions
+- van-sales/vans/new → sales/van-sales/drawer=create
+- recruitment/candidates/new → hr/recruitment/drawer=create
+- recruitment/requisitions/new → hr/recruitment/drawer=create
+
+### Checks (2026-05-16 post-Pass 3)
+- type-check → PASS (0 errors)
+- audit-page-count → B=149, D=351
+- check-route-redirects → 0 drift
+- check-workspace-tabs → 0 mismatches
+- erp-health-audit → 0 HIGH
+- npm run build → PASS (exit 0)
 
 ## Completed in This Run (2026-05-16) — Page Consolidation Pass 2
 
@@ -64,31 +87,41 @@ None.
 - check-route-redirects.js: 0 issues
 - check-workspace-tabs.js: 0 issues
 
-## Page Count Status (2026-05-16 — post Pass 2)
+## Page Count Status (2026-05-16 — post Pass 3)
 
-| Classification          | Count | Delta |
-|-------------------------|-------|-------|
-| A WORKSPACE_PAGE        | 31    | —     |
-| B REDIRECT_ONLY         | 73    | +73   |
-| C LIGHTWEIGHT_WRAPPER   | 213   | —     |
-| D FULL_DUPLICATE_UI     | 427   | -73   |
-| E STANDALONE_OPERATIONAL| 7     | —     |
-| F UNKNOWN               | 3     | —     |
-| Total physical pages    | 754   | —     |
+| Classification          | Count | Delta vs Pass 2 | Delta vs start |
+|-------------------------|-------|-----------------|----------------|
+| A WORKSPACE_PAGE        | 31    | —               | —              |
+| B REDIRECT_ONLY         | 149   | +76             | +149           |
+| C LIGHTWEIGHT_WRAPPER   | 213   | —               | —              |
+| D FULL_DUPLICATE_UI     | 351   | -76             | -149           |
+| E STANDALONE_OPERATIONAL| 7     | —               | —              |
+| F UNKNOWN               | 3     | —               | —              |
+| Total physical pages    | 754   | —               | —              |
 
-Converted clusters: marketing(36), finance/accounting(13), utility-management(18), production(6).
-Remaining FULL_DUPLICATE_UI: van-sales(16), qms(15), recruitment(12), allergen(11), expenses(11), fixed-assets(11), + others.
+Converted clusters: marketing(36), finance/accounting(13), utility-management(18), production(6), van-sales(16), qms(15), recruitment(12), allergen(11), expenses(11), fixed-assets(11).
 
 ## Remaining Page Consolidation Work
 
-### Priority 1 — Next FULL_DUPLICATE_UI clusters (MW coverage already exists)
-Need to audit each cluster's tab destinations before writing convert script entries.
-1. van-sales: 16 pages
-2. qms: 15 pages
-3. recruitment: 12 pages
-4. allergen: 11 pages
-5. expenses: 11 pages
-6. fixed-assets: 11 pages
+### Priority 1 — Next FULL_DUPLICATE_UI clusters (need tab audit + MW check before converting)
+Clusters not yet converted. Inspect workspace tabs before scripting.
+1. BOM, CRM, Sales child pages (bom, crm, sales/orders/[id], etc.)
+2. procurement, documents child pages
+3. hr/employees, hr/attendance, hr/leave, hr/payroll child pages
+4. inventory, wms child pages
+5. logistics, distribution child pages
+6. communication, support child pages
+7. UNKNOWN (3) — classify first
+
+### Priority 2 — BOM, CRM, Sales, Procurement, Documents without MW
+- bom: 4 pages (no MW — /dashboard/bom/[id]/* need redirects added)
+- crm: 4 pages (no MW — /dashboard/crm/records/[id], ai, overdue, qualify)
+- sales: 5 pages (no MW — orders/[id], invoices/[id], shipments/[id], pod, customer-statement)
+- documents: 2 pages (no MW — /[id], /new)
+- procurement: 2 pages (no MW — /[id], orders/[id])
+
+### Priority 3 — Unknown pages (3)
+Classify and handle the 3 UNKNOWN pages.
 
 ### Priority 2 — BOM, CRM, Sales child pages
 - bom: 4 pages (no MW — /dashboard/bom/[id]/* need redirects)
