@@ -24,8 +24,8 @@ from app.schemas.tax_regulatory import (
 
 # ── Country Tax Config ─────────────────────────────────────────────────────────
 
-async def list_country_configs(db: AsyncSession) -> List[CountryTaxConfig]:
-    result = await db.execute(select(CountryTaxConfig).order_by(CountryTaxConfig.country_code))
+async def list_country_configs(db: AsyncSession, limit: int = 300) -> List[CountryTaxConfig]:
+    result = await db.execute(select(CountryTaxConfig).order_by(CountryTaxConfig.country_code).limit(min(limit, 1000)))
     return list(result.scalars().all())
 
 
@@ -59,8 +59,8 @@ async def update_country_config(
 
 # ── Tax Category ───────────────────────────────────────────────────────────────
 
-async def list_categories(db: AsyncSession) -> List[TaxCategory]:
-    result = await db.execute(select(TaxCategory).order_by(TaxCategory.code))
+async def list_categories(db: AsyncSession, limit: int = 300) -> List[TaxCategory]:
+    result = await db.execute(select(TaxCategory).order_by(TaxCategory.code).limit(min(limit, 1000)))
     return list(result.scalars().all())
 
 
@@ -93,12 +93,12 @@ async def update_category(
 # ── Tax Rules ──────────────────────────────────────────────────────────────────
 
 async def list_rules(
-    db: AsyncSession, country_code: Optional[str] = None
+    db: AsyncSession, country_code: Optional[str] = None, limit: int = 200, offset: int = 0
 ) -> List[TaxRule]:
     q = select(TaxRule).options(selectinload(TaxRule.category)).order_by(TaxRule.country_code)
     if country_code:
         q = q.where(TaxRule.country_code == country_code)
-    result = await db.execute(q)
+    result = await db.execute(q.offset(offset).limit(min(limit, 1000)))
     return list(result.scalars().all())
 
 
@@ -136,6 +136,8 @@ async def list_mappings(
     country_code: Optional[str] = None,
     product_id: Optional[UUID] = None,
     material_id: Optional[UUID] = None,
+    limit: int = 200,
+    offset: int = 0,
 ) -> List[ProductTaxMapping]:
     q = select(ProductTaxMapping).options(selectinload(ProductTaxMapping.category))
     if country_code:
@@ -144,7 +146,7 @@ async def list_mappings(
         q = q.where(ProductTaxMapping.product_id == product_id)
     if material_id:
         q = q.where(ProductTaxMapping.material_id == material_id)
-    result = await db.execute(q)
+    result = await db.execute(q.offset(offset).limit(min(limit, 1000)))
     return list(result.scalars().all())
 
 
@@ -186,13 +188,15 @@ async def list_flags(
     db: AsyncSession,
     country_code: Optional[str] = None,
     status: Optional[str] = None,
+    limit: int = 200,
+    offset: int = 0,
 ) -> List[RegulatoryFlag]:
     q = select(RegulatoryFlag).order_by(RegulatoryFlag.country_code, RegulatoryFlag.flag_type)
     if country_code:
         q = q.where(RegulatoryFlag.country_code == country_code)
     if status:
         q = q.where(RegulatoryFlag.status == status)
-    result = await db.execute(q)
+    result = await db.execute(q.offset(offset).limit(min(limit, 1000)))
     return list(result.scalars().all())
 
 
@@ -238,6 +242,8 @@ async def list_transaction_taxes(
     entity_type: Optional[str] = None,
     entity_id: Optional[UUID] = None,
     country_code: Optional[str] = None,
+    limit: int = 200,
+    offset: int = 0,
 ) -> List[TransactionTax]:
     q = select(TransactionTax).order_by(TransactionTax.created_at.desc())
     if entity_type:
@@ -246,7 +252,7 @@ async def list_transaction_taxes(
         q = q.where(TransactionTax.entity_id == entity_id)
     if country_code:
         q = q.where(TransactionTax.country_code == country_code)
-    result = await db.execute(q)
+    result = await db.execute(q.offset(offset).limit(min(limit, 1000)))
     return list(result.scalars().all())
 
 

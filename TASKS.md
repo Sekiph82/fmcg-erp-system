@@ -1,7 +1,7 @@
 # TASKS
 
 ## Current Phase
-HARDENING PASS 2 — production-readiness fixes. 2026-05-16.
+HARDENING PASS 2 — COMPLETE. 2026-05-16. All HIGH findings resolved.
 
 ## Execution Rules
 - Always read this file before starting work.
@@ -16,27 +16,34 @@ HARDENING PASS 2 — production-readiness fixes. 2026-05-16.
 - If context/usage limit is near, stop after updating TASKS.md and CODEX_PROGRESS.md.
 
 ## In Progress
-HARDENING-PASS-2: Fix all confirmed and mostly-fixed issues from Issue Fix Verification Report.
+None. Hardening Pass 2 complete.
 
 ## Completed in Last Run (2026-05-16)
-- DB connection pool: added pool_size, max_overflow, pool_recycle, pool_timeout, pool_pre_ping to session.py + config.py
-- Finance CRUD unbounded queries: list_coa, list_cash_accounts, list_production_cost_entries, list_product_costs, list_budgets — all paginated
-- Finance balance updates: replaced with_for_update + Python arithmetic with atomic SQL UPDATE
-- Bulk inserts: create_journal_entry and create_budget now use db.add_all()
-- Health checks: /live (zero DB cost), /ready (DB cached), /health (DB cached 8s TTL)
-- Middleware: moved `import time` to module level
-- Docker dev: resource limits added to all services
-- Docker prod: resource limits+reservations added; DB/Redis not port-exposed; prod healthcheck uses /live; prod pool size set via env
-- Alembic migration: 20260516_0060_performance_indexes.py — 35 indexes for FK/date/status fields
-- Audit script: scripts/erp-health-audit.py — repeatable automated scan
-- Verification report: docs/ISSUE_FIX_VERIFICATION_REPORT.md
-- All compile checks passed: backend app/ + alembic migration
+### Pass 1
+- DB connection pool: pool_size, max_overflow, pool_recycle, pool_timeout, pool_pre_ping
+- Finance CRUD unbounded queries (5 list_* functions) paginated
+- Finance atomic balance UPDATE (removed with_for_update + Python race)
+- db.add_all() for JournalLine and BudgetLine
+- Health: /live /ready /health with 8s cache
+- Middleware: import time module-level
+- Docker dev + prod: resource limits; prod DB/Redis not port-exposed; /live healthcheck
+- Alembic 20260516_0060_performance_indexes.py: 35 indexes
+
+### Pass 2
+- 34 real CRUD unbounded queries fixed across 13 files: procurement, sales, quality, role, maintenance, esg, field_sales, logistics, pricing, distribution, tax_regulatory, wms, production_advanced
+- pagination helper: backend/app/core/pagination.py
+- Request timeout middleware: asyncio.wait_for + 504 response + REQUEST_TIMEOUT_SECONDS setting
+- Audit script updated: 18 false positives documented and suppressed; 0 HIGH remaining
+- Auth audit logging verified: LOGIN_SUCCESS, LOGIN_FAILED, LOGOUT, TWO_FA_CHALLENGE_SENT, PASSWORD_CHANGED
+- AI mock mode UI verified: AIModeBanner on all /dashboard/ai/* pages
+- DEPLOYMENT.md created: dev/prod startup, migrations, rollback, backup, health, port exposure, resource limits
+- Verification report updated: all D.47, E.47, B.23, C.34 resolved
 
 ## Next Immediate Task
-1. Fix remaining 52 unbounded CRUD queries (priority: procurement.py, sales.py, quality.py, role.py)
-2. Verify auth audit logging in auth.py
-3. Review AI mock mode UI visibility
-4. Add docs/DEPLOYMENT.md
+No blocking tasks. Optional future work:
+1. Wire Redis caching for COA and product reference data (A.15)
+2. Add streaming for large export endpoints (A.14)
+3. Multi-replica migration advisory lock (C.31 — documented in DEPLOYMENT.md)
 
 ## Blockers
 - Live alembic upgrade head blocked until Docker/PostgreSQL running

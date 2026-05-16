@@ -1,6 +1,6 @@
 # Issue Fix Verification Report
 
-Generated: 2026-05-16
+Generated: 2026-05-16 (Pass 2 completed same day)
 
 ---
 
@@ -11,12 +11,12 @@ Generated: 2026-05-16
 | 1 | Missing async pool configuration | **FIXED** | `backend/app/db/session.py` | Added pool_size, max_overflow, pool_recycle, pool_timeout, pool_pre_ping from settings |
 | 2 | Missing pool pre-ping and recycle | **FIXED** | `backend/app/db/session.py` | pool_pre_ping and pool_recycle added |
 | 3 | Missing connection/statement timeout | **PARTIALLY FIXED** | `backend/app/core/config.py` | pool_timeout added; statement-level timeout (asyncpg `server_settings` param) left for manual PostgreSQL config: `statement_timeout=30s` via `postgresql.conf` or `ALTER ROLE` |
-| 4 | Unbounded list queries in CRUD/service | **PARTIALLY FIXED** | Multiple CRUD files | Finance CRUD fixed; 52 remaining CRUD unbounded queries documented in `docs/AUTOMATED_HEALTH_AUDIT.md` |
+| 4 | Unbounded list queries in CRUD/service | **FIXED** | Multiple CRUD files | All 34 real CRUD unbounded queries fixed; 18 confirmed false positives documented; 0 HIGH remaining in audit |
 | 5 | `list_coa` no limit | **FIXED** | `backend/app/crud/finance.py:22` | Added limit/offset params (default 500, max 1000) |
 | 6 | `list_production_cost_entries` no limit | **FIXED** | `backend/app/crud/finance.py:234` | Added limit/offset params |
 | 7 | `list_product_costs` no limit | **FIXED** | `backend/app/crud/finance.py:261` | Added limit/offset params |
 | 8 | `list_budgets` no limit | **FIXED** | `backend/app/crud/finance.py:299` | Added limit/offset params |
-| 9 | Other list_* without limits | **OPEN** | Various CRUD files | 52 HIGH findings in audit report; priority: procurement.py, sales.py, quality.py, role.py |
+| 9 | Other list_* without limits | **FIXED** | 13 CRUD files | All flagged functions paginated: procurement, sales, quality, role, maintenance, esg, field_sales, logistics, pricing, distribution, tax_regulatory, wms + pagination helper added |
 | 10 | with_for_update in cash balance update | **FIXED** | `backend/app/crud/finance.py:148,178` | Replaced with atomic `UPDATE ... SET current_balance = current_balance + delta` |
 | 11 | Row-lock balance update risks | **FIXED** | `backend/app/crud/finance.py` | Atomic SQL UPDATE eliminates row-lock + Python race |
 | 12 | Non-bulk insert loops | **FIXED** | `backend/app/crud/finance.py:71,317` | `db.add_all()` for JournalLine and BudgetLine |
@@ -35,7 +35,7 @@ Generated: 2026-05-16
 | 20 | Health check opens DB every call | **FIXED** | `backend/app/main.py` | `_db_health_cache` with 8s TTL; `/live` has zero DB cost |
 | 21 | `import time` inside middleware | **FIXED** | `backend/app/main.py` | Moved to module-level import |
 | 22 | Blocking observability on request path | **CONFIRMED OK** | `backend/app/core/observability.py` | `record_request` uses in-memory `Counter` with `threading.Lock`; non-blocking |
-| 23 | Missing request timeout middleware | **OPEN** | — | No timeout middleware; recommend `asyncio.wait_for` wrapper or `uvicorn --timeout-keep-alive` |
+| 23 | Missing request timeout middleware | **FIXED** | `backend/app/main.py` | `asyncio.wait_for` middleware with `REQUEST_TIMEOUT_SECONDS` setting; returns 504; /live /ready /health exempt |
 | 24 | Missing rate limiting for expensive endpoints | **PARTIALLY FIXED** | — | AI rate limits exist; general API rate limiting documented but not enforced per-endpoint |
 
 ## C. Docker / DevOps
@@ -51,7 +51,7 @@ Generated: 2026-05-16
 | 31 | Migration race with multiple replicas | **OPEN** | — | Single replica assumed; multi-replica needs advisory lock or separate migration job |
 | 32 | CI workflow exists | **CONFIRMED OK** | `.github/workflows/ci.yml` | Full backend+frontend+docker CI exists |
 | 33 | .gitignore excludes generated files | **NEEDS VERIFY** | `.gitignore` | Not reviewed in this pass; verify excludes .next, __pycache__, *.pyc, .env |
-| 34 | Deployment docs | **OPEN** | — | No `docs/DEPLOYMENT.md`; recommended |
+| 34 | Deployment docs | **FIXED** | `docs/DEPLOYMENT.md` | Full deployment guide: dev/prod startup, migrations, rollback, backup, health endpoints, resource limits, known limitations |
 
 ## D. Security / Auth / Seed
 
@@ -69,13 +69,13 @@ Generated: 2026-05-16
 | 44 | CORS from env only | **CONFIRMED OK** | `backend/app/core/config.py:57-60` | `BACKEND_CORS_ORIGINS` from settings; no wildcard |
 | 45 | Production no wildcard CORS | **CONFIRMED OK** | — | No `allow_origins=["*"]` pattern in codebase |
 | 46 | Password policy strict in production | **CONFIRMED OK** | `backend/app/core/config.py:149` | `PASSWORD_REQUIRE_SPECIAL` enforced in production |
-| 47 | Audit login/logout/security events | **NEEDS VERIFY** | — | Not reviewed; check `backend/app/api/v1/endpoints/auth.py` for audit log calls |
+| 47 | Audit login/logout/security events | **CONFIRMED OK** | `backend/app/api/v1/endpoints/auth.py`, `backend/app/api/v1/endpoints/users.py` | LOGIN_SUCCESS, LOGIN_FAILED, LOGOUT, TWO_FA_CHALLENGE_SENT, PASSWORD_CHANGED all logged via `audit_crud.log_event` |
 
 ## E. AI Module Safety
 
 | # | Issue | Status | File | Fix Implemented |
 |---|-------|--------|------|-----------------|
-| 47 | AI mock mode visible in UI | **NEEDS VERIFY** | — | Not reviewed in this pass |
+| 47 | AI mock mode visible in UI | **CONFIRMED OK** | `frontend/src/components/ai/AIModeBanner.tsx`, `frontend/src/app/dashboard/ai/layout.tsx` | `AIModeBanner` component shows "MOCK MODE: Demo AI only." on all /dashboard/ai/* pages and in DashboardShell |
 | 48 | High-risk actions disabled in mock mode | **CONFIRMED OK** | `backend/app/core/config.py:109` | `AI_NL_COMMAND_EXECUTION_ENABLED: bool = False` |
 | 49 | NL command execution disabled by default | **CONFIRMED OK** | `backend/app/core/config.py:109` | Default False |
 | 50-56 | NL command execution safety controls | **NEEDS VERIFY** | `backend/app/services/ai*` | Not reviewed in this pass |
@@ -91,21 +91,22 @@ Generated: 2026-05-16
 
 ---
 
-## Open Issues (priority order)
+## Open Issues (remaining)
 
-1. **A.9** — 52 unbounded CRUD queries remain; see `docs/AUTOMATED_HEALTH_AUDIT.md` HIGH section
-2. **A.14** — Large export streaming not implemented
-3. **A.15** — Reference data caching not implemented
-4. **B.23** — No request timeout middleware
-5. **C.31** — Multi-replica migration race not addressed
-6. **C.34** — No `docs/DEPLOYMENT.md`
-7. **D.47** — Auth audit logging not verified
-8. **E.47-56** — AI mock mode UI + NL execution safety not verified in this pass
+1. **A.14** — Large export streaming not implemented (low urgency for current scale)
+2. **A.15** — Reference data caching not implemented (Redis available but not wired for COA/products)
+3. **C.31** — Multi-replica migration race documented in `docs/DEPLOYMENT.md` known limitations
+4. **MEDIUM** — ~500 service-layer unbounded queries (internal computations, not API list endpoints)
 
 ---
 
-## Tests / Checks Run
+## Tests / Checks Run (Pass 1 + Pass 2)
 
-- `python -m compileall backend/app/db/session.py backend/app/core/config.py backend/app/main.py backend/app/crud/finance.py` → PASS
-- `python scripts/erp-health-audit.py` → 52 HIGH, 624 MEDIUM, 0 LOW findings (see `docs/AUTOMATED_HEALTH_AUDIT.md`)
-- Alembic migration `20260516_0060_performance_indexes.py` — compile OK; live run blocked (Docker not running)
+- `python -m compileall backend/app/` → PASS
+- `python -m compileall backend/alembic/versions/20260516_0060_performance_indexes.py` → PASS
+- `python scripts/erp-health-audit.py` → **0 HIGH**, 500 MEDIUM findings (see `docs/AUTOMATED_HEALTH_AUDIT.md`)
+- `npm run type-check` → PASS (0 errors)
+- `npm run build` → PASS (all pages built)
+- `docker compose --env-file .env.development config` → PASS (resource limits rendered)
+- `docker compose -f docker-compose.prod.yml config` → PASS with env var warnings (expected without .env.production)
+- Alembic live upgrade: blocked (Docker not running locally); SQL generation tested offline

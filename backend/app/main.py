@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import time
 import uuid
@@ -106,13 +107,48 @@ app.add_middleware(
 )
 
 
+_NO_TIMEOUT_PATHS = {"/live", "/ready", "/health", "/metrics"}
+
+
 @app.middleware("http")
 async def add_process_time_header(request: Request, call_next):
     t0 = time.monotonic()
     request_id = request.headers.get(REQUEST_ID_HEADER) or str(uuid.uuid4())
     request.state.request_id = request_id
+
+    timeout = (
+        None
+        if request.url.path in _NO_TIMEOUT_PATHS
+        else settings.REQUEST_TIMEOUT_SECONDS
+    )
+
     try:
-        response = await call_next(request)
+        if timeout:
+            response = await asyncio.wait_for(call_next(request), timeout=timeout)
+        else:
+            response = await call_next(request)
+    except asyncio.TimeoutError:
+        elapsed_ms = int((time.monotonic() - t0) * 1000)
+        record_request(request.method, request.url.path, 504, elapsed_ms)
+        logger.warning(
+            "Request timed out",
+            extra={
+                "request_id": request_id,
+                "method": request.method,
+                "path": request.url.path,
+                "timeout_seconds": timeout,
+                "duration_ms": elapsed_ms,
+            },
+        )
+        return JSONResponse(
+            status_code=504,
+            content={
+                "error": "request_timeout",
+                "detail": f"Request exceeded the {timeout}s timeout limit.",
+                "path": request.url.path,
+            },
+            headers={REQUEST_ID_HEADER: request_id},
+        )
     except Exception as exc:
         elapsed_ms = int((time.monotonic() - t0) * 1000)
         record_request(request.method, request.url.path, 500, elapsed_ms)

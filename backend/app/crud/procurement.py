@@ -20,6 +20,8 @@ async def list_prs(
     db: AsyncSession,
     status: Optional[PRStatus] = None,
     requester_id: Optional[uuid.UUID] = None,
+    limit: int = 100,
+    offset: int = 0,
 ) -> List[PurchaseRequisition]:
     q = select(PurchaseRequisition).options(
         selectinload(PurchaseRequisition.requester),
@@ -30,7 +32,7 @@ async def list_prs(
     if requester_id:
         q = q.where(PurchaseRequisition.requester_id == requester_id)
     q = q.order_by(PurchaseRequisition.created_at.desc())
-    result = await db.execute(q)
+    result = await db.execute(q.offset(offset).limit(min(limit, 1000)))
     return list(result.scalars().all())
 
 
@@ -86,6 +88,8 @@ async def list_pos(
     db: AsyncSession,
     status: Optional[POStatus] = None,
     supplier_id: Optional[uuid.UUID] = None,
+    limit: int = 100,
+    offset: int = 0,
 ) -> List[PurchaseOrder]:
     q = select(PurchaseOrder).options(
         selectinload(PurchaseOrder.supplier),
@@ -97,7 +101,7 @@ async def list_pos(
     if supplier_id:
         q = q.where(PurchaseOrder.supplier_id == supplier_id)
     q = q.order_by(PurchaseOrder.created_at.desc())
-    result = await db.execute(q)
+    result = await db.execute(q.offset(offset).limit(min(limit, 1000)))
     return list(result.scalars().all())
 
 
@@ -139,7 +143,7 @@ async def get_po_line(db: AsyncSession, line_id: uuid.UUID) -> Optional[POLine]:
 
 # ── GRN ────────────────────────────────────────────────────────────────────────
 
-async def list_grns(db: AsyncSession, po_id: Optional[uuid.UUID] = None) -> List[GoodsReceipt]:
+async def list_grns(db: AsyncSession, po_id: Optional[uuid.UUID] = None, limit: int = 100, offset: int = 0) -> List[GoodsReceipt]:
     q = select(GoodsReceipt).options(
         selectinload(GoodsReceipt.po),
         selectinload(GoodsReceipt.warehouse),
@@ -147,7 +151,7 @@ async def list_grns(db: AsyncSession, po_id: Optional[uuid.UUID] = None) -> List
     if po_id:
         q = q.where(GoodsReceipt.po_id == po_id)
     q = q.order_by(GoodsReceipt.received_date.desc())
-    result = await db.execute(q)
+    result = await db.execute(q.offset(offset).limit(min(limit, 1000)))
     return list(result.scalars().all())
 
 
@@ -181,13 +185,13 @@ async def create_grn(db: AsyncSession, data: dict, received_by_id: uuid.UUID) ->
 # ── Import Shipment ────────────────────────────────────────────────────────────
 
 async def list_shipments(
-    db: AsyncSession, po_id: Optional[uuid.UUID] = None
+    db: AsyncSession, po_id: Optional[uuid.UUID] = None, limit: int = 100, offset: int = 0
 ) -> List[ImportShipment]:
     q = select(ImportShipment).options(selectinload(ImportShipment.po).selectinload(PurchaseOrder.supplier))
     if po_id:
         q = q.where(ImportShipment.po_id == po_id)
     q = q.order_by(ImportShipment.created_at.desc())
-    result = await db.execute(q)
+    result = await db.execute(q.offset(offset).limit(min(limit, 1000)))
     return list(result.scalars().all())
 
 
@@ -211,7 +215,7 @@ async def create_shipment(db: AsyncSession, data: dict) -> ImportShipment:
 # ── Supplier Evaluations ───────────────────────────────────────────────────────
 
 async def list_evaluations(
-    db: AsyncSession, supplier_id: Optional[uuid.UUID] = None
+    db: AsyncSession, supplier_id: Optional[uuid.UUID] = None, limit: int = 200, offset: int = 0
 ) -> List[SupplierEvaluation]:
     q = select(SupplierEvaluation).options(
         selectinload(SupplierEvaluation.supplier),
@@ -220,7 +224,7 @@ async def list_evaluations(
     if supplier_id:
         q = q.where(SupplierEvaluation.supplier_id == supplier_id)
     q = q.order_by(SupplierEvaluation.evaluation_date.desc())
-    result = await db.execute(q)
+    result = await db.execute(q.offset(offset).limit(min(limit, 1000)))
     return list(result.scalars().all())
 
 
@@ -248,12 +252,13 @@ async def create_evaluation(
 # ── Supplier Payments ─────────────────────────────────────────────────────────
 
 async def get_supplier_payments(
-    db: AsyncSession, po_id: uuid.UUID
+    db: AsyncSession, po_id: uuid.UUID, limit: int = 500
 ) -> List[SupplierPayment]:
     result = await db.execute(
         select(SupplierPayment)
         .where(SupplierPayment.po_id == po_id)
         .order_by(SupplierPayment.created_at)
+        .limit(min(limit, 1000))
     )
     return list(result.scalars().all())
 

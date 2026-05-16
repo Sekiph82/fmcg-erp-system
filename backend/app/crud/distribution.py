@@ -15,6 +15,8 @@ async def list_distributors(
     *,
     region: Optional[str] = None,
     active_only: bool = False,
+    limit: int = 200,
+    offset: int = 0,
 ) -> List[Distributor]:
     q = select(Distributor)
     if region:
@@ -22,7 +24,7 @@ async def list_distributors(
     if active_only:
         from app.models.distribution import DistributorStatus
         q = q.where(Distributor.status == DistributorStatus.ACTIVE)
-    result = await db.execute(q.order_by(Distributor.name))
+    result = await db.execute(q.order_by(Distributor.name).offset(offset).limit(min(limit, 1000)))
     return list(result.scalars().all())
 
 

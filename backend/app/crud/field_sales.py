@@ -18,13 +18,13 @@ from app.schemas.field_sales import (
 
 # ── Sales Reps ────────────────────────────────────────────────────────────────
 
-async def list_reps(db: AsyncSession, *, region: Optional[str] = None, active_only: bool = False) -> List[SalesRep]:
+async def list_reps(db: AsyncSession, *, region: Optional[str] = None, active_only: bool = False, limit: int = 200, offset: int = 0) -> List[SalesRep]:
     q = select(SalesRep)
     if region:
         q = q.where(SalesRep.region == region)
     if active_only:
         q = q.where(SalesRep.is_active == True)  # noqa
-    result = await db.execute(q.order_by(SalesRep.name))
+    result = await db.execute(q.order_by(SalesRep.name).offset(offset).limit(min(limit, 1000)))
     return list(result.scalars().all())
 
 
@@ -55,14 +55,14 @@ async def update_rep(db: AsyncSession, rep: SalesRep, data: SalesRepUpdate) -> S
 
 # ── Routes ────────────────────────────────────────────────────────────────────
 
-async def list_routes(db: AsyncSession, *, region: Optional[str] = None) -> List[SalesRoute]:
+async def list_routes(db: AsyncSession, *, region: Optional[str] = None, limit: int = 200, offset: int = 0) -> List[SalesRoute]:
     q = select(SalesRoute).options(
         selectinload(SalesRoute.stops).selectinload(RouteStop.customer),
         selectinload(SalesRoute.assigned_rep),
     )
     if region:
         q = q.where(SalesRoute.region == region)
-    result = await db.execute(q.order_by(SalesRoute.name))
+    result = await db.execute(q.order_by(SalesRoute.name).offset(offset).limit(min(limit, 1000)))
     return list(result.scalars().all())
 
 
@@ -125,6 +125,8 @@ async def list_targets(
     rep_id: Optional[uuid.UUID] = None,
     from_date: Optional[date] = None,
     to_date: Optional[date] = None,
+    limit: int = 200,
+    offset: int = 0,
 ) -> List[DailyTarget]:
     q = select(DailyTarget).options(
         selectinload(DailyTarget.rep),
@@ -136,7 +138,7 @@ async def list_targets(
         q = q.where(DailyTarget.target_date >= from_date)
     if to_date:
         q = q.where(DailyTarget.target_date <= to_date)
-    result = await db.execute(q.order_by(DailyTarget.target_date.desc()))
+    result = await db.execute(q.order_by(DailyTarget.target_date.desc()).offset(offset).limit(min(limit, 1000)))
     return list(result.scalars().all())
 
 

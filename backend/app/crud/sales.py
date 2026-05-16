@@ -15,12 +15,12 @@ from app.models.sales import (
 
 # ── Customers ─────────────────────────────────────────────────────────────────
 
-async def list_customers(db: AsyncSession, active_only: bool = False) -> List[Customer]:
+async def list_customers(db: AsyncSession, active_only: bool = False, limit: int = 200, offset: int = 0) -> List[Customer]:
     q = select(Customer)
     if active_only:
         q = q.where(Customer.is_active == True)  # noqa: E712
     q = q.order_by(Customer.name)
-    result = await db.execute(q)
+    result = await db.execute(q.offset(offset).limit(min(limit, 1000)))
     return list(result.scalars().all())
 
 
@@ -43,6 +43,8 @@ async def list_sos(
     db: AsyncSession,
     status: Optional[SOStatus] = None,
     customer_id: Optional[uuid.UUID] = None,
+    limit: int = 100,
+    offset: int = 0,
 ) -> List[SalesOrder]:
     q = select(SalesOrder).options(
         selectinload(SalesOrder.customer),
@@ -54,7 +56,7 @@ async def list_sos(
     if customer_id:
         q = q.where(SalesOrder.customer_id == customer_id)
     q = q.order_by(SalesOrder.order_date.desc(), SalesOrder.created_at.desc())
-    result = await db.execute(q)
+    result = await db.execute(q.offset(offset).limit(min(limit, 1000)))
     return list(result.scalars().all())
 
 
@@ -98,6 +100,8 @@ async def list_shipments(
     db: AsyncSession,
     status: Optional[ShipmentStatus] = None,
     so_id: Optional[uuid.UUID] = None,
+    limit: int = 100,
+    offset: int = 0,
 ) -> List[Shipment]:
     q = select(Shipment).options(
         selectinload(Shipment.so).selectinload(SalesOrder.customer),
@@ -109,7 +113,7 @@ async def list_shipments(
     if so_id:
         q = q.where(Shipment.so_id == so_id)
     q = q.order_by(Shipment.scheduled_date, Shipment.created_at.desc())
-    result = await db.execute(q)
+    result = await db.execute(q.offset(offset).limit(min(limit, 1000)))
     return list(result.scalars().all())
 
 
@@ -158,6 +162,8 @@ async def list_invoices(
     db: AsyncSession,
     status: Optional[InvoiceStatus] = None,
     customer_id: Optional[uuid.UUID] = None,
+    limit: int = 100,
+    offset: int = 0,
 ) -> List[Invoice]:
     q = select(Invoice).options(
         selectinload(Invoice.customer),
@@ -169,15 +175,16 @@ async def list_invoices(
     if customer_id:
         q = q.where(Invoice.customer_id == customer_id)
     q = q.order_by(Invoice.due_date, Invoice.invoice_date.desc())
-    result = await db.execute(q)
+    result = await db.execute(q.offset(offset).limit(min(limit, 1000)))
     return list(result.scalars().all())
 
 
-async def get_mpesa_transactions(db: AsyncSession, so_id: uuid.UUID) -> List[MpesaTransaction]:
+async def get_mpesa_transactions(db: AsyncSession, so_id: uuid.UUID, limit: int = 200) -> List[MpesaTransaction]:
     result = await db.execute(
         select(MpesaTransaction)
         .where(MpesaTransaction.so_id == so_id)
         .order_by(MpesaTransaction.created_at)
+        .limit(min(limit, 1000))
     )
     return list(result.scalars().all())
 

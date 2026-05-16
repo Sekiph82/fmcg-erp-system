@@ -19,6 +19,8 @@ async def list_parameters(
     db: AsyncSession,
     qc_type: Optional[QCType] = None,
     active_only: bool = True,
+    limit: int = 500,
+    offset: int = 0,
 ) -> List[QCParameter]:
     q = select(QCParameter)
     if active_only:
@@ -29,7 +31,7 @@ async def list_parameters(
             QCParameter.applicable_types.contains(qc_type.value)
         )
     q = q.order_by(QCParameter.name)
-    result = await db.execute(q)
+    result = await db.execute(q.offset(offset).limit(min(limit, 1000)))
     return list(result.scalars().all())
 
 
@@ -62,6 +64,8 @@ async def list_inspections(
     supplier_id: Optional[uuid.UUID] = None,
     material_id: Optional[uuid.UUID] = None,
     product_id: Optional[uuid.UUID] = None,
+    limit: int = 100,
+    offset: int = 0,
 ) -> List[QCInspection]:
     q = select(QCInspection).options(
         selectinload(QCInspection.supplier),
@@ -81,7 +85,7 @@ async def list_inspections(
     if product_id:
         q = q.where(QCInspection.product_id == product_id)
     q = q.order_by(QCInspection.inspection_date.desc(), QCInspection.created_at.desc())
-    result = await db.execute(q)
+    result = await db.execute(q.offset(offset).limit(min(limit, 1000)))
     return list(result.scalars().all())
 
 

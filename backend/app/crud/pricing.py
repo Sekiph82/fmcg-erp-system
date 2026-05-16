@@ -17,6 +17,8 @@ async def list_pricing_rules(
     pricing_level: Optional[PricingLevel] = None,
     region: Optional[str] = None,
     active_only: bool = True,
+    limit: int = 200,
+    offset: int = 0,
 ) -> List[PricingRule]:
     q = select(PricingRule).options(
         selectinload(PricingRule.product),
@@ -29,7 +31,7 @@ async def list_pricing_rules(
         q = q.where(PricingRule.region == region)
     if active_only:
         q = q.where(PricingRule.is_active == True)  # noqa
-    result = await db.execute(q.order_by(PricingRule.pricing_level))
+    result = await db.execute(q.order_by(PricingRule.pricing_level).offset(offset).limit(min(limit, 1000)))
     return list(result.scalars().all())
 
 
@@ -62,13 +64,15 @@ async def list_promotions(
     *,
     active_only: bool = True,
     region: Optional[str] = None,
+    limit: int = 200,
+    offset: int = 0,
 ) -> List[Promotion]:
     q = select(Promotion).options(selectinload(Promotion.products))
     if active_only:
         q = q.where(Promotion.is_active == True)  # noqa
     if region:
         q = q.where(Promotion.region == region)
-    result = await db.execute(q.order_by(Promotion.start_date.desc()))
+    result = await db.execute(q.order_by(Promotion.start_date.desc()).offset(offset).limit(min(limit, 1000)))
     return list(result.scalars().all())
 
 

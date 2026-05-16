@@ -21,13 +21,15 @@ async def list_factors(
     db: AsyncSession,
     source_type: Optional[SourceType] = None,
     is_active: Optional[bool] = None,
+    limit: int = 500,
+    offset: int = 0,
 ) -> List[EmissionFactor]:
     q = select(EmissionFactor).order_by(EmissionFactor.source_type, EmissionFactor.valid_from.desc())
     if source_type:
         q = q.where(EmissionFactor.source_type == source_type)
     if is_active is not None:
         q = q.where(EmissionFactor.is_active == is_active)
-    result = await db.execute(q)
+    result = await db.execute(q.offset(offset).limit(min(limit, 1000)))
     return list(result.scalars().all())
 
 
@@ -206,11 +208,16 @@ async def create_metric(
 
 # ── ESG Targets ───────────────────────────────────────────────────────────────
 
-async def list_targets(db: AsyncSession, is_active: Optional[bool] = None) -> List[ESGTarget]:
+async def list_targets(
+    db: AsyncSession,
+    is_active: Optional[bool] = None,
+    limit: int = 200,
+    offset: int = 0,
+) -> List[ESGTarget]:
     q = select(ESGTarget).order_by(ESGTarget.target_date)
     if is_active is not None:
         q = q.where(ESGTarget.is_active == is_active)
-    result = await db.execute(q)
+    result = await db.execute(q.offset(offset).limit(min(limit, 1000)))
     return list(result.scalars().all())
 
 

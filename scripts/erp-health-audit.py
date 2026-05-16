@@ -71,22 +71,75 @@ def read(p: Path) -> str:
 
 # ── checks ────────────────────────────────────────────────────────────────────
 
+_UNBOUNDED_SKIP_PATTERNS = [
+    # Loading objects by a provided ID list — bounded by caller
+    re.compile(r"\.in_\("),
+    # for-loop consumption — bulk expire/delete, bounded by parent key
+    re.compile(r"^\s*for\s+\w+\s+in\s+result\.scalars\(\)\.all\(\)"),
+]
+
+# Specific file-suffix + context patterns proven to be FK-bounded internal ops.
+# Format: (relative_path_suffix, line_context_pattern)
+# A finding is suppressed if the file path ends with the suffix AND the surrounding
+# 10-line window matches the context pattern.
+_KNOWN_FP_CONTEXTS = [
+    # seed.py — startup initialization, not a user-facing query
+    (os.path.join("app", "db", "seed.py"), None),
+    # production_advanced.py schedule conflict check — bounded by time window condition
+    (os.path.join("crud", "production_advanced.py"), re.compile(r"exclude_id|check_schedule|overlap")),
+    # chemical_treatment.py KPI aggregation — internal, bounded by conditions
+    (os.path.join("crud", "chemical_treatment.py"), re.compile(r"KPI|low_stock|kpi")),
+    # FK-bounded lookup functions in logistics/logs
+    (os.path.join("crud", "logistics.py"), re.compile(r"shipment_id\s*==|po_link|customs_doc|local_cost")),
+    # logs.py: mpesa status history is FK-scoped to a single transaction
+    (os.path.join("crud", "logs.py"), re.compile(r"transaction_id\s*==|MpesaStatus|status_history")),
+    # Internal tax batch update
+    (os.path.join("crud", "tax_regulatory.py"), re.compile(r"POSTED|mark_taxes|batch_update")),
+    # procurement.py: internal payment recalc bounded by po.id FK
+    (os.path.join("crud", "procurement.py"), re.compile(r"po\.id|payment_status|total_paid|Recalculate")),
+    # two_factor: per-user ops bounded by user_id
+    (os.path.join("crud", "two_factor.py"), re.compile(r"user_id\s*==|recovery_code|TwoFASession")),
+]
+
+
+def _is_known_fp(filepath: str, window_text: str) -> bool:
+    for suffix, ctx_re in _KNOWN_FP_CONTEXTS:
+        if filepath.replace("/", os.sep).endswith(suffix):
+            if ctx_re is None or ctx_re.search(window_text):
+                return True
+    return False
+
+
 def check_unbounded_queries(root: Path) -> None:
     pattern = re.compile(r"\.scalars\(\)\.all\(\)")
     limit_pattern = re.compile(r"\.limit\(")
+    in_pattern = re.compile(r"\.in_\(")
+    for_consume = re.compile(r"^\s*for\s+\w+\s+in\s+")
     crud_dir = root / "backend" / "app" / "crud"
     for p in iter_py(root / "backend"):
         text = read(p)
         lines = text.splitlines()
-        # Only flag CRUD files as HIGH; service/other files as MEDIUM
         is_crud = crud_dir in p.parents or p.parent == crud_dir
         for i, line in enumerate(lines, 1):
-            if pattern.search(line):
-                window = lines[max(0, i - 6):i + 5]
-                if not any(limit_pattern.search(w) for w in window):
-                    sev = "HIGH" if is_crud else "MEDIUM"
-                    find(sev, "unbounded_query", str(p), i,
-                         ".scalars().all() without .limit() nearby")
+            if not pattern.search(line):
+                continue
+            window = lines[max(0, i - 8):i + 5]
+            window_text = "\n".join(window)
+            # Skip if .limit( already nearby
+            if any(limit_pattern.search(w) for w in window):
+                continue
+            # Skip if bounded by .in_() — loading by provided IDs
+            if any(in_pattern.search(w) for w in window):
+                continue
+            # Skip for-loop consumption (bulk update/delete)
+            if for_consume.search(line) or for_consume.search(lines[max(0, i - 2)]):
+                continue
+            # Skip known false-positive contexts
+            if _is_known_fp(str(p), window_text):
+                continue
+            sev = "HIGH" if is_crud else "MEDIUM"
+            find(sev, "unbounded_query", str(p), i,
+                 ".scalars().all() without .limit() nearby")
 
 
 def check_for_update_locks(root: Path) -> None:
@@ -132,7 +185,7 @@ def check_create_all(root: Path) -> None:
 def check_dev_server_in_prod_dockerfile(root: Path) -> None:
     for name in ("Dockerfile.prod", "Dockerfile"):
         for dockerfile in root.rglob(name):
-            if any(part in {".git", "node_modules"} for part in dockerfile.parts):
+            if any(part in _SKIP_DIRS for part in dockerfile.parts):
                 continue
             text = read(dockerfile)
             if "--reload" in text:

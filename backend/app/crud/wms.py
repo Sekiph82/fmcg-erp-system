@@ -172,6 +172,8 @@ async def list_putaway_rules(
     db: AsyncSession,
     warehouse_id: Optional[uuid.UUID] = None,
     is_active: Optional[bool] = None,
+    limit: int = 200,
+    offset: int = 0,
 ) -> List[PutawayRule]:
     q = (
         select(PutawayRule)
@@ -187,7 +189,7 @@ async def list_putaway_rules(
         q = q.where(PutawayRule.warehouse_id == warehouse_id)
     if is_active is not None:
         q = q.where(PutawayRule.is_active == is_active)
-    result = await db.execute(q)
+    result = await db.execute(q.offset(offset).limit(min(limit, 1000)))
     return list(result.scalars().all())
 
 

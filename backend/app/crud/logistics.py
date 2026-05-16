@@ -88,6 +88,8 @@ async def list_containers(
     db: AsyncSession,
     shipment_id: Optional[uuid.UUID] = None,
     status: Optional[ContainerStatus] = None,
+    limit: int = 200,
+    offset: int = 0,
 ) -> List[ShipmentContainer]:
     q = (
         select(ShipmentContainer)
@@ -98,7 +100,7 @@ async def list_containers(
         q = q.where(ShipmentContainer.shipment_id == shipment_id)
     if status:
         q = q.where(ShipmentContainer.status == status)
-    return list((await db.execute(q)).scalars().all())
+    return list((await db.execute(q.offset(offset).limit(min(limit, 1000)))).scalars().all())
 
 
 async def create_container(db: AsyncSession, data: dict) -> ShipmentContainer:

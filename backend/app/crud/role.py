@@ -70,11 +70,13 @@ async def list_permissions(
     db: AsyncSession,
     *,
     module: Optional[str] = None,
+    limit: int = 500,
+    offset: int = 0,
 ) -> List[Permission]:
     q = select(Permission)
     if module:
         q = q.where(Permission.module == module)
-    result = await db.execute(q.order_by(Permission.module, Permission.action))
+    result = await db.execute(q.order_by(Permission.module, Permission.action).offset(offset).limit(min(limit, 1000)))
     return list(result.scalars().all())
 
 

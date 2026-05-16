@@ -53,6 +53,9 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "postgresql+asyncpg://erp_user:changeme@localhost:5432/fmcg_erp"
     REDIS_URL: str = "redis://localhost:6379/0"
 
+    # Request timeout
+    REQUEST_TIMEOUT_SECONDS: int = 120  # recommended: 60 in production
+
     # Connection pool
     DATABASE_POOL_SIZE: int = 5
     DATABASE_MAX_OVERFLOW: int = 10

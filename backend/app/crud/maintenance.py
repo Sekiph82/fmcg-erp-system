@@ -18,13 +18,15 @@ async def list_assets(
     db: AsyncSession,
     status: Optional[AssetStatus] = None,
     line: Optional[str] = None,
+    limit: int = 200,
+    offset: int = 0,
 ) -> List[Asset]:
     q = select(Asset).order_by(Asset.line, Asset.asset_no)
     if status:
         q = q.where(Asset.status == status)
     if line:
         q = q.where(Asset.line == line)
-    return list((await db.execute(q)).scalars().all())
+    return list((await db.execute(q.offset(offset).limit(min(limit, 1000)))).scalars().all())
 
 
 async def get_asset(db: AsyncSession, asset_id: uuid.UUID) -> Optional[Asset]:
@@ -55,6 +57,8 @@ async def list_pm_plans(
     db: AsyncSession,
     asset_id: Optional[uuid.UUID] = None,
     active_only: bool = False,
+    limit: int = 200,
+    offset: int = 0,
 ) -> List[PMPlan]:
     q = (
         select(PMPlan)
@@ -65,7 +69,7 @@ async def list_pm_plans(
         q = q.where(PMPlan.asset_id == asset_id)
     if active_only:
         q = q.where(PMPlan.is_active == True)  # noqa: E712
-    return list((await db.execute(q)).scalars().all())
+    return list((await db.execute(q.offset(offset).limit(min(limit, 1000)))).scalars().all())
 
 
 async def get_pm_plan(db: AsyncSession, plan_id: uuid.UUID) -> Optional[PMPlan]:
@@ -255,11 +259,13 @@ async def list_spare_parts(
     db: AsyncSession,
     active_only: bool = True,
     low_stock: bool = False,
+    limit: int = 500,
+    offset: int = 0,
 ) -> List[SparePart]:
     q = select(SparePart).order_by(SparePart.part_no)
     if active_only:
         q = q.where(SparePart.is_active == True)  # noqa: E712
-    return list((await db.execute(q)).scalars().all())
+    return list((await db.execute(q.offset(offset).limit(min(limit, 1000)))).scalars().all())
 
 
 async def get_spare_part(db: AsyncSession, part_id: uuid.UUID) -> Optional[SparePart]:
@@ -290,6 +296,8 @@ async def list_spare_usages(
     db: AsyncSession,
     asset_id: Optional[uuid.UUID] = None,
     breakdown_id: Optional[uuid.UUID] = None,
+    limit: int = 200,
+    offset: int = 0,
 ) -> List[SparePartUsage]:
     q = (
         select(SparePartUsage)
@@ -303,7 +311,7 @@ async def list_spare_usages(
         q = q.where(SparePartUsage.asset_id == asset_id)
     if breakdown_id:
         q = q.where(SparePartUsage.breakdown_id == breakdown_id)
-    return list((await db.execute(q)).scalars().all())
+    return list((await db.execute(q.offset(offset).limit(min(limit, 1000)))).scalars().all())
 
 
 async def record_spare_usage(
