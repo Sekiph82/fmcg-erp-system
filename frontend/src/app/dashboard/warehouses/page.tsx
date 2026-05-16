@@ -1,5 +1,7 @@
 "use client";
 
+import dynamic from "next/dynamic";
+import { ModuleWorkspace } from "@/components/workspace";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { warehousesApi, WarehouseCreate, WarehouseType } from "@/lib/warehouses";
@@ -30,7 +32,7 @@ const typeVariant = (t: WarehouseType): "blue" | "yellow" | "gray" | "red" => {
 
 const empty: WarehouseCreate = { code: "", name: "", warehouse_type: "FINISHED_GOODS", is_active: true };
 
-export default function WarehousesPage() {
+function WarehousesListTab() {
   const qc = useQueryClient();
   const { toasts, toast, dismiss } = useToast();
   const [open, setOpen] = useState(false);
@@ -153,5 +155,23 @@ export default function WarehousesPage() {
         </div>
       </Modal>
     </div>
+  );
+}
+
+const WMSPage = dynamic(() => import("@/app/dashboard/wms/page"), { ssr: false });
+
+export default function WarehousesPage() {
+  const tabs = [
+    { key: "warehouses", label: "Warehouses",  permission: "inventory.view", content: <WarehousesListTab /> },
+    { key: "wms",        label: "WMS / Putaway",permission: "inventory.view", content: <WMSPage /> },
+  ];
+  return (
+    <ModuleWorkspace
+      title="Warehouses"
+      description="Warehouse management, locations, WMS operations"
+      permission="inventory.view"
+      tabs={tabs}
+      defaultTab="warehouses"
+    />
   );
 }

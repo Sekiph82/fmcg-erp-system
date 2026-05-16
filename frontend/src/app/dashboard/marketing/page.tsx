@@ -1,5 +1,7 @@
 "use client";
 
+import dynamic from "next/dynamic";
+import { ModuleWorkspace } from "@/components/workspace";
 import { useQuery } from "@tanstack/react-query";
 import { marketingApi, MarketingDashboard } from "@/lib/marketingApi";
 import { RequirePermission } from "@/components/PermissionGuard";
@@ -112,7 +114,7 @@ function PromotionsByRegion({ rows }: { rows: Array<{ region: string; count: num
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
-export default function MarketingDashboardPage() {
+function MarketingDashboardTab() {
   const { data, isLoading } = useQuery({
     queryKey: ["marketing-dashboard"],
     queryFn: () => marketingApi.analytics.dashboard().then((r) => r.data),
@@ -241,5 +243,48 @@ export default function MarketingDashboardPage() {
         )}
       </div>
     </RequirePermission>
+  );
+}
+
+const MarketingCampaignsPage  = dynamic(() => import("@/app/dashboard/marketing/campaigns/page"),   { ssr: false });
+const MarketingPromotionsPage = dynamic(() => import("@/app/dashboard/marketing/promotions/page"),  { ssr: false });
+const MarketingTradeSpendPage = dynamic(() => import("@/app/dashboard/marketing/trade-spend/page"), { ssr: false });
+const MarketingAdsPage        = dynamic(() => import("@/app/dashboard/marketing/ads/page"),          { ssr: false });
+const MarketingSocialPage     = dynamic(() => import("@/app/dashboard/marketing/social-media/page"), { ssr: false });
+const MarketingSegmentsPage   = dynamic(() => import("@/app/dashboard/marketing/segments/page"),    { ssr: false });
+const MarketingInfluencersPage= dynamic(() => import("@/app/dashboard/marketing/influencers/page"), { ssr: false });
+const MarketingEcommercePage  = dynamic(() => import("@/app/dashboard/marketing/ecommerce/page"),   { ssr: false });
+const MarketingAnalyticsPage  = dynamic(() => import("@/app/dashboard/marketing/analytics/page"),   { ssr: false });
+const MarketingVisitsPage     = dynamic(() => import("@/app/dashboard/marketing/visits/page"),       { ssr: false });
+const MarketingBrandSpendPage = dynamic(() => import("@/app/dashboard/marketing/brand-spend/page"), { ssr: false });
+const TPMPage                 = dynamic(() => import("@/app/dashboard/tpm/page"),                   { ssr: false });
+const MarketIntelPage         = dynamic(() => import("@/app/dashboard/market-intelligence/page"),   { ssr: false });
+
+export default function MarketingPage() {
+  const tabs = [
+    { key: "overview",      label: "Overview",         permission: "marketing.view", content: <MarketingDashboardTab /> },
+    { key: "campaigns",     label: "Campaigns",        permission: "marketing.view", content: <MarketingCampaignsPage /> },
+    { key: "promotions",    label: "Promotions",       permission: "marketing.view", content: <MarketingPromotionsPage /> },
+    { key: "promotions-schemes", label: "Schemes",    permission: "marketing.view", content: <MarketingPromotionsPage /> },
+    { key: "tpm",           label: "TPM",              permission: "marketing.view", content: <TPMPage /> },
+    { key: "trade-spend",   label: "Trade Spend",      permission: "marketing.view", content: <MarketingTradeSpendPage /> },
+    { key: "ads",           label: "Ads",              permission: "marketing.view", content: <MarketingAdsPage /> },
+    { key: "social-media",  label: "Social Media",     permission: "marketing.view", content: <MarketingSocialPage /> },
+    { key: "segments",      label: "Segments",         permission: "marketing.view", content: <MarketingSegmentsPage /> },
+    { key: "influencers",   label: "Influencers",      permission: "marketing.view", content: <MarketingInfluencersPage /> },
+    { key: "ecommerce",     label: "E-Commerce",       permission: "marketing.view", content: <MarketingEcommercePage /> },
+    { key: "brand-spend",   label: "Brand Spend",      permission: "marketing.view", content: <MarketingBrandSpendPage /> },
+    { key: "visits",        label: "Visits",           permission: "marketing.view", content: <MarketingVisitsPage /> },
+    { key: "market-intel",  label: "Market Intel",     permission: "marketing.view", content: <MarketIntelPage /> },
+    { key: "analytics",     label: "Analytics",        permission: "marketing.view", content: <MarketingAnalyticsPage /> },
+  ];
+  return (
+    <ModuleWorkspace
+      title="Marketing"
+      description="Campaigns, promotions, TPM, ads, social media, e-commerce"
+      permission="marketing.view"
+      tabs={tabs}
+      defaultTab="overview"
+    />
   );
 }

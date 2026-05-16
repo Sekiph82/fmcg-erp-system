@@ -1,12 +1,14 @@
 "use client";
 
+import dynamic from "next/dynamic";
+import { ModuleWorkspace } from "@/components/workspace";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { salesApi } from "@/lib/sales";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 
-export default function SalesDashboardPage() {
+function SalesDashboardTab() {
   const router = useRouter();
 
   const { data: summary } = useQuery({
@@ -136,5 +138,63 @@ export default function SalesDashboardPage() {
         </div>
       )}
     </div>
+  );
+}
+
+const SalesOrdersPage       = dynamic(() => import("@/app/dashboard/sales/orders/page"),        { ssr: false });
+const SalesInvoicesPage     = dynamic(() => import("@/app/dashboard/sales/invoices/page"),      { ssr: false });
+const SalesCustomersPage    = dynamic(() => import("@/app/dashboard/sales/customers/page"),     { ssr: false });
+const SalesQuotesPage       = dynamic(() => import("@/app/dashboard/sales/quotes/page"),        { ssr: false });
+const SalesShipmentsPage    = dynamic(() => import("@/app/dashboard/sales/shipments/page"),     { ssr: false });
+const SalesDeliveryPage     = dynamic(() => import("@/app/dashboard/sales/delivery/page"),      { ssr: false });
+const SalesCollectionsPage  = dynamic(() => import("@/app/dashboard/sales/collections/page"),   { ssr: false });
+const SalesReturnsPage      = dynamic(() => import("@/app/dashboard/sales/returns/page"),       { ssr: false });
+const SalesPricingPage      = dynamic(() => import("@/app/dashboard/sales/pricing/page"),       { ssr: false });
+const SalesMarginPage       = dynamic(() => import("@/app/dashboard/sales/margin/page"),        { ssr: false });
+const SalesDistributorsPage = dynamic(() => import("@/app/dashboard/sales/distributors/page"),  { ssr: false });
+const SalesFieldSalesPage   = dynamic(() => import("@/app/dashboard/sales/field-sales/page"),   { ssr: false });
+const SalesReportsPage      = dynamic(() => import("@/app/dashboard/sales/reports/page"),       { ssr: false });
+const PriceListsPage        = dynamic(() => import("@/app/dashboard/price-lists/page"),         { ssr: false });
+const DynamicPricingPage    = dynamic(() => import("@/app/dashboard/dynamic-pricing/page"),     { ssr: false });
+const ContractsPage         = dynamic(() => import("@/app/dashboard/contracts/page"),           { ssr: false });
+const RecurringOrdersPage   = dynamic(() => import("@/app/dashboard/recurring-orders/page"),    { ssr: false });
+const CommissionsPage       = dynamic(() => import("@/app/dashboard/commissions/page"),         { ssr: false });
+const SecondarySalesPage    = dynamic(() => import("@/app/dashboard/secondary-sales/page"),     { ssr: false });
+const VanSalesPage          = dynamic(() => import("@/app/dashboard/van-sales/page"),           { ssr: false });
+const PortalPage            = dynamic(() => import("@/app/dashboard/portal/page"),              { ssr: false });
+
+export default function SalesPage() {
+  const tabs = [
+    { key: "overview",       label: "Overview",        permission: "sales.view", content: <SalesDashboardTab /> },
+    { key: "orders",         label: "Orders",          permission: "sales.view", content: <SalesOrdersPage /> },
+    { key: "invoices",       label: "Invoices",        permission: "sales.view", content: <SalesInvoicesPage /> },
+    { key: "customers",      label: "Customers",       permission: "sales.view", content: <SalesCustomersPage /> },
+    { key: "quotes",         label: "Quotes",          permission: "sales.view", content: <SalesQuotesPage /> },
+    { key: "shipments",      label: "Shipments",       permission: "sales.view", content: <SalesShipmentsPage /> },
+    { key: "delivery",       label: "Delivery",        permission: "sales.view", content: <SalesDeliveryPage /> },
+    { key: "collections",    label: "Collections",     permission: "sales.view", content: <SalesCollectionsPage /> },
+    { key: "returns",        label: "Returns",         permission: "sales.view", content: <SalesReturnsPage /> },
+    { key: "pricing",        label: "Pricing",         permission: "sales.view", content: <SalesPricingPage /> },
+    { key: "price-lists",    label: "Price Lists",     permission: "sales.view", content: <PriceListsPage /> },
+    { key: "dynamic-pricing",label: "Dynamic Pricing", permission: "sales.view", content: <DynamicPricingPage /> },
+    { key: "contracts",      label: "Contracts",       permission: "sales.view", content: <ContractsPage /> },
+    { key: "recurring",      label: "Recurring",       permission: "sales.view", content: <RecurringOrdersPage /> },
+    { key: "commissions",    label: "Commissions",     permission: "sales.view", content: <CommissionsPage /> },
+    { key: "secondary",      label: "Secondary Sales", permission: "sales.view", content: <SecondarySalesPage /> },
+    { key: "van-sales",      label: "Van Sales",       permission: "sales.view", content: <VanSalesPage /> },
+    { key: "distributors",   label: "Distributors",    permission: "sales.view", content: <SalesDistributorsPage /> },
+    { key: "field-sales",    label: "Field Sales",     permission: "sales.view", content: <SalesFieldSalesPage /> },
+    { key: "margin",         label: "Margin",          permission: "sales.view", content: <SalesMarginPage /> },
+    { key: "portal",         label: "Customer Portal", permission: "sales.view", content: <PortalPage /> },
+    { key: "reports",        label: "Reports",         permission: "sales.view", content: <SalesReportsPage /> },
+  ];
+  return (
+    <ModuleWorkspace
+      title="Sales"
+      description="Orders, invoices, customers, pricing, collections, van sales"
+      permission="sales.view"
+      tabs={tabs}
+      defaultTab="overview"
+    />
   );
 }

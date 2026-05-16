@@ -1,5 +1,7 @@
 "use client";
 
+import dynamic from "next/dynamic";
+import { ModuleWorkspace } from "@/components/workspace";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { logisticsApi, IntlShipmentStatus, ClearanceStatus } from "@/lib/logistics";
@@ -24,7 +26,7 @@ const clearanceBadge = (s?: ClearanceStatus) => {
 
 const modeBadge = (m: string) => m === "SEA" ? "blue" : m === "AIR" ? "yellow" : "gray";
 
-export default function LogisticsDashboardPage() {
+function LogisticsShipmentsTab() {
   const router = useRouter();
 
   const { data: rows = [], isLoading } = useQuery({
@@ -163,5 +165,31 @@ export default function LogisticsDashboardPage() {
         ))}
       </div>
     </div>
+  );
+}
+
+const LogisticsContainersPage = dynamic(() => import("@/app/dashboard/logistics/containers/page"), { ssr: false });
+const LogisticsArrivalsPage   = dynamic(() => import("@/app/dashboard/logistics/arrivals/page"),   { ssr: false });
+const LogisticsDocumentsPage  = dynamic(() => import("@/app/dashboard/logistics/documents/page"),  { ssr: false });
+const LogisticsShipmentsPage  = dynamic(() => import("@/app/dashboard/logistics/shipments/page"),  { ssr: false });
+const FleetPage               = dynamic(() => import("@/app/dashboard/fleet/page"),                { ssr: false });
+
+export default function LogisticsDashboardPage() {
+  const tabs = [
+    { key: "overview",    label: "Overview",    permission: "logistics.view", content: <LogisticsShipmentsTab /> },
+    { key: "shipments",   label: "Shipments",   permission: "logistics.view", content: <LogisticsShipmentsPage /> },
+    { key: "containers",  label: "Containers",  permission: "logistics.view", content: <LogisticsContainersPage /> },
+    { key: "arrivals",    label: "Arrivals",    permission: "logistics.view", content: <LogisticsArrivalsPage /> },
+    { key: "documents",   label: "Documents",   permission: "logistics.view", content: <LogisticsDocumentsPage /> },
+    { key: "fleet",       label: "Fleet",       permission: "logistics.view", content: <FleetPage /> },
+  ];
+  return (
+    <ModuleWorkspace
+      title="Logistics"
+      description="International shipments, containers, fleet, customs clearance"
+      permission="logistics.view"
+      tabs={tabs}
+      defaultTab="overview"
+    />
   );
 }

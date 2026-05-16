@@ -1,5 +1,7 @@
 "use client";
 
+import dynamic from "next/dynamic";
+import { ModuleWorkspace } from "@/components/workspace";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
@@ -37,7 +39,7 @@ const STATUS_OPTIONS = [
 
 const emptyPlan: PlanCreate = { plan_no: "", name: "", planned_date: "" };
 
-export default function ProductionPlansPage() {
+function ProductionPlansTab() {
   const qc = useQueryClient();
   const router = useRouter();
   const { toasts, toast, dismiss } = useToast();
@@ -208,5 +210,59 @@ export default function ProductionPlansPage() {
         </form>
       </Modal>
     </div>
+  );
+}
+
+const ProductionOrdersPage     = dynamic(() => import("@/app/dashboard/production/orders/page"),         { ssr: false });
+const ProductionSchedulingPage = dynamic(() => import("@/app/dashboard/production/scheduling/page"),     { ssr: false });
+const ProductionWorkCentersPage= dynamic(() => import("@/app/dashboard/production/work-centers/page"),   { ssr: false });
+const ProductionBatchLotsPage  = dynamic(() => import("@/app/dashboard/production/batch-lots/page"),     { ssr: false });
+const ProductionQCPage         = dynamic(() => import("@/app/dashboard/production/quality-control/page"),{ ssr: false });
+const ProductionLaborPage      = dynamic(() => import("@/app/dashboard/production/labor/page"),          { ssr: false });
+const ProductionOEEPage        = dynamic(() => import("@/app/dashboard/production/oee/page"),            { ssr: false });
+const ProductionDowntimePage   = dynamic(() => import("@/app/dashboard/production/downtime/page"),       { ssr: false });
+const ProductionWasteYieldPage = dynamic(() => import("@/app/dashboard/production/waste-yield/page"),    { ssr: false });
+const ProductionWIPPage        = dynamic(() => import("@/app/dashboard/production/wip/page"),            { ssr: false });
+const ProductionCostingPage    = dynamic(() => import("@/app/dashboard/production/costing/page"),        { ssr: false });
+const ProductionVariancePage   = dynamic(() => import("@/app/dashboard/production/variance/page"),       { ssr: false });
+const ProductionReportsPage    = dynamic(() => import("@/app/dashboard/production/reports/page"),        { ssr: false });
+const ProductionRoutingPage    = dynamic(() => import("@/app/dashboard/production/routing/page"),        { ssr: false });
+const ProductionTimeTrackPage  = dynamic(() => import("@/app/dashboard/production/time-tracking/page"),  { ssr: false });
+const ExecutionPage            = dynamic(() => import("@/app/dashboard/production-execution/page"),      { ssr: false });
+const MachineOpsPage           = dynamic(() => import("@/app/dashboard/machine-ops/page"),               { ssr: false });
+const MaterialFlowPage         = dynamic(() => import("@/app/dashboard/material-flow/page"),             { ssr: false });
+const ProjectsPage             = dynamic(() => import("@/app/dashboard/projects/page"),                  { ssr: false });
+
+export default function ProductionPage() {
+  const tabs = [
+    { key: "plans",         label: "Plans",           permission: "production.view", content: <ProductionPlansTab /> },
+    { key: "orders",        label: "Work Orders",     permission: "production.view", content: <ProductionOrdersPage /> },
+    { key: "scheduling",    label: "Scheduling",      permission: "production.view", content: <ProductionSchedulingPage /> },
+    { key: "work-centers",  label: "Work Centers",    permission: "production.view", content: <ProductionWorkCentersPage /> },
+    { key: "routing",       label: "Routing",         permission: "production.view", content: <ProductionRoutingPage /> },
+    { key: "batch-lots",    label: "Batch / Lots",    permission: "production.view", content: <ProductionBatchLotsPage /> },
+    { key: "quality-control",label:"QC",              permission: "production.view", content: <ProductionQCPage /> },
+    { key: "labor",         label: "Labor",           permission: "production.view", content: <ProductionLaborPage /> },
+    { key: "time-tracking", label: "Time Tracking",   permission: "production.view", content: <ProductionTimeTrackPage /> },
+    { key: "oee",           label: "OEE",             permission: "production.view", content: <ProductionOEEPage /> },
+    { key: "downtime",      label: "Downtime",        permission: "production.view", content: <ProductionDowntimePage /> },
+    { key: "waste-yield",   label: "Waste & Yield",   permission: "production.view", content: <ProductionWasteYieldPage /> },
+    { key: "wip",           label: "WIP",             permission: "production.view", content: <ProductionWIPPage /> },
+    { key: "costing",       label: "Costing",         permission: "production.view", content: <ProductionCostingPage /> },
+    { key: "variance",      label: "Variance",        permission: "production.view", content: <ProductionVariancePage /> },
+    { key: "reports",       label: "Reports",         permission: "production.view", content: <ProductionReportsPage /> },
+    { key: "execution",     label: "Execution",       permission: "production.view", content: <ExecutionPage /> },
+    { key: "machine-ops",   label: "Machine Ops",     permission: "production.view", content: <MachineOpsPage /> },
+    { key: "material-flow", label: "Material Flow",   permission: "production.view", content: <MaterialFlowPage /> },
+    { key: "projects",      label: "Projects",        permission: "production.view", content: <ProjectsPage /> },
+  ];
+  return (
+    <ModuleWorkspace
+      title="Production"
+      description="Plans, work orders, scheduling, OEE, quality, costing"
+      permission="production.view"
+      tabs={tabs}
+      defaultTab="plans"
+    />
   );
 }

@@ -1,5 +1,7 @@
 "use client";
 
+import dynamic from "next/dynamic";
+import { ModuleWorkspace } from "@/components/workspace";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -566,10 +568,30 @@ function InventoryContent() {
   );
 }
 
+const MovementsPage        = dynamic(() => import("@/app/dashboard/movements/page"),            { ssr: false });
+const CycleCountPage       = dynamic(() => import("@/app/dashboard/cycle-count/page"),          { ssr: false });
+const ShelfLifePage        = dynamic(() => import("@/app/dashboard/shelf-life/page"),           { ssr: false });
+const TraceabilityPage     = dynamic(() => import("@/app/dashboard/traceability/page"),         { ssr: false });
+const InventorySerialsPage = dynamic(() => import("@/app/dashboard/inventory/serials/page"),    { ssr: false });
+const InventoryValuationPage = dynamic(() => import("@/app/dashboard/inventory/valuation/page"),{ ssr: false });
+
 export default function InventoryPage() {
+  const tabs = [
+    { key: "stock",       label: "Stock Ledger",    permission: "inventory.view", content: <InventoryContent /> },
+    { key: "movements",   label: "Movements",       permission: "inventory.view", content: <MovementsPage /> },
+    { key: "cycle-count", label: "Cycle Count",     permission: "inventory.view", content: <CycleCountPage /> },
+    { key: "shelf-life",  label: "Shelf Life",      permission: "inventory.view", content: <ShelfLifePage /> },
+    { key: "traceability",label: "Traceability",    permission: "inventory.view", content: <TraceabilityPage /> },
+    { key: "serials",     label: "Serials",         permission: "inventory.view", content: <InventorySerialsPage /> },
+    { key: "valuation",   label: "Valuation",       permission: "inventory.view", content: <InventoryValuationPage /> },
+  ];
   return (
-    <RequirePermission permission="inventory.view">
-      <InventoryContent />
-    </RequirePermission>
+    <ModuleWorkspace
+      title="Inventory"
+      description="Stock ledger, movements, cycle counts, shelf life, traceability"
+      permission="inventory.view"
+      tabs={tabs}
+      defaultTab="stock"
+    />
   );
 }

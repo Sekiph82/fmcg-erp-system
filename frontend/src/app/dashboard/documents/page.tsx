@@ -1,5 +1,7 @@
 "use client";
 
+import dynamic from "next/dynamic";
+import { ModuleWorkspace } from "@/components/workspace";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
@@ -218,10 +220,26 @@ function DocumentRow({ doc, onClick }: { doc: DocumentShort; onClick: () => void
   );
 }
 
+const DocsCompliancePage = dynamic(() => import("@/app/dashboard/documents/compliance/page"), { ssr: false });
+const DocsExpiringPage   = dynamic(() => import("@/app/dashboard/documents/expiring/page"),   { ssr: false });
+const KnowledgeBasePage  = dynamic(() => import("@/app/dashboard/knowledge-base/page"),       { ssr: false });
+const ESignPage          = dynamic(() => import("@/app/dashboard/esign/page"),                { ssr: false });
+
 export default function DocumentsPage() {
+  const tabs = [
+    { key: "documents",      label: "Documents",      permission: "documents.view", content: <DocumentsContent /> },
+    { key: "compliance",     label: "Compliance",     permission: "documents.view", content: <DocsCompliancePage /> },
+    { key: "expiring",       label: "Expiring",       permission: "documents.view", content: <DocsExpiringPage /> },
+    { key: "knowledge-base", label: "Knowledge Base", permission: "documents.view", content: <KnowledgeBasePage /> },
+    { key: "esign",          label: "E-Sign",         permission: "documents.view", content: <ESignPage /> },
+  ];
   return (
-    <RequirePermission permission="documents.view">
-      <DocumentsContent />
-    </RequirePermission>
+    <ModuleWorkspace
+      title="Documents"
+      description="Document library, compliance docs, expiring alerts, knowledge base, e-sign"
+      permission="documents.view"
+      tabs={tabs}
+      defaultTab="documents"
+    />
   );
 }

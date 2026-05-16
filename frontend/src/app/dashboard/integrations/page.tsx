@@ -1,5 +1,7 @@
 "use client";
 
+import dynamic from "next/dynamic";
+import { ModuleWorkspace } from "@/components/workspace";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { integrationsApi, IntegrationCapability, ProviderStatus } from "@/lib/integrations";
@@ -125,7 +127,7 @@ function CapabilityCard({ capability }: { capability: IntegrationCapability }) {
   );
 }
 
-export default function IntegrationsDashboardPage() {
+function IntegrationsDashboardTab() {
   const { data: providers = [], isLoading, refetch } = useQuery({
     queryKey: ["integration-providers"],
     queryFn: integrationsApi.getProviders,
@@ -239,5 +241,37 @@ export default function IntegrationsDashboardPage() {
         ))}
       </div>
     </div>
+  );
+}
+
+const IntegrationsMpesaPage        = dynamic(() => import("@/app/dashboard/integrations/mpesa/page"),         { ssr: false });
+const IntegrationsSyncPage         = dynamic(() => import("@/app/dashboard/integrations/sync/page"),          { ssr: false });
+const IntegrationsMarketplacePage  = dynamic(() => import("@/app/dashboard/integrations/marketplace/page"),   { ssr: false });
+const IntegrationsBarcodePage      = dynamic(() => import("@/app/dashboard/integrations/barcode/page"),       { ssr: false });
+const IntegrationsMarketingSyncPage= dynamic(() => import("@/app/dashboard/integrations/marketing-sync/page"),{ ssr: false });
+const IntegrationsLogsPage         = dynamic(() => import("@/app/dashboard/integrations/logs/page"),          { ssr: false });
+const WebhooksPage                 = dynamic(() => import("@/app/dashboard/webhooks/page"),                   { ssr: false });
+const DeveloperPage                = dynamic(() => import("@/app/dashboard/developer/page"),                  { ssr: false });
+
+export default function IntegrationsDashboardPage() {
+  const tabs = [
+    { key: "overview",        label: "Overview",        permission: "integrations.view", content: <IntegrationsDashboardTab /> },
+    { key: "mpesa",           label: "M-Pesa",          permission: "integrations.view", content: <IntegrationsMpesaPage /> },
+    { key: "sync",            label: "Sync",            permission: "integrations.view", content: <IntegrationsSyncPage /> },
+    { key: "marketplace",     label: "Marketplace",     permission: "integrations.view", content: <IntegrationsMarketplacePage /> },
+    { key: "barcode",         label: "Barcode",         permission: "integrations.view", content: <IntegrationsBarcodePage /> },
+    { key: "marketing-sync",  label: "Marketing Sync",  permission: "integrations.view", content: <IntegrationsMarketingSyncPage /> },
+    { key: "logs",            label: "Logs",            permission: "integrations.view", content: <IntegrationsLogsPage /> },
+    { key: "webhooks",        label: "Webhooks",        permission: "integrations.view", content: <WebhooksPage /> },
+    { key: "developer",       label: "Developer",       permission: "integrations.view", content: <DeveloperPage /> },
+  ];
+  return (
+    <ModuleWorkspace
+      title="Integrations"
+      description="M-Pesa, sync, marketplace, barcode, webhooks, developer tools"
+      permission="integrations.view"
+      tabs={tabs}
+      defaultTab="overview"
+    />
   );
 }

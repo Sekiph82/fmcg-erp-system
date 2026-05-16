@@ -1,9 +1,12 @@
 "use client";
+
+import dynamic from "next/dynamic";
+import { ModuleWorkspace } from "@/components/workspace";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { crmApi, CRMDashboard, fmtCurrency, STATUS_COLORS, TEMPERATURE_COLORS } from "@/lib/crm_pipeline";
 
-export default function CRMDashboardPage() {
+function CRMDashboardTab() {
   const [data, setData] = useState<CRMDashboard | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -133,5 +136,43 @@ export default function CRMDashboardPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+const CRMPipelinePage    = dynamic(() => import("@/app/dashboard/crm/pipeline/page"),    { ssr: false });
+const CRMLeadsPage       = dynamic(() => import("@/app/dashboard/crm/leads/page"),       { ssr: false });
+const CRMOppsPage        = dynamic(() => import("@/app/dashboard/crm/opportunities/page"),{ ssr: false });
+const CRMActivitiesPage  = dynamic(() => import("@/app/dashboard/crm/activities/page"),  { ssr: false });
+const CRMForecastPage    = dynamic(() => import("@/app/dashboard/crm/forecast/page"),    { ssr: false });
+const CRMTerritoryPage   = dynamic(() => import("@/app/dashboard/crm/territory/page"),   { ssr: false });
+const CRMStagesPage      = dynamic(() => import("@/app/dashboard/crm/stages/page"),      { ssr: false });
+const CRMWinLossPage     = dynamic(() => import("@/app/dashboard/crm/win-loss/page"),    { ssr: false });
+const LoyaltyPage        = dynamic(() => import("@/app/dashboard/loyalty/page"),         { ssr: false });
+const NPSPage            = dynamic(() => import("@/app/dashboard/nps/page"),             { ssr: false });
+const SurveysPage        = dynamic(() => import("@/app/dashboard/surveys/page"),         { ssr: false });
+
+export default function CRMPage() {
+  const tabs = [
+    { key: "overview",    label: "Overview",    permission: "crm.view", content: <CRMDashboardTab /> },
+    { key: "pipeline",    label: "Pipeline",    permission: "crm.view", content: <CRMPipelinePage /> },
+    { key: "leads",       label: "Leads",       permission: "crm.view", content: <CRMLeadsPage /> },
+    { key: "opportunities",label:"Opportunities",permission: "crm.view", content: <CRMOppsPage /> },
+    { key: "activities",  label: "Activities",  permission: "crm.view", content: <CRMActivitiesPage /> },
+    { key: "forecast",    label: "Forecast",    permission: "crm.view", content: <CRMForecastPage /> },
+    { key: "territory",   label: "Territory",   permission: "crm.view", content: <CRMTerritoryPage /> },
+    { key: "stages",      label: "Stages",      permission: "crm.view", content: <CRMStagesPage /> },
+    { key: "win-loss",    label: "Win / Loss",  permission: "crm.view", content: <CRMWinLossPage /> },
+    { key: "loyalty",     label: "Loyalty",     permission: "crm.view", content: <LoyaltyPage /> },
+    { key: "nps",         label: "NPS",         permission: "crm.view", content: <NPSPage /> },
+    { key: "surveys",     label: "Surveys",     permission: "crm.view", content: <SurveysPage /> },
+  ];
+  return (
+    <ModuleWorkspace
+      title="CRM"
+      description="Pipeline, leads, opportunities, forecast, loyalty, NPS"
+      permission="crm.view"
+      tabs={tabs}
+      defaultTab="overview"
+    />
   );
 }

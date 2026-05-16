@@ -1,5 +1,7 @@
 "use client";
 
+import dynamic from "next/dynamic";
+import { ModuleWorkspace } from "@/components/workspace";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
@@ -49,7 +51,7 @@ const emptyLine = (n: number): LineForm => ({
   estimated_unit_cost: "", preferred_supplier_id: "", notes: "",
 });
 
-export default function PRsPage() {
+function ProcurementPRsTab() {
   const qc = useQueryClient();
   const router = useRouter();
   const { toasts, toast, dismiss } = useToast();
@@ -219,5 +221,41 @@ export default function PRsPage() {
         </form>
       </Modal>
     </div>
+  );
+}
+
+const ProcurementOrdersPage       = dynamic(() => import("@/app/dashboard/procurement/orders/page"),              { ssr: false });
+const ProcurementRFQPage          = dynamic(() => import("@/app/dashboard/procurement/rfq/page"),                 { ssr: false });
+const ProcurementDeliveriesPage   = dynamic(() => import("@/app/dashboard/procurement/deliveries/page"),          { ssr: false });
+const ProcurementSuppliersPage    = dynamic(() => import("@/app/dashboard/procurement/suppliers/page"),           { ssr: false });
+const ProcurementBlanketPage      = dynamic(() => import("@/app/dashboard/procurement/blanket-agreements/page"),  { ssr: false });
+const ProcurementReorderPage      = dynamic(() => import("@/app/dashboard/procurement/reorder-policies/page"),    { ssr: false });
+const SuggestionsPage             = dynamic(() => import("@/app/dashboard/procurement-suggestion/page"),          { ssr: false });
+const SubcontractingPage          = dynamic(() => import("@/app/dashboard/subcontracting/page"),                  { ssr: false });
+const LandedCostPage              = dynamic(() => import("@/app/dashboard/landed-cost/page"),                     { ssr: false });
+const SupplierPortalPage          = dynamic(() => import("@/app/dashboard/supplier-portal/page"),                 { ssr: false });
+
+export default function ProcurementPage() {
+  const tabs = [
+    { key: "purchase-requests", label: "Purchase Requests", permission: "procurement.view", content: <ProcurementPRsTab /> },
+    { key: "orders",            label: "Purchase Orders",   permission: "procurement.view", content: <ProcurementOrdersPage /> },
+    { key: "rfq",               label: "RFQ",               permission: "procurement.view", content: <ProcurementRFQPage /> },
+    { key: "deliveries",        label: "Deliveries",        permission: "procurement.view", content: <ProcurementDeliveriesPage /> },
+    { key: "suppliers",         label: "Suppliers",         permission: "procurement.view", content: <ProcurementSuppliersPage /> },
+    { key: "blanket-agreements",label: "Blanket Agreements",permission: "procurement.view", content: <ProcurementBlanketPage /> },
+    { key: "reorder-policies",  label: "Reorder Policies",  permission: "procurement.view", content: <ProcurementReorderPage /> },
+    { key: "suggestions",       label: "Suggestions",       permission: "procurement.view", content: <SuggestionsPage /> },
+    { key: "subcontracting",    label: "Subcontracting",    permission: "procurement.view", content: <SubcontractingPage /> },
+    { key: "landed-cost",       label: "Landed Cost",       permission: "procurement.view", content: <LandedCostPage /> },
+    { key: "supplier-portal",   label: "Supplier Portal",   permission: "procurement.view", content: <SupplierPortalPage /> },
+  ];
+  return (
+    <ModuleWorkspace
+      title="Procurement"
+      description="Purchase requests, orders, RFQ, suppliers, subcontracting"
+      permission="procurement.view"
+      tabs={tabs}
+      defaultTab="purchase-requests"
+    />
   );
 }

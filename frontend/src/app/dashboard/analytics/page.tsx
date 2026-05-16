@@ -1,5 +1,7 @@
 "use client";
 
+import dynamic from "next/dynamic";
+import { ModuleWorkspace } from "@/components/workspace";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { analyticsApi, fmtKES, fmt, DailyKPIs } from "@/lib/analytics";
@@ -154,7 +156,7 @@ function KPIGrid({ d }: { d: DailyKPIs }) {
   );
 }
 
-export default function AnalyticsHubPage() {
+function AnalyticsHubTab() {
   const { data, isLoading } = useQuery({
     queryKey: ["analytics-kpi-daily"],
     queryFn: analyticsApi.kpiDaily,
@@ -201,5 +203,37 @@ export default function AnalyticsHubPage() {
         </section>
       </div>
     </RequirePermission>
+  );
+}
+
+const AnalyticsInventoryPage  = dynamic(() => import("@/app/dashboard/analytics/inventory/page"),  { ssr: false });
+const AnalyticsSalesPage      = dynamic(() => import("@/app/dashboard/analytics/sales/page"),      { ssr: false });
+const AnalyticsProductionPage = dynamic(() => import("@/app/dashboard/analytics/production/page"), { ssr: false });
+const AnalyticsProcurementPage= dynamic(() => import("@/app/dashboard/analytics/procurement/page"),{ ssr: false });
+const AnalyticsFinancePage    = dynamic(() => import("@/app/dashboard/analytics/finance/page"),    { ssr: false });
+const AnalyticsPaymentsPage   = dynamic(() => import("@/app/dashboard/analytics/payments/page"),   { ssr: false });
+const ReportsPage             = dynamic(() => import("@/app/dashboard/reports/page"),              { ssr: false });
+const ReportBuilderPage       = dynamic(() => import("@/app/dashboard/report-builder/page"),       { ssr: false });
+
+export default function AnalyticsPage() {
+  const tabs = [
+    { key: "overview",     label: "Overview",     permission: "analytics.view", content: <AnalyticsHubTab /> },
+    { key: "inventory",    label: "Inventory",    permission: "inventory.view", content: <AnalyticsInventoryPage /> },
+    { key: "sales",        label: "Sales",        permission: "sales.view",     content: <AnalyticsSalesPage /> },
+    { key: "production",   label: "Production",   permission: "production.view",content: <AnalyticsProductionPage /> },
+    { key: "procurement",  label: "Procurement",  permission: "procurement.view",content: <AnalyticsProcurementPage /> },
+    { key: "finance",      label: "Finance",      permission: "finance.view",   content: <AnalyticsFinancePage /> },
+    { key: "payments",     label: "Payments",     permission: "finance.view",   content: <AnalyticsPaymentsPage /> },
+    { key: "reports",      label: "Reports",      permission: "analytics.view", content: <ReportsPage /> },
+    { key: "report-builder",label:"Report Builder",permission:"analytics.view", content: <ReportBuilderPage /> },
+  ];
+  return (
+    <ModuleWorkspace
+      title="Analytics"
+      description="KPIs, module analytics, reports, report builder"
+      permission="analytics.view"
+      tabs={tabs}
+      defaultTab="overview"
+    />
   );
 }

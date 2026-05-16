@@ -1,5 +1,7 @@
 "use client";
 
+import dynamic from "next/dynamic";
+import { ModuleWorkspace } from "@/components/workspace";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { financeApi } from "@/lib/finance";
@@ -166,10 +168,52 @@ function FinanceDashboardContent() {
   );
 }
 
+const FinanceAccountingPage   = dynamic(() => import("@/app/dashboard/finance/accounting/page"),    { ssr: false });
+const FinanceCashbookPage     = dynamic(() => import("@/app/dashboard/finance/cashbook/page"),       { ssr: false });
+const FinanceReceivablesPage  = dynamic(() => import("@/app/dashboard/finance/receivables/page"),    { ssr: false });
+const FinanceBudgetPage       = dynamic(() => import("@/app/dashboard/finance/budget/page"),         { ssr: false });
+const FinanceMpesaPage        = dynamic(() => import("@/app/dashboard/finance/mpesa/page"),          { ssr: false });
+const FinanceCostingPage      = dynamic(() => import("@/app/dashboard/finance/costing/page"),        { ssr: false });
+const FinanceExchangeRatesPage= dynamic(() => import("@/app/dashboard/finance/exchange-rates/page"), { ssr: false });
+const FinanceEtimsPage        = dynamic(() => import("@/app/dashboard/finance/etims/page"),          { ssr: false });
+const FinanceVATPage          = dynamic(() => import("@/app/dashboard/finance/vat-returns/page"),    { ssr: false });
+const BankReconPage           = dynamic(() => import("@/app/dashboard/bank-reconciliation/page"),    { ssr: false });
+const InvoiceMatchPage        = dynamic(() => import("@/app/dashboard/invoice-match/page"),          { ssr: false });
+const FixedAssetsPage         = dynamic(() => import("@/app/dashboard/fixed-assets/page"),           { ssr: false });
+const DimensionsPage          = dynamic(() => import("@/app/dashboard/dimensions/page"),             { ssr: false });
+const DunningPage             = dynamic(() => import("@/app/dashboard/dunning/page"),                { ssr: false });
+const TaxPage                 = dynamic(() => import("@/app/dashboard/tax/page"),                    { ssr: false });
+const BankAPIPage             = dynamic(() => import("@/app/dashboard/bank-api/page"),               { ssr: false });
+const ExpensesPage            = dynamic(() => import("@/app/dashboard/expenses/page"),               { ssr: false });
+
 export default function FinanceDashboardPage() {
+  const tabs = [
+    { key: "overview",       label: "Overview",        permission: "finance.view", content: <FinanceDashboardContent /> },
+    { key: "accounting",     label: "Accounting",      permission: "finance.view", content: <FinanceAccountingPage /> },
+    { key: "cashbook",       label: "Cashbook",        permission: "finance.view", content: <FinanceCashbookPage /> },
+    { key: "receivables",    label: "Receivables",     permission: "finance.view", content: <FinanceReceivablesPage /> },
+    { key: "budget",         label: "Budget",          permission: "finance.view", content: <FinanceBudgetPage /> },
+    { key: "mpesa",          label: "M-Pesa",          permission: "finance.view", content: <FinanceMpesaPage /> },
+    { key: "costing",        label: "Costing",         permission: "finance.view", content: <FinanceCostingPage /> },
+    { key: "exchange-rates", label: "Exchange Rates",  permission: "finance.view", content: <FinanceExchangeRatesPage /> },
+    { key: "etims",          label: "eTIMS",           permission: "finance.view", content: <FinanceEtimsPage /> },
+    { key: "vat-returns",    label: "VAT Returns",     permission: "finance.view", content: <FinanceVATPage /> },
+    { key: "bank-recon",     label: "Bank Recon",      permission: "finance.view", content: <BankReconPage /> },
+    { key: "invoice-match",  label: "Invoice Match",   permission: "finance.view", content: <InvoiceMatchPage /> },
+    { key: "fixed-assets",   label: "Fixed Assets",    permission: "finance.view", content: <FixedAssetsPage /> },
+    { key: "dimensions",     label: "Dimensions",      permission: "finance.view", content: <DimensionsPage /> },
+    { key: "dunning",        label: "Dunning",         permission: "finance.view", content: <DunningPage /> },
+    { key: "tax",            label: "Tax",             permission: "finance.view", content: <TaxPage /> },
+    { key: "bank-api",       label: "Bank API",        permission: "finance.view", content: <BankAPIPage /> },
+    { key: "expenses",       label: "Expenses",        permission: "hr.view",      content: <ExpensesPage /> },
+  ];
   return (
-    <RequirePermission permission="finance.view">
-      <FinanceDashboardContent />
-    </RequirePermission>
+    <ModuleWorkspace
+      title="Finance"
+      description="Accounting, cashbook, receivables, bank recon, tax, expenses"
+      permission="finance.view"
+      tabs={tabs}
+      defaultTab="overview"
+    />
   );
 }

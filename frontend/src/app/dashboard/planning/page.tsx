@@ -1,5 +1,7 @@
 "use client";
 
+import dynamic from "next/dynamic";
+import { ModuleWorkspace } from "@/components/workspace";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -9,7 +11,7 @@ import {
 } from "@/lib/planning";
 import { useAuth } from "@/context/AuthContext";
 
-export default function PlanningDashboardPage() {
+function PlanningDashboardTab() {
   const qc = useQueryClient();
   const { hasAnyPermission } = useAuth();
   const [showCreate, setShowCreate] = useState(false);
@@ -228,5 +230,37 @@ export default function PlanningDashboardPage() {
         </div>
       )}
     </div>
+  );
+}
+
+const PlanningSchedulePage  = dynamic(() => import("@/app/dashboard/planning/schedule/page"),    { ssr: false });
+const PlanningCapacityPage  = dynamic(() => import("@/app/dashboard/planning/capacity/page"),    { ssr: false });
+const PlanningSimulationPage= dynamic(() => import("@/app/dashboard/planning/simulation/page"),  { ssr: false });
+const PlanningBottlenecksPage=dynamic(() => import("@/app/dashboard/planning/bottlenecks/page"), { ssr: false });
+const PlanningChangeoverPage= dynamic(() => import("@/app/dashboard/planning/changeover/page"),  { ssr: false });
+const MRPPage               = dynamic(() => import("@/app/dashboard/mrp/page"),                  { ssr: false });
+const MPSPage               = dynamic(() => import("@/app/dashboard/mps/page"),                  { ssr: false });
+const KanbanPage            = dynamic(() => import("@/app/dashboard/kanban/page"),               { ssr: false });
+
+export default function PlanningPage() {
+  const tabs = [
+    { key: "advanced",     label: "Dashboard",    permission: "planning.view", content: <PlanningDashboardTab /> },
+    { key: "schedule",     label: "Schedule",     permission: "planning.view", content: <PlanningSchedulePage /> },
+    { key: "capacity",     label: "Capacity",     permission: "planning.view", content: <PlanningCapacityPage /> },
+    { key: "simulation",   label: "Simulation",   permission: "planning.view", content: <PlanningSimulationPage /> },
+    { key: "bottlenecks",  label: "Bottlenecks",  permission: "planning.view", content: <PlanningBottlenecksPage /> },
+    { key: "changeover",   label: "Changeover",   permission: "planning.view", content: <PlanningChangeoverPage /> },
+    { key: "mrp",          label: "MRP",          permission: "planning.view", content: <MRPPage /> },
+    { key: "mps",          label: "MPS",          permission: "planning.view", content: <MPSPage /> },
+    { key: "kanban",       label: "Kanban",       permission: "planning.view", content: <KanbanPage /> },
+  ];
+  return (
+    <ModuleWorkspace
+      title="Planning"
+      description="Advanced planning, MRP, MPS, capacity, simulation"
+      permission="planning.view"
+      tabs={tabs}
+      defaultTab="advanced"
+    />
   );
 }

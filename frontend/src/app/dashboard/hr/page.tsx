@@ -1,5 +1,7 @@
 "use client";
 
+import dynamic from "next/dynamic";
+import { ModuleWorkspace } from "@/components/workspace";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { hrApi } from "@/lib/hr";
@@ -111,10 +113,40 @@ function HRContent() {
   );
 }
 
+const HREmployeesPage    = dynamic(() => import("@/app/dashboard/hr/employees/page"),   { ssr: false });
+const HRAttendancePage   = dynamic(() => import("@/app/dashboard/hr/attendance/page"),  { ssr: false });
+const HRLeavePage        = dynamic(() => import("@/app/dashboard/hr/leave/page"),       { ssr: false });
+const HRPayrollPage      = dynamic(() => import("@/app/dashboard/hr/payroll/page"),     { ssr: false });
+const HRShiftsPage       = dynamic(() => import("@/app/dashboard/hr/shifts/page"),      { ssr: false });
+const RecruitmentPage    = dynamic(() => import("@/app/dashboard/recruitment/page"),    { ssr: false });
+const ESSPage            = dynamic(() => import("@/app/dashboard/ess/page"),            { ssr: false });
+const AppraisalsPage     = dynamic(() => import("@/app/dashboard/appraisals/page"),     { ssr: false });
+const TrainingPage       = dynamic(() => import("@/app/dashboard/training/page"),       { ssr: false });
+const TimesheetsPage     = dynamic(() => import("@/app/dashboard/timesheets/page"),     { ssr: false });
+const HRExpensesPage     = dynamic(() => import("@/app/dashboard/expenses/page"),       { ssr: false });
+
 export default function HRPage() {
+  const tabs = [
+    { key: "overview",     label: "Overview",     permission: "hr.view", content: <HRContent /> },
+    { key: "employees",    label: "Employees",    permission: "hr.view", content: <HREmployeesPage /> },
+    { key: "attendance",   label: "Attendance",   permission: "hr.view", content: <HRAttendancePage /> },
+    { key: "leave",        label: "Leave",        permission: "hr.view", content: <HRLeavePage /> },
+    { key: "payroll",      label: "Payroll",      permission: "payroll.view", content: <HRPayrollPage /> },
+    { key: "shifts",       label: "Shifts",       permission: "hr.view", content: <HRShiftsPage /> },
+    { key: "recruitment",  label: "Recruitment",  permission: "hr.view", content: <RecruitmentPage /> },
+    { key: "ess",          label: "ESS",          permission: "hr.view", content: <ESSPage /> },
+    { key: "appraisals",   label: "Appraisals",   permission: "hr.view", content: <AppraisalsPage /> },
+    { key: "training",     label: "Training",     permission: "hr.view", content: <TrainingPage /> },
+    { key: "timesheets",   label: "Timesheets",   permission: "hr.view", content: <TimesheetsPage /> },
+    { key: "expenses",     label: "Expenses",     permission: "hr.view", content: <HRExpensesPage /> },
+  ];
   return (
-    <RequirePermission permission="hr.view">
-      <HRContent />
-    </RequirePermission>
+    <ModuleWorkspace
+      title="HR & Payroll"
+      description="Employees, attendance, leave, payroll, recruitment, training"
+      permission="hr.view"
+      tabs={tabs}
+      defaultTab="overview"
+    />
   );
 }

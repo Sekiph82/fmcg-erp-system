@@ -1,5 +1,7 @@
 "use client";
 
+import dynamic from "next/dynamic";
+import { ModuleWorkspace } from "@/components/workspace";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
@@ -47,7 +49,7 @@ const STATUS_OPTS = [
   { value: "CANCELLED", label: "Cancelled" },
 ];
 
-export default function QCInspectionsPage() {
+function QCInspectionsTab() {
   const qc = useQueryClient();
   const router = useRouter();
   const { toasts, toast, dismiss } = useToast();
@@ -232,5 +234,35 @@ export default function QCInspectionsPage() {
         </form>
       </Modal>
     </div>
+  );
+}
+
+const QualityCertsPage      = dynamic(() => import("@/app/dashboard/quality/certificates/page"),         { ssr: false });
+const QualityParamsPage     = dynamic(() => import("@/app/dashboard/quality/parameters/page"),           { ssr: false });
+const QualityComplaintsPage = dynamic(() => import("@/app/dashboard/quality/consumer-complaints/page"),  { ssr: false });
+const QualityReportsPage    = dynamic(() => import("@/app/dashboard/quality/reports/page"),              { ssr: false });
+const QMSPage               = dynamic(() => import("@/app/dashboard/qms/page"),                          { ssr: false });
+const AllergenPage          = dynamic(() => import("@/app/dashboard/allergen/page"),                     { ssr: false });
+const BrandAssetsPage       = dynamic(() => import("@/app/dashboard/brand-assets/page"),                 { ssr: false });
+
+export default function QualityPage() {
+  const tabs = [
+    { key: "inspections",        label: "Inspections",         permission: "quality.view", content: <QCInspectionsTab /> },
+    { key: "certificates",       label: "Certificates",        permission: "quality.view", content: <QualityCertsPage /> },
+    { key: "parameters",         label: "Parameters",          permission: "quality.view", content: <QualityParamsPage /> },
+    { key: "consumer-complaints",label: "Consumer Complaints", permission: "quality.view", content: <QualityComplaintsPage /> },
+    { key: "reports",            label: "Reports",             permission: "quality.view", content: <QualityReportsPage /> },
+    { key: "qms",                label: "QMS",                 permission: "quality.view", content: <QMSPage /> },
+    { key: "allergen",           label: "Allergen",            permission: "quality.view", content: <AllergenPage /> },
+    { key: "brand-assets",       label: "Brand Assets",        permission: "quality.view", content: <BrandAssetsPage /> },
+  ];
+  return (
+    <ModuleWorkspace
+      title="Quality"
+      description="QC inspections, certificates, parameters, allergen, brand assets"
+      permission="quality.view"
+      tabs={tabs}
+      defaultTab="inspections"
+    />
   );
 }
