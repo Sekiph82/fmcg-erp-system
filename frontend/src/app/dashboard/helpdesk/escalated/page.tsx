@@ -1,5 +1,5 @@
-import HelpdeskPage from "../page";
+import { HelpdeskAllTab } from "../page";
 
 export default function EscalatedTicketsPage() {
-  return <HelpdeskPage defaultStatus="ESCALATED" />;
+  return <HelpdeskAllTab defaultStatus="ESCALATED" />;
 }

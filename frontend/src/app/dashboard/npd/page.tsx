@@ -1,4 +1,7 @@
 "use client";
+
+import dynamic from "next/dynamic";
+import { ModuleWorkspace } from "@/components/workspace";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { PermissionGuard, RequirePermission } from "@/components/PermissionGuard";
@@ -46,7 +49,7 @@ interface NewProjectForm {
   description: string;
 }
 
-export default function NPDPage() {
+function NPDTab() {
   const [projects, setProjects] = useState<NPDProject[]>([]);
   const [dash, setDash] = useState<NPDDash | null>(null);
   const [loading, setLoading] = useState(true);
@@ -230,5 +233,20 @@ export default function NPDPage() {
       )}
     </div>
     </RequirePermission>
+  );
+}
+
+export default function NPDPage() {
+  const tabs = [
+    { key: "npd", label: "New Products", permission: "npd.view", content: <NPDTab /> },
+  ];
+  return (
+    <ModuleWorkspace
+      title="NPD"
+      description="New product development, formulation trials, stage-gate"
+      permission="npd.view"
+      tabs={tabs}
+      defaultTab="npd"
+    />
   );
 }

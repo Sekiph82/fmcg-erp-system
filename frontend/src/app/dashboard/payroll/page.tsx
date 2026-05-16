@@ -1,12 +1,14 @@
 "use client";
 
+import dynamic from "next/dynamic";
+import { ModuleWorkspace } from "@/components/workspace";
 import { useState, useEffect } from "react";
 import { payrollKeApi, PayrollRun, STATUS_COLORS, MONTH_NAMES, PayrollInsight } from "@/lib/payrollKe";
 import Link from "next/link";
 import { RequirePermission } from "@/components/PermissionGuard";
 import { useAuth } from "@/context/AuthContext";
 
-export default function PayrollDashboard() {
+function PayrollDashboardLegacy() {
   return (
     <RequirePermission permission="payroll_ke.view">
       <PayrollDashboardContent />
@@ -207,5 +209,25 @@ function PayrollDashboardContent() {
         </div>
       )}
     </div>
+  );
+}
+
+const PayrollProfilesPage = dynamic(() => import("@/app/dashboard/payroll/profiles/page"), { ssr: false });
+const PayrollReportsPage  = dynamic(() => import("@/app/dashboard/payroll/reports/page"),  { ssr: false });
+
+export default function PayrollDashboard() {
+  const tabs = [
+    { key: "overview",  label: "Overview",  permission: "payroll_ke.view", content: <PayrollDashboardContent /> },
+    { key: "profiles",  label: "Profiles",  permission: "payroll_ke.view", content: <PayrollProfilesPage /> },
+    { key: "reports",   label: "Reports",   permission: "payroll_ke.view", content: <PayrollReportsPage /> },
+  ];
+  return (
+    <ModuleWorkspace
+      title="Kenya Payroll"
+      description="Payroll runs, employee profiles, PAYE, NHIF, NSSF, reports"
+      permission="payroll_ke.view"
+      tabs={tabs}
+      defaultTab="overview"
+    />
   );
 }

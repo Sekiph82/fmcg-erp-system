@@ -1,5 +1,5 @@
-import HelpdeskPage from "../page";
+import { HelpdeskAllTab } from "../page";
 
 export default function TicketsPage() {
-  return <HelpdeskPage />;
+  return <HelpdeskAllTab />;
 }

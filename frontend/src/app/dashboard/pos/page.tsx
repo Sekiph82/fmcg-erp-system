@@ -1,5 +1,7 @@
 "use client";
 
+import dynamic from "next/dynamic";
+import { ModuleWorkspace } from "@/components/workspace";
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { posApi, POSPaymentMethod, POSSaleLineCreate, fmtKES } from "@/lib/pos";
@@ -165,7 +167,7 @@ function PaymentModal({ total, onPay, onClose }: {
 
 // ── Main POS terminal ─────────────────────────────────────────────────────────
 
-export default function POSPage() {
+function POSTerminalTab() {
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [cart, setCart] = useState<CartLine[]>([]);
@@ -415,5 +417,25 @@ export default function POSPage() {
         <PaymentModal total={totals.total} onPay={handlePay} onClose={() => setShowPayment(false)} />
       )}
     </div>
+  );
+}
+
+const POSSalesPage    = dynamic(() => import("@/app/dashboard/pos/sales/page"),    { ssr: false });
+const POSSessionsPage = dynamic(() => import("@/app/dashboard/pos/sessions/page"), { ssr: false });
+
+export default function POSPage() {
+  const tabs = [
+    { key: "pos",      label: "POS Terminal", permission: "sales.view", content: <POSTerminalTab /> },
+    { key: "sales",    label: "Sales",        permission: "sales.view", content: <POSSalesPage /> },
+    { key: "sessions", label: "Sessions",     permission: "sales.view", content: <POSSessionsPage /> },
+  ];
+  return (
+    <ModuleWorkspace
+      title="POS"
+      description="Point of sale terminal, daily sales, session management"
+      permission="sales.view"
+      tabs={tabs}
+      defaultTab="pos"
+    />
   );
 }

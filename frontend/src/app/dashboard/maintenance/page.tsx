@@ -1,12 +1,14 @@
 "use client";
 
+import dynamic from "next/dynamic";
+import { ModuleWorkspace } from "@/components/workspace";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { maintenanceApi } from "@/lib/maintenance";
 import { Badge } from "@/components/ui/Badge";
 import { RequirePermission } from "@/components/PermissionGuard";
 
-export default function MaintenanceDashboardPage() {
+function MaintenanceDashboardTab() {
   const router = useRouter();
 
   const { data: assets = [] } = useQuery({
@@ -158,5 +160,33 @@ export default function MaintenanceDashboardPage() {
       </div>
     </div>
     </RequirePermission>
+  );
+}
+
+const MaintenanceAssetsPage     = dynamic(() => import("@/app/dashboard/maintenance/assets/page"),     { ssr: false });
+const MaintenanceBreakdownsPage = dynamic(() => import("@/app/dashboard/maintenance/breakdowns/page"), { ssr: false });
+const MaintenancePlansPage      = dynamic(() => import("@/app/dashboard/maintenance/plans/page"),      { ssr: false });
+const MaintenancePredictivePage = dynamic(() => import("@/app/dashboard/maintenance/predictive/page"), { ssr: false });
+const MaintenanceSparesPage     = dynamic(() => import("@/app/dashboard/maintenance/spares/page"),     { ssr: false });
+const MaintenanceReportsPage    = dynamic(() => import("@/app/dashboard/maintenance/reports/page"),    { ssr: false });
+
+export default function MaintenancePage() {
+  const tabs = [
+    { key: "overview",    label: "Overview",    permission: "maintenance.view", content: <MaintenanceDashboardTab /> },
+    { key: "assets",      label: "Assets",      permission: "maintenance.view", content: <MaintenanceAssetsPage /> },
+    { key: "breakdowns",  label: "Breakdowns",  permission: "maintenance.view", content: <MaintenanceBreakdownsPage /> },
+    { key: "plans",       label: "Plans",       permission: "maintenance.view", content: <MaintenancePlansPage /> },
+    { key: "predictive",  label: "Predictive",  permission: "maintenance.view", content: <MaintenancePredictivePage /> },
+    { key: "spares",      label: "Spares",      permission: "maintenance.view", content: <MaintenanceSparesPage /> },
+    { key: "reports",     label: "Reports",     permission: "maintenance.view", content: <MaintenanceReportsPage /> },
+  ];
+  return (
+    <ModuleWorkspace
+      title="Maintenance"
+      description="Assets, breakdowns, planned maintenance, predictive, spares"
+      permission="maintenance.view"
+      tabs={tabs}
+      defaultTab="overview"
+    />
   );
 }

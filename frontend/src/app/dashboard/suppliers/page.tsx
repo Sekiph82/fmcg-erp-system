@@ -1,5 +1,7 @@
 "use client";
 
+import dynamic from "next/dynamic";
+import { ModuleWorkspace } from "@/components/workspace";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { suppliersApi, SupplierCreate } from "@/lib/suppliers";
@@ -12,7 +14,7 @@ import { Input } from "@/components/ui/Input";
 
 const empty: SupplierCreate = { code: "", name: "", payment_terms_days: 30, is_active: true };
 
-export default function SuppliersPage() {
+function SuppliersListTab() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<SupplierCreate>(empty);
@@ -126,5 +128,20 @@ export default function SuppliersPage() {
         </div>
       </Modal>
     </div>
+  );
+}
+
+export default function SuppliersPage() {
+  const tabs = [
+    { key: "suppliers", label: "Suppliers", permission: "procurement.view", content: <SuppliersListTab /> },
+  ];
+  return (
+    <ModuleWorkspace
+      title="Suppliers"
+      description="Supplier master, contacts, performance, approved vendors"
+      permission="procurement.view"
+      tabs={tabs}
+      defaultTab="suppliers"
+    />
   );
 }

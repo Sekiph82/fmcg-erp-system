@@ -1,5 +1,7 @@
 "use client";
 
+import dynamic from "next/dynamic";
+import { ModuleWorkspace } from "@/components/workspace";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
@@ -35,7 +37,7 @@ const empty: RecipeCreate = {
   is_active: true,
 };
 
-export default function RecipesPage() {
+function RecipesListTab() {
   const qc = useQueryClient();
   const router = useRouter();
   const { toasts, toast, dismiss } = useToast();
@@ -311,5 +313,20 @@ export default function RecipesPage() {
       </PermissionGuard>
     </div>
     </RequirePermission>
+  );
+}
+
+export default function RecipesPage() {
+  const tabs = [
+    { key: "recipes", label: "Recipes", permission: "recipe.view", content: <RecipesListTab /> },
+  ];
+  return (
+    <ModuleWorkspace
+      title="Recipes"
+      description="Production recipes, instructions, ingredient steps"
+      permission="recipe.view"
+      tabs={tabs}
+      defaultTab="recipes"
+    />
   );
 }

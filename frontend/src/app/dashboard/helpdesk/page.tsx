@@ -1,5 +1,7 @@
 "use client";
 
+import dynamic from "next/dynamic";
+import { ModuleWorkspace } from "@/components/workspace";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -270,7 +272,7 @@ function TicketDetail({ ticket, onClose }: { ticket: Ticket; onClose: () => void
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 
-export default function HelpdeskPage({ defaultStatus }: { defaultStatus?: TicketStatus | "" } = {}) {
+export function HelpdeskAllTab({ defaultStatus }: { defaultStatus?: TicketStatus | "" } = {}) {
   const [statusFilter, setStatusFilter] = useState<TicketStatus | "">(defaultStatus ?? "");
   const [catFilter, setCatFilter] = useState<TicketCategory | "">("");
   const [priFilter, setPriFilter] = useState<TicketPriority | "">("");
@@ -418,5 +420,29 @@ export default function HelpdeskPage({ defaultStatus }: { defaultStatus?: Ticket
       {showCreate && <CreateModal onClose={() => setShowCreate(false)} />}
       {selected && <TicketDetail ticket={selected} onClose={() => setSelected(null)} />}
     </div>
+  );
+}
+
+const HelpdeskOpenPage      = dynamic(() => import("@/app/dashboard/helpdesk/open/page"),      { ssr: false });
+const HelpdeskEscalatedPage = dynamic(() => import("@/app/dashboard/helpdesk/escalated/page"), { ssr: false });
+const HelpdeskSLAPage       = dynamic(() => import("@/app/dashboard/helpdesk/sla/page"),       { ssr: false });
+const HelpdeskTicketsPage   = dynamic(() => import("@/app/dashboard/helpdesk/tickets/page"),   { ssr: false });
+
+export default function HelpdeskPage() {
+  const tabs = [
+    { key: "all",       label: "All Tickets", permission: "quality.view", content: <HelpdeskAllTab /> },
+    { key: "open",      label: "Open",        permission: "quality.view", content: <HelpdeskOpenPage /> },
+    { key: "escalated", label: "Escalated",   permission: "quality.view", content: <HelpdeskEscalatedPage /> },
+    { key: "sla",       label: "SLA",         permission: "quality.view", content: <HelpdeskSLAPage /> },
+    { key: "tickets",   label: "Tickets",     permission: "quality.view", content: <HelpdeskTicketsPage /> },
+  ];
+  return (
+    <ModuleWorkspace
+      title="Helpdesk"
+      description="Support tickets, escalations, SLA tracking"
+      permission="quality.view"
+      tabs={tabs}
+      defaultTab="all"
+    />
   );
 }

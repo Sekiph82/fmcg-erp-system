@@ -1,5 +1,7 @@
 "use client";
 
+import dynamic from "next/dynamic";
+import { ModuleWorkspace } from "@/components/workspace";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { materialsApi, Material, MaterialCreate, MaterialType, UnitOfMeasure } from "@/lib/materials";
@@ -344,9 +346,16 @@ function MaterialsContent() {
 }
 
 export default function MaterialsPage() {
+  const tabs = [
+    { key: "materials", label: "Materials", permission: "materials.view", content: <MaterialsContent /> },
+  ];
   return (
-    <RequirePermission permission="materials.view">
-      <MaterialsContent />
-    </RequirePermission>
+    <ModuleWorkspace
+      title="Materials"
+      description="Raw materials, packaging, Bill of Materials inputs"
+      permission="materials.view"
+      tabs={tabs}
+      defaultTab="materials"
+    />
   );
 }

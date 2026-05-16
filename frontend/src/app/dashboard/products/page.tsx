@@ -1,5 +1,7 @@
 "use client";
 
+import dynamic from "next/dynamic";
+import { ModuleWorkspace } from "@/components/workspace";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { productsApi, Product, ProductCreate, ProductCategory, UnitOfMeasure } from "@/lib/products";
@@ -43,7 +45,7 @@ const DELETE_BLOCKERS = [
   { module: "Finance – Product Cost", detail: "Cost entries (standard cost per period) for this product." },
 ];
 
-export default function ProductsPage() {
+function ProductsListTab() {
   const qc = useQueryClient();
   const { toasts, toast, dismiss } = useToast();
   const [open, setOpen] = useState(false);
@@ -358,5 +360,20 @@ export default function ProductsPage() {
         </form>
       </Modal>
     </div>
+  );
+}
+
+export default function ProductsPage() {
+  const tabs = [
+    { key: "products", label: "Products", permission: "products.view", content: <ProductsListTab /> },
+  ];
+  return (
+    <ModuleWorkspace
+      title="Products"
+      description="Finished goods, SKUs, categories, pricing, units of measure"
+      permission="products.view"
+      tabs={tabs}
+      defaultTab="products"
+    />
   );
 }

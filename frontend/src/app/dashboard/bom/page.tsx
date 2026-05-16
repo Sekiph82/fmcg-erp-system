@@ -1,5 +1,7 @@
 "use client";
 
+import dynamic from "next/dynamic";
+import { ModuleWorkspace } from "@/components/workspace";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -10,7 +12,7 @@ import { PermissionGuard, RequirePermission } from "@/components/PermissionGuard
 
 const BOM_TYPES: BOMType[] = ["FORMULA", "INTERMEDIATE", "PACKAGING", "MULTILEVEL", "PHANTOM", "REWORK", "COPRODUCT"];
 
-export default function BOMPage() {
+function BOMListTab() {
   const qc = useQueryClient();
   const [showCreate, setShowCreate] = useState(false);
   const [filterType, setFilterType] = useState<string>("");
@@ -221,5 +223,27 @@ export default function BOMPage() {
       )}
     </div>
     </RequirePermission>
+  );
+}
+
+const BOMComparePage    = dynamic(() => import("@/app/dashboard/bom/compare/page"),    { ssr: false });
+const BOMSubstitutesPage= dynamic(() => import("@/app/dashboard/bom/substitutes/page"),{ ssr: false });
+const BOMConversionPage = dynamic(() => import("@/app/dashboard/bom/conversion/page"), { ssr: false });
+
+export default function BOMPage() {
+  const tabs = [
+    { key: "list",        label: "BOM / Formula", permission: "bom.view", content: <BOMListTab /> },
+    { key: "substitutes", label: "Substitutes",   permission: "bom.view", content: <BOMSubstitutesPage /> },
+    { key: "compare",     label: "Compare",       permission: "bom.view", content: <BOMComparePage /> },
+    { key: "conversion",  label: "Conversion",    permission: "bom.view", content: <BOMConversionPage /> },
+  ];
+  return (
+    <ModuleWorkspace
+      title="BOM & Formula"
+      description="Bill of materials, formula versions, substitutes, cost explosion"
+      permission="bom.view"
+      tabs={tabs}
+      defaultTab="list"
+    />
   );
 }

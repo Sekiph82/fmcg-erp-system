@@ -1,9 +1,11 @@
 "use client";
 
+import dynamic from "next/dynamic";
+import { ModuleWorkspace } from "@/components/workspace";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { sfApi, SFDashboard, LIVE_STATUS_COLOR, IMPACT_COLOR, DOWNTIME_CAT_LABEL } from "@/lib/shopFloor";
 
-export default function ShopFloorDashboard() {
+function ShopFloorDashboardTab() {
   const qc = useQueryClient();
 
   const { data: dash, isLoading } = useQuery<SFDashboard>({
@@ -167,5 +169,31 @@ export default function ShopFloorDashboard() {
         ))}
       </div>
     </div>
+  );
+}
+
+const SFTerminalPage   = dynamic(() => import("@/app/dashboard/shop-floor/terminal/page"),   { ssr: false });
+const SFSupervisorPage = dynamic(() => import("@/app/dashboard/shop-floor/supervisor/page"), { ssr: false });
+const SFQueuePage      = dynamic(() => import("@/app/dashboard/shop-floor/queue/page"),      { ssr: false });
+const SFDowntimePage   = dynamic(() => import("@/app/dashboard/shop-floor/downtime/page"),   { ssr: false });
+const SFHandoverPage   = dynamic(() => import("@/app/dashboard/shop-floor/handover/page"),   { ssr: false });
+
+export default function ShopFloorPage() {
+  const tabs = [
+    { key: "overview",   label: "Overview",   permission: "production.view", content: <ShopFloorDashboardTab /> },
+    { key: "terminal",   label: "Terminal",   permission: "production.view", content: <SFTerminalPage /> },
+    { key: "supervisor", label: "Supervisor", permission: "production.view", content: <SFSupervisorPage /> },
+    { key: "queue",      label: "Queue",      permission: "production.view", content: <SFQueuePage /> },
+    { key: "downtime",   label: "Downtime",   permission: "production.view", content: <SFDowntimePage /> },
+    { key: "handover",   label: "Handover",   permission: "production.view", content: <SFHandoverPage /> },
+  ];
+  return (
+    <ModuleWorkspace
+      title="Shop Floor"
+      description="Operator terminal, supervisor console, queue board, downtime, handover"
+      permission="production.view"
+      tabs={tabs}
+      defaultTab="overview"
+    />
   );
 }

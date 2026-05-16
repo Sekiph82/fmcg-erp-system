@@ -1,5 +1,7 @@
 "use client";
 
+import dynamic from "next/dynamic";
+import { ModuleWorkspace } from "@/components/workspace";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { aiApi, AIDashboard, AIPrediction, AIRecommendation, parseAIError } from "@/lib/aiApi";
@@ -35,7 +37,7 @@ function KpiCard({ label, value, sub, color }: { label: string; value: string | 
   );
 }
 
-export default function AIDashboardPage() {
+function AIDashboardTab() {
   const qc = useQueryClient();
 
   const { data, isLoading, error } = useQuery<AIDashboard>({
@@ -225,5 +227,39 @@ export default function AIDashboardPage() {
       </div>
     </div>
     </RequirePermission>
+  );
+}
+
+const AIChatPage           = dynamic(() => import("@/app/dashboard/ai/chat/page"),           { ssr: false });
+const AIPredictionsPage    = dynamic(() => import("@/app/dashboard/ai/predictions/page"),    { ssr: false });
+const AIFormulationsPage   = dynamic(() => import("@/app/dashboard/ai/formulations/page"),   { ssr: false });
+const AIRecommendationsPage= dynamic(() => import("@/app/dashboard/ai/recommendations/page"),{ ssr: false });
+const AIScenariosPage      = dynamic(() => import("@/app/dashboard/ai/scenarios/page"),      { ssr: false });
+const AICompliancePage     = dynamic(() => import("@/app/dashboard/ai/compliance/page"),     { ssr: false });
+const AIGovernancePage     = dynamic(() => import("@/app/dashboard/ai/governance/page"),     { ssr: false });
+const AINLCommandPage      = dynamic(() => import("@/app/dashboard/ai/nl-command/page"),     { ssr: false });
+const AILogsPage           = dynamic(() => import("@/app/dashboard/ai/logs/page"),           { ssr: false });
+
+export default function AIPage() {
+  const tabs = [
+    { key: "dashboard",      label: "Dashboard",       permission: "ai.view", content: <AIDashboardTab /> },
+    { key: "chat",           label: "AI Chat",         permission: "ai.view", content: <AIChatPage /> },
+    { key: "predictions",    label: "Predictions",     permission: "ai.view", content: <AIPredictionsPage /> },
+    { key: "formulations",   label: "Formulations",    permission: "ai.view", content: <AIFormulationsPage /> },
+    { key: "recommendations",label: "Recommendations", permission: "ai.view", content: <AIRecommendationsPage /> },
+    { key: "scenarios",      label: "Scenarios",       permission: "ai.view", content: <AIScenariosPage /> },
+    { key: "compliance",     label: "Compliance",      permission: "ai.view", content: <AICompliancePage /> },
+    { key: "governance",     label: "Governance",      permission: "ai.view", content: <AIGovernancePage /> },
+    { key: "nl-command",     label: "NL Command",      permission: "ai.view", content: <AINLCommandPage /> },
+    { key: "logs",           label: "Logs",            permission: "ai.view", content: <AILogsPage /> },
+  ];
+  return (
+    <ModuleWorkspace
+      title="AI"
+      description="AI copilot, predictions, formulations, scenarios, governance"
+      permission="ai.view"
+      tabs={tabs}
+      defaultTab="dashboard"
+    />
   );
 }
