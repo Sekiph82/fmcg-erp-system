@@ -32,7 +32,7 @@ This review: 1 CRITICAL (fixed), 0 HIGH open, 3 MEDIUM, 2 LOW
 | Token blocklist on logout | ✅ | Redis-backed JTI blocklist |
 | JTI per token | ✅ | Each JWT has unique `jti` claim |
 | JWT expiry | ✅ | 8 hours access token (`ACCESS_TOKEN_EXPIRE_MINUTES=480`) |
-| Password hashing | ✅ | bcrypt via passlib |
+| Password hashing | ✅ | bcrypt via passlib; conditional compat patch auto-detects if bcrypt raises ValueError for >72-byte passwords (bcrypt 4.3.x does not raise; 5.x does); `bcrypt>=4.0.1,<5` pinned in requirements.txt |
 | Password policy enforced | ✅ | Min 8 chars, uppercase, lowercase, digit |
 | `PASSWORD_REQUIRE_SPECIAL=false` in dev | ⚠️ | Production guard forces `true` |
 | Brute-force protection | ✅ | 5 attempts / 10min / 30min lockout, IP + username |

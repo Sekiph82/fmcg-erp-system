@@ -1,7 +1,26 @@
 # Auto-Fix Continuation Guide
 
-Date: 2026-05-17 (Round 5)
+Date: 2026-05-17 (Round 6 — VERIFICATION PASS COMPLETE)
 Purpose: Let the next Claude session continue without asking the user anything.
+
+## Status After Round 6 (Verification Pass)
+
+**Backend tests:** 462/462 local (Windows venv) AND Docker/Linux. No failures.
+**Frontend:** type-check clean, build clean, 0 critical npm audit findings.
+**Alembic:** single head `20260516_0060`, DB at head in Docker.
+**Remaining work:** GitHub Actions CI verification (no push made yet). 2FA OTP unimplemented.
+
+### Files Changed in Round 6
+- `backend/app/core/security.py` — bcrypt patch replaced with conditional auto-detect (only patches when bcrypt actually raises ValueError for >72 bytes; no-op on 4.x, fixes 5.x)
+- `backend/requirements.txt` — bcrypt pinned `>=4.0.1,<5`
+- `docker-compose.yml` — added `./docs:/docs:ro` and `./frontend:/frontend:ro` volumes to backend service
+- `backend/tests/test_hardening.py` — `test_seed_defaults_do_not_enable_demo_users_or_plaintext_passwords` uses `monkeypatch.delenv` to truly isolate from Docker env
+- `docs/BACKEND_TEST_FAILURE_REPORT.md` — updated final status
+- `docs/CI_FAILURE_REPORT.md` — updated final status
+- `docs/SECURITY_REVIEW.md` — bcrypt compat row updated
+- `TASKS.md` — current phase updated with verification summary
+
+---
 
 ---
 

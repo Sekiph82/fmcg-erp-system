@@ -211,7 +211,10 @@ def test_production_config_rejects_security_landmines():
         Settings(**{**base, "AUTH_COOKIE_SECURE": False})
 
 
-def test_seed_defaults_do_not_enable_demo_users_or_plaintext_passwords():
+def test_seed_defaults_do_not_enable_demo_users_or_plaintext_passwords(monkeypatch):
+    # Clear vars that .env.development may inject so we test code defaults only.
+    for var in ("SEED_DEMO_DATA", "DEMO_USER_PASSWORD"):
+        monkeypatch.delenv(var, raising=False)
     isolated = Settings(_env_file=None)
 
     assert isolated.SEED_DEMO_DATA is False

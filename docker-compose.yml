@@ -62,6 +62,8 @@ services:
       start_period: 90s
     volumes:
       - ./backend:/app
+      - ./docs:/docs:ro
+      - ./frontend:/frontend:ro
     deploy:
       resources:
         limits:

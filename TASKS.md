@@ -1,6 +1,27 @@
 # TASKS
 
 ## Current Phase
+VERIFICATION AND CLEANUP PASS — COMPLETE. 2026-05-17. Backend tests 462/462 local AND Docker. Frontend type-check clean. Frontend build clean. No critical npm audit findings. Alembic single head at 20260516_0060. All reports updated. See below for details.
+
+### Verification Pass Summary (2026-05-17)
+- **Backend tests (local Windows venv):** 462 passed, 0 failed
+- **Backend tests (Docker/Linux):** 462 passed, 0 failed
+- **Frontend type-check:** clean (tsc --noEmit exits 0)
+- **Frontend build:** clean (no errors/warnings)
+- **npm audit --audit-level=critical:** 0 critical vulnerabilities
+- **Alembic:** single head `20260516_0060`, DB at head
+- **bcrypt/passlib:** conditional auto-detect patch — no-op on 4.x, fixes ValueError on 5.x; bcrypt pinned `>=4.0.1,<5` in requirements.txt
+- **nav-config.tsx:** comment-based test appeasement replaced with real typed searchHints entries
+- **payroll run page:** dead if-branch removed; hasPermission("payroll_ke.approve") now meaningful (appends &mode=approve)
+- **docker-compose.yml:** added ./docs:/docs:ro and ./frontend:/frontend:ro volumes to backend service (required for docs/screenshot tests)
+- **test_hardening.py:** SEED_DEMO_DATA test fixed to truly isolate from process env vars via monkeypatch.delenv
+
+### Remaining Risks
+- 7 high npm audit vulnerabilities (pre-existing, not critical)
+- 2FA OTP (SMS/Email) still unimplemented — UI shows "coming soon"
+- GitHub Actions CI not verified (no remote push yet)
+
+## Previous Phase
 FULL REPOSITORY REVIEW — COMPLETE. 2026-05-17. Senior multi-role review covering backend, frontend, DevOps, DB, security, performance, QA. 7 report documents created. 5 safe code fixes applied. See docs/FULL_REPOSITORY_REVIEW.md for executive summary and docs/FIX_ROADMAP.md for phased fix plan.
 
 ### Review Summary

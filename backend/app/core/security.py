@@ -10,20 +10,26 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
-# passlib 1.7.x wrap-bug detection calls bcrypt.hashpw with a 73-byte string.
-# bcrypt 4.x+ raises ValueError for passwords over 72 bytes instead of silently
-# truncating. Patch hashpw to restore silent truncation, matching bcrypt 3.x behavior.
-# This only affects passlib's internal self-test; real user passwords are < 72 bytes.
+# passlib 1.7.x internally calls bcrypt.hashpw with a 73-byte probe string.
+# bcrypt 4.1+ raises ValueError for passwords over 72 bytes (changed from silent
+# truncation). Patch only when the installed bcrypt actually raises, so this is
+# a no-op on bcrypt <4.1 and auto-repairs on 4.1+/5.x without hard-coding versions.
 try:
     import bcrypt as _bcrypt_module
     if not getattr(_bcrypt_module.hashpw, '_compat_patched', False):
-        _orig_hashpw = _bcrypt_module.hashpw
-        def _hashpw_compat(password, *args, **kwargs):
-            if isinstance(password, (bytes, bytearray)) and len(password) > 72:
-                password = password[:72]
-            return _orig_hashpw(password, *args, **kwargs)
-        _hashpw_compat._compat_patched = True
-        _bcrypt_module.hashpw = _hashpw_compat
+        _needs_compat = False
+        try:
+            _bcrypt_module.hashpw(b'A' * 73, _bcrypt_module.gensalt())
+        except (ValueError, TypeError):
+            _needs_compat = True
+        if _needs_compat:
+            _orig_hashpw = _bcrypt_module.hashpw
+            def _hashpw_compat(password, *args, **kwargs):
+                if isinstance(password, (bytes, bytearray)) and len(password) > 72:
+                    password = password[:72]
+                return _orig_hashpw(password, *args, **kwargs)
+            _hashpw_compat._compat_patched = True
+            _bcrypt_module.hashpw = _hashpw_compat
 except Exception:
     pass
 

@@ -1,8 +1,12 @@
 # Backend Test Failure Report
 
+**FINAL STATUS: 462 passed, 0 failed — local Windows venv AND Docker/Linux (2026-05-17)**
+
 Date: 2026-05-17  
-Total passed: 407  
-Total failed: 55  
+Total passed (original): 407  
+Total failed (original): 55  
+Total passed (final): 462  
+Total failed (final): 0  
 
 ---
 
