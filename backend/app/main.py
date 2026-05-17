@@ -24,9 +24,8 @@ from app.core.observability import (
     record_request,
 )
 from app.core.security_headers import SecurityHeadersMiddleware
-from app.db.base import Base
 from app.db.seed import seed_admin
-from app.db.session import AsyncSessionLocal, engine
+from app.db.session import AsyncSessionLocal
 import app.models  # noqa: F401 - ensure all models are registered
 
 configure_logging(settings.ENVIRONMENT)
@@ -37,15 +36,7 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Starting %s v%s", settings.PROJECT_NAME, settings.VERSION)
-    if settings.ENVIRONMENT == "development" and settings.AUTO_CREATE_TABLES:
-        try:
-            async with engine.begin() as conn:
-                await conn.run_sync(Base.metadata.create_all)
-            logger.info("Database tables verified/created successfully")
-        except Exception:
-            logger.exception("Database table creation failed; server will start but DB may be unavailable")
-    else:
-        logger.info("Automatic table creation disabled; use Alembic migrations for schema changes")
+    logger.info("Automatic table creation disabled; use Alembic migrations for schema changes")
 
     try:
         async with AsyncSessionLocal() as db:

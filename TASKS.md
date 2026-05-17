@@ -1,6 +1,35 @@
 # TASKS
 
 ## Current Phase
+FULL REPOSITORY REVIEW — COMPLETE. 2026-05-17. Senior multi-role review covering backend, frontend, DevOps, DB, security, performance, QA. 7 report documents created. 5 safe code fixes applied. See docs/FULL_REPOSITORY_REVIEW.md for executive summary and docs/FIX_ROADMAP.md for phased fix plan.
+
+### Review Summary
+- **Health score:** 72/100 (Functional, Production-conditional)
+- **Critical issues found:** 1 (FIXED — /auth/me 500 due to EmailStr re-validation of .local TLD)
+- **High issues found:** 3 (fresh-DB deploy failure; unbounded CRUD queries x35 files; 2FA OTP never dispatched)
+- **Medium issues found:** 5 (CORS wildcard methods; RequestTimeout missing from .env.production.example; python-jose vs PyJWT; permission_codes O(n); 401 hard redirect)
+- **Low issues found:** 4 (Redis no AUTH; SAWarning on self-referential models; seeding on every startup; no CI pipeline)
+- **Safe fixes applied:** 5
+- **Fixes requiring manual decision:** 7
+- **Production ready?** NO — fresh DB deploy will fail; 2FA OTP unimplemented; no CI
+
+### Safe Fixes Applied (2026-05-17)
+1. `backend/app/schemas/user.py` — `UserRead.email: str` (CRITICAL: fixed /auth/me 500)
+2. `backend/app/db/session.py` — added `await session.rollback()` on exception in `get_db`
+3. `start-dev.bat:226` — updated outdated `--reload` comment
+4. `docker-compose.prod.yml` — added `env_file: .env.production` to `db` service
+5. `backend/app/main.py` — removed dead `AUTO_CREATE_TABLES` block + orphaned imports
+
+### Reports Created (2026-05-17)
+- `docs/FULL_REPOSITORY_REVIEW.md` — executive summary, health score, all findings
+- `docs/PROJECT_INVENTORY.md` — complete backend/frontend/DevOps/DB/docs inventory
+- `docs/MIGRATION_CHAIN_REVIEW.md` — Alembic chain analysis, production risk
+- `docs/SECURITY_REVIEW.md` — 1 CRITICAL (fixed), 0 HIGH, 3 MEDIUM, 2 LOW
+- `docs/PERFORMANCE_REVIEW.md` — 35 unbounded CRUD files, DB pool sizing, AuthContext
+- `docs/QA_TEST_PLAN.md` — Playwright smoke, API contract, migration, permission tests
+- `docs/FIX_ROADMAP.md` — phased fix plan: Phase 0-6, ~2-3 weeks to production-ready
+
+### Previous Phase
 DOCKER DEV STARTUP FIX — COMPLETE. 2026-05-17. Fixed 5 root causes: (1) uvicorn --reload killing child on Windows volume mount, (2) missing INITIAL_ADMIN_PASSWORD, (3) Docker Compose env var substitution, (4) migration chain broken for fresh DBs, (5) dev_migrate.py not importing app.models so create_all() created nothing. See docs/RUNTIME_STARTUP_REPORT.md and docs/MIGRATION_CHAIN_REPORT.md.
 
 ## Execution Rules
@@ -79,7 +108,32 @@ All page consolidation passes complete. See docs/PAGE_CONSOLIDATION_HISTORY.md f
 - Verification report updated: all D.47, E.47, B.23, C.34 resolved
 
 ## Next Immediate Task
-No blocking tasks. Optional future work:
+
+### Option A — Production Bootstrap (CRITICAL, requires decision)
+Write `backend/scripts/prod_bootstrap.py` with `BOOTSTRAP_PRODUCTION=true` guard.
+Runs `create_all()` + `alembic stamp head` on fresh empty DB. Refuses if tables exist.
+**Decision needed:** confirm Option A approach (see docs/FIX_ROADMAP.md Phase 2).
+
+### Option B — Wire 2FA OTP dispatch (HIGH, requires decision)
+`backend/app/api/v1/endpoints/auth.py:109` — OTP generated but never sent.
+**Decision needed:** which notification service (email SMTP, Twilio SMS, etc.)?
+Interim safe fix: disable SMS/Email 2FA method in frontend UI until wired.
+
+### Option C — CRUD pagination (HIGH, safe to apply)
+35+ CRUD files call `.scalars().all()` without limit. Add `skip`/`limit` params.
+Start with highest-risk files: `crud/audit.py`, `crud/esg.py`, `crud/finance.py`.
+No manual decision needed.
+
+### Option D — CI/CD pipeline (HIGH, safe to apply)
+Add `.github/workflows/ci.yml`: pytest + tsc + build. No manual decision needed.
+
+### Option E — Safe security fixes (MEDIUM, safe to apply now)
+- Restrict CORS `allow_methods` to explicit list in `backend/app/main.py`
+- Set `REQUEST_TIMEOUT_SECONDS=60` in `.env.production.example`
+- Convert `permission_codes` to `Set<string>` in `frontend/src/context/AuthContext.tsx`
+- Fix 401 hard redirect in `frontend/src/lib/api.ts`
+
+### Previously Optional (still open)
 1. Wire Redis caching for COA and product reference data (A.15)
 2. Add streaming for large export endpoints (A.14)
 3. Multi-replica migration advisory lock (C.31 — documented in DEPLOYMENT.md)

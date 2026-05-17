@@ -223,7 +223,7 @@ if !BACKEND_READY!==0 (
     goto :error
 ) else (
     echo  Backend is up.
-    :: Brief stability pause — lets uvicorn finish any in-progress reload
+    :: Brief pause to allow uvicorn server process to fully initialize
     timeout /t 3 /nobreak >nul
 )
 
