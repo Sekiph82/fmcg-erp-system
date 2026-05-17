@@ -1,7 +1,7 @@
 # TASKS
 
 ## Current Phase
-RUNTIME STARTUP FIX — COMPLETE. 2026-05-17. Backend Docker healthcheck was failing because `--reload` + volume mount on Windows caused uvicorn child to be killed before binding port 8000. Fixed: removed `--reload` from Dockerfile.dev, added missing seeding env vars to .env.development. See docs/RUNTIME_STARTUP_REPORT.md.
+DOCKER DEV STARTUP FIX — COMPLETE. 2026-05-17. Fixed 5 root causes: (1) uvicorn --reload killing child on Windows volume mount, (2) missing INITIAL_ADMIN_PASSWORD, (3) Docker Compose env var substitution, (4) migration chain broken for fresh DBs, (5) dev_migrate.py not importing app.models so create_all() created nothing. See docs/RUNTIME_STARTUP_REPORT.md and docs/MIGRATION_CHAIN_REPORT.md.
 
 ## Execution Rules
 - Always read this file before starting work.
@@ -18,11 +18,17 @@ RUNTIME STARTUP FIX — COMPLETE. 2026-05-17. Backend Docker healthcheck was fai
 ## In Progress
 None.
 
-## Completed — Runtime Startup Fix (2026-05-17)
+## Completed — Docker Dev Startup Fix (2026-05-17)
 
-- `backend/Dockerfile.dev`: removed `--reload` flag (WatchFiles kills child on Windows volume mount before port bind)
-- `.env.development`: added `INITIAL_ADMIN_PASSWORD` and other missing seed fields (seed_admin was raising RuntimeError, caught in lifespan try/except but admin user never seeded)
-- `docs/RUNTIME_STARTUP_REPORT.md`: root cause, evidence, fix, verification steps
+Five root causes found and fixed. Gordon/AI-assisted diagnosis confirmed issues.
+
+- `backend/Dockerfile.dev`: removed `--reload` (WatchFiles kills child before port bind on Windows volumes)
+- `.env.development`: added `INITIAL_ADMIN_PASSWORD` + seed fields (were missing, admin never seeded)
+- `backend/scripts/dev_migrate.py`: full rewrite — Alembic-first with dev fallback for fresh DBs; imports `app.models` so `create_all()` actually creates all tables; stamps head after bootstrap so future migrations work
+- `backend/alembic/versions/3c45d9071c98_initial_schema.py`: kept Gordon's conditional guards (correct); fixed bare `except:` → `except Exception:`
+- `docker-compose.yml`: kept Gordon's `env_file:` on db + 90s start_period + resource increases; fixed wrong healthcheck defaults `:-postgres` → `:-erp_user`/`:-fmcg_erp`
+- `docs/RUNTIME_STARTUP_REPORT.md`: full root cause analysis, Gordon assessment, verification steps
+- `docs/MIGRATION_CHAIN_REPORT.md`: migration dependency map, why chain fails on fresh DBs, production note
 
 ## Completed — Page Consolidation Passes 4–6 (2026-05-17)
 
