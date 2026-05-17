@@ -252,6 +252,17 @@ if !FRONTEND_READY!==1 (
 :: ============================================================
 :: DONE - OPEN BROWSER
 :: ============================================================
+
+:: Read dev credentials from .env.development for display
+set "DEV_ADMIN_USER=admin"
+set "DEV_ADMIN_PASS=(see INITIAL_ADMIN_PASSWORD in .env.development)"
+set "DEV_ENV=development"
+for /f "usebackq tokens=1,* delims==" %%A in (".env.development") do (
+    if "%%A"=="INITIAL_ADMIN_USERNAME" set "DEV_ADMIN_USER=%%B"
+    if "%%A"=="INITIAL_ADMIN_PASSWORD" set "DEV_ADMIN_PASS=%%B"
+    if "%%A"=="ENVIRONMENT" set "DEV_ENV=%%B"
+)
+
 echo.
 echo ============================================================
 echo  All services started!
@@ -260,6 +271,19 @@ echo  Frontend : http://localhost:3000/login
 echo  Backend  : http://localhost:8000/docs
 echo  Database : localhost:5432
 echo ============================================================
+
+if /i "!DEV_ENV!"=="development" (
+    echo.
+    echo  Development login:
+    echo    URL      : http://localhost:3000/login
+    echo    Username : !DEV_ADMIN_USER!
+    echo    Password : !DEV_ADMIN_PASS!
+    echo.
+    echo  If login fails because the database has a different admin password, run:
+    echo    docker compose --env-file .env.development exec backend python scripts/reset_dev_admin_password.py
+    echo.
+    echo  Smoke test:  test-login.bat
+)
 echo.
 
 :: Open in Chrome — check all common install locations

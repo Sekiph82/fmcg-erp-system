@@ -27,6 +27,10 @@ class Settings(BaseSettings):
     # Bootstrap / seed controls
     SEED_INITIAL_ADMIN: bool = True
     SEED_DEMO_DATA: bool = False
+    # DEV ONLY: when true, seed_admin re-hashes the admin password from
+    # INITIAL_ADMIN_PASSWORD on every startup so the DB matches .env.development.
+    # Production startup rejects this flag when set to true.
+    SYNC_INITIAL_ADMIN_PASSWORD: bool = False
     INITIAL_ADMIN_USERNAME: str = "admin"
     INITIAL_ADMIN_EMAIL: str = "admin@erp.local"
     INITIAL_ADMIN_PASSWORD: str = ""
@@ -164,6 +168,13 @@ class Settings(BaseSettings):
                 raise ValueError("INITIAL_ADMIN_PASSWORD is required in production when SEED_INITIAL_ADMIN=true")
             if not self.AUTH_COOKIE_SECURE:
                 raise ValueError("AUTH_COOKIE_SECURE must be true in production")
+            if self.SYNC_INITIAL_ADMIN_PASSWORD:
+                raise ValueError(
+                    "SYNC_INITIAL_ADMIN_PASSWORD=true is not allowed in production. "
+                    "This flag auto-resets the admin password from env on every startup, "
+                    "which is a development-only convenience. "
+                    "Set SYNC_INITIAL_ADMIN_PASSWORD=false in .env.production."
+                )
         return self
 
     @field_validator("BACKEND_CORS_ORIGINS", mode="before")

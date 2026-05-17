@@ -49,9 +49,43 @@ docker compose --env-file .env.development up --build
 - Backend docs: http://localhost:8000/docs
 - Compose status: `docker compose --env-file .env.development ps`
 
-## Smoke Checks
+## Development Login
 
-Run these after startup:
+Default credentials (set in `.env.development.example` and copied to `.env.development`):
+
+| Field    | Value              |
+| -------- | ------------------ |
+| Username | `admin`            |
+| Password | `Admin1234!`       |
+
+**Important:** Login checks the PostgreSQL database, not the `.env.development` file directly. The password in `.env.development` is only used when the admin user is first created, or when `SYNC_INITIAL_ADMIN_PASSWORD=true` (the default in `.env.development.example`).
+
+With `SYNC_INITIAL_ADMIN_PASSWORD=true`, the backend re-hashes the admin password from `INITIAL_ADMIN_PASSWORD` on every startup, so the DB always matches the env file in development.
+
+If you started the project before this flag existed (old DB with a different password), run the manual reset:
+
+```bat
+docker compose --env-file .env.development exec backend python scripts/reset_dev_admin_password.py
+```
+
+Other useful commands:
+
+```bat
+:: Start
+start-dev.bat
+
+:: Smoke test login
+test-login.bat
+
+:: Reset local admin password manually
+docker compose --env-file .env.development exec backend python scripts/reset_dev_admin_password.py
+
+:: Full local DB reset (destroys all local data)
+docker compose --env-file .env.development down -v
+docker compose --env-file .env.development up --build
+```
+
+## Smoke Checks
 
 ```bash
 docker compose --env-file .env.development exec backend python -c "import app.main; print('backend import ok')"

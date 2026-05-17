@@ -1381,6 +1381,35 @@ async def seed_admin(db: AsyncSession) -> None:
             logger.info("  password : configured via INITIAL_ADMIN_PASSWORD")
             logger.info("=" * 50)
 
+    # ── 3b. DEV ONLY: sync admin password from env when flag is set ───────────
+    if admin_exists and settings.SYNC_INITIAL_ADMIN_PASSWORD and settings.INITIAL_ADMIN_PASSWORD:
+        sync_result = await db.execute(
+            select(User).where(User.username == settings.INITIAL_ADMIN_USERNAME)
+        )
+        sync_user = sync_result.scalar_one_or_none()
+        if sync_user:
+            sync_user.hashed_password = hash_password(settings.INITIAL_ADMIN_PASSWORD)
+            sync_user.is_active = True
+            sync_user.is_superuser = True
+            sync_user.must_change_password = False
+            await db.flush()
+            # Ensure owner role is assigned if missing
+            role_check = await db.execute(
+                select(user_role).where(user_role.c.user_id == sync_user.id)
+            )
+            if not role_check.fetchone():
+                owner_r = await db.execute(select(Role).where(Role.name == "owner"))
+                owner_role_obj = owner_r.scalar_one_or_none()
+                if owner_role_obj:
+                    await db.execute(
+                        insert(user_role).values(user_id=sync_user.id, role_id=owner_role_obj.id)
+                    )
+                    await db.flush()
+            logger.warning(
+                "DEV ONLY: admin password synced from INITIAL_ADMIN_PASSWORD for username=%s",
+                settings.INITIAL_ADMIN_USERNAME,
+            )
+
     # ── 4. Seed demo C-suite users (idempotent — skips existing by username) ───
     if settings.SEED_DEMO_DATA:
         if not settings.DEMO_USER_PASSWORD:
