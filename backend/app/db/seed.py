@@ -1,7 +1,7 @@
 import logging
 import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, insert, delete
+from sqlalchemy import select, insert, delete
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from app.models.user import User, user_role
@@ -1344,72 +1344,72 @@ async def seed_admin(db: AsyncSession) -> None:
             await db.execute(insert(AccessScope), scope_rows)
         await db.flush()
 
-    count_result = await db.execute(select(func.count()).select_from(User))
-    user_count = count_result.scalar_one()
-    if user_count > 0:
-        await db.commit()
-        return
-    if not settings.SEED_INITIAL_ADMIN:
-        logger.info("Initial admin seed disabled; no user accounts were created.")
-        await db.commit()
-        return
-    if not settings.INITIAL_ADMIN_PASSWORD:
-        raise RuntimeError("INITIAL_ADMIN_PASSWORD is required before creating the first admin user.")
+    # ── 3. Seed admin user (idempotent — checks by username) ──────────────────
+    admin_result = await db.execute(select(User).where(User.username == settings.INITIAL_ADMIN_USERNAME))
+    admin_exists = admin_result.scalar_one_or_none() is not None
 
-    owner_result = await db.execute(select(Role).where(Role.name == "owner"))
-    owner_role = owner_result.scalar_one_or_none()
+    if not admin_exists:
+        if not settings.SEED_INITIAL_ADMIN:
+            logger.info("Initial admin seed disabled; no admin account was created.")
+        elif not settings.INITIAL_ADMIN_PASSWORD:
+            raise RuntimeError("INITIAL_ADMIN_PASSWORD is required before creating the first admin user.")
+        else:
+            owner_result = await db.execute(select(Role).where(Role.name == "owner"))
+            owner_role = owner_result.scalar_one_or_none()
 
-    admin = User(
-        email=settings.INITIAL_ADMIN_EMAIL,
-        username=settings.INITIAL_ADMIN_USERNAME,
-        full_name=settings.INITIAL_ADMIN_FULL_NAME,
-        hashed_password=hash_password(settings.INITIAL_ADMIN_PASSWORD),
-        is_active=True,
-        is_superuser=True,
-        must_change_password=True,
-    )
-    db.add(admin)
-    await db.flush()
-
-    if owner_role:
-        await db.execute(
-            insert(user_role).values(user_id=admin.id, role_id=owner_role.id)
-        )
-
-    logger.info("=" * 50)
-    logger.info("  INITIAL ADMIN USER CREATED")
-    logger.info("  username : %s", settings.INITIAL_ADMIN_USERNAME)
-    logger.info("  email    : %s", settings.INITIAL_ADMIN_EMAIL)
-    logger.info("  password : configured via INITIAL_ADMIN_PASSWORD")
-    logger.info("=" * 50)
-
-    # ── 4. Seed demo C-suite users ─────────────────────────────────────────────
-    if not settings.SEED_DEMO_DATA:
-        await db.commit()
-        return
-    if not settings.DEMO_USER_PASSWORD:
-        raise RuntimeError("DEMO_USER_PASSWORD is required when SEED_DEMO_DATA=true.")
-    for demo in DEMO_USERS:
-        role_result = await db.execute(select(Role).where(Role.name == demo["role"]))
-        demo_role = role_result.scalar_one_or_none()
-
-        demo_user = User(
-            email=demo["email"],
-            username=demo["username"],
-            full_name=demo["full_name"],
-            hashed_password=hash_password(settings.DEMO_USER_PASSWORD),
-            is_active=True,
-            is_superuser=False,
-            must_change_password=True,
-        )
-        db.add(demo_user)
-        await db.flush()
-
-        if demo_role:
-            await db.execute(
-                insert(user_role).values(user_id=demo_user.id, role_id=demo_role.id)
+            admin = User(
+                email=settings.INITIAL_ADMIN_EMAIL,
+                username=settings.INITIAL_ADMIN_USERNAME,
+                full_name=settings.INITIAL_ADMIN_FULL_NAME,
+                hashed_password=hash_password(settings.INITIAL_ADMIN_PASSWORD),
+                is_active=True,
+                is_superuser=True,
+                must_change_password=False,
             )
+            db.add(admin)
+            await db.flush()
 
-        logger.info("  DEMO USER: username=%s  role=%s", demo["username"], demo["role"])
+            if owner_role:
+                await db.execute(
+                    insert(user_role).values(user_id=admin.id, role_id=owner_role.id)
+                )
+
+            logger.info("=" * 50)
+            logger.info("  INITIAL ADMIN USER CREATED")
+            logger.info("  username : %s", settings.INITIAL_ADMIN_USERNAME)
+            logger.info("  email    : %s", settings.INITIAL_ADMIN_EMAIL)
+            logger.info("  password : configured via INITIAL_ADMIN_PASSWORD")
+            logger.info("=" * 50)
+
+    # ── 4. Seed demo C-suite users (idempotent — skips existing by username) ───
+    if settings.SEED_DEMO_DATA:
+        if not settings.DEMO_USER_PASSWORD:
+            raise RuntimeError("DEMO_USER_PASSWORD is required when SEED_DEMO_DATA=true.")
+        for demo in DEMO_USERS:
+            existing_result = await db.execute(select(User).where(User.username == demo["username"]))
+            if existing_result.scalar_one_or_none() is not None:
+                continue
+
+            role_result = await db.execute(select(Role).where(Role.name == demo["role"]))
+            demo_role = role_result.scalar_one_or_none()
+
+            demo_user = User(
+                email=demo["email"],
+                username=demo["username"],
+                full_name=demo["full_name"],
+                hashed_password=hash_password(settings.DEMO_USER_PASSWORD),
+                is_active=True,
+                is_superuser=False,
+                must_change_password=False,
+            )
+            db.add(demo_user)
+            await db.flush()
+
+            if demo_role:
+                await db.execute(
+                    insert(user_role).values(user_id=demo_user.id, role_id=demo_role.id)
+                )
+
+            logger.info("  DEMO USER: username=%s  role=%s", demo["username"], demo["role"])
 
     await db.commit()
