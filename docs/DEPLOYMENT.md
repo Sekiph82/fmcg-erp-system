@@ -69,12 +69,9 @@ Migrations run automatically via `scripts/dev_migrate.py` on backend startup.
 
 ### First-time setup (fresh/empty database)
 
-> **Why `prod_bootstrap.py`?** The Alembic migration chain starts with a migration
-> that adds columns to existing tables — it does not create the base schema.
-> Running `alembic upgrade head` on a completely empty database will fail immediately.
-> `prod_bootstrap.py` bridges this gap: it creates the full schema from SQLAlchemy
-> models and stamps Alembic at the current head so that future incremental migrations
-> work normally. **Run it exactly once on the first deploy.**
+Migration `20260517_0000` (squashed baseline) is the chain root. `alembic upgrade head`
+works on a completely empty database — `prod_bootstrap.py` is no longer needed for
+first deploys.
 
 ```bash
 # 1. Create production env file with real secrets
@@ -90,19 +87,13 @@ docker compose -f docker-compose.prod.yml up -d db redis
 # 4. Wait for DB to be healthy
 docker compose -f docker-compose.prod.yml ps  # check db is "healthy"
 
-# 5. Bootstrap schema on empty DB (run ONCE — aborts if tables already exist)
-docker compose -f docker-compose.prod.yml run --rm \
-  -e BOOTSTRAP_PRODUCTION=true \
-  backend python scripts/prod_bootstrap.py
-
-# 6. Verify bootstrap was a clean no-op from Alembic's perspective
+# 5. Run migrations on empty DB (creates all 650+ tables via squashed baseline)
 docker compose -f docker-compose.prod.yml run --rm backend alembic upgrade head
-# Expected output: no migrations applied (already at head)
 
-# 7. Start all services
+# 6. Start all services
 docker compose -f docker-compose.prod.yml up -d
 
-# 8. Verify health
+# 7. Verify health
 curl http://localhost:8000/live    # → {"status":"ok"}
 curl http://localhost:8000/ready   # → {"status":"ok","database":"connected"}
 ```

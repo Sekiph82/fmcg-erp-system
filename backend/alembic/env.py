@@ -34,10 +34,84 @@ def run_migrations_offline() -> None:
 
 
 def do_run_migrations(connection: Connection) -> None:
-    # Patch the four mutable Operations methods to be idempotent so that the
-    # squashed baseline (20260517_0000) can create all tables up-front and the
-    # remaining migration chain skips DDL that is already in place.
+    # Patch Operations to be idempotent so the squashed baseline (20260517_0000)
+    # can pre-create all tables and the migration chain skips already-present DDL.
+    #
+    # Uses direct SQL queries (NOT sa.inspect) because Inspector caches its
+    # results on the Connection object and returns stale data for schema objects
+    # created earlier in the same transaction.
+    #
+    # Also patches NamedType._on_table_create to force checkfirst=True for
+    # PostgreSQL ENUM types — the baseline creates all current-model enums, and
+    # subsequent migrations that create historical tables using the same enum
+    # types would otherwise raise DuplicateObjectError.
     from alembic.operations import Operations
+    try:
+        from sqlalchemy.dialects.postgresql.named_types import NamedType as _PgNamedType
+        _orig_nt_otc = _PgNamedType._on_table_create
+
+        def _on_table_create(self, target, bind, checkfirst: bool = False, **kw):
+            return _orig_nt_otc(self, target, bind, checkfirst=True, **kw)
+
+        _PgNamedType._on_table_create = _on_table_create
+        _have_pg_patch = True
+    except (ImportError, AttributeError):
+        _have_pg_patch = False
+
+    def _exists(sql: str, **params) -> bool:
+        return bool(connection.execute(sa.text(sql), params).scalar())
+
+    def _has_table(t: str) -> bool:
+        return _exists(
+            "SELECT EXISTS(SELECT 1 FROM information_schema.tables "
+            "WHERE table_schema='public' AND table_name=:t)",
+            t=t,
+        )
+
+    def _has_column(t: str, c: str) -> bool:
+        return _exists(
+            "SELECT EXISTS(SELECT 1 FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name=:t AND column_name=:c)",
+            t=t, c=c,
+        )
+
+    def _has_index(n: str) -> bool:
+        return _exists(
+            "SELECT EXISTS(SELECT 1 FROM pg_indexes "
+            "WHERE schemaname='public' AND indexname=:n)",
+            n=n,
+        )
+
+    def _has_fk(src: str, ref: str, local_cols) -> bool:
+        """True if a FK from src→ref with exactly these local columns exists."""
+        cols = [c for c in local_cols if isinstance(c, str)]
+        if not cols:
+            return False
+        # Inline the column names as a SQL ARRAY literal — SQLAlchemy text() does
+        # not parse :name as a parameter when immediately followed by ::type, so
+        # we cannot use ANY(:cols::text[]).  Column names come from migration source
+        # code (not user input), so literal inlining is safe.
+        cols_literal = "ARRAY[" + ",".join(f"'{c}'" for c in cols) + "]"
+        return _exists(
+            "SELECT EXISTS("
+            "  SELECT 1 FROM pg_constraint c"
+            "  JOIN pg_class cs ON cs.oid = c.conrelid"
+            "  JOIN pg_class cr ON cr.oid = c.confrelid"
+            "  JOIN pg_namespace n ON n.oid = cs.relnamespace"
+            "  WHERE c.contype = 'f'"
+            "    AND n.nspname = 'public'"
+            "    AND cs.relname = :src"
+            "    AND cr.relname = :ref"
+            "    AND array_length(c.conkey, 1) = :ncols"
+            "    AND ("
+            "      SELECT COUNT(*) FROM pg_attribute a"
+            "      WHERE a.attrelid = cs.oid"
+            "        AND a.attnum = ANY(c.conkey)"
+            f"        AND a.attname = ANY({cols_literal})"
+            "    ) = :ncols"
+            ")",
+            src=src, ref=ref, ncols=len(cols),
+        )
 
     _orig_ct = Operations.create_table
     _orig_ac = Operations.add_column
@@ -45,33 +119,49 @@ def do_run_migrations(connection: Connection) -> None:
     _orig_fk = Operations.create_foreign_key
 
     def _create_table(self, table_name: str, *cols, **kw):
-        if sa.inspect(connection).has_table(table_name):
+        if _has_table(table_name):
             return None
+        # Skip if any inline UniqueConstraint has a backing index that already
+        # exists — happens when a table was renamed but the constraint name was
+        # preserved (baseline creates the renamed table, migration creates the
+        # old name with the same constraint, causing an index name collision).
+        for item in cols:
+            if isinstance(item, sa.UniqueConstraint) and item.name and _has_index(item.name):
+                return None
         return _orig_ct(self, table_name, *cols, **kw)
 
     def _add_column(self, table_name: str, column, **kw):
-        insp = sa.inspect(connection)
-        if insp.has_table(table_name):
-            if column.name in {c["name"] for c in insp.get_columns(table_name)}:
-                return
+        if _has_table(table_name) and _has_column(table_name, column.name):
+            return
         return _orig_ac(self, table_name, column, **kw)
 
     def _create_index(self, index_name, table_name: str, columns, **kw):
         name_str = str(index_name) if index_name is not None else None
-        insp = sa.inspect(connection)
-        if name_str and insp.has_table(table_name):
-            if name_str in {i["name"] for i in insp.get_indexes(table_name)}:
+        if not _has_table(table_name):
+            # Table doesn't exist — either create_table was skipped (renamed/removed
+            # table) or this index precedes the table in the migration (bug). In both
+            # cases we cannot create the index; skip to avoid UndefinedTableError.
+            return None
+        if name_str and _has_index(name_str):
+            return None
+        # Skip if any plain-string column doesn't exist (removed from current model —
+        # baseline created the table without it because it's no longer in the model).
+        for col in columns:
+            if isinstance(col, str) and not _has_column(table_name, col):
                 return None
         return _orig_ci(self, index_name, table_name, columns, **kw)
 
     def _create_foreign_key(self, constraint_name, source_table: str,
                              referent_table: str, local_cols, remote_cols, **kw):
-        insp = sa.inspect(connection)
-        if insp.has_table(source_table):
-            for fk in insp.get_foreign_keys(source_table):
-                if (fk["referred_table"] == referent_table and
-                        set(fk["constrained_columns"]) == set(local_cols)):
-                    return None
+        if not _has_table(source_table):
+            # Source table doesn't exist (create_table was skipped); skip the FK too.
+            return None
+        if _has_fk(source_table, referent_table, local_cols):
+            return None
+        # Skip if any local column doesn't exist (removed from current model).
+        for col in local_cols:
+            if isinstance(col, str) and not _has_column(source_table, col):
+                return None
         return _orig_fk(self, constraint_name, source_table, referent_table,
                         local_cols, remote_cols, **kw)
 
@@ -89,6 +179,8 @@ def do_run_migrations(connection: Connection) -> None:
         Operations.add_column = _orig_ac
         Operations.create_index = _orig_ci
         Operations.create_foreign_key = _orig_fk
+        if _have_pg_patch:
+            _PgNamedType._on_table_create = _orig_nt_otc
 
 
 async def run_async_migrations() -> None:

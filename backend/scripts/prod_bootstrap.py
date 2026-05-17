@@ -1,20 +1,18 @@
 """
 Production first-deploy bootstrap script.
 
+DEPRECATED — no longer needed for fresh deployments (see below).
+
+As of 2026-05-17, migration 20260517_0000 (squashed baseline) is the chain root.
+`alembic upgrade head` on a fresh empty database now works without this script.
+The preferred first-deploy flow is simply:
+
+  alembic upgrade head
+
+This script is kept as a legacy safety valve. It may still be useful if the
+Alembic chain is ever corrupt or the migration cannot run for some reason.
+
 USE ONLY ON A COMPLETELY FRESH PRODUCTION DATABASE — RUN EXACTLY ONCE.
-
-This script exists because the Alembic migration chain cannot be applied to a fresh
-database: the initial migration (3c45d9071c98) only adds columns to existing tables,
-never creates them. Pure `alembic upgrade head` fails immediately on an empty DB.
-
-This script bridges that gap:
-  1. Asserts the database is completely empty (refuses if any tables exist).
-  2. Creates all tables from the current SQLAlchemy models (create_all).
-  3. Stamps Alembic at the current head so future incremental migrations work.
-  4. Exits with code 0 on success, code 1 on any failure.
-
-USAGE:
-  BOOTSTRAP_PRODUCTION=true python scripts/prod_bootstrap.py
 
 GUARDS:
   - Requires BOOTSTRAP_PRODUCTION=true in the environment.
