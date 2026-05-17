@@ -103,17 +103,22 @@ echo.
 echo [2/5] Checking environment file...
 
 if not exist ".env.development" (
-    if exist ".env.example" (
-        copy ".env.example" ".env.development" >nul
-        echo  Created .env.development from .env.example.
+    if exist ".env.development.example" (
+        copy ".env.development.example" ".env.development" >nul
+        echo  Created .env.development from .env.development.example.
+        echo.
+        echo  IMPORTANT:
+        echo  Open .env.development and check INITIAL_ADMIN_USERNAME and INITIAL_ADMIN_PASSWORD.
+        echo  These values are only used when the admin user is created for the first time.
     ) else (
-        echo  ERROR: .env.development and .env.example are both missing.
+        echo  ERROR: .env.development and .env.development.example are both missing.
+        echo.
+        echo  Please create .env.development manually or restore .env.development.example.
         goto :error
     )
 ) else (
     echo  .env.development found.
 )
-
 :: ============================================================
 :: 3. CHECK PORTS
 :: ============================================================
