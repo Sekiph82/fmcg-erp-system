@@ -192,6 +192,7 @@ def test_production_config_rejects_security_landmines():
         "PASSWORD_REQUIRE_SPECIAL": True,
         "SEED_DEMO_DATA": False,
         "SEED_INITIAL_ADMIN": True,
+        "SYNC_INITIAL_ADMIN_PASSWORD": False,
         "INITIAL_ADMIN_PASSWORD": "StrongerAdmin1!",
         "AUTH_COOKIE_SECURE": True,
     }

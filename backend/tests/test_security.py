@@ -113,23 +113,23 @@ from app.core.token_blocklist import add, is_blocked, store_size
 
 
 class TestTokenBlocklist:
-    def test_fresh_token_not_blocked(self):
-        assert not is_blocked("some-fresh-token-abc123")
+    async def test_fresh_token_not_blocked(self):
+        assert not await is_blocked("some-fresh-token-abc123")
 
-    def test_added_token_is_blocked(self):
+    async def test_added_token_is_blocked(self):
         token = "token-to-block-xyz"
         expiry = time.time() + 3600
-        add(token, expiry)
-        assert is_blocked(token)
+        await add(token, expiry)
+        assert await is_blocked(token)
 
-    def test_expired_token_auto_cleared(self):
+    async def test_expired_token_auto_cleared(self):
         token = "expired-token-test"
-        add(token, time.time() - 1)  # already expired
-        assert not is_blocked(token)
+        await add(token, time.time() - 1)  # already expired
+        assert not await is_blocked(token)
 
-    def test_different_tokens_independent(self):
-        add("blocked-one", time.time() + 3600)
-        assert not is_blocked("different-token")
+    async def test_different_tokens_independent(self):
+        await add("blocked-one", time.time() + 3600)
+        assert not await is_blocked("different-token")
 
 
 # ── Input sanitizer tests ──────────────────────────────────────────────────────
