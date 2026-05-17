@@ -89,8 +89,8 @@ export function DashboardShell({ children }: DashboardShellProps) {
             </svg>
           </button>
           <div className="flex items-center gap-2 flex-1">
-            <div className="h-6 w-6 rounded-md overflow-hidden shrink-0">
-              <Image src="/povu-logo.jpg" alt="POVU" width={24} height={24} className="h-full w-full object-cover" />
+            <div className="relative h-6 w-6 rounded-md overflow-hidden shrink-0">
+              <Image src="/povu-logo.jpg" alt="POVU" fill sizes="24px" className="object-cover" />
             </div>
             <span className="text-[13px] font-semibold text-white tracking-tight">POVU ERP</span>
           </div>

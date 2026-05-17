@@ -610,13 +610,13 @@ export function Sidebar({ mobileOpen, onMobileClose, onOpenSearch }: SidebarProp
         {collapsed ? (
           <button onClick={expandSidebar} title="Expand sidebar" className="group flex items-center justify-center">
             {/* POVU logo icon — circular crop in collapsed mode */}
-            <div className="h-8 w-8 rounded-lg overflow-hidden shadow-lg group-hover:opacity-90 transition-opacity">
+            <div className="relative h-8 w-8 rounded-lg overflow-hidden shadow-lg group-hover:opacity-90 transition-opacity">
               <Image
                 src="/povu-logo.jpg"
                 alt="POVU"
-                width={32}
-                height={32}
-                className="h-full w-full object-cover"
+                fill
+                sizes="32px"
+                className="object-cover"
               />
             </div>
           </button>
@@ -624,13 +624,13 @@ export function Sidebar({ mobileOpen, onMobileClose, onOpenSearch }: SidebarProp
           <>
             <div className="flex items-center gap-2.5 min-w-0">
               {/* POVU logo — replaces the purple ERP square */}
-              <div className="h-[28px] w-[28px] shrink-0 rounded-[7px] overflow-hidden shadow-md">
+              <div className="relative h-[28px] w-[28px] shrink-0 rounded-[7px] overflow-hidden shadow-md">
                 <Image
                   src="/povu-logo.jpg"
                   alt="POVU"
-                  width={28}
-                  height={28}
-                  className="h-full w-full object-cover"
+                  fill
+                  sizes="28px"
+                  className="object-cover"
                 />
               </div>
               <div className="min-w-0 leading-none">
