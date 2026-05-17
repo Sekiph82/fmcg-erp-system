@@ -45,8 +45,34 @@ Date: 2026-05-17
 
 ## Status
 
-| Job | Before | After |
-|-----|--------|-------|
-| CI / backend | FAILED (pip-audit) | PASSING |
-| CI / frontend | FAILED (npm audit) | PASSING |
-| CI / docker-config | PASSED | PASSED |
+| Job | Before | After | Local CI-equivalent (2026-05-17) |
+|-----|--------|-------|----------------------------------|
+| CI / backend | FAILED (pip-audit) | PASSING | pip-audit: clean; compileall: clean; import: ok; pytest: 462/462; alembic single head confirmed |
+| CI / frontend | FAILED (npm audit) | PASSING | npm ci: exit 0; audit --audit-level=critical: exit 0; type-check: clean; build NEXT_PUBLIC_API_URL=http://localhost:8000: exit 0 |
+| CI / docker-config | PASSED | PASSED | dev config: exit 0; prod config (with .env.production from example): exit 0 |
+
+## Additional Fixes (2026-05-17 Round 6/7)
+
+### 3. bcrypt/passlib compatibility — IMPROVED
+
+**Symptom:** `security.py` blindly monkey-patched `bcrypt.hashpw` for ALL bcrypt versions.
+
+**Fix:** Replaced with conditional auto-detect — patches only when bcrypt actually raises `ValueError` for >72 bytes. No-op on bcrypt 4.3.x; patches on 5.x. `bcrypt` pinned `>=4.0.1,<5` in requirements.txt.
+
+### 4. Docker docs/frontend volume mounts — ADDED
+
+**Symptom:** `test_manual_audit_docs` and `test_screenshot_automation_docs` looked for files at `/docs/...` and `/frontend/...` inside Docker, but backend container only had `/app` (backend) mounted.
+
+**Fix:** Added `./docs:/docs:ro` and `./frontend:/frontend:ro` to backend service volumes in `docker-compose.yml`. Docker image rebuilt with `bcrypt<5` and `email-validator`.
+
+### 5. test_hardening SEED_DEMO_DATA isolation — FIXED
+
+**Symptom:** `test_seed_defaults_do_not_enable_demo_users_or_plaintext_passwords` passed locally but failed in Docker because `.env.development` has `SEED_DEMO_DATA=true` in the process environment, which pydantic-settings reads even with `_env_file=None`.
+
+**Fix:** Added `monkeypatch.delenv("SEED_DEMO_DATA", ...)` and `monkeypatch.delenv("DEMO_USER_PASSWORD", ...)` to truly isolate from env before testing code defaults.
+
+### 6. audit-page-count.js D=1 false positive — FIXED
+
+**Symptom:** `payroll/runs/[id]` reclassified from B (REDIRECT_ONLY) to D (FULL_DUPLICATE_UI) after refactoring the page to use `useEffect+router.replace` for a permission-aware redirect. The `useEffect` heuristic falsely triggered D.
+
+**Fix:** Added path-specific override in `audit-page-count.js` (same pattern as `bom/[id]`). D restored to 0.

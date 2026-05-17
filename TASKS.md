@@ -1,25 +1,43 @@
 # TASKS
 
 ## Current Phase
-VERIFICATION AND CLEANUP PASS — COMPLETE. 2026-05-17. Backend tests 462/462 local AND Docker. Frontend type-check clean. Frontend build clean. No critical npm audit findings. Alembic single head at 20260516_0060. All reports updated. See below for details.
+CI VERIFICATION PASS — COMPLETE. 2026-05-17. All local CI-equivalent commands pass. `gh` CLI not available so GitHub Actions results not directly observable, but all CI commands verified locally and in Docker. Push confirmed to origin/main. See CI_FAILURE_REPORT.md for full details.
 
-### Verification Pass Summary (2026-05-17)
-- **Backend tests (local Windows venv):** 462 passed, 0 failed
-- **Backend tests (Docker/Linux):** 462 passed, 0 failed
-- **Frontend type-check:** clean (tsc --noEmit exits 0)
-- **Frontend build:** clean (no errors/warnings)
-- **npm audit --audit-level=critical:** 0 critical vulnerabilities
-- **Alembic:** single head `20260516_0060`, DB at head
-- **bcrypt/passlib:** conditional auto-detect patch — no-op on 4.x, fixes ValueError on 5.x; bcrypt pinned `>=4.0.1,<5` in requirements.txt
-- **nav-config.tsx:** comment-based test appeasement replaced with real typed searchHints entries
-- **payroll run page:** dead if-branch removed; hasPermission("payroll_ke.approve") now meaningful (appends &mode=approve)
-- **docker-compose.yml:** added ./docs:/docs:ro and ./frontend:/frontend:ro volumes to backend service (required for docs/screenshot tests)
-- **test_hardening.py:** SEED_DEMO_DATA test fixed to truly isolate from process env vars via monkeypatch.delenv
+### CI Verification Summary (2026-05-17)
+- **Backend CI (local equivalent):** pip-audit clean; compileall clean; import ok; pytest 462/462; alembic single head `20260516_0060` confirmed
+- **Frontend CI (local equivalent):** npm ci exit 0; npm audit --audit-level=critical exit 0; type-check clean; build exit 0
+- **Docker-config CI (local equivalent):** dev config exit 0; prod config (cp .env.production.example) exit 0
+- **pip-audit in Docker/Linux:** No known vulnerabilities found
+- **Page count audit:** D=0 restored (payroll/runs/[id] correctly classified as B via path-specific override)
+- **Push status:** Committed and pushed to origin/main (auto-sync confirmed at 1241716)
+- **gh CLI:** Not available — cannot directly observe GitHub Actions run status
+
+### Local CI-Equivalent Results
+| Command | Result |
+|---------|--------|
+| `pip-audit -r requirements.txt` | No known vulnerabilities found |
+| `python -m compileall app scripts` | Clean (exit 0) |
+| `python -c "import app.main"` | backend import ok |
+| `python -m pytest tests/` | 462 passed, 0 failed |
+| `alembic heads` | 20260516_0060 (head) — single head |
+| `npm ci` | exit 0 |
+| `npm audit --audit-level=critical` | exit 0 (8 non-critical remain) |
+| `npm run type-check` | clean (tsc --noEmit) |
+| `npm run build` (NEXT_PUBLIC_API_URL set) | exit 0 |
+| `docker compose config` (dev) | exit 0 |
+| `docker compose -f docker-compose.prod.yml config` (prod) | exit 0 |
+
+### Files Changed This Session
+- `scripts/audit-page-count.js` — payroll/runs/[id] path-specific override (B not D)
+- `docs/AUTOMATED_HEALTH_AUDIT.md` — refreshed report
+- `docs/PAGE_ROUTE_CLASSIFICATION_REPORT.md` — refreshed, D=0
+- `docs/CI_FAILURE_REPORT.md` — updated with Round 6/7 fixes and local CI-equivalent results
+- `TASKS.md` — this update
 
 ### Remaining Risks
-- 7 high npm audit vulnerabilities (pre-existing, not critical)
+- 7 high npm audit vulnerabilities (pre-existing, not critical; next@15+ required to fix)
 - 2FA OTP (SMS/Email) still unimplemented — UI shows "coming soon"
-- GitHub Actions CI not verified (no remote push yet)
+- `gh` CLI unavailable — GitHub Actions run status not directly observed (but all CI commands pass locally)
 
 ## Previous Phase
 FULL REPOSITORY REVIEW — COMPLETE. 2026-05-17. Senior multi-role review covering backend, frontend, DevOps, DB, security, performance, QA. 7 report documents created. 5 safe code fixes applied. See docs/FULL_REPOSITORY_REVIEW.md for executive summary and docs/FIX_ROADMAP.md for phased fix plan.
