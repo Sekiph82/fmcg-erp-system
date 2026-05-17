@@ -136,6 +136,11 @@ function classify(filePath, workspaceImports, mwRedirects) {
   if (topDir === "bom" && parts[1] === "[id]") {
     return { cls: "E", label: "STANDALONE_OPERATIONAL" };
   }
+  // payroll/runs/[id] — permission-aware redirect to /dashboard/hr?tab=payroll.
+  // Uses useEffect+router.replace (needs client-side auth context) but renders no UI.
+  if (topDir === "payroll" && parts[1] === "runs" && parts[2] === "[id]") {
+    return { cls: "B", label: "REDIRECT_ONLY" };
+  }
 
   // ── E. STANDALONE_OPERATIONAL ─────────────────────────────────────────────
   if (STANDALONE_DIRS.has(topDir)) {

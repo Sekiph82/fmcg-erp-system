@@ -77,8 +77,8 @@ Generated: 2026-05-17
 | `/dashboard/bom/[id]/explode` | E STANDALONE_OPERATIONAL | ❌ | — | — | — |
 | `/dashboard/bom/[id]` | E STANDALONE_OPERATIONAL | ❌ | — | — | — |
 | `/dashboard/bom/compare` | C LIGHTWEIGHT_WRAPPER | ❌ | — | — | — |
-| `/dashboard/bom/conversion` | C LIGHTWEIGHT_WRAPPER | ❌ | — | — | — |
-| `/dashboard/bom` | A WORKSPACE_PAGE | ❌ | — | — | — |
+| `/dashboard/bom/conversion` | C LIGHTWEIGHT_WRAPPER | ❌ | ✅ | — | — |
+| `/dashboard/bom` | A WORKSPACE_PAGE | ❌ | ✅ | — | — |
 | `/dashboard/bom/substitutes` | C LIGHTWEIGHT_WRAPPER | ❌ | — | — | — |
 | `/dashboard/brand-assets/[id]` | B REDIRECT_ONLY | ✅ | — | /dashboard/quality | brand-assets |
 | `/dashboard/brand-assets` | C LIGHTWEIGHT_WRAPPER | ✅ | — | /dashboard/quality | brand-assets |
@@ -291,7 +291,7 @@ Generated: 2026-05-17
 | `/dashboard/invoice-match/reports` | B REDIRECT_ONLY | ✅ | — | /dashboard/finance | invoice-match |
 | `/dashboard/invoice-match/review-queue` | B REDIRECT_ONLY | ✅ | — | /dashboard/finance | invoice-match |
 | `/dashboard/invoice-match/tolerance-rules` | B REDIRECT_ONLY | ✅ | — | /dashboard/finance | invoice-match |
-| `/dashboard/iot` | C LIGHTWEIGHT_WRAPPER | ✅ | — | /dashboard/utility-management | iot |
+| `/dashboard/iot` | C LIGHTWEIGHT_WRAPPER | ✅ | ✅ | /dashboard/utility-management | iot |
 | `/dashboard/kanban/ai` | B REDIRECT_ONLY | ✅ | — | /dashboard/planning | kanban |
 | `/dashboard/kanban/boards` | B REDIRECT_ONLY | ✅ | — | /dashboard/planning | kanban |
 | `/dashboard/kanban/cards` | B REDIRECT_ONLY | ✅ | — | /dashboard/planning | kanban |
@@ -422,7 +422,7 @@ Generated: 2026-05-17
 | `/dashboard/notification-center/schedules` | B REDIRECT_ONLY | ✅ | — | /dashboard/communication | notifications |
 | `/dashboard/notification-center/templates` | B REDIRECT_ONLY | ✅ | — | /dashboard/communication | notifications |
 | `/dashboard/npd/[id]` | E STANDALONE_OPERATIONAL | ❌ | — | — | — |
-| `/dashboard/npd` | A WORKSPACE_PAGE | ❌ | — | — | — |
+| `/dashboard/npd` | A WORKSPACE_PAGE | ❌ | ✅ | — | — |
 | `/dashboard/nps` | C LIGHTWEIGHT_WRAPPER | ✅ | — | /dashboard/crm | nps |
 | `/dashboard/` | E STANDALONE_OPERATIONAL | ❌ | — | — | — |
 | `/dashboard/payroll` | A WORKSPACE_PAGE | ✅ | — | /dashboard/hr | payroll |
@@ -540,7 +540,7 @@ Generated: 2026-05-17
 | `/dashboard/quality/parameters` | C LIGHTWEIGHT_WRAPPER | ❌ | — | — | — |
 | `/dashboard/quality/reports` | C LIGHTWEIGHT_WRAPPER | ❌ | — | — | — |
 | `/dashboard/recipes/[id]` | E STANDALONE_OPERATIONAL | ❌ | — | — | — |
-| `/dashboard/recipes` | A WORKSPACE_PAGE | ❌ | — | — | — |
+| `/dashboard/recipes` | A WORKSPACE_PAGE | ❌ | ✅ | — | — |
 | `/dashboard/recruitment/ai` | B REDIRECT_ONLY | ✅ | — | /dashboard/hr | recruitment |
 | `/dashboard/recruitment/candidates/[id]` | B REDIRECT_ONLY | ✅ | — | /dashboard/hr | recruitment |
 | `/dashboard/recruitment/candidates/new` | B REDIRECT_ONLY | ✅ | — | /dashboard/hr | recruitment |
