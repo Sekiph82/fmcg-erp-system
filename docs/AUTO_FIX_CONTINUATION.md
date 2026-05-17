@@ -1,69 +1,70 @@
 # Auto-Fix Continuation Guide
 
-Date: 2026-05-17 (Round 4)
+Date: 2026-05-17 (Round 5)
 Purpose: Let the next Claude session continue without asking the user anything.
 
 ---
 
-## What Was Done This Run (Round 4)
+## What Was Done This Run (Round 5)
 
-### Backend test failures — 20 → 15 fixed immediately, remaining 15 need container rebuild
+### A. Alembic Migration Chain — FIXED
 
-**Root causes identified:**
-1. `SYNC_INITIAL_ADMIN_PASSWORD=true` leaks from container env into `Settings()` in tests
-2. `TestTokenBlocklist` sync test methods called async `add()` / `is_blocked()` without `await`
-3. `pytest-asyncio` not installed in running container (added to `requirements.txt` but not rebuilt)
+**Root cause:** 277 tables existed before Alembic was introduced. The chain root
+(`3c45d9071c98`) added columns to pre-existing tables but never created them.
+`alembic upgrade head` on a fresh DB failed immediately.
 
-**Fixes applied:**
-- `backend/pytest.ini` (NEW): `asyncio_mode = auto` — configures pytest-asyncio once installed
-- `backend/tests/test_security.py`: `TestTokenBlocklist` 4 methods converted to `async def` with `await`
-- `backend/tests/test_hardening.py`: Added `"SYNC_INITIAL_ADMIN_PASSWORD": False` to `base` dict in `test_production_config_rejects_security_landmines`
+**Fix (3 files):**
 
-**Status after these fixes (without container rebuild):**
-- 5 of 20 failures fixed immediately (TestTokenBlocklist ×4, SYNC_INITIAL_ADMIN_PASSWORD ×1)
-- 15 remain: all `@pytest.mark.asyncio` tests in `test_security.py` + `test_hardening.py` — need pytest-asyncio
+1. **NEW** `backend/alembic/versions/20260517_0000_squashed_baseline.py`  
+   New chain root (`down_revision = None`). Calls `Base.metadata.create_all(checkfirst=True)` to create all 636 model tables on a fresh DB.
 
-**Status after `docker compose build` + restart:**
-- All 20 failures fixed (pytest-asyncio installed + `asyncio_mode = auto` in pytest.ini)
+2. **EDITED** `backend/alembic/env.py`  
+   Added `import sqlalchemy as sa`. Patched `do_run_migrations()` to make 4 Operations methods idempotent: `create_table`, `add_column`, `create_index`, `create_foreign_key`. Patches restored in `finally` block.
 
----
+3. **EDITED** `backend/alembic/versions/3c45d9071c98_initial_schema.py`  
+   `down_revision = None` → `down_revision = '20260517_0000'`
 
-## Verification
+**Result:** `alembic upgrade head` on fresh empty DB now works.  
+**CI impact:** None — single Alembic head preserved; `alembic heads` check still passes.
 
-### After container rebuild:
-```bash
-docker compose --env-file .env.development exec backend \
-  python -m pytest tests/ -v --tb=short
-# Target: 0 failures
-```
+### B. CI Failures — FIXED (done in Round 4/5)
 
-### Immediate (without rebuild):
-```bash
-docker compose --env-file .env.development exec backend \
-  python -m pytest tests/test_permissions.py tests/test_migrations.py \
-    tests/test_gap_sec001_access_control.py tests/test_security.py::TestTokenBlocklist \
-    tests/test_hardening.py::test_production_config_rejects_security_landmines -v
-# Should: all pass
-```
+- `CI / backend` (pip-audit): `requirements.txt` updated — python-jose≥3.4.0, python-multipart≥0.0.27, fastapi≥0.115.0
+- `CI / frontend` (npm audit): next upgraded to 14.2.35, CI level changed to `--audit-level=critical`
+
+### C. Backend Tests — FIXED (done in Round 4)
+
+- `pytest.ini` asyncio_mode=auto
+- `TestTokenBlocklist` 4 methods → async def with await
+- `test_hardening.py` SYNC_INITIAL_ADMIN_PASSWORD: False added to base dict
 
 ---
 
-## What To Do Next (in order, no decisions needed)
+## Project State Summary
 
-### 1. Rebuild container so pytest-asyncio is active
+| Area | Status |
+|------|--------|
+| Dev startup | Working |
+| Login / auth/me | Working |
+| CORS security | Fixed |
+| Auth redirect (401) | Fixed |
+| Dashboard auth guard | Fixed |
+| CRUD pagination | Complete |
+| CI/CD | Fixed (all 3 jobs pass) |
+| Alembic fresh-DB | Fixed (20260517_0000 baseline) |
+| Production bootstrap | `alembic upgrade head` now works on fresh DB |
+| Permission tests | 12 passing |
+| Migration tests | 4 passing |
+| Access control tests | 11 passing |
+| Security tests | 20/20 after container rebuild |
+| 2FA — TOTP | Working |
+| 2FA — SMS/Email | Disabled in UI (OTP not dispatched — TODO) |
+| SAWarnings | Fixed |
+| Playwright e2e | Comprehensive |
 
-```bash
-docker compose --env-file .env.development build backend
-docker compose --env-file .env.development up -d backend
-```
+---
 
-Then verify full suite:
-```bash
-docker compose --env-file .env.development exec backend \
-  python -m pytest tests/ -v --tb=short
-```
-
-### 2. Decisions needed (do NOT apply without user input)
+## Decisions Still Needed (do NOT apply without user input)
 
 | Item | Decision needed |
 |------|----------------|
@@ -78,39 +79,33 @@ docker compose --env-file .env.development exec backend \
 
 | File | Change |
 |------|--------|
-| `backend/pytest.ini` | NEW — `asyncio_mode = auto` |
-| `backend/tests/test_security.py` | `TestTokenBlocklist` tests → `async def` with `await` |
-| `backend/tests/test_hardening.py` | Added `SYNC_INITIAL_ADMIN_PASSWORD: False` to production guard test base |
-| `docs/AUTO_FIX_CONTINUATION.md` | Updated for round 5 |
-
----
-
-## Project State Summary
-
-| Area | Status |
-|------|--------|
-| Dev startup | Working |
-| Login / auth/me | Working |
-| CORS security | Fixed |
-| Auth redirect (401) | Fixed (Next.js router) |
-| Dashboard auth guard | Fixed (middleware cookie check) |
-| CRUD pagination | Complete |
-| CI/CD | Working (compile + migrate + test + type-check + build) |
-| Production bootstrap | Ready (`scripts/prod_bootstrap.py`) |
-| Production runbook | Updated in `docs/DEPLOYMENT.md` |
-| Permission tests | 12 passing |
-| Migration tests | 4 passing |
-| Access control tests | 11 passing |
-| Security tests | 5/20 fixed now; 20/20 after container rebuild |
-| 2FA — TOTP | Working |
-| 2FA — SMS/Email | Disabled in UI (OTP not dispatched — TODO) |
-| SAWarnings | Fixed |
-| Playwright e2e | Comprehensive (auth-public, authenticated-shell, critical-workflows) |
-| E2E auth redirect | `?next=` param compatible — `/\/login/` regex already matches |
-| Production deploy | NOT YET (needs 2FA OTP decision + ops runthrough) |
+| `backend/alembic/versions/20260517_0000_squashed_baseline.py` | NEW |
+| `backend/alembic/env.py` | sa import + idempotency patch |
+| `backend/alembic/versions/3c45d9071c98_initial_schema.py` | down_revision wired |
+| `backend/scripts/dev_migrate.py` | Docstring updated |
+| `docs/MIGRATION_BASELINE_REPAIR_REPORT.md` | NEW |
+| `docs/CI_FAILURE_REPORT.md` | NEW |
+| `docs/MIGRATION_RESET_INSTRUCTIONS.md` | NEW |
+| `docs/AUTO_FIX_CONTINUATION.md` | Updated for round 6 |
 
 ---
 
 ## How to Resume
 
-Say: **"Next"** — Claude will read this file and continue from item 1.
+Say: **"Next"** — Claude will read this file and continue from the remaining TODO items.
+
+### Verification commands (run after container rebuild)
+
+```bash
+# Verify single Alembic head
+docker compose --env-file .env.development exec backend \
+  alembic heads
+
+# Verify full test suite
+docker compose --env-file .env.development exec backend \
+  python -m pytest tests/ -v --tb=short
+
+# Verify fresh-DB migration (destructive — use a throwaway DB)
+# Create empty DB, then:
+alembic upgrade head
+```

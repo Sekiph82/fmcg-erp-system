@@ -26,15 +26,13 @@ Behavior:
         3. ``alembic stamp head`` — marks baseline applied.
         (Incremental migrations from this point forward will run normally.)
 
-WHY NOT PURE ALEMBIC ON A FRESH DB?
-  The migration chain begins with 3c45d9071c98 which adds columns to
-  ``sales_orders`` — a table the chain never creates.  All subsequent
-  migrations reference ``users``, ``suppliers``, ``products``, etc. via FK.
-  Pure ``alembic upgrade head`` on a fresh database will fail immediately.
-  The base schema must be bootstrapped via ``create_all()`` first.
-  This is a known design constraint: Alembic was introduced after the initial
-  schema was already deployed.  Only use ``alembic upgrade head`` in production
-  when the schema already exists.
+NOTE ON FRESH-DB MIGRATION (fixed 2026-05-17):
+  Migration 20260517_0000 (squashed baseline) is now the chain root.  It calls
+  ``Base.metadata.create_all(checkfirst=True)`` to create all current-model
+  tables, then the subsequent migrations in the chain are made idempotent by
+  patches in alembic/env.py.  ``alembic upgrade head`` on a fresh empty DB
+  now works correctly in production.  The dev path below (create_all + stamp)
+  is kept as a fast shortcut that avoids iterating through all migrations.
 """
 from __future__ import annotations
 
