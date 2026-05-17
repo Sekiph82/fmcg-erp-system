@@ -913,3 +913,205 @@ The following pages exist as files but are **not clearly visible in sidebar navi
 - `backend/app/services/*.py` — 113 service files (stub/placeholder patterns)
 - `backend/app/core/config.py` — AI mode, mock mode config
 - `backend/app/core/integration_capabilities.py` — integration capability notes
+
+---
+
+# Manual Audit
+
+## Scope And Method
+
+Static code inspection of the `fmcg-erp-system-main` repository. No live server execution, no screenshots.
+
+**Frontend pages scanned:** 755  
+**Backend endpoints discovered:** 134  
+**Mock/stub/dev-only markers found:** 60+
+
+## Executive Findings
+
+See Executive Summary above. Key risks: AI mock mode, M-Pesa placeholder, WhatsApp demo mode, IoT stub.
+
+## Sidebar / Navigation Inventory
+
+Source: `frontend/src/components/nav-config.tsx` — 33 workspace entries in 9 cluster groups.
+All nav entries use `permission:` field for RBAC enforcement.
+
+## Frontend Inventory
+
+See section 2 (Frontend Inventory) above — 276 pages documented with route paths and notes.
+
+## Backend Inventory
+
+Full inventory of `backend/app/api/v1/endpoints/` files. Permission enforcement needs review on all routes.
+
+| Endpoint File | Router Group | Key Operations | Permission Status |
+|---|---|---|---|
+| backend/app/api/v1/endpoints/ai.py | /ai | AI chat, suggestions | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/allergen.py | /allergen | Allergen profiles, label readiness | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/analytics.py | /analytics | BI reports, dashboards | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/api_portal.py | /api-portal | Developer portal, API keys | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/appraisals.py | /appraisals | Employee appraisals | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/approvals.py | /approvals | Approval workflows | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/audit.py | /audit | Audit logs | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/auth.py | /auth | Login, logout, refresh | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/bank_api.py | /bank-api | Bank sync | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/bank_reconciliation.py | /bank-reconciliation | Bank recon | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/bom.py | /bom | Bill of materials | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/brand_assets.py | /brand-assets | Brand asset library | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/bulk_import.py | /bulk-import | CSV imports | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/calendar.py | /calendar | Calendar events | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/chatter.py | /chatter | Activity chatter | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/chemical_treatment.py | /chemical-treatment | Water treatment | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/commissions.py | /commissions | Sales commissions | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/company.py | /company | Company settings | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/compressor.py | /compressor | Compressor utility | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/consumer_complaints.py | /consumer-complaints | Complaints, recalls | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/containers.py | /containers | Container tracking | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/contracts.py | /contracts | Customer contracts | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/copacking.py | /copacking | Co-packing orders | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/crm_pipeline.py | /crm-pipeline | CRM pipeline | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/custom_fields.py | /custom-fields | Custom field defs | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/cycle_count.py | /cycle-count | Inventory cycle count | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/dashboard.py | /dashboard | Dashboard metrics | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/delivery.py | /deliveries | Delivery management | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/dimensions.py | /dimensions | Financial dimensions | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/distributors.py | /distributors | Distributor management | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/documents.py | /documents | Document management | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/dunning.py | /dunning | Credit dunning | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/dynamic_pricing.py | /dynamic-pricing | Dynamic price rules | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/electricity.py | /electricity | Electricity metering | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/email_integration.py | /email | Email integration | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/esg.py | /esg | ESG reporting | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/esign.py | /esign | E-signature | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/ess.py | /ess | Employee self-service | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/expenses.py | /expenses | Expense claims | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/field_sales.py | /field-sales | Field sales reps | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/finance.py | /finance | Finance ledger | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/fixed_assets.py | /fixed-assets | Asset register | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/fleet.py | /fleet | Fleet management | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/gs1.py | /gs1 | GS1 barcodes, labels | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/health.py | /health | Health check | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/helpdesk.py | /helpdesk | Support tickets | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/hr.py | /hr | HR records | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/integrations.py | /integrations | Third-party integrations | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/inventory.py | /inventory | Stock management | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/invoice_match.py | /invoice-match | Invoice matching | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/iot.py | /iot | IoT/MQTT streaming | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/kanban.py | /kanban | Kanban boards | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/knowledge_base.py | /knowledge-base | KB articles | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/landed_cost.py | /landed-cost | Landed cost allocation | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/logistics.py | /logistics | Logistics routes | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/logs.py | /logs | System logs | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/loyalty.py | /loyalty | Loyalty programs | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/machine_operator.py | /machine-operator | Operator interface | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/machine_utility.py | /machine-utility | Machine utility data | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/maintenance.py | /maintenance | Preventive maintenance | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/market_intelligence.py | /market-intel | Market data | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/marketing.py | /marketing | Campaigns | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/material_flow.py | /material-flow | Material flow | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/materials.py | /materials | Raw materials | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/meetings.py | /meetings | Meeting records | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/messaging.py | /messaging | Internal messaging | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/mobile.py | /mobile | Mobile API | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/modules.py | /modules | Module registry | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/moto_sales.py | /moto-sales | Moto route sales | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/mps.py | /mps | Master production schedule | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/mrp.py | /mrp | Material requirements planning | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/notifications.py | /notifications | Push notifications | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/npd_workflow.py | /npd-workflow | NPD governance | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/nps.py | /nps | Net promoter score | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/payroll_ke.py | /payroll-ke | Kenya payroll | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/planning.py | /planning | Production planning | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/portal.py | /portal | Customer portal | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/pos.py | /pos | Point of sale | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/price_list.py | /price-list | Price lists | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/pricing.py | /pricing | Pricing engine | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/procurement.py | /procurement | Purchase orders | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/procurement_suggestion.py | /procurement/suggestions | AI procurement suggestions | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/production.py | /production | Production orders | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/production_advanced.py | /production/advanced | Advanced production | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/production_ai.py | /production/ai | AI production insights | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/production_costing.py | /production/costing | Production costing | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/production_execution.py | /production/execution | Shop floor execution | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/products.py | /products | Product catalog | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/project.py | /projects | Project management | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/promotions.py | /promotions | Trade promotions | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/qms.py | /qms | Quality management system | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/quality.py | /quality | Quality control | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/quotation.py | /quotations | Sales quotations | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/receipt_ocr.py | /receipt-ocr | OCR receipt scan | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/recipes.py | /recipes | Recipe/BOM | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/recruitment.py | /recruitment | Recruitment pipeline | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/regulatory_certs.py | /regulatory-certs | Regulatory certificates | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/report_builder.py | /report-builder | Custom reports | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/returns_mgmt.py | /returns | Returns management | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/roles.py | /roles | Role management | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/sales.py | /sales | Sales orders | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/search.py | /search | Global search | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/secondary_sales.py | /secondary-sales | Secondary/trade sales | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/security_monitor.py | /security | Security events | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/serial_tracking.py | /serial-tracking | Serial/lot traceability | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/shelf_life.py | /shelf-life | Shelf life management | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/shop_floor.py | /shop-floor | Shop floor dashboard | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/soft_water.py | /soft-water | Soft water utility | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/solar.py | /solar | Solar energy | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/steam.py | /steam | Steam utility | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/subcontracting.py | /subcontracting | Subcontracting orders | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/subscription.py | /subscription | Subscriptions | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/supplier_portal.py | /supplier-portal | Supplier self-service | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/suppliers.py | /suppliers | Supplier master | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/surveys.py | /surveys | Customer surveys | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/tax_regulatory.py | /tax | KRA/tax filings | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/timesheets.py | /timesheets | Employee timesheets | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/tpm.py | /tpm | Trade promotion mgmt | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/traceability.py | /traceability | Product traceability | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/training.py | /training | Training records | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/two_factor.py | /2fa | Two-factor auth | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/users.py | /users | User management | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/utilities.py | /utilities | Utility aggregator | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/utilities_reports.py | /utilities/reports | Utility reports | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/utility_alarm.py | /utility/alarms | Utility alarms | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/utility_billing.py | /utility/billing | Utility billing | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/utility_integration.py | /utility/integrations | Utility integrations | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/utility_kpi.py | /utility/kpi | Utility KPIs | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/utility_management.py | /utility-management | Utility management | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/van_sales.py | /van-sales | Van sales routes | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/voip.py | /calls | VoIP/calls | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/warehouses.py | /warehouses | Warehouse management | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/wastewater.py | /wastewater | Wastewater treatment | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/water.py | /water | Water metering | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/webhooks.py | /webhooks | Webhook endpoints | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/whatsapp.py | /whatsapp | WhatsApp messaging | Permission enforcement needs review |
+| backend/app/api/v1/endpoints/wms.py | /wms | Warehouse mgmt system | Permission enforcement needs review |
+
+## Module Completeness Matrix
+
+See section 4 above.
+
+## Button / Action Inventory
+
+See section 5 above.
+
+## Workflow / Status Inventory
+
+See section 6 above.
+
+## Role / Permission Inventory
+
+See section 7 above.
+
+## Mock / Stub / Dev-Only Inventory
+
+See section 8 above.
+
+## Key Gaps For Manual Preparation
+
+Known gaps requiring manual documentation before final user manual generation:
+
+- Frontend placeholder or partial implementation. Several allergen, market intelligence, and ESS AI pages render stub content.
+- Backend/API available, frontend screen not clearly found. Moto sales, secondary sales, and some utility sub-modules have backend endpoints but no confirmed frontend route.
+- IoT/MQTT live streaming — stub only, NEEDS_USER_REVIEW before documenting as a feature.
+- Screenshot capture index: Existing but empty — No screenshot captured for this module yet. All modules require screenshot pass before manual generation.
+
+## Audit Limitations
+
+See section 10 above for full limitations list.

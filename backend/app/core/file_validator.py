@@ -53,6 +53,10 @@ _UNSAFE_FILENAME_RE = re.compile(r"[^\w.\-]")
 
 def sanitize_filename(filename: str) -> str:
     """Strip path traversal and non-safe characters from filename."""
+    # Strip null bytes before any further processing
+    filename = filename.replace("\x00", "")
+    # Normalize Windows backslash separators so os.path.basename works on Linux
+    filename = filename.replace("\\", "/")
     # Remove path components
     filename = os.path.basename(filename)
     # Replace unsafe chars

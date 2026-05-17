@@ -77,6 +77,15 @@ class TestLoginLimiter:
         """Clear limiter state before each test."""
         _failures.clear()
         _lockouts.clear()
+        try:
+            import redis as _rsync, os
+            r = _rsync.from_url(os.environ.get("REDIS_URL", "redis://localhost:6379/0"), decode_responses=True)
+            keys = r.keys("ll:*")
+            if keys:
+                r.delete(*keys)
+            r.close()
+        except Exception:
+            pass
 
     @pytest.mark.asyncio
     async def test_first_attempt_allowed(self):

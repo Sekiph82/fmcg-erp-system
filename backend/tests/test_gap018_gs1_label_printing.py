@@ -76,6 +76,6 @@ def test_alembic_head_is_gs1_migration():
         capture_output=True, text=True,
         cwd=__file__[:__file__.index("tests")],
     )
-    assert "20260515_0060" in result.stdout, (
-        f"Alembic head should be 20260515_0060; got: {result.stdout.strip()}"
+    assert "20260516_0060" in result.stdout, (
+        f"Alembic head should be 20260516_0060; got: {result.stdout.strip()}"
     )

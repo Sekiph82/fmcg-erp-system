@@ -42,7 +42,7 @@ class _FlushOnlyDB:
 
 
 def test_gap002_migration_contains_additive_posting_foundations():
-    migration = Path("backend/alembic/versions/20260511_0020_operational_posting_integration.py").read_text()
+    migration = Path("alembic/versions/20260511_0020_operational_posting_integration.py").read_text()
 
     assert "operational_posting_events" in migration
     assert "inventory_account_mappings" in migration

@@ -8,6 +8,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+import uuid
 from collections import defaultdict
 from datetime import datetime, timezone
 
@@ -70,7 +71,7 @@ async def check_rate_limit(
                         "reset_at": reset_at.isoformat(),
                     },
                 )
-            await r.zadd(key, {str(now): now})
+            await r.zadd(key, {str(uuid.uuid4()): now})
             await r.expire(key, window_seconds)
             return
         except HTTPException:

@@ -26,6 +26,15 @@ class TestLoginLimiterUnderLoad:
         from app.core.login_limiter import _failures, _lockouts
         _failures.clear()
         _lockouts.clear()
+        try:
+            import redis as _rsync, os
+            r = _rsync.from_url(os.environ.get("REDIS_URL", "redis://localhost:6379/0"), decode_responses=True)
+            keys = r.keys("ll:*")
+            if keys:
+                r.delete(*keys)
+            r.close()
+        except Exception:
+            pass
 
     @pytest.mark.asyncio
     async def test_100_concurrent_login_failures_lock_account(self):
@@ -72,7 +81,7 @@ class TestLoginLimiterUnderLoad:
 # ── Token blocklist throughput ────────────────────────────────────────────────
 
 class TestTokenBlocklistThroughput:
-    def test_10000_token_adds_complete(self):
+    async def test_10000_token_adds_complete(self):
         """Blocklist handles 10k tokens without performance issues."""
         from app.core.token_blocklist import add, is_blocked, _store
         _store.clear()
@@ -82,25 +91,25 @@ class TestTokenBlocklistThroughput:
 
         start = time.monotonic()
         for token in tokens:
-            add(token, expiry)
+            await add(token, expiry)
         elapsed = time.monotonic() - start
 
         assert elapsed < 2.0, f"1000 adds took too long: {elapsed:.2f}s"
-        assert is_blocked(tokens[0])
-        assert is_blocked(tokens[999])
+        assert await is_blocked(tokens[0])
+        assert await is_blocked(tokens[999])
 
-    def test_expired_tokens_cleaned_up(self):
+    async def test_expired_tokens_cleaned_up(self):
         """Expired tokens are cleaned up automatically."""
         from app.core.token_blocklist import add, is_blocked, _store
         _store.clear()
 
         # Add 100 expired tokens
         for i in range(100):
-            add(f"expired_{i}", time.time() - 1)
+            await add(f"expired_{i}", time.time() - 1)
 
         # Check triggers cleanup for each
         for i in range(100):
-            assert not is_blocked(f"expired_{i}")
+            assert not await is_blocked(f"expired_{i}")
 
 
 # ── Input sanitizer throughput ────────────────────────────────────────────────
@@ -144,7 +153,18 @@ class TestSanitizerThroughput:
 class TestAIRateLimiterConcurrency:
     def setup_method(self):
         from app.core.ai_rate_limiter import _store
+        import app.core.ai_rate_limiter as _rl_mod
         _store.clear()
+        _rl_mod._redis = None  # force re-creation on current event loop
+        try:
+            import redis as _rsync, os
+            r = _rsync.from_url(os.environ.get("REDIS_URL", "redis://localhost:6379/0"), decode_responses=True)
+            keys = r.keys("ai:rl:*")
+            if keys:
+                r.delete(*keys)
+            r.close()
+        except Exception:
+            pass
 
     @pytest.mark.asyncio
     async def test_concurrent_requests_counted_correctly(self):

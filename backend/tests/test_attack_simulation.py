@@ -46,6 +46,15 @@ class TestAuthAttacks:
         from app.core.login_limiter import _failures, _lockouts
         _failures.clear()
         _lockouts.clear()
+        try:
+            import redis as _rsync, os
+            r = _rsync.from_url(os.environ.get("REDIS_URL", "redis://localhost:6379/0"), decode_responses=True)
+            keys = r.keys("ll:*")
+            if keys:
+                r.delete(*keys)
+            r.close()
+        except Exception:
+            pass
 
     @pytest.mark.asyncio
     async def test_brute_force_triggers_lockout(self):
@@ -76,25 +85,25 @@ class TestAuthAttacks:
         assert is_locked("192.168.1.100")
         assert not is_locked("other_user")
 
-    def test_revoked_token_blocked(self):
+    async def test_revoked_token_blocked(self):
         """Token added to blocklist → is_blocked returns True."""
         from app.core.token_blocklist import add, is_blocked
         token = "jwt.token.attacktest123"
-        add(token, time.time() + 3600)
-        assert is_blocked(token)
+        await add(token, time.time() + 3600)
+        assert await is_blocked(token)
 
-    def test_different_token_not_blocked(self):
+    async def test_different_token_not_blocked(self):
         """Only the exact revoked token is blocked, not others."""
         from app.core.token_blocklist import add, is_blocked
-        add("one.specific.token", time.time() + 3600)
-        assert not is_blocked("different.token.same_prefix")
+        await add("one.specific.token", time.time() + 3600)
+        assert not await is_blocked("different.token.same_prefix")
 
-    def test_expired_revoked_token_auto_released(self):
+    async def test_expired_revoked_token_auto_released(self):
         """Blocklist auto-removes expired entries."""
         from app.core.token_blocklist import add, is_blocked
         token = "expired.blocked.token"
-        add(token, time.time() - 10)  # already expired
-        assert not is_blocked(token), "Expired blocklist entry should auto-clear"
+        await add(token, time.time() - 10)  # already expired
+        assert not await is_blocked(token), "Expired blocklist entry should auto-clear"
 
     def test_weak_password_rejected(self):
         """Password policy rejects common/weak passwords."""

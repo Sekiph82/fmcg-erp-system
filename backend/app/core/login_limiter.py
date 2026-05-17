@@ -111,6 +111,13 @@ async def record_login_failure(identifier: str) -> int:
                 pipe.zcard(fail_key)
                 results = await pipe.execute()
             count = results[3]
+            # Dual-write in-memory so sync is_locked() / get_failure_count() stay accurate
+            # in single-worker deployments (and in unit tests).
+            async with _mem_lock:
+                _failures[identifier] = [t for t in _failures[identifier] if t > cutoff]
+                _failures[identifier].append(now)
+                if count >= MAX_ATTEMPTS:
+                    _lockouts[identifier] = now + LOCKOUT_SECONDS
             if count >= MAX_ATTEMPTS:
                 await r.setex(f"ll:lock:{identifier}", LOCKOUT_SECONDS, "1")
                 log.warning("Account locked (Redis): %s — %d failures", identifier, count)
