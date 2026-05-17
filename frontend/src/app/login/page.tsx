@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import axios from "axios";
 import { useAuth } from "@/context/AuthContext";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
@@ -19,8 +20,12 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await login(username, password);
-    } catch {
-      setError("Invalid username or password.");
+    } catch (err) {
+      if (axios.isAxiosError(err) && err.response && err.response.status >= 500) {
+        setError("Server error — please try again in a moment.");
+      } else {
+        setError("Invalid username or password.");
+      }
     } finally {
       setLoading(false);
     }

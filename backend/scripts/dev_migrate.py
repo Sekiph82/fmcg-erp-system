@@ -21,8 +21,9 @@ Behavior:
         ``alembic upgrade head`` — applies pending incremental migrations.
 
     - Existing DB without Alembic tracking (prior create_all bootstrap):
-        1. Reconcile known schema drift columns.
-        2. ``alembic stamp head`` — marks baseline applied.
+        1. ``Base.metadata.create_all()`` — creates any missing tables.
+        2. Reconcile known schema drift columns.
+        3. ``alembic stamp head`` — marks baseline applied.
         (Incremental migrations from this point forward will run normally.)
 
 WHY NOT PURE ALEMBIC ON A FRESH DB?
@@ -194,8 +195,9 @@ def main() -> None:
 
     logger.warning(
         "DEV ONLY: detected create_all schema without Alembic tracking. "
-        "Reconciling drift columns and stamping head."
+        "Creating any missing tables, reconciling drift columns, and stamping head."
     )
+    asyncio.run(_create_all_tables())        # creates missing tables (e.g. access_scopes)
     asyncio.run(_ensure_reconciliation_columns())
     command.stamp(config, "head")
     logger.info("Dev schema reconciled and stamped to Alembic head")
