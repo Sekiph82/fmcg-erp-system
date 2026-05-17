@@ -36,6 +36,7 @@ class UserUpdate(BaseModel):
 
 class UserRead(UserBase):
     id: uuid.UUID
+    email: str  # override: stored emails may use reserved TLDs (.local, .test, .internal)
     roles: List[RoleRead] = []
     modules: List[str] = []
     scopes: List[EffectiveAccessScopeRead] = []
