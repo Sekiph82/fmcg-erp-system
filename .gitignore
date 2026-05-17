@@ -27,6 +27,11 @@ yarn-debug.log*
 yarn-error.log*
 *.tsbuildinfo
 
+# Playwright artifacts (traces, screenshots, videos, auth state)
+frontend/playwright-report/
+frontend/test-results/
+frontend/playwright/.auth/
+
 # Docker
 postgres_data/
 

@@ -11,6 +11,7 @@
     "manual:screenshots": "node scripts/capture-user-manual-screenshots.mjs",
     "check:api-parity": "node scripts/check-api-parity.mjs",
     "test:e2e": "playwright test",
+    "test:smoke": "playwright test e2e/smoke.spec.ts",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:report": "playwright show-report",
