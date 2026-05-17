@@ -125,6 +125,18 @@ function classify(filePath, workspaceImports, mwRedirects) {
     return { cls: "B", label: "REDIRECT_ONLY" };
   }
 
+  // ── Path-specific STANDALONE overrides ────────────────────────────────────
+  // Root dashboard page — primary landing page, not a navigation duplicate
+  if (parts.length === 1 && parts[0] === "page.tsx") {
+    return { cls: "E", label: "STANDALONE_OPERATIONAL" };
+  }
+  // bom/[id] and its sub-pages (costing, compliance, explode) — rich formula editors.
+  // Cannot add "bom" to STANDALONE_DIRS because bom/compare, bom/substitutes,
+  // bom/conversion are C=LIGHTWEIGHT_WRAPPER (dynamically imported by bom/page.tsx).
+  if (topDir === "bom" && parts[1] === "[id]") {
+    return { cls: "E", label: "STANDALONE_OPERATIONAL" };
+  }
+
   // ── E. STANDALONE_OPERATIONAL ─────────────────────────────────────────────
   if (STANDALONE_DIRS.has(topDir)) {
     return { cls: "E", label: "STANDALONE_OPERATIONAL" };

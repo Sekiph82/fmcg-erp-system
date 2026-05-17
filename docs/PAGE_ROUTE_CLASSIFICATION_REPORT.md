@@ -9,8 +9,8 @@ Generated: 2026-05-17
 | A WORKSPACE_PAGE          | 31     |
 | B REDIRECT_ONLY           | 496     |
 | C LIGHTWEIGHT_WRAPPER     | 213     |
-| D FULL_DUPLICATE_UI       | 5     |
-| E STANDALONE_OPERATIONAL  | 9     |
+| D FULL_DUPLICATE_UI       | 0     |
+| E STANDALONE_OPERATIONAL  | 14     |
 | F UNKNOWN                 | 0     |
 | Total                     | 754   |
 
@@ -72,10 +72,10 @@ Generated: 2026-05-17
 | `/dashboard/bank-reconciliation/rules` | B REDIRECT_ONLY | ✅ | — | /dashboard/finance | bank-recon |
 | `/dashboard/bank-reconciliation/statements/[id]` | B REDIRECT_ONLY | ✅ | — | /dashboard/finance | bank-recon |
 | `/dashboard/bank-reconciliation/statements` | B REDIRECT_ONLY | ✅ | — | /dashboard/finance | bank-recon |
-| `/dashboard/bom/[id]/compliance` | D FULL_DUPLICATE_UI | ❌ | — | — | — |
-| `/dashboard/bom/[id]/costing` | D FULL_DUPLICATE_UI | ❌ | — | — | — |
-| `/dashboard/bom/[id]/explode` | D FULL_DUPLICATE_UI | ❌ | — | — | — |
-| `/dashboard/bom/[id]` | D FULL_DUPLICATE_UI | ❌ | — | — | — |
+| `/dashboard/bom/[id]/compliance` | E STANDALONE_OPERATIONAL | ❌ | — | — | — |
+| `/dashboard/bom/[id]/costing` | E STANDALONE_OPERATIONAL | ❌ | — | — | — |
+| `/dashboard/bom/[id]/explode` | E STANDALONE_OPERATIONAL | ❌ | — | — | — |
+| `/dashboard/bom/[id]` | E STANDALONE_OPERATIONAL | ❌ | — | — | — |
 | `/dashboard/bom/compare` | C LIGHTWEIGHT_WRAPPER | ❌ | — | — | — |
 | `/dashboard/bom/conversion` | C LIGHTWEIGHT_WRAPPER | ❌ | — | — | — |
 | `/dashboard/bom` | A WORKSPACE_PAGE | ❌ | — | — | — |
@@ -424,7 +424,7 @@ Generated: 2026-05-17
 | `/dashboard/npd/[id]` | E STANDALONE_OPERATIONAL | ❌ | — | — | — |
 | `/dashboard/npd` | A WORKSPACE_PAGE | ❌ | — | — | — |
 | `/dashboard/nps` | C LIGHTWEIGHT_WRAPPER | ✅ | — | /dashboard/crm | nps |
-| `/dashboard/` | D FULL_DUPLICATE_UI | ❌ | — | — | — |
+| `/dashboard/` | E STANDALONE_OPERATIONAL | ❌ | — | — | — |
 | `/dashboard/payroll` | A WORKSPACE_PAGE | ✅ | — | /dashboard/hr | payroll |
 | `/dashboard/payroll/profiles` | C LIGHTWEIGHT_WRAPPER | ✅ | — | /dashboard/hr | payroll |
 | `/dashboard/payroll/reports` | C LIGHTWEIGHT_WRAPPER | ✅ | — | /dashboard/hr | payroll |

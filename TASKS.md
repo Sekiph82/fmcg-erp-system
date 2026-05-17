@@ -1,7 +1,7 @@
 # TASKS
 
 ## Current Phase
-PAGE CONSOLIDATION — PASS 5 COMPLETE. 2026-05-17. 496 total redirect-only. FULL_DUPLICATE_UI: 338 → 5. Build passes.
+PAGE CONSOLIDATION — COMPLETE. 2026-05-17. All 6 passes done. D=0, B=496, E=14, Total=754. Build passes. See docs/PAGE_CONSOLIDATION_HISTORY.md for full history.
 
 ## Execution Rules
 - Always read this file before starting work.
@@ -18,245 +18,27 @@ PAGE CONSOLIDATION — PASS 5 COMPLETE. 2026-05-17. 496 total redirect-only. FUL
 ## In Progress
 None.
 
-## Completed in This Run (2026-05-17) — Page Consolidation Pass 5
+## Completed — Page Consolidation Passes 4–6 (2026-05-17)
 
-### Pages converted (331 new, total B=496)
-Clusters converted (all had existing MW prefix coverage):
-- material-flow (11) → /dashboard/production?tab=material-flow
-- portal (11) → /dashboard/sales?tab=portal
-- shelf-life (11) → /dashboard/inventory?tab=shelf-life
-- supplier-portal (11) → /dashboard/procurement?tab=supplier-portal
-- tpm (11) → /dashboard/marketing?tab=tpm
-- appraisals (10) → /dashboard/hr?tab=appraisals
-- bank-reconciliation (10) → /dashboard/finance?tab=bank-recon
-- dimensions (10) → /dashboard/finance?tab=dimensions
-- recurring-orders (10) → /dashboard/sales?tab=recurring
-- calendar (9) → /dashboard/communication?tab=calendar
-- dunning (9) → /dashboard/finance?tab=dunning
-- machine-ops (9) → /dashboard/production?tab=machine-ops
-- report-builder (9) → /dashboard/analytics?tab=report-builder
-- traceability (9) → /dashboard/inventory?tab=traceability
-- custom-fields (8) → /dashboard/admin?tab=custom-fields
-- ess (8) → /dashboard/hr?tab=ess
-- gs1 (8) → /dashboard/compliance?tab=gs1
-- invoice-match (8) → /dashboard/finance?tab=invoice-match
-- price-lists (8) → /dashboard/sales?tab=price-lists
-- promotions (8) → /dashboard/marketing?tab=promotions-schemes
-- training (8) → /dashboard/hr?tab=training
-- contracts (7) → /dashboard/sales?tab=contracts
-- fleet (7) → /dashboard/logistics?tab=fleet
-- reports (7) → /dashboard/analytics?tab=reports
-- commissions (6) → /dashboard/sales?tab=commissions
-- esg (6) → /dashboard/utility-management?tab=esg
-- mrp (6) → /dashboard/planning?tab=mrp
-- notification-center (6) → /dashboard/communication?tab=notifications
-- procurement-suggestion (6) → /dashboard/procurement?tab=suggestions
-- subcontracting (6) → /dashboard/procurement?tab=subcontracting
-- timesheets (6) → /dashboard/hr?tab=timesheets
-- webhooks (6) → /dashboard/integrations?tab=webhooks
-- chatter (5) → /dashboard/communication?tab=chatter
-- cycle-count (5) → /dashboard/inventory?tab=cycle-count
-- kanban (5) → /dashboard/planning?tab=kanban
-- landed-cost (5) → /dashboard/procurement?tab=landed-cost
-- wms sub-pages (5) → /dashboard/warehouses?tab=wms
-- mps (4) → /dashboard/planning?tab=mps
-- surveys (4) → /dashboard/crm?tab=surveys
-- tax (4) → /dashboard/finance?tab=tax
-- knowledge-base (3) → /dashboard/documents?tab=knowledge-base
-- production-execution (3) → /dashboard/production?tab=execution
-- putaway (3) → /dashboard/warehouses?tab=wms
-- secondary-sales (3) → /dashboard/sales?tab=secondary
-- containers (2) → /dashboard/logistics?tab=containers
-- developer (2) → /dashboard/integrations?tab=developer
-- logs (2) → /dashboard/admin?tab=logs
-- mobile (2) → /dashboard/admin?tab=mobile
-- projects (2) → /dashboard/production?tab=projects
-- brand-assets/[id] → /dashboard/quality?tab=brand-assets
-- copacking → /dashboard/procurement?tab=subcontracting
-- payroll/runs/[id] → /dashboard/hr?tab=payroll (+ MW entry added)
-- quality/[id] → /dashboard/quality?tab=qms (file-level only; no MW prefix to avoid loop)
-- roles/[id] → /dashboard/admin?tab=roles
-- security/monitor → /dashboard/admin?tab=security
-- users/[id] → /dashboard/admin?tab=users
+All page consolidation passes complete. D=0. See docs/PAGE_CONSOLIDATION_HISTORY.md for full per-pass details.
 
-### STANDALONE_OPERATIONAL documented/classified
-- bom/[id], bom/[id]/compliance, bom/[id]/costing, bom/[id]/explode (4) — rich formula editor
-- npd/[id] — NPD project detail (stage gates, pilot batches, regulatory checklists)
-- recipes/[id] — recipe editor with items and process parameters
-- Audit script STANDALONE_DIRS updated to include "npd" and "recipes"
+Final state: A=31, B=496, C=213, D=0, E=14, F=0, Total=754. All checks pass.
 
-### Middleware addition
-- `/dashboard/payroll` → `{ p: "/dashboard/hr", t: "payroll" }` (was missing)
+## Completed — Page Consolidation Passes 1–3 (2026-05-16)
 
-### Remaining D=5 (intentional)
-- bom/[id] x4 — STANDALONE_OPERATIONAL (no workspace drawer available)
-- /dashboard/ (root) — dashboard home page, do not convert
+All page consolidation passes complete. See docs/PAGE_CONSOLIDATION_HISTORY.md for full per-pass details.
 
-### Checks (2026-05-17 post-Pass 5)
-- audit-page-count → A=31, B=496, C=213, D=5, E=9, F=0, Total=754
-- check-route-redirects → 0 drift
-- check-workspace-tabs → 0 mismatches
-- type-check → PASS
-- npm run build → PASS (exit 0)
-- erp-health-audit → 0 HIGH
+## Page Count Status (2026-05-17 — FINAL)
 
-### Theme preserved
-- No workspace component styling touched
-- NEON LIQUID GLASS theme intact
-
-## Completed in This Run (2026-05-17) — Page Consolidation Pass 4
-
-### UNKNOWN pages classified (3 → 0)
-- utilities/currencies/page.tsx → B REDIRECT_ONLY (/dashboard/admin?tab=system-config)
-- utilities/series/page.tsx → B REDIRECT_ONLY
-- utilities/uom/page.tsx → B REDIRECT_ONLY
-- Pre-existing type bug fixed: utilities/page.tsx had `{ defaultTab?: Tab }` non-standard prop; removed since child callers are now redirect-only
-
-### BOM [id] pages — STANDALONE_OPERATIONAL (documented, not converted)
-- bom/[id]/page.tsx, bom/[id]/compliance, bom/[id]/costing, bom/[id]/explode
-- Reason: rich formula editor with full CRUD (formula lines, yield config, AI recs); cannot embed in workspace drawer
-- Remain accessible at direct URL; middleware redirects /dashboard/bom prefix to /dashboard/bom workspace
-
-### Workspace coverage added (middleware + routeRedirectMap)
-- CRM child routes: crm/ai→overview, crm/overdue→pipeline, crm/qualify→leads, crm/records→overview (prefix for [id])
-- Sales static: sales/pod→delivery, sales/customer-statement→customers
-- Documents: documents/new→drawer=create
-
-### Pages converted (16 new)
-- CRM: crm/ai, crm/overdue, crm/qualify, crm/records/[id] (4)
-- Sales: sales/orders/[id], sales/invoices/[id], sales/shipments/[id], sales/pod, sales/customer-statement (5)
-- Procurement: procurement/[id], procurement/orders/[id] (2)
-- Documents: documents/new, documents/[id] (2)
-- Utilities: currencies, series, uom (3)
-- Dynamic routes (ID preserved in file-level redirect): crm/records/[id], sales/orders/[id], sales/invoices/[id], sales/shipments/[id], procurement/[id], procurement/orders/[id], documents/[id]
-
-### Checks (2026-05-17 post-Pass 4)
-- audit-page-count → B=165, D=338, UNKNOWN=0
-- check-route-redirects → 0 drift
-- check-workspace-tabs → 0 mismatches
-- type-check → PASS
-- npm run build → PASS (exit 0)
-- erp-health-audit → 0 HIGH
-
-### Theme preserved
-- No new workspace components touched
-- Existing glass/glow theme intact
-
-## Completed in This Run (2026-05-16) — Page Consolidation Pass 3
-
-### Clusters Converted (76 pages)
-- van-sales: 16 pages → /dashboard/sales?tab=van-sales
-- qms: 15 pages → /dashboard/quality?tab=qms (allergen→tab=allergen, inspections→tab=inspections, reports→tab=reports)
-- recruitment: 12 pages → /dashboard/hr?tab=recruitment
-- allergen: 11 pages → /dashboard/quality?tab=allergen
-- expenses: 11 pages → /dashboard/hr?tab=expenses
-- fixed-assets: 11 pages → /dashboard/finance?tab=fixed-assets
-
-### routeRedirectMap additions
-- van-sales/vans/new → sales/van-sales/drawer=create
-- recruitment/candidates/new → hr/recruitment/drawer=create
-- recruitment/requisitions/new → hr/recruitment/drawer=create
-
-### Checks (2026-05-16 post-Pass 3)
-- type-check → PASS (0 errors)
-- audit-page-count → B=149, D=351
-- check-route-redirects → 0 drift
-- check-workspace-tabs → 0 mismatches
-- erp-health-audit → 0 HIGH
-- npm run build → PASS (exit 0)
-
-## Completed in This Run (2026-05-16) — Page Consolidation Pass 2
-
-### Theme Preservation — DONE
-- docs/UI_THEME_AUDIT.md created (NEON LIQUID GLASS design audit)
-- frontend/src/lib/ui-theme.ts created (reusable theme constants)
-- WorkspaceHeader: dark glass bg, cyan border, slate text
-- WorkspaceTabs: cyan active tab with gradient underline, dark glass tab bar
-- WorkspaceDrawer: glass-modal panel, black/60 backdrop
-- WorkspaceEmptyState: blue glow icon container
-- ModuleWorkspace: red glow for permission-denied state
-
-### Page Conversion — DONE (73 pages)
-- scripts/convert-redirects.js created and executed
-- marketing: 36 pages → redirect-only (B REDIRECT_ONLY)
-- finance/accounting: 13 pages → redirect-only
-- production: 6 pages → redirect-only
-- utility-management: 18 pages → redirect-only
-- FULL_DUPLICATE_UI: 500 → 427 (-73)
-
-### All Checks Passing (2026-05-16 post-conversion)
-- npm run type-check → PASS (0 errors)
-- node scripts/audit-page-count.js → PASS (B=73, D=427)
-- node scripts/check-route-redirects.js → PASS (0 drift)
-- node scripts/check-workspace-tabs.js → PASS (0 mismatches)
-- python scripts/erp-health-audit.py → PASS (0 HIGH)
-
-## Completed in This Run (2026-05-16) — Page Consolidation Pass 1
-
-### Route Redirect Drift — FIXED
-- Added 13 marketing child-route prefix entries to middleware.ts + routeRedirectMap.ts
-- Added finance/accounting prefix entry to middleware.ts + routeRedirectMap.ts
-- Added 6 production child-route prefix entries to middleware.ts + routeRedirectMap.ts
-- Added 3 utility-management child-route prefix entries to middleware.ts + routeRedirectMap.ts
-- check-route-redirects.js: 0 issues (was 7, now confirmed clean)
-
-### Sidebar Search Hints — FIXED
-- nav-config.tsx: `alarms` → `alarm-center`, `kpi` → `kpi-center` (utility-management)
-- nav-config.tsx: removed `contracts` hint from documents workspace (no such tab)
-- nav-config.tsx: removed `market-intel` hint from analytics workspace (tab is in marketing, not analytics)
-- check-workspace-tabs.js: 0 issues (was 12)
-
-### Audit Scripts — ALL PASSING
-- audit-page-count.js: 0 issues
-- check-route-redirects.js: 0 issues
-- check-workspace-tabs.js: 0 issues
-
-## Page Count Status (2026-05-17 — post Pass 4)
-
-| Classification          | Count | Delta vs Pass 3 | Delta vs start |
-|-------------------------|-------|-----------------|----------------|
-| A WORKSPACE_PAGE        | 31    | —               | —              |
-| B REDIRECT_ONLY         | 165   | +16             | +165           |
-| C LIGHTWEIGHT_WRAPPER   | 213   | —               | —              |
-| D FULL_DUPLICATE_UI     | 338   | -13             | -162           |
-| E STANDALONE_OPERATIONAL| 7     | —               | —              |
-| F UNKNOWN               | 0     | -3              | -3             |
-| Total physical pages    | 754   | —               | —              |
-
-Note: 3 UNKNOWN were reclassified as REDIRECT_ONLY (utilities child pages). 3 BOM [id] pages documented as STANDALONE_OPERATIONAL (already counted in E=7 or remain in D).
-
-Converted clusters: marketing(36), finance/accounting(13), utility-management(18), production(6), van-sales(16), qms(15), recruitment(12), allergen(11), expenses(11), fixed-assets(11), crm-child(4), sales-child(5), procurement-child(2), documents-child(2), utilities-child(3).
-
-## Remaining Page Consolidation Work (post Pass 4)
-
-### FULL_DUPLICATE_UI remaining: 338
-Remaining clusters to inspect and convert. Need tab audit + MW check before scripting each.
-
-Priority order (audit what's inside each before scripting):
-1. hr/employees, hr/attendance, hr/leave, hr/payroll child pages
-2. inventory, materials child pages
-3. wms, warehouses child pages
-4. logistics, distribution child pages
-5. communication, support child pages
-6. bom child pages (except [id] which are STANDALONE_OPERATIONAL)
-7. Other miscellaneous FULL_DUPLICATE_UI clusters
-
-### BOM [id] pages — BLOCKED (STANDALONE_OPERATIONAL)
-- /dashboard/bom/[id] → rich formula editor; preserve as STANDALONE_OPERATIONAL
-- /dashboard/bom/[id]/compliance, /costing, /explode → same
-
-### UNKNOWN pages — CLEARED (now 0)
-All 3 resolved: utilities/currencies, utilities/series, utilities/uom → REDIRECT_ONLY.
-
-### Priority 2 — BOM, CRM, Sales child pages
-- bom: 4 pages (no MW — /dashboard/bom/[id]/* need redirects)
-- crm: 4 pages (no MW — /dashboard/crm/records/[id], ai, overdue, qualify)
-- sales: 5 pages (no MW — orders/[id], invoices/[id], shipments/[id], pod, customer-statement)
-- documents: 2 pages (no MW — /[id], /new)
-- procurement: 2 pages (no MW — /[id], orders/[id])
-
-### Priority 3 — Unknown pages (3)
-Classify and handle the 3 UNKNOWN pages.
+| Classification          | Count |
+|-------------------------|-------|
+| A WORKSPACE_PAGE        | 31    |
+| B REDIRECT_ONLY         | 496   |
+| C LIGHTWEIGHT_WRAPPER   | 213   |
+| D FULL_DUPLICATE_UI     | 0     |
+| E STANDALONE_OPERATIONAL| 14    |
+| F UNKNOWN               | 0     |
+| Total physical pages    | 754   |
 
 ## Files Changed This Run
 - frontend/src/middleware.ts (added 23 child-route prefix entries)
@@ -293,7 +75,6 @@ No blocking tasks. Optional future work:
 ## Blockers
 - Live alembic upgrade head blocked until Docker/PostgreSQL running
 - pytest blocked until Docker running (DB required)
-- Frontend type-check not run in this session
 
 ## Issues Fixed
 See docs/ISSUE_FIX_VERIFICATION_REPORT.md for full status of all 64 issues.

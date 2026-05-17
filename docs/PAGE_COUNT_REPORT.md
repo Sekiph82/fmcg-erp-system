@@ -9,8 +9,8 @@ Generated: 2026-05-17
 | WORKSPACE_PAGE            | A    | 31   |
 | REDIRECT_ONLY             | B    | 496   |
 | LIGHTWEIGHT_WRAPPER       | C    | 213   |
-| FULL_DUPLICATE_UI         | D    | 5   |
-| STANDALONE_OPERATIONAL    | E    | 9   |
+| FULL_DUPLICATE_UI         | D    | 0   |
+| STANDALONE_OPERATIONAL    | E    | 14   |
 | UNKNOWN                   | F    | 0   |
 | **Total**                 |      | **754** |
 
@@ -25,14 +25,3 @@ Generated: 2026-05-17
 - **F UNKNOWN** — could not classify from content heuristics.
 
 ## FULL_DUPLICATE_UI pages by module
-
-### bom (4 pages)
-
-- `/dashboard/bom/[id]/compliance` ❌ MW
-- `/dashboard/bom/[id]/costing` ❌ MW
-- `/dashboard/bom/[id]/explode` ❌ MW
-- `/dashboard/bom/[id]` ❌ MW
-
-### root (1 pages)
-
-- `/dashboard/` ❌ MW
