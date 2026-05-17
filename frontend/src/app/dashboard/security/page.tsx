@@ -151,19 +151,27 @@ export default function SecurityPage() {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Choose method</label>
               <div className="grid grid-cols-3 gap-3">
-                {(["totp", "sms", "email"] as TwoFAMethod[]).map((m) => (
-                  <button
-                    key={m}
-                    onClick={() => setMethod(m)}
-                    className={`p-3 border rounded-xl text-sm font-medium transition-colors ${
-                      method === m
-                        ? "border-indigo-600 bg-indigo-50 text-indigo-700"
-                        : "border-gray-200 text-gray-700 hover:border-gray-300"
-                    }`}
-                  >
-                    {methodLabels[m]}
-                  </button>
-                ))}
+                {(["totp", "sms", "email"] as TwoFAMethod[]).map((m) => {
+                  const unavailable = m === "sms" || m === "email";
+                  return (
+                    <button
+                      key={m}
+                      onClick={() => !unavailable && setMethod(m)}
+                      disabled={unavailable}
+                      title={unavailable ? "Not available yet — OTP dispatch not configured" : undefined}
+                      className={`p-3 border rounded-xl text-sm font-medium transition-colors ${
+                        unavailable
+                          ? "border-gray-100 bg-gray-50 text-gray-400 cursor-not-allowed opacity-60"
+                          : method === m
+                            ? "border-indigo-600 bg-indigo-50 text-indigo-700"
+                            : "border-gray-200 text-gray-700 hover:border-gray-300"
+                      }`}
+                    >
+                      {methodLabels[m]}
+                      {unavailable && <span className="block text-xs mt-0.5">(coming soon)</span>}
+                    </button>
+                  );
+                })}
               </div>
             </div>
             <Button onClick={handleSetup} loading={loading}>

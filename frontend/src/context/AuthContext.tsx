@@ -1,8 +1,9 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, useCallback } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { getMe, login as apiLogin, logout as apiLogout, User } from "@/lib/auth";
+import { setAppRouter } from "@/lib/api";
 
 interface AuthContextValue {
   user: User | null;
@@ -40,6 +41,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => { loadUser(); }, [loadUser]);
+  useEffect(() => { setAppRouter(router); }, [router]);
 
   const login = async (username: string, password: string) => {
     const res = await apiLogin(username, password);
@@ -72,10 +74,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     router.push("/login");
   };
 
+  const permissionSet = useMemo(
+    () => new Set(user?.permission_codes ?? []),
+    [user?.permission_codes]
+  );
+
   const hasPermission = (code: string): boolean => {
     if (!user) return false;
     if (user.is_superuser) return true;
-    if (user.permission_codes.includes(code)) return true;
+    if (permissionSet.has(code)) return true;
 
     const [moduleKey, action] = code.split(".", 2);
     if (!moduleKey || !action) return false;
@@ -92,7 +99,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       `${moduleKey}.${action}_own_department`,
       `${moduleKey}.${action}_own_category`,
     ];
-    return scopedAliases.some((permission) => user.permission_codes.includes(permission));
+    return scopedAliases.some((permission) => permissionSet.has(permission));
   };
 
   const hasAnyPermission = (codes: string[]): boolean => codes.some((code) => hasPermission(code));

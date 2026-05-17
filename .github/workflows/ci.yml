@@ -31,12 +31,18 @@ jobs:
     env:
       ENVIRONMENT: development
       DATABASE_URL: postgresql+asyncpg://erp_user:erp_password@localhost:5432/fmcg_erp
-      SECRET_KEY: ci-secret-key-change-me
-      INITIAL_ADMIN_PASSWORD: ci-admin-password
+      SECRET_KEY: ci-secret-key-change-me-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+      INITIAL_ADMIN_USERNAME: admin
+      INITIAL_ADMIN_EMAIL: admin@ci.local
+      INITIAL_ADMIN_PASSWORD: CiAdmin1234!
+      INITIAL_ADMIN_FULL_NAME: CI Admin
       REDIS_URL: redis://localhost:6379/0
+      SEED_INITIAL_ADMIN: "false"
       SEED_DEMO_DATA: "false"
+      SYNC_INITIAL_ADMIN_PASSWORD: "false"
       AUTO_CREATE_TABLES: "false"
       RUN_MIGRATIONS_ON_STARTUP: "false"
+      AUTH_COOKIE_SECURE: "false"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -58,12 +64,19 @@ jobs:
       - name: Import backend
         working-directory: backend
         run: python -c "import app.main; print('backend import ok')"
-      - name: Alembic heads
+      - name: Bootstrap test DB and run migrations
         working-directory: backend
-        run: alembic heads
-      - name: Alembic upgrade
+        run: python scripts/dev_migrate.py
+      - name: Verify single Alembic head
         working-directory: backend
-        run: alembic upgrade head
+        run: |
+          count=$(alembic heads 2>&1 | grep -c "(head)")
+          if [ "$count" -ne 1 ]; then
+            echo "ERROR: Expected 1 migration head, got $count"
+            alembic heads
+            exit 1
+          fi
+          echo "Single head confirmed."
       - name: Pytest
         working-directory: backend
         run: pytest

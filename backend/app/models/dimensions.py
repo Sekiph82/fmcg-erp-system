@@ -119,7 +119,7 @@ class DimValue(Base, TimestampMixin):
 
     dim_type  = relationship("DimType", back_populates="values")
     parent    = relationship("DimValue", remote_side="DimValue.id", foreign_keys=[parent_id])
-    children  = relationship("DimValue", foreign_keys=[parent_id])
+    children  = relationship("DimValue", foreign_keys=[parent_id], overlaps="parent")
 
 
 # ── Cost Center Master ─────────────────────────────────────────────────────────
@@ -141,7 +141,7 @@ class CostCenter(Base, TimestampMixin):
     notes                 = Column(Text)
 
     parent   = relationship("CostCenter", remote_side="CostCenter.id", foreign_keys=[parent_id])
-    children = relationship("CostCenter", foreign_keys=[parent_id])
+    children = relationship("CostCenter", foreign_keys=[parent_id], overlaps="parent")
 
 
 # ── Transaction Dimension Link ─────────────────────────────────────────────────

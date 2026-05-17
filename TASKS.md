@@ -109,29 +109,40 @@ All page consolidation passes complete. See docs/PAGE_CONSOLIDATION_HISTORY.md f
 
 ## Next Immediate Task
 
-### Option A — Production Bootstrap (CRITICAL, requires decision)
-Write `backend/scripts/prod_bootstrap.py` with `BOOTSTRAP_PRODUCTION=true` guard.
-Runs `create_all()` + `alembic stamp head` on fresh empty DB. Refuses if tables exist.
-**Decision needed:** confirm Option A approach (see docs/FIX_ROADMAP.md Phase 2).
+### Completed This Run (2026-05-17 — Round 2)
 
-### Option B — Wire 2FA OTP dispatch (HIGH, requires decision)
-`backend/app/api/v1/endpoints/auth.py:109` — OTP generated but never sent.
-**Decision needed:** which notification service (email SMTP, Twilio SMS, etc.)?
-Interim safe fix: disable SMS/Email 2FA method in frontend UI until wired.
+**Option E — Safe security fixes:** ALL DONE
+- `backend/app/main.py`: CORS restricted to `["GET","POST","PUT","PATCH","DELETE","OPTIONS"]`
+- `.env.production.example`: Added `REQUEST_TIMEOUT_SECONDS=60`
+- `frontend/src/context/AuthContext.tsx`: permission_codes converted to `Set<string>` via `useMemo` + wired `setAppRouter`
+- `frontend/src/lib/api.ts`: 401 redirect uses Next.js router ref (`_router.push`) with `window.location.href` fallback
+- `backend/app/models/dimensions.py`: Added `overlaps="parent"` to `DimValue.children` and `CostCenter.children`
 
-### Option C — CRUD pagination (HIGH, safe to apply)
-35+ CRUD files call `.scalars().all()` without limit. Add `skip`/`limit` params.
-Start with highest-risk files: `crud/audit.py`, `crud/esg.py`, `crud/finance.py`.
-No manual decision needed.
+**Option C — CRUD pagination:** VERIFIED COMPLETE (all real unbounded queries were already fixed in Pass 2; remaining `.all()` calls are paginated or bounded by parent-ID filters)
 
-### Option D — CI/CD pipeline (HIGH, safe to apply)
-Add `.github/workflows/ci.yml`: pytest + tsc + build. No manual decision needed.
+**Option D — CI/CD:** IMPROVED (`.github/workflows/ci.yml` already existed; fixed `alembic upgrade head` → `python scripts/dev_migrate.py` + added missing env vars `SEED_INITIAL_ADMIN`, `SYNC_INITIAL_ADMIN_PASSWORD`, `AUTH_COOKIE_SECURE`, `INITIAL_ADMIN_USERNAME/EMAIL/FULL_NAME`, padded `SECRET_KEY` for CI)
 
-### Option E — Safe security fixes (MEDIUM, safe to apply now)
-- Restrict CORS `allow_methods` to explicit list in `backend/app/main.py`
-- Set `REQUEST_TIMEOUT_SECONDS=60` in `.env.production.example`
-- Convert `permission_codes` to `Set<string>` in `frontend/src/context/AuthContext.tsx`
-- Fix 401 hard redirect in `frontend/src/lib/api.ts`
+**Option A — Production Bootstrap:** DONE (`backend/scripts/prod_bootstrap.py` created with `BOOTSTRAP_PRODUCTION=true` guard, empty-DB check, `create_all()` + `alembic stamp head`, refuses if tables exist)
+
+**Option B — 2FA OTP:** INTERIM FIX DONE (`frontend/src/app/dashboard/security/page.tsx`: SMS and Email 2FA methods disabled in UI with "coming soon" tooltip; TOTP still works)
+
+**Additional fixes:**
+- `frontend/src/middleware.ts`: Added auth guard — unauthenticated requests to `/dashboard/*` redirect to `/login?next=<path>`
+
+### Next Immediate Task
+
+**Remaining (manual decision required):**
+- Wire 2FA OTP dispatch: pick notification service (SMTP email or Twilio SMS)
+- Evaluate python-jose → PyJWT migration (needs test coverage)
+- Add Redis AUTH password for production (password management decision)
+- Multi-replica migration safety strategy (architecture decision)
+
+**Safe to apply in next round:**
+- Add Playwright E2E smoke tests (`frontend/tests/e2e/`)
+- Add permission enforcement test (`backend/tests/`)
+- Add real-DB integration test fixture (`backend/tests/conftest.py`)
+- Add migration chain test (`backend/tests/test_migrations.py`)
+- Write complete production first-deploy runbook in `docs/DEPLOYMENT.md`
 
 ### Previously Optional (still open)
 1. Wire Redis caching for COA and product reference data (A.15)

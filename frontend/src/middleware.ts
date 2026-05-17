@@ -167,6 +167,15 @@ function matchRedirect(pathname: string): { p: string; t?: string; d?: string } 
 export function middleware(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
 
+  // Auth guard: all /dashboard/* routes require the session cookie.
+  // The cookie is HttpOnly so we can only check existence, not validity.
+  // Full JWT verification still happens server-side on every API call.
+  if (!request.cookies.has("erp_access_token")) {
+    const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set("next", pathname + search);
+    return NextResponse.redirect(loginUrl, { status: 302 });
+  }
+
   const match = matchRedirect(pathname);
   if (!match) return NextResponse.next();
 
