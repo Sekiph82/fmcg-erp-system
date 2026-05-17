@@ -67,23 +67,42 @@ Migrations run automatically via `scripts/dev_migrate.py` on backend startup.
 
 ## Production Startup
 
-### First-time setup
+### First-time setup (fresh/empty database)
+
+> **Why `prod_bootstrap.py`?** The Alembic migration chain starts with a migration
+> that adds columns to existing tables — it does not create the base schema.
+> Running `alembic upgrade head` on a completely empty database will fail immediately.
+> `prod_bootstrap.py` bridges this gap: it creates the full schema from SQLAlchemy
+> models and stamps Alembic at the current head so that future incremental migrations
+> work normally. **Run it exactly once on the first deploy.**
 
 ```bash
 # 1. Create production env file with real secrets
 cp .env.production.example .env.production
-# Fill in all required secrets above
+# Fill in ALL secrets — see "Required production secrets" above
 
 # 2. Build images
 docker compose -f docker-compose.prod.yml build
 
-# 3. Run migrations BEFORE starting replicas
-docker compose -f docker-compose.prod.yml run --rm backend alembic upgrade head
+# 3. Start only database and redis (do NOT start backend yet)
+docker compose -f docker-compose.prod.yml up -d db redis
 
-# 4. Start services
+# 4. Wait for DB to be healthy
+docker compose -f docker-compose.prod.yml ps  # check db is "healthy"
+
+# 5. Bootstrap schema on empty DB (run ONCE — aborts if tables already exist)
+docker compose -f docker-compose.prod.yml run --rm \
+  -e BOOTSTRAP_PRODUCTION=true \
+  backend python scripts/prod_bootstrap.py
+
+# 6. Verify bootstrap was a clean no-op from Alembic's perspective
+docker compose -f docker-compose.prod.yml run --rm backend alembic upgrade head
+# Expected output: no migrations applied (already at head)
+
+# 7. Start all services
 docker compose -f docker-compose.prod.yml up -d
 
-# 5. Verify
+# 8. Verify health
 curl http://localhost:8000/live    # → {"status":"ok"}
 curl http://localhost:8000/ready   # → {"status":"ok","database":"connected"}
 ```
@@ -105,7 +124,9 @@ docker compose -f docker-compose.prod.yml up -d --no-deps backend frontend
 
 ## Database Migration Procedure
 
-Migrations use Alembic. Never use `create_all` in production (guarded in code).
+Migrations use Alembic. In production, never call `create_all` directly — the only
+exception is `scripts/prod_bootstrap.py` which is explicitly guarded and runs only
+on a completely empty database (see First-time setup above).
 
 ```bash
 # Check current revision

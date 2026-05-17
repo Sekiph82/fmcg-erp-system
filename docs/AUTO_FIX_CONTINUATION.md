@@ -1,105 +1,60 @@
 # Auto-Fix Continuation Guide
 
-Date: 2026-05-17  
+Date: 2026-05-17 (Round 3)
 Purpose: Let the next Claude session continue without asking the user anything.
 
 ---
 
-## What Was Done This Run
+## What Was Done This Run (Round 3)
 
-### Option E — Safe security fixes (ALL DONE)
-1. `backend/app/main.py` — CORS methods restricted to explicit list
-2. `.env.production.example` — `REQUEST_TIMEOUT_SECONDS=60` added
-3. `frontend/src/context/AuthContext.tsx` — `permission_codes` to `Set<string>` via `useMemo`; `setAppRouter` wired
-4. `frontend/src/lib/api.ts` — 401 redirect uses Next.js router ref; `window.location.href` fallback
-5. `backend/app/models/dimensions.py` — `overlaps="parent"` on `DimValue.children` and `CostCenter.children`
+### Backend tests — DONE
+- `backend/tests/test_permissions.py` (NEW): 12 tests — `has_permission`, `has_any_permission`, `forbidden_detail`, `require_permission`. All pass without DB.
+- `backend/tests/test_migrations.py` (NEW): 4 tests — single head, all have downgrade, no duplicate IDs, all importable. All pass without DB.
+- `backend/requirements.txt`: Added `pytest>=8.0.0` and `pytest-asyncio>=0.23.0` so CI can run tests.
 
-### Option C — CRUD pagination (VERIFIED COMPLETE)
-All 35+ CRUD files already paginated. Pass 2 fixed everything real. No action needed.
-
-### Option D — CI/CD (IMPROVED)
-`.github/workflows/ci.yml` already existed. Fixed:
-- `alembic upgrade head` → `python scripts/dev_migrate.py` (alembic upgrade fails on fresh CI DB)
-- Added missing env vars: `SEED_INITIAL_ADMIN`, `SYNC_INITIAL_ADMIN_PASSWORD`, `AUTH_COOKIE_SECURE`, `INITIAL_ADMIN_*`, padded `SECRET_KEY`
-
-### Option A — Production Bootstrap (DONE)
-Created `backend/scripts/prod_bootstrap.py`:
-- Requires `BOOTSTRAP_PRODUCTION=true` env var AND `ENVIRONMENT=production`
-- Aborts if any public table exists (prevents double-bootstrap)
-- Runs `create_all()` + `alembic stamp head`
-- Usage: `BOOTSTRAP_PRODUCTION=true python scripts/prod_bootstrap.py`
-
-### Option B — 2FA OTP interim fix (DONE)
-`frontend/src/app/dashboard/security/page.tsx`: SMS and Email 2FA disabled in UI with "coming soon" tooltip.
-
-### Additional
-`frontend/src/middleware.ts`: auth guard added — unauthenticated `/dashboard/*` → `/login?next=<path>`
+### DEPLOYMENT.md — DONE
+- Replaced broken first-deploy step (`alembic upgrade head` on fresh DB) with correct `prod_bootstrap.py` workflow.
+- Added note to Migration Procedure section clarifying `prod_bootstrap.py` exception.
 
 ---
 
-## Verification Commands Run
+## Verification
 ```bash
-docker compose --env-file .env.development exec backend python -m compileall app/ scripts/ -q
-# (no output = clean)
-
-cd frontend && npm run type-check
-# (no output = clean)
+docker compose --env-file .env.development exec backend \
+  python -m pytest tests/test_permissions.py tests/test_migrations.py -v
+# 16 passed
 ```
 
 ---
 
 ## What To Do Next (in order, no decisions needed)
 
-### 1. Add backend tests (Option D remaining)
+### 1. Run the full existing test suite and fix any failures
 
-Create `backend/tests/test_permissions.py`:
-```python
-# Test that missing permission returns 403
+```bash
+docker compose --env-file .env.development exec backend \
+  python -m pytest tests/ -v --tb=short -x 2>&1 | head -120
 ```
 
-Create `backend/tests/test_migrations.py`:
-```python
-# Test that alembic heads returns exactly 1 head
+Many existing tests in `tests/` use `pip install` inline or have import issues. 
+Check which ones fail and fix import paths or missing deps, but DO NOT delete tests.
+
+### 2. Add `pytest-asyncio` config to `pyproject.toml` or `pytest.ini`
+
+The tests use `asyncio.run()` rather than `@pytest.mark.asyncio`, so no asyncio mode config is needed. But check:
+```bash
+# inside container
+python -m pytest tests/ --collect-only 2>&1 | grep "ERROR"
 ```
+Fix any collection errors.
 
-No new DB fixture needed for the alembic test (uses alembic offline config).
+### 3. Add `workflow-controls.spec.ts` E2E test coverage for the new auth guard
 
-### 2. Update `docs/DEPLOYMENT.md` production runbook
-
-Read `docs/DEPLOYMENT.md` first. Add section:
-
-```markdown
-## Production First Deploy (Fresh Database)
-
-1. Clone repo, copy `.env.production.example` to `.env.production`, fill all values.
-2. Start db and redis services only:
-   docker compose -f docker-compose.prod.yml up -d db redis
-3. Run bootstrap ONCE on empty database:
-   docker compose -f docker-compose.prod.yml run --rm backend \
-     sh -c "BOOTSTRAP_PRODUCTION=true python scripts/prod_bootstrap.py"
-4. Verify it's a no-op:
-   docker compose -f docker-compose.prod.yml run --rm backend alembic upgrade head
-5. Start all services:
-   docker compose -f docker-compose.prod.yml up -d
-```
-
-### 3. Add Playwright smoke tests
-
-Create `frontend/tests/e2e/` directory.
-Create `frontend/playwright.config.ts` (if not exists).
-Create `frontend/tests/e2e/smoke.spec.ts`:
+The middleware now redirects `/dashboard/*` to `/login?next=<path>` when no cookie.  
+Check `frontend/e2e/auth-public.spec.ts` — it already has a test for this.  
+If the test is failing due to the `?next=` query param change, update the assertion:
 ```typescript
-import { test, expect } from '@playwright/test';
-
-test('login page loads', async ({ page }) => {
-  await page.goto('/login');
-  await expect(page.getByRole('heading', { name: /sign in/i })).toBeVisible();
-});
-
-test('unauthenticated dashboard redirects to login', async ({ page }) => {
-  await page.goto('/dashboard');
-  await expect(page).toHaveURL(/\/login/);
-});
+await expect(page).toHaveURL(/\/login/);  // already matches with ?next= param
 ```
 
 ### 4. Decisions needed (do NOT apply without user input)
@@ -117,24 +72,11 @@ test('unauthenticated dashboard redirects to login', async ({ page }) => {
 
 | File | Change |
 |------|--------|
-| `backend/app/main.py` | CORS methods restricted |
-| `.env.production.example` | `REQUEST_TIMEOUT_SECONDS=60` added |
-| `frontend/src/context/AuthContext.tsx` | `useMemo` Set + `setAppRouter` |
-| `frontend/src/lib/api.ts` | Router ref for 401 redirect |
-| `backend/app/models/dimensions.py` | `overlaps="parent"` on children relationships |
-| `.github/workflows/ci.yml` | Fixed alembic step + missing env vars |
-| `backend/scripts/prod_bootstrap.py` | NEW — production first-deploy bootstrap |
-| `frontend/src/app/dashboard/security/page.tsx` | SMS/Email 2FA disabled in UI |
-| `frontend/src/middleware.ts` | Auth guard for `/dashboard/*` |
-| `TASKS.md` | Updated with all completed work |
-
----
-
-## How to Resume
-
-Say: **"Continue from docs/AUTO_FIX_CONTINUATION.md — do items 1, 2, 3 in order without asking me anything"**
-
-Or say: **"Apply the decisions for 2FA OTP using [service name] and continue"**
+| `backend/tests/test_permissions.py` | NEW — 12 permission unit tests |
+| `backend/tests/test_migrations.py` | NEW — 4 migration integrity tests |
+| `backend/requirements.txt` | Added pytest, pytest-asyncio |
+| `docs/DEPLOYMENT.md` | Fixed first-deploy section (prod_bootstrap.py) |
+| `docs/AUTO_FIX_CONTINUATION.md` | Updated for round 4 |
 
 ---
 
@@ -142,15 +84,25 @@ Or say: **"Apply the decisions for 2FA OTP using [service name] and continue"**
 
 | Area | Status |
 |------|--------|
-| Dev startup | Working (Docker, migrations, seeding all fixed) |
-| Login / auth/me | Working (EmailStr .local TLD fix applied) |
+| Dev startup | Working |
+| Login / auth/me | Working |
 | CORS security | Fixed |
-| Auth redirect (401) | Fixed (uses Next.js router) |
-| Dashboard auth guard | Fixed (middleware) |
-| CRUD pagination | Complete (35+ files, all paginated) |
-| CI/CD | Working (GitHub Actions, compile+migrate+test+type-check+build) |
+| Auth redirect (401) | Fixed (Next.js router) |
+| Dashboard auth guard | Fixed (middleware cookie check) |
+| CRUD pagination | Complete |
+| CI/CD | Working (compile + migrate + test + type-check + build) |
 | Production bootstrap | Ready (`scripts/prod_bootstrap.py`) |
+| Production runbook | Updated in `docs/DEPLOYMENT.md` |
+| Permission tests | 12 passing |
+| Migration tests | 4 passing |
 | 2FA — TOTP | Working |
 | 2FA — SMS/Email | Disabled in UI (OTP not dispatched — TODO) |
-| SAWarnings | Fixed (DimValue, CostCenter children) |
-| Production deploy | NOT YET (needs runbook + 2FA OTP) |
+| SAWarnings | Fixed |
+| Playwright e2e | Comprehensive (auth-public, authenticated-shell, critical-workflows) |
+| Production deploy | NOT YET (needs 2FA OTP decision + ops runthrough) |
+
+---
+
+## How to Resume
+
+Say: **"Next"** — Claude will read this file and continue from item 1.
