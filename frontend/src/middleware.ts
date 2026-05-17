@@ -30,7 +30,15 @@ const REDIRECTS: Record<string, { p: string; t?: string; d?: string }> = {
   "/dashboard/secondary-sales":                 { p: "/dashboard/sales", t: "secondary" },
   "/dashboard/van-sales":                       { p: "/dashboard/sales", t: "van-sales" },
   "/dashboard/portal":                          { p: "/dashboard/sales", t: "portal" },
-  // CRM
+  // Sales child routes (static; dynamic [id] handled by file-level redirect to preserve ID)
+  "/dashboard/sales/pod":                       { p: "/dashboard/sales", t: "delivery" },
+  "/dashboard/sales/customer-statement":        { p: "/dashboard/sales", t: "customers" },
+  // CRM child routes (static + prefix for records/[id])
+  "/dashboard/crm/ai":                          { p: "/dashboard/crm", t: "overview" },
+  "/dashboard/crm/overdue":                     { p: "/dashboard/crm", t: "pipeline" },
+  "/dashboard/crm/qualify":                     { p: "/dashboard/crm", t: "leads" },
+  "/dashboard/crm/records":                     { p: "/dashboard/crm", t: "overview" },
+  // CRM alias modules
   "/dashboard/loyalty":                         { p: "/dashboard/crm", t: "loyalty" },
   "/dashboard/nps":                             { p: "/dashboard/crm", t: "nps" },
   "/dashboard/surveys":                         { p: "/dashboard/crm", t: "surveys" },
@@ -107,7 +115,9 @@ const REDIRECTS: Record<string, { p: string; t?: string; d?: string }> = {
   "/dashboard/appraisals":                      { p: "/dashboard/hr", t: "appraisals" },
   "/dashboard/training":                        { p: "/dashboard/hr", t: "training" },
   "/dashboard/timesheets":                      { p: "/dashboard/hr", t: "timesheets" },
-  // Documents
+  // Documents child routes
+  "/dashboard/documents/new":                   { p: "/dashboard/documents", d: "create" },
+  // Documents alias modules
   "/dashboard/knowledge-base":                  { p: "/dashboard/documents", t: "knowledge-base" },
   "/dashboard/esign":                           { p: "/dashboard/documents", t: "esign" },
   // Communication

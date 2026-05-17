@@ -1,5 +1,5 @@
-import UtilitiesPage from "../page";
+import { redirect } from "next/navigation";
 
-export default function UomPage() {
-  return <UtilitiesPage defaultTab="uom" />;
+export default function Page() {
+  redirect("/dashboard/admin?tab=system-config");
 }

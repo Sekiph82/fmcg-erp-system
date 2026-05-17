@@ -1,13 +1,13 @@
 # Route Redirect Report
 
-Generated: 2026-05-16
+Generated: 2026-05-17
 
 ## Summary
 
 | Check | Count |
 |-------|-------|
-| routeRedirectMap top-level keys | 85 |
-| middleware redirect keys        | 108 |
+| routeRedirectMap top-level keys | 88 |
+| middleware redirect keys        | 115 |
 | In routeRedirectMap NOT middleware | 0 |
 | In middleware NOT routeRedirectMap | 0 |
 | Duplicate keys in routeRedirectMap | 0 |
@@ -39,10 +39,15 @@ routeRedirectMap.ts and middleware.ts are in sync. No issues found.
 | `/dashboard/containers` | `/dashboard/logistics` | containers |
 | `/dashboard/contracts` | `/dashboard/sales` | contracts |
 | `/dashboard/copacking` | `/dashboard/procurement` | subcontracting |
+| `/dashboard/crm/ai` | `/dashboard/crm` | overview |
+| `/dashboard/crm/overdue` | `/dashboard/crm` | pipeline |
+| `/dashboard/crm/qualify` | `/dashboard/crm` | leads |
+| `/dashboard/crm/records` | `/dashboard/crm` | overview |
 | `/dashboard/custom-fields` | `/dashboard/admin` | custom-fields |
 | `/dashboard/cycle-count` | `/dashboard/inventory` | cycle-count |
 | `/dashboard/developer` | `/dashboard/integrations` | developer |
 | `/dashboard/dimensions` | `/dashboard/finance` | dimensions |
+| `/dashboard/documents/new` | `/dashboard/documents` | — |
 | `/dashboard/dunning` | `/dashboard/finance` | dunning |
 | `/dashboard/dynamic-pricing` | `/dashboard/sales` | dynamic-pricing |
 | `/dashboard/email` | `/dashboard/communication` | email |
@@ -113,6 +118,8 @@ routeRedirectMap.ts and middleware.ts are in sync. No issues found.
 | `/dashboard/report-builder` | `/dashboard/analytics` | report-builder |
 | `/dashboard/reports` | `/dashboard/analytics` | reports |
 | `/dashboard/roles` | `/dashboard/admin` | roles |
+| `/dashboard/sales/customer-statement` | `/dashboard/sales` | customers |
+| `/dashboard/sales/pod` | `/dashboard/sales` | delivery |
 | `/dashboard/secondary-sales` | `/dashboard/sales` | secondary |
 | `/dashboard/security` | `/dashboard/admin` | security |
 | `/dashboard/shelf-life` | `/dashboard/inventory` | shelf-life |

@@ -1,7 +1,7 @@
 # TASKS
 
 ## Current Phase
-PAGE CONSOLIDATION — PASS 3 COMPLETE. 2026-05-16. 149 total pages now redirect-only. FULL_DUPLICATE_UI: 500 → 351. Next remaining clusters: see below.
+PAGE CONSOLIDATION — PASS 4 COMPLETE. 2026-05-17. 165 total redirect-only. FULL_DUPLICATE_UI: 500 → 338. UNKNOWN: 3 → 0. Build passes.
 
 ## Execution Rules
 - Always read this file before starting work.
@@ -17,6 +17,44 @@ PAGE CONSOLIDATION — PASS 3 COMPLETE. 2026-05-16. 149 total pages now redirect
 
 ## In Progress
 None.
+
+## Completed in This Run (2026-05-17) — Page Consolidation Pass 4
+
+### UNKNOWN pages classified (3 → 0)
+- utilities/currencies/page.tsx → B REDIRECT_ONLY (/dashboard/admin?tab=system-config)
+- utilities/series/page.tsx → B REDIRECT_ONLY
+- utilities/uom/page.tsx → B REDIRECT_ONLY
+- Pre-existing type bug fixed: utilities/page.tsx had `{ defaultTab?: Tab }` non-standard prop; removed since child callers are now redirect-only
+
+### BOM [id] pages — STANDALONE_OPERATIONAL (documented, not converted)
+- bom/[id]/page.tsx, bom/[id]/compliance, bom/[id]/costing, bom/[id]/explode
+- Reason: rich formula editor with full CRUD (formula lines, yield config, AI recs); cannot embed in workspace drawer
+- Remain accessible at direct URL; middleware redirects /dashboard/bom prefix to /dashboard/bom workspace
+
+### Workspace coverage added (middleware + routeRedirectMap)
+- CRM child routes: crm/ai→overview, crm/overdue→pipeline, crm/qualify→leads, crm/records→overview (prefix for [id])
+- Sales static: sales/pod→delivery, sales/customer-statement→customers
+- Documents: documents/new→drawer=create
+
+### Pages converted (16 new)
+- CRM: crm/ai, crm/overdue, crm/qualify, crm/records/[id] (4)
+- Sales: sales/orders/[id], sales/invoices/[id], sales/shipments/[id], sales/pod, sales/customer-statement (5)
+- Procurement: procurement/[id], procurement/orders/[id] (2)
+- Documents: documents/new, documents/[id] (2)
+- Utilities: currencies, series, uom (3)
+- Dynamic routes (ID preserved in file-level redirect): crm/records/[id], sales/orders/[id], sales/invoices/[id], sales/shipments/[id], procurement/[id], procurement/orders/[id], documents/[id]
+
+### Checks (2026-05-17 post-Pass 4)
+- audit-page-count → B=165, D=338, UNKNOWN=0
+- check-route-redirects → 0 drift
+- check-workspace-tabs → 0 mismatches
+- type-check → PASS
+- npm run build → PASS (exit 0)
+- erp-health-audit → 0 HIGH
+
+### Theme preserved
+- No new workspace components touched
+- Existing glass/glow theme intact
 
 ## Completed in This Run (2026-05-16) — Page Consolidation Pass 3
 
@@ -87,41 +125,42 @@ None.
 - check-route-redirects.js: 0 issues
 - check-workspace-tabs.js: 0 issues
 
-## Page Count Status (2026-05-16 — post Pass 3)
+## Page Count Status (2026-05-17 — post Pass 4)
 
-| Classification          | Count | Delta vs Pass 2 | Delta vs start |
+| Classification          | Count | Delta vs Pass 3 | Delta vs start |
 |-------------------------|-------|-----------------|----------------|
 | A WORKSPACE_PAGE        | 31    | —               | —              |
-| B REDIRECT_ONLY         | 149   | +76             | +149           |
+| B REDIRECT_ONLY         | 165   | +16             | +165           |
 | C LIGHTWEIGHT_WRAPPER   | 213   | —               | —              |
-| D FULL_DUPLICATE_UI     | 351   | -76             | -149           |
+| D FULL_DUPLICATE_UI     | 338   | -13             | -162           |
 | E STANDALONE_OPERATIONAL| 7     | —               | —              |
-| F UNKNOWN               | 3     | —               | —              |
+| F UNKNOWN               | 0     | -3              | -3             |
 | Total physical pages    | 754   | —               | —              |
 
-Converted clusters: marketing(36), finance/accounting(13), utility-management(18), production(6), van-sales(16), qms(15), recruitment(12), allergen(11), expenses(11), fixed-assets(11).
+Note: 3 UNKNOWN were reclassified as REDIRECT_ONLY (utilities child pages). 3 BOM [id] pages documented as STANDALONE_OPERATIONAL (already counted in E=7 or remain in D).
 
-## Remaining Page Consolidation Work
+Converted clusters: marketing(36), finance/accounting(13), utility-management(18), production(6), van-sales(16), qms(15), recruitment(12), allergen(11), expenses(11), fixed-assets(11), crm-child(4), sales-child(5), procurement-child(2), documents-child(2), utilities-child(3).
 
-### Priority 1 — Next FULL_DUPLICATE_UI clusters (need tab audit + MW check before converting)
-Clusters not yet converted. Inspect workspace tabs before scripting.
-1. BOM, CRM, Sales child pages (bom, crm, sales/orders/[id], etc.)
-2. procurement, documents child pages
-3. hr/employees, hr/attendance, hr/leave, hr/payroll child pages
-4. inventory, wms child pages
-5. logistics, distribution child pages
-6. communication, support child pages
-7. UNKNOWN (3) — classify first
+## Remaining Page Consolidation Work (post Pass 4)
 
-### Priority 2 — BOM, CRM, Sales, Procurement, Documents without MW
-- bom: 4 pages (no MW — /dashboard/bom/[id]/* need redirects added)
-- crm: 4 pages (no MW — /dashboard/crm/records/[id], ai, overdue, qualify)
-- sales: 5 pages (no MW — orders/[id], invoices/[id], shipments/[id], pod, customer-statement)
-- documents: 2 pages (no MW — /[id], /new)
-- procurement: 2 pages (no MW — /[id], orders/[id])
+### FULL_DUPLICATE_UI remaining: 338
+Remaining clusters to inspect and convert. Need tab audit + MW check before scripting each.
 
-### Priority 3 — Unknown pages (3)
-Classify and handle the 3 UNKNOWN pages.
+Priority order (audit what's inside each before scripting):
+1. hr/employees, hr/attendance, hr/leave, hr/payroll child pages
+2. inventory, materials child pages
+3. wms, warehouses child pages
+4. logistics, distribution child pages
+5. communication, support child pages
+6. bom child pages (except [id] which are STANDALONE_OPERATIONAL)
+7. Other miscellaneous FULL_DUPLICATE_UI clusters
+
+### BOM [id] pages — BLOCKED (STANDALONE_OPERATIONAL)
+- /dashboard/bom/[id] → rich formula editor; preserve as STANDALONE_OPERATIONAL
+- /dashboard/bom/[id]/compliance, /costing, /explode → same
+
+### UNKNOWN pages — CLEARED (now 0)
+All 3 resolved: utilities/currencies, utilities/series, utilities/uom → REDIRECT_ONLY.
 
 ### Priority 2 — BOM, CRM, Sales child pages
 - bom: 4 pages (no MW — /dashboard/bom/[id]/* need redirects)

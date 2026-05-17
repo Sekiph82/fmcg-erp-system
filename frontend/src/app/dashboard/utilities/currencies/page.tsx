@@ -1,5 +1,5 @@
-import UtilitiesPage from "../page";
+import { redirect } from "next/navigation";
 
-export default function CurrenciesPage() {
-  return <UtilitiesPage defaultTab="currencies" />;
+export default function Page() {
+  redirect("/dashboard/admin?tab=system-config");
 }

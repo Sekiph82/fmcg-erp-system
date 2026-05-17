@@ -1,17 +1,17 @@
 # Page Count Report
 
-Generated: 2026-05-16
+Generated: 2026-05-17
 
 ## Summary
 
 | Classification            | Code | Count |
 |---------------------------|------|-------|
 | WORKSPACE_PAGE            | A    | 31   |
-| REDIRECT_ONLY             | B    | 149   |
+| REDIRECT_ONLY             | B    | 165   |
 | LIGHTWEIGHT_WRAPPER       | C    | 213   |
-| FULL_DUPLICATE_UI         | D    | 351   |
+| FULL_DUPLICATE_UI         | D    | 338   |
 | STANDALONE_OPERATIONAL    | E    | 7   |
-| UNKNOWN                   | F    | 3   |
+| UNKNOWN                   | F    | 0   |
 | **Total**                 |      | **754** |
 
 ## Definitions
@@ -419,14 +419,6 @@ Generated: 2026-05-16
 - `/dashboard/landed-cost/new` ✅ MW
 - `/dashboard/landed-cost/reports` ✅ MW
 
-### sales (5 pages)
-
-- `/dashboard/sales/customer-statement` ❌ MW
-- `/dashboard/sales/invoices/[id]` ❌ MW
-- `/dashboard/sales/orders/[id]` ❌ MW
-- `/dashboard/sales/pod` ❌ MW
-- `/dashboard/sales/shipments/[id]` ❌ MW
-
 ### wms (5 pages)
 
 - `/dashboard/wms/counts/[id]` ✅ MW
@@ -441,13 +433,6 @@ Generated: 2026-05-16
 - `/dashboard/bom/[id]/costing` ❌ MW
 - `/dashboard/bom/[id]/explode` ❌ MW
 - `/dashboard/bom/[id]` ❌ MW
-
-### crm (4 pages)
-
-- `/dashboard/crm/ai` ❌ MW
-- `/dashboard/crm/overdue` ❌ MW
-- `/dashboard/crm/qualify` ❌ MW
-- `/dashboard/crm/records/[id]` ❌ MW
 
 ### mps (4 pages)
 
@@ -504,11 +489,6 @@ Generated: 2026-05-16
 - `/dashboard/developer/graphql` ✅ MW
 - `/dashboard/developer/keys` ✅ MW
 
-### documents (2 pages)
-
-- `/dashboard/documents/[id]` ❌ MW
-- `/dashboard/documents/new` ❌ MW
-
 ### logs (2 pages)
 
 - `/dashboard/logs/compliance` ✅ MW
@@ -518,11 +498,6 @@ Generated: 2026-05-16
 
 - `/dashboard/mobile/approvals` ✅ MW
 - `/dashboard/mobile/devices` ✅ MW
-
-### procurement (2 pages)
-
-- `/dashboard/procurement/[id]` ❌ MW
-- `/dashboard/procurement/orders/[id]` ❌ MW
 
 ### projects (2 pages)
 

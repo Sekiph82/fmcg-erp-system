@@ -145,6 +145,8 @@ export const EXACT_REDIRECTS: Record<string, RedirectTarget> = {
   "/dashboard/van-sales/route-optimizer":       { pathname: "/dashboard/sales", tab: "van-sales" },
   "/dashboard/van-sales/returns":               { pathname: "/dashboard/sales", tab: "van-sales" },
   "/dashboard/van-sales/visits":                { pathname: "/dashboard/sales", tab: "van-sales" },
+  "/dashboard/sales/pod":                       { pathname: "/dashboard/sales", tab: "delivery" },
+  "/dashboard/sales/customer-statement":        { pathname: "/dashboard/sales", tab: "customers" },
   "/dashboard/portal":                          { pathname: "/dashboard/sales", tab: "portal" },
   "/dashboard/portal/accounts":                 { pathname: "/dashboard/sales", tab: "portal" },
   "/dashboard/portal/order-tracking":           { pathname: "/dashboard/sales", tab: "portal" },
@@ -157,6 +159,10 @@ export const EXACT_REDIRECTS: Record<string, RedirectTarget> = {
   "/dashboard/portal/ai":                       { pathname: "/dashboard/sales", tab: "portal" },
 
   // ── CRM ───────────────────────────────────────────────────────────────────
+  "/dashboard/crm/ai":                          { pathname: "/dashboard/crm", tab: "overview" },
+  "/dashboard/crm/overdue":                     { pathname: "/dashboard/crm", tab: "pipeline" },
+  "/dashboard/crm/qualify":                     { pathname: "/dashboard/crm", tab: "leads" },
+  "/dashboard/crm/records":                     { pathname: "/dashboard/crm", tab: "overview" },
   "/dashboard/loyalty":                         { pathname: "/dashboard/crm", tab: "loyalty" },
   "/dashboard/nps":                             { pathname: "/dashboard/crm", tab: "nps" },
   "/dashboard/surveys":                         { pathname: "/dashboard/crm", tab: "surveys" },
@@ -442,6 +448,7 @@ export const EXACT_REDIRECTS: Record<string, RedirectTarget> = {
   "/dashboard/timesheets/ai":                   { pathname: "/dashboard/hr", tab: "timesheets" },
 
   // ── Documents ─────────────────────────────────────────────────────────────
+  "/dashboard/documents/new":                   { pathname: "/dashboard/documents", drawer: "create" },
   "/dashboard/knowledge-base":                  { pathname: "/dashboard/documents", tab: "knowledge-base" },
   "/dashboard/knowledge-base/articles":         { pathname: "/dashboard/documents", tab: "knowledge-base" },
   "/dashboard/esign":                           { pathname: "/dashboard/documents", tab: "esign" },

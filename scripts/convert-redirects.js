@@ -213,6 +213,32 @@ const redirects = [
   { file: "fixed-assets/import/page.tsx",                     content: staticRedirect("/dashboard/finance?tab=fixed-assets") },
   { file: "fixed-assets/posting/page.tsx",                    content: staticRedirect("/dashboard/finance?tab=fixed-assets") },
   { file: "fixed-assets/transfer/page.tsx",                   content: staticRedirect("/dashboard/finance?tab=fixed-assets") },
+
+  // ── CRM child routes (→ /dashboard/crm) ────────────────────────────────────
+  { file: "crm/ai/page.tsx",                   content: staticRedirect("/dashboard/crm?tab=overview") },
+  { file: "crm/overdue/page.tsx",              content: staticRedirect("/dashboard/crm?tab=pipeline") },
+  { file: "crm/qualify/page.tsx",              content: staticRedirect("/dashboard/crm?tab=leads") },
+  { file: "crm/records/[id]/page.tsx",         content: dynamicRedirect("/dashboard/crm?tab=overview&id={id}&drawer=detail") },
+
+  // ── Sales child dynamic routes (ID preserved) ───────────────────────────────
+  { file: "sales/orders/[id]/page.tsx",        content: dynamicRedirect("/dashboard/sales?tab=orders&id={id}&drawer=detail") },
+  { file: "sales/invoices/[id]/page.tsx",      content: dynamicRedirect("/dashboard/sales?tab=invoices&id={id}&drawer=detail") },
+  { file: "sales/shipments/[id]/page.tsx",     content: dynamicRedirect("/dashboard/sales?tab=shipments&id={id}&drawer=detail") },
+  { file: "sales/pod/page.tsx",                content: staticRedirect("/dashboard/sales?tab=delivery") },
+  { file: "sales/customer-statement/page.tsx", content: staticRedirect("/dashboard/sales?tab=customers") },
+
+  // ── Procurement child dynamic routes (ID preserved) ─────────────────────────
+  { file: "procurement/[id]/page.tsx",         content: dynamicRedirect("/dashboard/procurement?tab=purchase-requests&id={id}&drawer=detail") },
+  { file: "procurement/orders/[id]/page.tsx",  content: dynamicRedirect("/dashboard/procurement?tab=orders&id={id}&drawer=detail") },
+
+  // ── Documents child routes ──────────────────────────────────────────────────
+  { file: "documents/new/page.tsx",            content: staticRedirect("/dashboard/documents?drawer=create") },
+  { file: "documents/[id]/page.tsx",           content: dynamicRedirect("/dashboard/documents?id={id}&drawer=detail") },
+
+  // ── Utilities (→ /dashboard/admin?tab=system-config) — clears UNKNOWN ───────
+  { file: "utilities/currencies/page.tsx",     content: staticRedirect("/dashboard/admin?tab=system-config") },
+  { file: "utilities/series/page.tsx",         content: staticRedirect("/dashboard/admin?tab=system-config") },
+  { file: "utilities/uom/page.tsx",            content: staticRedirect("/dashboard/admin?tab=system-config") },
 ];
 
 let written = 0;
