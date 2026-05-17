@@ -1,14 +1,25 @@
 # Auto-Fix Continuation Guide
 
-Date: 2026-05-17 (Round 6 — VERIFICATION PASS COMPLETE)
+Date: 2026-05-17 (Round 7 — PLAYWRIGHT SMOKE TESTS COMPLETE)
 Purpose: Let the next Claude session continue without asking the user anything.
 
-## Status After Round 6 (Verification Pass)
+## Status After Round 7 (Playwright Smoke Tests)
 
-**Backend tests:** 462/462 local (Windows venv) AND Docker/Linux. No failures.
+**Playwright smoke tests:** 52/52 PASSED, exit 0, 4.9 minutes.
+**Backend tests:** 462/462 Docker/Linux. No failures.
 **Frontend:** type-check clean, build clean, 0 critical npm audit findings.
 **Alembic:** single head `20260516_0060`, DB at head in Docker.
-**Remaining work:** GitHub Actions CI verification (no push made yet). 2FA OTP unimplemented.
+**Remaining work:** 2FA OTP unimplemented. GitHub Actions not directly verified. No mobile/Firefox E2E.
+
+### Files Changed in Round 7
+- `docker-compose.yml` — frontend: memory 512M→1G, cpus 1.0→2.0 (root cause fix for ERR_EMPTY_RESPONSE)
+- `frontend/playwright.config.ts` — retries:2, timeout:60s, setup timeout:300s
+- `frontend/e2e/auth.setup.ts` — 30-route warmup pre-compiles all workspace+tab pages
+- `frontend/e2e/smoke.spec.ts` — tab button timeout 10s→20s
+- `frontend/package.json` — test:smoke script
+- `.gitignore` — playwright artifact exclusions
+- `docs/PLAYWRIGHT_SMOKE_TEST_REPORT.md` — new, full coverage table
+- `TASKS.md` — updated with Playwright phase
 
 ### Files Changed in Round 6
 - `backend/app/core/security.py` — bcrypt patch replaced with conditional auto-detect (only patches when bcrypt actually raises ValueError for >72 bytes; no-op on 4.x, fixes 5.x)

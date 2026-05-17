@@ -1,6 +1,37 @@
 # TASKS
 
 ## Current Phase
+PLAYWRIGHT SMOKE TEST PASS — COMPLETE. 2026-05-17. 52/52 tests pass (exit 0) in 4.9 minutes. Root cause of all prior failures: Docker frontend container memory limit of 512MB caused ERR_EMPTY_RESPONSE on heavy pages (production page has 20 dynamic imports). Fixed by increasing to 1G. See docs/PLAYWRIGHT_SMOKE_TEST_REPORT.md.
+
+### Playwright Smoke Test Summary (2026-05-17)
+- **Result:** 52/52 PASSED, 0 failed, 0 flaky — exit 0
+- **Duration:** 4.9 minutes
+- **Coverage:** Auth (3), Dashboard root (1), 11 workspaces (C), 18 tab URLs (D), 10 static redirects (E), 6 dynamic redirects (F), 2 theme/layout (G)
+- **Infra fixes:** retries=2, timeout=60s, setup warmup (300s), docker frontend 512M→1G/cpus1→2
+- **Backend:** 462/462 pytest still passing
+- **Frontend:** type-check clean, build passes
+- **Audits:** D=0, no redirect drift, workspace tabs pass
+- **Artifacts:** gitignored (test-results/, playwright-report/, playwright/.auth/)
+- **Report:** docs/PLAYWRIGHT_SMOKE_TEST_REPORT.md
+
+### Files Changed This Session
+- `docker-compose.yml` — frontend: memory 512M→1G, cpus 1.0→2.0
+- `frontend/playwright.config.ts` — retries:2, timeout:60s, setup project timeout:300s
+- `frontend/e2e/auth.setup.ts` — added 30-route warmup (workspace + tab pages)
+- `frontend/e2e/smoke.spec.ts` — tab button timeout 10s→20s
+- `frontend/package.json` — added test:smoke script
+- `frontend/next-env.d.ts` — auto-updated by Next.js build
+- `.gitignore` — added playwright artifact exclusions
+- `docs/PLAYWRIGHT_SMOKE_TEST_REPORT.md` — new report
+
+### Remaining Risks
+- `npm run dev` mode for E2E: production build (`next start`) would be more reliable long-term
+- No Firefox/WebKit coverage (Chromium only)
+- No mobile viewport testing
+- 2FA OTP still unimplemented
+- GitHub Actions not verified directly (`gh` CLI unavailable)
+
+## Previous Phase
 CI VERIFICATION PASS — COMPLETE. 2026-05-17. All local CI-equivalent commands pass. `gh` CLI not available so GitHub Actions results not directly observable, but all CI commands verified locally and in Docker. Push confirmed to origin/main. See CI_FAILURE_REPORT.md for full details.
 
 ### CI Verification Summary (2026-05-17)
