@@ -1,7 +1,7 @@
 # TASKS
 
 ## Current Phase
-PAGE CONSOLIDATION — COMPLETE. 2026-05-17. All 6 passes done. D=0, B=496, E=14, Total=754. Build passes. See docs/PAGE_CONSOLIDATION_HISTORY.md for full history.
+RUNTIME STARTUP FIX — COMPLETE. 2026-05-17. Backend Docker healthcheck was failing because `--reload` + volume mount on Windows caused uvicorn child to be killed before binding port 8000. Fixed: removed `--reload` from Dockerfile.dev, added missing seeding env vars to .env.development. See docs/RUNTIME_STARTUP_REPORT.md.
 
 ## Execution Rules
 - Always read this file before starting work.
@@ -17,6 +17,12 @@ PAGE CONSOLIDATION — COMPLETE. 2026-05-17. All 6 passes done. D=0, B=496, E=14
 
 ## In Progress
 None.
+
+## Completed — Runtime Startup Fix (2026-05-17)
+
+- `backend/Dockerfile.dev`: removed `--reload` flag (WatchFiles kills child on Windows volume mount before port bind)
+- `.env.development`: added `INITIAL_ADMIN_PASSWORD` and other missing seed fields (seed_admin was raising RuntimeError, caught in lifespan try/except but admin user never seeded)
+- `docs/RUNTIME_STARTUP_REPORT.md`: root cause, evidence, fix, verification steps
 
 ## Completed — Page Consolidation Passes 4–6 (2026-05-17)
 
