@@ -35,6 +35,8 @@ const STANDALONE_DIRS = new Set([
   "shop-floor",
   "login",
   "auth",
+  "npd",
+  "recipes",
 ]);
 
 // ── Middleware top-level redirect keys ────────────────────────────────────────

@@ -1,7 +1,7 @@
 # TASKS
 
 ## Current Phase
-PAGE CONSOLIDATION — PASS 4 COMPLETE. 2026-05-17. 165 total redirect-only. FULL_DUPLICATE_UI: 500 → 338. UNKNOWN: 3 → 0. Build passes.
+PAGE CONSOLIDATION — PASS 5 COMPLETE. 2026-05-17. 496 total redirect-only. FULL_DUPLICATE_UI: 338 → 5. Build passes.
 
 ## Execution Rules
 - Always read this file before starting work.
@@ -17,6 +17,92 @@ PAGE CONSOLIDATION — PASS 4 COMPLETE. 2026-05-17. 165 total redirect-only. FUL
 
 ## In Progress
 None.
+
+## Completed in This Run (2026-05-17) — Page Consolidation Pass 5
+
+### Pages converted (331 new, total B=496)
+Clusters converted (all had existing MW prefix coverage):
+- material-flow (11) → /dashboard/production?tab=material-flow
+- portal (11) → /dashboard/sales?tab=portal
+- shelf-life (11) → /dashboard/inventory?tab=shelf-life
+- supplier-portal (11) → /dashboard/procurement?tab=supplier-portal
+- tpm (11) → /dashboard/marketing?tab=tpm
+- appraisals (10) → /dashboard/hr?tab=appraisals
+- bank-reconciliation (10) → /dashboard/finance?tab=bank-recon
+- dimensions (10) → /dashboard/finance?tab=dimensions
+- recurring-orders (10) → /dashboard/sales?tab=recurring
+- calendar (9) → /dashboard/communication?tab=calendar
+- dunning (9) → /dashboard/finance?tab=dunning
+- machine-ops (9) → /dashboard/production?tab=machine-ops
+- report-builder (9) → /dashboard/analytics?tab=report-builder
+- traceability (9) → /dashboard/inventory?tab=traceability
+- custom-fields (8) → /dashboard/admin?tab=custom-fields
+- ess (8) → /dashboard/hr?tab=ess
+- gs1 (8) → /dashboard/compliance?tab=gs1
+- invoice-match (8) → /dashboard/finance?tab=invoice-match
+- price-lists (8) → /dashboard/sales?tab=price-lists
+- promotions (8) → /dashboard/marketing?tab=promotions-schemes
+- training (8) → /dashboard/hr?tab=training
+- contracts (7) → /dashboard/sales?tab=contracts
+- fleet (7) → /dashboard/logistics?tab=fleet
+- reports (7) → /dashboard/analytics?tab=reports
+- commissions (6) → /dashboard/sales?tab=commissions
+- esg (6) → /dashboard/utility-management?tab=esg
+- mrp (6) → /dashboard/planning?tab=mrp
+- notification-center (6) → /dashboard/communication?tab=notifications
+- procurement-suggestion (6) → /dashboard/procurement?tab=suggestions
+- subcontracting (6) → /dashboard/procurement?tab=subcontracting
+- timesheets (6) → /dashboard/hr?tab=timesheets
+- webhooks (6) → /dashboard/integrations?tab=webhooks
+- chatter (5) → /dashboard/communication?tab=chatter
+- cycle-count (5) → /dashboard/inventory?tab=cycle-count
+- kanban (5) → /dashboard/planning?tab=kanban
+- landed-cost (5) → /dashboard/procurement?tab=landed-cost
+- wms sub-pages (5) → /dashboard/warehouses?tab=wms
+- mps (4) → /dashboard/planning?tab=mps
+- surveys (4) → /dashboard/crm?tab=surveys
+- tax (4) → /dashboard/finance?tab=tax
+- knowledge-base (3) → /dashboard/documents?tab=knowledge-base
+- production-execution (3) → /dashboard/production?tab=execution
+- putaway (3) → /dashboard/warehouses?tab=wms
+- secondary-sales (3) → /dashboard/sales?tab=secondary
+- containers (2) → /dashboard/logistics?tab=containers
+- developer (2) → /dashboard/integrations?tab=developer
+- logs (2) → /dashboard/admin?tab=logs
+- mobile (2) → /dashboard/admin?tab=mobile
+- projects (2) → /dashboard/production?tab=projects
+- brand-assets/[id] → /dashboard/quality?tab=brand-assets
+- copacking → /dashboard/procurement?tab=subcontracting
+- payroll/runs/[id] → /dashboard/hr?tab=payroll (+ MW entry added)
+- quality/[id] → /dashboard/quality?tab=qms (file-level only; no MW prefix to avoid loop)
+- roles/[id] → /dashboard/admin?tab=roles
+- security/monitor → /dashboard/admin?tab=security
+- users/[id] → /dashboard/admin?tab=users
+
+### STANDALONE_OPERATIONAL documented/classified
+- bom/[id], bom/[id]/compliance, bom/[id]/costing, bom/[id]/explode (4) — rich formula editor
+- npd/[id] — NPD project detail (stage gates, pilot batches, regulatory checklists)
+- recipes/[id] — recipe editor with items and process parameters
+- Audit script STANDALONE_DIRS updated to include "npd" and "recipes"
+
+### Middleware addition
+- `/dashboard/payroll` → `{ p: "/dashboard/hr", t: "payroll" }` (was missing)
+
+### Remaining D=5 (intentional)
+- bom/[id] x4 — STANDALONE_OPERATIONAL (no workspace drawer available)
+- /dashboard/ (root) — dashboard home page, do not convert
+
+### Checks (2026-05-17 post-Pass 5)
+- audit-page-count → A=31, B=496, C=213, D=5, E=9, F=0, Total=754
+- check-route-redirects → 0 drift
+- check-workspace-tabs → 0 mismatches
+- type-check → PASS
+- npm run build → PASS (exit 0)
+- erp-health-audit → 0 HIGH
+
+### Theme preserved
+- No workspace component styling touched
+- NEON LIQUID GLASS theme intact
 
 ## Completed in This Run (2026-05-17) — Page Consolidation Pass 4
 

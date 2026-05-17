@@ -147,6 +147,8 @@ const REDIRECTS: Record<string, { p: string; t?: string; d?: string }> = {
   // Integrations
   "/dashboard/webhooks":                        { p: "/dashboard/integrations", t: "webhooks" },
   "/dashboard/developer":                       { p: "/dashboard/integrations", t: "developer" },
+  // Payroll (top-level alias → HR payroll tab)
+  "/dashboard/payroll":                         { p: "/dashboard/hr", t: "payroll" },
 };
 
 function matchRedirect(pathname: string): { p: string; t?: string; d?: string } | null {

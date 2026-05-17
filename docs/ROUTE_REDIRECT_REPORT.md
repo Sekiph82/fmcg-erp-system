@@ -7,7 +7,7 @@ Generated: 2026-05-17
 | Check | Count |
 |-------|-------|
 | routeRedirectMap top-level keys | 88 |
-| middleware redirect keys        | 115 |
+| middleware redirect keys        | 116 |
 | In routeRedirectMap NOT middleware | 0 |
 | In middleware NOT routeRedirectMap | 0 |
 | Duplicate keys in routeRedirectMap | 0 |
@@ -92,6 +92,7 @@ routeRedirectMap.ts and middleware.ts are in sync. No issues found.
 | `/dashboard/mrp` | `/dashboard/planning` | mrp |
 | `/dashboard/notification-center` | `/dashboard/communication` | notifications |
 | `/dashboard/nps` | `/dashboard/crm` | nps |
+| `/dashboard/payroll` | `/dashboard/hr` | payroll |
 | `/dashboard/permissions` | `/dashboard/admin` | permissions |
 | `/dashboard/planning/bottlenecks` | `/dashboard/planning` | advanced |
 | `/dashboard/planning/capacity` | `/dashboard/planning` | advanced |
