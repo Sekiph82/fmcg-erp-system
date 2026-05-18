@@ -1,7 +1,50 @@
 # Auto-Fix Continuation Guide
 
-Date: 2026-05-19 (Round 11 — SCREENSHOT RECAPTURE COMPLETE)
+Date: 2026-05-19 (Round 12 — PDF EXPORT PIPELINE COMPLETE)
 Purpose: Let the next Claude session continue without asking the user anything.
+
+## Status After Round 12 (Kenya Go-Live PDF)
+
+**Backend tests:** 482/482 pytest pass.
+**Frontend:** build clean, type-check clean.
+**Docker prod config:** passes with `--env-file .env.production.example`.
+**Alembic:** single head `20260518_0001`.
+**Playwright auth-public:** 4/4 pass.
+**Playwright smoke tests:** 52/52 pass.
+
+**PDF generated:** `docs/user-manual/pdf-output/Kenya-Go-Live-ERP-Training-Manual.pdf`
+- Size: 17.5 MB
+- Images: 45/45 loaded, 0 failed
+- Gitignored — not committed
+- Regenerate: `node docs/user-manual/pdf-export/generate-kenya-pdf.mjs` (from repo root)
+- Prerequisites: `docs/user-manual/screenshots/captured/` must exist (140 PNGs)
+
+**PDF export pipeline committed:**
+- `docs/user-manual/pdf-export/generate-kenya-pdf.mjs` — Node.js + Playwright Chromium + marked
+- `docs/user-manual/pdf-export/export-kenya-go-live.ps1` — Windows wrapper
+- `docs/user-manual/pdf-export/export-kenya-go-live.sh` — Bash wrapper
+- `docs/user-manual/pdf-export/pdf-style.css` — A4 stylesheet
+- `docs/user-manual/pdf-export/README.md` — setup/usage
+
+**Screenshots:** 140/140 captured. Gitignored (~70 MB). Regenerate:
+```
+cd frontend && E2E_SKIP_WEBSERVER=1 npm run test:manual-screenshots
+```
+
+**Remaining work:**
+- Full ERP Reference Manual PDF (create `generate-full-reference-pdf.mjs`, same pipeline)
+- Optional: in-app help integration
+- Optional: Pandoc with `--toc` for clickable TOC
+
+### Files Changed in Round 12
+- `docs/user-manual/pdf-export/` — 5 new files (generator, wrappers, CSS, README)
+- `docs/user-manual/PDF_EXPORT_REPORT.md` — new
+- `frontend/package.json` — marked added as devDependency
+- `.gitignore` — `docs/user-manual/pdf-output/` added
+- `TASKS.md` — current phase updated
+- `docs/AUTO_FIX_CONTINUATION.md` — this file
+
+---
 
 ## Status After Round 11 (Screenshot recapture + manual links)
 

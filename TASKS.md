@@ -1,15 +1,50 @@
 # TASKS
 
 ## Current Phase
-SCREENSHOT-BASED ERP USER MANUAL SYSTEM — COMPLETE. 2026-05-19. All 140/140 routes captured. 67 failed routes from Round 10 recaptured using improved script v2 (failed-only mode, retry, fresh context after crash). Docker frontend memory 2G. All 24 screenshot placeholders in manuals replaced with real PNG links. Backend: 482/482 pytest pass. Auth-public: 4/4 pass. Playwright smoke: pass.
+PDF EXPORT PIPELINE — COMPLETE. 2026-05-19. Kenya Go-Live ERP Training Manual PDF generated: 17.5 MB, 45/45 images loaded. Playwright Chromium + marked pipeline. PDF gitignored (not committed). Export scripts committed. All tests pass.
 
-### Screenshot Manual System (2026-05-19)
+### PDF Export (2026-05-19)
+- **Kenya PDF:** `docs/user-manual/pdf-output/Kenya-Go-Live-ERP-Training-Manual.pdf` (17.5 MB, gitignored)
+- **Export scripts:** `docs/user-manual/pdf-export/` — generate-kenya-pdf.mjs, export-kenya-go-live.ps1, export-kenya-go-live.sh, pdf-style.css, README.md
+- **Regenerate PDF:** `node docs/user-manual/pdf-export/generate-kenya-pdf.mjs` (from repo root)
+- **Chapters:** 10 Kenya go-live files combined with cover page, page breaks, A4 CSS
+- **Images:** 45/45 loaded, 0 failed
+
+### Previous Phase — Screenshot Manual System (2026-05-19)
 - **Captured:** 140/140 routes — all modules complete including Kenya-critical (Sales, Finance, HR, Payroll)
 - **Failed:** 0
 - **PNGs:** ~70 MB, gitignored — regenerate with `cd frontend && E2E_SKIP_WEBSERVER=1 npm run test:manual-screenshots`
 - **Kenya go-live manuals:** `docs/user-manual/kenya-go-live/` (10 files, role-based)
 - **Full reference:** `docs/user-manual/full-reference/` (15 chapters)
 - **Index:** `docs/user-manual/screenshots/screenshots-index.json`
+
+### Files Changed (Round 12 — PDF Export)
+- `docs/user-manual/pdf-export/generate-kenya-pdf.mjs` — main PDF generation script (new)
+- `docs/user-manual/pdf-export/export-kenya-go-live.ps1` — Windows wrapper (new)
+- `docs/user-manual/pdf-export/export-kenya-go-live.sh` — Bash wrapper (new)
+- `docs/user-manual/pdf-export/pdf-style.css` — A4 print stylesheet (new)
+- `docs/user-manual/pdf-export/README.md` — setup + usage instructions (new)
+- `docs/user-manual/PDF_EXPORT_REPORT.md` — export results (new)
+- `frontend/package.json` — marked added as dev dependency
+- `.gitignore` — pdf-output/ added
+
+### Verification Results (2026-05-19)
+| Check | Result |
+|---|---|
+| Backend pytest | 482/482 pass |
+| Frontend build | clean |
+| Type-check | clean |
+| Auth-public E2E | 4/4 pass |
+| Playwright smoke | 52/52 pass |
+| Route/redirect/tab audits | all green |
+| Health audit | 0 HIGH |
+| PDF generated | YES — 17.5 MB, 45/45 images |
+| PDF committed | NO — gitignored |
+
+### Remaining Work
+- Full ERP Reference Manual PDF (create generate-full-reference-pdf.mjs, same pipeline)
+- Optional: in-app help integration
+- Optional: Pandoc setup for clickable TOC
 
 ### Files Changed (Round 11)
 - `frontend/e2e/manual-screenshots.spec.ts` — rewritten v2: failed-only/batch/role/ID filter, retry, fresh context after crash
