@@ -1,6 +1,32 @@
 # TASKS
 
 ## Current Phase
+PRODUCTION DOCKER ENV-FILE FIX — COMPLETE. 2026-05-18. Changed service-level `env_file: .env.production` to long-form `required: false` in docker-compose.prod.yml (db, backend, frontend). Config validation now passes with `--env-file .env.production.example`. Real prod deployment unchanged — file loads when present. Backend: 478/478 pytest pass. Frontend: type-check + build clean. Audits: D=0, no redirect drift, tabs pass. Health: 0 HIGH.
+
+### Docker Config Fix (2026-05-18)
+- **Root cause:** Service-level `env_file: .env.production` (hardcoded path) caused `config` to fail when `.env.production` absent locally. `--env-file` flag only handles YAML interpolation, not service env injection.
+- **Fix:** Long-form `env_file: - path: .env.production, required: false` on db/backend/frontend services
+- **Validation command:** `docker compose -f docker-compose.prod.yml --env-file .env.production.example config --quiet`
+- **Production unchanged:** File loads normally when present at runtime
+
+### Files Changed
+- `docker-compose.prod.yml` — db/backend/frontend env_file: required: false
+- `docs/DEPLOYMENT.md` — added config validation section
+
+### Verification Results (2026-05-18)
+| Check | Result |
+|---|---|
+| Prod compose config (example env) | pass |
+| Dev compose config | pass |
+| Backend pytest | 478/478 pass |
+| Frontend type-check | clean |
+| Frontend build | clean |
+| D (duplicate pages) | 0 |
+| Route redirect drift | 0 |
+| Workspace tabs | pass |
+| Health audit | 0 HIGH |
+
+## Previous Phase
 2FA SMS/EMAIL OTP IMPLEMENTATION — COMPLETE. 2026-05-18. Real OTP delivery implemented for Email and SMS. OTP now hashed (bcrypt) in DB. Login-verify uses hash comparison. SMS/email setup flow fully wired. Resend endpoint added. Frontend enables all 3 methods. Backend: 478/478 pytest pass. Frontend: type-check + build clean. Audits: D=0, no redirect drift, tabs pass.
 
 ### 2FA OTP Status (2026-05-18)

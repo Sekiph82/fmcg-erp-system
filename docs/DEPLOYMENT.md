@@ -67,6 +67,16 @@ Migrations run automatically via `scripts/dev_migrate.py` on backend startup.
 
 ## Production Startup
 
+### Config validation (no real secrets needed)
+
+```bash
+# Validate compose config using example env file (CI-safe, no secrets)
+docker compose -f docker-compose.prod.yml --env-file .env.production.example config --quiet
+```
+
+Services use `env_file: path: .env.production, required: false` — file is optional
+for validation but must exist with real secrets at actual runtime.
+
 ### First-time setup (fresh/empty database)
 
 Migration `20260517_0000` (squashed baseline) is the chain root. `alembic upgrade head`

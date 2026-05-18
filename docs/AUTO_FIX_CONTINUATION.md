@@ -1,15 +1,34 @@
 # Auto-Fix Continuation Guide
 
-Date: 2026-05-17 (Round 7 — PLAYWRIGHT SMOKE TESTS COMPLETE)
+Date: 2026-05-18 (Round 9 — PRODUCTION DOCKER ENV-FILE FIX COMPLETE)
 Purpose: Let the next Claude session continue without asking the user anything.
 
-## Status After Round 7 (Playwright Smoke Tests)
+## Status After Round 9 (Production Docker env-file fix)
+
+**Docker prod config:** passes with `--env-file .env.production.example` (no real secrets needed).
+**Backend tests:** 478/478 pytest pass.
+**Frontend:** type-check clean, build clean.
+**Audits:** D=0, no redirect drift, tabs pass. Health: 0 HIGH.
+**Alembic:** single head `20260518_0001`.
+**Playwright smoke tests:** 52/52 PASSED (Round 7 baseline; no smoke-affecting changes since).
+**Remaining work:** Playwright smoke re-run recommended. SMTP/SMS end-to-end not tested. GitHub Actions not directly verified.
+
+### Files Changed in Round 9
+- `docker-compose.prod.yml` — db/backend/frontend: `env_file: .env.production` → long-form `required: false`
+- `docs/DEPLOYMENT.md` — added config validation section
+- `TASKS.md` — updated current phase
+
+---
+
+## Status After Round 8 (2FA SMS/Email OTP)
 
 **Playwright smoke tests:** 52/52 PASSED, exit 0, 4.9 minutes.
-**Backend tests:** 462/462 Docker/Linux. No failures.
-**Frontend:** type-check clean, build clean, 0 critical npm audit findings.
-**Alembic:** single head `20260516_0060`, DB at head in Docker.
-**Remaining work:** 2FA OTP unimplemented. GitHub Actions not directly verified. No mobile/Firefox E2E.
+**Backend tests:** 478/478 pytest pass.
+**Frontend:** type-check clean, build clean.
+**Alembic:** single head `20260518_0001`. DB at head.
+**Remaining work:** Playwright smoke re-run. SMTP/SMS staging test. GitHub Actions not verified.
+
+### Files Changed in Round 7
 
 ### Files Changed in Round 7
 - `docker-compose.yml` — frontend: memory 512M→1G, cpus 1.0→2.0 (root cause fix for ERR_EMPTY_RESPONSE)
