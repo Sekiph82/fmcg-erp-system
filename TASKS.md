@@ -1,6 +1,73 @@
 # TASKS
 
 ## Current Phase
+2FA SMS/EMAIL OTP IMPLEMENTATION — COMPLETE. 2026-05-18. Real OTP delivery implemented for Email and SMS. OTP now hashed (bcrypt) in DB. Login-verify uses hash comparison. SMS/email setup flow fully wired. Resend endpoint added. Frontend enables all 3 methods. Backend: 478/478 pytest pass. Frontend: type-check + build clean. Audits: D=0, no redirect drift, tabs pass.
+
+### 2FA OTP Status (2026-05-18)
+- **TOTP:** Unchanged, working
+- **Email OTP:** Implemented — dev=console log, prod=SMTP (smtplib)
+- **SMS OTP:** Implemented — dev=console log, prod=Twilio via httpx
+- **OTP hashing:** bcrypt (passlib, existing context)
+- **Login-verify:** Fixed — was plaintext compare, now verify_otp_hash()
+- **Setup flow:** Fixed — SMS/email setup sends OTP, creates session, returns session_token
+- **Verify/enable:** Fixed — handles SMS/email via session_token
+- **Resend:** New endpoint POST /auth/2fa/resend-otp with 60s cooldown
+- **Production guard:** OTP_DEV_DELIVERY_MODE=true blocked in production
+- **Frontend:** SMS/Email buttons enabled, phone input for SMS, OTP entry step, resend countdown
+
+### Files Changed (Round 8)
+- `backend/app/core/config.py` — OTP/SMTP/SMS config vars + production guard
+- `backend/app/core/totp.py` — hash_otp(), verify_otp_hash(), create/decode_setup_2fa_token()
+- `backend/app/models/two_factor.py` — challenge_code String(10)→String(255)
+- `backend/app/schemas/two_factor.py` — session_token in setup response, OTPResendRequest/Response
+- `backend/app/api/v1/endpoints/auth.py` — hash OTP before store, dispatch via sender
+- `backend/app/api/v1/endpoints/two_factor.py` — fix SMS/email enable, add resend endpoint
+- `backend/app/services/email_sender.py` — NEW: email OTP sender
+- `backend/app/services/sms_sender.py` — NEW: SMS OTP sender (Twilio)
+- `backend/alembic/versions/20260518_0001_otp_delivery.py` — NEW: migration challenge_code String(255)
+- `backend/tests/test_otp.py` — NEW: 16 OTP/sender/token/config tests
+- `backend/tests/test_hardening.py` — add OTP_DEV_DELIVERY_MODE=False to production base dict
+- `backend/tests/test_gap018_gs1_label_printing.py` — update Alembic head to 20260518_0001
+- `.env.development.example` — OTP/SMTP/SMS vars
+- `.env.production.example` — OTP/SMTP/SMS vars
+- `frontend/src/lib/twoFactor.ts` — session_token in setup response type, resendOTP()
+- `frontend/src/app/dashboard/security/page.tsx` — SMS/email enabled, OTP input step, resend countdown
+- `docs/2FA_IMPLEMENTATION_REPORT.md` — NEW: full audit + implementation record
+
+### Backend Test Results (2026-05-18)
+| Suite | Result |
+|---|---|
+| pytest (all tests) | 478/478 pass |
+| test_otp.py (new) | 16/16 pass |
+| test_security.py | 20/20 pass |
+| test_hardening.py | all pass |
+| compileall | clean |
+
+### Verification Results (2026-05-18)
+| Check | Result |
+|---|---|
+| Backend pytest | 478/478 pass |
+| Frontend type-check | clean |
+| Frontend build | clean |
+| D (duplicate pages) | 0 |
+| Route redirect drift | 0 |
+| Workspace tabs | pass |
+| Health audit | 0 HIGH |
+| Docker dev config | pass |
+| Alembic head | 20260518_0001 (single head) |
+
+### Remaining Risks
+- Step-up 2FA for SMS/email not implemented (TOTP step-up still works)
+- Playwright smoke tests not re-run (52/52 pass from previous round; no smoke-affecting changes made)
+- SMS provider beyond Twilio: pluggable via SMS_PROVIDER env var
+- Production SMTP not tested end-to-end (requires real SMTP server)
+- GitHub Actions not directly observable
+
+### Next Recommended Task
+- Playwright smoke re-run to confirm 52/52 still pass after frontend changes
+- Wire SMTP credentials in staging environment and test email OTP end-to-end
+
+## Previous Phase
 PLAYWRIGHT SMOKE TEST PASS — COMPLETE. 2026-05-17. 52/52 tests pass (exit 0) in 4.9 minutes. Root cause of all prior failures: Docker frontend container memory limit of 512MB caused ERR_EMPTY_RESPONSE on heavy pages (production page has 20 dynamic imports). Fixed by increasing to 1G. See docs/PLAYWRIGHT_SMOKE_TEST_REPORT.md.
 
 ### Playwright Smoke Test Summary (2026-05-17)

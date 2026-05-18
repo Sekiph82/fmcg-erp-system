@@ -104,17 +104,36 @@ async def login(
         await tfa_crud.expire_old_sessions(db, user.id)
 
         challenge_code = None
+        challenge_code_hash = None
         if tfa_settings.method in (TwoFAMethod.SMS, TwoFAMethod.EMAIL):
             challenge_code = totp_utils.generate_otp()
-            # TODO: dispatch OTP via notification service
+            challenge_code_hash = totp_utils.hash_otp(challenge_code)
 
         session = await tfa_crud.create_2fa_session(
             db,
             user_id=user.id,
             settings_id=tfa_settings.id,
             method=tfa_settings.method,
-            challenge_code=challenge_code,
+            challenge_code=challenge_code_hash,
         )
+        await db.commit()
+
+        # Dispatch OTP after commit so session is durable before sending
+        if challenge_code:
+            from app.services.email_sender import send_otp_email
+            from app.services.sms_sender import send_otp_sms
+            try:
+                if tfa_settings.method == TwoFAMethod.EMAIL:
+                    dest = tfa_settings.email or user.email
+                    await send_otp_email(dest, challenge_code)
+                else:
+                    await send_otp_sms(tfa_settings.phone_number, challenge_code)
+            except Exception as exc:
+                import logging
+                logging.getLogger(__name__).error(
+                    "OTP dispatch failed for user %s method=%s: %s",
+                    user.id, tfa_settings.method, exc,
+                )
         await audit_crud.log_event(
             db,
             event_type=AuditEvent.TWO_FA_CHALLENGE_SENT,

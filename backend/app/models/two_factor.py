@@ -46,7 +46,7 @@ class TwoFASession(Base, TimestampMixin):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     settings_id = Column(UUID(as_uuid=True), ForeignKey("user_2fa_settings.id", ondelete="CASCADE"), nullable=False)
-    challenge_code = Column(String(10), nullable=True)   # for SMS/email OTP; null for TOTP
+    challenge_code = Column(String(255), nullable=True)  # bcrypt hash of OTP for SMS/email; null for TOTP
     method = Column(Enum(TwoFAMethod), nullable=False)
     expires_at = Column(DateTime(timezone=True), nullable=False)
     status = Column(Enum(TwoFASessionStatus), default=TwoFASessionStatus.PENDING, nullable=False)

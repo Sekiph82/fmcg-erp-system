@@ -7,6 +7,7 @@ export interface TwoFASetupResponse {
   secret_key?: string;
   qr_code_uri?: string;
   qr_code_image?: string;
+  session_token?: string;  // SMS/email only — pass to verify2FA
 }
 
 export interface TwoFAEnableResponse {
@@ -48,8 +49,16 @@ export async function setup2FA(method: TwoFAMethod, phone_number?: string, email
   return res.data;
 }
 
-export async function verify2FA(code: string): Promise<TwoFAEnableResponse> {
-  const res = await apiClient.post<TwoFAEnableResponse>("/api/v1/auth/2fa/verify", { code });
+export async function verify2FA(code: string, session_token?: string): Promise<TwoFAEnableResponse> {
+  const res = await apiClient.post<TwoFAEnableResponse>("/api/v1/auth/2fa/verify", { code, session_token });
+  return res.data;
+}
+
+export async function resendOTP(session_token: string): Promise<{ session_token: string; cooldown_seconds: number }> {
+  const res = await apiClient.post<{ session_token: string; cooldown_seconds: number }>(
+    "/api/v1/auth/2fa/resend-otp",
+    { session_token },
+  );
   return res.data;
 }
 

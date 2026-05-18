@@ -28,6 +28,7 @@ from app.schemas.two_factor import (
     TwoFASettingsRead,
     StepUpRequest, StepUpResponse,
     TwoFAStatusReport,
+    OTPResendRequest, OTPResendResponse,
 )
 
 router = APIRouter()
@@ -92,15 +93,31 @@ async def setup_2fa(
             raise HTTPException(status_code=422, detail="phone_number required for SMS method")
         settings.method = TwoFAMethod.SMS
         settings.phone_number = body.phone_number
+        otp = totp_utils.generate_otp()
+        session = await tfa_crud.create_2fa_session(
+            db, user_id=current_user.id, settings_id=settings.id,
+            method=TwoFAMethod.SMS, challenge_code=totp_utils.hash_otp(otp),
+        )
         await db.commit()
-        # Gateway hook — log intent; real SMS gateway plugged in here
-        return TwoFASetupResponse(method=TwoFAMethod.SMS)
+        from app.services.sms_sender import send_otp_sms
+        await send_otp_sms(body.phone_number, otp)
+        setup_token = totp_utils.create_setup_2fa_token(str(current_user.id), str(session.id))
+        return TwoFASetupResponse(method=TwoFAMethod.SMS, session_token=setup_token)
 
     if body.method == TwoFAMethod.EMAIL:
         settings.method = TwoFAMethod.EMAIL
         settings.email = body.email or current_user.email
+        otp = totp_utils.generate_otp()
+        session = await tfa_crud.create_2fa_session(
+            db, user_id=current_user.id, settings_id=settings.id,
+            method=TwoFAMethod.EMAIL, challenge_code=totp_utils.hash_otp(otp),
+        )
         await db.commit()
-        return TwoFASetupResponse(method=TwoFAMethod.EMAIL)
+        from app.services.email_sender import send_otp_email
+        dest = body.email or current_user.email
+        await send_otp_email(dest, otp)
+        setup_token = totp_utils.create_setup_2fa_token(str(current_user.id), str(session.id))
+        return TwoFASetupResponse(method=TwoFAMethod.EMAIL, session_token=setup_token)
 
     raise HTTPException(status_code=422, detail="Unsupported 2FA method")
 
@@ -115,15 +132,45 @@ async def verify_and_enable_2fa(
     db: AsyncSession = Depends(get_db),
 ):
     """Verify first OTP during setup, then enable 2FA and return recovery codes."""
-    settings = await tfa_crud.get_2fa_settings(db, current_user.id)
-    if not settings or not settings.secret_key:
+    tfa_settings = await tfa_crud.get_2fa_settings(db, current_user.id)
+    if not tfa_settings:
         raise HTTPException(status_code=400, detail="2FA setup not initiated. Call /setup first.")
 
-    if settings.method == TwoFAMethod.TOTP:
-        if not totp_utils.verify_totp(settings.secret_key, body.code):
+    if tfa_settings.method == TwoFAMethod.TOTP:
+        if not tfa_settings.secret_key:
+            raise HTTPException(status_code=400, detail="2FA setup not initiated. Call /setup first.")
+        if not totp_utils.verify_totp(tfa_settings.secret_key, body.code):
             raise HTTPException(status_code=400, detail="Invalid OTP code")
     else:
-        raise HTTPException(status_code=400, detail="Use /login-verify for non-TOTP methods")
+        # SMS/email: verify via setup session token
+        if not body.session_token:
+            raise HTTPException(
+                status_code=422,
+                detail="session_token required for SMS/email 2FA verification",
+            )
+        payload = totp_utils.decode_setup_2fa_token(body.session_token)
+        if not payload:
+            raise HTTPException(status_code=401, detail="Invalid or expired setup token")
+        session_id = uuid.UUID(payload["sid"])
+        session = await tfa_crud.get_2fa_session(db, session_id)
+        if not session or session.status != TwoFASessionStatus.PENDING:
+            raise HTTPException(status_code=401, detail="Setup session not found or already used")
+        if session.expires_at.replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):
+            session.status = TwoFASessionStatus.EXPIRED
+            await db.commit()
+            raise HTTPException(status_code=401, detail="Setup OTP expired. Request a new one via /setup.")
+        if int(session.attempt_count) >= MAX_ATTEMPTS:
+            raise HTTPException(status_code=429, detail="Too many failed attempts. Request a new code.")
+        if not session.challenge_code or not totp_utils.verify_otp_hash(body.code, session.challenge_code):
+            session = await tfa_crud.mark_session_failed(db, session)
+            await db.commit()
+            remaining = MAX_ATTEMPTS - int(session.attempt_count)
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid OTP code. {remaining} attempt(s) remaining.",
+            )
+        await tfa_crud.mark_session_verified(db, session)
+    settings = tfa_settings
 
     # Enable
     settings.is_enabled = True
@@ -238,9 +285,9 @@ async def login_verify_2fa(
         if tfa_settings.secret_key:
             verified = totp_utils.verify_totp(tfa_settings.secret_key, body.code)
     else:
-        # SMS or email: compare challenge code
-        if session.challenge_code and session.challenge_code == body.code:
-            verified = True
+        # SMS or email: verify against bcrypt hash
+        if session.challenge_code:
+            verified = totp_utils.verify_otp_hash(body.code, session.challenge_code)
 
     if not verified:
         session = await tfa_crud.mark_session_failed(db, session)
@@ -372,6 +419,80 @@ async def use_recovery_code(
         "access_token": access_token if settings.AUTH_RETURN_TOKEN_IN_BODY else None,
         "token_type": "bearer",
     }
+
+
+# ── POST /auth/2fa/resend-otp ────────────────────────────────────────────────
+
+@router.post("/resend-otp", response_model=OTPResendResponse)
+async def resend_otp(
+    body: OTPResendRequest,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+):
+    """Resend OTP for login or setup flow. Enforces 60-second cooldown."""
+    from datetime import timedelta
+
+    # Accept both login and setup tokens
+    payload = totp_utils.decode_pending_2fa_token(body.session_token)
+    token_type = "login"
+    if not payload:
+        payload = totp_utils.decode_setup_2fa_token(body.session_token)
+        token_type = "setup"
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid or expired session token")
+
+    session_id = uuid.UUID(payload["sid"])
+    user_id = uuid.UUID(payload["uid"])
+
+    session = await tfa_crud.get_2fa_session(db, session_id)
+    if not session or session.status != TwoFASessionStatus.PENDING:
+        raise HTTPException(status_code=401, detail="Session not found or already used")
+
+    # Enforce resend cooldown
+    cooldown = settings.OTP_RESEND_COOLDOWN_SECONDS
+    elapsed = (datetime.now(timezone.utc) - session.created_at.replace(tzinfo=timezone.utc)).total_seconds()
+    if elapsed < cooldown:
+        remaining = int(cooldown - elapsed)
+        raise HTTPException(
+            status_code=429,
+            detail=f"Please wait {remaining}s before requesting a new code.",
+        )
+
+    tfa_settings = await tfa_crud.get_2fa_settings(db, user_id)
+    if not tfa_settings:
+        raise HTTPException(status_code=500, detail="2FA settings not found")
+
+    # Expire old session, create new one
+    session.status = TwoFASessionStatus.EXPIRED
+    otp = totp_utils.generate_otp()
+    new_session = await tfa_crud.create_2fa_session(
+        db,
+        user_id=user_id,
+        settings_id=tfa_settings.id,
+        method=session.method,
+        challenge_code=totp_utils.hash_otp(otp),
+    )
+    await db.commit()
+
+    # Dispatch
+    from app.services.email_sender import send_otp_email
+    from app.services.sms_sender import send_otp_sms
+    try:
+        if session.method == TwoFAMethod.EMAIL:
+            dest = tfa_settings.email or ""
+            await send_otp_email(dest, otp)
+        else:
+            await send_otp_sms(tfa_settings.phone_number or "", otp)
+    except Exception as exc:
+        import logging
+        logging.getLogger(__name__).error("OTP resend dispatch failed user=%s: %s", user_id, exc)
+
+    if token_type == "login":
+        new_token = totp_utils.create_pending_2fa_token(str(user_id), str(new_session.id))
+    else:
+        new_token = totp_utils.create_setup_2fa_token(str(user_id), str(new_session.id))
+
+    return OTPResendResponse(session_token=new_token, cooldown_seconds=cooldown)
 
 
 # ── POST /auth/2fa/step-up ────────────────────────────────────────────────────

@@ -51,6 +51,15 @@ def generate_otp() -> str:
     return "".join(secrets.choice(string.digits) for _ in range(6))
 
 
+def hash_otp(plaintext_otp: str) -> str:
+    """Hash OTP for DB storage. Never store plaintext OTPs."""
+    return _code_context.hash(plaintext_otp)
+
+
+def verify_otp_hash(plaintext_otp: str, hashed: str) -> bool:
+    return _code_context.verify(plaintext_otp, hashed)
+
+
 def otp_expires_at() -> datetime:
     return datetime.now(timezone.utc) + timedelta(seconds=EMAIL_SMS_TTL_SECONDS)
 
@@ -105,6 +114,30 @@ def decode_stepup_token(token: str) -> dict | None:
 
 
 # ── Pending-2FA session token ─────────────────────────────────────────────────
+
+def create_setup_2fa_token(user_id: str, session_id: str) -> str:
+    """Token for SMS/email 2FA setup flow (distinct from login flow)."""
+    from datetime import timedelta
+    from app.core.security import create_access_token
+    import json
+    subject = json.dumps({"uid": user_id, "sid": session_id, "type": "2fa_setup"})
+    return create_access_token(subject, expires_delta=timedelta(seconds=EMAIL_SMS_TTL_SECONDS))
+
+
+def decode_setup_2fa_token(token: str) -> dict | None:
+    from app.core.security import decode_token
+    import json
+    raw = decode_token(token)
+    if not raw:
+        return None
+    try:
+        data = json.loads(raw)
+        if data.get("type") != "2fa_setup":
+            return None
+        return data
+    except Exception:
+        return None
+
 
 def create_pending_2fa_token(user_id: str, session_id: str) -> str:
     from datetime import timedelta

@@ -1,23 +1,25 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
 import {
   getSettings, setup2FA, verify2FA, disable2FA, regenerateRecoveryCodes,
-  get2FAReport, getSecurityRiskReport, getAccessAnomalyReport,
+  get2FAReport, getSecurityRiskReport, getAccessAnomalyReport, resendOTP,
   TwoFAMethod, TwoFASettingsRead, TwoFASetupResponse, TwoFAStatusReport,
 } from "@/lib/twoFactor";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
-type Step = "idle" | "setup" | "qr" | "verify" | "done" | "disable" | "regenerate";
+type Step = "idle" | "qr" | "otp_input" | "done" | "disable";
 
 export default function SecurityPage() {
   const { user } = useAuth();
   const [settings, setSettings] = useState<TwoFASettingsRead | null>(null);
   const [step, setStep] = useState<Step>("idle");
   const [method, setMethod] = useState<TwoFAMethod>("totp");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [setupData, setSetupData] = useState<TwoFASetupResponse | null>(null);
+  const [setupSessionToken, setSetupSessionToken] = useState<string | null>(null);
   const [code, setCode] = useState("");
   const [password, setPassword] = useState("");
   const [recoveryCodes, setRecoveryCodes] = useState<string[]>([]);
@@ -26,10 +28,24 @@ export default function SecurityPage() {
   const [report, setReport] = useState<TwoFAStatusReport | null>(null);
   const [riskReport, setRiskReport] = useState<unknown>(null);
   const [anomalyReport, setAnomalyReport] = useState<unknown>(null);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     loadSettings();
+    return () => { if (cooldownRef.current) clearInterval(cooldownRef.current); };
   }, []);
+
+  function startCooldown(seconds: number) {
+    setResendCooldown(seconds);
+    if (cooldownRef.current) clearInterval(cooldownRef.current);
+    cooldownRef.current = setInterval(() => {
+      setResendCooldown((s) => {
+        if (s <= 1) { clearInterval(cooldownRef.current!); return 0; }
+        return s - 1;
+      });
+    }, 1000);
+  }
 
   async function loadSettings() {
     try {
@@ -42,9 +58,16 @@ export default function SecurityPage() {
     setError("");
     setLoading(true);
     try {
-      const data = await setup2FA(method);
+      const phone = method === "sms" ? phoneNumber : undefined;
+      const data = await setup2FA(method, phone);
       setSetupData(data);
-      setStep("qr");
+      if (method === "totp") {
+        setStep("qr");
+      } else {
+        setSetupSessionToken(data.session_token ?? null);
+        setStep("otp_input");
+        startCooldown(60);
+      }
     } catch (err: unknown) {
       const e = err as { response?: { data?: { detail?: string } } };
       setError(e?.response?.data?.detail || "Setup failed");
@@ -57,13 +80,29 @@ export default function SecurityPage() {
     setError("");
     setLoading(true);
     try {
-      const res = await verify2FA(code);
+      const res = await verify2FA(code, setupSessionToken ?? undefined);
       setRecoveryCodes(res.recovery_codes);
       setStep("done");
       await loadSettings();
     } catch (err: unknown) {
       const e = err as { response?: { data?: { detail?: string } } };
       setError(e?.response?.data?.detail || "Invalid code");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleResend() {
+    if (!setupSessionToken || resendCooldown > 0) return;
+    setError("");
+    setLoading(true);
+    try {
+      const res = await resendOTP(setupSessionToken);
+      setSetupSessionToken(res.session_token);
+      startCooldown(res.cooldown_seconds);
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { detail?: string } } };
+      setError(e?.response?.data?.detail || "Failed to resend code");
     } finally {
       setLoading(false);
     }
@@ -151,30 +190,34 @@ export default function SecurityPage() {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Choose method</label>
               <div className="grid grid-cols-3 gap-3">
-                {(["totp", "sms", "email"] as TwoFAMethod[]).map((m) => {
-                  const unavailable = m === "sms" || m === "email";
-                  return (
-                    <button
-                      key={m}
-                      onClick={() => !unavailable && setMethod(m)}
-                      disabled={unavailable}
-                      title={unavailable ? "Not available yet — OTP dispatch not configured" : undefined}
-                      className={`p-3 border rounded-xl text-sm font-medium transition-colors ${
-                        unavailable
-                          ? "border-gray-100 bg-gray-50 text-gray-400 cursor-not-allowed opacity-60"
-                          : method === m
-                            ? "border-indigo-600 bg-indigo-50 text-indigo-700"
-                            : "border-gray-200 text-gray-700 hover:border-gray-300"
-                      }`}
-                    >
-                      {methodLabels[m]}
-                      {unavailable && <span className="block text-xs mt-0.5">(coming soon)</span>}
-                    </button>
-                  );
-                })}
+                {(["totp", "sms", "email"] as TwoFAMethod[]).map((m) => (
+                  <button
+                    key={m}
+                    onClick={() => setMethod(m)}
+                    className={`p-3 border rounded-xl text-sm font-medium transition-colors ${
+                      method === m
+                        ? "border-indigo-600 bg-indigo-50 text-indigo-700"
+                        : "border-gray-200 text-gray-700 hover:border-gray-300"
+                    }`}
+                  >
+                    {methodLabels[m]}
+                  </button>
+                ))}
               </div>
             </div>
-            <Button onClick={handleSetup} loading={loading}>
+
+            {method === "sms" && (
+              <Input
+                id="phone-number"
+                label="Phone Number"
+                type="tel"
+                placeholder="+254700000000"
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+              />
+            )}
+
+            <Button onClick={handleSetup} loading={loading} disabled={method === "sms" && !phoneNumber.trim()}>
               Enable 2FA
             </Button>
           </div>
@@ -192,7 +235,7 @@ export default function SecurityPage() {
         )}
       </div>
 
-      {/* QR Code display */}
+      {/* QR Code display (TOTP) */}
       {step === "qr" && setupData && (
         <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4">
           <h2 className="text-lg font-semibold text-gray-900">Scan QR Code</h2>
@@ -236,6 +279,49 @@ export default function SecurityPage() {
             <Button onClick={handleVerify} loading={loading} className="w-full">
               Verify & Enable
             </Button>
+          </div>
+        </div>
+      )}
+
+      {/* OTP input (SMS/Email) */}
+      {step === "otp_input" && (
+        <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4">
+          <h2 className="text-lg font-semibold text-gray-900">
+            {method === "email" ? "Check your email" : "Check your phone"}
+          </h2>
+          <p className="text-sm text-gray-600">
+            {method === "email"
+              ? `We sent a 6-digit code to ${user?.email}. Enter it below to enable Email OTP.`
+              : `We sent a 6-digit code to ${phoneNumber}. Enter it below to enable SMS OTP.`}
+          </p>
+          <div className="space-y-3">
+            <Input
+              id="otp-code"
+              label="Verification Code"
+              type="text"
+              inputMode="numeric"
+              placeholder="000000"
+              value={code}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              maxLength={6}
+              autoFocus
+            />
+            {error && (
+              <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                {error}
+              </div>
+            )}
+            <Button onClick={handleVerify} loading={loading} className="w-full" disabled={code.length !== 6}>
+              Verify & Enable
+            </Button>
+            <button
+              type="button"
+              onClick={handleResend}
+              disabled={resendCooldown > 0 || loading}
+              className="w-full text-sm text-indigo-600 hover:text-indigo-800 disabled:text-gray-400 disabled:cursor-not-allowed"
+            >
+              {resendCooldown > 0 ? `Resend code in ${resendCooldown}s` : "Resend code"}
+            </button>
           </div>
         </div>
       )}

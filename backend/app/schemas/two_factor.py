@@ -19,10 +19,23 @@ class TwoFASetupResponse(BaseModel):
     secret_key: Optional[str] = None       # TOTP only
     qr_code_uri: Optional[str] = None      # otpauth:// URI for QR scanning
     qr_code_image: Optional[str] = None    # base64 PNG
+    session_token: Optional[str] = None    # SMS/email only — pass to /verify
 
 
 class TwoFAVerifySetupRequest(BaseModel):
     code: str
+    session_token: Optional[str] = None   # required for SMS/email, omit for TOTP
+
+
+# ── Resend OTP ────────────────────────────────────────────────────────────────
+
+class OTPResendRequest(BaseModel):
+    session_token: str
+
+
+class OTPResendResponse(BaseModel):
+    session_token: str      # new token — replace old one in client
+    cooldown_seconds: int
 
 
 class TwoFAEnableResponse(BaseModel):

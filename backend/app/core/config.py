@@ -73,6 +73,30 @@ class Settings(BaseSettings):
         "http://localhost:8000",
     ]
 
+    # ── 2FA OTP delivery ───────────────────────────────────────────────────────
+    TWO_FACTOR_EMAIL_ENABLED: bool = True
+    TWO_FACTOR_SMS_ENABLED: bool = False
+    OTP_EXPIRY_SECONDS: int = 300           # 5 minutes
+    OTP_RESEND_COOLDOWN_SECONDS: int = 60   # 1 minute
+    OTP_MAX_ATTEMPTS: int = 5
+    # DEV ONLY: log OTP to console instead of sending real email/SMS.
+    # Production startup rejects this flag when set to true.
+    OTP_DEV_DELIVERY_MODE: bool = True
+
+    # ── SMTP (email OTP delivery) ───────────────────────────────────────────────
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 587
+    SMTP_USERNAME: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM_EMAIL: str = "noreply@erp.local"
+    SMTP_USE_TLS: bool = True
+
+    # ── SMS OTP delivery (Twilio or compatible) ────────────────────────────────
+    SMS_PROVIDER: str = ""          # "twilio" or ""
+    SMS_ACCOUNT_SID: str = ""       # Twilio Account SID
+    SMS_AUTH_TOKEN: str = ""        # Twilio Auth Token
+    SMS_SENDER_ID: str = ""         # From number/sender ID
+
     # ── M-Pesa / Safaricom Daraja ──────────────────────────────────────────────
     MPESA_CONSUMER_KEY: str = ""
     MPESA_CONSUMER_SECRET: str = ""
@@ -174,6 +198,12 @@ class Settings(BaseSettings):
                     "This flag auto-resets the admin password from env on every startup, "
                     "which is a development-only convenience. "
                     "Set SYNC_INITIAL_ADMIN_PASSWORD=false in .env.production."
+                )
+            if self.OTP_DEV_DELIVERY_MODE:
+                raise ValueError(
+                    "OTP_DEV_DELIVERY_MODE=true is not allowed in production. "
+                    "This flag logs OTPs to the console instead of sending real email/SMS. "
+                    "Set OTP_DEV_DELIVERY_MODE=false in .env.production."
                 )
         return self
 
