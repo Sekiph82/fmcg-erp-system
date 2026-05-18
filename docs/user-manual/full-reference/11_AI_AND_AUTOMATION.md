@@ -8,7 +8,7 @@
 
 ## Screenshot
 
-> Screenshot pending: AI workspace — Chat tab
+![AI Workspace — Chat Tab](../screenshots/captured/132_ai-chat.png)
 
 ---
 

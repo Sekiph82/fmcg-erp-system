@@ -24,7 +24,7 @@ You inspect incoming materials, in-process production, and finished goods. You m
 
 ## Screenshot
 
-> Screenshot pending: Quality workspace overview
+![Quality Workspace](../screenshots/captured/062_quality.png)
 
 ---
 
@@ -66,7 +66,7 @@ Finished goods:
 7. If FAIL: mandatory **Corrective Action** field
 8. Click **Submit**
 
-> Screenshot pending: Quality — Inspections tab with form
+![Quality — Inspections Tab](../screenshots/captured/063_quality-inspections.png)
 
 ---
 
@@ -85,7 +85,7 @@ Examples:
 - Microbial count: < 100 CFU/g
 - Temperature at receipt: 0–4°C
 
-> Screenshot pending: Quality — Parameters tab
+![Quality — Parameters Tab](../screenshots/captured/068_quality-parameters.png)
 
 ---
 
@@ -98,7 +98,7 @@ For each released batch:
 4. Review and sign off (digital signature)
 5. Send to customer if requested
 
-> Screenshot pending: Quality — Certificates tab
+![Quality — Certificates Tab](../screenshots/captured/066_quality-certificates.png)
 
 ---
 
@@ -110,7 +110,7 @@ For each released batch:
 4. CAPA: Corrective and Preventive Action records
 5. Document control: SOPs, work instructions
 
-> Screenshot pending: Quality — QMS tab
+![Quality — QMS Tab](../screenshots/captured/064_quality-qms.png)
 
 ---
 
@@ -122,7 +122,7 @@ Kenya food producers must declare allergens on labels:
 3. Cross-contamination risks from shared equipment are flagged
 4. Update whenever a formula changes
 
-> Screenshot pending: Quality — Allergen tab
+![Quality — Allergen Tab](../screenshots/captured/065_quality-allergen.png)
 
 **Critical for regulatory compliance:** Incorrect allergen declaration can trigger recalls and regulatory action.
 

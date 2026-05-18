@@ -8,7 +8,7 @@
 
 ## Screenshot
 
-> Screenshot pending: Admin workspace — Users tab
+![Admin Workspace](../screenshots/captured/004_admin-users.png)
 
 ---
 

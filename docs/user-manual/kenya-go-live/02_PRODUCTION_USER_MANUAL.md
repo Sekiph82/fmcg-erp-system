@@ -27,7 +27,7 @@ You plan and execute manufacturing. You create production orders, record output,
 
 ## Screenshot
 
-> Screenshot pending: Production workspace overview
+![Production Workspace](../screenshots/captured/038_production.png)
 
 ---
 
@@ -68,7 +68,7 @@ End of shift:
 5. Review the material requirements (auto-calculated from BOM)
 6. Click **Release** when ready to start
 
-> Screenshot pending: Production — Orders tab with create form
+![Production — Orders Tab](../screenshots/captured/039_production-orders.png)
 
 **Status flow:** Draft → Released → In Progress → Completed
 
@@ -91,7 +91,7 @@ Or use the Shop Floor terminal (tablet/touchscreen):
 4. Click **Complete** when done
 5. Enter actual quantity
 
-> Screenshot pending: Shop Floor — Operator Terminal
+![Shop Floor — Terminal](../screenshots/captured/051_shop-floor-terminal.png)
 
 ---
 
@@ -105,7 +105,7 @@ Or use the Shop Floor terminal (tablet/touchscreen):
 
 If a material substitution was needed, enter the alternate material and quantity.
 
-> Screenshot pending: Production — Material Flow tab
+![Production — Material Flow Tab](../screenshots/captured/041_production-material-flow.png)
 
 ---
 
@@ -146,7 +146,7 @@ Batch numbers link production to quality inspections and traceability.
 To check if a substitute is allowed:
 - BOM → Substitutes tab → find the component
 
-> Screenshot pending: BOM workspace — formula list
+![BOM Workspace](../screenshots/captured/053_bom.png)
 
 ---
 

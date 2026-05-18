@@ -12,7 +12,7 @@ This chapter covers workspaces that serve specific operational functions and do 
 **Tab:** npd  
 **Permission:** `npd.view`
 
-> Screenshot pending: NPD workspace
+![NPD Workspace](../screenshots/captured/118_npd.png)
 
 Manages new product development projects from concept to launch:
 - Project pipeline with stage gates
@@ -27,7 +27,7 @@ Manages new product development projects from concept to launch:
 **URL:** `/dashboard/maintenance`  
 **Permission:** `maintenance.view`
 
-> Screenshot pending: Maintenance workspace — Assets tab
+![Maintenance — Assets Tab](../screenshots/captured/120_maintenance-assets.png)
 
 | Tab | Purpose |
 |---|---|
@@ -48,7 +48,7 @@ Linked to Production OEE — downtime in Production links to Maintenance breakdo
 **URL:** `/dashboard/utility-management`  
 **Permission:** `utility_management.view`
 
-> Screenshot pending: Utilities workspace
+![Utility Management](../screenshots/captured/122_utility-management.png)
 
 | Tab | Purpose |
 |---|---|
@@ -81,7 +81,7 @@ Linked to Production OEE — downtime in Production links to Maintenance breakdo
 **URL:** `/dashboard/helpdesk`  
 **Permission:** `quality.view`
 
-> Screenshot pending: Helpdesk workspace
+![Helpdesk Workspace](../screenshots/captured/140_helpdesk.png)
 
 | Tab | Purpose |
 |---|---|
@@ -100,7 +100,7 @@ Used for internal IT support and customer service tickets. Links to Consumer Com
 **URL:** `/dashboard/documents`  
 **Permission:** `documents.view`
 
-> Screenshot pending: Documents workspace
+![Documents Workspace](../screenshots/captured/115_documents.png)
 
 | Tab | Purpose |
 |---|---|
@@ -116,7 +116,7 @@ Used for internal IT support and customer service tickets. Links to Consumer Com
 
 **URL:** `/dashboard/communication`
 
-> Screenshot pending: Communication workspace
+![Communication Workspace](../screenshots/captured/139_communication.png)
 
 | Tab | Purpose |
 |---|---|
@@ -136,7 +136,7 @@ Used for internal IT support and customer service tickets. Links to Consumer Com
 **URL:** `/dashboard/shop-floor`  
 **Permission:** `production.view`
 
-> Screenshot pending: Shop Floor — Operator Terminal
+![Shop Floor — Terminal](../screenshots/captured/051_shop-floor-terminal.png)
 
 | Tab | Purpose |
 |---|---|

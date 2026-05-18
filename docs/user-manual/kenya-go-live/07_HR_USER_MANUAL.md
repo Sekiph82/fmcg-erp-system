@@ -23,7 +23,7 @@ You manage employee records, attendance, leave, and payroll. Kenya statutory ded
 
 ## Screenshot
 
-> Screenshot pending: HR workspace — Employees tab
+![HR Workspace](../screenshots/captured/097_hr.png)
 
 ---
 
@@ -44,7 +44,7 @@ You manage employee records, attendance, leave, and payroll. Kenya statutory ded
    - Bank account details (for payroll payment)
 4. Save
 
-> Screenshot pending: HR — Employees tab with employee list
+![HR — Employees Tab](../screenshots/captured/098_hr-employees.png)
 
 ---
 
@@ -63,7 +63,7 @@ For each employee, set up their payroll profile:
 5. Verify net pay
 6. Save
 
-> Screenshot pending: Payroll — Profiles tab
+![Payroll — Profiles Tab](../screenshots/captured/107_payroll-profiles.png)
 
 ---
 
@@ -86,7 +86,7 @@ For each employee, set up their payroll profile:
 7. Generate payslips (email or PDF)
 8. Process payment (bank transfer, M-Pesa)
 
-> Screenshot pending: Kenya Payroll workspace — overview
+![Payroll Workspace](../screenshots/captured/106_payroll.png)
 
 ---
 
@@ -98,7 +98,7 @@ Daily attendance tracking:
 3. Mark attendance manually or confirm biometric import
 4. Late arrivals: enter actual arrival time
 
-> Screenshot pending: HR — Attendance tab
+![HR — Attendance Tab](../screenshots/captured/099_hr-attendance.png)
 
 ---
 
@@ -147,7 +147,7 @@ Employee submits expense claim:
    - **Payroll summary** by department
    - **Payslip export** (PDF or Excel)
 
-> Screenshot pending: Payroll — Reports tab
+![Payroll — Reports Tab](../screenshots/captured/108_payroll-reports.png)
 
 ---
 

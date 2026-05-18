@@ -8,7 +8,7 @@
 
 ## Screenshot
 
-> Screenshot pending: Procurement workspace overview
+![Procurement Workspace](../screenshots/captured/029_procurement.png)
 
 ---
 

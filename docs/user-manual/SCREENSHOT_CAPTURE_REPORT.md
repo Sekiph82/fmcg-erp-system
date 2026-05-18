@@ -1,107 +1,127 @@
 # Screenshot Capture Report
 
-**Date:** 2026-05-18  
-**Run duration:** ~7.1 minutes  
-**Tool:** Playwright (`e2e/manual-screenshots.spec.ts`)  
-**Viewport:** 1440×900
+**Date:** 2026-05-19  
+**Status:** COMPLETE — 140/140 routes captured
 
-## Results
+---
 
-| Status | Count |
+## Run History
+
+### Run 1 (2026-05-18) — PARTIAL
+- Tool: `frontend/e2e/manual-screenshots.spec.ts` (v1)
+- Viewport: 1440×900, Docker frontend: 1G memory
+- Result: **73/140 captured**, 67 failed
+- Root cause: Next.js dev server OOM at route 38 (production workspace). ERR_EMPTY_RESPONSE.
+- Recovery: Server restarted, captured analytics/docs/maintenance/CRM/marketing/AI clusters (routes 109–140)
+
+### Run 2 (2026-05-19) — COMPLETE
+- Tool: `frontend/e2e/manual-screenshots.spec.ts` (v2 — failed-only mode)
+- Viewport: 1440×900, Docker frontend: **2G memory** (increased from 1G)
+- Command: `MANUAL_CAPTURE_ONLY_FAILED=true npm run test:manual-screenshots`
+- Result: **67/67 failed routes recaptured successfully, 0 failures**
+- Total after merge: **140/140 captured**
+- Duration: 8.5 minutes (2.0m setup/warmup + 6.4m capture)
+
+---
+
+## Final Results
+
+| Metric | Count |
 |--------|-------|
-| Captured | 73 |
-| Failed | 67 |
-| Total routes | 140 |
+| Total routes (capture=true) | 140 |
+| Captured | **140** |
+| Failed | 0 |
+| capture=false (skipped) | 1 (`/dashboard/admin?tab=security` — covered by `admin-security`) |
+| PNG files | 140 |
+| Total size | ~70 MB (gitignored — regenerate locally) |
 
-Captured screenshots stored in: `docs/user-manual/screenshots/captured/`  
-Index file: `docs/user-manual/screenshots/screenshots-index.json`  
-Total size: ~36 MB (excluded from git — regenerate locally)
+---
 
-## Captured Modules
+## Captured Modules (All)
 
-All 73 captures are real screenshots from the running ERP at 1440×900.
+| Module | Routes | Status |
+|--------|--------|--------|
+| Login | 1 | ✅ Captured |
+| Dashboard | 1 | ✅ Captured |
+| Admin (all 8 tabs) | 9 | ✅ Captured |
+| Products / Materials / Suppliers | 3 | ✅ Captured |
+| Warehouses (2 tabs) | 2 | ✅ Captured |
+| Inventory (8 tabs) | 8 | ✅ Captured |
+| WMS (4 tabs) | 4 | ✅ Captured |
+| Procurement (8 tabs) | 8 | ✅ Captured |
+| Production (12 tabs) | 12 | ✅ Captured |
+| Shop-floor (3 tabs) | 3 | ✅ Captured |
+| BOM (4 tabs) | 4 | ✅ Captured |
+| Recipes | 1 | ✅ Captured |
+| Planning (4 tabs) | 4 | ✅ Captured |
+| Quality (7 tabs) | 7 | ✅ Captured |
+| Compliance (3 tabs) | 3 | ✅ Captured |
+| **Sales (11 tabs)** | 11 | ✅ Captured |
+| Logistics (4 tabs) | 4 | ✅ Captured |
+| **Finance (10 tabs)** | 10 | ✅ Captured |
+| **HR (9 tabs)** | 9 | ✅ Captured |
+| **Payroll (3 tabs)** | 3 | ✅ Captured |
+| Analytics (6 tabs) | 6 | ✅ Captured |
+| Documents (3 tabs) | 3 | ✅ Captured |
+| NPD | 1 | ✅ Captured |
+| Maintenance (3 tabs) | 3 | ✅ Captured |
+| Utility Management (3 tabs) | 3 | ✅ Captured |
+| CRM (3 tabs) | 3 | ✅ Captured |
+| Marketing (3 tabs) | 3 | ✅ Captured |
+| AI (2 tabs) | 2 | ✅ Captured |
+| Integrations (2 tabs) | 2 | ✅ Captured |
+| Approvals | 1 | ✅ Captured |
+| Audit Logs (2 tabs) | 2 | ✅ Captured |
+| POS | 1 | ✅ Captured |
+| Communication | 1 | ✅ Captured |
+| Helpdesk | 1 | ✅ Captured |
 
-| Module | Routes Captured |
-|--------|----------------|
-| Login page | 1 |
-| Dashboard (main) | 1 |
-| Admin | 9 tabs |
-| Products | 1 |
-| Materials | 1 |
-| Suppliers | 1 |
-| Warehouses | 2 tabs |
-| Inventory | 8 tabs |
-| WMS | 4 tabs |
-| Procurement | 8 tabs |
-| Production (partial) | 4 tabs (overview, orders, execution, material-flow) |
-| Analytics | 6 tabs |
-| Documents | 3 tabs |
-| NPD | 1 |
-| Maintenance | 3 tabs |
-| Utility Management | 3 tabs |
-| CRM | 3 tabs |
-| Marketing | 3 tabs |
-| AI | 2 tabs |
-| Integrations | 2 tabs |
-| Approvals | 1 |
-| Audit Logs | 2 tabs |
-| POS | 1 |
-| Communication | 1 |
-| Helpdesk | 1 |
+---
 
-## Failed Routes (67)
+## Kenya-Critical Route Status
 
-All failures: `net::ERR_EMPTY_RESPONSE` — the Next.js dev server became unresponsive around route 42 (production advanced tabs), then recovered at analytics (route 109).
+All critical routes captured:
 
-**Missing modules:**
-- Production: costing, batch-lots, QC, OEE, downtime, plans, scheduling, waste-yield
-- Shop-floor (all 3 tabs)
-- BOM (all 4 tabs)
-- Recipes
-- Planning (all 4 tabs)
-- Quality (all 7 tabs)
-- Compliance (all 3 tabs)
-- **Sales (all 11 tabs)** — critical for Kenya go-live
-- Logistics (all 4 tabs)
-- **Finance (all 10 tabs)** — critical for Kenya go-live
-- **HR (all 9 tabs)** — critical for Kenya go-live
-- **Payroll (all 3 tabs)** — critical for Kenya go-live
+| Route | PNG |
+|-------|-----|
+| /dashboard/sales | 072_sales.png |
+| /dashboard/sales?tab=orders | 073_sales-orders.png |
+| /dashboard/sales?tab=van-sales | 077_sales-van-sales.png |
+| /dashboard/sales?tab=collections | 079_sales-collections.png |
+| /dashboard/finance | 087_finance.png |
+| /dashboard/finance?tab=mpesa | 094_finance-mpesa.png |
+| /dashboard/finance?tab=tax | 095_finance-tax.png |
+| /dashboard/hr | 097_hr.png |
+| /dashboard/hr?tab=payroll | 100_hr-payroll.png |
+| /dashboard/payroll | 106_payroll.png |
+| /dashboard/payroll?tab=profiles | 107_payroll-profiles.png |
+| /dashboard/payroll?tab=reports | 108_payroll-reports.png |
 
-## Root Cause
-
-The Next.js dev server (`next dev`) became unresponsive after sustained load (37+ rapid page navigations). This is expected dev server behavior — production builds do not have this issue.
-
-**Workaround for re-capture of failed routes:**
-
-1. Restart the Docker stack: `docker compose up -d`
-2. Wait 60s for services to stabilize
-3. Re-run capture: `npm run test:manual-screenshots`
-
-The capture script is idempotent — it overwrites the index and adds new PNGs. Failed-route retries can be done by editing `routes.json` to only include the routes needing re-capture.
-
-## Re-Capture Priority
-
-For Kenya go-live documentation, re-capture these first:
-
-1. Sales workspace (all tabs) — van sales, M-Pesa collections
-2. Finance workspace (all tabs) — M-Pesa, tax (eTIMS), expenses
-3. HR workspace (all tabs) — Kenya payroll, PAYE/NHIF/NSSF
-4. Payroll workspace
-5. Quality workspace
-6. Planning workspace
+---
 
 ## How to Regenerate Screenshots
 
+PNGs are gitignored (~70 MB). Regenerate locally:
+
 ```bash
-# From repo root, with Docker stack running:
+# Full capture (all routes)
 cd frontend
 E2E_SKIP_WEBSERVER=1 npm run test:manual-screenshots
 
-# Or with explicit auth setup first:
-E2E_SKIP_WEBSERVER=1 npx playwright test --project=setup
-E2E_SKIP_WEBSERVER=1 npm run test:manual-screenshots
+# Failed-only recapture
+E2E_SKIP_WEBSERVER=1 MANUAL_CAPTURE_ONLY_FAILED=true npm run test:manual-screenshots
+
+# Specific module
+E2E_SKIP_WEBSERVER=1 MANUAL_CAPTURE_ROLE=sales npm run test:manual-screenshots
+
+# Batch mode
+E2E_SKIP_WEBSERVER=1 MANUAL_CAPTURE_BATCH_SIZE=15 MANUAL_CAPTURE_BATCH_INDEX=0 MANUAL_CAPTURE_ONLY_FAILED=true npm run test:manual-screenshots
+
+# Validate routes.json first
+npm run manual:validate-routes
 ```
 
-Credentials and base URL are read from `.env.test` (or environment):
-- `NEXT_PUBLIC_APP_URL` (default: `http://localhost:3000`)
-- Admin credentials from auth setup test
+**Requirements:**
+- Docker stack running (`docker compose up -d`)
+- Frontend container: 2G memory (set in docker-compose.yml)
+- Auth state present (auto-created by setup project)

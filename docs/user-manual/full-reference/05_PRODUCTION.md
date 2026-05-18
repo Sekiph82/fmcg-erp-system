@@ -8,7 +8,7 @@
 
 ## Screenshot
 
-> Screenshot pending: Production workspace overview
+![Production Workspace](../screenshots/captured/038_production.png)
 
 ---
 

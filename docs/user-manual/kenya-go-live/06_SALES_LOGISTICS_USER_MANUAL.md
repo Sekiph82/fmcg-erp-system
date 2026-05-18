@@ -24,7 +24,7 @@ You manage customer orders, raise invoices, coordinate deliveries, and settle va
 
 ## Screenshot
 
-> Screenshot pending: Sales workspace — Orders tab
+![Sales Workspace](../screenshots/captured/072_sales.png)
 
 ---
 
@@ -60,7 +60,7 @@ You manage customer orders, raise invoices, coordinate deliveries, and settle va
 5. Check total and VAT
 6. Click **Confirm Order**
 
-> Screenshot pending: Sales — Orders tab with order list
+![Sales — Orders Tab](../screenshots/captured/073_sales-orders.png)
 
 ---
 
@@ -79,7 +79,7 @@ Add a new customer:
    - Price list (assign appropriate tier)
 4. Save
 
-> Screenshot pending: Sales — Customers tab
+![Sales — Customers Tab](../screenshots/captured/075_sales-customers.png)
 
 ---
 
@@ -94,7 +94,7 @@ After goods are dispatched:
 6. Download PDF or send by email
 7. System sends to eTIMS (KRA) for e-invoicing compliance
 
-> Screenshot pending: Sales — Invoices tab
+![Sales — Invoices Tab](../screenshots/captured/074_sales-invoices.png)
 
 ---
 
@@ -114,7 +114,7 @@ Selling route:
 7. Enter: products sold by customer, cash collected, returns
 8. System creates invoices and updates stock
 
-> Screenshot pending: Sales — Van Sales tab
+![Sales — Van Sales Tab](../screenshots/captured/077_sales-van-sales.png)
 
 ---
 

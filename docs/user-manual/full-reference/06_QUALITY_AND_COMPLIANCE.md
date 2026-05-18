@@ -8,7 +8,7 @@
 
 ## Screenshot
 
-> Screenshot pending: Quality workspace overview
+![Quality Workspace](../screenshots/captured/062_quality.png)
 
 ---
 

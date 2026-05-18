@@ -457,10 +457,10 @@
     "role": "manager",
     "module": "production",
     "priority": 2,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/dashboard/production?tab=costing\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/production?tab=costing\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/042_production-costing.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "042_production-costing.png"
   },
   {
     "id": "production-batch-lots",
@@ -469,10 +469,10 @@
     "role": "production",
     "module": "production",
     "priority": 2,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/dashboard/production?tab=batch-lots\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/production?tab=batch-lots\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/043_production-batch-lots.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "043_production-batch-lots.png"
   },
   {
     "id": "production-quality-control",
@@ -481,10 +481,10 @@
     "role": "quality",
     "module": "production",
     "priority": 2,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/dashboard/production?tab=quality-control\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/production?tab=quality-control\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/044_production-quality-control.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "044_production-quality-control.png"
   },
   {
     "id": "production-oee",
@@ -493,10 +493,10 @@
     "role": "manager",
     "module": "production",
     "priority": 2,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/dashboard/production?tab=oee\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/production?tab=oee\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/045_production-oee.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "045_production-oee.png"
   },
   {
     "id": "production-downtime",
@@ -505,10 +505,10 @@
     "role": "production",
     "module": "production",
     "priority": 2,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/dashboard/production?tab=downtime\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/production?tab=downtime\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/046_production-downtime.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "046_production-downtime.png"
   },
   {
     "id": "production-plans",
@@ -517,10 +517,10 @@
     "role": "production",
     "module": "production",
     "priority": 2,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/dashboard/production?tab=plans\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/production?tab=plans\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/047_production-plans.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "047_production-plans.png"
   },
   {
     "id": "production-scheduling",
@@ -529,10 +529,10 @@
     "role": "production",
     "module": "production",
     "priority": 2,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/dashboard/production?tab=scheduling\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/production?tab=scheduling\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/048_production-scheduling.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "048_production-scheduling.png"
   },
   {
     "id": "production-waste-yield",
@@ -541,10 +541,10 @@
     "role": "production",
     "module": "production",
     "priority": 2,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/dashboard/production?tab=waste-yield\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/production?tab=waste-yield\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/049_production-waste-yield.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "049_production-waste-yield.png"
   },
   {
     "id": "shop-floor",
@@ -553,10 +553,10 @@
     "role": "production",
     "module": "production",
     "priority": 1,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/dashboard/shop-floor\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/shop-floor\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/050_shop-floor.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "050_shop-floor.png"
   },
   {
     "id": "shop-floor-terminal",
@@ -565,10 +565,10 @@
     "role": "production",
     "module": "production",
     "priority": 1,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/dashboard/shop-floor?tab=terminal\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/shop-floor?tab=terminal\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/051_shop-floor-terminal.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "051_shop-floor-terminal.png"
   },
   {
     "id": "shop-floor-supervisor",
@@ -577,10 +577,10 @@
     "role": "production",
     "module": "production",
     "priority": 2,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/dashboard/shop-floor?tab=supervisor\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/shop-floor?tab=supervisor\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/052_shop-floor-supervisor.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "052_shop-floor-supervisor.png"
   },
   {
     "id": "bom",
@@ -589,10 +589,10 @@
     "role": "production",
     "module": "bom",
     "priority": 1,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/dashboard/bom\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/bom\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/053_bom.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "053_bom.png"
   },
   {
     "id": "bom-list",
@@ -601,10 +601,10 @@
     "role": "production",
     "module": "bom",
     "priority": 1,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/dashboard/bom?tab=list\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/bom?tab=list\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/054_bom-list.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "054_bom-list.png"
   },
   {
     "id": "bom-substitutes",
@@ -613,10 +613,10 @@
     "role": "production",
     "module": "bom",
     "priority": 2,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/dashboard/bom?tab=substitutes\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/bom?tab=substitutes\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/055_bom-substitutes.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "055_bom-substitutes.png"
   },
   {
     "id": "bom-compare",
@@ -625,10 +625,10 @@
     "role": "production",
     "module": "bom",
     "priority": 2,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/dashboard/bom?tab=compare\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/bom?tab=compare\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/056_bom-compare.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "056_bom-compare.png"
   },
   {
     "id": "recipes",
@@ -637,10 +637,10 @@
     "role": "production",
     "module": "recipes",
     "priority": 1,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/dashboard/recipes\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/recipes\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/057_recipes.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "057_recipes.png"
   },
   {
     "id": "planning",
@@ -649,10 +649,10 @@
     "role": "production",
     "module": "planning",
     "priority": 2,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/dashboard/planning\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/planning\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/058_planning.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "058_planning.png"
   },
   {
     "id": "planning-mrp",
@@ -661,10 +661,10 @@
     "role": "production",
     "module": "planning",
     "priority": 1,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/dashboard/planning?tab=mrp\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/planning?tab=mrp\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/059_planning-mrp.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "059_planning-mrp.png"
   },
   {
     "id": "planning-mps",
@@ -673,10 +673,10 @@
     "role": "production",
     "module": "planning",
     "priority": 2,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/dashboard/planning?tab=mps\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/planning?tab=mps\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/060_planning-mps.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "060_planning-mps.png"
   },
   {
     "id": "planning-capacity",
@@ -685,10 +685,10 @@
     "role": "production",
     "module": "planning",
     "priority": 2,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/dashboard/planning?tab=capacity\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/planning?tab=capacity\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/061_planning-capacity.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "061_planning-capacity.png"
   },
   {
     "id": "quality",
@@ -697,10 +697,10 @@
     "role": "quality",
     "module": "quality",
     "priority": 1,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/dashboard/quality\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/quality\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/062_quality.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "062_quality.png"
   },
   {
     "id": "quality-inspections",
@@ -709,10 +709,10 @@
     "role": "quality",
     "module": "quality",
     "priority": 1,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/dashboard/quality?tab=inspections\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/quality?tab=inspections\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/063_quality-inspections.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "063_quality-inspections.png"
   },
   {
     "id": "quality-qms",
@@ -721,10 +721,10 @@
     "role": "quality",
     "module": "quality",
     "priority": 1,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/dashboard/quality?tab=qms\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/quality?tab=qms\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/064_quality-qms.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "064_quality-qms.png"
   },
   {
     "id": "quality-allergen",
@@ -733,10 +733,10 @@
     "role": "quality",
     "module": "quality",
     "priority": 1,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/dashboard/quality?tab=allergen\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/quality?tab=allergen\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/065_quality-allergen.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "065_quality-allergen.png"
   },
   {
     "id": "quality-certificates",
@@ -745,10 +745,10 @@
     "role": "quality",
     "module": "quality",
     "priority": 2,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/dashboard/quality?tab=certificates\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/quality?tab=certificates\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/066_quality-certificates.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "066_quality-certificates.png"
   },
   {
     "id": "quality-consumer-complaints",
@@ -757,10 +757,10 @@
     "role": "quality",
     "module": "quality",
     "priority": 2,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/dashboard/quality?tab=consumer-complaints\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/quality?tab=consumer-complaints\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/067_quality-consumer-complaints.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "067_quality-consumer-complaints.png"
   },
   {
     "id": "quality-parameters",
@@ -769,10 +769,10 @@
     "role": "quality",
     "module": "quality",
     "priority": 2,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/dashboard/quality?tab=parameters\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/quality?tab=parameters\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/068_quality-parameters.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "068_quality-parameters.png"
   },
   {
     "id": "compliance",
@@ -781,10 +781,10 @@
     "role": "quality",
     "module": "compliance",
     "priority": 2,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/dashboard/compliance\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/compliance\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/069_compliance.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "069_compliance.png"
   },
   {
     "id": "compliance-gs1",
@@ -793,10 +793,10 @@
     "role": "quality",
     "module": "compliance",
     "priority": 2,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/dashboard/compliance?tab=gs1\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/compliance?tab=gs1\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/070_compliance-gs1.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "070_compliance-gs1.png"
   },
   {
     "id": "compliance-regulatory",
@@ -805,10 +805,10 @@
     "role": "quality",
     "module": "compliance",
     "priority": 2,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/dashboard/compliance?tab=regulatory-certs\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/compliance?tab=regulatory-certs\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/071_compliance-regulatory.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "071_compliance-regulatory.png"
   },
   {
     "id": "sales",
@@ -817,10 +817,10 @@
     "role": "sales",
     "module": "sales",
     "priority": 1,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/dashboard/sales\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/sales\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/072_sales.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "072_sales.png"
   },
   {
     "id": "sales-orders",
@@ -829,10 +829,10 @@
     "role": "sales",
     "module": "sales",
     "priority": 1,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/dashboard/sales?tab=orders\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/sales?tab=orders\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/073_sales-orders.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "073_sales-orders.png"
   },
   {
     "id": "sales-invoices",
@@ -841,10 +841,10 @@
     "role": "sales",
     "module": "sales",
     "priority": 1,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/dashboard/sales?tab=invoices\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/sales?tab=invoices\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/074_sales-invoices.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "074_sales-invoices.png"
   },
   {
     "id": "sales-customers",
@@ -853,10 +853,10 @@
     "role": "sales",
     "module": "sales",
     "priority": 1,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/dashboard/sales?tab=customers\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/sales?tab=customers\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/075_sales-customers.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "075_sales-customers.png"
   },
   {
     "id": "sales-shipments",
@@ -865,10 +865,10 @@
     "role": "sales",
     "module": "sales",
     "priority": 1,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/dashboard/sales?tab=shipments\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/sales?tab=shipments\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/076_sales-shipments.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "076_sales-shipments.png"
   },
   {
     "id": "sales-van-sales",
@@ -877,10 +877,10 @@
     "role": "sales",
     "module": "sales",
     "priority": 1,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/dashboard/sales?tab=van-sales\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/sales?tab=van-sales\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/077_sales-van-sales.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "077_sales-van-sales.png"
   },
   {
     "id": "sales-quotes",
@@ -889,10 +889,10 @@
     "role": "sales",
     "module": "sales",
     "priority": 2,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/dashboard/sales?tab=quotes\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/sales?tab=quotes\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/078_sales-quotes.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "078_sales-quotes.png"
   },
   {
     "id": "sales-collections",
@@ -901,10 +901,10 @@
     "role": "sales",
     "module": "sales",
     "priority": 2,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/dashboard/sales?tab=collections\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/sales?tab=collections\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/079_sales-collections.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "079_sales-collections.png"
   },
   {
     "id": "sales-price-lists",
@@ -913,10 +913,10 @@
     "role": "sales",
     "module": "sales",
     "priority": 2,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/dashboard/sales?tab=price-lists\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/sales?tab=price-lists\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/080_sales-price-lists.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "080_sales-price-lists.png"
   },
   {
     "id": "sales-returns",
@@ -925,10 +925,10 @@
     "role": "sales",
     "module": "sales",
     "priority": 2,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/dashboard/sales?tab=returns\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/sales?tab=returns\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/081_sales-returns.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "081_sales-returns.png"
   },
   {
     "id": "sales-field-sales",
@@ -937,10 +937,10 @@
     "role": "sales",
     "module": "sales",
     "priority": 2,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/dashboard/sales?tab=field-sales\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/sales?tab=field-sales\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/082_sales-field-sales.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "082_sales-field-sales.png"
   },
   {
     "id": "logistics",
@@ -949,10 +949,10 @@
     "role": "sales",
     "module": "logistics",
     "priority": 1,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/dashboard/logistics\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/logistics\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/083_logistics.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "083_logistics.png"
   },
   {
     "id": "logistics-shipments",
@@ -961,10 +961,10 @@
     "role": "sales",
     "module": "logistics",
     "priority": 1,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/dashboard/logistics?tab=shipments\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/logistics?tab=shipments\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/084_logistics-shipments.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "084_logistics-shipments.png"
   },
   {
     "id": "logistics-fleet",
@@ -973,10 +973,10 @@
     "role": "sales",
     "module": "logistics",
     "priority": 2,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/dashboard/logistics?tab=fleet\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/logistics?tab=fleet\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/085_logistics-fleet.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "085_logistics-fleet.png"
   },
   {
     "id": "logistics-containers",
@@ -985,10 +985,10 @@
     "role": "sales",
     "module": "logistics",
     "priority": 2,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/dashboard/logistics?tab=containers\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/logistics?tab=containers\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/086_logistics-containers.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "086_logistics-containers.png"
   },
   {
     "id": "finance",
@@ -997,10 +997,10 @@
     "role": "manager",
     "module": "finance",
     "priority": 1,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/dashboard/finance\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/finance\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/087_finance.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "087_finance.png"
   },
   {
     "id": "finance-accounting",
@@ -1009,10 +1009,10 @@
     "role": "manager",
     "module": "finance",
     "priority": 1,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/dashboard/finance?tab=accounting\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/finance?tab=accounting\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/088_finance-accounting.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "088_finance-accounting.png"
   },
   {
     "id": "finance-bank-recon",
@@ -1021,10 +1021,10 @@
     "role": "manager",
     "module": "finance",
     "priority": 1,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/dashboard/finance?tab=bank-recon\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/finance?tab=bank-recon\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/089_finance-bank-recon.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "089_finance-bank-recon.png"
   },
   {
     "id": "finance-fixed-assets",
@@ -1033,10 +1033,10 @@
     "role": "manager",
     "module": "finance",
     "priority": 2,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/dashboard/finance?tab=fixed-assets\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/finance?tab=fixed-assets\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/090_finance-fixed-assets.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "090_finance-fixed-assets.png"
   },
   {
     "id": "finance-receivables",
@@ -1045,10 +1045,10 @@
     "role": "manager",
     "module": "finance",
     "priority": 1,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/dashboard/finance?tab=receivables\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/finance?tab=receivables\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/091_finance-receivables.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "091_finance-receivables.png"
   },
   {
     "id": "finance-cashbook",
@@ -1057,10 +1057,10 @@
     "role": "manager",
     "module": "finance",
     "priority": 2,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/dashboard/finance?tab=cashbook\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/finance?tab=cashbook\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/092_finance-cashbook.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "092_finance-cashbook.png"
   },
   {
     "id": "finance-budget",
@@ -1069,10 +1069,10 @@
     "role": "manager",
     "module": "finance",
     "priority": 2,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/dashboard/finance?tab=budget\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/finance?tab=budget\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/093_finance-budget.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "093_finance-budget.png"
   },
   {
     "id": "finance-mpesa",
@@ -1081,10 +1081,10 @@
     "role": "manager",
     "module": "finance",
     "priority": 1,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/dashboard/finance?tab=mpesa\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/finance?tab=mpesa\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/094_finance-mpesa.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "094_finance-mpesa.png"
   },
   {
     "id": "finance-tax",
@@ -1093,10 +1093,10 @@
     "role": "manager",
     "module": "finance",
     "priority": 2,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/dashboard/finance?tab=tax\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/finance?tab=tax\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/095_finance-tax.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "095_finance-tax.png"
   },
   {
     "id": "finance-expenses",
@@ -1105,10 +1105,10 @@
     "role": "manager",
     "module": "finance",
     "priority": 2,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/dashboard/finance?tab=expenses\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/finance?tab=expenses\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/096_finance-expenses.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "096_finance-expenses.png"
   },
   {
     "id": "hr",
@@ -1117,10 +1117,10 @@
     "role": "hr",
     "module": "hr",
     "priority": 1,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/dashboard/hr\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/hr\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/097_hr.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "097_hr.png"
   },
   {
     "id": "hr-employees",
@@ -1129,10 +1129,10 @@
     "role": "hr",
     "module": "hr",
     "priority": 1,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/dashboard/hr?tab=employees\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/hr?tab=employees\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/098_hr-employees.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "098_hr-employees.png"
   },
   {
     "id": "hr-attendance",
@@ -1141,10 +1141,10 @@
     "role": "hr",
     "module": "hr",
     "priority": 1,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/dashboard/hr?tab=attendance\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/hr?tab=attendance\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/099_hr-attendance.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "099_hr-attendance.png"
   },
   {
     "id": "hr-payroll",
@@ -1153,10 +1153,10 @@
     "role": "hr",
     "module": "hr",
     "priority": 1,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/dashboard/hr?tab=payroll\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/hr?tab=payroll\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/100_hr-payroll.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "100_hr-payroll.png"
   },
   {
     "id": "hr-recruitment",
@@ -1165,10 +1165,10 @@
     "role": "hr",
     "module": "hr",
     "priority": 2,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/dashboard/hr?tab=recruitment\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/hr?tab=recruitment\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/101_hr-recruitment.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "101_hr-recruitment.png"
   },
   {
     "id": "hr-leave",
@@ -1177,10 +1177,10 @@
     "role": "hr",
     "module": "hr",
     "priority": 2,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/dashboard/hr?tab=leave\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/hr?tab=leave\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/102_hr-leave.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "102_hr-leave.png"
   },
   {
     "id": "hr-appraisals",
@@ -1189,10 +1189,10 @@
     "role": "hr",
     "module": "hr",
     "priority": 2,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/dashboard/hr?tab=appraisals\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/hr?tab=appraisals\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/103_hr-appraisals.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "103_hr-appraisals.png"
   },
   {
     "id": "hr-training",
@@ -1201,10 +1201,10 @@
     "role": "hr",
     "module": "hr",
     "priority": 2,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/dashboard/hr?tab=training\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/hr?tab=training\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/104_hr-training.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "104_hr-training.png"
   },
   {
     "id": "hr-expenses",
@@ -1213,10 +1213,10 @@
     "role": "hr",
     "module": "hr",
     "priority": 2,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/dashboard/hr?tab=expenses\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/hr?tab=expenses\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/105_hr-expenses.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "105_hr-expenses.png"
   },
   {
     "id": "payroll",
@@ -1225,10 +1225,10 @@
     "role": "hr",
     "module": "payroll",
     "priority": 1,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/dashboard/payroll\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/payroll\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/106_payroll.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "106_payroll.png"
   },
   {
     "id": "payroll-profiles",
@@ -1237,10 +1237,10 @@
     "role": "hr",
     "module": "payroll",
     "priority": 2,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: net::ERR_EMPTY_RESPONSE at http://localhost:3000/dashboard/payroll?tab=profiles\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/payroll?tab=profiles\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/107_payroll-profiles.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "107_payroll-profiles.png"
   },
   {
     "id": "payroll-reports",
@@ -1249,10 +1249,10 @@
     "role": "hr",
     "module": "payroll",
     "priority": 2,
-    "screenshot": null,
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "failed",
-    "error": "page.goto: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:3000/dashboard/payroll?tab=reports\", waiting until \"domcontentloaded\"\u001b[22m\n"
+    "screenshot": "captured/108_payroll-reports.png",
+    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "status": "captured",
+    "filename": "108_payroll-reports.png"
   },
   {
     "id": "analytics",
@@ -1605,5 +1605,17 @@
     "screenshot": "captured/140_helpdesk.png",
     "capturedAt": "2026-05-18T20:20:53.975Z",
     "status": "captured"
+  },
+  {
+    "id": "security",
+    "title": "Security Settings (Admin — Security)",
+    "path": "/dashboard/admin?tab=security",
+    "role": "admin",
+    "module": "admin",
+    "priority": 1,
+    "screenshot": null,
+    "capturedAt": "",
+    "status": "failed",
+    "filename": "141_security.png"
   }
 ]

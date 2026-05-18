@@ -27,7 +27,7 @@ You monitor business performance, approve large transactions, and use the ERP fo
 
 ## Screenshot
 
-> Screenshot pending: Dashboard home — KPI cards
+![Dashboard Home — KPI Cards](../screenshots/captured/002_dashboard.png)
 
 ---
 
@@ -59,7 +59,7 @@ Items requiring your approval appear as notifications and in the Approvals queue
 4. Click **Approve** or **Reject**
 5. If rejecting: enter reason (mandatory)
 
-> Screenshot pending: Approvals workspace
+![Approvals Workspace](../screenshots/captured/135_approvals.png)
 
 ---
 
@@ -72,7 +72,7 @@ Items requiring your approval appear as notifications and in the Approvals queue
    - Receivables and payables
    - Budget vs actual
 
-> Screenshot pending: Finance workspace overview
+![Finance Workspace](../screenshots/captured/087_finance.png)
 
 ---
 
@@ -94,7 +94,7 @@ Items requiring your approval appear as notifications and in the Approvals queue
    - Top 10 customers, top 10 products
    - Sales rep performance
 
-> Screenshot pending: Analytics — Sales tab
+![Analytics — Sales Tab](../screenshots/captured/110_analytics-sales.png)
 
 ---
 

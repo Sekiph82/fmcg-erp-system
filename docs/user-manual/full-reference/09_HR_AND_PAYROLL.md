@@ -8,7 +8,7 @@
 
 ## Screenshot
 
-> Screenshot pending: HR workspace — Employees tab
+![HR Workspace](../screenshots/captured/097_hr.png)
 
 ---
 

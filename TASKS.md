@@ -1,35 +1,41 @@
 # TASKS
 
 ## Current Phase
-SCREENSHOT-BASED ERP USER MANUAL SYSTEM — PARTIAL COMPLETE. 2026-05-18. Created full screenshot automation infrastructure: 140-route manifest, Playwright capture script, Kenya go-live manuals (10 role-based docs), full reference manual (15 chapters), strategy/plan docs. Captured 73/140 screenshots (36 MB, excluded from git). 67 routes failed due to Next.js dev server ERR_EMPTY_RESPONSE crash mid-run. Priority re-capture needed: Sales, Finance, HR, Payroll. Backend: 482/482 pytest pass.
+SCREENSHOT-BASED ERP USER MANUAL SYSTEM — COMPLETE. 2026-05-19. All 140/140 routes captured. 67 failed routes from Round 10 recaptured using improved script v2 (failed-only mode, retry, fresh context after crash). Docker frontend memory 2G. All 24 screenshot placeholders in manuals replaced with real PNG links. Backend: 482/482 pytest pass. Auth-public: 4/4 pass. Playwright smoke: pass.
 
-### Screenshot Manual System (2026-05-18)
-- **Captured:** 73/140 routes — login, dashboard, admin, products, materials, suppliers, warehouses, inventory, WMS, procurement (complete), production (4/12), analytics, documents, NPD, maintenance, utility, CRM, marketing, AI, integrations, approvals, logs, POS, communication, helpdesk
-- **Failed (67):** production advanced tabs, shop-floor, BOM, recipes, planning, quality, compliance, sales, logistics, finance, HR, payroll — all `net::ERR_EMPTY_RESPONSE` (dev server crash)
-- **Re-capture:** `cd frontend && E2E_SKIP_WEBSERVER=1 npm run test:manual-screenshots`
+### Screenshot Manual System (2026-05-19)
+- **Captured:** 140/140 routes — all modules complete including Kenya-critical (Sales, Finance, HR, Payroll)
+- **Failed:** 0
+- **PNGs:** ~70 MB, gitignored — regenerate with `cd frontend && E2E_SKIP_WEBSERVER=1 npm run test:manual-screenshots`
 - **Kenya go-live manuals:** `docs/user-manual/kenya-go-live/` (10 files, role-based)
 - **Full reference:** `docs/user-manual/full-reference/` (15 chapters)
 - **Index:** `docs/user-manual/screenshots/screenshots-index.json`
 
-### Files Changed
-- `.gitignore` — excluded `docs/user-manual/screenshots/captured/`
-- `docs/user-manual/screenshots/routes.json` — rebuilt with 140 real workspace paths
-- `docs/user-manual/screenshots/screenshots-index.json` — capture results
-- `frontend/e2e/manual-screenshots.spec.ts` — Playwright capture script (new)
-- `frontend/package.json` — added `test:manual-screenshots` script
-- `backend/tests/test_screenshot_automation_docs.py` — updated assertions
-- `backend/tests/test_full_manual_generation_readiness.py` — 7-test suite (rewritten)
-- All `docs/user-manual/` strategy/plan/manual files (new)
+### Files Changed (Round 11)
+- `frontend/e2e/manual-screenshots.spec.ts` — rewritten v2: failed-only/batch/role/ID filter, retry, fresh context after crash
+- `frontend/scripts/validate-manual-routes.mjs` — route validation script (new)
+- `frontend/package.json` — added `manual:validate-routes` script
+- `docker-compose.yml` — frontend memory 1G→2G (prevents OOM during 140-route capture)
+- `docs/user-manual/screenshots/screenshots-index.json` — 140/140 captured
+- `docs/user-manual/kenya-go-live/*.md` — 24 screenshot placeholders → real PNG links (8 files)
+- `docs/user-manual/full-reference/*.md` — real PNG links (13 files)
+- `docs/user-manual/SCREENSHOT_CAPTURE_REPORT.md` — updated 140/140
+- `docs/user-manual/UNCAPTURED_SCREENSHOTS_REPORT.md` — root cause + recapture log (new)
+- `docs/user-manual/FULL_MANUAL_GENERATION_AUDIT.md` — updated complete status
 
-### Verification Results (2026-05-18)
+### Verification Results (2026-05-19)
 | Check | Result |
 |---|---|
 | Backend pytest | 482/482 pass |
 | Frontend build | clean |
-| Screenshots captured | 73/140 (52%) |
-| Screenshots failed | 67/140 (ERR_EMPTY_RESPONSE) |
+| Type-check | clean |
+| Screenshots captured | **140/140** |
+| Screenshots failed | 0 |
+| Auth-public E2E | 4/4 pass |
+| Playwright smoke | pass |
 | Kenya go-live manuals | 10/10 created |
 | Full reference chapters | 15/15 created |
+| Screenshot placeholders remaining | 0 (all replaced) |
 
 ## Previous Phase
 PRODUCTION DOCKER ENV-FILE FIX — COMPLETE. 2026-05-18. Changed service-level `env_file: .env.production` to long-form `required: false` in docker-compose.prod.yml (db, backend, frontend). Config validation now passes with `--env-file .env.production.example`. Real prod deployment unchanged — file loads when present. Backend: 478/478 pytest pass. Frontend: type-check + build clean. Audits: D=0, no redirect drift, tabs pass. Health: 0 HIGH.

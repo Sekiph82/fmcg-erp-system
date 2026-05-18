@@ -8,7 +8,7 @@
 
 ## Screenshot
 
-> Screenshot pending: Inventory workspace — Stock tab
+![Inventory — Stock Tab](../screenshots/captured/018_inventory-stock.png)
 
 ---
 
@@ -77,4 +77,4 @@
 
 ## Screenshot
 
-> Screenshot pending: WMS workspace — Locations tab
+![WMS — Locations Tab](../screenshots/captured/027_wms-locations.png)

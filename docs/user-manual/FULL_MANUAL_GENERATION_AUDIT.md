@@ -1,44 +1,42 @@
 # Full Manual Generation Audit
 
-**Date:** 2026-05-18  
-**Status:** PARTIAL CAPTURE COMPLETE — 73/140 routes captured (67 failed due to dev server ERR_EMPTY_RESPONSE)
+**Date:** 2026-05-19  
+**Status:** COMPLETE — 140/140 routes captured
 
 ---
 
-## Current State (2026-05-18 Update)
+## Current State (2026-05-19 Update)
 
-**What changed this pass:**
-- `routes.json` rebuilt with real workspace paths and tab params (old redirect paths removed)
-- `manual-screenshots.spec.ts` Playwright capture script created
-- Kenya go-live manuals created (10 role-based documents)
-- Full reference manual structure created (15 chapters)
-- Manual strategy, capture plan, automation plan, PDF plan, in-app help plan created
-- Backend readiness tests updated to check manuals exist + routes are workspace-based
+**What changed this pass (Round 11):**
+- `manual-screenshots.spec.ts` rewritten v2: failed-only mode, batching, role/ID filter, retry (3×), 4s retry delay, fresh browser context after crash, progress persistence after every route
+- `scripts/validate-manual-routes.mjs` created: validates routes.json before capture
+- `docker-compose.yml` frontend memory 1G → 2G (prevents dev server OOM during 140-route capture)
+- `package.json` added `manual:validate-routes` script
+- All 67 failed routes recaptured (production/shop-floor/BOM/planning/quality/compliance/sales/logistics/finance/HR/payroll)
+- 24 `> Screenshot pending:` placeholders replaced with real `![...](../screenshots/captured/NNN_id.png)` links across 21 manual files
 
 **Screenshot capture:**
-- Script: `frontend/e2e/manual-screenshots.spec.ts`
-- Command: `E2E_SKIP_WEBSERVER=1 npx playwright test e2e/manual-screenshots.spec.ts --project=chromium`
-- Output: `docs/user-manual/screenshots/captured/`
+- Script: `frontend/e2e/manual-screenshots.spec.ts` (v2)
+- Command: `E2E_SKIP_WEBSERVER=1 npm run test:manual-screenshots`
+- Output: `docs/user-manual/screenshots/captured/` (~70 MB, gitignored)
 - Index: `docs/user-manual/screenshots/screenshots-index.json`
 
 ---
 
 ## Screenshot capture index
 
-**Status:** Pending capture run (index file is currently empty or contains results from last run).
+| Metric | Count |
+|--------|-------|
+| Total routes (capture=true) | 140 |
+| Captured | **140** |
+| Failed | 0 |
+| capture=false (skipped) | 1 (`/dashboard/admin?tab=security`) |
+| PNG files | 140 |
+| Total size | ~70 MB (gitignored) |
 
-Run `npm run test:manual-screenshots` to populate.
-
-Results will show: captured screenshots, failed routes, and error reasons.
-
-After capture, screenshots are referenced in manuals as:
+Screenshots are referenced in manuals as:
 ```markdown
 ![Title](../screenshots/captured/NNN_id.png)
-```
-
-Pending screenshots use:
-```markdown
-> Screenshot pending: description
 ```
 
 ---
@@ -49,7 +47,7 @@ Pending screenshots use:
 |---|---|---|
 | `MANUAL_AUDIT.md` | Existing | Static code audit complete |
 | `FULL_MANUAL_GENERATION_AUDIT.md` | Updated | This file |
-| `screenshots-index.json` | Ready for capture | Run `npm run test:manual-screenshots` |
+| `screenshots-index.json` | **140/140 captured** | All routes captured 2026-05-19 |
 | `routes.json` | Updated | 140+ real workspace routes |
 | `manual-screenshots.spec.ts` | Created | Playwright capture script |
 | Kenya go-live manuals | Created | 10 role-based documents |

@@ -8,7 +8,7 @@
 
 ## Screenshot
 
-> Screenshot pending: Sales workspace — Orders tab
+![Sales Workspace](../screenshots/captured/072_sales.png)
 
 ---
 

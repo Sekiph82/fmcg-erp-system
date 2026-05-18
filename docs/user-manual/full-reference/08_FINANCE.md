@@ -8,7 +8,7 @@
 
 ## Screenshot
 
-> Screenshot pending: Finance workspace overview
+![Finance Workspace](../screenshots/captured/087_finance.png)
 
 ---
 

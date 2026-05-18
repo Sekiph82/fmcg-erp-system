@@ -23,7 +23,7 @@ You source materials, raise purchase orders, manage suppliers, and oversee goods
 
 ## Screenshot
 
-> Screenshot pending: Procurement workspace overview
+![Procurement Workspace](../screenshots/captured/029_procurement.png)
 
 ---
 
@@ -57,7 +57,7 @@ When production or warehouse needs materials:
 
 Or production/warehouse staff can submit requests themselves — they appear in your queue.
 
-> Screenshot pending: Procurement — Purchase Requests tab
+![Procurement — Purchase Requests Tab](../screenshots/captured/030_procurement-requests.png)
 
 ---
 
@@ -79,7 +79,7 @@ Or production/warehouse staff can submit requests themselves — they appear in 
 
 **Status flow:** Draft → Confirmed → Sent → Partially Received → Fully Received → Invoiced
 
-> Screenshot pending: Procurement — Orders tab with PO list
+![Procurement — Orders Tab](../screenshots/captured/031_procurement-orders.png)
 
 ---
 
@@ -93,7 +93,7 @@ Or production/warehouse staff can submit requests themselves — they appear in 
    - Bank account for payment
 3. **Rate supplier:** after each delivery, rate quality, timeliness, documentation
 
-> Screenshot pending: Suppliers workspace
+![Suppliers Workspace](../screenshots/captured/014_suppliers.png)
 
 ---
 
@@ -122,7 +122,7 @@ When warehouse receives goods against your PO:
 If short delivery: partial receipt is posted; remaining balance shows as open.  
 If damaged goods: warehouse will mark as quarantine; QC inspects.
 
-> Screenshot pending: Procurement — Deliveries tab
+![Procurement — Deliveries Tab](../screenshots/captured/033_procurement-deliveries.png)
 
 ---
 

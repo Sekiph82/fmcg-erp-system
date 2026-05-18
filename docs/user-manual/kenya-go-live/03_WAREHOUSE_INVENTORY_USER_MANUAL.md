@@ -26,7 +26,7 @@ You receive and dispatch goods, maintain accurate stock records, count stock, an
 
 ## Screenshot
 
-> Screenshot pending: Inventory workspace — stock tab
+![Inventory Workspace — Stock Tab](../screenshots/captured/018_inventory-stock.png)
 
 ---
 
@@ -57,7 +57,7 @@ End of day:
 3. Use search/filter to find specific items
 4. Columns: SKU, Description, On Hand, Reserved, Available, Location, Unit
 
-> Screenshot pending: Inventory — Stock tab
+![Inventory — Stock Tab](../screenshots/captured/018_inventory-stock.png)
 
 **Available = On Hand minus Reserved**
 
@@ -85,7 +85,7 @@ If goods are rejected or quarantined:
 - Goods go to WMS → Quarantine tab
 - Notify QC to inspect
 
-> Screenshot pending: Procurement — Deliveries tab with receive form
+![Procurement — Deliveries Tab](../screenshots/captured/033_procurement-deliveries.png)
 
 ---
 
@@ -98,7 +98,7 @@ After receiving:
 4. Scan or select the bin location
 5. Confirm
 
-> Screenshot pending: WMS — Locations tab
+![WMS — Locations Tab](../screenshots/captured/027_wms-locations.png)
 
 ---
 
@@ -133,7 +133,7 @@ Move stock between locations or warehouses:
 4. Items expired are highlighted in red
 5. Always pick the earliest expiry batch first (FEFO)
 
-> Screenshot pending: Inventory — Shelf Life tab
+![Inventory — Shelf Life Tab](../screenshots/captured/020_inventory-shelf-life.png)
 
 **Important for Kenya food production:** Expiry tracking is required for regulatory compliance. Never issue an expired batch to production.
 
@@ -150,7 +150,7 @@ Move stock between locations or warehouses:
 7. System calculates variance (actual vs system quantity)
 8. Supervisor approves the count; inventory is adjusted
 
-> Screenshot pending: Inventory — Cycle Count tab
+![Inventory — Cycle Count Tab](../screenshots/captured/021_inventory-cycle-count.png)
 
 ---
 

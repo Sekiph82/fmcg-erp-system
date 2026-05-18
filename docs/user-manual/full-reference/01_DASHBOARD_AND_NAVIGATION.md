@@ -8,7 +8,7 @@
 
 ## Screenshot
 
-> Screenshot pending: Main dashboard with KPI cards and sidebar navigation
+![Main Dashboard](../screenshots/captured/002_dashboard.png)
 
 ---
 

@@ -28,7 +28,7 @@ As admin, you set up and maintain the ERP. You create user accounts, assign role
 
 ## Screenshot
 
-> Screenshot pending: Admin workspace — Users tab
+![Admin Workspace — Users Tab](../screenshots/captured/004_admin-users.png)
 
 ---
 
@@ -46,7 +46,7 @@ As admin, you set up and maintain the ERP. You create user accounts, assign role
 4. Upload logo (PNG, max 2MB)
 5. Click **Save**
 
-> Screenshot pending: Admin system config tab
+![Admin — System Config Tab](../screenshots/captured/008_admin-system-config.png)
 
 ### 1.2 Configure Email (SMTP)
 
@@ -64,7 +64,7 @@ For order confirmations, OTP delivery, and notifications:
 4. Click **Test Connection**
 5. Save
 
-> Screenshot pending: Integrations — M-Pesa tab
+![Integrations — M-Pesa Tab](../screenshots/captured/134_integrations-mpesa.png)
 
 ---
 
@@ -82,7 +82,7 @@ For order confirmations, OTP delivery, and notifications:
 4. Assign Role (see section below)
 5. Click **Create**
 
-> Screenshot pending: Admin — Users tab with user list
+![Admin — Users Tab](../screenshots/captured/004_admin-users.png)
 
 ### 2.2 Assign Roles
 
@@ -102,7 +102,7 @@ Roles control what each user can see and do.
 
 To assign: Admin → Roles tab → select role → add user to role members.
 
-> Screenshot pending: Admin — Roles tab
+![Admin — Roles Tab](../screenshots/captured/005_admin-roles.png)
 
 ### 2.3 Deactivate a User
 
@@ -124,7 +124,7 @@ To assign: Admin → Roles tab → select role → add user to role members.
    - Require special character: Yes
 3. Save
 
-> Screenshot pending: Admin — Security tab
+![Admin — Security Tab](../screenshots/captured/007_admin-security.png)
 
 ### 3.2 Two-Factor Authentication (2FA)
 
@@ -155,7 +155,7 @@ Admin → Security → Session Settings:
 
 **Do not remove permissions from a role while users are logged in — they will see permission errors until they re-login.**
 
-> Screenshot pending: Admin — Permissions tab
+![Admin — Permissions Tab](../screenshots/captured/006_admin-permissions.png)
 
 ---
 
@@ -183,7 +183,7 @@ Every user action (login, create, edit, delete, approve) is recorded.
 2. Filter by user, action type, date
 3. Export to CSV for compliance audits
 
-> Screenshot pending: Admin — Audit Logs tab
+![Admin — Audit Logs Tab](../screenshots/captured/011_admin-logs.png)
 
 ### System Config Tab
 

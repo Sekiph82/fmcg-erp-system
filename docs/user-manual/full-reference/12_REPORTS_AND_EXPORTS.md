@@ -8,7 +8,7 @@
 
 ## Screenshot
 
-> Screenshot pending: Analytics workspace — Overview tab
+![Analytics Workspace](../screenshots/captured/109_analytics.png)
 
 ---
 

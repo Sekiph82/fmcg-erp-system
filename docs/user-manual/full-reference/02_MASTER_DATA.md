@@ -17,7 +17,7 @@ Master data is the foundation of the ERP. Products, materials, suppliers, recipe
 **URL:** `/dashboard/products`  
 Tab: `products`
 
-> Screenshot pending: Products workspace
+![Products Workspace](../screenshots/captured/012_products.png)
 
 Finished goods catalogue. Each product has:
 - SKU code, description, category
@@ -35,7 +35,7 @@ Finished goods catalogue. Each product has:
 **URL:** `/dashboard/materials`  
 Tab: `materials`
 
-> Screenshot pending: Materials workspace
+![Materials Workspace](../screenshots/captured/013_materials.png)
 
 Raw material master. Each material has:
 - Material code and description
@@ -54,7 +54,7 @@ Raw material master. Each material has:
 **URL:** `/dashboard/suppliers`  
 Tab: `suppliers`
 
-> Screenshot pending: Suppliers workspace
+![Suppliers Workspace](../screenshots/captured/014_suppliers.png)
 
 Supplier master used by Procurement. See Chapter 03 (Procurement) for full details.
 
@@ -65,7 +65,7 @@ Supplier master used by Procurement. See Chapter 03 (Procurement) for full detai
 **URL:** `/dashboard/recipes`  
 Tab: `recipes`
 
-> Screenshot pending: Recipes workspace
+![Recipes Workspace](../screenshots/captured/057_recipes.png)
 
 Product formulas. Recipes define ingredients, quantities per batch, and processing steps. A recipe becomes a BOM when linked to a product.
 
@@ -76,7 +76,7 @@ Product formulas. Recipes define ingredients, quantities per batch, and processi
 **URL:** `/dashboard/bom`  
 Tabs: `list`, `substitutes`, `compare`, `conversion`
 
-> Screenshot pending: BOM workspace — formula list
+![BOM Workspace](../screenshots/captured/053_bom.png)
 
 ### BOM Tabs
 
