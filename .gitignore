@@ -32,6 +32,9 @@ frontend/playwright-report/
 frontend/test-results/
 frontend/playwright/.auth/
 
+# User manual captured screenshots — regenerate locally with npm run test:manual-screenshots
+docs/user-manual/screenshots/captured/
+
 # Docker
 postgres_data/
 

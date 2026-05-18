@@ -1,17 +1,28 @@
 # Auto-Fix Continuation Guide
 
-Date: 2026-05-18 (Round 9 — PRODUCTION DOCKER ENV-FILE FIX COMPLETE)
+Date: 2026-05-18 (Round 10 — SCREENSHOT-BASED USER MANUAL SYSTEM)
 Purpose: Let the next Claude session continue without asking the user anything.
 
-## Status After Round 9 (Production Docker env-file fix)
+## Status After Round 10 (Screenshot-based ERP user manual)
 
-**Docker prod config:** passes with `--env-file .env.production.example` (no real secrets needed).
-**Backend tests:** 478/478 pytest pass.
-**Frontend:** type-check clean, build clean.
-**Audits:** D=0, no redirect drift, tabs pass. Health: 0 HIGH.
+**Backend tests:** 482/482 pytest pass.
+**Frontend:** build clean (Next.js, no type errors).
+**Docker prod config:** passes with `--env-file .env.production.example`.
 **Alembic:** single head `20260518_0001`.
-**Playwright smoke tests:** 52/52 PASSED (Round 7 baseline; no smoke-affecting changes since).
-**Remaining work:** Playwright smoke re-run recommended. SMTP/SMS end-to-end not tested. GitHub Actions not directly verified.
+**Playwright smoke tests:** re-run underway (52/52 expected — no business logic changes).
+
+**Screenshot capture:** 73/140 routes captured (52%). 67 failed with `ERR_EMPTY_RESPONSE` (Next.js dev server crash at route 42). PNGs in `docs/user-manual/screenshots/captured/` (36 MB, gitignored). Index committed at `docs/user-manual/screenshots/screenshots-index.json`.
+
+**Priority re-capture needed:**
+- Sales, Finance, HR, Payroll (all tabs) — critical for Kenya go-live docs
+- Run: `cd frontend && E2E_SKIP_WEBSERVER=1 npm run test:manual-screenshots`
+
+**Manuals created:**
+- Kenya go-live: `docs/user-manual/kenya-go-live/` (10 role-based files)
+- Full reference: `docs/user-manual/full-reference/` (15 chapters)
+- Strategy/plans: `docs/user-manual/MANUAL_WITH_SCREENSHOTS_STRATEGY.md` + 4 plan files
+
+**Remaining work:** Re-capture failed routes (sales/finance/HR/payroll). Insert real screenshot image links into manual placeholder sections. Optional: PDF export pipeline.
 
 ### Files Changed in Round 9
 - `docker-compose.prod.yml` — db/backend/frontend: `env_file: .env.production` → long-form `required: false`
