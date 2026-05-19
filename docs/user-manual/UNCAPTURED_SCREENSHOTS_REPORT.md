@@ -1,20 +1,22 @@
 # Uncaptured Screenshots Report
 
 **Date:** 2026-05-19  
-**Status:** RECAPTURE IN PROGRESS
+**Status:** COMPLETE — 140/140 capture=true routes captured, 0 remaining failures
 
 ---
 
-## Summary
+## Final Results
 
 | Metric | Count |
 |--------|-------|
 | Total routes in routes.json | 141 |
 | Routes with capture=true | 140 |
-| Routes with capture=false | 1 |
-| Previously captured (run 1) | 73 |
-| Previously failed (run 1) | 67 |
-| Target for recapture | 67 |
+| Routes with capture=false | 1 (intentionally excluded) |
+| Captured PNGs (run 1 + run 2) | **140** |
+| Failed after run 2 | **0** |
+| Screenshot folder size | ~72 MB (gitignored) |
+| Pending placeholders in manuals | 0 |
+| Broken content image refs | 0 |
 
 ### capture=false Routes (intentionally excluded)
 
@@ -24,7 +26,17 @@
 
 ---
 
-## Kenya-Critical Route Status (Pre-Recapture)
+## Run History
+
+| Run | Date | Captured | Failed | Notes |
+|-----|------|----------|--------|-------|
+| Run 1 | 2026-05-18 | 73/140 | 67 | Dev server OOM at 1G memory after route 37 |
+| Run 2 | 2026-05-19 | 67/67 | 0 | Failed-only recapture with 2G memory — all resolved |
+| **Total** | | **140/140** | **0** | |
+
+---
+
+## Kenya-Critical Route Status (Historical — Pre-Recapture)
 
 | Module | Routes | Status | Critical for Kenya |
 |--------|--------|--------|--------------------|

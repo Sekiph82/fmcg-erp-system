@@ -1,8 +1,8 @@
 # Current Status Checkpoint
 
-**Date:** 2026-05-19  
+**Date:** 2026-05-19 (updated after cleanup pass)  
 **Branch:** main  
-**Working tree:** CLEAN (no uncommitted changes)
+**Working tree:** CLEAN after this commit
 
 ---
 
@@ -11,10 +11,9 @@
 | Item | Value |
 |------|-------|
 | Branch | main |
-| Latest commit | `da61905` docs(manual): add Kenya go-live PDF export pipeline |
-| Previous commit | `3dd08df` docs(manual): complete screenshot capture and update manual links |
-| Uncommitted changes | None |
+| Latest commit (pre-this) | `51b4f7e` Auto-sync: docs/CURRENT_STATUS_CHECKPOINT.md |
 | Remote | origin → github.com/Sekiph82/fmcg-erp-system.git |
+| Uncommitted changes | None after this commit |
 
 ---
 
@@ -24,7 +23,7 @@
 |------|--------|
 | pytest | **482/482 PASSED** |
 | Warnings | 72 (deprecation/duplicate op ID — non-blocking) |
-| Duration | 63s |
+| Duration | ~24s |
 
 ---
 
@@ -41,9 +40,9 @@
 
 | Check | Result |
 |-------|--------|
-| Docker daemon | NOT running |
-| Dev config | VALID (compose config OK) |
-| Prod config | VALID (compose config OK) |
+| Docker daemon | NOT running (local) |
+| Dev config | VALID |
+| Prod config | VALID |
 | Container health | N/A (daemon down) |
 
 ---
@@ -58,9 +57,9 @@
 | capture=true routes | 140 |
 | Captured PNGs | **140/140** |
 | Screenshot folder size | ~72 MB (gitignored) |
-| "Screenshot pending" in content | **0** (none in kenya-go-live or full-reference) |
+| "Screenshot pending" in content | **0** |
 | Broken image refs | 0 |
-| UNCAPTURED report status | Stale (says "in progress" — superseded by SCREENSHOT_CAPTURE_REPORT COMPLETE) |
+| UNCAPTURED report | **COMPLETE** (fixed in this pass) |
 
 ---
 
@@ -72,22 +71,22 @@
 | PDF size | 17.5 MB |
 | Images in PDF | 45/45 loaded, 0 failed |
 | Est. pages | ~80–100 A4 |
+| pdf-output gitignored? | Yes — local only |
 | Full-reference PDF | NOT generated yet |
-| PDF export scripts | `pdf-export/` — generate-kenya-pdf.mjs, export scripts, css |
 
 ---
 
 ## Audit Scripts
 
-| Script | Status |
-|--------|--------|
-| manual:validate-routes | **PASSED** (141 routes, 0 errors, 1 known warn for /dashboard/wms redirect) |
-| audit-page-count.js | MISSING from repo (MODULE_NOT_FOUND) |
-| check-route-redirects.js | MISSING from repo (MODULE_NOT_FOUND) |
-| check-workspace-tabs.js | MISSING from repo (MODULE_NOT_FOUND) |
-| erp-health-audit.py | MISSING from repo |
+All 4 scripts exist at `scripts/` in repo root. Previous MODULE_NOT_FOUND errors were caused by running from `frontend/` directory.
 
-> Note: These scripts were referenced in prior docs but do not exist in the repo. Not a regression — may have been planned but not committed.
+| Script | Location | Last Result |
+|--------|----------|-------------|
+| `audit-page-count.js` | `scripts/` | D FULL_DUPLICATE_UI: **0** |
+| `check-route-redirects.js` | `scripts/` | **No redirect drift** |
+| `check-workspace-tabs.js` | `scripts/` | **All workspace tab checks passed** |
+| `erp-health-audit.py` | `scripts/` | **0 HIGH findings** (500 total, all low) |
+| `manual:validate-routes` | `frontend/scripts/` | **PASSED** (0 errors, 1 known warn) |
 
 ---
 
@@ -95,18 +94,12 @@
 
 | Risk | Severity | Notes |
 |------|----------|-------|
-| UNCAPTURED_SCREENSHOTS_REPORT.md stale | Low | Says "in progress" but capture is 140/140 complete. Update report header. |
-| Missing audit scripts | Low | 4 scripts referenced in docs but absent from repo. No test coverage impact. |
-| Full-reference PDF not generated | Low | Pipeline not built yet — next optional task. |
-| Docker daemon down | Info | Local only; config files valid. |
-| Duplicate Operation ID warning (webhooks) | Low | FastAPI warning, non-blocking. |
+| Full-reference PDF not generated | Low | Next optional task |
+| Docker daemon down | Info | Local only; compose config valid |
+| Duplicate Operation ID (webhooks) | Low | FastAPI non-blocking warning |
 
 ---
 
 ## Recommended Next Task
 
-**Option A (quick):** Update `UNCAPTURED_SCREENSHOTS_REPORT.md` header to COMPLETE to match actual state.
-
-**Option B (feature):** Build Full-Reference PDF export pipeline (mirror of Kenya pipeline) for all 15 full-reference manual files.
-
-**Option C (cleanup):** Remove or stub the 4 missing audit script references in docs.
+Build Full-Reference PDF export pipeline — mirror `pdf-export/generate-kenya-pdf.mjs` for all 15 full-reference manual files. Expected output: `pdf-output/FMCG-ERP-Full-Reference-Manual.pdf`.
