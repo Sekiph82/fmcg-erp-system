@@ -306,7 +306,7 @@
     "actionType": "modal",
     "actionLabel": "Locations / Bins tab",
     "selectorStrategy": "text",
-    "selector": "button:has-text('Locations / Bins')",
+    "selector": "button:has-text('Locations')",
     "output": "tabs/wms-locations.png",
     "requiredForPdf": true,
     "notes": "WMS useState tab — click Locations / Bins button"
