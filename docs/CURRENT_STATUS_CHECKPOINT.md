@@ -48,7 +48,7 @@
 
 | Item | Value |
 |------|-------|
-| Help Center page | `/dashboard/help` — live |
+| Help Center page | `/dashboard/help` — live, in Sidebar nav |
 | Help registry entries | 60+ routes covered |
 | Help button | DashboardShell — mobile header + desktop floating |
 | Help drawer | Contextual, ESC/backdrop-close, accessible |
@@ -96,7 +96,7 @@
 
 | Risk | Severity | Notes |
 |------|----------|-------|
-| Help nav entry missing from Sidebar | Low | Users must navigate to /dashboard/help manually |
+| Screenshot thumbnails not shown in drawer | Low | Requires static serving of captured/ |
 | Screenshot thumbnails not shown in drawer | Low | Requires static serving of captured/ |
 | Docker daemon down | Info | Local only |
 

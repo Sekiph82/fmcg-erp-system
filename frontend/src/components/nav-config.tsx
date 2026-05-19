@@ -380,6 +380,14 @@ export const NAV_CONFIG: NavEntry[] = [
       { label: "M-Pesa",              tab: "mpesa" },
     ]}),
 
+  {
+    type: "link",
+    id: "help",
+    label: "Help Center",
+    href: "/dashboard/help",
+    icon: md("M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.938-.306.06-.55.288-.55.607v.334m0 3.668h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"),
+  },
+
 ];
 
 // ── Active path helpers ───────────────────────────────────────────────────────

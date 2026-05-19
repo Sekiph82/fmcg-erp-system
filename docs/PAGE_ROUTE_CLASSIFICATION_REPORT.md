@@ -260,7 +260,7 @@ Generated: 2026-05-19
 | `/dashboard/gs1/reports` | B REDIRECT_ONLY | ✅ | — | /dashboard/compliance | gs1 |
 | `/dashboard/gs1/scan` | B REDIRECT_ONLY | ✅ | — | /dashboard/compliance | gs1 |
 | `/dashboard/gs1/sscc` | B REDIRECT_ONLY | ✅ | — | /dashboard/compliance | gs1 |
-| `/dashboard/help` | E STANDALONE_OPERATIONAL | ❌ | — | — | — |
+| `/dashboard/help` | E STANDALONE_OPERATIONAL | ❌ | ✅ | — | — |
 | `/dashboard/helpdesk/escalated` | C LIGHTWEIGHT_WRAPPER | ❌ | — | — | — |
 | `/dashboard/helpdesk/open` | C LIGHTWEIGHT_WRAPPER | ❌ | — | — | — |
 | `/dashboard/helpdesk` | A WORKSPACE_PAGE | ❌ | — | — | — |
