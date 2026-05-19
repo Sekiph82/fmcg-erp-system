@@ -1,0 +1,112 @@
+{
+  "hr-overview-tab": {
+    "status": "captured",
+    "path": "module-ui/hr/hr/overview-tab.png",
+    "capturedAt": "2026-05-19T16:16:17.980Z"
+  },
+  "hr-employees-tab": {
+    "status": "captured",
+    "path": "module-ui/hr/hr/employees-tab.png",
+    "capturedAt": "2026-05-19T16:16:23.355Z"
+  },
+  "hr-attendance-tab": {
+    "status": "captured",
+    "path": "module-ui/hr/hr/attendance-tab.png",
+    "capturedAt": "2026-05-19T16:16:30.798Z"
+  },
+  "hr-leave-tab": {
+    "status": "captured",
+    "path": "module-ui/hr/hr/leave-tab.png",
+    "capturedAt": "2026-05-19T16:16:35.815Z"
+  },
+  "hr-payroll-tab": {
+    "status": "captured",
+    "path": "module-ui/hr/hr/payroll-tab.png",
+    "capturedAt": "2026-05-19T16:16:42.367Z"
+  },
+  "hr-shifts-tab": {
+    "status": "captured",
+    "path": "module-ui/hr/hr/shifts-tab.png",
+    "capturedAt": "2026-05-19T16:16:47.962Z"
+  },
+  "hr-recruitment-tab": {
+    "status": "captured",
+    "path": "module-ui/hr/hr/recruitment-tab.png",
+    "capturedAt": "2026-05-19T16:16:55.692Z"
+  },
+  "hr-ess-tab": {
+    "status": "captured",
+    "path": "module-ui/hr/hr/ess-tab.png",
+    "capturedAt": "2026-05-19T16:17:00.749Z"
+  },
+  "hr-appraisals-tab": {
+    "status": "captured",
+    "path": "module-ui/hr/hr/appraisals-tab.png",
+    "capturedAt": "2026-05-19T16:17:07.654Z"
+  },
+  "hr-training-tab": {
+    "status": "captured",
+    "path": "module-ui/hr/hr/training-tab.png",
+    "capturedAt": "2026-05-19T16:17:13.536Z"
+  },
+  "hr-timesheets-tab": {
+    "status": "captured",
+    "path": "module-ui/hr/hr/timesheets-tab.png",
+    "capturedAt": "2026-05-19T16:17:20.876Z"
+  },
+  "hr-expenses-tab": {
+    "status": "captured",
+    "path": "module-ui/hr/hr/expenses-tab.png",
+    "capturedAt": "2026-05-19T16:17:26.138Z"
+  },
+  "hr-new-employee-form": {
+    "status": "captured",
+    "path": "module-ui/hr/employees/new-employee-form.png",
+    "capturedAt": "2026-05-19T16:17:34.245Z"
+  },
+  "hr-employee-dropdowns": {
+    "status": "captured",
+    "path": "module-ui/hr/employees/employee-dropdowns.png",
+    "capturedAt": "2026-05-19T16:17:41.385Z"
+  },
+  "hr-record-attendance-form": {
+    "status": "captured",
+    "path": "module-ui/hr/attendance/record-attendance-form.png",
+    "capturedAt": "2026-05-19T16:17:47.096Z"
+  },
+  "hr-attendance-dropdowns": {
+    "status": "captured",
+    "path": "module-ui/hr/attendance/attendance-dropdowns.png",
+    "capturedAt": "2026-05-19T16:17:53.221Z"
+  },
+  "hr-new-leave-form": {
+    "status": "captured",
+    "path": "module-ui/hr/leave/new-leave-form.png",
+    "capturedAt": "2026-05-19T16:17:59.704Z"
+  },
+  "hr-leave-type-dropdown": {
+    "status": "captured",
+    "path": "module-ui/hr/leave/leave-type-dropdown.png",
+    "capturedAt": "2026-05-19T16:18:06.705Z"
+  },
+  "hr-new-period-form": {
+    "status": "captured",
+    "path": "module-ui/hr/payroll/new-period-form.png",
+    "capturedAt": "2026-05-19T16:18:12.602Z"
+  },
+  "hr-payroll-month-dropdown": {
+    "status": "captured",
+    "path": "module-ui/hr/payroll/payroll-month-dropdown.png",
+    "capturedAt": "2026-05-19T16:18:19.095Z"
+  },
+  "hr-new-template-form": {
+    "status": "captured",
+    "path": "module-ui/hr/shifts/new-template-form.png",
+    "capturedAt": "2026-05-19T16:18:26.058Z"
+  },
+  "hr-assign-shift-form": {
+    "status": "captured",
+    "path": "module-ui/hr/shifts/assign-shift-form.png",
+    "capturedAt": "2026-05-19T16:18:33.135Z"
+  }
+}

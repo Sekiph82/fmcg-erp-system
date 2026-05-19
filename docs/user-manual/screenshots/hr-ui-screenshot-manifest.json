@@ -1,0 +1,224 @@
+[
+  {
+    "id": "hr-overview-tab",
+    "label": "HR overview tab",
+    "path": "module-ui/hr/hr/overview-tab.png",
+    "steps": [
+      { "type": "goto", "url": "/dashboard/hr?tab=overview" },
+      { "type": "wait", "ms": 1800 }
+    ]
+  },
+  {
+    "id": "hr-employees-tab",
+    "label": "HR employees tab",
+    "path": "module-ui/hr/hr/employees-tab.png",
+    "steps": [
+      { "type": "goto", "url": "/dashboard/hr?tab=employees" },
+      { "type": "wait", "ms": 1800 }
+    ]
+  },
+  {
+    "id": "hr-attendance-tab",
+    "label": "HR attendance tab",
+    "path": "module-ui/hr/hr/attendance-tab.png",
+    "steps": [
+      { "type": "goto", "url": "/dashboard/hr?tab=attendance" },
+      { "type": "wait", "ms": 1800 }
+    ]
+  },
+  {
+    "id": "hr-leave-tab",
+    "label": "HR leave tab",
+    "path": "module-ui/hr/hr/leave-tab.png",
+    "steps": [
+      { "type": "goto", "url": "/dashboard/hr?tab=leave" },
+      { "type": "wait", "ms": 1800 }
+    ]
+  },
+  {
+    "id": "hr-payroll-tab",
+    "label": "HR payroll tab",
+    "path": "module-ui/hr/hr/payroll-tab.png",
+    "steps": [
+      { "type": "goto", "url": "/dashboard/hr?tab=payroll" },
+      { "type": "wait", "ms": 1800 }
+    ]
+  },
+  {
+    "id": "hr-shifts-tab",
+    "label": "HR shifts tab",
+    "path": "module-ui/hr/hr/shifts-tab.png",
+    "steps": [
+      { "type": "goto", "url": "/dashboard/hr?tab=shifts" },
+      { "type": "wait", "ms": 1800 }
+    ]
+  },
+  {
+    "id": "hr-recruitment-tab",
+    "label": "HR recruitment tab",
+    "path": "module-ui/hr/hr/recruitment-tab.png",
+    "steps": [
+      { "type": "goto", "url": "/dashboard/hr?tab=recruitment" },
+      { "type": "wait", "ms": 1800 }
+    ]
+  },
+  {
+    "id": "hr-ess-tab",
+    "label": "HR ESS tab",
+    "path": "module-ui/hr/hr/ess-tab.png",
+    "steps": [
+      { "type": "goto", "url": "/dashboard/hr?tab=ess" },
+      { "type": "wait", "ms": 1800 }
+    ]
+  },
+  {
+    "id": "hr-appraisals-tab",
+    "label": "HR appraisals tab",
+    "path": "module-ui/hr/hr/appraisals-tab.png",
+    "steps": [
+      { "type": "goto", "url": "/dashboard/hr?tab=appraisals" },
+      { "type": "wait", "ms": 1800 }
+    ]
+  },
+  {
+    "id": "hr-training-tab",
+    "label": "HR training tab",
+    "path": "module-ui/hr/hr/training-tab.png",
+    "steps": [
+      { "type": "goto", "url": "/dashboard/hr?tab=training" },
+      { "type": "wait", "ms": 1800 }
+    ]
+  },
+  {
+    "id": "hr-timesheets-tab",
+    "label": "HR timesheets tab",
+    "path": "module-ui/hr/hr/timesheets-tab.png",
+    "steps": [
+      { "type": "goto", "url": "/dashboard/hr?tab=timesheets" },
+      { "type": "wait", "ms": 1800 }
+    ]
+  },
+  {
+    "id": "hr-expenses-tab",
+    "label": "HR expenses tab",
+    "path": "module-ui/hr/hr/expenses-tab.png",
+    "steps": [
+      { "type": "goto", "url": "/dashboard/hr?tab=expenses" },
+      { "type": "wait", "ms": 1800 }
+    ]
+  },
+  {
+    "id": "hr-new-employee-form",
+    "label": "New Employee inline form",
+    "path": "module-ui/hr/employees/new-employee-form.png",
+    "steps": [
+      { "type": "goto", "url": "/dashboard/hr?tab=employees" },
+      { "type": "wait", "ms": 1500 },
+      { "type": "clickText", "text": "+ New Employee" },
+      { "type": "wait", "ms": 900 }
+    ]
+  },
+  {
+    "id": "hr-employee-dropdowns",
+    "label": "New Employee form dropdowns expanded",
+    "path": "module-ui/hr/employees/employee-dropdowns.png",
+    "steps": [
+      { "type": "goto", "url": "/dashboard/hr?tab=employees" },
+      { "type": "wait", "ms": 1500 },
+      { "type": "clickText", "text": "+ New Employee" },
+      { "type": "wait", "ms": 900 },
+      { "type": "evaluate", "script": "document.querySelectorAll('select').forEach(s => { if(s.options.length > 1){ s.size = s.options.length; s.style.height='auto'; s.style.overflow='visible'; } })" }
+    ]
+  },
+  {
+    "id": "hr-record-attendance-form",
+    "label": "Record Attendance inline form",
+    "path": "module-ui/hr/attendance/record-attendance-form.png",
+    "steps": [
+      { "type": "goto", "url": "/dashboard/hr?tab=attendance" },
+      { "type": "wait", "ms": 1500 },
+      { "type": "clickText", "text": "+ Record" },
+      { "type": "wait", "ms": 900 }
+    ]
+  },
+  {
+    "id": "hr-attendance-dropdowns",
+    "label": "Record Attendance form dropdowns expanded",
+    "path": "module-ui/hr/attendance/attendance-dropdowns.png",
+    "steps": [
+      { "type": "goto", "url": "/dashboard/hr?tab=attendance" },
+      { "type": "wait", "ms": 1500 },
+      { "type": "clickText", "text": "+ Record" },
+      { "type": "wait", "ms": 900 },
+      { "type": "evaluate", "script": "document.querySelectorAll('select').forEach(s => { if(s.options.length > 1){ s.size = s.options.length; s.style.height='auto'; s.style.overflow='visible'; } })" }
+    ]
+  },
+  {
+    "id": "hr-new-leave-form",
+    "label": "New Leave Request inline form",
+    "path": "module-ui/hr/leave/new-leave-form.png",
+    "steps": [
+      { "type": "goto", "url": "/dashboard/hr?tab=leave" },
+      { "type": "wait", "ms": 1500 },
+      { "type": "clickText", "text": "+ Request Leave" },
+      { "type": "wait", "ms": 900 }
+    ]
+  },
+  {
+    "id": "hr-leave-type-dropdown",
+    "label": "Leave type dropdown expanded",
+    "path": "module-ui/hr/leave/leave-type-dropdown.png",
+    "steps": [
+      { "type": "goto", "url": "/dashboard/hr?tab=leave" },
+      { "type": "wait", "ms": 1500 },
+      { "type": "clickText", "text": "+ Request Leave" },
+      { "type": "wait", "ms": 900 },
+      { "type": "evaluate", "script": "document.querySelectorAll('select').forEach(s => { if(s.options.length > 1){ s.size = s.options.length; s.style.height='auto'; s.style.overflow='visible'; } })" }
+    ]
+  },
+  {
+    "id": "hr-new-period-form",
+    "label": "New Payroll Period inline form",
+    "path": "module-ui/hr/payroll/new-period-form.png",
+    "steps": [
+      { "type": "goto", "url": "/dashboard/hr?tab=payroll" },
+      { "type": "wait", "ms": 1500 },
+      { "type": "clickText", "text": "+ New Period" },
+      { "type": "wait", "ms": 900 }
+    ]
+  },
+  {
+    "id": "hr-payroll-month-dropdown",
+    "label": "Payroll month dropdown expanded",
+    "path": "module-ui/hr/payroll/payroll-month-dropdown.png",
+    "steps": [
+      { "type": "goto", "url": "/dashboard/hr?tab=payroll" },
+      { "type": "wait", "ms": 1500 },
+      { "type": "clickText", "text": "+ New Period" },
+      { "type": "wait", "ms": 900 },
+      { "type": "evaluate", "script": "document.querySelectorAll('select').forEach(s => { if(s.options.length > 1){ s.size = s.options.length; s.style.height='auto'; s.style.overflow='visible'; } })" }
+    ]
+  },
+  {
+    "id": "hr-new-template-form",
+    "label": "New Shift Template inline form",
+    "path": "module-ui/hr/shifts/new-template-form.png",
+    "steps": [
+      { "type": "goto", "url": "/dashboard/hr?tab=shifts" },
+      { "type": "wait", "ms": 1500 },
+      { "type": "clickText", "text": "+ Template" },
+      { "type": "wait", "ms": 900 }
+    ]
+  },
+  {
+    "id": "hr-assign-shift-form",
+    "label": "Assign Shift inline form",
+    "path": "module-ui/hr/shifts/assign-shift-form.png",
+    "steps": [
+      { "type": "goto", "url": "/dashboard/hr?tab=shifts" },
+      { "type": "wait", "ms": 1500 },
+      { "type": "clickText", "text": "+ Assign Shift" },
+      { "type": "wait", "ms": 900 }
+    ]
+  }
+]
