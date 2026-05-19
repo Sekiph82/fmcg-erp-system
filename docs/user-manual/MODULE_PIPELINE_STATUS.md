@@ -20,8 +20,8 @@ Last updated: 2026-05-19
 
 | Module | Route | Priority |
 |--------|-------|----------|
-| Logistics | /dashboard/logistics | Next |
-| Maintenance | /dashboard/maintenance | — |
+| Logistics | /dashboard/logistics | ✅ Done 2026-05-19 |
+| Maintenance | /dashboard/maintenance | Next |
 | Utilities | /dashboard/utility-management | — |
 | Documents | /dashboard/documents | — |
 | Communication | /dashboard/communication | — |
