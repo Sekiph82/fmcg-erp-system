@@ -62,10 +62,28 @@ const CHAPTERS = [
 // ── Required screenshots ───────────────────────────────────────────────────
 
 const REQUIRED_SCREENSHOTS = [
-  "029_procurement.png",
-  "017_inventory.png",
+  "tabs/procurement-purchase-requests.png",
+  "tabs/procurement-orders.png",
+  "tabs/procurement-rfq.png",
+  "tabs/procurement-deliveries.png",
+  "tabs/procurement-suppliers.png",
+  "tabs/suppliers-list.png",
+  "tabs/inventory-stock.png",
+  "tabs/inventory-movements.png",
+  "tabs/inventory-cycle-count.png",
+  "tabs/inventory-shelf-life.png",
+  "tabs/warehouses-list.png",
+  "tabs/wms-zones.png",
+  "tabs/wms-locations.png",
+  "tabs/wms-quarantine.png",
+  "tabs/logistics-overview.png",
+  "tabs/logistics-shipments.png",
   "actions/procurement-new-pr-modal.png",
+  "actions/suppliers-add-modal.png",
   "actions/inventory-stock-entry-form.png",
+  "actions/inventory-stock-issue-form.png",
+  "actions/inventory-stock-transfer-form.png",
+  "actions/wms-new-zone-modal.png",
 ];
 
 // ── Validation ─────────────────────────────────────────────────────────────
@@ -132,7 +150,7 @@ function validateImageRefs() {
     const refs = [...content.matchAll(/!\[.*?\]\([^)]*?screenshots\/captured\/([^)]+\.png)\)/g)];
     for (const ref of refs) {
       totalRefs++;
-      if (ref[1].startsWith("actions/")) actionRefs++;
+      if (ref[1].startsWith("actions/") || ref[1].startsWith("tabs/")) actionRefs++;
       if (!capturedFiles.has(ref[1])) {
         console.warn(`  WARNING: Image not found: ${ref[1]} (in ${chapter})`);
         missingRefs++;

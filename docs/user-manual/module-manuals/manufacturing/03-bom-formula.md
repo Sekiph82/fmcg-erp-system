@@ -12,7 +12,7 @@ The BOM & Formula module manages the Bill of Materials for all manufactured prod
 
 The BOM module is separate from the Recipes module. Recipes focus on process parameters and formulation trials; BOMs focus on costing, production release, and structural explosion.
 
-![BOM & Formula workspace](../../../screenshots/captured/053_bom.png)
+![BOM & Formula workspace](../../../screenshots/captured/tabs/bom-list.png)
 *BOM workspace overview showing the formula list with lifecycle status badges.*
 
 ---

@@ -13,7 +13,7 @@ The Shop Floor module is the real-time factory execution layer. Operators log in
 
 The dashboard auto-refreshes every 30 seconds to reflect live factory status.
 
-![Shop Floor workspace](../../../screenshots/captured/050_shop-floor.png)
+![Shop Floor workspace](../../../screenshots/captured/tabs/shop-floor-overview.png)
 *Shop Floor dashboard showing live KPI tiles: active sessions, running work orders, good quantity today, and help requests.*
 
 ---
@@ -84,7 +84,7 @@ Shows the 4 most recent shift handover records with:
 **Tab key:** `terminal`  
 **Route:** `/dashboard/shop-floor/terminal/page`
 
-![Shop Floor — Operator Terminal](../../../screenshots/captured/051_shop-floor-terminal.png)
+![Shop Floor — Operator Terminal](../../../screenshots/captured/tabs/shop-floor-terminal.png)
 *Operator Terminal: full-screen touch interface for starting, pausing, and completing work orders.*
 
 The Operator Terminal is a full-screen, simplified interface designed for use on touch screens and shared factory tablets.
@@ -104,7 +104,7 @@ The terminal is accessible directly at `/dashboard/shop-floor/terminal` (standal
 **Tab key:** `supervisor`  
 **Route:** `/dashboard/shop-floor/supervisor/page`
 
-![Shop Floor — Supervisor Console](../../../screenshots/captured/052_shop-floor-supervisor.png)
+![Shop Floor — Supervisor Console](../../../screenshots/captured/tabs/shop-floor-supervisor.png)
 *Supervisor Console showing all lines, active work orders, and override controls.*
 
 The Supervisor Console provides a manager-level view of all active work orders across all lines. Key capabilities:

@@ -10,7 +10,7 @@
 
 Production Plans group related work orders under a single planning event. A plan defines a target date, a reference number, and a name. Work orders are then raised against a confirmed plan. Plans must be **Confirmed** before work orders can be executed.
 
-![Production workspace](../../../screenshots/captured/038_production.png)
+![Production workspace](../../../screenshots/captured/tabs/production-plans.png)
 *Production workspace showing the Plans tab with plan list, status badges, and workspace navigation.*
 
 ---

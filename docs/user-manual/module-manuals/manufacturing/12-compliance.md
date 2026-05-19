@@ -10,10 +10,10 @@
 
 The Compliance module manages product labelling and regulatory certification requirements. It covers GS1 barcode generation and label printing, and provides a consolidated view of all regulatory certificates linked to products and suppliers.
 
-![Compliance workspace](../../../screenshots/captured/069_compliance.png)
+![Compliance workspace](../../../screenshots/captured/tabs/compliance-gs1.png)
 *Compliance workspace showing GS1 & Labels and Regulatory Certs tabs.*
 
-![Compliance — GS1 Labels tab](../../../screenshots/captured/070_compliance-gs1.png)
+![Compliance — GS1 Labels tab](../../../screenshots/captured/tabs/compliance-gs1.png)
 *GS1 Labels tab for generating and printing GS1-128 barcodes and label artwork.*
 
 ---

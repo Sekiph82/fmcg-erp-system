@@ -10,7 +10,7 @@
 **Tab key:** `orders`  
 **Route:** `/dashboard/production/orders/page`
 
-![Production — Orders tab](../../../screenshots/captured/039_production-orders.png)
+![Production — Orders tab](../../../screenshots/captured/tabs/production-orders.png)
 *Production Orders tab listing work orders with status, plan reference, and target quantities.*
 
 Work orders are the execution units of manufacturing. Each work order references a production plan, a product (or BOM), a target quantity, and a work center. Work orders progress through status stages from DRAFT to COMPLETED.
@@ -109,7 +109,7 @@ Work-in-Progress (WIP) tracks materials that have been issued to production but 
 **Tab key:** `costing`  
 **Route:** `/dashboard/production/costing/page`
 
-![Production — Costing tab](../../../screenshots/captured/042_production-costing.png)
+![Production — Costing tab](../../../screenshots/captured/tabs/production-costing.png)
 *Costing tab showing standard vs. actual cost breakdown per work order.*
 
 Production costing aggregates:
@@ -141,7 +141,7 @@ Significant variances are flagged for investigation.
 **Tab key:** `execution`  
 **Route:** `/dashboard/production-execution/page`
 
-![Production — Execution tab](../../../screenshots/captured/040_production-execution.png)
+![Production — Execution tab](../../../screenshots/captured/tabs/production-execution.png)
 *Execution tab showing real-time work order progress, percentages, and exception alerts.*
 
 Production execution provides a manager-level real-time view of all active work orders, their progress percentages, and exception alerts. It complements the Shop Floor Supervisor console.
@@ -166,7 +166,7 @@ Machine operations management covers:
 **Tab key:** `material-flow`  
 **Route:** `/dashboard/material-flow/page`
 
-![Production — Material Flow tab](../../../screenshots/captured/041_production-material-flow.png)
+![Production — Material Flow tab](../../../screenshots/captured/tabs/production-material-flow.png)
 *Material Flow tab tracking goods issue from warehouse to production and goods receipt back to stock.*
 
 Material flow tracks the movement of materials through the production process:

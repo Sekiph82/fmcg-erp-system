@@ -10,7 +10,7 @@
 
 The NPD module manages the stage-gate pipeline for new product development — from an initial idea through concept, development, pilot trials, and commercial launch. Each project tracks the target market, estimated cost of goods, brand, and target launch date.
 
-![NPD workspace](../../../screenshots/captured/118_npd.png)
+![NPD workspace](../../../screenshots/captured/tabs/npd-new-products.png)
 *NPD workspace showing the stage-gate pipeline with project cards grouped by stage.*
 
 ---
