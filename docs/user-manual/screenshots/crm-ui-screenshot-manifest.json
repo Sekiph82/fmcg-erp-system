@@ -1,0 +1,189 @@
+[
+  {
+    "id": "crm-overview-tab",
+    "label": "CRM Overview Tab",
+    "path": "module-ui/crm/crm/overview-tab.png",
+    "steps": [
+      { "type": "goto", "url": "/dashboard/crm?tab=overview" },
+      { "type": "wait", "ms": 2000 }
+    ]
+  },
+  {
+    "id": "crm-pipeline-tab",
+    "label": "CRM Pipeline Board Tab",
+    "path": "module-ui/crm/crm/pipeline-tab.png",
+    "steps": [
+      { "type": "goto", "url": "/dashboard/crm?tab=pipeline" },
+      { "type": "wait", "ms": 2000 }
+    ]
+  },
+  {
+    "id": "crm-leads-tab",
+    "label": "CRM Leads Tab",
+    "path": "module-ui/crm/crm/leads-tab.png",
+    "steps": [
+      { "type": "goto", "url": "/dashboard/crm?tab=leads" },
+      { "type": "wait", "ms": 2000 }
+    ]
+  },
+  {
+    "id": "crm-opportunities-tab",
+    "label": "CRM Opportunities Tab",
+    "path": "module-ui/crm/crm/opportunities-tab.png",
+    "steps": [
+      { "type": "goto", "url": "/dashboard/crm?tab=opportunities" },
+      { "type": "wait", "ms": 2000 }
+    ]
+  },
+  {
+    "id": "crm-activities-tab",
+    "label": "CRM Activities Timeline Tab",
+    "path": "module-ui/crm/crm/activities-tab.png",
+    "steps": [
+      { "type": "goto", "url": "/dashboard/crm?tab=activities" },
+      { "type": "wait", "ms": 2000 }
+    ]
+  },
+  {
+    "id": "crm-forecast-tab",
+    "label": "CRM Forecast Tab",
+    "path": "module-ui/crm/crm/forecast-tab.png",
+    "steps": [
+      { "type": "goto", "url": "/dashboard/crm?tab=forecast" },
+      { "type": "wait", "ms": 2000 }
+    ]
+  },
+  {
+    "id": "crm-territory-tab",
+    "label": "CRM Territory Tab",
+    "path": "module-ui/crm/crm/territory-tab.png",
+    "steps": [
+      { "type": "goto", "url": "/dashboard/crm?tab=territory" },
+      { "type": "wait", "ms": 2000 }
+    ]
+  },
+  {
+    "id": "crm-stages-tab",
+    "label": "CRM Pipeline Stage Config Tab",
+    "path": "module-ui/crm/crm/stages-tab.png",
+    "steps": [
+      { "type": "goto", "url": "/dashboard/crm?tab=stages" },
+      { "type": "wait", "ms": 2000 }
+    ]
+  },
+  {
+    "id": "crm-win-loss-tab",
+    "label": "CRM Win/Loss Analysis Tab",
+    "path": "module-ui/crm/crm/win-loss-tab.png",
+    "steps": [
+      { "type": "goto", "url": "/dashboard/crm?tab=win-loss" },
+      { "type": "wait", "ms": 2000 }
+    ]
+  },
+  {
+    "id": "crm-loyalty-tab",
+    "label": "CRM Loyalty Program Tab",
+    "path": "module-ui/crm/crm/loyalty-tab.png",
+    "steps": [
+      { "type": "goto", "url": "/dashboard/crm?tab=loyalty" },
+      { "type": "wait", "ms": 2000 }
+    ]
+  },
+  {
+    "id": "crm-nps-tab",
+    "label": "CRM NPS Tracking Tab",
+    "path": "module-ui/crm/crm/nps-tab.png",
+    "steps": [
+      { "type": "goto", "url": "/dashboard/crm?tab=nps" },
+      { "type": "wait", "ms": 2000 }
+    ]
+  },
+  {
+    "id": "crm-surveys-tab",
+    "label": "CRM Surveys Tab",
+    "path": "module-ui/crm/crm/surveys-tab.png",
+    "steps": [
+      { "type": "goto", "url": "/dashboard/crm?tab=surveys" },
+      { "type": "wait", "ms": 2000 }
+    ]
+  },
+  {
+    "id": "crm-new-lead-form",
+    "label": "New Lead Form Modal",
+    "path": "module-ui/crm/leads/new-lead-form.png",
+    "steps": [
+      { "type": "goto", "url": "/dashboard/crm?tab=leads" },
+      { "type": "wait", "ms": 1800 },
+      { "type": "clickText", "text": "+ New Lead" },
+      { "type": "wait", "ms": 800 }
+    ]
+  },
+  {
+    "id": "crm-new-opportunity-form",
+    "label": "New Opportunity Form Modal",
+    "path": "module-ui/crm/opportunities/new-opportunity-form.png",
+    "steps": [
+      { "type": "goto", "url": "/dashboard/crm?tab=opportunities" },
+      { "type": "wait", "ms": 1800 },
+      { "type": "clickText", "text": "+ New Opportunity" },
+      { "type": "wait", "ms": 800 }
+    ]
+  },
+  {
+    "id": "crm-loyalty-enroll-form",
+    "label": "Enroll Customer Form Modal",
+    "path": "module-ui/crm/loyalty/enroll-form.png",
+    "steps": [
+      { "type": "goto", "url": "/dashboard/crm?tab=loyalty" },
+      { "type": "wait", "ms": 1800 },
+      { "type": "clickText", "text": "+ Enroll Customer" },
+      { "type": "wait", "ms": 800 }
+    ]
+  },
+  {
+    "id": "crm-nps-log-response-form",
+    "label": "Log NPS Response Form Modal",
+    "path": "module-ui/crm/nps/log-response-form.png",
+    "steps": [
+      { "type": "goto", "url": "/dashboard/crm?tab=nps" },
+      { "type": "wait", "ms": 1800 },
+      { "type": "clickText", "text": "+ Log Response" },
+      { "type": "wait", "ms": 800 }
+    ]
+  },
+  {
+    "id": "crm-leads-dropdowns",
+    "label": "Leads Tab Filter Dropdowns Expanded",
+    "path": "module-ui/crm/leads/leads-dropdowns.png",
+    "steps": [
+      { "type": "goto", "url": "/dashboard/crm?tab=leads" },
+      { "type": "wait", "ms": 1800 },
+      { "type": "evaluate", "script": "document.querySelectorAll('select').forEach(s => { if(s.options.length > 1){ s.size = s.options.length; s.style.height='auto'; s.style.overflow='visible'; } })" },
+      { "type": "wait", "ms": 400 }
+    ]
+  },
+  {
+    "id": "crm-opportunities-dropdowns",
+    "label": "Opportunities Tab Filter Dropdowns Expanded",
+    "path": "module-ui/crm/opportunities/opportunities-dropdowns.png",
+    "steps": [
+      { "type": "goto", "url": "/dashboard/crm?tab=opportunities" },
+      { "type": "wait", "ms": 1800 },
+      { "type": "evaluate", "script": "document.querySelectorAll('select').forEach(s => { if(s.options.length > 1){ s.size = s.options.length; s.style.height='auto'; s.style.overflow='visible'; } })" },
+      { "type": "wait", "ms": 400 }
+    ]
+  },
+  {
+    "id": "crm-new-lead-source-dropdown",
+    "label": "New Lead Form Source Type Dropdown Expanded",
+    "path": "module-ui/crm/leads/new-lead-source-dropdown.png",
+    "steps": [
+      { "type": "goto", "url": "/dashboard/crm?tab=leads" },
+      { "type": "wait", "ms": 1800 },
+      { "type": "clickText", "text": "+ New Lead" },
+      { "type": "wait", "ms": 800 },
+      { "type": "evaluate", "script": "document.querySelectorAll('select').forEach(s => { if(s.options.length > 1){ s.size = s.options.length; s.style.height='auto'; s.style.overflow='visible'; } })" },
+      { "type": "wait", "ms": 400 }
+    ]
+  }
+]
