@@ -1,0 +1,627 @@
+[
+  {
+    "id": "finance-tab-overview",
+    "module": "finance-payroll",
+    "page": "finance",
+    "route": "/dashboard/finance",
+    "type": "tab",
+    "label": "Finance Overview tab",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/finance" }
+    ],
+    "waitFor": "Finance",
+    "output": "module-ui/finance-payroll/finance/overview-tab.png",
+    "caption": "Finance workspace — Overview tab with KPI tiles (Total Cash & Bank, Receivables, Bank Recon, M-Pesa) and cash position table.",
+    "status": "pending"
+  },
+  {
+    "id": "finance-tab-accounting",
+    "module": "finance-payroll",
+    "page": "finance",
+    "route": "/dashboard/finance?tab=accounting",
+    "type": "tab",
+    "label": "Finance Accounting tab",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/finance?tab=accounting" }
+    ],
+    "waitFor": null,
+    "output": "module-ui/finance-payroll/finance/accounting-tab.png",
+    "caption": "Finance — Accounting tab with journal entries, ledger links, and chart of accounts navigation.",
+    "status": "pending"
+  },
+  {
+    "id": "finance-tab-cashbook",
+    "module": "finance-payroll",
+    "page": "finance",
+    "route": "/dashboard/finance?tab=cashbook",
+    "type": "tab",
+    "label": "Finance Cashbook tab",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/finance?tab=cashbook" }
+    ],
+    "waitFor": "Cashbook",
+    "output": "module-ui/finance-payroll/finance/cashbook-tab.png",
+    "caption": "Finance — Cashbook tab showing cash and bank accounts with balances.",
+    "status": "pending"
+  },
+  {
+    "id": "finance-tab-receivables",
+    "module": "finance-payroll",
+    "page": "finance",
+    "route": "/dashboard/finance?tab=receivables",
+    "type": "tab",
+    "label": "Finance Receivables tab",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/finance?tab=receivables" }
+    ],
+    "waitFor": "Receivables",
+    "output": "module-ui/finance-payroll/finance/receivables-tab.png",
+    "caption": "Finance — Receivables tab showing customer aging buckets and outstanding balances.",
+    "status": "pending"
+  },
+  {
+    "id": "finance-tab-budget",
+    "module": "finance-payroll",
+    "page": "finance",
+    "route": "/dashboard/finance?tab=budget",
+    "type": "tab",
+    "label": "Finance Budget tab",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/finance?tab=budget" }
+    ],
+    "waitFor": null,
+    "output": "module-ui/finance-payroll/finance/budget-tab.png",
+    "caption": "Finance — Budget tab for department budget creation, approval, and actuals tracking.",
+    "status": "pending"
+  },
+  {
+    "id": "finance-tab-mpesa",
+    "module": "finance-payroll",
+    "page": "finance",
+    "route": "/dashboard/finance?tab=mpesa",
+    "type": "tab",
+    "label": "Finance M-Pesa tab",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/finance?tab=mpesa" }
+    ],
+    "waitFor": null,
+    "output": "module-ui/finance-payroll/finance/mpesa-tab.png",
+    "caption": "Finance — M-Pesa tab for matching M-Pesa receipts to invoices.",
+    "status": "pending"
+  },
+  {
+    "id": "finance-tab-costing",
+    "module": "finance-payroll",
+    "page": "finance",
+    "route": "/dashboard/finance?tab=costing",
+    "type": "tab",
+    "label": "Finance Costing tab",
+    "requiredForPdf": false,
+    "priority": 2,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/finance?tab=costing" }
+    ],
+    "waitFor": null,
+    "output": "module-ui/finance-payroll/finance/costing-tab.png",
+    "caption": "Finance — Costing tab showing production cost rollups and unit costs by period.",
+    "status": "pending"
+  },
+  {
+    "id": "finance-tab-exchange-rates",
+    "module": "finance-payroll",
+    "page": "finance",
+    "route": "/dashboard/finance?tab=exchange-rates",
+    "type": "tab",
+    "label": "Finance Exchange Rates tab",
+    "requiredForPdf": false,
+    "priority": 2,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/finance?tab=exchange-rates" }
+    ],
+    "waitFor": null,
+    "output": "module-ui/finance-payroll/finance/exchange-rates-tab.png",
+    "caption": "Finance — Exchange Rates tab for managing currency conversion rates.",
+    "status": "pending"
+  },
+  {
+    "id": "finance-tab-etims",
+    "module": "finance-payroll",
+    "page": "finance",
+    "route": "/dashboard/finance?tab=etims",
+    "type": "tab",
+    "label": "Finance eTIMS tab",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/finance?tab=etims" }
+    ],
+    "waitFor": null,
+    "output": "module-ui/finance-payroll/finance/etims-tab.png",
+    "caption": "Finance — eTIMS tab for KRA electronic tax invoice submission.",
+    "status": "pending"
+  },
+  {
+    "id": "finance-tab-vat-returns",
+    "module": "finance-payroll",
+    "page": "finance",
+    "route": "/dashboard/finance?tab=vat-returns",
+    "type": "tab",
+    "label": "Finance VAT Returns tab",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/finance?tab=vat-returns" }
+    ],
+    "waitFor": null,
+    "output": "module-ui/finance-payroll/finance/vat-returns-tab.png",
+    "caption": "Finance — VAT Returns tab for KRA VAT3 filing and return status.",
+    "status": "pending"
+  },
+  {
+    "id": "finance-tab-bank-recon",
+    "module": "finance-payroll",
+    "page": "finance",
+    "route": "/dashboard/finance?tab=bank-recon",
+    "type": "tab",
+    "label": "Finance Bank Recon tab",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/finance?tab=bank-recon" }
+    ],
+    "waitFor": null,
+    "output": "module-ui/finance-payroll/finance/bank-recon-tab.png",
+    "caption": "Finance — Bank Recon tab for matching bank statements to ledger entries.",
+    "status": "pending"
+  },
+  {
+    "id": "finance-tab-invoice-match",
+    "module": "finance-payroll",
+    "page": "finance",
+    "route": "/dashboard/finance?tab=invoice-match",
+    "type": "tab",
+    "label": "Finance Invoice Match tab",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/finance?tab=invoice-match" }
+    ],
+    "waitFor": null,
+    "output": "module-ui/finance-payroll/finance/invoice-match-tab.png",
+    "caption": "Finance — Invoice Match tab for 3-way matching of POs, GRNs, and invoices.",
+    "status": "pending"
+  },
+  {
+    "id": "finance-tab-fixed-assets",
+    "module": "finance-payroll",
+    "page": "finance",
+    "route": "/dashboard/finance?tab=fixed-assets",
+    "type": "tab",
+    "label": "Finance Fixed Assets tab",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/finance?tab=fixed-assets" }
+    ],
+    "waitFor": null,
+    "output": "module-ui/finance-payroll/finance/fixed-assets-tab.png",
+    "caption": "Finance — Fixed Assets tab with asset register, depreciation, and disposal management.",
+    "status": "pending"
+  },
+  {
+    "id": "finance-tab-dimensions",
+    "module": "finance-payroll",
+    "page": "finance",
+    "route": "/dashboard/finance?tab=dimensions",
+    "type": "tab",
+    "label": "Finance Dimensions tab",
+    "requiredForPdf": false,
+    "priority": 2,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/finance?tab=dimensions" }
+    ],
+    "waitFor": null,
+    "output": "module-ui/finance-payroll/finance/dimensions-tab.png",
+    "caption": "Finance — Dimensions tab for cost centre and analysis dimension management.",
+    "status": "pending"
+  },
+  {
+    "id": "finance-tab-dunning",
+    "module": "finance-payroll",
+    "page": "finance",
+    "route": "/dashboard/finance?tab=dunning",
+    "type": "tab",
+    "label": "Finance Dunning tab",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/finance?tab=dunning" }
+    ],
+    "waitFor": null,
+    "output": "module-ui/finance-payroll/finance/dunning-tab.png",
+    "caption": "Finance — Dunning tab for automated overdue payment reminders.",
+    "status": "pending"
+  },
+  {
+    "id": "finance-tab-tax",
+    "module": "finance-payroll",
+    "page": "finance",
+    "route": "/dashboard/finance?tab=tax",
+    "type": "tab",
+    "label": "Finance Tax tab",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/finance?tab=tax" }
+    ],
+    "waitFor": null,
+    "output": "module-ui/finance-payroll/finance/tax-tab.png",
+    "caption": "Finance — Tax tab showing tax rules, regulatory compliance status, and transaction taxes.",
+    "status": "pending"
+  },
+  {
+    "id": "finance-tab-bank-api",
+    "module": "finance-payroll",
+    "page": "finance",
+    "route": "/dashboard/finance?tab=bank-api",
+    "type": "tab",
+    "label": "Finance Bank API tab",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/finance?tab=bank-api" }
+    ],
+    "waitFor": null,
+    "output": "module-ui/finance-payroll/finance/bank-api-tab.png",
+    "caption": "Finance — Bank API tab for configuring bank connections and syncing transactions.",
+    "status": "pending"
+  },
+  {
+    "id": "finance-tab-expenses",
+    "module": "finance-payroll",
+    "page": "finance",
+    "route": "/dashboard/finance?tab=expenses",
+    "type": "tab",
+    "label": "Finance Expenses tab",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/finance?tab=expenses" }
+    ],
+    "waitFor": null,
+    "output": "module-ui/finance-payroll/finance/expenses-tab.png",
+    "caption": "Finance — Expenses tab showing expense claim dashboard and navigation links.",
+    "status": "pending"
+  },
+  {
+    "id": "cashbook-tab-accounts",
+    "module": "finance-payroll",
+    "page": "cashbook",
+    "route": "/dashboard/finance?tab=cashbook",
+    "type": "tab",
+    "label": "Cashbook Accounts tab",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/finance?tab=cashbook" },
+      { "type": "clickText", "text": "Accounts" }
+    ],
+    "waitFor": "Cashbook",
+    "output": "module-ui/finance-payroll/cashbook/accounts-tab.png",
+    "caption": "Cashbook — Accounts tab listing cash, bank, and M-Pesa accounts with balances and type badges.",
+    "status": "pending"
+  },
+  {
+    "id": "cashbook-tab-transactions",
+    "module": "finance-payroll",
+    "page": "cashbook",
+    "route": "/dashboard/finance?tab=cashbook",
+    "type": "tab",
+    "label": "Cashbook Transactions tab",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/finance?tab=cashbook" },
+      { "type": "clickText", "text": "Transactions" }
+    ],
+    "waitFor": null,
+    "output": "module-ui/finance-payroll/cashbook/transactions-tab.png",
+    "caption": "Cashbook — Transactions tab showing transaction history for the selected account.",
+    "status": "pending"
+  },
+  {
+    "id": "cashbook-tab-journal",
+    "module": "finance-payroll",
+    "page": "cashbook",
+    "route": "/dashboard/finance?tab=cashbook",
+    "type": "tab",
+    "label": "Cashbook Journal tab",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/finance?tab=cashbook" },
+      { "type": "clickText", "text": "Journal" }
+    ],
+    "waitFor": null,
+    "output": "module-ui/finance-payroll/cashbook/journal-tab.png",
+    "caption": "Cashbook — Journal tab showing double-entry journal entries.",
+    "status": "pending"
+  },
+  {
+    "id": "cashbook-modal-new-account",
+    "module": "finance-payroll",
+    "page": "cashbook",
+    "route": "/dashboard/finance?tab=cashbook",
+    "type": "button_modal",
+    "label": "New Cash Account modal",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/finance?tab=cashbook" },
+      { "type": "clickRole", "role": "button", "name": "New Account" }
+    ],
+    "waitFor": "New Cash Account",
+    "output": "module-ui/finance-payroll/cashbook/new-account-modal.png",
+    "caption": "New Cash Account modal — Name, Type (Cash/Bank/M-Pesa), Bank Name, Account No., Currency, Opening Balance.",
+    "status": "pending"
+  },
+  {
+    "id": "cashbook-dropdown-account-type",
+    "module": "finance-payroll",
+    "page": "cashbook",
+    "route": "/dashboard/finance?tab=cashbook",
+    "type": "dropdown",
+    "label": "Cashbook Account Type dropdown options",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/finance?tab=cashbook" },
+      { "type": "clickRole", "role": "button", "name": "New Account" },
+      { "type": "wait", "ms": 900 },
+      { "type": "evaluate", "selector": "document.querySelectorAll('.max-w-md select').forEach(s => { s.size = s.options.length; s.style.height = 'auto'; })" }
+    ],
+    "waitFor": "New Cash Account",
+    "output": "module-ui/finance-payroll/cashbook/account-type-dropdown.png",
+    "caption": "Account Type dropdown showing options: Cash, Bank, M-Pesa.",
+    "status": "pending"
+  },
+  {
+    "id": "payroll-tab-overview",
+    "module": "finance-payroll",
+    "page": "payroll",
+    "route": "/dashboard/payroll",
+    "type": "tab",
+    "label": "Payroll Overview tab",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/payroll" }
+    ],
+    "waitFor": "Payroll",
+    "output": "module-ui/finance-payroll/payroll/overview-tab.png",
+    "caption": "Kenya Payroll workspace — Overview tab with payroll runs list, KPI summary, and New Payroll Run button.",
+    "status": "pending"
+  },
+  {
+    "id": "payroll-tab-profiles",
+    "module": "finance-payroll",
+    "page": "payroll",
+    "route": "/dashboard/payroll?tab=profiles",
+    "type": "tab",
+    "label": "Payroll Profiles tab",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/payroll?tab=profiles" }
+    ],
+    "waitFor": null,
+    "output": "module-ui/finance-payroll/payroll/profiles-tab.png",
+    "caption": "Payroll — Profiles tab listing employee payroll profiles with salary, allowances, and deduction settings.",
+    "status": "pending"
+  },
+  {
+    "id": "payroll-tab-reports",
+    "module": "finance-payroll",
+    "page": "payroll",
+    "route": "/dashboard/payroll?tab=reports",
+    "type": "tab",
+    "label": "Payroll Reports tab",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/payroll?tab=reports" }
+    ],
+    "waitFor": null,
+    "output": "module-ui/finance-payroll/payroll/reports-tab.png",
+    "caption": "Payroll — Reports tab with PAYE, NHIF, NSSF summary reports and CSV export.",
+    "status": "pending"
+  },
+  {
+    "id": "payroll-modal-new-run",
+    "module": "finance-payroll",
+    "page": "payroll",
+    "route": "/dashboard/payroll",
+    "type": "button_modal",
+    "label": "New Payroll Run modal",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/payroll" },
+      { "type": "clickRole", "role": "button", "name": "New Payroll Run" }
+    ],
+    "waitFor": "New Payroll Run",
+    "output": "module-ui/finance-payroll/payroll/new-run-modal.png",
+    "caption": "New Payroll Run modal — Month (select), Year (number), and Notes fields.",
+    "status": "pending"
+  },
+  {
+    "id": "payroll-dropdown-month",
+    "module": "finance-payroll",
+    "page": "payroll",
+    "route": "/dashboard/payroll",
+    "type": "dropdown",
+    "label": "Payroll Run Month dropdown options",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/payroll" },
+      { "type": "clickRole", "role": "button", "name": "New Payroll Run" },
+      { "type": "wait", "ms": 900 },
+      { "type": "evaluate", "selector": "document.querySelectorAll('.max-w-sm select').forEach(s => { s.size = s.options.length; s.style.height = 'auto'; })" }
+    ],
+    "waitFor": "New Payroll Run",
+    "output": "module-ui/finance-payroll/payroll/month-dropdown.png",
+    "caption": "Payroll Run Month dropdown showing January through December options.",
+    "status": "pending"
+  },
+  {
+    "id": "expenses-dashboard",
+    "module": "finance-payroll",
+    "page": "expenses",
+    "route": "/dashboard/expenses",
+    "type": "tab",
+    "label": "Expenses dashboard",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/expenses" }
+    ],
+    "waitFor": "Expense",
+    "output": "module-ui/finance-payroll/expenses/expenses-dashboard.png",
+    "caption": "Expenses dashboard — KPI tiles, + New Claim button, and navigation links to claims, approval, reimbursement, advances.",
+    "status": "pending"
+  },
+  {
+    "id": "fixed-assets-dashboard",
+    "module": "finance-payroll",
+    "page": "fixed-assets",
+    "route": "/dashboard/fixed-assets",
+    "type": "tab",
+    "label": "Fixed Assets dashboard",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/fixed-assets" }
+    ],
+    "waitFor": "Asset",
+    "output": "module-ui/finance-payroll/fixed-assets/fixed-assets-dashboard.png",
+    "caption": "Fixed Assets dashboard — KPI tiles, + New Asset button, and links to asset register, depreciation, disposals.",
+    "status": "pending"
+  },
+  {
+    "id": "bank-reconciliation-dashboard",
+    "module": "finance-payroll",
+    "page": "bank-reconciliation",
+    "route": "/dashboard/bank-reconciliation",
+    "type": "tab",
+    "label": "Bank Reconciliation dashboard",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/bank-reconciliation" }
+    ],
+    "waitFor": null,
+    "output": "module-ui/finance-payroll/bank-reconciliation/bank-recon-dashboard.png",
+    "caption": "Bank Reconciliation dashboard — Import Statement, All Statements, and reconciliation navigation links.",
+    "status": "pending"
+  },
+  {
+    "id": "bank-api-page",
+    "module": "finance-payroll",
+    "page": "bank-api",
+    "route": "/dashboard/bank-api",
+    "type": "tab",
+    "label": "Bank API page",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/bank-api" }
+    ],
+    "waitFor": "Bank",
+    "output": "module-ui/finance-payroll/bank-api/bank-api-page.png",
+    "caption": "Bank API page — New Bank Connection form with Currency and API Type selects, plus synced transactions table.",
+    "status": "pending"
+  },
+  {
+    "id": "bank-api-dropdowns",
+    "module": "finance-payroll",
+    "page": "bank-api",
+    "route": "/dashboard/bank-api",
+    "type": "dropdown",
+    "label": "Bank API Currency and API Type dropdowns",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/bank-api" },
+      { "type": "wait", "ms": 1000 },
+      { "type": "evaluate", "selector": "document.querySelectorAll('select').forEach(s => { if (s.options.length <= 6) { s.size = s.options.length; s.style.height = 'auto'; } })" }
+    ],
+    "waitFor": null,
+    "output": "module-ui/finance-payroll/bank-api/bank-api-dropdowns.png",
+    "caption": "Bank API form with Currency dropdown (KES, USD, EUR, GBP) and API Type dropdown (MOCK, DIRECT) expanded.",
+    "status": "pending"
+  },
+  {
+    "id": "tax-dashboard",
+    "module": "finance-payroll",
+    "page": "tax",
+    "route": "/dashboard/tax",
+    "type": "tab",
+    "label": "Tax dashboard",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/tax" }
+    ],
+    "waitFor": null,
+    "output": "module-ui/finance-payroll/tax/tax-dashboard.png",
+    "caption": "Tax dashboard — Tax rules, regulatory compliance status, and links to VAT reports.",
+    "status": "pending"
+  },
+  {
+    "id": "contracts-dashboard",
+    "module": "finance-payroll",
+    "page": "contracts",
+    "route": "/dashboard/contracts",
+    "type": "tab",
+    "label": "Contracts dashboard",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/contracts" }
+    ],
+    "waitFor": null,
+    "output": "module-ui/finance-payroll/contracts/contracts-dashboard.png",
+    "caption": "Contracts dashboard — recent contracts list, + New Contract button, expiring contracts, and AI alerts.",
+    "status": "pending"
+  },
+  {
+    "id": "invoice-match-dashboard",
+    "module": "finance-payroll",
+    "page": "invoice-match",
+    "route": "/dashboard/invoice-match",
+    "type": "tab",
+    "label": "Invoice Match dashboard",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/invoice-match" }
+    ],
+    "waitFor": null,
+    "output": "module-ui/finance-payroll/invoice-match/invoice-match-dashboard.png",
+    "caption": "Invoice Match dashboard — 3-way match queue, duplicates, blocked invoices, and AI recommendations.",
+    "status": "pending"
+  }
+]
