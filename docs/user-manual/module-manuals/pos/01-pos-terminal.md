@@ -50,10 +50,7 @@ API: `POST /api/v1/pos/sessions` with `{ register_id, opening_float }`
 
 ### Closing a Session
 
-Click `Close Register`:
-
-![Close Register modal](../../../screenshots/captured/module-ui/pos/terminal/close-session-modal.png)
-*Close Register modal — enter actual cash counted and notes.*
+Click `Close Register` (visible only when a session is open):
 
 | Field | Description |
 |---|---|
@@ -86,10 +83,7 @@ Cart totals:
 
 ## Payment
 
-Click `Pay Now` to open the Payment modal.
-
-![Payment modal](../../../screenshots/captured/module-ui/pos/terminal/payment-modal.png)
-*Payment modal showing amount due, method selector, amount received, and change calculation.*
+Click `Pay Now` to open the Payment modal. Fields:
 
 | Field | Description |
 |---|---|

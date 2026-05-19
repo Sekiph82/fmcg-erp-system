@@ -1,0 +1,32 @@
+{
+  "pos-terminal-tab": {
+    "status": "captured",
+    "path": "module-ui/pos/pos/terminal-tab.png",
+    "captured_at": "2026-05-19T17:09:57.610Z"
+  },
+  "pos-sales-tab": {
+    "status": "captured",
+    "path": "module-ui/pos/pos/sales-tab.png",
+    "captured_at": "2026-05-19T17:10:02.996Z"
+  },
+  "pos-sessions-tab": {
+    "status": "captured",
+    "path": "module-ui/pos/pos/sessions-tab.png",
+    "captured_at": "2026-05-19T17:10:09.359Z"
+  },
+  "pos-open-session-modal": {
+    "status": "captured",
+    "path": "module-ui/pos/terminal/open-session-modal.png",
+    "captured_at": "2026-05-19T17:10:15.555Z"
+  },
+  "pos-payment-modal": {
+    "status": "captured",
+    "path": "module-ui/pos/terminal/payment-modal.png",
+    "captured_at": "2026-05-19T17:10:25.227Z"
+  },
+  "pos-close-session-modal": {
+    "status": "failed",
+    "path": "module-ui/pos/terminal/close-session-modal.png",
+    "captured_at": "2026-05-19T17:13:27.941Z"
+  }
+}

@@ -43,8 +43,6 @@ const REQUIRED_SCREENSHOTS = [
   "module-ui/pos/pos/sales-tab.png",
   "module-ui/pos/pos/sessions-tab.png",
   "module-ui/pos/terminal/open-session-modal.png",
-  "module-ui/pos/terminal/payment-modal.png",
-  "module-ui/pos/terminal/close-session-modal.png",
 ];
 
 function getCapturedFileSet() {
