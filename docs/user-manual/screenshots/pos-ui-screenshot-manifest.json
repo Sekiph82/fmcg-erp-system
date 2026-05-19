@@ -1,0 +1,62 @@
+[
+  {
+    "id": "pos-terminal-tab",
+    "label": "POS Terminal Tab",
+    "path": "module-ui/pos/pos/terminal-tab.png",
+    "steps": [
+      { "type": "goto", "url": "/dashboard/pos?tab=pos" },
+      { "type": "wait", "ms": 2000 }
+    ]
+  },
+  {
+    "id": "pos-sales-tab",
+    "label": "POS Sales History Tab",
+    "path": "module-ui/pos/pos/sales-tab.png",
+    "steps": [
+      { "type": "goto", "url": "/dashboard/pos?tab=sales" },
+      { "type": "wait", "ms": 2000 }
+    ]
+  },
+  {
+    "id": "pos-sessions-tab",
+    "label": "POS Sessions Tab",
+    "path": "module-ui/pos/pos/sessions-tab.png",
+    "steps": [
+      { "type": "goto", "url": "/dashboard/pos?tab=sessions" },
+      { "type": "wait", "ms": 2000 }
+    ]
+  },
+  {
+    "id": "pos-open-session-modal",
+    "label": "Open Register Session Modal",
+    "path": "module-ui/pos/terminal/open-session-modal.png",
+    "steps": [
+      { "type": "goto", "url": "/dashboard/pos?tab=pos" },
+      { "type": "wait", "ms": 1800 },
+      { "type": "clickText", "text": "Open Register" },
+      { "type": "wait", "ms": 800 }
+    ]
+  },
+  {
+    "id": "pos-payment-modal",
+    "label": "Payment Modal",
+    "path": "module-ui/pos/terminal/payment-modal.png",
+    "steps": [
+      { "type": "goto", "url": "/dashboard/pos?tab=pos" },
+      { "type": "wait", "ms": 1800 },
+      { "type": "evaluate", "script": "document.querySelector('[class*=\"Pay Now\"]') && document.querySelector('[class*=\"Pay Now\"]').click()" },
+      { "type": "wait", "ms": 800 }
+    ]
+  },
+  {
+    "id": "pos-close-session-modal",
+    "label": "Close Register Session Modal",
+    "path": "module-ui/pos/terminal/close-session-modal.png",
+    "steps": [
+      { "type": "goto", "url": "/dashboard/pos?tab=pos" },
+      { "type": "wait", "ms": 1800 },
+      { "type": "clickText", "text": "Close Register" },
+      { "type": "wait", "ms": 800 }
+    ]
+  }
+]

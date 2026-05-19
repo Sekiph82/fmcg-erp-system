@@ -1,0 +1,97 @@
+{
+  "crm-overview-tab": {
+    "status": "captured",
+    "path": "module-ui/crm/crm/overview-tab.png",
+    "captured_at": "2026-05-19T16:39:29.920Z"
+  },
+  "crm-pipeline-tab": {
+    "status": "captured",
+    "path": "module-ui/crm/crm/pipeline-tab.png",
+    "captured_at": "2026-05-19T16:39:35.355Z"
+  },
+  "crm-leads-tab": {
+    "status": "captured",
+    "path": "module-ui/crm/crm/leads-tab.png",
+    "captured_at": "2026-05-19T16:39:42.849Z"
+  },
+  "crm-opportunities-tab": {
+    "status": "captured",
+    "path": "module-ui/crm/crm/opportunities-tab.png",
+    "captured_at": "2026-05-19T16:39:49.698Z"
+  },
+  "crm-activities-tab": {
+    "status": "captured",
+    "path": "module-ui/crm/crm/activities-tab.png",
+    "captured_at": "2026-05-19T16:39:56.391Z"
+  },
+  "crm-forecast-tab": {
+    "status": "captured",
+    "path": "module-ui/crm/crm/forecast-tab.png",
+    "captured_at": "2026-05-19T16:40:01.914Z"
+  },
+  "crm-territory-tab": {
+    "status": "captured",
+    "path": "module-ui/crm/crm/territory-tab.png",
+    "captured_at": "2026-05-19T16:40:09.538Z"
+  },
+  "crm-stages-tab": {
+    "status": "captured",
+    "path": "module-ui/crm/crm/stages-tab.png",
+    "captured_at": "2026-05-19T16:40:16.390Z"
+  },
+  "crm-win-loss-tab": {
+    "status": "captured",
+    "path": "module-ui/crm/crm/win-loss-tab.png",
+    "captured_at": "2026-05-19T16:40:24.389Z"
+  },
+  "crm-loyalty-tab": {
+    "status": "captured",
+    "path": "module-ui/crm/crm/loyalty-tab.png",
+    "captured_at": "2026-05-19T16:40:31.737Z"
+  },
+  "crm-nps-tab": {
+    "status": "captured",
+    "path": "module-ui/crm/crm/nps-tab.png",
+    "captured_at": "2026-05-19T16:40:38.064Z"
+  },
+  "crm-surveys-tab": {
+    "status": "captured",
+    "path": "module-ui/crm/crm/surveys-tab.png",
+    "captured_at": "2026-05-19T16:40:46.772Z"
+  },
+  "crm-new-lead-form": {
+    "status": "captured",
+    "path": "module-ui/crm/leads/new-lead-form.png",
+    "captured_at": "2026-05-19T16:40:52.726Z"
+  },
+  "crm-new-opportunity-form": {
+    "status": "captured",
+    "path": "module-ui/crm/opportunities/new-opportunity-form.png",
+    "captured_at": "2026-05-19T16:40:59.521Z"
+  },
+  "crm-loyalty-enroll-form": {
+    "status": "captured",
+    "path": "module-ui/crm/loyalty/enroll-form.png",
+    "captured_at": "2026-05-19T16:41:05.933Z"
+  },
+  "crm-nps-log-response-form": {
+    "status": "captured",
+    "path": "module-ui/crm/nps/log-response-form.png",
+    "captured_at": "2026-05-19T16:41:12.007Z"
+  },
+  "crm-leads-dropdowns": {
+    "status": "captured",
+    "path": "module-ui/crm/leads/leads-dropdowns.png",
+    "captured_at": "2026-05-19T16:41:17.718Z"
+  },
+  "crm-opportunities-dropdowns": {
+    "status": "captured",
+    "path": "module-ui/crm/opportunities/opportunities-dropdowns.png",
+    "captured_at": "2026-05-19T16:41:23.422Z"
+  },
+  "crm-new-lead-source-dropdown": {
+    "status": "captured",
+    "path": "module-ui/crm/leads/new-lead-source-dropdown.png",
+    "captured_at": "2026-05-19T16:41:29.872Z"
+  }
+}

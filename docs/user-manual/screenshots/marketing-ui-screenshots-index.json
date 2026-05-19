@@ -1,0 +1,87 @@
+{
+  "marketing-overview-tab": {
+    "status": "captured",
+    "path": "module-ui/marketing/marketing/overview-tab.png",
+    "captured_at": "2026-05-19T16:48:27.437Z"
+  },
+  "marketing-campaigns-tab": {
+    "status": "captured",
+    "path": "module-ui/marketing/marketing/campaigns-tab.png",
+    "captured_at": "2026-05-19T16:48:32.972Z"
+  },
+  "marketing-promotions-tab": {
+    "status": "captured",
+    "path": "module-ui/marketing/marketing/promotions-tab.png",
+    "captured_at": "2026-05-19T16:48:38.374Z"
+  },
+  "marketing-schemes-tab": {
+    "status": "captured",
+    "path": "module-ui/marketing/marketing/schemes-tab.png",
+    "captured_at": "2026-05-19T16:48:44.640Z"
+  },
+  "marketing-tpm-tab": {
+    "status": "captured",
+    "path": "module-ui/marketing/marketing/tpm-tab.png",
+    "captured_at": "2026-05-19T16:48:50.011Z"
+  },
+  "marketing-trade-spend-tab": {
+    "status": "captured",
+    "path": "module-ui/marketing/marketing/trade-spend-tab.png",
+    "captured_at": "2026-05-19T16:48:55.328Z"
+  },
+  "marketing-ads-tab": {
+    "status": "captured",
+    "path": "module-ui/marketing/marketing/ads-tab.png",
+    "captured_at": "2026-05-19T16:49:00.945Z"
+  },
+  "marketing-social-tab": {
+    "status": "captured",
+    "path": "module-ui/marketing/marketing/social-tab.png",
+    "captured_at": "2026-05-19T16:49:07.670Z"
+  },
+  "marketing-segments-tab": {
+    "status": "captured",
+    "path": "module-ui/marketing/marketing/segments-tab.png",
+    "captured_at": "2026-05-19T16:49:12.855Z"
+  },
+  "marketing-influencers-tab": {
+    "status": "captured",
+    "path": "module-ui/marketing/marketing/influencers-tab.png",
+    "captured_at": "2026-05-19T16:49:19.455Z"
+  },
+  "marketing-ecommerce-tab": {
+    "status": "captured",
+    "path": "module-ui/marketing/marketing/ecommerce-tab.png",
+    "captured_at": "2026-05-19T16:49:28.727Z"
+  },
+  "marketing-brand-spend-tab": {
+    "status": "captured",
+    "path": "module-ui/marketing/marketing/brand-spend-tab.png",
+    "captured_at": "2026-05-19T16:49:34.160Z"
+  },
+  "marketing-visits-tab": {
+    "status": "captured",
+    "path": "module-ui/marketing/marketing/visits-tab.png",
+    "captured_at": "2026-05-19T16:49:39.579Z"
+  },
+  "marketing-market-intel-tab": {
+    "status": "captured",
+    "path": "module-ui/marketing/marketing/market-intel-tab.png",
+    "captured_at": "2026-05-19T16:49:48.714Z"
+  },
+  "marketing-analytics-tab": {
+    "status": "captured",
+    "path": "module-ui/marketing/marketing/analytics-tab.png",
+    "captured_at": "2026-05-19T16:49:55.428Z"
+  },
+  "marketing-new-campaign-form": {
+    "status": "captured",
+    "path": "module-ui/marketing/campaigns/new-campaign-form.png",
+    "captured_at": "2026-05-19T16:50:01.238Z"
+  },
+  "marketing-new-promotion-form": {
+    "status": "captured",
+    "path": "module-ui/marketing/promotions/new-promotion-form.png",
+    "captured_at": "2026-05-19T16:50:08.446Z"
+  }
+}

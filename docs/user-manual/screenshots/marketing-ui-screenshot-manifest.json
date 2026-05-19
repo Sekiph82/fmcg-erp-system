@@ -1,0 +1,155 @@
+[
+  {
+    "id": "marketing-overview-tab",
+    "label": "Marketing Overview Tab",
+    "path": "module-ui/marketing/marketing/overview-tab.png",
+    "steps": [
+      { "type": "goto", "url": "/dashboard/marketing?tab=overview" },
+      { "type": "wait", "ms": 2000 }
+    ]
+  },
+  {
+    "id": "marketing-campaigns-tab",
+    "label": "Marketing Campaigns Tab",
+    "path": "module-ui/marketing/marketing/campaigns-tab.png",
+    "steps": [
+      { "type": "goto", "url": "/dashboard/marketing?tab=campaigns" },
+      { "type": "wait", "ms": 2000 }
+    ]
+  },
+  {
+    "id": "marketing-promotions-tab",
+    "label": "Marketing Promotions Tab",
+    "path": "module-ui/marketing/marketing/promotions-tab.png",
+    "steps": [
+      { "type": "goto", "url": "/dashboard/marketing?tab=promotions" },
+      { "type": "wait", "ms": 2000 }
+    ]
+  },
+  {
+    "id": "marketing-schemes-tab",
+    "label": "Marketing Promotion Schemes Tab",
+    "path": "module-ui/marketing/marketing/schemes-tab.png",
+    "steps": [
+      { "type": "goto", "url": "/dashboard/marketing?tab=promotions-schemes" },
+      { "type": "wait", "ms": 2000 }
+    ]
+  },
+  {
+    "id": "marketing-tpm-tab",
+    "label": "Marketing TPM Tab",
+    "path": "module-ui/marketing/marketing/tpm-tab.png",
+    "steps": [
+      { "type": "goto", "url": "/dashboard/marketing?tab=tpm" },
+      { "type": "wait", "ms": 2000 }
+    ]
+  },
+  {
+    "id": "marketing-trade-spend-tab",
+    "label": "Marketing Trade Spend Tab",
+    "path": "module-ui/marketing/marketing/trade-spend-tab.png",
+    "steps": [
+      { "type": "goto", "url": "/dashboard/marketing?tab=trade-spend" },
+      { "type": "wait", "ms": 2000 }
+    ]
+  },
+  {
+    "id": "marketing-ads-tab",
+    "label": "Marketing Digital Ads Tab",
+    "path": "module-ui/marketing/marketing/ads-tab.png",
+    "steps": [
+      { "type": "goto", "url": "/dashboard/marketing?tab=ads" },
+      { "type": "wait", "ms": 2000 }
+    ]
+  },
+  {
+    "id": "marketing-social-tab",
+    "label": "Marketing Social Media Tab",
+    "path": "module-ui/marketing/marketing/social-tab.png",
+    "steps": [
+      { "type": "goto", "url": "/dashboard/marketing?tab=social-media" },
+      { "type": "wait", "ms": 2000 }
+    ]
+  },
+  {
+    "id": "marketing-segments-tab",
+    "label": "Marketing Customer Segments Tab",
+    "path": "module-ui/marketing/marketing/segments-tab.png",
+    "steps": [
+      { "type": "goto", "url": "/dashboard/marketing?tab=segments" },
+      { "type": "wait", "ms": 2000 }
+    ]
+  },
+  {
+    "id": "marketing-influencers-tab",
+    "label": "Marketing Influencers Tab",
+    "path": "module-ui/marketing/marketing/influencers-tab.png",
+    "steps": [
+      { "type": "goto", "url": "/dashboard/marketing?tab=influencers" },
+      { "type": "wait", "ms": 2000 }
+    ]
+  },
+  {
+    "id": "marketing-ecommerce-tab",
+    "label": "Marketing E-Commerce Tab",
+    "path": "module-ui/marketing/marketing/ecommerce-tab.png",
+    "steps": [
+      { "type": "goto", "url": "/dashboard/marketing?tab=ecommerce" },
+      { "type": "wait", "ms": 2000 }
+    ]
+  },
+  {
+    "id": "marketing-brand-spend-tab",
+    "label": "Marketing Brand Spend Tab",
+    "path": "module-ui/marketing/marketing/brand-spend-tab.png",
+    "steps": [
+      { "type": "goto", "url": "/dashboard/marketing?tab=brand-spend" },
+      { "type": "wait", "ms": 2000 }
+    ]
+  },
+  {
+    "id": "marketing-visits-tab",
+    "label": "Marketing Field Visits Tab",
+    "path": "module-ui/marketing/marketing/visits-tab.png",
+    "steps": [
+      { "type": "goto", "url": "/dashboard/marketing?tab=visits" },
+      { "type": "wait", "ms": 2000 }
+    ]
+  },
+  {
+    "id": "marketing-market-intel-tab",
+    "label": "Marketing Market Intelligence Tab",
+    "path": "module-ui/marketing/marketing/market-intel-tab.png",
+    "steps": [
+      { "type": "goto", "url": "/dashboard/marketing?tab=market-intel" },
+      { "type": "wait", "ms": 2000 }
+    ]
+  },
+  {
+    "id": "marketing-analytics-tab",
+    "label": "Marketing Analytics Tab",
+    "path": "module-ui/marketing/marketing/analytics-tab.png",
+    "steps": [
+      { "type": "goto", "url": "/dashboard/marketing?tab=analytics" },
+      { "type": "wait", "ms": 2000 }
+    ]
+  },
+  {
+    "id": "marketing-new-campaign-form",
+    "label": "New Campaign Form",
+    "path": "module-ui/marketing/campaigns/new-campaign-form.png",
+    "steps": [
+      { "type": "goto", "url": "/dashboard/marketing/campaigns/new" },
+      { "type": "wait", "ms": 2000 }
+    ]
+  },
+  {
+    "id": "marketing-new-promotion-form",
+    "label": "New Promotion Form",
+    "path": "module-ui/marketing/promotions/new-promotion-form.png",
+    "steps": [
+      { "type": "goto", "url": "/dashboard/marketing/promotions/new" },
+      { "type": "wait", "ms": 2000 }
+    ]
+  }
+]
