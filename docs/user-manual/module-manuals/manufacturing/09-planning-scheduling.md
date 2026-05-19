@@ -10,7 +10,7 @@
 
 The Advanced Planning module provides finite and infinite capacity scheduling, material requirements planning (MRP), master production scheduling (MPS), bottleneck detection, and AI-driven optimisation. It is built for production planners who need to schedule across multiple work centers, manage capacity constraints, and align production with demand.
 
-![Planning workspace](../../../screenshots/captured/tabs/planning-dashboard.png)
+![Planning workspace](../../../screenshots/captured/module-ui/manufacturing/planning/dashboard-tab.png)
 *Advanced Planning workspace showing the dashboard with scenario KPIs, scenario list, and navigation tabs.*
 
 ---
@@ -74,6 +74,9 @@ Pending AI recommendations from the planning agents:
 
 **Button:** `+ New Scenario`
 
+![New Planning Scenario modal](../../../screenshots/captured/module-ui/manufacturing/planning/new-scenario-modal.png)
+*New Planning Scenario modal — Scenario Name, Capacity Mode, and Description fields.*
+
 ### New Planning Scenario Fields
 
 | Field | Label | Required | Default | Notes |
@@ -100,6 +103,9 @@ Start with a FINITE scenario for operational planning. Use INFINITE for demand-s
 **Tab key:** `schedule`  
 **Route:** `/dashboard/planning/schedule/page`
 
+![Planning — Schedule tab](../../../screenshots/captured/module-ui/manufacturing/planning/schedule-tab.png)
+*Schedule tab — interactive Gantt board showing operations per work center per day.*
+
 Interactive Gantt board showing scheduled operations per work center per day/shift. Drag-and-drop to reschedule. Conflicts highlighted in red.
 
 Navigate to a specific scenario via URL: `/dashboard/planning/schedule?scenario={id}`
@@ -111,7 +117,7 @@ Navigate to a specific scenario via URL: `/dashboard/planning/schedule?scenario=
 **Tab key:** `capacity`  
 **Route:** `/dashboard/planning/capacity/page`
 
-![Planning — Capacity tab](../../../screenshots/captured/tabs/planning-capacity.png)
+![Planning — Capacity tab](../../../screenshots/captured/module-ui/manufacturing/planning/capacity-tab.png)
 *Capacity tab showing work center load vs. available capacity for the planning horizon.*
 
 Visual capacity loading chart per work center for the planning horizon. Shows available capacity, scheduled load, and overloaded periods. Used to identify where to offload or reschedule.
@@ -123,6 +129,9 @@ Visual capacity loading chart per work center for the planning horizon. Shows av
 **Tab key:** `simulation`  
 **Route:** `/dashboard/planning/simulation/page`
 
+![Planning — Simulation tab](../../../screenshots/captured/module-ui/manufacturing/planning/simulation-tab.png)
+*Simulation tab — sandbox environment for testing alternative schedules without affecting operational plans.*
+
 Sandbox environment to test alternative schedules without affecting operational plans. Create a simulation scenario, apply changes (shift priorities, add/remove work orders, change capacity), and compare results with the baseline.
 
 ---
@@ -131,6 +140,9 @@ Sandbox environment to test alternative schedules without affecting operational 
 
 **Tab key:** `bottlenecks`  
 **Route:** `/dashboard/planning/bottlenecks/page`
+
+![Planning — Bottlenecks tab](../../../screenshots/captured/module-ui/manufacturing/planning/bottlenecks-tab.png)
+*Bottlenecks tab showing constrained work centers with overload severity and AI recommendations.*
 
 Detailed bottleneck analysis explorer. Shows each constrained work center with:
 - Overload severity
@@ -146,6 +158,9 @@ Detailed bottleneck analysis explorer. Shows each constrained work center with:
 **Tab key:** `changeover`  
 **Route:** `/dashboard/planning/changeover/page`
 
+![Planning — Changeover tab](../../../screenshots/captured/module-ui/manufacturing/planning/changeover-tab.png)
+*Changeover Matrix tab defining product-to-product setup times per work center.*
+
 Changeover matrix management. Defines the setup time required when switching between products on a given work center (e.g. from product A to product B on Line 1 = 45 minutes). The scheduler uses these times when sequencing work orders to minimise total changeover duration.
 
 ---
@@ -155,7 +170,7 @@ Changeover matrix management. Defines the setup time required when switching bet
 **Tab key:** `mrp`  
 **Route:** `/dashboard/mrp/page`
 
-![Planning — MRP tab](../../../screenshots/captured/tabs/planning-mrp.png)
+![Planning — MRP tab](../../../screenshots/captured/module-ui/manufacturing/planning/mrp-tab.png)
 *MRP tab showing material requirements plan output with planned orders and suggested actions.*
 
 Material Requirements Planning calculates what materials need to be ordered or produced, by when, to fulfil the demand plan.
@@ -179,7 +194,7 @@ MRP run outputs:
 **Tab key:** `mps`  
 **Route:** `/dashboard/mps/page`
 
-![Planning — MPS tab](../../../screenshots/captured/tabs/planning-mps.png)
+![Planning — MPS tab](../../../screenshots/captured/module-ui/manufacturing/planning/mps-tab.png)
 *Master Production Schedule tab showing the time-phased production schedule by product.*
 
 Master Production Schedule defines the production plan at the finished goods level across the planning horizon. MPS drives MRP. Planners manage MPS quantities by product and week/day.
@@ -190,5 +205,8 @@ Master Production Schedule defines the production plan at the finished goods lev
 
 **Tab key:** `kanban`  
 **Route:** `/dashboard/kanban/page`
+
+![Planning — Kanban tab](../../../screenshots/captured/module-ui/manufacturing/planning/kanban-tab.png)
+*Kanban tab for pull-based replenishment — card quantities, bin sizes, and replenishment triggers.*
 
 Kanban-based replenishment for high-velocity materials or work centers that operate on pull scheduling rather than MRP push scheduling. Manages Kanban card quantities, bin sizes, and replenishment triggers.

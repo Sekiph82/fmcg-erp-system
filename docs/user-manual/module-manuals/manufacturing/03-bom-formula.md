@@ -12,7 +12,7 @@ The BOM & Formula module manages the Bill of Materials for all manufactured prod
 
 The BOM module is separate from the Recipes module. Recipes focus on process parameters and formulation trials; BOMs focus on costing, production release, and structural explosion.
 
-![BOM & Formula workspace](../../../screenshots/captured/tabs/bom-list.png)
+![BOM & Formula workspace](../../../screenshots/captured/module-ui/manufacturing/bom/bom-list-tab.png)
 *BOM workspace overview showing the formula list with lifecycle status badges.*
 
 ---
@@ -88,6 +88,9 @@ A product can have multiple BOM versions. The one marked `is_default=true` is us
 
 **Button:** `+ New BOM` (requires `bom.create`)
 
+![New BOM modal](../../../screenshots/captured/module-ui/manufacturing/bom/new-bom-modal.png)
+*New BOM modal — BOM Name, Type, Base Qty, Unit, and Version fields.*
+
 ### Create Form Fields
 
 | Field | Label | Required | Default | Allowed Values |
@@ -117,6 +120,14 @@ The BOM detail page provides tabs for formula editing, costing, compliance, and 
 
 **Route:** `/dashboard/bom?tab=substitutes`
 
+![BOM — Substitutes tab](../../../screenshots/captured/module-ui/manufacturing/bom/substitutes-tab.png)
+*Substitutes tab listing approved substitute groups and alternative materials.*
+
+**Button:** `+ New Substitute Group`
+
+![New Substitute Group modal](../../../screenshots/captured/module-ui/manufacturing/bom/new-substitute-group-modal.png)
+*New Substitute Group modal — group code and primary material fields.*
+
 Manages approved material substitutions. When a BOM item's primary material is unavailable, an approved substitute with the same `alternative_group` can be used.
 
 ---
@@ -125,6 +136,9 @@ Manages approved material substitutions. When a BOM item's primary material is u
 
 **Route:** `/dashboard/bom?tab=compare`
 
+![BOM — Compare tab](../../../screenshots/captured/module-ui/manufacturing/bom/compare-tab.png)
+*Compare tab — side-by-side view of two BOM versions showing ingredient and cost differences.*
+
 Side-by-side comparison of two BOM versions for the same product. Used during reformulation reviews to see cost and ingredient differences.
 
 ---
@@ -132,6 +146,9 @@ Side-by-side comparison of two BOM versions for the same product. Used during re
 ## Conversion Tab
 
 **Route:** `/dashboard/bom?tab=conversion`
+
+![BOM — Conversion tab](../../../screenshots/captured/module-ui/manufacturing/bom/conversion-tab.png)
+*Conversion tab showing UoM conversion factors for bulk-to-packaged unit equivalents.*
 
 Manages unit of measure conversions specific to this BOM's product line (e.g. converting bulk KG quantities to packaged unit equivalents).
 

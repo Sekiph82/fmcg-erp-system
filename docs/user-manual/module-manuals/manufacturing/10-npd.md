@@ -10,7 +10,7 @@
 
 The NPD module manages the stage-gate pipeline for new product development — from an initial idea through concept, development, pilot trials, and commercial launch. Each project tracks the target market, estimated cost of goods, brand, and target launch date.
 
-![NPD workspace](../../../screenshots/captured/tabs/npd-new-products.png)
+![NPD workspace](../../../screenshots/captured/module-ui/manufacturing/npd/new-products-tab.png)
 *NPD workspace showing the stage-gate pipeline with project cards grouped by stage.*
 
 ---
@@ -60,6 +60,9 @@ Clicking a card navigates to the project detail page at `/dashboard/npd/{id}`.
 ## Creating an NPD Project
 
 **Button:** `+ New Project` (requires `npd.create`)
+
+![New NPD Project form](../../../screenshots/captured/module-ui/manufacturing/npd/new-project-form.png)
+*New NPD Project inline form — Product Name, Category, Brand, Target Market, Launch Date, Est. COGS/Unit, Description.*
 
 ### New Project Form Fields
 

@@ -10,11 +10,8 @@
 
 The Compliance module manages product labelling and regulatory certification requirements. It covers GS1 barcode generation and label printing, and provides a consolidated view of all regulatory certificates linked to products and suppliers.
 
-![Compliance workspace](../../../screenshots/captured/tabs/compliance-gs1.png)
-*Compliance workspace showing GS1 & Labels and Regulatory Certs tabs.*
-
-![Compliance — GS1 Labels tab](../../../screenshots/captured/tabs/compliance-gs1.png)
-*GS1 Labels tab for generating and printing GS1-128 barcodes and label artwork.*
+![Compliance workspace — GS1 & Labels tab](../../../screenshots/captured/module-ui/manufacturing/compliance/gs1-labels-tab.png)
+*Compliance workspace showing the GS1 & Labels tab with label validator and packaging optimizer actions.*
 
 ---
 
@@ -73,6 +70,18 @@ Allergen information from the **Allergen** tab (Quality module) is pulled automa
 
 **Tab key:** `regulatory-certs`  
 **Route:** `/dashboard/quality/certificates/page` (embedded)
+
+![Compliance — Regulatory Certs tab](../../../screenshots/captured/module-ui/manufacturing/compliance/regulatory-certs-tab.png)
+*Regulatory Certs tab listing all certificates with type, status, expiry, and linked entity.*
+
+![Add Certificate form](../../../screenshots/captured/module-ui/manufacturing/compliance/add-certificate-form.png)
+*Add Certificate form — fields for cert type, number, issuing body, issued/expiry dates, product or supplier.*
+
+![Status dropdown](../../../screenshots/captured/module-ui/manufacturing/compliance/regulatory-certs-status-dropdown.png)
+*Status filter dropdown — ACTIVE, EXPIRED, SUSPENDED, PENDING options.*
+
+![Entity Type dropdown](../../../screenshots/captured/module-ui/manufacturing/compliance/regulatory-certs-entity-type-dropdown.png)
+*Entity Type filter dropdown — Product, Supplier, Material options.*
 
 The Regulatory Certs tab is the same content as **Quality → Certificates**. It is surfaced here in the Compliance workspace for users whose primary focus is regulatory compliance rather than QC operations.
 

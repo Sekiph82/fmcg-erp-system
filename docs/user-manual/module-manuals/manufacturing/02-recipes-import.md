@@ -10,8 +10,14 @@
 
 The bulk import modal allows you to upload recipe data from CSV files. It has three separate tabs — one per data type — and each tab runs an independent validate-then-import flow. You must import in the correct order:
 
-![Import Recipes / BOM modal](../../../screenshots/captured/actions/recipes-import-bom-modal.png)
-*Bulk Import — Recipes / BOM modal showing the three-tab structure (Recipe Headers, BOM Items, Process Steps).*
+![Import dialog — Recipe Headers tab](../../../screenshots/captured/module-ui/manufacturing/recipes/import-modal-headers-tab.png)
+*Bulk Import — Recipe Headers tab: template download, CSV picker, Validate, and Import buttons.*
+
+![Import dialog — BOM Items tab](../../../screenshots/captured/module-ui/manufacturing/recipes/import-modal-bom-items-tab.png)
+*Bulk Import — BOM Items tab for uploading ingredient quantities per recipe.*
+
+![Import dialog — Process Steps tab](../../../screenshots/captured/module-ui/manufacturing/recipes/import-modal-process-steps-tab.png)
+*Bulk Import — Process Steps tab for uploading process parameters per recipe.*
 
 1. **Recipe Headers** first
 2. **BOM Items** second (recipes must already exist)

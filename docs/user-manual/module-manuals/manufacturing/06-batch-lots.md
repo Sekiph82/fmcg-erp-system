@@ -6,6 +6,9 @@
 
 ---
 
+![Production — Batch / Lots tab](../../../screenshots/captured/module-ui/manufacturing/production/batch-lots-tab.png)
+*Batch / Lots tab showing batch and lot numbers assigned during production runs.*
+
 ## What It Does
 
 The Batch & Lots tab tracks the batch numbers and lot numbers assigned during production. Batch/lot traceability is required for:

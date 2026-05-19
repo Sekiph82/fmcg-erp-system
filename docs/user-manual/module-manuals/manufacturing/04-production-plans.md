@@ -10,8 +10,8 @@
 
 Production Plans group related work orders under a single planning event. A plan defines a target date, a reference number, and a name. Work orders are then raised against a confirmed plan. Plans must be **Confirmed** before work orders can be executed.
 
-![Production workspace](../../../screenshots/captured/tabs/production-plans.png)
-*Production workspace showing the Plans tab with plan list, status badges, and workspace navigation.*
+![Production workspace — Plans tab](../../../screenshots/captured/module-ui/manufacturing/production/plans-tab.png)
+*Production workspace — Plans tab showing production plan list with status badges and actions.*
 
 ---
 
@@ -50,6 +50,9 @@ The **Confirm** button appears on any row where `status === "DRAFT"`. Clicking i
 ## Creating a Production Plan
 
 **Button:** `+ New Plan` (`data-testid="production-create-plan-button"`)
+
+![New Production Plan modal](../../../screenshots/captured/module-ui/manufacturing/production/new-plan-modal.png)
+*New Production Plan modal — Plan No, Name, Planned Date and Description fields.*
 
 ### New Production Plan Modal Fields
 

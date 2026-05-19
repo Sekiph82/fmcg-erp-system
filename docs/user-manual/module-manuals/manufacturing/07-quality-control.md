@@ -11,7 +11,7 @@
 
 The Quality module manages all QC inspections across three inspection contexts: incoming raw materials, in-process production checks, and finished goods release. Each inspection records test results, a pass/fail decision, and optional quarantine actions.
 
-![Quality workspace](../../../screenshots/captured/tabs/quality-inspections.png)
+![Quality workspace](../../../screenshots/captured/module-ui/manufacturing/quality/inspections-tab.png)
 *Quality workspace showing the Inspections tab with dashboard counters and inspection list.*
 
 ---
@@ -55,7 +55,7 @@ Critical failures are highlighted in bold red. These indicate a safety or regula
 
 **Button:** `+ New Inspection` (`data-testid="quality-create-inspection-button"`)
 
-![New QC Inspection modal](../../../screenshots/captured/actions/quality-new-inspection-modal.png)
+![New QC Inspection modal](../../../screenshots/captured/module-ui/manufacturing/quality/new-inspection-modal.png)
 *New QC Inspection form. The Supplier and Material fields only appear when qc_type is INCOMING.*
 
 ### New QC Inspection Modal Fields
@@ -149,14 +149,26 @@ The detail page provides:
 
 ## Other Quality Tabs
 
-![Quality — Inspections tab](../../../screenshots/captured/tabs/quality-inspections.png)
-*Quality Inspections tab with pending and completed inspection list.*
+![Quality — Certificates tab](../../../screenshots/captured/module-ui/manufacturing/quality/certificates-tab.png)
+*Certificates tab listing regulatory and quality certificates with status and expiry dates.*
 
-![Quality — QMS tab](../../../screenshots/captured/tabs/quality-qms.png)
+![Quality — Parameters tab](../../../screenshots/captured/module-ui/manufacturing/quality/parameters-tab.png)
+*Parameters tab with specification limits per product and material.*
+
+![Quality — Consumer Complaints tab](../../../screenshots/captured/module-ui/manufacturing/quality/consumer-complaints-tab.png)
+*Consumer Complaints tab tracking customer-reported product issues linked to batches.*
+
+![Quality — Reports tab](../../../screenshots/captured/module-ui/manufacturing/quality/reports-tab.png)
+*Quality Reports tab showing KPI trends and generated quality reports.*
+
+![Quality — QMS tab](../../../screenshots/captured/module-ui/manufacturing/quality/qms-tab.png)
 *QMS tab for non-conformance reports, CAPA, and SOPs.*
 
-![Quality — Allergen tab](../../../screenshots/captured/tabs/quality-allergen.png)
+![Quality — Allergen tab](../../../screenshots/captured/module-ui/manufacturing/quality/allergen-tab.png)
 *Allergen management tab showing allergen declarations and cross-contamination matrix.*
+
+![Quality — Brand Assets tab](../../../screenshots/captured/module-ui/manufacturing/quality/brand-assets-tab.png)
+*Brand Assets tab for brand-related quality standards and packaging specifications.*
 
 | Tab | Content |
 |-----|---------|

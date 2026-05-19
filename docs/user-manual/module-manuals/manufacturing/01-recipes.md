@@ -10,7 +10,7 @@
 
 The Recipes module manages product formulations: the exact materials (BOM items) and manufacturing process parameters (temperature, pH, mixing time, etc.) for each product version. A recipe must be **Approved** before it can be used in production work orders.
 
-![Recipes page overview](../../../screenshots/captured/tabs/recipes-list.png)
+![Recipes page overview](../../../screenshots/captured/module-ui/manufacturing/recipes/recipes-tab.png)
 *Recipes page showing recipe list with Search, Status filter, Import Recipes / BOM, and + New Recipe buttons.*
 
 ---
@@ -56,7 +56,7 @@ Status transitions are managed from the recipe detail page. New recipes always s
 
 **Button:** `+ New Recipe` (requires `recipe.create`)
 
-![New Recipe modal](../../../screenshots/captured/actions/recipes-new-recipe-modal.png)
+![New Recipe modal](../../../screenshots/captured/module-ui/manufacturing/recipes/new-recipe-modal.png)
 *New Recipe / Formulation modal opened from the + New Recipe button.*
 
 ### New Recipe Modal Fields

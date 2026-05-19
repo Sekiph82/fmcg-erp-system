@@ -10,6 +10,9 @@
 **Tab key:** `oee`  
 **Route:** `/dashboard/production/oee/page`
 
+![Production — OEE tab](../../../screenshots/captured/module-ui/manufacturing/production/oee-tab.png)
+*OEE tab showing Availability, Performance, and Quality metrics per work center.*
+
 OEE is the primary manufacturing performance metric. It measures how effectively production equipment is being used compared to its full potential.
 
 ### OEE Formula
@@ -53,6 +56,9 @@ Historical OEE trend for the selected work center and date range. Used to detect
 **Tab key:** `downtime`  
 **Route:** `/dashboard/production/downtime/page`
 
+![Production — Downtime tab](../../../screenshots/captured/module-ui/manufacturing/production/downtime-tab.png)
+*Downtime tab showing downtime events, categories, duration, and Pareto analysis.*
+
 ### Downtime Impact on OEE
 
 All downtime events recorded in the Shop Floor module feed directly into OEE Availability calculations. Planned downtime (maintenance windows) is excluded from availability calculations; unplanned downtime reduces availability.
@@ -77,6 +83,9 @@ The downtime tab provides a Pareto chart of downtime by category. The 80/20 rule
 
 **Tab key:** `waste-yield`  
 **Route:** `/dashboard/production/waste-yield/page`
+
+![Production — Waste & Yield tab](../../../screenshots/captured/module-ui/manufacturing/production/waste-yield-tab.png)
+*Waste & Yield tab showing scrap quantities, yield percentages, and trend analysis per work order.*
 
 ### Key Metrics
 
@@ -107,6 +116,9 @@ Each work order has a **standard yield** from the recipe's `loss_percentage` set
 
 **Tab key:** `reports`  
 **Route:** `/dashboard/production/reports/page`
+
+![Production — Reports tab](../../../screenshots/captured/module-ui/manufacturing/production/reports-tab.png)
+*Production Reports tab with report type selector, date filters, and export options.*
 
 Standard reports available:
 

@@ -60,9 +60,26 @@ const CHAPTERS = [
   "12-compliance.md",
 ];
 
-// ── Required screenshots (PDF is NOT COMPLETE without these) ───────────────
+// ── Required screenshots — loaded from manifest ────────────────────────────
 
-const REQUIRED_SCREENSHOTS = [
+const MANUFACTURING_MANIFEST_FILE = path.join(REPO_ROOT, "docs", "user-manual", "screenshots", "manufacturing-ui-screenshot-manifest.json");
+const MANUFACTURING_INDEX_FILE    = path.join(REPO_ROOT, "docs", "user-manual", "screenshots", "manufacturing-ui-screenshots-index.json");
+
+function loadManufacturingManifest() {
+  if (!fs.existsSync(MANUFACTURING_MANIFEST_FILE)) return [];
+  return JSON.parse(fs.readFileSync(MANUFACTURING_MANIFEST_FILE, "utf-8"));
+}
+
+function loadManufacturingIndex() {
+  if (!fs.existsSync(MANUFACTURING_INDEX_FILE)) return {};
+  try {
+    const arr = JSON.parse(fs.readFileSync(MANUFACTURING_INDEX_FILE, "utf-8"));
+    return Object.fromEntries(arr.map((e) => [e.id, e]));
+  } catch { return {}; }
+}
+
+// Legacy hardcoded list (keeps old screenshots valid while new ones are captured)
+const LEGACY_REQUIRED_SCREENSHOTS = [
   "tabs/recipes-list.png",
   "tabs/bom-list.png",
   "tabs/production-plans.png",
@@ -88,6 +105,8 @@ const REQUIRED_SCREENSHOTS = [
   "actions/recipes-import-bom-modal.png",
   "actions/quality-new-inspection-modal.png",
 ];
+
+const REQUIRED_SCREENSHOTS = LEGACY_REQUIRED_SCREENSHOTS;
 
 // ── Validation ─────────────────────────────────────────────────────────────
 
@@ -135,8 +154,43 @@ function validateRequiredScreenshots(capturedFiles) {
     for (const f of missing) console.error(`  MISSING: ${f}`);
     return false;
   }
-  console.log(`Required screenshots: ${REQUIRED_SCREENSHOTS.length}/${REQUIRED_SCREENSHOTS.length} present`);
+  console.log(`Required screenshots (legacy): ${REQUIRED_SCREENSHOTS.length}/${REQUIRED_SCREENSHOTS.length} present`);
   return true;
+}
+
+function validateManifestCoverage(capturedFiles) {
+  const manifest = loadManufacturingManifest();
+  const index    = loadManufacturingIndex();
+
+  const total     = manifest.length;
+  const required  = manifest.filter((i) => i.requiredForPdf && i.output !== null && i.status !== "captured_as_part_of_parent_screen");
+  const captured  = manifest.filter((i) => index[i.id]?.status === "captured");
+  const parentCap = manifest.filter((i) => i.status === "captured_as_part_of_parent_screen");
+  const failed    = manifest.filter((i) => index[i.id]?.status === "failed");
+  const pending   = manifest.filter((i) => !index[i.id] && i.output !== null && i.status !== "captured_as_part_of_parent_screen");
+
+  const requiredCaptured = required.filter((i) => index[i.id]?.status === "captured");
+  const requiredMissing  = required.filter((i) => index[i.id]?.status !== "captured");
+
+  console.log(`\n── Manufacturing Screenshot Manifest ─────────────────────────`);
+  console.log(`  Total manifest items:          ${total}`);
+  console.log(`  Required for PDF:              ${required.length}`);
+  console.log(`  Captured:                      ${captured.length}`);
+  console.log(`  Captured as part of parent:    ${parentCap.length}`);
+  console.log(`  Failed:                        ${failed.length}`);
+  console.log(`  Pending (not yet run):         ${pending.length}`);
+  console.log(`  Required + captured:           ${requiredCaptured.length}/${required.length}`);
+
+  if (requiredMissing.length > 0) {
+    console.warn(`\n  MISSING REQUIRED screenshots (${requiredMissing.length}):`);
+    for (const i of requiredMissing) {
+      const entry = index[i.id];
+      const reason = entry ? `status=${entry.status}: ${entry.reason}` : "not yet run";
+      console.warn(`    MISSING [${i.id}]: ${reason}`);
+    }
+  }
+  console.log(`──────────────────────────────────────────────────────────────`);
+  return requiredMissing.length === 0;
 }
 
 function validateImageRefs() {
@@ -153,7 +207,7 @@ function validateImageRefs() {
     const refs = [...content.matchAll(/!\[.*?\]\(.*?screenshots\/captured\/([^)]+\.png)\)/g)];
     for (const ref of refs) {
       totalRefs++;
-      if (ref[1].startsWith("actions/") || ref[1].startsWith("tabs/")) actionRefs++;
+      if (ref[1].startsWith("actions/") || ref[1].startsWith("tabs/") || ref[1].startsWith("module-ui/")) actionRefs++;
       if (!capturedFiles.has(ref[1])) {
         console.warn(`  WARNING: Image not found: ${ref[1]} (in ${chapter})`);
         missingRefs++;
@@ -274,6 +328,7 @@ async function generatePdf() {
   if (!validateChapters()) process.exit(1);
   const capturedFiles = getCapturedFileSet();
   if (!validateRequiredScreenshots(capturedFiles)) process.exit(1);
+  validateManifestCoverage(capturedFiles);
   validateImageRefs();
 
   console.log("\nBuilding HTML...");
