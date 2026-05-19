@@ -31,7 +31,7 @@
     "actionType": "modal",
     "actionLabel": "New PR",
     "screenshot": "actions/procurement-new-pr-modal.png",
-    "capturedAt": "2026-05-19T10:05:22.680Z",
+    "capturedAt": "2026-05-19T10:11:47.492Z",
     "status": "captured",
     "notes": "Open New Purchase Requisition modal from Procurement page"
   },
@@ -55,7 +55,7 @@
     "actionType": "modal",
     "actionLabel": "Stock Entry (IN) tab",
     "screenshot": "actions/inventory-stock-entry-form.png",
-    "capturedAt": "2026-05-19T10:06:09.312Z",
+    "capturedAt": "2026-05-19T10:12:50.060Z",
     "status": "captured",
     "notes": "Click Stock Entry (IN) tab — inner useState tab, not URL-driven"
   },
@@ -67,7 +67,7 @@
     "actionType": "modal",
     "actionLabel": "Stock Issue (OUT) tab",
     "screenshot": "actions/inventory-stock-issue-form.png",
-    "capturedAt": "2026-05-19T10:06:14.953Z",
+    "capturedAt": "2026-05-19T10:12:55.389Z",
     "status": "captured",
     "notes": "Click Stock Issue (OUT) tab — inner useState tab, not URL-driven"
   },
@@ -78,9 +78,11 @@
     "route": "/dashboard/inventory",
     "actionType": "modal",
     "actionLabel": "Stock Transfer tab",
-    "screenshot": "actions/inventory-stock-transfer-form.png",
-    "capturedAt": "2026-05-19T10:06:19.839Z",
-    "status": "captured",
+    "screenshot": null,
+    "capturedAt": "2026-05-19T10:13:00.256Z",
+    "status": "failed",
+    "error": "Button/element not found: [data-testid='inventory-tab-transfer']",
+    "failureClass": "route-not-found",
     "notes": "Click Transfer tab — inner useState tab, not URL-driven"
   },
   {
@@ -127,7 +129,7 @@
     "actionType": "page",
     "actionLabel": "Deliveries tab",
     "screenshot": "tabs/procurement-deliveries.png",
-    "capturedAt": "2026-05-19T10:05:04.821Z",
+    "capturedAt": "2026-05-19T10:11:22.274Z",
     "status": "captured",
     "notes": "Procurement workspace — Deliveries / GRN tab"
   },
@@ -139,7 +141,7 @@
     "actionType": "page",
     "actionLabel": "Suppliers tab",
     "screenshot": "tabs/procurement-suppliers.png",
-    "capturedAt": "2026-05-19T10:05:09.084Z",
+    "capturedAt": "2026-05-19T10:11:27.449Z",
     "status": "captured",
     "notes": "Procurement workspace — Suppliers tab"
   },
@@ -151,7 +153,7 @@
     "actionType": "page",
     "actionLabel": "Blanket Agreements tab",
     "screenshot": "tabs/procurement-blanket.png",
-    "capturedAt": "2026-05-19T10:05:13.334Z",
+    "capturedAt": "2026-05-19T10:11:33.581Z",
     "status": "captured",
     "notes": "Procurement workspace — Blanket Agreements tab"
   },
@@ -163,7 +165,7 @@
     "actionType": "page",
     "actionLabel": "Reorder Policies tab",
     "screenshot": "tabs/procurement-reorder.png",
-    "capturedAt": "2026-05-19T10:05:17.643Z",
+    "capturedAt": "2026-05-19T10:11:38.849Z",
     "status": "captured",
     "notes": "Procurement workspace — Reorder Policies tab"
   },
@@ -175,7 +177,7 @@
     "actionType": "page",
     "actionLabel": "Suppliers list page",
     "screenshot": "tabs/suppliers-list.png",
-    "capturedAt": "2026-05-19T10:05:28.316Z",
+    "capturedAt": "2026-05-19T10:11:55.587Z",
     "status": "captured",
     "notes": "Supplier master list at /dashboard/suppliers"
   },
@@ -187,7 +189,7 @@
     "actionType": "modal",
     "actionLabel": "Add Supplier",
     "screenshot": "actions/suppliers-add-modal.png",
-    "capturedAt": "2026-05-19T10:05:33.268Z",
+    "capturedAt": "2026-05-19T10:12:03.436Z",
     "status": "captured",
     "notes": "Open Add Supplier modal from /dashboard/suppliers"
   },
@@ -199,7 +201,7 @@
     "actionType": "page",
     "actionLabel": "Stock Ledger tab",
     "screenshot": "tabs/inventory-stock.png",
-    "capturedAt": "2026-05-19T10:05:38.698Z",
+    "capturedAt": "2026-05-19T10:12:08.727Z",
     "status": "captured",
     "notes": "Inventory workspace — Stock Ledger tab (default outer WorkspaceTabs)"
   },
@@ -211,7 +213,7 @@
     "actionType": "page",
     "actionLabel": "Movements tab",
     "screenshot": "tabs/inventory-movements.png",
-    "capturedAt": "2026-05-19T10:05:42.987Z",
+    "capturedAt": "2026-05-19T10:12:13.762Z",
     "status": "captured",
     "notes": "Inventory workspace — Movements tab (URL-driven WorkspaceTabs)"
   },
@@ -223,7 +225,7 @@
     "actionType": "page",
     "actionLabel": "Cycle Count tab",
     "screenshot": "tabs/inventory-cycle-count.png",
-    "capturedAt": "2026-05-19T10:05:47.250Z",
+    "capturedAt": "2026-05-19T10:12:18.752Z",
     "status": "captured",
     "notes": "Inventory workspace — Cycle Count tab (URL-driven WorkspaceTabs)"
   },
@@ -235,7 +237,7 @@
     "actionType": "page",
     "actionLabel": "Shelf Life tab",
     "screenshot": "tabs/inventory-shelf-life.png",
-    "capturedAt": "2026-05-19T10:05:51.594Z",
+    "capturedAt": "2026-05-19T10:12:25.865Z",
     "status": "captured",
     "notes": "Inventory workspace — Shelf Life tab (URL-driven WorkspaceTabs)"
   },
@@ -247,7 +249,7 @@
     "actionType": "page",
     "actionLabel": "Traceability tab",
     "screenshot": "tabs/inventory-traceability.png",
-    "capturedAt": "2026-05-19T10:05:55.862Z",
+    "capturedAt": "2026-05-19T10:12:31.633Z",
     "status": "captured",
     "notes": "Inventory workspace — Traceability tab"
   },
@@ -259,7 +261,7 @@
     "actionType": "page",
     "actionLabel": "Serials tab",
     "screenshot": "tabs/inventory-serials.png",
-    "capturedAt": "2026-05-19T10:06:00.195Z",
+    "capturedAt": "2026-05-19T10:12:38.298Z",
     "status": "captured",
     "notes": "Inventory workspace — Serials tab"
   },
@@ -271,7 +273,7 @@
     "actionType": "page",
     "actionLabel": "Valuation tab",
     "screenshot": "tabs/inventory-valuation.png",
-    "capturedAt": "2026-05-19T10:06:04.408Z",
+    "capturedAt": "2026-05-19T10:12:43.610Z",
     "status": "captured",
     "notes": "Inventory workspace — Valuation tab"
   },
@@ -283,7 +285,7 @@
     "actionType": "page",
     "actionLabel": "Warehouses list tab",
     "screenshot": "tabs/warehouses-list.png",
-    "capturedAt": "2026-05-19T10:06:26.289Z",
+    "capturedAt": "2026-05-19T10:13:07.738Z",
     "status": "captured",
     "notes": "Warehouses workspace — Warehouses list tab (default)"
   },
@@ -295,7 +297,7 @@
     "actionType": "page",
     "actionLabel": "WMS / Putaway tab",
     "screenshot": "tabs/warehouses-wms.png",
-    "capturedAt": "2026-05-19T10:06:30.712Z",
+    "capturedAt": "2026-05-19T10:13:12.707Z",
     "status": "captured",
     "notes": "Warehouses workspace — WMS / Putaway embedded tab"
   },
@@ -307,7 +309,7 @@
     "actionType": "page",
     "actionLabel": "Zones tab",
     "screenshot": "tabs/wms-zones.png",
-    "capturedAt": "2026-05-19T10:06:35.117Z",
+    "capturedAt": "2026-05-19T10:13:18.252Z",
     "status": "captured",
     "notes": "WMS standalone page — Zones tab is the default"
   },
@@ -318,9 +320,11 @@
     "route": "/dashboard/wms",
     "actionType": "modal",
     "actionLabel": "Locations / Bins tab",
-    "screenshot": "tabs/wms-locations.png",
-    "capturedAt": "2026-05-19T10:06:40.320Z",
-    "status": "captured",
+    "screenshot": null,
+    "capturedAt": "2026-05-19T10:13:23.157Z",
+    "status": "failed",
+    "error": "Button/element not found: button:has-text('Locations')",
+    "failureClass": "route-not-found",
     "notes": "WMS useState tab — click Locations / Bins button"
   },
   {
@@ -330,9 +334,11 @@
     "route": "/dashboard/wms",
     "actionType": "modal",
     "actionLabel": "Handling Units tab",
-    "screenshot": "tabs/wms-handling-units.png",
-    "capturedAt": "2026-05-19T10:06:45.282Z",
-    "status": "captured",
+    "screenshot": null,
+    "capturedAt": "2026-05-19T10:13:28.340Z",
+    "status": "failed",
+    "error": "Button/element not found: button:has-text('Handling Units')",
+    "failureClass": "route-not-found",
     "notes": "WMS useState tab — click Handling Units button"
   },
   {
@@ -343,7 +349,7 @@
     "actionType": "modal",
     "actionLabel": "Pick Waves tab",
     "screenshot": "tabs/wms-pick-waves.png",
-    "capturedAt": "2026-05-19T10:06:51.114Z",
+    "capturedAt": "2026-05-19T10:13:33.531Z",
     "status": "captured",
     "notes": "WMS useState tab — click Pick Waves button"
   },
@@ -354,9 +360,11 @@
     "route": "/dashboard/wms",
     "actionType": "modal",
     "actionLabel": "Quarantine tab",
-    "screenshot": "tabs/wms-quarantine.png",
-    "capturedAt": "2026-05-19T10:06:56.067Z",
-    "status": "captured",
+    "screenshot": null,
+    "capturedAt": "2026-05-19T10:13:37.002Z",
+    "status": "failed",
+    "error": "Button/element not found: button:has-text('Quarantine')",
+    "failureClass": "route-not-found",
     "notes": "WMS useState tab — click Quarantine button. Selector: first button matching text."
   },
   {
@@ -367,7 +375,7 @@
     "actionType": "modal",
     "actionLabel": "New Zone form",
     "screenshot": "actions/wms-new-zone-modal.png",
-    "capturedAt": "2026-05-19T10:07:02.341Z",
+    "capturedAt": "2026-05-19T10:13:43.926Z",
     "status": "captured",
     "notes": "Zones tab is default — click + New Zone to open zone creation form"
   },
@@ -379,7 +387,7 @@
     "actionType": "page",
     "actionLabel": "Logistics Overview tab",
     "screenshot": "tabs/logistics-overview.png",
-    "capturedAt": "2026-05-19T10:07:07.691Z",
+    "capturedAt": "2026-05-19T10:13:50.706Z",
     "status": "captured",
     "notes": "Logistics workspace — Overview tab (default)"
   },
@@ -391,7 +399,7 @@
     "actionType": "page",
     "actionLabel": "Shipments tab",
     "screenshot": "tabs/logistics-shipments.png",
-    "capturedAt": "2026-05-19T10:07:12.567Z",
+    "capturedAt": "2026-05-19T10:13:55.178Z",
     "status": "captured",
     "notes": "Logistics workspace — Shipments tab"
   },
