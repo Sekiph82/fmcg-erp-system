@@ -93,7 +93,7 @@
     "output": "module-ui/manufacturing/compliance/regulatory-certs-entity-type-dropdown.png",
     "status": "captured",
     "reason": "",
-    "capturedAt": "2026-05-19T11:50:54.027Z",
+    "capturedAt": "2026-05-19T12:03:11.133Z",
     "usedInManual": false,
     "usedInPdf": false
   },
@@ -107,7 +107,7 @@
     "output": "module-ui/manufacturing/compliance/regulatory-certs-status-dropdown.png",
     "status": "captured",
     "reason": "",
-    "capturedAt": "2026-05-19T11:50:48.044Z",
+    "capturedAt": "2026-05-19T12:03:02.680Z",
     "usedInManual": false,
     "usedInPdf": false
   },
@@ -121,7 +121,7 @@
     "output": "module-ui/manufacturing/compliance/add-certificate-form.png",
     "status": "captured",
     "reason": "",
-    "capturedAt": "2026-05-19T11:50:42.195Z",
+    "capturedAt": "2026-05-19T12:02:55.816Z",
     "usedInManual": false,
     "usedInPdf": false
   },
@@ -163,7 +163,7 @@
     "output": "module-ui/manufacturing/compliance/gs1-labels-tab.png",
     "status": "captured",
     "reason": "",
-    "capturedAt": "2026-05-19T11:50:21.040Z",
+    "capturedAt": "2026-05-19T12:02:33.510Z",
     "usedInManual": false,
     "usedInPdf": false
   },
@@ -177,7 +177,7 @@
     "output": "module-ui/manufacturing/compliance/regulatory-certs-tab.png",
     "status": "captured",
     "reason": "",
-    "capturedAt": "2026-05-19T11:50:26.038Z",
+    "capturedAt": "2026-05-19T12:02:38.642Z",
     "usedInManual": false,
     "usedInPdf": false
   },
@@ -667,7 +667,7 @@
     "output": "module-ui/manufacturing/quality/new-inspection-modal.png",
     "status": "captured",
     "reason": "",
-    "capturedAt": "2026-05-19T11:50:14.814Z",
+    "capturedAt": "2026-05-19T12:02:26.820Z",
     "usedInManual": false,
     "usedInPdf": false
   },
@@ -681,7 +681,7 @@
     "output": "module-ui/manufacturing/quality/allergen-tab.png",
     "status": "captured",
     "reason": "",
-    "capturedAt": "2026-05-19T11:50:01.240Z",
+    "capturedAt": "2026-05-19T12:02:12.324Z",
     "usedInManual": false,
     "usedInPdf": false
   },
@@ -695,7 +695,7 @@
     "output": "module-ui/manufacturing/quality/brand-assets-tab.png",
     "status": "captured",
     "reason": "",
-    "capturedAt": "2026-05-19T11:50:07.930Z",
+    "capturedAt": "2026-05-19T12:02:19.216Z",
     "usedInManual": false,
     "usedInPdf": false
   },
@@ -765,7 +765,7 @@
     "output": "module-ui/manufacturing/quality/qms-tab.png",
     "status": "captured",
     "reason": "",
-    "capturedAt": "2026-05-19T11:49:56.585Z",
+    "capturedAt": "2026-05-19T12:02:07.465Z",
     "usedInManual": false,
     "usedInPdf": false
   },
@@ -779,7 +779,7 @@
     "output": "module-ui/manufacturing/quality/reports-tab.png",
     "status": "captured",
     "reason": "",
-    "capturedAt": "2026-05-19T11:49:50.704Z",
+    "capturedAt": "2026-05-19T12:02:01.219Z",
     "usedInManual": false,
     "usedInPdf": false
   },
@@ -863,7 +863,7 @@
     "output": "module-ui/manufacturing/shop-floor/downtime-tab.png",
     "status": "captured",
     "reason": "",
-    "capturedAt": "2026-05-19T11:51:20.021Z",
+    "capturedAt": "2026-05-19T12:03:39.817Z",
     "usedInManual": false,
     "usedInPdf": false
   },
@@ -877,7 +877,7 @@
     "output": "module-ui/manufacturing/shop-floor/handover-tab.png",
     "status": "captured",
     "reason": "",
-    "capturedAt": "2026-05-19T11:51:24.719Z",
+    "capturedAt": "2026-05-19T12:03:47.134Z",
     "usedInManual": false,
     "usedInPdf": false
   },
@@ -891,7 +891,7 @@
     "output": "module-ui/manufacturing/shop-floor/overview-tab.png",
     "status": "captured",
     "reason": "",
-    "capturedAt": "2026-05-19T11:50:59.045Z",
+    "capturedAt": "2026-05-19T12:03:16.833Z",
     "usedInManual": false,
     "usedInPdf": false
   },
@@ -905,7 +905,7 @@
     "output": "module-ui/manufacturing/shop-floor/queue-tab.png",
     "status": "captured",
     "reason": "",
-    "capturedAt": "2026-05-19T11:51:14.075Z",
+    "capturedAt": "2026-05-19T12:03:34.747Z",
     "usedInManual": false,
     "usedInPdf": false
   },
@@ -919,7 +919,7 @@
     "output": "module-ui/manufacturing/shop-floor/supervisor-tab.png",
     "status": "captured",
     "reason": "",
-    "capturedAt": "2026-05-19T11:51:09.365Z",
+    "capturedAt": "2026-05-19T12:03:28.661Z",
     "usedInManual": false,
     "usedInPdf": false
   },
@@ -933,7 +933,7 @@
     "output": "module-ui/manufacturing/shop-floor/terminal-tab.png",
     "status": "captured",
     "reason": "",
-    "capturedAt": "2026-05-19T11:51:03.833Z",
+    "capturedAt": "2026-05-19T12:03:23.447Z",
     "usedInManual": false,
     "usedInPdf": false
   }
