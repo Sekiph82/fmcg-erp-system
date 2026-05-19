@@ -1,6 +1,22 @@
 # TASKS
 
 ## Current Phase
+ACTION CARD HEALTH AUDIT — COMPLETE. 2026-05-19. ERP-wide audit of navigation tiles and action cards. Zero dead-click broken cards found. Two UX context bugs fixed: Logistics and Maintenance overview tabs now navigate within workspace via ?tab= params. Audit infrastructure created. Frontend type-check/build clean. All repo audits pass.
+
+### Action Card Health Audit (2026-05-19)
+**Scope:** All dashboard pages, 23 routes, 30+ tabs, 120+ card/tile elements
+**Broken (dead-click):** 0
+**UX context bugs fixed:** 2
+- `frontend/src/app/dashboard/logistics/page.tsx` — 11 cards now use `?tab=` URLs
+- `frontend/src/app/dashboard/maintenance/page.tsx` — 14 cards now use `?tab=` URLs
+**Needs review:** 2 (Fleet sub-nav, Cycle Count cross-context — documented, routes work)
+**Reports:** `docs/ACTION_CARD_HEALTH_AUDIT.md`, `docs/ACTION_CARD_HEALTH_AUDIT.json`
+**Tests:** `frontend/e2e/action-card-health.spec.ts`, `frontend/e2e/audit-action-cards.spec.ts`
+**Type-check:** CLEAN
+**Build:** CLEAN
+**Repo audits:** D=0, no redirect drift, tabs pass
+
+## Previous Phase — PDF Export Pipeline
 PDF EXPORT PIPELINE — COMPLETE. 2026-05-19. Kenya Go-Live ERP Training Manual PDF generated: 17.5 MB, 45/45 images loaded. Playwright Chromium + marked pipeline. PDF gitignored (not committed). Export scripts committed. All tests pass.
 
 ### PDF Export (2026-05-19)

@@ -1,0 +1,92 @@
+{
+  "generatedAt": "2026-05-19T00:00:00.000Z",
+  "method": "code-inspection + targeted-playwright-tests",
+  "summary": {
+    "routes_scanned": 23,
+    "tabs_examined": 31,
+    "cards_discovered": 120,
+    "working": 110,
+    "broken": 0,
+    "static_ok": 40,
+    "needs_review": 2,
+    "fixed_in_this_pass": 2
+  },
+  "fixes": [
+    {
+      "route": "/dashboard/logistics",
+      "tab": "overview",
+      "file": "frontend/src/app/dashboard/logistics/page.tsx",
+      "issue": "KPI tiles and quick nav cards navigated to standalone routes (/dashboard/logistics/shipments etc.) instead of switching tabs within the ModuleWorkspace",
+      "fix": "Changed all href/router.push targets to use ?tab= format",
+      "cards_fixed": [
+        "Active Shipments KPI",
+        "In Transit KPI",
+        "At Port / Clearing KPI",
+        "Overdue Documents KPI",
+        "ETA View button",
+        "Manage all shipments",
+        "Shipment row click",
+        "Shipment Planning card",
+        "Container Tracking card",
+        "Customs Documents card",
+        "Arrival & Clearance card"
+      ],
+      "status": "fixed"
+    },
+    {
+      "route": "/dashboard/maintenance",
+      "tab": "overview",
+      "file": "frontend/src/app/dashboard/maintenance/page.tsx",
+      "issue": "KPI tiles, View all buttons, table row clicks, and quick nav cards navigated to standalone routes instead of switching tabs within the ModuleWorkspace",
+      "fix": "Changed all href/router.push targets to use ?tab= format",
+      "cards_fixed": [
+        "Total Assets KPI",
+        "Open Breakdowns KPI",
+        "Overdue PMs KPI",
+        "Low Stock Spares KPI",
+        "View all breakdowns button",
+        "Breakdown row click",
+        "View all PMs button",
+        "PM row click",
+        "Asset Register card",
+        "PM Plans & Work Orders card",
+        "Breakdown Records card",
+        "Predictive Maintenance card",
+        "Spare Parts card",
+        "Maintenance Reports card"
+      ],
+      "status": "fixed"
+    }
+  ],
+  "needs_review": [
+    {
+      "route": "/dashboard/logistics",
+      "tab": "fleet",
+      "module": "Fleet Dashboard (embedded in Logistics)",
+      "issue": "Fleet nav cards (Vehicles, Drivers, Trips etc.) navigate to /dashboard/fleet/vehicles etc., leaving the Logistics workspace context. Routes exist and work.",
+      "reason": "Fleet is a large standalone module. Embedding all 7 sub-pages as Logistics sub-tabs would be architecturally inappropriate.",
+      "recommended": "Add Fleet as a top-level sidebar nav item, or add breadcrumb context in fleet sub-pages."
+    },
+    {
+      "route": "/dashboard/inventory",
+      "tab": "cycle-count",
+      "module": "Cycle Count (embedded in Inventory)",
+      "issue": "Cycle Count nav cards navigate to /dashboard/cycle-count/plans etc., leaving the Inventory workspace context. Routes exist and work.",
+      "reason": "Cycle Count is a standalone module with 5 real sub-pages. All using proper Link components.",
+      "recommended": "Add Back to Inventory breadcrumb in cycle-count sub-pages for context continuity."
+    }
+  ],
+  "known_example": {
+    "route": "/dashboard/inventory",
+    "tab": "cycle-count",
+    "cards": [
+      { "label": "Count Plans", "target": "/dashboard/cycle-count/plans", "handler": "Link href", "status": "working" },
+      { "label": "Count Tasks", "target": "/dashboard/cycle-count/tasks", "handler": "Link href", "status": "working" },
+      { "label": "Count Entries", "target": "/dashboard/cycle-count/entries", "handler": "Link href", "status": "working" },
+      { "label": "Variance Review", "target": "/dashboard/cycle-count/variances", "handler": "Link href", "status": "working" },
+      { "label": "Reports & AI", "target": "/dashboard/cycle-count/reports", "handler": "Link href", "status": "working" }
+    ]
+  },
+  "zero_dead_click_cards": true,
+  "conclusion": "Zero dead-click broken cards found. Two UX context bugs fixed: Logistics and Maintenance overview tabs now navigate within their workspace via ?tab= params instead of to standalone routes."
+}

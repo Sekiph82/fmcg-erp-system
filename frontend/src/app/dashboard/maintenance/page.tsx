@@ -36,10 +36,10 @@ function MaintenanceDashboardTab() {
   const lowStock = spareParts.filter((s) => s.reorder_level != null && s.current_stock <= s.reorder_level!);
 
   const tiles = [
-    { label: "Total Assets", value: assets.length, sub: `${underMaintenance.length} under maintenance`, color: "text-gray-900", href: "/dashboard/maintenance/assets" },
-    { label: "Open Breakdowns", value: openBreakdowns.length, sub: "active / in-repair", color: openBreakdowns.length > 0 ? "text-red-600" : "text-gray-700", href: "/dashboard/maintenance/breakdowns" },
-    { label: "Overdue PMs", value: overduePM.length, sub: "past due date", color: overduePM.length > 0 ? "text-orange-600" : "text-gray-700", href: "/dashboard/maintenance/plans" },
-    { label: "Low Stock Spares", value: lowStock.length, sub: "at or below reorder level", color: lowStock.length > 0 ? "text-yellow-600" : "text-gray-700", href: "/dashboard/maintenance/spares" },
+    { label: "Total Assets", value: assets.length, sub: `${underMaintenance.length} under maintenance`, color: "text-gray-900", href: "/dashboard/maintenance?tab=assets" },
+    { label: "Open Breakdowns", value: openBreakdowns.length, sub: "active / in-repair", color: openBreakdowns.length > 0 ? "text-red-600" : "text-gray-700", href: "/dashboard/maintenance?tab=breakdowns" },
+    { label: "Overdue PMs", value: overduePM.length, sub: "past due date", color: overduePM.length > 0 ? "text-orange-600" : "text-gray-700", href: "/dashboard/maintenance?tab=plans" },
+    { label: "Low Stock Spares", value: lowStock.length, sub: "at or below reorder level", color: lowStock.length > 0 ? "text-yellow-600" : "text-gray-700", href: "/dashboard/maintenance?tab=spares" },
   ];
 
   const severityColor = (s: string) =>
@@ -75,7 +75,7 @@ function MaintenanceDashboardTab() {
         <div className="bg-white rounded-lg border">
           <div className="px-5 py-3 border-b flex items-center justify-between">
             <h2 className="font-semibold text-gray-800">Open Breakdowns</h2>
-            <button className="text-xs text-indigo-600 hover:underline" onClick={() => router.push("/dashboard/maintenance/breakdowns")}>View all</button>
+            <button className="text-xs text-indigo-600 hover:underline" onClick={() => router.push("/dashboard/maintenance?tab=breakdowns")}>View all</button>
           </div>
           {openBreakdowns.length === 0 ? (
             <p className="px-5 py-8 text-sm text-gray-400 text-center">No open breakdowns</p>
@@ -91,7 +91,7 @@ function MaintenanceDashboardTab() {
               </thead>
               <tbody className="divide-y">
                 {openBreakdowns.slice(0, 8).map((bd) => (
-                  <tr key={bd.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => router.push("/dashboard/maintenance/breakdowns")}>
+                  <tr key={bd.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => router.push("/dashboard/maintenance?tab=breakdowns")}>
                     <td className="px-5 py-2 font-medium">{bd.asset_name || bd.asset_no}</td>
                     <td className="px-5 py-2 text-gray-600 truncate max-w-xs">{bd.reason}</td>
                     <td className="px-5 py-2"><Badge label={bd.severity} variant={severityColor(bd.severity) as "red" | "yellow" | "gray"} /></td>
@@ -107,7 +107,7 @@ function MaintenanceDashboardTab() {
         <div className="bg-white rounded-lg border">
           <div className="px-5 py-3 border-b flex items-center justify-between">
             <h2 className="font-semibold text-gray-800">Overdue PM Plans</h2>
-            <button className="text-xs text-indigo-600 hover:underline" onClick={() => router.push("/dashboard/maintenance/plans")}>View all</button>
+            <button className="text-xs text-indigo-600 hover:underline" onClick={() => router.push("/dashboard/maintenance?tab=plans")}>View all</button>
           </div>
           {overduePM.length === 0 ? (
             <p className="px-5 py-8 text-sm text-gray-400 text-center">All PMs are up to date</p>
@@ -123,7 +123,7 @@ function MaintenanceDashboardTab() {
               </thead>
               <tbody className="divide-y">
                 {overduePM.slice(0, 8).map((r) => (
-                  <tr key={r.plan_id} className="hover:bg-gray-50 cursor-pointer" onClick={() => router.push("/dashboard/maintenance/plans")}>
+                  <tr key={r.plan_id} className="hover:bg-gray-50 cursor-pointer" onClick={() => router.push("/dashboard/maintenance?tab=plans")}>
                     <td className="px-5 py-2 font-medium">{r.asset_name}</td>
                     <td className="px-5 py-2 text-gray-600">{r.plan_name}</td>
                     <td className="px-5 py-2 text-gray-500">{r.next_due_date}</td>
@@ -141,12 +141,12 @@ function MaintenanceDashboardTab() {
       {/* Quick links */}
       <div className="grid grid-cols-3 gap-4">
         {[
-          { label: "Asset Register", desc: "Manage machines, equipment and production lines", href: "/dashboard/maintenance/assets" },
-          { label: "PM Plans & Work Orders", desc: "Preventive maintenance schedules and completion tracking", href: "/dashboard/maintenance/plans" },
-          { label: "Breakdown Records", desc: "Log and resolve equipment failures with MES linkage", href: "/dashboard/maintenance/breakdowns" },
-          { label: "Predictive Maintenance", desc: "IoT-based failure risk queue and maintenance recommendations", href: "/dashboard/maintenance/predictive" },
-          { label: "Spare Parts", desc: "Spare part inventory with reorder alerts", href: "/dashboard/maintenance/spares" },
-          { label: "Maintenance Reports", desc: "MTBF, MTTR, downtime by machine, overdue PM list", href: "/dashboard/maintenance/reports" },
+          { label: "Asset Register", desc: "Manage machines, equipment and production lines", href: "/dashboard/maintenance?tab=assets" },
+          { label: "PM Plans & Work Orders", desc: "Preventive maintenance schedules and completion tracking", href: "/dashboard/maintenance?tab=plans" },
+          { label: "Breakdown Records", desc: "Log and resolve equipment failures with MES linkage", href: "/dashboard/maintenance?tab=breakdowns" },
+          { label: "Predictive Maintenance", desc: "IoT-based failure risk queue and maintenance recommendations", href: "/dashboard/maintenance?tab=predictive" },
+          { label: "Spare Parts", desc: "Spare part inventory with reorder alerts", href: "/dashboard/maintenance?tab=spares" },
+          { label: "Maintenance Reports", desc: "MTBF, MTTR, downtime by machine, overdue PM list", href: "/dashboard/maintenance?tab=reports" },
         ].map((item) => (
           <button
             key={item.href}

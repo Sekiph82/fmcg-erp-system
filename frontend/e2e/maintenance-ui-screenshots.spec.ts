@@ -38,7 +38,8 @@ for (const shot of manifest.screenshots) {
     (PRIORITY_IDS && !PRIORITY_IDS.has(shot.id)) ||
     (MISSING_ONLY && fs.existsSync(outPath));
 
-  test(shot.id, { skip }, async ({ page }) => {
+  test(shot.id, async ({ page }) => {
+    test.skip(!!skip, "filtered by env var");
     await page.setViewportSize({ width: 1440, height: 900 });
 
     for (const step of shot.steps) {

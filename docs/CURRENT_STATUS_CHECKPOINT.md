@@ -1,6 +1,6 @@
 # Current Status Checkpoint
 
-**Date:** 2026-05-19 (updated after in-app help implementation)  
+**Date:** 2026-05-19 (updated after action card health audit)  
 **Branch:** main  
 **Working tree:** CLEAN after this commit
 
@@ -102,6 +102,17 @@
 
 ---
 
+## Action Card Health
+
+| Item | Value |
+|------|-------|
+| ERP-wide audit | COMPLETE — code inspection + targeted tests |
+| Dead-click broken cards | **0** |
+| UX context bugs fixed | 2 (Logistics + Maintenance overview tabs) |
+| Needs review | 2 (Fleet sub-nav, Cycle Count cross-context) |
+| Reports | `docs/ACTION_CARD_HEALTH_AUDIT.md`, `docs/ACTION_CARD_HEALTH_AUDIT.json` |
+| Tests | `frontend/e2e/action-card-health.spec.ts`, `frontend/e2e/audit-action-cards.spec.ts` |
+
 ## Recommended Next Task
 
-Add `/dashboard/help` to Sidebar nav config so users can discover Help Center from navigation.
+Continue module manual pipeline: Utilities (`/dashboard/utility-management`) is next per `docs/user-manual/MODULE_PIPELINE_STATUS.md`.

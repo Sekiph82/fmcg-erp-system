@@ -54,10 +54,10 @@ function LogisticsShipmentsTab() {
       {/* KPI tiles */}
       <div className="grid grid-cols-4 gap-4">
         {[
-          { label: "Active Shipments", value: active.length, sub: "in planning or transit", color: "text-gray-900", href: "/dashboard/logistics/shipments" },
-          { label: "In Transit", value: inTransit.length, sub: "vessels at sea", color: "text-blue-700", href: "/dashboard/logistics/shipments" },
-          { label: "At Port / Clearing", value: atPort.length, sub: "Mombasa port / customs", color: "text-orange-600", href: "/dashboard/logistics/arrivals" },
-          { label: "Overdue Documents", value: overdueDocs.length, sub: "draft or rejected docs", color: overdueDocs.length > 0 ? "text-red-600" : "text-gray-700", href: "/dashboard/logistics/documents" },
+          { label: "Active Shipments", value: active.length, sub: "in planning or transit", color: "text-gray-900", href: "/dashboard/logistics?tab=shipments" },
+          { label: "In Transit", value: inTransit.length, sub: "vessels at sea", color: "text-blue-700", href: "/dashboard/logistics?tab=shipments" },
+          { label: "At Port / Clearing", value: atPort.length, sub: "Mombasa port / customs", color: "text-orange-600", href: "/dashboard/logistics?tab=arrivals" },
+          { label: "Overdue Documents", value: overdueDocs.length, sub: "draft or rejected docs", color: overdueDocs.length > 0 ? "text-red-600" : "text-gray-700", href: "/dashboard/logistics?tab=documents" },
         ].map((t) => (
           <button key={t.label} onClick={() => router.push(t.href)} className="bg-white rounded-lg border p-5 text-left hover:border-indigo-300 transition-colors">
             <p className="text-xs text-gray-500 uppercase tracking-wide">{t.label}</p>
@@ -80,7 +80,7 @@ function LogisticsShipmentsTab() {
                 <span className={s.days_to_eta != null && s.days_to_eta <= 3 ? "text-red-600 font-bold" : ""}>
                   {s.days_to_eta != null ? `${s.days_to_eta}d` : "—"}
                 </span>
-                <button className="text-indigo-600 hover:underline" onClick={() => router.push("/dashboard/logistics/arrivals")}>View</button>
+                <button className="text-indigo-600 hover:underline" onClick={() => router.push("/dashboard/logistics?tab=arrivals")}>View</button>
               </div>
             ))}
           </div>
@@ -91,7 +91,7 @@ function LogisticsShipmentsTab() {
       <div className="bg-white rounded-lg border">
         <div className="px-5 py-3 border-b flex items-center justify-between">
           <h2 className="font-semibold text-gray-800">Shipment Pipeline — Turkey to Kenya</h2>
-          <button className="text-xs text-indigo-600 hover:underline" onClick={() => router.push("/dashboard/logistics/shipments")}>Manage all</button>
+          <button className="text-xs text-indigo-600 hover:underline" onClick={() => router.push("/dashboard/logistics?tab=shipments")}>Manage all</button>
         </div>
         {isLoading ? (
           <p className="px-5 py-8 text-center text-gray-400">Loading…</p>
@@ -118,7 +118,7 @@ function LogisticsShipmentsTab() {
                 <tr
                   key={r.shipment_id}
                   className={`hover:bg-gray-50 cursor-pointer ${r.has_overdue_docs ? "bg-red-50" : ""}`}
-                  onClick={() => router.push("/dashboard/logistics/shipments")}
+                  onClick={() => router.push("/dashboard/logistics?tab=shipments")}
                 >
                   <td className="px-5 py-3 font-mono text-xs font-semibold text-indigo-700">{r.shipment_no}</td>
                   <td className="px-5 py-3"><Badge label={r.mode} variant={modeBadge(r.mode) as "blue" | "yellow" | "gray"} /></td>
@@ -153,10 +153,10 @@ function LogisticsShipmentsTab() {
       {/* Quick links */}
       <div className="grid grid-cols-4 gap-4">
         {[
-          { label: "Shipment Planning", desc: "Create and manage import shipments", href: "/dashboard/logistics/shipments" },
-          { label: "Container Tracking", desc: "Track container status and seal numbers", href: "/dashboard/logistics/containers" },
-          { label: "Customs Documents", desc: "Invoice, BL, packing list, certificates", href: "/dashboard/logistics/documents" },
-          { label: "Arrival & Clearance", desc: "ETA alerts, port events, KRA clearance", href: "/dashboard/logistics/arrivals" },
+          { label: "Shipment Planning", desc: "Create and manage import shipments", href: "/dashboard/logistics?tab=shipments" },
+          { label: "Container Tracking", desc: "Track container status and seal numbers", href: "/dashboard/logistics?tab=containers" },
+          { label: "Customs Documents", desc: "Invoice, BL, packing list, certificates", href: "/dashboard/logistics?tab=documents" },
+          { label: "Arrival & Clearance", desc: "ETA alerts, port events, KRA clearance", href: "/dashboard/logistics?tab=arrivals" },
         ].map((item) => (
           <button key={item.href} onClick={() => router.push(item.href)} className="bg-white rounded-lg border p-4 text-left hover:border-indigo-300 transition-colors">
             <p className="font-semibold text-sm text-gray-800">{item.label}</p>
