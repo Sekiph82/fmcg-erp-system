@@ -103,7 +103,7 @@
     "actionType": "page",
     "actionLabel": "Purchase Orders tab",
     "screenshot": "tabs/procurement-orders.png",
-    "capturedAt": "2026-05-19T10:04:56.184Z",
+    "capturedAt": "2026-05-19T10:11:08.418Z",
     "status": "captured",
     "notes": "Procurement workspace — Purchase Orders tab"
   },
@@ -115,7 +115,7 @@
     "actionType": "page",
     "actionLabel": "RFQ tab",
     "screenshot": "tabs/procurement-rfq.png",
-    "capturedAt": "2026-05-19T10:05:00.438Z",
+    "capturedAt": "2026-05-19T10:11:15.673Z",
     "status": "captured",
     "notes": "Procurement workspace — RFQ tab"
   },
