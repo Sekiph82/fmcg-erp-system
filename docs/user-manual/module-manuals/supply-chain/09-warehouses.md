@@ -10,7 +10,7 @@
 
 The Warehouses module manages the physical warehouse master data — the locations where stock is held. Warehouse records are referenced by inventory positions, GRNs, transfers, WMS zones, and logistics arrivals.
 
-![Warehouses workspace](../../../screenshots/captured/015_warehouses.png)
+![Warehouses workspace](../../../screenshots/captured/tabs/warehouses-list.png)
 *Warehouse list showing code, name, type badge, city, country, capacity, and status.*
 
 ---

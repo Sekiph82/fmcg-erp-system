@@ -10,7 +10,7 @@
 
 The Logistics module manages international import shipments from origin port to warehouse delivery. It tracks vessels, containers, customs clearance, and arrival milestones. Logistics integrates with Procurement (links to POs) and Inventory (GRN creation on delivery).
 
-![Logistics workspace](../../../screenshots/captured/083_logistics.png)
+![Logistics workspace](../../../screenshots/captured/tabs/logistics-overview.png)
 *Logistics overview showing KPI tiles (Active Shipments, In Transit, At Port/Clearing, Overdue Documents) and ETA alert panel.*
 
 ---
@@ -78,7 +78,7 @@ Shipments within 14 days of ETA appear in the alert panel. Colour coding:
 
 **Tab key:** `shipments`
 
-![Logistics — Shipments tab](../../../screenshots/captured/084_logistics-shipments.png)
+![Logistics — Shipments tab](../../../screenshots/captured/tabs/logistics-shipments.png)
 *Shipments tab showing import shipments with mode badges, ETA, days to ETA (colour-coded), clearance status, and shipment status.*
 
 Lists all import shipments with filterable columns.

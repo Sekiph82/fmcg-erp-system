@@ -10,7 +10,7 @@
 
 The Suppliers tab manages the supplier master data — the registry of all vendors from whom materials and products are purchased. Supplier records are referenced across procurement (PRs, POs, RFQs), quality (incoming inspections, certificates), and logistics (import shipments).
 
-![Suppliers workspace](../../../screenshots/captured/014_suppliers.png)
+![Suppliers workspace](../../../screenshots/captured/tabs/suppliers-list.png)
 *Supplier master list showing code, name, country, contact, and active/inactive status.*
 
 ---

@@ -10,10 +10,7 @@
 
 The Inventory module manages finished goods stock positions across all warehouses. Each stock record (position) represents a unique combination of product + warehouse + lot number. The inventory page provides four operational sub-tabs: stock summary, stock entry (receive), stock issue (dispatch), and inter-warehouse transfer.
 
-![Inventory workspace](../../../screenshots/captured/017_inventory.png)
-*Inventory workspace showing real-time stock positions across all warehouses.*
-
-![Inventory — Stock Ledger tab](../../../screenshots/captured/018_inventory-stock.png)
+![Inventory — Stock Ledger tab](../../../screenshots/captured/tabs/inventory-stock.png)
 *Stock Ledger showing on-hand, available, and reserved quantities with reorder alerts.*
 
 ---
