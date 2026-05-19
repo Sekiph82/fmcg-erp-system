@@ -1,0 +1,719 @@
+[
+  {
+    "id": "procurement-tab-purchase-requests",
+    "module": "supply-chain",
+    "page": "procurement",
+    "route": "/dashboard/procurement",
+    "type": "tab",
+    "label": "Purchase Requests tab",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/procurement" }
+    ],
+    "waitFor": "Purchase Requisitions",
+    "output": "module-ui/supply-chain/procurement/purchase-requests-tab.png",
+    "caption": "Procurement workspace — Purchase Requests tab listing PRs with status and line counts.",
+    "status": "pending"
+  },
+  {
+    "id": "procurement-tab-orders",
+    "module": "supply-chain",
+    "page": "procurement",
+    "route": "/dashboard/procurement?tab=orders",
+    "type": "tab",
+    "label": "Purchase Orders tab",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/procurement?tab=orders" }
+    ],
+    "waitFor": "Purchase Orders",
+    "output": "module-ui/supply-chain/procurement/orders-tab.png",
+    "caption": "Procurement — Purchase Orders tab with PO list and status badges.",
+    "status": "pending"
+  },
+  {
+    "id": "procurement-tab-rfq",
+    "module": "supply-chain",
+    "page": "procurement",
+    "route": "/dashboard/procurement?tab=rfq",
+    "type": "tab",
+    "label": "RFQ tab",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/procurement?tab=rfq" }
+    ],
+    "waitFor": "RFQ",
+    "output": "module-ui/supply-chain/procurement/rfq-tab.png",
+    "caption": "Procurement — RFQ tab listing requests for quotation.",
+    "status": "pending"
+  },
+  {
+    "id": "procurement-tab-deliveries",
+    "module": "supply-chain",
+    "page": "procurement",
+    "route": "/dashboard/procurement?tab=deliveries",
+    "type": "tab",
+    "label": "Deliveries tab",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/procurement?tab=deliveries" }
+    ],
+    "waitFor": "Deliveries",
+    "output": "module-ui/supply-chain/procurement/deliveries-tab.png",
+    "caption": "Procurement — Deliveries tab showing GRN records.",
+    "status": "pending"
+  },
+  {
+    "id": "procurement-tab-suppliers",
+    "module": "supply-chain",
+    "page": "procurement",
+    "route": "/dashboard/procurement?tab=suppliers",
+    "type": "tab",
+    "label": "Suppliers evaluation tab",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/procurement?tab=suppliers" }
+    ],
+    "waitFor": "Supplier",
+    "output": "module-ui/supply-chain/procurement/suppliers-tab.png",
+    "caption": "Procurement — Suppliers tab showing supplier evaluation dashboard with performance scores.",
+    "status": "pending"
+  },
+  {
+    "id": "procurement-tab-blanket-agreements",
+    "module": "supply-chain",
+    "page": "procurement",
+    "route": "/dashboard/procurement?tab=blanket-agreements",
+    "type": "tab",
+    "label": "Blanket Agreements tab",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/procurement?tab=blanket-agreements" }
+    ],
+    "waitFor": "Blanket",
+    "output": "module-ui/supply-chain/procurement/blanket-agreements-tab.png",
+    "caption": "Procurement — Blanket Agreements tab listing long-term purchase agreements.",
+    "status": "pending"
+  },
+  {
+    "id": "procurement-tab-reorder-policies",
+    "module": "supply-chain",
+    "page": "procurement",
+    "route": "/dashboard/procurement?tab=reorder-policies",
+    "type": "tab",
+    "label": "Reorder Policies tab",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/procurement?tab=reorder-policies" }
+    ],
+    "waitFor": "Reorder",
+    "output": "module-ui/supply-chain/procurement/reorder-policies-tab.png",
+    "caption": "Procurement — Reorder Policies tab with auto-reorder rules per material and warehouse.",
+    "status": "pending"
+  },
+  {
+    "id": "procurement-tab-suggestions",
+    "module": "supply-chain",
+    "page": "procurement",
+    "route": "/dashboard/procurement?tab=suggestions",
+    "type": "tab",
+    "label": "Suggestions tab",
+    "requiredForPdf": false,
+    "priority": 2,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/procurement?tab=suggestions" }
+    ],
+    "waitFor": null,
+    "output": "module-ui/supply-chain/procurement/suggestions-tab.png",
+    "caption": "Procurement — Suggestions tab with AI-driven procurement recommendations.",
+    "status": "pending"
+  },
+  {
+    "id": "procurement-tab-subcontracting",
+    "module": "supply-chain",
+    "page": "procurement",
+    "route": "/dashboard/procurement?tab=subcontracting",
+    "type": "tab",
+    "label": "Subcontracting tab",
+    "requiredForPdf": false,
+    "priority": 2,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/procurement?tab=subcontracting" }
+    ],
+    "waitFor": null,
+    "output": "module-ui/supply-chain/procurement/subcontracting-tab.png",
+    "caption": "Procurement — Subcontracting tab for outsourced production orders.",
+    "status": "pending"
+  },
+  {
+    "id": "procurement-tab-landed-cost",
+    "module": "supply-chain",
+    "page": "procurement",
+    "route": "/dashboard/procurement?tab=landed-cost",
+    "type": "tab",
+    "label": "Landed Cost tab",
+    "requiredForPdf": false,
+    "priority": 2,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/procurement?tab=landed-cost" }
+    ],
+    "waitFor": null,
+    "output": "module-ui/supply-chain/procurement/landed-cost-tab.png",
+    "caption": "Procurement — Landed Cost tab for allocating freight and duty to purchase orders.",
+    "status": "pending"
+  },
+  {
+    "id": "procurement-tab-supplier-portal",
+    "module": "supply-chain",
+    "page": "procurement",
+    "route": "/dashboard/procurement?tab=supplier-portal",
+    "type": "tab",
+    "label": "Supplier Portal tab",
+    "requiredForPdf": false,
+    "priority": 2,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/procurement?tab=supplier-portal" }
+    ],
+    "waitFor": null,
+    "output": "module-ui/supply-chain/procurement/supplier-portal-tab.png",
+    "caption": "Procurement — Supplier Portal tab for supplier self-service access.",
+    "status": "pending"
+  },
+  {
+    "id": "procurement-modal-new-pr",
+    "module": "supply-chain",
+    "page": "procurement",
+    "route": "/dashboard/procurement",
+    "type": "button_modal",
+    "label": "New Purchase Requisition modal",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/procurement" },
+      { "type": "clickTestId", "selector": "procurement-create-pr-button" }
+    ],
+    "waitFor": "New Purchase Requisition",
+    "output": "module-ui/supply-chain/procurement/new-pr-modal.png",
+    "caption": "New Purchase Requisition modal — PR No, Department, Required Date, and line items.",
+    "status": "pending"
+  },
+  {
+    "id": "procurement-modal-new-po",
+    "module": "supply-chain",
+    "page": "procurement",
+    "route": "/dashboard/procurement?tab=orders",
+    "type": "button_modal",
+    "label": "New Purchase Order modal",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/procurement?tab=orders" },
+      { "type": "clickRole", "role": "button", "name": "New PO" }
+    ],
+    "waitFor": "New Purchase Order",
+    "output": "module-ui/supply-chain/procurement/new-po-modal.png",
+    "caption": "New Purchase Order modal — PO No, Supplier, Delivery Date, and line items.",
+    "status": "pending"
+  },
+  {
+    "id": "procurement-modal-new-rfq",
+    "module": "supply-chain",
+    "page": "procurement",
+    "route": "/dashboard/procurement?tab=rfq",
+    "type": "button_modal",
+    "label": "New RFQ modal",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/procurement?tab=rfq" },
+      { "type": "clickRole", "role": "button", "name": "New RFQ" }
+    ],
+    "waitFor": "New RFQ",
+    "output": "module-ui/supply-chain/procurement/new-rfq-modal.png",
+    "caption": "New RFQ modal — title, deadline, items, and invited suppliers.",
+    "status": "pending"
+  },
+  {
+    "id": "procurement-modal-new-blanket",
+    "module": "supply-chain",
+    "page": "procurement",
+    "route": "/dashboard/procurement?tab=blanket-agreements",
+    "type": "button_modal",
+    "label": "New Blanket Agreement modal",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/procurement?tab=blanket-agreements" },
+      { "type": "clickRole", "role": "button", "name": "New Agreement" }
+    ],
+    "waitFor": "New Blanket Agreement",
+    "output": "module-ui/supply-chain/procurement/new-blanket-modal.png",
+    "caption": "New Blanket Agreement modal — supplier, validity dates, committed quantity and value.",
+    "status": "pending"
+  },
+  {
+    "id": "procurement-modal-new-reorder-policy",
+    "module": "supply-chain",
+    "page": "procurement",
+    "route": "/dashboard/procurement?tab=reorder-policies",
+    "type": "button_modal",
+    "label": "New Reorder Policy modal",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/procurement?tab=reorder-policies" },
+      { "type": "clickRole", "role": "button", "name": "New Policy" }
+    ],
+    "waitFor": "Reorder",
+    "output": "module-ui/supply-chain/procurement/new-reorder-policy-modal.png",
+    "caption": "New Reorder Policy modal — material, warehouse, reorder point, quantity, and supplier.",
+    "status": "pending"
+  },
+  {
+    "id": "suppliers-tab-list",
+    "module": "supply-chain",
+    "page": "suppliers",
+    "route": "/dashboard/suppliers",
+    "type": "tab",
+    "label": "Suppliers master list",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/suppliers" }
+    ],
+    "waitFor": "Suppliers",
+    "output": "module-ui/supply-chain/suppliers/suppliers-list-tab.png",
+    "caption": "Suppliers master list — code, name, contact, country, payment terms, and status.",
+    "status": "pending"
+  },
+  {
+    "id": "suppliers-modal-add-supplier",
+    "module": "supply-chain",
+    "page": "suppliers",
+    "route": "/dashboard/suppliers",
+    "type": "button_modal",
+    "label": "Add Supplier modal",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/suppliers" },
+      { "type": "clickRole", "role": "button", "name": "Add Supplier" }
+    ],
+    "waitFor": "Add Supplier",
+    "output": "module-ui/supply-chain/suppliers/add-supplier-modal.png",
+    "caption": "Add Supplier modal — Code, Name, Contact, Email, Phone, Country, Payment Terms.",
+    "status": "pending"
+  },
+  {
+    "id": "inventory-tab-stock",
+    "module": "supply-chain",
+    "page": "inventory",
+    "route": "/dashboard/inventory",
+    "type": "tab",
+    "label": "Current Stock tab",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/inventory" },
+      { "type": "clickTestId", "selector": "inventory-tab-stock" }
+    ],
+    "waitFor": "Current Stock",
+    "output": "module-ui/supply-chain/inventory/stock-tab.png",
+    "caption": "Inventory — Current Stock tab showing on-hand, available, and reserved quantities.",
+    "status": "pending"
+  },
+  {
+    "id": "inventory-tab-entry",
+    "module": "supply-chain",
+    "page": "inventory",
+    "route": "/dashboard/inventory",
+    "type": "tab",
+    "label": "Stock Entry (IN) tab",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/inventory" },
+      { "type": "clickTestId", "selector": "inventory-tab-entry" }
+    ],
+    "waitFor": "Stock Entry",
+    "output": "module-ui/supply-chain/inventory/entry-tab.png",
+    "caption": "Inventory — Stock Entry (IN) form for receiving goods into warehouse.",
+    "status": "pending"
+  },
+  {
+    "id": "inventory-tab-issue",
+    "module": "supply-chain",
+    "page": "inventory",
+    "route": "/dashboard/inventory",
+    "type": "tab",
+    "label": "Stock Issue (OUT) tab",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/inventory" },
+      { "type": "clickTestId", "selector": "inventory-tab-issue" }
+    ],
+    "waitFor": "Stock Issue",
+    "output": "module-ui/supply-chain/inventory/issue-tab.png",
+    "caption": "Inventory — Stock Issue (OUT) form for dispatching goods from warehouse.",
+    "status": "pending"
+  },
+  {
+    "id": "inventory-tab-transfer",
+    "module": "supply-chain",
+    "page": "inventory",
+    "route": "/dashboard/inventory",
+    "type": "tab",
+    "label": "Transfer tab",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/inventory" },
+      { "type": "clickTestId", "selector": "inventory-tab-transfer" }
+    ],
+    "waitFor": "Transfer",
+    "output": "module-ui/supply-chain/inventory/transfer-tab.png",
+    "caption": "Inventory — Transfer form for moving stock between warehouses.",
+    "status": "pending"
+  },
+  {
+    "id": "movements-page",
+    "module": "supply-chain",
+    "page": "movements",
+    "route": "/dashboard/movements",
+    "type": "tab",
+    "label": "Movements ledger page",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/movements" }
+    ],
+    "waitFor": "Movement",
+    "output": "module-ui/supply-chain/movements/movements-list.png",
+    "caption": "Movements page — stock movement ledger with type, quantity, reference, and timestamp.",
+    "status": "pending"
+  },
+  {
+    "id": "cycle-count-page",
+    "module": "supply-chain",
+    "page": "cycle-count",
+    "route": "/dashboard/cycle-count",
+    "type": "tab",
+    "label": "Cycle Count dashboard",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/cycle-count" }
+    ],
+    "waitFor": "Cycle Count",
+    "output": "module-ui/supply-chain/cycle-count/cycle-count-dashboard.png",
+    "caption": "Cycle Count dashboard — KPIs, nav links to plans, tasks, entries, variances, reports.",
+    "status": "pending"
+  },
+  {
+    "id": "shelf-life-page",
+    "module": "supply-chain",
+    "page": "shelf-life",
+    "route": "/dashboard/shelf-life",
+    "type": "tab",
+    "label": "Shelf Life dashboard",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/shelf-life" }
+    ],
+    "waitFor": "Shelf Life",
+    "output": "module-ui/supply-chain/shelf-life/shelf-life-dashboard.png",
+    "caption": "Shelf Life dashboard — near-expiry KPIs, FEFO ranking, and disposition actions.",
+    "status": "pending"
+  },
+  {
+    "id": "warehouses-tab-list",
+    "module": "supply-chain",
+    "page": "warehouses",
+    "route": "/dashboard/warehouses",
+    "type": "tab",
+    "label": "Warehouses list tab",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/warehouses" }
+    ],
+    "waitFor": "Warehouses",
+    "output": "module-ui/supply-chain/warehouses/warehouses-list-tab.png",
+    "caption": "Warehouses tab — list with code, name, type, city, country, capacity, and status.",
+    "status": "pending"
+  },
+  {
+    "id": "warehouses-modal-add-warehouse",
+    "module": "supply-chain",
+    "page": "warehouses",
+    "route": "/dashboard/warehouses",
+    "type": "button_modal",
+    "label": "Add Warehouse modal",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/warehouses" },
+      { "type": "clickRole", "role": "button", "name": "Add Warehouse" }
+    ],
+    "waitFor": "Add Warehouse",
+    "output": "module-ui/supply-chain/warehouses/add-warehouse-modal.png",
+    "caption": "Add Warehouse modal — Code, Name, Type, City, Country, Capacity fields.",
+    "status": "pending"
+  },
+  {
+    "id": "wms-tab-zones",
+    "module": "supply-chain",
+    "page": "wms",
+    "route": "/dashboard/warehouses?tab=wms",
+    "type": "tab",
+    "label": "WMS Zones tab",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/warehouses?tab=wms" }
+    ],
+    "waitFor": "Warehouse Management",
+    "output": "module-ui/supply-chain/wms/zones-tab.png",
+    "caption": "WMS — Zones tab listing warehouse zones with type, location count, and status.",
+    "status": "pending"
+  },
+  {
+    "id": "wms-tab-locations",
+    "module": "supply-chain",
+    "page": "wms",
+    "route": "/dashboard/warehouses?tab=wms",
+    "type": "tab",
+    "label": "WMS Locations tab",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/warehouses?tab=wms" },
+      { "type": "clickText", "text": "Locations / Bins" }
+    ],
+    "waitFor": null,
+    "output": "module-ui/supply-chain/wms/locations-tab.png",
+    "caption": "WMS — Locations / Bins tab showing bin codes, zone, barcode, and status.",
+    "status": "pending"
+  },
+  {
+    "id": "wms-tab-handling-units",
+    "module": "supply-chain",
+    "page": "wms",
+    "route": "/dashboard/warehouses?tab=wms",
+    "type": "tab",
+    "label": "WMS Handling Units tab",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/warehouses?tab=wms" },
+      { "type": "clickText", "text": "Handling Units" }
+    ],
+    "waitFor": null,
+    "output": "module-ui/supply-chain/wms/handling-units-tab.png",
+    "caption": "WMS — Handling Units tab for pallets, cartons, and license plate tracking.",
+    "status": "pending"
+  },
+  {
+    "id": "wms-tab-pick-waves",
+    "module": "supply-chain",
+    "page": "wms",
+    "route": "/dashboard/warehouses?tab=wms",
+    "type": "tab",
+    "label": "WMS Pick Waves tab",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/warehouses?tab=wms" },
+      { "type": "clickText", "text": "Pick Waves" }
+    ],
+    "waitFor": null,
+    "output": "module-ui/supply-chain/wms/pick-waves-tab.png",
+    "caption": "WMS — Pick Waves tab for batched picking operations.",
+    "status": "pending"
+  },
+  {
+    "id": "wms-tab-quarantine",
+    "module": "supply-chain",
+    "page": "wms",
+    "route": "/dashboard/warehouses?tab=wms",
+    "type": "tab",
+    "label": "WMS Quarantine tab",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/warehouses?tab=wms" },
+      { "type": "clickText", "text": "Quarantine" }
+    ],
+    "waitFor": null,
+    "output": "module-ui/supply-chain/wms/quarantine-tab.png",
+    "caption": "WMS — Quarantine tab showing blocked stock lots with reason and warehouse.",
+    "status": "pending"
+  },
+  {
+    "id": "wms-modal-new-zone",
+    "module": "supply-chain",
+    "page": "wms",
+    "route": "/dashboard/warehouses?tab=wms",
+    "type": "button_modal",
+    "label": "New Warehouse Zone modal",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/warehouses?tab=wms" },
+      { "type": "clickRole", "role": "button", "name": "New Zone" }
+    ],
+    "waitFor": "New Warehouse Zone",
+    "output": "module-ui/supply-chain/wms/new-zone-modal.png",
+    "caption": "New Warehouse Zone modal — Warehouse, Code, Name, Zone Type fields.",
+    "status": "pending"
+  },
+  {
+    "id": "wms-modal-new-location",
+    "module": "supply-chain",
+    "page": "wms",
+    "route": "/dashboard/warehouses?tab=wms",
+    "type": "button_modal",
+    "label": "New Storage Location modal",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/warehouses?tab=wms" },
+      { "type": "clickText", "text": "Locations / Bins" },
+      { "type": "clickRole", "role": "button", "name": "New Location" }
+    ],
+    "waitFor": "New Storage Location",
+    "output": "module-ui/supply-chain/wms/new-location-modal.png",
+    "caption": "New Storage Location modal — Zone, Code, Name, Barcode fields.",
+    "status": "pending"
+  },
+  {
+    "id": "wms-modal-quarantine-stock",
+    "module": "supply-chain",
+    "page": "wms",
+    "route": "/dashboard/warehouses?tab=wms",
+    "type": "button_modal",
+    "label": "Quarantine Stock modal",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/warehouses?tab=wms" },
+      { "type": "clickText", "text": "Quarantine" },
+      { "type": "clickRole", "role": "button", "name": "Quarantine Stock" }
+    ],
+    "waitFor": "Quarantine Stock",
+    "output": "module-ui/supply-chain/wms/quarantine-stock-modal.png",
+    "caption": "Quarantine Stock modal — Warehouse, Lot Number, Reason, Notes.",
+    "status": "pending"
+  },
+  {
+    "id": "logistics-tab-overview",
+    "module": "supply-chain",
+    "page": "logistics",
+    "route": "/dashboard/logistics",
+    "type": "tab",
+    "label": "Logistics Overview tab",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/logistics" }
+    ],
+    "waitFor": "International Logistics",
+    "output": "module-ui/supply-chain/logistics/overview-tab.png",
+    "caption": "Logistics workspace — Overview tab with KPI tiles and shipment pipeline.",
+    "status": "pending"
+  },
+  {
+    "id": "logistics-tab-shipments",
+    "module": "supply-chain",
+    "page": "logistics",
+    "route": "/dashboard/logistics?tab=shipments",
+    "type": "tab",
+    "label": "Shipments tab",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/logistics?tab=shipments" }
+    ],
+    "waitFor": "Shipment",
+    "output": "module-ui/supply-chain/logistics/shipments-tab.png",
+    "caption": "Logistics — Shipments tab listing import shipments with vessel, ETA, and clearance status.",
+    "status": "pending"
+  },
+  {
+    "id": "logistics-tab-containers",
+    "module": "supply-chain",
+    "page": "logistics",
+    "route": "/dashboard/logistics?tab=containers",
+    "type": "tab",
+    "label": "Containers tab",
+    "requiredForPdf": false,
+    "priority": 2,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/logistics?tab=containers" }
+    ],
+    "waitFor": "Container",
+    "output": "module-ui/supply-chain/logistics/containers-tab.png",
+    "caption": "Logistics — Containers tab tracking container numbers, seal, and status.",
+    "status": "pending"
+  },
+  {
+    "id": "logistics-tab-arrivals",
+    "module": "supply-chain",
+    "page": "logistics",
+    "route": "/dashboard/logistics?tab=arrivals",
+    "type": "tab",
+    "label": "Arrivals tab",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/logistics?tab=arrivals" }
+    ],
+    "waitFor": "Arrival",
+    "output": "module-ui/supply-chain/logistics/arrivals-tab.png",
+    "caption": "Logistics — Arrivals tab with port events, ETA alerts, and customs clearance tracking.",
+    "status": "pending"
+  },
+  {
+    "id": "logistics-tab-documents",
+    "module": "supply-chain",
+    "page": "logistics",
+    "route": "/dashboard/logistics?tab=documents",
+    "type": "tab",
+    "label": "Documents tab",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/logistics?tab=documents" }
+    ],
+    "waitFor": "Document",
+    "output": "module-ui/supply-chain/logistics/documents-tab.png",
+    "caption": "Logistics — Documents tab listing shipping documents (BL, invoices, certificates).",
+    "status": "pending"
+  },
+  {
+    "id": "logistics-tab-fleet",
+    "module": "supply-chain",
+    "page": "logistics",
+    "route": "/dashboard/logistics?tab=fleet",
+    "type": "tab",
+    "label": "Fleet tab",
+    "requiredForPdf": false,
+    "priority": 2,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/logistics?tab=fleet" }
+    ],
+    "waitFor": "Fleet",
+    "output": "module-ui/supply-chain/logistics/fleet-tab.png",
+    "caption": "Logistics — Fleet tab for vehicle and driver management.",
+    "status": "pending"
+  }
+]

@@ -10,7 +10,7 @@
 
 The Suppliers tab manages the supplier master data — the registry of all vendors from whom materials and products are purchased. Supplier records are referenced across procurement (PRs, POs, RFQs), quality (incoming inspections, certificates), and logistics (import shipments).
 
-![Suppliers workspace](../../../screenshots/captured/tabs/suppliers-list.png)
+![Suppliers workspace](../../../screenshots/captured/module-ui/supply-chain/suppliers/suppliers-list-tab.png)
 *Supplier master list showing code, name, country, contact, and active/inactive status.*
 
 ---
@@ -31,7 +31,7 @@ Shows all suppliers with:
 
 Click **+ Add Supplier** to open the create dialog.
 
-![Add Supplier modal](../../../screenshots/captured/actions/suppliers-add-modal.png)
+![Add Supplier modal](../../../screenshots/captured/module-ui/supply-chain/suppliers/add-supplier-modal.png)
 *Add Supplier form: Code, Name, Contact Person, Email, Phone, Country, and Payment Terms.*
 
 Fields shown in the form:

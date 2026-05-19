@@ -10,7 +10,7 @@
 **Tab key:** `movements`  
 **Route:** `/dashboard/movements/page`
 
-![Inventory — Movements tab](../../../screenshots/captured/tabs/inventory-movements.png)
+![Inventory — Movements tab](../../../screenshots/captured/module-ui/supply-chain/movements/movements-list.png)
 *Movements ledger showing all stock changes with movement type, quantity, reference, and timestamp.*
 
 Every change to inventory — receipt, issue, transfer, adjustment, quarantine — creates an immutable movement record in the ledger. Movements are the audit trail of all stock changes.
@@ -59,7 +59,7 @@ The Movements tab supports filtering by:
 **Tab key:** `cycle-count`  
 **Route:** `/dashboard/cycle-count/page`
 
-![Inventory — Cycle Count tab](../../../screenshots/captured/tabs/inventory-cycle-count.png)
+![Inventory — Cycle Count tab](../../../screenshots/captured/module-ui/supply-chain/cycle-count/cycle-count-dashboard.png)
 *Cycle Count tab showing count sheets with status (DRAFT, IN_PROGRESS, POSTED, CANCELLED).*
 
 Cycle counting is the process of periodically counting a subset of inventory items to verify the accuracy of the stock ledger without doing a full warehouse shutdown.
@@ -88,7 +88,7 @@ Cycle counting is the process of periodically counting a subset of inventory ite
 **Tab key:** `shelf-life`  
 **Route:** `/dashboard/shelf-life/page`
 
-![Inventory — Shelf Life tab](../../../screenshots/captured/tabs/inventory-shelf-life.png)
+![Inventory — Shelf Life tab](../../../screenshots/captured/module-ui/supply-chain/shelf-life/shelf-life-dashboard.png)
 *Shelf Life tab showing expiring stock positions grouped by urgency with FEFO ranking.*
 
 Manages expiry dates across all stock positions.

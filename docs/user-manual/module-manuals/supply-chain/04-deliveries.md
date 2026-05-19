@@ -10,7 +10,7 @@
 
 The Deliveries tab manages Goods Receipt Notes (GRNs) — the documents that record the physical arrival of materials from suppliers. Posting a GRN credits inventory and updates PO receipt quantities. It also triggers QC inspection requests for incoming materials when configured.
 
-![Procurement — Deliveries tab](../../../screenshots/captured/tabs/procurement-deliveries.png)
+![Procurement — Deliveries tab](../../../screenshots/captured/module-ui/supply-chain/procurement/deliveries-tab.png)
 *Deliveries tab showing Goods Receipt Notes with status (DRAFT / POSTED / CANCELLED).*
 
 ---

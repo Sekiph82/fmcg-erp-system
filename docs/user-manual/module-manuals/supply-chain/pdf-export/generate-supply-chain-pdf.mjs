@@ -62,28 +62,39 @@ const CHAPTERS = [
 // ── Required screenshots ───────────────────────────────────────────────────
 
 const REQUIRED_SCREENSHOTS = [
-  "tabs/procurement-purchase-requests.png",
-  "tabs/procurement-orders.png",
-  "tabs/procurement-rfq.png",
-  "tabs/procurement-deliveries.png",
-  "tabs/procurement-suppliers.png",
-  "tabs/suppliers-list.png",
-  "tabs/inventory-stock.png",
-  "tabs/inventory-movements.png",
-  "tabs/inventory-cycle-count.png",
-  "tabs/inventory-shelf-life.png",
-  "tabs/warehouses-list.png",
-  "tabs/wms-zones.png",
-  "tabs/wms-locations.png",
-  "tabs/wms-quarantine.png",
-  "tabs/logistics-overview.png",
-  "tabs/logistics-shipments.png",
-  "actions/procurement-new-pr-modal.png",
-  "actions/suppliers-add-modal.png",
-  "actions/inventory-stock-entry-form.png",
-  "actions/inventory-stock-issue-form.png",
-  "actions/inventory-stock-transfer-form.png",
-  "actions/wms-new-zone-modal.png",
+  "module-ui/supply-chain/procurement/purchase-requests-tab.png",
+  "module-ui/supply-chain/procurement/orders-tab.png",
+  "module-ui/supply-chain/procurement/rfq-tab.png",
+  "module-ui/supply-chain/procurement/deliveries-tab.png",
+  "module-ui/supply-chain/procurement/suppliers-tab.png",
+  "module-ui/supply-chain/procurement/blanket-agreements-tab.png",
+  "module-ui/supply-chain/procurement/reorder-policies-tab.png",
+  "module-ui/supply-chain/procurement/new-pr-modal.png",
+  "module-ui/supply-chain/procurement/new-po-modal.png",
+  "module-ui/supply-chain/procurement/new-rfq-modal.png",
+  "module-ui/supply-chain/procurement/new-blanket-modal.png",
+  "module-ui/supply-chain/procurement/new-reorder-policy-modal.png",
+  "module-ui/supply-chain/suppliers/suppliers-list-tab.png",
+  "module-ui/supply-chain/suppliers/add-supplier-modal.png",
+  "module-ui/supply-chain/inventory/stock-tab.png",
+  "module-ui/supply-chain/inventory/entry-tab.png",
+  "module-ui/supply-chain/inventory/issue-tab.png",
+  "module-ui/supply-chain/inventory/transfer-tab.png",
+  "module-ui/supply-chain/movements/movements-list.png",
+  "module-ui/supply-chain/cycle-count/cycle-count-dashboard.png",
+  "module-ui/supply-chain/shelf-life/shelf-life-dashboard.png",
+  "module-ui/supply-chain/warehouses/warehouses-list-tab.png",
+  "module-ui/supply-chain/warehouses/add-warehouse-modal.png",
+  "module-ui/supply-chain/wms/zones-tab.png",
+  "module-ui/supply-chain/wms/locations-tab.png",
+  "module-ui/supply-chain/wms/quarantine-tab.png",
+  "module-ui/supply-chain/wms/new-zone-modal.png",
+  "module-ui/supply-chain/wms/new-location-modal.png",
+  "module-ui/supply-chain/wms/quarantine-stock-modal.png",
+  "module-ui/supply-chain/logistics/overview-tab.png",
+  "module-ui/supply-chain/logistics/shipments-tab.png",
+  "module-ui/supply-chain/logistics/arrivals-tab.png",
+  "module-ui/supply-chain/logistics/documents-tab.png",
 ];
 
 // ── Validation ─────────────────────────────────────────────────────────────
@@ -150,7 +161,7 @@ function validateImageRefs() {
     const refs = [...content.matchAll(/!\[.*?\]\([^)]*?screenshots\/captured\/([^)]+\.png)\)/g)];
     for (const ref of refs) {
       totalRefs++;
-      if (ref[1].startsWith("actions/") || ref[1].startsWith("tabs/")) actionRefs++;
+      if (ref[1].startsWith("actions/") || ref[1].startsWith("tabs/") || ref[1].startsWith("module-ui/")) actionRefs++;
       if (!capturedFiles.has(ref[1])) {
         console.warn(`  WARNING: Image not found: ${ref[1]} (in ${chapter})`);
         missingRefs++;

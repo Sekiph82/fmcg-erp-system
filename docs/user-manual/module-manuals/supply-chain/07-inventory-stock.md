@@ -10,7 +10,7 @@
 
 The Inventory module manages finished goods stock positions across all warehouses. Each stock record (position) represents a unique combination of product + warehouse + lot number. The inventory page provides four operational sub-tabs: stock summary, stock entry (receive), stock issue (dispatch), and inter-warehouse transfer.
 
-![Inventory — Stock Ledger tab](../../../screenshots/captured/tabs/inventory-stock.png)
+![Inventory — Stock Ledger tab](../../../screenshots/captured/module-ui/supply-chain/inventory/stock-tab.png)
 *Stock Ledger showing on-hand, available, and reserved quantities with reorder alerts.*
 
 ---
@@ -57,7 +57,7 @@ Stock positions below their reorder point show a bold red quantity and a `⚠ lo
 
 Used to receive finished goods into a warehouse. Typically triggered after a production batch is completed or a direct purchase receipt outside the procurement module.
 
-![Stock Entry (IN) form](../../../screenshots/captured/actions/inventory-stock-entry-form.png)
+![Stock Entry (IN) form](../../../screenshots/captured/module-ui/supply-chain/inventory/entry-tab.png)
 *Stock Entry form for receiving goods: product, warehouse, quantity, lot number, expiry date, and reference.*
 
 ### Stock Entry Fields
@@ -85,7 +85,7 @@ On success: `quantity_on_hand` increases; a RECEIPT movement is created in the l
 
 Used to issue finished goods from a warehouse. Typically used for sales order fulfilment or production material issue outside the main work order flow.
 
-![Stock Issue (OUT) form](../../../screenshots/captured/actions/inventory-stock-issue-form.png)
+![Stock Issue (OUT) form](../../../screenshots/captured/module-ui/supply-chain/inventory/issue-tab.png)
 *Stock Issue form for dispatching goods: product, warehouse, quantity, lot number, and reference.*
 
 ### Stock Issue Fields
@@ -113,7 +113,7 @@ On success: `quantity_on_hand` decreases; an ISSUE movement is created; returns 
 
 Transfers stock between two warehouses of the same company.
 
-![Stock Transfer form](../../../screenshots/captured/actions/inventory-stock-transfer-form.png)
+![Stock Transfer form](../../../screenshots/captured/module-ui/supply-chain/inventory/transfer-tab.png)
 *Transfer form: select product, source warehouse, destination warehouse, quantity, and reference.*
 
 ### Transfer Fields

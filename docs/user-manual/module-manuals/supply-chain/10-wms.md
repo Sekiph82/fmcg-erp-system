@@ -14,8 +14,11 @@ WMS provides sub-warehouse organisation: zones within a warehouse, bin locations
 
 **Tab key:** `zones`
 
-![WMS — Zones tab](../../../screenshots/captured/tabs/wms-zones.png)
+![WMS — Zones tab](../../../screenshots/captured/module-ui/supply-chain/wms/zones-tab.png)
 *Zones tab showing warehouse zones with type badges (RAW_MATERIAL, FINISHED_GOODS, QUARANTINE, etc.).*
+
+![New Warehouse Zone modal](../../../screenshots/captured/module-ui/supply-chain/wms/new-zone-modal.png)
+*New Warehouse Zone modal — Warehouse, Zone Code, Zone Name, and Zone Type fields.*
 
 Zones are areas within a warehouse with a specific function (raw material, staging, quarantine, etc.).
 
@@ -46,8 +49,11 @@ Zones are areas within a warehouse with a specific function (raw material, stagi
 
 **Tab key:** `locations`
 
-![WMS — Locations tab](../../../screenshots/captured/tabs/wms-locations.png)
+![WMS — Locations tab](../../../screenshots/captured/module-ui/supply-chain/wms/locations-tab.png)
 *Locations tab showing bin locations with zone, barcode, blocked status, and active status.*
+
+![New Storage Location modal](../../../screenshots/captured/module-ui/supply-chain/wms/new-location-modal.png)
+*New Storage Location modal — Zone, Location Code, Location Name, and Barcode fields.*
 
 Bin locations are the leaf-level storage positions within a zone (rack, shelf, bin address).
 
@@ -67,6 +73,9 @@ Bin locations are the leaf-level storage positions within a zone (rack, shelf, b
 ## Handling Units Tab
 
 **Tab key:** `handlingUnits`
+
+![WMS — Handling Units tab](../../../screenshots/captured/module-ui/supply-chain/wms/handling-units-tab.png)
+*Handling Units tab listing pallets, totes, and cartons with license plate, location, and status.*
 
 Handling units (HUs) group individual stock items under a single licence plate for tracking pallets, totes, or cartons.
 
@@ -96,6 +105,9 @@ Handling units (HUs) group individual stock items under a single licence plate f
 
 **Tab key:** `pickWaves`
 
+![WMS — Pick Waves tab](../../../screenshots/captured/module-ui/supply-chain/wms/pick-waves-tab.png)
+*Pick Waves tab showing batched picking waves with task count, priority, and status.*
+
 Wave picking batches multiple pick tasks across multiple orders into a single wave for efficient picking routes.
 
 ### Pick Wave List Columns
@@ -117,8 +129,11 @@ Wave status uses the same badge colour scheme as handling units.
 
 **Tab key:** `quarantine`
 
-![WMS — Quarantine tab](../../../screenshots/captured/tabs/wms-quarantine.png)
+![WMS — Quarantine tab](../../../screenshots/captured/module-ui/supply-chain/wms/quarantine-tab.png)
 *Quarantine tab showing quarantine action and release forms for blocking/unblocking lot stock.*
+
+![Quarantine Stock modal](../../../screenshots/captured/module-ui/supply-chain/wms/quarantine-stock-modal.png)
+*Quarantine Stock modal — Warehouse, Lot Number, Reason, and Notes fields.*
 
 Quarantine blocks specific stock from being picked or issued. It applies at the lot level within a warehouse.
 

@@ -10,7 +10,7 @@
 
 The Logistics module manages international import shipments from origin port to warehouse delivery. It tracks vessels, containers, customs clearance, and arrival milestones. Logistics integrates with Procurement (links to POs) and Inventory (GRN creation on delivery).
 
-![Logistics workspace](../../../screenshots/captured/tabs/logistics-overview.png)
+![Logistics workspace](../../../screenshots/captured/module-ui/supply-chain/logistics/overview-tab.png)
 *Logistics overview showing KPI tiles (Active Shipments, In Transit, At Port/Clearing, Overdue Documents) and ETA alert panel.*
 
 ---
@@ -78,7 +78,7 @@ Shipments within 14 days of ETA appear in the alert panel. Colour coding:
 
 **Tab key:** `shipments`
 
-![Logistics — Shipments tab](../../../screenshots/captured/tabs/logistics-shipments.png)
+![Logistics — Shipments tab](../../../screenshots/captured/module-ui/supply-chain/logistics/shipments-tab.png)
 *Shipments tab showing import shipments with mode badges, ETA, days to ETA (colour-coded), clearance status, and shipment status.*
 
 Lists all import shipments with filterable columns.
@@ -108,6 +108,9 @@ Lists all import shipments with filterable columns.
 
 **Tab key:** `containers`
 
+![Logistics — Containers tab](../../../screenshots/captured/module-ui/supply-chain/logistics/containers-tab.png)
+*Containers tab showing container numbers, seal numbers, size, weight, and shipment linkage.*
+
 Tracks individual container records linked to shipments. Containers have their own tracking (seal number, container number, size, weight).
 
 ---
@@ -115,6 +118,9 @@ Tracks individual container records linked to shipments. Containers have their o
 ## Arrivals Tab
 
 **Tab key:** `arrivals`
+
+![Logistics — Arrivals tab](../../../screenshots/captured/module-ui/supply-chain/logistics/arrivals-tab.png)
+*Arrivals tab showing port event records, ETA alerts, and customs clearance tracking.*
 
 Records the physical arrival of goods at the warehouse. After an arrival is confirmed:
 1. The logistics team marks the shipment as `DELIVERED`
@@ -128,6 +134,9 @@ See [04-deliveries.md](./04-deliveries.md) for the GRN process.
 
 **Tab key:** `documents`
 
+![Logistics — Documents tab](../../../screenshots/captured/module-ui/supply-chain/logistics/documents-tab.png)
+*Documents tab listing shipping documents (bill of lading, commercial invoice, certificates) with due dates and status.*
+
 Manages import documentation: bill of lading, commercial invoice, packing list, certificate of origin, phytosanitary certificate, import declaration. Documents have due dates; overdue documents drive the red KPI tile on the dashboard.
 
 ---
@@ -135,6 +144,9 @@ Manages import documentation: bill of lading, commercial invoice, packing list, 
 ## Fleet Tab
 
 **Tab key:** `fleet`
+
+![Logistics — Fleet tab](../../../screenshots/captured/module-ui/supply-chain/logistics/fleet-tab.png)
+*Fleet tab showing internal delivery vehicles with registration, driver assignment, and trip status.*
 
 Manages internal delivery fleet vehicles used for last-mile delivery from port to warehouse. Tracks vehicle registration, driver assignment, and trip logs.
 
