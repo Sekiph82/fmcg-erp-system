@@ -1,6 +1,6 @@
 # Current Status Checkpoint
 
-**Date:** 2026-05-19 (updated after Full Reference PDF pipeline)  
+**Date:** 2026-05-19 (updated after in-app help implementation)  
 **Branch:** main  
 **Working tree:** CLEAN after this commit
 
@@ -11,7 +11,7 @@
 | Item | Value |
 |------|-------|
 | Branch | main |
-| Latest commit (pre-this) | `eb535ce` docs(status): update manual checkpoint and audit script status |
+| Latest commit (pre-this) | `b6759eb` docs(manual): add full reference PDF export pipeline |
 | Remote | origin → github.com/Sekiph82/fmcg-erp-system.git |
 
 ---
@@ -21,7 +21,7 @@
 | Item | Result |
 |------|--------|
 | pytest | **482/482 PASSED** |
-| Warnings | 72 (deprecation/duplicate op ID — non-blocking) |
+| Warnings | 72 (non-blocking) |
 
 ---
 
@@ -44,16 +44,27 @@
 
 ---
 
+## In-App Help
+
+| Item | Value |
+|------|-------|
+| Help Center page | `/dashboard/help` — live |
+| Help registry entries | 60+ routes covered |
+| Help button | DashboardShell — mobile header + desktop floating |
+| Help drawer | Contextual, ESC/backdrop-close, accessible |
+| Manual paths in drawer | Referenced (not hardcoded public URLs) |
+| PDF link strategy | "Generate locally" note — no broken public URLs |
+| Audit script fix | "help" added to STANDALONE_DIRS → D=0 maintained |
+
+---
+
 ## Manual / Screenshots
 
 | Item | Value |
 |------|-------|
 | Kenya go-live files | 10 |
 | Full-reference files | 15 |
-| routes.json total | 141 |
-| capture=true routes | 140 |
-| Captured PNGs | **140/140** |
-| Screenshot folder size | ~72 MB (gitignored) |
+| Captured PNGs | 140/140 (gitignored) |
 | Pending placeholders | 0 |
 | Broken image refs | 0 |
 
@@ -63,25 +74,21 @@
 
 | Item | Value |
 |------|-------|
-| Kenya Go-Live PDF | **EXISTS** — `pdf-output/Kenya-Go-Live-ERP-Training-Manual.pdf` |
-| Kenya PDF size | 17.5 MB — 45/45 images |
-| Full Reference PDF | **EXISTS** — `pdf-output/FMCG-ERP-Full-Reference-Manual.pdf` |
-| Full Reference PDF size | 9.7 MB — 24/24 images |
-| Screenshots embedded | **Yes — 24/24 loaded, 0 failed** |
-| pdf-output gitignored | Yes — local only |
-| Pipeline source committed | Yes |
+| Kenya Go-Live PDF | EXISTS — 17.5 MB, 45/45 images (local) |
+| Full Reference PDF | EXISTS — 9.7 MB, 24/24 images (local) |
+| pdf-output gitignored | Yes |
 
 ---
 
-## Audit Scripts (run from repo root)
+## Audit Results (from repo root)
 
-| Script | Last Result |
-|--------|-------------|
-| `audit-page-count.js` | D FULL_DUPLICATE_UI: **0** |
-| `check-route-redirects.js` | **No redirect drift** |
-| `check-workspace-tabs.js` | **All workspace tab checks passed** |
-| `erp-health-audit.py` | **0 HIGH findings** |
-| `manual:validate-routes` | **PASSED** (0 errors, 1 known warn) |
+| Script | Result |
+|--------|--------|
+| audit-page-count.js | D=0, E=15 (help page correctly classified) |
+| check-route-redirects.js | No redirect drift |
+| check-workspace-tabs.js | All tab checks passed |
+| erp-health-audit.py | 0 HIGH findings |
+| manual:validate-routes | PASSED |
 
 ---
 
@@ -89,12 +96,12 @@
 
 | Risk | Severity | Notes |
 |------|----------|-------|
-| Docker daemon down | Info | Local only; compose config valid |
-| Duplicate Operation ID (webhooks) | Low | FastAPI non-blocking warning |
-| PDF output gitignored | Info | Intentional — regenerate locally when needed |
+| Help nav entry missing from Sidebar | Low | Users must navigate to /dashboard/help manually |
+| Screenshot thumbnails not shown in drawer | Low | Requires static serving of captured/ |
+| Docker daemon down | Info | Local only |
 
 ---
 
 ## Recommended Next Task
 
-In-app help integration — surface manual content as contextual help within ERP UI.
+Add `/dashboard/help` to Sidebar nav config so users can discover Help Center from navigation.

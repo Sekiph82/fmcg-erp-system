@@ -10,9 +10,9 @@ Generated: 2026-05-19
 | REDIRECT_ONLY             | B    | 496   |
 | LIGHTWEIGHT_WRAPPER       | C    | 213   |
 | FULL_DUPLICATE_UI         | D    | 0   |
-| STANDALONE_OPERATIONAL    | E    | 14   |
+| STANDALONE_OPERATIONAL    | E    | 15   |
 | UNKNOWN                   | F    | 0   |
-| **Total**                 |      | **754** |
+| **Total**                 |      | **755** |
 
 ## Definitions
 

@@ -2,11 +2,14 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import Image from "next/image";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Sidebar } from "./Sidebar";
 import { CommandPalette } from "./CommandPalette";
 import { NotificationBell } from "./NotificationBell";
 import { AIModeBanner } from "./ai/AIModeBanner";
+import { HelpButton } from "./help/HelpButton";
+import { HelpDrawer } from "./help/HelpDrawer";
+import { getHelpForRoute } from "@/lib/help/get-help-for-route";
 import { useCommandPalette } from "@/hooks/useCommandPalette";
 import { useUnsavedChangesContext } from "@/context/UnsavedChangesContext";
 
@@ -16,12 +19,19 @@ interface DashboardShellProps {
 
 export function DashboardShell({ children }: DashboardShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const { isDirty, confirmLeave } = useUnsavedChangesContext();
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const originalPushRef = useRef<typeof window.history.pushState | null>(null);
   const { open, openPalette, closePalette, recent, recordVisit } = useCommandPalette();
   const showModuleAIBanner = pathname.includes("/ai") && !pathname.startsWith("/dashboard/ai");
+
+  const currentTab = searchParams.get("tab");
+  const helpEntry = getHelpForRoute(pathname, currentTab);
+  const openHelp = useCallback(() => setHelpOpen(true), []);
+  const closeHelp = useCallback(() => setHelpOpen(false), []);
 
   const openMobile = useCallback(() => setMobileOpen(true), []);
   const closeMobile = useCallback(() => setMobileOpen(false), []);
@@ -96,6 +106,8 @@ export function DashboardShell({ children }: DashboardShellProps) {
           </div>
           {/* Mobile notification bell */}
           <NotificationBell />
+          {/* Mobile help button */}
+          <HelpButton onClick={openHelp} />
           {/* Mobile search button */}
           <button
             onClick={openPalette}
@@ -122,6 +134,14 @@ export function DashboardShell({ children }: DashboardShellProps) {
         onVisit={recordVisit}
         recent={recent}
       />
+
+      {/* Floating help button — desktop only */}
+      <div className="fixed bottom-6 right-6 z-30 hidden lg:block">
+        <HelpButton onClick={openHelp} className="h-10 w-10 shadow-lg shadow-cyan-500/10" />
+      </div>
+
+      {/* Global help drawer */}
+      <HelpDrawer open={helpOpen} onClose={closeHelp} entry={helpEntry} />
     </div>
   );
 }

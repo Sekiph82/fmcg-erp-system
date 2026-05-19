@@ -10,9 +10,9 @@ Generated: 2026-05-19
 | B REDIRECT_ONLY           | 496     |
 | C LIGHTWEIGHT_WRAPPER     | 213     |
 | D FULL_DUPLICATE_UI       | 0     |
-| E STANDALONE_OPERATIONAL  | 14     |
+| E STANDALONE_OPERATIONAL  | 15     |
 | F UNKNOWN                 | 0     |
-| Total                     | 754   |
+| Total                     | 755   |
 
 ## All Routes
 
@@ -260,6 +260,7 @@ Generated: 2026-05-19
 | `/dashboard/gs1/reports` | B REDIRECT_ONLY | ✅ | — | /dashboard/compliance | gs1 |
 | `/dashboard/gs1/scan` | B REDIRECT_ONLY | ✅ | — | /dashboard/compliance | gs1 |
 | `/dashboard/gs1/sscc` | B REDIRECT_ONLY | ✅ | — | /dashboard/compliance | gs1 |
+| `/dashboard/help` | E STANDALONE_OPERATIONAL | ❌ | — | — | — |
 | `/dashboard/helpdesk/escalated` | C LIGHTWEIGHT_WRAPPER | ❌ | — | — | — |
 | `/dashboard/helpdesk/open` | C LIGHTWEIGHT_WRAPPER | ❌ | — | — | — |
 | `/dashboard/helpdesk` | A WORKSPACE_PAGE | ❌ | — | — | — |

@@ -37,6 +37,7 @@ const STANDALONE_DIRS = new Set([
   "auth",
   "npd",
   "recipes",
+  "help",
 ]);
 
 // ── Middleware top-level redirect keys ────────────────────────────────────────
