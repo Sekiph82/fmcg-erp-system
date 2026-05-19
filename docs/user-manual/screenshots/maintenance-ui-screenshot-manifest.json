@@ -1,0 +1,128 @@
+{
+  "module": "maintenance",
+  "route": "/dashboard/maintenance",
+  "screenshots": [
+    {
+      "id": "overview-tab",
+      "path": "module-ui/maintenance/overview/overview-tab.png",
+      "description": "Maintenance overview dashboard — KPI tiles, open breakdowns panel, overdue PMs panel, quick links",
+      "steps": [
+        { "type": "goto", "url": "/dashboard/maintenance?tab=overview" },
+        { "type": "wait", "ms": 2000 }
+      ]
+    },
+    {
+      "id": "assets-tab",
+      "path": "module-ui/maintenance/assets/assets-tab.png",
+      "description": "Asset register — full asset list with status badges",
+      "steps": [
+        { "type": "goto", "url": "/dashboard/maintenance?tab=assets" },
+        { "type": "wait", "ms": 2000 }
+      ]
+    },
+    {
+      "id": "new-asset-modal",
+      "path": "module-ui/maintenance/assets/new-asset-modal.png",
+      "description": "Add Asset modal — full form with dropdowns expanded",
+      "steps": [
+        { "type": "goto", "url": "/dashboard/maintenance?tab=assets" },
+        { "type": "wait", "ms": 1500 },
+        { "type": "clickRole", "role": "button", "name": "Add Asset" },
+        { "type": "wait", "ms": 800 },
+        { "type": "evaluate", "script": "document.querySelectorAll('select').forEach(s => { if(s.options.length > 1){ s.size = s.options.length; s.style.height='auto'; s.style.overflow='visible'; } })" }
+      ]
+    },
+    {
+      "id": "breakdowns-tab",
+      "path": "module-ui/maintenance/breakdowns/breakdowns-tab.png",
+      "description": "Breakdown records — list with severity badges and downtime summary",
+      "steps": [
+        { "type": "goto", "url": "/dashboard/maintenance?tab=breakdowns" },
+        { "type": "wait", "ms": 2000 }
+      ]
+    },
+    {
+      "id": "log-breakdown-modal",
+      "path": "module-ui/maintenance/breakdowns/log-breakdown-modal.png",
+      "description": "Log Breakdown modal — asset, start time, severity, reason fields with dropdowns expanded",
+      "steps": [
+        { "type": "goto", "url": "/dashboard/maintenance?tab=breakdowns" },
+        { "type": "wait", "ms": 1500 },
+        { "type": "clickRole", "role": "button", "name": "Log Breakdown" },
+        { "type": "wait", "ms": 800 },
+        { "type": "evaluate", "script": "document.querySelectorAll('select').forEach(s => { if(s.options.length > 1){ s.size = s.options.length; s.style.height='auto'; s.style.overflow='visible'; } })" }
+      ]
+    },
+    {
+      "id": "plans-tab",
+      "path": "module-ui/maintenance/plans/plans-tab.png",
+      "description": "PM Plans sub-tab — preventive maintenance plan list",
+      "steps": [
+        { "type": "goto", "url": "/dashboard/maintenance?tab=plans" },
+        { "type": "wait", "ms": 2000 }
+      ]
+    },
+    {
+      "id": "work-orders-tab",
+      "path": "module-ui/maintenance/plans/work-orders-tab.png",
+      "description": "Work Orders sub-tab — scheduled and completed work orders",
+      "steps": [
+        { "type": "goto", "url": "/dashboard/maintenance?tab=plans" },
+        { "type": "wait", "ms": 1500 },
+        { "type": "clickText", "text": "Work Orders" },
+        { "type": "wait", "ms": 1000 }
+      ]
+    },
+    {
+      "id": "new-plan-modal",
+      "path": "module-ui/maintenance/plans/new-plan-modal.png",
+      "description": "New PM Plan modal — full form with frequency and checklist fields expanded",
+      "steps": [
+        { "type": "goto", "url": "/dashboard/maintenance?tab=plans" },
+        { "type": "wait", "ms": 1500 },
+        { "type": "clickRole", "role": "button", "name": "New PM Plan" },
+        { "type": "wait", "ms": 800 },
+        { "type": "evaluate", "script": "document.querySelectorAll('select').forEach(s => { if(s.options.length > 1){ s.size = s.options.length; s.style.height='auto'; s.style.overflow='visible'; } })" }
+      ]
+    },
+    {
+      "id": "predictive-tab",
+      "path": "module-ui/maintenance/predictive/predictive-tab.png",
+      "description": "Predictive Maintenance — KPIs, filters, prediction queue with risk and confidence",
+      "steps": [
+        { "type": "goto", "url": "/dashboard/maintenance?tab=predictive" },
+        { "type": "wait", "ms": 2000 },
+        { "type": "evaluate", "script": "document.querySelectorAll('select').forEach(s => { if(s.options.length > 1){ s.size = s.options.length; s.style.height='auto'; s.style.overflow='visible'; } })" }
+      ]
+    },
+    {
+      "id": "spares-tab",
+      "path": "module-ui/maintenance/spares/spares-tab.png",
+      "description": "Spare Parts — inventory table with reorder level and low stock highlights",
+      "steps": [
+        { "type": "goto", "url": "/dashboard/maintenance?tab=spares" },
+        { "type": "wait", "ms": 2000 }
+      ]
+    },
+    {
+      "id": "add-part-modal",
+      "path": "module-ui/maintenance/spares/add-part-modal.png",
+      "description": "Add Spare Part modal — full form fields",
+      "steps": [
+        { "type": "goto", "url": "/dashboard/maintenance?tab=spares" },
+        { "type": "wait", "ms": 1500 },
+        { "type": "clickRole", "role": "button", "name": "Add Part" },
+        { "type": "wait", "ms": 800 }
+      ]
+    },
+    {
+      "id": "reports-tab",
+      "path": "module-ui/maintenance/reports/reports-tab.png",
+      "description": "Maintenance Reports — MTBF/MTTR table, downtime by machine, overdue PMs",
+      "steps": [
+        { "type": "goto", "url": "/dashboard/maintenance?tab=reports" },
+        { "type": "wait", "ms": 2000 }
+      ]
+    }
+  ]
+}

@@ -15,14 +15,16 @@ Last updated: 2026-05-19
 | Marketing | marketing/ | 8 | ✅ | generate-marketing-pdf.mjs |
 | POS | pos/ | 3 | ✅ | generate-pos-pdf.mjs |
 | Commercial (combined) | commercial/ | — | — | generate-commercial-pdf.mjs (CRM+Marketing+POS) |
+| Logistics | logistics/ | 6 | ✅ | generate-logistics-pdf.mjs |
+| Maintenance | maintenance/ | 7 | ✅ | generate-maintenance-pdf.mjs |
 
 ## Pending ⏳
 
 | Module | Route | Priority |
 |--------|-------|----------|
 | Logistics | /dashboard/logistics | ✅ Done 2026-05-19 |
-| Maintenance | /dashboard/maintenance | Next |
-| Utilities | /dashboard/utility-management | — |
+| Maintenance | /dashboard/maintenance | ✅ Done 2026-05-19 |
+| Utilities | /dashboard/utility-management | Next |
 | Documents | /dashboard/documents | — |
 | Communication | /dashboard/communication | — |
 | Helpdesk | /dashboard/helpdesk | — |

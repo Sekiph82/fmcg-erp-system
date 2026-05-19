@@ -1,0 +1,67 @@
+{
+  "module": "maintenance",
+  "generatedAt": "2026-05-19T17:42:34.070Z",
+  "count": 12,
+  "screenshots": [
+    {
+      "id": "overview-tab",
+      "path": "module-ui/maintenance/overview/overview-tab.png",
+      "capturedAt": "2026-05-19T17:40:56.276Z"
+    },
+    {
+      "id": "assets-tab",
+      "path": "module-ui/maintenance/assets/assets-tab.png",
+      "capturedAt": "2026-05-19T17:41:02.370Z"
+    },
+    {
+      "id": "new-asset-modal",
+      "path": "module-ui/maintenance/assets/new-asset-modal.png",
+      "capturedAt": "2026-05-19T17:41:14.956Z"
+    },
+    {
+      "id": "breakdowns-tab",
+      "path": "module-ui/maintenance/breakdowns/breakdowns-tab.png",
+      "capturedAt": "2026-05-19T17:41:22.244Z"
+    },
+    {
+      "id": "log-breakdown-modal",
+      "path": "module-ui/maintenance/breakdowns/log-breakdown-modal.png",
+      "capturedAt": "2026-05-19T17:41:29.926Z"
+    },
+    {
+      "id": "plans-tab",
+      "path": "module-ui/maintenance/plans/plans-tab.png",
+      "capturedAt": "2026-05-19T17:41:39.675Z"
+    },
+    {
+      "id": "work-orders-tab",
+      "path": "module-ui/maintenance/plans/work-orders-tab.png",
+      "capturedAt": "2026-05-19T17:41:52.795Z"
+    },
+    {
+      "id": "new-plan-modal",
+      "path": "module-ui/maintenance/plans/new-plan-modal.png",
+      "capturedAt": "2026-05-19T17:42:01.113Z"
+    },
+    {
+      "id": "predictive-tab",
+      "path": "module-ui/maintenance/predictive/predictive-tab.png",
+      "capturedAt": "2026-05-19T17:42:09.598Z"
+    },
+    {
+      "id": "spares-tab",
+      "path": "module-ui/maintenance/spares/spares-tab.png",
+      "capturedAt": "2026-05-19T17:42:18.119Z"
+    },
+    {
+      "id": "add-part-modal",
+      "path": "module-ui/maintenance/spares/add-part-modal.png",
+      "capturedAt": "2026-05-19T17:42:25.642Z"
+    },
+    {
+      "id": "reports-tab",
+      "path": "module-ui/maintenance/reports/reports-tab.png",
+      "capturedAt": "2026-05-19T17:42:33.639Z"
+    }
+  ]
+}
