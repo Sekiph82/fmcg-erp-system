@@ -112,6 +112,7 @@ export const HELP_REGISTRY: HelpEntry[] = [
     description: "Supplier master records: contact details, payment terms, and performance ratings.",
     fullReferencePath: `${FR}/02_MASTER_DATA.md`,
     screenshotFile: "014_suppliers.png",
+    moduleManualPath: "module-manuals/supply-chain/05-suppliers.md",
     keywords: ["suppliers", "vendors", "procurement", "contacts"],
   },
 
@@ -127,6 +128,7 @@ export const HELP_REGISTRY: HelpEntry[] = [
     fullReferencePath: `${FR}/03_PROCUREMENT.md`,
     quickGuidePath: `${KE}/04_PROCUREMENT_USER_MANUAL.md`,
     screenshotFile: "019_procurement.png",
+    moduleManualPath: "module-manuals/supply-chain/00-overview.md",
     keywords: ["procurement", "purchasing", "po", "purchase order"],
   },
   {
@@ -141,6 +143,7 @@ export const HELP_REGISTRY: HelpEntry[] = [
     fullReferencePath: `${FR}/03_PROCUREMENT.md`,
     quickGuidePath: `${KE}/04_PROCUREMENT_USER_MANUAL.md`,
     screenshotFile: "020_procurement-requests.png",
+    moduleManualPath: "module-manuals/supply-chain/01-purchase-requisitions.md",
     keywords: ["purchase request", "pr", "requisition", "approval"],
   },
   {
@@ -155,6 +158,7 @@ export const HELP_REGISTRY: HelpEntry[] = [
     fullReferencePath: `${FR}/03_PROCUREMENT.md`,
     quickGuidePath: `${KE}/04_PROCUREMENT_USER_MANUAL.md`,
     screenshotFile: "021_procurement-orders.png",
+    moduleManualPath: "module-manuals/supply-chain/02-purchase-orders.md",
     keywords: ["purchase order", "po", "supplier", "order"],
   },
   {
@@ -168,6 +172,7 @@ export const HELP_REGISTRY: HelpEntry[] = [
     description: "Request for Quotation: get supplier quotes before committing to a PO.",
     fullReferencePath: `${FR}/03_PROCUREMENT.md`,
     screenshotFile: "022_procurement-rfq.png",
+    moduleManualPath: "module-manuals/supply-chain/03-rfq.md",
     keywords: ["rfq", "quotation", "quote", "supplier bid"],
   },
 
@@ -183,6 +188,7 @@ export const HELP_REGISTRY: HelpEntry[] = [
     fullReferencePath: `${FR}/04_INVENTORY_AND_WAREHOUSE.md`,
     quickGuidePath: `${KE}/03_WAREHOUSE_INVENTORY_USER_MANUAL.md`,
     screenshotFile: "027_inventory.png",
+    moduleManualPath: "module-manuals/supply-chain/07-inventory-stock.md",
     keywords: ["inventory", "stock", "warehouse", "levels"],
   },
   {
@@ -197,6 +203,7 @@ export const HELP_REGISTRY: HelpEntry[] = [
     fullReferencePath: `${FR}/04_INVENTORY_AND_WAREHOUSE.md`,
     quickGuidePath: `${KE}/03_WAREHOUSE_INVENTORY_USER_MANUAL.md`,
     screenshotFile: "028_inventory-stock.png",
+    moduleManualPath: "module-manuals/supply-chain/07-inventory-stock.md",
     keywords: ["stock levels", "on hand", "available stock"],
   },
   {
@@ -211,6 +218,7 @@ export const HELP_REGISTRY: HelpEntry[] = [
     fullReferencePath: `${FR}/04_INVENTORY_AND_WAREHOUSE.md`,
     quickGuidePath: `${KE}/03_WAREHOUSE_INVENTORY_USER_MANUAL.md`,
     screenshotFile: "029_inventory-movements.png",
+    moduleManualPath: "module-manuals/supply-chain/08-movements.md",
     keywords: ["movements", "transfers", "adjustments", "stock history"],
   },
   {
@@ -225,6 +233,7 @@ export const HELP_REGISTRY: HelpEntry[] = [
     fullReferencePath: `${FR}/04_INVENTORY_AND_WAREHOUSE.md`,
     quickGuidePath: `${KE}/03_WAREHOUSE_INVENTORY_USER_MANUAL.md`,
     screenshotFile: "030_inventory-shelf-life.png",
+    moduleManualPath: "module-manuals/supply-chain/08-movements.md",
     keywords: ["shelf life", "expiry", "fefo", "dates"],
   },
   {
@@ -239,6 +248,7 @@ export const HELP_REGISTRY: HelpEntry[] = [
     fullReferencePath: `${FR}/04_INVENTORY_AND_WAREHOUSE.md`,
     quickGuidePath: `${KE}/03_WAREHOUSE_INVENTORY_USER_MANUAL.md`,
     screenshotFile: "031_inventory-cycle-count.png",
+    moduleManualPath: "module-manuals/supply-chain/08-movements.md",
     keywords: ["cycle count", "stock count", "audit", "physical inventory"],
   },
   {
@@ -252,6 +262,7 @@ export const HELP_REGISTRY: HelpEntry[] = [
     fullReferencePath: `${FR}/04_INVENTORY_AND_WAREHOUSE.md`,
     quickGuidePath: `${KE}/03_WAREHOUSE_INVENTORY_USER_MANUAL.md`,
     screenshotFile: "035_wms.png",
+    moduleManualPath: "module-manuals/supply-chain/10-wms.md",
     keywords: ["wms", "warehouse", "picking", "putaway", "location"],
   },
   {
@@ -266,6 +277,7 @@ export const HELP_REGISTRY: HelpEntry[] = [
     fullReferencePath: `${FR}/04_INVENTORY_AND_WAREHOUSE.md`,
     quickGuidePath: `${KE}/03_WAREHOUSE_INVENTORY_USER_MANUAL.md`,
     screenshotFile: "036_wms-zones.png",
+    moduleManualPath: "module-manuals/supply-chain/10-wms.md",
     keywords: ["zones", "warehouse layout", "storage areas"],
   },
   {
@@ -279,7 +291,21 @@ export const HELP_REGISTRY: HelpEntry[] = [
     description: "Bin and shelf locations within warehouse zones.",
     fullReferencePath: `${FR}/04_INVENTORY_AND_WAREHOUSE.md`,
     screenshotFile: "037_wms-locations.png",
+    moduleManualPath: "module-manuals/supply-chain/10-wms.md",
     keywords: ["locations", "bins", "shelves", "slotting"],
+  },
+
+  {
+    id: "warehouses",
+    title: "Warehouses",
+    route: "/dashboard/warehouses",
+    path: "/dashboard/warehouses",
+    role: "warehouse",
+    module: "wms",
+    description: "Warehouse master data: types (finished goods, raw material, transit, returns), capacity, and WMS zones.",
+    fullReferencePath: `${FR}/04_INVENTORY_AND_WAREHOUSE.md`,
+    moduleManualPath: "module-manuals/supply-chain/09-warehouses.md",
+    keywords: ["warehouses", "warehouse master", "warehouse type", "capacity"],
   },
 
   // ── Production ────────────────────────────────────────────────────────────
@@ -599,6 +625,7 @@ export const HELP_REGISTRY: HelpEntry[] = [
     fullReferencePath: `${FR}/07_SALES_AND_DISTRIBUTION.md`,
     quickGuidePath: `${KE}/06_SALES_LOGISTICS_USER_MANUAL.md`,
     screenshotFile: "083_logistics.png",
+    moduleManualPath: "module-manuals/supply-chain/11-logistics.md",
     keywords: ["logistics", "delivery", "fleet", "shipment", "distribution"],
   },
 

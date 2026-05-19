@@ -31,11 +31,11 @@
         "/dashboard/wms",
         "/dashboard/logistics"
       ],
-      "chapters": null,
-      "status": "pending",
+      "chapters": 12,
+      "status": "complete",
       "manual_dir": "docs/user-manual/module-manuals/supply-chain",
-      "pdf_generator": null,
-      "completed_date": null
+      "pdf_generator": "docs/user-manual/module-manuals/supply-chain/pdf-export/generate-supply-chain-pdf.mjs",
+      "completed_date": "2026-05-19"
     },
     {
       "id": "finance",
