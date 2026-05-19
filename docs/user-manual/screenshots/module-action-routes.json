@@ -55,39 +55,52 @@
     "id": "inventory-stock-entry-form",
     "module": "supply-chain",
     "page": "inventory",
-    "route": "/dashboard/inventory?tab=entry",
-    "actionType": "tab",
+    "route": "/dashboard/inventory",
+    "actionType": "modal",
     "actionLabel": "Stock Entry (IN) tab",
-    "selectorStrategy": "route",
-    "selector": null,
+    "selectorStrategy": "testid",
+    "selector": "[data-testid='inventory-tab-entry']",
     "output": "actions/inventory-stock-entry-form.png",
     "requiredForPdf": true,
-    "notes": "Navigate directly to entry tab; captures the receive stock form"
+    "notes": "Click Stock Entry (IN) tab button — page uses useState not URL params"
   },
   {
     "id": "inventory-stock-issue-form",
     "module": "supply-chain",
     "page": "inventory",
-    "route": "/dashboard/inventory?tab=issue",
-    "actionType": "tab",
+    "route": "/dashboard/inventory",
+    "actionType": "modal",
     "actionLabel": "Stock Issue (OUT) tab",
-    "selectorStrategy": "route",
-    "selector": null,
+    "selectorStrategy": "testid",
+    "selector": "[data-testid='inventory-tab-issue']",
     "output": "actions/inventory-stock-issue-form.png",
     "requiredForPdf": false,
-    "notes": "Navigate directly to issue tab; captures the dispatch form"
+    "notes": "Click Stock Issue (OUT) tab button — page uses useState not URL params"
   },
   {
     "id": "inventory-stock-transfer-form",
     "module": "supply-chain",
     "page": "inventory",
-    "route": "/dashboard/inventory?tab=transfer",
-    "actionType": "tab",
+    "route": "/dashboard/inventory",
+    "actionType": "modal",
     "actionLabel": "Stock Transfer tab",
-    "selectorStrategy": "route",
-    "selector": null,
+    "selectorStrategy": "testid",
+    "selector": "[data-testid='inventory-tab-transfer']",
     "output": "actions/inventory-stock-transfer-form.png",
     "requiredForPdf": false,
-    "notes": "Navigate directly to transfer tab; captures the warehouse transfer form"
+    "notes": "Click Transfer tab button — page uses useState not URL params"
+  },
+  {
+    "id": "suppliers-add-modal",
+    "module": "supply-chain",
+    "page": "suppliers",
+    "route": "/dashboard/suppliers",
+    "actionType": "modal",
+    "actionLabel": "Add Supplier",
+    "selectorStrategy": "text",
+    "selector": "button:has-text('+ Add Supplier')",
+    "output": "actions/suppliers-add-modal.png",
+    "requiredForPdf": false,
+    "notes": "Open Add Supplier modal from /dashboard/suppliers"
   }
 ]

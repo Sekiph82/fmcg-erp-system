@@ -88,6 +88,9 @@ On success: `quantity_on_hand` increases; a RECEIPT movement is created in the l
 
 Used to issue finished goods from a warehouse. Typically used for sales order fulfilment or production material issue outside the main work order flow.
 
+![Stock Issue (OUT) form](../../../screenshots/captured/actions/inventory-stock-issue-form.png)
+*Stock Issue form for dispatching goods: product, warehouse, quantity, lot number, and reference.*
+
 ### Stock Issue Fields
 
 | Field | Label | Required | Backend field | Notes |
@@ -112,6 +115,9 @@ On success: `quantity_on_hand` decreases; an ISSUE movement is created; returns 
 **Tab:** `transfer` (blue label)
 
 Transfers stock between two warehouses of the same company.
+
+![Stock Transfer form](../../../screenshots/captured/actions/inventory-stock-transfer-form.png)
+*Transfer form: select product, source warehouse, destination warehouse, quantity, and reference.*
 
 ### Transfer Fields
 
