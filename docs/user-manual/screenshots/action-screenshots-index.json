@@ -7,7 +7,7 @@
     "actionType": "modal",
     "actionLabel": "New Recipe",
     "screenshot": "actions/recipes-new-recipe-modal.png",
-    "capturedAt": "2026-05-19T10:07:41.917Z",
+    "capturedAt": "2026-05-19T10:14:23.578Z",
     "status": "captured",
     "notes": "Open New Recipe / Formulation modal from Recipes page"
   },
@@ -19,7 +19,7 @@
     "actionType": "modal",
     "actionLabel": "Import Recipes / BOM",
     "screenshot": "actions/recipes-import-bom-modal.png",
-    "capturedAt": "2026-05-19T10:07:46.821Z",
+    "capturedAt": "2026-05-19T10:14:30.461Z",
     "status": "captured",
     "notes": "Open Bulk Import modal (tabbed: recipe headers, BOM items, process steps)"
   },
@@ -43,7 +43,7 @@
     "actionType": "modal",
     "actionLabel": "New Inspection",
     "screenshot": "actions/quality-new-inspection-modal.png",
-    "capturedAt": "2026-05-19T10:09:28.881Z",
+    "capturedAt": "2026-05-19T10:16:00.877Z",
     "status": "captured",
     "notes": "Open New QC Inspection modal from Quality page"
   },
@@ -411,7 +411,7 @@
     "actionType": "page",
     "actionLabel": "Containers tab",
     "screenshot": "tabs/logistics-containers.png",
-    "capturedAt": "2026-05-19T10:07:16.849Z",
+    "capturedAt": "2026-05-19T10:13:59.459Z",
     "status": "captured",
     "notes": "Logistics workspace — Containers tab"
   },
@@ -423,7 +423,7 @@
     "actionType": "page",
     "actionLabel": "Arrivals tab",
     "screenshot": "tabs/logistics-arrivals.png",
-    "capturedAt": "2026-05-19T10:07:21.195Z",
+    "capturedAt": "2026-05-19T10:14:03.927Z",
     "status": "captured",
     "notes": "Logistics workspace — Arrivals tab"
   },
@@ -435,7 +435,7 @@
     "actionType": "page",
     "actionLabel": "Documents tab",
     "screenshot": "tabs/logistics-documents.png",
-    "capturedAt": "2026-05-19T10:07:25.982Z",
+    "capturedAt": "2026-05-19T10:14:08.336Z",
     "status": "captured",
     "notes": "Logistics workspace — Documents tab"
   },
@@ -447,7 +447,7 @@
     "actionType": "page",
     "actionLabel": "Fleet tab",
     "screenshot": "tabs/logistics-fleet.png",
-    "capturedAt": "2026-05-19T10:07:30.292Z",
+    "capturedAt": "2026-05-19T10:14:12.630Z",
     "status": "captured",
     "notes": "Logistics workspace — Fleet tab"
   },
@@ -459,7 +459,7 @@
     "actionType": "page",
     "actionLabel": "Recipes list tab",
     "screenshot": "tabs/recipes-list.png",
-    "capturedAt": "2026-05-19T10:07:37.025Z",
+    "capturedAt": "2026-05-19T10:14:18.648Z",
     "status": "captured",
     "notes": "Recipes workspace — Recipes list tab (default)"
   },
@@ -471,7 +471,7 @@
     "actionType": "page",
     "actionLabel": "BOM / Formula tab",
     "screenshot": "tabs/bom-list.png",
-    "capturedAt": "2026-05-19T10:07:51.779Z",
+    "capturedAt": "2026-05-19T10:14:35.295Z",
     "status": "captured",
     "notes": "BOM workspace — BOM / Formula list tab (default)"
   },
@@ -483,7 +483,7 @@
     "actionType": "page",
     "actionLabel": "Substitutes tab",
     "screenshot": "tabs/bom-substitutes.png",
-    "capturedAt": "2026-05-19T10:07:56.113Z",
+    "capturedAt": "2026-05-19T10:14:39.759Z",
     "status": "captured",
     "notes": "BOM workspace — Substitutes tab"
   },
@@ -495,7 +495,7 @@
     "actionType": "page",
     "actionLabel": "Compare tab",
     "screenshot": "tabs/bom-compare.png",
-    "capturedAt": "2026-05-19T10:08:01.242Z",
+    "capturedAt": "2026-05-19T10:14:44.455Z",
     "status": "captured",
     "notes": "BOM workspace — Compare tab"
   },
@@ -507,7 +507,7 @@
     "actionType": "page",
     "actionLabel": "Plans tab",
     "screenshot": "tabs/production-plans.png",
-    "capturedAt": "2026-05-19T10:08:06.920Z",
+    "capturedAt": "2026-05-19T10:14:49.079Z",
     "status": "captured",
     "notes": "Production workspace — Plans tab (default)"
   },
@@ -519,7 +519,7 @@
     "actionType": "page",
     "actionLabel": "Work Orders tab",
     "screenshot": "tabs/production-orders.png",
-    "capturedAt": "2026-05-19T10:08:13.056Z",
+    "capturedAt": "2026-05-19T10:14:54.098Z",
     "status": "captured",
     "notes": "Production workspace — Work Orders tab"
   },
@@ -531,7 +531,7 @@
     "actionType": "page",
     "actionLabel": "Execution tab",
     "screenshot": "tabs/production-execution.png",
-    "capturedAt": "2026-05-19T10:08:19.097Z",
+    "capturedAt": "2026-05-19T10:14:59.260Z",
     "status": "captured",
     "notes": "Production workspace — Execution tab"
   },
@@ -543,7 +543,7 @@
     "actionType": "page",
     "actionLabel": "Material Flow tab",
     "screenshot": "tabs/production-material-flow.png",
-    "capturedAt": "2026-05-19T10:08:23.390Z",
+    "capturedAt": "2026-05-19T10:15:06.912Z",
     "status": "captured",
     "notes": "Production workspace — Material Flow tab"
   },
@@ -555,7 +555,7 @@
     "actionType": "page",
     "actionLabel": "Costing tab",
     "screenshot": "tabs/production-costing.png",
-    "capturedAt": "2026-05-19T10:08:29.266Z",
+    "capturedAt": "2026-05-19T10:15:11.749Z",
     "status": "captured",
     "notes": "Production workspace — Costing tab"
   },
@@ -567,7 +567,7 @@
     "actionType": "page",
     "actionLabel": "Batch / Lots tab",
     "screenshot": "tabs/production-batch-lots.png",
-    "capturedAt": "2026-05-19T10:08:35.795Z",
+    "capturedAt": "2026-05-19T10:15:18.553Z",
     "status": "captured",
     "notes": "Production workspace — Batch / Lots tab"
   },
@@ -579,7 +579,7 @@
     "actionType": "page",
     "actionLabel": "OEE tab",
     "screenshot": "tabs/production-oee.png",
-    "capturedAt": "2026-05-19T10:08:41.697Z",
+    "capturedAt": "2026-05-19T10:15:23.580Z",
     "status": "captured",
     "notes": "Production workspace — OEE tab"
   },
@@ -591,7 +591,7 @@
     "actionType": "page",
     "actionLabel": "Scheduling tab",
     "screenshot": "tabs/production-scheduling.png",
-    "capturedAt": "2026-05-19T10:08:46.610Z",
+    "capturedAt": "2026-05-19T10:15:28.381Z",
     "status": "captured",
     "notes": "Production workspace — Scheduling tab"
   },
@@ -603,7 +603,7 @@
     "actionType": "page",
     "actionLabel": "Inspections tab",
     "screenshot": "tabs/quality-inspections.png",
-    "capturedAt": "2026-05-19T10:08:54.758Z",
+    "capturedAt": "2026-05-19T10:15:33.346Z",
     "status": "captured",
     "notes": "Quality workspace — Inspections tab (default)"
   },
@@ -615,7 +615,7 @@
     "actionType": "page",
     "actionLabel": "QMS tab",
     "screenshot": "tabs/quality-qms.png",
-    "capturedAt": "2026-05-19T10:09:00.303Z",
+    "capturedAt": "2026-05-19T10:15:38.414Z",
     "status": "captured",
     "notes": "Quality workspace — QMS tab"
   },
@@ -627,7 +627,7 @@
     "actionType": "page",
     "actionLabel": "Allergen tab",
     "screenshot": "tabs/quality-allergen.png",
-    "capturedAt": "2026-05-19T10:09:07.290Z",
+    "capturedAt": "2026-05-19T10:15:43.480Z",
     "status": "captured",
     "notes": "Quality workspace — Allergen tab"
   },
@@ -639,7 +639,7 @@
     "actionType": "page",
     "actionLabel": "Certificates tab",
     "screenshot": "tabs/quality-certificates.png",
-    "capturedAt": "2026-05-19T10:09:12.823Z",
+    "capturedAt": "2026-05-19T10:15:48.769Z",
     "status": "captured",
     "notes": "Quality workspace — Certificates tab"
   },
@@ -651,7 +651,7 @@
     "actionType": "page",
     "actionLabel": "Parameters tab",
     "screenshot": "tabs/quality-parameters.png",
-    "capturedAt": "2026-05-19T10:09:22.042Z",
+    "capturedAt": "2026-05-19T10:15:55.154Z",
     "status": "captured",
     "notes": "Quality workspace — Parameters tab"
   },
@@ -663,7 +663,7 @@
     "actionType": "page",
     "actionLabel": "Shop Floor Overview tab",
     "screenshot": "tabs/shop-floor-overview.png",
-    "capturedAt": "2026-05-19T10:09:37.299Z",
+    "capturedAt": "2026-05-19T10:16:08.167Z",
     "status": "captured",
     "notes": "Shop Floor workspace — Overview tab (default)"
   },
@@ -675,7 +675,7 @@
     "actionType": "page",
     "actionLabel": "Terminal tab",
     "screenshot": "tabs/shop-floor-terminal.png",
-    "capturedAt": "2026-05-19T10:09:42.393Z",
+    "capturedAt": "2026-05-19T10:16:12.876Z",
     "status": "captured",
     "notes": "Shop Floor workspace — Terminal tab"
   },
@@ -687,7 +687,7 @@
     "actionType": "page",
     "actionLabel": "Supervisor tab",
     "screenshot": "tabs/shop-floor-supervisor.png",
-    "capturedAt": "2026-05-19T10:09:47.847Z",
+    "capturedAt": "2026-05-19T10:16:18.602Z",
     "status": "captured",
     "notes": "Shop Floor workspace — Supervisor tab"
   },
@@ -699,7 +699,7 @@
     "actionType": "page",
     "actionLabel": "Queue tab",
     "screenshot": "tabs/shop-floor-queue.png",
-    "capturedAt": "2026-05-19T10:09:52.601Z",
+    "capturedAt": "2026-05-19T10:16:23.475Z",
     "status": "captured",
     "notes": "Shop Floor workspace — Queue tab"
   },
@@ -711,7 +711,7 @@
     "actionType": "page",
     "actionLabel": "Planning Dashboard tab",
     "screenshot": "tabs/planning-dashboard.png",
-    "capturedAt": "2026-05-19T10:10:02.456Z",
+    "capturedAt": "2026-05-19T10:16:30.926Z",
     "status": "captured",
     "notes": "Planning workspace — Dashboard tab (default; key: advanced)"
   },
@@ -723,7 +723,7 @@
     "actionType": "page",
     "actionLabel": "Capacity tab",
     "screenshot": "tabs/planning-capacity.png",
-    "capturedAt": "2026-05-19T10:10:07.730Z",
+    "capturedAt": "2026-05-19T10:16:35.833Z",
     "status": "captured",
     "notes": "Planning workspace — Capacity tab"
   },
@@ -735,7 +735,7 @@
     "actionType": "page",
     "actionLabel": "MRP tab",
     "screenshot": "tabs/planning-mrp.png",
-    "capturedAt": "2026-05-19T10:10:13.524Z",
+    "capturedAt": "2026-05-19T10:16:41.340Z",
     "status": "captured",
     "notes": "Planning workspace — MRP tab"
   },
@@ -747,7 +747,7 @@
     "actionType": "page",
     "actionLabel": "MPS tab",
     "screenshot": "tabs/planning-mps.png",
-    "capturedAt": "2026-05-19T10:10:18.979Z",
+    "capturedAt": "2026-05-19T10:16:46.536Z",
     "status": "captured",
     "notes": "Planning workspace — MPS tab"
   },
@@ -759,7 +759,7 @@
     "actionType": "page",
     "actionLabel": "Schedule tab",
     "screenshot": "tabs/planning-schedule.png",
-    "capturedAt": "2026-05-19T10:10:26.519Z",
+    "capturedAt": "2026-05-19T10:16:51.866Z",
     "status": "captured",
     "notes": "Planning workspace — Schedule tab"
   },
@@ -771,7 +771,7 @@
     "actionType": "page",
     "actionLabel": "New Products tab",
     "screenshot": "tabs/npd-new-products.png",
-    "capturedAt": "2026-05-19T10:10:32.664Z",
+    "capturedAt": "2026-05-19T10:16:57.873Z",
     "status": "captured",
     "notes": "NPD workspace — New Products tab (default)"
   },
@@ -783,7 +783,7 @@
     "actionType": "page",
     "actionLabel": "GS1 and Labels tab",
     "screenshot": "tabs/compliance-gs1.png",
-    "capturedAt": "2026-05-19T10:10:41.959Z",
+    "capturedAt": "2026-05-19T10:17:03.663Z",
     "status": "captured",
     "notes": "Compliance workspace — GS1 and Labels tab (default)"
   },
@@ -795,7 +795,7 @@
     "actionType": "page",
     "actionLabel": "Regulatory Certs tab",
     "screenshot": "tabs/compliance-regulatory-certs.png",
-    "capturedAt": "2026-05-19T10:10:47.235Z",
+    "capturedAt": "2026-05-19T10:17:09.199Z",
     "status": "captured",
     "notes": "Compliance workspace — Regulatory Certs tab"
   }
