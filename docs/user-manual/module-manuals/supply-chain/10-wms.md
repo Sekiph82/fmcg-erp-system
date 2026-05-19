@@ -10,11 +10,17 @@
 
 WMS provides sub-warehouse organisation: zones within a warehouse, bin locations within zones, handling unit tracking, wave picking, and quarantine management. It sits on top of the inventory ledger — WMS locations track where within a warehouse stock physically resides.
 
+![WMS workspace](../../../screenshots/captured/025_wms.png)
+*WMS workspace overview showing zone list, location counts, and tab navigation.*
+
 ---
 
 ## Zones Tab
 
 **Tab key:** `zones`
+
+![WMS — Zones tab](../../../screenshots/captured/026_wms-zones.png)
+*Zones tab showing warehouse zones with type badges (RAW_MATERIAL, FINISHED_GOODS, QUARANTINE, etc.).*
 
 Zones are areas within a warehouse with a specific function (raw material, staging, quarantine, etc.).
 
@@ -44,6 +50,9 @@ Zones are areas within a warehouse with a specific function (raw material, stagi
 ## Locations Tab
 
 **Tab key:** `locations`
+
+![WMS — Locations tab](../../../screenshots/captured/027_wms-locations.png)
+*Locations tab showing bin locations with zone, barcode, blocked status, and active status.*
 
 Bin locations are the leaf-level storage positions within a zone (rack, shelf, bin address).
 
@@ -112,6 +121,9 @@ Wave status uses the same badge colour scheme as handling units.
 ## Quarantine Tab
 
 **Tab key:** `quarantine`
+
+![WMS — Quarantine tab](../../../screenshots/captured/028_wms-quarantine.png)
+*Quarantine tab showing quarantine action and release forms for blocking/unblocking lot stock.*
 
 Quarantine blocks specific stock from being picked or issued. It applies at the lot level within a warehouse.
 

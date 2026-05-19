@@ -10,6 +10,12 @@
 
 The Inventory module manages finished goods stock positions across all warehouses. Each stock record (position) represents a unique combination of product + warehouse + lot number. The inventory page provides four operational sub-tabs: stock summary, stock entry (receive), stock issue (dispatch), and inter-warehouse transfer.
 
+![Inventory workspace](../../../screenshots/captured/017_inventory.png)
+*Inventory workspace showing real-time stock positions across all warehouses.*
+
+![Inventory — Stock Ledger tab](../../../screenshots/captured/018_inventory-stock.png)
+*Stock Ledger showing on-hand, available, and reserved quantities with reorder alerts.*
+
 ---
 
 ## Stock Summary (Current Stock Tab)
@@ -53,6 +59,9 @@ Stock positions below their reorder point show a bold red quantity and a `⚠ lo
 **Tab:** `entry` (green label)
 
 Used to receive finished goods into a warehouse. Typically triggered after a production batch is completed or a direct purchase receipt outside the procurement module.
+
+![Stock Entry (IN) form](../../../screenshots/captured/actions/inventory-stock-entry-form.png)
+*Stock Entry form for receiving goods: product, warehouse, quantity, lot number, expiry date, and reference.*
 
 ### Stock Entry Fields
 

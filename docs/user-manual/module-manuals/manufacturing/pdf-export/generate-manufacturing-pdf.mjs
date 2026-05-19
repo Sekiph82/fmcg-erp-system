@@ -60,16 +60,40 @@ const CHAPTERS = [
   "12-compliance.md",
 ];
 
+// ── Required screenshots (PDF is NOT COMPLETE without these) ───────────────
+
+const REQUIRED_SCREENSHOTS = [
+  "057_recipes.png",
+  "actions/recipes-new-recipe-modal.png",
+  "actions/recipes-import-bom-modal.png",
+];
+
 // ── Validation ─────────────────────────────────────────────────────────────
+
+function getCapturedFileSet() {
+  if (!fs.existsSync(SCREENSHOTS_DIR)) return new Set();
+  const files = new Set();
+  function scan(dir, prefix) {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const rel = prefix ? `${prefix}/${entry.name}` : entry.name;
+      if (entry.isDirectory()) {
+        scan(path.join(dir, entry.name), rel);
+      } else if (entry.name.endsWith(".png")) {
+        files.add(rel);
+      }
+    }
+  }
+  scan(SCREENSHOTS_DIR, "");
+  return files;
+}
 
 function validateScreenshots() {
   if (!fs.existsSync(SCREENSHOTS_DIR)) {
     console.warn(`WARNING: Screenshots folder missing: ${SCREENSHOTS_DIR}`);
-    console.warn("Images in chapters will be skipped. Regenerate: cd frontend && npm run test:manual-screenshots");
-    return true; // non-fatal — PDF generates without images
+    return true;
   }
-  const pngs = fs.readdirSync(SCREENSHOTS_DIR).filter((f) => f.endsWith(".png"));
-  console.log(`Screenshots: ${pngs.length} PNGs found`);
+  const files = getCapturedFileSet();
+  console.log(`Screenshots: ${files.size} PNGs found (including subdirs)`);
   return true;
 }
 
@@ -83,20 +107,32 @@ function validateChapters() {
   return true;
 }
 
+function validateRequiredScreenshots(capturedFiles) {
+  const missing = REQUIRED_SCREENSHOTS.filter((f) => !capturedFiles.has(f));
+  if (missing.length > 0) {
+    console.error("ERROR: Required screenshots missing — PDF is NOT COMPLETE:");
+    for (const f of missing) console.error(`  MISSING: ${f}`);
+    return false;
+  }
+  console.log(`Required screenshots: ${REQUIRED_SCREENSHOTS.length}/${REQUIRED_SCREENSHOTS.length} present`);
+  return true;
+}
+
 function validateImageRefs() {
   if (!fs.existsSync(SCREENSHOTS_DIR)) {
     console.log("Image ref check skipped — no screenshots directory");
     return true;
   }
-  const capturedFiles = new Set(fs.readdirSync(SCREENSHOTS_DIR));
+  const capturedFiles = getCapturedFileSet();
   let totalRefs = 0;
+  let actionRefs = 0;
   let missingRefs = 0;
   for (const chapter of CHAPTERS) {
     const content = fs.readFileSync(path.join(MANUAL_DIR, chapter), "utf-8");
-    // Match both ../../../screenshots/captured/ and ../../screenshots/captured/ paths
     const refs = [...content.matchAll(/!\[.*?\]\(.*?screenshots\/captured\/([^)]+\.png)\)/g)];
     for (const ref of refs) {
       totalRefs++;
+      if (ref[1].startsWith("actions/")) actionRefs++;
       if (!capturedFiles.has(ref[1])) {
         console.warn(`  WARNING: Image not found: ${ref[1]} (in ${chapter})`);
         missingRefs++;
@@ -106,12 +142,12 @@ function validateImageRefs() {
   if (totalRefs === 0) {
     console.log("Image refs: 0 image references in chapters");
   } else {
-    console.log(`Image refs: ${totalRefs} total, ${totalRefs - missingRefs} valid, ${missingRefs} missing`);
+    console.log(`Image refs: ${totalRefs} total (${actionRefs} action/modal), ${totalRefs - missingRefs} valid, ${missingRefs} missing`);
   }
   if (missingRefs > 0) {
     console.warn(`WARNING: ${missingRefs} image references are broken — they will be skipped in the PDF`);
   }
-  return true; // non-fatal
+  return missingRefs === 0;
 }
 
 // ── Markdown processing ─────────────────────────────────────────────────────
@@ -119,13 +155,13 @@ function validateImageRefs() {
 function fixImagePaths(mdContent) {
   if (!fs.existsSync(SCREENSHOTS_DIR)) return mdContent;
   return mdContent.replace(
-    /!\[([^\]]*)\]\(.*?screenshots\/captured\/([^)]+\.png)\)/g,
+    /!\[([^\]]*)\]\([^)]*?screenshots\/captured\/([^)]+\.png)\)/g,
     (match, alt, filename) => {
-      const absPath = path.join(SCREENSHOTS_DIR, filename).replace(/\\/g, "/");
-      const uri = `file:///${absPath}`;
-      if (!fs.existsSync(path.join(SCREENSHOTS_DIR, filename))) {
+      const fullPath = path.join(SCREENSHOTS_DIR, filename);
+      if (!fs.existsSync(fullPath)) {
         return `<!-- image missing: ${filename} -->`;
       }
+      const uri = `file:///${fullPath.replace(/\\/g, "/")}`;
       return `![${alt}](${uri})`;
     }
   );
@@ -215,6 +251,8 @@ async function generatePdf() {
 
   validateScreenshots();
   if (!validateChapters()) process.exit(1);
+  const capturedFiles = getCapturedFileSet();
+  if (!validateRequiredScreenshots(capturedFiles)) process.exit(1);
   validateImageRefs();
 
   console.log("\nBuilding HTML...");

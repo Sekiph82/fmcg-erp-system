@@ -10,6 +10,9 @@
 
 The Advanced Planning module provides finite and infinite capacity scheduling, material requirements planning (MRP), master production scheduling (MPS), bottleneck detection, and AI-driven optimisation. It is built for production planners who need to schedule across multiple work centers, manage capacity constraints, and align production with demand.
 
+![Planning workspace](../../../screenshots/captured/058_planning.png)
+*Advanced Planning workspace showing the dashboard with scenario KPIs, scenario list, and navigation tabs.*
+
 ---
 
 ## Planning Dashboard Tab
@@ -108,6 +111,9 @@ Navigate to a specific scenario via URL: `/dashboard/planning/schedule?scenario=
 **Tab key:** `capacity`  
 **Route:** `/dashboard/planning/capacity/page`
 
+![Planning — Capacity tab](../../../screenshots/captured/061_planning-capacity.png)
+*Capacity tab showing work center load vs. available capacity for the planning horizon.*
+
 Visual capacity loading chart per work center for the planning horizon. Shows available capacity, scheduled load, and overloaded periods. Used to identify where to offload or reschedule.
 
 ---
@@ -149,6 +155,9 @@ Changeover matrix management. Defines the setup time required when switching bet
 **Tab key:** `mrp`  
 **Route:** `/dashboard/mrp/page`
 
+![Planning — MRP tab](../../../screenshots/captured/059_planning-mrp.png)
+*MRP tab showing material requirements plan output with planned orders and suggested actions.*
+
 Material Requirements Planning calculates what materials need to be ordered or produced, by when, to fulfil the demand plan.
 
 MRP run inputs:
@@ -169,6 +178,9 @@ MRP run outputs:
 
 **Tab key:** `mps`  
 **Route:** `/dashboard/mps/page`
+
+![Planning — MPS tab](../../../screenshots/captured/060_planning-mps.png)
+*Master Production Schedule tab showing the time-phased production schedule by product.*
 
 Master Production Schedule defines the production plan at the finished goods level across the planning horizon. MPS drives MRP. Planners manage MPS quantities by product and week/day.
 

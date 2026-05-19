@@ -1,67 +1,51 @@
-# Manufacturing Manual — PDF Export Report
-
-**Generated:** 2026-05-19  
-**Status:** SUCCESS
-
----
+# Manufacturing Module Manual — PDF Export Report
 
 ## Output
 
-| Item | Value |
-|------|-------|
-| PDF file | `docs/user-manual/pdf-output/FMCG-ERP-Manufacturing-Manual.pdf` |
-| File size | 0.6 MB |
+| Field | Value |
+|-------|-------|
+| File | `docs/user-manual/pdf-output/FMCG-ERP-Manufacturing-Manual.pdf` |
+| Size | 9.7 MB |
 | Chapters | 13 |
-| Images loaded | 0 / 0 |
-| Images failed | 0 |
-| Exit code | 0 |
+| Screenshots referenced | 24 |
+| Action/modal screenshots | 3 |
+| Images loaded into PDF | 24 / 24 |
+| Missing screenshots | 0 |
+| Status | **COMPLETE** |
+| Generator | `pdf-export/generate-manufacturing-pdf.mjs` |
 
-> Note: 0 images because chapter files do not yet contain embedded screenshot references. Screenshots are planned in SCREENSHOT_PLAN.md. When screenshots are embedded in chapters, re-run the generator — it validates image refs against `docs/user-manual/screenshots/captured/` before build.
+## Required Screenshots Validation
 
----
+| Screenshot | Status |
+|------------|--------|
+| `057_recipes.png` | ✓ Present |
+| `actions/recipes-new-recipe-modal.png` | ✓ Present |
+| `actions/recipes-import-bom-modal.png` | ✓ Present |
 
-## Generator
+## Chapter Screenshot Map
 
-```
-node docs/user-manual/module-manuals/manufacturing/pdf-export/generate-manufacturing-pdf.mjs
-```
+| # | File | Screenshots Embedded |
+|---|------|---------------------|
+| 0 | 00-overview.md | 0 |
+| 1 | 01-recipes.md | 3 (overview + new recipe modal + import BOM modal) |
+| 2 | 02-recipes-import.md | 1 (import BOM modal) |
+| 3 | 03-bom-formula.md | 1 (BOM workspace) |
+| 4 | 04-production-plans.md | 1 (production workspace) |
+| 5 | 05-work-orders.md | 4 (orders + execution + material flow + costing tabs) |
+| 6 | 06-batch-lots.md | 0 |
+| 7 | 07-quality-control.md | 5 (overview + new inspection + inspections + QMS + allergen) |
+| 8 | 08-shop-floor.md | 3 (overview + terminal + supervisor) |
+| 9 | 09-planning-scheduling.md | 4 (planning + capacity + MRP + MPS) |
+| 10 | 10-npd.md | 1 (NPD workspace) |
+| 11 | 11-oee-reporting.md | 0 |
+| 12 | 12-compliance.md | 2 (compliance overview + GS1 labels) |
 
-**Run from repo root.** Requires:
-- Node.js 18+
-- `cd frontend && npm install` (Playwright + marked)
-- `docs/user-manual/screenshots/captured/` with captured PNGs (optional; PDF generates without images)
+**Total: 24 real ERP UI screenshots embedded**
 
----
+## Action Screenshots Captured
 
-## Chapters Included
-
-| # | File | Title |
-|---|------|-------|
-| 1 | `00-overview.md` | Manufacturing Overview |
-| 2 | `01-recipes.md` | Recipes |
-| 3 | `02-recipes-import.md` | Recipe Bulk CSV Import |
-| 4 | `03-bom-formula.md` | BOM & Formula Management |
-| 5 | `04-production-plans.md` | Production Plans |
-| 6 | `05-work-orders.md` | Work Orders & Scheduling |
-| 7 | `06-batch-lots.md` | Batch & Lots |
-| 8 | `07-quality-control.md` | QC Inspections |
-| 9 | `08-shop-floor.md` | Shop Floor Operations |
-| 10 | `09-planning-scheduling.md` | Advanced Planning & MRP |
-| 11 | `10-npd.md` | New Product Development |
-| 12 | `11-oee-reporting.md` | OEE, Downtime & Yield Reporting |
-| 13 | `12-compliance.md` | Compliance & Labelling |
-
----
-
-## Git Status
-
-PDF output is gitignored (`docs/user-manual/pdf-output/`). The generator script and chapter source files are committed.
-
----
-
-## Next Run
-
-After screenshots are captured and embedded in chapter files, re-run:
-```powershell
-.\docs\user-manual\module-manuals\manufacturing\pdf-export\run-manufacturing-pdf.ps1
-```
+| ID | File | Status |
+|----|------|--------|
+| recipes-new-recipe-modal | `actions/recipes-new-recipe-modal.png` | Captured via Playwright |
+| recipes-import-bom-modal | `actions/recipes-import-bom-modal.png` | Captured via Playwright |
+| quality-new-inspection-modal | `actions/quality-new-inspection-modal.png` | Captured via Playwright |

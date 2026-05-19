@@ -10,6 +10,9 @@
 
 Purchase Orders (POs) are the formal external documents sent to suppliers to procure materials or products. POs can be created by converting an approved PR, or created directly. Each PO tracks receipt progress through Goods Receipt Notes (GRNs).
 
+![Procurement — Orders tab](../../../screenshots/captured/031_procurement-orders.png)
+*Purchase Orders tab showing PO list with status, supplier, and receipt progress.*
+
 ---
 
 ## PO Header Fields

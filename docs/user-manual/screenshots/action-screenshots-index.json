@@ -1,0 +1,86 @@
+[
+  {
+    "id": "recipes-new-recipe-modal",
+    "module": "manufacturing",
+    "page": "recipes",
+    "route": "/dashboard/recipes",
+    "actionType": "modal",
+    "actionLabel": "New Recipe",
+    "screenshot": "actions/recipes-new-recipe-modal.png",
+    "capturedAt": "2026-05-19T07:16:14.188Z",
+    "status": "captured",
+    "notes": "Open New Recipe / Formulation modal from Recipes page"
+  },
+  {
+    "id": "recipes-import-bom-modal",
+    "module": "manufacturing",
+    "page": "recipes",
+    "route": "/dashboard/recipes",
+    "actionType": "modal",
+    "actionLabel": "Import Recipes / BOM",
+    "screenshot": "actions/recipes-import-bom-modal.png",
+    "capturedAt": "2026-05-19T07:16:19.138Z",
+    "status": "captured",
+    "notes": "Open Bulk Import modal (tabbed: recipe headers, BOM items, process steps)"
+  },
+  {
+    "id": "procurement-new-pr-modal",
+    "module": "supply-chain",
+    "page": "procurement",
+    "route": "/dashboard/procurement",
+    "actionType": "modal",
+    "actionLabel": "New PR",
+    "screenshot": "actions/procurement-new-pr-modal.png",
+    "capturedAt": "2026-05-19T07:16:24.651Z",
+    "status": "captured",
+    "notes": "Open New Purchase Requisition modal from Procurement page"
+  },
+  {
+    "id": "quality-new-inspection-modal",
+    "module": "manufacturing",
+    "page": "quality",
+    "route": "/dashboard/quality",
+    "actionType": "modal",
+    "actionLabel": "New Inspection",
+    "screenshot": "actions/quality-new-inspection-modal.png",
+    "capturedAt": "2026-05-19T07:16:29.714Z",
+    "status": "captured",
+    "notes": "Open New QC Inspection modal from Quality page"
+  },
+  {
+    "id": "inventory-stock-entry-form",
+    "module": "supply-chain",
+    "page": "inventory",
+    "route": "/dashboard/inventory?tab=entry",
+    "actionType": "tab",
+    "actionLabel": "Stock Entry (IN) tab",
+    "screenshot": "actions/inventory-stock-entry-form.png",
+    "capturedAt": "2026-05-19T07:16:33.957Z",
+    "status": "captured",
+    "notes": "Navigate directly to entry tab; captures the receive stock form"
+  },
+  {
+    "id": "inventory-stock-issue-form",
+    "module": "supply-chain",
+    "page": "inventory",
+    "route": "/dashboard/inventory?tab=issue",
+    "actionType": "tab",
+    "actionLabel": "Stock Issue (OUT) tab",
+    "screenshot": "actions/inventory-stock-issue-form.png",
+    "capturedAt": "2026-05-19T07:16:38.438Z",
+    "status": "captured",
+    "notes": "Navigate directly to issue tab; captures the dispatch form"
+  },
+  {
+    "id": "inventory-stock-transfer-form",
+    "module": "supply-chain",
+    "page": "inventory",
+    "route": "/dashboard/inventory?tab=transfer",
+    "actionType": "tab",
+    "actionLabel": "Stock Transfer tab",
+    "screenshot": "actions/inventory-stock-transfer-form.png",
+    "capturedAt": "2026-05-19T07:16:43.820Z",
+    "status": "captured",
+    "notes": "Navigate directly to transfer tab; captures the warehouse transfer form"
+  }
+]

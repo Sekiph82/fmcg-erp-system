@@ -5,30 +5,48 @@
 | Field | Value |
 |-------|-------|
 | File | `docs/user-manual/pdf-output/FMCG-ERP-Supply-Chain-Manual.pdf` |
-| Size | 0.5 MB |
+| Size | 7.8 MB |
 | Chapters | 12 |
-| Images loaded | 0 / 0 (no image refs in chapters yet) |
+| Screenshots referenced | 19 |
+| Action/modal screenshots | 2 |
+| Images loaded into PDF | 19 / 19 |
+| Missing screenshots | 0 |
+| Status | **COMPLETE** |
 | Generator | `pdf-export/generate-supply-chain-pdf.mjs` |
 
-## Chapter List
+## Required Screenshots Validation
 
-| # | File | Topic |
-|---|------|-------|
-| 0 | 00-overview.md | Module overview, subsystems, permissions |
-| 1 | 01-purchase-requisitions.md | PR creation, approval, convert to PO |
-| 2 | 02-purchase-orders.md | PO lifecycle, lines, GRN, payment |
-| 3 | 03-rfq.md | RFQ, blanket agreements, reorder, suggestions |
-| 4 | 04-deliveries.md | GRN creation, posting, import shipment |
-| 5 | 05-suppliers.md | Supplier master, AVL, portal, performance |
-| 6 | 06-blanket-reorder.md | Reference stub → 03-rfq.md |
-| 7 | 07-inventory-stock.md | Stock ledger, entry, issue, transfer, adjust |
-| 8 | 08-movements.md | Movement types, cycle count, shelf life, valuation |
-| 9 | 09-warehouses.md | Warehouse master, types, scoping |
-| 10 | 10-wms.md | Zones, locations, handling units, pick waves, quarantine |
-| 11 | 11-logistics.md | Import shipments, KPIs, status values, tabs |
+| Screenshot | Status |
+|------------|--------|
+| `029_procurement.png` | ✓ Present |
+| `017_inventory.png` | ✓ Present |
+| `actions/procurement-new-pr-modal.png` | ✓ Present |
+| `actions/inventory-stock-entry-form.png` | ✓ Present |
 
-## Notes
+## Chapter Screenshot Map
 
-- Screenshots not yet embedded (captured folder present, 140 PNGs; no refs in supply-chain chapters)
-- To embed screenshots: add `![alt](../../../screenshots/captured/supply-chain/filename.png)` to chapter files, then re-run generator
-- PDF is gitignored — not committed to repo
+| # | File | Screenshots Embedded |
+|---|------|---------------------|
+| 0 | 00-overview.md | 0 |
+| 1 | 01-purchase-requisitions.md | 2 (PR list + new PR modal) |
+| 2 | 02-purchase-orders.md | 1 (orders tab) |
+| 3 | 03-rfq.md | 1 (RFQ tab) |
+| 4 | 04-deliveries.md | 1 (deliveries/GRN tab) |
+| 5 | 05-suppliers.md | 1 (supplier list) |
+| 6 | 06-blanket-reorder.md | 0 (reference stub) |
+| 7 | 07-inventory-stock.md | 3 (inventory + stock ledger + stock entry form) |
+| 8 | 08-movements.md | 3 (movements + cycle count + shelf life) |
+| 9 | 09-warehouses.md | 1 (warehouse list) |
+| 10 | 10-wms.md | 4 (WMS + zones + locations + quarantine) |
+| 11 | 11-logistics.md | 2 (logistics overview + shipments) |
+
+**Total: 19 real ERP UI screenshots embedded**
+
+## Action Screenshots Captured
+
+| ID | File | Status |
+|----|------|--------|
+| procurement-new-pr-modal | `actions/procurement-new-pr-modal.png` | Captured via Playwright |
+| inventory-stock-entry-form | `actions/inventory-stock-entry-form.png` | Captured via Playwright |
+| inventory-stock-issue-form | `actions/inventory-stock-issue-form.png` | Captured via Playwright |
+| inventory-stock-transfer-form | `actions/inventory-stock-transfer-form.png` | Captured via Playwright |

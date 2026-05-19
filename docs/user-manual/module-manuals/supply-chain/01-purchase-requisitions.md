@@ -10,6 +10,12 @@
 
 A Purchase Requisition (PR) is an internal request to procure materials or products. PRs are raised by any department and go through an approval workflow before being converted into Purchase Orders. The system enforces scope-based access — users may be restricted to PRs within their company, branch, cost centre, or department.
 
+![Procurement — Purchase Requests tab](../../../screenshots/captured/030_procurement-requests.png)
+*Purchase Requests tab showing PR list with status badges and approval controls.*
+
+![New Purchase Requisition modal](../../../screenshots/captured/actions/procurement-new-pr-modal.png)
+*New PR form with line items, department, required date, and preferred supplier fields.*
+
 ---
 
 ## PR List

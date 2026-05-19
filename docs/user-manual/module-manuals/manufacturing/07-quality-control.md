@@ -11,6 +11,9 @@
 
 The Quality module manages all QC inspections across three inspection contexts: incoming raw materials, in-process production checks, and finished goods release. Each inspection records test results, a pass/fail decision, and optional quarantine actions.
 
+![Quality workspace](../../../screenshots/captured/062_quality.png)
+*Quality workspace showing the Inspections tab with dashboard counters and inspection list.*
+
 ---
 
 ## Inspection List
@@ -51,6 +54,9 @@ Critical failures are highlighted in bold red. These indicate a safety or regula
 ## Creating a QC Inspection
 
 **Button:** `+ New Inspection` (`data-testid="quality-create-inspection-button"`)
+
+![New QC Inspection modal](../../../screenshots/captured/actions/quality-new-inspection-modal.png)
+*New QC Inspection form. The Supplier and Material fields only appear when qc_type is INCOMING.*
 
 ### New QC Inspection Modal Fields
 
@@ -142,6 +148,15 @@ The detail page provides:
 ---
 
 ## Other Quality Tabs
+
+![Quality — Inspections tab](../../../screenshots/captured/063_quality-inspections.png)
+*Quality Inspections tab with pending and completed inspection list.*
+
+![Quality — QMS tab](../../../screenshots/captured/064_quality-qms.png)
+*QMS tab for non-conformance reports, CAPA, and SOPs.*
+
+![Quality — Allergen tab](../../../screenshots/captured/065_quality-allergen.png)
+*Allergen management tab showing allergen declarations and cross-contamination matrix.*
 
 | Tab | Content |
 |-----|---------|

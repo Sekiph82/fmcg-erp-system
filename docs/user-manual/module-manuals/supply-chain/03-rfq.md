@@ -10,6 +10,9 @@
 
 A Request for Quotation (RFQ) is sent to one or more suppliers to obtain pricing before committing to a Purchase Order. Suppliers respond with their quoted prices; the procurement team compares responses and awards the business to the preferred supplier, which then creates a PO.
 
+![Procurement — RFQ tab](../../../screenshots/captured/032_procurement-rfq.png)
+*RFQ tab showing active quotation requests with supplier response status.*
+
 ---
 
 ## RFQ Workflow
