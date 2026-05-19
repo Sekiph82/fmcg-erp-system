@@ -283,6 +283,36 @@ export const HELP_REGISTRY: HelpEntry[] = [
   },
 
   // ── Production ────────────────────────────────────────────────────────────
+  // ── Recipes ───────────────────────────────────────────────────────────────
+  {
+    id: "recipes",
+    title: "Recipes",
+    route: "/dashboard/recipes",
+    path: "/dashboard/recipes",
+    role: "production",
+    module: "production",
+    description: "Product formulation management: ingredients (BOM items), process parameters, and recipe lifecycle.",
+    fullReferencePath: `${FR}/05_PRODUCTION.md`,
+    quickGuidePath: `${KE}/02_PRODUCTION_USER_MANUAL.md`,
+    moduleManualPath: "module-manuals/manufacturing/01-recipes.md",
+    keywords: ["recipes", "formulation", "ingredients", "process parameters", "bom items"],
+  },
+
+  // ── NPD ───────────────────────────────────────────────────────────────────
+  {
+    id: "npd",
+    title: "New Product Development",
+    route: "/dashboard/npd",
+    path: "/dashboard/npd",
+    role: "production",
+    module: "production",
+    description: "Stage-gate NPD pipeline: idea, concept, development, pilot, launch for new FMCG products.",
+    fullReferencePath: `${FR}/05_PRODUCTION.md`,
+    moduleManualPath: "module-manuals/manufacturing/10-npd.md",
+    keywords: ["npd", "new product", "innovation", "stage gate", "formulation trial", "launch"],
+  },
+
+  // ── Production ────────────────────────────────────────────────────────────
   {
     id: "production",
     title: "Production",
@@ -294,6 +324,7 @@ export const HELP_REGISTRY: HelpEntry[] = [
     fullReferencePath: `${FR}/05_PRODUCTION.md`,
     quickGuidePath: `${KE}/02_PRODUCTION_USER_MANUAL.md`,
     screenshotFile: "039_production.png",
+    moduleManualPath: "module-manuals/manufacturing/04-production-plans.md",
     keywords: ["production", "manufacturing", "orders", "batches"],
   },
   {
@@ -308,6 +339,7 @@ export const HELP_REGISTRY: HelpEntry[] = [
     fullReferencePath: `${FR}/05_PRODUCTION.md`,
     quickGuidePath: `${KE}/02_PRODUCTION_USER_MANUAL.md`,
     screenshotFile: "040_production-orders.png",
+    moduleManualPath: "module-manuals/manufacturing/05-work-orders.md",
     keywords: ["production orders", "mo", "manufacturing order", "batch"],
   },
   {
@@ -322,6 +354,7 @@ export const HELP_REGISTRY: HelpEntry[] = [
     fullReferencePath: `${FR}/05_PRODUCTION.md`,
     quickGuidePath: `${KE}/02_PRODUCTION_USER_MANUAL.md`,
     screenshotFile: "041_production-execution.png",
+    moduleManualPath: "module-manuals/manufacturing/05-work-orders.md",
     keywords: ["execution", "floor", "operations", "real-time"],
   },
   {
@@ -336,6 +369,7 @@ export const HELP_REGISTRY: HelpEntry[] = [
     fullReferencePath: `${FR}/05_PRODUCTION.md`,
     quickGuidePath: `${KE}/02_PRODUCTION_USER_MANUAL.md`,
     screenshotFile: "042_production-material-flow.png",
+    moduleManualPath: "module-manuals/manufacturing/05-work-orders.md",
     keywords: ["material flow", "components", "consumption", "issuance"],
   },
   {
@@ -350,6 +384,7 @@ export const HELP_REGISTRY: HelpEntry[] = [
     fullReferencePath: `${FR}/05_PRODUCTION.md`,
     quickGuidePath: `${KE}/02_PRODUCTION_USER_MANUAL.md`,
     screenshotFile: "043_production-costing.png",
+    moduleManualPath: "module-manuals/manufacturing/11-oee-reporting.md",
     keywords: ["costing", "cost", "cogs", "overhead", "labour"],
   },
   {
@@ -363,6 +398,7 @@ export const HELP_REGISTRY: HelpEntry[] = [
     description: "Overall Equipment Effectiveness metrics: availability, performance, quality.",
     fullReferencePath: `${FR}/05_PRODUCTION.md`,
     screenshotFile: "046_production-oee.png",
+    moduleManualPath: "module-manuals/manufacturing/11-oee-reporting.md",
     keywords: ["oee", "equipment effectiveness", "availability", "performance"],
   },
   {
@@ -376,6 +412,7 @@ export const HELP_REGISTRY: HelpEntry[] = [
     fullReferencePath: `${FR}/05_PRODUCTION.md`,
     quickGuidePath: `${KE}/02_PRODUCTION_USER_MANUAL.md`,
     screenshotFile: "052_shop-floor.png",
+    moduleManualPath: "module-manuals/manufacturing/08-shop-floor.md",
     keywords: ["shop floor", "operator", "terminal", "supervisor"],
   },
   {
@@ -389,6 +426,7 @@ export const HELP_REGISTRY: HelpEntry[] = [
     fullReferencePath: `${FR}/05_PRODUCTION.md`,
     quickGuidePath: `${KE}/02_PRODUCTION_USER_MANUAL.md`,
     screenshotFile: "055_bom.png",
+    moduleManualPath: "module-manuals/manufacturing/03-bom-formula.md",
     keywords: ["bom", "bill of materials", "formula", "recipe structure"],
   },
   {
@@ -401,6 +439,7 @@ export const HELP_REGISTRY: HelpEntry[] = [
     description: "MRP/MPS planning: generate production and procurement requirements.",
     fullReferencePath: `${FR}/05_PRODUCTION.md`,
     screenshotFile: "059_planning.png",
+    moduleManualPath: "module-manuals/manufacturing/09-planning-scheduling.md",
     keywords: ["planning", "mrp", "mps", "demand", "capacity"],
   },
 
@@ -416,6 +455,7 @@ export const HELP_REGISTRY: HelpEntry[] = [
     fullReferencePath: `${FR}/06_QUALITY_AND_COMPLIANCE.md`,
     quickGuidePath: `${KE}/05_QUALITY_CONTROL_USER_MANUAL.md`,
     screenshotFile: "063_quality.png",
+    moduleManualPath: "module-manuals/manufacturing/07-quality-control.md",
     keywords: ["quality", "qc", "inspection", "qa"],
   },
   {
@@ -430,6 +470,7 @@ export const HELP_REGISTRY: HelpEntry[] = [
     fullReferencePath: `${FR}/06_QUALITY_AND_COMPLIANCE.md`,
     quickGuidePath: `${KE}/05_QUALITY_CONTROL_USER_MANUAL.md`,
     screenshotFile: "064_quality-inspections.png",
+    moduleManualPath: "module-manuals/manufacturing/07-quality-control.md",
     keywords: ["inspections", "incoming", "sampling", "pass/fail"],
   },
   {
@@ -444,6 +485,7 @@ export const HELP_REGISTRY: HelpEntry[] = [
     fullReferencePath: `${FR}/06_QUALITY_AND_COMPLIANCE.md`,
     quickGuidePath: `${KE}/05_QUALITY_CONTROL_USER_MANUAL.md`,
     screenshotFile: "065_quality-qms.png",
+    moduleManualPath: "module-manuals/manufacturing/07-quality-control.md",
     keywords: ["qms", "non-conformance", "ncr", "capa", "corrective action"],
   },
   {
@@ -458,6 +500,7 @@ export const HELP_REGISTRY: HelpEntry[] = [
     fullReferencePath: `${FR}/06_QUALITY_AND_COMPLIANCE.md`,
     quickGuidePath: `${KE}/05_QUALITY_CONTROL_USER_MANUAL.md`,
     screenshotFile: "066_quality-allergen.png",
+    moduleManualPath: "module-manuals/manufacturing/07-quality-control.md",
     keywords: ["allergen", "cross contamination", "gluten", "nuts", "dairy"],
   },
   {
@@ -471,6 +514,7 @@ export const HELP_REGISTRY: HelpEntry[] = [
     fullReferencePath: `${FR}/06_QUALITY_AND_COMPLIANCE.md`,
     quickGuidePath: `${KE}/05_QUALITY_CONTROL_USER_MANUAL.md`,
     screenshotFile: "069_compliance.png",
+    moduleManualPath: "module-manuals/manufacturing/12-compliance.md",
     keywords: ["compliance", "regulatory", "kebs", "gs1", "barcode"],
   },
 

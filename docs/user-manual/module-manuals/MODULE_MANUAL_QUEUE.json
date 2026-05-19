@@ -1,0 +1,97 @@
+{
+  "version": "1.0",
+  "description": "Per-module deep manual production queue. One module per run. Each manual covers all subpages and tabs with field-level documentation derived from actual code inspection.",
+  "modules": [
+    {
+      "id": "manufacturing",
+      "label": "Manufacturing",
+      "routes": [
+        "/dashboard/recipes",
+        "/dashboard/bom",
+        "/dashboard/production",
+        "/dashboard/planning",
+        "/dashboard/shop-floor",
+        "/dashboard/npd",
+        "/dashboard/quality",
+        "/dashboard/compliance"
+      ],
+      "chapters": 13,
+      "status": "complete",
+      "manual_dir": "docs/user-manual/module-manuals/manufacturing",
+      "pdf_generator": "docs/user-manual/module-manuals/manufacturing/pdf-export/generate-manufacturing-pdf.mjs",
+      "completed_date": "2026-05-19"
+    },
+    {
+      "id": "supply-chain",
+      "label": "Supply Chain",
+      "routes": [
+        "/dashboard/procurement",
+        "/dashboard/inventory",
+        "/dashboard/warehouses",
+        "/dashboard/wms",
+        "/dashboard/logistics"
+      ],
+      "chapters": null,
+      "status": "pending",
+      "manual_dir": "docs/user-manual/module-manuals/supply-chain",
+      "pdf_generator": null,
+      "completed_date": null
+    },
+    {
+      "id": "finance",
+      "label": "Finance & Payroll",
+      "routes": [
+        "/dashboard/finance",
+        "/dashboard/hr",
+        "/dashboard/payroll"
+      ],
+      "chapters": null,
+      "status": "pending",
+      "manual_dir": "docs/user-manual/module-manuals/finance",
+      "pdf_generator": null,
+      "completed_date": null
+    },
+    {
+      "id": "sales",
+      "label": "Sales & Distribution",
+      "routes": [
+        "/dashboard/sales",
+        "/dashboard/pos",
+        "/dashboard/logistics"
+      ],
+      "chapters": null,
+      "status": "pending",
+      "manual_dir": "docs/user-manual/module-manuals/sales",
+      "pdf_generator": null,
+      "completed_date": null
+    },
+    {
+      "id": "admin",
+      "label": "Admin & Master Data",
+      "routes": [
+        "/dashboard/admin",
+        "/dashboard/products",
+        "/dashboard/materials",
+        "/dashboard/suppliers"
+      ],
+      "chapters": null,
+      "status": "pending",
+      "manual_dir": "docs/user-manual/module-manuals/admin",
+      "pdf_generator": null,
+      "completed_date": null
+    },
+    {
+      "id": "analytics-ai",
+      "label": "Analytics & AI",
+      "routes": [
+        "/dashboard/analytics",
+        "/dashboard/ai-hub"
+      ],
+      "chapters": null,
+      "status": "pending",
+      "manual_dir": "docs/user-manual/module-manuals/analytics-ai",
+      "pdf_generator": null,
+      "completed_date": null
+    }
+  ]
+}

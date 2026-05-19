@@ -10,5 +10,6 @@ export interface HelpEntry {
   fullReferencePath: string;
   quickGuidePath?: string;
   screenshotFile?: string;
+  moduleManualPath?: string;
   keywords: string[];
 }
