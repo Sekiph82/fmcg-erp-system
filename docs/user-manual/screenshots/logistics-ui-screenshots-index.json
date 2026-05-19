@@ -1,0 +1,37 @@
+{
+  "logistics-overview-tab": {
+    "status": "captured",
+    "path": "module-ui/logistics/overview/overview-tab.png",
+    "capturedAt": "2026-05-19T17:28:19.158Z"
+  },
+  "logistics-shipments-tab": {
+    "status": "captured",
+    "path": "module-ui/logistics/shipments/shipments-tab.png",
+    "capturedAt": "2026-05-19T17:28:25.346Z"
+  },
+  "logistics-new-shipment-modal": {
+    "status": "captured",
+    "path": "module-ui/logistics/shipments/new-shipment-modal.png",
+    "capturedAt": "2026-05-19T17:28:33.130Z"
+  },
+  "logistics-containers-tab": {
+    "status": "captured",
+    "path": "module-ui/logistics/containers/containers-tab.png",
+    "capturedAt": "2026-05-19T17:28:42.277Z"
+  },
+  "logistics-arrivals-tab": {
+    "status": "captured",
+    "path": "module-ui/logistics/arrivals/arrivals-tab.png",
+    "capturedAt": "2026-05-19T17:28:48.993Z"
+  },
+  "logistics-documents-tab": {
+    "status": "captured",
+    "path": "module-ui/logistics/documents/documents-tab.png",
+    "capturedAt": "2026-05-19T17:28:56.292Z"
+  },
+  "logistics-fleet-tab": {
+    "status": "captured",
+    "path": "module-ui/logistics/fleet/fleet-tab.png",
+    "capturedAt": "2026-05-19T17:29:02.965Z"
+  }
+}

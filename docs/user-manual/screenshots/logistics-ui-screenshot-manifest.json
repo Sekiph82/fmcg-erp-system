@@ -1,0 +1,73 @@
+{
+  "module": "logistics",
+  "base_url": "http://localhost:3000",
+  "default_wait_ms": 2000,
+  "screenshots": [
+    {
+      "id": "logistics-overview-tab",
+      "label": "Logistics Overview Tab",
+      "output": "module-ui/logistics/overview/overview-tab.png",
+      "steps": [
+        { "type": "goto", "url": "/dashboard/logistics?tab=overview" },
+        { "type": "wait", "ms": 2500 }
+      ]
+    },
+    {
+      "id": "logistics-shipments-tab",
+      "label": "Shipments Tab",
+      "output": "module-ui/logistics/shipments/shipments-tab.png",
+      "steps": [
+        { "type": "goto", "url": "/dashboard/logistics?tab=shipments" },
+        { "type": "wait", "ms": 2500 }
+      ]
+    },
+    {
+      "id": "logistics-new-shipment-modal",
+      "label": "New Shipment Modal",
+      "output": "module-ui/logistics/shipments/new-shipment-modal.png",
+      "steps": [
+        { "type": "goto", "url": "/dashboard/logistics?tab=shipments" },
+        { "type": "wait", "ms": 2000 },
+        { "type": "clickRole", "role": "button", "name": "New Shipment" },
+        { "type": "wait", "ms": 800 },
+        { "type": "evaluate", "script": "document.querySelectorAll('select').forEach(s => { if(s.options.length > 1){ s.size = s.options.length; s.style.height='auto'; s.style.overflow='visible'; } })" }
+      ]
+    },
+    {
+      "id": "logistics-containers-tab",
+      "label": "Containers Tab",
+      "output": "module-ui/logistics/containers/containers-tab.png",
+      "steps": [
+        { "type": "goto", "url": "/dashboard/logistics?tab=containers" },
+        { "type": "wait", "ms": 2500 }
+      ]
+    },
+    {
+      "id": "logistics-arrivals-tab",
+      "label": "Arrivals Tab",
+      "output": "module-ui/logistics/arrivals/arrivals-tab.png",
+      "steps": [
+        { "type": "goto", "url": "/dashboard/logistics?tab=arrivals" },
+        { "type": "wait", "ms": 2500 }
+      ]
+    },
+    {
+      "id": "logistics-documents-tab",
+      "label": "Documents Tab",
+      "output": "module-ui/logistics/documents/documents-tab.png",
+      "steps": [
+        { "type": "goto", "url": "/dashboard/logistics?tab=documents" },
+        { "type": "wait", "ms": 2500 }
+      ]
+    },
+    {
+      "id": "logistics-fleet-tab",
+      "label": "Fleet Tab",
+      "output": "module-ui/logistics/fleet/fleet-tab.png",
+      "steps": [
+        { "type": "goto", "url": "/dashboard/logistics?tab=fleet" },
+        { "type": "wait", "ms": 2500 }
+      ]
+    }
+  ]
+}
