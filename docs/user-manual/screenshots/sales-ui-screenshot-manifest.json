@@ -1,0 +1,470 @@
+[
+  {
+    "id": "sales-tab-overview",
+    "module": "sales",
+    "page": "sales",
+    "route": "/dashboard/sales",
+    "type": "workspace_tab",
+    "label": "Sales Overview tab",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/sales?tab=overview" }
+    ],
+    "waitFor": "Sales & Distribution",
+    "output": "module-ui/sales/sales/overview-tab.png",
+    "caption": "Sales Overview showing KPI tiles, overdue alerts, and recent orders list",
+    "status": "pending"
+  },
+  {
+    "id": "sales-tab-orders",
+    "module": "sales",
+    "page": "sales",
+    "route": "/dashboard/sales",
+    "type": "workspace_tab",
+    "label": "Sales Orders tab",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/sales?tab=orders" }
+    ],
+    "waitFor": "Sales Orders",
+    "output": "module-ui/sales/sales/orders-tab.png",
+    "caption": "Sales Orders tab showing orders list with status badges and filter",
+    "status": "pending"
+  },
+  {
+    "id": "sales-tab-invoices",
+    "module": "sales",
+    "page": "sales",
+    "route": "/dashboard/sales",
+    "type": "workspace_tab",
+    "label": "Invoices tab",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/sales?tab=invoices" }
+    ],
+    "waitFor": null,
+    "output": "module-ui/sales/sales/invoices-tab.png",
+    "caption": "Sales Invoices tab showing invoice list with payment status badges",
+    "status": "pending"
+  },
+  {
+    "id": "sales-tab-customers",
+    "module": "sales",
+    "page": "sales",
+    "route": "/dashboard/sales",
+    "type": "workspace_tab",
+    "label": "Customers tab",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/sales?tab=customers" }
+    ],
+    "waitFor": "Customers",
+    "output": "module-ui/sales/sales/customers-tab.png",
+    "caption": "Customers tab showing customer master list with channel badges",
+    "status": "pending"
+  },
+  {
+    "id": "sales-tab-quotes",
+    "module": "sales",
+    "page": "sales",
+    "route": "/dashboard/sales",
+    "type": "workspace_tab",
+    "label": "Quotes tab",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/sales?tab=quotes" }
+    ],
+    "waitFor": null,
+    "output": "module-ui/sales/sales/quotes-tab.png",
+    "caption": "Sales Quotes tab showing quote list with validity and conversion status",
+    "status": "pending"
+  },
+  {
+    "id": "sales-tab-shipments",
+    "module": "sales",
+    "page": "sales",
+    "route": "/dashboard/sales",
+    "type": "workspace_tab",
+    "label": "Shipments tab",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/sales?tab=shipments" }
+    ],
+    "waitFor": null,
+    "output": "module-ui/sales/sales/shipments-tab.png",
+    "caption": "Shipments tab showing pick, pack, and dispatch board",
+    "status": "pending"
+  },
+  {
+    "id": "sales-tab-delivery",
+    "module": "sales",
+    "page": "sales",
+    "route": "/dashboard/sales",
+    "type": "workspace_tab",
+    "label": "Delivery tab",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/sales?tab=delivery" }
+    ],
+    "waitFor": null,
+    "output": "module-ui/sales/sales/delivery-tab.png",
+    "caption": "Delivery tab showing delivery scheduling and route management",
+    "status": "pending"
+  },
+  {
+    "id": "sales-tab-collections",
+    "module": "sales",
+    "page": "sales",
+    "route": "/dashboard/sales",
+    "type": "workspace_tab",
+    "label": "Collections tab",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/sales?tab=collections" }
+    ],
+    "waitFor": null,
+    "output": "module-ui/sales/sales/collections-tab.png",
+    "caption": "Collections tab showing cash collection records and reconciliation status",
+    "status": "pending"
+  },
+  {
+    "id": "sales-tab-returns",
+    "module": "sales",
+    "page": "sales",
+    "route": "/dashboard/sales",
+    "type": "workspace_tab",
+    "label": "Returns tab",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/sales?tab=returns" }
+    ],
+    "waitFor": null,
+    "output": "module-ui/sales/sales/returns-tab.png",
+    "caption": "Returns tab showing sales return records with reason codes and credit note status",
+    "status": "pending"
+  },
+  {
+    "id": "sales-tab-pricing",
+    "module": "sales",
+    "page": "sales",
+    "route": "/dashboard/sales",
+    "type": "workspace_tab",
+    "label": "Pricing tab",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/sales?tab=pricing" }
+    ],
+    "waitFor": "Pricing",
+    "output": "module-ui/sales/sales/pricing-tab.png",
+    "caption": "Pricing tab showing pricing rules and promotions with tiered level badges",
+    "status": "pending"
+  },
+  {
+    "id": "sales-tab-price-lists",
+    "module": "sales",
+    "page": "sales",
+    "route": "/dashboard/sales",
+    "type": "workspace_tab",
+    "label": "Price Lists tab",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/sales?tab=price-lists" }
+    ],
+    "waitFor": null,
+    "output": "module-ui/sales/sales/price-lists-tab.png",
+    "caption": "Price Lists tab showing configurable price lists by customer group",
+    "status": "pending"
+  },
+  {
+    "id": "sales-tab-dynamic-pricing",
+    "module": "sales",
+    "page": "sales",
+    "route": "/dashboard/sales",
+    "type": "workspace_tab",
+    "label": "Dynamic Pricing tab",
+    "requiredForPdf": true,
+    "priority": 2,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/sales?tab=dynamic-pricing" }
+    ],
+    "waitFor": null,
+    "output": "module-ui/sales/sales/dynamic-pricing-tab.png",
+    "caption": "Dynamic Pricing tab showing rule-based automatic price adjustments",
+    "status": "pending"
+  },
+  {
+    "id": "sales-tab-contracts",
+    "module": "sales",
+    "page": "sales",
+    "route": "/dashboard/sales",
+    "type": "workspace_tab",
+    "label": "Contracts tab",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/sales?tab=contracts" }
+    ],
+    "waitFor": null,
+    "output": "module-ui/sales/sales/contracts-tab.png",
+    "caption": "Contracts tab showing commercial agreements list within the sales workspace",
+    "status": "pending"
+  },
+  {
+    "id": "sales-tab-recurring",
+    "module": "sales",
+    "page": "sales",
+    "route": "/dashboard/sales",
+    "type": "workspace_tab",
+    "label": "Recurring Orders tab",
+    "requiredForPdf": true,
+    "priority": 2,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/sales?tab=recurring" }
+    ],
+    "waitFor": null,
+    "output": "module-ui/sales/sales/recurring-tab.png",
+    "caption": "Recurring Orders tab showing scheduled repeat order templates",
+    "status": "pending"
+  },
+  {
+    "id": "sales-tab-commissions",
+    "module": "sales",
+    "page": "sales",
+    "route": "/dashboard/sales",
+    "type": "workspace_tab",
+    "label": "Commissions tab",
+    "requiredForPdf": true,
+    "priority": 2,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/sales?tab=commissions" }
+    ],
+    "waitFor": null,
+    "output": "module-ui/sales/sales/commissions-tab.png",
+    "caption": "Commissions tab showing sales rep commission calculations and payout status",
+    "status": "pending"
+  },
+  {
+    "id": "sales-tab-secondary",
+    "module": "sales",
+    "page": "sales",
+    "route": "/dashboard/sales",
+    "type": "workspace_tab",
+    "label": "Secondary Sales tab",
+    "requiredForPdf": true,
+    "priority": 2,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/sales?tab=secondary" }
+    ],
+    "waitFor": null,
+    "output": "module-ui/sales/sales/secondary-tab.png",
+    "caption": "Secondary Sales tab showing distributor sell-through tracking",
+    "status": "pending"
+  },
+  {
+    "id": "sales-tab-van-sales",
+    "module": "sales",
+    "page": "sales",
+    "route": "/dashboard/sales",
+    "type": "workspace_tab",
+    "label": "Van Sales tab",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/sales?tab=van-sales" }
+    ],
+    "waitFor": null,
+    "output": "module-ui/sales/sales/van-sales-tab.png",
+    "caption": "Van Sales tab showing mobile sales route management and van inventory",
+    "status": "pending"
+  },
+  {
+    "id": "sales-tab-distributors",
+    "module": "sales",
+    "page": "sales",
+    "route": "/dashboard/sales",
+    "type": "workspace_tab",
+    "label": "Distributors tab",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/sales?tab=distributors" }
+    ],
+    "waitFor": null,
+    "output": "module-ui/sales/sales/distributors-tab.png",
+    "caption": "Distributors tab showing distributor network management",
+    "status": "pending"
+  },
+  {
+    "id": "sales-tab-field-sales",
+    "module": "sales",
+    "page": "sales",
+    "route": "/dashboard/sales",
+    "type": "workspace_tab",
+    "label": "Field Sales tab",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/sales?tab=field-sales" }
+    ],
+    "waitFor": null,
+    "output": "module-ui/sales/sales/field-sales-tab.png",
+    "caption": "Field Sales tab showing sales rep territory and visit management",
+    "status": "pending"
+  },
+  {
+    "id": "sales-tab-margin",
+    "module": "sales",
+    "page": "sales",
+    "route": "/dashboard/sales",
+    "type": "workspace_tab",
+    "label": "Margin tab",
+    "requiredForPdf": true,
+    "priority": 2,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/sales?tab=margin" }
+    ],
+    "waitFor": null,
+    "output": "module-ui/sales/sales/margin-tab.png",
+    "caption": "Margin tab showing product and customer profitability analysis",
+    "status": "pending"
+  },
+  {
+    "id": "sales-tab-portal",
+    "module": "sales",
+    "page": "sales",
+    "route": "/dashboard/sales",
+    "type": "workspace_tab",
+    "label": "Customer Portal tab",
+    "requiredForPdf": true,
+    "priority": 2,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/sales?tab=portal" }
+    ],
+    "waitFor": null,
+    "output": "module-ui/sales/sales/portal-tab.png",
+    "caption": "Customer Portal tab showing self-service portal configuration",
+    "status": "pending"
+  },
+  {
+    "id": "sales-tab-reports",
+    "module": "sales",
+    "page": "sales",
+    "route": "/dashboard/sales",
+    "type": "workspace_tab",
+    "label": "Sales Reports tab",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/sales?tab=reports" }
+    ],
+    "waitFor": null,
+    "output": "module-ui/sales/sales/reports-tab.png",
+    "caption": "Reports tab showing sales analytics and performance reports",
+    "status": "pending"
+  },
+  {
+    "id": "sales-modal-new-order",
+    "module": "sales",
+    "page": "sales",
+    "route": "/dashboard/sales",
+    "type": "button_modal",
+    "label": "New Sales Order modal",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/sales?tab=orders" },
+      { "type": "clickRole", "role": "button", "name": "New Order" }
+    ],
+    "waitFor": "Create Sales Order",
+    "output": "module-ui/sales/orders/new-order-modal.png",
+    "caption": "Create Sales Order modal showing header fields and order lines section",
+    "status": "pending"
+  },
+  {
+    "id": "sales-dropdown-order-currency",
+    "module": "sales",
+    "page": "sales",
+    "route": "/dashboard/sales",
+    "type": "import_dialog",
+    "label": "Order Currency dropdown",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/sales?tab=orders" },
+      { "type": "clickRole", "role": "button", "name": "New Order" },
+      { "type": "wait", "ms": 600 },
+      { "type": "evaluate", "selector": "document.querySelectorAll('select').forEach(s => { if(s.options.length > 1){ s.size = s.options.length; s.style.height='auto'; s.style.overflow='visible'; } })" }
+    ],
+    "waitFor": "Create Sales Order",
+    "output": "module-ui/sales/orders/order-dropdowns.png",
+    "caption": "New Order form with Currency dropdown expanded showing USD, EUR, GBP, JPY, CNY, SGD options",
+    "status": "pending"
+  },
+  {
+    "id": "sales-modal-new-customer",
+    "module": "sales",
+    "page": "sales",
+    "route": "/dashboard/sales",
+    "type": "button_modal",
+    "label": "New Customer modal",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/sales?tab=customers" },
+      { "type": "clickRole", "role": "button", "name": "Add Customer" }
+    ],
+    "waitFor": "New Customer",
+    "output": "module-ui/sales/customers/new-customer-modal.png",
+    "caption": "New Customer modal showing code, name, channel, payment terms, and currency fields",
+    "status": "pending"
+  },
+  {
+    "id": "sales-dropdown-customer-channel",
+    "module": "sales",
+    "page": "sales",
+    "route": "/dashboard/sales",
+    "type": "import_dialog",
+    "label": "Customer Channel dropdown",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/sales?tab=customers" },
+      { "type": "clickRole", "role": "button", "name": "Add Customer" },
+      { "type": "wait", "ms": 600 },
+      { "type": "evaluate", "selector": "document.querySelectorAll('select').forEach(s => { if(s.options.length > 1){ s.size = s.options.length; s.style.height='auto'; s.style.overflow='visible'; } })" }
+    ],
+    "waitFor": "New Customer",
+    "output": "module-ui/sales/customers/customer-dropdowns.png",
+    "caption": "New Customer modal with Channel dropdown expanded showing RETAIL, WHOLESALE, DISTRIBUTOR, DIRECT, EXPORT, ONLINE options",
+    "status": "pending"
+  },
+  {
+    "id": "sales-modal-new-pricing-rule",
+    "module": "sales",
+    "page": "sales",
+    "route": "/dashboard/sales",
+    "type": "button_modal",
+    "label": "New Pricing Rule modal",
+    "requiredForPdf": true,
+    "priority": 1,
+    "openSteps": [
+      { "type": "goto", "url": "/dashboard/sales?tab=pricing" },
+      { "type": "clickRole", "role": "button", "name": "Pricing Rule" }
+    ],
+    "waitFor": null,
+    "output": "module-ui/sales/pricing/new-pricing-rule-modal.png",
+    "caption": "New Pricing Rule modal showing product, pricing level, price, currency, and effective date fields",
+    "status": "pending"
+  }
+]
