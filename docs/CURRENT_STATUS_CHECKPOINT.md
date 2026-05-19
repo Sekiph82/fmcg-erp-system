@@ -1,6 +1,6 @@
 # Current Status Checkpoint
 
-**Date:** 2026-05-19 (updated after cleanup pass)  
+**Date:** 2026-05-19 (updated after Full Reference PDF pipeline)  
 **Branch:** main  
 **Working tree:** CLEAN after this commit
 
@@ -11,9 +11,8 @@
 | Item | Value |
 |------|-------|
 | Branch | main |
-| Latest commit (pre-this) | `51b4f7e` Auto-sync: docs/CURRENT_STATUS_CHECKPOINT.md |
+| Latest commit (pre-this) | `eb535ce` docs(status): update manual checkpoint and audit script status |
 | Remote | origin → github.com/Sekiph82/fmcg-erp-system.git |
-| Uncommitted changes | None after this commit |
 
 ---
 
@@ -23,7 +22,6 @@
 |------|--------|
 | pytest | **482/482 PASSED** |
 | Warnings | 72 (deprecation/duplicate op ID — non-blocking) |
-| Duration | ~24s |
 
 ---
 
@@ -43,7 +41,6 @@
 | Docker daemon | NOT running (local) |
 | Dev config | VALID |
 | Prod config | VALID |
-| Container health | N/A (daemon down) |
 
 ---
 
@@ -57,9 +54,8 @@
 | capture=true routes | 140 |
 | Captured PNGs | **140/140** |
 | Screenshot folder size | ~72 MB (gitignored) |
-| "Screenshot pending" in content | **0** |
+| Pending placeholders | 0 |
 | Broken image refs | 0 |
-| UNCAPTURED report | **COMPLETE** (fixed in this pass) |
 
 ---
 
@@ -68,25 +64,24 @@
 | Item | Value |
 |------|-------|
 | Kenya Go-Live PDF | **EXISTS** — `pdf-output/Kenya-Go-Live-ERP-Training-Manual.pdf` |
-| PDF size | 17.5 MB |
-| Images in PDF | 45/45 loaded, 0 failed |
-| Est. pages | ~80–100 A4 |
-| pdf-output gitignored? | Yes — local only |
-| Full-reference PDF | NOT generated yet |
+| Kenya PDF size | 17.5 MB — 45/45 images |
+| Full Reference PDF | **EXISTS** — `pdf-output/FMCG-ERP-Full-Reference-Manual.pdf` |
+| Full Reference PDF size | 9.7 MB — 24/24 images |
+| Screenshots embedded | **Yes — 24/24 loaded, 0 failed** |
+| pdf-output gitignored | Yes — local only |
+| Pipeline source committed | Yes |
 
 ---
 
-## Audit Scripts
+## Audit Scripts (run from repo root)
 
-All 4 scripts exist at `scripts/` in repo root. Previous MODULE_NOT_FOUND errors were caused by running from `frontend/` directory.
-
-| Script | Location | Last Result |
-|--------|----------|-------------|
-| `audit-page-count.js` | `scripts/` | D FULL_DUPLICATE_UI: **0** |
-| `check-route-redirects.js` | `scripts/` | **No redirect drift** |
-| `check-workspace-tabs.js` | `scripts/` | **All workspace tab checks passed** |
-| `erp-health-audit.py` | `scripts/` | **0 HIGH findings** (500 total, all low) |
-| `manual:validate-routes` | `frontend/scripts/` | **PASSED** (0 errors, 1 known warn) |
+| Script | Last Result |
+|--------|-------------|
+| `audit-page-count.js` | D FULL_DUPLICATE_UI: **0** |
+| `check-route-redirects.js` | **No redirect drift** |
+| `check-workspace-tabs.js` | **All workspace tab checks passed** |
+| `erp-health-audit.py` | **0 HIGH findings** |
+| `manual:validate-routes` | **PASSED** (0 errors, 1 known warn) |
 
 ---
 
@@ -94,12 +89,12 @@ All 4 scripts exist at `scripts/` in repo root. Previous MODULE_NOT_FOUND errors
 
 | Risk | Severity | Notes |
 |------|----------|-------|
-| Full-reference PDF not generated | Low | Next optional task |
 | Docker daemon down | Info | Local only; compose config valid |
 | Duplicate Operation ID (webhooks) | Low | FastAPI non-blocking warning |
+| PDF output gitignored | Info | Intentional — regenerate locally when needed |
 
 ---
 
 ## Recommended Next Task
 
-Build Full-Reference PDF export pipeline — mirror `pdf-export/generate-kenya-pdf.mjs` for all 15 full-reference manual files. Expected output: `pdf-output/FMCG-ERP-Full-Reference-Manual.pdf`.
+In-app help integration — surface manual content as contextual help within ERP UI.
