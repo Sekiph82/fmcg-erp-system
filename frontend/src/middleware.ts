@@ -151,9 +151,20 @@ const REDIRECTS: Record<string, { p: string; t?: string; d?: string }> = {
   "/dashboard/payroll":                         { p: "/dashboard/hr", t: "payroll" },
 };
 
+/** Real standalone pages — skip prefix-redirect so the page renders instead of redirecting */
+const BYPASS_PREFIX_REDIRECT = new Set([
+  "/dashboard/mps/planning-board",
+  "/dashboard/mps/capacity",
+  "/dashboard/mps/campaigns",
+  "/dashboard/mps/whatif",
+]);
+
 function matchRedirect(pathname: string): { p: string; t?: string; d?: string } | null {
   // Exact match
   if (REDIRECTS[pathname]) return REDIRECTS[pathname];
+
+  // Real standalone pages must not be caught by parent prefix redirects
+  if (BYPASS_PREFIX_REDIRECT.has(pathname)) return null;
 
   // Prefix match — longest prefix wins
   const parts = pathname.split("/");

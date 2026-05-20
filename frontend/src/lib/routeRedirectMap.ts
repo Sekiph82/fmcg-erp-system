@@ -312,10 +312,7 @@ export const EXACT_REDIRECTS: Record<string, RedirectTarget> = {
   "/dashboard/mrp/forecast/accuracy":           { pathname: "/dashboard/planning", tab: "mrp" },
   "/dashboard/mrp/forecast/correlation":        { pathname: "/dashboard/planning", tab: "mrp" },
   "/dashboard/mps":                             { pathname: "/dashboard/planning", tab: "mps" },
-  "/dashboard/mps/planning-board":              { pathname: "/dashboard/planning", tab: "mps" },
-  "/dashboard/mps/capacity":                    { pathname: "/dashboard/planning", tab: "mps" },
-  "/dashboard/mps/campaigns":                   { pathname: "/dashboard/planning", tab: "mps" },
-  "/dashboard/mps/whatif":                      { pathname: "/dashboard/planning", tab: "mps" },
+  // Note: mps/planning-board, mps/capacity, mps/campaigns, mps/whatif are real standalone pages — no redirect
   // NOTE: /dashboard/planning itself is the workspace — no self-redirect (would loop).
   // Child routes redirect to specific tabs:
   "/dashboard/planning/schedule":               { pathname: "/dashboard/planning", tab: "advanced" },

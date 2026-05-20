@@ -1,0 +1,2954 @@
+[
+  {
+    "route": "/dashboard/allergen/ai",
+    "file": "frontend/src/app/dashboard/allergen/ai/page.tsx",
+    "target": "/dashboard/quality?tab=allergen",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/allergen/allergens",
+    "file": "frontend/src/app/dashboard/allergen/allergens/page.tsx",
+    "target": "/dashboard/quality?tab=allergen",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/allergen/change-logs",
+    "file": "frontend/src/app/dashboard/allergen/change-logs/page.tsx",
+    "target": "/dashboard/quality?tab=allergen",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/allergen/cleaning",
+    "file": "frontend/src/app/dashboard/allergen/cleaning/page.tsx",
+    "target": "/dashboard/quality?tab=allergen",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/allergen/label-readiness",
+    "file": "frontend/src/app/dashboard/allergen/label-readiness/page.tsx",
+    "target": "/dashboard/quality?tab=allergen",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/allergen/material-profiles",
+    "file": "frontend/src/app/dashboard/allergen/material-profiles/page.tsx",
+    "target": "/dashboard/quality?tab=allergen",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/allergen/nutrition",
+    "file": "frontend/src/app/dashboard/allergen/nutrition/page.tsx",
+    "target": "/dashboard/quality?tab=allergen",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/allergen/product-allergens",
+    "file": "frontend/src/app/dashboard/allergen/product-allergens/page.tsx",
+    "target": "/dashboard/quality?tab=allergen",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/allergen/product-nutrition",
+    "file": "frontend/src/app/dashboard/allergen/product-nutrition/page.tsx",
+    "target": "/dashboard/quality?tab=allergen",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/allergen/reports",
+    "file": "frontend/src/app/dashboard/allergen/reports/page.tsx",
+    "target": "/dashboard/quality?tab=allergen",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/allergen/rollup",
+    "file": "frontend/src/app/dashboard/allergen/rollup/page.tsx",
+    "target": "/dashboard/quality?tab=allergen",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/appraisals/ai",
+    "file": "frontend/src/app/dashboard/appraisals/ai/page.tsx",
+    "target": "/dashboard/hr?tab=appraisals",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/appraisals/development-plans",
+    "file": "frontend/src/app/dashboard/appraisals/development-plans/page.tsx",
+    "target": "/dashboard/hr?tab=appraisals",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/appraisals/hr-review",
+    "file": "frontend/src/app/dashboard/appraisals/hr-review/page.tsx",
+    "target": "/dashboard/hr?tab=appraisals",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/appraisals/manager-queue",
+    "file": "frontend/src/app/dashboard/appraisals/manager-queue/page.tsx",
+    "target": "/dashboard/hr?tab=appraisals",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/appraisals/periods",
+    "file": "frontend/src/app/dashboard/appraisals/periods/page.tsx",
+    "target": "/dashboard/hr?tab=appraisals",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/appraisals/records/new",
+    "file": "frontend/src/app/dashboard/appraisals/records/new/page.tsx",
+    "target": "/dashboard/hr?tab=appraisals&drawer=create",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/appraisals/records",
+    "file": "frontend/src/app/dashboard/appraisals/records/page.tsx",
+    "target": "/dashboard/hr?tab=appraisals",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/appraisals/reports",
+    "file": "frontend/src/app/dashboard/appraisals/reports/page.tsx",
+    "target": "/dashboard/hr?tab=appraisals",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/appraisals/self-review",
+    "file": "frontend/src/app/dashboard/appraisals/self-review/page.tsx",
+    "target": "/dashboard/hr?tab=appraisals",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/appraisals/templates",
+    "file": "frontend/src/app/dashboard/appraisals/templates/page.tsx",
+    "target": "/dashboard/hr?tab=appraisals",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/bank-reconciliation/accounts",
+    "file": "frontend/src/app/dashboard/bank-reconciliation/accounts/page.tsx",
+    "target": "/dashboard/finance?tab=bank-recon",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/bank-reconciliation/ai",
+    "file": "frontend/src/app/dashboard/bank-reconciliation/ai/page.tsx",
+    "target": "/dashboard/finance?tab=bank-recon",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/bank-reconciliation/balance",
+    "file": "frontend/src/app/dashboard/bank-reconciliation/balance/page.tsx",
+    "target": "/dashboard/finance?tab=bank-recon",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/bank-reconciliation/import",
+    "file": "frontend/src/app/dashboard/bank-reconciliation/import/page.tsx",
+    "target": "/dashboard/finance?tab=bank-recon",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/bank-reconciliation/mpesa",
+    "file": "frontend/src/app/dashboard/bank-reconciliation/mpesa/page.tsx",
+    "target": "/dashboard/finance?tab=bank-recon",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/bank-reconciliation/open-items",
+    "file": "frontend/src/app/dashboard/bank-reconciliation/open-items/page.tsx",
+    "target": "/dashboard/finance?tab=bank-recon",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/bank-reconciliation/reports",
+    "file": "frontend/src/app/dashboard/bank-reconciliation/reports/page.tsx",
+    "target": "/dashboard/finance?tab=bank-recon",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/bank-reconciliation/rules",
+    "file": "frontend/src/app/dashboard/bank-reconciliation/rules/page.tsx",
+    "target": "/dashboard/finance?tab=bank-recon",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/bank-reconciliation/statements",
+    "file": "frontend/src/app/dashboard/bank-reconciliation/statements/page.tsx",
+    "target": "/dashboard/finance?tab=bank-recon",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/bank-reconciliation/statements/[id]",
+    "file": "frontend/src/app/dashboard/bank-reconciliation/statements/[id]/page.tsx",
+    "target": "/dashboard/finance?tab=bank-recon&id=${encodeURIComponent(params.id)}&drawer=detail",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/brand-assets/[id]",
+    "file": "frontend/src/app/dashboard/brand-assets/[id]/page.tsx",
+    "target": "/dashboard/quality?tab=brand-assets&id=${encodeURIComponent(params.id)}&drawer=detail",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/calendar/ai",
+    "file": "frontend/src/app/dashboard/calendar/ai/page.tsx",
+    "target": "/dashboard/communication?tab=calendar",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/calendar/availability",
+    "file": "frontend/src/app/dashboard/calendar/availability/page.tsx",
+    "target": "/dashboard/communication?tab=calendar",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/calendar/bookings",
+    "file": "frontend/src/app/dashboard/calendar/bookings/page.tsx",
+    "target": "/dashboard/communication?tab=calendar",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/calendar/events",
+    "file": "frontend/src/app/dashboard/calendar/events/page.tsx",
+    "target": "/dashboard/communication?tab=calendar",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/calendar/new-event",
+    "file": "frontend/src/app/dashboard/calendar/new-event/page.tsx",
+    "target": "/dashboard/communication?tab=calendar",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/calendar/reports",
+    "file": "frontend/src/app/dashboard/calendar/reports/page.tsx",
+    "target": "/dashboard/communication?tab=calendar",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/calendar/resources",
+    "file": "frontend/src/app/dashboard/calendar/resources/page.tsx",
+    "target": "/dashboard/communication?tab=calendar",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/calendar/shifts",
+    "file": "frontend/src/app/dashboard/calendar/shifts/page.tsx",
+    "target": "/dashboard/communication?tab=calendar",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/calendar/view",
+    "file": "frontend/src/app/dashboard/calendar/view/page.tsx",
+    "target": "/dashboard/communication?tab=calendar",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/chatter/ai",
+    "file": "frontend/src/app/dashboard/chatter/ai/page.tsx",
+    "target": "/dashboard/communication?tab=chatter",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/chatter/feed",
+    "file": "frontend/src/app/dashboard/chatter/feed/page.tsx",
+    "target": "/dashboard/communication?tab=chatter",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/chatter/reports",
+    "file": "frontend/src/app/dashboard/chatter/reports/page.tsx",
+    "target": "/dashboard/communication?tab=chatter",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/chatter/search",
+    "file": "frontend/src/app/dashboard/chatter/search/page.tsx",
+    "target": "/dashboard/communication?tab=chatter",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/chatter/threads",
+    "file": "frontend/src/app/dashboard/chatter/threads/page.tsx",
+    "target": "/dashboard/communication?tab=chatter",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/commissions/ai",
+    "file": "frontend/src/app/dashboard/commissions/ai/page.tsx",
+    "target": "/dashboard/sales?tab=commissions",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/commissions/payouts",
+    "file": "frontend/src/app/dashboard/commissions/payouts/page.tsx",
+    "target": "/dashboard/sales?tab=commissions",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/commissions/reports",
+    "file": "frontend/src/app/dashboard/commissions/reports/page.tsx",
+    "target": "/dashboard/sales?tab=commissions",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/commissions/rules",
+    "file": "frontend/src/app/dashboard/commissions/rules/page.tsx",
+    "target": "/dashboard/sales?tab=commissions",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/commissions/targets",
+    "file": "frontend/src/app/dashboard/commissions/targets/page.tsx",
+    "target": "/dashboard/sales?tab=commissions",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/commissions/transactions",
+    "file": "frontend/src/app/dashboard/commissions/transactions/page.tsx",
+    "target": "/dashboard/sales?tab=commissions",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/containers/outstanding",
+    "file": "frontend/src/app/dashboard/containers/outstanding/page.tsx",
+    "target": "/dashboard/logistics?tab=containers",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/containers",
+    "file": "frontend/src/app/dashboard/containers/page.tsx",
+    "target": "/dashboard/logistics?tab=containers",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/contracts/ai",
+    "file": "frontend/src/app/dashboard/contracts/ai/page.tsx",
+    "target": "/dashboard/sales?tab=contracts",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/contracts/expiring",
+    "file": "frontend/src/app/dashboard/contracts/expiring/page.tsx",
+    "target": "/dashboard/sales?tab=contracts",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/contracts/list",
+    "file": "frontend/src/app/dashboard/contracts/list/page.tsx",
+    "target": "/dashboard/sales?tab=contracts",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/contracts/list/[id]",
+    "file": "frontend/src/app/dashboard/contracts/list/[id]/page.tsx",
+    "target": "/dashboard/sales?tab=contracts&id=${encodeURIComponent(params.id)}&drawer=detail",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/contracts/new",
+    "file": "frontend/src/app/dashboard/contracts/new/page.tsx",
+    "target": "/dashboard/sales?tab=contracts&drawer=create",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/contracts/performance",
+    "file": "frontend/src/app/dashboard/contracts/performance/page.tsx",
+    "target": "/dashboard/sales?tab=contracts",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/contracts/reports",
+    "file": "frontend/src/app/dashboard/contracts/reports/page.tsx",
+    "target": "/dashboard/sales?tab=contracts",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/copacking",
+    "file": "frontend/src/app/dashboard/copacking/page.tsx",
+    "target": "/dashboard/procurement?tab=subcontracting",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/crm/ai",
+    "file": "frontend/src/app/dashboard/crm/ai/page.tsx",
+    "target": "/dashboard/crm?tab=overview",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/crm/overdue",
+    "file": "frontend/src/app/dashboard/crm/overdue/page.tsx",
+    "target": "/dashboard/crm?tab=pipeline",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/crm/qualify",
+    "file": "frontend/src/app/dashboard/crm/qualify/page.tsx",
+    "target": "/dashboard/crm?tab=leads",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/crm/records/[id]",
+    "file": "frontend/src/app/dashboard/crm/records/[id]/page.tsx",
+    "target": "/dashboard/crm?tab=overview&id=${encodeURIComponent(params.id)}&drawer=detail",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/custom-fields/ai",
+    "file": "frontend/src/app/dashboard/custom-fields/ai/page.tsx",
+    "target": "/dashboard/admin?tab=custom-fields",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/custom-fields/fields",
+    "file": "frontend/src/app/dashboard/custom-fields/fields/page.tsx",
+    "target": "/dashboard/admin?tab=custom-fields",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/custom-fields/form-builder",
+    "file": "frontend/src/app/dashboard/custom-fields/form-builder/page.tsx",
+    "target": "/dashboard/admin?tab=custom-fields",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/custom-fields/new-field",
+    "file": "frontend/src/app/dashboard/custom-fields/new-field/page.tsx",
+    "target": "/dashboard/admin?tab=custom-fields&drawer=create",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/custom-fields/reports",
+    "file": "frontend/src/app/dashboard/custom-fields/reports/page.tsx",
+    "target": "/dashboard/admin?tab=custom-fields",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/custom-fields/values",
+    "file": "frontend/src/app/dashboard/custom-fields/values/page.tsx",
+    "target": "/dashboard/admin?tab=custom-fields",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/custom-fields/workflow-rules",
+    "file": "frontend/src/app/dashboard/custom-fields/workflow-rules/page.tsx",
+    "target": "/dashboard/admin?tab=custom-fields",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/custom-fields/[id]",
+    "file": "frontend/src/app/dashboard/custom-fields/[id]/page.tsx",
+    "target": "/dashboard/admin?tab=custom-fields&id=${encodeURIComponent(params.id)}&drawer=detail",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/cycle-count/entries",
+    "file": "frontend/src/app/dashboard/cycle-count/entries/page.tsx",
+    "target": "/dashboard/inventory?tab=cycle-count",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/cycle-count/plans",
+    "file": "frontend/src/app/dashboard/cycle-count/plans/page.tsx",
+    "target": "/dashboard/inventory?tab=cycle-count",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/cycle-count/reports",
+    "file": "frontend/src/app/dashboard/cycle-count/reports/page.tsx",
+    "target": "/dashboard/inventory?tab=cycle-count",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/cycle-count/tasks",
+    "file": "frontend/src/app/dashboard/cycle-count/tasks/page.tsx",
+    "target": "/dashboard/inventory?tab=cycle-count",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/cycle-count/variances",
+    "file": "frontend/src/app/dashboard/cycle-count/variances/page.tsx",
+    "target": "/dashboard/inventory?tab=cycle-count",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/developer/graphql",
+    "file": "frontend/src/app/dashboard/developer/graphql/page.tsx",
+    "target": "/dashboard/integrations?tab=developer",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/developer/keys",
+    "file": "frontend/src/app/dashboard/developer/keys/page.tsx",
+    "target": "/dashboard/integrations?tab=developer",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/dimensions/ai",
+    "file": "frontend/src/app/dashboard/dimensions/ai/page.tsx",
+    "target": "/dashboard/finance?tab=dimensions",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/dimensions/allocation-run",
+    "file": "frontend/src/app/dashboard/dimensions/allocation-run/page.tsx",
+    "target": "/dashboard/finance?tab=dimensions",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/dimensions/allocations",
+    "file": "frontend/src/app/dashboard/dimensions/allocations/page.tsx",
+    "target": "/dashboard/finance?tab=dimensions",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/dimensions/completeness",
+    "file": "frontend/src/app/dashboard/dimensions/completeness/page.tsx",
+    "target": "/dashboard/finance?tab=dimensions",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/dimensions/cost-centers",
+    "file": "frontend/src/app/dashboard/dimensions/cost-centers/page.tsx",
+    "target": "/dashboard/finance?tab=dimensions",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/dimensions/defaults",
+    "file": "frontend/src/app/dashboard/dimensions/defaults/page.tsx",
+    "target": "/dashboard/finance?tab=dimensions",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/dimensions/reclassify",
+    "file": "frontend/src/app/dashboard/dimensions/reclassify/page.tsx",
+    "target": "/dashboard/finance?tab=dimensions",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/dimensions/types",
+    "file": "frontend/src/app/dashboard/dimensions/types/page.tsx",
+    "target": "/dashboard/finance?tab=dimensions",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/dimensions/validation",
+    "file": "frontend/src/app/dashboard/dimensions/validation/page.tsx",
+    "target": "/dashboard/finance?tab=dimensions",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/dimensions/values",
+    "file": "frontend/src/app/dashboard/dimensions/values/page.tsx",
+    "target": "/dashboard/finance?tab=dimensions",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/documents/new",
+    "file": "frontend/src/app/dashboard/documents/new/page.tsx",
+    "target": "/dashboard/documents?drawer=create",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/documents/[id]",
+    "file": "frontend/src/app/dashboard/documents/[id]/page.tsx",
+    "target": "/dashboard/documents?id=${encodeURIComponent(params.id)}&drawer=detail",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/dunning/aging",
+    "file": "frontend/src/app/dashboard/dunning/aging/page.tsx",
+    "target": "/dashboard/finance?tab=dunning",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/dunning/ai",
+    "file": "frontend/src/app/dashboard/dunning/ai/page.tsx",
+    "target": "/dashboard/finance?tab=dunning",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/dunning/cases",
+    "file": "frontend/src/app/dashboard/dunning/cases/page.tsx",
+    "target": "/dashboard/finance?tab=dunning",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/dunning/cases/[id]",
+    "file": "frontend/src/app/dashboard/dunning/cases/[id]/page.tsx",
+    "target": "/dashboard/finance?tab=dunning&id=${encodeURIComponent(params.id)}&drawer=detail",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/dunning/credit-holds",
+    "file": "frontend/src/app/dashboard/dunning/credit-holds/page.tsx",
+    "target": "/dashboard/finance?tab=dunning",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/dunning/policies",
+    "file": "frontend/src/app/dashboard/dunning/policies/page.tsx",
+    "target": "/dashboard/finance?tab=dunning",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/dunning/reports",
+    "file": "frontend/src/app/dashboard/dunning/reports/page.tsx",
+    "target": "/dashboard/finance?tab=dunning",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/dunning/templates",
+    "file": "frontend/src/app/dashboard/dunning/templates/page.tsx",
+    "target": "/dashboard/finance?tab=dunning",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/dunning/workqueue",
+    "file": "frontend/src/app/dashboard/dunning/workqueue/page.tsx",
+    "target": "/dashboard/finance?tab=dunning",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/esg/activities",
+    "file": "frontend/src/app/dashboard/esg/activities/page.tsx",
+    "target": "/dashboard/utility-management?tab=esg",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/esg/carbon",
+    "file": "frontend/src/app/dashboard/esg/carbon/page.tsx",
+    "target": "/dashboard/utility-management?tab=esg",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/esg/factors",
+    "file": "frontend/src/app/dashboard/esg/factors/page.tsx",
+    "target": "/dashboard/utility-management?tab=esg",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/esg/intelligence",
+    "file": "frontend/src/app/dashboard/esg/intelligence/page.tsx",
+    "target": "/dashboard/utility-management?tab=esg",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/esg/reports",
+    "file": "frontend/src/app/dashboard/esg/reports/page.tsx",
+    "target": "/dashboard/utility-management?tab=esg",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/esg/targets",
+    "file": "frontend/src/app/dashboard/esg/targets/page.tsx",
+    "target": "/dashboard/utility-management?tab=esg",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/ess/admin",
+    "file": "frontend/src/app/dashboard/ess/admin/page.tsx",
+    "target": "/dashboard/hr?tab=ess",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/ess/ai",
+    "file": "frontend/src/app/dashboard/ess/ai/page.tsx",
+    "target": "/dashboard/hr?tab=ess",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/ess/attendance",
+    "file": "frontend/src/app/dashboard/ess/attendance/page.tsx",
+    "target": "/dashboard/hr?tab=ess",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/ess/documents",
+    "file": "frontend/src/app/dashboard/ess/documents/page.tsx",
+    "target": "/dashboard/hr?tab=ess",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/ess/leave",
+    "file": "frontend/src/app/dashboard/ess/leave/page.tsx",
+    "target": "/dashboard/hr?tab=ess",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/ess/notifications",
+    "file": "frontend/src/app/dashboard/ess/notifications/page.tsx",
+    "target": "/dashboard/hr?tab=ess",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/ess/profile",
+    "file": "frontend/src/app/dashboard/ess/profile/page.tsx",
+    "target": "/dashboard/hr?tab=ess",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/ess/requests",
+    "file": "frontend/src/app/dashboard/ess/requests/page.tsx",
+    "target": "/dashboard/hr?tab=ess",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/expenses/advances",
+    "file": "frontend/src/app/dashboard/expenses/advances/page.tsx",
+    "target": "/dashboard/hr?tab=expenses",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/expenses/ai",
+    "file": "frontend/src/app/dashboard/expenses/ai/page.tsx",
+    "target": "/dashboard/hr?tab=expenses",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/expenses/approval",
+    "file": "frontend/src/app/dashboard/expenses/approval/page.tsx",
+    "target": "/dashboard/hr?tab=expenses",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/expenses/categories",
+    "file": "frontend/src/app/dashboard/expenses/categories/page.tsx",
+    "target": "/dashboard/hr?tab=expenses",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/expenses/claims/new",
+    "file": "frontend/src/app/dashboard/expenses/claims/new/page.tsx",
+    "target": "/dashboard/hr?tab=expenses&drawer=create",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/expenses/claims",
+    "file": "frontend/src/app/dashboard/expenses/claims/page.tsx",
+    "target": "/dashboard/hr?tab=expenses",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/expenses/claims/[id]",
+    "file": "frontend/src/app/dashboard/expenses/claims/[id]/page.tsx",
+    "target": "/dashboard/hr?tab=expenses&id=${encodeURIComponent(params.id)}&drawer=detail",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/expenses/policies",
+    "file": "frontend/src/app/dashboard/expenses/policies/page.tsx",
+    "target": "/dashboard/hr?tab=expenses",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/expenses/receipt-ocr",
+    "file": "frontend/src/app/dashboard/expenses/receipt-ocr/page.tsx",
+    "target": "/dashboard/hr?tab=expenses",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/expenses/reimbursement",
+    "file": "frontend/src/app/dashboard/expenses/reimbursement/page.tsx",
+    "target": "/dashboard/hr?tab=expenses",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/expenses/reports",
+    "file": "frontend/src/app/dashboard/expenses/reports/page.tsx",
+    "target": "/dashboard/hr?tab=expenses",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/finance/accounting/balance-sheet",
+    "file": "frontend/src/app/dashboard/finance/accounting/balance-sheet/page.tsx",
+    "target": "/dashboard/finance?tab=accounting",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/finance/accounting/chart-of-accounts",
+    "file": "frontend/src/app/dashboard/finance/accounting/chart-of-accounts/page.tsx",
+    "target": "/dashboard/finance?tab=accounting",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/finance/accounting/controls",
+    "file": "frontend/src/app/dashboard/finance/accounting/controls/page.tsx",
+    "target": "/dashboard/finance?tab=accounting",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/finance/accounting/customers-ledger",
+    "file": "frontend/src/app/dashboard/finance/accounting/customers-ledger/page.tsx",
+    "target": "/dashboard/finance?tab=accounting",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/finance/accounting/general-ledger",
+    "file": "frontend/src/app/dashboard/finance/accounting/general-ledger/page.tsx",
+    "target": "/dashboard/finance?tab=accounting",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/finance/accounting/journal",
+    "file": "frontend/src/app/dashboard/finance/accounting/journal/page.tsx",
+    "target": "/dashboard/finance?tab=accounting",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/finance/accounting/payments",
+    "file": "frontend/src/app/dashboard/finance/accounting/payments/page.tsx",
+    "target": "/dashboard/finance?tab=accounting",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/finance/accounting/period-closing",
+    "file": "frontend/src/app/dashboard/finance/accounting/period-closing/page.tsx",
+    "target": "/dashboard/finance?tab=accounting",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/finance/accounting/profit-loss",
+    "file": "frontend/src/app/dashboard/finance/accounting/profit-loss/page.tsx",
+    "target": "/dashboard/finance?tab=accounting",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/finance/accounting/purchase-invoices",
+    "file": "frontend/src/app/dashboard/finance/accounting/purchase-invoices/page.tsx",
+    "target": "/dashboard/finance?tab=accounting",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/finance/accounting/sales-invoices",
+    "file": "frontend/src/app/dashboard/finance/accounting/sales-invoices/page.tsx",
+    "target": "/dashboard/finance?tab=accounting",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/finance/accounting/suppliers-ledger",
+    "file": "frontend/src/app/dashboard/finance/accounting/suppliers-ledger/page.tsx",
+    "target": "/dashboard/finance?tab=accounting",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/finance/accounting/trial-balance",
+    "file": "frontend/src/app/dashboard/finance/accounting/trial-balance/page.tsx",
+    "target": "/dashboard/finance?tab=accounting",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/fixed-assets/ai",
+    "file": "frontend/src/app/dashboard/fixed-assets/ai/page.tsx",
+    "target": "/dashboard/finance?tab=fixed-assets",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/fixed-assets/assets/new",
+    "file": "frontend/src/app/dashboard/fixed-assets/assets/new/page.tsx",
+    "target": "/dashboard/finance?tab=fixed-assets&drawer=create",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/fixed-assets/assets",
+    "file": "frontend/src/app/dashboard/fixed-assets/assets/page.tsx",
+    "target": "/dashboard/finance?tab=fixed-assets",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/fixed-assets/assets/[id]/add-component",
+    "file": "frontend/src/app/dashboard/fixed-assets/assets/[id]/add-component/page.tsx",
+    "target": "/dashboard/finance?tab=fixed-assets&id=${encodeURIComponent(params.id)}&drawer=add-component",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/fixed-assets/assets/[id]",
+    "file": "frontend/src/app/dashboard/fixed-assets/assets/[id]/page.tsx",
+    "target": "/dashboard/finance?tab=fixed-assets&id=${encodeURIComponent(params.id)}&drawer=detail",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/fixed-assets/categories",
+    "file": "frontend/src/app/dashboard/fixed-assets/categories/page.tsx",
+    "target": "/dashboard/finance?tab=fixed-assets",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/fixed-assets/depreciation",
+    "file": "frontend/src/app/dashboard/fixed-assets/depreciation/page.tsx",
+    "target": "/dashboard/finance?tab=fixed-assets",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/fixed-assets/disposal",
+    "file": "frontend/src/app/dashboard/fixed-assets/disposal/page.tsx",
+    "target": "/dashboard/finance?tab=fixed-assets",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/fixed-assets/import",
+    "file": "frontend/src/app/dashboard/fixed-assets/import/page.tsx",
+    "target": "/dashboard/finance?tab=fixed-assets",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/fixed-assets/posting",
+    "file": "frontend/src/app/dashboard/fixed-assets/posting/page.tsx",
+    "target": "/dashboard/finance?tab=fixed-assets",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/fixed-assets/transfer",
+    "file": "frontend/src/app/dashboard/fixed-assets/transfer/page.tsx",
+    "target": "/dashboard/finance?tab=fixed-assets",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/fleet/drivers",
+    "file": "frontend/src/app/dashboard/fleet/drivers/page.tsx",
+    "target": "/dashboard/logistics?tab=fleet",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/fleet/fuel",
+    "file": "frontend/src/app/dashboard/fleet/fuel/page.tsx",
+    "target": "/dashboard/logistics?tab=fleet",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/fleet/incidents",
+    "file": "frontend/src/app/dashboard/fleet/incidents/page.tsx",
+    "target": "/dashboard/logistics?tab=fleet",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/fleet/maintenance",
+    "file": "frontend/src/app/dashboard/fleet/maintenance/page.tsx",
+    "target": "/dashboard/logistics?tab=fleet",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/fleet/reports",
+    "file": "frontend/src/app/dashboard/fleet/reports/page.tsx",
+    "target": "/dashboard/logistics?tab=fleet",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/fleet/trips",
+    "file": "frontend/src/app/dashboard/fleet/trips/page.tsx",
+    "target": "/dashboard/logistics?tab=fleet",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/fleet/vehicles",
+    "file": "frontend/src/app/dashboard/fleet/vehicles/page.tsx",
+    "target": "/dashboard/logistics?tab=fleet",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/gs1/ai",
+    "file": "frontend/src/app/dashboard/gs1/ai/page.tsx",
+    "target": "/dashboard/compliance?tab=gs1",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/gs1/barcodes",
+    "file": "frontend/src/app/dashboard/gs1/barcodes/page.tsx",
+    "target": "/dashboard/compliance?tab=gs1",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/gs1/config",
+    "file": "frontend/src/app/dashboard/gs1/config/page.tsx",
+    "target": "/dashboard/compliance?tab=gs1",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/gs1/labels",
+    "file": "frontend/src/app/dashboard/gs1/labels/page.tsx",
+    "target": "/dashboard/compliance?tab=gs1",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/gs1/print-queue",
+    "file": "frontend/src/app/dashboard/gs1/print-queue/page.tsx",
+    "target": "/dashboard/compliance?tab=gs1",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/gs1/reports",
+    "file": "frontend/src/app/dashboard/gs1/reports/page.tsx",
+    "target": "/dashboard/compliance?tab=gs1",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/gs1/scan",
+    "file": "frontend/src/app/dashboard/gs1/scan/page.tsx",
+    "target": "/dashboard/compliance?tab=gs1",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/gs1/sscc",
+    "file": "frontend/src/app/dashboard/gs1/sscc/page.tsx",
+    "target": "/dashboard/compliance?tab=gs1",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/invoice-match/ai",
+    "file": "frontend/src/app/dashboard/invoice-match/ai/page.tsx",
+    "target": "/dashboard/finance?tab=invoice-match",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/invoice-match/blocked",
+    "file": "frontend/src/app/dashboard/invoice-match/blocked/page.tsx",
+    "target": "/dashboard/finance?tab=invoice-match",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/invoice-match/duplicates",
+    "file": "frontend/src/app/dashboard/invoice-match/duplicates/page.tsx",
+    "target": "/dashboard/finance?tab=invoice-match",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/invoice-match/matches",
+    "file": "frontend/src/app/dashboard/invoice-match/matches/page.tsx",
+    "target": "/dashboard/finance?tab=invoice-match",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/invoice-match/reports",
+    "file": "frontend/src/app/dashboard/invoice-match/reports/page.tsx",
+    "target": "/dashboard/finance?tab=invoice-match",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/invoice-match/review-queue",
+    "file": "frontend/src/app/dashboard/invoice-match/review-queue/page.tsx",
+    "target": "/dashboard/finance?tab=invoice-match",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/invoice-match/tolerance-rules",
+    "file": "frontend/src/app/dashboard/invoice-match/tolerance-rules/page.tsx",
+    "target": "/dashboard/finance?tab=invoice-match",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/invoice-match/[id]",
+    "file": "frontend/src/app/dashboard/invoice-match/[id]/page.tsx",
+    "target": "/dashboard/finance?tab=invoice-match&id=${encodeURIComponent(params.id)}&drawer=detail",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/kanban/ai",
+    "file": "frontend/src/app/dashboard/kanban/ai/page.tsx",
+    "target": "/dashboard/planning?tab=kanban",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/kanban/boards",
+    "file": "frontend/src/app/dashboard/kanban/boards/page.tsx",
+    "target": "/dashboard/planning?tab=kanban",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/kanban/cards",
+    "file": "frontend/src/app/dashboard/kanban/cards/page.tsx",
+    "target": "/dashboard/planning?tab=kanban",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/kanban/reports",
+    "file": "frontend/src/app/dashboard/kanban/reports/page.tsx",
+    "target": "/dashboard/planning?tab=kanban",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/kanban/view",
+    "file": "frontend/src/app/dashboard/kanban/view/page.tsx",
+    "target": "/dashboard/planning?tab=kanban",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/knowledge-base/articles/new",
+    "file": "frontend/src/app/dashboard/knowledge-base/articles/new/page.tsx",
+    "target": "/dashboard/documents?tab=knowledge-base&drawer=create",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/knowledge-base/articles",
+    "file": "frontend/src/app/dashboard/knowledge-base/articles/page.tsx",
+    "target": "/dashboard/documents?tab=knowledge-base",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/knowledge-base/[id]",
+    "file": "frontend/src/app/dashboard/knowledge-base/[id]/page.tsx",
+    "target": "/dashboard/documents?tab=knowledge-base&id=${encodeURIComponent(params.id)}&drawer=detail",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/landed-cost/ai",
+    "file": "frontend/src/app/dashboard/landed-cost/ai/page.tsx",
+    "target": "/dashboard/procurement?tab=landed-cost",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/landed-cost/documents",
+    "file": "frontend/src/app/dashboard/landed-cost/documents/page.tsx",
+    "target": "/dashboard/procurement?tab=landed-cost",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/landed-cost/new",
+    "file": "frontend/src/app/dashboard/landed-cost/new/page.tsx",
+    "target": "/dashboard/procurement?tab=landed-cost&drawer=create",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/landed-cost/reports",
+    "file": "frontend/src/app/dashboard/landed-cost/reports/page.tsx",
+    "target": "/dashboard/procurement?tab=landed-cost",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/landed-cost/[id]",
+    "file": "frontend/src/app/dashboard/landed-cost/[id]/page.tsx",
+    "target": "/dashboard/procurement?tab=landed-cost&id=${encodeURIComponent(params.id)}&drawer=detail",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/logs/compliance",
+    "file": "frontend/src/app/dashboard/logs/compliance/page.tsx",
+    "target": "/dashboard/admin?tab=logs",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/logs/retention",
+    "file": "frontend/src/app/dashboard/logs/retention/page.tsx",
+    "target": "/dashboard/admin?tab=logs",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/machine-ops/assignment",
+    "file": "frontend/src/app/dashboard/machine-ops/assignment/page.tsx",
+    "target": "/dashboard/production?tab=machine-ops",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/machine-ops/certs",
+    "file": "frontend/src/app/dashboard/machine-ops/certs/page.tsx",
+    "target": "/dashboard/production?tab=machine-ops",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/machine-ops/costing",
+    "file": "frontend/src/app/dashboard/machine-ops/costing/page.tsx",
+    "target": "/dashboard/production?tab=machine-ops",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/machine-ops/downtime",
+    "file": "frontend/src/app/dashboard/machine-ops/downtime/page.tsx",
+    "target": "/dashboard/production?tab=machine-ops",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/machine-ops/machines",
+    "file": "frontend/src/app/dashboard/machine-ops/machines/page.tsx",
+    "target": "/dashboard/production?tab=machine-ops",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/machine-ops/operators",
+    "file": "frontend/src/app/dashboard/machine-ops/operators/page.tsx",
+    "target": "/dashboard/production?tab=machine-ops",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/machine-ops/performance",
+    "file": "frontend/src/app/dashboard/machine-ops/performance/page.tsx",
+    "target": "/dashboard/production?tab=machine-ops",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/machine-ops/runtime",
+    "file": "frontend/src/app/dashboard/machine-ops/runtime/page.tsx",
+    "target": "/dashboard/production?tab=machine-ops",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/machine-ops/teams",
+    "file": "frontend/src/app/dashboard/machine-ops/teams/page.tsx",
+    "target": "/dashboard/production?tab=machine-ops",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/marketing/ads/new",
+    "file": "frontend/src/app/dashboard/marketing/ads/new/page.tsx",
+    "target": "/dashboard/marketing?tab=ads&drawer=create",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/marketing/ads/[id]",
+    "file": "frontend/src/app/dashboard/marketing/ads/[id]/page.tsx",
+    "target": "/dashboard/marketing?tab=ads&id=${encodeURIComponent(params.id)}&drawer=detail",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/marketing/ai-optimizer",
+    "file": "frontend/src/app/dashboard/marketing/ai-optimizer/page.tsx",
+    "target": "/dashboard/marketing?tab=analytics",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/marketing/brand-spend/new",
+    "file": "frontend/src/app/dashboard/marketing/brand-spend/new/page.tsx",
+    "target": "/dashboard/marketing?tab=brand-spend&drawer=create",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/marketing/brand-spend/[id]",
+    "file": "frontend/src/app/dashboard/marketing/brand-spend/[id]/page.tsx",
+    "target": "/dashboard/marketing?tab=brand-spend&id=${encodeURIComponent(params.id)}&drawer=detail",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/marketing/campaigns/new",
+    "file": "frontend/src/app/dashboard/marketing/campaigns/new/page.tsx",
+    "target": "/dashboard/marketing?tab=campaigns&drawer=create",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/marketing/campaigns/[id]",
+    "file": "frontend/src/app/dashboard/marketing/campaigns/[id]/page.tsx",
+    "target": "/dashboard/marketing?tab=campaigns&id=${encodeURIComponent(params.id)}&drawer=detail",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/marketing/crm/followup",
+    "file": "frontend/src/app/dashboard/marketing/crm/followup/page.tsx",
+    "target": "/dashboard/marketing?tab=overview",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/marketing/crm",
+    "file": "frontend/src/app/dashboard/marketing/crm/page.tsx",
+    "target": "/dashboard/marketing?tab=overview",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/marketing/crm/[id]",
+    "file": "frontend/src/app/dashboard/marketing/crm/[id]/page.tsx",
+    "target": "/dashboard/marketing?tab=overview&id=${encodeURIComponent(params.id)}",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/marketing/ecommerce/analytics",
+    "file": "frontend/src/app/dashboard/marketing/ecommerce/analytics/page.tsx",
+    "target": "/dashboard/marketing?tab=ecommerce",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/marketing/ecommerce/performance/new",
+    "file": "frontend/src/app/dashboard/marketing/ecommerce/performance/new/page.tsx",
+    "target": "/dashboard/marketing?tab=ecommerce&drawer=create",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/marketing/ecommerce/performance",
+    "file": "frontend/src/app/dashboard/marketing/ecommerce/performance/page.tsx",
+    "target": "/dashboard/marketing?tab=ecommerce",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/marketing/ecommerce/performance/[id]",
+    "file": "frontend/src/app/dashboard/marketing/ecommerce/performance/[id]/page.tsx",
+    "target": "/dashboard/marketing?tab=ecommerce&id=${encodeURIComponent(params.id)}&drawer=detail",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/marketing/ecommerce/products/new",
+    "file": "frontend/src/app/dashboard/marketing/ecommerce/products/new/page.tsx",
+    "target": "/dashboard/marketing?tab=ecommerce&drawer=create",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/marketing/ecommerce/products",
+    "file": "frontend/src/app/dashboard/marketing/ecommerce/products/page.tsx",
+    "target": "/dashboard/marketing?tab=ecommerce",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/marketing/ecommerce/products/[id]",
+    "file": "frontend/src/app/dashboard/marketing/ecommerce/products/[id]/page.tsx",
+    "target": "/dashboard/marketing?tab=ecommerce&id=${encodeURIComponent(params.id)}&drawer=detail",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/marketing/ecommerce/returns",
+    "file": "frontend/src/app/dashboard/marketing/ecommerce/returns/page.tsx",
+    "target": "/dashboard/marketing?tab=ecommerce",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/marketing/ecommerce/stores/new",
+    "file": "frontend/src/app/dashboard/marketing/ecommerce/stores/new/page.tsx",
+    "target": "/dashboard/marketing?tab=ecommerce&drawer=create",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/marketing/ecommerce/stores",
+    "file": "frontend/src/app/dashboard/marketing/ecommerce/stores/page.tsx",
+    "target": "/dashboard/marketing?tab=ecommerce",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/marketing/ecommerce/stores/[id]",
+    "file": "frontend/src/app/dashboard/marketing/ecommerce/stores/[id]/page.tsx",
+    "target": "/dashboard/marketing?tab=ecommerce&id=${encodeURIComponent(params.id)}&drawer=detail",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/marketing/influencers/new",
+    "file": "frontend/src/app/dashboard/marketing/influencers/new/page.tsx",
+    "target": "/dashboard/marketing?tab=influencers&drawer=create",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/marketing/influencers/[id]",
+    "file": "frontend/src/app/dashboard/marketing/influencers/[id]/page.tsx",
+    "target": "/dashboard/marketing?tab=influencers&id=${encodeURIComponent(params.id)}&drawer=detail",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/marketing/promotions/new",
+    "file": "frontend/src/app/dashboard/marketing/promotions/new/page.tsx",
+    "target": "/dashboard/marketing?tab=promotions&drawer=create",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/marketing/promotions/[id]",
+    "file": "frontend/src/app/dashboard/marketing/promotions/[id]/page.tsx",
+    "target": "/dashboard/marketing?tab=promotions&id=${encodeURIComponent(params.id)}&drawer=detail",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/marketing/segments/new",
+    "file": "frontend/src/app/dashboard/marketing/segments/new/page.tsx",
+    "target": "/dashboard/marketing?tab=segments&drawer=create",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/marketing/segments/[id]",
+    "file": "frontend/src/app/dashboard/marketing/segments/[id]/page.tsx",
+    "target": "/dashboard/marketing?tab=segments&id=${encodeURIComponent(params.id)}&drawer=detail",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/marketing/social-media/new",
+    "file": "frontend/src/app/dashboard/marketing/social-media/new/page.tsx",
+    "target": "/dashboard/marketing?tab=social-media&drawer=create",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/marketing/social-media/[id]",
+    "file": "frontend/src/app/dashboard/marketing/social-media/[id]/page.tsx",
+    "target": "/dashboard/marketing?tab=social-media&id=${encodeURIComponent(params.id)}&drawer=detail",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/marketing/surveys/new",
+    "file": "frontend/src/app/dashboard/marketing/surveys/new/page.tsx",
+    "target": "/dashboard/marketing?tab=overview&drawer=create",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/marketing/surveys",
+    "file": "frontend/src/app/dashboard/marketing/surveys/page.tsx",
+    "target": "/dashboard/marketing?tab=overview",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/marketing/surveys/[id]",
+    "file": "frontend/src/app/dashboard/marketing/surveys/[id]/page.tsx",
+    "target": "/dashboard/marketing?tab=overview&id=${encodeURIComponent(params.id)}",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/marketing/trade-spend/new",
+    "file": "frontend/src/app/dashboard/marketing/trade-spend/new/page.tsx",
+    "target": "/dashboard/marketing?tab=trade-spend&drawer=create",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/marketing/trade-spend/[id]",
+    "file": "frontend/src/app/dashboard/marketing/trade-spend/[id]/page.tsx",
+    "target": "/dashboard/marketing?tab=trade-spend&id=${encodeURIComponent(params.id)}&drawer=detail",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/marketing/visits/new",
+    "file": "frontend/src/app/dashboard/marketing/visits/new/page.tsx",
+    "target": "/dashboard/marketing?tab=visits&drawer=create",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/marketing/visits/[id]",
+    "file": "frontend/src/app/dashboard/marketing/visits/[id]/page.tsx",
+    "target": "/dashboard/marketing?tab=visits&id=${encodeURIComponent(params.id)}&drawer=detail",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/material-flow/bulk-transfer",
+    "file": "frontend/src/app/dashboard/material-flow/bulk-transfer/page.tsx",
+    "target": "/dashboard/production?tab=material-flow",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/material-flow/fg-receipt",
+    "file": "frontend/src/app/dashboard/material-flow/fg-receipt/page.tsx",
+    "target": "/dashboard/production?tab=material-flow",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/material-flow/history",
+    "file": "frontend/src/app/dashboard/material-flow/history/page.tsx",
+    "target": "/dashboard/production?tab=material-flow",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/material-flow/issue",
+    "file": "frontend/src/app/dashboard/material-flow/issue/page.tsx",
+    "target": "/dashboard/production?tab=material-flow",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/material-flow/packaging",
+    "file": "frontend/src/app/dashboard/material-flow/packaging/page.tsx",
+    "target": "/dashboard/production?tab=material-flow",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/material-flow/reconciliation",
+    "file": "frontend/src/app/dashboard/material-flow/reconciliation/page.tsx",
+    "target": "/dashboard/production?tab=material-flow",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/material-flow/reservations",
+    "file": "frontend/src/app/dashboard/material-flow/reservations/page.tsx",
+    "target": "/dashboard/production?tab=material-flow",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/material-flow/returns",
+    "file": "frontend/src/app/dashboard/material-flow/returns/page.tsx",
+    "target": "/dashboard/production?tab=material-flow",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/material-flow/stages",
+    "file": "frontend/src/app/dashboard/material-flow/stages/page.tsx",
+    "target": "/dashboard/production?tab=material-flow",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/material-flow/tanks",
+    "file": "frontend/src/app/dashboard/material-flow/tanks/page.tsx",
+    "target": "/dashboard/production?tab=material-flow",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/material-flow/wip-transfer",
+    "file": "frontend/src/app/dashboard/material-flow/wip-transfer/page.tsx",
+    "target": "/dashboard/production?tab=material-flow",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/mobile/approvals",
+    "file": "frontend/src/app/dashboard/mobile/approvals/page.tsx",
+    "target": "/dashboard/admin?tab=mobile",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/mobile/devices",
+    "file": "frontend/src/app/dashboard/mobile/devices/page.tsx",
+    "target": "/dashboard/admin?tab=mobile",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/mps/whatif",
+    "file": "frontend/src/app/dashboard/mps/whatif/page.tsx",
+    "target": "/dashboard/planning?tab=mps",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/mrp/forecast/accuracy",
+    "file": "frontend/src/app/dashboard/mrp/forecast/accuracy/page.tsx",
+    "target": "/dashboard/planning?tab=mrp",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/mrp/forecast/correlation",
+    "file": "frontend/src/app/dashboard/mrp/forecast/correlation/page.tsx",
+    "target": "/dashboard/planning?tab=mrp",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/mrp/forecast",
+    "file": "frontend/src/app/dashboard/mrp/forecast/page.tsx",
+    "target": "/dashboard/planning?tab=mrp",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/mrp/run",
+    "file": "frontend/src/app/dashboard/mrp/run/page.tsx",
+    "target": "/dashboard/planning?tab=mrp",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/mrp/suggestions",
+    "file": "frontend/src/app/dashboard/mrp/suggestions/page.tsx",
+    "target": "/dashboard/planning?tab=mrp",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/mrp/workbench",
+    "file": "frontend/src/app/dashboard/mrp/workbench/page.tsx",
+    "target": "/dashboard/planning?tab=mrp",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/notification-center/ai",
+    "file": "frontend/src/app/dashboard/notification-center/ai/page.tsx",
+    "target": "/dashboard/communication?tab=notifications",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/notification-center/list",
+    "file": "frontend/src/app/dashboard/notification-center/list/page.tsx",
+    "target": "/dashboard/communication?tab=notifications",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/notification-center/preferences",
+    "file": "frontend/src/app/dashboard/notification-center/preferences/page.tsx",
+    "target": "/dashboard/communication?tab=notifications",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/notification-center/reports",
+    "file": "frontend/src/app/dashboard/notification-center/reports/page.tsx",
+    "target": "/dashboard/communication?tab=notifications",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/notification-center/schedules",
+    "file": "frontend/src/app/dashboard/notification-center/schedules/page.tsx",
+    "target": "/dashboard/communication?tab=notifications",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/notification-center/templates",
+    "file": "frontend/src/app/dashboard/notification-center/templates/page.tsx",
+    "target": "/dashboard/communication?tab=notifications",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/portal/accounts",
+    "file": "frontend/src/app/dashboard/portal/accounts/page.tsx",
+    "target": "/dashboard/sales?tab=portal",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/portal/accounts/[id]",
+    "file": "frontend/src/app/dashboard/portal/accounts/[id]/page.tsx",
+    "target": "/dashboard/sales?tab=portal&id=${encodeURIComponent(params.id)}&drawer=detail",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/portal/accounts/[id]/view",
+    "file": "frontend/src/app/dashboard/portal/accounts/[id]/view/page.tsx",
+    "target": "/dashboard/sales?tab=portal&id=${encodeURIComponent(params.id)}&drawer=detail",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/portal/activity",
+    "file": "frontend/src/app/dashboard/portal/activity/page.tsx",
+    "target": "/dashboard/sales?tab=portal",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/portal/ai",
+    "file": "frontend/src/app/dashboard/portal/ai/page.tsx",
+    "target": "/dashboard/sales?tab=portal",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/portal/claims",
+    "file": "frontend/src/app/dashboard/portal/claims/page.tsx",
+    "target": "/dashboard/sales?tab=portal",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/portal/drafts",
+    "file": "frontend/src/app/dashboard/portal/drafts/page.tsx",
+    "target": "/dashboard/sales?tab=portal",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/portal/order-tracking",
+    "file": "frontend/src/app/dashboard/portal/order-tracking/page.tsx",
+    "target": "/dashboard/sales?tab=portal",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/portal/reports",
+    "file": "frontend/src/app/dashboard/portal/reports/page.tsx",
+    "target": "/dashboard/sales?tab=portal",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/portal/sell-through",
+    "file": "frontend/src/app/dashboard/portal/sell-through/page.tsx",
+    "target": "/dashboard/sales?tab=portal",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/portal/users",
+    "file": "frontend/src/app/dashboard/portal/users/page.tsx",
+    "target": "/dashboard/sales?tab=portal",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/price-lists/ai",
+    "file": "frontend/src/app/dashboard/price-lists/ai/page.tsx",
+    "target": "/dashboard/sales?tab=price-lists",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/price-lists/approval-queue",
+    "file": "frontend/src/app/dashboard/price-lists/approval-queue/page.tsx",
+    "target": "/dashboard/sales?tab=price-lists",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/price-lists/compare",
+    "file": "frontend/src/app/dashboard/price-lists/compare/page.tsx",
+    "target": "/dashboard/sales?tab=price-lists",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/price-lists/discount-rules",
+    "file": "frontend/src/app/dashboard/price-lists/discount-rules/page.tsx",
+    "target": "/dashboard/sales?tab=price-lists",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/price-lists/import",
+    "file": "frontend/src/app/dashboard/price-lists/import/page.tsx",
+    "target": "/dashboard/sales?tab=price-lists",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/price-lists/margin",
+    "file": "frontend/src/app/dashboard/price-lists/margin/page.tsx",
+    "target": "/dashboard/sales?tab=price-lists",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/price-lists/reports",
+    "file": "frontend/src/app/dashboard/price-lists/reports/page.tsx",
+    "target": "/dashboard/sales?tab=price-lists",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/price-lists/[id]",
+    "file": "frontend/src/app/dashboard/price-lists/[id]/page.tsx",
+    "target": "/dashboard/sales?tab=price-lists&id=${encodeURIComponent(params.id)}&drawer=detail",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/procurement/orders/[id]",
+    "file": "frontend/src/app/dashboard/procurement/orders/[id]/page.tsx",
+    "target": "/dashboard/procurement?tab=orders&id=${encodeURIComponent(params.id)}&drawer=detail",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/procurement/[id]",
+    "file": "frontend/src/app/dashboard/procurement/[id]/page.tsx",
+    "target": "/dashboard/procurement?tab=purchase-requests&id=${encodeURIComponent(params.id)}&drawer=detail",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/procurement-suggestion/ai",
+    "file": "frontend/src/app/dashboard/procurement-suggestion/ai/page.tsx",
+    "target": "/dashboard/procurement?tab=suggestions",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/procurement-suggestion/groups",
+    "file": "frontend/src/app/dashboard/procurement-suggestion/groups/page.tsx",
+    "target": "/dashboard/procurement?tab=suggestions",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/procurement-suggestion/reports",
+    "file": "frontend/src/app/dashboard/procurement-suggestion/reports/page.tsx",
+    "target": "/dashboard/procurement?tab=suggestions",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/procurement-suggestion/suggestions",
+    "file": "frontend/src/app/dashboard/procurement-suggestion/suggestions/page.tsx",
+    "target": "/dashboard/procurement?tab=suggestions",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/procurement-suggestion/supplier-compare",
+    "file": "frontend/src/app/dashboard/procurement-suggestion/supplier-compare/page.tsx",
+    "target": "/dashboard/procurement?tab=suggestions",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/procurement-suggestion/supplier-prices",
+    "file": "frontend/src/app/dashboard/procurement-suggestion/supplier-prices/page.tsx",
+    "target": "/dashboard/procurement?tab=suggestions",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/production/advanced",
+    "file": "frontend/src/app/dashboard/production/advanced/page.tsx",
+    "target": "/dashboard/production?tab=scheduling",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/production/ai",
+    "file": "frontend/src/app/dashboard/production/ai/page.tsx",
+    "target": "/dashboard/production?tab=plans",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/production/orders/[id]",
+    "file": "frontend/src/app/dashboard/production/orders/[id]/page.tsx",
+    "target": "/dashboard/production?tab=orders&id=${encodeURIComponent(params.id)}&drawer=detail",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/production/plans/[id]",
+    "file": "frontend/src/app/dashboard/production/plans/[id]/page.tsx",
+    "target": "/dashboard/production?tab=plans&id=${encodeURIComponent(params.id)}&drawer=detail",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/production/shifts",
+    "file": "frontend/src/app/dashboard/production/shifts/page.tsx",
+    "target": "/dashboard/production?tab=scheduling",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/production/work-orders",
+    "file": "frontend/src/app/dashboard/production/work-orders/page.tsx",
+    "target": "/dashboard/production?tab=orders",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/production-execution/work-orders",
+    "file": "frontend/src/app/dashboard/production-execution/work-orders/page.tsx",
+    "target": "/dashboard/production?tab=execution",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/production-execution/[id]/genealogy",
+    "file": "frontend/src/app/dashboard/production-execution/[id]/genealogy/page.tsx",
+    "target": "/dashboard/production?tab=execution&id=${encodeURIComponent(params.id)}&drawer=detail",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/production-execution/[id]",
+    "file": "frontend/src/app/dashboard/production-execution/[id]/page.tsx",
+    "target": "/dashboard/production?tab=execution&id=${encodeURIComponent(params.id)}&drawer=detail",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/projects/dashboard",
+    "file": "frontend/src/app/dashboard/projects/dashboard/page.tsx",
+    "target": "/dashboard/production?tab=projects",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/projects/[id]",
+    "file": "frontend/src/app/dashboard/projects/[id]/page.tsx",
+    "target": "/dashboard/production?tab=projects&id=${encodeURIComponent(params.id)}&drawer=detail",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/promotions/ai",
+    "file": "frontend/src/app/dashboard/promotions/ai/page.tsx",
+    "target": "/dashboard/marketing?tab=promotions-schemes",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/promotions/analytics",
+    "file": "frontend/src/app/dashboard/promotions/analytics/page.tsx",
+    "target": "/dashboard/marketing?tab=promotions-schemes",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/promotions/overrides",
+    "file": "frontend/src/app/dashboard/promotions/overrides/page.tsx",
+    "target": "/dashboard/marketing?tab=promotions-schemes",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/promotions",
+    "file": "frontend/src/app/dashboard/promotions/page.tsx",
+    "target": "/dashboard/marketing?tab=promotions-schemes",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/promotions/schemes/new",
+    "file": "frontend/src/app/dashboard/promotions/schemes/new/page.tsx",
+    "target": "/dashboard/marketing?tab=promotions-schemes&drawer=create",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/promotions/schemes",
+    "file": "frontend/src/app/dashboard/promotions/schemes/page.tsx",
+    "target": "/dashboard/marketing?tab=promotions-schemes",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/promotions/schemes/[id]",
+    "file": "frontend/src/app/dashboard/promotions/schemes/[id]/page.tsx",
+    "target": "/dashboard/marketing?tab=promotions-schemes&id=${encodeURIComponent(params.id)}&drawer=detail",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/promotions/simulate",
+    "file": "frontend/src/app/dashboard/promotions/simulate/page.tsx",
+    "target": "/dashboard/marketing?tab=promotions-schemes",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/putaway/execute/[id]",
+    "file": "frontend/src/app/dashboard/putaway/execute/[id]/page.tsx",
+    "target": "/dashboard/warehouses?tab=wms&id=${encodeURIComponent(params.id)}&drawer=detail",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/putaway",
+    "file": "frontend/src/app/dashboard/putaway/page.tsx",
+    "target": "/dashboard/warehouses?tab=wms",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/putaway/rules",
+    "file": "frontend/src/app/dashboard/putaway/rules/page.tsx",
+    "target": "/dashboard/warehouses?tab=wms",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/qms/ai",
+    "file": "frontend/src/app/dashboard/qms/ai/page.tsx",
+    "target": "/dashboard/quality?tab=qms",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/qms/allergen",
+    "file": "frontend/src/app/dashboard/qms/allergen/page.tsx",
+    "target": "/dashboard/quality?tab=allergen",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/qms/aql",
+    "file": "frontend/src/app/dashboard/qms/aql/page.tsx",
+    "target": "/dashboard/quality?tab=qms",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/qms/audit-checklists",
+    "file": "frontend/src/app/dashboard/qms/audit-checklists/page.tsx",
+    "target": "/dashboard/quality?tab=qms",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/qms/calibration",
+    "file": "frontend/src/app/dashboard/qms/calibration/page.tsx",
+    "target": "/dashboard/quality?tab=qms",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/qms/ccp",
+    "file": "frontend/src/app/dashboard/qms/ccp/page.tsx",
+    "target": "/dashboard/quality?tab=qms",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/qms/coa",
+    "file": "frontend/src/app/dashboard/qms/coa/page.tsx",
+    "target": "/dashboard/quality?tab=qms",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/qms/corrective-actions",
+    "file": "frontend/src/app/dashboard/qms/corrective-actions/page.tsx",
+    "target": "/dashboard/quality?tab=qms",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/qms/deviations",
+    "file": "frontend/src/app/dashboard/qms/deviations/page.tsx",
+    "target": "/dashboard/quality?tab=qms",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/qms/haccp",
+    "file": "frontend/src/app/dashboard/qms/haccp/page.tsx",
+    "target": "/dashboard/quality?tab=qms",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/qms/inspections",
+    "file": "frontend/src/app/dashboard/qms/inspections/page.tsx",
+    "target": "/dashboard/quality?tab=inspections",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/qms/quarantine",
+    "file": "frontend/src/app/dashboard/qms/quarantine/page.tsx",
+    "target": "/dashboard/quality?tab=qms",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/qms/reports",
+    "file": "frontend/src/app/dashboard/qms/reports/page.tsx",
+    "target": "/dashboard/quality?tab=reports",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/qms/supplier-safety",
+    "file": "frontend/src/app/dashboard/qms/supplier-safety/page.tsx",
+    "target": "/dashboard/quality?tab=qms",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/qms/templates",
+    "file": "frontend/src/app/dashboard/qms/templates/page.tsx",
+    "target": "/dashboard/quality?tab=qms",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/quality/[id]",
+    "file": "frontend/src/app/dashboard/quality/[id]/page.tsx",
+    "target": "/dashboard/quality?tab=qms&id=${encodeURIComponent(params.id)}&drawer=detail",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/recruitment/ai",
+    "file": "frontend/src/app/dashboard/recruitment/ai/page.tsx",
+    "target": "/dashboard/hr?tab=recruitment",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/recruitment/candidates/new",
+    "file": "frontend/src/app/dashboard/recruitment/candidates/new/page.tsx",
+    "target": "/dashboard/hr?tab=recruitment&drawer=create",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/recruitment/candidates",
+    "file": "frontend/src/app/dashboard/recruitment/candidates/page.tsx",
+    "target": "/dashboard/hr?tab=recruitment",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/recruitment/candidates/[id]",
+    "file": "frontend/src/app/dashboard/recruitment/candidates/[id]/page.tsx",
+    "target": "/dashboard/hr?tab=recruitment&id=${encodeURIComponent(params.id)}&drawer=detail",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/recruitment/interviews",
+    "file": "frontend/src/app/dashboard/recruitment/interviews/page.tsx",
+    "target": "/dashboard/hr?tab=recruitment",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/recruitment/offers",
+    "file": "frontend/src/app/dashboard/recruitment/offers/page.tsx",
+    "target": "/dashboard/hr?tab=recruitment",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/recruitment/pipeline",
+    "file": "frontend/src/app/dashboard/recruitment/pipeline/page.tsx",
+    "target": "/dashboard/hr?tab=recruitment",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/recruitment/reports",
+    "file": "frontend/src/app/dashboard/recruitment/reports/page.tsx",
+    "target": "/dashboard/hr?tab=recruitment",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/recruitment/requisitions/new",
+    "file": "frontend/src/app/dashboard/recruitment/requisitions/new/page.tsx",
+    "target": "/dashboard/hr?tab=recruitment&drawer=create",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/recruitment/requisitions",
+    "file": "frontend/src/app/dashboard/recruitment/requisitions/page.tsx",
+    "target": "/dashboard/hr?tab=recruitment",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/recruitment/requisitions/[id]",
+    "file": "frontend/src/app/dashboard/recruitment/requisitions/[id]/page.tsx",
+    "target": "/dashboard/hr?tab=recruitment&id=${encodeURIComponent(params.id)}&drawer=detail",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/recruitment/stages",
+    "file": "frontend/src/app/dashboard/recruitment/stages/page.tsx",
+    "target": "/dashboard/hr?tab=recruitment",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/recurring-orders/ai",
+    "file": "frontend/src/app/dashboard/recurring-orders/ai/page.tsx",
+    "target": "/dashboard/sales?tab=recurring",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/recurring-orders/billing",
+    "file": "frontend/src/app/dashboard/recurring-orders/billing/page.tsx",
+    "target": "/dashboard/sales?tab=recurring",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/recurring-orders/generation-log",
+    "file": "frontend/src/app/dashboard/recurring-orders/generation-log/page.tsx",
+    "target": "/dashboard/sales?tab=recurring",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/recurring-orders/pause-skip",
+    "file": "frontend/src/app/dashboard/recurring-orders/pause-skip/page.tsx",
+    "target": "/dashboard/sales?tab=recurring",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/recurring-orders/reports",
+    "file": "frontend/src/app/dashboard/recurring-orders/reports/page.tsx",
+    "target": "/dashboard/sales?tab=recurring",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/recurring-orders/schedule",
+    "file": "frontend/src/app/dashboard/recurring-orders/schedule/page.tsx",
+    "target": "/dashboard/sales?tab=recurring",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/recurring-orders/templates/new",
+    "file": "frontend/src/app/dashboard/recurring-orders/templates/new/page.tsx",
+    "target": "/dashboard/sales?tab=recurring&drawer=create",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/recurring-orders/templates",
+    "file": "frontend/src/app/dashboard/recurring-orders/templates/page.tsx",
+    "target": "/dashboard/sales?tab=recurring",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/recurring-orders/templates/[id]",
+    "file": "frontend/src/app/dashboard/recurring-orders/templates/[id]/page.tsx",
+    "target": "/dashboard/sales?tab=recurring&id=${encodeURIComponent(params.id)}&drawer=detail",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/recurring-orders/upcoming-demand",
+    "file": "frontend/src/app/dashboard/recurring-orders/upcoming-demand/page.tsx",
+    "target": "/dashboard/sales?tab=recurring",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/report-builder/ai",
+    "file": "frontend/src/app/dashboard/report-builder/ai/page.tsx",
+    "target": "/dashboard/analytics?tab=report-builder",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/report-builder/builder",
+    "file": "frontend/src/app/dashboard/report-builder/builder/page.tsx",
+    "target": "/dashboard/analytics?tab=report-builder",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/report-builder/catalog",
+    "file": "frontend/src/app/dashboard/report-builder/catalog/page.tsx",
+    "target": "/dashboard/analytics?tab=report-builder",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/report-builder/dashboards",
+    "file": "frontend/src/app/dashboard/report-builder/dashboards/page.tsx",
+    "target": "/dashboard/analytics?tab=report-builder",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/report-builder/executive",
+    "file": "frontend/src/app/dashboard/report-builder/executive/page.tsx",
+    "target": "/dashboard/analytics?tab=report-builder",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/report-builder/rls",
+    "file": "frontend/src/app/dashboard/report-builder/rls/page.tsx",
+    "target": "/dashboard/analytics?tab=report-builder",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/report-builder/saved",
+    "file": "frontend/src/app/dashboard/report-builder/saved/page.tsx",
+    "target": "/dashboard/analytics?tab=report-builder",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/report-builder/schedules",
+    "file": "frontend/src/app/dashboard/report-builder/schedules/page.tsx",
+    "target": "/dashboard/analytics?tab=report-builder",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/report-builder/viewer",
+    "file": "frontend/src/app/dashboard/report-builder/viewer/page.tsx",
+    "target": "/dashboard/analytics?tab=report-builder",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/reports/finance",
+    "file": "frontend/src/app/dashboard/reports/finance/page.tsx",
+    "target": "/dashboard/analytics?tab=reports",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/reports/inventory",
+    "file": "frontend/src/app/dashboard/reports/inventory/page.tsx",
+    "target": "/dashboard/analytics?tab=reports",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/reports/marketing",
+    "file": "frontend/src/app/dashboard/reports/marketing/page.tsx",
+    "target": "/dashboard/analytics?tab=reports",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/reports/payments",
+    "file": "frontend/src/app/dashboard/reports/payments/page.tsx",
+    "target": "/dashboard/analytics?tab=reports",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/reports/procurement",
+    "file": "frontend/src/app/dashboard/reports/procurement/page.tsx",
+    "target": "/dashboard/analytics?tab=reports",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/reports/production",
+    "file": "frontend/src/app/dashboard/reports/production/page.tsx",
+    "target": "/dashboard/analytics?tab=reports",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/reports/sales",
+    "file": "frontend/src/app/dashboard/reports/sales/page.tsx",
+    "target": "/dashboard/analytics?tab=reports",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/roles/[id]",
+    "file": "frontend/src/app/dashboard/roles/[id]/page.tsx",
+    "target": "/dashboard/admin?tab=roles&id=${encodeURIComponent(params.id)}&drawer=detail",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/sales/customer-statement",
+    "file": "frontend/src/app/dashboard/sales/customer-statement/page.tsx",
+    "target": "/dashboard/sales?tab=customers",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/sales/invoices/[id]",
+    "file": "frontend/src/app/dashboard/sales/invoices/[id]/page.tsx",
+    "target": "/dashboard/sales?tab=invoices&id=${encodeURIComponent(params.id)}&drawer=detail",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/sales/orders/[id]",
+    "file": "frontend/src/app/dashboard/sales/orders/[id]/page.tsx",
+    "target": "/dashboard/sales?tab=orders&id=${encodeURIComponent(params.id)}&drawer=detail",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/sales/pod",
+    "file": "frontend/src/app/dashboard/sales/pod/page.tsx",
+    "target": "/dashboard/sales?tab=delivery",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/sales/shipments/[id]",
+    "file": "frontend/src/app/dashboard/sales/shipments/[id]/page.tsx",
+    "target": "/dashboard/sales?tab=shipments&id=${encodeURIComponent(params.id)}&drawer=detail",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/secondary-sales/analysis",
+    "file": "frontend/src/app/dashboard/secondary-sales/analysis/page.tsx",
+    "target": "/dashboard/sales?tab=secondary",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/secondary-sales/inventory",
+    "file": "frontend/src/app/dashboard/secondary-sales/inventory/page.tsx",
+    "target": "/dashboard/sales?tab=secondary",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/secondary-sales/upload",
+    "file": "frontend/src/app/dashboard/secondary-sales/upload/page.tsx",
+    "target": "/dashboard/sales?tab=secondary",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/security/monitor",
+    "file": "frontend/src/app/dashboard/security/monitor/page.tsx",
+    "target": "/dashboard/admin?tab=security",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/shelf-life/bulk-hold-monitor",
+    "file": "frontend/src/app/dashboard/shelf-life/bulk-hold-monitor/page.tsx",
+    "target": "/dashboard/inventory?tab=shelf-life",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/shelf-life/compliance",
+    "file": "frontend/src/app/dashboard/shelf-life/compliance/page.tsx",
+    "target": "/dashboard/inventory?tab=shelf-life",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/shelf-life/customer-rules",
+    "file": "frontend/src/app/dashboard/shelf-life/customer-rules/page.tsx",
+    "target": "/dashboard/inventory?tab=shelf-life",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/shelf-life/disposition",
+    "file": "frontend/src/app/dashboard/shelf-life/disposition/page.tsx",
+    "target": "/dashboard/inventory?tab=shelf-life",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/shelf-life/expired",
+    "file": "frontend/src/app/dashboard/shelf-life/expired/page.tsx",
+    "target": "/dashboard/inventory?tab=shelf-life",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/shelf-life/fefo-config",
+    "file": "frontend/src/app/dashboard/shelf-life/fefo-config/page.tsx",
+    "target": "/dashboard/inventory?tab=shelf-life",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/shelf-life/lot-aging",
+    "file": "frontend/src/app/dashboard/shelf-life/lot-aging/page.tsx",
+    "target": "/dashboard/inventory?tab=shelf-life",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/shelf-life/near-expiry",
+    "file": "frontend/src/app/dashboard/shelf-life/near-expiry/page.tsx",
+    "target": "/dashboard/inventory?tab=shelf-life",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/shelf-life/production-validation",
+    "file": "frontend/src/app/dashboard/shelf-life/production-validation/page.tsx",
+    "target": "/dashboard/inventory?tab=shelf-life",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/shelf-life/retest-queue",
+    "file": "frontend/src/app/dashboard/shelf-life/retest-queue/page.tsx",
+    "target": "/dashboard/inventory?tab=shelf-life",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/shelf-life/shipment-validation",
+    "file": "frontend/src/app/dashboard/shelf-life/shipment-validation/page.tsx",
+    "target": "/dashboard/inventory?tab=shelf-life",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/subcontracting/ai",
+    "file": "frontend/src/app/dashboard/subcontracting/ai/page.tsx",
+    "target": "/dashboard/procurement?tab=subcontracting",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/subcontracting/locations",
+    "file": "frontend/src/app/dashboard/subcontracting/locations/page.tsx",
+    "target": "/dashboard/procurement?tab=subcontracting",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/subcontracting/orders",
+    "file": "frontend/src/app/dashboard/subcontracting/orders/page.tsx",
+    "target": "/dashboard/procurement?tab=subcontracting",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/subcontracting/performance",
+    "file": "frontend/src/app/dashboard/subcontracting/performance/page.tsx",
+    "target": "/dashboard/procurement?tab=subcontracting",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/subcontracting/stock",
+    "file": "frontend/src/app/dashboard/subcontracting/stock/page.tsx",
+    "target": "/dashboard/procurement?tab=subcontracting",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/subcontracting/yield",
+    "file": "frontend/src/app/dashboard/subcontracting/yield/page.tsx",
+    "target": "/dashboard/procurement?tab=subcontracting",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/supplier-portal/accounts",
+    "file": "frontend/src/app/dashboard/supplier-portal/accounts/page.tsx",
+    "target": "/dashboard/procurement?tab=supplier-portal",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/supplier-portal/accounts/[id]",
+    "file": "frontend/src/app/dashboard/supplier-portal/accounts/[id]/page.tsx",
+    "target": "/dashboard/procurement?tab=supplier-portal&id=${encodeURIComponent(params.id)}&drawer=detail",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/supplier-portal/accounts/[id]/purchase-orders",
+    "file": "frontend/src/app/dashboard/supplier-portal/accounts/[id]/purchase-orders/page.tsx",
+    "target": "/dashboard/procurement?tab=supplier-portal&id=${encodeURIComponent(params.id)}&drawer=detail",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/supplier-portal/activity",
+    "file": "frontend/src/app/dashboard/supplier-portal/activity/page.tsx",
+    "target": "/dashboard/procurement?tab=supplier-portal",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/supplier-portal/ai",
+    "file": "frontend/src/app/dashboard/supplier-portal/ai/page.tsx",
+    "target": "/dashboard/procurement?tab=supplier-portal",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/supplier-portal/documents",
+    "file": "frontend/src/app/dashboard/supplier-portal/documents/page.tsx",
+    "target": "/dashboard/procurement?tab=supplier-portal",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/supplier-portal/eta",
+    "file": "frontend/src/app/dashboard/supplier-portal/eta/page.tsx",
+    "target": "/dashboard/procurement?tab=supplier-portal",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/supplier-portal/invoices",
+    "file": "frontend/src/app/dashboard/supplier-portal/invoices/page.tsx",
+    "target": "/dashboard/procurement?tab=supplier-portal",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/supplier-portal/payment",
+    "file": "frontend/src/app/dashboard/supplier-portal/payment/page.tsx",
+    "target": "/dashboard/procurement?tab=supplier-portal",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/supplier-portal/reports",
+    "file": "frontend/src/app/dashboard/supplier-portal/reports/page.tsx",
+    "target": "/dashboard/procurement?tab=supplier-portal",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/supplier-portal/users",
+    "file": "frontend/src/app/dashboard/supplier-portal/users/page.tsx",
+    "target": "/dashboard/procurement?tab=supplier-portal",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/surveys/new",
+    "file": "frontend/src/app/dashboard/surveys/new/page.tsx",
+    "target": "/dashboard/crm?tab=surveys&drawer=create",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/surveys/[id]",
+    "file": "frontend/src/app/dashboard/surveys/[id]/page.tsx",
+    "target": "/dashboard/crm?tab=surveys&id=${encodeURIComponent(params.id)}&drawer=detail",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/surveys/[id]/respond",
+    "file": "frontend/src/app/dashboard/surveys/[id]/respond/page.tsx",
+    "target": "/dashboard/crm?tab=surveys&id=${encodeURIComponent(params.id)}&drawer=detail",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/surveys/[id]/results",
+    "file": "frontend/src/app/dashboard/surveys/[id]/results/page.tsx",
+    "target": "/dashboard/crm?tab=surveys&id=${encodeURIComponent(params.id)}&drawer=detail",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/tax/regulatory",
+    "file": "frontend/src/app/dashboard/tax/regulatory/page.tsx",
+    "target": "/dashboard/finance?tab=tax",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/tax/reports",
+    "file": "frontend/src/app/dashboard/tax/reports/page.tsx",
+    "target": "/dashboard/finance?tab=tax",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/tax/rules",
+    "file": "frontend/src/app/dashboard/tax/rules/page.tsx",
+    "target": "/dashboard/finance?tab=tax",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/tax/transactions",
+    "file": "frontend/src/app/dashboard/tax/transactions/page.tsx",
+    "target": "/dashboard/finance?tab=tax",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/timesheets/ai",
+    "file": "frontend/src/app/dashboard/timesheets/ai/page.tsx",
+    "target": "/dashboard/hr?tab=timesheets",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/timesheets/approval-queue",
+    "file": "frontend/src/app/dashboard/timesheets/approval-queue/page.tsx",
+    "target": "/dashboard/hr?tab=timesheets",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/timesheets/my-timesheets",
+    "file": "frontend/src/app/dashboard/timesheets/my-timesheets/page.tsx",
+    "target": "/dashboard/hr?tab=timesheets",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/timesheets/reports",
+    "file": "frontend/src/app/dashboard/timesheets/reports/page.tsx",
+    "target": "/dashboard/hr?tab=timesheets",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/timesheets/time-entry",
+    "file": "frontend/src/app/dashboard/timesheets/time-entry/page.tsx",
+    "target": "/dashboard/hr?tab=timesheets",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/timesheets/weekly-view",
+    "file": "frontend/src/app/dashboard/timesheets/weekly-view/page.tsx",
+    "target": "/dashboard/hr?tab=timesheets",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/tpm/ai",
+    "file": "frontend/src/app/dashboard/tpm/ai/page.tsx",
+    "target": "/dashboard/marketing?tab=tpm",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/tpm/budget",
+    "file": "frontend/src/app/dashboard/tpm/budget/page.tsx",
+    "target": "/dashboard/marketing?tab=tpm",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/tpm/calendar",
+    "file": "frontend/src/app/dashboard/tpm/calendar/page.tsx",
+    "target": "/dashboard/marketing?tab=tpm",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/tpm/claims",
+    "file": "frontend/src/app/dashboard/tpm/claims/page.tsx",
+    "target": "/dashboard/marketing?tab=tpm",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/tpm/plans/new",
+    "file": "frontend/src/app/dashboard/tpm/plans/new/page.tsx",
+    "target": "/dashboard/marketing?tab=tpm&drawer=create",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/tpm/plans",
+    "file": "frontend/src/app/dashboard/tpm/plans/page.tsx",
+    "target": "/dashboard/marketing?tab=tpm",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/tpm/promotions/new",
+    "file": "frontend/src/app/dashboard/tpm/promotions/new/page.tsx",
+    "target": "/dashboard/marketing?tab=tpm&drawer=create",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/tpm/promotions",
+    "file": "frontend/src/app/dashboard/tpm/promotions/page.tsx",
+    "target": "/dashboard/marketing?tab=tpm",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/tpm/promotions/[id]",
+    "file": "frontend/src/app/dashboard/tpm/promotions/[id]/page.tsx",
+    "target": "/dashboard/marketing?tab=tpm&id=${encodeURIComponent(params.id)}&drawer=detail",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/tpm/roi",
+    "file": "frontend/src/app/dashboard/tpm/roi/page.tsx",
+    "target": "/dashboard/marketing?tab=tpm",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/tpm/settlement",
+    "file": "frontend/src/app/dashboard/tpm/settlement/page.tsx",
+    "target": "/dashboard/marketing?tab=tpm",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/traceability/backward",
+    "file": "frontend/src/app/dashboard/traceability/backward/page.tsx",
+    "target": "/dashboard/inventory?tab=traceability",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/traceability/forward",
+    "file": "frontend/src/app/dashboard/traceability/forward/page.tsx",
+    "target": "/dashboard/inventory?tab=traceability",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/traceability/genealogy",
+    "file": "frontend/src/app/dashboard/traceability/genealogy/page.tsx",
+    "target": "/dashboard/inventory?tab=traceability",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/traceability/mock-recall",
+    "file": "frontend/src/app/dashboard/traceability/mock-recall/page.tsx",
+    "target": "/dashboard/inventory?tab=traceability",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/traceability/recalls",
+    "file": "frontend/src/app/dashboard/traceability/recalls/page.tsx",
+    "target": "/dashboard/inventory?tab=traceability",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/traceability/recalls/[id]",
+    "file": "frontend/src/app/dashboard/traceability/recalls/[id]/page.tsx",
+    "target": "/dashboard/inventory?tab=traceability&id=${encodeURIComponent(params.id)}&drawer=detail",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/traceability/regulatory",
+    "file": "frontend/src/app/dashboard/traceability/regulatory/page.tsx",
+    "target": "/dashboard/inventory?tab=traceability",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/traceability/search",
+    "file": "frontend/src/app/dashboard/traceability/search/page.tsx",
+    "target": "/dashboard/inventory?tab=traceability",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/traceability/templates",
+    "file": "frontend/src/app/dashboard/traceability/templates/page.tsx",
+    "target": "/dashboard/inventory?tab=traceability",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/training/ai",
+    "file": "frontend/src/app/dashboard/training/ai/page.tsx",
+    "target": "/dashboard/hr?tab=training",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/training/assignments",
+    "file": "frontend/src/app/dashboard/training/assignments/page.tsx",
+    "target": "/dashboard/hr?tab=training",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/training/certifications",
+    "file": "frontend/src/app/dashboard/training/certifications/page.tsx",
+    "target": "/dashboard/hr?tab=training",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/training/feedback",
+    "file": "frontend/src/app/dashboard/training/feedback/page.tsx",
+    "target": "/dashboard/hr?tab=training",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/training/programs",
+    "file": "frontend/src/app/dashboard/training/programs/page.tsx",
+    "target": "/dashboard/hr?tab=training",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/training/reports",
+    "file": "frontend/src/app/dashboard/training/reports/page.tsx",
+    "target": "/dashboard/hr?tab=training",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/training/sessions",
+    "file": "frontend/src/app/dashboard/training/sessions/page.tsx",
+    "target": "/dashboard/hr?tab=training",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/training/skill-matrix",
+    "file": "frontend/src/app/dashboard/training/skill-matrix/page.tsx",
+    "target": "/dashboard/hr?tab=training",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/users/[id]",
+    "file": "frontend/src/app/dashboard/users/[id]/page.tsx",
+    "target": "/dashboard/admin?tab=users&id=${encodeURIComponent(params.id)}&drawer=detail",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/utilities/currencies",
+    "file": "frontend/src/app/dashboard/utilities/currencies/page.tsx",
+    "target": "/dashboard/admin?tab=system-config",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/utilities/series",
+    "file": "frontend/src/app/dashboard/utilities/series/page.tsx",
+    "target": "/dashboard/admin?tab=system-config",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/utilities/uom",
+    "file": "frontend/src/app/dashboard/utilities/uom/page.tsx",
+    "target": "/dashboard/admin?tab=system-config",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/utility-management/categories",
+    "file": "frontend/src/app/dashboard/utility-management/categories/page.tsx",
+    "target": "/dashboard/utility-management?tab=assets",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/utility-management/kpi-center/boiler",
+    "file": "frontend/src/app/dashboard/utility-management/kpi-center/boiler/page.tsx",
+    "target": "/dashboard/utility-management?tab=kpi-center",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/utility-management/kpi-center/chemicals",
+    "file": "frontend/src/app/dashboard/utility-management/kpi-center/chemicals/page.tsx",
+    "target": "/dashboard/utility-management?tab=kpi-center",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/utility-management/kpi-center/compressor",
+    "file": "frontend/src/app/dashboard/utility-management/kpi-center/compressor/page.tsx",
+    "target": "/dashboard/utility-management?tab=kpi-center",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/utility-management/kpi-center/electricity",
+    "file": "frontend/src/app/dashboard/utility-management/kpi-center/electricity/page.tsx",
+    "target": "/dashboard/utility-management?tab=kpi-center",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/utility-management/kpi-center/machine-utility",
+    "file": "frontend/src/app/dashboard/utility-management/kpi-center/machine-utility/page.tsx",
+    "target": "/dashboard/utility-management?tab=kpi-center",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/utility-management/kpi-center/soft-water",
+    "file": "frontend/src/app/dashboard/utility-management/kpi-center/soft-water/page.tsx",
+    "target": "/dashboard/utility-management?tab=kpi-center",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/utility-management/kpi-center/solar",
+    "file": "frontend/src/app/dashboard/utility-management/kpi-center/solar/page.tsx",
+    "target": "/dashboard/utility-management?tab=kpi-center",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/utility-management/kpi-center/utility-cost",
+    "file": "frontend/src/app/dashboard/utility-management/kpi-center/utility-cost/page.tsx",
+    "target": "/dashboard/utility-management?tab=kpi-center",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/utility-management/kpi-center/wastewater",
+    "file": "frontend/src/app/dashboard/utility-management/kpi-center/wastewater/page.tsx",
+    "target": "/dashboard/utility-management?tab=kpi-center",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/utility-management/kpi-center/water",
+    "file": "frontend/src/app/dashboard/utility-management/kpi-center/water/page.tsx",
+    "target": "/dashboard/utility-management?tab=kpi-center",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/utility-management/reports/anomalies",
+    "file": "frontend/src/app/dashboard/utility-management/reports/anomalies/page.tsx",
+    "target": "/dashboard/utility-management?tab=reports",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/utility-management/reports/cost-allocation",
+    "file": "frontend/src/app/dashboard/utility-management/reports/cost-allocation/page.tsx",
+    "target": "/dashboard/utility-management?tab=reports",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/utility-management/reports/daily-consumption",
+    "file": "frontend/src/app/dashboard/utility-management/reports/daily-consumption/page.tsx",
+    "target": "/dashboard/utility-management?tab=reports",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/utility-management/reports/equipment-efficiency",
+    "file": "frontend/src/app/dashboard/utility-management/reports/equipment-efficiency/page.tsx",
+    "target": "/dashboard/utility-management?tab=reports",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/utility-management/reports/load-analysis",
+    "file": "frontend/src/app/dashboard/utility-management/reports/load-analysis/page.tsx",
+    "target": "/dashboard/utility-management?tab=reports",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/utility-management/reports/sustainability",
+    "file": "frontend/src/app/dashboard/utility-management/reports/sustainability/page.tsx",
+    "target": "/dashboard/utility-management?tab=reports",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/utility-management/reports/treatment",
+    "file": "frontend/src/app/dashboard/utility-management/reports/treatment/page.tsx",
+    "target": "/dashboard/utility-management?tab=reports",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/van-sales/ai",
+    "file": "frontend/src/app/dashboard/van-sales/ai/page.tsx",
+    "target": "/dashboard/sales?tab=van-sales",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/van-sales/field-rep",
+    "file": "frontend/src/app/dashboard/van-sales/field-rep/page.tsx",
+    "target": "/dashboard/sales?tab=van-sales",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/van-sales/fraud",
+    "file": "frontend/src/app/dashboard/van-sales/fraud/page.tsx",
+    "target": "/dashboard/sales?tab=van-sales",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/van-sales/mpesa",
+    "file": "frontend/src/app/dashboard/van-sales/mpesa/page.tsx",
+    "target": "/dashboard/sales?tab=van-sales",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/van-sales/performance",
+    "file": "frontend/src/app/dashboard/van-sales/performance/page.tsx",
+    "target": "/dashboard/sales?tab=van-sales",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/van-sales/pos",
+    "file": "frontend/src/app/dashboard/van-sales/pos/page.tsx",
+    "target": "/dashboard/sales?tab=van-sales",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/van-sales/reconciliation",
+    "file": "frontend/src/app/dashboard/van-sales/reconciliation/page.tsx",
+    "target": "/dashboard/sales?tab=van-sales",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/van-sales/reports",
+    "file": "frontend/src/app/dashboard/van-sales/reports/page.tsx",
+    "target": "/dashboard/sales?tab=van-sales",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/van-sales/returns",
+    "file": "frontend/src/app/dashboard/van-sales/returns/page.tsx",
+    "target": "/dashboard/sales?tab=van-sales",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/van-sales/route",
+    "file": "frontend/src/app/dashboard/van-sales/route/page.tsx",
+    "target": "/dashboard/sales?tab=van-sales",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/van-sales/route-optimizer",
+    "file": "frontend/src/app/dashboard/van-sales/route-optimizer/page.tsx",
+    "target": "/dashboard/sales?tab=van-sales",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/van-sales/stock",
+    "file": "frontend/src/app/dashboard/van-sales/stock/page.tsx",
+    "target": "/dashboard/sales?tab=van-sales",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/van-sales/vans/new",
+    "file": "frontend/src/app/dashboard/van-sales/vans/new/page.tsx",
+    "target": "/dashboard/sales?tab=van-sales&drawer=create",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/van-sales/vans",
+    "file": "frontend/src/app/dashboard/van-sales/vans/page.tsx",
+    "target": "/dashboard/sales?tab=van-sales",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/van-sales/vans/[id]",
+    "file": "frontend/src/app/dashboard/van-sales/vans/[id]/page.tsx",
+    "target": "/dashboard/sales?tab=van-sales&id=${encodeURIComponent(params.id)}&drawer=detail",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/van-sales/visits",
+    "file": "frontend/src/app/dashboard/van-sales/visits/page.tsx",
+    "target": "/dashboard/sales?tab=van-sales",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/webhooks/dead-letter",
+    "file": "frontend/src/app/dashboard/webhooks/dead-letter/page.tsx",
+    "target": "/dashboard/integrations?tab=webhooks",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/webhooks/definitions",
+    "file": "frontend/src/app/dashboard/webhooks/definitions/page.tsx",
+    "target": "/dashboard/integrations?tab=webhooks",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/webhooks/deliveries",
+    "file": "frontend/src/app/dashboard/webhooks/deliveries/page.tsx",
+    "target": "/dashboard/integrations?tab=webhooks",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/webhooks/inbound",
+    "file": "frontend/src/app/dashboard/webhooks/inbound/page.tsx",
+    "target": "/dashboard/integrations?tab=webhooks",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/webhooks/reports",
+    "file": "frontend/src/app/dashboard/webhooks/reports/page.tsx",
+    "target": "/dashboard/integrations?tab=webhooks",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/webhooks/subscriptions",
+    "file": "frontend/src/app/dashboard/webhooks/subscriptions/page.tsx",
+    "target": "/dashboard/integrations?tab=webhooks",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/wms/counts",
+    "file": "frontend/src/app/dashboard/wms/counts/page.tsx",
+    "target": "/dashboard/warehouses?tab=wms",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/wms/counts/[id]",
+    "file": "frontend/src/app/dashboard/wms/counts/[id]/page.tsx",
+    "target": "/dashboard/warehouses?tab=wms&id=${encodeURIComponent(params.id)}&drawer=detail",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/wms/picking",
+    "file": "frontend/src/app/dashboard/wms/picking/page.tsx",
+    "target": "/dashboard/warehouses?tab=wms",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/wms/replenishment",
+    "file": "frontend/src/app/dashboard/wms/replenishment/page.tsx",
+    "target": "/dashboard/warehouses?tab=wms",
+    "lineCount": 4
+  },
+  {
+    "route": "/dashboard/wms/reports",
+    "file": "frontend/src/app/dashboard/wms/reports/page.tsx",
+    "target": "/dashboard/warehouses?tab=wms",
+    "lineCount": 4
+  }
+]

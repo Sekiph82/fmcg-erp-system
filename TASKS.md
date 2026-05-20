@@ -1,6 +1,23 @@
 # TASKS
 
 ## Current Phase
+MPS REDIRECT STUB RECOVERY — COMPLETE. 2026-05-20. All 4 MPS action card targets restored as real standalone pages. Middleware prefix-redirect bug fixed. 492-stub audit complete.
+
+### MPS Redirect Stub Recovery (2026-05-20)
+**Redirect stubs found:** 492 (491 safe consolidation redirects, 4 broken MPS action targets)
+**Broken action targets fixed:** 4 (planning-board, capacity, campaigns, whatif)
+**Root cause 1:** Page files were redirect stubs pointing back to `/dashboard/planning?tab=mps`
+**Root cause 2:** middleware.ts `/dashboard/mps` prefix-redirect caught all sub-routes before pages rendered
+**Fix applied:**
+- `mps/whatif/page.tsx` — restored from git commit `12bcbf5` (original MPS engine)
+- `mps/planning-board/page.tsx`, `mps/capacity/page.tsx`, `mps/campaigns/page.tsx` — already restored in prior session (commit `ced1b1b`)
+- `middleware.ts` — added `BYPASS_PREFIX_REDIRECT` set to skip prefix matching for the 4 real MPS pages
+- `routeRedirectMap.ts` — removed 4 stub entries (kept `/dashboard/mps` base redirect)
+**Type-check:** CLEAN | **Build:** CLEAN | **Backend tests:** 482/482 PASS
+**Reports:** `docs/REDIRECT_STUB_RECOVERY_REPORT.md`, `docs/REDIRECT_STUB_ROUTE_AUDIT.md`, `docs/REDIRECT_STUB_ROUTE_AUDIT.json`
+**Audit scripts:** `scripts/find-redirect-stubs.js`, `scripts/find-broken-action-cards.js`, `scripts/summarize-redirect-stubs.js`
+
+## Previous Phase — Action Card Health Audit
 ACTION CARD HEALTH AUDIT — COMPLETE. 2026-05-19. ERP-wide audit of navigation tiles and action cards. Zero dead-click broken cards found. Two UX context bugs fixed: Logistics and Maintenance overview tabs now navigate within workspace via ?tab= params. Audit infrastructure created. Frontend type-check/build clean. All repo audits pass.
 
 ### Action Card Health Audit (2026-05-19)

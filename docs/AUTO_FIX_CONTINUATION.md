@@ -1,7 +1,48 @@
 # Auto-Fix Continuation Guide
 
-Date: 2026-05-19 (Round 12 — PDF EXPORT PIPELINE COMPLETE)
+Date: 2026-05-20 (Round 13 — MPS REDIRECT STUB RECOVERY COMPLETE)
 Purpose: Let the next Claude session continue without asking the user anything.
+
+## Status After Round 13 (MPS Redirect Stub Recovery)
+
+**Backend tests:** 482/482 pytest pass.
+**Frontend:** build clean, type-check clean.
+
+**MPS action cards fixed:** All 4 MPS action card targets now navigate to real standalone pages:
+- `/dashboard/mps/planning-board` — full planning board (lines table, edit modal, generate from MRP, approve/release)
+- `/dashboard/mps/capacity` — capacity heatmap (work center utilization grid, overload alerts)
+- `/dashboard/mps/campaigns` — campaign grouping view (SKU groups, sequence, efficiency)
+- `/dashboard/mps/whatif` — what-if simulator (scenario builder, line selector, impact analysis)
+
+**Middleware fix:** `BYPASS_PREFIX_REDIRECT` set added to `middleware.ts` — prevents `/dashboard/mps`
+prefix-redirect from catching the 4 real sub-route pages.
+
+**routeRedirectMap.ts:** Removed 4 stub entries. Kept `/dashboard/mps` base redirect.
+
+**How to audit redirect stubs:**
+```bash
+node scripts/find-redirect-stubs.js          # find all ≤8-line redirect-only pages
+node scripts/summarize-redirect-stubs.js     # group by target + save docs/REDIRECT_STUB_ROUTE_AUDIT.json
+node scripts/find-broken-action-cards.js     # find action cards pointing to stubs
+```
+
+**How to recover deleted pages from git history:**
+```bash
+git log --all -- frontend/src/app/dashboard/<path>/page.tsx   # find the commit
+git show <commit>:frontend/src/app/dashboard/<path>/page.tsx  # view the content
+# then copy the content back to the file
+```
+
+**How to add new bypass entries (when restoring more real pages from stubs):**
+1. Create/restore the real `page.tsx`
+2. Add the route to `BYPASS_PREFIX_REDIRECT` in `middleware.ts`
+3. Remove the route from `EXACT_REDIRECTS` in `routeRedirectMap.ts`
+4. Run type-check + build to verify
+
+**Remaining redirect stub work:** 491 safe consolidation redirects remain — these are intentional.
+No user-visible broken action cards remain in MPS. Broader module expansion follows the same pattern.
+
+---
 
 ## Status After Round 12 (Kenya Go-Live PDF)
 
