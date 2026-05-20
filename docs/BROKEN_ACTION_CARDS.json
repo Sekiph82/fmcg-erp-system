@@ -282,22 +282,6 @@
     ]
   },
   {
-    "sourceFile": "frontend/src/app/dashboard/crm/page.tsx",
-    "stubRoute": "/dashboard/crm/ai",
-    "redirectTarget": "/dashboard/crm?tab=overview",
-    "matches": [
-      "href: \"/dashboard/crm/ai\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/crm/page.tsx",
-    "stubRoute": "/dashboard/crm/overdue",
-    "redirectTarget": "/dashboard/crm?tab=pipeline",
-    "matches": [
-      "href: \"/dashboard/crm/overdue\""
-    ]
-  },
-  {
     "sourceFile": "frontend/src/app/dashboard/custom-fields/page.tsx",
     "stubRoute": "/dashboard/custom-fields/ai",
     "redirectTarget": "/dashboard/admin?tab=custom-fields",
@@ -490,14 +474,6 @@
     "matches": [
       "href=\"/dashboard/documents/new\"",
       "href=\"/dashboard/documents/new\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/documents/page.tsx",
-    "stubRoute": "/dashboard/documents/new",
-    "redirectTarget": "/dashboard/documents?drawer=create",
-    "matches": [
-      "push(\"/dashboard/documents/new\""
     ]
   },
   {
@@ -1124,24 +1100,6 @@
     "redirectTarget": "/dashboard/marketing?tab=influencers&drawer=create",
     "matches": [
       "href=\"/dashboard/marketing/influencers/new\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/marketing/page.tsx",
-    "stubRoute": "/dashboard/marketing/campaigns/new",
-    "redirectTarget": "/dashboard/marketing?tab=campaigns&drawer=create",
-    "matches": [
-      "href=\"/dashboard/marketing/campaigns/new\"",
-      "href: \"/dashboard/marketing/campaigns/new\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/marketing/page.tsx",
-    "stubRoute": "/dashboard/marketing/promotions/new",
-    "redirectTarget": "/dashboard/marketing?tab=promotions&drawer=create",
-    "matches": [
-      "href=\"/dashboard/marketing/promotions/new\"",
-      "href: \"/dashboard/marketing/promotions/new\""
     ]
   },
   {
@@ -2455,110 +2413,6 @@
     "redirectTarget": "/dashboard/integrations?tab=webhooks",
     "matches": [
       "href: \"/dashboard/webhooks/subscriptions\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/lib/actionRegistry.ts",
-    "stubRoute": "/dashboard/bank-reconciliation/import",
-    "redirectTarget": "/dashboard/finance?tab=bank-recon",
-    "matches": [
-      "href: \"/dashboard/bank-reconciliation/import\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/lib/actionRegistry.ts",
-    "stubRoute": "/dashboard/contracts/new",
-    "redirectTarget": "/dashboard/sales?tab=contracts&drawer=create",
-    "matches": [
-      "href: \"/dashboard/contracts/new\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/lib/actionRegistry.ts",
-    "stubRoute": "/dashboard/dunning/aging",
-    "redirectTarget": "/dashboard/finance?tab=dunning",
-    "matches": [
-      "href: \"/dashboard/dunning/aging\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/lib/actionRegistry.ts",
-    "stubRoute": "/dashboard/esg/reports",
-    "redirectTarget": "/dashboard/utility-management?tab=esg",
-    "matches": [
-      "href: \"/dashboard/esg/reports\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/lib/actionRegistry.ts",
-    "stubRoute": "/dashboard/expenses/claims/new",
-    "redirectTarget": "/dashboard/hr?tab=expenses&drawer=create",
-    "matches": [
-      "href: \"/dashboard/expenses/claims/new\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/lib/actionRegistry.ts",
-    "stubRoute": "/dashboard/kanban/cards",
-    "redirectTarget": "/dashboard/planning?tab=kanban",
-    "matches": [
-      "href: \"/dashboard/kanban/cards\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/lib/actionRegistry.ts",
-    "stubRoute": "/dashboard/mrp/run",
-    "redirectTarget": "/dashboard/planning?tab=mrp",
-    "matches": [
-      "href: \"/dashboard/mrp/run\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/lib/actionRegistry.ts",
-    "stubRoute": "/dashboard/procurement-suggestion/ai",
-    "redirectTarget": "/dashboard/procurement?tab=suggestions",
-    "matches": [
-      "href: \"/dashboard/procurement-suggestion/ai\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/lib/actionRegistry.ts",
-    "stubRoute": "/dashboard/production/ai",
-    "redirectTarget": "/dashboard/production?tab=plans",
-    "matches": [
-      "href: \"/dashboard/production/ai\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/lib/actionRegistry.ts",
-    "stubRoute": "/dashboard/recruitment/requisitions",
-    "redirectTarget": "/dashboard/hr?tab=recruitment",
-    "matches": [
-      "href: \"/dashboard/recruitment/requisitions\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/lib/actionRegistry.ts",
-    "stubRoute": "/dashboard/report-builder/builder",
-    "redirectTarget": "/dashboard/analytics?tab=report-builder",
-    "matches": [
-      "href: \"/dashboard/report-builder/builder\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/lib/actionRegistry.ts",
-    "stubRoute": "/dashboard/van-sales/performance",
-    "redirectTarget": "/dashboard/sales?tab=van-sales",
-    "matches": [
-      "href: \"/dashboard/van-sales/performance\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/lib/actionRegistry.ts",
-    "stubRoute": "/dashboard/van-sales/route",
-    "redirectTarget": "/dashboard/sales?tab=van-sales",
-    "matches": [
-      "href: \"/dashboard/van-sales/route\""
     ]
   }
 ]

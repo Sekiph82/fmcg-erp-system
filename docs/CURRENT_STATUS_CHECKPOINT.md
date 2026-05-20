@@ -1,7 +1,7 @@
 # Current Status Checkpoint
 
-**Date:** 2026-05-20 (updated after MPS redirect stub recovery)  
-**Branch:** main  
+**Date:** 2026-05-20 (updated after ERP-wide action card recovery — Round 15)
+**Branch:** main
 **Working tree:** CLEAN after this commit
 
 ---
@@ -11,7 +11,7 @@
 | Item | Value |
 |------|-------|
 | Branch | main |
-| Latest commit (pre-this) | `b6759eb` docs(manual): add full reference PDF export pipeline |
+| Latest commit (pre-this) | `66a0d86` fix(router): use temporary redirects for dashboard consolidation |
 | Remote | origin → github.com/Sekiph82/fmcg-erp-system.git |
 
 ---

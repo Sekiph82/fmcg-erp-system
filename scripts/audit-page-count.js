@@ -142,6 +142,11 @@ function classify(filePath, workspaceImports, mwRedirects) {
   if (topDir === "payroll" && parts[1] === "runs" && parts[2] === "[id]") {
     return { cls: "B", label: "REDIRECT_ONLY" };
   }
+  // mps sub-pages — real standalone operational tools restored from stubs (Round 13).
+  // Not duplicates of planning workspace; each has unique full-screen UI.
+  if (topDir === "mps" && ["planning-board", "capacity", "campaigns", "whatif"].includes(parts[1])) {
+    return { cls: "E", label: "STANDALONE_OPERATIONAL" };
+  }
 
   // ── E. STANDALONE_OPERATIONAL ─────────────────────────────────────────────
   if (STANDALONE_DIRS.has(topDir)) {

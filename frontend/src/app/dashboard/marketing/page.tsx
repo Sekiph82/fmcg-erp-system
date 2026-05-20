@@ -136,8 +136,8 @@ function MarketingDashboardTab() {
             <p className="text-sm text-slate-400 mt-1">Campaign and promotion performance overview</p>
           </div>
           <div className="flex gap-2">
-            <a href="/dashboard/marketing/campaigns/new" className="glow-button-secondary text-sm">+ New Campaign</a>
-            <a href="/dashboard/marketing/promotions/new" className="glow-button text-sm">+ New Promotion</a>
+            <a href="/dashboard/marketing?tab=campaigns&drawer=create" className="glow-button-secondary text-sm">+ New Campaign</a>
+            <a href="/dashboard/marketing?tab=promotions&drawer=create" className="glow-button text-sm">+ New Promotion</a>
           </div>
         </div>
 
@@ -224,8 +224,8 @@ function MarketingDashboardTab() {
               <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Quick Actions</p>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {[
-                  { label: "+ New Campaign",  href: "/dashboard/marketing/campaigns/new" },
-                  { label: "+ New Promotion", href: "/dashboard/marketing/promotions/new" },
+                  { label: "+ New Campaign",  href: "/dashboard/marketing?tab=campaigns&drawer=create" },
+                  { label: "+ New Promotion", href: "/dashboard/marketing?tab=promotions&drawer=create" },
                   { label: "All Campaigns",   href: "/dashboard/marketing/campaigns" },
                   { label: "All Promotions",  href: "/dashboard/marketing/promotions" },
                 ].map((item) => (

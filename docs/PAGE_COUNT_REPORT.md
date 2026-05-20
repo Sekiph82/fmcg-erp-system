@@ -1,16 +1,16 @@
 # Page Count Report
 
-Generated: 2026-05-19
+Generated: 2026-05-20
 
 ## Summary
 
 | Classification            | Code | Count |
 |---------------------------|------|-------|
 | WORKSPACE_PAGE            | A    | 31   |
-| REDIRECT_ONLY             | B    | 496   |
+| REDIRECT_ONLY             | B    | 492   |
 | LIGHTWEIGHT_WRAPPER       | C    | 213   |
 | FULL_DUPLICATE_UI         | D    | 0   |
-| STANDALONE_OPERATIONAL    | E    | 15   |
+| STANDALONE_OPERATIONAL    | E    | 19   |
 | UNKNOWN                   | F    | 0   |
 | **Total**                 |      | **755** |
 

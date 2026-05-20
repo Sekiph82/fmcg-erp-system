@@ -1,0 +1,5015 @@
+[
+  {
+    "sourceFile": "frontend/src/app/dashboard/ai/compliance/page.tsx",
+    "href": "/dashboard/documents",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/ai/compliance/page.tsx",
+    "href": "/dashboard/ai/formulations",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/ai/compliance/page.tsx",
+    "href": "/dashboard/tax",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": true,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "middleware_redirect",
+    "potentialIssue": "Route is intercepted by middleware redirect"
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/ai/compliance/page.tsx",
+    "href": "/dashboard/production/quality",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/ai/compliance/page.tsx",
+    "href": "/dashboard/ai/logs",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/ai/page.tsx",
+    "href": "/dashboard/ai/predictions",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/ai/page.tsx",
+    "href": "/dashboard/ai/recommendations",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/ai/page.tsx",
+    "href": "/dashboard/ai/scenarios",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/ai/page.tsx",
+    "href": "/dashboard/ai/formulations",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/ai/page.tsx",
+    "href": "/dashboard/ai/logs",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/allergen/page.tsx",
+    "href": "/dashboard/allergen/material-profiles",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/allergen/page.tsx",
+    "href": "/dashboard/allergen/product-allergens",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/allergen/page.tsx",
+    "href": "/dashboard/allergen/change-logs",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/analytics/finance/page.tsx",
+    "href": "/dashboard/finance/receivables",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/analytics/inventory/page.tsx",
+    "href": "/dashboard/inventory",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/analytics/page.tsx",
+    "href": "/dashboard/analytics/inventory",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/analytics/page.tsx",
+    "href": "/dashboard/analytics/production",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/analytics/page.tsx",
+    "href": "/dashboard/analytics/procurement",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/analytics/page.tsx",
+    "href": "/dashboard/analytics/sales",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/analytics/page.tsx",
+    "href": "/dashboard/analytics/finance",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/analytics/page.tsx",
+    "href": "/dashboard/analytics/payments",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/analytics/page.tsx",
+    "href": "/dashboard/production",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/analytics/payments/page.tsx",
+    "href": "/dashboard/finance/mpesa",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/analytics/procurement/page.tsx",
+    "href": "/dashboard/procurement/orders",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/analytics/procurement/page.tsx",
+    "href": "/dashboard/procurement",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/analytics/production/page.tsx",
+    "href": "/dashboard/production/orders",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": true,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "middleware_redirect",
+    "potentialIssue": "Route is intercepted by middleware redirect"
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/analytics/production/page.tsx",
+    "href": "/dashboard/maintenance/assets",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/analytics/sales/page.tsx",
+    "href": "/dashboard/sales/invoices",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/analytics/sales/page.tsx",
+    "href": "/dashboard/sales/orders",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/analytics/sales/page.tsx",
+    "href": "/dashboard/sales/shipments",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/appraisals/page.tsx",
+    "href": "/dashboard/appraisals/periods",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/appraisals/page.tsx",
+    "href": "/dashboard/appraisals/templates",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/appraisals/page.tsx",
+    "href": "/dashboard/appraisals/records",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/appraisals/page.tsx",
+    "href": "/dashboard/appraisals/records/new",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/appraisals/page.tsx",
+    "href": "/dashboard/appraisals/self-review",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/appraisals/page.tsx",
+    "href": "/dashboard/appraisals/manager-queue",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/appraisals/page.tsx",
+    "href": "/dashboard/appraisals/hr-review",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/appraisals/page.tsx",
+    "href": "/dashboard/appraisals/development-plans",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/appraisals/page.tsx",
+    "href": "/dashboard/appraisals/reports",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/appraisals/page.tsx",
+    "href": "/dashboard/appraisals/ai",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/bank-reconciliation/page.tsx",
+    "href": "/dashboard/bank-reconciliation/import",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/bank-reconciliation/page.tsx",
+    "href": "/dashboard/bank-reconciliation/statements",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/bank-reconciliation/page.tsx",
+    "href": "/dashboard/bank-reconciliation/open-items",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/bank-reconciliation/page.tsx",
+    "href": "/dashboard/bank-reconciliation/balance",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/bank-reconciliation/page.tsx",
+    "href": "/dashboard/bank-reconciliation/rules",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/bank-reconciliation/page.tsx",
+    "href": "/dashboard/bank-reconciliation/ai",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/bank-reconciliation/page.tsx",
+    "href": "/dashboard/bank-reconciliation/statements/${s.id",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/bom/compare/page.tsx",
+    "href": "/dashboard/bom",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/bom/conversion/page.tsx",
+    "href": "/dashboard/bom",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/bom/page.tsx",
+    "href": "/dashboard/bom/${bom.id",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/bom/substitutes/page.tsx",
+    "href": "/dashboard/bom",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/bom/[id]/compliance/page.tsx",
+    "href": "/dashboard/bom/${id",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/bom/[id]/costing/page.tsx",
+    "href": "/dashboard/bom/${id",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/bom/[id]/explode/page.tsx",
+    "href": "/dashboard/bom/${id",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/bom/[id]/page.tsx",
+    "href": "/dashboard/bom/${id",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/bom/[id]/page.tsx",
+    "href": "/dashboard/bom/${newBom.id}",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/bom/[id]/page.tsx",
+    "href": "/dashboard/bom",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/brand-assets/page.tsx",
+    "href": "/dashboard/brand-assets/${a.id",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/calendar/page.tsx",
+    "href": "/dashboard/calendar/view",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/calendar/page.tsx",
+    "href": "/dashboard/calendar/new-event",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/calendar/page.tsx",
+    "href": "/dashboard/calendar/resources",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/calendar/page.tsx",
+    "href": "/dashboard/calendar/availability",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/chatter/page.tsx",
+    "href": "/dashboard/chatter/feed",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/chatter/page.tsx",
+    "href": "/dashboard/chatter/search",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/chatter/page.tsx",
+    "href": "/dashboard/chatter/reports",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/chatter/page.tsx",
+    "href": "/dashboard/chatter/ai",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/commissions/page.tsx",
+    "href": "/dashboard/commissions/rules",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/commissions/page.tsx",
+    "href": "/dashboard/commissions/transactions",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/commissions/page.tsx",
+    "href": "/dashboard/commissions/payouts",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/commissions/page.tsx",
+    "href": "/dashboard/commissions/ai",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/contracts/page.tsx",
+    "href": "/dashboard/contracts/new",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/contracts/page.tsx",
+    "href": "/dashboard/contracts/list",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/contracts/page.tsx",
+    "href": "/dashboard/contracts/list/${c.id",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/contracts/page.tsx",
+    "href": "/dashboard/contracts/expiring",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/contracts/page.tsx",
+    "href": "/dashboard/contracts/ai",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/crm/activities/page.tsx",
+    "href": "/dashboard/crm/records/${act.crm_record_id",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/crm/leads/page.tsx",
+    "href": "/dashboard/crm/records/${rec.id",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/crm/opportunities/page.tsx",
+    "href": "/dashboard/crm/records/${rec.id",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/crm/page.tsx",
+    "href": "/dashboard/crm/leads",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/crm/page.tsx",
+    "href": "/dashboard/crm/opportunities",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/crm/page.tsx",
+    "href": "/dashboard/crm/pipeline",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/crm/page.tsx",
+    "href": "/dashboard/crm/activities",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/crm/page.tsx",
+    "href": "/dashboard/crm/forecast",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/crm/page.tsx",
+    "href": "/dashboard/crm/win-loss",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/crm/page.tsx",
+    "href": "/dashboard/crm?tab=pipeline",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/crm/page.tsx",
+    "href": "/dashboard/crm?tab=overview",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/crm/page.tsx",
+    "href": "/dashboard/crm/stages",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/crm/pipeline/page.tsx",
+    "href": "/dashboard/crm/leads",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/crm/pipeline/page.tsx",
+    "href": "/dashboard/crm/opportunities",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/crm/pipeline/page.tsx",
+    "href": "/dashboard/crm/records/${rec.id",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/custom-fields/page.tsx",
+    "href": "/dashboard/custom-fields/new-field",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/custom-fields/page.tsx",
+    "href": "/dashboard/custom-fields/fields",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/custom-fields/page.tsx",
+    "href": "/dashboard/custom-fields/${f.custom_field_id",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/custom-fields/page.tsx",
+    "href": "/dashboard/custom-fields/form-builder",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/custom-fields/page.tsx",
+    "href": "/dashboard/custom-fields/workflow-rules",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/custom-fields/page.tsx",
+    "href": "/dashboard/custom-fields/values",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/custom-fields/page.tsx",
+    "href": "/dashboard/custom-fields/ai",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/cycle-count/page.tsx",
+    "href": "/dashboard/cycle-count/plans",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/cycle-count/page.tsx",
+    "href": "/dashboard/cycle-count/tasks",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/cycle-count/page.tsx",
+    "href": "/dashboard/cycle-count/entries",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/cycle-count/page.tsx",
+    "href": "/dashboard/cycle-count/variances",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/cycle-count/page.tsx",
+    "href": "/dashboard/cycle-count/reports",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/developer/page.tsx",
+    "href": "/dashboard/developer/keys",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/developer/page.tsx",
+    "href": "/dashboard/developer/graphql",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/developer/page.tsx",
+    "href": "/dashboard/webhooks",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": true,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "middleware_redirect",
+    "potentialIssue": "Route is intercepted by middleware redirect"
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/developer/page.tsx",
+    "href": "/dashboard/integrations",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/dimensions/page.tsx",
+    "href": "/dashboard/dimensions/types",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/dimensions/page.tsx",
+    "href": "/dashboard/dimensions/values",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/dimensions/page.tsx",
+    "href": "/dashboard/dimensions/cost-centers",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/dimensions/page.tsx",
+    "href": "/dashboard/dimensions/allocations",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/dimensions/page.tsx",
+    "href": "/dashboard/dimensions/allocation-run",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/dimensions/page.tsx",
+    "href": "/dashboard/dimensions/validation",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/dimensions/page.tsx",
+    "href": "/dashboard/dimensions/defaults",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/dimensions/page.tsx",
+    "href": "/dashboard/dimensions/reclassify",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/dimensions/page.tsx",
+    "href": "/dashboard/dimensions/completeness",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/dimensions/page.tsx",
+    "href": "/dashboard/dimensions/ai",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/documents/compliance/page.tsx",
+    "href": "/dashboard/documents/new",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": true,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "middleware_redirect",
+    "potentialIssue": "Route is intercepted by middleware redirect"
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/documents/compliance/page.tsx",
+    "href": "/dashboard/documents/${d.id",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/documents/compliance/page.tsx",
+    "href": "/dashboard/documents",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/documents/compliance/page.tsx",
+    "href": "/dashboard/documents/expiring",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/documents/compliance/page.tsx",
+    "href": "/dashboard/esign",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": true,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "middleware_redirect",
+    "potentialIssue": "Route is intercepted by middleware redirect"
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/documents/expiring/page.tsx",
+    "href": "/dashboard/documents/${d.id",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/documents/page.tsx",
+    "href": "/dashboard/documents?drawer=create",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/documents/page.tsx",
+    "href": "/dashboard/documents/${doc.id}",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/dunning/page.tsx",
+    "href": "/dashboard/dunning/aging",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/dunning/page.tsx",
+    "href": "/dashboard/dunning/workqueue",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/dunning/page.tsx",
+    "href": "/dashboard/dunning/credit-holds",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/dunning/page.tsx",
+    "href": "/dashboard/dunning/policies",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/dunning/page.tsx",
+    "href": "/dashboard/dunning/cases",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/dunning/page.tsx",
+    "href": "/dashboard/dunning/cases/${c.id",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/esg/page.tsx",
+    "href": "/dashboard/esg/activities",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/esg/page.tsx",
+    "href": "/dashboard/esg/factors",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/esg/page.tsx",
+    "href": "/dashboard/esg/targets",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/esg/page.tsx",
+    "href": "/dashboard/esg/reports",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/esg/page.tsx",
+    "href": "/dashboard/esg/intelligence",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/ess/page.tsx",
+    "href": "/dashboard/ess/profile",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/ess/page.tsx",
+    "href": "/dashboard/ess/leave",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/ess/page.tsx",
+    "href": "/dashboard/ess/attendance",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/ess/page.tsx",
+    "href": "/dashboard/ess/documents",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/ess/page.tsx",
+    "href": "/dashboard/ess/requests",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/ess/page.tsx",
+    "href": "/dashboard/ess/notifications",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/ess/page.tsx",
+    "href": "/dashboard/ess/ai",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/ess/page.tsx",
+    "href": "/dashboard/ess/admin",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/expenses/page.tsx",
+    "href": "/dashboard/expenses/claims",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/expenses/page.tsx",
+    "href": "/dashboard/expenses/claims/new",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/expenses/page.tsx",
+    "href": "/dashboard/expenses/approval",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/expenses/page.tsx",
+    "href": "/dashboard/expenses/reimbursement",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/expenses/page.tsx",
+    "href": "/dashboard/expenses/advances",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/expenses/page.tsx",
+    "href": "/dashboard/expenses/categories",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/expenses/page.tsx",
+    "href": "/dashboard/expenses/policies",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/expenses/page.tsx",
+    "href": "/dashboard/expenses/reports",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/expenses/page.tsx",
+    "href": "/dashboard/expenses/ai",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/finance/accounting/page.tsx",
+    "href": "/dashboard/finance/accounting/customers-ledger",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/finance/accounting/page.tsx",
+    "href": "/dashboard/finance/accounting/suppliers-ledger",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/finance/accounting/page.tsx",
+    "href": "/dashboard/finance/accounting/sales-invoices",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/finance/accounting/page.tsx",
+    "href": "/dashboard/finance/accounting/purchase-invoices",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/finance/accounting/page.tsx",
+    "href": "/dashboard/finance/accounting/payments",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/finance/accounting/page.tsx",
+    "href": "/dashboard/finance/accounting/controls",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/finance/page.tsx",
+    "href": "/dashboard/finance/cashbook",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/finance/page.tsx",
+    "href": "/dashboard/finance/receivables",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/finance/page.tsx",
+    "href": "/dashboard/finance/mpesa",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/finance/page.tsx",
+    "href": "/dashboard/finance/costing",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/finance/page.tsx",
+    "href": "/dashboard/finance/budget",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/finance/page.tsx",
+    "href": "/dashboard/finance/cashbook?tab=journal",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/fixed-assets/page.tsx",
+    "href": "/dashboard/fixed-assets/assets",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/fixed-assets/page.tsx",
+    "href": "/dashboard/fixed-assets/categories",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/fixed-assets/page.tsx",
+    "href": "/dashboard/fixed-assets/depreciation",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/fixed-assets/page.tsx",
+    "href": "/dashboard/fixed-assets/posting",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/fixed-assets/page.tsx",
+    "href": "/dashboard/fixed-assets/disposal",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/fixed-assets/page.tsx",
+    "href": "/dashboard/fixed-assets/transfer",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/fixed-assets/page.tsx",
+    "href": "/dashboard/fixed-assets/import",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/fixed-assets/page.tsx",
+    "href": "/dashboard/fixed-assets/ai",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/fixed-assets/page.tsx",
+    "href": "/dashboard/fixed-assets/assets/new",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/fleet/page.tsx",
+    "href": "/dashboard/fleet/vehicles",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/fleet/page.tsx",
+    "href": "/dashboard/fleet/drivers",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/fleet/page.tsx",
+    "href": "/dashboard/fleet/trips",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/fleet/page.tsx",
+    "href": "/dashboard/fleet/fuel",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/fleet/page.tsx",
+    "href": "/dashboard/fleet/maintenance",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/fleet/page.tsx",
+    "href": "/dashboard/fleet/incidents",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/fleet/page.tsx",
+    "href": "/dashboard/fleet/reports",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/hr/page.tsx",
+    "href": "/dashboard/hr/employees",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/hr/page.tsx",
+    "href": "/dashboard/hr/attendance",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/hr/page.tsx",
+    "href": "/dashboard/hr/leave",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/hr/page.tsx",
+    "href": "/dashboard/hr/payroll",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/hr/page.tsx",
+    "href": "/dashboard/hr/shifts",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/integrations/marketplace/page.tsx",
+    "href": "/dashboard/integrations",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/integrations/page.tsx",
+    "href": "/dashboard/integrations/mpesa",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/integrations/page.tsx",
+    "href": "/dashboard/integrations/sync",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/integrations/page.tsx",
+    "href": "/dashboard/integrations/barcode",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/integrations/page.tsx",
+    "href": "/dashboard/integrations/logs",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/invoice-match/page.tsx",
+    "href": "/dashboard/invoice-match/review-queue",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/invoice-match/page.tsx",
+    "href": "/dashboard/invoice-match/matches",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/invoice-match/page.tsx",
+    "href": "/dashboard/invoice-match/blocked",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/invoice-match/page.tsx",
+    "href": "/dashboard/invoice-match/duplicates",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/invoice-match/page.tsx",
+    "href": "/dashboard/invoice-match/ai",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/invoice-match/page.tsx",
+    "href": "/dashboard/invoice-match/${m.id",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/kanban/page.tsx",
+    "href": "/dashboard/kanban/boards",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/kanban/page.tsx",
+    "href": "/dashboard/kanban/view",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/kanban/page.tsx",
+    "href": "/dashboard/kanban/cards",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/kanban/page.tsx",
+    "href": "/dashboard/kanban/reports",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/kanban/page.tsx",
+    "href": "/dashboard/kanban/ai",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/knowledge-base/page.tsx",
+    "href": "/dashboard/knowledge-base/${a.id",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/knowledge-base/page.tsx",
+    "href": "/dashboard/knowledge-base/categories",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/knowledge-base/page.tsx",
+    "href": "/dashboard/knowledge-base/articles?category_id=${c.id",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/knowledge-base/page.tsx",
+    "href": "/dashboard/knowledge-base/articles",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/knowledge-base/page.tsx",
+    "href": "/dashboard/knowledge-base/articles/new",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/landed-cost/page.tsx",
+    "href": "/dashboard/landed-cost/new",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/landed-cost/page.tsx",
+    "href": "/dashboard/landed-cost/ai",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/landed-cost/page.tsx",
+    "href": "/dashboard/landed-cost/documents",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/landed-cost/page.tsx",
+    "href": "/dashboard/landed-cost/${doc.id",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/logistics/page.tsx",
+    "href": "/dashboard/logistics?tab=shipments",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/logistics/page.tsx",
+    "href": "/dashboard/logistics?tab=arrivals",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/logistics/page.tsx",
+    "href": "/dashboard/logistics?tab=documents",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/logistics/page.tsx",
+    "href": "/dashboard/logistics?tab=containers",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/machine-ops/page.tsx",
+    "href": "/dashboard/machine-ops/machines",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/machine-ops/page.tsx",
+    "href": "/dashboard/machine-ops/operators",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/machine-ops/page.tsx",
+    "href": "/dashboard/machine-ops/teams",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/machine-ops/page.tsx",
+    "href": "/dashboard/machine-ops/runtime",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/machine-ops/page.tsx",
+    "href": "/dashboard/machine-ops/performance",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/machine-ops/page.tsx",
+    "href": "/dashboard/machine-ops/downtime",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/machine-ops/page.tsx",
+    "href": "/dashboard/machine-ops/costing",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/machine-ops/page.tsx",
+    "href": "/dashboard/machine-ops/certs",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/machine-ops/page.tsx",
+    "href": "/dashboard/machine-ops/assignment",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/maintenance/page.tsx",
+    "href": "/dashboard/maintenance?tab=assets",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/maintenance/page.tsx",
+    "href": "/dashboard/maintenance?tab=breakdowns",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/maintenance/page.tsx",
+    "href": "/dashboard/maintenance?tab=plans",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/maintenance/page.tsx",
+    "href": "/dashboard/maintenance?tab=spares",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/maintenance/page.tsx",
+    "href": "/dashboard/maintenance?tab=predictive",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/maintenance/page.tsx",
+    "href": "/dashboard/maintenance?tab=reports",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/marketing/ads/page.tsx",
+    "href": "/dashboard/marketing/ads/new",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/marketing/ads/page.tsx",
+    "href": "/dashboard/marketing/ads/${a.id",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/marketing/brand-spend/page.tsx",
+    "href": "/dashboard/marketing/brand-spend/new",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/marketing/brand-spend/page.tsx",
+    "href": "/dashboard/marketing/brand-spend/${b.id",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/marketing/campaigns/page.tsx",
+    "href": "/dashboard/marketing/campaigns/new",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/marketing/campaigns/page.tsx",
+    "href": "/dashboard/marketing/campaigns/${c.id",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/marketing/ecommerce/page.tsx",
+    "href": "/dashboard/marketing/ecommerce/stores",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/marketing/influencers/page.tsx",
+    "href": "/dashboard/marketing/influencers/new",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/marketing/influencers/page.tsx",
+    "href": "/dashboard/marketing/influencers/${i.id",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/marketing/page.tsx",
+    "href": "/dashboard/marketing?tab=campaigns&drawer=create",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/marketing/page.tsx",
+    "href": "/dashboard/marketing?tab=promotions&drawer=create",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/marketing/page.tsx",
+    "href": "/dashboard/marketing/campaigns",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": true,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "middleware_redirect",
+    "potentialIssue": "Route is intercepted by middleware redirect"
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/marketing/page.tsx",
+    "href": "/dashboard/marketing/promotions",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": true,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "middleware_redirect",
+    "potentialIssue": "Route is intercepted by middleware redirect"
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/marketing/promotions/page.tsx",
+    "href": "/dashboard/marketing/promotions/new",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/marketing/promotions/page.tsx",
+    "href": "/dashboard/marketing/promotions/${p.id",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/marketing/segments/page.tsx",
+    "href": "/dashboard/marketing/segments/new",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/marketing/segments/page.tsx",
+    "href": "/dashboard/marketing/segments/${s.id",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/marketing/social-media/page.tsx",
+    "href": "/dashboard/marketing/social-media/new",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/marketing/social-media/page.tsx",
+    "href": "/dashboard/marketing/social-media/${a.id",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/marketing/trade-spend/page.tsx",
+    "href": "/dashboard/marketing/trade-spend/new",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/marketing/trade-spend/page.tsx",
+    "href": "/dashboard/marketing/trade-spend/${t.id",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/marketing/visits/page.tsx",
+    "href": "/dashboard/marketing/visits/new",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/marketing/visits/page.tsx",
+    "href": "/dashboard/marketing/visits/${v.id",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/material-flow/page.tsx",
+    "href": "/dashboard/material-flow/issue",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/material-flow/page.tsx",
+    "href": "/dashboard/material-flow/wip-transfer",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/material-flow/page.tsx",
+    "href": "/dashboard/material-flow/bulk-transfer",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/material-flow/page.tsx",
+    "href": "/dashboard/material-flow/fg-receipt",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/material-flow/page.tsx",
+    "href": "/dashboard/material-flow/reservations",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/material-flow/page.tsx",
+    "href": "/dashboard/material-flow/tanks",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/material-flow/page.tsx",
+    "href": "/dashboard/material-flow/returns",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/material-flow/page.tsx",
+    "href": "/dashboard/material-flow/reconciliation",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/material-flow/page.tsx",
+    "href": "/dashboard/material-flow/history",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/mobile/page.tsx",
+    "href": "/dashboard/mobile/approvals",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/mobile/page.tsx",
+    "href": "/dashboard/mobile/devices",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/mobile/page.tsx",
+    "href": "/dashboard/approvals",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": true,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "middleware_redirect",
+    "potentialIssue": "Route is intercepted by middleware redirect"
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/mobile/page.tsx",
+    "href": "/dashboard/notification-center",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": true,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "middleware_redirect",
+    "potentialIssue": "Route is intercepted by middleware redirect"
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/mps/campaigns/page.tsx",
+    "href": "/dashboard/mps",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": true,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "middleware_redirect",
+    "potentialIssue": "Route is intercepted by middleware redirect"
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/mps/capacity/page.tsx",
+    "href": "/dashboard/mps",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": true,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "middleware_redirect",
+    "potentialIssue": "Route is intercepted by middleware redirect"
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/mps/page.tsx",
+    "href": "/dashboard/mps/planning-board",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/mps/page.tsx",
+    "href": "/dashboard/mps/capacity",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/mps/page.tsx",
+    "href": "/dashboard/mps/campaigns",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/mps/page.tsx",
+    "href": "/dashboard/mps/whatif",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/mps/planning-board/page.tsx",
+    "href": "/dashboard/mps",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": true,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "middleware_redirect",
+    "potentialIssue": "Route is intercepted by middleware redirect"
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/mps/whatif/page.tsx",
+    "href": "/dashboard/mps",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": true,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "middleware_redirect",
+    "potentialIssue": "Route is intercepted by middleware redirect"
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/mrp/page.tsx",
+    "href": "/dashboard/mrp/forecast",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/mrp/page.tsx",
+    "href": "/dashboard/mrp/suggestions",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/mrp/page.tsx",
+    "href": "/dashboard/mrp/run",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/mrp/page.tsx",
+    "href": "/dashboard/mrp/run?id=${dash.last_run.id",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/mrp/page.tsx",
+    "href": "/dashboard/mrp/run?id=${r.id",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/notification-center/page.tsx",
+    "href": "/dashboard/notification-center/list",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/notification-center/page.tsx",
+    "href": "/dashboard/notification-center/preferences",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/notification-center/page.tsx",
+    "href": "/dashboard/notification-center/templates",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/notification-center/page.tsx",
+    "href": "/dashboard/notification-center/schedules",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/notification-center/page.tsx",
+    "href": "/dashboard/notification-center/reports",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/notification-center/page.tsx",
+    "href": "/dashboard/notification-center/ai",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/npd/page.tsx",
+    "href": "/dashboard/npd/${proj.id",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/npd/[id]/page.tsx",
+    "href": "/dashboard/npd",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/nps/page.tsx",
+    "href": "/dashboard/nps/surveys",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/page.tsx",
+    "href": "/dashboard/production/orders",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": true,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "middleware_redirect",
+    "potentialIssue": "Route is intercepted by middleware redirect"
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/page.tsx",
+    "href": "/dashboard/maintenance/breakdowns",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/page.tsx",
+    "href": "/dashboard/inventory",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/page.tsx",
+    "href": "/dashboard/sales/invoices",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/page.tsx",
+    "href": "/dashboard/finance/mpesa",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/page.tsx",
+    "href": "/dashboard/logistics/shipments",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/payroll/page.tsx",
+    "href": "/dashboard/payroll/profiles",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/payroll/page.tsx",
+    "href": "/dashboard/payroll/reports",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/payroll/page.tsx",
+    "href": "/dashboard/payroll/runs/${r.id",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/planning/bottlenecks/page.tsx",
+    "href": "/dashboard/planning",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/planning/capacity/page.tsx",
+    "href": "/dashboard/planning",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/planning/changeover/page.tsx",
+    "href": "/dashboard/planning",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/planning/page.tsx",
+    "href": "/dashboard/planning/schedule",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": true,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "middleware_redirect",
+    "potentialIssue": "Route is intercepted by middleware redirect"
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/planning/page.tsx",
+    "href": "/dashboard/planning/schedule?scenario=${s.id",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/planning/page.tsx",
+    "href": "/dashboard/planning/capacity",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": true,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "middleware_redirect",
+    "potentialIssue": "Route is intercepted by middleware redirect"
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/planning/page.tsx",
+    "href": "/dashboard/planning/bottlenecks",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": true,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "middleware_redirect",
+    "potentialIssue": "Route is intercepted by middleware redirect"
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/planning/page.tsx",
+    "href": "/dashboard/planning/simulation",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": true,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "middleware_redirect",
+    "potentialIssue": "Route is intercepted by middleware redirect"
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/planning/page.tsx",
+    "href": "/dashboard/planning/changeover",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": true,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "middleware_redirect",
+    "potentialIssue": "Route is intercepted by middleware redirect"
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/planning/schedule/page.tsx",
+    "href": "/dashboard/planning",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/planning/simulation/page.tsx",
+    "href": "/dashboard/planning",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/portal/page.tsx",
+    "href": "/dashboard/portal/accounts",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/portal/page.tsx",
+    "href": "/dashboard/portal/drafts",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/portal/page.tsx",
+    "href": "/dashboard/portal/claims",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/portal/page.tsx",
+    "href": "/dashboard/portal/users",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/portal/page.tsx",
+    "href": "/dashboard/portal/activity",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/portal/page.tsx",
+    "href": "/dashboard/portal/ai",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/portal/page.tsx",
+    "href": "/dashboard/portal/reports",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/portal/page.tsx",
+    "href": "/dashboard/portal/accounts/${acc.id",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/price-lists/page.tsx",
+    "href": "/dashboard/price-lists/approval-queue",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/price-lists/page.tsx",
+    "href": "/dashboard/price-lists/${h.id",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/procurement/deliveries/page.tsx",
+    "href": "/dashboard/procurement/orders/${a.po_id}",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/procurement/deliveries/page.tsx",
+    "href": "/dashboard/procurement/orders/${r.po_id}",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/procurement/orders/page.tsx",
+    "href": "/dashboard/procurement/orders/${p.id}",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/procurement/page.tsx",
+    "href": "/dashboard/procurement/${p.id}",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/procurement-suggestion/page.tsx",
+    "href": "/dashboard/procurement-suggestion/suggestions?run_id=${r.id",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/procurement-suggestion/page.tsx",
+    "href": "/dashboard/procurement-suggestion/suggestions",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/procurement-suggestion/page.tsx",
+    "href": "/dashboard/procurement-suggestion/groups",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/procurement-suggestion/page.tsx",
+    "href": "/dashboard/procurement-suggestion/supplier-prices",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/procurement-suggestion/page.tsx",
+    "href": "/dashboard/procurement-suggestion/ai",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/production/orders/page.tsx",
+    "href": "/dashboard/production/orders/${o.id}",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/production/page.tsx",
+    "href": "/dashboard/production/plans/${p.id}",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/production-execution/page.tsx",
+    "href": "/dashboard/production-execution/work-orders",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/production-execution/page.tsx",
+    "href": "/dashboard/production-execution/${o.id",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/products/page.tsx",
+    "href": "/dashboard/inventory",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/products/page.tsx",
+    "href": "/dashboard/movements",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": true,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "middleware_redirect",
+    "potentialIssue": "Route is intercepted by middleware redirect"
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/projects/page.tsx",
+    "href": "/dashboard/projects/${p.id}",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/qms/page.tsx",
+    "href": "/dashboard/qms/inspections",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/qms/page.tsx",
+    "href": "/dashboard/qms/templates",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/qms/page.tsx",
+    "href": "/dashboard/qms/haccp",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/qms/page.tsx",
+    "href": "/dashboard/qms/ccp",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/qms/page.tsx",
+    "href": "/dashboard/qms/deviations",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/qms/page.tsx",
+    "href": "/dashboard/qms/corrective-actions",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/qms/page.tsx",
+    "href": "/dashboard/qms/quarantine",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/qms/page.tsx",
+    "href": "/dashboard/qms/allergen",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/qms/page.tsx",
+    "href": "/dashboard/qms/reports",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/qms/page.tsx",
+    "href": "/dashboard/qms/ai",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/quality/page.tsx",
+    "href": "/dashboard/quality/${insp.id}",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/quality/page.tsx",
+    "href": "/dashboard/quality/${i.id}",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/quality/reports/page.tsx",
+    "href": "/dashboard/quality/${i.id}",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/recipes/page.tsx",
+    "href": "/dashboard/recipes/${r.id}",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/recipes/[id]/page.tsx",
+    "href": "/dashboard/recipes/${r.id}",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/recipes/[id]/page.tsx",
+    "href": "/dashboard/recipes",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/recruitment/page.tsx",
+    "href": "/dashboard/recruitment/requisitions",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/recruitment/page.tsx",
+    "href": "/dashboard/recruitment/requisitions/new",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/recruitment/page.tsx",
+    "href": "/dashboard/recruitment/candidates",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/recruitment/page.tsx",
+    "href": "/dashboard/recruitment/pipeline",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/recruitment/page.tsx",
+    "href": "/dashboard/recruitment/interviews",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/recruitment/page.tsx",
+    "href": "/dashboard/recruitment/offers",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/recruitment/page.tsx",
+    "href": "/dashboard/recruitment/stages",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/recruitment/page.tsx",
+    "href": "/dashboard/recruitment/reports",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/recruitment/page.tsx",
+    "href": "/dashboard/recruitment/ai",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/recurring-orders/page.tsx",
+    "href": "/dashboard/recurring-orders/templates/new",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/recurring-orders/page.tsx",
+    "href": "/dashboard/recurring-orders/templates",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/recurring-orders/page.tsx",
+    "href": "/dashboard/recurring-orders/templates/${t.id",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/recurring-orders/page.tsx",
+    "href": "/dashboard/recurring-orders/reports",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/recurring-orders/page.tsx",
+    "href": "/dashboard/recurring-orders/ai",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/report-builder/page.tsx",
+    "href": "/dashboard/report-builder/catalog",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/report-builder/page.tsx",
+    "href": "/dashboard/report-builder/builder",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/report-builder/page.tsx",
+    "href": "/dashboard/report-builder/saved",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/report-builder/page.tsx",
+    "href": "/dashboard/report-builder/viewer",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/report-builder/page.tsx",
+    "href": "/dashboard/report-builder/dashboards",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/report-builder/page.tsx",
+    "href": "/dashboard/report-builder/schedules",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/report-builder/page.tsx",
+    "href": "/dashboard/report-builder/ai",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/reports/page.tsx",
+    "href": "/dashboard/reports/inventory",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/reports/page.tsx",
+    "href": "/dashboard/reports/production",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/reports/page.tsx",
+    "href": "/dashboard/reports/procurement",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/reports/page.tsx",
+    "href": "/dashboard/reports/sales",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/reports/page.tsx",
+    "href": "/dashboard/reports/finance",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/reports/page.tsx",
+    "href": "/dashboard/reports/payments",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/reports/page.tsx",
+    "href": "/dashboard/reports/marketing",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/roles/page.tsx",
+    "href": "/dashboard/roles/${r.id",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/sales/invoices/page.tsx",
+    "href": "/dashboard/sales/invoices/${r.id}",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/sales/orders/page.tsx",
+    "href": "/dashboard/sales/orders/${r.id}",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/sales/page.tsx",
+    "href": "/dashboard/sales/orders",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/sales/page.tsx",
+    "href": "/dashboard/sales/invoices",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/sales/page.tsx",
+    "href": "/dashboard/sales/invoices?status=OVERDUE",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/sales/page.tsx",
+    "href": "/dashboard/sales/customers",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/sales/page.tsx",
+    "href": "/dashboard/sales/shipments",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/sales/page.tsx",
+    "href": "/dashboard/sales/orders/${so.id}",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/sales/shipments/page.tsx",
+    "href": "/dashboard/sales/shipments/${r.id}",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/secondary-sales/page.tsx",
+    "href": "/dashboard/secondary-sales/analysis",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/secondary-sales/page.tsx",
+    "href": "/dashboard/secondary-sales/inventory",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/secondary-sales/page.tsx",
+    "href": "/dashboard/secondary-sales/upload",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/secondary-sales/page.tsx",
+    "href": "/dashboard/secondary-sales/${h.id",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/shelf-life/page.tsx",
+    "href": "/dashboard/shelf-life/fefo-config",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/shelf-life/page.tsx",
+    "href": "/dashboard/shelf-life/lot-aging",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/shelf-life/page.tsx",
+    "href": "/dashboard/shelf-life/near-expiry",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/shelf-life/page.tsx",
+    "href": "/dashboard/shelf-life/expired",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/shelf-life/page.tsx",
+    "href": "/dashboard/shelf-life/retest-queue",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/shelf-life/page.tsx",
+    "href": "/dashboard/shelf-life/shipment-validation",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/shelf-life/page.tsx",
+    "href": "/dashboard/shelf-life/production-validation",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/shelf-life/page.tsx",
+    "href": "/dashboard/shelf-life/compliance",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/shelf-life/page.tsx",
+    "href": "/dashboard/shelf-life/disposition",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/shelf-life/page.tsx",
+    "href": "/dashboard/shelf-life/customer-rules",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/shelf-life/page.tsx",
+    "href": "/dashboard/shelf-life/bulk-hold-monitor",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/shop-floor/downtime/page.tsx",
+    "href": "/dashboard/shop-floor",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/shop-floor/handover/page.tsx",
+    "href": "/dashboard/shop-floor",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/shop-floor/page.tsx",
+    "href": "/dashboard/shop-floor/terminal",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/shop-floor/page.tsx",
+    "href": "/dashboard/shop-floor/supervisor",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/shop-floor/page.tsx",
+    "href": "/dashboard/shop-floor/downtime",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/shop-floor/page.tsx",
+    "href": "/dashboard/shop-floor/handover",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/shop-floor/page.tsx",
+    "href": "/dashboard/shop-floor/queue",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/shop-floor/queue/page.tsx",
+    "href": "/dashboard/shop-floor",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/shop-floor/supervisor/page.tsx",
+    "href": "/dashboard/shop-floor",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/shop-floor/terminal/page.tsx",
+    "href": "/dashboard/shop-floor",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/subcontracting/page.tsx",
+    "href": "/dashboard/subcontracting/locations",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/subcontracting/page.tsx",
+    "href": "/dashboard/subcontracting/orders",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/subcontracting/page.tsx",
+    "href": "/dashboard/subcontracting/orders?id=${o.id",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/subcontracting/page.tsx",
+    "href": "/dashboard/subcontracting/stock",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/subcontracting/page.tsx",
+    "href": "/dashboard/subcontracting/yield",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/subcontracting/page.tsx",
+    "href": "/dashboard/subcontracting/ai",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/supplier-portal/page.tsx",
+    "href": "/dashboard/supplier-portal/accounts/${a.id",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/surveys/page.tsx",
+    "href": "/dashboard/surveys/new",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/surveys/page.tsx",
+    "href": "/dashboard/surveys/${s.id",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/tax/page.tsx",
+    "href": "/dashboard/tax/rules",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/tax/page.tsx",
+    "href": "/dashboard/tax/regulatory",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/tax/page.tsx",
+    "href": "/dashboard/tax/transactions",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/tax/page.tsx",
+    "href": "/dashboard/tax/reports",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/timesheets/page.tsx",
+    "href": "/dashboard/timesheets/my-timesheets",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/timesheets/page.tsx",
+    "href": "/dashboard/timesheets/time-entry",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/timesheets/page.tsx",
+    "href": "/dashboard/timesheets/weekly-view",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/timesheets/page.tsx",
+    "href": "/dashboard/timesheets/approval-queue",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/timesheets/page.tsx",
+    "href": "/dashboard/timesheets/reports",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/timesheets/page.tsx",
+    "href": "/dashboard/timesheets/ai",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/tpm/page.tsx",
+    "href": "/dashboard/tpm/plans/new",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/tpm/page.tsx",
+    "href": "/dashboard/tpm/promotions/new",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/tpm/page.tsx",
+    "href": "/dashboard/tpm/promotions",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/tpm/page.tsx",
+    "href": "/dashboard/tpm/promotions/${p.id",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/tpm/page.tsx",
+    "href": "/dashboard/tpm/calendar",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/tpm/page.tsx",
+    "href": "/dashboard/tpm/budget",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/tpm/page.tsx",
+    "href": "/dashboard/tpm/claims",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/tpm/page.tsx",
+    "href": "/dashboard/tpm/roi",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/tpm/page.tsx",
+    "href": "/dashboard/tpm/settlement",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/tpm/page.tsx",
+    "href": "/dashboard/tpm/plans",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/tpm/page.tsx",
+    "href": "/dashboard/tpm/ai",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/traceability/page.tsx",
+    "href": "/dashboard/traceability/recalls",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/traceability/page.tsx",
+    "href": "/dashboard/traceability/recalls/${r.id",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/traceability/page.tsx",
+    "href": "/dashboard/traceability/search",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/traceability/page.tsx",
+    "href": "/dashboard/traceability/backward",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/traceability/page.tsx",
+    "href": "/dashboard/traceability/forward",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/traceability/page.tsx",
+    "href": "/dashboard/traceability/genealogy",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/traceability/page.tsx",
+    "href": "/dashboard/traceability/mock-recall",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/traceability/page.tsx",
+    "href": "/dashboard/traceability/regulatory",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/training/page.tsx",
+    "href": "/dashboard/training/programs",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/training/page.tsx",
+    "href": "/dashboard/training/sessions",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/training/page.tsx",
+    "href": "/dashboard/training/skill-matrix",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/training/page.tsx",
+    "href": "/dashboard/training/assignments",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/training/page.tsx",
+    "href": "/dashboard/training/certifications",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/training/page.tsx",
+    "href": "/dashboard/training/feedback",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/training/page.tsx",
+    "href": "/dashboard/training/reports",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/training/page.tsx",
+    "href": "/dashboard/training/ai",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/users/page.tsx",
+    "href": "/dashboard/users/${r.id",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/utility-management/alarm-center/page.tsx",
+    "href": "/dashboard/utility-management/kpi-center",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": true,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "middleware_redirect",
+    "potentialIssue": "Route is intercepted by middleware redirect"
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/utility-management/alarm-center/page.tsx",
+    "href": "/dashboard/utility-management/alarm-rules",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/utility-management/alarm-rules/page.tsx",
+    "href": "/dashboard/utility-management/alarm-center",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/utility-management/alarm-rules/page.tsx",
+    "href": "/dashboard/utility-management/kpi-center",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": true,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "middleware_redirect",
+    "potentialIssue": "Route is intercepted by middleware redirect"
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/utility-management/integration/page.tsx",
+    "href": "/dashboard/utility-management/kpi-center",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": true,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "middleware_redirect",
+    "potentialIssue": "Route is intercepted by middleware redirect"
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/utility-management/integration/page.tsx",
+    "href": "/dashboard/utility-management/billing",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/utility-management/integration/page.tsx",
+    "href": "/dashboard/finance",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/utility-management/integration/page.tsx",
+    "href": "/dashboard/utility-management/machine-utility",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/utility-management/integration/page.tsx",
+    "href": "/dashboard/production",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/utility-management/integration/page.tsx",
+    "href": "/dashboard/utility-management/chemical-treatment",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/utility-management/integration/page.tsx",
+    "href": "/dashboard/inventory",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/utility-management/integration/page.tsx",
+    "href": "/dashboard/utility-management/assets",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/utility-management/integration/page.tsx",
+    "href": "/dashboard/maintenance",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/utility-management/integration/page.tsx",
+    "href": "/dashboard/utility-management/wastewater",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/utility-management/integration/page.tsx",
+    "href": "/dashboard/quality",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/utility-management/integration/page.tsx",
+    "href": "/dashboard/utility-management/alarm-center",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/utility-management/integration/page.tsx",
+    "href": "/dashboard/utility-management/alarm-rules",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/utility-management/kpi-center/page.tsx",
+    "href": "/dashboard/utility-management/kpi-center/electricity",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/utility-management/kpi-center/page.tsx",
+    "href": "/dashboard/utility-management/kpi-center/water",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/utility-management/kpi-center/page.tsx",
+    "href": "/dashboard/utility-management/kpi-center/soft-water",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/utility-management/kpi-center/page.tsx",
+    "href": "/dashboard/utility-management/kpi-center/boiler",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/utility-management/kpi-center/page.tsx",
+    "href": "/dashboard/utility-management/kpi-center/compressor",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/utility-management/kpi-center/page.tsx",
+    "href": "/dashboard/utility-management/kpi-center/solar",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/utility-management/kpi-center/page.tsx",
+    "href": "/dashboard/utility-management/kpi-center/chemicals",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/utility-management/kpi-center/page.tsx",
+    "href": "/dashboard/utility-management/kpi-center/wastewater",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/utility-management/kpi-center/page.tsx",
+    "href": "/dashboard/utility-management/kpi-center/utility-cost",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/utility-management/kpi-center/page.tsx",
+    "href": "/dashboard/utility-management/kpi-center/machine-utility",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/utility-management/reports/page.tsx",
+    "href": "/dashboard/utility-management/reports/daily-consumption",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/utility-management/reports/page.tsx",
+    "href": "/dashboard/utility-management/reports/daily-consumption?view=summary",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/utility-management/reports/page.tsx",
+    "href": "/dashboard/utility-management/reports/equipment-efficiency",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/utility-management/reports/page.tsx",
+    "href": "/dashboard/utility-management/reports/equipment-efficiency?tab=compressor",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/utility-management/reports/page.tsx",
+    "href": "/dashboard/utility-management/reports/equipment-efficiency?tab=softwater",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/utility-management/reports/page.tsx",
+    "href": "/dashboard/utility-management/reports/treatment",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/utility-management/reports/page.tsx",
+    "href": "/dashboard/utility-management/reports/treatment?tab=solar",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/utility-management/reports/page.tsx",
+    "href": "/dashboard/utility-management/reports/treatment?tab=wastewater",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/utility-management/reports/page.tsx",
+    "href": "/dashboard/utility-management/reports/cost-allocation",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/utility-management/reports/page.tsx",
+    "href": "/dashboard/utility-management/reports/load-analysis",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/utility-management/reports/page.tsx",
+    "href": "/dashboard/utility-management/reports/load-analysis?tab=peak",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/utility-management/reports/page.tsx",
+    "href": "/dashboard/utility-management/reports/anomalies",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/utility-management/reports/page.tsx",
+    "href": "/dashboard/utility-management/reports/anomalies?tab=abnormal",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/utility-management/reports/page.tsx",
+    "href": "/dashboard/utility-management/reports/sustainability",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/utility-management/reports/page.tsx",
+    "href": "/dashboard/utility-management",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/van-sales/page.tsx",
+    "href": "/dashboard/van-sales/vans/new",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/van-sales/page.tsx",
+    "href": "/dashboard/van-sales/route",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/van-sales/page.tsx",
+    "href": "/dashboard/van-sales/pos",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/van-sales/page.tsx",
+    "href": "/dashboard/van-sales/stock",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/van-sales/page.tsx",
+    "href": "/dashboard/van-sales/reconciliation",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/van-sales/page.tsx",
+    "href": "/dashboard/van-sales/vans",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/van-sales/page.tsx",
+    "href": "/dashboard/van-sales/vans/${v.id",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/van-sales/page.tsx",
+    "href": "/dashboard/van-sales/ai",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/webhooks/page.tsx",
+    "href": "/dashboard/webhooks/definitions",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/webhooks/page.tsx",
+    "href": "/dashboard/webhooks/subscriptions",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/webhooks/page.tsx",
+    "href": "/dashboard/webhooks/deliveries",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/webhooks/page.tsx",
+    "href": "/dashboard/webhooks/dead-letter",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/webhooks/page.tsx",
+    "href": "/dashboard/webhooks/inbound",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/app/dashboard/webhooks/page.tsx",
+    "href": "/dashboard/webhooks/reports",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/components/dashboard/MpesaSection.tsx",
+    "href": "/dashboard/finance/mpesa",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/components/documents/DocumentPanel.tsx",
+    "href": "/dashboard/documents/${doc.id",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/components/help/HelpDrawer.tsx",
+    "href": "/dashboard/help",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/components/nav-config.tsx",
+    "href": "/dashboard/npd",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/components/nav-config.tsx",
+    "href": "/dashboard/bom",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/components/nav-config.tsx",
+    "href": "/dashboard/bom/conversion",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/components/nav-config.tsx",
+    "href": "/dashboard/recipes",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/components/nav-config.tsx",
+    "href": "/dashboard/iot",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": true,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "middleware_redirect",
+    "potentialIssue": "Route is intercepted by middleware redirect"
+  },
+  {
+    "sourceFile": "frontend/src/components/nav-config.tsx",
+    "href": "/dashboard/help",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/components/NotificationBell.tsx",
+    "href": "/dashboard/notification-center",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": true,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "middleware_redirect",
+    "potentialIssue": "Route is intercepted by middleware redirect"
+  },
+  {
+    "sourceFile": "frontend/src/lib/actionRegistry.ts",
+    "href": "/dashboard/sales/orders",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/lib/actionRegistry.ts",
+    "href": "/dashboard/procurement/orders",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/lib/actionRegistry.ts",
+    "href": "/dashboard/sales/invoices",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/lib/actionRegistry.ts",
+    "href": "/dashboard/sales/customers",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/lib/actionRegistry.ts",
+    "href": "/dashboard/products",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/lib/actionRegistry.ts",
+    "href": "/dashboard/production/orders",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": true,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "middleware_redirect",
+    "potentialIssue": "Route is intercepted by middleware redirect"
+  },
+  {
+    "sourceFile": "frontend/src/lib/actionRegistry.ts",
+    "href": "/dashboard/sales?tab=contracts&drawer=create",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/lib/actionRegistry.ts",
+    "href": "/dashboard/hr?tab=expenses&drawer=create",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/lib/actionRegistry.ts",
+    "href": "/dashboard/hr?tab=recruitment",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/lib/actionRegistry.ts",
+    "href": "/dashboard/planning?tab=kanban",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/lib/actionRegistry.ts",
+    "href": "/dashboard/sales?tab=van-sales",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/lib/actionRegistry.ts",
+    "href": "/dashboard/finance?tab=bank-recon",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/lib/actionRegistry.ts",
+    "href": "/dashboard/planning?tab=mrp",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/lib/actionRegistry.ts",
+    "href": "/dashboard/procurement?tab=suggestions",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/lib/actionRegistry.ts",
+    "href": "/dashboard/finance?tab=invoice-match",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/lib/actionRegistry.ts",
+    "href": "/dashboard/ai/predictions",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/lib/actionRegistry.ts",
+    "href": "/dashboard/ai/chat",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/lib/actionRegistry.ts",
+    "href": "/dashboard/hr?tab=payroll",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/lib/actionRegistry.ts",
+    "href": "/dashboard/production?tab=plans",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/lib/actionRegistry.ts",
+    "href": "/dashboard/analytics/sales",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/lib/actionRegistry.ts",
+    "href": "/dashboard/analytics/finance",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/lib/actionRegistry.ts",
+    "href": "/dashboard/analytics/inventory",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/lib/actionRegistry.ts",
+    "href": "/dashboard/analytics/production",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/lib/actionRegistry.ts",
+    "href": "/dashboard/ai/logs",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/lib/actionRegistry.ts",
+    "href": "/dashboard/finance?tab=dunning",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/lib/actionRegistry.ts",
+    "href": "/dashboard/analytics?tab=report-builder",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/lib/actionRegistry.ts",
+    "href": "/dashboard/utility-management?tab=esg",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/lib/actionRegistry.ts",
+    "href": "/dashboard/ai/chat?q=analyze+sales+trends",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/lib/actionRegistry.ts",
+    "href": "/dashboard/ai/recommendations",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/lib/actionRegistry.ts",
+    "href": "/dashboard/ai/chat?q=show+unpaid+invoices",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/lib/actionRegistry.ts",
+    "href": "/dashboard/ai/formulations",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  },
+  {
+    "sourceFile": "frontend/src/lib/actionRegistry.ts",
+    "href": "/dashboard/ai/scenarios",
+    "isRedirectStub": false,
+    "isMiddlewareRedirect": false,
+    "stubRedirectTarget": null,
+    "staticAnalysisStatus": "linked_route",
+    "potentialIssue": ""
+  }
+]

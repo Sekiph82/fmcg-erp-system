@@ -1,7 +1,26 @@
 # TASKS
 
 ## Current Phase
-MPS REDIRECT STUB RECOVERY — COMPLETE. 2026-05-20. All 4 MPS action card targets restored as real standalone pages. Middleware prefix-redirect bug fixed. 492-stub audit complete.
+ERP-WIDE ACTION CARD RECOVERY — COMPLETE. 2026-05-20. Strict audit of all user-visible action cards, navigation tiles, command palette links. 18 broken cards fixed across 4 files. Zero user-visible broken cards remain.
+
+### ERP-Wide Action Card Recovery (2026-05-20)
+**Audit scope:** 63 source files, 557 href/push references scanned
+**Redirect stubs found (total):** 491 (unchanged)
+**Total broken card refs (pre-fix):** 314
+**User-visible broken cards fixed:** 18
+**User-visible broken cards remaining:** 0
+**Old standalone page cards (never user-visible):** 296 — safe, pages themselves redirect via middleware
+**Files changed:**
+- `frontend/src/lib/actionRegistry.ts` — 16 command palette hrefs updated to direct workspace URLs
+- `frontend/src/app/dashboard/marketing/page.tsx` — 4 instances: campaigns/new + promotions/new → direct URLs with drawer=create
+- `frontend/src/app/dashboard/crm/page.tsx` — 2 quick links: crm/overdue + crm/ai → direct tab URLs
+- `frontend/src/app/dashboard/documents/page.tsx` — 1 button: documents/new push → direct URL
+**Scripts created:** `scripts/audit-action-card-sources.js`
+**Reports created:** `docs/ERP_ACTION_CARD_RECOVERY_REPORT.md`, `docs/ACTION_CARD_REDIRECT_MAP.md`, `docs/ACTION_CARD_SOURCE_INVENTORY.json/md`
+**Tests updated:** `frontend/e2e/action-card-health.spec.ts` — added MPS regression, actionRegistry href tests, Marketing drawer tests, CRM stub regression
+**Type-check:** CLEAN | **Build:** CLEAN | **Backend tests:** 482/482 PASS
+
+### MPS Redirect Stub Recovery (2026-05-20)
 
 ### MPS Redirect Stub Recovery (2026-05-20)
 **Redirect stubs found:** 492 (491 safe consolidation redirects, 4 broken MPS action targets)

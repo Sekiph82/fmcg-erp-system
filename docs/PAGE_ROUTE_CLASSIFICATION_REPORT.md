@@ -1,16 +1,16 @@
 # Page Route Classification Report
 
-Generated: 2026-05-19
+Generated: 2026-05-20
 
 ## Summary
 
 | Classification            | Count |
 |---------------------------|-------|
 | A WORKSPACE_PAGE          | 31     |
-| B REDIRECT_ONLY           | 496     |
+| B REDIRECT_ONLY           | 492     |
 | C LIGHTWEIGHT_WRAPPER     | 213     |
 | D FULL_DUPLICATE_UI       | 0     |
-| E STANDALONE_OPERATIONAL  | 15     |
+| E STANDALONE_OPERATIONAL  | 19     |
 | F UNKNOWN                 | 0     |
 | Total                     | 755   |
 
@@ -403,11 +403,11 @@ Generated: 2026-05-19
 | `/dashboard/mobile/devices` | B REDIRECT_ONLY | ✅ | — | /dashboard/admin | mobile |
 | `/dashboard/mobile` | C LIGHTWEIGHT_WRAPPER | ✅ | — | /dashboard/admin | mobile |
 | `/dashboard/movements` | C LIGHTWEIGHT_WRAPPER | ✅ | — | /dashboard/inventory | movements |
-| `/dashboard/mps/campaigns` | B REDIRECT_ONLY | ✅ | — | /dashboard/planning | mps |
-| `/dashboard/mps/capacity` | B REDIRECT_ONLY | ✅ | — | /dashboard/planning | mps |
+| `/dashboard/mps/campaigns` | E STANDALONE_OPERATIONAL | ✅ | — | /dashboard/planning | mps |
+| `/dashboard/mps/capacity` | E STANDALONE_OPERATIONAL | ✅ | — | /dashboard/planning | mps |
 | `/dashboard/mps` | C LIGHTWEIGHT_WRAPPER | ✅ | — | /dashboard/planning | mps |
-| `/dashboard/mps/planning-board` | B REDIRECT_ONLY | ✅ | — | /dashboard/planning | mps |
-| `/dashboard/mps/whatif` | B REDIRECT_ONLY | ✅ | — | /dashboard/planning | mps |
+| `/dashboard/mps/planning-board` | E STANDALONE_OPERATIONAL | ✅ | — | /dashboard/planning | mps |
+| `/dashboard/mps/whatif` | E STANDALONE_OPERATIONAL | ✅ | — | /dashboard/planning | mps |
 | `/dashboard/mrp/forecast/accuracy` | B REDIRECT_ONLY | ✅ | — | /dashboard/planning | mrp |
 | `/dashboard/mrp/forecast/correlation` | B REDIRECT_ONLY | ✅ | — | /dashboard/planning | mrp |
 | `/dashboard/mrp/forecast` | B REDIRECT_ONLY | ✅ | — | /dashboard/planning | mrp |

@@ -35,8 +35,8 @@ function CRMDashboardTab() {
     { href: "/dashboard/crm/activities", label: "Activity Timeline" },
     { href: "/dashboard/crm/forecast", label: "Forecast" },
     { href: "/dashboard/crm/win-loss", label: "Win/Loss Analysis" },
-    { href: "/dashboard/crm/overdue", label: "Overdue Queue" },
-    { href: "/dashboard/crm/ai", label: "AI Agents" },
+    { href: "/dashboard/crm?tab=pipeline", label: "Overdue Queue" },
+    { href: "/dashboard/crm?tab=overview", label: "AI Agents" },
     { href: "/dashboard/crm/stages", label: "Stage Config" },
   ];
 

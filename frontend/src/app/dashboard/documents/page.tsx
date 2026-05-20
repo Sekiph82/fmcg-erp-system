@@ -86,7 +86,7 @@ function DocumentsContent() {
         </div>
         <PermissionGuard permission="documents.create">
           <button
-            onClick={() => router.push("/dashboard/documents/new")}
+            onClick={() => router.push("/dashboard/documents?drawer=create")}
             className="px-4 py-2 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700"
           >
             + New Document

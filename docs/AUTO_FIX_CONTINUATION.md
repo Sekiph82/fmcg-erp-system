@@ -1,5 +1,84 @@
 # Auto-Fix Continuation Guide
 
+Date: 2026-05-20 (Round 15 — ERP-wide action card recovery)
+
+## Status After Round 15 (ERP-Wide Action Card Recovery)
+
+**Backend tests:** 482/482 pytest pass.
+**Frontend:** build clean, type-check clean.
+**User-visible broken cards fixed:** 18 (0 remaining).
+
+### What was fixed
+
+| File | Change |
+|------|--------|
+| `frontend/src/lib/actionRegistry.ts` | 16 command palette hrefs → direct workspace `?tab=` URLs |
+| `frontend/src/app/dashboard/marketing/page.tsx` | `campaigns/new` + `promotions/new` → direct URLs with `drawer=create` |
+| `frontend/src/app/dashboard/crm/page.tsx` | `crm/overdue` + `crm/ai` → direct tab URLs |
+| `frontend/src/app/dashboard/documents/page.tsx` | `documents/new` push → direct `?drawer=create` URL |
+
+### Root cause patterns
+
+**Pattern 1 — Command palette stub hrefs:**
+`actionRegistry.ts` had hrefs like `/dashboard/mrp/run` which pointed to redirect stub pages.
+Each click caused an extra 302 redirect hop before landing in the workspace.
+Fix: update all hrefs to direct workspace `?tab=` URLs.
+
+**Pattern 2 — Middleware strips drawer param:**
+`marketing/page.tsx` used `/dashboard/marketing/campaigns/new` (a stub route).
+Middleware prefix-matched `/dashboard/marketing/campaigns` and redirected to `?tab=campaigns` WITHOUT `drawer=create`.
+The stub page (which had `drawer=create` in its redirect) was never reached.
+Fix: use `/dashboard/marketing?tab=campaigns&drawer=create` directly, bypassing middleware.
+
+**Pattern 3 — Same-workspace stub redirect:**
+`crm/page.tsx` linked to `crm/overdue` and `crm/ai` stubs that redirected to `crm?tab=pipeline` / `crm?tab=overview`.
+Fix: use the tab URLs directly.
+
+### Key rules (carry forward)
+
+- **Redirect stubs are not working action targets.** Even if the stub redirects correctly, it can lose `drawer=create` params via middleware prefix-match.
+- **Dashboard consolidation redirects use 302, not 308.**
+- **Middleware prefix traps:** if a parent route redirects, child routes with real content need `BYPASS_PREFIX_REDIRECT` (see MPS case).
+- **actionRegistry.ts hrefs:** always use direct workspace `?tab=` URLs, never redirect stubs.
+
+### How to run the audits
+
+```bash
+# Find action cards pointing to redirect stubs
+node scripts/find-broken-action-cards.js
+
+# Build full source inventory of all hrefs/pushes
+node scripts/audit-action-card-sources.js
+
+# Find all redirect stub pages
+node scripts/find-redirect-stubs.js
+
+# Find action cards in broken state (by file)
+node scripts/find-broken-action-cards.js 2>&1 | grep "^FILE:" | sort | uniq -c | sort -rn
+```
+
+### How to filter for user-visible broken cards
+
+Old standalone pages (like `/dashboard/allergen`) are THEMSELVES redirected by middleware.
+Their internal broken cards are never seen by users.
+
+User-visible files are: workspace pages, actionRegistry.ts, components.
+NOT user-visible: any page whose own route is in middleware REDIRECTS or routeRedirectMap.
+
+```bash
+# After running find-broken-action-cards.js, check which sourceFiles are workspaces:
+node scripts/find-broken-action-cards.js 2>/dev/null | grep "^FILE:" | grep -v "<list of old-page patterns>"
+```
+
+### How to fix prefix trap (same as MPS pattern)
+
+1. Identify: parent route in middleware.ts REDIRECTS has a prefix that catches a child route
+2. Add child route to `BYPASS_PREFIX_REDIRECT` set in `middleware.ts`
+3. Remove exact entry from `routeRedirectMap.ts` if present
+4. Restore or create the real page at the child route
+
+---
+
 Date: 2026-05-20 (Round 14 — 308→302 redirect fix + MPS E2E tests)
 
 ## Status After Round 14 (Redirect Cache Fix)
