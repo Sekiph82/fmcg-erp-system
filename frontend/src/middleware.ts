@@ -197,7 +197,7 @@ export function middleware(request: NextRequest) {
   const qs = params.toString();
   const dest = qs ? `${match.p}?${qs}` : match.p;
 
-  return NextResponse.redirect(new URL(dest, request.url), { status: 308 });
+  return NextResponse.redirect(new URL(dest, request.url), { status: 302 });
 }
 
 export const config = {

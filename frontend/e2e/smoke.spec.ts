@@ -232,3 +232,38 @@ test.describe("G. Theme sanity", () => {
     await expect(page.locator("text=Application error")).toHaveCount(0);
   });
 });
+
+// ── H. MPS sub-route pages ────────────────────────────────────────────────────
+// Each MPS sub-route must stay on its own URL, show unique h1 content,
+// and must NOT redirect to /dashboard/planning?tab=mps.
+
+const MPS_PAGES: [string, string][] = [
+  ["/dashboard/mps/planning-board", "Production Planning Board"],
+  ["/dashboard/mps/capacity",       "Capacity Heatmap"],
+  ["/dashboard/mps/campaigns",      "Campaign Planning"],
+  ["/dashboard/mps/whatif",         "What-If Simulation"],
+];
+
+test.describe("H. MPS sub-route pages", () => {
+  for (const [route, expectedH1] of MPS_PAGES) {
+    test(`${route} stays on route and shows unique content`, async ({ page }) => {
+      await page.goto(route, { waitUntil: "domcontentloaded" });
+
+      // 1. URL must stay on the MPS sub-route (not redirect away)
+      expect(page.url()).toContain(route);
+
+      // 2. Must NOT have redirected to /dashboard/planning?tab=mps
+      expect(page.url()).not.toContain("/dashboard/planning");
+
+      // 3. Unique page h1 content must appear
+      await expect(page.locator("h1").first()).toContainText(expectedH1, {
+        timeout: 20_000,
+        ignoreCase: true,
+      });
+
+      // 4. No error overlays
+      await expect(page.locator("text=Application error")).toHaveCount(0);
+      await expect(page.locator("text=404")).toHaveCount(0);
+    });
+  }
+});

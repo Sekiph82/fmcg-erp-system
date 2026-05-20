@@ -1,5 +1,45 @@
 # Auto-Fix Continuation Guide
 
+Date: 2026-05-20 (Round 14 — 308→302 redirect fix + MPS E2E tests)
+
+## Status After Round 14 (Redirect Cache Fix)
+
+**Backend tests:** 482/482 pytest pass.
+**Frontend:** build clean, type-check clean.
+
+### Problem: browser-cached 308 redirects
+
+HTTP 308 (Permanent Redirect) is cached permanently by browsers. If the app ever
+served a 308 for a URL, the browser will continue redirecting that URL locally —
+even after the server-side redirect is removed — until the cache is cleared.
+
+**Symptom:** Page loads correctly in Incognito / InPrivate (no cached 308) but
+normal browser profile still redirects to the old destination (e.g.
+`/dashboard/planning?tab=mps`) even after the server fix.
+
+**Fix applied:** Changed all dashboard consolidation redirects in
+`frontend/src/middleware.ts` from `status: 308` to `status: 302`.
+302 (Found / Temporary Redirect) is **not** cached by browsers, so it can be
+corrected server-side without requiring users to clear their cache.
+
+### If a user's normal browser still redirects after the server fix
+
+They need to clear cached redirects for the site:
+
+- **Chrome:** DevTools → Application → Storage → Clear site data (check "Cache storage")
+  or navigate to `chrome://settings/clearBrowserData` and clear cached images/files.
+- **Firefox:** DevTools → Storage → Cache Storage → right-click → Delete All.
+- **Edge:** DevTools → Application → Clear storage → Clear site data.
+- Alternatively: hard-refresh with `Shift+Ctrl+R` / `Shift+Cmd+R` (clears navigation cache for current page).
+
+### Rule for future redirects
+
+Use **302** for all dashboard consolidation redirects unless there is a strong,
+explicit production reason for permanent caching (e.g. a decommissioned external
+domain that will never change back). Document the reason inline if 308 is chosen.
+
+---
+
 Date: 2026-05-20 (Round 13 — MPS REDIRECT STUB RECOVERY COMPLETE)
 Purpose: Let the next Claude session continue without asking the user anything.
 
