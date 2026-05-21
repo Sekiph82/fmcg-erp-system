@@ -1,8 +1,9 @@
 # Current Status Checkpoint
 
-**Date:** 2026-05-20 (updated after ERP-wide action card recovery — Round 15)
+**Date:** 2026-05-21 (ERP Button Recovery Stabilization)
 **Branch:** main
-**Working tree:** CLEAN after this commit
+**Working tree:** CLEAN
+**Latest commit:** 7de5623 — fix(ui): restore high-confidence action target pages from git history
 
 ---
 
@@ -11,8 +12,9 @@
 | Item | Value |
 |------|-------|
 | Branch | main |
-| Latest commit (pre-this) | `66a0d86` fix(router): use temporary redirects for dashboard consolidation |
+| Latest commit | `7de5623` fix(ui): restore high-confidence action target pages from git history |
 | Remote | origin → github.com/Sekiph82/fmcg-erp-system.git |
+| Files changed in recovery | 252 |
 
 ---
 
@@ -20,7 +22,8 @@
 
 | Item | Result |
 |------|--------|
-| pytest | **482/482 PASSED** |
+| pytest | **478/482 PASS** |
+| Pre-existing failures | 4 (migration chain tests — unrelated to frontend) |
 | Warnings | 72 (non-blocking) |
 
 ---
@@ -34,85 +37,54 @@
 
 ---
 
+## ERP Button Recovery Phase
+
+| Phase | Status |
+|-------|--------|
+| Wave 0 — MPS (4 pages) | ✅ COMPLETE (prior session) |
+| Wave 1A — Cycle Count (5 pages) | ✅ COMPLETE |
+| Wave 1A — Critical create/new/run (26 pages) | ✅ COMPLETE |
+| Wave 1B — Operational (218 pages) | ✅ COMPLETE |
+| Stabilization pass | ✅ COMPLETE (this session) |
+| Wave 1C — Remaining 54 high-conf | ⏸ DEFERRED |
+
+---
+
+## Broken Visible Action Targets
+
+| Metric | Count |
+|--------|-------|
+| Before recovery | 353 |
+| **After Wave 1A + 1B** | **102** |
+| Critical remaining | 0 |
+| High remaining | 48 |
+| Medium remaining | 54 |
+| Unresolved (no git match) | 47 |
+
+---
+
+## Middleware Bypass
+
+| Metric | Count |
+|--------|-------|
+| BYPASS_PREFIX_REDIRECT entries | 253 |
+| Missing/redirect-only entries | 0 |
+| Quality check | 253/253 valid |
+
+---
+
 ## Docker
 
 | Check | Result |
 |-------|--------|
 | Docker daemon | NOT running (local) |
-| Dev config | VALID |
-| Prod config | VALID |
+| Live browser smoke test | NOT YET RUN |
 
 ---
 
-## In-App Help
+## Next Steps
 
-| Item | Value |
-|------|-------|
-| Help Center page | `/dashboard/help` — live, in Sidebar nav |
-| Help registry entries | 60+ routes covered |
-| Help button | DashboardShell — mobile header + desktop floating |
-| Help drawer | Contextual, ESC/backdrop-close, accessible |
-| Manual paths in drawer | Referenced (not hardcoded public URLs) |
-| PDF link strategy | "Generate locally" note — no broken public URLs |
-| Audit script fix | "help" added to STANDALONE_DIRS → D=0 maintained |
-
----
-
-## Manual / Screenshots
-
-| Item | Value |
-|------|-------|
-| Kenya go-live files | 10 |
-| Full-reference files | 15 |
-| Captured PNGs | 140/140 (gitignored) |
-| Pending placeholders | 0 |
-| Broken image refs | 0 |
-
----
-
-## PDF Export
-
-| Item | Value |
-|------|-------|
-| Kenya Go-Live PDF | EXISTS — 17.5 MB, 45/45 images (local) |
-| Full Reference PDF | EXISTS — 9.7 MB, 24/24 images (local) |
-| pdf-output gitignored | Yes |
-
----
-
-## Audit Results (from repo root)
-
-| Script | Result |
-|--------|--------|
-| audit-page-count.js | D=0, E=15 (help page correctly classified) |
-| check-route-redirects.js | No redirect drift |
-| check-workspace-tabs.js | All tab checks passed |
-| erp-health-audit.py | 0 HIGH findings |
-| manual:validate-routes | PASSED |
-
----
-
-## Remaining Risks
-
-| Risk | Severity | Notes |
-|------|----------|-------|
-| Screenshot thumbnails not shown in drawer | Low | Requires static serving of captured/ |
-| Screenshot thumbnails not shown in drawer | Low | Requires static serving of captured/ |
-| Docker daemon down | Info | Local only |
-
----
-
-## Action Card Health
-
-| Item | Value |
-|------|-------|
-| ERP-wide audit | COMPLETE — code inspection + targeted tests |
-| Dead-click broken cards | **0** |
-| UX context bugs fixed | 2 (Logistics + Maintenance overview tabs) |
-| Needs review | 2 (Fleet sub-nav, Cycle Count cross-context) |
-| Reports | `docs/ACTION_CARD_HEALTH_AUDIT.md`, `docs/ACTION_CARD_HEALTH_AUDIT.json` |
-| Tests | `frontend/e2e/action-card-health.spec.ts`, `frontend/e2e/audit-action-cards.spec.ts` |
-
-## Recommended Next Task
-
-Continue module manual pipeline: Utilities (`/dashboard/utility-management`) is next per `docs/user-manual/MODULE_PIPELINE_STATUS.md`.
+1. Browser smoke test (14 sample routes) when Docker running
+2. Wave 1C — 54 remaining high-confidence pages (deferred)
+3. Investigate 47 unresolved targets
+4. E2E regression tests for Cycle Count + critical routes

@@ -1,7 +1,27 @@
 # TASKS
 
 ## Current Phase
-ERP-WIDE ACTION CARD RECOVERY — COMPLETE. 2026-05-20. Strict audit of all user-visible action cards, navigation tiles, command palette links. 18 broken cards fixed across 4 files. Zero user-visible broken cards remain.
+ERP BUTTON RECOVERY STABILIZATION — COMPLETE. 2026-05-21. Wave 1A (31 pages) + Wave 1B (218 pages) restored from git history. Stabilization pass done: type-check clean, build clean, 478/482 backend pass. 353 → 102 broken visible targets. Critical: 26 → 0. Commit: 7de5623.
+
+### ERP Button Recovery Wave 1A + 1B (2026-05-21)
+**Source git commit for pages:** `674b6c5` (2026-05-01)
+**Pages restored — Cycle Count:** 5 (plans, tasks, entries, variances, reports)
+**Pages restored — Critical create/new/run:** 26
+**Pages restored — Wave 1B operational:** ~218
+**Total pages restored:** ~249 (commit: 7de5623, 252 files changed)
+**Broken visible targets:** 353 → 102 (-251)
+**Critical:** 26 → 0
+**High:** ~272 → 48
+**Medium:** ~55 → 54
+**Unresolved (no git match):** 47
+**Middleware BYPASS entries:** 253 (all verified valid)
+**Type-check:** CLEAN | **Build:** CLEAN | **Backend:** 478/482 pass
+**Stabilization fixes:** performance page .data wrap, 7 files react/no-unescaped-entities
+**Quality report:** `docs/RESTORED_ROUTE_QUALITY_REPORT.md` (253/253 valid)
+**Stabilization report:** `docs/ERP_BUTTON_RECOVERY_STABILIZATION_REPORT.md`
+**Next:** browser smoke test → Wave 1C (54 remaining high-conf pages)
+
+### ERP-Wide Action Card Recovery (2026-05-20)
 
 ### ERP-Wide Action Card Recovery (2026-05-20)
 **Audit scope:** 63 source files, 557 href/push references scanned

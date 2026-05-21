@@ -1,82 +1,10 @@
 [
   {
-    "sourceFile": "frontend/src/app/dashboard/allergen/page.tsx",
-    "stubRoute": "/dashboard/allergen/change-logs",
-    "redirectTarget": "/dashboard/quality?tab=allergen",
-    "matches": [
-      "href: \"/dashboard/allergen/change-logs\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/allergen/page.tsx",
-    "stubRoute": "/dashboard/allergen/material-profiles",
-    "redirectTarget": "/dashboard/quality?tab=allergen",
-    "matches": [
-      "href: \"/dashboard/allergen/material-profiles\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/allergen/page.tsx",
-    "stubRoute": "/dashboard/allergen/product-allergens",
-    "redirectTarget": "/dashboard/quality?tab=allergen",
-    "matches": [
-      "href: \"/dashboard/allergen/product-allergens\""
-    ]
-  },
-  {
     "sourceFile": "frontend/src/app/dashboard/appraisals/page.tsx",
     "stubRoute": "/dashboard/appraisals/ai",
     "redirectTarget": "/dashboard/hr?tab=appraisals",
     "matches": [
       "href: \"/dashboard/appraisals/ai\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/appraisals/page.tsx",
-    "stubRoute": "/dashboard/appraisals/development-plans",
-    "redirectTarget": "/dashboard/hr?tab=appraisals",
-    "matches": [
-      "href: \"/dashboard/appraisals/development-plans\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/appraisals/page.tsx",
-    "stubRoute": "/dashboard/appraisals/hr-review",
-    "redirectTarget": "/dashboard/hr?tab=appraisals",
-    "matches": [
-      "href: \"/dashboard/appraisals/hr-review\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/appraisals/page.tsx",
-    "stubRoute": "/dashboard/appraisals/manager-queue",
-    "redirectTarget": "/dashboard/hr?tab=appraisals",
-    "matches": [
-      "href: \"/dashboard/appraisals/manager-queue\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/appraisals/page.tsx",
-    "stubRoute": "/dashboard/appraisals/periods",
-    "redirectTarget": "/dashboard/hr?tab=appraisals",
-    "matches": [
-      "href: \"/dashboard/appraisals/periods\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/appraisals/page.tsx",
-    "stubRoute": "/dashboard/appraisals/records/new",
-    "redirectTarget": "/dashboard/hr?tab=appraisals&drawer=create",
-    "matches": [
-      "href: \"/dashboard/appraisals/records/new\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/appraisals/page.tsx",
-    "stubRoute": "/dashboard/appraisals/records",
-    "redirectTarget": "/dashboard/hr?tab=appraisals",
-    "matches": [
-      "href: \"/dashboard/appraisals/records\""
     ]
   },
   {
@@ -88,22 +16,6 @@
     ]
   },
   {
-    "sourceFile": "frontend/src/app/dashboard/appraisals/page.tsx",
-    "stubRoute": "/dashboard/appraisals/self-review",
-    "redirectTarget": "/dashboard/hr?tab=appraisals",
-    "matches": [
-      "href: \"/dashboard/appraisals/self-review\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/appraisals/page.tsx",
-    "stubRoute": "/dashboard/appraisals/templates",
-    "redirectTarget": "/dashboard/hr?tab=appraisals",
-    "matches": [
-      "href: \"/dashboard/appraisals/templates\""
-    ]
-  },
-  {
     "sourceFile": "frontend/src/app/dashboard/bank-reconciliation/page.tsx",
     "stubRoute": "/dashboard/bank-reconciliation/ai",
     "redirectTarget": "/dashboard/finance?tab=bank-recon",
@@ -112,76 +24,11 @@
     ]
   },
   {
-    "sourceFile": "frontend/src/app/dashboard/bank-reconciliation/page.tsx",
-    "stubRoute": "/dashboard/bank-reconciliation/balance",
-    "redirectTarget": "/dashboard/finance?tab=bank-recon",
-    "matches": [
-      "href: \"/dashboard/bank-reconciliation/balance\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/bank-reconciliation/page.tsx",
-    "stubRoute": "/dashboard/bank-reconciliation/import",
-    "redirectTarget": "/dashboard/finance?tab=bank-recon",
-    "matches": [
-      "href=\"/dashboard/bank-reconciliation/import\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/bank-reconciliation/page.tsx",
-    "stubRoute": "/dashboard/bank-reconciliation/open-items",
-    "redirectTarget": "/dashboard/finance?tab=bank-recon",
-    "matches": [
-      "href: \"/dashboard/bank-reconciliation/open-items\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/bank-reconciliation/page.tsx",
-    "stubRoute": "/dashboard/bank-reconciliation/rules",
-    "redirectTarget": "/dashboard/finance?tab=bank-recon",
-    "matches": [
-      "href: \"/dashboard/bank-reconciliation/rules\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/bank-reconciliation/page.tsx",
-    "stubRoute": "/dashboard/bank-reconciliation/statements",
-    "redirectTarget": "/dashboard/finance?tab=bank-recon",
-    "matches": [
-      "href=\"/dashboard/bank-reconciliation/statements\"",
-      "href=\"/dashboard/bank-reconciliation/statements\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/calendar/page.tsx",
-    "stubRoute": "/dashboard/calendar/availability",
+    "sourceFile": "frontend/src/app/dashboard/calendar/new-event/page.tsx",
+    "stubRoute": "/dashboard/calendar/events",
     "redirectTarget": "/dashboard/communication?tab=calendar",
     "matches": [
-      "href: \"/dashboard/calendar/availability\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/calendar/page.tsx",
-    "stubRoute": "/dashboard/calendar/new-event",
-    "redirectTarget": "/dashboard/communication?tab=calendar",
-    "matches": [
-      "href: \"/dashboard/calendar/new-event\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/calendar/page.tsx",
-    "stubRoute": "/dashboard/calendar/resources",
-    "redirectTarget": "/dashboard/communication?tab=calendar",
-    "matches": [
-      "href: \"/dashboard/calendar/resources\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/calendar/page.tsx",
-    "stubRoute": "/dashboard/calendar/view",
-    "redirectTarget": "/dashboard/communication?tab=calendar",
-    "matches": [
-      "href: \"/dashboard/calendar/view\""
+      "href=\"/dashboard/calendar/events\""
     ]
   },
   {
@@ -194,27 +41,10 @@
   },
   {
     "sourceFile": "frontend/src/app/dashboard/chatter/page.tsx",
-    "stubRoute": "/dashboard/chatter/feed",
-    "redirectTarget": "/dashboard/communication?tab=chatter",
-    "matches": [
-      "href=\"/dashboard/chatter/feed\"",
-      "href: \"/dashboard/chatter/feed\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/chatter/page.tsx",
     "stubRoute": "/dashboard/chatter/reports",
     "redirectTarget": "/dashboard/communication?tab=chatter",
     "matches": [
       "href: \"/dashboard/chatter/reports\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/chatter/page.tsx",
-    "stubRoute": "/dashboard/chatter/search",
-    "redirectTarget": "/dashboard/communication?tab=chatter",
-    "matches": [
-      "href: \"/dashboard/chatter/search\""
     ]
   },
   {
@@ -226,59 +56,11 @@
     ]
   },
   {
-    "sourceFile": "frontend/src/app/dashboard/commissions/page.tsx",
-    "stubRoute": "/dashboard/commissions/payouts",
-    "redirectTarget": "/dashboard/sales?tab=commissions",
-    "matches": [
-      "href=\"/dashboard/commissions/payouts\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/commissions/page.tsx",
-    "stubRoute": "/dashboard/commissions/rules",
-    "redirectTarget": "/dashboard/sales?tab=commissions",
-    "matches": [
-      "href=\"/dashboard/commissions/rules\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/commissions/page.tsx",
-    "stubRoute": "/dashboard/commissions/transactions",
-    "redirectTarget": "/dashboard/sales?tab=commissions",
-    "matches": [
-      "href=\"/dashboard/commissions/transactions\""
-    ]
-  },
-  {
     "sourceFile": "frontend/src/app/dashboard/contracts/page.tsx",
     "stubRoute": "/dashboard/contracts/ai",
     "redirectTarget": "/dashboard/sales?tab=contracts",
     "matches": [
       "href=\"/dashboard/contracts/ai\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/contracts/page.tsx",
-    "stubRoute": "/dashboard/contracts/expiring",
-    "redirectTarget": "/dashboard/sales?tab=contracts",
-    "matches": [
-      "href=\"/dashboard/contracts/expiring\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/contracts/page.tsx",
-    "stubRoute": "/dashboard/contracts/list",
-    "redirectTarget": "/dashboard/sales?tab=contracts",
-    "matches": [
-      "href=\"/dashboard/contracts/list\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/contracts/page.tsx",
-    "stubRoute": "/dashboard/contracts/new",
-    "redirectTarget": "/dashboard/sales?tab=contracts&drawer=create",
-    "matches": [
-      "href=\"/dashboard/contracts/new\""
     ]
   },
   {
@@ -290,101 +72,11 @@
     ]
   },
   {
-    "sourceFile": "frontend/src/app/dashboard/custom-fields/page.tsx",
-    "stubRoute": "/dashboard/custom-fields/fields",
-    "redirectTarget": "/dashboard/admin?tab=custom-fields",
+    "sourceFile": "frontend/src/app/dashboard/dimensions/completeness/page.tsx",
+    "stubRoute": "/dashboard/dimensions/ai",
+    "redirectTarget": "/dashboard/finance?tab=dimensions",
     "matches": [
-      "href=\"/dashboard/custom-fields/fields\"",
-      "href: \"/dashboard/custom-fields/fields\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/custom-fields/page.tsx",
-    "stubRoute": "/dashboard/custom-fields/form-builder",
-    "redirectTarget": "/dashboard/admin?tab=custom-fields",
-    "matches": [
-      "href: \"/dashboard/custom-fields/form-builder\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/custom-fields/page.tsx",
-    "stubRoute": "/dashboard/custom-fields/new-field",
-    "redirectTarget": "/dashboard/admin?tab=custom-fields&drawer=create",
-    "matches": [
-      "href=\"/dashboard/custom-fields/new-field\"",
-      "href: \"/dashboard/custom-fields/new-field\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/custom-fields/page.tsx",
-    "stubRoute": "/dashboard/custom-fields/values",
-    "redirectTarget": "/dashboard/admin?tab=custom-fields",
-    "matches": [
-      "href: \"/dashboard/custom-fields/values\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/custom-fields/page.tsx",
-    "stubRoute": "/dashboard/custom-fields/workflow-rules",
-    "redirectTarget": "/dashboard/admin?tab=custom-fields",
-    "matches": [
-      "href: \"/dashboard/custom-fields/workflow-rules\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/cycle-count/page.tsx",
-    "stubRoute": "/dashboard/cycle-count/entries",
-    "redirectTarget": "/dashboard/inventory?tab=cycle-count",
-    "matches": [
-      "href: \"/dashboard/cycle-count/entries\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/cycle-count/page.tsx",
-    "stubRoute": "/dashboard/cycle-count/plans",
-    "redirectTarget": "/dashboard/inventory?tab=cycle-count",
-    "matches": [
-      "href: \"/dashboard/cycle-count/plans\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/cycle-count/page.tsx",
-    "stubRoute": "/dashboard/cycle-count/reports",
-    "redirectTarget": "/dashboard/inventory?tab=cycle-count",
-    "matches": [
-      "href: \"/dashboard/cycle-count/reports\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/cycle-count/page.tsx",
-    "stubRoute": "/dashboard/cycle-count/tasks",
-    "redirectTarget": "/dashboard/inventory?tab=cycle-count",
-    "matches": [
-      "href: \"/dashboard/cycle-count/tasks\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/cycle-count/page.tsx",
-    "stubRoute": "/dashboard/cycle-count/variances",
-    "redirectTarget": "/dashboard/inventory?tab=cycle-count",
-    "matches": [
-      "href: \"/dashboard/cycle-count/variances\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/developer/page.tsx",
-    "stubRoute": "/dashboard/developer/graphql",
-    "redirectTarget": "/dashboard/integrations?tab=developer",
-    "matches": [
-      "href: \"/dashboard/developer/graphql\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/developer/page.tsx",
-    "stubRoute": "/dashboard/developer/keys",
-    "redirectTarget": "/dashboard/integrations?tab=developer",
-    "matches": [
-      "href: \"/dashboard/developer/keys\""
+      "href=\"/dashboard/dimensions/ai\""
     ]
   },
   {
@@ -396,148 +88,11 @@
     ]
   },
   {
-    "sourceFile": "frontend/src/app/dashboard/dimensions/page.tsx",
-    "stubRoute": "/dashboard/dimensions/allocation-run",
-    "redirectTarget": "/dashboard/finance?tab=dimensions",
-    "matches": [
-      "href: \"/dashboard/dimensions/allocation-run\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/dimensions/page.tsx",
-    "stubRoute": "/dashboard/dimensions/allocations",
-    "redirectTarget": "/dashboard/finance?tab=dimensions",
-    "matches": [
-      "href: \"/dashboard/dimensions/allocations\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/dimensions/page.tsx",
-    "stubRoute": "/dashboard/dimensions/completeness",
-    "redirectTarget": "/dashboard/finance?tab=dimensions",
-    "matches": [
-      "href: \"/dashboard/dimensions/completeness\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/dimensions/page.tsx",
-    "stubRoute": "/dashboard/dimensions/cost-centers",
-    "redirectTarget": "/dashboard/finance?tab=dimensions",
-    "matches": [
-      "href: \"/dashboard/dimensions/cost-centers\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/dimensions/page.tsx",
-    "stubRoute": "/dashboard/dimensions/defaults",
-    "redirectTarget": "/dashboard/finance?tab=dimensions",
-    "matches": [
-      "href: \"/dashboard/dimensions/defaults\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/dimensions/page.tsx",
-    "stubRoute": "/dashboard/dimensions/reclassify",
-    "redirectTarget": "/dashboard/finance?tab=dimensions",
-    "matches": [
-      "href: \"/dashboard/dimensions/reclassify\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/dimensions/page.tsx",
-    "stubRoute": "/dashboard/dimensions/types",
-    "redirectTarget": "/dashboard/finance?tab=dimensions",
-    "matches": [
-      "href: \"/dashboard/dimensions/types\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/dimensions/page.tsx",
-    "stubRoute": "/dashboard/dimensions/validation",
-    "redirectTarget": "/dashboard/finance?tab=dimensions",
-    "matches": [
-      "href: \"/dashboard/dimensions/validation\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/dimensions/page.tsx",
-    "stubRoute": "/dashboard/dimensions/values",
-    "redirectTarget": "/dashboard/finance?tab=dimensions",
-    "matches": [
-      "href: \"/dashboard/dimensions/values\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/documents/compliance/page.tsx",
-    "stubRoute": "/dashboard/documents/new",
-    "redirectTarget": "/dashboard/documents?drawer=create",
-    "matches": [
-      "href=\"/dashboard/documents/new\"",
-      "href=\"/dashboard/documents/new\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/dunning/page.tsx",
-    "stubRoute": "/dashboard/dunning/aging",
-    "redirectTarget": "/dashboard/finance?tab=dunning",
-    "matches": [
-      "href: \"/dashboard/dunning/aging\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/dunning/page.tsx",
-    "stubRoute": "/dashboard/dunning/cases",
-    "redirectTarget": "/dashboard/finance?tab=dunning",
-    "matches": [
-      "href=\"/dashboard/dunning/cases\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/dunning/page.tsx",
-    "stubRoute": "/dashboard/dunning/credit-holds",
-    "redirectTarget": "/dashboard/finance?tab=dunning",
-    "matches": [
-      "href: \"/dashboard/dunning/credit-holds\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/dunning/page.tsx",
-    "stubRoute": "/dashboard/dunning/policies",
-    "redirectTarget": "/dashboard/finance?tab=dunning",
-    "matches": [
-      "href: \"/dashboard/dunning/policies\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/dunning/page.tsx",
-    "stubRoute": "/dashboard/dunning/workqueue",
-    "redirectTarget": "/dashboard/finance?tab=dunning",
-    "matches": [
-      "href: \"/dashboard/dunning/workqueue\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/esg/page.tsx",
-    "stubRoute": "/dashboard/esg/activities",
+    "sourceFile": "frontend/src/app/dashboard/esg/intelligence/page.tsx",
+    "stubRoute": "/dashboard/esg/reports",
     "redirectTarget": "/dashboard/utility-management?tab=esg",
     "matches": [
-      "href=\"/dashboard/esg/activities\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/esg/page.tsx",
-    "stubRoute": "/dashboard/esg/factors",
-    "redirectTarget": "/dashboard/utility-management?tab=esg",
-    "matches": [
-      "href=\"/dashboard/esg/factors\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/esg/page.tsx",
-    "stubRoute": "/dashboard/esg/intelligence",
-    "redirectTarget": "/dashboard/utility-management?tab=esg",
-    "matches": [
-      "href=\"/dashboard/esg/intelligence\""
+      "href=\"/dashboard/esg/reports\""
     ]
   },
   {
@@ -549,22 +104,6 @@
     ]
   },
   {
-    "sourceFile": "frontend/src/app/dashboard/esg/page.tsx",
-    "stubRoute": "/dashboard/esg/targets",
-    "redirectTarget": "/dashboard/utility-management?tab=esg",
-    "matches": [
-      "href=\"/dashboard/esg/targets\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/ess/page.tsx",
-    "stubRoute": "/dashboard/ess/admin",
-    "redirectTarget": "/dashboard/hr?tab=ess",
-    "matches": [
-      "href: \"/dashboard/ess/admin\""
-    ]
-  },
-  {
     "sourceFile": "frontend/src/app/dashboard/ess/page.tsx",
     "stubRoute": "/dashboard/ess/ai",
     "redirectTarget": "/dashboard/hr?tab=ess",
@@ -573,116 +112,11 @@
     ]
   },
   {
-    "sourceFile": "frontend/src/app/dashboard/ess/page.tsx",
-    "stubRoute": "/dashboard/ess/attendance",
-    "redirectTarget": "/dashboard/hr?tab=ess",
-    "matches": [
-      "href: \"/dashboard/ess/attendance\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/ess/page.tsx",
-    "stubRoute": "/dashboard/ess/documents",
-    "redirectTarget": "/dashboard/hr?tab=ess",
-    "matches": [
-      "href: \"/dashboard/ess/documents\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/ess/page.tsx",
-    "stubRoute": "/dashboard/ess/leave",
-    "redirectTarget": "/dashboard/hr?tab=ess",
-    "matches": [
-      "href: \"/dashboard/ess/leave\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/ess/page.tsx",
-    "stubRoute": "/dashboard/ess/notifications",
-    "redirectTarget": "/dashboard/hr?tab=ess",
-    "matches": [
-      "href: \"/dashboard/ess/notifications\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/ess/page.tsx",
-    "stubRoute": "/dashboard/ess/profile",
-    "redirectTarget": "/dashboard/hr?tab=ess",
-    "matches": [
-      "href: \"/dashboard/ess/profile\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/ess/page.tsx",
-    "stubRoute": "/dashboard/ess/requests",
-    "redirectTarget": "/dashboard/hr?tab=ess",
-    "matches": [
-      "href: \"/dashboard/ess/requests\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/expenses/page.tsx",
-    "stubRoute": "/dashboard/expenses/advances",
-    "redirectTarget": "/dashboard/hr?tab=expenses",
-    "matches": [
-      "href: \"/dashboard/expenses/advances\""
-    ]
-  },
-  {
     "sourceFile": "frontend/src/app/dashboard/expenses/page.tsx",
     "stubRoute": "/dashboard/expenses/ai",
     "redirectTarget": "/dashboard/hr?tab=expenses",
     "matches": [
       "href: \"/dashboard/expenses/ai\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/expenses/page.tsx",
-    "stubRoute": "/dashboard/expenses/approval",
-    "redirectTarget": "/dashboard/hr?tab=expenses",
-    "matches": [
-      "href: \"/dashboard/expenses/approval\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/expenses/page.tsx",
-    "stubRoute": "/dashboard/expenses/categories",
-    "redirectTarget": "/dashboard/hr?tab=expenses",
-    "matches": [
-      "href: \"/dashboard/expenses/categories\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/expenses/page.tsx",
-    "stubRoute": "/dashboard/expenses/claims/new",
-    "redirectTarget": "/dashboard/hr?tab=expenses&drawer=create",
-    "matches": [
-      "href: \"/dashboard/expenses/claims/new\"",
-      "href=\"/dashboard/expenses/claims/new\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/expenses/page.tsx",
-    "stubRoute": "/dashboard/expenses/claims",
-    "redirectTarget": "/dashboard/hr?tab=expenses",
-    "matches": [
-      "href: \"/dashboard/expenses/claims\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/expenses/page.tsx",
-    "stubRoute": "/dashboard/expenses/policies",
-    "redirectTarget": "/dashboard/hr?tab=expenses",
-    "matches": [
-      "href: \"/dashboard/expenses/policies\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/expenses/page.tsx",
-    "stubRoute": "/dashboard/expenses/reimbursement",
-    "redirectTarget": "/dashboard/hr?tab=expenses",
-    "matches": [
-      "href: \"/dashboard/expenses/reimbursement\""
     ]
   },
   {
@@ -702,149 +136,11 @@
     ]
   },
   {
-    "sourceFile": "frontend/src/app/dashboard/finance/accounting/page.tsx",
-    "stubRoute": "/dashboard/finance/accounting/customers-ledger",
-    "redirectTarget": "/dashboard/finance?tab=accounting",
-    "matches": [
-      "href: \"/dashboard/finance/accounting/customers-ledger\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/finance/accounting/page.tsx",
-    "stubRoute": "/dashboard/finance/accounting/payments",
-    "redirectTarget": "/dashboard/finance?tab=accounting",
-    "matches": [
-      "href: \"/dashboard/finance/accounting/payments\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/finance/accounting/page.tsx",
-    "stubRoute": "/dashboard/finance/accounting/purchase-invoices",
-    "redirectTarget": "/dashboard/finance?tab=accounting",
-    "matches": [
-      "href: \"/dashboard/finance/accounting/purchase-invoices\"",
-      "href=\"/dashboard/finance/accounting/purchase-invoices\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/finance/accounting/page.tsx",
-    "stubRoute": "/dashboard/finance/accounting/sales-invoices",
-    "redirectTarget": "/dashboard/finance?tab=accounting",
-    "matches": [
-      "href: \"/dashboard/finance/accounting/sales-invoices\"",
-      "href=\"/dashboard/finance/accounting/sales-invoices\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/finance/accounting/page.tsx",
-    "stubRoute": "/dashboard/finance/accounting/suppliers-ledger",
-    "redirectTarget": "/dashboard/finance?tab=accounting",
-    "matches": [
-      "href: \"/dashboard/finance/accounting/suppliers-ledger\""
-    ]
-  },
-  {
     "sourceFile": "frontend/src/app/dashboard/fixed-assets/page.tsx",
     "stubRoute": "/dashboard/fixed-assets/ai",
     "redirectTarget": "/dashboard/finance?tab=fixed-assets",
     "matches": [
       "href: \"/dashboard/fixed-assets/ai\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/fixed-assets/page.tsx",
-    "stubRoute": "/dashboard/fixed-assets/assets/new",
-    "redirectTarget": "/dashboard/finance?tab=fixed-assets&drawer=create",
-    "matches": [
-      "href=\"/dashboard/fixed-assets/assets/new\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/fixed-assets/page.tsx",
-    "stubRoute": "/dashboard/fixed-assets/assets",
-    "redirectTarget": "/dashboard/finance?tab=fixed-assets",
-    "matches": [
-      "href: \"/dashboard/fixed-assets/assets\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/fixed-assets/page.tsx",
-    "stubRoute": "/dashboard/fixed-assets/categories",
-    "redirectTarget": "/dashboard/finance?tab=fixed-assets",
-    "matches": [
-      "href: \"/dashboard/fixed-assets/categories\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/fixed-assets/page.tsx",
-    "stubRoute": "/dashboard/fixed-assets/depreciation",
-    "redirectTarget": "/dashboard/finance?tab=fixed-assets",
-    "matches": [
-      "href: \"/dashboard/fixed-assets/depreciation\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/fixed-assets/page.tsx",
-    "stubRoute": "/dashboard/fixed-assets/disposal",
-    "redirectTarget": "/dashboard/finance?tab=fixed-assets",
-    "matches": [
-      "href: \"/dashboard/fixed-assets/disposal\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/fixed-assets/page.tsx",
-    "stubRoute": "/dashboard/fixed-assets/import",
-    "redirectTarget": "/dashboard/finance?tab=fixed-assets",
-    "matches": [
-      "href: \"/dashboard/fixed-assets/import\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/fixed-assets/page.tsx",
-    "stubRoute": "/dashboard/fixed-assets/posting",
-    "redirectTarget": "/dashboard/finance?tab=fixed-assets",
-    "matches": [
-      "href: \"/dashboard/fixed-assets/posting\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/fixed-assets/page.tsx",
-    "stubRoute": "/dashboard/fixed-assets/transfer",
-    "redirectTarget": "/dashboard/finance?tab=fixed-assets",
-    "matches": [
-      "href: \"/dashboard/fixed-assets/transfer\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/fleet/page.tsx",
-    "stubRoute": "/dashboard/fleet/drivers",
-    "redirectTarget": "/dashboard/logistics?tab=fleet",
-    "matches": [
-      "href: \"/dashboard/fleet/drivers\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/fleet/page.tsx",
-    "stubRoute": "/dashboard/fleet/fuel",
-    "redirectTarget": "/dashboard/logistics?tab=fleet",
-    "matches": [
-      "href: \"/dashboard/fleet/fuel\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/fleet/page.tsx",
-    "stubRoute": "/dashboard/fleet/incidents",
-    "redirectTarget": "/dashboard/logistics?tab=fleet",
-    "matches": [
-      "href: \"/dashboard/fleet/incidents\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/fleet/page.tsx",
-    "stubRoute": "/dashboard/fleet/maintenance",
-    "redirectTarget": "/dashboard/logistics?tab=fleet",
-    "matches": [
-      "href: \"/dashboard/fleet/maintenance\""
     ]
   },
   {
@@ -856,62 +152,11 @@
     ]
   },
   {
-    "sourceFile": "frontend/src/app/dashboard/fleet/page.tsx",
-    "stubRoute": "/dashboard/fleet/trips",
-    "redirectTarget": "/dashboard/logistics?tab=fleet",
-    "matches": [
-      "href: \"/dashboard/fleet/trips\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/fleet/page.tsx",
-    "stubRoute": "/dashboard/fleet/vehicles",
-    "redirectTarget": "/dashboard/logistics?tab=fleet",
-    "matches": [
-      "href: \"/dashboard/fleet/vehicles\""
-    ]
-  },
-  {
     "sourceFile": "frontend/src/app/dashboard/invoice-match/page.tsx",
     "stubRoute": "/dashboard/invoice-match/ai",
     "redirectTarget": "/dashboard/finance?tab=invoice-match",
     "matches": [
       "href: \"/dashboard/invoice-match/ai\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/invoice-match/page.tsx",
-    "stubRoute": "/dashboard/invoice-match/blocked",
-    "redirectTarget": "/dashboard/finance?tab=invoice-match",
-    "matches": [
-      "href=\"/dashboard/invoice-match/blocked\"",
-      "href: \"/dashboard/invoice-match/blocked\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/invoice-match/page.tsx",
-    "stubRoute": "/dashboard/invoice-match/duplicates",
-    "redirectTarget": "/dashboard/finance?tab=invoice-match",
-    "matches": [
-      "href: \"/dashboard/invoice-match/duplicates\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/invoice-match/page.tsx",
-    "stubRoute": "/dashboard/invoice-match/matches",
-    "redirectTarget": "/dashboard/finance?tab=invoice-match",
-    "matches": [
-      "href=\"/dashboard/invoice-match/matches\"",
-      "href=\"/dashboard/invoice-match/matches\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/invoice-match/page.tsx",
-    "stubRoute": "/dashboard/invoice-match/review-queue",
-    "redirectTarget": "/dashboard/finance?tab=invoice-match",
-    "matches": [
-      "href=\"/dashboard/invoice-match/review-queue\"",
-      "href: \"/dashboard/invoice-match/review-queue\""
     ]
   },
   {
@@ -924,51 +169,10 @@
   },
   {
     "sourceFile": "frontend/src/app/dashboard/kanban/page.tsx",
-    "stubRoute": "/dashboard/kanban/boards",
-    "redirectTarget": "/dashboard/planning?tab=kanban",
-    "matches": [
-      "href: \"/dashboard/kanban/boards\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/kanban/page.tsx",
-    "stubRoute": "/dashboard/kanban/cards",
-    "redirectTarget": "/dashboard/planning?tab=kanban",
-    "matches": [
-      "href: \"/dashboard/kanban/cards\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/kanban/page.tsx",
     "stubRoute": "/dashboard/kanban/reports",
     "redirectTarget": "/dashboard/planning?tab=kanban",
     "matches": [
       "href: \"/dashboard/kanban/reports\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/kanban/page.tsx",
-    "stubRoute": "/dashboard/kanban/view",
-    "redirectTarget": "/dashboard/planning?tab=kanban",
-    "matches": [
-      "href: \"/dashboard/kanban/view\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/knowledge-base/page.tsx",
-    "stubRoute": "/dashboard/knowledge-base/articles/new",
-    "redirectTarget": "/dashboard/documents?tab=knowledge-base&drawer=create",
-    "matches": [
-      "href=\"/dashboard/knowledge-base/articles/new\"",
-      "href=\"/dashboard/knowledge-base/articles/new\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/knowledge-base/page.tsx",
-    "stubRoute": "/dashboard/knowledge-base/articles",
-    "redirectTarget": "/dashboard/documents?tab=knowledge-base",
-    "matches": [
-      "href=\"/dashboard/knowledge-base/articles\""
     ]
   },
   {
@@ -981,281 +185,11 @@
     ]
   },
   {
-    "sourceFile": "frontend/src/app/dashboard/landed-cost/page.tsx",
-    "stubRoute": "/dashboard/landed-cost/documents",
-    "redirectTarget": "/dashboard/procurement?tab=landed-cost",
+    "sourceFile": "frontend/src/app/dashboard/marketing/ecommerce/stores/page.tsx",
+    "stubRoute": "/dashboard/marketing/ecommerce/stores/new",
+    "redirectTarget": "/dashboard/marketing?tab=ecommerce&drawer=create",
     "matches": [
-      "href=\"/dashboard/landed-cost/documents\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/landed-cost/page.tsx",
-    "stubRoute": "/dashboard/landed-cost/new",
-    "redirectTarget": "/dashboard/procurement?tab=landed-cost&drawer=create",
-    "matches": [
-      "href=\"/dashboard/landed-cost/new\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/machine-ops/page.tsx",
-    "stubRoute": "/dashboard/machine-ops/assignment",
-    "redirectTarget": "/dashboard/production?tab=machine-ops",
-    "matches": [
-      "href: \"/dashboard/machine-ops/assignment\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/machine-ops/page.tsx",
-    "stubRoute": "/dashboard/machine-ops/certs",
-    "redirectTarget": "/dashboard/production?tab=machine-ops",
-    "matches": [
-      "href: \"/dashboard/machine-ops/certs\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/machine-ops/page.tsx",
-    "stubRoute": "/dashboard/machine-ops/costing",
-    "redirectTarget": "/dashboard/production?tab=machine-ops",
-    "matches": [
-      "href: \"/dashboard/machine-ops/costing\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/machine-ops/page.tsx",
-    "stubRoute": "/dashboard/machine-ops/downtime",
-    "redirectTarget": "/dashboard/production?tab=machine-ops",
-    "matches": [
-      "href: \"/dashboard/machine-ops/downtime\"",
-      "href=\"/dashboard/machine-ops/downtime\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/machine-ops/page.tsx",
-    "stubRoute": "/dashboard/machine-ops/machines",
-    "redirectTarget": "/dashboard/production?tab=machine-ops",
-    "matches": [
-      "href: \"/dashboard/machine-ops/machines\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/machine-ops/page.tsx",
-    "stubRoute": "/dashboard/machine-ops/operators",
-    "redirectTarget": "/dashboard/production?tab=machine-ops",
-    "matches": [
-      "href: \"/dashboard/machine-ops/operators\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/machine-ops/page.tsx",
-    "stubRoute": "/dashboard/machine-ops/performance",
-    "redirectTarget": "/dashboard/production?tab=machine-ops",
-    "matches": [
-      "href: \"/dashboard/machine-ops/performance\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/machine-ops/page.tsx",
-    "stubRoute": "/dashboard/machine-ops/runtime",
-    "redirectTarget": "/dashboard/production?tab=machine-ops",
-    "matches": [
-      "href: \"/dashboard/machine-ops/runtime\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/machine-ops/page.tsx",
-    "stubRoute": "/dashboard/machine-ops/teams",
-    "redirectTarget": "/dashboard/production?tab=machine-ops",
-    "matches": [
-      "href: \"/dashboard/machine-ops/teams\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/marketing/ads/page.tsx",
-    "stubRoute": "/dashboard/marketing/ads/new",
-    "redirectTarget": "/dashboard/marketing?tab=ads&drawer=create",
-    "matches": [
-      "href=\"/dashboard/marketing/ads/new\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/marketing/brand-spend/page.tsx",
-    "stubRoute": "/dashboard/marketing/brand-spend/new",
-    "redirectTarget": "/dashboard/marketing?tab=brand-spend&drawer=create",
-    "matches": [
-      "href=\"/dashboard/marketing/brand-spend/new\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/marketing/campaigns/page.tsx",
-    "stubRoute": "/dashboard/marketing/campaigns/new",
-    "redirectTarget": "/dashboard/marketing?tab=campaigns&drawer=create",
-    "matches": [
-      "href=\"/dashboard/marketing/campaigns/new\"",
-      "href=\"/dashboard/marketing/campaigns/new\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/marketing/influencers/page.tsx",
-    "stubRoute": "/dashboard/marketing/influencers/new",
-    "redirectTarget": "/dashboard/marketing?tab=influencers&drawer=create",
-    "matches": [
-      "href=\"/dashboard/marketing/influencers/new\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/marketing/promotions/page.tsx",
-    "stubRoute": "/dashboard/marketing/promotions/new",
-    "redirectTarget": "/dashboard/marketing?tab=promotions&drawer=create",
-    "matches": [
-      "href=\"/dashboard/marketing/promotions/new\"",
-      "href=\"/dashboard/marketing/promotions/new\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/marketing/segments/page.tsx",
-    "stubRoute": "/dashboard/marketing/segments/new",
-    "redirectTarget": "/dashboard/marketing?tab=segments&drawer=create",
-    "matches": [
-      "href=\"/dashboard/marketing/segments/new\"",
-      "href=\"/dashboard/marketing/segments/new\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/marketing/social-media/page.tsx",
-    "stubRoute": "/dashboard/marketing/social-media/new",
-    "redirectTarget": "/dashboard/marketing?tab=social-media&drawer=create",
-    "matches": [
-      "href=\"/dashboard/marketing/social-media/new\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/marketing/trade-spend/page.tsx",
-    "stubRoute": "/dashboard/marketing/trade-spend/new",
-    "redirectTarget": "/dashboard/marketing?tab=trade-spend&drawer=create",
-    "matches": [
-      "href=\"/dashboard/marketing/trade-spend/new\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/marketing/visits/page.tsx",
-    "stubRoute": "/dashboard/marketing/visits/new",
-    "redirectTarget": "/dashboard/marketing?tab=visits&drawer=create",
-    "matches": [
-      "href=\"/dashboard/marketing/visits/new\"",
-      "href=\"/dashboard/marketing/visits/new\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/material-flow/page.tsx",
-    "stubRoute": "/dashboard/material-flow/bulk-transfer",
-    "redirectTarget": "/dashboard/production?tab=material-flow",
-    "matches": [
-      "href: \"/dashboard/material-flow/bulk-transfer\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/material-flow/page.tsx",
-    "stubRoute": "/dashboard/material-flow/fg-receipt",
-    "redirectTarget": "/dashboard/production?tab=material-flow",
-    "matches": [
-      "href: \"/dashboard/material-flow/fg-receipt\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/material-flow/page.tsx",
-    "stubRoute": "/dashboard/material-flow/history",
-    "redirectTarget": "/dashboard/production?tab=material-flow",
-    "matches": [
-      "href=\"/dashboard/material-flow/history\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/material-flow/page.tsx",
-    "stubRoute": "/dashboard/material-flow/issue",
-    "redirectTarget": "/dashboard/production?tab=material-flow",
-    "matches": [
-      "href: \"/dashboard/material-flow/issue\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/material-flow/page.tsx",
-    "stubRoute": "/dashboard/material-flow/reconciliation",
-    "redirectTarget": "/dashboard/production?tab=material-flow",
-    "matches": [
-      "href: \"/dashboard/material-flow/reconciliation\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/material-flow/page.tsx",
-    "stubRoute": "/dashboard/material-flow/reservations",
-    "redirectTarget": "/dashboard/production?tab=material-flow",
-    "matches": [
-      "href: \"/dashboard/material-flow/reservations\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/material-flow/page.tsx",
-    "stubRoute": "/dashboard/material-flow/returns",
-    "redirectTarget": "/dashboard/production?tab=material-flow",
-    "matches": [
-      "href: \"/dashboard/material-flow/returns\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/material-flow/page.tsx",
-    "stubRoute": "/dashboard/material-flow/tanks",
-    "redirectTarget": "/dashboard/production?tab=material-flow",
-    "matches": [
-      "href: \"/dashboard/material-flow/tanks\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/material-flow/page.tsx",
-    "stubRoute": "/dashboard/material-flow/wip-transfer",
-    "redirectTarget": "/dashboard/production?tab=material-flow",
-    "matches": [
-      "href: \"/dashboard/material-flow/wip-transfer\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/mobile/page.tsx",
-    "stubRoute": "/dashboard/mobile/approvals",
-    "redirectTarget": "/dashboard/admin?tab=mobile",
-    "matches": [
-      "href: \"/dashboard/mobile/approvals\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/mobile/page.tsx",
-    "stubRoute": "/dashboard/mobile/devices",
-    "redirectTarget": "/dashboard/admin?tab=mobile",
-    "matches": [
-      "href: \"/dashboard/mobile/devices\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/mrp/page.tsx",
-    "stubRoute": "/dashboard/mrp/forecast",
-    "redirectTarget": "/dashboard/planning?tab=mrp",
-    "matches": [
-      "href=\"/dashboard/mrp/forecast\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/mrp/page.tsx",
-    "stubRoute": "/dashboard/mrp/run",
-    "redirectTarget": "/dashboard/planning?tab=mrp",
-    "matches": [
-      "href=\"/dashboard/mrp/run\"",
-      "href=\"/dashboard/mrp/run\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/mrp/page.tsx",
-    "stubRoute": "/dashboard/mrp/suggestions",
-    "redirectTarget": "/dashboard/planning?tab=mrp",
-    "matches": [
-      "href=\"/dashboard/mrp/suggestions\""
+      "push(\"/dashboard/marketing/ecommerce/stores/new\""
     ]
   },
   {
@@ -1268,58 +202,10 @@
   },
   {
     "sourceFile": "frontend/src/app/dashboard/notification-center/page.tsx",
-    "stubRoute": "/dashboard/notification-center/list",
-    "redirectTarget": "/dashboard/communication?tab=notifications",
-    "matches": [
-      "href: \"/dashboard/notification-center/list\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/notification-center/page.tsx",
-    "stubRoute": "/dashboard/notification-center/preferences",
-    "redirectTarget": "/dashboard/communication?tab=notifications",
-    "matches": [
-      "href: \"/dashboard/notification-center/preferences\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/notification-center/page.tsx",
     "stubRoute": "/dashboard/notification-center/reports",
     "redirectTarget": "/dashboard/communication?tab=notifications",
     "matches": [
       "href: \"/dashboard/notification-center/reports\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/notification-center/page.tsx",
-    "stubRoute": "/dashboard/notification-center/schedules",
-    "redirectTarget": "/dashboard/communication?tab=notifications",
-    "matches": [
-      "href: \"/dashboard/notification-center/schedules\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/notification-center/page.tsx",
-    "stubRoute": "/dashboard/notification-center/templates",
-    "redirectTarget": "/dashboard/communication?tab=notifications",
-    "matches": [
-      "href: \"/dashboard/notification-center/templates\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/portal/page.tsx",
-    "stubRoute": "/dashboard/portal/accounts",
-    "redirectTarget": "/dashboard/sales?tab=portal",
-    "matches": [
-      "href: \"/dashboard/portal/accounts\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/portal/page.tsx",
-    "stubRoute": "/dashboard/portal/activity",
-    "redirectTarget": "/dashboard/sales?tab=portal",
-    "matches": [
-      "href: \"/dashboard/portal/activity\""
     ]
   },
   {
@@ -1332,42 +218,10 @@
   },
   {
     "sourceFile": "frontend/src/app/dashboard/portal/page.tsx",
-    "stubRoute": "/dashboard/portal/claims",
-    "redirectTarget": "/dashboard/sales?tab=portal",
-    "matches": [
-      "href: \"/dashboard/portal/claims\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/portal/page.tsx",
-    "stubRoute": "/dashboard/portal/drafts",
-    "redirectTarget": "/dashboard/sales?tab=portal",
-    "matches": [
-      "href: \"/dashboard/portal/drafts\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/portal/page.tsx",
     "stubRoute": "/dashboard/portal/reports",
     "redirectTarget": "/dashboard/sales?tab=portal",
     "matches": [
       "href: \"/dashboard/portal/reports\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/portal/page.tsx",
-    "stubRoute": "/dashboard/portal/users",
-    "redirectTarget": "/dashboard/sales?tab=portal",
-    "matches": [
-      "href: \"/dashboard/portal/users\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/price-lists/page.tsx",
-    "stubRoute": "/dashboard/price-lists/approval-queue",
-    "redirectTarget": "/dashboard/sales?tab=price-lists",
-    "matches": [
-      "href=\"/dashboard/price-lists/approval-queue\""
     ]
   },
   {
@@ -1376,38 +230,6 @@
     "redirectTarget": "/dashboard/procurement?tab=suggestions",
     "matches": [
       "href: \"/dashboard/procurement-suggestion/ai\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/procurement-suggestion/page.tsx",
-    "stubRoute": "/dashboard/procurement-suggestion/groups",
-    "redirectTarget": "/dashboard/procurement?tab=suggestions",
-    "matches": [
-      "href: \"/dashboard/procurement-suggestion/groups\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/procurement-suggestion/page.tsx",
-    "stubRoute": "/dashboard/procurement-suggestion/suggestions",
-    "redirectTarget": "/dashboard/procurement?tab=suggestions",
-    "matches": [
-      "href: \"/dashboard/procurement-suggestion/suggestions\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/procurement-suggestion/page.tsx",
-    "stubRoute": "/dashboard/procurement-suggestion/supplier-prices",
-    "redirectTarget": "/dashboard/procurement?tab=suggestions",
-    "matches": [
-      "href: \"/dashboard/procurement-suggestion/supplier-prices\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/production-execution/page.tsx",
-    "stubRoute": "/dashboard/production-execution/work-orders",
-    "redirectTarget": "/dashboard/production?tab=execution",
-    "matches": [
-      "href=\"/dashboard/production-execution/work-orders\""
     ]
   },
   {
@@ -1420,62 +242,6 @@
   },
   {
     "sourceFile": "frontend/src/app/dashboard/qms/page.tsx",
-    "stubRoute": "/dashboard/qms/allergen",
-    "redirectTarget": "/dashboard/quality?tab=allergen",
-    "matches": [
-      "href: \"/dashboard/qms/allergen\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/qms/page.tsx",
-    "stubRoute": "/dashboard/qms/ccp",
-    "redirectTarget": "/dashboard/quality?tab=qms",
-    "matches": [
-      "href: \"/dashboard/qms/ccp\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/qms/page.tsx",
-    "stubRoute": "/dashboard/qms/corrective-actions",
-    "redirectTarget": "/dashboard/quality?tab=qms",
-    "matches": [
-      "href: \"/dashboard/qms/corrective-actions\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/qms/page.tsx",
-    "stubRoute": "/dashboard/qms/deviations",
-    "redirectTarget": "/dashboard/quality?tab=qms",
-    "matches": [
-      "href: \"/dashboard/qms/deviations\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/qms/page.tsx",
-    "stubRoute": "/dashboard/qms/haccp",
-    "redirectTarget": "/dashboard/quality?tab=qms",
-    "matches": [
-      "href: \"/dashboard/qms/haccp\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/qms/page.tsx",
-    "stubRoute": "/dashboard/qms/inspections",
-    "redirectTarget": "/dashboard/quality?tab=inspections",
-    "matches": [
-      "href: \"/dashboard/qms/inspections\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/qms/page.tsx",
-    "stubRoute": "/dashboard/qms/quarantine",
-    "redirectTarget": "/dashboard/quality?tab=qms",
-    "matches": [
-      "href: \"/dashboard/qms/quarantine\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/qms/page.tsx",
     "stubRoute": "/dashboard/qms/reports",
     "redirectTarget": "/dashboard/quality?tab=reports",
     "matches": [
@@ -1483,11 +249,11 @@
     ]
   },
   {
-    "sourceFile": "frontend/src/app/dashboard/qms/page.tsx",
-    "stubRoute": "/dashboard/qms/templates",
-    "redirectTarget": "/dashboard/quality?tab=qms",
+    "sourceFile": "frontend/src/app/dashboard/recruitment/candidates/page.tsx",
+    "stubRoute": "/dashboard/recruitment/candidates/new",
+    "redirectTarget": "/dashboard/hr?tab=recruitment&drawer=create",
     "matches": [
-      "href: \"/dashboard/qms/templates\""
+      "href=\"/dashboard/recruitment/candidates/new\""
     ]
   },
   {
@@ -1500,67 +266,10 @@
   },
   {
     "sourceFile": "frontend/src/app/dashboard/recruitment/page.tsx",
-    "stubRoute": "/dashboard/recruitment/candidates",
-    "redirectTarget": "/dashboard/hr?tab=recruitment",
-    "matches": [
-      "href: \"/dashboard/recruitment/candidates\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/recruitment/page.tsx",
-    "stubRoute": "/dashboard/recruitment/interviews",
-    "redirectTarget": "/dashboard/hr?tab=recruitment",
-    "matches": [
-      "href: \"/dashboard/recruitment/interviews\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/recruitment/page.tsx",
-    "stubRoute": "/dashboard/recruitment/offers",
-    "redirectTarget": "/dashboard/hr?tab=recruitment",
-    "matches": [
-      "href: \"/dashboard/recruitment/offers\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/recruitment/page.tsx",
-    "stubRoute": "/dashboard/recruitment/pipeline",
-    "redirectTarget": "/dashboard/hr?tab=recruitment",
-    "matches": [
-      "href: \"/dashboard/recruitment/pipeline\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/recruitment/page.tsx",
     "stubRoute": "/dashboard/recruitment/reports",
     "redirectTarget": "/dashboard/hr?tab=recruitment",
     "matches": [
       "href: \"/dashboard/recruitment/reports\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/recruitment/page.tsx",
-    "stubRoute": "/dashboard/recruitment/requisitions/new",
-    "redirectTarget": "/dashboard/hr?tab=recruitment&drawer=create",
-    "matches": [
-      "href: \"/dashboard/recruitment/requisitions/new\"",
-      "href=\"/dashboard/recruitment/requisitions/new\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/recruitment/page.tsx",
-    "stubRoute": "/dashboard/recruitment/requisitions",
-    "redirectTarget": "/dashboard/hr?tab=recruitment",
-    "matches": [
-      "href: \"/dashboard/recruitment/requisitions\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/recruitment/page.tsx",
-    "stubRoute": "/dashboard/recruitment/stages",
-    "redirectTarget": "/dashboard/hr?tab=recruitment",
-    "matches": [
-      "href: \"/dashboard/recruitment/stages\""
     ]
   },
   {
@@ -1580,75 +289,11 @@
     ]
   },
   {
-    "sourceFile": "frontend/src/app/dashboard/recurring-orders/page.tsx",
-    "stubRoute": "/dashboard/recurring-orders/templates/new",
-    "redirectTarget": "/dashboard/sales?tab=recurring&drawer=create",
-    "matches": [
-      "href=\"/dashboard/recurring-orders/templates/new\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/recurring-orders/page.tsx",
-    "stubRoute": "/dashboard/recurring-orders/templates",
-    "redirectTarget": "/dashboard/sales?tab=recurring",
-    "matches": [
-      "href=\"/dashboard/recurring-orders/templates\""
-    ]
-  },
-  {
     "sourceFile": "frontend/src/app/dashboard/report-builder/page.tsx",
     "stubRoute": "/dashboard/report-builder/ai",
     "redirectTarget": "/dashboard/analytics?tab=report-builder",
     "matches": [
       "href: \"/dashboard/report-builder/ai\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/report-builder/page.tsx",
-    "stubRoute": "/dashboard/report-builder/builder",
-    "redirectTarget": "/dashboard/analytics?tab=report-builder",
-    "matches": [
-      "href: \"/dashboard/report-builder/builder\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/report-builder/page.tsx",
-    "stubRoute": "/dashboard/report-builder/catalog",
-    "redirectTarget": "/dashboard/analytics?tab=report-builder",
-    "matches": [
-      "href: \"/dashboard/report-builder/catalog\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/report-builder/page.tsx",
-    "stubRoute": "/dashboard/report-builder/dashboards",
-    "redirectTarget": "/dashboard/analytics?tab=report-builder",
-    "matches": [
-      "href: \"/dashboard/report-builder/dashboards\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/report-builder/page.tsx",
-    "stubRoute": "/dashboard/report-builder/saved",
-    "redirectTarget": "/dashboard/analytics?tab=report-builder",
-    "matches": [
-      "href: \"/dashboard/report-builder/saved\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/report-builder/page.tsx",
-    "stubRoute": "/dashboard/report-builder/schedules",
-    "redirectTarget": "/dashboard/analytics?tab=report-builder",
-    "matches": [
-      "href: \"/dashboard/report-builder/schedules\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/report-builder/page.tsx",
-    "stubRoute": "/dashboard/report-builder/viewer",
-    "redirectTarget": "/dashboard/analytics?tab=report-builder",
-    "matches": [
-      "href: \"/dashboard/report-builder/viewer\""
     ]
   },
   {
@@ -1708,118 +353,6 @@
     ]
   },
   {
-    "sourceFile": "frontend/src/app/dashboard/secondary-sales/page.tsx",
-    "stubRoute": "/dashboard/secondary-sales/analysis",
-    "redirectTarget": "/dashboard/sales?tab=secondary",
-    "matches": [
-      "href=\"/dashboard/secondary-sales/analysis\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/secondary-sales/page.tsx",
-    "stubRoute": "/dashboard/secondary-sales/inventory",
-    "redirectTarget": "/dashboard/sales?tab=secondary",
-    "matches": [
-      "href=\"/dashboard/secondary-sales/inventory\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/secondary-sales/page.tsx",
-    "stubRoute": "/dashboard/secondary-sales/upload",
-    "redirectTarget": "/dashboard/sales?tab=secondary",
-    "matches": [
-      "href=\"/dashboard/secondary-sales/upload\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/shelf-life/page.tsx",
-    "stubRoute": "/dashboard/shelf-life/bulk-hold-monitor",
-    "redirectTarget": "/dashboard/inventory?tab=shelf-life",
-    "matches": [
-      "href: \"/dashboard/shelf-life/bulk-hold-monitor\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/shelf-life/page.tsx",
-    "stubRoute": "/dashboard/shelf-life/compliance",
-    "redirectTarget": "/dashboard/inventory?tab=shelf-life",
-    "matches": [
-      "href: \"/dashboard/shelf-life/compliance\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/shelf-life/page.tsx",
-    "stubRoute": "/dashboard/shelf-life/customer-rules",
-    "redirectTarget": "/dashboard/inventory?tab=shelf-life",
-    "matches": [
-      "href: \"/dashboard/shelf-life/customer-rules\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/shelf-life/page.tsx",
-    "stubRoute": "/dashboard/shelf-life/disposition",
-    "redirectTarget": "/dashboard/inventory?tab=shelf-life",
-    "matches": [
-      "href: \"/dashboard/shelf-life/disposition\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/shelf-life/page.tsx",
-    "stubRoute": "/dashboard/shelf-life/expired",
-    "redirectTarget": "/dashboard/inventory?tab=shelf-life",
-    "matches": [
-      "href: \"/dashboard/shelf-life/expired\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/shelf-life/page.tsx",
-    "stubRoute": "/dashboard/shelf-life/fefo-config",
-    "redirectTarget": "/dashboard/inventory?tab=shelf-life",
-    "matches": [
-      "href: \"/dashboard/shelf-life/fefo-config\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/shelf-life/page.tsx",
-    "stubRoute": "/dashboard/shelf-life/lot-aging",
-    "redirectTarget": "/dashboard/inventory?tab=shelf-life",
-    "matches": [
-      "href: \"/dashboard/shelf-life/lot-aging\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/shelf-life/page.tsx",
-    "stubRoute": "/dashboard/shelf-life/near-expiry",
-    "redirectTarget": "/dashboard/inventory?tab=shelf-life",
-    "matches": [
-      "href: \"/dashboard/shelf-life/near-expiry\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/shelf-life/page.tsx",
-    "stubRoute": "/dashboard/shelf-life/production-validation",
-    "redirectTarget": "/dashboard/inventory?tab=shelf-life",
-    "matches": [
-      "href: \"/dashboard/shelf-life/production-validation\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/shelf-life/page.tsx",
-    "stubRoute": "/dashboard/shelf-life/retest-queue",
-    "redirectTarget": "/dashboard/inventory?tab=shelf-life",
-    "matches": [
-      "href: \"/dashboard/shelf-life/retest-queue\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/shelf-life/page.tsx",
-    "stubRoute": "/dashboard/shelf-life/shipment-validation",
-    "redirectTarget": "/dashboard/inventory?tab=shelf-life",
-    "matches": [
-      "href: \"/dashboard/shelf-life/shipment-validation\""
-    ]
-  },
-  {
     "sourceFile": "frontend/src/app/dashboard/subcontracting/page.tsx",
     "stubRoute": "/dashboard/subcontracting/ai",
     "redirectTarget": "/dashboard/procurement?tab=subcontracting",
@@ -1828,78 +361,11 @@
     ]
   },
   {
-    "sourceFile": "frontend/src/app/dashboard/subcontracting/page.tsx",
-    "stubRoute": "/dashboard/subcontracting/locations",
-    "redirectTarget": "/dashboard/procurement?tab=subcontracting",
-    "matches": [
-      "href=\"/dashboard/subcontracting/locations\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/subcontracting/page.tsx",
-    "stubRoute": "/dashboard/subcontracting/orders",
-    "redirectTarget": "/dashboard/procurement?tab=subcontracting",
-    "matches": [
-      "href=\"/dashboard/subcontracting/orders\"",
-      "href=\"/dashboard/subcontracting/orders\"",
-      "href: \"/dashboard/subcontracting/orders\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/subcontracting/page.tsx",
-    "stubRoute": "/dashboard/subcontracting/stock",
-    "redirectTarget": "/dashboard/procurement?tab=subcontracting",
-    "matches": [
-      "href: \"/dashboard/subcontracting/stock\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/subcontracting/page.tsx",
-    "stubRoute": "/dashboard/subcontracting/yield",
-    "redirectTarget": "/dashboard/procurement?tab=subcontracting",
-    "matches": [
-      "href: \"/dashboard/subcontracting/yield\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/surveys/page.tsx",
-    "stubRoute": "/dashboard/surveys/new",
-    "redirectTarget": "/dashboard/crm?tab=surveys&drawer=create",
-    "matches": [
-      "href=\"/dashboard/surveys/new\"",
-      "href=\"/dashboard/surveys/new\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/tax/page.tsx",
-    "stubRoute": "/dashboard/tax/regulatory",
-    "redirectTarget": "/dashboard/finance?tab=tax",
-    "matches": [
-      "href: \"/dashboard/tax/regulatory\""
-    ]
-  },
-  {
     "sourceFile": "frontend/src/app/dashboard/tax/page.tsx",
     "stubRoute": "/dashboard/tax/reports",
     "redirectTarget": "/dashboard/finance?tab=tax",
     "matches": [
       "href: \"/dashboard/tax/reports\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/tax/page.tsx",
-    "stubRoute": "/dashboard/tax/rules",
-    "redirectTarget": "/dashboard/finance?tab=tax",
-    "matches": [
-      "href: \"/dashboard/tax/rules\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/tax/page.tsx",
-    "stubRoute": "/dashboard/tax/transactions",
-    "redirectTarget": "/dashboard/finance?tab=tax",
-    "matches": [
-      "href: \"/dashboard/tax/transactions\""
     ]
   },
   {
@@ -1912,42 +378,10 @@
   },
   {
     "sourceFile": "frontend/src/app/dashboard/timesheets/page.tsx",
-    "stubRoute": "/dashboard/timesheets/approval-queue",
-    "redirectTarget": "/dashboard/hr?tab=timesheets",
-    "matches": [
-      "href: \"/dashboard/timesheets/approval-queue\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/timesheets/page.tsx",
-    "stubRoute": "/dashboard/timesheets/my-timesheets",
-    "redirectTarget": "/dashboard/hr?tab=timesheets",
-    "matches": [
-      "href: \"/dashboard/timesheets/my-timesheets\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/timesheets/page.tsx",
     "stubRoute": "/dashboard/timesheets/reports",
     "redirectTarget": "/dashboard/hr?tab=timesheets",
     "matches": [
       "href: \"/dashboard/timesheets/reports\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/timesheets/page.tsx",
-    "stubRoute": "/dashboard/timesheets/time-entry",
-    "redirectTarget": "/dashboard/hr?tab=timesheets",
-    "matches": [
-      "href: \"/dashboard/timesheets/time-entry\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/timesheets/page.tsx",
-    "stubRoute": "/dashboard/timesheets/weekly-view",
-    "redirectTarget": "/dashboard/hr?tab=timesheets",
-    "matches": [
-      "href: \"/dashboard/timesheets/weekly-view\""
     ]
   },
   {
@@ -1956,136 +390,6 @@
     "redirectTarget": "/dashboard/marketing?tab=tpm",
     "matches": [
       "href: \"/dashboard/tpm/ai\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/tpm/page.tsx",
-    "stubRoute": "/dashboard/tpm/budget",
-    "redirectTarget": "/dashboard/marketing?tab=tpm",
-    "matches": [
-      "href: \"/dashboard/tpm/budget\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/tpm/page.tsx",
-    "stubRoute": "/dashboard/tpm/calendar",
-    "redirectTarget": "/dashboard/marketing?tab=tpm",
-    "matches": [
-      "href: \"/dashboard/tpm/calendar\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/tpm/page.tsx",
-    "stubRoute": "/dashboard/tpm/claims",
-    "redirectTarget": "/dashboard/marketing?tab=tpm",
-    "matches": [
-      "href: \"/dashboard/tpm/claims\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/tpm/page.tsx",
-    "stubRoute": "/dashboard/tpm/plans/new",
-    "redirectTarget": "/dashboard/marketing?tab=tpm&drawer=create",
-    "matches": [
-      "href=\"/dashboard/tpm/plans/new\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/tpm/page.tsx",
-    "stubRoute": "/dashboard/tpm/plans",
-    "redirectTarget": "/dashboard/marketing?tab=tpm",
-    "matches": [
-      "href: \"/dashboard/tpm/plans\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/tpm/page.tsx",
-    "stubRoute": "/dashboard/tpm/promotions/new",
-    "redirectTarget": "/dashboard/marketing?tab=tpm&drawer=create",
-    "matches": [
-      "href=\"/dashboard/tpm/promotions/new\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/tpm/page.tsx",
-    "stubRoute": "/dashboard/tpm/promotions",
-    "redirectTarget": "/dashboard/marketing?tab=tpm",
-    "matches": [
-      "href=\"/dashboard/tpm/promotions\"",
-      "href: \"/dashboard/tpm/promotions\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/tpm/page.tsx",
-    "stubRoute": "/dashboard/tpm/roi",
-    "redirectTarget": "/dashboard/marketing?tab=tpm",
-    "matches": [
-      "href: \"/dashboard/tpm/roi\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/tpm/page.tsx",
-    "stubRoute": "/dashboard/tpm/settlement",
-    "redirectTarget": "/dashboard/marketing?tab=tpm",
-    "matches": [
-      "href: \"/dashboard/tpm/settlement\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/traceability/page.tsx",
-    "stubRoute": "/dashboard/traceability/backward",
-    "redirectTarget": "/dashboard/inventory?tab=traceability",
-    "matches": [
-      "href: \"/dashboard/traceability/backward\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/traceability/page.tsx",
-    "stubRoute": "/dashboard/traceability/forward",
-    "redirectTarget": "/dashboard/inventory?tab=traceability",
-    "matches": [
-      "href: \"/dashboard/traceability/forward\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/traceability/page.tsx",
-    "stubRoute": "/dashboard/traceability/genealogy",
-    "redirectTarget": "/dashboard/inventory?tab=traceability",
-    "matches": [
-      "href: \"/dashboard/traceability/genealogy\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/traceability/page.tsx",
-    "stubRoute": "/dashboard/traceability/mock-recall",
-    "redirectTarget": "/dashboard/inventory?tab=traceability",
-    "matches": [
-      "href: \"/dashboard/traceability/mock-recall\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/traceability/page.tsx",
-    "stubRoute": "/dashboard/traceability/recalls",
-    "redirectTarget": "/dashboard/inventory?tab=traceability",
-    "matches": [
-      "href=\"/dashboard/traceability/recalls\"",
-      "href: \"/dashboard/traceability/recalls\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/traceability/page.tsx",
-    "stubRoute": "/dashboard/traceability/regulatory",
-    "redirectTarget": "/dashboard/inventory?tab=traceability",
-    "matches": [
-      "href: \"/dashboard/traceability/regulatory\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/traceability/page.tsx",
-    "stubRoute": "/dashboard/traceability/search",
-    "redirectTarget": "/dashboard/inventory?tab=traceability",
-    "matches": [
-      "href: \"/dashboard/traceability/search\""
     ]
   },
   {
@@ -2098,161 +402,10 @@
   },
   {
     "sourceFile": "frontend/src/app/dashboard/training/page.tsx",
-    "stubRoute": "/dashboard/training/assignments",
-    "redirectTarget": "/dashboard/hr?tab=training",
-    "matches": [
-      "href: \"/dashboard/training/assignments\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/training/page.tsx",
-    "stubRoute": "/dashboard/training/certifications",
-    "redirectTarget": "/dashboard/hr?tab=training",
-    "matches": [
-      "href: \"/dashboard/training/certifications\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/training/page.tsx",
-    "stubRoute": "/dashboard/training/feedback",
-    "redirectTarget": "/dashboard/hr?tab=training",
-    "matches": [
-      "href: \"/dashboard/training/feedback\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/training/page.tsx",
-    "stubRoute": "/dashboard/training/programs",
-    "redirectTarget": "/dashboard/hr?tab=training",
-    "matches": [
-      "href: \"/dashboard/training/programs\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/training/page.tsx",
     "stubRoute": "/dashboard/training/reports",
     "redirectTarget": "/dashboard/hr?tab=training",
     "matches": [
       "href: \"/dashboard/training/reports\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/training/page.tsx",
-    "stubRoute": "/dashboard/training/sessions",
-    "redirectTarget": "/dashboard/hr?tab=training",
-    "matches": [
-      "href: \"/dashboard/training/sessions\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/training/page.tsx",
-    "stubRoute": "/dashboard/training/skill-matrix",
-    "redirectTarget": "/dashboard/hr?tab=training",
-    "matches": [
-      "href: \"/dashboard/training/skill-matrix\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/utility-management/kpi-center/page.tsx",
-    "stubRoute": "/dashboard/utility-management/kpi-center/boiler",
-    "redirectTarget": "/dashboard/utility-management?tab=kpi-center",
-    "matches": [
-      "href: \"/dashboard/utility-management/kpi-center/boiler\"",
-      "href=\"/dashboard/utility-management/kpi-center/boiler\"",
-      "href=\"/dashboard/utility-management/kpi-center/boiler\"",
-      "href=\"/dashboard/utility-management/kpi-center/boiler\"",
-      "href=\"/dashboard/utility-management/kpi-center/boiler\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/utility-management/kpi-center/page.tsx",
-    "stubRoute": "/dashboard/utility-management/kpi-center/chemicals",
-    "redirectTarget": "/dashboard/utility-management?tab=kpi-center",
-    "matches": [
-      "href: \"/dashboard/utility-management/kpi-center/chemicals\"",
-      "href=\"/dashboard/utility-management/kpi-center/chemicals\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/utility-management/kpi-center/page.tsx",
-    "stubRoute": "/dashboard/utility-management/kpi-center/compressor",
-    "redirectTarget": "/dashboard/utility-management?tab=kpi-center",
-    "matches": [
-      "href: \"/dashboard/utility-management/kpi-center/compressor\"",
-      "href=\"/dashboard/utility-management/kpi-center/compressor\"",
-      "href=\"/dashboard/utility-management/kpi-center/compressor\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/utility-management/kpi-center/page.tsx",
-    "stubRoute": "/dashboard/utility-management/kpi-center/electricity",
-    "redirectTarget": "/dashboard/utility-management?tab=kpi-center",
-    "matches": [
-      "href: \"/dashboard/utility-management/kpi-center/electricity\"",
-      "href=\"/dashboard/utility-management/kpi-center/electricity\"",
-      "href=\"/dashboard/utility-management/kpi-center/electricity\"",
-      "href=\"/dashboard/utility-management/kpi-center/electricity\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/utility-management/kpi-center/page.tsx",
-    "stubRoute": "/dashboard/utility-management/kpi-center/machine-utility",
-    "redirectTarget": "/dashboard/utility-management?tab=kpi-center",
-    "matches": [
-      "href: \"/dashboard/utility-management/kpi-center/machine-utility\"",
-      "href=\"/dashboard/utility-management/kpi-center/machine-utility\"",
-      "href=\"/dashboard/utility-management/kpi-center/machine-utility\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/utility-management/kpi-center/page.tsx",
-    "stubRoute": "/dashboard/utility-management/kpi-center/soft-water",
-    "redirectTarget": "/dashboard/utility-management?tab=kpi-center",
-    "matches": [
-      "href: \"/dashboard/utility-management/kpi-center/soft-water\"",
-      "href=\"/dashboard/utility-management/kpi-center/soft-water\"",
-      "href=\"/dashboard/utility-management/kpi-center/soft-water\"",
-      "href=\"/dashboard/utility-management/kpi-center/soft-water\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/utility-management/kpi-center/page.tsx",
-    "stubRoute": "/dashboard/utility-management/kpi-center/solar",
-    "redirectTarget": "/dashboard/utility-management?tab=kpi-center",
-    "matches": [
-      "href: \"/dashboard/utility-management/kpi-center/solar\"",
-      "href=\"/dashboard/utility-management/kpi-center/solar\"",
-      "href=\"/dashboard/utility-management/kpi-center/solar\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/utility-management/kpi-center/page.tsx",
-    "stubRoute": "/dashboard/utility-management/kpi-center/utility-cost",
-    "redirectTarget": "/dashboard/utility-management?tab=kpi-center",
-    "matches": [
-      "href: \"/dashboard/utility-management/kpi-center/utility-cost\"",
-      "href=\"/dashboard/utility-management/kpi-center/utility-cost\"",
-      "href=\"/dashboard/utility-management/kpi-center/utility-cost\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/utility-management/kpi-center/page.tsx",
-    "stubRoute": "/dashboard/utility-management/kpi-center/wastewater",
-    "redirectTarget": "/dashboard/utility-management?tab=kpi-center",
-    "matches": [
-      "href: \"/dashboard/utility-management/kpi-center/wastewater\"",
-      "href=\"/dashboard/utility-management/kpi-center/wastewater\"",
-      "href=\"/dashboard/utility-management/kpi-center/wastewater\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/utility-management/kpi-center/page.tsx",
-    "stubRoute": "/dashboard/utility-management/kpi-center/water",
-    "redirectTarget": "/dashboard/utility-management?tab=kpi-center",
-    "matches": [
-      "href: \"/dashboard/utility-management/kpi-center/water\"",
-      "href=\"/dashboard/utility-management/kpi-center/water\"",
-      "href=\"/dashboard/utility-management/kpi-center/water\""
     ]
   },
   {
@@ -2320,99 +473,11 @@
     ]
   },
   {
-    "sourceFile": "frontend/src/app/dashboard/van-sales/page.tsx",
-    "stubRoute": "/dashboard/van-sales/pos",
-    "redirectTarget": "/dashboard/sales?tab=van-sales",
-    "matches": [
-      "href: \"/dashboard/van-sales/pos\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/van-sales/page.tsx",
-    "stubRoute": "/dashboard/van-sales/reconciliation",
-    "redirectTarget": "/dashboard/sales?tab=van-sales",
-    "matches": [
-      "href: \"/dashboard/van-sales/reconciliation\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/van-sales/page.tsx",
-    "stubRoute": "/dashboard/van-sales/route",
-    "redirectTarget": "/dashboard/sales?tab=van-sales",
-    "matches": [
-      "href: \"/dashboard/van-sales/route\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/van-sales/page.tsx",
-    "stubRoute": "/dashboard/van-sales/stock",
-    "redirectTarget": "/dashboard/sales?tab=van-sales",
-    "matches": [
-      "href: \"/dashboard/van-sales/stock\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/van-sales/page.tsx",
-    "stubRoute": "/dashboard/van-sales/vans/new",
-    "redirectTarget": "/dashboard/sales?tab=van-sales&drawer=create",
-    "matches": [
-      "href=\"/dashboard/van-sales/vans/new\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/van-sales/page.tsx",
-    "stubRoute": "/dashboard/van-sales/vans",
-    "redirectTarget": "/dashboard/sales?tab=van-sales",
-    "matches": [
-      "href=\"/dashboard/van-sales/vans\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/webhooks/page.tsx",
-    "stubRoute": "/dashboard/webhooks/dead-letter",
-    "redirectTarget": "/dashboard/integrations?tab=webhooks",
-    "matches": [
-      "href: \"/dashboard/webhooks/dead-letter\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/webhooks/page.tsx",
-    "stubRoute": "/dashboard/webhooks/definitions",
-    "redirectTarget": "/dashboard/integrations?tab=webhooks",
-    "matches": [
-      "href: \"/dashboard/webhooks/definitions\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/webhooks/page.tsx",
-    "stubRoute": "/dashboard/webhooks/deliveries",
-    "redirectTarget": "/dashboard/integrations?tab=webhooks",
-    "matches": [
-      "href: \"/dashboard/webhooks/deliveries\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/webhooks/page.tsx",
-    "stubRoute": "/dashboard/webhooks/inbound",
-    "redirectTarget": "/dashboard/integrations?tab=webhooks",
-    "matches": [
-      "href: \"/dashboard/webhooks/inbound\""
-    ]
-  },
-  {
     "sourceFile": "frontend/src/app/dashboard/webhooks/page.tsx",
     "stubRoute": "/dashboard/webhooks/reports",
     "redirectTarget": "/dashboard/integrations?tab=webhooks",
     "matches": [
       "href: \"/dashboard/webhooks/reports\""
-    ]
-  },
-  {
-    "sourceFile": "frontend/src/app/dashboard/webhooks/page.tsx",
-    "stubRoute": "/dashboard/webhooks/subscriptions",
-    "redirectTarget": "/dashboard/integrations?tab=webhooks",
-    "matches": [
-      "href: \"/dashboard/webhooks/subscriptions\""
     ]
   }
 ]

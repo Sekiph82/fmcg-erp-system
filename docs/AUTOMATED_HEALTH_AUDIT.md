@@ -1,16 +1,20 @@
 # Automated ERP Health Audit
 
-Generated: 2026-05-19 06:07 UTC
+Generated: 2026-05-21 13:24 UTC
 
 ## Summary
 
 | Severity | Count |
 |----------|-------|
-| HIGH     | 0 |
+| HIGH     | 1 |
 | MEDIUM   | 499 |
 | LOW      | 0 |
 | INFO     | 1 |
-| **Total**| **500** |
+| **Total**| **501** |
+
+## HIGH (1)
+
+- **[token_storage]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\frontend\src\app\dashboard\qms\inspections\page.tsx:42` — Auth token stored in localStorage — use HttpOnly cookies instead
 
 ## MEDIUM (499)
 

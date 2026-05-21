@@ -1,0 +1,2035 @@
+{
+  "summary": {
+    "total": 253,
+    "valid": 253,
+    "missing": 0,
+    "redirectOnly": 0,
+    "noUI": 0
+  },
+  "results": [
+    {
+      "route": "/dashboard/mps/planning-board",
+      "exists": true,
+      "lineCount": 361,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/mps/capacity",
+      "exists": true,
+      "lineCount": 171,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/mps/campaigns",
+      "exists": true,
+      "lineCount": 176,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/mps/whatif",
+      "exists": true,
+      "lineCount": 301,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/cycle-count/plans",
+      "exists": true,
+      "lineCount": 121,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/cycle-count/tasks",
+      "exists": true,
+      "lineCount": 93,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/cycle-count/entries",
+      "exists": true,
+      "lineCount": 121,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/cycle-count/variances",
+      "exists": true,
+      "lineCount": 143,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/cycle-count/reports",
+      "exists": true,
+      "lineCount": 124,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/custom-fields/new-field",
+      "exists": true,
+      "lineCount": 280,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/calendar/new-event",
+      "exists": true,
+      "lineCount": 212,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/surveys/new",
+      "exists": true,
+      "lineCount": 223,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/documents/new",
+      "exists": true,
+      "lineCount": 232,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/knowledge-base/articles/new",
+      "exists": true,
+      "lineCount": 145,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/fixed-assets/assets/new",
+      "exists": true,
+      "lineCount": 216,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/expenses/claims/new",
+      "exists": true,
+      "lineCount": 98,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/recruitment/requisitions/new",
+      "exists": true,
+      "lineCount": 62,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/appraisals/records/new",
+      "exists": true,
+      "lineCount": 155,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/marketing/campaigns/new",
+      "exists": true,
+      "lineCount": 181,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/marketing/promotions/new",
+      "exists": true,
+      "lineCount": 173,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/marketing/trade-spend/new",
+      "exists": true,
+      "lineCount": 132,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/marketing/ads/new",
+      "exists": true,
+      "lineCount": 160,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/marketing/social-media/new",
+      "exists": true,
+      "lineCount": 158,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/marketing/segments/new",
+      "exists": true,
+      "lineCount": 125,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/marketing/influencers/new",
+      "exists": true,
+      "lineCount": 146,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/marketing/visits/new",
+      "exists": true,
+      "lineCount": 156,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/marketing/brand-spend/new",
+      "exists": true,
+      "lineCount": 122,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/tpm/plans/new",
+      "exists": true,
+      "lineCount": 96,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/tpm/promotions/new",
+      "exists": true,
+      "lineCount": 118,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/mrp/run",
+      "exists": true,
+      "lineCount": 220,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/landed-cost/new",
+      "exists": true,
+      "lineCount": 223,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/machine-ops/runtime",
+      "exists": true,
+      "lineCount": 153,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/contracts/new",
+      "exists": true,
+      "lineCount": 127,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/recurring-orders/templates/new",
+      "exists": true,
+      "lineCount": 173,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/van-sales/vans/new",
+      "exists": true,
+      "lineCount": 52,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/custom-fields/fields",
+      "exists": true,
+      "lineCount": 116,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/custom-fields/form-builder",
+      "exists": true,
+      "lineCount": 282,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/custom-fields/workflow-rules",
+      "exists": true,
+      "lineCount": 376,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/custom-fields/values",
+      "exists": true,
+      "lineCount": 182,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/mobile/approvals",
+      "exists": true,
+      "lineCount": 125,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/mobile/devices",
+      "exists": true,
+      "lineCount": 164,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/approvals",
+      "exists": true,
+      "lineCount": 400,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/notification-center",
+      "exists": true,
+      "lineCount": 124,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/notification-center/list",
+      "exists": true,
+      "lineCount": 207,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/notification-center/preferences",
+      "exists": true,
+      "lineCount": 97,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/notification-center/templates",
+      "exists": true,
+      "lineCount": 151,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/notification-center/schedules",
+      "exists": true,
+      "lineCount": 150,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/tax",
+      "exists": true,
+      "lineCount": 151,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/tax/rules",
+      "exists": true,
+      "lineCount": 390,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/tax/regulatory",
+      "exists": true,
+      "lineCount": 231,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/tax/transactions",
+      "exists": true,
+      "lineCount": 234,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/production/orders",
+      "exists": true,
+      "lineCount": 250,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/production-execution/work-orders",
+      "exists": true,
+      "lineCount": 125,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/report-builder/catalog",
+      "exists": true,
+      "lineCount": 114,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/report-builder/builder",
+      "exists": true,
+      "lineCount": 217,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/report-builder/saved",
+      "exists": true,
+      "lineCount": 115,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/report-builder/viewer",
+      "exists": true,
+      "lineCount": 130,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/report-builder/dashboards",
+      "exists": true,
+      "lineCount": 184,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/report-builder/schedules",
+      "exists": true,
+      "lineCount": 109,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/chatter/feed",
+      "exists": true,
+      "lineCount": 119,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/chatter/search",
+      "exists": true,
+      "lineCount": 146,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/calendar/view",
+      "exists": true,
+      "lineCount": 249,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/calendar/resources",
+      "exists": true,
+      "lineCount": 128,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/calendar/availability",
+      "exists": true,
+      "lineCount": 143,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/esign",
+      "exists": true,
+      "lineCount": 577,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/knowledge-base/articles",
+      "exists": true,
+      "lineCount": 131,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/finance/accounting/customers-ledger",
+      "exists": true,
+      "lineCount": 117,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/finance/accounting/suppliers-ledger",
+      "exists": true,
+      "lineCount": 117,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/finance/accounting/sales-invoices",
+      "exists": true,
+      "lineCount": 163,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/finance/accounting/purchase-invoices",
+      "exists": true,
+      "lineCount": 265,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/finance/accounting/payments",
+      "exists": true,
+      "lineCount": 169,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/bank-reconciliation/import",
+      "exists": true,
+      "lineCount": 191,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/bank-reconciliation/statements",
+      "exists": true,
+      "lineCount": 84,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/bank-reconciliation/open-items",
+      "exists": true,
+      "lineCount": 96,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/bank-reconciliation/balance",
+      "exists": true,
+      "lineCount": 75,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/bank-reconciliation/rules",
+      "exists": true,
+      "lineCount": 179,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/invoice-match/review-queue",
+      "exists": true,
+      "lineCount": 104,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/invoice-match/matches",
+      "exists": true,
+      "lineCount": 124,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/invoice-match/blocked",
+      "exists": true,
+      "lineCount": 67,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/invoice-match/duplicates",
+      "exists": true,
+      "lineCount": 105,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/fixed-assets/assets",
+      "exists": true,
+      "lineCount": 94,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/fixed-assets/categories",
+      "exists": true,
+      "lineCount": 129,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/fixed-assets/depreciation",
+      "exists": true,
+      "lineCount": 134,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/fixed-assets/posting",
+      "exists": true,
+      "lineCount": 134,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/fixed-assets/disposal",
+      "exists": true,
+      "lineCount": 132,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/fixed-assets/transfer",
+      "exists": true,
+      "lineCount": 100,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/fixed-assets/import",
+      "exists": true,
+      "lineCount": 147,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/dimensions/types",
+      "exists": true,
+      "lineCount": 122,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/dimensions/values",
+      "exists": true,
+      "lineCount": 145,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/dimensions/cost-centers",
+      "exists": true,
+      "lineCount": 148,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/dimensions/allocations",
+      "exists": true,
+      "lineCount": 204,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/dimensions/allocation-run",
+      "exists": true,
+      "lineCount": 145,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/dimensions/validation",
+      "exists": true,
+      "lineCount": 134,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/dimensions/defaults",
+      "exists": true,
+      "lineCount": 128,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/dimensions/reclassify",
+      "exists": true,
+      "lineCount": 131,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/dimensions/completeness",
+      "exists": true,
+      "lineCount": 103,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/dunning/aging",
+      "exists": true,
+      "lineCount": 113,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/dunning/workqueue",
+      "exists": true,
+      "lineCount": 98,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/dunning/credit-holds",
+      "exists": true,
+      "lineCount": 102,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/dunning/policies",
+      "exists": true,
+      "lineCount": 221,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/dunning/cases",
+      "exists": true,
+      "lineCount": 92,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/expenses/claims",
+      "exists": true,
+      "lineCount": 81,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/expenses/approval",
+      "exists": true,
+      "lineCount": 76,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/expenses/reimbursement",
+      "exists": true,
+      "lineCount": 66,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/expenses/advances",
+      "exists": true,
+      "lineCount": 77,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/expenses/categories",
+      "exists": true,
+      "lineCount": 81,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/expenses/policies",
+      "exists": true,
+      "lineCount": 87,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/recruitment/requisitions",
+      "exists": true,
+      "lineCount": 69,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/recruitment/candidates",
+      "exists": true,
+      "lineCount": 62,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/recruitment/pipeline",
+      "exists": true,
+      "lineCount": 77,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/recruitment/interviews",
+      "exists": true,
+      "lineCount": 115,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/recruitment/offers",
+      "exists": true,
+      "lineCount": 98,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/recruitment/stages",
+      "exists": true,
+      "lineCount": 80,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/ess/profile",
+      "exists": true,
+      "lineCount": 77,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/ess/leave",
+      "exists": true,
+      "lineCount": 111,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/ess/attendance",
+      "exists": true,
+      "lineCount": 100,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/ess/documents",
+      "exists": true,
+      "lineCount": 59,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/ess/requests",
+      "exists": true,
+      "lineCount": 72,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/ess/notifications",
+      "exists": true,
+      "lineCount": 58,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/ess/admin",
+      "exists": true,
+      "lineCount": 136,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/appraisals/periods",
+      "exists": true,
+      "lineCount": 143,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/appraisals/templates",
+      "exists": true,
+      "lineCount": 132,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/appraisals/records",
+      "exists": true,
+      "lineCount": 185,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/appraisals/self-review",
+      "exists": true,
+      "lineCount": 183,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/appraisals/manager-queue",
+      "exists": true,
+      "lineCount": 167,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/appraisals/hr-review",
+      "exists": true,
+      "lineCount": 197,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/appraisals/development-plans",
+      "exists": true,
+      "lineCount": 102,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/training/programs",
+      "exists": true,
+      "lineCount": 155,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/training/sessions",
+      "exists": true,
+      "lineCount": 156,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/training/skill-matrix",
+      "exists": true,
+      "lineCount": 171,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/training/assignments",
+      "exists": true,
+      "lineCount": 188,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/training/certifications",
+      "exists": true,
+      "lineCount": 205,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/training/feedback",
+      "exists": true,
+      "lineCount": 133,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/timesheets/my-timesheets",
+      "exists": true,
+      "lineCount": 170,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/timesheets/time-entry",
+      "exists": true,
+      "lineCount": 224,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/timesheets/weekly-view",
+      "exists": true,
+      "lineCount": 124,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/timesheets/approval-queue",
+      "exists": true,
+      "lineCount": 179,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/webhooks",
+      "exists": true,
+      "lineCount": 116,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/webhooks/definitions",
+      "exists": true,
+      "lineCount": 78,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/webhooks/subscriptions",
+      "exists": true,
+      "lineCount": 159,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/webhooks/deliveries",
+      "exists": true,
+      "lineCount": 103,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/webhooks/dead-letter",
+      "exists": true,
+      "lineCount": 111,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/webhooks/inbound",
+      "exists": true,
+      "lineCount": 100,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/developer/keys",
+      "exists": true,
+      "lineCount": 230,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/developer/graphql",
+      "exists": true,
+      "lineCount": 79,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/shelf-life/fefo-config",
+      "exists": true,
+      "lineCount": 286,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/shelf-life/lot-aging",
+      "exists": true,
+      "lineCount": 139,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/shelf-life/near-expiry",
+      "exists": true,
+      "lineCount": 100,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/shelf-life/expired",
+      "exists": true,
+      "lineCount": 84,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/shelf-life/retest-queue",
+      "exists": true,
+      "lineCount": 174,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/shelf-life/shipment-validation",
+      "exists": true,
+      "lineCount": 128,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/shelf-life/production-validation",
+      "exists": true,
+      "lineCount": 187,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/shelf-life/compliance",
+      "exists": true,
+      "lineCount": 145,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/shelf-life/disposition",
+      "exists": true,
+      "lineCount": 156,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/shelf-life/customer-rules",
+      "exists": true,
+      "lineCount": 172,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/shelf-life/bulk-hold-monitor",
+      "exists": true,
+      "lineCount": 181,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/traceability/recalls",
+      "exists": true,
+      "lineCount": 174,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/traceability/search",
+      "exists": true,
+      "lineCount": 123,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/traceability/backward",
+      "exists": true,
+      "lineCount": 142,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/traceability/forward",
+      "exists": true,
+      "lineCount": 138,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/traceability/genealogy",
+      "exists": true,
+      "lineCount": 172,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/traceability/mock-recall",
+      "exists": true,
+      "lineCount": 189,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/traceability/regulatory",
+      "exists": true,
+      "lineCount": 163,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/fleet/vehicles",
+      "exists": true,
+      "lineCount": 126,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/fleet/drivers",
+      "exists": true,
+      "lineCount": 105,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/fleet/trips",
+      "exists": true,
+      "lineCount": 132,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/fleet/fuel",
+      "exists": true,
+      "lineCount": 110,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/fleet/maintenance",
+      "exists": true,
+      "lineCount": 128,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/fleet/incidents",
+      "exists": true,
+      "lineCount": 136,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/marketing/ecommerce/stores",
+      "exists": true,
+      "lineCount": 82,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/tpm/plans",
+      "exists": true,
+      "lineCount": 98,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/tpm/promotions",
+      "exists": true,
+      "lineCount": 111,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/tpm/calendar",
+      "exists": true,
+      "lineCount": 143,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/tpm/budget",
+      "exists": true,
+      "lineCount": 106,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/tpm/claims",
+      "exists": true,
+      "lineCount": 123,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/tpm/roi",
+      "exists": true,
+      "lineCount": 111,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/tpm/settlement",
+      "exists": true,
+      "lineCount": 96,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/mrp/forecast",
+      "exists": true,
+      "lineCount": 334,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/mrp/suggestions",
+      "exists": true,
+      "lineCount": 222,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/kanban/boards",
+      "exists": true,
+      "lineCount": 112,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/kanban/view",
+      "exists": true,
+      "lineCount": 289,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/kanban/cards",
+      "exists": true,
+      "lineCount": 105,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/procurement-suggestion/suggestions",
+      "exists": true,
+      "lineCount": 237,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/procurement-suggestion/groups",
+      "exists": true,
+      "lineCount": 181,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/procurement-suggestion/supplier-prices",
+      "exists": true,
+      "lineCount": 231,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/subcontracting/locations",
+      "exists": true,
+      "lineCount": 82,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/subcontracting/orders",
+      "exists": true,
+      "lineCount": 249,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/subcontracting/stock",
+      "exists": true,
+      "lineCount": 75,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/subcontracting/yield",
+      "exists": true,
+      "lineCount": 92,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/landed-cost/documents",
+      "exists": true,
+      "lineCount": 107,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/machine-ops/machines",
+      "exists": true,
+      "lineCount": 207,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/machine-ops/operators",
+      "exists": true,
+      "lineCount": 128,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/machine-ops/teams",
+      "exists": true,
+      "lineCount": 110,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/machine-ops/performance",
+      "exists": true,
+      "lineCount": 114,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/machine-ops/downtime",
+      "exists": true,
+      "lineCount": 189,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/machine-ops/costing",
+      "exists": true,
+      "lineCount": 89,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/machine-ops/certs",
+      "exists": true,
+      "lineCount": 149,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/machine-ops/assignment",
+      "exists": true,
+      "lineCount": 115,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/material-flow/issue",
+      "exists": true,
+      "lineCount": 219,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/material-flow/wip-transfer",
+      "exists": true,
+      "lineCount": 155,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/material-flow/bulk-transfer",
+      "exists": true,
+      "lineCount": 153,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/material-flow/fg-receipt",
+      "exists": true,
+      "lineCount": 143,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/material-flow/reservations",
+      "exists": true,
+      "lineCount": 166,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/material-flow/tanks",
+      "exists": true,
+      "lineCount": 155,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/material-flow/returns",
+      "exists": true,
+      "lineCount": 171,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/material-flow/reconciliation",
+      "exists": true,
+      "lineCount": 140,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/material-flow/history",
+      "exists": true,
+      "lineCount": 108,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/qms/inspections",
+      "exists": true,
+      "lineCount": 143,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/qms/templates",
+      "exists": true,
+      "lineCount": 203,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/qms/haccp",
+      "exists": true,
+      "lineCount": 191,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/qms/ccp",
+      "exists": true,
+      "lineCount": 287,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/qms/deviations",
+      "exists": true,
+      "lineCount": 198,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/qms/corrective-actions",
+      "exists": true,
+      "lineCount": 256,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/qms/quarantine",
+      "exists": true,
+      "lineCount": 190,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/qms/allergen",
+      "exists": true,
+      "lineCount": 147,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/allergen/material-profiles",
+      "exists": true,
+      "lineCount": 178,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/allergen/product-allergens",
+      "exists": true,
+      "lineCount": 86,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/allergen/change-logs",
+      "exists": true,
+      "lineCount": 80,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/price-lists/approval-queue",
+      "exists": true,
+      "lineCount": 87,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/contracts/list",
+      "exists": true,
+      "lineCount": 86,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/contracts/expiring",
+      "exists": true,
+      "lineCount": 71,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/recurring-orders/templates",
+      "exists": true,
+      "lineCount": 98,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/commissions/rules",
+      "exists": true,
+      "lineCount": 183,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/commissions/transactions",
+      "exists": true,
+      "lineCount": 133,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/commissions/payouts",
+      "exists": true,
+      "lineCount": 110,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/secondary-sales/analysis",
+      "exists": true,
+      "lineCount": 242,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/secondary-sales/inventory",
+      "exists": true,
+      "lineCount": 238,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/secondary-sales/upload",
+      "exists": true,
+      "lineCount": 275,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/van-sales/route",
+      "exists": true,
+      "lineCount": 118,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/van-sales/pos",
+      "exists": true,
+      "lineCount": 226,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/van-sales/stock",
+      "exists": true,
+      "lineCount": 127,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/van-sales/reconciliation",
+      "exists": true,
+      "lineCount": 100,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/van-sales/vans",
+      "exists": true,
+      "lineCount": 73,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/portal/accounts",
+      "exists": true,
+      "lineCount": 78,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/portal/drafts",
+      "exists": true,
+      "lineCount": 109,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/portal/claims",
+      "exists": true,
+      "lineCount": 126,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/portal/users",
+      "exists": true,
+      "lineCount": 101,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/portal/activity",
+      "exists": true,
+      "lineCount": 70,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/utility-management/kpi-center",
+      "exists": true,
+      "lineCount": 410,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/utility-management/kpi-center/electricity",
+      "exists": true,
+      "lineCount": 116,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/utility-management/kpi-center/water",
+      "exists": true,
+      "lineCount": 114,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/utility-management/kpi-center/soft-water",
+      "exists": true,
+      "lineCount": 121,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/utility-management/kpi-center/boiler",
+      "exists": true,
+      "lineCount": 197,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/utility-management/kpi-center/compressor",
+      "exists": true,
+      "lineCount": 160,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/utility-management/kpi-center/solar",
+      "exists": true,
+      "lineCount": 195,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/utility-management/kpi-center/chemicals",
+      "exists": true,
+      "lineCount": 157,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/utility-management/kpi-center/wastewater",
+      "exists": true,
+      "lineCount": 218,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/utility-management/kpi-center/utility-cost",
+      "exists": true,
+      "lineCount": 213,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/utility-management/kpi-center/machine-utility",
+      "exists": true,
+      "lineCount": 240,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/esg/activities",
+      "exists": true,
+      "lineCount": 240,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/esg/factors",
+      "exists": true,
+      "lineCount": 216,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/esg/targets",
+      "exists": true,
+      "lineCount": 227,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/esg/intelligence",
+      "exists": true,
+      "lineCount": 304,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    }
+  ]
+}
