@@ -2,8 +2,8 @@
 
 | Metric | Count |
 |--------|-------|
-| Total bypass routes | 253 |
-| Valid (has UI) | 253 |
+| Total bypass routes | 307 |
+| Valid (has UI) | 307 |
 | Missing page file | 0 |
 | Redirect-only | 0 |
 | No UI detected | 0 |
@@ -265,3 +265,57 @@
 | `/dashboard/esg/factors` | true | 216 | false | true | OK |
 | `/dashboard/esg/targets` | true | 227 | false | true | OK |
 | `/dashboard/esg/intelligence` | true | 304 | false | true | OK |
+| `/dashboard/custom-fields/ai` | true | 112 | false | true | OK |
+| `/dashboard/reports/inventory` | true | 100 | false | true | OK |
+| `/dashboard/reports/production` | true | 108 | false | true | OK |
+| `/dashboard/reports/procurement` | true | 80 | false | true | OK |
+| `/dashboard/reports/sales` | true | 95 | false | true | OK |
+| `/dashboard/reports/finance` | true | 79 | false | true | OK |
+| `/dashboard/reports/payments` | true | 80 | false | true | OK |
+| `/dashboard/reports/marketing` | true | 765 | false | true | OK |
+| `/dashboard/report-builder/ai` | true | 95 | false | true | OK |
+| `/dashboard/chatter/reports` | true | 160 | false | true | OK |
+| `/dashboard/chatter/ai` | true | 112 | false | true | OK |
+| `/dashboard/notification-center/reports` | true | 129 | false | true | OK |
+| `/dashboard/notification-center/ai` | true | 93 | false | true | OK |
+| `/dashboard/bank-reconciliation/ai` | true | 132 | false | true | OK |
+| `/dashboard/invoice-match/ai` | true | 123 | false | true | OK |
+| `/dashboard/fixed-assets/ai` | true | 100 | false | true | OK |
+| `/dashboard/dimensions/ai` | true | 105 | false | true | OK |
+| `/dashboard/tax/reports` | true | 162 | false | true | OK |
+| `/dashboard/expenses/reports` | true | 102 | false | true | OK |
+| `/dashboard/expenses/ai` | true | 67 | false | true | OK |
+| `/dashboard/recruitment/reports` | true | 87 | false | true | OK |
+| `/dashboard/recruitment/ai` | true | 72 | false | true | OK |
+| `/dashboard/ess/ai` | true | 70 | false | true | OK |
+| `/dashboard/appraisals/reports` | true | 154 | false | true | OK |
+| `/dashboard/appraisals/ai` | true | 124 | false | true | OK |
+| `/dashboard/training/reports` | true | 160 | false | true | OK |
+| `/dashboard/training/ai` | true | 122 | false | true | OK |
+| `/dashboard/timesheets/reports` | true | 162 | false | true | OK |
+| `/dashboard/timesheets/ai` | true | 93 | false | true | OK |
+| `/dashboard/webhooks/reports` | true | 113 | false | true | OK |
+| `/dashboard/fleet/reports` | true | 141 | false | true | OK |
+| `/dashboard/tpm/ai` | true | 105 | false | true | OK |
+| `/dashboard/kanban/reports` | true | 99 | false | true | OK |
+| `/dashboard/kanban/ai` | true | 89 | false | true | OK |
+| `/dashboard/procurement-suggestion/ai` | true | 209 | false | true | OK |
+| `/dashboard/subcontracting/ai` | true | 127 | false | true | OK |
+| `/dashboard/landed-cost/ai` | true | 134 | false | true | OK |
+| `/dashboard/qms/reports` | true | 190 | false | true | OK |
+| `/dashboard/qms/ai` | true | 203 | false | true | OK |
+| `/dashboard/contracts/ai` | true | 81 | false | true | OK |
+| `/dashboard/recurring-orders/reports` | true | 96 | false | true | OK |
+| `/dashboard/recurring-orders/ai` | true | 98 | false | true | OK |
+| `/dashboard/commissions/ai` | true | 76 | false | true | OK |
+| `/dashboard/van-sales/ai` | true | 82 | false | true | OK |
+| `/dashboard/portal/ai` | true | 153 | false | true | OK |
+| `/dashboard/portal/reports` | true | 80 | false | true | OK |
+| `/dashboard/utility-management/reports/daily-consumption` | true | 213 | false | true | OK |
+| `/dashboard/utility-management/reports/equipment-efficiency` | true | 275 | false | true | OK |
+| `/dashboard/utility-management/reports/treatment` | true | 281 | false | true | OK |
+| `/dashboard/utility-management/reports/cost-allocation` | true | 132 | false | true | OK |
+| `/dashboard/utility-management/reports/load-analysis` | true | 213 | false | true | OK |
+| `/dashboard/utility-management/reports/anomalies` | true | 250 | false | true | OK |
+| `/dashboard/utility-management/reports/sustainability` | true | 125 | false | true | OK |
+| `/dashboard/esg/reports` | true | 211 | false | true | OK |
