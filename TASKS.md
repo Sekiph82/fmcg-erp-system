@@ -19,7 +19,7 @@ ERP BUTTON RECOVERY STABILIZATION — COMPLETE. 2026-05-21. Wave 1A (31 pages) +
 **Stabilization fixes:** performance page .data wrap, 7 files react/no-unescaped-entities
 **Quality report:** `docs/RESTORED_ROUTE_QUALITY_REPORT.md` (253/253 valid)
 **Stabilization report:** `docs/ERP_BUTTON_RECOVERY_STABILIZATION_REPORT.md`
-**Next:** browser smoke test → Wave 1C (54 remaining high-conf pages)
+**Next:** Wave 1C (54 remaining high-conf pages) — CLEARED after smoke test
 
 ### ERP-Wide Action Card Recovery (2026-05-20)
 

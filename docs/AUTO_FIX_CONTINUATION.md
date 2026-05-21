@@ -57,7 +57,9 @@ Date: 2026-05-21 (ERP Button Recovery — Wave 1A + 1B complete, stabilization d
 ## Wave 1C readiness checklist
 
 Before starting Wave 1C:
-- [ ] Browser smoke test of Wave 1A + 1B pages passes
-- [ ] Working tree clean (no uncommitted changes)
-- [ ] Run: `node scripts/audit-visible-import-graph.js` — confirm still 102 broken
-- [ ] Run: `npm run type-check` in frontend — confirm clean
+- [x] Browser smoke test — 50/50 PASSED (2026-05-21) — `docs/RESTORED_ROUTES_LIVE_SMOKE_REPORT.md`
+- [x] Working tree clean
+- [x] Audit confirms 102 broken remaining
+- [x] Type-check clean
+
+**Wave 1C is CLEARED TO PROCEED.**
