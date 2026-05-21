@@ -65,9 +65,9 @@
     "targetType": "Link.href",
     "lineNumber": 36,
     "evidence": "href=\"/dashboard/custom-fields/new-field",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/admin?tab=custom-fields"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/custom-fields/page.tsx",
@@ -79,9 +79,9 @@
     "targetType": "Link.href",
     "lineNumber": 105,
     "evidence": "href=\"/dashboard/custom-fields/fields",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/admin?tab=custom-fields"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/custom-fields/page.tsx",
@@ -107,9 +107,9 @@
     "targetType": "Link.href",
     "lineNumber": 147,
     "evidence": "href: \"/dashboard/custom-fields/fields",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/admin?tab=custom-fields"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/custom-fields/page.tsx",
@@ -121,9 +121,9 @@
     "targetType": "Link.href",
     "lineNumber": 148,
     "evidence": "href: \"/dashboard/custom-fields/form-builder",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/admin?tab=custom-fields"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/custom-fields/page.tsx",
@@ -135,9 +135,9 @@
     "targetType": "Link.href",
     "lineNumber": 149,
     "evidence": "href: \"/dashboard/custom-fields/workflow-rules",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/admin?tab=custom-fields"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/custom-fields/page.tsx",
@@ -149,9 +149,9 @@
     "targetType": "Link.href",
     "lineNumber": 150,
     "evidence": "href: \"/dashboard/custom-fields/new-field",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/admin?tab=custom-fields"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/custom-fields/page.tsx",
@@ -163,9 +163,9 @@
     "targetType": "Link.href",
     "lineNumber": 151,
     "evidence": "href: \"/dashboard/custom-fields/values",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/admin?tab=custom-fields"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/custom-fields/page.tsx",
@@ -191,9 +191,9 @@
     "targetType": "Link.href",
     "lineNumber": 18,
     "evidence": "href: \"/dashboard/mobile/approvals",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/admin?tab=mobile"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/mobile/page.tsx",
@@ -205,9 +205,9 @@
     "targetType": "Link.href",
     "lineNumber": 19,
     "evidence": "href: \"/dashboard/mobile/devices",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/admin?tab=mobile"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/mobile/page.tsx",
@@ -219,9 +219,9 @@
     "targetType": "Link.href",
     "lineNumber": 20,
     "evidence": "href: \"/dashboard/approvals",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/admin?tab=approvals"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/mobile/page.tsx",
@@ -233,9 +233,9 @@
     "targetType": "Link.href",
     "lineNumber": 21,
     "evidence": "href: \"/dashboard/notification-center",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/communication?tab=notifications"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/ai/compliance/page.tsx",
@@ -289,9 +289,9 @@
     "targetType": "Link.href",
     "lineNumber": 42,
     "evidence": "href: \"/dashboard/tax",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/finance?tab=tax"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/ai/compliance/page.tsx",
@@ -401,9 +401,9 @@
     "targetType": "Link.href",
     "lineNumber": 49,
     "evidence": "href=\"/dashboard/production/orders",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/production?tab=orders"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/analytics/production/page.tsx",
@@ -597,9 +597,9 @@
     "targetType": "Link.href",
     "lineNumber": 31,
     "evidence": "href: \"/dashboard/report-builder/catalog",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/analytics?tab=report-builder"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/report-builder/page.tsx",
@@ -611,9 +611,9 @@
     "targetType": "Link.href",
     "lineNumber": 32,
     "evidence": "href: \"/dashboard/report-builder/builder",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/analytics?tab=report-builder"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/report-builder/page.tsx",
@@ -625,9 +625,9 @@
     "targetType": "Link.href",
     "lineNumber": 33,
     "evidence": "href: \"/dashboard/report-builder/saved",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/analytics?tab=report-builder"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/report-builder/page.tsx",
@@ -639,9 +639,9 @@
     "targetType": "Link.href",
     "lineNumber": 34,
     "evidence": "href: \"/dashboard/report-builder/viewer",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/analytics?tab=report-builder"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/report-builder/page.tsx",
@@ -653,9 +653,9 @@
     "targetType": "Link.href",
     "lineNumber": 35,
     "evidence": "href: \"/dashboard/report-builder/dashboards",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/analytics?tab=report-builder"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/report-builder/page.tsx",
@@ -667,9 +667,9 @@
     "targetType": "Link.href",
     "lineNumber": 36,
     "evidence": "href: \"/dashboard/report-builder/schedules",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/analytics?tab=report-builder"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/report-builder/page.tsx",
@@ -737,9 +737,9 @@
     "targetType": "Link.href",
     "lineNumber": 38,
     "evidence": "href=\"/dashboard/chatter/feed",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/communication?tab=chatter"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/chatter/page.tsx",
@@ -751,9 +751,9 @@
     "targetType": "Link.href",
     "lineNumber": 91,
     "evidence": "href: \"/dashboard/chatter/feed",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/communication?tab=chatter"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/chatter/page.tsx",
@@ -765,9 +765,9 @@
     "targetType": "Link.href",
     "lineNumber": 92,
     "evidence": "href: \"/dashboard/chatter/search",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/communication?tab=chatter"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/chatter/page.tsx",
@@ -807,9 +807,9 @@
     "targetType": "Link.href",
     "lineNumber": 109,
     "evidence": "href: \"/dashboard/calendar/view",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/communication?tab=calendar"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/calendar/page.tsx",
@@ -821,9 +821,9 @@
     "targetType": "Link.href",
     "lineNumber": 110,
     "evidence": "href: \"/dashboard/calendar/new-event",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/communication?tab=calendar"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/calendar/page.tsx",
@@ -835,9 +835,9 @@
     "targetType": "Link.href",
     "lineNumber": 111,
     "evidence": "href: \"/dashboard/calendar/resources",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/communication?tab=calendar"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/calendar/page.tsx",
@@ -849,9 +849,9 @@
     "targetType": "Link.href",
     "lineNumber": 112,
     "evidence": "href: \"/dashboard/calendar/availability",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/communication?tab=calendar"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/notification-center/page.tsx",
@@ -863,9 +863,9 @@
     "targetType": "Link.href",
     "lineNumber": 34,
     "evidence": "href: \"/dashboard/notification-center/list",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/communication?tab=notifications"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/notification-center/page.tsx",
@@ -877,9 +877,9 @@
     "targetType": "Link.href",
     "lineNumber": 35,
     "evidence": "href: \"/dashboard/notification-center/preferences",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/communication?tab=notifications"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/notification-center/page.tsx",
@@ -891,9 +891,9 @@
     "targetType": "Link.href",
     "lineNumber": 36,
     "evidence": "href: \"/dashboard/notification-center/templates",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/communication?tab=notifications"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/notification-center/page.tsx",
@@ -905,9 +905,9 @@
     "targetType": "Link.href",
     "lineNumber": 37,
     "evidence": "href: \"/dashboard/notification-center/schedules",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/communication?tab=notifications"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/notification-center/page.tsx",
@@ -1045,9 +1045,9 @@
     "targetType": "Link.href",
     "lineNumber": 52,
     "evidence": "href=\"/dashboard/surveys/new",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/crm?tab=surveys"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/surveys/page.tsx",
@@ -1073,9 +1073,9 @@
     "targetType": "Link.href",
     "lineNumber": 111,
     "evidence": "href=\"/dashboard/surveys/new",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/crm?tab=surveys"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/surveys/page.tsx",
@@ -1157,9 +1157,9 @@
     "targetType": "Link.href",
     "lineNumber": 115,
     "evidence": "href=\"/dashboard/documents/new",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/documents?drawer=create"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/documents/compliance/page.tsx",
@@ -1171,9 +1171,9 @@
     "targetType": "Link.href",
     "lineNumber": 126,
     "evidence": "href=\"/dashboard/documents/new",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/documents?drawer=create"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/documents/compliance/page.tsx",
@@ -1227,9 +1227,9 @@
     "targetType": "Link.href",
     "lineNumber": 174,
     "evidence": "href=\"/dashboard/esign",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/documents?tab=esign"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/documents/expiring/page.tsx",
@@ -1283,9 +1283,9 @@
     "targetType": "Link.href",
     "lineNumber": 108,
     "evidence": "href={`/dashboard/knowledge-base/articles?category_id=${c.id",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/documents?tab=knowledge-base"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/knowledge-base/page.tsx",
@@ -1297,9 +1297,9 @@
     "targetType": "Link.href",
     "lineNumber": 126,
     "evidence": "href=\"/dashboard/knowledge-base/articles",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/documents?tab=knowledge-base"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/knowledge-base/page.tsx",
@@ -1311,9 +1311,9 @@
     "targetType": "Link.href",
     "lineNumber": 127,
     "evidence": "href=\"/dashboard/knowledge-base/articles/new",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/documents?tab=knowledge-base"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/knowledge-base/page.tsx",
@@ -1325,9 +1325,9 @@
     "targetType": "Link.href",
     "lineNumber": 136,
     "evidence": "href=\"/dashboard/knowledge-base/articles/new",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/documents?tab=knowledge-base"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/knowledge-base/page.tsx",
@@ -1367,9 +1367,9 @@
     "targetType": "Link.href",
     "lineNumber": 94,
     "evidence": "href: \"/dashboard/finance/accounting/customers-ledger",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/finance?tab=accounting"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/finance/accounting/page.tsx",
@@ -1381,9 +1381,9 @@
     "targetType": "Link.href",
     "lineNumber": 95,
     "evidence": "href: \"/dashboard/finance/accounting/suppliers-ledger",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/finance?tab=accounting"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/finance/accounting/page.tsx",
@@ -1395,9 +1395,9 @@
     "targetType": "Link.href",
     "lineNumber": 96,
     "evidence": "href: \"/dashboard/finance/accounting/sales-invoices",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/finance?tab=accounting"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/finance/accounting/page.tsx",
@@ -1409,9 +1409,9 @@
     "targetType": "Link.href",
     "lineNumber": 97,
     "evidence": "href: \"/dashboard/finance/accounting/purchase-invoices",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/finance?tab=accounting"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/finance/accounting/page.tsx",
@@ -1423,9 +1423,9 @@
     "targetType": "Link.href",
     "lineNumber": 98,
     "evidence": "href: \"/dashboard/finance/accounting/payments",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/finance?tab=accounting"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/finance/accounting/page.tsx",
@@ -1451,9 +1451,9 @@
     "targetType": "Link.href",
     "lineNumber": 118,
     "evidence": "href=\"/dashboard/finance/accounting/sales-invoices",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/finance?tab=accounting"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/finance/accounting/page.tsx",
@@ -1465,9 +1465,9 @@
     "targetType": "Link.href",
     "lineNumber": 151,
     "evidence": "href=\"/dashboard/finance/accounting/purchase-invoices",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/finance?tab=accounting"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/bank-reconciliation/page.tsx",
@@ -1479,9 +1479,9 @@
     "targetType": "Link.href",
     "lineNumber": 34,
     "evidence": "href=\"/dashboard/bank-reconciliation/import",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/finance?tab=bank-recon"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/bank-reconciliation/page.tsx",
@@ -1493,9 +1493,9 @@
     "targetType": "Link.href",
     "lineNumber": 37,
     "evidence": "href=\"/dashboard/bank-reconciliation/statements",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/finance?tab=bank-recon"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/bank-reconciliation/page.tsx",
@@ -1507,9 +1507,9 @@
     "targetType": "Link.href",
     "lineNumber": 56,
     "evidence": "href: \"/dashboard/bank-reconciliation/open-items",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/finance?tab=bank-recon"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/bank-reconciliation/page.tsx",
@@ -1521,9 +1521,9 @@
     "targetType": "Link.href",
     "lineNumber": 57,
     "evidence": "href: \"/dashboard/bank-reconciliation/balance",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/finance?tab=bank-recon"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/bank-reconciliation/page.tsx",
@@ -1535,9 +1535,9 @@
     "targetType": "Link.href",
     "lineNumber": 58,
     "evidence": "href: \"/dashboard/bank-reconciliation/rules",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/finance?tab=bank-recon"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/bank-reconciliation/page.tsx",
@@ -1563,9 +1563,9 @@
     "targetType": "Link.href",
     "lineNumber": 75,
     "evidence": "href=\"/dashboard/bank-reconciliation/statements",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/finance?tab=bank-recon"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/bank-reconciliation/page.tsx",
@@ -1591,9 +1591,9 @@
     "targetType": "Link.href",
     "lineNumber": 42,
     "evidence": "href=\"/dashboard/invoice-match/review-queue",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/finance?tab=invoice-match"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/invoice-match/page.tsx",
@@ -1605,9 +1605,9 @@
     "targetType": "Link.href",
     "lineNumber": 46,
     "evidence": "href=\"/dashboard/invoice-match/matches",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/finance?tab=invoice-match"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/invoice-match/page.tsx",
@@ -1619,9 +1619,9 @@
     "targetType": "Link.href",
     "lineNumber": 77,
     "evidence": "href=\"/dashboard/invoice-match/blocked",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/finance?tab=invoice-match"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/invoice-match/page.tsx",
@@ -1633,9 +1633,9 @@
     "targetType": "Link.href",
     "lineNumber": 106,
     "evidence": "href: \"/dashboard/invoice-match/duplicates",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/finance?tab=invoice-match"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/invoice-match/page.tsx",
@@ -1647,9 +1647,9 @@
     "targetType": "Link.href",
     "lineNumber": 107,
     "evidence": "href: \"/dashboard/invoice-match/blocked",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/finance?tab=invoice-match"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/invoice-match/page.tsx",
@@ -1661,9 +1661,9 @@
     "targetType": "Link.href",
     "lineNumber": 108,
     "evidence": "href: \"/dashboard/invoice-match/review-queue",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/finance?tab=invoice-match"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/invoice-match/page.tsx",
@@ -1689,9 +1689,9 @@
     "targetType": "Link.href",
     "lineNumber": 124,
     "evidence": "href=\"/dashboard/invoice-match/matches",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/finance?tab=invoice-match"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/invoice-match/page.tsx",
@@ -1717,9 +1717,9 @@
     "targetType": "Link.href",
     "lineNumber": 36,
     "evidence": "href: \"/dashboard/fixed-assets/assets",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/finance?tab=fixed-assets"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/fixed-assets/page.tsx",
@@ -1731,9 +1731,9 @@
     "targetType": "Link.href",
     "lineNumber": 37,
     "evidence": "href: \"/dashboard/fixed-assets/categories",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/finance?tab=fixed-assets"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/fixed-assets/page.tsx",
@@ -1745,9 +1745,9 @@
     "targetType": "Link.href",
     "lineNumber": 38,
     "evidence": "href: \"/dashboard/fixed-assets/depreciation",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/finance?tab=fixed-assets"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/fixed-assets/page.tsx",
@@ -1759,9 +1759,9 @@
     "targetType": "Link.href",
     "lineNumber": 39,
     "evidence": "href: \"/dashboard/fixed-assets/posting",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/finance?tab=fixed-assets"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/fixed-assets/page.tsx",
@@ -1773,9 +1773,9 @@
     "targetType": "Link.href",
     "lineNumber": 40,
     "evidence": "href: \"/dashboard/fixed-assets/disposal",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/finance?tab=fixed-assets"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/fixed-assets/page.tsx",
@@ -1787,9 +1787,9 @@
     "targetType": "Link.href",
     "lineNumber": 41,
     "evidence": "href: \"/dashboard/fixed-assets/transfer",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/finance?tab=fixed-assets"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/fixed-assets/page.tsx",
@@ -1801,9 +1801,9 @@
     "targetType": "Link.href",
     "lineNumber": 42,
     "evidence": "href: \"/dashboard/fixed-assets/import",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/finance?tab=fixed-assets"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/fixed-assets/page.tsx",
@@ -1829,9 +1829,9 @@
     "targetType": "Link.href",
     "lineNumber": 55,
     "evidence": "href=\"/dashboard/fixed-assets/assets/new",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/finance?tab=fixed-assets"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/dimensions/page.tsx",
@@ -1843,9 +1843,9 @@
     "targetType": "Link.href",
     "lineNumber": 7,
     "evidence": "href: \"/dashboard/dimensions/types",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/finance?tab=dimensions"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/dimensions/page.tsx",
@@ -1857,9 +1857,9 @@
     "targetType": "Link.href",
     "lineNumber": 8,
     "evidence": "href: \"/dashboard/dimensions/values",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/finance?tab=dimensions"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/dimensions/page.tsx",
@@ -1871,9 +1871,9 @@
     "targetType": "Link.href",
     "lineNumber": 9,
     "evidence": "href: \"/dashboard/dimensions/cost-centers",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/finance?tab=dimensions"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/dimensions/page.tsx",
@@ -1885,9 +1885,9 @@
     "targetType": "Link.href",
     "lineNumber": 10,
     "evidence": "href: \"/dashboard/dimensions/allocations",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/finance?tab=dimensions"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/dimensions/page.tsx",
@@ -1899,9 +1899,9 @@
     "targetType": "Link.href",
     "lineNumber": 11,
     "evidence": "href: \"/dashboard/dimensions/allocation-run",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/finance?tab=dimensions"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/dimensions/page.tsx",
@@ -1913,9 +1913,9 @@
     "targetType": "Link.href",
     "lineNumber": 12,
     "evidence": "href: \"/dashboard/dimensions/validation",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/finance?tab=dimensions"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/dimensions/page.tsx",
@@ -1927,9 +1927,9 @@
     "targetType": "Link.href",
     "lineNumber": 13,
     "evidence": "href: \"/dashboard/dimensions/defaults",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/finance?tab=dimensions"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/dimensions/page.tsx",
@@ -1941,9 +1941,9 @@
     "targetType": "Link.href",
     "lineNumber": 14,
     "evidence": "href: \"/dashboard/dimensions/reclassify",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/finance?tab=dimensions"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/dimensions/page.tsx",
@@ -1955,9 +1955,9 @@
     "targetType": "Link.href",
     "lineNumber": 15,
     "evidence": "href: \"/dashboard/dimensions/completeness",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/finance?tab=dimensions"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/dimensions/page.tsx",
@@ -1983,9 +1983,9 @@
     "targetType": "Link.href",
     "lineNumber": 66,
     "evidence": "href: \"/dashboard/dunning/aging",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/finance?tab=dunning"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/dunning/page.tsx",
@@ -1997,9 +1997,9 @@
     "targetType": "Link.href",
     "lineNumber": 67,
     "evidence": "href: \"/dashboard/dunning/workqueue",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/finance?tab=dunning"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/dunning/page.tsx",
@@ -2011,9 +2011,9 @@
     "targetType": "Link.href",
     "lineNumber": 68,
     "evidence": "href: \"/dashboard/dunning/credit-holds",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/finance?tab=dunning"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/dunning/page.tsx",
@@ -2025,9 +2025,9 @@
     "targetType": "Link.href",
     "lineNumber": 69,
     "evidence": "href: \"/dashboard/dunning/policies",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/finance?tab=dunning"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/dunning/page.tsx",
@@ -2039,9 +2039,9 @@
     "targetType": "Link.href",
     "lineNumber": 84,
     "evidence": "href=\"/dashboard/dunning/cases",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/finance?tab=dunning"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/dunning/page.tsx",
@@ -2067,9 +2067,9 @@
     "targetType": "Link.href",
     "lineNumber": 45,
     "evidence": "href: \"/dashboard/tax/rules",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/finance?tab=tax"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/tax/page.tsx",
@@ -2081,9 +2081,9 @@
     "targetType": "Link.href",
     "lineNumber": 46,
     "evidence": "href: \"/dashboard/tax/regulatory",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/finance?tab=tax"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/tax/page.tsx",
@@ -2095,9 +2095,9 @@
     "targetType": "Link.href",
     "lineNumber": 47,
     "evidence": "href: \"/dashboard/tax/transactions",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/finance?tab=tax"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/tax/page.tsx",
@@ -2123,9 +2123,9 @@
     "targetType": "Link.href",
     "lineNumber": 23,
     "evidence": "href: \"/dashboard/expenses/claims",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/hr?tab=expenses"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/expenses/page.tsx",
@@ -2137,9 +2137,9 @@
     "targetType": "Link.href",
     "lineNumber": 24,
     "evidence": "href: \"/dashboard/expenses/claims/new",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/hr?tab=expenses"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/expenses/page.tsx",
@@ -2151,9 +2151,9 @@
     "targetType": "Link.href",
     "lineNumber": 25,
     "evidence": "href: \"/dashboard/expenses/approval",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/hr?tab=expenses"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/expenses/page.tsx",
@@ -2165,9 +2165,9 @@
     "targetType": "Link.href",
     "lineNumber": 26,
     "evidence": "href: \"/dashboard/expenses/reimbursement",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/hr?tab=expenses"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/expenses/page.tsx",
@@ -2179,9 +2179,9 @@
     "targetType": "Link.href",
     "lineNumber": 27,
     "evidence": "href: \"/dashboard/expenses/advances",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/hr?tab=expenses"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/expenses/page.tsx",
@@ -2193,9 +2193,9 @@
     "targetType": "Link.href",
     "lineNumber": 28,
     "evidence": "href: \"/dashboard/expenses/categories",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/hr?tab=expenses"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/expenses/page.tsx",
@@ -2207,9 +2207,9 @@
     "targetType": "Link.href",
     "lineNumber": 29,
     "evidence": "href: \"/dashboard/expenses/policies",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/hr?tab=expenses"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/expenses/page.tsx",
@@ -2249,9 +2249,9 @@
     "targetType": "Link.href",
     "lineNumber": 41,
     "evidence": "href=\"/dashboard/expenses/claims/new",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/hr?tab=expenses"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/recruitment/page.tsx",
@@ -2263,9 +2263,9 @@
     "targetType": "Link.href",
     "lineNumber": 22,
     "evidence": "href: \"/dashboard/recruitment/requisitions",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/hr?tab=recruitment"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/recruitment/page.tsx",
@@ -2277,9 +2277,9 @@
     "targetType": "Link.href",
     "lineNumber": 23,
     "evidence": "href: \"/dashboard/recruitment/requisitions/new",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/hr?tab=recruitment"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/recruitment/page.tsx",
@@ -2291,9 +2291,9 @@
     "targetType": "Link.href",
     "lineNumber": 24,
     "evidence": "href: \"/dashboard/recruitment/candidates",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/hr?tab=recruitment"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/recruitment/page.tsx",
@@ -2305,9 +2305,9 @@
     "targetType": "Link.href",
     "lineNumber": 25,
     "evidence": "href: \"/dashboard/recruitment/pipeline",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/hr?tab=recruitment"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/recruitment/page.tsx",
@@ -2319,9 +2319,9 @@
     "targetType": "Link.href",
     "lineNumber": 26,
     "evidence": "href: \"/dashboard/recruitment/interviews",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/hr?tab=recruitment"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/recruitment/page.tsx",
@@ -2333,9 +2333,9 @@
     "targetType": "Link.href",
     "lineNumber": 27,
     "evidence": "href: \"/dashboard/recruitment/offers",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/hr?tab=recruitment"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/recruitment/page.tsx",
@@ -2347,9 +2347,9 @@
     "targetType": "Link.href",
     "lineNumber": 28,
     "evidence": "href: \"/dashboard/recruitment/stages",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/hr?tab=recruitment"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/recruitment/page.tsx",
@@ -2389,9 +2389,9 @@
     "targetType": "Link.href",
     "lineNumber": 40,
     "evidence": "href=\"/dashboard/recruitment/requisitions/new",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/hr?tab=recruitment"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/ess/page.tsx",
@@ -2403,9 +2403,9 @@
     "targetType": "Link.href",
     "lineNumber": 15,
     "evidence": "href: \"/dashboard/ess/profile",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/hr?tab=ess"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/ess/page.tsx",
@@ -2417,9 +2417,9 @@
     "targetType": "Link.href",
     "lineNumber": 16,
     "evidence": "href: \"/dashboard/ess/leave",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/hr?tab=ess"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/ess/page.tsx",
@@ -2431,9 +2431,9 @@
     "targetType": "Link.href",
     "lineNumber": 17,
     "evidence": "href: \"/dashboard/ess/attendance",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/hr?tab=ess"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/ess/page.tsx",
@@ -2445,9 +2445,9 @@
     "targetType": "Link.href",
     "lineNumber": 18,
     "evidence": "href: \"/dashboard/ess/documents",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/hr?tab=ess"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/ess/page.tsx",
@@ -2459,9 +2459,9 @@
     "targetType": "Link.href",
     "lineNumber": 19,
     "evidence": "href: \"/dashboard/ess/requests",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/hr?tab=ess"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/ess/page.tsx",
@@ -2473,9 +2473,9 @@
     "targetType": "Link.href",
     "lineNumber": 20,
     "evidence": "href: \"/dashboard/ess/notifications",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/hr?tab=ess"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/ess/page.tsx",
@@ -2501,9 +2501,9 @@
     "targetType": "Link.href",
     "lineNumber": 22,
     "evidence": "href: \"/dashboard/ess/admin",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/hr?tab=ess"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/appraisals/page.tsx",
@@ -2515,9 +2515,9 @@
     "targetType": "Link.href",
     "lineNumber": 36,
     "evidence": "href: \"/dashboard/appraisals/periods",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/hr?tab=appraisals"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/appraisals/page.tsx",
@@ -2529,9 +2529,9 @@
     "targetType": "Link.href",
     "lineNumber": 37,
     "evidence": "href: \"/dashboard/appraisals/templates",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/hr?tab=appraisals"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/appraisals/page.tsx",
@@ -2543,9 +2543,9 @@
     "targetType": "Link.href",
     "lineNumber": 38,
     "evidence": "href: \"/dashboard/appraisals/records",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/hr?tab=appraisals"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/appraisals/page.tsx",
@@ -2557,9 +2557,9 @@
     "targetType": "Link.href",
     "lineNumber": 39,
     "evidence": "href: \"/dashboard/appraisals/records/new",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/hr?tab=appraisals"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/appraisals/page.tsx",
@@ -2571,9 +2571,9 @@
     "targetType": "Link.href",
     "lineNumber": 40,
     "evidence": "href: \"/dashboard/appraisals/self-review",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/hr?tab=appraisals"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/appraisals/page.tsx",
@@ -2585,9 +2585,9 @@
     "targetType": "Link.href",
     "lineNumber": 41,
     "evidence": "href: \"/dashboard/appraisals/manager-queue",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/hr?tab=appraisals"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/appraisals/page.tsx",
@@ -2599,9 +2599,9 @@
     "targetType": "Link.href",
     "lineNumber": 42,
     "evidence": "href: \"/dashboard/appraisals/hr-review",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/hr?tab=appraisals"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/appraisals/page.tsx",
@@ -2613,9 +2613,9 @@
     "targetType": "Link.href",
     "lineNumber": 43,
     "evidence": "href: \"/dashboard/appraisals/development-plans",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/hr?tab=appraisals"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/appraisals/page.tsx",
@@ -2655,9 +2655,9 @@
     "targetType": "Link.href",
     "lineNumber": 32,
     "evidence": "href: \"/dashboard/training/programs",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/hr?tab=training"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/training/page.tsx",
@@ -2669,9 +2669,9 @@
     "targetType": "Link.href",
     "lineNumber": 33,
     "evidence": "href: \"/dashboard/training/sessions",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/hr?tab=training"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/training/page.tsx",
@@ -2683,9 +2683,9 @@
     "targetType": "Link.href",
     "lineNumber": 34,
     "evidence": "href: \"/dashboard/training/skill-matrix",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/hr?tab=training"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/training/page.tsx",
@@ -2697,9 +2697,9 @@
     "targetType": "Link.href",
     "lineNumber": 35,
     "evidence": "href: \"/dashboard/training/assignments",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/hr?tab=training"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/training/page.tsx",
@@ -2711,9 +2711,9 @@
     "targetType": "Link.href",
     "lineNumber": 36,
     "evidence": "href: \"/dashboard/training/certifications",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/hr?tab=training"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/training/page.tsx",
@@ -2725,9 +2725,9 @@
     "targetType": "Link.href",
     "lineNumber": 37,
     "evidence": "href: \"/dashboard/training/feedback",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/hr?tab=training"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/training/page.tsx",
@@ -2767,9 +2767,9 @@
     "targetType": "Link.href",
     "lineNumber": 29,
     "evidence": "href: \"/dashboard/timesheets/my-timesheets",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/hr?tab=timesheets"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/timesheets/page.tsx",
@@ -2781,9 +2781,9 @@
     "targetType": "Link.href",
     "lineNumber": 30,
     "evidence": "href: \"/dashboard/timesheets/time-entry",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/hr?tab=timesheets"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/timesheets/page.tsx",
@@ -2795,9 +2795,9 @@
     "targetType": "Link.href",
     "lineNumber": 31,
     "evidence": "href: \"/dashboard/timesheets/weekly-view",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/hr?tab=timesheets"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/timesheets/page.tsx",
@@ -2809,9 +2809,9 @@
     "targetType": "Link.href",
     "lineNumber": 32,
     "evidence": "href: \"/dashboard/timesheets/approval-queue",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/hr?tab=timesheets"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/timesheets/page.tsx",
@@ -2865,9 +2865,9 @@
     "targetType": "Link.href",
     "lineNumber": 36,
     "evidence": "href: \"/dashboard/webhooks/definitions",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/integrations?tab=webhooks"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/webhooks/page.tsx",
@@ -2879,9 +2879,9 @@
     "targetType": "Link.href",
     "lineNumber": 37,
     "evidence": "href: \"/dashboard/webhooks/subscriptions",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/integrations?tab=webhooks"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/webhooks/page.tsx",
@@ -2893,9 +2893,9 @@
     "targetType": "Link.href",
     "lineNumber": 38,
     "evidence": "href: \"/dashboard/webhooks/deliveries",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/integrations?tab=webhooks"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/webhooks/page.tsx",
@@ -2907,9 +2907,9 @@
     "targetType": "Link.href",
     "lineNumber": 39,
     "evidence": "href: \"/dashboard/webhooks/dead-letter",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/integrations?tab=webhooks"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/webhooks/page.tsx",
@@ -2921,9 +2921,9 @@
     "targetType": "Link.href",
     "lineNumber": 40,
     "evidence": "href: \"/dashboard/webhooks/inbound",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/integrations?tab=webhooks"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/webhooks/page.tsx",
@@ -2949,9 +2949,9 @@
     "targetType": "Link.href",
     "lineNumber": 18,
     "evidence": "href: \"/dashboard/developer/keys",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/integrations?tab=developer"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/developer/page.tsx",
@@ -2963,9 +2963,9 @@
     "targetType": "Link.href",
     "lineNumber": 19,
     "evidence": "href: \"/dashboard/developer/graphql",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/integrations?tab=developer"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/developer/page.tsx",
@@ -2977,9 +2977,9 @@
     "targetType": "Link.href",
     "lineNumber": 22,
     "evidence": "href: \"/dashboard/webhooks",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/integrations?tab=webhooks"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/developer/page.tsx",
@@ -3005,9 +3005,9 @@
     "targetType": "Link.href",
     "lineNumber": 16,
     "evidence": "href: \"/dashboard/cycle-count/plans",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/inventory?tab=cycle-count"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/cycle-count/page.tsx",
@@ -3019,9 +3019,9 @@
     "targetType": "Link.href",
     "lineNumber": 17,
     "evidence": "href: \"/dashboard/cycle-count/tasks",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/inventory?tab=cycle-count"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/cycle-count/page.tsx",
@@ -3033,9 +3033,9 @@
     "targetType": "Link.href",
     "lineNumber": 18,
     "evidence": "href: \"/dashboard/cycle-count/entries",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/inventory?tab=cycle-count"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/cycle-count/page.tsx",
@@ -3047,9 +3047,9 @@
     "targetType": "Link.href",
     "lineNumber": 19,
     "evidence": "href: \"/dashboard/cycle-count/variances",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/inventory?tab=cycle-count"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/cycle-count/page.tsx",
@@ -3061,9 +3061,9 @@
     "targetType": "Link.href",
     "lineNumber": 20,
     "evidence": "href: \"/dashboard/cycle-count/reports",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/inventory?tab=cycle-count"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/shelf-life/page.tsx",
@@ -3075,9 +3075,9 @@
     "targetType": "Link.href",
     "lineNumber": 184,
     "evidence": "href: \"/dashboard/shelf-life/fefo-config",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/inventory?tab=shelf-life"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/shelf-life/page.tsx",
@@ -3089,9 +3089,9 @@
     "targetType": "Link.href",
     "lineNumber": 185,
     "evidence": "href: \"/dashboard/shelf-life/lot-aging",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/inventory?tab=shelf-life"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/shelf-life/page.tsx",
@@ -3103,9 +3103,9 @@
     "targetType": "Link.href",
     "lineNumber": 186,
     "evidence": "href: \"/dashboard/shelf-life/near-expiry",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/inventory?tab=shelf-life"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/shelf-life/page.tsx",
@@ -3117,9 +3117,9 @@
     "targetType": "Link.href",
     "lineNumber": 187,
     "evidence": "href: \"/dashboard/shelf-life/expired",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/inventory?tab=shelf-life"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/shelf-life/page.tsx",
@@ -3131,9 +3131,9 @@
     "targetType": "Link.href",
     "lineNumber": 188,
     "evidence": "href: \"/dashboard/shelf-life/retest-queue",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/inventory?tab=shelf-life"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/shelf-life/page.tsx",
@@ -3145,9 +3145,9 @@
     "targetType": "Link.href",
     "lineNumber": 189,
     "evidence": "href: \"/dashboard/shelf-life/shipment-validation",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/inventory?tab=shelf-life"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/shelf-life/page.tsx",
@@ -3159,9 +3159,9 @@
     "targetType": "Link.href",
     "lineNumber": 190,
     "evidence": "href: \"/dashboard/shelf-life/production-validation",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/inventory?tab=shelf-life"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/shelf-life/page.tsx",
@@ -3173,9 +3173,9 @@
     "targetType": "Link.href",
     "lineNumber": 191,
     "evidence": "href: \"/dashboard/shelf-life/compliance",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/inventory?tab=shelf-life"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/shelf-life/page.tsx",
@@ -3187,9 +3187,9 @@
     "targetType": "Link.href",
     "lineNumber": 192,
     "evidence": "href: \"/dashboard/shelf-life/disposition",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/inventory?tab=shelf-life"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/shelf-life/page.tsx",
@@ -3201,9 +3201,9 @@
     "targetType": "Link.href",
     "lineNumber": 193,
     "evidence": "href: \"/dashboard/shelf-life/customer-rules",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/inventory?tab=shelf-life"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/shelf-life/page.tsx",
@@ -3215,9 +3215,9 @@
     "targetType": "Link.href",
     "lineNumber": 194,
     "evidence": "href: \"/dashboard/shelf-life/bulk-hold-monitor",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/inventory?tab=shelf-life"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/traceability/page.tsx",
@@ -3229,9 +3229,9 @@
     "targetType": "Link.href",
     "lineNumber": 53,
     "evidence": "href=\"/dashboard/traceability/recalls",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/inventory?tab=traceability"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/traceability/page.tsx",
@@ -3257,9 +3257,9 @@
     "targetType": "Link.href",
     "lineNumber": 94,
     "evidence": "href: \"/dashboard/traceability/search",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/inventory?tab=traceability"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/traceability/page.tsx",
@@ -3271,9 +3271,9 @@
     "targetType": "Link.href",
     "lineNumber": 95,
     "evidence": "href: \"/dashboard/traceability/backward",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/inventory?tab=traceability"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/traceability/page.tsx",
@@ -3285,9 +3285,9 @@
     "targetType": "Link.href",
     "lineNumber": 96,
     "evidence": "href: \"/dashboard/traceability/forward",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/inventory?tab=traceability"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/traceability/page.tsx",
@@ -3299,9 +3299,9 @@
     "targetType": "Link.href",
     "lineNumber": 97,
     "evidence": "href: \"/dashboard/traceability/genealogy",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/inventory?tab=traceability"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/traceability/page.tsx",
@@ -3313,9 +3313,9 @@
     "targetType": "Link.href",
     "lineNumber": 98,
     "evidence": "href: \"/dashboard/traceability/recalls",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/inventory?tab=traceability"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/traceability/page.tsx",
@@ -3327,9 +3327,9 @@
     "targetType": "Link.href",
     "lineNumber": 99,
     "evidence": "href: \"/dashboard/traceability/mock-recall",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/inventory?tab=traceability"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/traceability/page.tsx",
@@ -3341,9 +3341,9 @@
     "targetType": "Link.href",
     "lineNumber": 100,
     "evidence": "href: \"/dashboard/traceability/regulatory",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/inventory?tab=traceability"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/fleet/page.tsx",
@@ -3355,9 +3355,9 @@
     "targetType": "Link.href",
     "lineNumber": 16,
     "evidence": "href: \"/dashboard/fleet/vehicles",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/logistics?tab=fleet"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/fleet/page.tsx",
@@ -3369,9 +3369,9 @@
     "targetType": "Link.href",
     "lineNumber": 17,
     "evidence": "href: \"/dashboard/fleet/drivers",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/logistics?tab=fleet"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/fleet/page.tsx",
@@ -3383,9 +3383,9 @@
     "targetType": "Link.href",
     "lineNumber": 18,
     "evidence": "href: \"/dashboard/fleet/trips",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/logistics?tab=fleet"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/fleet/page.tsx",
@@ -3397,9 +3397,9 @@
     "targetType": "Link.href",
     "lineNumber": 19,
     "evidence": "href: \"/dashboard/fleet/fuel",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/logistics?tab=fleet"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/fleet/page.tsx",
@@ -3411,9 +3411,9 @@
     "targetType": "Link.href",
     "lineNumber": 20,
     "evidence": "href: \"/dashboard/fleet/maintenance",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/logistics?tab=fleet"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/fleet/page.tsx",
@@ -3425,9 +3425,9 @@
     "targetType": "Link.href",
     "lineNumber": 21,
     "evidence": "href: \"/dashboard/fleet/incidents",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/logistics?tab=fleet"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/fleet/page.tsx",
@@ -3453,9 +3453,9 @@
     "targetType": "Link.href",
     "lineNumber": 57,
     "evidence": "href=\"/dashboard/marketing/campaigns/new",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/marketing?tab=campaigns"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/marketing/campaigns/page.tsx",
@@ -3467,9 +3467,9 @@
     "targetType": "Link.href",
     "lineNumber": 92,
     "evidence": "href=\"/dashboard/marketing/campaigns/new",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/marketing?tab=campaigns"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/marketing/campaigns/page.tsx",
@@ -3509,9 +3509,9 @@
     "targetType": "Link.href",
     "lineNumber": 51,
     "evidence": "href=\"/dashboard/marketing/promotions/new",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/marketing?tab=promotions"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/marketing/promotions/page.tsx",
@@ -3523,9 +3523,9 @@
     "targetType": "Link.href",
     "lineNumber": 78,
     "evidence": "href=\"/dashboard/marketing/promotions/new",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/marketing?tab=promotions"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/marketing/promotions/page.tsx",
@@ -3565,9 +3565,9 @@
     "targetType": "Link.href",
     "lineNumber": 42,
     "evidence": "href=\"/dashboard/marketing/trade-spend/new",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/marketing?tab=trade-spend"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/marketing/trade-spend/page.tsx",
@@ -3593,9 +3593,9 @@
     "targetType": "Link.href",
     "lineNumber": 44,
     "evidence": "href=\"/dashboard/marketing/ads/new",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/marketing?tab=ads"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/marketing/ads/page.tsx",
@@ -3621,9 +3621,9 @@
     "targetType": "Link.href",
     "lineNumber": 52,
     "evidence": "href=\"/dashboard/marketing/social-media/new",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/marketing?tab=social-media"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/marketing/social-media/page.tsx",
@@ -3649,9 +3649,9 @@
     "targetType": "Link.href",
     "lineNumber": 39,
     "evidence": "href=\"/dashboard/marketing/segments/new",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/marketing?tab=segments"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/marketing/segments/page.tsx",
@@ -3663,9 +3663,9 @@
     "targetType": "Link.href",
     "lineNumber": 59,
     "evidence": "href=\"/dashboard/marketing/segments/new",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/marketing?tab=segments"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/marketing/segments/page.tsx",
@@ -3705,9 +3705,9 @@
     "targetType": "Link.href",
     "lineNumber": 33,
     "evidence": "href=\"/dashboard/marketing/influencers/new",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/marketing?tab=influencers"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/marketing/influencers/page.tsx",
@@ -3733,9 +3733,9 @@
     "targetType": "router.push",
     "lineNumber": 7,
     "evidence": "router.replace(\"/dashboard/marketing/ecommerce/stores",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/marketing?tab=ecommerce"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/marketing/visits/page.tsx",
@@ -3747,9 +3747,9 @@
     "targetType": "Link.href",
     "lineNumber": 41,
     "evidence": "href=\"/dashboard/marketing/visits/new",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/marketing?tab=visits"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/marketing/visits/page.tsx",
@@ -3761,9 +3761,9 @@
     "targetType": "Link.href",
     "lineNumber": 63,
     "evidence": "href=\"/dashboard/marketing/visits/new",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/marketing?tab=visits"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/marketing/visits/page.tsx",
@@ -3789,9 +3789,9 @@
     "targetType": "Link.href",
     "lineNumber": 43,
     "evidence": "href=\"/dashboard/marketing/brand-spend/new",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/marketing?tab=brand-spend"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/marketing/brand-spend/page.tsx",
@@ -3817,9 +3817,9 @@
     "targetType": "Link.href",
     "lineNumber": 28,
     "evidence": "href=\"/dashboard/tpm/plans/new",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/marketing?tab=tpm"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/tpm/page.tsx",
@@ -3831,9 +3831,9 @@
     "targetType": "Link.href",
     "lineNumber": 29,
     "evidence": "href=\"/dashboard/tpm/promotions/new",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/marketing?tab=tpm"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/tpm/page.tsx",
@@ -3845,9 +3845,9 @@
     "targetType": "Link.href",
     "lineNumber": 86,
     "evidence": "href=\"/dashboard/tpm/promotions",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/marketing?tab=tpm"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/tpm/page.tsx",
@@ -3873,9 +3873,9 @@
     "targetType": "Link.href",
     "lineNumber": 110,
     "evidence": "href: \"/dashboard/tpm/calendar",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/marketing?tab=tpm"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/tpm/page.tsx",
@@ -3887,9 +3887,9 @@
     "targetType": "Link.href",
     "lineNumber": 111,
     "evidence": "href: \"/dashboard/tpm/budget",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/marketing?tab=tpm"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/tpm/page.tsx",
@@ -3901,9 +3901,9 @@
     "targetType": "Link.href",
     "lineNumber": 112,
     "evidence": "href: \"/dashboard/tpm/claims",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/marketing?tab=tpm"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/tpm/page.tsx",
@@ -3915,9 +3915,9 @@
     "targetType": "Link.href",
     "lineNumber": 113,
     "evidence": "href: \"/dashboard/tpm/roi",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/marketing?tab=tpm"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/tpm/page.tsx",
@@ -3929,9 +3929,9 @@
     "targetType": "Link.href",
     "lineNumber": 114,
     "evidence": "href: \"/dashboard/tpm/settlement",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/marketing?tab=tpm"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/tpm/page.tsx",
@@ -3943,9 +3943,9 @@
     "targetType": "Link.href",
     "lineNumber": 115,
     "evidence": "href: \"/dashboard/tpm/plans",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/marketing?tab=tpm"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/tpm/page.tsx",
@@ -3957,9 +3957,9 @@
     "targetType": "Link.href",
     "lineNumber": 116,
     "evidence": "href: \"/dashboard/tpm/promotions",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/marketing?tab=tpm"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/tpm/page.tsx",
@@ -4055,9 +4055,9 @@
     "targetType": "Link.href",
     "lineNumber": 57,
     "evidence": "href=\"/dashboard/mrp/forecast",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/planning?tab=mrp"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/mrp/page.tsx",
@@ -4069,9 +4069,9 @@
     "targetType": "Link.href",
     "lineNumber": 60,
     "evidence": "href=\"/dashboard/mrp/suggestions",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/planning?tab=mrp"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/mrp/page.tsx",
@@ -4083,9 +4083,9 @@
     "targetType": "Link.href",
     "lineNumber": 63,
     "evidence": "href=\"/dashboard/mrp/run",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/planning?tab=mrp"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/mrp/page.tsx",
@@ -4097,9 +4097,9 @@
     "targetType": "Link.href",
     "lineNumber": 94,
     "evidence": "href={`/dashboard/mrp/run?id=${dash.last_run.id",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/planning?tab=mrp"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/mrp/page.tsx",
@@ -4111,9 +4111,9 @@
     "targetType": "Link.href",
     "lineNumber": 149,
     "evidence": "href=\"/dashboard/mrp/run",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/planning?tab=mrp"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/mrp/page.tsx",
@@ -4125,9 +4125,9 @@
     "targetType": "Link.href",
     "lineNumber": 164,
     "evidence": "href={`/dashboard/mrp/run?id=${r.id",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/planning?tab=mrp"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/mps/page.tsx",
@@ -4209,9 +4209,9 @@
     "targetType": "Link.href",
     "lineNumber": 34,
     "evidence": "href: \"/dashboard/kanban/boards",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/planning?tab=kanban"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/kanban/page.tsx",
@@ -4223,9 +4223,9 @@
     "targetType": "Link.href",
     "lineNumber": 35,
     "evidence": "href: \"/dashboard/kanban/view",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/planning?tab=kanban"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/kanban/page.tsx",
@@ -4237,9 +4237,9 @@
     "targetType": "Link.href",
     "lineNumber": 36,
     "evidence": "href: \"/dashboard/kanban/cards",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/planning?tab=kanban"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/kanban/page.tsx",
@@ -4349,9 +4349,9 @@
     "targetType": "Link.href",
     "lineNumber": 154,
     "evidence": "href={`/dashboard/procurement-suggestion/suggestions?run_id=${r.id",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/procurement?tab=suggestions"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/procurement-suggestion/page.tsx",
@@ -4363,9 +4363,9 @@
     "targetType": "Link.href",
     "lineNumber": 171,
     "evidence": "href: \"/dashboard/procurement-suggestion/suggestions",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/procurement?tab=suggestions"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/procurement-suggestion/page.tsx",
@@ -4377,9 +4377,9 @@
     "targetType": "Link.href",
     "lineNumber": 172,
     "evidence": "href: \"/dashboard/procurement-suggestion/groups",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/procurement?tab=suggestions"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/procurement-suggestion/page.tsx",
@@ -4391,9 +4391,9 @@
     "targetType": "Link.href",
     "lineNumber": 173,
     "evidence": "href: \"/dashboard/procurement-suggestion/supplier-prices",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/procurement?tab=suggestions"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/procurement-suggestion/page.tsx",
@@ -4419,9 +4419,9 @@
     "targetType": "Link.href",
     "lineNumber": 37,
     "evidence": "href=\"/dashboard/subcontracting/locations",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/procurement?tab=subcontracting"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/subcontracting/page.tsx",
@@ -4433,9 +4433,9 @@
     "targetType": "Link.href",
     "lineNumber": 44,
     "evidence": "href=\"/dashboard/subcontracting/orders",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/procurement?tab=subcontracting"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/subcontracting/page.tsx",
@@ -4447,9 +4447,9 @@
     "targetType": "Link.href",
     "lineNumber": 69,
     "evidence": "href=\"/dashboard/subcontracting/orders",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/procurement?tab=subcontracting"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/subcontracting/page.tsx",
@@ -4461,9 +4461,9 @@
     "targetType": "Link.href",
     "lineNumber": 93,
     "evidence": "href={`/dashboard/subcontracting/orders?id=${o.id",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/procurement?tab=subcontracting"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/subcontracting/page.tsx",
@@ -4475,9 +4475,9 @@
     "targetType": "Link.href",
     "lineNumber": 104,
     "evidence": "href: \"/dashboard/subcontracting/orders",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/procurement?tab=subcontracting"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/subcontracting/page.tsx",
@@ -4489,9 +4489,9 @@
     "targetType": "Link.href",
     "lineNumber": 105,
     "evidence": "href: \"/dashboard/subcontracting/stock",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/procurement?tab=subcontracting"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/subcontracting/page.tsx",
@@ -4503,9 +4503,9 @@
     "targetType": "Link.href",
     "lineNumber": 106,
     "evidence": "href: \"/dashboard/subcontracting/yield",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/procurement?tab=subcontracting"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/subcontracting/page.tsx",
@@ -4531,9 +4531,9 @@
     "targetType": "Link.href",
     "lineNumber": 42,
     "evidence": "href=\"/dashboard/landed-cost/new",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/procurement?tab=landed-cost"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/landed-cost/page.tsx",
@@ -4573,9 +4573,9 @@
     "targetType": "Link.href",
     "lineNumber": 128,
     "evidence": "href=\"/dashboard/landed-cost/documents",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/procurement?tab=landed-cost"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/landed-cost/page.tsx",
@@ -4643,9 +4643,9 @@
     "targetType": "Link.href",
     "lineNumber": 114,
     "evidence": "href=\"/dashboard/production-execution/work-orders",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/production?tab=execution"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/production-execution/page.tsx",
@@ -4685,9 +4685,9 @@
     "targetType": "Link.href",
     "lineNumber": 99,
     "evidence": "href: \"/dashboard/machine-ops/machines",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/production?tab=machine-ops"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/machine-ops/page.tsx",
@@ -4699,9 +4699,9 @@
     "targetType": "Link.href",
     "lineNumber": 100,
     "evidence": "href: \"/dashboard/machine-ops/operators",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/production?tab=machine-ops"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/machine-ops/page.tsx",
@@ -4713,9 +4713,9 @@
     "targetType": "Link.href",
     "lineNumber": 101,
     "evidence": "href: \"/dashboard/machine-ops/teams",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/production?tab=machine-ops"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/machine-ops/page.tsx",
@@ -4727,9 +4727,9 @@
     "targetType": "Link.href",
     "lineNumber": 102,
     "evidence": "href: \"/dashboard/machine-ops/runtime",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/production?tab=machine-ops"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/machine-ops/page.tsx",
@@ -4741,9 +4741,9 @@
     "targetType": "Link.href",
     "lineNumber": 103,
     "evidence": "href: \"/dashboard/machine-ops/performance",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/production?tab=machine-ops"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/machine-ops/page.tsx",
@@ -4755,9 +4755,9 @@
     "targetType": "Link.href",
     "lineNumber": 104,
     "evidence": "href: \"/dashboard/machine-ops/downtime",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/production?tab=machine-ops"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/machine-ops/page.tsx",
@@ -4769,9 +4769,9 @@
     "targetType": "Link.href",
     "lineNumber": 105,
     "evidence": "href: \"/dashboard/machine-ops/costing",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/production?tab=machine-ops"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/machine-ops/page.tsx",
@@ -4783,9 +4783,9 @@
     "targetType": "Link.href",
     "lineNumber": 106,
     "evidence": "href: \"/dashboard/machine-ops/certs",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/production?tab=machine-ops"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/machine-ops/page.tsx",
@@ -4797,9 +4797,9 @@
     "targetType": "Link.href",
     "lineNumber": 107,
     "evidence": "href: \"/dashboard/machine-ops/assignment",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/production?tab=machine-ops"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/machine-ops/page.tsx",
@@ -4811,9 +4811,9 @@
     "targetType": "Link.href",
     "lineNumber": 121,
     "evidence": "href=\"/dashboard/machine-ops/downtime",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/production?tab=machine-ops"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/material-flow/page.tsx",
@@ -4825,9 +4825,9 @@
     "targetType": "Link.href",
     "lineNumber": 81,
     "evidence": "href: \"/dashboard/material-flow/issue",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/production?tab=material-flow"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/material-flow/page.tsx",
@@ -4839,9 +4839,9 @@
     "targetType": "Link.href",
     "lineNumber": 82,
     "evidence": "href: \"/dashboard/material-flow/wip-transfer",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/production?tab=material-flow"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/material-flow/page.tsx",
@@ -4853,9 +4853,9 @@
     "targetType": "Link.href",
     "lineNumber": 83,
     "evidence": "href: \"/dashboard/material-flow/bulk-transfer",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/production?tab=material-flow"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/material-flow/page.tsx",
@@ -4867,9 +4867,9 @@
     "targetType": "Link.href",
     "lineNumber": 84,
     "evidence": "href: \"/dashboard/material-flow/fg-receipt",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/production?tab=material-flow"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/material-flow/page.tsx",
@@ -4881,9 +4881,9 @@
     "targetType": "Link.href",
     "lineNumber": 85,
     "evidence": "href: \"/dashboard/material-flow/reservations",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/production?tab=material-flow"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/material-flow/page.tsx",
@@ -4895,9 +4895,9 @@
     "targetType": "Link.href",
     "lineNumber": 86,
     "evidence": "href: \"/dashboard/material-flow/tanks",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/production?tab=material-flow"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/material-flow/page.tsx",
@@ -4909,9 +4909,9 @@
     "targetType": "Link.href",
     "lineNumber": 87,
     "evidence": "href: \"/dashboard/material-flow/returns",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/production?tab=material-flow"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/material-flow/page.tsx",
@@ -4923,9 +4923,9 @@
     "targetType": "Link.href",
     "lineNumber": 88,
     "evidence": "href: \"/dashboard/material-flow/reconciliation",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/production?tab=material-flow"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/material-flow/page.tsx",
@@ -4937,9 +4937,9 @@
     "targetType": "Link.href",
     "lineNumber": 101,
     "evidence": "href=\"/dashboard/material-flow/history",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/production?tab=material-flow"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/projects/page.tsx",
@@ -4993,9 +4993,9 @@
     "targetType": "Link.href",
     "lineNumber": 99,
     "evidence": "href: \"/dashboard/qms/inspections",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/quality?tab=qms"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/qms/page.tsx",
@@ -5007,9 +5007,9 @@
     "targetType": "Link.href",
     "lineNumber": 100,
     "evidence": "href: \"/dashboard/qms/templates",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/quality?tab=qms"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/qms/page.tsx",
@@ -5021,9 +5021,9 @@
     "targetType": "Link.href",
     "lineNumber": 101,
     "evidence": "href: \"/dashboard/qms/haccp",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/quality?tab=qms"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/qms/page.tsx",
@@ -5035,9 +5035,9 @@
     "targetType": "Link.href",
     "lineNumber": 102,
     "evidence": "href: \"/dashboard/qms/ccp",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/quality?tab=qms"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/qms/page.tsx",
@@ -5049,9 +5049,9 @@
     "targetType": "Link.href",
     "lineNumber": 103,
     "evidence": "href: \"/dashboard/qms/deviations",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/quality?tab=qms"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/qms/page.tsx",
@@ -5063,9 +5063,9 @@
     "targetType": "Link.href",
     "lineNumber": 104,
     "evidence": "href: \"/dashboard/qms/corrective-actions",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/quality?tab=qms"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/qms/page.tsx",
@@ -5077,9 +5077,9 @@
     "targetType": "Link.href",
     "lineNumber": 105,
     "evidence": "href: \"/dashboard/qms/quarantine",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/quality?tab=qms"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/qms/page.tsx",
@@ -5091,9 +5091,9 @@
     "targetType": "Link.href",
     "lineNumber": 106,
     "evidence": "href: \"/dashboard/qms/allergen",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/quality?tab=qms"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/qms/page.tsx",
@@ -5133,9 +5133,9 @@
     "targetType": "Link.href",
     "lineNumber": 73,
     "evidence": "href: \"/dashboard/allergen/material-profiles",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/quality?tab=allergen"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/allergen/page.tsx",
@@ -5147,9 +5147,9 @@
     "targetType": "Link.href",
     "lineNumber": 74,
     "evidence": "href: \"/dashboard/allergen/product-allergens",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/quality?tab=allergen"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/allergen/page.tsx",
@@ -5161,9 +5161,9 @@
     "targetType": "Link.href",
     "lineNumber": 75,
     "evidence": "href: \"/dashboard/allergen/change-logs",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/quality?tab=allergen"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/brand-assets/page.tsx",
@@ -5231,9 +5231,9 @@
     "targetType": "Link.href",
     "lineNumber": 48,
     "evidence": "href=\"/dashboard/price-lists/approval-queue",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/sales?tab=price-lists"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/price-lists/page.tsx",
@@ -5287,9 +5287,9 @@
     "targetType": "Link.href",
     "lineNumber": 41,
     "evidence": "href=\"/dashboard/contracts/new",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/sales?tab=contracts"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/contracts/page.tsx",
@@ -5301,9 +5301,9 @@
     "targetType": "Link.href",
     "lineNumber": 61,
     "evidence": "href=\"/dashboard/contracts/list",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/sales?tab=contracts"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/contracts/page.tsx",
@@ -5329,9 +5329,9 @@
     "targetType": "Link.href",
     "lineNumber": 88,
     "evidence": "href=\"/dashboard/contracts/expiring",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/sales?tab=contracts"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/contracts/page.tsx",
@@ -5371,9 +5371,9 @@
     "targetType": "Link.href",
     "lineNumber": 58,
     "evidence": "href=\"/dashboard/recurring-orders/templates/new",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/sales?tab=recurring"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/recurring-orders/page.tsx",
@@ -5385,9 +5385,9 @@
     "targetType": "Link.href",
     "lineNumber": 86,
     "evidence": "href=\"/dashboard/recurring-orders/templates",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/sales?tab=recurring"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/recurring-orders/page.tsx",
@@ -5441,9 +5441,9 @@
     "targetType": "Link.href",
     "lineNumber": 42,
     "evidence": "href=\"/dashboard/commissions/rules",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/sales?tab=commissions"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/commissions/page.tsx",
@@ -5455,9 +5455,9 @@
     "targetType": "Link.href",
     "lineNumber": 62,
     "evidence": "href=\"/dashboard/commissions/transactions",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/sales?tab=commissions"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/commissions/page.tsx",
@@ -5469,9 +5469,9 @@
     "targetType": "Link.href",
     "lineNumber": 86,
     "evidence": "href=\"/dashboard/commissions/payouts",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/sales?tab=commissions"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/commissions/page.tsx",
@@ -5497,9 +5497,9 @@
     "targetType": "Link.href",
     "lineNumber": 83,
     "evidence": "href=\"/dashboard/secondary-sales/analysis",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/sales?tab=secondary"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/secondary-sales/page.tsx",
@@ -5511,9 +5511,9 @@
     "targetType": "Link.href",
     "lineNumber": 89,
     "evidence": "href=\"/dashboard/secondary-sales/inventory",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/sales?tab=secondary"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/secondary-sales/page.tsx",
@@ -5525,9 +5525,9 @@
     "targetType": "Link.href",
     "lineNumber": 95,
     "evidence": "href=\"/dashboard/secondary-sales/upload",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/sales?tab=secondary"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/secondary-sales/page.tsx",
@@ -5553,9 +5553,9 @@
     "targetType": "Link.href",
     "lineNumber": 50,
     "evidence": "href=\"/dashboard/van-sales/vans/new",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/sales?tab=van-sales"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/van-sales/page.tsx",
@@ -5567,9 +5567,9 @@
     "targetType": "Link.href",
     "lineNumber": 68,
     "evidence": "href: \"/dashboard/van-sales/route",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/sales?tab=van-sales"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/van-sales/page.tsx",
@@ -5581,9 +5581,9 @@
     "targetType": "Link.href",
     "lineNumber": 69,
     "evidence": "href: \"/dashboard/van-sales/pos",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/sales?tab=van-sales"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/van-sales/page.tsx",
@@ -5595,9 +5595,9 @@
     "targetType": "Link.href",
     "lineNumber": 70,
     "evidence": "href: \"/dashboard/van-sales/stock",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/sales?tab=van-sales"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/van-sales/page.tsx",
@@ -5609,9 +5609,9 @@
     "targetType": "Link.href",
     "lineNumber": 71,
     "evidence": "href: \"/dashboard/van-sales/reconciliation",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/sales?tab=van-sales"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/van-sales/page.tsx",
@@ -5623,9 +5623,9 @@
     "targetType": "Link.href",
     "lineNumber": 87,
     "evidence": "href=\"/dashboard/van-sales/vans",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/sales?tab=van-sales"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/van-sales/page.tsx",
@@ -5665,9 +5665,9 @@
     "targetType": "Link.href",
     "lineNumber": 69,
     "evidence": "href: \"/dashboard/portal/accounts",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/sales?tab=portal"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/portal/page.tsx",
@@ -5679,9 +5679,9 @@
     "targetType": "Link.href",
     "lineNumber": 70,
     "evidence": "href: \"/dashboard/portal/drafts",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/sales?tab=portal"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/portal/page.tsx",
@@ -5693,9 +5693,9 @@
     "targetType": "Link.href",
     "lineNumber": 71,
     "evidence": "href: \"/dashboard/portal/claims",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/sales?tab=portal"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/portal/page.tsx",
@@ -5707,9 +5707,9 @@
     "targetType": "Link.href",
     "lineNumber": 72,
     "evidence": "href: \"/dashboard/portal/users",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/sales?tab=portal"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/portal/page.tsx",
@@ -5721,9 +5721,9 @@
     "targetType": "Link.href",
     "lineNumber": 73,
     "evidence": "href: \"/dashboard/portal/activity",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/sales?tab=portal"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/portal/page.tsx",
@@ -5847,9 +5847,9 @@
     "targetType": "Link.href",
     "lineNumber": 147,
     "evidence": "href: \"/dashboard/utility-management/kpi-center/electricity",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/utility-management?tab=kpi-center"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/utility-management/kpi-center/page.tsx",
@@ -5861,9 +5861,9 @@
     "targetType": "Link.href",
     "lineNumber": 148,
     "evidence": "href: \"/dashboard/utility-management/kpi-center/water",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/utility-management?tab=kpi-center"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/utility-management/kpi-center/page.tsx",
@@ -5875,9 +5875,9 @@
     "targetType": "Link.href",
     "lineNumber": 149,
     "evidence": "href: \"/dashboard/utility-management/kpi-center/soft-water",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/utility-management?tab=kpi-center"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/utility-management/kpi-center/page.tsx",
@@ -5889,9 +5889,9 @@
     "targetType": "Link.href",
     "lineNumber": 150,
     "evidence": "href: \"/dashboard/utility-management/kpi-center/boiler",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/utility-management?tab=kpi-center"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/utility-management/kpi-center/page.tsx",
@@ -5903,9 +5903,9 @@
     "targetType": "Link.href",
     "lineNumber": 151,
     "evidence": "href: \"/dashboard/utility-management/kpi-center/compressor",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/utility-management?tab=kpi-center"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/utility-management/kpi-center/page.tsx",
@@ -5917,9 +5917,9 @@
     "targetType": "Link.href",
     "lineNumber": 152,
     "evidence": "href: \"/dashboard/utility-management/kpi-center/solar",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/utility-management?tab=kpi-center"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/utility-management/kpi-center/page.tsx",
@@ -5931,9 +5931,9 @@
     "targetType": "Link.href",
     "lineNumber": 153,
     "evidence": "href: \"/dashboard/utility-management/kpi-center/chemicals",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/utility-management?tab=kpi-center"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/utility-management/kpi-center/page.tsx",
@@ -5945,9 +5945,9 @@
     "targetType": "Link.href",
     "lineNumber": 154,
     "evidence": "href: \"/dashboard/utility-management/kpi-center/wastewater",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/utility-management?tab=kpi-center"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/utility-management/kpi-center/page.tsx",
@@ -5959,9 +5959,9 @@
     "targetType": "Link.href",
     "lineNumber": 155,
     "evidence": "href: \"/dashboard/utility-management/kpi-center/utility-cost",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/utility-management?tab=kpi-center"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/utility-management/kpi-center/page.tsx",
@@ -5973,9 +5973,9 @@
     "targetType": "Link.href",
     "lineNumber": 156,
     "evidence": "href: \"/dashboard/utility-management/kpi-center/machine-utility",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/utility-management?tab=kpi-center"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/utility-management/kpi-center/page.tsx",
@@ -5987,9 +5987,9 @@
     "targetType": "Link.href",
     "lineNumber": 284,
     "evidence": "href=\"/dashboard/utility-management/kpi-center/electricity",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/utility-management?tab=kpi-center"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/utility-management/kpi-center/page.tsx",
@@ -6001,9 +6001,9 @@
     "targetType": "Link.href",
     "lineNumber": 286,
     "evidence": "href=\"/dashboard/utility-management/kpi-center/electricity",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/utility-management?tab=kpi-center"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/utility-management/kpi-center/page.tsx",
@@ -6015,9 +6015,9 @@
     "targetType": "Link.href",
     "lineNumber": 287,
     "evidence": "href=\"/dashboard/utility-management/kpi-center/electricity",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/utility-management?tab=kpi-center"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/utility-management/kpi-center/page.tsx",
@@ -6029,9 +6029,9 @@
     "targetType": "Link.href",
     "lineNumber": 289,
     "evidence": "href=\"/dashboard/utility-management/kpi-center/solar",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/utility-management?tab=kpi-center"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/utility-management/kpi-center/page.tsx",
@@ -6043,9 +6043,9 @@
     "targetType": "Link.href",
     "lineNumber": 290,
     "evidence": "href=\"/dashboard/utility-management/kpi-center/solar",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/utility-management?tab=kpi-center"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/utility-management/kpi-center/page.tsx",
@@ -6057,9 +6057,9 @@
     "targetType": "Link.href",
     "lineNumber": 297,
     "evidence": "href=\"/dashboard/utility-management/kpi-center/water",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/utility-management?tab=kpi-center"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/utility-management/kpi-center/page.tsx",
@@ -6071,9 +6071,9 @@
     "targetType": "Link.href",
     "lineNumber": 299,
     "evidence": "href=\"/dashboard/utility-management/kpi-center/water",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/utility-management?tab=kpi-center"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/utility-management/kpi-center/page.tsx",
@@ -6085,9 +6085,9 @@
     "targetType": "Link.href",
     "lineNumber": 302,
     "evidence": "href=\"/dashboard/utility-management/kpi-center/soft-water",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/utility-management?tab=kpi-center"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/utility-management/kpi-center/page.tsx",
@@ -6099,9 +6099,9 @@
     "targetType": "Link.href",
     "lineNumber": 306,
     "evidence": "href=\"/dashboard/utility-management/kpi-center/boiler",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/utility-management?tab=kpi-center"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/utility-management/kpi-center/page.tsx",
@@ -6113,9 +6113,9 @@
     "targetType": "Link.href",
     "lineNumber": 310,
     "evidence": "href=\"/dashboard/utility-management/kpi-center/boiler",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/utility-management?tab=kpi-center"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/utility-management/kpi-center/page.tsx",
@@ -6127,9 +6127,9 @@
     "targetType": "Link.href",
     "lineNumber": 317,
     "evidence": "href=\"/dashboard/utility-management/kpi-center/boiler",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/utility-management?tab=kpi-center"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/utility-management/kpi-center/page.tsx",
@@ -6141,9 +6141,9 @@
     "targetType": "Link.href",
     "lineNumber": 319,
     "evidence": "href=\"/dashboard/utility-management/kpi-center/boiler",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/utility-management?tab=kpi-center"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/utility-management/kpi-center/page.tsx",
@@ -6155,9 +6155,9 @@
     "targetType": "Link.href",
     "lineNumber": 332,
     "evidence": "href=\"/dashboard/utility-management/kpi-center/compressor",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/utility-management?tab=kpi-center"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/utility-management/kpi-center/page.tsx",
@@ -6169,9 +6169,9 @@
     "targetType": "Link.href",
     "lineNumber": 334,
     "evidence": "href=\"/dashboard/utility-management/kpi-center/compressor",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/utility-management?tab=kpi-center"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/utility-management/kpi-center/page.tsx",
@@ -6183,9 +6183,9 @@
     "targetType": "Link.href",
     "lineNumber": 346,
     "evidence": "href=\"/dashboard/utility-management/kpi-center/soft-water",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/utility-management?tab=kpi-center"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/utility-management/kpi-center/page.tsx",
@@ -6197,9 +6197,9 @@
     "targetType": "Link.href",
     "lineNumber": 348,
     "evidence": "href=\"/dashboard/utility-management/kpi-center/soft-water",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/utility-management?tab=kpi-center"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/utility-management/kpi-center/page.tsx",
@@ -6211,9 +6211,9 @@
     "targetType": "Link.href",
     "lineNumber": 357,
     "evidence": "href=\"/dashboard/utility-management/kpi-center/wastewater",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/utility-management?tab=kpi-center"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/utility-management/kpi-center/page.tsx",
@@ -6225,9 +6225,9 @@
     "targetType": "Link.href",
     "lineNumber": 361,
     "evidence": "href=\"/dashboard/utility-management/kpi-center/wastewater",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/utility-management?tab=kpi-center"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/utility-management/kpi-center/page.tsx",
@@ -6239,9 +6239,9 @@
     "targetType": "Link.href",
     "lineNumber": 367,
     "evidence": "href=\"/dashboard/utility-management/kpi-center/chemicals",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/utility-management?tab=kpi-center"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/utility-management/kpi-center/page.tsx",
@@ -6253,9 +6253,9 @@
     "targetType": "Link.href",
     "lineNumber": 373,
     "evidence": "href=\"/dashboard/utility-management/kpi-center/utility-cost",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/utility-management?tab=kpi-center"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/utility-management/kpi-center/page.tsx",
@@ -6267,9 +6267,9 @@
     "targetType": "Link.href",
     "lineNumber": 375,
     "evidence": "href=\"/dashboard/utility-management/kpi-center/utility-cost",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/utility-management?tab=kpi-center"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/utility-management/kpi-center/page.tsx",
@@ -6281,9 +6281,9 @@
     "targetType": "Link.href",
     "lineNumber": 384,
     "evidence": "href=\"/dashboard/utility-management/kpi-center/machine-utility",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/utility-management?tab=kpi-center"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/utility-management/kpi-center/page.tsx",
@@ -6295,9 +6295,9 @@
     "targetType": "Link.href",
     "lineNumber": 388,
     "evidence": "href=\"/dashboard/utility-management/kpi-center/machine-utility",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/utility-management?tab=kpi-center"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/utility-management/alarm-center/page.tsx",
@@ -6309,9 +6309,9 @@
     "targetType": "Link.href",
     "lineNumber": 799,
     "evidence": "href=\"/dashboard/utility-management/kpi-center",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/utility-management?tab=kpi-center"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/utility-management/alarm-center/page.tsx",
@@ -6351,9 +6351,9 @@
     "targetType": "Link.href",
     "lineNumber": 561,
     "evidence": "href=\"/dashboard/utility-management/kpi-center",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/utility-management?tab=kpi-center"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/utility-management/reports/page.tsx",
@@ -6575,9 +6575,9 @@
     "targetType": "Link.href",
     "lineNumber": 167,
     "evidence": "href=\"/dashboard/utility-management/kpi-center",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/utility-management?tab=kpi-center"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/utility-management/integration/page.tsx",
@@ -6757,9 +6757,9 @@
     "targetType": "Link.href",
     "lineNumber": 89,
     "evidence": "href=\"/dashboard/esg/activities",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/utility-management?tab=esg"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/esg/page.tsx",
@@ -6771,9 +6771,9 @@
     "targetType": "Link.href",
     "lineNumber": 92,
     "evidence": "href=\"/dashboard/esg/factors",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/utility-management?tab=esg"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/esg/page.tsx",
@@ -6785,9 +6785,9 @@
     "targetType": "Link.href",
     "lineNumber": 95,
     "evidence": "href=\"/dashboard/esg/targets",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/utility-management?tab=esg"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/esg/page.tsx",
@@ -6813,8 +6813,8 @@
     "targetType": "Link.href",
     "lineNumber": 101,
     "evidence": "href=\"/dashboard/esg/intelligence",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/utility-management?tab=esg"
+    "status": "WORKING",
+    "reason": "bypass_set_real_page",
+    "redirectsTo": null
   }
 ]

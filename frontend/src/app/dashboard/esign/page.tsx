@@ -12,7 +12,6 @@ import {
 import { apiClient } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/Button";
-import { PermissionGuard, RequirePermission } from "@/components/PermissionGuard";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -513,7 +512,6 @@ export default function ESignPage() {
   const currentUserId = user?.id ?? null;
 
   return (
-    <RequirePermission permission="esign.view">
     <div className="p-6 flex flex-col gap-6 min-h-screen bg-gray-50">
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -521,9 +519,7 @@ export default function ESignPage() {
           <h1 className="text-2xl font-bold text-gray-900">Electronic Signatures</h1>
           <p className="text-sm text-gray-500 mt-0.5">Manage and track document signing requests</p>
         </div>
-        <PermissionGuard permission="esign.request">
-          <Button onClick={() => setShowCreate(true)}>+ New Request</Button>
-        </PermissionGuard>
+        <Button onClick={() => setShowCreate(true)}>+ New Request</Button>
       </div>
 
       {/* KPI Cards */}
@@ -631,6 +627,5 @@ export default function ESignPage() {
         <DeclineModal req={declineTarget} onClose={() => setDeclineTarget(null)} />
       )}
     </div>
-    </RequirePermission>
   );
 }

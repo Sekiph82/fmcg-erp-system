@@ -196,7 +196,7 @@ function TopConsumersPanel({ dateFrom, dateTo }: { dateFrom: string; dateTo: str
             <CartesianGrid strokeDasharray="3 3" horizontal={false} />
             <XAxis type="number" tick={{ fontSize: 10 }} />
             <YAxis dataKey="name" type="category" tick={{ fontSize: 10 }} width={108} />
-            <Tooltip formatter={(v: unknown) => [fmt(v as number | null | undefined, 1), "Consumption"]} />
+            <Tooltip formatter={((v: number) => [fmt(v, 1), "Consumption"]) as never} />
             <Bar dataKey="qty" fill="#60a5fa" radius={[0, 4, 4, 0]} />
           </BarChart>
         </ResponsiveContainer>
@@ -405,10 +405,10 @@ export default function UtilityKpiCenter() {
             <YAxis yAxisId="left" tick={{ fontSize: 10 }} />
             <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 10 }} />
             <Tooltip
-              formatter={(v: unknown, name: unknown) => [
-                Number(v).toLocaleString(undefined, { maximumFractionDigits: 1 }),
-                UTILITY_CHART_LABELS[String(name)] ?? String(name),
-              ]}
+              formatter={((v: number, name: string) => [
+                (v ?? 0).toLocaleString(undefined, { maximumFractionDigits: 1 }),
+                UTILITY_CHART_LABELS[name as keyof typeof UTILITY_CHART_LABELS] ?? name,
+              ]) as never}
               labelFormatter={l => `Date: ${l}`}
             />
             <Legend formatter={name => UTILITY_CHART_LABELS[name] ?? name} />
