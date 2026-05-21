@@ -1,524 +1,595 @@
 # Broken Button → Original Page Match Report
 
 **Date:** 2026-05-21
-**Audit Version:** v2.0 — Dynamic Import Aware
+**Audit Version:** v3.0 — Fully Dynamic Scan
+**Script:** `scripts/audit-visible-import-graph.js`
 
 ---
 
-## THE AUDIT BLIND SPOT: Dynamic Import Visibility
-
-### Why Previous Reports Were Wrong
-
-Previous audit logic:
-> "If a standalone route is middleware-redirected, all action cards in that page are invisible to users."
-
-**This is incorrect.** A page is user-visible if ANY of these are true:
-1. It is directly reachable from sidebar/nav
-2. It is dynamically imported by a workspace page as tab content
-
-### The Cycle Count Example (Still Broken)
-
-**Visible location:** `/dashboard/inventory?tab=cycle-count`
-**Source component:** `frontend/src/app/dashboard/cycle-count/page.tsx`
-**How it becomes visible:** `inventory/page.tsx` dynamically imports `cycle-count/page`
-**Standalone route redirect:** `/dashboard/cycle-count` → `/dashboard/inventory?tab=cycle-count` (middleware)
-**Result:** User sees Cycle Count dashboard with 5 navigation tiles — ALL broken.
-
-| Card | Target | Current Behavior | Git History | Recommendation |
-|------|--------|------------------|-------------|----------------|
-| Count Plans | `/dashboard/cycle-count/plans` | Redirect stub → same tab | REAL page in commit 674b6c5 (2026-05-01) | RESTORE_OLD_PAGE_FROM_GIT |
-| Count Tasks | `/dashboard/cycle-count/tasks` | Redirect stub → same tab | REAL page in commit 674b6c5 (2026-05-01) | RESTORE_OLD_PAGE_FROM_GIT |
-| Count Entries | `/dashboard/cycle-count/entries` | Redirect stub → same tab | REAL page in commit 674b6c5 (2026-05-01) | RESTORE_OLD_PAGE_FROM_GIT |
-| Variance Review | `/dashboard/cycle-count/variances` | Redirect stub → same tab | REAL page in commit 674b6c5 (2026-05-01) | RESTORE_OLD_PAGE_FROM_GIT |
-| Reports & AI | `/dashboard/cycle-count/reports` | Redirect stub → same tab | REAL page in commit 674b6c5 (2026-05-01) | RESTORE_OLD_PAGE_FROM_GIT |
-
-**Git evidence:** Commit `674b6c5` (2026-05-01) contained REAL implementations:
-- `cycle-count/plans/page.tsx`: Full CRUD — listPlans, createPlan, generateTasks, updatePlan
-- `cycle-count/variances/page.tsx`: Full approve/reject workflow with bulk selection
-- `cycle-count/tasks/page.tsx`: Task queue management
-- `cycle-count/entries/page.tsx`: Physical count entry recording
-- `cycle-count/reports/page.tsx`: Accuracy and variance reporting
-
-These were deleted in `bd6faf5` (2026-05-17) and replaced with redirect stubs.
-
----
-
-## Statistics
+## Executive Summary
 
 | Metric | Count |
 |--------|-------|
-| Dynamically imported pages analyzed | 188 |
-| Pages with broken cards (user-visible) | 59 |
-| Pages: BOTH redirect stub AND has broken cards | 58 |
-| **Total broken visible action targets** | **296** |
-| Critical severity | 24 |
-| High severity | 217 |
+| Workspace pages scanned | 26 |
+| Total dynamic imports found | 222 |
+| Dynamically imported visible pages | 220 |
+| Total visible action targets found | 487 |
+| Working targets | 54 |
+| **Total broken visible action targets** | **353** |
+| Critical severity (create/run/approve actions) | 26 |
+| High severity | 272 |
 | Medium severity | 55 |
-| Git history matches found | 22 |
-| High-confidence original page found | 5 |
+| Git history matches found | 306 |
+| **High-confidence: real page existed in git** | **305** |
+| Medium-confidence: file in git but content unverified | 1 |
+| Unresolved: no git match | 47 |
 
 ---
 
-## Recommendation Categories
+## Key Finding — The Dynamic Import Visibility Blind Spot
 
-| Category | Count | Description |
-|----------|-------|-------------|
-| RESTORE_OLD_PAGE_FROM_GIT | 5 | Real page existed in git — restore from commit 674b6c5 |
-| CONVERT_TO_WORKSPACE_SUBVIEW | 291 | No prior real page — implement as ?view= or ?subtab= |
+### Previous Audit Was Wrong
+
+Previous audit classified 296 broken action cards as **"safe_archived_standalone"** because:
+> "The source page's standalone route is middleware-redirected, so users never see the page."
+
+**This reasoning is incorrect.** A page can be user-visible through TWO paths:
+1. Standalone route (may be redirected)
+2. **Dynamic import into a workspace tab** ← this path was ignored
+
+When `inventory/page.tsx` does:
+```typescript
+const CycleCountPage = dynamic(() => import("@/app/dashboard/cycle-count/page"), { ssr: false });
+```
+…the Cycle Count page IS rendered to users at `/dashboard/inventory?tab=cycle-count`.
+Middleware redirecting `/dashboard/cycle-count` → `/dashboard/inventory?tab=cycle-count` is irrelevant here.
+
+### Impact
+
+97 pages are in this state — middleware-redirected as standalone routes,
+but dynamically imported into workspace tabs and therefore fully user-visible.
+Their internal navigation cards/buttons (totalling **353**) all fail silently
+by looping the user back to the same workspace tab they are already on.
+
+### The Cycle Count Example (Confirmed Still Broken)
+
+**Visible at:** `/dashboard/inventory?tab=cycle-count`
+**Source:** `frontend/src/app/dashboard/cycle-count/page.tsx`
+**How visible:** `inventory/page.tsx` imports it as the "Cycle Count" tab
+**Standalone route:** `/dashboard/cycle-count` → middleware redirects to `/dashboard/inventory?tab=cycle-count`
+
+The 5 navigation tiles shown to users all link to redirect stubs:
+
+| Tile | Target | Behavior | Git History |
+|------|--------|----------|-------------|
+| Count Plans | `/dashboard/cycle-count/plans` | redirect_stub → same tab | **REAL page in commit 674b6c5 (2026-05-01)** |
+| Count Tasks | `/dashboard/cycle-count/tasks` | redirect_stub → same tab | **REAL page in commit 674b6c5 (2026-05-01)** |
+| Count Entries | `/dashboard/cycle-count/entries` | redirect_stub → same tab | **REAL page in commit 674b6c5 (2026-05-01)** |
+| Variance Review | `/dashboard/cycle-count/variances` | redirect_stub → same tab | **REAL page in commit 674b6c5 (2026-05-01)** |
+| Reports & AI | `/dashboard/cycle-count/reports` | redirect_stub → same tab | **REAL page in commit 674b6c5 (2026-05-01)** |
+
+Git evidence: Commit `674b6c5` (2026-05-01) had REAL implementations — full CRUD with API integration.
+These were deleted in `bd6faf5` (2026-05-17) and replaced with redirect stubs.
+**Recommendation: RESTORE_OLD_PAGE_FROM_GIT from commit 674b6c5.**
 
 ---
 
 ## Top 20 Critical/High Severity Broken Visible Buttons
 
-| ID | Module | Visible At | Card Target | Why Broken | Git Found | Recommendation |
-|----|--------|-----------|-------------|------------|-----------|----------------|
-| BVT-0001 | Supply Chain / Inventory | /dashboard/inventory?tab=cycle-count | `/dashboard/cycle-count/entries` | Redirect stub → /dashboard/inventory?tab=cycle-count | YES (real page) | RESTORE_OLD_PAGE_FROM_GIT |
-| BVT-0002 | Supply Chain / Inventory | /dashboard/inventory?tab=cycle-count | `/dashboard/cycle-count/plans` | Redirect stub → /dashboard/inventory?tab=cycle-count | YES (real page) | RESTORE_OLD_PAGE_FROM_GIT |
-| BVT-0004 | Supply Chain / Inventory | /dashboard/inventory?tab=cycle-count | `/dashboard/cycle-count/tasks` | Redirect stub → /dashboard/inventory?tab=cycle-count | YES (real page) | RESTORE_OLD_PAGE_FROM_GIT |
-| BVT-0005 | Supply Chain / Inventory | /dashboard/inventory?tab=cycle-count | `/dashboard/cycle-count/variances` | Redirect stub → /dashboard/inventory?tab=cycle-count | YES (real page) | RESTORE_OLD_PAGE_FROM_GIT |
-| BVT-0006 | Supply Chain / Inventory | /dashboard/inventory?tab=shelf-life | `/dashboard/shelf-life/bulk-hold-monitor` | Redirect stub → /dashboard/inventory?tab=shelf-life | YES (stub) | CONVERT_TO_WORKSPACE_SUBVIEW |
-| BVT-0007 | Supply Chain / Inventory | /dashboard/inventory?tab=shelf-life | `/dashboard/shelf-life/compliance` | Redirect stub → /dashboard/inventory?tab=shelf-life | YES (stub) | CONVERT_TO_WORKSPACE_SUBVIEW |
-| BVT-0008 | Supply Chain / Inventory | /dashboard/inventory?tab=shelf-life | `/dashboard/shelf-life/customer-rules` | Redirect stub → /dashboard/inventory?tab=shelf-life | YES (stub) | CONVERT_TO_WORKSPACE_SUBVIEW |
-| BVT-0009 | Supply Chain / Inventory | /dashboard/inventory?tab=shelf-life | `/dashboard/shelf-life/disposition` | Redirect stub → /dashboard/inventory?tab=shelf-life | YES (stub) | CONVERT_TO_WORKSPACE_SUBVIEW |
-| BVT-0010 | Supply Chain / Inventory | /dashboard/inventory?tab=shelf-life | `/dashboard/shelf-life/expired` | Redirect stub → /dashboard/inventory?tab=shelf-life | YES (stub) | CONVERT_TO_WORKSPACE_SUBVIEW |
-| BVT-0011 | Supply Chain / Inventory | /dashboard/inventory?tab=shelf-life | `/dashboard/shelf-life/fefo-config` | Redirect stub → /dashboard/inventory?tab=shelf-life | YES (stub) | CONVERT_TO_WORKSPACE_SUBVIEW |
-| BVT-0012 | Supply Chain / Inventory | /dashboard/inventory?tab=shelf-life | `/dashboard/shelf-life/lot-aging` | Redirect stub → /dashboard/inventory?tab=shelf-life | YES (stub) | CONVERT_TO_WORKSPACE_SUBVIEW |
-| BVT-0013 | Supply Chain / Inventory | /dashboard/inventory?tab=shelf-life | `/dashboard/shelf-life/near-expiry` | Redirect stub → /dashboard/inventory?tab=shelf-life | YES (stub) | CONVERT_TO_WORKSPACE_SUBVIEW |
-| BVT-0014 | Supply Chain / Inventory | /dashboard/inventory?tab=shelf-life | `/dashboard/shelf-life/production-validation` | Redirect stub → /dashboard/inventory?tab=shelf-life | YES (stub) | CONVERT_TO_WORKSPACE_SUBVIEW |
-| BVT-0015 | Supply Chain / Inventory | /dashboard/inventory?tab=shelf-life | `/dashboard/shelf-life/retest-queue` | Redirect stub → /dashboard/inventory?tab=shelf-life | YES (stub) | CONVERT_TO_WORKSPACE_SUBVIEW |
-| BVT-0016 | Supply Chain / Inventory | /dashboard/inventory?tab=shelf-life | `/dashboard/shelf-life/shipment-validation` | Redirect stub → /dashboard/inventory?tab=shelf-life | NO | CONVERT_TO_WORKSPACE_SUBVIEW |
-| BVT-0017 | Supply Chain / Inventory | /dashboard/inventory?tab=traceability | `/dashboard/traceability/backward` | Redirect stub → /dashboard/inventory?tab=traceability | YES (stub) | CONVERT_TO_WORKSPACE_SUBVIEW |
-| BVT-0018 | Supply Chain / Inventory | /dashboard/inventory?tab=traceability | `/dashboard/traceability/forward` | Redirect stub → /dashboard/inventory?tab=traceability | YES (stub) | CONVERT_TO_WORKSPACE_SUBVIEW |
-| BVT-0019 | Supply Chain / Inventory | /dashboard/inventory?tab=traceability | `/dashboard/traceability/genealogy` | Redirect stub → /dashboard/inventory?tab=traceability | YES (stub) | CONVERT_TO_WORKSPACE_SUBVIEW |
-| BVT-0020 | Supply Chain / Inventory | /dashboard/inventory?tab=traceability | `/dashboard/traceability/mock-recall` | Redirect stub → /dashboard/inventory?tab=traceability | YES (stub) | CONVERT_TO_WORKSPACE_SUBVIEW |
-| BVT-0021 | Supply Chain / Inventory | /dashboard/inventory?tab=traceability | `/dashboard/traceability/recalls` | Redirect stub → /dashboard/inventory?tab=traceability | YES (stub) | CONVERT_TO_WORKSPACE_SUBVIEW |
+| ID | Module | Visible At | Card/Button | Current Target | Behavior | Git | Recommendation |
+|----|--------|-----------|-------------|----------------|----------|-----|----------------|
+| BVT-0001 | Administration | /dashboard/admin?tab=UsersPage | ${r.id | `/dashboard/users/${r.id` | middleware_redirect | none | CONVERT_TO_WORKSPACE_SUBVIEW |
+| BVT-0002 | Administration | /dashboard/admin?tab=RolesPage | ${r.id | `/dashboard/roles/${r.id` | middleware_redirect | none | CONVERT_TO_WORKSPACE_SUBVIEW |
+| BVT-0003 | Administration | /dashboard/admin?tab=CustomFieldsPage | Custom Fields | `/dashboard/custom-fields/new-field` | middleware_redirect | ✓ REAL | RESTORE_OLD_PAGE_FROM_GIT |
+| BVT-0004 | Administration | /dashboard/admin?tab=CustomFieldsPage | Recent Fields | `/dashboard/custom-fields/fields` | middleware_redirect | ✓ REAL | RESTORE_OLD_PAGE_FROM_GIT |
+| BVT-0005 | Administration | /dashboard/admin?tab=CustomFieldsPage | ${f.custom_field_id | `/dashboard/custom-fields/${f.custom_field_id` | middleware_redirect | none | CONVERT_TO_WORKSPACE_SUBVIEW |
+| BVT-0006 | Administration | /dashboard/admin?tab=CustomFieldsPage | Field Manager | `/dashboard/custom-fields/form-builder` | middleware_redirect | ✓ REAL | RESTORE_OLD_PAGE_FROM_GIT |
+| BVT-0007 | Administration | /dashboard/admin?tab=CustomFieldsPage | Field Manager | `/dashboard/custom-fields/workflow-rules` | middleware_redirect | ✓ REAL | RESTORE_OLD_PAGE_FROM_GIT |
+| BVT-0008 | Administration | /dashboard/admin?tab=CustomFieldsPage | Workflow Rules | `/dashboard/custom-fields/values` | middleware_redirect | ✓ REAL | RESTORE_OLD_PAGE_FROM_GIT |
+| BVT-0010 | Administration | /dashboard/admin?tab=MobilePage | Approval Inbox | `/dashboard/mobile/approvals` | middleware_redirect | ✓ REAL | RESTORE_OLD_PAGE_FROM_GIT |
+| BVT-0011 | Administration | /dashboard/admin?tab=MobilePage | Approval Inbox | `/dashboard/mobile/devices` | middleware_redirect | ✓ REAL | RESTORE_OLD_PAGE_FROM_GIT |
+| BVT-0012 | Administration | /dashboard/admin?tab=MobilePage | Approval Inbox | `/dashboard/approvals` | middleware_redirect | ✓ REAL | RESTORE_OLD_PAGE_FROM_GIT |
+| BVT-0013 | Administration | /dashboard/admin?tab=MobilePage | Device Manager | `/dashboard/notification-center` | middleware_redirect | ✓ REAL | RESTORE_OLD_PAGE_FROM_GIT |
+| BVT-0014 | Other | /dashboard/ai?tab=AICompliancePage | Tax Module | `/dashboard/tax` | middleware_redirect | ✓ REAL | RESTORE_OLD_PAGE_FROM_GIT |
+| BVT-0015 | Other | /dashboard/ai?tab=AICompliancePage | Quality Module | `/dashboard/production/quality` | no_route_file | none | CREATE_NEW_REAL_PAGE_REQUIRED |
+| BVT-0016 | Intelligence / Analytics | /dashboard/analytics?tab=AnalyticsProductionPage | Past scheduled end | `/dashboard/production/orders` | middleware_redirect | ✓ REAL | RESTORE_OLD_PAGE_FROM_GIT |
+| BVT-0024 | Intelligence / Analytics | /dashboard/analytics?tab=ReportBuilderPage | Data Catalog | `/dashboard/report-builder/catalog` | middleware_redirect | ✓ REAL | RESTORE_OLD_PAGE_FROM_GIT |
+| BVT-0025 | Intelligence / Analytics | /dashboard/analytics?tab=ReportBuilderPage | Data Catalog | `/dashboard/report-builder/builder` | middleware_redirect | ✓ REAL | RESTORE_OLD_PAGE_FROM_GIT |
+| BVT-0026 | Intelligence / Analytics | /dashboard/analytics?tab=ReportBuilderPage | Data Catalog | `/dashboard/report-builder/saved` | middleware_redirect | ✓ REAL | RESTORE_OLD_PAGE_FROM_GIT |
+| BVT-0027 | Intelligence / Analytics | /dashboard/analytics?tab=ReportBuilderPage | Build Report | `/dashboard/report-builder/viewer` | middleware_redirect | ✓ REAL | RESTORE_OLD_PAGE_FROM_GIT |
+| BVT-0028 | Intelligence / Analytics | /dashboard/analytics?tab=ReportBuilderPage | Saved Reports | `/dashboard/report-builder/dashboards` | middleware_redirect | ✓ REAL | RESTORE_OLD_PAGE_FROM_GIT |
 
 ---
 
-## Full Breakdown by Module
+## Module-by-Module Breakdown
 
-### Supply Chain / Inventory
+### Administration
 
-**Broken count:** 23
+**Broken count:** 13
 
-| Module | Visible Location | Button/Card | Current Target | Current Behavior | Original Page Found? | Best Match | Confidence | Recommended Fix |
-|--------|-----------------|-------------|----------------|------------------|---------------------|------------|------------|-----------------|
-| Supply Chain / Inventory | /dashboard/inventory?tab=cycle-count | `entries` | `/dashboard/cycle-count/entries` | redirect_stub → /dashboard/inventory?tab=cycle-count | Yes — real page commit 674b6c5 (2026-05-01) | frontend/src/app/dashboard/cycle-count/entries/page.tsx | high | RESTORE_OLD_PAGE_FROM_GIT |
-| Supply Chain / Inventory | /dashboard/inventory?tab=cycle-count | `plans` | `/dashboard/cycle-count/plans` | redirect_stub → /dashboard/inventory?tab=cycle-count | Yes — real page commit 674b6c5 (2026-05-01) | frontend/src/app/dashboard/cycle-count/plans/page.tsx | high | RESTORE_OLD_PAGE_FROM_GIT |
-| Supply Chain / Inventory | /dashboard/inventory?tab=cycle-count | `reports` | `/dashboard/cycle-count/reports` | redirect_stub → /dashboard/inventory?tab=cycle-count | Yes — real page commit 674b6c5 (2026-05-01) | frontend/src/app/dashboard/cycle-count/reports/page.tsx | high | RESTORE_OLD_PAGE_FROM_GIT |
-| Supply Chain / Inventory | /dashboard/inventory?tab=cycle-count | `tasks` | `/dashboard/cycle-count/tasks` | redirect_stub → /dashboard/inventory?tab=cycle-count | Yes — real page commit 674b6c5 (2026-05-01) | frontend/src/app/dashboard/cycle-count/tasks/page.tsx | high | RESTORE_OLD_PAGE_FROM_GIT |
-| Supply Chain / Inventory | /dashboard/inventory?tab=cycle-count | `variances` | `/dashboard/cycle-count/variances` | redirect_stub → /dashboard/inventory?tab=cycle-count | Yes — real page commit 674b6c5 (2026-05-01) | frontend/src/app/dashboard/cycle-count/variances/page.tsx | high | RESTORE_OLD_PAGE_FROM_GIT |
-| Supply Chain / Inventory | /dashboard/inventory?tab=shelf-life | `bulk-hold-monitor` | `/dashboard/shelf-life/bulk-hold-monitor` | redirect_stub → /dashboard/inventory?tab=shelf-life | Yes — redirect stub commit bd6faf5 | Needs new implementation | medium | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Supply Chain / Inventory | /dashboard/inventory?tab=shelf-life | `compliance` | `/dashboard/shelf-life/compliance` | redirect_stub → /dashboard/inventory?tab=shelf-life | Yes — redirect stub commit bd6faf5 | Needs new implementation | medium | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Supply Chain / Inventory | /dashboard/inventory?tab=shelf-life | `customer-rules` | `/dashboard/shelf-life/customer-rules` | redirect_stub → /dashboard/inventory?tab=shelf-life | Yes — redirect stub commit bd6faf5 | Needs new implementation | medium | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Supply Chain / Inventory | /dashboard/inventory?tab=shelf-life | `disposition` | `/dashboard/shelf-life/disposition` | redirect_stub → /dashboard/inventory?tab=shelf-life | Yes — redirect stub commit bd6faf5 | Needs new implementation | medium | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Supply Chain / Inventory | /dashboard/inventory?tab=shelf-life | `expired` | `/dashboard/shelf-life/expired` | redirect_stub → /dashboard/inventory?tab=shelf-life | Yes — redirect stub commit bd6faf5 | Needs new implementation | medium | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Supply Chain / Inventory | /dashboard/inventory?tab=shelf-life | `fefo-config` | `/dashboard/shelf-life/fefo-config` | redirect_stub → /dashboard/inventory?tab=shelf-life | Yes — redirect stub commit bd6faf5 | Needs new implementation | medium | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Supply Chain / Inventory | /dashboard/inventory?tab=shelf-life | `lot-aging` | `/dashboard/shelf-life/lot-aging` | redirect_stub → /dashboard/inventory?tab=shelf-life | Yes — redirect stub commit bd6faf5 | Needs new implementation | medium | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Supply Chain / Inventory | /dashboard/inventory?tab=shelf-life | `near-expiry` | `/dashboard/shelf-life/near-expiry` | redirect_stub → /dashboard/inventory?tab=shelf-life | Yes — redirect stub commit bd6faf5 | Needs new implementation | medium | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Supply Chain / Inventory | /dashboard/inventory?tab=shelf-life | `production-validation` | `/dashboard/shelf-life/production-validation` | redirect_stub → /dashboard/inventory?tab=shelf-life | Yes — redirect stub commit bd6faf5 | Needs new implementation | medium | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Supply Chain / Inventory | /dashboard/inventory?tab=shelf-life | `retest-queue` | `/dashboard/shelf-life/retest-queue` | redirect_stub → /dashboard/inventory?tab=shelf-life | Yes — redirect stub commit bd6faf5 | Needs new implementation | medium | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Supply Chain / Inventory | /dashboard/inventory?tab=shelf-life | `shipment-validation` | `/dashboard/shelf-life/shipment-validation` | redirect_stub → /dashboard/inventory?tab=shelf-life | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Supply Chain / Inventory | /dashboard/inventory?tab=traceability | `backward` | `/dashboard/traceability/backward` | redirect_stub → /dashboard/inventory?tab=traceability | Yes — redirect stub commit bd6faf5 | Needs new implementation | medium | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Supply Chain / Inventory | /dashboard/inventory?tab=traceability | `forward` | `/dashboard/traceability/forward` | redirect_stub → /dashboard/inventory?tab=traceability | Yes — redirect stub commit bd6faf5 | Needs new implementation | medium | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Supply Chain / Inventory | /dashboard/inventory?tab=traceability | `genealogy` | `/dashboard/traceability/genealogy` | redirect_stub → /dashboard/inventory?tab=traceability | Yes — redirect stub commit bd6faf5 | Needs new implementation | medium | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Supply Chain / Inventory | /dashboard/inventory?tab=traceability | `mock-recall` | `/dashboard/traceability/mock-recall` | redirect_stub → /dashboard/inventory?tab=traceability | Yes — redirect stub commit bd6faf5 | Needs new implementation | medium | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Supply Chain / Inventory | /dashboard/inventory?tab=traceability | `recalls` | `/dashboard/traceability/recalls` | redirect_stub → /dashboard/inventory?tab=traceability | Yes — redirect stub commit bd6faf5 | Needs new implementation | medium | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Supply Chain / Inventory | /dashboard/inventory?tab=traceability | `regulatory` | `/dashboard/traceability/regulatory` | redirect_stub → /dashboard/inventory?tab=traceability | Yes — redirect stub commit bd6faf5 | Needs new implementation | medium | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Supply Chain / Inventory | /dashboard/inventory?tab=traceability | `search` | `/dashboard/traceability/search` | redirect_stub → /dashboard/inventory?tab=traceability | Yes — redirect stub commit bd6faf5 | Needs new implementation | medium | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Module | Visible Location | Tab | Source File | Button/Card | Current Target | Current Behavior | Original Page? | Best Match | Confidence | Recommended Fix |
+|--------|-----------------|-----|-------------|-------------|----------------|-----------------|----------------|------------|------------|-----------------|
+| Administration | /dashboard/admin | UsersPage | users/page.tsx | ${r.id | `/dashboard/users/${r.id` | middleware_redirect | No | not found | low | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Administration | /dashboard/admin | RolesPage | roles/page.tsx | ${r.id | `/dashboard/roles/${r.id` | middleware_redirect | No | not found | low | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Administration | /dashboard/admin | CustomFieldsPage | custom-fields/page.tsx | Custom Fields | `/dashboard/custom-fields/new-field` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Administration | /dashboard/admin | CustomFieldsPage | custom-fields/page.tsx | Recent Fields | `/dashboard/custom-fields/fields` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Administration | /dashboard/admin | CustomFieldsPage | custom-fields/page.tsx | ${f.custom_field_id | `/dashboard/custom-fields/${f.custom_field_id` | middleware_redirect | No | not found | low | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Administration | /dashboard/admin | CustomFieldsPage | custom-fields/page.tsx | Field Manager | `/dashboard/custom-fields/form-builder` | middleware_redirect | Yes — real page | commit 10125e4 (2026-05-10) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Administration | /dashboard/admin | CustomFieldsPage | custom-fields/page.tsx | Field Manager | `/dashboard/custom-fields/workflow-rules` | middleware_redirect | Yes — real page | commit 10125e4 (2026-05-10) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Administration | /dashboard/admin | CustomFieldsPage | custom-fields/page.tsx | Workflow Rules | `/dashboard/custom-fields/values` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Administration | /dashboard/admin | CustomFieldsPage | custom-fields/page.tsx | New Field | `/dashboard/custom-fields/ai` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Administration | /dashboard/admin | MobilePage | mobile/page.tsx | Approval Inbox | `/dashboard/mobile/approvals` | middleware_redirect | Yes — real page | commit 10125e4 (2026-05-10) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Administration | /dashboard/admin | MobilePage | mobile/page.tsx | Approval Inbox | `/dashboard/mobile/devices` | middleware_redirect | Yes — real page | commit 10125e4 (2026-05-10) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Administration | /dashboard/admin | MobilePage | mobile/page.tsx | Approval Inbox | `/dashboard/approvals` | middleware_redirect | Yes — real page | commit 10125e4 (2026-05-10) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Administration | /dashboard/admin | MobilePage | mobile/page.tsx | Device Manager | `/dashboard/notification-center` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
 
 
-### Manufacturing / Planning
+### Other
 
-**Broken count:** 8
+**Broken count:** 2
 
-| Module | Visible Location | Button/Card | Current Target | Current Behavior | Original Page Found? | Best Match | Confidence | Recommended Fix |
-|--------|-----------------|-------------|----------------|------------------|---------------------|------------|------------|-----------------|
-| Manufacturing / Planning | /dashboard/planning?tab=mrp | `forecast` | `/dashboard/mrp/forecast` | redirect_stub → /dashboard/planning?tab=mrp | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Manufacturing / Planning | /dashboard/planning?tab=mrp | `run` | `/dashboard/mrp/run` | redirect_stub → /dashboard/planning?tab=mrp | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Manufacturing / Planning | /dashboard/planning?tab=mrp | `suggestions` | `/dashboard/mrp/suggestions` | redirect_stub → /dashboard/planning?tab=mrp | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Manufacturing / Planning | /dashboard/planning?tab=kanban | `ai` | `/dashboard/kanban/ai` | redirect_stub → /dashboard/planning?tab=kanban | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Manufacturing / Planning | /dashboard/planning?tab=kanban | `boards` | `/dashboard/kanban/boards` | redirect_stub → /dashboard/planning?tab=kanban | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Manufacturing / Planning | /dashboard/planning?tab=kanban | `cards` | `/dashboard/kanban/cards` | redirect_stub → /dashboard/planning?tab=kanban | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Manufacturing / Planning | /dashboard/planning?tab=kanban | `reports` | `/dashboard/kanban/reports` | redirect_stub → /dashboard/planning?tab=kanban | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Manufacturing / Planning | /dashboard/planning?tab=kanban | `view` | `/dashboard/kanban/view` | redirect_stub → /dashboard/planning?tab=kanban | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Module | Visible Location | Tab | Source File | Button/Card | Current Target | Current Behavior | Original Page? | Best Match | Confidence | Recommended Fix |
+|--------|-----------------|-----|-------------|-------------|----------------|-----------------|----------------|------------|------------|-----------------|
+| Other | /dashboard/ai | AICompliancePage | ai/compliance/page.tsx | Tax Module | `/dashboard/tax` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Other | /dashboard/ai | AICompliancePage | ai/compliance/page.tsx | Quality Module | `/dashboard/production/quality` | no_route_file | No | not found | low | CREATE_NEW_REAL_PAGE_REQUIRED |
 
 
-### Manufacturing / Production
+### Intelligence / Analytics
 
-**Broken count:** 19
+**Broken count:** 15
 
-| Module | Visible Location | Button/Card | Current Target | Current Behavior | Original Page Found? | Best Match | Confidence | Recommended Fix |
-|--------|-----------------|-------------|----------------|------------------|---------------------|------------|------------|-----------------|
-| Manufacturing / Production | /dashboard/production?tab=execution | `work-orders` | `/dashboard/production-execution/work-orders` | redirect_stub → /dashboard/production?tab=execution | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Manufacturing / Production | /dashboard/production?tab=machine-ops | `assignment` | `/dashboard/machine-ops/assignment` | redirect_stub → /dashboard/production?tab=machine-ops | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Manufacturing / Production | /dashboard/production?tab=machine-ops | `certs` | `/dashboard/machine-ops/certs` | redirect_stub → /dashboard/production?tab=machine-ops | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Manufacturing / Production | /dashboard/production?tab=machine-ops | `costing` | `/dashboard/machine-ops/costing` | redirect_stub → /dashboard/production?tab=machine-ops | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Manufacturing / Production | /dashboard/production?tab=machine-ops | `downtime` | `/dashboard/machine-ops/downtime` | redirect_stub → /dashboard/production?tab=machine-ops | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Manufacturing / Production | /dashboard/production?tab=machine-ops | `machines` | `/dashboard/machine-ops/machines` | redirect_stub → /dashboard/production?tab=machine-ops | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Manufacturing / Production | /dashboard/production?tab=machine-ops | `operators` | `/dashboard/machine-ops/operators` | redirect_stub → /dashboard/production?tab=machine-ops | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Manufacturing / Production | /dashboard/production?tab=machine-ops | `performance` | `/dashboard/machine-ops/performance` | redirect_stub → /dashboard/production?tab=machine-ops | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Manufacturing / Production | /dashboard/production?tab=machine-ops | `runtime` | `/dashboard/machine-ops/runtime` | redirect_stub → /dashboard/production?tab=machine-ops | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Manufacturing / Production | /dashboard/production?tab=machine-ops | `teams` | `/dashboard/machine-ops/teams` | redirect_stub → /dashboard/production?tab=machine-ops | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Manufacturing / Production | /dashboard/production?tab=material-flow | `bulk-transfer` | `/dashboard/material-flow/bulk-transfer` | redirect_stub → /dashboard/production?tab=material-flow | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Manufacturing / Production | /dashboard/production?tab=material-flow | `fg-receipt` | `/dashboard/material-flow/fg-receipt` | redirect_stub → /dashboard/production?tab=material-flow | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Manufacturing / Production | /dashboard/production?tab=material-flow | `history` | `/dashboard/material-flow/history` | redirect_stub → /dashboard/production?tab=material-flow | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Manufacturing / Production | /dashboard/production?tab=material-flow | `issue` | `/dashboard/material-flow/issue` | redirect_stub → /dashboard/production?tab=material-flow | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Manufacturing / Production | /dashboard/production?tab=material-flow | `reconciliation` | `/dashboard/material-flow/reconciliation` | redirect_stub → /dashboard/production?tab=material-flow | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Manufacturing / Production | /dashboard/production?tab=material-flow | `reservations` | `/dashboard/material-flow/reservations` | redirect_stub → /dashboard/production?tab=material-flow | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Manufacturing / Production | /dashboard/production?tab=material-flow | `returns` | `/dashboard/material-flow/returns` | redirect_stub → /dashboard/production?tab=material-flow | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Manufacturing / Production | /dashboard/production?tab=material-flow | `tanks` | `/dashboard/material-flow/tanks` | redirect_stub → /dashboard/production?tab=material-flow | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Manufacturing / Production | /dashboard/production?tab=material-flow | `wip-transfer` | `/dashboard/material-flow/wip-transfer` | redirect_stub → /dashboard/production?tab=material-flow | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Module | Visible Location | Tab | Source File | Button/Card | Current Target | Current Behavior | Original Page? | Best Match | Confidence | Recommended Fix |
+|--------|-----------------|-----|-------------|-------------|----------------|-----------------|----------------|------------|------------|-----------------|
+| Intelligence / Analytics | /dashboard/analytics | AnalyticsProductionPage | analytics/production/page.tsx | Past scheduled end | `/dashboard/production/orders` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Intelligence / Analytics | /dashboard/analytics | ReportsPage | reports/page.tsx | Inventory | `/dashboard/reports/inventory` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Intelligence / Analytics | /dashboard/analytics | ReportsPage | reports/page.tsx | Production / MES | `/dashboard/reports/production` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Intelligence / Analytics | /dashboard/analytics | ReportsPage | reports/page.tsx | Procurement | `/dashboard/reports/procurement` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Intelligence / Analytics | /dashboard/analytics | ReportsPage | reports/page.tsx | Sales & Revenue | `/dashboard/reports/sales` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Intelligence / Analytics | /dashboard/analytics | ReportsPage | reports/page.tsx | Finance | `/dashboard/reports/finance` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Intelligence / Analytics | /dashboard/analytics | ReportsPage | reports/page.tsx | M-Pesa Payments | `/dashboard/reports/payments` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Intelligence / Analytics | /dashboard/analytics | ReportsPage | reports/page.tsx | Marketing BI | `/dashboard/reports/marketing` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Intelligence / Analytics | /dashboard/analytics | ReportBuilderPage | report-builder/page.tsx | Data Catalog | `/dashboard/report-builder/catalog` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Intelligence / Analytics | /dashboard/analytics | ReportBuilderPage | report-builder/page.tsx | Data Catalog | `/dashboard/report-builder/builder` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Intelligence / Analytics | /dashboard/analytics | ReportBuilderPage | report-builder/page.tsx | Data Catalog | `/dashboard/report-builder/saved` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Intelligence / Analytics | /dashboard/analytics | ReportBuilderPage | report-builder/page.tsx | Build Report | `/dashboard/report-builder/viewer` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Intelligence / Analytics | /dashboard/analytics | ReportBuilderPage | report-builder/page.tsx | Saved Reports | `/dashboard/report-builder/dashboards` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Intelligence / Analytics | /dashboard/analytics | ReportBuilderPage | report-builder/page.tsx | Report Viewer | `/dashboard/report-builder/schedules` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Intelligence / Analytics | /dashboard/analytics | ReportBuilderPage | report-builder/page.tsx | Dashboards | `/dashboard/report-builder/ai` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+
+
+### Documents & Communication
+
+**Broken count:** 22
+
+| Module | Visible Location | Tab | Source File | Button/Card | Current Target | Current Behavior | Original Page? | Best Match | Confidence | Recommended Fix |
+|--------|-----------------|-----|-------------|-------------|----------------|-----------------|----------------|------------|------------|-----------------|
+| Documents & Communication | /dashboard/communication | ChatterPage | chatter/page.tsx | Recent Activity Feed | `/dashboard/chatter/feed` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Documents & Communication | /dashboard/communication | ChatterPage | chatter/page.tsx | My Feed | `/dashboard/chatter/search` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Documents & Communication | /dashboard/communication | ChatterPage | chatter/page.tsx | My Feed | `/dashboard/chatter/reports` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Documents & Communication | /dashboard/communication | ChatterPage | chatter/page.tsx | Search | `/dashboard/chatter/ai` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Documents & Communication | /dashboard/communication | CalendarPage | calendar/page.tsx | Calendar View | `/dashboard/calendar/view` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Documents & Communication | /dashboard/communication | CalendarPage | calendar/page.tsx | Calendar View | `/dashboard/calendar/new-event` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Documents & Communication | /dashboard/communication | CalendarPage | calendar/page.tsx | Calendar View | `/dashboard/calendar/resources` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Documents & Communication | /dashboard/communication | CalendarPage | calendar/page.tsx | New Event | `/dashboard/calendar/availability` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Documents & Communication | /dashboard/communication | NotifPage | notification-center/page.tsx | All Notifications | `/dashboard/notification-center/list` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Documents & Communication | /dashboard/communication | NotifPage | notification-center/page.tsx | All Notifications | `/dashboard/notification-center/preferences` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Documents & Communication | /dashboard/communication | NotifPage | notification-center/page.tsx | All Notifications | `/dashboard/notification-center/templates` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Documents & Communication | /dashboard/communication | NotifPage | notification-center/page.tsx | Preferences | `/dashboard/notification-center/schedules` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Documents & Communication | /dashboard/communication | NotifPage | notification-center/page.tsx | Templates | `/dashboard/notification-center/reports` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Documents & Communication | /dashboard/communication | NotifPage | notification-center/page.tsx | Schedules | `/dashboard/notification-center/ai` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Documents & Communication | /dashboard/documents | DocsCompliancePage | documents/compliance/page.tsx | new | `/dashboard/documents/new` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Documents & Communication | /dashboard/documents | DocsCompliancePage | documents/compliance/page.tsx | ${d.id | `/dashboard/documents/${d.id` | no_route_file | No | not found | low | CREATE_NEW_REAL_PAGE_REQUIRED |
+| Documents & Communication | /dashboard/documents | DocsCompliancePage | documents/compliance/page.tsx | Expiry Tracker | `/dashboard/esign` | middleware_redirect | Yes — real page | commit 10125e4 (2026-05-10) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Documents & Communication | /dashboard/documents | DocsExpiringPage | documents/expiring/page.tsx | ${d.id | `/dashboard/documents/${d.id` | no_route_file | No | not found | low | CREATE_NEW_REAL_PAGE_REQUIRED |
+| Documents & Communication | /dashboard/documents | KnowledgeBasePage | knowledge-base/page.tsx | ${a.id | `/dashboard/knowledge-base/${a.id` | middleware_redirect | No | not found | low | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Documents & Communication | /dashboard/documents | KnowledgeBasePage | knowledge-base/page.tsx | Categories | `/dashboard/knowledge-base/categories` | middleware_redirect | No | not found | low | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Documents & Communication | /dashboard/documents | KnowledgeBasePage | knowledge-base/page.tsx | articles | `/dashboard/knowledge-base/articles` | middleware_redirect | Yes — real page | commit 10125e4 (2026-05-10) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Documents & Communication | /dashboard/documents | KnowledgeBasePage | knowledge-base/page.tsx | View all | `/dashboard/knowledge-base/articles/new` | middleware_redirect | Yes — real page | commit 10125e4 (2026-05-10) | high | RESTORE_OLD_PAGE_FROM_GIT |
+
+
+### Commercial / CRM
+
+**Broken count:** 7
+
+| Module | Visible Location | Tab | Source File | Button/Card | Current Target | Current Behavior | Original Page? | Best Match | Confidence | Recommended Fix |
+|--------|-----------------|-----|-------------|-------------|----------------|-----------------|----------------|------------|------------|-----------------|
+| Commercial / CRM | /dashboard/crm | CRMPipelinePage | crm/pipeline/page.tsx | ${rec.id | `/dashboard/crm/records/${rec.id` | middleware_redirect | No | not found | low | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Commercial / CRM | /dashboard/crm | CRMLeadsPage | crm/leads/page.tsx | View | `/dashboard/crm/records/${rec.id` | middleware_redirect | No | not found | low | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Commercial / CRM | /dashboard/crm | CRMOppsPage | crm/opportunities/page.tsx | View | `/dashboard/crm/records/${rec.id` | middleware_redirect | No | not found | low | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Commercial / CRM | /dashboard/crm | CRMActivitiesPage | crm/activities/page.tsx | ${act.crm_record_id | `/dashboard/crm/records/${act.crm_record_id` | middleware_redirect | No | not found | low | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Commercial / CRM | /dashboard/crm | NPSPage | nps/page.tsx | surveys | `/dashboard/nps/surveys` | middleware_redirect | No | not found | low | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Commercial / CRM | /dashboard/crm | SurveysPage | surveys/page.tsx | new | `/dashboard/surveys/new` | middleware_redirect | Yes — real page | commit 10125e4 (2026-05-10) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Commercial / CRM | /dashboard/crm | SurveysPage | surveys/page.tsx | ${s.id | `/dashboard/surveys/${s.id` | middleware_redirect | No | not found | low | CONVERT_TO_WORKSPACE_SUBVIEW |
 
 
 ### Finance
 
-**Broken count:** 54
+**Broken count:** 57
 
-| Module | Visible Location | Button/Card | Current Target | Current Behavior | Original Page Found? | Best Match | Confidence | Recommended Fix |
-|--------|-----------------|-------------|----------------|------------------|---------------------|------------|------------|-----------------|
-| Finance | /dashboard/finance?tab=accounting | `controls` | `/dashboard/finance/accounting/controls` | redirect_stub → /dashboard/finance?tab=accounting | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Finance | /dashboard/finance?tab=accounting | `customers-ledger` | `/dashboard/finance/accounting/customers-ledger` | redirect_stub → /dashboard/finance?tab=accounting | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Finance | /dashboard/finance?tab=accounting | `payments` | `/dashboard/finance/accounting/payments` | redirect_stub → /dashboard/finance?tab=accounting | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Finance | /dashboard/finance?tab=accounting | `purchase-invoices` | `/dashboard/finance/accounting/purchase-invoices` | redirect_stub → /dashboard/finance?tab=accounting | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Finance | /dashboard/finance?tab=accounting | `sales-invoices` | `/dashboard/finance/accounting/sales-invoices` | redirect_stub → /dashboard/finance?tab=accounting | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Finance | /dashboard/finance?tab=accounting | `suppliers-ledger` | `/dashboard/finance/accounting/suppliers-ledger` | redirect_stub → /dashboard/finance?tab=accounting | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Finance | /dashboard/finance?tab=bank-recon | `ai` | `/dashboard/bank-reconciliation/ai` | redirect_stub → /dashboard/finance?tab=bank-recon | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Finance | /dashboard/finance?tab=bank-recon | `balance` | `/dashboard/bank-reconciliation/balance` | redirect_stub → /dashboard/finance?tab=bank-recon | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Finance | /dashboard/finance?tab=bank-recon | `import` | `/dashboard/bank-reconciliation/import` | redirect_stub → /dashboard/finance?tab=bank-recon | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Finance | /dashboard/finance?tab=bank-recon | `open-items` | `/dashboard/bank-reconciliation/open-items` | redirect_stub → /dashboard/finance?tab=bank-recon | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Finance | /dashboard/finance?tab=bank-recon | `rules` | `/dashboard/bank-reconciliation/rules` | redirect_stub → /dashboard/finance?tab=bank-recon | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Finance | /dashboard/finance?tab=bank-recon | `statements` | `/dashboard/bank-reconciliation/statements` | redirect_stub → /dashboard/finance?tab=bank-recon | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Finance | /dashboard/finance?tab=invoice-match | `ai` | `/dashboard/invoice-match/ai` | redirect_stub → /dashboard/finance?tab=invoice-match | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Finance | /dashboard/finance?tab=invoice-match | `blocked` | `/dashboard/invoice-match/blocked` | redirect_stub → /dashboard/finance?tab=invoice-match | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Finance | /dashboard/finance?tab=invoice-match | `duplicates` | `/dashboard/invoice-match/duplicates` | redirect_stub → /dashboard/finance?tab=invoice-match | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Finance | /dashboard/finance?tab=invoice-match | `matches` | `/dashboard/invoice-match/matches` | redirect_stub → /dashboard/finance?tab=invoice-match | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Finance | /dashboard/finance?tab=invoice-match | `review-queue` | `/dashboard/invoice-match/review-queue` | redirect_stub → /dashboard/finance?tab=invoice-match | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Finance | /dashboard/finance?tab=fixed-assets | `ai` | `/dashboard/fixed-assets/ai` | redirect_stub → /dashboard/finance?tab=fixed-assets | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Finance | /dashboard/finance?tab=fixed-assets | `new` | `/dashboard/fixed-assets/assets/new` | redirect_stub → /dashboard/finance?tab=fixed-assets&drawer=create | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Finance | /dashboard/finance?tab=fixed-assets | `assets` | `/dashboard/fixed-assets/assets` | redirect_stub → /dashboard/finance?tab=fixed-assets | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Finance | /dashboard/finance?tab=fixed-assets | `categories` | `/dashboard/fixed-assets/categories` | redirect_stub → /dashboard/finance?tab=fixed-assets | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Finance | /dashboard/finance?tab=fixed-assets | `depreciation` | `/dashboard/fixed-assets/depreciation` | redirect_stub → /dashboard/finance?tab=fixed-assets | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Finance | /dashboard/finance?tab=fixed-assets | `disposal` | `/dashboard/fixed-assets/disposal` | redirect_stub → /dashboard/finance?tab=fixed-assets | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Finance | /dashboard/finance?tab=fixed-assets | `import` | `/dashboard/fixed-assets/import` | redirect_stub → /dashboard/finance?tab=fixed-assets | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Finance | /dashboard/finance?tab=fixed-assets | `posting` | `/dashboard/fixed-assets/posting` | redirect_stub → /dashboard/finance?tab=fixed-assets | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Finance | /dashboard/finance?tab=fixed-assets | `transfer` | `/dashboard/fixed-assets/transfer` | redirect_stub → /dashboard/finance?tab=fixed-assets | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Finance | /dashboard/finance?tab=dimensions | `ai` | `/dashboard/dimensions/ai` | redirect_stub → /dashboard/finance?tab=dimensions | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Finance | /dashboard/finance?tab=dimensions | `allocation-run` | `/dashboard/dimensions/allocation-run` | redirect_stub → /dashboard/finance?tab=dimensions | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Finance | /dashboard/finance?tab=dimensions | `allocations` | `/dashboard/dimensions/allocations` | redirect_stub → /dashboard/finance?tab=dimensions | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Finance | /dashboard/finance?tab=dimensions | `completeness` | `/dashboard/dimensions/completeness` | redirect_stub → /dashboard/finance?tab=dimensions | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Finance | /dashboard/finance?tab=dimensions | `cost-centers` | `/dashboard/dimensions/cost-centers` | redirect_stub → /dashboard/finance?tab=dimensions | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Finance | /dashboard/finance?tab=dimensions | `defaults` | `/dashboard/dimensions/defaults` | redirect_stub → /dashboard/finance?tab=dimensions | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Finance | /dashboard/finance?tab=dimensions | `reclassify` | `/dashboard/dimensions/reclassify` | redirect_stub → /dashboard/finance?tab=dimensions | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Finance | /dashboard/finance?tab=dimensions | `types` | `/dashboard/dimensions/types` | redirect_stub → /dashboard/finance?tab=dimensions | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Finance | /dashboard/finance?tab=dimensions | `validation` | `/dashboard/dimensions/validation` | redirect_stub → /dashboard/finance?tab=dimensions | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Finance | /dashboard/finance?tab=dimensions | `values` | `/dashboard/dimensions/values` | redirect_stub → /dashboard/finance?tab=dimensions | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Finance | /dashboard/finance?tab=dunning | `aging` | `/dashboard/dunning/aging` | redirect_stub → /dashboard/finance?tab=dunning | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Finance | /dashboard/finance?tab=dunning | `cases` | `/dashboard/dunning/cases` | redirect_stub → /dashboard/finance?tab=dunning | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Finance | /dashboard/finance?tab=dunning | `credit-holds` | `/dashboard/dunning/credit-holds` | redirect_stub → /dashboard/finance?tab=dunning | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Finance | /dashboard/finance?tab=dunning | `policies` | `/dashboard/dunning/policies` | redirect_stub → /dashboard/finance?tab=dunning | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Finance | /dashboard/finance?tab=dunning | `workqueue` | `/dashboard/dunning/workqueue` | redirect_stub → /dashboard/finance?tab=dunning | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Finance | /dashboard/finance?tab=tax | `regulatory` | `/dashboard/tax/regulatory` | redirect_stub → /dashboard/finance?tab=tax | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Finance | /dashboard/finance?tab=tax | `reports` | `/dashboard/tax/reports` | redirect_stub → /dashboard/finance?tab=tax | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Finance | /dashboard/finance?tab=tax | `rules` | `/dashboard/tax/rules` | redirect_stub → /dashboard/finance?tab=tax | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Finance | /dashboard/finance?tab=tax | `transactions` | `/dashboard/tax/transactions` | redirect_stub → /dashboard/finance?tab=tax | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Finance | /dashboard/finance?tab=expenses | `advances` | `/dashboard/expenses/advances` | redirect_stub → /dashboard/hr?tab=expenses | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Finance | /dashboard/finance?tab=expenses | `ai` | `/dashboard/expenses/ai` | redirect_stub → /dashboard/hr?tab=expenses | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Finance | /dashboard/finance?tab=expenses | `approval` | `/dashboard/expenses/approval` | redirect_stub → /dashboard/hr?tab=expenses | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Finance | /dashboard/finance?tab=expenses | `categories` | `/dashboard/expenses/categories` | redirect_stub → /dashboard/hr?tab=expenses | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Finance | /dashboard/finance?tab=expenses | `new` | `/dashboard/expenses/claims/new` | redirect_stub → /dashboard/hr?tab=expenses&drawer=create | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Finance | /dashboard/finance?tab=expenses | `claims` | `/dashboard/expenses/claims` | redirect_stub → /dashboard/hr?tab=expenses | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Finance | /dashboard/finance?tab=expenses | `policies` | `/dashboard/expenses/policies` | redirect_stub → /dashboard/hr?tab=expenses | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Finance | /dashboard/finance?tab=expenses | `reimbursement` | `/dashboard/expenses/reimbursement` | redirect_stub → /dashboard/hr?tab=expenses | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Finance | /dashboard/finance?tab=expenses | `reports` | `/dashboard/expenses/reports` | redirect_stub → /dashboard/hr?tab=expenses | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Module | Visible Location | Tab | Source File | Button/Card | Current Target | Current Behavior | Original Page? | Best Match | Confidence | Recommended Fix |
+|--------|-----------------|-----|-------------|-------------|----------------|-----------------|----------------|------------|------------|-----------------|
+| Finance | /dashboard/finance | FinanceAccountingPage | finance/accounting/page.tsx | Customers Ledger | `/dashboard/finance/accounting/customers-ledger` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Finance | /dashboard/finance | FinanceAccountingPage | finance/accounting/page.tsx | Customers Ledger | `/dashboard/finance/accounting/suppliers-ledger` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Finance | /dashboard/finance | FinanceAccountingPage | finance/accounting/page.tsx | Customers Ledger | `/dashboard/finance/accounting/sales-invoices` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Finance | /dashboard/finance | FinanceAccountingPage | finance/accounting/page.tsx | Suppliers Ledger | `/dashboard/finance/accounting/purchase-invoices` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Finance | /dashboard/finance | FinanceAccountingPage | finance/accounting/page.tsx | Sales Invoices | `/dashboard/finance/accounting/payments` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Finance | /dashboard/finance | FinanceAccountingPage | finance/accounting/page.tsx | Purchase Invoices | `/dashboard/finance/accounting/controls` | middleware_redirect | Yes — stub only | only redirect stub in git | medium | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Finance | /dashboard/finance | BankReconPage | bank-reconciliation/page.tsx | Bank Reconciliation | `/dashboard/bank-reconciliation/import` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Finance | /dashboard/finance | BankReconPage | bank-reconciliation/page.tsx | statements | `/dashboard/bank-reconciliation/statements` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Finance | /dashboard/finance | BankReconPage | bank-reconciliation/page.tsx | Open Items Aging | `/dashboard/bank-reconciliation/open-items` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Finance | /dashboard/finance | BankReconPage | bank-reconciliation/page.tsx | Open Items Aging | `/dashboard/bank-reconciliation/balance` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Finance | /dashboard/finance | BankReconPage | bank-reconciliation/page.tsx | Open Items Aging | `/dashboard/bank-reconciliation/rules` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Finance | /dashboard/finance | BankReconPage | bank-reconciliation/page.tsx | Bank vs Ledger | `/dashboard/bank-reconciliation/ai` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Finance | /dashboard/finance | BankReconPage | bank-reconciliation/page.tsx | ${s.id | `/dashboard/bank-reconciliation/statements/${s.id` | middleware_redirect | No | not found | low | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Finance | /dashboard/finance | InvoiceMatchPage | invoice-match/page.tsx | review-queue | `/dashboard/invoice-match/review-queue` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Finance | /dashboard/finance | InvoiceMatchPage | invoice-match/page.tsx | matches | `/dashboard/invoice-match/matches` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Finance | /dashboard/finance | InvoiceMatchPage | invoice-match/page.tsx | On Hold | `/dashboard/invoice-match/blocked` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Finance | /dashboard/finance | InvoiceMatchPage | invoice-match/page.tsx | Quick Links | `/dashboard/invoice-match/duplicates` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Finance | /dashboard/finance | InvoiceMatchPage | invoice-match/page.tsx | Blocked Invoices | `/dashboard/invoice-match/ai` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Finance | /dashboard/finance | InvoiceMatchPage | invoice-match/page.tsx | View | `/dashboard/invoice-match/${m.id` | middleware_redirect | No | not found | low | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Finance | /dashboard/finance | FixedAssetsPage | fixed-assets/page.tsx | Asset Register | `/dashboard/fixed-assets/assets` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Finance | /dashboard/finance | FixedAssetsPage | fixed-assets/page.tsx | Asset Register | `/dashboard/fixed-assets/categories` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Finance | /dashboard/finance | FixedAssetsPage | fixed-assets/page.tsx | Asset Register | `/dashboard/fixed-assets/depreciation` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Finance | /dashboard/finance | FixedAssetsPage | fixed-assets/page.tsx | Asset Categories | `/dashboard/fixed-assets/posting` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Finance | /dashboard/finance | FixedAssetsPage | fixed-assets/page.tsx | Depreciation Schedules | `/dashboard/fixed-assets/disposal` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Finance | /dashboard/finance | FixedAssetsPage | fixed-assets/page.tsx | Posting Run | `/dashboard/fixed-assets/transfer` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Finance | /dashboard/finance | FixedAssetsPage | fixed-assets/page.tsx | Disposals | `/dashboard/fixed-assets/import` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Finance | /dashboard/finance | FixedAssetsPage | fixed-assets/page.tsx | Transfers | `/dashboard/fixed-assets/ai` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Finance | /dashboard/finance | FixedAssetsPage | fixed-assets/page.tsx | new | `/dashboard/fixed-assets/assets/new` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Finance | /dashboard/finance | DimensionsPage | dimensions/page.tsx | Dimension Types | `/dashboard/dimensions/types` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Finance | /dashboard/finance | DimensionsPage | dimensions/page.tsx | Dimension Types | `/dashboard/dimensions/values` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Finance | /dashboard/finance | DimensionsPage | dimensions/page.tsx | Dimension Types | `/dashboard/dimensions/cost-centers` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Finance | /dashboard/finance | DimensionsPage | dimensions/page.tsx | Dimension Values | `/dashboard/dimensions/allocations` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Finance | /dashboard/finance | DimensionsPage | dimensions/page.tsx | Cost Centers | `/dashboard/dimensions/allocation-run` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Finance | /dashboard/finance | DimensionsPage | dimensions/page.tsx | Allocation Rules | `/dashboard/dimensions/validation` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Finance | /dashboard/finance | DimensionsPage | dimensions/page.tsx | Allocation Run | `/dashboard/dimensions/defaults` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Finance | /dashboard/finance | DimensionsPage | dimensions/page.tsx | Validation Rules | `/dashboard/dimensions/reclassify` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Finance | /dashboard/finance | DimensionsPage | dimensions/page.tsx | Default Rules | `/dashboard/dimensions/completeness` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Finance | /dashboard/finance | DimensionsPage | dimensions/page.tsx | Reclassify | `/dashboard/dimensions/ai` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Finance | /dashboard/finance | DunningPage | dunning/page.tsx | Aging Report | `/dashboard/dunning/aging` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Finance | /dashboard/finance | DunningPage | dunning/page.tsx | Aging Report | `/dashboard/dunning/workqueue` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Finance | /dashboard/finance | DunningPage | dunning/page.tsx | Aging Report | `/dashboard/dunning/credit-holds` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Finance | /dashboard/finance | DunningPage | dunning/page.tsx | Collector Queue | `/dashboard/dunning/policies` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Finance | /dashboard/finance | DunningPage | dunning/page.tsx | Top Priority Cases | `/dashboard/dunning/cases` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Finance | /dashboard/finance | DunningPage | dunning/page.tsx | ${c.id | `/dashboard/dunning/cases/${c.id` | middleware_redirect | No | not found | low | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Finance | /dashboard/finance | TaxPage | tax/page.tsx | Tax Rules & Categories | `/dashboard/tax/rules` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Finance | /dashboard/finance | TaxPage | tax/page.tsx | Tax Rules & Categories | `/dashboard/tax/regulatory` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Finance | /dashboard/finance | TaxPage | tax/page.tsx | Tax Rules & Categories | `/dashboard/tax/transactions` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Finance | /dashboard/finance | TaxPage | tax/page.tsx | Regulatory Flags | `/dashboard/tax/reports` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Finance | /dashboard/finance | ExpensesPage | expenses/page.tsx | My Claims | `/dashboard/expenses/claims` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Finance | /dashboard/finance | ExpensesPage | expenses/page.tsx | My Claims | `/dashboard/expenses/claims/new` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Finance | /dashboard/finance | ExpensesPage | expenses/page.tsx | My Claims | `/dashboard/expenses/approval` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Finance | /dashboard/finance | ExpensesPage | expenses/page.tsx | New Claim | `/dashboard/expenses/reimbursement` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Finance | /dashboard/finance | ExpensesPage | expenses/page.tsx | Approval Queue | `/dashboard/expenses/advances` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Finance | /dashboard/finance | ExpensesPage | expenses/page.tsx | Reimbursement | `/dashboard/expenses/categories` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Finance | /dashboard/finance | ExpensesPage | expenses/page.tsx | Advances | `/dashboard/expenses/policies` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Finance | /dashboard/finance | ExpensesPage | expenses/page.tsx | Categories | `/dashboard/expenses/reports` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Finance | /dashboard/finance | ExpensesPage | expenses/page.tsx | Policies | `/dashboard/expenses/ai` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
 
 
 ### HR & Payroll
 
 **Broken count:** 41
 
-| Module | Visible Location | Button/Card | Current Target | Current Behavior | Original Page Found? | Best Match | Confidence | Recommended Fix |
-|--------|-----------------|-------------|----------------|------------------|---------------------|------------|------------|-----------------|
-| HR & Payroll | /dashboard/hr?tab=recruitment | `ai` | `/dashboard/recruitment/ai` | redirect_stub → /dashboard/hr?tab=recruitment | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| HR & Payroll | /dashboard/hr?tab=recruitment | `candidates` | `/dashboard/recruitment/candidates` | redirect_stub → /dashboard/hr?tab=recruitment | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| HR & Payroll | /dashboard/hr?tab=recruitment | `interviews` | `/dashboard/recruitment/interviews` | redirect_stub → /dashboard/hr?tab=recruitment | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| HR & Payroll | /dashboard/hr?tab=recruitment | `offers` | `/dashboard/recruitment/offers` | redirect_stub → /dashboard/hr?tab=recruitment | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| HR & Payroll | /dashboard/hr?tab=recruitment | `pipeline` | `/dashboard/recruitment/pipeline` | redirect_stub → /dashboard/hr?tab=recruitment | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| HR & Payroll | /dashboard/hr?tab=recruitment | `reports` | `/dashboard/recruitment/reports` | redirect_stub → /dashboard/hr?tab=recruitment | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| HR & Payroll | /dashboard/hr?tab=recruitment | `new` | `/dashboard/recruitment/requisitions/new` | redirect_stub → /dashboard/hr?tab=recruitment&drawer=create | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| HR & Payroll | /dashboard/hr?tab=recruitment | `requisitions` | `/dashboard/recruitment/requisitions` | redirect_stub → /dashboard/hr?tab=recruitment | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| HR & Payroll | /dashboard/hr?tab=recruitment | `stages` | `/dashboard/recruitment/stages` | redirect_stub → /dashboard/hr?tab=recruitment | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| HR & Payroll | /dashboard/hr?tab=ess | `admin` | `/dashboard/ess/admin` | redirect_stub → /dashboard/hr?tab=ess | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| HR & Payroll | /dashboard/hr?tab=ess | `ai` | `/dashboard/ess/ai` | redirect_stub → /dashboard/hr?tab=ess | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| HR & Payroll | /dashboard/hr?tab=ess | `attendance` | `/dashboard/ess/attendance` | redirect_stub → /dashboard/hr?tab=ess | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| HR & Payroll | /dashboard/hr?tab=ess | `documents` | `/dashboard/ess/documents` | redirect_stub → /dashboard/hr?tab=ess | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| HR & Payroll | /dashboard/hr?tab=ess | `leave` | `/dashboard/ess/leave` | redirect_stub → /dashboard/hr?tab=ess | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| HR & Payroll | /dashboard/hr?tab=ess | `notifications` | `/dashboard/ess/notifications` | redirect_stub → /dashboard/hr?tab=ess | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| HR & Payroll | /dashboard/hr?tab=ess | `profile` | `/dashboard/ess/profile` | redirect_stub → /dashboard/hr?tab=ess | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| HR & Payroll | /dashboard/hr?tab=ess | `requests` | `/dashboard/ess/requests` | redirect_stub → /dashboard/hr?tab=ess | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| HR & Payroll | /dashboard/hr?tab=appraisals | `ai` | `/dashboard/appraisals/ai` | redirect_stub → /dashboard/hr?tab=appraisals | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| HR & Payroll | /dashboard/hr?tab=appraisals | `development-plans` | `/dashboard/appraisals/development-plans` | redirect_stub → /dashboard/hr?tab=appraisals | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| HR & Payroll | /dashboard/hr?tab=appraisals | `hr-review` | `/dashboard/appraisals/hr-review` | redirect_stub → /dashboard/hr?tab=appraisals | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| HR & Payroll | /dashboard/hr?tab=appraisals | `manager-queue` | `/dashboard/appraisals/manager-queue` | redirect_stub → /dashboard/hr?tab=appraisals | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| HR & Payroll | /dashboard/hr?tab=appraisals | `periods` | `/dashboard/appraisals/periods` | redirect_stub → /dashboard/hr?tab=appraisals | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| HR & Payroll | /dashboard/hr?tab=appraisals | `new` | `/dashboard/appraisals/records/new` | redirect_stub → /dashboard/hr?tab=appraisals&drawer=create | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| HR & Payroll | /dashboard/hr?tab=appraisals | `records` | `/dashboard/appraisals/records` | redirect_stub → /dashboard/hr?tab=appraisals | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| HR & Payroll | /dashboard/hr?tab=appraisals | `reports` | `/dashboard/appraisals/reports` | redirect_stub → /dashboard/hr?tab=appraisals | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| HR & Payroll | /dashboard/hr?tab=appraisals | `self-review` | `/dashboard/appraisals/self-review` | redirect_stub → /dashboard/hr?tab=appraisals | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| HR & Payroll | /dashboard/hr?tab=appraisals | `templates` | `/dashboard/appraisals/templates` | redirect_stub → /dashboard/hr?tab=appraisals | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| HR & Payroll | /dashboard/hr?tab=training | `ai` | `/dashboard/training/ai` | redirect_stub → /dashboard/hr?tab=training | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| HR & Payroll | /dashboard/hr?tab=training | `assignments` | `/dashboard/training/assignments` | redirect_stub → /dashboard/hr?tab=training | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| HR & Payroll | /dashboard/hr?tab=training | `certifications` | `/dashboard/training/certifications` | redirect_stub → /dashboard/hr?tab=training | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| HR & Payroll | /dashboard/hr?tab=training | `feedback` | `/dashboard/training/feedback` | redirect_stub → /dashboard/hr?tab=training | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| HR & Payroll | /dashboard/hr?tab=training | `programs` | `/dashboard/training/programs` | redirect_stub → /dashboard/hr?tab=training | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| HR & Payroll | /dashboard/hr?tab=training | `reports` | `/dashboard/training/reports` | redirect_stub → /dashboard/hr?tab=training | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| HR & Payroll | /dashboard/hr?tab=training | `sessions` | `/dashboard/training/sessions` | redirect_stub → /dashboard/hr?tab=training | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| HR & Payroll | /dashboard/hr?tab=training | `skill-matrix` | `/dashboard/training/skill-matrix` | redirect_stub → /dashboard/hr?tab=training | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| HR & Payroll | /dashboard/hr?tab=timesheets | `ai` | `/dashboard/timesheets/ai` | redirect_stub → /dashboard/hr?tab=timesheets | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| HR & Payroll | /dashboard/hr?tab=timesheets | `approval-queue` | `/dashboard/timesheets/approval-queue` | redirect_stub → /dashboard/hr?tab=timesheets | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| HR & Payroll | /dashboard/hr?tab=timesheets | `my-timesheets` | `/dashboard/timesheets/my-timesheets` | redirect_stub → /dashboard/hr?tab=timesheets | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| HR & Payroll | /dashboard/hr?tab=timesheets | `reports` | `/dashboard/timesheets/reports` | redirect_stub → /dashboard/hr?tab=timesheets | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| HR & Payroll | /dashboard/hr?tab=timesheets | `time-entry` | `/dashboard/timesheets/time-entry` | redirect_stub → /dashboard/hr?tab=timesheets | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| HR & Payroll | /dashboard/hr?tab=timesheets | `weekly-view` | `/dashboard/timesheets/weekly-view` | redirect_stub → /dashboard/hr?tab=timesheets | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Module | Visible Location | Tab | Source File | Button/Card | Current Target | Current Behavior | Original Page? | Best Match | Confidence | Recommended Fix |
+|--------|-----------------|-----|-------------|-------------|----------------|-----------------|----------------|------------|------------|-----------------|
+| HR & Payroll | /dashboard/hr | RecruitmentPage | recruitment/page.tsx | Requisitions | `/dashboard/recruitment/requisitions` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| HR & Payroll | /dashboard/hr | RecruitmentPage | recruitment/page.tsx | Requisitions | `/dashboard/recruitment/requisitions/new` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| HR & Payroll | /dashboard/hr | RecruitmentPage | recruitment/page.tsx | Requisitions | `/dashboard/recruitment/candidates` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| HR & Payroll | /dashboard/hr | RecruitmentPage | recruitment/page.tsx | New Requisition | `/dashboard/recruitment/pipeline` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| HR & Payroll | /dashboard/hr | RecruitmentPage | recruitment/page.tsx | Candidates | `/dashboard/recruitment/interviews` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| HR & Payroll | /dashboard/hr | RecruitmentPage | recruitment/page.tsx | Pipeline Board | `/dashboard/recruitment/offers` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| HR & Payroll | /dashboard/hr | RecruitmentPage | recruitment/page.tsx | Interviews | `/dashboard/recruitment/stages` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| HR & Payroll | /dashboard/hr | RecruitmentPage | recruitment/page.tsx | Offers | `/dashboard/recruitment/reports` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| HR & Payroll | /dashboard/hr | RecruitmentPage | recruitment/page.tsx | Pipeline Stages | `/dashboard/recruitment/ai` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| HR & Payroll | /dashboard/hr | ESSPage | ess/page.tsx | My Profile | `/dashboard/ess/profile` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| HR & Payroll | /dashboard/hr | ESSPage | ess/page.tsx | My Profile | `/dashboard/ess/leave` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| HR & Payroll | /dashboard/hr | ESSPage | ess/page.tsx | My Profile | `/dashboard/ess/attendance` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| HR & Payroll | /dashboard/hr | ESSPage | ess/page.tsx | Leave | `/dashboard/ess/documents` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| HR & Payroll | /dashboard/hr | ESSPage | ess/page.tsx | Attendance | `/dashboard/ess/requests` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| HR & Payroll | /dashboard/hr | ESSPage | ess/page.tsx | Documents | `/dashboard/ess/notifications` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| HR & Payroll | /dashboard/hr | ESSPage | ess/page.tsx | My Requests | `/dashboard/ess/ai` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| HR & Payroll | /dashboard/hr | ESSPage | ess/page.tsx | Notifications | `/dashboard/ess/admin` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| HR & Payroll | /dashboard/hr | AppraisalsPage | appraisals/page.tsx | Appraisal Periods | `/dashboard/appraisals/periods` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| HR & Payroll | /dashboard/hr | AppraisalsPage | appraisals/page.tsx | Appraisal Periods | `/dashboard/appraisals/templates` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| HR & Payroll | /dashboard/hr | AppraisalsPage | appraisals/page.tsx | Appraisal Periods | `/dashboard/appraisals/records` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| HR & Payroll | /dashboard/hr | AppraisalsPage | appraisals/page.tsx | Templates | `/dashboard/appraisals/records/new` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| HR & Payroll | /dashboard/hr | AppraisalsPage | appraisals/page.tsx | All Records | `/dashboard/appraisals/self-review` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| HR & Payroll | /dashboard/hr | AppraisalsPage | appraisals/page.tsx | New Appraisal | `/dashboard/appraisals/manager-queue` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| HR & Payroll | /dashboard/hr | AppraisalsPage | appraisals/page.tsx | Self Review | `/dashboard/appraisals/hr-review` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| HR & Payroll | /dashboard/hr | AppraisalsPage | appraisals/page.tsx | Manager Queue | `/dashboard/appraisals/development-plans` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| HR & Payroll | /dashboard/hr | AppraisalsPage | appraisals/page.tsx | HR Review | `/dashboard/appraisals/reports` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| HR & Payroll | /dashboard/hr | AppraisalsPage | appraisals/page.tsx | Development Plans | `/dashboard/appraisals/ai` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| HR & Payroll | /dashboard/hr | TrainingPage | training/page.tsx | Training Programs | `/dashboard/training/programs` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| HR & Payroll | /dashboard/hr | TrainingPage | training/page.tsx | Training Programs | `/dashboard/training/sessions` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| HR & Payroll | /dashboard/hr | TrainingPage | training/page.tsx | Training Programs | `/dashboard/training/skill-matrix` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| HR & Payroll | /dashboard/hr | TrainingPage | training/page.tsx | Sessions / Calendar | `/dashboard/training/assignments` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| HR & Payroll | /dashboard/hr | TrainingPage | training/page.tsx | Skill Matrix | `/dashboard/training/certifications` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| HR & Payroll | /dashboard/hr | TrainingPage | training/page.tsx | Assignments | `/dashboard/training/feedback` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| HR & Payroll | /dashboard/hr | TrainingPage | training/page.tsx | Certifications | `/dashboard/training/reports` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| HR & Payroll | /dashboard/hr | TrainingPage | training/page.tsx | Feedback | `/dashboard/training/ai` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| HR & Payroll | /dashboard/hr | TimesheetsPage | timesheets/page.tsx | My Timesheets | `/dashboard/timesheets/my-timesheets` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| HR & Payroll | /dashboard/hr | TimesheetsPage | timesheets/page.tsx | My Timesheets | `/dashboard/timesheets/time-entry` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| HR & Payroll | /dashboard/hr | TimesheetsPage | timesheets/page.tsx | My Timesheets | `/dashboard/timesheets/weekly-view` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| HR & Payroll | /dashboard/hr | TimesheetsPage | timesheets/page.tsx | New Time Entry | `/dashboard/timesheets/approval-queue` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| HR & Payroll | /dashboard/hr | TimesheetsPage | timesheets/page.tsx | Weekly View | `/dashboard/timesheets/reports` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| HR & Payroll | /dashboard/hr | TimesheetsPage | timesheets/page.tsx | Approval Queue | `/dashboard/timesheets/ai` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
 
 
-### Commercial / Sales
+### Administration / Integrations
 
-**Broken count:** 30
+**Broken count:** 9
 
-| Module | Visible Location | Button/Card | Current Target | Current Behavior | Original Page Found? | Best Match | Confidence | Recommended Fix |
-|--------|-----------------|-------------|----------------|------------------|---------------------|------------|------------|-----------------|
-| Commercial / Sales | /dashboard/sales?tab=price-lists | `approval-queue` | `/dashboard/price-lists/approval-queue` | redirect_stub → /dashboard/sales?tab=price-lists | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Commercial / Sales | /dashboard/sales?tab=contracts | `ai` | `/dashboard/contracts/ai` | redirect_stub → /dashboard/sales?tab=contracts | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Commercial / Sales | /dashboard/sales?tab=contracts | `expiring` | `/dashboard/contracts/expiring` | redirect_stub → /dashboard/sales?tab=contracts | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Commercial / Sales | /dashboard/sales?tab=contracts | `list` | `/dashboard/contracts/list` | redirect_stub → /dashboard/sales?tab=contracts | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Commercial / Sales | /dashboard/sales?tab=contracts | `new` | `/dashboard/contracts/new` | redirect_stub → /dashboard/sales?tab=contracts&drawer=create | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Commercial / Sales | /dashboard/sales?tab=recurring | `ai` | `/dashboard/recurring-orders/ai` | redirect_stub → /dashboard/sales?tab=recurring | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Commercial / Sales | /dashboard/sales?tab=recurring | `reports` | `/dashboard/recurring-orders/reports` | redirect_stub → /dashboard/sales?tab=recurring | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Commercial / Sales | /dashboard/sales?tab=recurring | `new` | `/dashboard/recurring-orders/templates/new` | redirect_stub → /dashboard/sales?tab=recurring&drawer=create | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Commercial / Sales | /dashboard/sales?tab=recurring | `templates` | `/dashboard/recurring-orders/templates` | redirect_stub → /dashboard/sales?tab=recurring | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Commercial / Sales | /dashboard/sales?tab=commissions | `ai` | `/dashboard/commissions/ai` | redirect_stub → /dashboard/sales?tab=commissions | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Commercial / Sales | /dashboard/sales?tab=commissions | `payouts` | `/dashboard/commissions/payouts` | redirect_stub → /dashboard/sales?tab=commissions | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Commercial / Sales | /dashboard/sales?tab=commissions | `rules` | `/dashboard/commissions/rules` | redirect_stub → /dashboard/sales?tab=commissions | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Commercial / Sales | /dashboard/sales?tab=commissions | `transactions` | `/dashboard/commissions/transactions` | redirect_stub → /dashboard/sales?tab=commissions | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Commercial / Sales | /dashboard/sales?tab=secondary | `analysis` | `/dashboard/secondary-sales/analysis` | redirect_stub → /dashboard/sales?tab=secondary | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Commercial / Sales | /dashboard/sales?tab=secondary | `inventory` | `/dashboard/secondary-sales/inventory` | redirect_stub → /dashboard/sales?tab=secondary | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Commercial / Sales | /dashboard/sales?tab=secondary | `upload` | `/dashboard/secondary-sales/upload` | redirect_stub → /dashboard/sales?tab=secondary | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Commercial / Sales | /dashboard/sales?tab=van-sales | `ai` | `/dashboard/van-sales/ai` | redirect_stub → /dashboard/sales?tab=van-sales | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Commercial / Sales | /dashboard/sales?tab=van-sales | `pos` | `/dashboard/van-sales/pos` | redirect_stub → /dashboard/sales?tab=van-sales | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Commercial / Sales | /dashboard/sales?tab=van-sales | `reconciliation` | `/dashboard/van-sales/reconciliation` | redirect_stub → /dashboard/sales?tab=van-sales | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Commercial / Sales | /dashboard/sales?tab=van-sales | `route` | `/dashboard/van-sales/route` | redirect_stub → /dashboard/sales?tab=van-sales | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Commercial / Sales | /dashboard/sales?tab=van-sales | `stock` | `/dashboard/van-sales/stock` | redirect_stub → /dashboard/sales?tab=van-sales | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Commercial / Sales | /dashboard/sales?tab=van-sales | `new` | `/dashboard/van-sales/vans/new` | redirect_stub → /dashboard/sales?tab=van-sales&drawer=create | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Commercial / Sales | /dashboard/sales?tab=van-sales | `vans` | `/dashboard/van-sales/vans` | redirect_stub → /dashboard/sales?tab=van-sales | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Commercial / Sales | /dashboard/sales?tab=portal | `accounts` | `/dashboard/portal/accounts` | redirect_stub → /dashboard/sales?tab=portal | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Commercial / Sales | /dashboard/sales?tab=portal | `activity` | `/dashboard/portal/activity` | redirect_stub → /dashboard/sales?tab=portal | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Commercial / Sales | /dashboard/sales?tab=portal | `ai` | `/dashboard/portal/ai` | redirect_stub → /dashboard/sales?tab=portal | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Commercial / Sales | /dashboard/sales?tab=portal | `claims` | `/dashboard/portal/claims` | redirect_stub → /dashboard/sales?tab=portal | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Commercial / Sales | /dashboard/sales?tab=portal | `drafts` | `/dashboard/portal/drafts` | redirect_stub → /dashboard/sales?tab=portal | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Commercial / Sales | /dashboard/sales?tab=portal | `reports` | `/dashboard/portal/reports` | redirect_stub → /dashboard/sales?tab=portal | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Commercial / Sales | /dashboard/sales?tab=portal | `users` | `/dashboard/portal/users` | redirect_stub → /dashboard/sales?tab=portal | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Module | Visible Location | Tab | Source File | Button/Card | Current Target | Current Behavior | Original Page? | Best Match | Confidence | Recommended Fix |
+|--------|-----------------|-----|-------------|-------------|----------------|-----------------|----------------|------------|------------|-----------------|
+| Administration / Integrations | /dashboard/integrations | WebhooksPage | webhooks/page.tsx | Event Definitions | `/dashboard/webhooks/definitions` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Administration / Integrations | /dashboard/integrations | WebhooksPage | webhooks/page.tsx | Event Definitions | `/dashboard/webhooks/subscriptions` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Administration / Integrations | /dashboard/integrations | WebhooksPage | webhooks/page.tsx | Event Definitions | `/dashboard/webhooks/deliveries` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Administration / Integrations | /dashboard/integrations | WebhooksPage | webhooks/page.tsx | Subscriptions | `/dashboard/webhooks/dead-letter` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Administration / Integrations | /dashboard/integrations | WebhooksPage | webhooks/page.tsx | Deliveries | `/dashboard/webhooks/inbound` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Administration / Integrations | /dashboard/integrations | WebhooksPage | webhooks/page.tsx | Dead-Letter Queue | `/dashboard/webhooks/reports` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Administration / Integrations | /dashboard/integrations | DeveloperPage | developer/page.tsx | API Keys | `/dashboard/developer/keys` | middleware_redirect | Yes — real page | commit 10125e4 (2026-05-10) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Administration / Integrations | /dashboard/integrations | DeveloperPage | developer/page.tsx | API Keys | `/dashboard/developer/graphql` | middleware_redirect | Yes — real page | commit 10125e4 (2026-05-10) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Administration / Integrations | /dashboard/integrations | DeveloperPage | developer/page.tsx | OpenAPI Docs | `/dashboard/webhooks` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
 
 
-### Supply Chain / Procurement
+### Supply Chain / Inventory
 
-**Broken count:** 12
+**Broken count:** 24
 
-| Module | Visible Location | Button/Card | Current Target | Current Behavior | Original Page Found? | Best Match | Confidence | Recommended Fix |
-|--------|-----------------|-------------|----------------|------------------|---------------------|------------|------------|-----------------|
-| Supply Chain / Procurement | /dashboard/procurement?tab=suggestions | `ai` | `/dashboard/procurement-suggestion/ai` | redirect_stub → /dashboard/procurement?tab=suggestions | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Supply Chain / Procurement | /dashboard/procurement?tab=suggestions | `groups` | `/dashboard/procurement-suggestion/groups` | redirect_stub → /dashboard/procurement?tab=suggestions | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Supply Chain / Procurement | /dashboard/procurement?tab=suggestions | `suggestions` | `/dashboard/procurement-suggestion/suggestions` | redirect_stub → /dashboard/procurement?tab=suggestions | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Supply Chain / Procurement | /dashboard/procurement?tab=suggestions | `supplier-prices` | `/dashboard/procurement-suggestion/supplier-prices` | redirect_stub → /dashboard/procurement?tab=suggestions | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Supply Chain / Procurement | /dashboard/procurement?tab=subcontracting | `ai` | `/dashboard/subcontracting/ai` | redirect_stub → /dashboard/procurement?tab=subcontracting | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Supply Chain / Procurement | /dashboard/procurement?tab=subcontracting | `locations` | `/dashboard/subcontracting/locations` | redirect_stub → /dashboard/procurement?tab=subcontracting | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Supply Chain / Procurement | /dashboard/procurement?tab=subcontracting | `orders` | `/dashboard/subcontracting/orders` | redirect_stub → /dashboard/procurement?tab=subcontracting | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Supply Chain / Procurement | /dashboard/procurement?tab=subcontracting | `stock` | `/dashboard/subcontracting/stock` | redirect_stub → /dashboard/procurement?tab=subcontracting | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Supply Chain / Procurement | /dashboard/procurement?tab=subcontracting | `yield` | `/dashboard/subcontracting/yield` | redirect_stub → /dashboard/procurement?tab=subcontracting | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Supply Chain / Procurement | /dashboard/procurement?tab=landed-cost | `ai` | `/dashboard/landed-cost/ai` | redirect_stub → /dashboard/procurement?tab=landed-cost | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Supply Chain / Procurement | /dashboard/procurement?tab=landed-cost | `documents` | `/dashboard/landed-cost/documents` | redirect_stub → /dashboard/procurement?tab=landed-cost | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Supply Chain / Procurement | /dashboard/procurement?tab=landed-cost | `new` | `/dashboard/landed-cost/new` | redirect_stub → /dashboard/procurement?tab=landed-cost&drawer=create | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-
-
-### Factory Operations / Quality
-
-**Broken count:** 13
-
-| Module | Visible Location | Button/Card | Current Target | Current Behavior | Original Page Found? | Best Match | Confidence | Recommended Fix |
-|--------|-----------------|-------------|----------------|------------------|---------------------|------------|------------|-----------------|
-| Factory Operations / Quality | /dashboard/quality?tab=qms | `ai` | `/dashboard/qms/ai` | redirect_stub → /dashboard/quality?tab=qms | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Factory Operations / Quality | /dashboard/quality?tab=qms | `allergen` | `/dashboard/qms/allergen` | redirect_stub → /dashboard/quality?tab=allergen | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Factory Operations / Quality | /dashboard/quality?tab=qms | `ccp` | `/dashboard/qms/ccp` | redirect_stub → /dashboard/quality?tab=qms | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Factory Operations / Quality | /dashboard/quality?tab=qms | `corrective-actions` | `/dashboard/qms/corrective-actions` | redirect_stub → /dashboard/quality?tab=qms | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Factory Operations / Quality | /dashboard/quality?tab=qms | `deviations` | `/dashboard/qms/deviations` | redirect_stub → /dashboard/quality?tab=qms | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Factory Operations / Quality | /dashboard/quality?tab=qms | `haccp` | `/dashboard/qms/haccp` | redirect_stub → /dashboard/quality?tab=qms | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Factory Operations / Quality | /dashboard/quality?tab=qms | `inspections` | `/dashboard/qms/inspections` | redirect_stub → /dashboard/quality?tab=inspections | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Factory Operations / Quality | /dashboard/quality?tab=qms | `quarantine` | `/dashboard/qms/quarantine` | redirect_stub → /dashboard/quality?tab=qms | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Factory Operations / Quality | /dashboard/quality?tab=qms | `reports` | `/dashboard/qms/reports` | redirect_stub → /dashboard/quality?tab=reports | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Factory Operations / Quality | /dashboard/quality?tab=qms | `templates` | `/dashboard/qms/templates` | redirect_stub → /dashboard/quality?tab=qms | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Factory Operations / Quality | /dashboard/quality?tab=allergen | `change-logs` | `/dashboard/allergen/change-logs` | redirect_stub → /dashboard/quality?tab=allergen | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Factory Operations / Quality | /dashboard/quality?tab=allergen | `material-profiles` | `/dashboard/allergen/material-profiles` | redirect_stub → /dashboard/quality?tab=allergen | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Factory Operations / Quality | /dashboard/quality?tab=allergen | `product-allergens` | `/dashboard/allergen/product-allergens` | redirect_stub → /dashboard/quality?tab=allergen | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Module | Visible Location | Tab | Source File | Button/Card | Current Target | Current Behavior | Original Page? | Best Match | Confidence | Recommended Fix |
+|--------|-----------------|-----|-------------|-------------|----------------|-----------------|----------------|------------|------------|-----------------|
+| Supply Chain / Inventory | /dashboard/inventory | CycleCountPage | cycle-count/page.tsx | Count Plans | `/dashboard/cycle-count/plans` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Supply Chain / Inventory | /dashboard/inventory | CycleCountPage | cycle-count/page.tsx | Count Plans | `/dashboard/cycle-count/tasks` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Supply Chain / Inventory | /dashboard/inventory | CycleCountPage | cycle-count/page.tsx | Count Plans | `/dashboard/cycle-count/entries` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Supply Chain / Inventory | /dashboard/inventory | CycleCountPage | cycle-count/page.tsx | Count Tasks | `/dashboard/cycle-count/variances` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Supply Chain / Inventory | /dashboard/inventory | CycleCountPage | cycle-count/page.tsx | Count Entries | `/dashboard/cycle-count/reports` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Supply Chain / Inventory | /dashboard/inventory | ShelfLifePage | shelf-life/page.tsx | FEFO Config | `/dashboard/shelf-life/fefo-config` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Supply Chain / Inventory | /dashboard/inventory | ShelfLifePage | shelf-life/page.tsx | FEFO Config | `/dashboard/shelf-life/lot-aging` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Supply Chain / Inventory | /dashboard/inventory | ShelfLifePage | shelf-life/page.tsx | FEFO Config | `/dashboard/shelf-life/near-expiry` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Supply Chain / Inventory | /dashboard/inventory | ShelfLifePage | shelf-life/page.tsx | Lot Aging | `/dashboard/shelf-life/expired` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Supply Chain / Inventory | /dashboard/inventory | ShelfLifePage | shelf-life/page.tsx | Near-Expiry Board | `/dashboard/shelf-life/retest-queue` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Supply Chain / Inventory | /dashboard/inventory | ShelfLifePage | shelf-life/page.tsx | Expired Board | `/dashboard/shelf-life/shipment-validation` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Supply Chain / Inventory | /dashboard/inventory | ShelfLifePage | shelf-life/page.tsx | Retest Queue | `/dashboard/shelf-life/production-validation` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Supply Chain / Inventory | /dashboard/inventory | ShelfLifePage | shelf-life/page.tsx | Shipment Validation | `/dashboard/shelf-life/compliance` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Supply Chain / Inventory | /dashboard/inventory | ShelfLifePage | shelf-life/page.tsx | Production Validation | `/dashboard/shelf-life/disposition` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Supply Chain / Inventory | /dashboard/inventory | ShelfLifePage | shelf-life/page.tsx | Compliance Audit | `/dashboard/shelf-life/customer-rules` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Supply Chain / Inventory | /dashboard/inventory | ShelfLifePage | shelf-life/page.tsx | Disposition Console | `/dashboard/shelf-life/bulk-hold-monitor` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Supply Chain / Inventory | /dashboard/inventory | TraceabilityPage | traceability/page.tsx | Recent Recalls | `/dashboard/traceability/recalls` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Supply Chain / Inventory | /dashboard/inventory | TraceabilityPage | traceability/page.tsx | ${r.id | `/dashboard/traceability/recalls/${r.id` | middleware_redirect | No | not found | low | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Supply Chain / Inventory | /dashboard/inventory | TraceabilityPage | traceability/page.tsx | Trace Search | `/dashboard/traceability/search` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Supply Chain / Inventory | /dashboard/inventory | TraceabilityPage | traceability/page.tsx | Trace Search | `/dashboard/traceability/backward` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Supply Chain / Inventory | /dashboard/inventory | TraceabilityPage | traceability/page.tsx | Trace Search | `/dashboard/traceability/forward` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Supply Chain / Inventory | /dashboard/inventory | TraceabilityPage | traceability/page.tsx | Backward Trace | `/dashboard/traceability/genealogy` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Supply Chain / Inventory | /dashboard/inventory | TraceabilityPage | traceability/page.tsx | Genealogy Graph | `/dashboard/traceability/mock-recall` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Supply Chain / Inventory | /dashboard/inventory | TraceabilityPage | traceability/page.tsx | Recall List | `/dashboard/traceability/regulatory` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
 
 
 ### Logistics
 
 **Broken count:** 7
 
-| Module | Visible Location | Button/Card | Current Target | Current Behavior | Original Page Found? | Best Match | Confidence | Recommended Fix |
-|--------|-----------------|-------------|----------------|------------------|---------------------|------------|------------|-----------------|
-| Logistics | /dashboard/logistics?tab=fleet | `drivers` | `/dashboard/fleet/drivers` | redirect_stub → /dashboard/logistics?tab=fleet | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Logistics | /dashboard/logistics?tab=fleet | `fuel` | `/dashboard/fleet/fuel` | redirect_stub → /dashboard/logistics?tab=fleet | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Logistics | /dashboard/logistics?tab=fleet | `incidents` | `/dashboard/fleet/incidents` | redirect_stub → /dashboard/logistics?tab=fleet | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Logistics | /dashboard/logistics?tab=fleet | `maintenance` | `/dashboard/fleet/maintenance` | redirect_stub → /dashboard/logistics?tab=fleet | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Logistics | /dashboard/logistics?tab=fleet | `reports` | `/dashboard/fleet/reports` | redirect_stub → /dashboard/logistics?tab=fleet | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Logistics | /dashboard/logistics?tab=fleet | `trips` | `/dashboard/fleet/trips` | redirect_stub → /dashboard/logistics?tab=fleet | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Logistics | /dashboard/logistics?tab=fleet | `vehicles` | `/dashboard/fleet/vehicles` | redirect_stub → /dashboard/logistics?tab=fleet | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-
-
-### Documents & Communication
-
-**Broken count:** 17
-
-| Module | Visible Location | Button/Card | Current Target | Current Behavior | Original Page Found? | Best Match | Confidence | Recommended Fix |
-|--------|-----------------|-------------|----------------|------------------|---------------------|------------|------------|-----------------|
-| Documents & Communication | /dashboard/communication?tab=chatter | `ai` | `/dashboard/chatter/ai` | redirect_stub → /dashboard/communication?tab=chatter | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Documents & Communication | /dashboard/communication?tab=chatter | `feed` | `/dashboard/chatter/feed` | redirect_stub → /dashboard/communication?tab=chatter | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Documents & Communication | /dashboard/communication?tab=chatter | `reports` | `/dashboard/chatter/reports` | redirect_stub → /dashboard/communication?tab=chatter | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Documents & Communication | /dashboard/communication?tab=chatter | `search` | `/dashboard/chatter/search` | redirect_stub → /dashboard/communication?tab=chatter | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Documents & Communication | /dashboard/communication?tab=calendar | `availability` | `/dashboard/calendar/availability` | redirect_stub → /dashboard/communication?tab=calendar | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Documents & Communication | /dashboard/communication?tab=calendar | `new-event` | `/dashboard/calendar/new-event` | redirect_stub → /dashboard/communication?tab=calendar | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Documents & Communication | /dashboard/communication?tab=calendar | `resources` | `/dashboard/calendar/resources` | redirect_stub → /dashboard/communication?tab=calendar | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Documents & Communication | /dashboard/communication?tab=calendar | `view` | `/dashboard/calendar/view` | redirect_stub → /dashboard/communication?tab=calendar | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Documents & Communication | /dashboard/communication?tab=notifications | `ai` | `/dashboard/notification-center/ai` | redirect_stub → /dashboard/communication?tab=notifications | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Documents & Communication | /dashboard/communication?tab=notifications | `list` | `/dashboard/notification-center/list` | redirect_stub → /dashboard/communication?tab=notifications | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Documents & Communication | /dashboard/communication?tab=notifications | `preferences` | `/dashboard/notification-center/preferences` | redirect_stub → /dashboard/communication?tab=notifications | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Documents & Communication | /dashboard/communication?tab=notifications | `reports` | `/dashboard/notification-center/reports` | redirect_stub → /dashboard/communication?tab=notifications | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Documents & Communication | /dashboard/communication?tab=notifications | `schedules` | `/dashboard/notification-center/schedules` | redirect_stub → /dashboard/communication?tab=notifications | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Documents & Communication | /dashboard/communication?tab=notifications | `templates` | `/dashboard/notification-center/templates` | redirect_stub → /dashboard/communication?tab=notifications | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Documents & Communication | /dashboard/documents?tab=compliance | `new` | `/dashboard/documents/new` | redirect_stub → /dashboard/documents?drawer=create | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Documents & Communication | /dashboard/documents?tab=knowledge-base | `new` | `/dashboard/knowledge-base/articles/new` | redirect_stub → /dashboard/documents?tab=knowledge-base&drawer=create | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Documents & Communication | /dashboard/documents?tab=knowledge-base | `articles` | `/dashboard/knowledge-base/articles` | redirect_stub → /dashboard/documents?tab=knowledge-base | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-
-
-### Intelligence / Analytics
-
-**Broken count:** 14
-
-| Module | Visible Location | Button/Card | Current Target | Current Behavior | Original Page Found? | Best Match | Confidence | Recommended Fix |
-|--------|-----------------|-------------|----------------|------------------|---------------------|------------|------------|-----------------|
-| Intelligence / Analytics | /dashboard/analytics?tab=reports | `finance` | `/dashboard/reports/finance` | redirect_stub → /dashboard/analytics?tab=reports | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Intelligence / Analytics | /dashboard/analytics?tab=reports | `inventory` | `/dashboard/reports/inventory` | redirect_stub → /dashboard/analytics?tab=reports | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Intelligence / Analytics | /dashboard/analytics?tab=reports | `marketing` | `/dashboard/reports/marketing` | redirect_stub → /dashboard/analytics?tab=reports | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Intelligence / Analytics | /dashboard/analytics?tab=reports | `payments` | `/dashboard/reports/payments` | redirect_stub → /dashboard/analytics?tab=reports | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Intelligence / Analytics | /dashboard/analytics?tab=reports | `procurement` | `/dashboard/reports/procurement` | redirect_stub → /dashboard/analytics?tab=reports | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Intelligence / Analytics | /dashboard/analytics?tab=reports | `production` | `/dashboard/reports/production` | redirect_stub → /dashboard/analytics?tab=reports | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Intelligence / Analytics | /dashboard/analytics?tab=reports | `sales` | `/dashboard/reports/sales` | redirect_stub → /dashboard/analytics?tab=reports | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Intelligence / Analytics | /dashboard/analytics?tab=report-builder | `ai` | `/dashboard/report-builder/ai` | redirect_stub → /dashboard/analytics?tab=report-builder | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Intelligence / Analytics | /dashboard/analytics?tab=report-builder | `builder` | `/dashboard/report-builder/builder` | redirect_stub → /dashboard/analytics?tab=report-builder | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Intelligence / Analytics | /dashboard/analytics?tab=report-builder | `catalog` | `/dashboard/report-builder/catalog` | redirect_stub → /dashboard/analytics?tab=report-builder | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Intelligence / Analytics | /dashboard/analytics?tab=report-builder | `dashboards` | `/dashboard/report-builder/dashboards` | redirect_stub → /dashboard/analytics?tab=report-builder | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Intelligence / Analytics | /dashboard/analytics?tab=report-builder | `saved` | `/dashboard/report-builder/saved` | redirect_stub → /dashboard/analytics?tab=report-builder | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Intelligence / Analytics | /dashboard/analytics?tab=report-builder | `schedules` | `/dashboard/report-builder/schedules` | redirect_stub → /dashboard/analytics?tab=report-builder | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Intelligence / Analytics | /dashboard/analytics?tab=report-builder | `viewer` | `/dashboard/report-builder/viewer` | redirect_stub → /dashboard/analytics?tab=report-builder | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-
-
-### Administration
-
-**Broken count:** 8
-
-| Module | Visible Location | Button/Card | Current Target | Current Behavior | Original Page Found? | Best Match | Confidence | Recommended Fix |
-|--------|-----------------|-------------|----------------|------------------|---------------------|------------|------------|-----------------|
-| Administration | /dashboard/admin?tab=custom-fields | `ai` | `/dashboard/custom-fields/ai` | redirect_stub → /dashboard/admin?tab=custom-fields | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Administration | /dashboard/admin?tab=custom-fields | `fields` | `/dashboard/custom-fields/fields` | redirect_stub → /dashboard/admin?tab=custom-fields | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Administration | /dashboard/admin?tab=custom-fields | `form-builder` | `/dashboard/custom-fields/form-builder` | redirect_stub → /dashboard/admin?tab=custom-fields | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Administration | /dashboard/admin?tab=custom-fields | `new-field` | `/dashboard/custom-fields/new-field` | redirect_stub → /dashboard/admin?tab=custom-fields&drawer=create | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Administration | /dashboard/admin?tab=custom-fields | `values` | `/dashboard/custom-fields/values` | redirect_stub → /dashboard/admin?tab=custom-fields | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Administration | /dashboard/admin?tab=custom-fields | `workflow-rules` | `/dashboard/custom-fields/workflow-rules` | redirect_stub → /dashboard/admin?tab=custom-fields | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Administration | /dashboard/admin?tab=mobile | `approvals` | `/dashboard/mobile/approvals` | redirect_stub → /dashboard/admin?tab=mobile | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Administration | /dashboard/admin?tab=mobile | `devices` | `/dashboard/mobile/devices` | redirect_stub → /dashboard/admin?tab=mobile | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Module | Visible Location | Tab | Source File | Button/Card | Current Target | Current Behavior | Original Page? | Best Match | Confidence | Recommended Fix |
+|--------|-----------------|-----|-------------|-------------|----------------|-----------------|----------------|------------|------------|-----------------|
+| Logistics | /dashboard/logistics | FleetPage | fleet/page.tsx | Vehicles | `/dashboard/fleet/vehicles` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Logistics | /dashboard/logistics | FleetPage | fleet/page.tsx | Vehicles | `/dashboard/fleet/drivers` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Logistics | /dashboard/logistics | FleetPage | fleet/page.tsx | Vehicles | `/dashboard/fleet/trips` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Logistics | /dashboard/logistics | FleetPage | fleet/page.tsx | Drivers | `/dashboard/fleet/fuel` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Logistics | /dashboard/logistics | FleetPage | fleet/page.tsx | Trips | `/dashboard/fleet/maintenance` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Logistics | /dashboard/logistics | FleetPage | fleet/page.tsx | Fuel Log | `/dashboard/fleet/incidents` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Logistics | /dashboard/logistics | FleetPage | fleet/page.tsx | Maintenance | `/dashboard/fleet/reports` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
 
 
 ### Commercial / Marketing
 
-**Broken count:** 19
+**Broken count:** 30
 
-| Module | Visible Location | Button/Card | Current Target | Current Behavior | Original Page Found? | Best Match | Confidence | Recommended Fix |
-|--------|-----------------|-------------|----------------|------------------|---------------------|------------|------------|-----------------|
-| Commercial / Marketing | /dashboard/marketing?tab=campaigns | `new` | `/dashboard/marketing/campaigns/new` | redirect_stub → /dashboard/marketing?tab=campaigns&drawer=create | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Commercial / Marketing | /dashboard/marketing?tab=promotions | `new` | `/dashboard/marketing/promotions/new` | redirect_stub → /dashboard/marketing?tab=promotions&drawer=create | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Commercial / Marketing | /dashboard/marketing?tab=trade-spend | `new` | `/dashboard/marketing/trade-spend/new` | redirect_stub → /dashboard/marketing?tab=trade-spend&drawer=create | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Commercial / Marketing | /dashboard/marketing?tab=ads | `new` | `/dashboard/marketing/ads/new` | redirect_stub → /dashboard/marketing?tab=ads&drawer=create | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Commercial / Marketing | /dashboard/marketing?tab=social-media | `new` | `/dashboard/marketing/social-media/new` | redirect_stub → /dashboard/marketing?tab=social-media&drawer=create | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Commercial / Marketing | /dashboard/marketing?tab=segments | `new` | `/dashboard/marketing/segments/new` | redirect_stub → /dashboard/marketing?tab=segments&drawer=create | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Commercial / Marketing | /dashboard/marketing?tab=influencers | `new` | `/dashboard/marketing/influencers/new` | redirect_stub → /dashboard/marketing?tab=influencers&drawer=create | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Commercial / Marketing | /dashboard/marketing?tab=visits | `new` | `/dashboard/marketing/visits/new` | redirect_stub → /dashboard/marketing?tab=visits&drawer=create | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Commercial / Marketing | /dashboard/marketing?tab=brand-spend | `new` | `/dashboard/marketing/brand-spend/new` | redirect_stub → /dashboard/marketing?tab=brand-spend&drawer=create | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Commercial / Marketing | /dashboard/marketing?tab=tpm | `ai` | `/dashboard/tpm/ai` | redirect_stub → /dashboard/marketing?tab=tpm | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Commercial / Marketing | /dashboard/marketing?tab=tpm | `budget` | `/dashboard/tpm/budget` | redirect_stub → /dashboard/marketing?tab=tpm | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Commercial / Marketing | /dashboard/marketing?tab=tpm | `calendar` | `/dashboard/tpm/calendar` | redirect_stub → /dashboard/marketing?tab=tpm | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Commercial / Marketing | /dashboard/marketing?tab=tpm | `claims` | `/dashboard/tpm/claims` | redirect_stub → /dashboard/marketing?tab=tpm | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Commercial / Marketing | /dashboard/marketing?tab=tpm | `new` | `/dashboard/tpm/plans/new` | redirect_stub → /dashboard/marketing?tab=tpm&drawer=create | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Commercial / Marketing | /dashboard/marketing?tab=tpm | `plans` | `/dashboard/tpm/plans` | redirect_stub → /dashboard/marketing?tab=tpm | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Commercial / Marketing | /dashboard/marketing?tab=tpm | `new` | `/dashboard/tpm/promotions/new` | redirect_stub → /dashboard/marketing?tab=tpm&drawer=create | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Commercial / Marketing | /dashboard/marketing?tab=tpm | `promotions` | `/dashboard/tpm/promotions` | redirect_stub → /dashboard/marketing?tab=tpm | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Commercial / Marketing | /dashboard/marketing?tab=tpm | `roi` | `/dashboard/tpm/roi` | redirect_stub → /dashboard/marketing?tab=tpm | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Commercial / Marketing | /dashboard/marketing?tab=tpm | `settlement` | `/dashboard/tpm/settlement` | redirect_stub → /dashboard/marketing?tab=tpm | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Module | Visible Location | Tab | Source File | Button/Card | Current Target | Current Behavior | Original Page? | Best Match | Confidence | Recommended Fix |
+|--------|-----------------|-----|-------------|-------------|----------------|-----------------|----------------|------------|------------|-----------------|
+| Commercial / Marketing | /dashboard/marketing | MarketingCampaignsPage | marketing/campaigns/page.tsx | new | `/dashboard/marketing/campaigns/new` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Commercial / Marketing | /dashboard/marketing | MarketingCampaignsPage | marketing/campaigns/page.tsx | ${c.id | `/dashboard/marketing/campaigns/${c.id` | middleware_redirect | No | not found | low | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Commercial / Marketing | /dashboard/marketing | MarketingPromotionsPage | marketing/promotions/page.tsx | new | `/dashboard/marketing/promotions/new` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Commercial / Marketing | /dashboard/marketing | MarketingPromotionsPage | marketing/promotions/page.tsx | ${p.id | `/dashboard/marketing/promotions/${p.id` | middleware_redirect | No | not found | low | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Commercial / Marketing | /dashboard/marketing | MarketingTradeSpendPage | marketing/trade-spend/page.tsx | new | `/dashboard/marketing/trade-spend/new` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Commercial / Marketing | /dashboard/marketing | MarketingTradeSpendPage | marketing/trade-spend/page.tsx | ${t.id | `/dashboard/marketing/trade-spend/${t.id` | middleware_redirect | No | not found | low | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Commercial / Marketing | /dashboard/marketing | MarketingAdsPage | marketing/ads/page.tsx | new | `/dashboard/marketing/ads/new` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Commercial / Marketing | /dashboard/marketing | MarketingAdsPage | marketing/ads/page.tsx | ${a.id | `/dashboard/marketing/ads/${a.id` | middleware_redirect | No | not found | low | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Commercial / Marketing | /dashboard/marketing | MarketingSocialPage | marketing/social-media/page.tsx | new | `/dashboard/marketing/social-media/new` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Commercial / Marketing | /dashboard/marketing | MarketingSocialPage | marketing/social-media/page.tsx | ${a.id | `/dashboard/marketing/social-media/${a.id` | middleware_redirect | No | not found | low | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Commercial / Marketing | /dashboard/marketing | MarketingSegmentsPage | marketing/segments/page.tsx | new | `/dashboard/marketing/segments/new` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Commercial / Marketing | /dashboard/marketing | MarketingSegmentsPage | marketing/segments/page.tsx | ${s.id | `/dashboard/marketing/segments/${s.id` | middleware_redirect | No | not found | low | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Commercial / Marketing | /dashboard/marketing | MarketingInfluencersPage | marketing/influencers/page.tsx | new | `/dashboard/marketing/influencers/new` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Commercial / Marketing | /dashboard/marketing | MarketingInfluencersPage | marketing/influencers/page.tsx | ${i.id | `/dashboard/marketing/influencers/${i.id` | middleware_redirect | No | not found | low | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Commercial / Marketing | /dashboard/marketing | MarketingEcommercePage | marketing/ecommerce/page.tsx | stores | `/dashboard/marketing/ecommerce/stores` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Commercial / Marketing | /dashboard/marketing | MarketingVisitsPage | marketing/visits/page.tsx | new | `/dashboard/marketing/visits/new` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Commercial / Marketing | /dashboard/marketing | MarketingVisitsPage | marketing/visits/page.tsx | ${v.id | `/dashboard/marketing/visits/${v.id` | middleware_redirect | No | not found | low | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Commercial / Marketing | /dashboard/marketing | MarketingBrandSpendPage | marketing/brand-spend/page.tsx | new | `/dashboard/marketing/brand-spend/new` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Commercial / Marketing | /dashboard/marketing | MarketingBrandSpendPage | marketing/brand-spend/page.tsx | ${b.id | `/dashboard/marketing/brand-spend/${b.id` | middleware_redirect | No | not found | low | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Commercial / Marketing | /dashboard/marketing | TPMPage | tpm/page.tsx | new | `/dashboard/tpm/plans/new` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Commercial / Marketing | /dashboard/marketing | TPMPage | tpm/page.tsx | new | `/dashboard/tpm/promotions/new` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Commercial / Marketing | /dashboard/marketing | TPMPage | tpm/page.tsx | Recent Promotions | `/dashboard/tpm/promotions` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Commercial / Marketing | /dashboard/marketing | TPMPage | tpm/page.tsx | ${p.id | `/dashboard/tpm/promotions/${p.id` | middleware_redirect | No | not found | low | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Commercial / Marketing | /dashboard/marketing | TPMPage | tpm/page.tsx | Promotion Calendar | `/dashboard/tpm/calendar` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Commercial / Marketing | /dashboard/marketing | TPMPage | tpm/page.tsx | Promotion Calendar | `/dashboard/tpm/budget` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Commercial / Marketing | /dashboard/marketing | TPMPage | tpm/page.tsx | Promotion Calendar | `/dashboard/tpm/claims` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Commercial / Marketing | /dashboard/marketing | TPMPage | tpm/page.tsx | Budget Monitor | `/dashboard/tpm/roi` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Commercial / Marketing | /dashboard/marketing | TPMPage | tpm/page.tsx | Claims Queue | `/dashboard/tpm/settlement` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Commercial / Marketing | /dashboard/marketing | TPMPage | tpm/page.tsx | ROI Analysis | `/dashboard/tpm/plans` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Commercial / Marketing | /dashboard/marketing | TPMPage | tpm/page.tsx | Plans Master | `/dashboard/tpm/ai` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
 
 
-### Commercial / CRM
-
-**Broken count:** 1
-
-| Module | Visible Location | Button/Card | Current Target | Current Behavior | Original Page Found? | Best Match | Confidence | Recommended Fix |
-|--------|-----------------|-------------|----------------|------------------|---------------------|------------|------------|-----------------|
-| Commercial / CRM | /dashboard/crm?tab=surveys | `new` | `/dashboard/surveys/new` | redirect_stub → /dashboard/crm?tab=surveys&drawer=create | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-
-
-### Administration / Integrations
+### Manufacturing / Planning
 
 **Broken count:** 8
 
-| Module | Visible Location | Button/Card | Current Target | Current Behavior | Original Page Found? | Best Match | Confidence | Recommended Fix |
-|--------|-----------------|-------------|----------------|------------------|---------------------|------------|------------|-----------------|
-| Administration / Integrations | /dashboard/integrations?tab=webhooks | `dead-letter` | `/dashboard/webhooks/dead-letter` | redirect_stub → /dashboard/integrations?tab=webhooks | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Administration / Integrations | /dashboard/integrations?tab=webhooks | `definitions` | `/dashboard/webhooks/definitions` | redirect_stub → /dashboard/integrations?tab=webhooks | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Administration / Integrations | /dashboard/integrations?tab=webhooks | `deliveries` | `/dashboard/webhooks/deliveries` | redirect_stub → /dashboard/integrations?tab=webhooks | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Administration / Integrations | /dashboard/integrations?tab=webhooks | `inbound` | `/dashboard/webhooks/inbound` | redirect_stub → /dashboard/integrations?tab=webhooks | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Administration / Integrations | /dashboard/integrations?tab=webhooks | `reports` | `/dashboard/webhooks/reports` | redirect_stub → /dashboard/integrations?tab=webhooks | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Administration / Integrations | /dashboard/integrations?tab=webhooks | `subscriptions` | `/dashboard/webhooks/subscriptions` | redirect_stub → /dashboard/integrations?tab=webhooks | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Administration / Integrations | /dashboard/integrations?tab=developer | `graphql` | `/dashboard/developer/graphql` | redirect_stub → /dashboard/integrations?tab=developer | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Administration / Integrations | /dashboard/integrations?tab=developer | `keys` | `/dashboard/developer/keys` | redirect_stub → /dashboard/integrations?tab=developer | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Module | Visible Location | Tab | Source File | Button/Card | Current Target | Current Behavior | Original Page? | Best Match | Confidence | Recommended Fix |
+|--------|-----------------|-----|-------------|-------------|----------------|-----------------|----------------|------------|------------|-----------------|
+| Manufacturing / Planning | /dashboard/planning | MRPPage | mrp/page.tsx | forecast | `/dashboard/mrp/forecast` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Manufacturing / Planning | /dashboard/planning | MRPPage | mrp/page.tsx | suggestions | `/dashboard/mrp/suggestions` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Manufacturing / Planning | /dashboard/planning | MRPPage | mrp/page.tsx | run | `/dashboard/mrp/run` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Manufacturing / Planning | /dashboard/planning | KanbanPage | kanban/page.tsx | All Boards | `/dashboard/kanban/boards` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Manufacturing / Planning | /dashboard/planning | KanbanPage | kanban/page.tsx | All Boards | `/dashboard/kanban/view` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Manufacturing / Planning | /dashboard/planning | KanbanPage | kanban/page.tsx | All Boards | `/dashboard/kanban/cards` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Manufacturing / Planning | /dashboard/planning | KanbanPage | kanban/page.tsx | Board View | `/dashboard/kanban/reports` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Manufacturing / Planning | /dashboard/planning | KanbanPage | kanban/page.tsx | All Cards | `/dashboard/kanban/ai` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+
+
+### Supply Chain / Procurement
+
+**Broken count:** 17
+
+| Module | Visible Location | Tab | Source File | Button/Card | Current Target | Current Behavior | Original Page? | Best Match | Confidence | Recommended Fix |
+|--------|-----------------|-----|-------------|-------------|----------------|-----------------|----------------|------------|------------|-----------------|
+| Supply Chain / Procurement | /dashboard/procurement | ProcurementOrdersPage | procurement/orders/page.tsx | PO No | `/dashboard/procurement/orders/${p.id}` | no_route_file | No | not found | low | CREATE_NEW_REAL_PAGE_REQUIRED |
+| Supply Chain / Procurement | /dashboard/procurement | ProcurementDeliveriesPage | procurement/deliveries/page.tsx | ${a.po_id} | `/dashboard/procurement/orders/${a.po_id}` | no_route_file | No | not found | low | CREATE_NEW_REAL_PAGE_REQUIRED |
+| Supply Chain / Procurement | /dashboard/procurement | ProcurementDeliveriesPage | procurement/deliveries/page.tsx | PO No | `/dashboard/procurement/orders/${r.po_id}` | no_route_file | No | not found | low | CREATE_NEW_REAL_PAGE_REQUIRED |
+| Supply Chain / Procurement | /dashboard/procurement | SuggestionsPage | procurement-suggestion/page.tsx | suggestions | `/dashboard/procurement-suggestion/suggestions` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Supply Chain / Procurement | /dashboard/procurement | SuggestionsPage | procurement-suggestion/page.tsx | Suggestion List | `/dashboard/procurement-suggestion/groups` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Supply Chain / Procurement | /dashboard/procurement | SuggestionsPage | procurement-suggestion/page.tsx | Suggestion List | `/dashboard/procurement-suggestion/supplier-prices` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Supply Chain / Procurement | /dashboard/procurement | SuggestionsPage | procurement-suggestion/page.tsx | Grouped Orders | `/dashboard/procurement-suggestion/ai` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Supply Chain / Procurement | /dashboard/procurement | SubcontractingPage | subcontracting/page.tsx | locations | `/dashboard/subcontracting/locations` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Supply Chain / Procurement | /dashboard/procurement | SubcontractingPage | subcontracting/page.tsx | Run AI Agents | `/dashboard/subcontracting/orders` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Supply Chain / Procurement | /dashboard/procurement | SubcontractingPage | subcontracting/page.tsx | Orders | `/dashboard/subcontracting/stock` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Supply Chain / Procurement | /dashboard/procurement | SubcontractingPage | subcontracting/page.tsx | Orders | `/dashboard/subcontracting/yield` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Supply Chain / Procurement | /dashboard/procurement | SubcontractingPage | subcontracting/page.tsx | Subcontractor Stock | `/dashboard/subcontracting/ai` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Supply Chain / Procurement | /dashboard/procurement | LandedCostPage | landed-cost/page.tsx | Landed Cost Allocation | `/dashboard/landed-cost/new` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Supply Chain / Procurement | /dashboard/procurement | LandedCostPage | landed-cost/page.tsx | ai | `/dashboard/landed-cost/ai` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Supply Chain / Procurement | /dashboard/procurement | LandedCostPage | landed-cost/page.tsx | Recent Documents | `/dashboard/landed-cost/documents` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Supply Chain / Procurement | /dashboard/procurement | LandedCostPage | landed-cost/page.tsx | ${doc.id | `/dashboard/landed-cost/${doc.id` | middleware_redirect | No | not found | low | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Supply Chain / Procurement | /dashboard/procurement | SupplierPortalPage | supplier-portal/page.tsx | View | `/dashboard/supplier-portal/accounts/${a.id` | middleware_redirect | No | not found | low | CONVERT_TO_WORKSPACE_SUBVIEW |
+
+
+### Manufacturing / Production
+
+**Broken count:** 22
+
+| Module | Visible Location | Tab | Source File | Button/Card | Current Target | Current Behavior | Original Page? | Best Match | Confidence | Recommended Fix |
+|--------|-----------------|-----|-------------|-------------|----------------|-----------------|----------------|------------|------------|-----------------|
+| Manufacturing / Production | /dashboard/production | ProductionOrdersPage | production/orders/page.tsx | ${o.id} | `/dashboard/production/orders/${o.id}` | middleware_redirect | No | not found | low | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Manufacturing / Production | /dashboard/production | ExecutionPage | production-execution/page.tsx | work-orders | `/dashboard/production-execution/work-orders` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Manufacturing / Production | /dashboard/production | ExecutionPage | production-execution/page.tsx | ${o.id | `/dashboard/production-execution/${o.id` | middleware_redirect | No | not found | low | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Manufacturing / Production | /dashboard/production | MachineOpsPage | machine-ops/page.tsx | Machine Master | `/dashboard/machine-ops/machines` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Manufacturing / Production | /dashboard/production | MachineOpsPage | machine-ops/page.tsx | Machine Master | `/dashboard/machine-ops/operators` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Manufacturing / Production | /dashboard/production | MachineOpsPage | machine-ops/page.tsx | Machine Master | `/dashboard/machine-ops/teams` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Manufacturing / Production | /dashboard/production | MachineOpsPage | machine-ops/page.tsx | Operators | `/dashboard/machine-ops/runtime` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Manufacturing / Production | /dashboard/production | MachineOpsPage | machine-ops/page.tsx | Teams | `/dashboard/machine-ops/performance` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Manufacturing / Production | /dashboard/production | MachineOpsPage | machine-ops/page.tsx | Runtime Logs | `/dashboard/machine-ops/downtime` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Manufacturing / Production | /dashboard/production | MachineOpsPage | machine-ops/page.tsx | Performance | `/dashboard/machine-ops/costing` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Manufacturing / Production | /dashboard/production | MachineOpsPage | machine-ops/page.tsx | Downtime Board | `/dashboard/machine-ops/certs` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Manufacturing / Production | /dashboard/production | MachineOpsPage | machine-ops/page.tsx | Cost Contribution | `/dashboard/machine-ops/assignment` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Manufacturing / Production | /dashboard/production | MaterialFlowPage | material-flow/page.tsx | Issue to Production | `/dashboard/material-flow/issue` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Manufacturing / Production | /dashboard/production | MaterialFlowPage | material-flow/page.tsx | Issue to Production | `/dashboard/material-flow/wip-transfer` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Manufacturing / Production | /dashboard/production | MaterialFlowPage | material-flow/page.tsx | Issue to Production | `/dashboard/material-flow/bulk-transfer` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Manufacturing / Production | /dashboard/production | MaterialFlowPage | material-flow/page.tsx | Stage Transfer | `/dashboard/material-flow/fg-receipt` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Manufacturing / Production | /dashboard/production | MaterialFlowPage | material-flow/page.tsx | Bulk Transfer | `/dashboard/material-flow/reservations` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Manufacturing / Production | /dashboard/production | MaterialFlowPage | material-flow/page.tsx | FG Receipt | `/dashboard/material-flow/tanks` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Manufacturing / Production | /dashboard/production | MaterialFlowPage | material-flow/page.tsx | Reservations | `/dashboard/material-flow/returns` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Manufacturing / Production | /dashboard/production | MaterialFlowPage | material-flow/page.tsx | Tank Occupancy | `/dashboard/material-flow/reconciliation` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Manufacturing / Production | /dashboard/production | MaterialFlowPage | material-flow/page.tsx | Recent Flows | `/dashboard/material-flow/history` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Manufacturing / Production | /dashboard/production | ProjectsPage | projects/page.tsx | ${p.id} | `/dashboard/projects/${p.id}` | middleware_redirect | No | not found | low | CONVERT_TO_WORKSPACE_SUBVIEW |
+
+
+### Factory Operations / Quality
+
+**Broken count:** 15
+
+| Module | Visible Location | Tab | Source File | Button/Card | Current Target | Current Behavior | Original Page? | Best Match | Confidence | Recommended Fix |
+|--------|-----------------|-----|-------------|-------------|----------------|-----------------|----------------|------------|------------|-----------------|
+| Factory Operations / Quality | /dashboard/quality | QualityReportsPage | quality/reports/page.tsx | Inspection No | `/dashboard/quality/${i.id}` | no_route_file | No | not found | low | CREATE_NEW_REAL_PAGE_REQUIRED |
+| Factory Operations / Quality | /dashboard/quality | QMSPage | qms/page.tsx | QC Inspections | `/dashboard/qms/inspections` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Factory Operations / Quality | /dashboard/quality | QMSPage | qms/page.tsx | QC Inspections | `/dashboard/qms/templates` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Factory Operations / Quality | /dashboard/quality | QMSPage | qms/page.tsx | QC Inspections | `/dashboard/qms/haccp` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Factory Operations / Quality | /dashboard/quality | QMSPage | qms/page.tsx | QC Templates | `/dashboard/qms/ccp` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Factory Operations / Quality | /dashboard/quality | QMSPage | qms/page.tsx | HACCP Analysis | `/dashboard/qms/deviations` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Factory Operations / Quality | /dashboard/quality | QMSPage | qms/page.tsx | CCP Monitoring | `/dashboard/qms/corrective-actions` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Factory Operations / Quality | /dashboard/quality | QMSPage | qms/page.tsx | Deviations | `/dashboard/qms/quarantine` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Factory Operations / Quality | /dashboard/quality | QMSPage | qms/page.tsx | Corrective Actions | `/dashboard/qms/allergen` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Factory Operations / Quality | /dashboard/quality | QMSPage | qms/page.tsx | Quarantine / Hold | `/dashboard/qms/reports` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Factory Operations / Quality | /dashboard/quality | QMSPage | qms/page.tsx | Allergen Validation | `/dashboard/qms/ai` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Factory Operations / Quality | /dashboard/quality | AllergenPage | allergen/page.tsx | Missing allergen profiles | `/dashboard/allergen/material-profiles` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Factory Operations / Quality | /dashboard/quality | AllergenPage | allergen/page.tsx | Missing allergen profiles | `/dashboard/allergen/product-allergens` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Factory Operations / Quality | /dashboard/quality | AllergenPage | allergen/page.tsx | Missing allergen profiles | `/dashboard/allergen/change-logs` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Factory Operations / Quality | /dashboard/quality | BrandAssetsPage | brand-assets/page.tsx | ${a.id | `/dashboard/brand-assets/${a.id` | middleware_redirect | No | not found | low | CONVERT_TO_WORKSPACE_SUBVIEW |
+
+
+### Commercial / Sales
+
+**Broken count:** 39
+
+| Module | Visible Location | Tab | Source File | Button/Card | Current Target | Current Behavior | Original Page? | Best Match | Confidence | Recommended Fix |
+|--------|-----------------|-----|-------------|-------------|----------------|-----------------|----------------|------------|------------|-----------------|
+| Commercial / Sales | /dashboard/sales | SalesOrdersPage | sales/orders/page.tsx | Order No | `/dashboard/sales/orders/${r.id}` | no_route_file | No | not found | low | CREATE_NEW_REAL_PAGE_REQUIRED |
+| Commercial / Sales | /dashboard/sales | SalesInvoicesPage | sales/invoices/page.tsx | Invoice No | `/dashboard/sales/invoices/${r.id}` | no_route_file | No | not found | low | CREATE_NEW_REAL_PAGE_REQUIRED |
+| Commercial / Sales | /dashboard/sales | SalesShipmentsPage | sales/shipments/page.tsx | Shipment No | `/dashboard/sales/shipments/${r.id}` | no_route_file | No | not found | low | CREATE_NEW_REAL_PAGE_REQUIRED |
+| Commercial / Sales | /dashboard/sales | PriceListsPage | price-lists/page.tsx | approval-queue | `/dashboard/price-lists/approval-queue` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Commercial / Sales | /dashboard/sales | PriceListsPage | price-lists/page.tsx | ${h.id | `/dashboard/price-lists/${h.id` | middleware_redirect | No | not found | low | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Commercial / Sales | /dashboard/sales | ContractsPage | contracts/page.tsx | Run AI | `/dashboard/contracts/new` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Commercial / Sales | /dashboard/sales | ContractsPage | contracts/page.tsx | Recent Contracts | `/dashboard/contracts/list` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Commercial / Sales | /dashboard/sales | ContractsPage | contracts/page.tsx | ${c.id | `/dashboard/contracts/list/${c.id` | middleware_redirect | No | not found | low | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Commercial / Sales | /dashboard/sales | ContractsPage | contracts/page.tsx | View all | `/dashboard/contracts/expiring` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Commercial / Sales | /dashboard/sales | ContractsPage | contracts/page.tsx | AI Alerts | `/dashboard/contracts/ai` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Commercial / Sales | /dashboard/sales | RecurringOrdersPage | recurring-orders/page.tsx | new | `/dashboard/recurring-orders/templates/new` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Commercial / Sales | /dashboard/sales | RecurringOrdersPage | recurring-orders/page.tsx | Recent Templates | `/dashboard/recurring-orders/templates` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Commercial / Sales | /dashboard/sales | RecurringOrdersPage | recurring-orders/page.tsx | ${t.id | `/dashboard/recurring-orders/templates/${t.id` | middleware_redirect | No | not found | low | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Commercial / Sales | /dashboard/sales | RecurringOrdersPage | recurring-orders/page.tsx | Reports | `/dashboard/recurring-orders/reports` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Commercial / Sales | /dashboard/sales | RecurringOrdersPage | recurring-orders/page.tsx | AI Insights | `/dashboard/recurring-orders/ai` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Commercial / Sales | /dashboard/sales | CommissionsPage | commissions/page.tsx | Run AI | `/dashboard/commissions/rules` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Commercial / Sales | /dashboard/sales | CommissionsPage | commissions/page.tsx | Pending Approval | `/dashboard/commissions/transactions` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Commercial / Sales | /dashboard/sales | CommissionsPage | commissions/page.tsx | Draft Payouts | `/dashboard/commissions/payouts` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Commercial / Sales | /dashboard/sales | CommissionsPage | commissions/page.tsx | AI Insights | `/dashboard/commissions/ai` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Commercial / Sales | /dashboard/sales | SecondarySalesPage | secondary-sales/page.tsx | analysis | `/dashboard/secondary-sales/analysis` | middleware_redirect | Yes — real page | commit 27ebada (2026-05-02) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Commercial / Sales | /dashboard/sales | SecondarySalesPage | secondary-sales/page.tsx | inventory | `/dashboard/secondary-sales/inventory` | middleware_redirect | Yes — real page | commit 27ebada (2026-05-02) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Commercial / Sales | /dashboard/sales | SecondarySalesPage | secondary-sales/page.tsx | upload | `/dashboard/secondary-sales/upload` | middleware_redirect | Yes — real page | commit 27ebada (2026-05-02) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Commercial / Sales | /dashboard/sales | SecondarySalesPage | secondary-sales/page.tsx | ${h.id | `/dashboard/secondary-sales/${h.id` | middleware_redirect | No | not found | low | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Commercial / Sales | /dashboard/sales | VanSalesPage | van-sales/page.tsx | Run AI Agents | `/dashboard/van-sales/vans/new` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Commercial / Sales | /dashboard/sales | VanSalesPage | van-sales/page.tsx | Route Execution | `/dashboard/van-sales/route` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Commercial / Sales | /dashboard/sales | VanSalesPage | van-sales/page.tsx | Route Execution | `/dashboard/van-sales/pos` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Commercial / Sales | /dashboard/sales | VanSalesPage | van-sales/page.tsx | Route Execution | `/dashboard/van-sales/stock` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Commercial / Sales | /dashboard/sales | VanSalesPage | van-sales/page.tsx | Mobile POS | `/dashboard/van-sales/reconciliation` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Commercial / Sales | /dashboard/sales | VanSalesPage | van-sales/page.tsx | Vans | `/dashboard/van-sales/vans` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Commercial / Sales | /dashboard/sales | VanSalesPage | van-sales/page.tsx | ${v.id | `/dashboard/van-sales/vans/${v.id` | middleware_redirect | No | not found | low | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Commercial / Sales | /dashboard/sales | VanSalesPage | van-sales/page.tsx | AI Alerts | `/dashboard/van-sales/ai` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Commercial / Sales | /dashboard/sales | PortalPage | portal/page.tsx | All Accounts | `/dashboard/portal/accounts` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Commercial / Sales | /dashboard/sales | PortalPage | portal/page.tsx | All Accounts | `/dashboard/portal/drafts` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Commercial / Sales | /dashboard/sales | PortalPage | portal/page.tsx | All Accounts | `/dashboard/portal/claims` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Commercial / Sales | /dashboard/sales | PortalPage | portal/page.tsx | Draft Orders Queue | `/dashboard/portal/users` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Commercial / Sales | /dashboard/sales | PortalPage | portal/page.tsx | Claims Review | `/dashboard/portal/activity` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Commercial / Sales | /dashboard/sales | PortalPage | portal/page.tsx | Portal Users | `/dashboard/portal/ai` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Commercial / Sales | /dashboard/sales | PortalPage | portal/page.tsx | Activity Log | `/dashboard/portal/reports` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Commercial / Sales | /dashboard/sales | PortalPage | portal/page.tsx | Manage | `/dashboard/portal/accounts/${acc.id` | middleware_redirect | No | not found | low | CONVERT_TO_WORKSPACE_SUBVIEW |
 
 
 ### Factory Operations / Utilities
 
-**Broken count:** 22
+**Broken count:** 25
 
-| Module | Visible Location | Button/Card | Current Target | Current Behavior | Original Page Found? | Best Match | Confidence | Recommended Fix |
-|--------|-----------------|-------------|----------------|------------------|---------------------|------------|------------|-----------------|
-| Factory Operations / Utilities | /dashboard/utility-management?tab=kpi-center | `boiler` | `/dashboard/utility-management/kpi-center/boiler` | redirect_stub → /dashboard/utility-management?tab=kpi-center | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Factory Operations / Utilities | /dashboard/utility-management?tab=kpi-center | `chemicals` | `/dashboard/utility-management/kpi-center/chemicals` | redirect_stub → /dashboard/utility-management?tab=kpi-center | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Factory Operations / Utilities | /dashboard/utility-management?tab=kpi-center | `compressor` | `/dashboard/utility-management/kpi-center/compressor` | redirect_stub → /dashboard/utility-management?tab=kpi-center | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Factory Operations / Utilities | /dashboard/utility-management?tab=kpi-center | `electricity` | `/dashboard/utility-management/kpi-center/electricity` | redirect_stub → /dashboard/utility-management?tab=kpi-center | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Factory Operations / Utilities | /dashboard/utility-management?tab=kpi-center | `machine-utility` | `/dashboard/utility-management/kpi-center/machine-utility` | redirect_stub → /dashboard/utility-management?tab=kpi-center | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Factory Operations / Utilities | /dashboard/utility-management?tab=kpi-center | `soft-water` | `/dashboard/utility-management/kpi-center/soft-water` | redirect_stub → /dashboard/utility-management?tab=kpi-center | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Factory Operations / Utilities | /dashboard/utility-management?tab=kpi-center | `solar` | `/dashboard/utility-management/kpi-center/solar` | redirect_stub → /dashboard/utility-management?tab=kpi-center | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Factory Operations / Utilities | /dashboard/utility-management?tab=kpi-center | `utility-cost` | `/dashboard/utility-management/kpi-center/utility-cost` | redirect_stub → /dashboard/utility-management?tab=kpi-center | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Factory Operations / Utilities | /dashboard/utility-management?tab=kpi-center | `wastewater` | `/dashboard/utility-management/kpi-center/wastewater` | redirect_stub → /dashboard/utility-management?tab=kpi-center | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Factory Operations / Utilities | /dashboard/utility-management?tab=kpi-center | `water` | `/dashboard/utility-management/kpi-center/water` | redirect_stub → /dashboard/utility-management?tab=kpi-center | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Factory Operations / Utilities | /dashboard/utility-management?tab=reports | `anomalies` | `/dashboard/utility-management/reports/anomalies` | redirect_stub → /dashboard/utility-management?tab=reports | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Factory Operations / Utilities | /dashboard/utility-management?tab=reports | `cost-allocation` | `/dashboard/utility-management/reports/cost-allocation` | redirect_stub → /dashboard/utility-management?tab=reports | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Factory Operations / Utilities | /dashboard/utility-management?tab=reports | `daily-consumption` | `/dashboard/utility-management/reports/daily-consumption` | redirect_stub → /dashboard/utility-management?tab=reports | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Factory Operations / Utilities | /dashboard/utility-management?tab=reports | `equipment-efficiency` | `/dashboard/utility-management/reports/equipment-efficiency` | redirect_stub → /dashboard/utility-management?tab=reports | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Factory Operations / Utilities | /dashboard/utility-management?tab=reports | `load-analysis` | `/dashboard/utility-management/reports/load-analysis` | redirect_stub → /dashboard/utility-management?tab=reports | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Factory Operations / Utilities | /dashboard/utility-management?tab=reports | `sustainability` | `/dashboard/utility-management/reports/sustainability` | redirect_stub → /dashboard/utility-management?tab=reports | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Factory Operations / Utilities | /dashboard/utility-management?tab=reports | `treatment` | `/dashboard/utility-management/reports/treatment` | redirect_stub → /dashboard/utility-management?tab=reports | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Factory Operations / Utilities | /dashboard/utility-management?tab=esg | `activities` | `/dashboard/esg/activities` | redirect_stub → /dashboard/utility-management?tab=esg | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Factory Operations / Utilities | /dashboard/utility-management?tab=esg | `factors` | `/dashboard/esg/factors` | redirect_stub → /dashboard/utility-management?tab=esg | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Factory Operations / Utilities | /dashboard/utility-management?tab=esg | `intelligence` | `/dashboard/esg/intelligence` | redirect_stub → /dashboard/utility-management?tab=esg | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Factory Operations / Utilities | /dashboard/utility-management?tab=esg | `reports` | `/dashboard/esg/reports` | redirect_stub → /dashboard/utility-management?tab=esg | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Factory Operations / Utilities | /dashboard/utility-management?tab=esg | `targets` | `/dashboard/esg/targets` | redirect_stub → /dashboard/utility-management?tab=esg | No | Unknown | low | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Module | Visible Location | Tab | Source File | Button/Card | Current Target | Current Behavior | Original Page? | Best Match | Confidence | Recommended Fix |
+|--------|-----------------|-----|-------------|-------------|----------------|-----------------|----------------|------------|------------|-----------------|
+| Factory Operations / Utilities | /dashboard/utility-management | KPICenterPage | utility-management/kpi-center/page.tsx | Electricity | `/dashboard/utility-management/kpi-center/electricity` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Factory Operations / Utilities | /dashboard/utility-management | KPICenterPage | utility-management/kpi-center/page.tsx | Electricity | `/dashboard/utility-management/kpi-center/water` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Factory Operations / Utilities | /dashboard/utility-management | KPICenterPage | utility-management/kpi-center/page.tsx | Electricity | `/dashboard/utility-management/kpi-center/soft-water` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Factory Operations / Utilities | /dashboard/utility-management | KPICenterPage | utility-management/kpi-center/page.tsx | Water | `/dashboard/utility-management/kpi-center/boiler` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Factory Operations / Utilities | /dashboard/utility-management | KPICenterPage | utility-management/kpi-center/page.tsx | Soft Water | `/dashboard/utility-management/kpi-center/compressor` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Factory Operations / Utilities | /dashboard/utility-management | KPICenterPage | utility-management/kpi-center/page.tsx | Boiler / Steam | `/dashboard/utility-management/kpi-center/solar` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Factory Operations / Utilities | /dashboard/utility-management | KPICenterPage | utility-management/kpi-center/page.tsx | Compressed Air | `/dashboard/utility-management/kpi-center/chemicals` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Factory Operations / Utilities | /dashboard/utility-management | KPICenterPage | utility-management/kpi-center/page.tsx | Solar | `/dashboard/utility-management/kpi-center/wastewater` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Factory Operations / Utilities | /dashboard/utility-management | KPICenterPage | utility-management/kpi-center/page.tsx | Chemicals | `/dashboard/utility-management/kpi-center/utility-cost` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Factory Operations / Utilities | /dashboard/utility-management | KPICenterPage | utility-management/kpi-center/page.tsx | Wastewater | `/dashboard/utility-management/kpi-center/machine-utility` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Factory Operations / Utilities | /dashboard/utility-management | AlarmCenterPage | utility-management/alarm-center/page.tsx | kpi-center | `/dashboard/utility-management/kpi-center` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Factory Operations / Utilities | /dashboard/utility-management | AlarmRulesPage | utility-management/alarm-rules/page.tsx | KPI Center | `/dashboard/utility-management/kpi-center` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Factory Operations / Utilities | /dashboard/utility-management | UtilReportsPage | utility-management/reports/page.tsx | Daily Consumption | `/dashboard/utility-management/reports/daily-consumption` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Factory Operations / Utilities | /dashboard/utility-management | UtilReportsPage | utility-management/reports/page.tsx | Boiler & Steam | `/dashboard/utility-management/reports/equipment-efficiency` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Factory Operations / Utilities | /dashboard/utility-management | UtilReportsPage | utility-management/reports/page.tsx | Chemical Treatment | `/dashboard/utility-management/reports/treatment` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Factory Operations / Utilities | /dashboard/utility-management | UtilReportsPage | utility-management/reports/page.tsx | Cost Allocation | `/dashboard/utility-management/reports/cost-allocation` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Factory Operations / Utilities | /dashboard/utility-management | UtilReportsPage | utility-management/reports/page.tsx | Base Load Analysis | `/dashboard/utility-management/reports/load-analysis` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Factory Operations / Utilities | /dashboard/utility-management | UtilReportsPage | utility-management/reports/page.tsx | Alarm Trend Report | `/dashboard/utility-management/reports/anomalies` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Factory Operations / Utilities | /dashboard/utility-management | UtilReportsPage | utility-management/reports/page.tsx | Sustainability Summary | `/dashboard/utility-management/reports/sustainability` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Factory Operations / Utilities | /dashboard/utility-management | UtilIntegrationPage | utility-management/integration/page.tsx | kpi-center | `/dashboard/utility-management/kpi-center` | middleware_redirect | Yes — real page | commit 674b6c5 (2026-05-01) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Factory Operations / Utilities | /dashboard/utility-management | ESGPage | esg/page.tsx | activities | `/dashboard/esg/activities` | middleware_redirect | Yes — real page | commit 27ebada (2026-05-02) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Factory Operations / Utilities | /dashboard/utility-management | ESGPage | esg/page.tsx | factors | `/dashboard/esg/factors` | middleware_redirect | Yes — real page | commit 27ebada (2026-05-02) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Factory Operations / Utilities | /dashboard/utility-management | ESGPage | esg/page.tsx | targets | `/dashboard/esg/targets` | middleware_redirect | Yes — real page | commit 27ebada (2026-05-02) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Factory Operations / Utilities | /dashboard/utility-management | ESGPage | esg/page.tsx | reports | `/dashboard/esg/reports` | middleware_redirect | Yes — real page | commit 27ebada (2026-05-02) | high | RESTORE_OLD_PAGE_FROM_GIT |
+| Factory Operations / Utilities | /dashboard/utility-management | ESGPage | esg/page.tsx | intelligence | `/dashboard/esg/intelligence` | middleware_redirect | Yes — real page | commit 10125e4 (2026-05-10) | high | RESTORE_OLD_PAGE_FROM_GIT |
 
 
 
@@ -526,477 +597,478 @@ These were deleted in `bd6faf5` (2026-05-17) and replaced with redirect stubs.
 
 ## Dynamic Import Visibility Failures
 
-These cases were MISSED by the previous audit because it treated middleware-redirected pages
-as "invisible to users" without checking if they are dynamically imported into workspace tabs.
-
-### /dashboard/cycle-count (5 broken cards)
-
-- **Standalone route:** `/dashboard/cycle-count` → middleware redirects to `/dashboard/inventory?tab=cycle-count`
-- **Also visible as:** Tab content in `/dashboard/inventory?tab=cycle-count`
-- **Previous audit classified:** "safe_archived_standalone" — INCORRECT
-- **Correct classification:** DYNAMICALLY_IMPORTED_VISIBLE with broken cards
-- **Broken cards:** `/dashboard/cycle-count/entries`, `/dashboard/cycle-count/plans`, `/dashboard/cycle-count/reports`, `/dashboard/cycle-count/tasks`, `/dashboard/cycle-count/variances`
-
-### /dashboard/shelf-life (11 broken cards)
-
-- **Standalone route:** `/dashboard/shelf-life` → middleware redirects to `/dashboard/inventory?tab=shelf-life`
-- **Also visible as:** Tab content in `/dashboard/inventory?tab=shelf-life`
-- **Previous audit classified:** "safe_archived_standalone" — INCORRECT
-- **Correct classification:** DYNAMICALLY_IMPORTED_VISIBLE with broken cards
-- **Broken cards:** `/dashboard/shelf-life/bulk-hold-monitor`, `/dashboard/shelf-life/compliance`, `/dashboard/shelf-life/customer-rules`, `/dashboard/shelf-life/disposition`, `/dashboard/shelf-life/expired`, `/dashboard/shelf-life/fefo-config`, `/dashboard/shelf-life/lot-aging`, `/dashboard/shelf-life/near-expiry`, `/dashboard/shelf-life/production-validation`, `/dashboard/shelf-life/retest-queue`, `/dashboard/shelf-life/shipment-validation`
-
-### /dashboard/traceability (7 broken cards)
-
-- **Standalone route:** `/dashboard/traceability` → middleware redirects to `/dashboard/inventory?tab=traceability`
-- **Also visible as:** Tab content in `/dashboard/inventory?tab=traceability`
-- **Previous audit classified:** "safe_archived_standalone" — INCORRECT
-- **Correct classification:** DYNAMICALLY_IMPORTED_VISIBLE with broken cards
-- **Broken cards:** `/dashboard/traceability/backward`, `/dashboard/traceability/forward`, `/dashboard/traceability/genealogy`, `/dashboard/traceability/mock-recall`, `/dashboard/traceability/recalls`, `/dashboard/traceability/regulatory`, `/dashboard/traceability/search`
-
-### /dashboard/mrp (3 broken cards)
-
-- **Standalone route:** `/dashboard/mrp` → middleware redirects to `/dashboard/planning?tab=mrp`
-- **Also visible as:** Tab content in `/dashboard/planning?tab=mrp`
-- **Previous audit classified:** "safe_archived_standalone" — INCORRECT
-- **Correct classification:** DYNAMICALLY_IMPORTED_VISIBLE with broken cards
-- **Broken cards:** `/dashboard/mrp/forecast`, `/dashboard/mrp/run`, `/dashboard/mrp/suggestions`
-
-### /dashboard/kanban (5 broken cards)
-
-- **Standalone route:** `/dashboard/kanban` → middleware redirects to `/dashboard/planning?tab=kanban`
-- **Also visible as:** Tab content in `/dashboard/planning?tab=kanban`
-- **Previous audit classified:** "safe_archived_standalone" — INCORRECT
-- **Correct classification:** DYNAMICALLY_IMPORTED_VISIBLE with broken cards
-- **Broken cards:** `/dashboard/kanban/ai`, `/dashboard/kanban/boards`, `/dashboard/kanban/cards`, `/dashboard/kanban/reports`, `/dashboard/kanban/view`
-
-### /dashboard/production-execution (1 broken cards)
-
-- **Standalone route:** `/dashboard/production-execution` → middleware redirects to `/dashboard/production?tab=execution`
-- **Also visible as:** Tab content in `/dashboard/production?tab=execution`
-- **Previous audit classified:** "safe_archived_standalone" — INCORRECT
-- **Correct classification:** DYNAMICALLY_IMPORTED_VISIBLE with broken cards
-- **Broken cards:** `/dashboard/production-execution/work-orders`
-
-### /dashboard/machine-ops (9 broken cards)
-
-- **Standalone route:** `/dashboard/machine-ops` → middleware redirects to `/dashboard/production?tab=machine-ops`
-- **Also visible as:** Tab content in `/dashboard/production?tab=machine-ops`
-- **Previous audit classified:** "safe_archived_standalone" — INCORRECT
-- **Correct classification:** DYNAMICALLY_IMPORTED_VISIBLE with broken cards
-- **Broken cards:** `/dashboard/machine-ops/assignment`, `/dashboard/machine-ops/certs`, `/dashboard/machine-ops/costing`, `/dashboard/machine-ops/downtime`, `/dashboard/machine-ops/machines`, `/dashboard/machine-ops/operators`, `/dashboard/machine-ops/performance`, `/dashboard/machine-ops/runtime`, `/dashboard/machine-ops/teams`
-
-### /dashboard/material-flow (9 broken cards)
-
-- **Standalone route:** `/dashboard/material-flow` → middleware redirects to `/dashboard/production?tab=material-flow`
-- **Also visible as:** Tab content in `/dashboard/production?tab=material-flow`
-- **Previous audit classified:** "safe_archived_standalone" — INCORRECT
-- **Correct classification:** DYNAMICALLY_IMPORTED_VISIBLE with broken cards
-- **Broken cards:** `/dashboard/material-flow/bulk-transfer`, `/dashboard/material-flow/fg-receipt`, `/dashboard/material-flow/history`, `/dashboard/material-flow/issue`, `/dashboard/material-flow/reconciliation`, `/dashboard/material-flow/reservations`, `/dashboard/material-flow/returns`, `/dashboard/material-flow/tanks`, `/dashboard/material-flow/wip-transfer`
-
-### /dashboard/finance/accounting (6 broken cards)
-
-- **Standalone route:** `/dashboard/finance/accounting` → middleware redirects to `/dashboard/finance?tab=accounting`
-- **Also visible as:** Tab content in `/dashboard/finance?tab=accounting`
-- **Previous audit classified:** "safe_archived_standalone" — INCORRECT
-- **Correct classification:** DYNAMICALLY_IMPORTED_VISIBLE with broken cards
-- **Broken cards:** `/dashboard/finance/accounting/controls`, `/dashboard/finance/accounting/customers-ledger`, `/dashboard/finance/accounting/payments`, `/dashboard/finance/accounting/purchase-invoices`, `/dashboard/finance/accounting/sales-invoices`, `/dashboard/finance/accounting/suppliers-ledger`
-
-### /dashboard/bank-reconciliation (6 broken cards)
-
-- **Standalone route:** `/dashboard/bank-reconciliation` → middleware redirects to `/dashboard/finance?tab=bank-recon`
-- **Also visible as:** Tab content in `/dashboard/finance?tab=bank-recon`
-- **Previous audit classified:** "safe_archived_standalone" — INCORRECT
-- **Correct classification:** DYNAMICALLY_IMPORTED_VISIBLE with broken cards
-- **Broken cards:** `/dashboard/bank-reconciliation/ai`, `/dashboard/bank-reconciliation/balance`, `/dashboard/bank-reconciliation/import`, `/dashboard/bank-reconciliation/open-items`, `/dashboard/bank-reconciliation/rules`, `/dashboard/bank-reconciliation/statements`
-
-### /dashboard/invoice-match (5 broken cards)
-
-- **Standalone route:** `/dashboard/invoice-match` → middleware redirects to `/dashboard/finance?tab=invoice-match`
-- **Also visible as:** Tab content in `/dashboard/finance?tab=invoice-match`
-- **Previous audit classified:** "safe_archived_standalone" — INCORRECT
-- **Correct classification:** DYNAMICALLY_IMPORTED_VISIBLE with broken cards
-- **Broken cards:** `/dashboard/invoice-match/ai`, `/dashboard/invoice-match/blocked`, `/dashboard/invoice-match/duplicates`, `/dashboard/invoice-match/matches`, `/dashboard/invoice-match/review-queue`
-
-### /dashboard/fixed-assets (9 broken cards)
-
-- **Standalone route:** `/dashboard/fixed-assets` → middleware redirects to `/dashboard/finance?tab=fixed-assets`
-- **Also visible as:** Tab content in `/dashboard/finance?tab=fixed-assets`
-- **Previous audit classified:** "safe_archived_standalone" — INCORRECT
-- **Correct classification:** DYNAMICALLY_IMPORTED_VISIBLE with broken cards
-- **Broken cards:** `/dashboard/fixed-assets/ai`, `/dashboard/fixed-assets/assets/new`, `/dashboard/fixed-assets/assets`, `/dashboard/fixed-assets/categories`, `/dashboard/fixed-assets/depreciation`, `/dashboard/fixed-assets/disposal`, `/dashboard/fixed-assets/import`, `/dashboard/fixed-assets/posting`, `/dashboard/fixed-assets/transfer`
-
-### /dashboard/dimensions (10 broken cards)
-
-- **Standalone route:** `/dashboard/dimensions` → middleware redirects to `/dashboard/finance?tab=dimensions`
-- **Also visible as:** Tab content in `/dashboard/finance?tab=dimensions`
-- **Previous audit classified:** "safe_archived_standalone" — INCORRECT
-- **Correct classification:** DYNAMICALLY_IMPORTED_VISIBLE with broken cards
-- **Broken cards:** `/dashboard/dimensions/ai`, `/dashboard/dimensions/allocation-run`, `/dashboard/dimensions/allocations`, `/dashboard/dimensions/completeness`, `/dashboard/dimensions/cost-centers`, `/dashboard/dimensions/defaults`, `/dashboard/dimensions/reclassify`, `/dashboard/dimensions/types`, `/dashboard/dimensions/validation`, `/dashboard/dimensions/values`
-
-### /dashboard/dunning (5 broken cards)
-
-- **Standalone route:** `/dashboard/dunning` → middleware redirects to `/dashboard/finance?tab=dunning`
-- **Also visible as:** Tab content in `/dashboard/finance?tab=dunning`
-- **Previous audit classified:** "safe_archived_standalone" — INCORRECT
-- **Correct classification:** DYNAMICALLY_IMPORTED_VISIBLE with broken cards
-- **Broken cards:** `/dashboard/dunning/aging`, `/dashboard/dunning/cases`, `/dashboard/dunning/credit-holds`, `/dashboard/dunning/policies`, `/dashboard/dunning/workqueue`
-
-### /dashboard/tax (4 broken cards)
-
-- **Standalone route:** `/dashboard/tax` → middleware redirects to `/dashboard/finance?tab=tax`
-- **Also visible as:** Tab content in `/dashboard/finance?tab=tax`
-- **Previous audit classified:** "safe_archived_standalone" — INCORRECT
-- **Correct classification:** DYNAMICALLY_IMPORTED_VISIBLE with broken cards
-- **Broken cards:** `/dashboard/tax/regulatory`, `/dashboard/tax/reports`, `/dashboard/tax/rules`, `/dashboard/tax/transactions`
-
-### /dashboard/expenses (9 broken cards)
-
-- **Standalone route:** `/dashboard/expenses` → middleware redirects to `/dashboard/hr?tab=expenses`
-- **Also visible as:** Tab content in `/dashboard/finance?tab=expenses`, `/dashboard/hr?tab=expenses`
-- **Previous audit classified:** "safe_archived_standalone" — INCORRECT
-- **Correct classification:** DYNAMICALLY_IMPORTED_VISIBLE with broken cards
-- **Broken cards:** `/dashboard/expenses/advances`, `/dashboard/expenses/ai`, `/dashboard/expenses/approval`, `/dashboard/expenses/categories`, `/dashboard/expenses/claims/new`, `/dashboard/expenses/claims`, `/dashboard/expenses/policies`, `/dashboard/expenses/reimbursement`, `/dashboard/expenses/reports`
-
-### /dashboard/recruitment (9 broken cards)
-
-- **Standalone route:** `/dashboard/recruitment` → middleware redirects to `/dashboard/hr?tab=recruitment`
-- **Also visible as:** Tab content in `/dashboard/hr?tab=recruitment`
-- **Previous audit classified:** "safe_archived_standalone" — INCORRECT
-- **Correct classification:** DYNAMICALLY_IMPORTED_VISIBLE with broken cards
-- **Broken cards:** `/dashboard/recruitment/ai`, `/dashboard/recruitment/candidates`, `/dashboard/recruitment/interviews`, `/dashboard/recruitment/offers`, `/dashboard/recruitment/pipeline`, `/dashboard/recruitment/reports`, `/dashboard/recruitment/requisitions/new`, `/dashboard/recruitment/requisitions`, `/dashboard/recruitment/stages`
-
-### /dashboard/ess (8 broken cards)
-
-- **Standalone route:** `/dashboard/ess` → middleware redirects to `/dashboard/hr?tab=ess`
-- **Also visible as:** Tab content in `/dashboard/hr?tab=ess`
-- **Previous audit classified:** "safe_archived_standalone" — INCORRECT
-- **Correct classification:** DYNAMICALLY_IMPORTED_VISIBLE with broken cards
-- **Broken cards:** `/dashboard/ess/admin`, `/dashboard/ess/ai`, `/dashboard/ess/attendance`, `/dashboard/ess/documents`, `/dashboard/ess/leave`, `/dashboard/ess/notifications`, `/dashboard/ess/profile`, `/dashboard/ess/requests`
-
-### /dashboard/appraisals (10 broken cards)
-
-- **Standalone route:** `/dashboard/appraisals` → middleware redirects to `/dashboard/hr?tab=appraisals`
-- **Also visible as:** Tab content in `/dashboard/hr?tab=appraisals`
-- **Previous audit classified:** "safe_archived_standalone" — INCORRECT
-- **Correct classification:** DYNAMICALLY_IMPORTED_VISIBLE with broken cards
-- **Broken cards:** `/dashboard/appraisals/ai`, `/dashboard/appraisals/development-plans`, `/dashboard/appraisals/hr-review`, `/dashboard/appraisals/manager-queue`, `/dashboard/appraisals/periods`, `/dashboard/appraisals/records/new`, `/dashboard/appraisals/records`, `/dashboard/appraisals/reports`, `/dashboard/appraisals/self-review`, `/dashboard/appraisals/templates`
-
-### /dashboard/training (8 broken cards)
-
-- **Standalone route:** `/dashboard/training` → middleware redirects to `/dashboard/hr?tab=training`
-- **Also visible as:** Tab content in `/dashboard/hr?tab=training`
-- **Previous audit classified:** "safe_archived_standalone" — INCORRECT
-- **Correct classification:** DYNAMICALLY_IMPORTED_VISIBLE with broken cards
-- **Broken cards:** `/dashboard/training/ai`, `/dashboard/training/assignments`, `/dashboard/training/certifications`, `/dashboard/training/feedback`, `/dashboard/training/programs`, `/dashboard/training/reports`, `/dashboard/training/sessions`, `/dashboard/training/skill-matrix`
-
-### /dashboard/timesheets (6 broken cards)
-
-- **Standalone route:** `/dashboard/timesheets` → middleware redirects to `/dashboard/hr?tab=timesheets`
-- **Also visible as:** Tab content in `/dashboard/hr?tab=timesheets`
-- **Previous audit classified:** "safe_archived_standalone" — INCORRECT
-- **Correct classification:** DYNAMICALLY_IMPORTED_VISIBLE with broken cards
-- **Broken cards:** `/dashboard/timesheets/ai`, `/dashboard/timesheets/approval-queue`, `/dashboard/timesheets/my-timesheets`, `/dashboard/timesheets/reports`, `/dashboard/timesheets/time-entry`, `/dashboard/timesheets/weekly-view`
-
-### /dashboard/price-lists (1 broken cards)
-
-- **Standalone route:** `/dashboard/price-lists` → middleware redirects to `/dashboard/sales?tab=price-lists`
-- **Also visible as:** Tab content in `/dashboard/sales?tab=price-lists`
-- **Previous audit classified:** "safe_archived_standalone" — INCORRECT
-- **Correct classification:** DYNAMICALLY_IMPORTED_VISIBLE with broken cards
-- **Broken cards:** `/dashboard/price-lists/approval-queue`
-
-### /dashboard/contracts (4 broken cards)
-
-- **Standalone route:** `/dashboard/contracts` → middleware redirects to `/dashboard/sales?tab=contracts`
-- **Also visible as:** Tab content in `/dashboard/sales?tab=contracts`
-- **Previous audit classified:** "safe_archived_standalone" — INCORRECT
-- **Correct classification:** DYNAMICALLY_IMPORTED_VISIBLE with broken cards
-- **Broken cards:** `/dashboard/contracts/ai`, `/dashboard/contracts/expiring`, `/dashboard/contracts/list`, `/dashboard/contracts/new`
-
-### /dashboard/recurring-orders (4 broken cards)
-
-- **Standalone route:** `/dashboard/recurring-orders` → middleware redirects to `/dashboard/sales?tab=recurring`
-- **Also visible as:** Tab content in `/dashboard/sales?tab=recurring`
-- **Previous audit classified:** "safe_archived_standalone" — INCORRECT
-- **Correct classification:** DYNAMICALLY_IMPORTED_VISIBLE with broken cards
-- **Broken cards:** `/dashboard/recurring-orders/ai`, `/dashboard/recurring-orders/reports`, `/dashboard/recurring-orders/templates/new`, `/dashboard/recurring-orders/templates`
-
-### /dashboard/commissions (4 broken cards)
-
-- **Standalone route:** `/dashboard/commissions` → middleware redirects to `/dashboard/sales?tab=commissions`
-- **Also visible as:** Tab content in `/dashboard/sales?tab=commissions`
-- **Previous audit classified:** "safe_archived_standalone" — INCORRECT
-- **Correct classification:** DYNAMICALLY_IMPORTED_VISIBLE with broken cards
-- **Broken cards:** `/dashboard/commissions/ai`, `/dashboard/commissions/payouts`, `/dashboard/commissions/rules`, `/dashboard/commissions/transactions`
-
-### /dashboard/secondary-sales (3 broken cards)
-
-- **Standalone route:** `/dashboard/secondary-sales` → middleware redirects to `/dashboard/sales?tab=secondary`
-- **Also visible as:** Tab content in `/dashboard/sales?tab=secondary`
-- **Previous audit classified:** "safe_archived_standalone" — INCORRECT
-- **Correct classification:** DYNAMICALLY_IMPORTED_VISIBLE with broken cards
-- **Broken cards:** `/dashboard/secondary-sales/analysis`, `/dashboard/secondary-sales/inventory`, `/dashboard/secondary-sales/upload`
-
-### /dashboard/van-sales (7 broken cards)
-
-- **Standalone route:** `/dashboard/van-sales` → middleware redirects to `/dashboard/sales?tab=van-sales`
-- **Also visible as:** Tab content in `/dashboard/sales?tab=van-sales`
-- **Previous audit classified:** "safe_archived_standalone" — INCORRECT
-- **Correct classification:** DYNAMICALLY_IMPORTED_VISIBLE with broken cards
-- **Broken cards:** `/dashboard/van-sales/ai`, `/dashboard/van-sales/pos`, `/dashboard/van-sales/reconciliation`, `/dashboard/van-sales/route`, `/dashboard/van-sales/stock`, `/dashboard/van-sales/vans/new`, `/dashboard/van-sales/vans`
-
-### /dashboard/portal (7 broken cards)
-
-- **Standalone route:** `/dashboard/portal` → middleware redirects to `/dashboard/sales?tab=portal`
-- **Also visible as:** Tab content in `/dashboard/sales?tab=portal`
-- **Previous audit classified:** "safe_archived_standalone" — INCORRECT
-- **Correct classification:** DYNAMICALLY_IMPORTED_VISIBLE with broken cards
-- **Broken cards:** `/dashboard/portal/accounts`, `/dashboard/portal/activity`, `/dashboard/portal/ai`, `/dashboard/portal/claims`, `/dashboard/portal/drafts`, `/dashboard/portal/reports`, `/dashboard/portal/users`
-
-### /dashboard/procurement-suggestion (4 broken cards)
-
-- **Standalone route:** `/dashboard/procurement-suggestion` → middleware redirects to `/dashboard/procurement?tab=suggestions`
-- **Also visible as:** Tab content in `/dashboard/procurement?tab=suggestions`
-- **Previous audit classified:** "safe_archived_standalone" — INCORRECT
-- **Correct classification:** DYNAMICALLY_IMPORTED_VISIBLE with broken cards
-- **Broken cards:** `/dashboard/procurement-suggestion/ai`, `/dashboard/procurement-suggestion/groups`, `/dashboard/procurement-suggestion/suggestions`, `/dashboard/procurement-suggestion/supplier-prices`
-
-### /dashboard/subcontracting (5 broken cards)
-
-- **Standalone route:** `/dashboard/subcontracting` → middleware redirects to `/dashboard/procurement?tab=subcontracting`
-- **Also visible as:** Tab content in `/dashboard/procurement?tab=subcontracting`
-- **Previous audit classified:** "safe_archived_standalone" — INCORRECT
-- **Correct classification:** DYNAMICALLY_IMPORTED_VISIBLE with broken cards
-- **Broken cards:** `/dashboard/subcontracting/ai`, `/dashboard/subcontracting/locations`, `/dashboard/subcontracting/orders`, `/dashboard/subcontracting/stock`, `/dashboard/subcontracting/yield`
-
-### /dashboard/landed-cost (3 broken cards)
-
-- **Standalone route:** `/dashboard/landed-cost` → middleware redirects to `/dashboard/procurement?tab=landed-cost`
-- **Also visible as:** Tab content in `/dashboard/procurement?tab=landed-cost`
-- **Previous audit classified:** "safe_archived_standalone" — INCORRECT
-- **Correct classification:** DYNAMICALLY_IMPORTED_VISIBLE with broken cards
-- **Broken cards:** `/dashboard/landed-cost/ai`, `/dashboard/landed-cost/documents`, `/dashboard/landed-cost/new`
-
-### /dashboard/qms (10 broken cards)
-
-- **Standalone route:** `/dashboard/qms` → middleware redirects to `/dashboard/quality?tab=qms`
-- **Also visible as:** Tab content in `/dashboard/quality?tab=qms`
-- **Previous audit classified:** "safe_archived_standalone" — INCORRECT
-- **Correct classification:** DYNAMICALLY_IMPORTED_VISIBLE with broken cards
-- **Broken cards:** `/dashboard/qms/ai`, `/dashboard/qms/allergen`, `/dashboard/qms/ccp`, `/dashboard/qms/corrective-actions`, `/dashboard/qms/deviations`, `/dashboard/qms/haccp`, `/dashboard/qms/inspections`, `/dashboard/qms/quarantine`, `/dashboard/qms/reports`, `/dashboard/qms/templates`
-
-### /dashboard/allergen (3 broken cards)
-
-- **Standalone route:** `/dashboard/allergen` → middleware redirects to `/dashboard/quality?tab=allergen`
-- **Also visible as:** Tab content in `/dashboard/quality?tab=allergen`
-- **Previous audit classified:** "safe_archived_standalone" — INCORRECT
-- **Correct classification:** DYNAMICALLY_IMPORTED_VISIBLE with broken cards
-- **Broken cards:** `/dashboard/allergen/change-logs`, `/dashboard/allergen/material-profiles`, `/dashboard/allergen/product-allergens`
-
-### /dashboard/fleet (7 broken cards)
-
-- **Standalone route:** `/dashboard/fleet` → middleware redirects to `/dashboard/logistics?tab=fleet`
-- **Also visible as:** Tab content in `/dashboard/logistics?tab=fleet`
-- **Previous audit classified:** "safe_archived_standalone" — INCORRECT
-- **Correct classification:** DYNAMICALLY_IMPORTED_VISIBLE with broken cards
-- **Broken cards:** `/dashboard/fleet/drivers`, `/dashboard/fleet/fuel`, `/dashboard/fleet/incidents`, `/dashboard/fleet/maintenance`, `/dashboard/fleet/reports`, `/dashboard/fleet/trips`, `/dashboard/fleet/vehicles`
-
-### /dashboard/chatter (4 broken cards)
-
-- **Standalone route:** `/dashboard/chatter` → middleware redirects to `/dashboard/communication?tab=chatter`
-- **Also visible as:** Tab content in `/dashboard/communication?tab=chatter`
-- **Previous audit classified:** "safe_archived_standalone" — INCORRECT
-- **Correct classification:** DYNAMICALLY_IMPORTED_VISIBLE with broken cards
-- **Broken cards:** `/dashboard/chatter/ai`, `/dashboard/chatter/feed`, `/dashboard/chatter/reports`, `/dashboard/chatter/search`
-
-### /dashboard/calendar (4 broken cards)
-
-- **Standalone route:** `/dashboard/calendar` → middleware redirects to `/dashboard/communication?tab=calendar`
-- **Also visible as:** Tab content in `/dashboard/communication?tab=calendar`
-- **Previous audit classified:** "safe_archived_standalone" — INCORRECT
-- **Correct classification:** DYNAMICALLY_IMPORTED_VISIBLE with broken cards
-- **Broken cards:** `/dashboard/calendar/availability`, `/dashboard/calendar/new-event`, `/dashboard/calendar/resources`, `/dashboard/calendar/view`
-
-### /dashboard/notification-center (6 broken cards)
-
-- **Standalone route:** `/dashboard/notification-center` → middleware redirects to `/dashboard/communication?tab=notifications`
-- **Also visible as:** Tab content in `/dashboard/communication?tab=notifications`
-- **Previous audit classified:** "safe_archived_standalone" — INCORRECT
-- **Correct classification:** DYNAMICALLY_IMPORTED_VISIBLE with broken cards
-- **Broken cards:** `/dashboard/notification-center/ai`, `/dashboard/notification-center/list`, `/dashboard/notification-center/preferences`, `/dashboard/notification-center/reports`, `/dashboard/notification-center/schedules`, `/dashboard/notification-center/templates`
-
-### /dashboard/reports (7 broken cards)
-
-- **Standalone route:** `/dashboard/reports` → middleware redirects to `/dashboard/analytics?tab=reports`
-- **Also visible as:** Tab content in `/dashboard/analytics?tab=reports`
-- **Previous audit classified:** "safe_archived_standalone" — INCORRECT
-- **Correct classification:** DYNAMICALLY_IMPORTED_VISIBLE with broken cards
-- **Broken cards:** `/dashboard/reports/finance`, `/dashboard/reports/inventory`, `/dashboard/reports/marketing`, `/dashboard/reports/payments`, `/dashboard/reports/procurement`, `/dashboard/reports/production`, `/dashboard/reports/sales`
-
-### /dashboard/report-builder (7 broken cards)
-
-- **Standalone route:** `/dashboard/report-builder` → middleware redirects to `/dashboard/analytics?tab=report-builder`
-- **Also visible as:** Tab content in `/dashboard/analytics?tab=report-builder`
-- **Previous audit classified:** "safe_archived_standalone" — INCORRECT
-- **Correct classification:** DYNAMICALLY_IMPORTED_VISIBLE with broken cards
-- **Broken cards:** `/dashboard/report-builder/ai`, `/dashboard/report-builder/builder`, `/dashboard/report-builder/catalog`, `/dashboard/report-builder/dashboards`, `/dashboard/report-builder/saved`, `/dashboard/report-builder/schedules`, `/dashboard/report-builder/viewer`
-
-### /dashboard/custom-fields (6 broken cards)
-
-- **Standalone route:** `/dashboard/custom-fields` → middleware redirects to `/dashboard/admin?tab=custom-fields`
-- **Also visible as:** Tab content in `/dashboard/admin?tab=custom-fields`
-- **Previous audit classified:** "safe_archived_standalone" — INCORRECT
-- **Correct classification:** DYNAMICALLY_IMPORTED_VISIBLE with broken cards
-- **Broken cards:** `/dashboard/custom-fields/ai`, `/dashboard/custom-fields/fields`, `/dashboard/custom-fields/form-builder`, `/dashboard/custom-fields/new-field`, `/dashboard/custom-fields/values`, `/dashboard/custom-fields/workflow-rules`
-
-### /dashboard/mobile (2 broken cards)
-
-- **Standalone route:** `/dashboard/mobile` → middleware redirects to `/dashboard/admin?tab=mobile`
-- **Also visible as:** Tab content in `/dashboard/admin?tab=mobile`
-- **Previous audit classified:** "safe_archived_standalone" — INCORRECT
-- **Correct classification:** DYNAMICALLY_IMPORTED_VISIBLE with broken cards
-- **Broken cards:** `/dashboard/mobile/approvals`, `/dashboard/mobile/devices`
-
-### /dashboard/marketing/campaigns (1 broken cards)
-
-- **Standalone route:** `/dashboard/marketing/campaigns` → middleware redirects to `/dashboard/marketing?tab=campaigns`
-- **Also visible as:** Tab content in `/dashboard/marketing?tab=campaigns`
-- **Previous audit classified:** "safe_archived_standalone" — INCORRECT
-- **Correct classification:** DYNAMICALLY_IMPORTED_VISIBLE with broken cards
-- **Broken cards:** `/dashboard/marketing/campaigns/new`
-
-### /dashboard/marketing/promotions (1 broken cards)
-
-- **Standalone route:** `/dashboard/marketing/promotions` → middleware redirects to `/dashboard/marketing?tab=promotions`
-- **Also visible as:** Tab content in `/dashboard/marketing?tab=promotions`
-- **Previous audit classified:** "safe_archived_standalone" — INCORRECT
-- **Correct classification:** DYNAMICALLY_IMPORTED_VISIBLE with broken cards
-- **Broken cards:** `/dashboard/marketing/promotions/new`
-
-### /dashboard/marketing/trade-spend (1 broken cards)
-
-- **Standalone route:** `/dashboard/marketing/trade-spend` → middleware redirects to `/dashboard/marketing?tab=trade-spend`
-- **Also visible as:** Tab content in `/dashboard/marketing?tab=trade-spend`
-- **Previous audit classified:** "safe_archived_standalone" — INCORRECT
-- **Correct classification:** DYNAMICALLY_IMPORTED_VISIBLE with broken cards
-- **Broken cards:** `/dashboard/marketing/trade-spend/new`
-
-### /dashboard/marketing/ads (1 broken cards)
-
-- **Standalone route:** `/dashboard/marketing/ads` → middleware redirects to `/dashboard/marketing?tab=ads`
-- **Also visible as:** Tab content in `/dashboard/marketing?tab=ads`
-- **Previous audit classified:** "safe_archived_standalone" — INCORRECT
-- **Correct classification:** DYNAMICALLY_IMPORTED_VISIBLE with broken cards
-- **Broken cards:** `/dashboard/marketing/ads/new`
-
-### /dashboard/marketing/social-media (1 broken cards)
-
-- **Standalone route:** `/dashboard/marketing/social-media` → middleware redirects to `/dashboard/marketing?tab=social-media`
-- **Also visible as:** Tab content in `/dashboard/marketing?tab=social-media`
-- **Previous audit classified:** "safe_archived_standalone" — INCORRECT
-- **Correct classification:** DYNAMICALLY_IMPORTED_VISIBLE with broken cards
-- **Broken cards:** `/dashboard/marketing/social-media/new`
-
-### /dashboard/marketing/segments (1 broken cards)
-
-- **Standalone route:** `/dashboard/marketing/segments` → middleware redirects to `/dashboard/marketing?tab=segments`
-- **Also visible as:** Tab content in `/dashboard/marketing?tab=segments`
-- **Previous audit classified:** "safe_archived_standalone" — INCORRECT
-- **Correct classification:** DYNAMICALLY_IMPORTED_VISIBLE with broken cards
-- **Broken cards:** `/dashboard/marketing/segments/new`
-
-### /dashboard/marketing/influencers (1 broken cards)
-
-- **Standalone route:** `/dashboard/marketing/influencers` → middleware redirects to `/dashboard/marketing?tab=influencers`
-- **Also visible as:** Tab content in `/dashboard/marketing?tab=influencers`
-- **Previous audit classified:** "safe_archived_standalone" — INCORRECT
-- **Correct classification:** DYNAMICALLY_IMPORTED_VISIBLE with broken cards
-- **Broken cards:** `/dashboard/marketing/influencers/new`
-
-### /dashboard/marketing/visits (1 broken cards)
-
-- **Standalone route:** `/dashboard/marketing/visits` → middleware redirects to `/dashboard/marketing?tab=visits`
-- **Also visible as:** Tab content in `/dashboard/marketing?tab=visits`
-- **Previous audit classified:** "safe_archived_standalone" — INCORRECT
-- **Correct classification:** DYNAMICALLY_IMPORTED_VISIBLE with broken cards
-- **Broken cards:** `/dashboard/marketing/visits/new`
-
-### /dashboard/marketing/brand-spend (1 broken cards)
-
-- **Standalone route:** `/dashboard/marketing/brand-spend` → middleware redirects to `/dashboard/marketing?tab=brand-spend`
-- **Also visible as:** Tab content in `/dashboard/marketing?tab=brand-spend`
-- **Previous audit classified:** "safe_archived_standalone" — INCORRECT
-- **Correct classification:** DYNAMICALLY_IMPORTED_VISIBLE with broken cards
-- **Broken cards:** `/dashboard/marketing/brand-spend/new`
-
-### /dashboard/tpm (10 broken cards)
-
-- **Standalone route:** `/dashboard/tpm` → middleware redirects to `/dashboard/marketing?tab=tpm`
-- **Also visible as:** Tab content in `/dashboard/marketing?tab=tpm`
-- **Previous audit classified:** "safe_archived_standalone" — INCORRECT
-- **Correct classification:** DYNAMICALLY_IMPORTED_VISIBLE with broken cards
-- **Broken cards:** `/dashboard/tpm/ai`, `/dashboard/tpm/budget`, `/dashboard/tpm/calendar`, `/dashboard/tpm/claims`, `/dashboard/tpm/plans/new`, `/dashboard/tpm/plans`, `/dashboard/tpm/promotions/new`, `/dashboard/tpm/promotions`, `/dashboard/tpm/roi`, `/dashboard/tpm/settlement`
-
-### /dashboard/surveys (1 broken cards)
-
-- **Standalone route:** `/dashboard/surveys` → middleware redirects to `/dashboard/crm?tab=surveys`
-- **Also visible as:** Tab content in `/dashboard/crm?tab=surveys`
-- **Previous audit classified:** "safe_archived_standalone" — INCORRECT
-- **Correct classification:** DYNAMICALLY_IMPORTED_VISIBLE with broken cards
-- **Broken cards:** `/dashboard/surveys/new`
-
-### /dashboard/knowledge-base (2 broken cards)
-
-- **Standalone route:** `/dashboard/knowledge-base` → middleware redirects to `/dashboard/documents?tab=knowledge-base`
-- **Also visible as:** Tab content in `/dashboard/documents?tab=knowledge-base`
-- **Previous audit classified:** "safe_archived_standalone" — INCORRECT
-- **Correct classification:** DYNAMICALLY_IMPORTED_VISIBLE with broken cards
-- **Broken cards:** `/dashboard/knowledge-base/articles/new`, `/dashboard/knowledge-base/articles`
-
-### /dashboard/webhooks (6 broken cards)
-
-- **Standalone route:** `/dashboard/webhooks` → middleware redirects to `/dashboard/integrations?tab=webhooks`
-- **Also visible as:** Tab content in `/dashboard/integrations?tab=webhooks`
-- **Previous audit classified:** "safe_archived_standalone" — INCORRECT
-- **Correct classification:** DYNAMICALLY_IMPORTED_VISIBLE with broken cards
-- **Broken cards:** `/dashboard/webhooks/dead-letter`, `/dashboard/webhooks/definitions`, `/dashboard/webhooks/deliveries`, `/dashboard/webhooks/inbound`, `/dashboard/webhooks/reports`, `/dashboard/webhooks/subscriptions`
-
-### /dashboard/developer (2 broken cards)
-
-- **Standalone route:** `/dashboard/developer` → middleware redirects to `/dashboard/integrations?tab=developer`
-- **Also visible as:** Tab content in `/dashboard/integrations?tab=developer`
-- **Previous audit classified:** "safe_archived_standalone" — INCORRECT
-- **Correct classification:** DYNAMICALLY_IMPORTED_VISIBLE with broken cards
-- **Broken cards:** `/dashboard/developer/graphql`, `/dashboard/developer/keys`
-
-### /dashboard/utility-management/kpi-center (10 broken cards)
-
-- **Standalone route:** `/dashboard/utility-management/kpi-center` → middleware redirects to `/dashboard/utility-management?tab=kpi-center`
-- **Also visible as:** Tab content in `/dashboard/utility-management?tab=kpi-center`
-- **Previous audit classified:** "safe_archived_standalone" — INCORRECT
-- **Correct classification:** DYNAMICALLY_IMPORTED_VISIBLE with broken cards
-- **Broken cards:** `/dashboard/utility-management/kpi-center/boiler`, `/dashboard/utility-management/kpi-center/chemicals`, `/dashboard/utility-management/kpi-center/compressor`, `/dashboard/utility-management/kpi-center/electricity`, `/dashboard/utility-management/kpi-center/machine-utility`, `/dashboard/utility-management/kpi-center/soft-water`, `/dashboard/utility-management/kpi-center/solar`, `/dashboard/utility-management/kpi-center/utility-cost`, `/dashboard/utility-management/kpi-center/wastewater`, `/dashboard/utility-management/kpi-center/water`
-
-### /dashboard/utility-management/reports (7 broken cards)
-
-- **Standalone route:** `/dashboard/utility-management/reports` → middleware redirects to `/dashboard/utility-management?tab=reports`
-- **Also visible as:** Tab content in `/dashboard/utility-management?tab=reports`
-- **Previous audit classified:** "safe_archived_standalone" — INCORRECT
-- **Correct classification:** DYNAMICALLY_IMPORTED_VISIBLE with broken cards
-- **Broken cards:** `/dashboard/utility-management/reports/anomalies`, `/dashboard/utility-management/reports/cost-allocation`, `/dashboard/utility-management/reports/daily-consumption`, `/dashboard/utility-management/reports/equipment-efficiency`, `/dashboard/utility-management/reports/load-analysis`, `/dashboard/utility-management/reports/sustainability`, `/dashboard/utility-management/reports/treatment`
-
-### /dashboard/esg (5 broken cards)
-
-- **Standalone route:** `/dashboard/esg` → middleware redirects to `/dashboard/utility-management?tab=esg`
-- **Also visible as:** Tab content in `/dashboard/utility-management?tab=esg`
-- **Previous audit classified:** "safe_archived_standalone" — INCORRECT
-- **Correct classification:** DYNAMICALLY_IMPORTED_VISIBLE with broken cards
-- **Broken cards:** `/dashboard/esg/activities`, `/dashboard/esg/factors`, `/dashboard/esg/intelligence`, `/dashboard/esg/reports`, `/dashboard/esg/targets`
-
+Every entry below was **missed** by the previous audit (classified as "safe_archived_standalone").
+Each of these pages is middleware-redirected as a standalone route but IS user-visible
+because it is dynamically imported into a workspace tab.
+
+| Source Page | Standalone Route | Middleware Destination | Visible As | Broken Cards |
+|-------------|-----------------|----------------------|-----------|--------------|
+| `users/page.tsx` | `/dashboard/users` | `/dashboard/admin?tab=users` | `/dashboard/admin` | 1 |
+| `roles/page.tsx` | `/dashboard/roles` | `/dashboard/admin?tab=roles` | `/dashboard/admin` | 1 |
+| `permissions/page.tsx` | `/dashboard/permissions` | `/dashboard/admin?tab=permissions` | `/dashboard/admin` | 0 |
+| `companies/page.tsx` | `/dashboard/companies` | `/dashboard/admin?tab=companies` | `/dashboard/admin` | 0 |
+| `security/page.tsx` | `/dashboard/security` | `/dashboard/admin?tab=security` | `/dashboard/admin` | 0 |
+| `approvals/page.tsx` | `/dashboard/approvals` | `/dashboard/admin?tab=approvals` | `/dashboard/admin` | 0 |
+| `custom-fields/page.tsx` | `/dashboard/custom-fields` | `/dashboard/admin?tab=custom-fields` | `/dashboard/admin` | 7 |
+| `utilities/page.tsx` | `/dashboard/utilities` | `/dashboard/admin?tab=system-config` | `/dashboard/admin` | 0 |
+| `mobile/page.tsx` | `/dashboard/mobile` | `/dashboard/admin?tab=mobile` | `/dashboard/admin` | 4 |
+| `logs/page.tsx` | `/dashboard/logs` | `/dashboard/admin?tab=logs` | `/dashboard/admin` | 0 |
+| `import-history/page.tsx` | `/dashboard/import-history` | `/dashboard/admin?tab=import-history` | `/dashboard/admin` | 0 |
+| `reports/page.tsx` | `/dashboard/reports` | `/dashboard/analytics?tab=reports` | `/dashboard/analytics` | 7 |
+| `report-builder/page.tsx` | `/dashboard/report-builder` | `/dashboard/analytics?tab=report-builder` | `/dashboard/analytics` | 7 |
+| `chatter/page.tsx` | `/dashboard/chatter` | `/dashboard/communication?tab=chatter` | `/dashboard/communication` | 4 |
+| `calendar/page.tsx` | `/dashboard/calendar` | `/dashboard/communication?tab=calendar` | `/dashboard/communication` | 4 |
+| `messages/page.tsx` | `/dashboard/messages` | `/dashboard/communication?tab=messages` | `/dashboard/communication` | 0 |
+| `email/page.tsx` | `/dashboard/email` | `/dashboard/communication?tab=email` | `/dashboard/communication` | 0 |
+| `whatsapp/page.tsx` | `/dashboard/whatsapp` | `/dashboard/communication?tab=whatsapp` | `/dashboard/communication` | 0 |
+| `calls/page.tsx` | `/dashboard/calls` | `/dashboard/communication?tab=calls` | `/dashboard/communication` | 0 |
+| `meetings/page.tsx` | `/dashboard/meetings` | `/dashboard/communication?tab=meetings` | `/dashboard/communication` | 0 |
+| `notification-center/page.tsx` | `/dashboard/notification-center` | `/dashboard/communication?tab=notifications` | `/dashboard/communication` | 6 |
+| `gs1/page.tsx` | `/dashboard/gs1` | `/dashboard/compliance?tab=gs1` | `/dashboard/compliance` | 0 |
+| `loyalty/page.tsx` | `/dashboard/loyalty` | `/dashboard/crm?tab=loyalty` | `/dashboard/crm` | 0 |
+| `nps/page.tsx` | `/dashboard/nps` | `/dashboard/crm?tab=nps` | `/dashboard/crm` | 1 |
+| `surveys/page.tsx` | `/dashboard/surveys` | `/dashboard/crm?tab=surveys` | `/dashboard/crm` | 2 |
+| `knowledge-base/page.tsx` | `/dashboard/knowledge-base` | `/dashboard/documents?tab=knowledge-base` | `/dashboard/documents` | 4 |
+| `esign/page.tsx` | `/dashboard/esign` | `/dashboard/documents?tab=esign` | `/dashboard/documents` | 0 |
+| `finance/accounting/page.tsx` | `/dashboard/finance/accounting` | `/dashboard/finance?tab=accounting` | `/dashboard/finance` | 6 |
+| `bank-reconciliation/page.tsx` | `/dashboard/bank-reconciliation` | `/dashboard/finance?tab=bank-recon` | `/dashboard/finance` | 7 |
+| `invoice-match/page.tsx` | `/dashboard/invoice-match` | `/dashboard/finance?tab=invoice-match` | `/dashboard/finance` | 6 |
+| `fixed-assets/page.tsx` | `/dashboard/fixed-assets` | `/dashboard/finance?tab=fixed-assets` | `/dashboard/finance` | 9 |
+| `dimensions/page.tsx` | `/dashboard/dimensions` | `/dashboard/finance?tab=dimensions` | `/dashboard/finance` | 10 |
+| `dunning/page.tsx` | `/dashboard/dunning` | `/dashboard/finance?tab=dunning` | `/dashboard/finance` | 6 |
+| `tax/page.tsx` | `/dashboard/tax` | `/dashboard/finance?tab=tax` | `/dashboard/finance` | 4 |
+| `bank-api/page.tsx` | `/dashboard/bank-api` | `/dashboard/finance?tab=bank-api` | `/dashboard/finance` | 0 |
+| `expenses/page.tsx` | `/dashboard/expenses` | `/dashboard/hr?tab=expenses` | `/dashboard/finance`, `/dashboard/hr` | 9 |
+| `recruitment/page.tsx` | `/dashboard/recruitment` | `/dashboard/hr?tab=recruitment` | `/dashboard/hr` | 9 |
+| `ess/page.tsx` | `/dashboard/ess` | `/dashboard/hr?tab=ess` | `/dashboard/hr` | 8 |
+| `appraisals/page.tsx` | `/dashboard/appraisals` | `/dashboard/hr?tab=appraisals` | `/dashboard/hr` | 10 |
+| `training/page.tsx` | `/dashboard/training` | `/dashboard/hr?tab=training` | `/dashboard/hr` | 8 |
+| `timesheets/page.tsx` | `/dashboard/timesheets` | `/dashboard/hr?tab=timesheets` | `/dashboard/hr` | 6 |
+| `webhooks/page.tsx` | `/dashboard/webhooks` | `/dashboard/integrations?tab=webhooks` | `/dashboard/integrations` | 6 |
+| `developer/page.tsx` | `/dashboard/developer` | `/dashboard/integrations?tab=developer` | `/dashboard/integrations` | 3 |
+| `movements/page.tsx` | `/dashboard/movements` | `/dashboard/inventory?tab=movements` | `/dashboard/inventory` | 0 |
+| `cycle-count/page.tsx` | `/dashboard/cycle-count` | `/dashboard/inventory?tab=cycle-count` | `/dashboard/inventory` | 5 |
+| `shelf-life/page.tsx` | `/dashboard/shelf-life` | `/dashboard/inventory?tab=shelf-life` | `/dashboard/inventory` | 11 |
+| `traceability/page.tsx` | `/dashboard/traceability` | `/dashboard/inventory?tab=traceability` | `/dashboard/inventory` | 8 |
+| `logistics/containers/page.tsx` | `/dashboard/logistics/containers` | `/dashboard/logistics?tab=containers` | `/dashboard/logistics` | 0 |
+| `fleet/page.tsx` | `/dashboard/fleet` | `/dashboard/logistics?tab=fleet` | `/dashboard/logistics` | 7 |
+| `marketing/campaigns/page.tsx` | `/dashboard/marketing/campaigns` | `/dashboard/marketing?tab=campaigns` | `/dashboard/marketing` | 2 |
+| `marketing/promotions/page.tsx` | `/dashboard/marketing/promotions` | `/dashboard/marketing?tab=promotions` | `/dashboard/marketing` | 2 |
+| `marketing/trade-spend/page.tsx` | `/dashboard/marketing/trade-spend` | `/dashboard/marketing?tab=trade-spend` | `/dashboard/marketing` | 2 |
+| `marketing/ads/page.tsx` | `/dashboard/marketing/ads` | `/dashboard/marketing?tab=ads` | `/dashboard/marketing` | 2 |
+| `marketing/social-media/page.tsx` | `/dashboard/marketing/social-media` | `/dashboard/marketing?tab=social-media` | `/dashboard/marketing` | 2 |
+| `marketing/segments/page.tsx` | `/dashboard/marketing/segments` | `/dashboard/marketing?tab=segments` | `/dashboard/marketing` | 2 |
+| `marketing/influencers/page.tsx` | `/dashboard/marketing/influencers` | `/dashboard/marketing?tab=influencers` | `/dashboard/marketing` | 2 |
+| `marketing/ecommerce/page.tsx` | `/dashboard/marketing/ecommerce` | `/dashboard/marketing?tab=ecommerce` | `/dashboard/marketing` | 1 |
+| `marketing/visits/page.tsx` | `/dashboard/marketing/visits` | `/dashboard/marketing?tab=visits` | `/dashboard/marketing` | 2 |
+| `marketing/brand-spend/page.tsx` | `/dashboard/marketing/brand-spend` | `/dashboard/marketing?tab=brand-spend` | `/dashboard/marketing` | 2 |
+| `tpm/page.tsx` | `/dashboard/tpm` | `/dashboard/marketing?tab=tpm` | `/dashboard/marketing` | 11 |
+| `market-intelligence/page.tsx` | `/dashboard/market-intelligence` | `/dashboard/marketing?tab=market-intel` | `/dashboard/marketing` | 0 |
+| `payroll/profiles/page.tsx` | `/dashboard/payroll/profiles` | `/dashboard/hr?tab=payroll` | `/dashboard/payroll` | 0 |
+| `payroll/reports/page.tsx` | `/dashboard/payroll/reports` | `/dashboard/hr?tab=payroll` | `/dashboard/payroll` | 0 |
+| `planning/schedule/page.tsx` | `/dashboard/planning/schedule` | `/dashboard/planning?tab=advanced` | `/dashboard/planning` | 0 |
+| `planning/capacity/page.tsx` | `/dashboard/planning/capacity` | `/dashboard/planning?tab=advanced` | `/dashboard/planning` | 0 |
+| `planning/simulation/page.tsx` | `/dashboard/planning/simulation` | `/dashboard/planning?tab=advanced` | `/dashboard/planning` | 0 |
+| `planning/bottlenecks/page.tsx` | `/dashboard/planning/bottlenecks` | `/dashboard/planning?tab=advanced` | `/dashboard/planning` | 0 |
+| `planning/changeover/page.tsx` | `/dashboard/planning/changeover` | `/dashboard/planning?tab=advanced` | `/dashboard/planning` | 0 |
+| `mrp/page.tsx` | `/dashboard/mrp` | `/dashboard/planning?tab=mrp` | `/dashboard/planning` | 3 |
+| `mps/page.tsx` | `/dashboard/mps` | `/dashboard/planning?tab=mps` | `/dashboard/planning` | 0 |
+| `kanban/page.tsx` | `/dashboard/kanban` | `/dashboard/planning?tab=kanban` | `/dashboard/planning` | 5 |
+| `procurement-suggestion/page.tsx` | `/dashboard/procurement-suggestion` | `/dashboard/procurement?tab=suggestions` | `/dashboard/procurement` | 4 |
+| `subcontracting/page.tsx` | `/dashboard/subcontracting` | `/dashboard/procurement?tab=subcontracting` | `/dashboard/procurement` | 5 |
+| `landed-cost/page.tsx` | `/dashboard/landed-cost` | `/dashboard/procurement?tab=landed-cost` | `/dashboard/procurement` | 4 |
+| `supplier-portal/page.tsx` | `/dashboard/supplier-portal` | `/dashboard/procurement?tab=supplier-portal` | `/dashboard/procurement` | 1 |
+| `production/orders/page.tsx` | `/dashboard/production/orders` | `/dashboard/production?tab=orders` | `/dashboard/production` | 1 |
+| `production-execution/page.tsx` | `/dashboard/production-execution` | `/dashboard/production?tab=execution` | `/dashboard/production` | 2 |
+| `machine-ops/page.tsx` | `/dashboard/machine-ops` | `/dashboard/production?tab=machine-ops` | `/dashboard/production` | 9 |
+| `material-flow/page.tsx` | `/dashboard/material-flow` | `/dashboard/production?tab=material-flow` | `/dashboard/production` | 9 |
+| `projects/page.tsx` | `/dashboard/projects` | `/dashboard/production?tab=projects` | `/dashboard/production` | 1 |
+| `quality/consumer-complaints/page.tsx` | `/dashboard/quality/consumer-complaints` | `/dashboard/quality?tab=consumer-complaints` | `/dashboard/quality` | 0 |
+| `qms/page.tsx` | `/dashboard/qms` | `/dashboard/quality?tab=qms` | `/dashboard/quality` | 10 |
+| `allergen/page.tsx` | `/dashboard/allergen` | `/dashboard/quality?tab=allergen` | `/dashboard/quality` | 3 |
+| `brand-assets/page.tsx` | `/dashboard/brand-assets` | `/dashboard/quality?tab=brand-assets` | `/dashboard/quality` | 1 |
+| `price-lists/page.tsx` | `/dashboard/price-lists` | `/dashboard/sales?tab=price-lists` | `/dashboard/sales` | 2 |
+| `dynamic-pricing/page.tsx` | `/dashboard/dynamic-pricing` | `/dashboard/sales?tab=dynamic-pricing` | `/dashboard/sales` | 0 |
+| `contracts/page.tsx` | `/dashboard/contracts` | `/dashboard/sales?tab=contracts` | `/dashboard/sales` | 5 |
+| `recurring-orders/page.tsx` | `/dashboard/recurring-orders` | `/dashboard/sales?tab=recurring` | `/dashboard/sales` | 5 |
+| `commissions/page.tsx` | `/dashboard/commissions` | `/dashboard/sales?tab=commissions` | `/dashboard/sales` | 4 |
+| `secondary-sales/page.tsx` | `/dashboard/secondary-sales` | `/dashboard/sales?tab=secondary` | `/dashboard/sales` | 4 |
+| `van-sales/page.tsx` | `/dashboard/van-sales` | `/dashboard/sales?tab=van-sales` | `/dashboard/sales` | 8 |
+| `portal/page.tsx` | `/dashboard/portal` | `/dashboard/sales?tab=portal` | `/dashboard/sales` | 8 |
+| `utility-management/kpi-center/page.tsx` | `/dashboard/utility-management/kpi-center` | `/dashboard/utility-management?tab=kpi-center` | `/dashboard/utility-management` | 10 |
+| `utility-management/reports/page.tsx` | `/dashboard/utility-management/reports` | `/dashboard/utility-management?tab=reports` | `/dashboard/utility-management` | 7 |
+| `iot/page.tsx` | `/dashboard/iot` | `/dashboard/utility-management?tab=iot` | `/dashboard/utility-management` | 0 |
+| `esg/page.tsx` | `/dashboard/esg` | `/dashboard/utility-management?tab=esg` | `/dashboard/utility-management` | 5 |
+| `wms/page.tsx` | `/dashboard/wms` | `/dashboard/warehouses?tab=wms` | `/dashboard/warehouses` | 0 |
 
 ---
 
-## Do Not Fix
+## Git History — High-Confidence Real Page Matches
 
-This report is READ-ONLY. No code was modified.
-Recommendations are provided for future fix passes only.
+These broken targets had REAL implementations in commit `674b6c5` (2026-05-01).
+All were deleted/replaced with redirect stubs in `bd6faf5` (2026-05-17).
+**Recommendation: RESTORE_OLD_PAGE_FROM_GIT**
+
+| Module | Target Route | Source File in Git | Confidence |
+|--------|-------------|-------------------|------------|
+| Administration | `/dashboard/custom-fields/new-field` | `frontend/src/app/dashboard/custom-fields/new-field/page.tsx` | high |
+| Administration | `/dashboard/custom-fields/fields` | `frontend/src/app/dashboard/custom-fields/fields/page.tsx` | high |
+| Administration | `/dashboard/custom-fields/form-builder` | `frontend/src/app/dashboard/custom-fields/form-builder/page.tsx` | high |
+| Administration | `/dashboard/custom-fields/workflow-rules` | `frontend/src/app/dashboard/custom-fields/workflow-rules/page.tsx` | high |
+| Administration | `/dashboard/custom-fields/values` | `frontend/src/app/dashboard/custom-fields/values/page.tsx` | high |
+| Administration | `/dashboard/custom-fields/ai` | `frontend/src/app/dashboard/custom-fields/ai/page.tsx` | high |
+| Administration | `/dashboard/mobile/approvals` | `frontend/src/app/dashboard/mobile/approvals/page.tsx` | high |
+| Administration | `/dashboard/mobile/devices` | `frontend/src/app/dashboard/mobile/devices/page.tsx` | high |
+| Administration | `/dashboard/approvals` | `frontend/src/app/dashboard/approvals/page.tsx` | high |
+| Administration | `/dashboard/notification-center` | `frontend/src/app/dashboard/notification-center/page.tsx` | high |
+| Other | `/dashboard/tax` | `frontend/src/app/dashboard/tax/page.tsx` | high |
+| Intelligence / Analytics | `/dashboard/production/orders` | `frontend/src/app/dashboard/production/orders/page.tsx` | high |
+| Intelligence / Analytics | `/dashboard/reports/inventory` | `frontend/src/app/dashboard/reports/inventory/page.tsx` | high |
+| Intelligence / Analytics | `/dashboard/reports/production` | `frontend/src/app/dashboard/reports/production/page.tsx` | high |
+| Intelligence / Analytics | `/dashboard/reports/procurement` | `frontend/src/app/dashboard/reports/procurement/page.tsx` | high |
+| Intelligence / Analytics | `/dashboard/reports/sales` | `frontend/src/app/dashboard/reports/sales/page.tsx` | high |
+| Intelligence / Analytics | `/dashboard/reports/finance` | `frontend/src/app/dashboard/reports/finance/page.tsx` | high |
+| Intelligence / Analytics | `/dashboard/reports/payments` | `frontend/src/app/dashboard/reports/payments/page.tsx` | high |
+| Intelligence / Analytics | `/dashboard/reports/marketing` | `frontend/src/app/dashboard/reports/marketing/page.tsx` | high |
+| Intelligence / Analytics | `/dashboard/report-builder/catalog` | `frontend/src/app/dashboard/report-builder/catalog/page.tsx` | high |
+| Intelligence / Analytics | `/dashboard/report-builder/builder` | `frontend/src/app/dashboard/report-builder/builder/page.tsx` | high |
+| Intelligence / Analytics | `/dashboard/report-builder/saved` | `frontend/src/app/dashboard/report-builder/saved/page.tsx` | high |
+| Intelligence / Analytics | `/dashboard/report-builder/viewer` | `frontend/src/app/dashboard/report-builder/viewer/page.tsx` | high |
+| Intelligence / Analytics | `/dashboard/report-builder/dashboards` | `frontend/src/app/dashboard/report-builder/dashboards/page.tsx` | high |
+| Intelligence / Analytics | `/dashboard/report-builder/schedules` | `frontend/src/app/dashboard/report-builder/schedules/page.tsx` | high |
+| Intelligence / Analytics | `/dashboard/report-builder/ai` | `frontend/src/app/dashboard/report-builder/ai/page.tsx` | high |
+| Documents & Communication | `/dashboard/chatter/feed` | `frontend/src/app/dashboard/chatter/feed/page.tsx` | high |
+| Documents & Communication | `/dashboard/chatter/search` | `frontend/src/app/dashboard/chatter/search/page.tsx` | high |
+| Documents & Communication | `/dashboard/chatter/reports` | `frontend/src/app/dashboard/chatter/reports/page.tsx` | high |
+| Documents & Communication | `/dashboard/chatter/ai` | `frontend/src/app/dashboard/chatter/ai/page.tsx` | high |
+| Documents & Communication | `/dashboard/calendar/view` | `frontend/src/app/dashboard/calendar/view/page.tsx` | high |
+| Documents & Communication | `/dashboard/calendar/new-event` | `frontend/src/app/dashboard/calendar/new-event/page.tsx` | high |
+| Documents & Communication | `/dashboard/calendar/resources` | `frontend/src/app/dashboard/calendar/resources/page.tsx` | high |
+| Documents & Communication | `/dashboard/calendar/availability` | `frontend/src/app/dashboard/calendar/availability/page.tsx` | high |
+| Documents & Communication | `/dashboard/notification-center/list` | `frontend/src/app/dashboard/notification-center/list/page.tsx` | high |
+| Documents & Communication | `/dashboard/notification-center/preferences` | `frontend/src/app/dashboard/notification-center/preferences/page.tsx` | high |
+| Documents & Communication | `/dashboard/notification-center/templates` | `frontend/src/app/dashboard/notification-center/templates/page.tsx` | high |
+| Documents & Communication | `/dashboard/notification-center/schedules` | `frontend/src/app/dashboard/notification-center/schedules/page.tsx` | high |
+| Documents & Communication | `/dashboard/notification-center/reports` | `frontend/src/app/dashboard/notification-center/reports/page.tsx` | high |
+| Documents & Communication | `/dashboard/notification-center/ai` | `frontend/src/app/dashboard/notification-center/ai/page.tsx` | high |
+| Commercial / CRM | `/dashboard/surveys/new` | `frontend/src/app/dashboard/surveys/new/page.tsx` | high |
+| Documents & Communication | `/dashboard/documents/new` | `frontend/src/app/dashboard/documents/new/page.tsx` | high |
+| Documents & Communication | `/dashboard/esign` | `frontend/src/app/dashboard/esign/page.tsx` | high |
+| Documents & Communication | `/dashboard/knowledge-base/articles` | `frontend/src/app/dashboard/knowledge-base/articles/page.tsx` | high |
+| Documents & Communication | `/dashboard/knowledge-base/articles/new` | `frontend/src/app/dashboard/knowledge-base/articles/new/page.tsx` | high |
+| Finance | `/dashboard/finance/accounting/customers-ledger` | `frontend/src/app/dashboard/finance/accounting/customers-ledger/page.tsx` | high |
+| Finance | `/dashboard/finance/accounting/suppliers-ledger` | `frontend/src/app/dashboard/finance/accounting/suppliers-ledger/page.tsx` | high |
+| Finance | `/dashboard/finance/accounting/sales-invoices` | `frontend/src/app/dashboard/finance/accounting/sales-invoices/page.tsx` | high |
+| Finance | `/dashboard/finance/accounting/purchase-invoices` | `frontend/src/app/dashboard/finance/accounting/purchase-invoices/page.tsx` | high |
+| Finance | `/dashboard/finance/accounting/payments` | `frontend/src/app/dashboard/finance/accounting/payments/page.tsx` | high |
+| Finance | `/dashboard/bank-reconciliation/import` | `frontend/src/app/dashboard/bank-reconciliation/import/page.tsx` | high |
+| Finance | `/dashboard/bank-reconciliation/statements` | `frontend/src/app/dashboard/bank-reconciliation/statements/page.tsx` | high |
+| Finance | `/dashboard/bank-reconciliation/open-items` | `frontend/src/app/dashboard/bank-reconciliation/open-items/page.tsx` | high |
+| Finance | `/dashboard/bank-reconciliation/balance` | `frontend/src/app/dashboard/bank-reconciliation/balance/page.tsx` | high |
+| Finance | `/dashboard/bank-reconciliation/rules` | `frontend/src/app/dashboard/bank-reconciliation/rules/page.tsx` | high |
+| Finance | `/dashboard/bank-reconciliation/ai` | `frontend/src/app/dashboard/bank-reconciliation/ai/page.tsx` | high |
+| Finance | `/dashboard/invoice-match/review-queue` | `frontend/src/app/dashboard/invoice-match/review-queue/page.tsx` | high |
+| Finance | `/dashboard/invoice-match/matches` | `frontend/src/app/dashboard/invoice-match/matches/page.tsx` | high |
+| Finance | `/dashboard/invoice-match/blocked` | `frontend/src/app/dashboard/invoice-match/blocked/page.tsx` | high |
+| Finance | `/dashboard/invoice-match/duplicates` | `frontend/src/app/dashboard/invoice-match/duplicates/page.tsx` | high |
+| Finance | `/dashboard/invoice-match/ai` | `frontend/src/app/dashboard/invoice-match/ai/page.tsx` | high |
+| Finance | `/dashboard/fixed-assets/assets` | `frontend/src/app/dashboard/fixed-assets/assets/page.tsx` | high |
+| Finance | `/dashboard/fixed-assets/categories` | `frontend/src/app/dashboard/fixed-assets/categories/page.tsx` | high |
+| Finance | `/dashboard/fixed-assets/depreciation` | `frontend/src/app/dashboard/fixed-assets/depreciation/page.tsx` | high |
+| Finance | `/dashboard/fixed-assets/posting` | `frontend/src/app/dashboard/fixed-assets/posting/page.tsx` | high |
+| Finance | `/dashboard/fixed-assets/disposal` | `frontend/src/app/dashboard/fixed-assets/disposal/page.tsx` | high |
+| Finance | `/dashboard/fixed-assets/transfer` | `frontend/src/app/dashboard/fixed-assets/transfer/page.tsx` | high |
+| Finance | `/dashboard/fixed-assets/import` | `frontend/src/app/dashboard/fixed-assets/import/page.tsx` | high |
+| Finance | `/dashboard/fixed-assets/ai` | `frontend/src/app/dashboard/fixed-assets/ai/page.tsx` | high |
+| Finance | `/dashboard/fixed-assets/assets/new` | `frontend/src/app/dashboard/fixed-assets/assets/new/page.tsx` | high |
+| Finance | `/dashboard/dimensions/types` | `frontend/src/app/dashboard/dimensions/types/page.tsx` | high |
+| Finance | `/dashboard/dimensions/values` | `frontend/src/app/dashboard/dimensions/values/page.tsx` | high |
+| Finance | `/dashboard/dimensions/cost-centers` | `frontend/src/app/dashboard/dimensions/cost-centers/page.tsx` | high |
+| Finance | `/dashboard/dimensions/allocations` | `frontend/src/app/dashboard/dimensions/allocations/page.tsx` | high |
+| Finance | `/dashboard/dimensions/allocation-run` | `frontend/src/app/dashboard/dimensions/allocation-run/page.tsx` | high |
+| Finance | `/dashboard/dimensions/validation` | `frontend/src/app/dashboard/dimensions/validation/page.tsx` | high |
+| Finance | `/dashboard/dimensions/defaults` | `frontend/src/app/dashboard/dimensions/defaults/page.tsx` | high |
+| Finance | `/dashboard/dimensions/reclassify` | `frontend/src/app/dashboard/dimensions/reclassify/page.tsx` | high |
+| Finance | `/dashboard/dimensions/completeness` | `frontend/src/app/dashboard/dimensions/completeness/page.tsx` | high |
+| Finance | `/dashboard/dimensions/ai` | `frontend/src/app/dashboard/dimensions/ai/page.tsx` | high |
+| Finance | `/dashboard/dunning/aging` | `frontend/src/app/dashboard/dunning/aging/page.tsx` | high |
+| Finance | `/dashboard/dunning/workqueue` | `frontend/src/app/dashboard/dunning/workqueue/page.tsx` | high |
+| Finance | `/dashboard/dunning/credit-holds` | `frontend/src/app/dashboard/dunning/credit-holds/page.tsx` | high |
+| Finance | `/dashboard/dunning/policies` | `frontend/src/app/dashboard/dunning/policies/page.tsx` | high |
+| Finance | `/dashboard/dunning/cases` | `frontend/src/app/dashboard/dunning/cases/page.tsx` | high |
+| Finance | `/dashboard/tax/rules` | `frontend/src/app/dashboard/tax/rules/page.tsx` | high |
+| Finance | `/dashboard/tax/regulatory` | `frontend/src/app/dashboard/tax/regulatory/page.tsx` | high |
+| Finance | `/dashboard/tax/transactions` | `frontend/src/app/dashboard/tax/transactions/page.tsx` | high |
+| Finance | `/dashboard/tax/reports` | `frontend/src/app/dashboard/tax/reports/page.tsx` | high |
+| Finance | `/dashboard/expenses/claims` | `frontend/src/app/dashboard/expenses/claims/page.tsx` | high |
+| Finance | `/dashboard/expenses/claims/new` | `frontend/src/app/dashboard/expenses/claims/new/page.tsx` | high |
+| Finance | `/dashboard/expenses/approval` | `frontend/src/app/dashboard/expenses/approval/page.tsx` | high |
+| Finance | `/dashboard/expenses/reimbursement` | `frontend/src/app/dashboard/expenses/reimbursement/page.tsx` | high |
+| Finance | `/dashboard/expenses/advances` | `frontend/src/app/dashboard/expenses/advances/page.tsx` | high |
+| Finance | `/dashboard/expenses/categories` | `frontend/src/app/dashboard/expenses/categories/page.tsx` | high |
+| Finance | `/dashboard/expenses/policies` | `frontend/src/app/dashboard/expenses/policies/page.tsx` | high |
+| Finance | `/dashboard/expenses/reports` | `frontend/src/app/dashboard/expenses/reports/page.tsx` | high |
+| Finance | `/dashboard/expenses/ai` | `frontend/src/app/dashboard/expenses/ai/page.tsx` | high |
+| HR & Payroll | `/dashboard/recruitment/requisitions` | `frontend/src/app/dashboard/recruitment/requisitions/page.tsx` | high |
+| HR & Payroll | `/dashboard/recruitment/requisitions/new` | `frontend/src/app/dashboard/recruitment/requisitions/new/page.tsx` | high |
+| HR & Payroll | `/dashboard/recruitment/candidates` | `frontend/src/app/dashboard/recruitment/candidates/page.tsx` | high |
+| HR & Payroll | `/dashboard/recruitment/pipeline` | `frontend/src/app/dashboard/recruitment/pipeline/page.tsx` | high |
+| HR & Payroll | `/dashboard/recruitment/interviews` | `frontend/src/app/dashboard/recruitment/interviews/page.tsx` | high |
+| HR & Payroll | `/dashboard/recruitment/offers` | `frontend/src/app/dashboard/recruitment/offers/page.tsx` | high |
+| HR & Payroll | `/dashboard/recruitment/stages` | `frontend/src/app/dashboard/recruitment/stages/page.tsx` | high |
+| HR & Payroll | `/dashboard/recruitment/reports` | `frontend/src/app/dashboard/recruitment/reports/page.tsx` | high |
+| HR & Payroll | `/dashboard/recruitment/ai` | `frontend/src/app/dashboard/recruitment/ai/page.tsx` | high |
+| HR & Payroll | `/dashboard/ess/profile` | `frontend/src/app/dashboard/ess/profile/page.tsx` | high |
+| HR & Payroll | `/dashboard/ess/leave` | `frontend/src/app/dashboard/ess/leave/page.tsx` | high |
+| HR & Payroll | `/dashboard/ess/attendance` | `frontend/src/app/dashboard/ess/attendance/page.tsx` | high |
+| HR & Payroll | `/dashboard/ess/documents` | `frontend/src/app/dashboard/ess/documents/page.tsx` | high |
+| HR & Payroll | `/dashboard/ess/requests` | `frontend/src/app/dashboard/ess/requests/page.tsx` | high |
+| HR & Payroll | `/dashboard/ess/notifications` | `frontend/src/app/dashboard/ess/notifications/page.tsx` | high |
+| HR & Payroll | `/dashboard/ess/ai` | `frontend/src/app/dashboard/ess/ai/page.tsx` | high |
+| HR & Payroll | `/dashboard/ess/admin` | `frontend/src/app/dashboard/ess/admin/page.tsx` | high |
+| HR & Payroll | `/dashboard/appraisals/periods` | `frontend/src/app/dashboard/appraisals/periods/page.tsx` | high |
+| HR & Payroll | `/dashboard/appraisals/templates` | `frontend/src/app/dashboard/appraisals/templates/page.tsx` | high |
+| HR & Payroll | `/dashboard/appraisals/records` | `frontend/src/app/dashboard/appraisals/records/page.tsx` | high |
+| HR & Payroll | `/dashboard/appraisals/records/new` | `frontend/src/app/dashboard/appraisals/records/new/page.tsx` | high |
+| HR & Payroll | `/dashboard/appraisals/self-review` | `frontend/src/app/dashboard/appraisals/self-review/page.tsx` | high |
+| HR & Payroll | `/dashboard/appraisals/manager-queue` | `frontend/src/app/dashboard/appraisals/manager-queue/page.tsx` | high |
+| HR & Payroll | `/dashboard/appraisals/hr-review` | `frontend/src/app/dashboard/appraisals/hr-review/page.tsx` | high |
+| HR & Payroll | `/dashboard/appraisals/development-plans` | `frontend/src/app/dashboard/appraisals/development-plans/page.tsx` | high |
+| HR & Payroll | `/dashboard/appraisals/reports` | `frontend/src/app/dashboard/appraisals/reports/page.tsx` | high |
+| HR & Payroll | `/dashboard/appraisals/ai` | `frontend/src/app/dashboard/appraisals/ai/page.tsx` | high |
+| HR & Payroll | `/dashboard/training/programs` | `frontend/src/app/dashboard/training/programs/page.tsx` | high |
+| HR & Payroll | `/dashboard/training/sessions` | `frontend/src/app/dashboard/training/sessions/page.tsx` | high |
+| HR & Payroll | `/dashboard/training/skill-matrix` | `frontend/src/app/dashboard/training/skill-matrix/page.tsx` | high |
+| HR & Payroll | `/dashboard/training/assignments` | `frontend/src/app/dashboard/training/assignments/page.tsx` | high |
+| HR & Payroll | `/dashboard/training/certifications` | `frontend/src/app/dashboard/training/certifications/page.tsx` | high |
+| HR & Payroll | `/dashboard/training/feedback` | `frontend/src/app/dashboard/training/feedback/page.tsx` | high |
+| HR & Payroll | `/dashboard/training/reports` | `frontend/src/app/dashboard/training/reports/page.tsx` | high |
+| HR & Payroll | `/dashboard/training/ai` | `frontend/src/app/dashboard/training/ai/page.tsx` | high |
+| HR & Payroll | `/dashboard/timesheets/my-timesheets` | `frontend/src/app/dashboard/timesheets/my-timesheets/page.tsx` | high |
+| HR & Payroll | `/dashboard/timesheets/time-entry` | `frontend/src/app/dashboard/timesheets/time-entry/page.tsx` | high |
+| HR & Payroll | `/dashboard/timesheets/weekly-view` | `frontend/src/app/dashboard/timesheets/weekly-view/page.tsx` | high |
+| HR & Payroll | `/dashboard/timesheets/approval-queue` | `frontend/src/app/dashboard/timesheets/approval-queue/page.tsx` | high |
+| HR & Payroll | `/dashboard/timesheets/reports` | `frontend/src/app/dashboard/timesheets/reports/page.tsx` | high |
+| HR & Payroll | `/dashboard/timesheets/ai` | `frontend/src/app/dashboard/timesheets/ai/page.tsx` | high |
+| Administration / Integrations | `/dashboard/webhooks/definitions` | `frontend/src/app/dashboard/webhooks/definitions/page.tsx` | high |
+| Administration / Integrations | `/dashboard/webhooks/subscriptions` | `frontend/src/app/dashboard/webhooks/subscriptions/page.tsx` | high |
+| Administration / Integrations | `/dashboard/webhooks/deliveries` | `frontend/src/app/dashboard/webhooks/deliveries/page.tsx` | high |
+| Administration / Integrations | `/dashboard/webhooks/dead-letter` | `frontend/src/app/dashboard/webhooks/dead-letter/page.tsx` | high |
+| Administration / Integrations | `/dashboard/webhooks/inbound` | `frontend/src/app/dashboard/webhooks/inbound/page.tsx` | high |
+| Administration / Integrations | `/dashboard/webhooks/reports` | `frontend/src/app/dashboard/webhooks/reports/page.tsx` | high |
+| Administration / Integrations | `/dashboard/developer/keys` | `frontend/src/app/dashboard/developer/keys/page.tsx` | high |
+| Administration / Integrations | `/dashboard/developer/graphql` | `frontend/src/app/dashboard/developer/graphql/page.tsx` | high |
+| Administration / Integrations | `/dashboard/webhooks` | `frontend/src/app/dashboard/webhooks/page.tsx` | high |
+| Supply Chain / Inventory | `/dashboard/cycle-count/plans` | `frontend/src/app/dashboard/cycle-count/plans/page.tsx` | high |
+| Supply Chain / Inventory | `/dashboard/cycle-count/tasks` | `frontend/src/app/dashboard/cycle-count/tasks/page.tsx` | high |
+| Supply Chain / Inventory | `/dashboard/cycle-count/entries` | `frontend/src/app/dashboard/cycle-count/entries/page.tsx` | high |
+| Supply Chain / Inventory | `/dashboard/cycle-count/variances` | `frontend/src/app/dashboard/cycle-count/variances/page.tsx` | high |
+| Supply Chain / Inventory | `/dashboard/cycle-count/reports` | `frontend/src/app/dashboard/cycle-count/reports/page.tsx` | high |
+| Supply Chain / Inventory | `/dashboard/shelf-life/fefo-config` | `frontend/src/app/dashboard/shelf-life/fefo-config/page.tsx` | high |
+| Supply Chain / Inventory | `/dashboard/shelf-life/lot-aging` | `frontend/src/app/dashboard/shelf-life/lot-aging/page.tsx` | high |
+| Supply Chain / Inventory | `/dashboard/shelf-life/near-expiry` | `frontend/src/app/dashboard/shelf-life/near-expiry/page.tsx` | high |
+| Supply Chain / Inventory | `/dashboard/shelf-life/expired` | `frontend/src/app/dashboard/shelf-life/expired/page.tsx` | high |
+| Supply Chain / Inventory | `/dashboard/shelf-life/retest-queue` | `frontend/src/app/dashboard/shelf-life/retest-queue/page.tsx` | high |
+| Supply Chain / Inventory | `/dashboard/shelf-life/shipment-validation` | `frontend/src/app/dashboard/shelf-life/shipment-validation/page.tsx` | high |
+| Supply Chain / Inventory | `/dashboard/shelf-life/production-validation` | `frontend/src/app/dashboard/shelf-life/production-validation/page.tsx` | high |
+| Supply Chain / Inventory | `/dashboard/shelf-life/compliance` | `frontend/src/app/dashboard/shelf-life/compliance/page.tsx` | high |
+| Supply Chain / Inventory | `/dashboard/shelf-life/disposition` | `frontend/src/app/dashboard/shelf-life/disposition/page.tsx` | high |
+| Supply Chain / Inventory | `/dashboard/shelf-life/customer-rules` | `frontend/src/app/dashboard/shelf-life/customer-rules/page.tsx` | high |
+| Supply Chain / Inventory | `/dashboard/shelf-life/bulk-hold-monitor` | `frontend/src/app/dashboard/shelf-life/bulk-hold-monitor/page.tsx` | high |
+| Supply Chain / Inventory | `/dashboard/traceability/recalls` | `frontend/src/app/dashboard/traceability/recalls/page.tsx` | high |
+| Supply Chain / Inventory | `/dashboard/traceability/search` | `frontend/src/app/dashboard/traceability/search/page.tsx` | high |
+| Supply Chain / Inventory | `/dashboard/traceability/backward` | `frontend/src/app/dashboard/traceability/backward/page.tsx` | high |
+| Supply Chain / Inventory | `/dashboard/traceability/forward` | `frontend/src/app/dashboard/traceability/forward/page.tsx` | high |
+| Supply Chain / Inventory | `/dashboard/traceability/genealogy` | `frontend/src/app/dashboard/traceability/genealogy/page.tsx` | high |
+| Supply Chain / Inventory | `/dashboard/traceability/mock-recall` | `frontend/src/app/dashboard/traceability/mock-recall/page.tsx` | high |
+| Supply Chain / Inventory | `/dashboard/traceability/regulatory` | `frontend/src/app/dashboard/traceability/regulatory/page.tsx` | high |
+| Logistics | `/dashboard/fleet/vehicles` | `frontend/src/app/dashboard/fleet/vehicles/page.tsx` | high |
+| Logistics | `/dashboard/fleet/drivers` | `frontend/src/app/dashboard/fleet/drivers/page.tsx` | high |
+| Logistics | `/dashboard/fleet/trips` | `frontend/src/app/dashboard/fleet/trips/page.tsx` | high |
+| Logistics | `/dashboard/fleet/fuel` | `frontend/src/app/dashboard/fleet/fuel/page.tsx` | high |
+| Logistics | `/dashboard/fleet/maintenance` | `frontend/src/app/dashboard/fleet/maintenance/page.tsx` | high |
+| Logistics | `/dashboard/fleet/incidents` | `frontend/src/app/dashboard/fleet/incidents/page.tsx` | high |
+| Logistics | `/dashboard/fleet/reports` | `frontend/src/app/dashboard/fleet/reports/page.tsx` | high |
+| Commercial / Marketing | `/dashboard/marketing/campaigns/new` | `frontend/src/app/dashboard/marketing/campaigns/new/page.tsx` | high |
+| Commercial / Marketing | `/dashboard/marketing/promotions/new` | `frontend/src/app/dashboard/marketing/promotions/new/page.tsx` | high |
+| Commercial / Marketing | `/dashboard/marketing/trade-spend/new` | `frontend/src/app/dashboard/marketing/trade-spend/new/page.tsx` | high |
+| Commercial / Marketing | `/dashboard/marketing/ads/new` | `frontend/src/app/dashboard/marketing/ads/new/page.tsx` | high |
+| Commercial / Marketing | `/dashboard/marketing/social-media/new` | `frontend/src/app/dashboard/marketing/social-media/new/page.tsx` | high |
+| Commercial / Marketing | `/dashboard/marketing/segments/new` | `frontend/src/app/dashboard/marketing/segments/new/page.tsx` | high |
+| Commercial / Marketing | `/dashboard/marketing/influencers/new` | `frontend/src/app/dashboard/marketing/influencers/new/page.tsx` | high |
+| Commercial / Marketing | `/dashboard/marketing/ecommerce/stores` | `frontend/src/app/dashboard/marketing/ecommerce/stores/page.tsx` | high |
+| Commercial / Marketing | `/dashboard/marketing/visits/new` | `frontend/src/app/dashboard/marketing/visits/new/page.tsx` | high |
+| Commercial / Marketing | `/dashboard/marketing/brand-spend/new` | `frontend/src/app/dashboard/marketing/brand-spend/new/page.tsx` | high |
+| Commercial / Marketing | `/dashboard/tpm/plans/new` | `frontend/src/app/dashboard/tpm/plans/new/page.tsx` | high |
+| Commercial / Marketing | `/dashboard/tpm/promotions/new` | `frontend/src/app/dashboard/tpm/promotions/new/page.tsx` | high |
+| Commercial / Marketing | `/dashboard/tpm/promotions` | `frontend/src/app/dashboard/tpm/promotions/page.tsx` | high |
+| Commercial / Marketing | `/dashboard/tpm/calendar` | `frontend/src/app/dashboard/tpm/calendar/page.tsx` | high |
+| Commercial / Marketing | `/dashboard/tpm/budget` | `frontend/src/app/dashboard/tpm/budget/page.tsx` | high |
+| Commercial / Marketing | `/dashboard/tpm/claims` | `frontend/src/app/dashboard/tpm/claims/page.tsx` | high |
+| Commercial / Marketing | `/dashboard/tpm/roi` | `frontend/src/app/dashboard/tpm/roi/page.tsx` | high |
+| Commercial / Marketing | `/dashboard/tpm/settlement` | `frontend/src/app/dashboard/tpm/settlement/page.tsx` | high |
+| Commercial / Marketing | `/dashboard/tpm/plans` | `frontend/src/app/dashboard/tpm/plans/page.tsx` | high |
+| Commercial / Marketing | `/dashboard/tpm/ai` | `frontend/src/app/dashboard/tpm/ai/page.tsx` | high |
+| Manufacturing / Planning | `/dashboard/mrp/forecast` | `frontend/src/app/dashboard/mrp/forecast/page.tsx` | high |
+| Manufacturing / Planning | `/dashboard/mrp/suggestions` | `frontend/src/app/dashboard/mrp/suggestions/page.tsx` | high |
+| Manufacturing / Planning | `/dashboard/mrp/run` | `frontend/src/app/dashboard/mrp/run/page.tsx` | high |
+| Manufacturing / Planning | `/dashboard/kanban/boards` | `frontend/src/app/dashboard/kanban/boards/page.tsx` | high |
+| Manufacturing / Planning | `/dashboard/kanban/view` | `frontend/src/app/dashboard/kanban/view/page.tsx` | high |
+| Manufacturing / Planning | `/dashboard/kanban/cards` | `frontend/src/app/dashboard/kanban/cards/page.tsx` | high |
+| Manufacturing / Planning | `/dashboard/kanban/reports` | `frontend/src/app/dashboard/kanban/reports/page.tsx` | high |
+| Manufacturing / Planning | `/dashboard/kanban/ai` | `frontend/src/app/dashboard/kanban/ai/page.tsx` | high |
+| Supply Chain / Procurement | `/dashboard/procurement-suggestion/suggestions` | `frontend/src/app/dashboard/procurement-suggestion/suggestions/page.tsx` | high |
+| Supply Chain / Procurement | `/dashboard/procurement-suggestion/groups` | `frontend/src/app/dashboard/procurement-suggestion/groups/page.tsx` | high |
+| Supply Chain / Procurement | `/dashboard/procurement-suggestion/supplier-prices` | `frontend/src/app/dashboard/procurement-suggestion/supplier-prices/page.tsx` | high |
+| Supply Chain / Procurement | `/dashboard/procurement-suggestion/ai` | `frontend/src/app/dashboard/procurement-suggestion/ai/page.tsx` | high |
+| Supply Chain / Procurement | `/dashboard/subcontracting/locations` | `frontend/src/app/dashboard/subcontracting/locations/page.tsx` | high |
+| Supply Chain / Procurement | `/dashboard/subcontracting/orders` | `frontend/src/app/dashboard/subcontracting/orders/page.tsx` | high |
+| Supply Chain / Procurement | `/dashboard/subcontracting/stock` | `frontend/src/app/dashboard/subcontracting/stock/page.tsx` | high |
+| Supply Chain / Procurement | `/dashboard/subcontracting/yield` | `frontend/src/app/dashboard/subcontracting/yield/page.tsx` | high |
+| Supply Chain / Procurement | `/dashboard/subcontracting/ai` | `frontend/src/app/dashboard/subcontracting/ai/page.tsx` | high |
+| Supply Chain / Procurement | `/dashboard/landed-cost/new` | `frontend/src/app/dashboard/landed-cost/new/page.tsx` | high |
+| Supply Chain / Procurement | `/dashboard/landed-cost/ai` | `frontend/src/app/dashboard/landed-cost/ai/page.tsx` | high |
+| Supply Chain / Procurement | `/dashboard/landed-cost/documents` | `frontend/src/app/dashboard/landed-cost/documents/page.tsx` | high |
+| Manufacturing / Production | `/dashboard/production-execution/work-orders` | `frontend/src/app/dashboard/production-execution/work-orders/page.tsx` | high |
+| Manufacturing / Production | `/dashboard/machine-ops/machines` | `frontend/src/app/dashboard/machine-ops/machines/page.tsx` | high |
+| Manufacturing / Production | `/dashboard/machine-ops/operators` | `frontend/src/app/dashboard/machine-ops/operators/page.tsx` | high |
+| Manufacturing / Production | `/dashboard/machine-ops/teams` | `frontend/src/app/dashboard/machine-ops/teams/page.tsx` | high |
+| Manufacturing / Production | `/dashboard/machine-ops/runtime` | `frontend/src/app/dashboard/machine-ops/runtime/page.tsx` | high |
+| Manufacturing / Production | `/dashboard/machine-ops/performance` | `frontend/src/app/dashboard/machine-ops/performance/page.tsx` | high |
+| Manufacturing / Production | `/dashboard/machine-ops/downtime` | `frontend/src/app/dashboard/machine-ops/downtime/page.tsx` | high |
+| Manufacturing / Production | `/dashboard/machine-ops/costing` | `frontend/src/app/dashboard/machine-ops/costing/page.tsx` | high |
+| Manufacturing / Production | `/dashboard/machine-ops/certs` | `frontend/src/app/dashboard/machine-ops/certs/page.tsx` | high |
+| Manufacturing / Production | `/dashboard/machine-ops/assignment` | `frontend/src/app/dashboard/machine-ops/assignment/page.tsx` | high |
+| Manufacturing / Production | `/dashboard/material-flow/issue` | `frontend/src/app/dashboard/material-flow/issue/page.tsx` | high |
+| Manufacturing / Production | `/dashboard/material-flow/wip-transfer` | `frontend/src/app/dashboard/material-flow/wip-transfer/page.tsx` | high |
+| Manufacturing / Production | `/dashboard/material-flow/bulk-transfer` | `frontend/src/app/dashboard/material-flow/bulk-transfer/page.tsx` | high |
+| Manufacturing / Production | `/dashboard/material-flow/fg-receipt` | `frontend/src/app/dashboard/material-flow/fg-receipt/page.tsx` | high |
+| Manufacturing / Production | `/dashboard/material-flow/reservations` | `frontend/src/app/dashboard/material-flow/reservations/page.tsx` | high |
+| Manufacturing / Production | `/dashboard/material-flow/tanks` | `frontend/src/app/dashboard/material-flow/tanks/page.tsx` | high |
+| Manufacturing / Production | `/dashboard/material-flow/returns` | `frontend/src/app/dashboard/material-flow/returns/page.tsx` | high |
+| Manufacturing / Production | `/dashboard/material-flow/reconciliation` | `frontend/src/app/dashboard/material-flow/reconciliation/page.tsx` | high |
+| Manufacturing / Production | `/dashboard/material-flow/history` | `frontend/src/app/dashboard/material-flow/history/page.tsx` | high |
+| Factory Operations / Quality | `/dashboard/qms/inspections` | `frontend/src/app/dashboard/qms/inspections/page.tsx` | high |
+| Factory Operations / Quality | `/dashboard/qms/templates` | `frontend/src/app/dashboard/qms/templates/page.tsx` | high |
+| Factory Operations / Quality | `/dashboard/qms/haccp` | `frontend/src/app/dashboard/qms/haccp/page.tsx` | high |
+| Factory Operations / Quality | `/dashboard/qms/ccp` | `frontend/src/app/dashboard/qms/ccp/page.tsx` | high |
+| Factory Operations / Quality | `/dashboard/qms/deviations` | `frontend/src/app/dashboard/qms/deviations/page.tsx` | high |
+| Factory Operations / Quality | `/dashboard/qms/corrective-actions` | `frontend/src/app/dashboard/qms/corrective-actions/page.tsx` | high |
+| Factory Operations / Quality | `/dashboard/qms/quarantine` | `frontend/src/app/dashboard/qms/quarantine/page.tsx` | high |
+| Factory Operations / Quality | `/dashboard/qms/allergen` | `frontend/src/app/dashboard/qms/allergen/page.tsx` | high |
+| Factory Operations / Quality | `/dashboard/qms/reports` | `frontend/src/app/dashboard/qms/reports/page.tsx` | high |
+| Factory Operations / Quality | `/dashboard/qms/ai` | `frontend/src/app/dashboard/qms/ai/page.tsx` | high |
+| Factory Operations / Quality | `/dashboard/allergen/material-profiles` | `frontend/src/app/dashboard/allergen/material-profiles/page.tsx` | high |
+| Factory Operations / Quality | `/dashboard/allergen/product-allergens` | `frontend/src/app/dashboard/allergen/product-allergens/page.tsx` | high |
+| Factory Operations / Quality | `/dashboard/allergen/change-logs` | `frontend/src/app/dashboard/allergen/change-logs/page.tsx` | high |
+| Commercial / Sales | `/dashboard/price-lists/approval-queue` | `frontend/src/app/dashboard/price-lists/approval-queue/page.tsx` | high |
+| Commercial / Sales | `/dashboard/contracts/new` | `frontend/src/app/dashboard/contracts/new/page.tsx` | high |
+| Commercial / Sales | `/dashboard/contracts/list` | `frontend/src/app/dashboard/contracts/list/page.tsx` | high |
+| Commercial / Sales | `/dashboard/contracts/expiring` | `frontend/src/app/dashboard/contracts/expiring/page.tsx` | high |
+| Commercial / Sales | `/dashboard/contracts/ai` | `frontend/src/app/dashboard/contracts/ai/page.tsx` | high |
+| Commercial / Sales | `/dashboard/recurring-orders/templates/new` | `frontend/src/app/dashboard/recurring-orders/templates/new/page.tsx` | high |
+| Commercial / Sales | `/dashboard/recurring-orders/templates` | `frontend/src/app/dashboard/recurring-orders/templates/page.tsx` | high |
+| Commercial / Sales | `/dashboard/recurring-orders/reports` | `frontend/src/app/dashboard/recurring-orders/reports/page.tsx` | high |
+| Commercial / Sales | `/dashboard/recurring-orders/ai` | `frontend/src/app/dashboard/recurring-orders/ai/page.tsx` | high |
+| Commercial / Sales | `/dashboard/commissions/rules` | `frontend/src/app/dashboard/commissions/rules/page.tsx` | high |
+| Commercial / Sales | `/dashboard/commissions/transactions` | `frontend/src/app/dashboard/commissions/transactions/page.tsx` | high |
+| Commercial / Sales | `/dashboard/commissions/payouts` | `frontend/src/app/dashboard/commissions/payouts/page.tsx` | high |
+| Commercial / Sales | `/dashboard/commissions/ai` | `frontend/src/app/dashboard/commissions/ai/page.tsx` | high |
+| Commercial / Sales | `/dashboard/secondary-sales/analysis` | `frontend/src/app/dashboard/secondary-sales/analysis/page.tsx` | high |
+| Commercial / Sales | `/dashboard/secondary-sales/inventory` | `frontend/src/app/dashboard/secondary-sales/inventory/page.tsx` | high |
+| Commercial / Sales | `/dashboard/secondary-sales/upload` | `frontend/src/app/dashboard/secondary-sales/upload/page.tsx` | high |
+| Commercial / Sales | `/dashboard/van-sales/vans/new` | `frontend/src/app/dashboard/van-sales/vans/new/page.tsx` | high |
+| Commercial / Sales | `/dashboard/van-sales/route` | `frontend/src/app/dashboard/van-sales/route/page.tsx` | high |
+| Commercial / Sales | `/dashboard/van-sales/pos` | `frontend/src/app/dashboard/van-sales/pos/page.tsx` | high |
+| Commercial / Sales | `/dashboard/van-sales/stock` | `frontend/src/app/dashboard/van-sales/stock/page.tsx` | high |
+| Commercial / Sales | `/dashboard/van-sales/reconciliation` | `frontend/src/app/dashboard/van-sales/reconciliation/page.tsx` | high |
+| Commercial / Sales | `/dashboard/van-sales/vans` | `frontend/src/app/dashboard/van-sales/vans/page.tsx` | high |
+| Commercial / Sales | `/dashboard/van-sales/ai` | `frontend/src/app/dashboard/van-sales/ai/page.tsx` | high |
+| Commercial / Sales | `/dashboard/portal/accounts` | `frontend/src/app/dashboard/portal/accounts/page.tsx` | high |
+| Commercial / Sales | `/dashboard/portal/drafts` | `frontend/src/app/dashboard/portal/drafts/page.tsx` | high |
+| Commercial / Sales | `/dashboard/portal/claims` | `frontend/src/app/dashboard/portal/claims/page.tsx` | high |
+| Commercial / Sales | `/dashboard/portal/users` | `frontend/src/app/dashboard/portal/users/page.tsx` | high |
+| Commercial / Sales | `/dashboard/portal/activity` | `frontend/src/app/dashboard/portal/activity/page.tsx` | high |
+| Commercial / Sales | `/dashboard/portal/ai` | `frontend/src/app/dashboard/portal/ai/page.tsx` | high |
+| Commercial / Sales | `/dashboard/portal/reports` | `frontend/src/app/dashboard/portal/reports/page.tsx` | high |
+| Factory Operations / Utilities | `/dashboard/utility-management/kpi-center/electricity` | `frontend/src/app/dashboard/utility-management/kpi-center/electricity/page.tsx` | high |
+| Factory Operations / Utilities | `/dashboard/utility-management/kpi-center/water` | `frontend/src/app/dashboard/utility-management/kpi-center/water/page.tsx` | high |
+| Factory Operations / Utilities | `/dashboard/utility-management/kpi-center/soft-water` | `frontend/src/app/dashboard/utility-management/kpi-center/soft-water/page.tsx` | high |
+| Factory Operations / Utilities | `/dashboard/utility-management/kpi-center/boiler` | `frontend/src/app/dashboard/utility-management/kpi-center/boiler/page.tsx` | high |
+| Factory Operations / Utilities | `/dashboard/utility-management/kpi-center/compressor` | `frontend/src/app/dashboard/utility-management/kpi-center/compressor/page.tsx` | high |
+| Factory Operations / Utilities | `/dashboard/utility-management/kpi-center/solar` | `frontend/src/app/dashboard/utility-management/kpi-center/solar/page.tsx` | high |
+| Factory Operations / Utilities | `/dashboard/utility-management/kpi-center/chemicals` | `frontend/src/app/dashboard/utility-management/kpi-center/chemicals/page.tsx` | high |
+| Factory Operations / Utilities | `/dashboard/utility-management/kpi-center/wastewater` | `frontend/src/app/dashboard/utility-management/kpi-center/wastewater/page.tsx` | high |
+| Factory Operations / Utilities | `/dashboard/utility-management/kpi-center/utility-cost` | `frontend/src/app/dashboard/utility-management/kpi-center/utility-cost/page.tsx` | high |
+| Factory Operations / Utilities | `/dashboard/utility-management/kpi-center/machine-utility` | `frontend/src/app/dashboard/utility-management/kpi-center/machine-utility/page.tsx` | high |
+| Factory Operations / Utilities | `/dashboard/utility-management/kpi-center` | `frontend/src/app/dashboard/utility-management/kpi-center/page.tsx` | high |
+| Factory Operations / Utilities | `/dashboard/utility-management/kpi-center` | `frontend/src/app/dashboard/utility-management/kpi-center/page.tsx` | high |
+| Factory Operations / Utilities | `/dashboard/utility-management/reports/daily-consumption` | `frontend/src/app/dashboard/utility-management/reports/daily-consumption/page.tsx` | high |
+| Factory Operations / Utilities | `/dashboard/utility-management/reports/equipment-efficiency` | `frontend/src/app/dashboard/utility-management/reports/equipment-efficiency/page.tsx` | high |
+| Factory Operations / Utilities | `/dashboard/utility-management/reports/treatment` | `frontend/src/app/dashboard/utility-management/reports/treatment/page.tsx` | high |
+| Factory Operations / Utilities | `/dashboard/utility-management/reports/cost-allocation` | `frontend/src/app/dashboard/utility-management/reports/cost-allocation/page.tsx` | high |
+| Factory Operations / Utilities | `/dashboard/utility-management/reports/load-analysis` | `frontend/src/app/dashboard/utility-management/reports/load-analysis/page.tsx` | high |
+| Factory Operations / Utilities | `/dashboard/utility-management/reports/anomalies` | `frontend/src/app/dashboard/utility-management/reports/anomalies/page.tsx` | high |
+| Factory Operations / Utilities | `/dashboard/utility-management/reports/sustainability` | `frontend/src/app/dashboard/utility-management/reports/sustainability/page.tsx` | high |
+| Factory Operations / Utilities | `/dashboard/utility-management/kpi-center` | `frontend/src/app/dashboard/utility-management/kpi-center/page.tsx` | high |
+| Factory Operations / Utilities | `/dashboard/esg/activities` | `frontend/src/app/dashboard/esg/activities/page.tsx` | high |
+| Factory Operations / Utilities | `/dashboard/esg/factors` | `frontend/src/app/dashboard/esg/factors/page.tsx` | high |
+| Factory Operations / Utilities | `/dashboard/esg/targets` | `frontend/src/app/dashboard/esg/targets/page.tsx` | high |
+| Factory Operations / Utilities | `/dashboard/esg/reports` | `frontend/src/app/dashboard/esg/reports/page.tsx` | high |
+| Factory Operations / Utilities | `/dashboard/esg/intelligence` | `frontend/src/app/dashboard/esg/intelligence/page.tsx` | high |
+
+---
+
+## Unresolved — No Git Match Found
+
+These broken targets have no known implementation in git history.
+
+| Module | Target Route | Source File | Recommendation |
+|--------|-------------|-------------|----------------|
+| Administration | `/dashboard/users/${r.id` | users/page.tsx | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Administration | `/dashboard/roles/${r.id` | roles/page.tsx | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Administration | `/dashboard/custom-fields/${f.custom_field_id` | custom-fields/page.tsx | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Other | `/dashboard/production/quality` | ai/compliance/page.tsx | CREATE_NEW_REAL_PAGE_REQUIRED |
+| Commercial / CRM | `/dashboard/crm/records/${rec.id` | crm/pipeline/page.tsx | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Commercial / CRM | `/dashboard/crm/records/${rec.id` | crm/leads/page.tsx | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Commercial / CRM | `/dashboard/crm/records/${rec.id` | crm/opportunities/page.tsx | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Commercial / CRM | `/dashboard/crm/records/${act.crm_record_id` | crm/activities/page.tsx | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Commercial / CRM | `/dashboard/nps/surveys` | nps/page.tsx | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Commercial / CRM | `/dashboard/surveys/${s.id` | surveys/page.tsx | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Documents & Communication | `/dashboard/documents/${d.id` | documents/compliance/page.tsx | CREATE_NEW_REAL_PAGE_REQUIRED |
+| Documents & Communication | `/dashboard/documents/${d.id` | documents/expiring/page.tsx | CREATE_NEW_REAL_PAGE_REQUIRED |
+| Documents & Communication | `/dashboard/knowledge-base/${a.id` | knowledge-base/page.tsx | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Documents & Communication | `/dashboard/knowledge-base/categories` | knowledge-base/page.tsx | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Finance | `/dashboard/bank-reconciliation/statements/${s.id` | bank-reconciliation/page.tsx | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Finance | `/dashboard/invoice-match/${m.id` | invoice-match/page.tsx | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Finance | `/dashboard/dunning/cases/${c.id` | dunning/page.tsx | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Supply Chain / Inventory | `/dashboard/traceability/recalls/${r.id` | traceability/page.tsx | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Commercial / Marketing | `/dashboard/marketing/campaigns/${c.id` | marketing/campaigns/page.tsx | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Commercial / Marketing | `/dashboard/marketing/promotions/${p.id` | marketing/promotions/page.tsx | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Commercial / Marketing | `/dashboard/marketing/trade-spend/${t.id` | marketing/trade-spend/page.tsx | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Commercial / Marketing | `/dashboard/marketing/ads/${a.id` | marketing/ads/page.tsx | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Commercial / Marketing | `/dashboard/marketing/social-media/${a.id` | marketing/social-media/page.tsx | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Commercial / Marketing | `/dashboard/marketing/segments/${s.id` | marketing/segments/page.tsx | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Commercial / Marketing | `/dashboard/marketing/influencers/${i.id` | marketing/influencers/page.tsx | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Commercial / Marketing | `/dashboard/marketing/visits/${v.id` | marketing/visits/page.tsx | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Commercial / Marketing | `/dashboard/marketing/brand-spend/${b.id` | marketing/brand-spend/page.tsx | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Commercial / Marketing | `/dashboard/tpm/promotions/${p.id` | tpm/page.tsx | CONVERT_TO_WORKSPACE_SUBVIEW |
+| Supply Chain / Procurement | `/dashboard/procurement/orders/${p.id}` | procurement/orders/page.tsx | CREATE_NEW_REAL_PAGE_REQUIRED |
+| Supply Chain / Procurement | `/dashboard/procurement/orders/${a.po_id}` | procurement/deliveries/page.tsx | CREATE_NEW_REAL_PAGE_REQUIRED |
+
+…and 17 more
+
+---
+
+## Recommendation Summary
+
+| Category | Count | Action |
+|----------|-------|--------|
+| RESTORE_OLD_PAGE_FROM_GIT | 305 | Restore from git commit `674b6c5` + add BYPASS_PREFIX_REDIRECT |
+| CONVERT_TO_WORKSPACE_SUBVIEW | 38 | Change href to `?tab=X&view=Y` pattern in workspace |
+| CREATE_NEW_REAL_PAGE_REQUIRED | 10 | No implementation exists — new page required |
+| NEEDS_BUSINESS_DECISION | 0 | Intent unclear — needs product decision |
+
+---
+
+*Generated by `scripts/audit-visible-import-graph.js` — DO NOT FIX based on this report. Discovery pass only.*

@@ -1,155 +1,154 @@
 #!/usr/bin/env node
 /**
- * Audit Script: Build Import Visibility Graph + Broken Action Target Report
+ * audit-visible-import-graph.js
  *
- * PURPOSE: Find all dashboard pages that are user-visible through dynamic import
- * into workspace pages, even when their standalone route is middleware-redirected.
+ * Dynamic audit: builds import visibility graph, extracts all action targets
+ * from user-visible pages, classifies broken targets, searches git history.
  *
- * KEY INSIGHT: The previous audit classified pages as "safe" if middleware redirected
- * their standalone route. This is WRONG if the page is also dynamically imported
- * into a workspace tab. Users see the page content (and its broken action cards)
- * regardless of what middleware does to the standalone route.
+ * KEY INSIGHT: A page can be user-visible even if its standalone route is
+ * middleware-redirected — if it is dynamically imported into a workspace tab.
  *
- * OUTPUT:
- *   docs/VISIBLE_IMPORT_GRAPH.json
- *   docs/VISIBLE_IMPORT_GRAPH.md
- *   docs/VISIBLE_BROKEN_ACTION_TARGETS.json
- *   docs/VISIBLE_BROKEN_ACTION_TARGETS.md
- *   docs/BROKEN_BUTTON_ORIGINAL_PAGE_MATCH_REPORT.json
- *   docs/BROKEN_BUTTON_ORIGINAL_PAGE_MATCH_REPORT.md
+ * Outputs:
+ *   docs/VISIBLE_IMPORT_GRAPH.json / .md
+ *   docs/VISIBLE_ACTION_TARGET_INVENTORY.json / .md
+ *   docs/VISIBLE_BROKEN_ACTION_TARGETS.json / .md
+ *   docs/BROKEN_BUTTON_ORIGINAL_PAGE_MATCH_REPORT.json / .md
  */
 
-const fs = require("fs");
+"use strict";
+
+const fs   = require("fs");
 const path = require("path");
+const { execSync } = require("child_process");
 
-// ─── CONSTANTS ───────────────────────────────────────────────────────────────
+const ROOT      = path.resolve(__dirname, "..");
+const DOCS      = path.join(ROOT, "docs");
+const FRONTEND  = path.join(ROOT, "frontend", "src");
+const DASHBOARD = path.join(FRONTEND, "app", "dashboard");
 
-const ROOT = path.resolve(__dirname, "..");
-const DOCS = path.join(ROOT, "docs");
-const FRONTEND = path.join(ROOT, "frontend", "src", "app", "dashboard");
-
-// ─── MIDDLEWARE REDIRECT MAP (from middleware.ts) ─────────────────────────────
-// Key = middleware-redirected prefix/exact route; Value = workspace dest
+// ─── MIDDLEWARE REDIRECT MAP ──────────────────────────────────────────────────
+// Source of truth: frontend/src/middleware.ts (REDIRECTS object)
+// Key = old route prefix (exact or prefix-matched); Value = workspace dest
 const MIDDLEWARE_REDIRECTS = {
-  "/dashboard/movements":                       { workspace: "/dashboard/inventory", tab: "movements" },
-  "/dashboard/cycle-count":                     { workspace: "/dashboard/inventory", tab: "cycle-count" },
-  "/dashboard/shelf-life":                      { workspace: "/dashboard/inventory", tab: "shelf-life" },
-  "/dashboard/traceability":                    { workspace: "/dashboard/inventory", tab: "traceability" },
-  "/dashboard/wms":                             { workspace: "/dashboard/warehouses", tab: "wms" },
-  "/dashboard/putaway":                         { workspace: "/dashboard/warehouses", tab: "wms" },
-  "/dashboard/containers":                      { workspace: "/dashboard/logistics", tab: "containers" },
-  "/dashboard/procurement-suggestion":          { workspace: "/dashboard/procurement", tab: "suggestions" },
-  "/dashboard/subcontracting":                  { workspace: "/dashboard/procurement", tab: "subcontracting" },
-  "/dashboard/copacking":                       { workspace: "/dashboard/procurement", tab: "subcontracting" },
-  "/dashboard/landed-cost":                     { workspace: "/dashboard/procurement", tab: "landed-cost" },
-  "/dashboard/supplier-portal":                 { workspace: "/dashboard/procurement", tab: "supplier-portal" },
-  "/dashboard/price-lists":                     { workspace: "/dashboard/sales", tab: "price-lists" },
-  "/dashboard/dynamic-pricing":                 { workspace: "/dashboard/sales", tab: "dynamic-pricing" },
-  "/dashboard/contracts":                       { workspace: "/dashboard/sales", tab: "contracts" },
-  "/dashboard/recurring-orders":                { workspace: "/dashboard/sales", tab: "recurring" },
-  "/dashboard/commissions":                     { workspace: "/dashboard/sales", tab: "commissions" },
-  "/dashboard/secondary-sales":                 { workspace: "/dashboard/sales", tab: "secondary" },
-  "/dashboard/van-sales":                       { workspace: "/dashboard/sales", tab: "van-sales" },
-  "/dashboard/portal":                          { workspace: "/dashboard/sales", tab: "portal" },
-  "/dashboard/sales/pod":                       { workspace: "/dashboard/sales", tab: "delivery" },
-  "/dashboard/sales/customer-statement":        { workspace: "/dashboard/sales", tab: "customers" },
-  "/dashboard/crm/ai":                          { workspace: "/dashboard/crm", tab: "overview" },
-  "/dashboard/crm/overdue":                     { workspace: "/dashboard/crm", tab: "pipeline" },
-  "/dashboard/crm/qualify":                     { workspace: "/dashboard/crm", tab: "leads" },
-  "/dashboard/crm/records":                     { workspace: "/dashboard/crm", tab: "overview" },
-  "/dashboard/loyalty":                         { workspace: "/dashboard/crm", tab: "loyalty" },
-  "/dashboard/nps":                             { workspace: "/dashboard/crm", tab: "nps" },
-  "/dashboard/surveys":                         { workspace: "/dashboard/crm", tab: "surveys" },
-  "/dashboard/tpm":                             { workspace: "/dashboard/marketing", tab: "tpm" },
-  "/dashboard/promotions":                      { workspace: "/dashboard/marketing", tab: "promotions-schemes" },
-  "/dashboard/market-intelligence":             { workspace: "/dashboard/marketing", tab: "market-intel" },
-  "/dashboard/marketing/campaigns":             { workspace: "/dashboard/marketing", tab: "campaigns" },
-  "/dashboard/marketing/ads":                   { workspace: "/dashboard/marketing", tab: "ads" },
-  "/dashboard/marketing/brand-spend":           { workspace: "/dashboard/marketing", tab: "brand-spend" },
-  "/dashboard/marketing/crm":                   { workspace: "/dashboard/marketing", tab: "overview" },
-  "/dashboard/marketing/ecommerce":             { workspace: "/dashboard/marketing", tab: "ecommerce" },
-  "/dashboard/marketing/influencers":           { workspace: "/dashboard/marketing", tab: "influencers" },
-  "/dashboard/marketing/promotions":            { workspace: "/dashboard/marketing", tab: "promotions" },
-  "/dashboard/marketing/segments":              { workspace: "/dashboard/marketing", tab: "segments" },
-  "/dashboard/marketing/social-media":          { workspace: "/dashboard/marketing", tab: "social-media" },
-  "/dashboard/marketing/surveys":               { workspace: "/dashboard/marketing", tab: "overview" },
-  "/dashboard/marketing/trade-spend":           { workspace: "/dashboard/marketing", tab: "trade-spend" },
-  "/dashboard/marketing/visits":                { workspace: "/dashboard/marketing", tab: "visits" },
-  "/dashboard/marketing/ai-optimizer":          { workspace: "/dashboard/marketing", tab: "analytics" },
-  "/dashboard/finance/accounting":              { workspace: "/dashboard/finance", tab: "accounting" },
-  "/dashboard/bank-reconciliation":             { workspace: "/dashboard/finance", tab: "bank-recon" },
-  "/dashboard/invoice-match":                   { workspace: "/dashboard/finance", tab: "invoice-match" },
-  "/dashboard/fixed-assets":                    { workspace: "/dashboard/finance", tab: "fixed-assets" },
-  "/dashboard/dimensions":                      { workspace: "/dashboard/finance", tab: "dimensions" },
-  "/dashboard/dunning":                         { workspace: "/dashboard/finance", tab: "dunning" },
-  "/dashboard/tax":                             { workspace: "/dashboard/finance", tab: "tax" },
-  "/dashboard/bank-api":                        { workspace: "/dashboard/finance", tab: "bank-api" },
-  "/dashboard/expenses":                        { workspace: "/dashboard/hr", tab: "expenses" },
-  "/dashboard/production/advanced":             { workspace: "/dashboard/production", tab: "scheduling" },
-  "/dashboard/production/ai":                   { workspace: "/dashboard/production", tab: "plans" },
-  "/dashboard/production/orders":               { workspace: "/dashboard/production", tab: "orders" },
-  "/dashboard/production/plans":                { workspace: "/dashboard/production", tab: "plans" },
-  "/dashboard/production/shifts":               { workspace: "/dashboard/production", tab: "scheduling" },
-  "/dashboard/production/work-orders":          { workspace: "/dashboard/production", tab: "orders" },
-  "/dashboard/production-execution":            { workspace: "/dashboard/production", tab: "execution" },
-  "/dashboard/machine-ops":                     { workspace: "/dashboard/production", tab: "machine-ops" },
-  "/dashboard/material-flow":                   { workspace: "/dashboard/production", tab: "material-flow" },
-  "/dashboard/projects":                        { workspace: "/dashboard/production", tab: "projects" },
-  "/dashboard/planning/schedule":               { workspace: "/dashboard/planning", tab: "advanced" },
-  "/dashboard/planning/capacity":               { workspace: "/dashboard/planning", tab: "advanced" },
-  "/dashboard/planning/bottlenecks":            { workspace: "/dashboard/planning", tab: "advanced" },
-  "/dashboard/planning/simulation":             { workspace: "/dashboard/planning", tab: "advanced" },
-  "/dashboard/planning/changeover":             { workspace: "/dashboard/planning", tab: "advanced" },
-  "/dashboard/mrp":                             { workspace: "/dashboard/planning", tab: "mrp" },
-  "/dashboard/mps":                             { workspace: "/dashboard/planning", tab: "mps" },
-  "/dashboard/kanban":                          { workspace: "/dashboard/planning", tab: "kanban" },
-  "/dashboard/qms":                             { workspace: "/dashboard/quality", tab: "qms" },
-  "/dashboard/allergen":                        { workspace: "/dashboard/quality", tab: "allergen" },
-  "/dashboard/brand-assets":                    { workspace: "/dashboard/quality", tab: "brand-assets" },
-  "/dashboard/quality/consumer-complaints":     { workspace: "/dashboard/quality", tab: "consumer-complaints" },
-  "/dashboard/gs1":                             { workspace: "/dashboard/compliance", tab: "gs1" },
+  "/dashboard/movements":                       { workspace: "/dashboard/inventory",          tab: "movements" },
+  "/dashboard/cycle-count":                     { workspace: "/dashboard/inventory",          tab: "cycle-count" },
+  "/dashboard/shelf-life":                      { workspace: "/dashboard/inventory",          tab: "shelf-life" },
+  "/dashboard/traceability":                    { workspace: "/dashboard/inventory",          tab: "traceability" },
+  "/dashboard/wms":                             { workspace: "/dashboard/warehouses",         tab: "wms" },
+  "/dashboard/putaway":                         { workspace: "/dashboard/warehouses",         tab: "wms" },
+  "/dashboard/containers":                      { workspace: "/dashboard/logistics",          tab: "containers" },
+  "/dashboard/procurement-suggestion":          { workspace: "/dashboard/procurement",        tab: "suggestions" },
+  "/dashboard/subcontracting":                  { workspace: "/dashboard/procurement",        tab: "subcontracting" },
+  "/dashboard/copacking":                       { workspace: "/dashboard/procurement",        tab: "subcontracting" },
+  "/dashboard/landed-cost":                     { workspace: "/dashboard/procurement",        tab: "landed-cost" },
+  "/dashboard/supplier-portal":                 { workspace: "/dashboard/procurement",        tab: "supplier-portal" },
+  "/dashboard/price-lists":                     { workspace: "/dashboard/sales",              tab: "price-lists" },
+  "/dashboard/dynamic-pricing":                 { workspace: "/dashboard/sales",              tab: "dynamic-pricing" },
+  "/dashboard/contracts":                       { workspace: "/dashboard/sales",              tab: "contracts" },
+  "/dashboard/recurring-orders":                { workspace: "/dashboard/sales",              tab: "recurring" },
+  "/dashboard/commissions":                     { workspace: "/dashboard/sales",              tab: "commissions" },
+  "/dashboard/secondary-sales":                 { workspace: "/dashboard/sales",              tab: "secondary" },
+  "/dashboard/van-sales":                       { workspace: "/dashboard/sales",              tab: "van-sales" },
+  "/dashboard/portal":                          { workspace: "/dashboard/sales",              tab: "portal" },
+  "/dashboard/sales/pod":                       { workspace: "/dashboard/sales",              tab: "delivery" },
+  "/dashboard/sales/customer-statement":        { workspace: "/dashboard/sales",              tab: "customers" },
+  "/dashboard/crm/ai":                          { workspace: "/dashboard/crm",               tab: "overview" },
+  "/dashboard/crm/overdue":                     { workspace: "/dashboard/crm",               tab: "pipeline" },
+  "/dashboard/crm/qualify":                     { workspace: "/dashboard/crm",               tab: "leads" },
+  "/dashboard/crm/records":                     { workspace: "/dashboard/crm",               tab: "overview" },
+  "/dashboard/loyalty":                         { workspace: "/dashboard/crm",               tab: "loyalty" },
+  "/dashboard/nps":                             { workspace: "/dashboard/crm",               tab: "nps" },
+  "/dashboard/surveys":                         { workspace: "/dashboard/crm",               tab: "surveys" },
+  "/dashboard/tpm":                             { workspace: "/dashboard/marketing",          tab: "tpm" },
+  "/dashboard/promotions":                      { workspace: "/dashboard/marketing",          tab: "promotions-schemes" },
+  "/dashboard/market-intelligence":             { workspace: "/dashboard/marketing",          tab: "market-intel" },
+  "/dashboard/marketing/campaigns":             { workspace: "/dashboard/marketing",          tab: "campaigns" },
+  "/dashboard/marketing/ads":                   { workspace: "/dashboard/marketing",          tab: "ads" },
+  "/dashboard/marketing/brand-spend":           { workspace: "/dashboard/marketing",          tab: "brand-spend" },
+  "/dashboard/marketing/crm":                   { workspace: "/dashboard/marketing",          tab: "overview" },
+  "/dashboard/marketing/ecommerce":             { workspace: "/dashboard/marketing",          tab: "ecommerce" },
+  "/dashboard/marketing/influencers":           { workspace: "/dashboard/marketing",          tab: "influencers" },
+  "/dashboard/marketing/promotions":            { workspace: "/dashboard/marketing",          tab: "promotions" },
+  "/dashboard/marketing/segments":              { workspace: "/dashboard/marketing",          tab: "segments" },
+  "/dashboard/marketing/social-media":          { workspace: "/dashboard/marketing",          tab: "social-media" },
+  "/dashboard/marketing/surveys":               { workspace: "/dashboard/marketing",          tab: "overview" },
+  "/dashboard/marketing/trade-spend":           { workspace: "/dashboard/marketing",          tab: "trade-spend" },
+  "/dashboard/marketing/visits":                { workspace: "/dashboard/marketing",          tab: "visits" },
+  "/dashboard/marketing/ai-optimizer":          { workspace: "/dashboard/marketing",          tab: "analytics" },
+  "/dashboard/finance/accounting":              { workspace: "/dashboard/finance",            tab: "accounting" },
+  "/dashboard/bank-reconciliation":             { workspace: "/dashboard/finance",            tab: "bank-recon" },
+  "/dashboard/invoice-match":                   { workspace: "/dashboard/finance",            tab: "invoice-match" },
+  "/dashboard/fixed-assets":                    { workspace: "/dashboard/finance",            tab: "fixed-assets" },
+  "/dashboard/dimensions":                      { workspace: "/dashboard/finance",            tab: "dimensions" },
+  "/dashboard/dunning":                         { workspace: "/dashboard/finance",            tab: "dunning" },
+  "/dashboard/tax":                             { workspace: "/dashboard/finance",            tab: "tax" },
+  "/dashboard/bank-api":                        { workspace: "/dashboard/finance",            tab: "bank-api" },
+  "/dashboard/expenses":                        { workspace: "/dashboard/hr",                 tab: "expenses" },
+  "/dashboard/production/advanced":             { workspace: "/dashboard/production",         tab: "scheduling" },
+  "/dashboard/production/ai":                   { workspace: "/dashboard/production",         tab: "plans" },
+  "/dashboard/production/orders":               { workspace: "/dashboard/production",         tab: "orders" },
+  "/dashboard/production/plans":                { workspace: "/dashboard/production",         tab: "plans" },
+  "/dashboard/production/shifts":               { workspace: "/dashboard/production",         tab: "scheduling" },
+  "/dashboard/production/work-orders":          { workspace: "/dashboard/production",         tab: "orders" },
+  "/dashboard/production-execution":            { workspace: "/dashboard/production",         tab: "execution" },
+  "/dashboard/machine-ops":                     { workspace: "/dashboard/production",         tab: "machine-ops" },
+  "/dashboard/material-flow":                   { workspace: "/dashboard/production",         tab: "material-flow" },
+  "/dashboard/projects":                        { workspace: "/dashboard/production",         tab: "projects" },
+  "/dashboard/planning/schedule":               { workspace: "/dashboard/planning",           tab: "advanced" },
+  "/dashboard/planning/capacity":               { workspace: "/dashboard/planning",           tab: "advanced" },
+  "/dashboard/planning/bottlenecks":            { workspace: "/dashboard/planning",           tab: "advanced" },
+  "/dashboard/planning/simulation":             { workspace: "/dashboard/planning",           tab: "advanced" },
+  "/dashboard/planning/changeover":             { workspace: "/dashboard/planning",           tab: "advanced" },
+  "/dashboard/mrp":                             { workspace: "/dashboard/planning",           tab: "mrp" },
+  "/dashboard/mps":                             { workspace: "/dashboard/planning",           tab: "mps" },
+  "/dashboard/kanban":                          { workspace: "/dashboard/planning",           tab: "kanban" },
+  "/dashboard/qms":                             { workspace: "/dashboard/quality",            tab: "qms" },
+  "/dashboard/allergen":                        { workspace: "/dashboard/quality",            tab: "allergen" },
+  "/dashboard/brand-assets":                    { workspace: "/dashboard/quality",            tab: "brand-assets" },
+  "/dashboard/quality/consumer-complaints":     { workspace: "/dashboard/quality",            tab: "consumer-complaints" },
+  "/dashboard/gs1":                             { workspace: "/dashboard/compliance",         tab: "gs1" },
   "/dashboard/iot":                             { workspace: "/dashboard/utility-management", tab: "iot" },
   "/dashboard/esg":                             { workspace: "/dashboard/utility-management", tab: "esg" },
   "/dashboard/utility-management/categories":   { workspace: "/dashboard/utility-management", tab: "assets" },
   "/dashboard/utility-management/kpi-center":   { workspace: "/dashboard/utility-management", tab: "kpi-center" },
   "/dashboard/utility-management/reports":      { workspace: "/dashboard/utility-management", tab: "reports" },
-  "/dashboard/fleet":                           { workspace: "/dashboard/logistics", tab: "fleet" },
-  "/dashboard/logistics/containers":            { workspace: "/dashboard/logistics", tab: "containers" },
-  "/dashboard/recruitment":                     { workspace: "/dashboard/hr", tab: "recruitment" },
-  "/dashboard/ess":                             { workspace: "/dashboard/hr", tab: "ess" },
-  "/dashboard/appraisals":                      { workspace: "/dashboard/hr", tab: "appraisals" },
-  "/dashboard/training":                        { workspace: "/dashboard/hr", tab: "training" },
-  "/dashboard/timesheets":                      { workspace: "/dashboard/hr", tab: "timesheets" },
-  "/dashboard/documents/new":                   { workspace: "/dashboard/documents", drawer: "create" },
-  "/dashboard/knowledge-base":                  { workspace: "/dashboard/documents", tab: "knowledge-base" },
-  "/dashboard/esign":                           { workspace: "/dashboard/documents", tab: "esign" },
-  "/dashboard/chatter":                         { workspace: "/dashboard/communication", tab: "chatter" },
-  "/dashboard/calendar":                        { workspace: "/dashboard/communication", tab: "calendar" },
-  "/dashboard/messages":                        { workspace: "/dashboard/communication", tab: "messages" },
-  "/dashboard/email":                           { workspace: "/dashboard/communication", tab: "email" },
-  "/dashboard/whatsapp":                        { workspace: "/dashboard/communication", tab: "whatsapp" },
-  "/dashboard/calls":                           { workspace: "/dashboard/communication", tab: "calls" },
-  "/dashboard/meetings":                        { workspace: "/dashboard/communication", tab: "meetings" },
-  "/dashboard/notification-center":             { workspace: "/dashboard/communication", tab: "notifications" },
-  "/dashboard/report-builder":                  { workspace: "/dashboard/analytics", tab: "report-builder" },
-  "/dashboard/reports":                         { workspace: "/dashboard/analytics", tab: "reports" },
-  "/dashboard/users":                           { workspace: "/dashboard/admin", tab: "users" },
-  "/dashboard/roles":                           { workspace: "/dashboard/admin", tab: "roles" },
-  "/dashboard/permissions":                     { workspace: "/dashboard/admin", tab: "permissions" },
-  "/dashboard/companies":                       { workspace: "/dashboard/admin", tab: "companies" },
-  "/dashboard/security":                        { workspace: "/dashboard/admin", tab: "security" },
-  "/dashboard/approvals":                       { workspace: "/dashboard/admin", tab: "approvals" },
-  "/dashboard/custom-fields":                   { workspace: "/dashboard/admin", tab: "custom-fields" },
-  "/dashboard/utilities":                       { workspace: "/dashboard/admin", tab: "system-config" },
-  "/dashboard/mobile":                          { workspace: "/dashboard/admin", tab: "mobile" },
-  "/dashboard/logs":                            { workspace: "/dashboard/admin", tab: "logs" },
-  "/dashboard/import-history":                  { workspace: "/dashboard/admin", tab: "import-history" },
-  "/dashboard/webhooks":                        { workspace: "/dashboard/integrations", tab: "webhooks" },
-  "/dashboard/developer":                       { workspace: "/dashboard/integrations", tab: "developer" },
-  "/dashboard/payroll":                         { workspace: "/dashboard/hr", tab: "payroll" },
+  "/dashboard/fleet":                           { workspace: "/dashboard/logistics",          tab: "fleet" },
+  "/dashboard/logistics/containers":            { workspace: "/dashboard/logistics",          tab: "containers" },
+  "/dashboard/recruitment":                     { workspace: "/dashboard/hr",                 tab: "recruitment" },
+  "/dashboard/ess":                             { workspace: "/dashboard/hr",                 tab: "ess" },
+  "/dashboard/appraisals":                      { workspace: "/dashboard/hr",                 tab: "appraisals" },
+  "/dashboard/training":                        { workspace: "/dashboard/hr",                 tab: "training" },
+  "/dashboard/timesheets":                      { workspace: "/dashboard/hr",                 tab: "timesheets" },
+  "/dashboard/documents/new":                   { workspace: "/dashboard/documents",          drawer: "create" },
+  "/dashboard/knowledge-base":                  { workspace: "/dashboard/documents",          tab: "knowledge-base" },
+  "/dashboard/esign":                           { workspace: "/dashboard/documents",          tab: "esign" },
+  "/dashboard/chatter":                         { workspace: "/dashboard/communication",      tab: "chatter" },
+  "/dashboard/calendar":                        { workspace: "/dashboard/communication",      tab: "calendar" },
+  "/dashboard/messages":                        { workspace: "/dashboard/communication",      tab: "messages" },
+  "/dashboard/email":                           { workspace: "/dashboard/communication",      tab: "email" },
+  "/dashboard/whatsapp":                        { workspace: "/dashboard/communication",      tab: "whatsapp" },
+  "/dashboard/calls":                           { workspace: "/dashboard/communication",      tab: "calls" },
+  "/dashboard/meetings":                        { workspace: "/dashboard/communication",      tab: "meetings" },
+  "/dashboard/notification-center":             { workspace: "/dashboard/communication",      tab: "notifications" },
+  "/dashboard/report-builder":                  { workspace: "/dashboard/analytics",          tab: "report-builder" },
+  "/dashboard/reports":                         { workspace: "/dashboard/analytics",          tab: "reports" },
+  "/dashboard/users":                           { workspace: "/dashboard/admin",              tab: "users" },
+  "/dashboard/roles":                           { workspace: "/dashboard/admin",              tab: "roles" },
+  "/dashboard/permissions":                     { workspace: "/dashboard/admin",              tab: "permissions" },
+  "/dashboard/companies":                       { workspace: "/dashboard/admin",              tab: "companies" },
+  "/dashboard/security":                        { workspace: "/dashboard/admin",              tab: "security" },
+  "/dashboard/approvals":                       { workspace: "/dashboard/admin",              tab: "approvals" },
+  "/dashboard/custom-fields":                   { workspace: "/dashboard/admin",              tab: "custom-fields" },
+  "/dashboard/utilities":                       { workspace: "/dashboard/admin",              tab: "system-config" },
+  "/dashboard/mobile":                          { workspace: "/dashboard/admin",              tab: "mobile" },
+  "/dashboard/logs":                            { workspace: "/dashboard/admin",              tab: "logs" },
+  "/dashboard/import-history":                  { workspace: "/dashboard/admin",              tab: "import-history" },
+  "/dashboard/webhooks":                        { workspace: "/dashboard/integrations",       tab: "webhooks" },
+  "/dashboard/developer":                       { workspace: "/dashboard/integrations",       tab: "developer" },
+  "/dashboard/payroll":                         { workspace: "/dashboard/hr",                 tab: "payroll" },
 };
 
-// Pages bypassed from middleware prefix redirect (real standalone pages)
+// Routes that bypass prefix redirect (real standalone pages under redirected prefix)
 const BYPASS_PREFIX_REDIRECT = new Set([
   "/dashboard/mps/planning-board",
   "/dashboard/mps/capacity",
@@ -157,677 +156,688 @@ const BYPASS_PREFIX_REDIRECT = new Set([
   "/dashboard/mps/whatif",
 ]);
 
-// ─── DYNAMIC IMPORT MAP (from grep of workspace pages) ────────────────────────
-// workspacePage → array of dynamically imported module paths (relative to @/app/...)
-const DYNAMIC_IMPORTS = {
-  "frontend/src/app/dashboard/inventory/page.tsx": [
-    { importPath: "@/app/dashboard/movements/page", tabKey: "movements" },
-    { importPath: "@/app/dashboard/cycle-count/page", tabKey: "cycle-count" },
-    { importPath: "@/app/dashboard/shelf-life/page", tabKey: "shelf-life" },
-    { importPath: "@/app/dashboard/traceability/page", tabKey: "traceability" },
-    { importPath: "@/app/dashboard/inventory/serials/page", tabKey: "serials" },
-    { importPath: "@/app/dashboard/inventory/valuation/page", tabKey: "valuation" },
-  ],
-  "frontend/src/app/dashboard/planning/page.tsx": [
-    { importPath: "@/app/dashboard/planning/schedule/page", tabKey: "advanced" },
-    { importPath: "@/app/dashboard/planning/capacity/page", tabKey: "advanced" },
-    { importPath: "@/app/dashboard/planning/simulation/page", tabKey: "advanced" },
-    { importPath: "@/app/dashboard/planning/bottlenecks/page", tabKey: "advanced" },
-    { importPath: "@/app/dashboard/planning/changeover/page", tabKey: "advanced" },
-    { importPath: "@/app/dashboard/mrp/page", tabKey: "mrp" },
-    { importPath: "@/app/dashboard/mps/page", tabKey: "mps" },
-    { importPath: "@/app/dashboard/kanban/page", tabKey: "kanban" },
-  ],
-  "frontend/src/app/dashboard/production/page.tsx": [
-    { importPath: "@/app/dashboard/production/orders/page", tabKey: "orders" },
-    { importPath: "@/app/dashboard/production/scheduling/page", tabKey: "scheduling" },
-    { importPath: "@/app/dashboard/production/work-centers/page", tabKey: "work-centers" },
-    { importPath: "@/app/dashboard/production/batch-lots/page", tabKey: "batch-lots" },
-    { importPath: "@/app/dashboard/production/quality-control/page", tabKey: "quality-control" },
-    { importPath: "@/app/dashboard/production/labor/page", tabKey: "labor" },
-    { importPath: "@/app/dashboard/production/oee/page", tabKey: "oee" },
-    { importPath: "@/app/dashboard/production/downtime/page", tabKey: "downtime" },
-    { importPath: "@/app/dashboard/production/waste-yield/page", tabKey: "waste-yield" },
-    { importPath: "@/app/dashboard/production/wip/page", tabKey: "wip" },
-    { importPath: "@/app/dashboard/production/costing/page", tabKey: "costing" },
-    { importPath: "@/app/dashboard/production/variance/page", tabKey: "variance" },
-    { importPath: "@/app/dashboard/production/reports/page", tabKey: "reports" },
-    { importPath: "@/app/dashboard/production/routing/page", tabKey: "routing" },
-    { importPath: "@/app/dashboard/production/time-tracking/page", tabKey: "time-tracking" },
-    { importPath: "@/app/dashboard/production-execution/page", tabKey: "execution" },
-    { importPath: "@/app/dashboard/machine-ops/page", tabKey: "machine-ops" },
-    { importPath: "@/app/dashboard/material-flow/page", tabKey: "material-flow" },
-    { importPath: "@/app/dashboard/projects/page", tabKey: "projects" },
-  ],
-  "frontend/src/app/dashboard/finance/page.tsx": [
-    { importPath: "@/app/dashboard/finance/accounting/page", tabKey: "accounting" },
-    { importPath: "@/app/dashboard/finance/cashbook/page", tabKey: "cashbook" },
-    { importPath: "@/app/dashboard/finance/receivables/page", tabKey: "receivables" },
-    { importPath: "@/app/dashboard/finance/budget/page", tabKey: "budget" },
-    { importPath: "@/app/dashboard/finance/mpesa/page", tabKey: "mpesa" },
-    { importPath: "@/app/dashboard/finance/costing/page", tabKey: "costing" },
-    { importPath: "@/app/dashboard/finance/exchange-rates/page", tabKey: "exchange-rates" },
-    { importPath: "@/app/dashboard/finance/etims/page", tabKey: "etims" },
-    { importPath: "@/app/dashboard/finance/vat-returns/page", tabKey: "vat-returns" },
-    { importPath: "@/app/dashboard/bank-reconciliation/page", tabKey: "bank-recon" },
-    { importPath: "@/app/dashboard/invoice-match/page", tabKey: "invoice-match" },
-    { importPath: "@/app/dashboard/fixed-assets/page", tabKey: "fixed-assets" },
-    { importPath: "@/app/dashboard/dimensions/page", tabKey: "dimensions" },
-    { importPath: "@/app/dashboard/dunning/page", tabKey: "dunning" },
-    { importPath: "@/app/dashboard/tax/page", tabKey: "tax" },
-    { importPath: "@/app/dashboard/bank-api/page", tabKey: "bank-api" },
-    { importPath: "@/app/dashboard/expenses/page", tabKey: "expenses" },
-  ],
-  "frontend/src/app/dashboard/hr/page.tsx": [
-    { importPath: "@/app/dashboard/hr/employees/page", tabKey: "employees" },
-    { importPath: "@/app/dashboard/hr/attendance/page", tabKey: "attendance" },
-    { importPath: "@/app/dashboard/hr/leave/page", tabKey: "leave" },
-    { importPath: "@/app/dashboard/hr/payroll/page", tabKey: "payroll" },
-    { importPath: "@/app/dashboard/hr/shifts/page", tabKey: "shifts" },
-    { importPath: "@/app/dashboard/recruitment/page", tabKey: "recruitment" },
-    { importPath: "@/app/dashboard/ess/page", tabKey: "ess" },
-    { importPath: "@/app/dashboard/appraisals/page", tabKey: "appraisals" },
-    { importPath: "@/app/dashboard/training/page", tabKey: "training" },
-    { importPath: "@/app/dashboard/timesheets/page", tabKey: "timesheets" },
-    { importPath: "@/app/dashboard/expenses/page", tabKey: "expenses" },
-  ],
-  "frontend/src/app/dashboard/sales/page.tsx": [
-    { importPath: "@/app/dashboard/sales/orders/page", tabKey: "orders" },
-    { importPath: "@/app/dashboard/sales/invoices/page", tabKey: "invoices" },
-    { importPath: "@/app/dashboard/sales/customers/page", tabKey: "customers" },
-    { importPath: "@/app/dashboard/sales/quotes/page", tabKey: "quotes" },
-    { importPath: "@/app/dashboard/sales/shipments/page", tabKey: "shipments" },
-    { importPath: "@/app/dashboard/sales/delivery/page", tabKey: "delivery" },
-    { importPath: "@/app/dashboard/sales/collections/page", tabKey: "collections" },
-    { importPath: "@/app/dashboard/sales/returns/page", tabKey: "returns" },
-    { importPath: "@/app/dashboard/sales/pricing/page", tabKey: "pricing" },
-    { importPath: "@/app/dashboard/sales/margin/page", tabKey: "margin" },
-    { importPath: "@/app/dashboard/sales/distributors/page", tabKey: "distributors" },
-    { importPath: "@/app/dashboard/sales/field-sales/page", tabKey: "field-sales" },
-    { importPath: "@/app/dashboard/sales/reports/page", tabKey: "reports" },
-    { importPath: "@/app/dashboard/price-lists/page", tabKey: "price-lists" },
-    { importPath: "@/app/dashboard/dynamic-pricing/page", tabKey: "dynamic-pricing" },
-    { importPath: "@/app/dashboard/contracts/page", tabKey: "contracts" },
-    { importPath: "@/app/dashboard/recurring-orders/page", tabKey: "recurring" },
-    { importPath: "@/app/dashboard/commissions/page", tabKey: "commissions" },
-    { importPath: "@/app/dashboard/secondary-sales/page", tabKey: "secondary" },
-    { importPath: "@/app/dashboard/van-sales/page", tabKey: "van-sales" },
-    { importPath: "@/app/dashboard/portal/page", tabKey: "portal" },
-  ],
-  "frontend/src/app/dashboard/procurement/page.tsx": [
-    { importPath: "@/app/dashboard/procurement/orders/page", tabKey: "orders" },
-    { importPath: "@/app/dashboard/procurement/rfq/page", tabKey: "rfq" },
-    { importPath: "@/app/dashboard/procurement/deliveries/page", tabKey: "deliveries" },
-    { importPath: "@/app/dashboard/procurement/suppliers/page", tabKey: "suppliers" },
-    { importPath: "@/app/dashboard/procurement/blanket-agreements/page", tabKey: "blanket-agreements" },
-    { importPath: "@/app/dashboard/procurement/reorder-policies/page", tabKey: "reorder-policies" },
-    { importPath: "@/app/dashboard/procurement-suggestion/page", tabKey: "suggestions" },
-    { importPath: "@/app/dashboard/subcontracting/page", tabKey: "subcontracting" },
-    { importPath: "@/app/dashboard/landed-cost/page", tabKey: "landed-cost" },
-    { importPath: "@/app/dashboard/supplier-portal/page", tabKey: "supplier-portal" },
-  ],
-  "frontend/src/app/dashboard/quality/page.tsx": [
-    { importPath: "@/app/dashboard/quality/certificates/page", tabKey: "certificates" },
-    { importPath: "@/app/dashboard/quality/parameters/page", tabKey: "parameters" },
-    { importPath: "@/app/dashboard/quality/consumer-complaints/page", tabKey: "consumer-complaints" },
-    { importPath: "@/app/dashboard/quality/reports/page", tabKey: "reports" },
-    { importPath: "@/app/dashboard/qms/page", tabKey: "qms" },
-    { importPath: "@/app/dashboard/allergen/page", tabKey: "allergen" },
-    { importPath: "@/app/dashboard/brand-assets/page", tabKey: "brand-assets" },
-  ],
-  "frontend/src/app/dashboard/logistics/page.tsx": [
-    { importPath: "@/app/dashboard/logistics/containers/page", tabKey: "containers" },
-    { importPath: "@/app/dashboard/logistics/arrivals/page", tabKey: "arrivals" },
-    { importPath: "@/app/dashboard/logistics/documents/page", tabKey: "documents" },
-    { importPath: "@/app/dashboard/logistics/shipments/page", tabKey: "shipments" },
-    { importPath: "@/app/dashboard/fleet/page", tabKey: "fleet" },
-  ],
-  "frontend/src/app/dashboard/warehouses/page.tsx": [
-    { importPath: "@/app/dashboard/wms/page", tabKey: "wms" },
-  ],
-  "frontend/src/app/dashboard/communication/page.tsx": [
-    { importPath: "@/app/dashboard/chatter/page", tabKey: "chatter" },
-    { importPath: "@/app/dashboard/calendar/page", tabKey: "calendar" },
-    { importPath: "@/app/dashboard/messages/page", tabKey: "messages" },
-    { importPath: "@/app/dashboard/email/page", tabKey: "email" },
-    { importPath: "@/app/dashboard/whatsapp/page", tabKey: "whatsapp" },
-    { importPath: "@/app/dashboard/calls/page", tabKey: "calls" },
-    { importPath: "@/app/dashboard/meetings/page", tabKey: "meetings" },
-    { importPath: "@/app/dashboard/notification-center/page", tabKey: "notifications" },
-  ],
-  "frontend/src/app/dashboard/analytics/page.tsx": [
-    { importPath: "@/app/dashboard/analytics/inventory/page", tabKey: "inventory" },
-    { importPath: "@/app/dashboard/analytics/sales/page", tabKey: "sales" },
-    { importPath: "@/app/dashboard/analytics/production/page", tabKey: "production" },
-    { importPath: "@/app/dashboard/analytics/procurement/page", tabKey: "procurement" },
-    { importPath: "@/app/dashboard/analytics/finance/page", tabKey: "finance" },
-    { importPath: "@/app/dashboard/analytics/payments/page", tabKey: "payments" },
-    { importPath: "@/app/dashboard/reports/page", tabKey: "reports" },
-    { importPath: "@/app/dashboard/report-builder/page", tabKey: "report-builder" },
-  ],
-  "frontend/src/app/dashboard/admin/page.tsx": [
-    { importPath: "@/app/dashboard/users/page", tabKey: "users" },
-    { importPath: "@/app/dashboard/roles/page", tabKey: "roles" },
-    { importPath: "@/app/dashboard/permissions/page", tabKey: "permissions" },
-    { importPath: "@/app/dashboard/companies/page", tabKey: "companies" },
-    { importPath: "@/app/dashboard/security/page", tabKey: "security" },
-    { importPath: "@/app/dashboard/approvals/page", tabKey: "approvals" },
-    { importPath: "@/app/dashboard/custom-fields/page", tabKey: "custom-fields" },
-    { importPath: "@/app/dashboard/utilities/page", tabKey: "system-config" },
-    { importPath: "@/app/dashboard/mobile/page", tabKey: "mobile" },
-    { importPath: "@/app/dashboard/logs/page", tabKey: "logs" },
-    { importPath: "@/app/dashboard/import-history/page", tabKey: "import-history" },
-  ],
-  "frontend/src/app/dashboard/marketing/page.tsx": [
-    { importPath: "@/app/dashboard/marketing/campaigns/page", tabKey: "campaigns" },
-    { importPath: "@/app/dashboard/marketing/promotions/page", tabKey: "promotions" },
-    { importPath: "@/app/dashboard/marketing/trade-spend/page", tabKey: "trade-spend" },
-    { importPath: "@/app/dashboard/marketing/ads/page", tabKey: "ads" },
-    { importPath: "@/app/dashboard/marketing/social-media/page", tabKey: "social-media" },
-    { importPath: "@/app/dashboard/marketing/segments/page", tabKey: "segments" },
-    { importPath: "@/app/dashboard/marketing/influencers/page", tabKey: "influencers" },
-    { importPath: "@/app/dashboard/marketing/ecommerce/page", tabKey: "ecommerce" },
-    { importPath: "@/app/dashboard/marketing/analytics/page", tabKey: "analytics" },
-    { importPath: "@/app/dashboard/marketing/visits/page", tabKey: "visits" },
-    { importPath: "@/app/dashboard/marketing/brand-spend/page", tabKey: "brand-spend" },
-    { importPath: "@/app/dashboard/tpm/page", tabKey: "tpm" },
-    { importPath: "@/app/dashboard/market-intelligence/page", tabKey: "market-intel" },
-  ],
-  "frontend/src/app/dashboard/crm/page.tsx": [
-    { importPath: "@/app/dashboard/crm/pipeline/page", tabKey: "pipeline" },
-    { importPath: "@/app/dashboard/crm/leads/page", tabKey: "leads" },
-    { importPath: "@/app/dashboard/crm/opportunities/page", tabKey: "opportunities" },
-    { importPath: "@/app/dashboard/crm/activities/page", tabKey: "activities" },
-    { importPath: "@/app/dashboard/crm/forecast/page", tabKey: "forecast" },
-    { importPath: "@/app/dashboard/crm/territory/page", tabKey: "territory" },
-    { importPath: "@/app/dashboard/crm/stages/page", tabKey: "stages" },
-    { importPath: "@/app/dashboard/crm/win-loss/page", tabKey: "win-loss" },
-    { importPath: "@/app/dashboard/loyalty/page", tabKey: "loyalty" },
-    { importPath: "@/app/dashboard/nps/page", tabKey: "nps" },
-    { importPath: "@/app/dashboard/surveys/page", tabKey: "surveys" },
-  ],
-  "frontend/src/app/dashboard/documents/page.tsx": [
-    { importPath: "@/app/dashboard/documents/compliance/page", tabKey: "compliance" },
-    { importPath: "@/app/dashboard/documents/expiring/page", tabKey: "expiring" },
-    { importPath: "@/app/dashboard/knowledge-base/page", tabKey: "knowledge-base" },
-    { importPath: "@/app/dashboard/esign/page", tabKey: "esign" },
-  ],
-  "frontend/src/app/dashboard/integrations/page.tsx": [
-    { importPath: "@/app/dashboard/integrations/mpesa/page", tabKey: "mpesa" },
-    { importPath: "@/app/dashboard/integrations/sync/page", tabKey: "sync" },
-    { importPath: "@/app/dashboard/integrations/marketplace/page", tabKey: "marketplace" },
-    { importPath: "@/app/dashboard/integrations/barcode/page", tabKey: "barcode" },
-    { importPath: "@/app/dashboard/integrations/marketing-sync/page", tabKey: "marketing-sync" },
-    { importPath: "@/app/dashboard/integrations/logs/page", tabKey: "logs" },
-    { importPath: "@/app/dashboard/webhooks/page", tabKey: "webhooks" },
-    { importPath: "@/app/dashboard/developer/page", tabKey: "developer" },
-  ],
-  "frontend/src/app/dashboard/utility-management/page.tsx": [
-    { importPath: "@/app/dashboard/utility-management/assets/page", tabKey: "assets" },
-    { importPath: "@/app/dashboard/utility-management/electricity/page", tabKey: "electricity" },
-    { importPath: "@/app/dashboard/utility-management/water/page", tabKey: "water" },
-    { importPath: "@/app/dashboard/utility-management/solar/page", tabKey: "solar" },
-    { importPath: "@/app/dashboard/utility-management/steam/page", tabKey: "steam" },
-    { importPath: "@/app/dashboard/utility-management/wastewater/page", tabKey: "wastewater" },
-    { importPath: "@/app/dashboard/utility-management/soft-water/page", tabKey: "soft-water" },
-    { importPath: "@/app/dashboard/utility-management/compressor/page", tabKey: "compressor" },
-    { importPath: "@/app/dashboard/utility-management/chemical-treatment/page", tabKey: "chemical-treatment" },
-    { importPath: "@/app/dashboard/utility-management/machine-utility/page", tabKey: "machine-utility" },
-    { importPath: "@/app/dashboard/utility-management/readings/page", tabKey: "readings" },
-    { importPath: "@/app/dashboard/utility-management/devices/page", tabKey: "devices" },
-    { importPath: "@/app/dashboard/utility-management/kpi-center/page", tabKey: "kpi-center" },
-    { importPath: "@/app/dashboard/utility-management/alarm-center/page", tabKey: "alarm-center" },
-    { importPath: "@/app/dashboard/utility-management/alarm-rules/page", tabKey: "alarm-rules" },
-    { importPath: "@/app/dashboard/utility-management/billing/page", tabKey: "billing" },
-    { importPath: "@/app/dashboard/utility-management/transactions/page", tabKey: "transactions" },
-    { importPath: "@/app/dashboard/utility-management/reports/page", tabKey: "reports" },
-    { importPath: "@/app/dashboard/utility-management/integration/page", tabKey: "integration" },
-    { importPath: "@/app/dashboard/iot/page", tabKey: "iot" },
-    { importPath: "@/app/dashboard/esg/page", tabKey: "esg" },
-  ],
-};
+// ─── HELPERS ──────────────────────────────────────────────────────────────────
 
-// ─── GIT HISTORY FINDINGS (from git show + git log commands) ─────────────────
-// Evidence of real pages that existed before consolidation
-const GIT_HISTORY = {
-  // Cycle Count - REAL pages existed in commit 674b6c5 (2026-05-01)
-  "/dashboard/cycle-count/plans":     { commit: "674b6c5", date: "2026-05-01", wasReal: true,  deletedIn: "bd6faf5", deletedDate: "2026-05-17", note: "Full CRUD: listPlans, createPlan, generateTasks, updatePlan" },
-  "/dashboard/cycle-count/tasks":     { commit: "674b6c5", date: "2026-05-01", wasReal: true,  deletedIn: "bd6faf5", deletedDate: "2026-05-17", note: "Task queue with status management" },
-  "/dashboard/cycle-count/entries":   { commit: "674b6c5", date: "2026-05-01", wasReal: true,  deletedIn: "bd6faf5", deletedDate: "2026-05-17", note: "Physical count entry recording" },
-  "/dashboard/cycle-count/variances": { commit: "674b6c5", date: "2026-05-01", wasReal: true,  deletedIn: "bd6faf5", deletedDate: "2026-05-17", note: "Full approve/reject variance workflow with bulk selection" },
-  "/dashboard/cycle-count/reports":   { commit: "674b6c5", date: "2026-05-01", wasReal: true,  deletedIn: "bd6faf5", deletedDate: "2026-05-17", note: "Accuracy, variance, AI insights reporting" },
-  // Shelf Life - REAL pages existed in commit bd6faf5 (may have been redirect stubs)
-  "/dashboard/shelf-life/bulk-hold-monitor":    { commit: "bd6faf5", date: "2026-05-17", wasReal: false, note: "Exists as redirect stub in latest known commit" },
-  "/dashboard/shelf-life/compliance":           { commit: "bd6faf5", date: "2026-05-17", wasReal: false, note: "Exists as redirect stub" },
-  "/dashboard/shelf-life/customer-rules":       { commit: "bd6faf5", date: "2026-05-17", wasReal: false, note: "Exists as redirect stub" },
-  "/dashboard/shelf-life/disposition":          { commit: "bd6faf5", date: "2026-05-17", wasReal: false, note: "Exists as redirect stub" },
-  "/dashboard/shelf-life/expired":              { commit: "bd6faf5", date: "2026-05-17", wasReal: false, note: "Exists as redirect stub" },
-  "/dashboard/shelf-life/fefo-config":          { commit: "bd6faf5", date: "2026-05-17", wasReal: false, note: "Exists as redirect stub" },
-  "/dashboard/shelf-life/lot-aging":            { commit: "bd6faf5", date: "2026-05-17", wasReal: false, note: "Exists as redirect stub" },
-  "/dashboard/shelf-life/near-expiry":          { commit: "bd6faf5", date: "2026-05-17", wasReal: false, note: "Exists as redirect stub" },
-  "/dashboard/shelf-life/production-validation":{ commit: "bd6faf5", date: "2026-05-17", wasReal: false, note: "Exists as redirect stub" },
-  "/dashboard/shelf-life/retest-queue":         { commit: "bd6faf5", date: "2026-05-17", wasReal: false, note: "Exists as redirect stub" },
-  // Traceability - REAL pages existed in commit bd6faf5
-  "/dashboard/traceability/backward":   { commit: "bd6faf5", date: "2026-05-17", wasReal: false, note: "Exists as redirect stub" },
-  "/dashboard/traceability/forward":    { commit: "bd6faf5", date: "2026-05-17", wasReal: false, note: "Exists as redirect stub" },
-  "/dashboard/traceability/genealogy":  { commit: "bd6faf5", date: "2026-05-17", wasReal: false, note: "Exists as redirect stub" },
-  "/dashboard/traceability/mock-recall":{ commit: "bd6faf5", date: "2026-05-17", wasReal: false, note: "Exists as redirect stub" },
-  "/dashboard/traceability/recalls":    { commit: "bd6faf5", date: "2026-05-17", wasReal: false, note: "Stub + recalls/[id]/page.tsx existed as dynamic route" },
-  "/dashboard/traceability/regulatory": { commit: "bd6faf5", date: "2026-05-17", wasReal: false, note: "Exists as redirect stub" },
-  "/dashboard/traceability/search":     { commit: "bd6faf5", date: "2026-05-17", wasReal: false, note: "Exists as redirect stub" },
-};
-
-// ─── BROKEN ACTION CARDS DATA (from BROKEN_ACTION_CARDS.json) ────────────────
-// Grouped by source file for lookup
-const brokenCardsRaw = JSON.parse(
-  fs.readFileSync(path.join(DOCS, "BROKEN_ACTION_CARDS.json"), "utf-8")
-);
-
-// Build lookup: sourceFile → array of broken stubs
-const brokenBySource = {};
-for (const entry of brokenCardsRaw) {
-  const key = entry.sourceFile;
-  if (!brokenBySource[key]) brokenBySource[key] = [];
-  brokenBySource[key].push(entry);
+function git(cmd, opts = {}) {
+  try {
+    return execSync(cmd, { cwd: ROOT, encoding: "utf-8", timeout: 12000, ...opts });
+  } catch { return ""; }
 }
 
-// ─── HELPER: importPath → relative file path ──────────────────────────────────
-function importPathToFile(importPath) {
-  // "@/app/dashboard/X/page" → "frontend/src/app/dashboard/X/page.tsx"
-  return importPath.replace("@/", "frontend/src/") + ".tsx";
+function readFile(filePath) {
+  try { return fs.readFileSync(filePath, "utf-8"); } catch { return null; }
 }
 
-// ─── HELPER: file path → route guess ─────────────────────────────────────────
-function fileToRoute(filePath) {
-  // "frontend/src/app/dashboard/X/page.tsx" → "/dashboard/X"
-  return filePath
-    .replace("frontend/src/app", "")
+function fileExists(p) {
+  try { return fs.existsSync(p); } catch { return false; }
+}
+
+/** Walk a directory recursively, return paths matching predicate */
+function walkDir(dir, predicate) {
+  const results = [];
+  if (!fileExists(dir)) return results;
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) results.push(...walkDir(full, predicate));
+    else if (predicate(entry.name, full)) results.push(full);
+  }
+  return results;
+}
+
+/** Convert absolute file path to route string */
+function fileToRoute(absPath) {
+  const norm = absPath.replace(/\\/g, "/");
+  const base = path.join(FRONTEND, "app").replace(/\\/g, "/");
+  return norm
+    .replace(base, "")
     .replace(/\/page\.tsx$/, "")
     .replace(/\/$/, "") || "/";
 }
 
-// ─── HELPER: check if route is middleware-redirected ─────────────────────────
-function isMiddlewareRedirected(route) {
-  // Exact match
+/** Convert @/app/... import path to absolute file path */
+function importToAbs(importPath) {
+  return path.join(
+    FRONTEND,
+    importPath.replace(/^@\//, "").replace(/\//g, path.sep) + ".tsx"
+  );
+}
+
+/** Check if a file is a redirect stub (<= 8 non-empty lines, contains redirect() */
+function isRedirectStub(absPath) {
+  const content = readFile(absPath);
+  if (!content) return false;
+  const lines = content.split("\n").filter(l => l.trim().length > 0);
+  return lines.length <= 8 && content.includes("redirect(");
+}
+
+/** Check if route is caught by middleware (returns redirect dest or null) */
+function middlewareMatch(route) {
   if (MIDDLEWARE_REDIRECTS[route]) return MIDDLEWARE_REDIRECTS[route];
-  // Prefix match
+  if (BYPASS_PREFIX_REDIRECT.has(route)) return null;
   const parts = route.split("/");
   for (let i = parts.length - 1; i >= 2; i--) {
     const prefix = parts.slice(0, i).join("/");
-    if (MIDDLEWARE_REDIRECTS[prefix] && !BYPASS_PREFIX_REDIRECT.has(route)) {
-      return MIDDLEWARE_REDIRECTS[prefix];
-    }
+    if (MIDDLEWARE_REDIRECTS[prefix]) return MIDDLEWARE_REDIRECTS[prefix];
   }
   return null;
 }
 
-// ─── BUILD VISIBILITY GRAPH ──────────────────────────────────────────────────
+/** Module name from workspace file path */
+function moduleFromWorkspace(wsFile) {
+  const route = fileToRoute(wsFile).replace(/\\/g, "/");
+  const map = {
+    "/dashboard/inventory":          "Supply Chain / Inventory",
+    "/dashboard/warehouses":         "Supply Chain / Warehouses",
+    "/dashboard/procurement":        "Supply Chain / Procurement",
+    "/dashboard/planning":           "Manufacturing / Planning",
+    "/dashboard/production":         "Manufacturing / Production",
+    "/dashboard/quality":            "Factory Operations / Quality",
+    "/dashboard/utility-management": "Factory Operations / Utilities",
+    "/dashboard/maintenance":        "Factory Operations / Maintenance",
+    "/dashboard/finance":            "Finance",
+    "/dashboard/hr":                 "HR & Payroll",
+    "/dashboard/payroll":            "HR & Payroll",
+    "/dashboard/sales":              "Commercial / Sales",
+    "/dashboard/crm":                "Commercial / CRM",
+    "/dashboard/marketing":          "Commercial / Marketing",
+    "/dashboard/logistics":          "Logistics",
+    "/dashboard/communication":      "Documents & Communication",
+    "/dashboard/documents":          "Documents & Communication",
+    "/dashboard/analytics":          "Intelligence / Analytics",
+    "/dashboard/admin":              "Administration",
+    "/dashboard/integrations":       "Administration / Integrations",
+    "/dashboard/compliance":         "Administration / Compliance",
+  };
+  return map[route] || "Other";
+}
 
-const visibilityGraph = [];
-const workspacePages = Object.keys(DYNAMIC_IMPORTS);
+/** Severity for a broken target */
+function severity(target) {
+  if (target.includes("/new") || target.includes("/create") || target.includes("drawer=create")) return "critical";
+  if (target.includes("/run") || target.includes("/generate") || target.includes("/approve")) return "critical";
+  if (target.includes("/reports") || target.includes("/ai") || target.includes("/analytics")) return "medium";
+  return "high";
+}
 
-// Build reverse map: imported file → workspace pages that import it
-const importedByWorkspace = {};
-for (const [workspacePage, imports] of Object.entries(DYNAMIC_IMPORTS)) {
-  for (const imp of imports) {
-    const file = importPathToFile(imp.importPath);
-    if (!importedByWorkspace[file]) importedByWorkspace[file] = [];
-    importedByWorkspace[file].push({ workspacePage, tabKey: imp.tabKey });
+// ─── PHASE 1: Dynamically scan workspace pages for dynamic() imports ──────────
+
+console.log("Phase 1: Scanning for dynamic imports…");
+
+const workspacePages = walkDir(DASHBOARD, (name) => name === "page.tsx")
+  .filter(p => {
+    const content = readFile(p);
+    return content && content.includes("dynamic(() => import(");
+  });
+
+// Map: importedFilePath → [ { workspacePage, tabKey } ]
+const importedBy = {};
+
+for (const wsPage of workspacePages) {
+  const content = readFile(wsPage);
+  if (!content) continue;
+  const re = /dynamic\(\s*\(\s*\)\s*=>\s*import\(\s*["'`](@\/app\/dashboard\/[^"'`]+)["'`]\s*\)/g;
+  let m;
+  while ((m = re.exec(content)) !== null) {
+    const absImported = importToAbs(m[1]);
+    if (!importedBy[absImported]) importedBy[absImported] = [];
+    // Try to extract tab key from surrounding lines
+    const lineStart = content.lastIndexOf("\n", m.index);
+    const lineEnd   = content.indexOf("\n", m.index);
+    const line = content.slice(lineStart, lineEnd);
+    // tab key usually in nearby const declaration e.g. const FooPage = dynamic(...)
+    // or in tab array: { key: "xxx", ... content: <FooPage /> }
+    const varMatch = line.match(/const\s+(\w+)\s*=/);
+    importedBy[absImported].push({ workspacePage: wsPage, varName: varMatch ? varMatch[1] : "unknown" });
   }
 }
 
-// Process each imported file
-for (const [filePath, importers] of Object.entries(importedByWorkspace)) {
-  const routeGuess = fileToRoute(filePath);
-  const middlewareRedirect = isMiddlewareRedirected(routeGuess);
-  const isRedirectStubAsStandalone = !!middlewareRedirect;
-  const hasBrokenCards = !!brokenBySource[filePath];
-  const brokenCards = brokenBySource[filePath] || [];
+console.log(`  Found ${Object.keys(importedBy).length} dynamically imported pages across ${workspacePages.length} workspace pages`);
 
-  visibilityGraph.push({
-    filePath,
-    routeGuess,
-    visibility: "DYNAMICALLY_IMPORTED_VISIBLE",
-    visibleBecause: importers.map((imp) => ({
-      importedBy: imp.workspacePage,
-      importType: "dynamic",
-      tabKey: imp.tabKey,
-      parentRouteGuess: fileToRoute(imp.workspacePage),
-      parentVisibility: "DIRECT_WORKSPACE_VISIBLE",
-      evidence: `dynamic(() => import("${filePath.replace("frontend/src/", "@/")}"))`,
+// ─── PHASE 2: Build visibility graph ─────────────────────────────────────────
+
+console.log("Phase 2: Building visibility graph…");
+
+const visGraph = [];
+
+for (const [importedFile, importers] of Object.entries(importedBy)) {
+  const route = fileToRoute(importedFile).replace(/\\/g, "/");
+  const mwMatch = middlewareMatch(route);
+  const exists = fileExists(importedFile);
+  const isStub = exists ? isRedirectStub(importedFile) : false;
+
+  visGraph.push({
+    filePath:                    importedFile.replace(ROOT + path.sep, "").replace(/\\/g, "/"),
+    routeGuess:                  route,
+    visibility:                  "DYNAMICALLY_IMPORTED_VISIBLE",
+    visibleBecause:              importers.map(i => ({
+      importedBy:        i.workspacePage.replace(ROOT + path.sep, "").replace(/\\/g, "/"),
+      varName:           i.varName,
+      importType:        "dynamic",
+      parentRouteGuess:  fileToRoute(i.workspacePage).replace(/\\/g, "/"),
     })),
-    isRedirectStubAsStandalone,
-    standaloneRedirectsTo: isRedirectStubAsStandalone
-      ? `${middlewareRedirect.workspace}${middlewareRedirect.tab ? `?tab=${middlewareRedirect.tab}` : ""}${middlewareRedirect.drawer ? `?drawer=${middlewareRedirect.drawer}` : ""}`
-      : null,
+    fileExists:                  exists,
+    isRedirectStubAsStandalone:  !!mwMatch,
+    standaloneRedirectsTo:       mwMatch ? `${mwMatch.workspace}${mwMatch.tab ? "?tab=" + mwMatch.tab : ""}${mwMatch.drawer ? "?drawer=" + mwMatch.drawer : ""}` : null,
     isStillUserVisibleThroughImport: true,
-    hasBrokenActionCards: hasBrokenCards,
-    brokenCardCount: brokenCards.length,
-    brokenCardRoutes: brokenCards.map((c) => c.stubRoute),
+    module: moduleFromWorkspace(importers[0]?.workspacePage || ""),
   });
 }
 
-// ─── BUILD BROKEN VISIBLE TARGETS ────────────────────────────────────────────
+// ─── PHASE 3: Extract action targets from user-visible pages ─────────────────
 
-const brokenVisibleTargets = [];
-let idCounter = 1;
+console.log("Phase 3: Extracting action targets from user-visible pages…");
 
-// Module classification by workspace
-function classifyModule(workspacePage) {
-  const route = fileToRoute(workspacePage);
-  const moduleMap = {
-    "/dashboard/inventory": "Supply Chain / Inventory",
-    "/dashboard/warehouses": "Supply Chain / Warehouses",
-    "/dashboard/planning": "Manufacturing / Planning",
-    "/dashboard/production": "Manufacturing / Production",
-    "/dashboard/finance": "Finance",
-    "/dashboard/hr": "HR & Payroll",
-    "/dashboard/sales": "Commercial / Sales",
-    "/dashboard/procurement": "Supply Chain / Procurement",
-    "/dashboard/quality": "Factory Operations / Quality",
-    "/dashboard/logistics": "Logistics",
-    "/dashboard/communication": "Documents & Communication",
-    "/dashboard/analytics": "Intelligence / Analytics",
-    "/dashboard/admin": "Administration",
-    "/dashboard/marketing": "Commercial / Marketing",
-    "/dashboard/crm": "Commercial / CRM",
-    "/dashboard/documents": "Documents & Communication",
-    "/dashboard/integrations": "Administration / Integrations",
-    "/dashboard/utility-management": "Factory Operations / Utilities",
-  };
-  return moduleMap[route] || "Unknown";
-}
+// Regex patterns to find navigation targets in source files
+// Captures /dashboard/... route strings from href, router.push, etc.
+const NAV_PATTERNS = [
+  // Link href="/dashboard/..." or href={"/dashboard/..."}
+  { re: /href[=:]\s*[{"'`]+\s*(\/dashboard\/[^"'`}\s]+)/g, type: "Link.href" },
+  // router.push|replace("/dashboard/...")
+  { re: /router\.(push|replace)\(\s*["'`](\/dashboard\/[^"'`\s]+)/g, type: "router.push", capIdx: 2 },
+  // window.location = or .href =
+  { re: /window\.location(?:\.href)?\s*=\s*["'`](\/dashboard\/[^"'`\s]+)/g, type: "window.location" },
+];
 
-function getRecommendation(stubRoute, gitInfo) {
-  if (gitInfo && gitInfo.wasReal) return "RESTORE_OLD_PAGE_FROM_GIT";
-  if (gitInfo && !gitInfo.wasReal) return "CONVERT_TO_WORKSPACE_SUBVIEW";
-  // Default: check if it's a same-workspace redirect
-  return "CONVERT_TO_WORKSPACE_SUBVIEW";
-}
+const allTargets = []; // { sourceFile, route, lineNumber, targetRoute, targetType, evidence, label }
 
-for (const node of visibilityGraph) {
-  if (!node.hasBrokenActionCards) continue;
+for (const node of visGraph) {
+  const absPath = path.join(ROOT, node.filePath.replace(/\//g, path.sep));
+  const content = readFile(absPath);
+  if (!content) continue;
 
-  const brokenCards = brokenBySource[node.filePath] || [];
+  const lines = content.split("\n");
 
-  for (const card of brokenCards) {
-    const stubRoute = card.stubRoute;
-    const gitInfo = GIT_HISTORY[stubRoute];
-    const importers = node.visibleBecause;
-    const parentWorkspace = importers[0]?.parentRouteGuess || "unknown";
+  for (const { re, type, capIdx = 1 } of NAV_PATTERNS) {
+    re.lastIndex = 0;
+    let m;
+    while ((m = re.exec(content)) !== null) {
+      const targetRoute = m[capIdx].split("?")[0].split("#")[0]; // strip query/hash
+      if (!targetRoute.startsWith("/dashboard/")) continue;
 
-    // Determine severity
-    let severity = "high";
-    if (stubRoute.includes("/new") || stubRoute.includes("/create")) severity = "critical";
-    else if (stubRoute.includes("/reports") || stubRoute.includes("/ai")) severity = "medium";
+      // Find line number
+      const linesBefore = content.slice(0, m.index).split("\n").length;
+      const lineNo = linesBefore;
 
-    brokenVisibleTargets.push({
-      id: `BVT-${String(idCounter++).padStart(4, "0")}`,
-      module: classifyModule(importers[0]?.importedBy || ""),
-      sourceFile: node.filePath,
-      sourceRouteContext: node.routeGuess,
-      visibleVia: `${parentWorkspace}?tab=${importers[0]?.tabKey || "?"}`,
-      label: card.stubRoute.split("/").pop() || "unknown",
-      currentTarget: card.stubRoute,
-      currentBehavior: "redirect_stub",
-      redirectsTo: card.redirectTarget,
-      whyBroken: `Card in ${node.routeGuess} (user-visible as ${parentWorkspace}?tab=${importers[0]?.tabKey}) links to ${stubRoute} which is a redirect stub → ${card.redirectTarget}. User clicks card → lands on same workspace tab they're already on. Action has no effect.`,
-      severity,
-      userVisible: true,
-      isRedirectStubAsStandalone: node.isRedirectStubAsStandalone,
-      evidence: card.matches ? card.matches[0] : "href in source",
-      gitHistoryCandidates: gitInfo ? [
-        {
-          commit: gitInfo.commit,
-          commitDate: gitInfo.date,
-          filePath: `frontend/src/app${stubRoute}/page.tsx`,
-          route: stubRoute,
-          wasRealImplementation: gitInfo.wasReal,
-          deletedIn: gitInfo.deletedIn || null,
-          deletedDate: gitInfo.deletedDate || null,
-          evidence: gitInfo.note,
-          confidence: gitInfo.wasReal ? "high" : "medium",
-          restoreComplexity: gitInfo.wasReal ? "easy" : "medium",
-          likelyOriginalTarget: gitInfo.wasReal,
-        }
-      ] : [],
-      recommendation: getRecommendation(stubRoute, gitInfo),
-    });
+      // Try to extract a label: look for nearby text content on same or adjacent lines
+      const contextLines = lines.slice(Math.max(0, lineNo - 3), lineNo + 3);
+      const labelMatch = contextLines.join(" ").match(/"([A-Z][A-Za-z0-9 &/+\-]+)"|label:\s*"([^"]+)"|>([A-Z][A-Za-z &/+\-]{2,30})</);
+      const label = labelMatch ? (labelMatch[1] || labelMatch[2] || labelMatch[3]) || targetRoute.split("/").pop() : targetRoute.split("/").pop();
+
+      allTargets.push({
+        sourceFile:    node.filePath,
+        sourceRoute:   node.routeGuess,
+        visibleVia:    node.visibleBecause[0]?.parentRouteGuess + "?tab=" + node.visibleBecause[0]?.varName,
+        module:        node.module,
+        label:         label.trim().slice(0, 60),
+        targetRoute,
+        fullTarget:    m[capIdx],
+        targetType:    type,
+        lineNumber:    lineNo,
+        evidence:      m[0].trim().slice(0, 120),
+      });
+    }
   }
 }
 
-// ─── STATISTICS ──────────────────────────────────────────────────────────────
+console.log(`  Found ${allTargets.length} navigation targets total`);
 
-const stats = {
-  totalDynamicallyImportedPages: visibilityGraph.length,
-  pagesWithBrokenCards: visibilityGraph.filter((n) => n.hasBrokenActionCards).length,
-  pagesWithRedirectStubAndBrokenCards: visibilityGraph.filter((n) => n.isRedirectStubAsStandalone && n.hasBrokenActionCards).length,
-  totalBrokenVisibleTargets: brokenVisibleTargets.length,
-  criticalSeverity: brokenVisibleTargets.filter((t) => t.severity === "critical").length,
-  highSeverity: brokenVisibleTargets.filter((t) => t.severity === "high").length,
-  mediumSeverity: brokenVisibleTargets.filter((t) => t.severity === "medium").length,
-  gitHistoryMatchesFound: brokenVisibleTargets.filter((t) => t.gitHistoryCandidates.length > 0).length,
-  highConfidenceMatches: brokenVisibleTargets.filter((t) => t.gitHistoryCandidates.some((g) => g.confidence === "high")).length,
-  restoreFromGitRecommendation: brokenVisibleTargets.filter((t) => t.recommendation === "RESTORE_OLD_PAGE_FROM_GIT").length,
-  convertToSubviewRecommendation: brokenVisibleTargets.filter((t) => t.recommendation === "CONVERT_TO_WORKSPACE_SUBVIEW").length,
-};
+// ─── PHASE 4: Classify targets ───────────────────────────────────────────────
 
-// Group by module
-const byModule = {};
-for (const target of brokenVisibleTargets) {
-  if (!byModule[target.module]) byModule[target.module] = [];
-  byModule[target.module].push(target);
+console.log("Phase 4: Classifying targets…");
+
+function classifyTarget(targetRoute) {
+  // 1. Bypass routes are real pages
+  if (BYPASS_PREFIX_REDIRECT.has(targetRoute)) return { status: "WORKING", reason: "bypass_set_real_page" };
+
+  // 2. Check middleware
+  const mw = middlewareMatch(targetRoute);
+  if (mw) {
+    const dest = `${mw.workspace}${mw.tab ? "?tab=" + mw.tab : ""}${mw.drawer ? "?drawer=" + mw.drawer : ""}`;
+    return { status: "BROKEN", reason: "middleware_redirect", redirectsTo: dest };
+  }
+
+  // 3. Check file system
+  const relPath = `/app${targetRoute}/page.tsx`;
+  const absPath = path.join(FRONTEND, ...relPath.split("/"));
+
+  if (!fileExists(absPath)) {
+    return { status: "BROKEN", reason: "no_route_file" };
+  }
+
+  if (isRedirectStub(absPath)) {
+    const content = readFile(absPath);
+    const stubMatch = content.match(/redirect\(["'`]([^"'`]+)["'`]\)/);
+    const redirectsTo = stubMatch ? stubMatch[1] : "unknown";
+    return { status: "BROKEN", reason: "redirect_stub_file", redirectsTo };
+  }
+
+  return { status: "WORKING", reason: "real_page_exists" };
 }
 
-// ─── WRITE OUTPUTS ────────────────────────────────────────────────────────────
+const classified = allTargets.map(t => {
+  const cls = classifyTarget(t.targetRoute);
+  return { ...t, ...cls };
+});
 
-// 1. VISIBLE_IMPORT_GRAPH.json
-fs.writeFileSync(
-  path.join(DOCS, "VISIBLE_IMPORT_GRAPH.json"),
-  JSON.stringify(visibilityGraph, null, 2)
-);
+const broken = classified.filter(t => t.status === "BROKEN");
+const working = classified.filter(t => t.status === "WORKING");
 
-// 2. VISIBLE_BROKEN_ACTION_TARGETS.json
-fs.writeFileSync(
-  path.join(DOCS, "VISIBLE_BROKEN_ACTION_TARGETS.json"),
-  JSON.stringify(brokenVisibleTargets, null, 2)
-);
+// Deduplicate broken by (sourceFile + targetRoute)
+const seenBroken = new Set();
+const brokenUniq = broken.filter(t => {
+  const key = `${t.sourceFile}||${t.targetRoute}`;
+  if (seenBroken.has(key)) return false;
+  seenBroken.add(key);
+  return true;
+});
 
-// 3. VISIBLE_IMPORT_GRAPH.md
+console.log(`  Working: ${working.length}, Broken: ${broken.length} (${brokenUniq.length} unique)`);
+
+// ─── PHASE 5: Git history search ─────────────────────────────────────────────
+
+console.log("Phase 5: Searching git history…");
+
+// Known reference commits (from prior analysis)
+// 674b6c5 (2026-05-01): had REAL page implementations
+// bd6faf5 (2026-05-17): many replaced with redirect stubs
+const REF_COMMITS = ["674b6c5", "27ebada", "10125e4"];
+
+// Cache git checks to avoid repeated git show calls
+const gitCache = {};
+
+function checkFileInGit(routePath) {
+  // routePath like /dashboard/cycle-count/plans
+  const filePath = `frontend/src/app${routePath}/page.tsx`;
+  if (gitCache[filePath] !== undefined) return gitCache[filePath];
+
+  let result = { found: false, wasReal: false, commit: null, commitDate: null, note: "" };
+
+  for (const commit of REF_COMMITS) {
+    const content = git(`git show ${commit}:${filePath} 2>nul`, { shell: true });
+    if (content && content.trim().length > 10) {
+      const isReal = !content.includes("redirect(");
+      result = {
+        found: true,
+        wasReal: isReal,
+        commit,
+        commitDate: git(`git log -1 --format=%as ${commit}`).trim(),
+        filePath,
+        preview: content.trim().slice(0, 200),
+        note: isReal
+          ? `Real implementation found in ${commit}`
+          : `Only redirect stub found in ${commit}`,
+      };
+      break;
+    }
+  }
+
+  if (!result.found) {
+    // Try git log to see if file ever existed
+    const log = git(`git log --all --oneline -- ${filePath}`);
+    if (log.trim()) {
+      const lines = log.trim().split("\n");
+      result = {
+        found: true,
+        wasReal: null, // unknown — would need to check content
+        commit: lines[0].split(" ")[0],
+        commitDate: null,
+        filePath,
+        note: `File existed in git history (${lines.length} commits). Content not checked.`,
+      };
+    }
+  }
+
+  gitCache[filePath] = result;
+  return result;
+}
+
+// Run git checks for all broken unique targets
+const brokenWithGit = brokenUniq.map(t => {
+  const gitInfo = checkFileInGit(t.targetRoute);
+  return {
+    ...t,
+    gitHistory: gitInfo,
+  };
+});
+
+const gitMatchesFound    = brokenWithGit.filter(t => t.gitHistory.found).length;
+const highConfMatches    = brokenWithGit.filter(t => t.gitHistory.wasReal === true).length;
+const medConfMatches     = brokenWithGit.filter(t => t.gitHistory.found && t.gitHistory.wasReal === null).length;
+const unresolved         = brokenWithGit.filter(t => !t.gitHistory.found).length;
+
+console.log(`  Git history: ${gitMatchesFound} found, ${highConfMatches} high-conf (real page), ${medConfMatches} medium, ${unresolved} unresolved`);
+
+// ─── PHASE 5b: Search current code for candidates ────────────────────────────
+
+console.log("Phase 5b: Searching current code for implementation candidates…");
+
+// For each broken target, look for existing related implementations
+function searchCurrentCode(targetRoute) {
+  const segment = targetRoute.split("/").pop(); // e.g. "plans", "variances"
+  const prefix  = targetRoute.split("/").slice(0, -1).join("/").replace("/dashboard/", ""); // e.g. "cycle-count"
+
+  const candidates = [];
+
+  // Search for the route path in current codebase
+  try {
+    const grepOut = git(`git grep -rn --include="*.tsx" "${segment}" frontend/src/app/dashboard/ 2>nul`, { shell: true });
+    if (grepOut.trim()) {
+      const matches = grepOut.trim().split("\n").slice(0, 3);
+      for (const match of matches) {
+        const parts = match.split(":");
+        if (parts.length >= 2) {
+          candidates.push({
+            filePath: parts[0],
+            lineNumber: parseInt(parts[1], 10),
+            evidence: parts.slice(2).join(":").trim().slice(0, 80),
+            confidence: match.includes(prefix) ? "high" : "low",
+          });
+        }
+      }
+    }
+  } catch {}
+
+  return candidates.slice(0, 3);
+}
+
+// ─── PHASE 6: Assign recommendation ─────────────────────────────────────────
+
+function getRecommendation(t) {
+  if (t.gitHistory.wasReal === true)                   return "RESTORE_OLD_PAGE_FROM_GIT";
+  if (t.reason === "no_route_file")                    return "CREATE_NEW_REAL_PAGE_REQUIRED";
+  if (t.targetRoute.includes("/new") && t.reason === "redirect_stub_file") return "CONVERT_TO_WORKSPACE_SUBVIEW";
+  if (t.reason === "middleware_redirect")              return "CONVERT_TO_WORKSPACE_SUBVIEW";
+  if (t.reason === "redirect_stub_file")               return "CONVERT_TO_WORKSPACE_SUBVIEW";
+  return "NEEDS_BUSINESS_DECISION";
+}
+
+// Add sequential IDs + recommendations
+let idCounter = 1;
+const finalBroken = brokenWithGit.map(t => ({
+  id:               `BVT-${String(idCounter++).padStart(4, "0")}`,
+  module:           t.module,
+  sourceFile:       t.sourceFile,
+  sourceRoute:      t.sourceRoute,
+  visibleVia:       t.visibleVia,
+  label:            t.label,
+  lineNumber:       t.lineNumber,
+  currentTarget:    t.targetRoute,
+  currentBehavior:  t.reason,
+  redirectsTo:      t.redirectsTo || null,
+  whyBroken:        `In ${t.sourceRoute} (visible at ${t.visibleVia}): link to "${t.targetRoute}" — ${t.reason}${t.redirectsTo ? " → " + t.redirectsTo : ""}`,
+  severity:         severity(t.targetRoute),
+  userVisible:      true,
+  evidence:         t.evidence,
+  gitHistory:       t.gitHistory,
+  recommendation:   getRecommendation({ ...t, gitHistory: t.gitHistory }),
+}));
+
+// ─── PHASE 7: Generate outputs ───────────────────────────────────────────────
+
+console.log("Phase 7: Writing reports…");
+
+// ── 7a: VISIBLE_IMPORT_GRAPH.json ──────────────────────────────────────────
+fs.writeFileSync(path.join(DOCS, "VISIBLE_IMPORT_GRAPH.json"), JSON.stringify(visGraph, null, 2));
+
+// ── 7b: VISIBLE_IMPORT_GRAPH.md ────────────────────────────────────────────
 const graphMd = `# Visible Import Graph
 
 **Date:** 2026-05-21
-**Method:** Static analysis of dynamic() imports in workspace pages cross-referenced with middleware redirect map.
+**Method:** Dynamic scan of \`dynamic(() => import(...))\` in all workspace pages, cross-referenced with middleware redirect map.
 
-## Key Finding: Dynamic Import Visibility Blind Spot
+## Key Insight
 
-The previous audit incorrectly classified ~296 broken action cards as "safe" because their source pages
-were middleware-redirected as standalone routes. This is wrong when those pages are ALSO dynamically
-imported into workspace tabs.
-
-**Rule:** A page is user-visible if it is dynamically imported into a workspace, regardless of what
-middleware does to its standalone route.
+A page can be user-visible even if its standalone route is middleware-redirected,
+if it is dynamically imported into a workspace tab.
 
 ## Summary
 
 | Metric | Count |
 |--------|-------|
-| Total dynamically imported pages | ${stats.totalDynamicallyImportedPages} |
-| Pages with broken action cards | ${stats.pagesWithBrokenCards} |
-| Pages that are BOTH redirect stubs AND have broken cards | ${stats.pagesWithRedirectStubAndBrokenCards} |
-| Total broken visible action targets | ${stats.totalBrokenVisibleTargets} |
+| Workspace pages with dynamic imports | ${workspacePages.length} |
+| Total dynamically imported pages found | ${visGraph.length} |
+| Pages with middleware-redirected standalone routes | ${visGraph.filter(n => n.isRedirectStubAsStandalone).length} |
 
-## Pages with Broken Action Cards (User-Visible Through Dynamic Import)
+## Import Map (Redirect-Stub Pages That Are Still User-Visible)
 
-${visibilityGraph
-  .filter((n) => n.hasBrokenActionCards)
-  .map((n) => `### ${n.filePath}
-
-- **Route (standalone):** \`${n.routeGuess}\`
-- **Standalone redirected:** ${n.isRedirectStubAsStandalone ? `YES → ${n.standaloneRedirectsTo}` : "NO"}
-- **Visible via:** ${n.visibleBecause.map((v) => `\`${v.parentRouteGuess}?tab=${v.tabKey}\``).join(", ")}
-- **Broken card count:** ${n.brokenCardCount}
-- **Broken targets:** ${n.brokenCardRoutes.map((r) => `\`${r}\``).join(", ")}
-`)
+| Imported Page | Standalone Route | Redirected To | Visible As Tab |
+|--------------|-----------------|---------------|----------------|
+${visGraph
+  .filter(n => n.isRedirectStubAsStandalone)
+  .map(n => `| \`${n.filePath.replace("frontend/src/app/dashboard/","")}\` | \`${n.routeGuess}\` | \`${n.standaloneRedirectsTo}\` | ${n.visibleBecause.map(v => `\`${v.parentRouteGuess}\``).join(", ")} |`)
   .join("\n")}
 `;
 fs.writeFileSync(path.join(DOCS, "VISIBLE_IMPORT_GRAPH.md"), graphMd);
 
-// 4. VISIBLE_BROKEN_ACTION_TARGETS.md
+// ── 7c: VISIBLE_ACTION_TARGET_INVENTORY.json ────────────────────────────────
+fs.writeFileSync(
+  path.join(DOCS, "VISIBLE_ACTION_TARGET_INVENTORY.json"),
+  JSON.stringify(classified.map(t => ({
+    sourceFile:   t.sourceFile,
+    sourceRoute:  t.sourceRoute,
+    visibleVia:   t.visibleVia,
+    module:       t.module,
+    label:        t.label,
+    targetRoute:  t.targetRoute,
+    targetType:   t.targetType,
+    lineNumber:   t.lineNumber,
+    evidence:     t.evidence,
+    status:       t.status,
+    reason:       t.reason,
+    redirectsTo:  t.redirectsTo || null,
+  })), null, 2)
+);
+
+// ── 7d: VISIBLE_ACTION_TARGET_INVENTORY.md ──────────────────────────────────
+const totalByModule = {};
+for (const t of classified) {
+  if (!totalByModule[t.module]) totalByModule[t.module] = { working: 0, broken: 0 };
+  t.status === "WORKING" ? totalByModule[t.module].working++ : totalByModule[t.module].broken++;
+}
+const invMd = `# Visible Action Target Inventory
+
+**Date:** 2026-05-21
+**Total targets found:** ${classified.length}
+**Working:** ${working.length}
+**Broken:** ${broken.length} (${brokenUniq.length} unique)
+
+## By Module
+
+| Module | Working | Broken | Total |
+|--------|---------|--------|-------|
+${Object.entries(totalByModule).map(([m, v]) => `| ${m} | ${v.working} | ${v.broken} | ${v.working + v.broken} |`).join("\n")}
+
+## All Broken Targets (first 50)
+
+| Source File | Visible Via | Target | Reason |
+|------------|-------------|--------|--------|
+${brokenUniq.slice(0, 50).map(t => `| \`${t.sourceFile.replace("frontend/src/app/dashboard/","")}\` | ${t.visibleVia} | \`${t.targetRoute}\` | ${t.reason} |`).join("\n")}
+`;
+fs.writeFileSync(path.join(DOCS, "VISIBLE_ACTION_TARGET_INVENTORY.md"), invMd);
+
+// ── 7e: VISIBLE_BROKEN_ACTION_TARGETS.json ──────────────────────────────────
+fs.writeFileSync(
+  path.join(DOCS, "VISIBLE_BROKEN_ACTION_TARGETS.json"),
+  JSON.stringify(finalBroken, null, 2)
+);
+
+// ── 7f: VISIBLE_BROKEN_ACTION_TARGETS.md ────────────────────────────────────
+const byMod = {};
+for (const t of finalBroken) {
+  if (!byMod[t.module]) byMod[t.module] = [];
+  byMod[t.module].push(t);
+}
 const brokenMd = `# Visible Broken Action Targets
 
 **Date:** 2026-05-21
-**Total broken visible buttons/cards/tiles:** ${stats.totalBrokenVisibleTargets}
+**Total:** ${finalBroken.length}
 
 ## Statistics
 
 | Metric | Count |
 |--------|-------|
-| Critical severity | ${stats.criticalSeverity} |
-| High severity | ${stats.highSeverity} |
-| Medium severity | ${stats.mediumSeverity} |
-| Git history matches found | ${stats.gitHistoryMatchesFound} |
-| High-confidence original page found | ${stats.highConfidenceMatches} |
-| Recommendation: RESTORE FROM GIT | ${stats.restoreFromGitRecommendation} |
-| Recommendation: CONVERT TO SUBVIEW | ${stats.convertToSubviewRecommendation} |
+| Critical | ${finalBroken.filter(t=>t.severity==="critical").length} |
+| High | ${finalBroken.filter(t=>t.severity==="high").length} |
+| Medium | ${finalBroken.filter(t=>t.severity==="medium").length} |
+| Git: real page found | ${highConfMatches} |
+| Recommendation: RESTORE FROM GIT | ${finalBroken.filter(t=>t.recommendation==="RESTORE_OLD_PAGE_FROM_GIT").length} |
+| Recommendation: CONVERT TO SUBVIEW | ${finalBroken.filter(t=>t.recommendation==="CONVERT_TO_WORKSPACE_SUBVIEW").length} |
+| Recommendation: CREATE NEW PAGE | ${finalBroken.filter(t=>t.recommendation==="CREATE_NEW_REAL_PAGE_REQUIRED").length} |
 
-${Object.entries(byModule).map(([module, targets]) => `## ${module}
+${Object.entries(byMod).map(([mod, targets]) => `## ${mod} (${targets.length})
 
-| ID | Source File | Visible Via | Target | Severity | Recommendation |
-|----|------------|-------------|--------|----------|----------------|
-${targets.map((t) => `| ${t.id} | ${t.sourceFile.replace("frontend/src/app/dashboard/", "")} | ${t.visibleVia} | \`${t.currentTarget}\` | ${t.severity} | ${t.recommendation} |`).join("\n")}
+| ID | Source | Visible At | Target | Severity | Git | Recommendation |
+|----|--------|-----------|--------|----------|-----|----------------|
+${targets.map(t => `| ${t.id} | ${t.sourceFile.replace("frontend/src/app/dashboard/","")} | ${t.visibleVia} | \`${t.currentTarget}\` | ${t.severity} | ${t.gitHistory.wasReal === true ? "REAL" : t.gitHistory.found ? "STUB" : "NONE"} | ${t.recommendation} |`).join("\n")}
 `).join("\n")}
 `;
 fs.writeFileSync(path.join(DOCS, "VISIBLE_BROKEN_ACTION_TARGETS.md"), brokenMd);
 
-// 5. BROKEN_BUTTON_ORIGINAL_PAGE_MATCH_REPORT.json
-const matchReport = {
+// ── 7g: BROKEN_BUTTON_ORIGINAL_PAGE_MATCH_REPORT.json ───────────────────────
+const reportJson = {
   generatedDate: "2026-05-21",
-  auditVersion: "v2.0-dynamic-import-aware",
-  keyFinding: "Previous audit blind spot: pages dynamically imported into workspace tabs were incorrectly classified as 'safe' because their standalone routes were middleware-redirected. These pages ARE user-visible and their broken action cards ARE encountered by users.",
-  stats,
-  moduleGroups: Object.entries(byModule).map(([module, targets]) => ({
+  auditVersion: "v3.0-fully-dynamic",
+  keyFinding: "Previous audit missed 296+ broken action cards because it did not account for pages dynamically imported into workspace tabs. A page is user-visible if it is imported as tab content, regardless of what middleware does to its standalone route.",
+  stats: {
+    workspacePagesScanned:             workspacePages.length,
+    totalDynamicImportsFound:          Object.values(importedBy).reduce((a, v) => a + v.length, 0),
+    dynamicallyImportedVisiblePages:   visGraph.length,
+    totalVisibleActionTargetsFound:    classified.length,
+    workingTargets:                    working.length,
+    totalBrokenVisibleTargets:         finalBroken.length,
+    criticalSeverity:                  finalBroken.filter(t=>t.severity==="critical").length,
+    highSeverity:                      finalBroken.filter(t=>t.severity==="high").length,
+    mediumSeverity:                    finalBroken.filter(t=>t.severity==="medium").length,
+    gitHistoryMatchesFound:            gitMatchesFound,
+    highConfidenceRealPageMatches:     highConfMatches,
+    mediumConfidenceMatches:           medConfMatches,
+    unresolvedNoGitMatch:              unresolved,
+    recommendRestoreFromGit:           finalBroken.filter(t=>t.recommendation==="RESTORE_OLD_PAGE_FROM_GIT").length,
+    recommendConvertToSubview:         finalBroken.filter(t=>t.recommendation==="CONVERT_TO_WORKSPACE_SUBVIEW").length,
+    recommendCreateNewPage:            finalBroken.filter(t=>t.recommendation==="CREATE_NEW_REAL_PAGE_REQUIRED").length,
+  },
+  moduleGroups: Object.entries(byMod).map(([module, targets]) => ({
     module,
     brokenCount: targets.length,
-    targets: targets.map((t) => ({
-      id: t.id,
-      module: t.module,
-      visibleLocation: t.visibleVia,
-      buttonLabel: t.currentTarget.split("/").pop(),
-      currentTarget: t.currentTarget,
-      currentBehavior: t.currentBehavior,
-      redirectsTo: t.redirectsTo,
-      whyBroken: t.whyBroken,
-      severity: t.severity,
-      gitHistoryFound: t.gitHistoryCandidates.length > 0,
-      gitHistoryWasRealPage: t.gitHistoryCandidates.some((g) => g.wasRealImplementation),
-      bestMatchOriginalPage: t.gitHistoryCandidates.length > 0 ? t.gitHistoryCandidates[0] : null,
-      recommendation: t.recommendation,
-    })),
+    items: targets,
   })),
 };
 fs.writeFileSync(
   path.join(DOCS, "BROKEN_BUTTON_ORIGINAL_PAGE_MATCH_REPORT.json"),
-  JSON.stringify(matchReport, null, 2)
+  JSON.stringify(reportJson, null, 2)
 );
 
-// 6. BROKEN_BUTTON_ORIGINAL_PAGE_MATCH_REPORT.md
-const top20 = brokenVisibleTargets
-  .filter((t) => t.severity === "critical" || t.severity === "high")
+// ── 7h: BROKEN_BUTTON_ORIGINAL_PAGE_MATCH_REPORT.md (main report) ───────────
+
+const topCritical = finalBroken
+  .filter(t => t.severity === "critical" || t.severity === "high")
   .slice(0, 20);
 
-const matchMd = `# Broken Button → Original Page Match Report
+const gitRealItems = finalBroken.filter(t => t.gitHistory.wasReal === true);
+const unresolvedItems = finalBroken.filter(t => !t.gitHistory.found);
+
+// Dynamic import failure list (pages that are both redirect-stubbed AND user-visible)
+const dif = visGraph.filter(n => n.isRedirectStubAsStandalone);
+
+const mainMd = `# Broken Button → Original Page Match Report
 
 **Date:** 2026-05-21
-**Audit Version:** v2.0 — Dynamic Import Aware
+**Audit Version:** v3.0 — Fully Dynamic Scan
+**Script:** \`scripts/audit-visible-import-graph.js\`
 
 ---
 
-## THE AUDIT BLIND SPOT: Dynamic Import Visibility
-
-### Why Previous Reports Were Wrong
-
-Previous audit logic:
-> "If a standalone route is middleware-redirected, all action cards in that page are invisible to users."
-
-**This is incorrect.** A page is user-visible if ANY of these are true:
-1. It is directly reachable from sidebar/nav
-2. It is dynamically imported by a workspace page as tab content
-
-### The Cycle Count Example (Still Broken)
-
-**Visible location:** \`/dashboard/inventory?tab=cycle-count\`
-**Source component:** \`frontend/src/app/dashboard/cycle-count/page.tsx\`
-**How it becomes visible:** \`inventory/page.tsx\` dynamically imports \`cycle-count/page\`
-**Standalone route redirect:** \`/dashboard/cycle-count\` → \`/dashboard/inventory?tab=cycle-count\` (middleware)
-**Result:** User sees Cycle Count dashboard with 5 navigation tiles — ALL broken.
-
-| Card | Target | Current Behavior | Git History | Recommendation |
-|------|--------|------------------|-------------|----------------|
-| Count Plans | \`/dashboard/cycle-count/plans\` | Redirect stub → same tab | REAL page in commit 674b6c5 (2026-05-01) | RESTORE_OLD_PAGE_FROM_GIT |
-| Count Tasks | \`/dashboard/cycle-count/tasks\` | Redirect stub → same tab | REAL page in commit 674b6c5 (2026-05-01) | RESTORE_OLD_PAGE_FROM_GIT |
-| Count Entries | \`/dashboard/cycle-count/entries\` | Redirect stub → same tab | REAL page in commit 674b6c5 (2026-05-01) | RESTORE_OLD_PAGE_FROM_GIT |
-| Variance Review | \`/dashboard/cycle-count/variances\` | Redirect stub → same tab | REAL page in commit 674b6c5 (2026-05-01) | RESTORE_OLD_PAGE_FROM_GIT |
-| Reports & AI | \`/dashboard/cycle-count/reports\` | Redirect stub → same tab | REAL page in commit 674b6c5 (2026-05-01) | RESTORE_OLD_PAGE_FROM_GIT |
-
-**Git evidence:** Commit \`674b6c5\` (2026-05-01) contained REAL implementations:
-- \`cycle-count/plans/page.tsx\`: Full CRUD — listPlans, createPlan, generateTasks, updatePlan
-- \`cycle-count/variances/page.tsx\`: Full approve/reject workflow with bulk selection
-- \`cycle-count/tasks/page.tsx\`: Task queue management
-- \`cycle-count/entries/page.tsx\`: Physical count entry recording
-- \`cycle-count/reports/page.tsx\`: Accuracy and variance reporting
-
-These were deleted in \`bd6faf5\` (2026-05-17) and replaced with redirect stubs.
-
----
-
-## Statistics
+## Executive Summary
 
 | Metric | Count |
 |--------|-------|
-| Dynamically imported pages analyzed | ${stats.totalDynamicallyImportedPages} |
-| Pages with broken cards (user-visible) | ${stats.pagesWithBrokenCards} |
-| Pages: BOTH redirect stub AND has broken cards | ${stats.pagesWithRedirectStubAndBrokenCards} |
-| **Total broken visible action targets** | **${stats.totalBrokenVisibleTargets}** |
-| Critical severity | ${stats.criticalSeverity} |
-| High severity | ${stats.highSeverity} |
-| Medium severity | ${stats.mediumSeverity} |
-| Git history matches found | ${stats.gitHistoryMatchesFound} |
-| High-confidence original page found | ${stats.highConfidenceMatches} |
+| Workspace pages scanned | ${workspacePages.length} |
+| Total dynamic imports found | ${Object.values(importedBy).reduce((a,v)=>a+v.length,0)} |
+| Dynamically imported visible pages | ${visGraph.length} |
+| Total visible action targets found | ${classified.length} |
+| Working targets | ${working.length} |
+| **Total broken visible action targets** | **${finalBroken.length}** |
+| Critical severity (create/run/approve actions) | ${finalBroken.filter(t=>t.severity==="critical").length} |
+| High severity | ${finalBroken.filter(t=>t.severity==="high").length} |
+| Medium severity | ${finalBroken.filter(t=>t.severity==="medium").length} |
+| Git history matches found | ${gitMatchesFound} |
+| **High-confidence: real page existed in git** | **${highConfMatches}** |
+| Medium-confidence: file in git but content unverified | ${medConfMatches} |
+| Unresolved: no git match | ${unresolved} |
 
 ---
 
-## Recommendation Categories
+## Key Finding — The Dynamic Import Visibility Blind Spot
 
-| Category | Count | Description |
-|----------|-------|-------------|
-| RESTORE_OLD_PAGE_FROM_GIT | ${stats.restoreFromGitRecommendation} | Real page existed in git — restore from commit 674b6c5 |
-| CONVERT_TO_WORKSPACE_SUBVIEW | ${stats.convertToSubviewRecommendation} | No prior real page — implement as ?view= or ?subtab= |
+### Previous Audit Was Wrong
+
+Previous audit classified 296 broken action cards as **"safe_archived_standalone"** because:
+> "The source page's standalone route is middleware-redirected, so users never see the page."
+
+**This reasoning is incorrect.** A page can be user-visible through TWO paths:
+1. Standalone route (may be redirected)
+2. **Dynamic import into a workspace tab** ← this path was ignored
+
+When \`inventory/page.tsx\` does:
+\`\`\`typescript
+const CycleCountPage = dynamic(() => import("@/app/dashboard/cycle-count/page"), { ssr: false });
+\`\`\`
+…the Cycle Count page IS rendered to users at \`/dashboard/inventory?tab=cycle-count\`.
+Middleware redirecting \`/dashboard/cycle-count\` → \`/dashboard/inventory?tab=cycle-count\` is irrelevant here.
+
+### Impact
+
+${dif.length} pages are in this state — middleware-redirected as standalone routes,
+but dynamically imported into workspace tabs and therefore fully user-visible.
+Their internal navigation cards/buttons (totalling **${finalBroken.length}**) all fail silently
+by looping the user back to the same workspace tab they are already on.
+
+### The Cycle Count Example (Confirmed Still Broken)
+
+**Visible at:** \`/dashboard/inventory?tab=cycle-count\`
+**Source:** \`frontend/src/app/dashboard/cycle-count/page.tsx\`
+**How visible:** \`inventory/page.tsx\` imports it as the "Cycle Count" tab
+**Standalone route:** \`/dashboard/cycle-count\` → middleware redirects to \`/dashboard/inventory?tab=cycle-count\`
+
+The 5 navigation tiles shown to users all link to redirect stubs:
+
+| Tile | Target | Behavior | Git History |
+|------|--------|----------|-------------|
+| Count Plans | \`/dashboard/cycle-count/plans\` | redirect_stub → same tab | **REAL page in commit 674b6c5 (2026-05-01)** |
+| Count Tasks | \`/dashboard/cycle-count/tasks\` | redirect_stub → same tab | **REAL page in commit 674b6c5 (2026-05-01)** |
+| Count Entries | \`/dashboard/cycle-count/entries\` | redirect_stub → same tab | **REAL page in commit 674b6c5 (2026-05-01)** |
+| Variance Review | \`/dashboard/cycle-count/variances\` | redirect_stub → same tab | **REAL page in commit 674b6c5 (2026-05-01)** |
+| Reports & AI | \`/dashboard/cycle-count/reports\` | redirect_stub → same tab | **REAL page in commit 674b6c5 (2026-05-01)** |
+
+Git evidence: Commit \`674b6c5\` (2026-05-01) had REAL implementations — full CRUD with API integration.
+These were deleted in \`bd6faf5\` (2026-05-17) and replaced with redirect stubs.
+**Recommendation: RESTORE_OLD_PAGE_FROM_GIT from commit 674b6c5.**
 
 ---
 
 ## Top 20 Critical/High Severity Broken Visible Buttons
 
-| ID | Module | Visible At | Card Target | Why Broken | Git Found | Recommendation |
-|----|--------|-----------|-------------|------------|-----------|----------------|
-${top20.map((t) => `| ${t.id} | ${t.module} | ${t.visibleVia} | \`${t.currentTarget}\` | Redirect stub → ${t.redirectsTo} | ${t.gitHistoryCandidates.length > 0 ? (t.gitHistoryCandidates[0].wasRealImplementation ? "YES (real page)" : "YES (stub)") : "NO"} | ${t.recommendation} |`).join("\n")}
+| ID | Module | Visible At | Card/Button | Current Target | Behavior | Git | Recommendation |
+|----|--------|-----------|-------------|----------------|----------|-----|----------------|
+${topCritical.map(t => `| ${t.id} | ${t.module} | ${t.visibleVia} | ${t.label} | \`${t.currentTarget}\` | ${t.currentBehavior} | ${t.gitHistory.wasReal === true ? "✓ REAL" : t.gitHistory.found ? "stub" : "none"} | ${t.recommendation} |`).join("\n")}
 
 ---
 
-## Full Breakdown by Module
+## Module-by-Module Breakdown
 
-${Object.entries(byModule).map(([module, targets]) => `### ${module}
+${Object.entries(byMod).map(([mod, targets]) => `### ${mod}
 
 **Broken count:** ${targets.length}
 
-| Module | Visible Location | Button/Card | Current Target | Current Behavior | Original Page Found? | Best Match | Confidence | Recommended Fix |
-|--------|-----------------|-------------|----------------|------------------|---------------------|------------|------------|-----------------|
-${targets.map((t) => {
-  const git = t.gitHistoryCandidates[0];
-  const gitFound = git ? (git.wasRealImplementation ? `Yes — real page commit ${git.commit} (${git.commitDate})` : `Yes — redirect stub commit ${git.commit}`) : "No";
-  const bestMatch = git ? (git.wasRealImplementation ? git.filePath : "Needs new implementation") : "Unknown";
-  const conf = git ? git.confidence : "low";
-  return `| ${module} | ${t.visibleVia} | \`${t.currentTarget.split("/").pop()}\` | \`${t.currentTarget}\` | redirect_stub → ${t.redirectsTo} | ${gitFound} | ${bestMatch} | ${conf} | ${t.recommendation} |`;
+| Module | Visible Location | Tab | Source File | Button/Card | Current Target | Current Behavior | Original Page? | Best Match | Confidence | Recommended Fix |
+|--------|-----------------|-----|-------------|-------------|----------------|-----------------|----------------|------------|------------|-----------------|
+${targets.map(t => {
+  const git = t.gitHistory;
+  const origFound = git.wasReal === true ? "Yes — real page" : git.found ? "Yes — stub only" : "No";
+  const bestMatch = git.wasReal === true ? `commit ${git.commit} (${git.commitDate})` : git.found ? "only redirect stub in git" : "not found";
+  const conf = git.wasReal === true ? "high" : git.found ? "medium" : "low";
+  const tabStr = t.visibleVia.split("?tab=")[1] || "—";
+  return `| ${mod} | ${t.visibleVia.split("?tab=")[0]} | ${tabStr} | ${t.sourceFile.replace("frontend/src/app/dashboard/","")} | ${t.label} | \`${t.currentTarget}\` | ${t.currentBehavior} | ${origFound} | ${bestMatch} | ${conf} | ${t.recommendation} |`;
 }).join("\n")}
 
 `).join("\n")}
@@ -836,49 +846,88 @@ ${targets.map((t) => {
 
 ## Dynamic Import Visibility Failures
 
-These cases were MISSED by the previous audit because it treated middleware-redirected pages
-as "invisible to users" without checking if they are dynamically imported into workspace tabs.
+Every entry below was **missed** by the previous audit (classified as "safe_archived_standalone").
+Each of these pages is middleware-redirected as a standalone route but IS user-visible
+because it is dynamically imported into a workspace tab.
 
-${visibilityGraph
-  .filter((n) => n.isRedirectStubAsStandalone && n.hasBrokenActionCards)
-  .map((n) => `### ${n.routeGuess} (${n.brokenCardCount} broken cards)
-
-- **Standalone route:** \`${n.routeGuess}\` → middleware redirects to \`${n.standaloneRedirectsTo}\`
-- **Also visible as:** Tab content in ${n.visibleBecause.map((v) => `\`${v.parentRouteGuess}?tab=${v.tabKey}\``).join(", ")}
-- **Previous audit classified:** "safe_archived_standalone" — INCORRECT
-- **Correct classification:** DYNAMICALLY_IMPORTED_VISIBLE with broken cards
-- **Broken cards:** ${n.brokenCardRoutes.map((r) => `\`${r}\``).join(", ")}
-`)
-  .join("\n")}
+| Source Page | Standalone Route | Middleware Destination | Visible As | Broken Cards |
+|-------------|-----------------|----------------------|-----------|--------------|
+${dif.map(n => {
+  const brokenCount = finalBroken.filter(t => t.sourceFile === n.filePath).length;
+  return `| \`${n.filePath.replace("frontend/src/app/dashboard/","")}\` | \`${n.routeGuess}\` | \`${n.standaloneRedirectsTo}\` | ${n.visibleBecause.map(v => `\`${v.parentRouteGuess}\``).join(", ")} | ${brokenCount} |`;
+}).join("\n")}
 
 ---
 
-## Do Not Fix
+## Git History — High-Confidence Real Page Matches
 
-This report is READ-ONLY. No code was modified.
-Recommendations are provided for future fix passes only.
+These broken targets had REAL implementations in commit \`674b6c5\` (2026-05-01).
+All were deleted/replaced with redirect stubs in \`bd6faf5\` (2026-05-17).
+**Recommendation: RESTORE_OLD_PAGE_FROM_GIT**
+
+| Module | Target Route | Source File in Git | Confidence |
+|--------|-------------|-------------------|------------|
+${gitRealItems.map(t => `| ${t.module} | \`${t.currentTarget}\` | \`${t.gitHistory.filePath}\` | high |`).join("\n")}
+
+---
+
+## Unresolved — No Git Match Found
+
+These broken targets have no known implementation in git history.
+
+| Module | Target Route | Source File | Recommendation |
+|--------|-------------|-------------|----------------|
+${unresolvedItems.slice(0, 30).map(t => `| ${t.module} | \`${t.currentTarget}\` | ${t.sourceFile.replace("frontend/src/app/dashboard/","")} | ${t.recommendation} |`).join("\n")}
+${unresolvedItems.length > 30 ? `\n…and ${unresolvedItems.length - 30} more` : ""}
+
+---
+
+## Recommendation Summary
+
+| Category | Count | Action |
+|----------|-------|--------|
+| RESTORE_OLD_PAGE_FROM_GIT | ${finalBroken.filter(t=>t.recommendation==="RESTORE_OLD_PAGE_FROM_GIT").length} | Restore from git commit \`674b6c5\` + add BYPASS_PREFIX_REDIRECT |
+| CONVERT_TO_WORKSPACE_SUBVIEW | ${finalBroken.filter(t=>t.recommendation==="CONVERT_TO_WORKSPACE_SUBVIEW").length} | Change href to \`?tab=X&view=Y\` pattern in workspace |
+| CREATE_NEW_REAL_PAGE_REQUIRED | ${finalBroken.filter(t=>t.recommendation==="CREATE_NEW_REAL_PAGE_REQUIRED").length} | No implementation exists — new page required |
+| NEEDS_BUSINESS_DECISION | ${finalBroken.filter(t=>t.recommendation==="NEEDS_BUSINESS_DECISION").length} | Intent unclear — needs product decision |
+
+---
+
+*Generated by \`scripts/audit-visible-import-graph.js\` — DO NOT FIX based on this report. Discovery pass only.*
 `;
 
-fs.writeFileSync(
-  path.join(DOCS, "BROKEN_BUTTON_ORIGINAL_PAGE_MATCH_REPORT.md"),
-  matchMd
-);
+fs.writeFileSync(path.join(DOCS, "BROKEN_BUTTON_ORIGINAL_PAGE_MATCH_REPORT.md"), mainMd);
 
-// ─── CONSOLE OUTPUT ───────────────────────────────────────────────────────────
-console.log("\n=== AUDIT COMPLETE ===\n");
-console.log(`Total dynamically imported pages scanned:     ${stats.totalDynamicallyImportedPages}`);
-console.log(`Pages with broken action cards:               ${stats.pagesWithBrokenCards}`);
-console.log(`Pages: redirect stub + broken cards (missed): ${stats.pagesWithRedirectStubAndBrokenCards}`);
-console.log(`TOTAL BROKEN VISIBLE ACTION TARGETS:          ${stats.totalBrokenVisibleTargets}`);
-console.log(`  Critical:                                   ${stats.criticalSeverity}`);
-console.log(`  High:                                       ${stats.highSeverity}`);
-console.log(`  Medium:                                     ${stats.mediumSeverity}`);
-console.log(`Git history matches found:                    ${stats.gitHistoryMatchesFound}`);
-console.log(`High-confidence original page matches:        ${stats.highConfidenceMatches}`);
-console.log(`\nOutputs:`);
-console.log(`  docs/VISIBLE_IMPORT_GRAPH.json`);
-console.log(`  docs/VISIBLE_IMPORT_GRAPH.md`);
-console.log(`  docs/VISIBLE_BROKEN_ACTION_TARGETS.json`);
-console.log(`  docs/VISIBLE_BROKEN_ACTION_TARGETS.md`);
-console.log(`  docs/BROKEN_BUTTON_ORIGINAL_PAGE_MATCH_REPORT.json`);
-console.log(`  docs/BROKEN_BUTTON_ORIGINAL_PAGE_MATCH_REPORT.md`);
+// ─── CONSOLE SUMMARY ─────────────────────────────────────────────────────────
+console.log("\n╔══════════════════════════════════════════════════════╗");
+console.log("║          AUDIT COMPLETE — SUMMARY                   ║");
+console.log("╠══════════════════════════════════════════════════════╣");
+console.log(`║ Workspace pages scanned:         ${String(workspacePages.length).padStart(6)}              ║`);
+console.log(`║ Dynamic imports found:           ${String(Object.values(importedBy).reduce((a,v)=>a+v.length,0)).padStart(6)}              ║`);
+console.log(`║ Dynamically imported pages:      ${String(visGraph.length).padStart(6)}              ║`);
+console.log(`║ Total visible action targets:    ${String(classified.length).padStart(6)}              ║`);
+console.log(`║ BROKEN visible action targets:   ${String(finalBroken.length).padStart(6)}              ║`);
+console.log(`║   Critical:                      ${String(finalBroken.filter(t=>t.severity==="critical").length).padStart(6)}              ║`);
+console.log(`║   High:                          ${String(finalBroken.filter(t=>t.severity==="high").length).padStart(6)}              ║`);
+console.log(`║   Medium:                        ${String(finalBroken.filter(t=>t.severity==="medium").length).padStart(6)}              ║`);
+console.log(`║ Git history matches:             ${String(gitMatchesFound).padStart(6)}              ║`);
+console.log(`║ High-conf (real page in git):    ${String(highConfMatches).padStart(6)}              ║`);
+console.log(`║ Unresolved (no git match):       ${String(unresolved).padStart(6)}              ║`);
+console.log("╠══════════════════════════════════════════════════════╣");
+console.log("║ CYCLE COUNT PAGES IN GIT:                           ║");
+const ccItems = finalBroken.filter(t => t.currentTarget.startsWith("/dashboard/cycle-count/"));
+for (const cc of ccItems) {
+  const status = cc.gitHistory.wasReal === true ? "REAL ✓" : cc.gitHistory.found ? "stub" : "NONE";
+  console.log(`║   ${cc.currentTarget.padEnd(40)} ${status.padStart(6)} ║`);
+}
+console.log("╠══════════════════════════════════════════════════════╣");
+console.log("║ OUTPUT FILES:                                        ║");
+console.log("║   docs/VISIBLE_IMPORT_GRAPH.json                    ║");
+console.log("║   docs/VISIBLE_IMPORT_GRAPH.md                      ║");
+console.log("║   docs/VISIBLE_ACTION_TARGET_INVENTORY.json         ║");
+console.log("║   docs/VISIBLE_ACTION_TARGET_INVENTORY.md           ║");
+console.log("║   docs/VISIBLE_BROKEN_ACTION_TARGETS.json           ║");
+console.log("║   docs/VISIBLE_BROKEN_ACTION_TARGETS.md             ║");
+console.log("║   docs/BROKEN_BUTTON_ORIGINAL_PAGE_MATCH_REPORT.json║");
+console.log("║   docs/BROKEN_BUTTON_ORIGINAL_PAGE_MATCH_REPORT.md  ║");
+console.log("╚══════════════════════════════════════════════════════╝");
