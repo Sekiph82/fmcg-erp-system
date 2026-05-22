@@ -133,3 +133,82 @@ test.describe("C. Wave 1B operational sample", () => {
     });
   }
 });
+
+// ── D. Wave 1C AI and reports pages (54 pages) ───────────────────────────────
+
+test.describe("D. Wave 1C AI and reports pages", () => {
+  const routes = [
+    // Cross-module reports
+    "/dashboard/reports/inventory",
+    "/dashboard/reports/production",
+    "/dashboard/reports/procurement",
+    "/dashboard/reports/sales",
+    "/dashboard/reports/finance",
+    "/dashboard/reports/payments",
+    "/dashboard/reports/marketing",
+    // AI utilities
+    "/dashboard/custom-fields/ai",
+    "/dashboard/report-builder/ai",
+    // Communication
+    "/dashboard/chatter/reports",
+    "/dashboard/chatter/ai",
+    "/dashboard/notification-center/reports",
+    "/dashboard/notification-center/ai",
+    // Finance AI
+    "/dashboard/bank-reconciliation/ai",
+    "/dashboard/invoice-match/ai",
+    "/dashboard/fixed-assets/ai",
+    "/dashboard/dimensions/ai",
+    // Finance reports
+    "/dashboard/tax/reports",
+    "/dashboard/expenses/reports",
+    "/dashboard/expenses/ai",
+    // HR
+    "/dashboard/recruitment/reports",
+    "/dashboard/recruitment/ai",
+    "/dashboard/ess/ai",
+    "/dashboard/appraisals/reports",
+    "/dashboard/appraisals/ai",
+    "/dashboard/training/reports",
+    "/dashboard/training/ai",
+    "/dashboard/timesheets/reports",
+    "/dashboard/timesheets/ai",
+    // Operations
+    "/dashboard/webhooks/reports",
+    "/dashboard/fleet/reports",
+    "/dashboard/tpm/ai",
+    "/dashboard/kanban/reports",
+    "/dashboard/kanban/ai",
+    // Procurement
+    "/dashboard/procurement-suggestion/ai",
+    "/dashboard/subcontracting/ai",
+    "/dashboard/landed-cost/ai",
+    // Quality
+    "/dashboard/qms/reports",
+    "/dashboard/qms/ai",
+    // Sales
+    "/dashboard/contracts/ai",
+    "/dashboard/recurring-orders/reports",
+    "/dashboard/recurring-orders/ai",
+    "/dashboard/commissions/ai",
+    "/dashboard/van-sales/ai",
+    "/dashboard/portal/ai",
+    "/dashboard/portal/reports",
+    // Utility reports
+    "/dashboard/utility-management/reports/daily-consumption",
+    "/dashboard/utility-management/reports/cost-allocation",
+    "/dashboard/utility-management/reports/treatment",
+    "/dashboard/utility-management/reports/equipment-efficiency",
+    "/dashboard/utility-management/reports/load-analysis",
+    "/dashboard/utility-management/reports/anomalies",
+    "/dashboard/utility-management/reports/sustainability",
+    // ESG
+    "/dashboard/esg/reports",
+  ];
+
+  for (const route of routes) {
+    test(route, async ({ page }) => {
+      await checkRoute(page, route, route);
+    });
+  }
+});

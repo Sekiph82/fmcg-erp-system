@@ -1,7 +1,22 @@
 # TASKS
 
 ## Current Phase
-ERP BUTTON RECOVERY STABILIZATION — COMPLETE. 2026-05-21. Wave 1A (31 pages) + Wave 1B (218 pages) restored from git history. Stabilization pass done: type-check clean, build clean, 478/482 backend pass. 353 → 102 broken visible targets. Critical: 26 → 0. Commit: 7de5623.
+ERP BUTTON RECOVERY WAVE 1C — COMPLETE AND VERIFIED. 2026-05-22. Wave 1C restored 54 AI/report pages. Type-check clean, build clean, 478/482 backend pass. 102 → 48 broken visible targets. Medium: 54 → 0. All 307 bypass routes valid. Live smoke 104/104 pass (exit 0). Commit: eecbba1.
+
+### ERP Button Recovery Wave 1C (2026-05-22)
+**Source git commit for pages:** `674b6c5` (2026-05-01), `27ebada` for esg/reports
+**Pages restored:** 54 (all AI sub-pages and reports sub-pages across modules)
+**Broken visible targets:** 102 → 48 (-54)
+**Critical:** 0 → 0 | **High:** 48 → 48 | **Medium:** 54 → 0
+**Unresolved (no git match):** 47 (unchanged)
+**Middleware BYPASS entries:** 253 → 307 (all verified valid)
+**audit-visible-import-graph.js BYPASS set:** synced to 307
+**Type-check:** CLEAN | **Build:** CLEAN | **Backend:** 478/482 pass
+**Live smoke:** 104/104 PASS (1 flaky transient on invoice-match/ai, exit 0)
+**TypeScript fixes:** unknown-as-ReactNode, Set iteration, Recharts formatter, PieLabelRenderProps, API double-cast, unescaped entities
+**Quality report:** `docs/RESTORED_ROUTE_QUALITY_REPORT.md` (307/307 valid)
+**Wave 1C report:** `docs/ERP_BUTTON_RECOVERY_WAVE1C_REPORT.md`
+**Next:** Design pass for 47 unresolved targets (requires user approval)
 
 ### ERP Button Recovery Wave 1A + 1B (2026-05-21)
 **Source git commit for pages:** `674b6c5` (2026-05-01)
