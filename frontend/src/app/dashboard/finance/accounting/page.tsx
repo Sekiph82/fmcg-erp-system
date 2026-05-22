@@ -96,7 +96,7 @@ export default function AccountingDashboardPage() {
           { label: "Sales Invoices",   href: "/dashboard/finance/accounting/sales-invoices",   icon: "📄" },
           { label: "Purchase Invoices",href: "/dashboard/finance/accounting/purchase-invoices",icon: "📦" },
           { label: "Payments",         href: "/dashboard/finance/accounting/payments",          icon: "💳" },
-          { label: "Accounting Controls", href: "/dashboard/finance/accounting/controls",       icon: "AC", permission: "finance.configure" },
+          { label: "Accounting Controls", href: "/dashboard/finance?tab=accounting",             icon: "AC", permission: "finance.configure" },
         ].filter((item) => !item.permission || hasPermission(item.permission)).map((item) => (
           <Link
             key={item.href}

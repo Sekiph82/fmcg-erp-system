@@ -1,11 +1,11 @@
 # Auto-Fix Continuation Guide
 
-Date: 2026-05-22 (ERP Button Recovery — Wave 1C complete + verified)
+Date: 2026-05-22 (Six Broken Action Cards — fixed, 0 remaining)
 
 ## Current State
 
-**Latest commit:** `eecbba1` — fix(ui): restore Wave 1C — 54 AI and reports pages with TS/ESLint fixes
-**Working tree:** CLEAN
+**Latest commit:** TBD — fix(ui): resolve remaining broken action card links
+**Working tree:** CLEAN (post-commit)
 **Type-check:** CLEAN | **Build:** CLEAN | **Backend tests:** 478/482 PASS
 
 ### What has been restored (all waves)
@@ -17,19 +17,41 @@ Date: 2026-05-22 (ERP Button Recovery — Wave 1C complete + verified)
 | Wave 1A — Critical create/new/run | 26 | ✅ done |
 | Wave 1B — High-conf operational | ~218 | ✅ done |
 | Wave 1C — AI and reports | 54 | ✅ done (eecbba1) |
+| Six broken action cards | 8 pages + 3 link fixes | ✅ done (this session) |
+
+### Pages restored this session (6 broken action card fixes)
+
+| Page | Route |
+|------|-------|
+| calendar/events | restored from `674b6c5` |
+| marketing/crm | restored from `674b6c5` |
+| marketing/crm/followup | restored from `674b6c5` |
+| marketing/surveys | restored from `674b6c5` |
+| marketing/surveys/new | restored from `674b6c5` |
+
+### Source links updated (no restore needed)
+
+| File | Old href | New href |
+|------|----------|----------|
+| finance/accounting/page.tsx | `/dashboard/finance/accounting/controls` | `/dashboard/finance?tab=accounting` |
+| marketing/ecommerce/stores/page.tsx | `router.push("/dashboard/marketing/ecommerce/stores/new")` | `router.push("/dashboard/marketing?tab=ecommerce&drawer=create")` |
+| recruitment/candidates/page.tsx | `/dashboard/recruitment/candidates/new` | `/dashboard/hr?tab=recruitment&drawer=create` |
 
 ### Broken visible targets
-- **Before:** 353
-- **After Wave 1A+1B:** 102 (critical: 0, high: 48, medium: 54)
-- **After Wave 1C:** 48 (critical: 0, high: 48, medium: 0)
-- **Total fixed:** 305
+
+- **Before (Wave 1C complete):** 48 (critical: 0, high: 48, medium: 0)
+- **After (broken action cards fixed):** 47 (critical: 0, high: 47, medium: 0)
+- **Broken action cards:** 6 → 0
 
 ### Middleware bypass
-307 entries in BYPASS_PREFIX_REDIRECT. All 307 verified as valid real pages (UI present, not redirect-only, not missing).
 
-### Stabilization fixes (this session)
-- `machine-ops/performance/page.tsx`: double `.data` wrap removed + Recharts formatter `as never` cast
-- 7 files: `react/no-unescaped-entities` (literal quotes in JSX text) escaped
+312 entries in BYPASS_PREFIX_REDIRECT (was 307). All verified as valid real pages.
+
+### Redirect map
+
+Removed `/dashboard/marketing/crm` and `/dashboard/marketing/surveys` from:
+- `frontend/src/middleware.ts`
+- `frontend/src/lib/routeRedirectMap.ts`
 
 ---
 
@@ -42,18 +64,9 @@ Date: 2026-05-22 (ERP Button Recovery — Wave 1C complete + verified)
 - **Unescaped JSX entities:** literal `"` → `&ldquo;&rdquo;`, literal `'` → `&apos;` in JSX text nodes.
 - **Git commits for page recovery:** `674b6c5` (2026-05-01) = real page implementations. `bd6faf5` = replaced with stubs.
 - **Do NOT restore pages blindly:** verify type-check passes after each batch.
+- **routeRedirectMap.ts must stay in sync with middleware.ts** redirect map — both must be updated when adding/removing redirects.
 
 ---
-
-## Wave 1C verification (2026-05-22)
-
-- [x] Type-check: CLEAN
-- [x] Build: CLEAN
-- [x] Backend: 478/482 (4 pre-existing failures)
-- [x] Static audits: all green (307/307 valid, route redirects OK, workspace tabs OK)
-- [x] Live smoke: **104/104 PASSED** (1 flaky transient on `/dashboard/invoice-match/ai`, passed on retry 2)
-- [x] Audit BYPASS set synced in `scripts/audit-visible-import-graph.js`
-- [x] Wave 1C report: `docs/ERP_BUTTON_RECOVERY_WAVE1C_REPORT.md`
 
 ## Next session tasks (in order)
 
@@ -61,5 +74,4 @@ Date: 2026-05-22 (ERP Button Recovery — Wave 1C complete + verified)
    - ~38 are dynamic detail routes (`/dashboard/users/${id}` etc.) → need subview/modal pattern
    - ~10 are new pages requiring design decisions
    - Requires user/stakeholder approval before implementation
-2. **6 remaining broken-action-cards** — `find-broken-action-cards.js` shows 6 pages with action cards pointing to redirect stubs (calendar/events, finance/accounting/controls, marketing/ecommerce/stores/new, recruitment/candidates/new, reports/marketing CRM/surveys links)
-3. **E2E regression** — expand smoke test to cover full 104 routes on every Docker build
+2. **E2E regression** — expand smoke test to cover 6 newly restored routes

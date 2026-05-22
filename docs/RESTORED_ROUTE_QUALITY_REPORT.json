@@ -1,7 +1,7 @@
 {
   "summary": {
-    "total": 307,
-    "valid": 307,
+    "total": 312,
+    "valid": 312,
     "missing": 0,
     "redirectOnly": 0,
     "noUI": 0
@@ -491,6 +491,14 @@
       "route": "/dashboard/chatter/search",
       "exists": true,
       "lineCount": 146,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/calendar/events",
+      "exists": true,
+      "lineCount": 79,
       "redirectOnly": false,
       "hasUI": true,
       "status": "OK"
@@ -1355,6 +1363,38 @@
       "route": "/dashboard/fleet/incidents",
       "exists": true,
       "lineCount": 136,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/marketing/crm",
+      "exists": true,
+      "lineCount": 103,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/marketing/crm/followup",
+      "exists": true,
+      "lineCount": 115,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/marketing/surveys",
+      "exists": true,
+      "lineCount": 89,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/marketing/surveys/new",
+      "exists": true,
+      "lineCount": 152,
       "redirectOnly": false,
       "hasUI": true,
       "status": "OK"

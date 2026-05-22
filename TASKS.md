@@ -1,7 +1,18 @@
 # TASKS
 
 ## Current Phase
-ERP BUTTON RECOVERY WAVE 1C — COMPLETE AND VERIFIED. 2026-05-22. Wave 1C restored 54 AI/report pages. Type-check clean, build clean, 478/482 backend pass. 102 → 48 broken visible targets. Medium: 54 → 0. All 307 bypass routes valid. Live smoke 104/104 pass (exit 0). Commit: eecbba1.
+SIX BROKEN ACTION CARDS — COMPLETE. 2026-05-22. 6 → 0 broken action cards. 5 pages restored from git 674b6c5 (calendar/events, marketing/crm, marketing/crm/followup, marketing/surveys, marketing/surveys/new). 3 source links updated directly. Type-check clean, build clean. 48 → 47 broken visible targets. 312/312 bypass valid.
+
+### Six Broken Action Cards Fix (2026-05-22)
+**Pages restored:** 5 (calendar/events, marketing/crm, marketing/crm/followup, marketing/surveys, marketing/surveys/new) from `674b6c5`
+**Source links updated:** 3 (finance/accounting/controls → finance?tab=accounting, stores/new → marketing?tab=ecommerce&drawer=create, candidates/new → hr?tab=recruitment&drawer=create)
+**Broken action cards:** 6 → 0
+**Broken visible targets:** 48 → 47
+**Middleware BYPASS entries:** 307 → 312 (all verified valid)
+**Redirect map entries removed:** marketing/crm, marketing/surveys (from middleware.ts + routeRedirectMap.ts)
+**Type-check:** CLEAN | **Build:** CLEAN
+**Report:** `docs/SIX_BROKEN_ACTION_CARDS_FIX_REPORT.md`
+**Next:** Design pass for 47 unresolved targets (requires user approval)
 
 ### ERP Button Recovery Wave 1C (2026-05-22)
 **Source git commit for pages:** `674b6c5` (2026-05-01), `27ebada` for esg/reports

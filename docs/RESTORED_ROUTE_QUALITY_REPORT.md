@@ -2,8 +2,8 @@
 
 | Metric | Count |
 |--------|-------|
-| Total bypass routes | 307 |
-| Valid (has UI) | 307 |
+| Total bypass routes | 312 |
+| Valid (has UI) | 312 |
 | Missing page file | 0 |
 | Redirect-only | 0 |
 | No UI detected | 0 |
@@ -73,6 +73,7 @@
 | `/dashboard/report-builder/schedules` | true | 109 | false | true | OK |
 | `/dashboard/chatter/feed` | true | 119 | false | true | OK |
 | `/dashboard/chatter/search` | true | 146 | false | true | OK |
+| `/dashboard/calendar/events` | true | 79 | false | true | OK |
 | `/dashboard/calendar/view` | true | 249 | false | true | OK |
 | `/dashboard/calendar/resources` | true | 128 | false | true | OK |
 | `/dashboard/calendar/availability` | true | 143 | false | true | OK |
@@ -181,6 +182,10 @@
 | `/dashboard/fleet/fuel` | true | 110 | false | true | OK |
 | `/dashboard/fleet/maintenance` | true | 128 | false | true | OK |
 | `/dashboard/fleet/incidents` | true | 136 | false | true | OK |
+| `/dashboard/marketing/crm` | true | 103 | false | true | OK |
+| `/dashboard/marketing/crm/followup` | true | 115 | false | true | OK |
+| `/dashboard/marketing/surveys` | true | 89 | false | true | OK |
+| `/dashboard/marketing/surveys/new` | true | 152 | false | true | OK |
 | `/dashboard/marketing/ecommerce/stores` | true | 82 | false | true | OK |
 | `/dashboard/tpm/plans` | true | 98 | false | true | OK |
 | `/dashboard/tpm/promotions` | true | 111 | false | true | OK |

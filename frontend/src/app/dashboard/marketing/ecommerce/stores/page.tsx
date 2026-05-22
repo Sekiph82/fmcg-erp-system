@@ -34,7 +34,7 @@ export default function EcommerceStoresPage() {
             <p className="text-slate-400 text-sm mt-1">{stores.length} stores connected</p>
           </div>
           <RequirePermission permission="stores.create">
-            <button onClick={() => router.push("/dashboard/marketing/ecommerce/stores/new")}
+            <button onClick={() => router.push("/dashboard/marketing?tab=ecommerce&drawer=create")}
               className="px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-sm font-medium">
               + Add Store
             </button>

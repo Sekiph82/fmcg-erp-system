@@ -24,7 +24,7 @@ export default function CandidatesPage() {
           <h1 className="text-xl font-bold text-white">Candidates</h1>
           <p className="text-slate-500 text-sm mt-0.5">{candidates.length} candidates</p>
         </div>
-        <Link href="/dashboard/recruitment/candidates/new"
+        <Link href="/dashboard/hr?tab=recruitment&drawer=create"
           className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium">+ Add Candidate</Link>
       </div>
 
