@@ -7,23 +7,23 @@
     "totalDynamicImportsFound": 222,
     "dynamicallyImportedVisiblePages": 220,
     "totalVisibleActionTargetsFound": 487,
-    "workingTargets": 357,
-    "totalBrokenVisibleTargets": 102,
+    "workingTargets": 419,
+    "totalBrokenVisibleTargets": 48,
     "criticalSeverity": 0,
     "highSeverity": 48,
-    "mediumSeverity": 54,
-    "gitHistoryMatchesFound": 55,
-    "highConfidenceRealPageMatches": 54,
+    "mediumSeverity": 0,
+    "gitHistoryMatchesFound": 1,
+    "highConfidenceRealPageMatches": 0,
     "mediumConfidenceMatches": 1,
     "unresolvedNoGitMatch": 47,
-    "recommendRestoreFromGit": 54,
+    "recommendRestoreFromGit": 0,
     "recommendConvertToSubview": 38,
     "recommendCreateNewPage": 10
   },
   "moduleGroups": [
     {
       "module": "Administration",
-      "brokenCount": 4,
+      "brokenCount": 3,
       "items": [
         {
           "id": "BVT-0001",
@@ -96,32 +96,6 @@
             "note": ""
           },
           "recommendation": "CONVERT_TO_WORKSPACE_SUBVIEW"
-        },
-        {
-          "id": "BVT-0004",
-          "module": "Administration",
-          "sourceFile": "frontend/src/app/dashboard/custom-fields/page.tsx",
-          "sourceRoute": "/dashboard/custom-fields",
-          "visibleVia": "/dashboard/admin?tab=CustomFieldsPage",
-          "label": "New Field",
-          "lineNumber": 152,
-          "currentTarget": "/dashboard/custom-fields/ai",
-          "currentBehavior": "middleware_redirect",
-          "redirectsTo": "/dashboard/admin?tab=custom-fields",
-          "whyBroken": "In /dashboard/custom-fields (visible at /dashboard/admin?tab=CustomFieldsPage): link to \"/dashboard/custom-fields/ai\" — middleware_redirect → /dashboard/admin?tab=custom-fields",
-          "severity": "medium",
-          "userVisible": true,
-          "evidence": "href: \"/dashboard/custom-fields/ai",
-          "gitHistory": {
-            "found": true,
-            "wasReal": true,
-            "commit": "674b6c5",
-            "commitDate": "2026-05-01",
-            "filePath": "frontend/src/app/dashboard/custom-fields/ai/page.tsx",
-            "preview": "\"use client\";\nimport { useEffect, useState } from \"react\";\nimport { customFieldsApi, CFAIRec, CFAIAgentType, CFAIRecStatus } from \"@/lib/custom_fields\";\n\nconst AGENT_META: Record<CFAIAgentType, { labe",
-            "note": "Real implementation found in 674b6c5"
-          },
-          "recommendation": "RESTORE_OLD_PAGE_FROM_GIT"
         }
       ]
     },
@@ -130,7 +104,7 @@
       "brokenCount": 1,
       "items": [
         {
-          "id": "BVT-0005",
+          "id": "BVT-0004",
           "module": "Other",
           "sourceFile": "frontend/src/app/dashboard/ai/compliance/page.tsx",
           "sourceRoute": "/dashboard/ai/compliance",
@@ -156,431 +130,11 @@
       ]
     },
     {
-      "module": "Intelligence / Analytics",
-      "brokenCount": 8,
-      "items": [
-        {
-          "id": "BVT-0006",
-          "module": "Intelligence / Analytics",
-          "sourceFile": "frontend/src/app/dashboard/reports/page.tsx",
-          "sourceRoute": "/dashboard/reports",
-          "visibleVia": "/dashboard/analytics?tab=ReportsPage",
-          "label": "Inventory",
-          "lineNumber": 13,
-          "currentTarget": "/dashboard/reports/inventory",
-          "currentBehavior": "middleware_redirect",
-          "redirectsTo": "/dashboard/analytics?tab=reports",
-          "whyBroken": "In /dashboard/reports (visible at /dashboard/analytics?tab=ReportsPage): link to \"/dashboard/reports/inventory\" — middleware_redirect → /dashboard/analytics?tab=reports",
-          "severity": "medium",
-          "userVisible": true,
-          "evidence": "href: \"/dashboard/reports/inventory",
-          "gitHistory": {
-            "found": true,
-            "wasReal": true,
-            "commit": "674b6c5",
-            "commitDate": "2026-05-01",
-            "filePath": "frontend/src/app/dashboard/reports/inventory/page.tsx",
-            "preview": "\"use client\";\n\nimport { useState } from \"react\";\nimport { useQuery } from \"@tanstack/react-query\";\nimport { analyticsApi, fmtKES, fmt } from \"@/lib/analytics\";\nimport { RequirePermission } from \"@/com",
-            "note": "Real implementation found in 674b6c5"
-          },
-          "recommendation": "RESTORE_OLD_PAGE_FROM_GIT"
-        },
-        {
-          "id": "BVT-0007",
-          "module": "Intelligence / Analytics",
-          "sourceFile": "frontend/src/app/dashboard/reports/page.tsx",
-          "sourceRoute": "/dashboard/reports",
-          "visibleVia": "/dashboard/analytics?tab=ReportsPage",
-          "label": "Production / MES",
-          "lineNumber": 22,
-          "currentTarget": "/dashboard/reports/production",
-          "currentBehavior": "middleware_redirect",
-          "redirectsTo": "/dashboard/analytics?tab=reports",
-          "whyBroken": "In /dashboard/reports (visible at /dashboard/analytics?tab=ReportsPage): link to \"/dashboard/reports/production\" — middleware_redirect → /dashboard/analytics?tab=reports",
-          "severity": "medium",
-          "userVisible": true,
-          "evidence": "href: \"/dashboard/reports/production",
-          "gitHistory": {
-            "found": true,
-            "wasReal": true,
-            "commit": "674b6c5",
-            "commitDate": "2026-05-01",
-            "filePath": "frontend/src/app/dashboard/reports/production/page.tsx",
-            "preview": "\"use client\";\n\nimport { useState } from \"react\";\nimport { useQuery } from \"@tanstack/react-query\";\nimport { analyticsApi, fmt } from \"@/lib/analytics\";\nimport { RequirePermission } from \"@/components/",
-            "note": "Real implementation found in 674b6c5"
-          },
-          "recommendation": "RESTORE_OLD_PAGE_FROM_GIT"
-        },
-        {
-          "id": "BVT-0008",
-          "module": "Intelligence / Analytics",
-          "sourceFile": "frontend/src/app/dashboard/reports/page.tsx",
-          "sourceRoute": "/dashboard/reports",
-          "visibleVia": "/dashboard/analytics?tab=ReportsPage",
-          "label": "Procurement",
-          "lineNumber": 31,
-          "currentTarget": "/dashboard/reports/procurement",
-          "currentBehavior": "middleware_redirect",
-          "redirectsTo": "/dashboard/analytics?tab=reports",
-          "whyBroken": "In /dashboard/reports (visible at /dashboard/analytics?tab=ReportsPage): link to \"/dashboard/reports/procurement\" — middleware_redirect → /dashboard/analytics?tab=reports",
-          "severity": "medium",
-          "userVisible": true,
-          "evidence": "href: \"/dashboard/reports/procurement",
-          "gitHistory": {
-            "found": true,
-            "wasReal": true,
-            "commit": "674b6c5",
-            "commitDate": "2026-05-01",
-            "filePath": "frontend/src/app/dashboard/reports/procurement/page.tsx",
-            "preview": "\"use client\";\n\nimport { useState } from \"react\";\nimport { useQuery } from \"@tanstack/react-query\";\nimport { analyticsApi, fmtKES, fmt } from \"@/lib/analytics\";\nimport { RequirePermission } from \"@/com",
-            "note": "Real implementation found in 674b6c5"
-          },
-          "recommendation": "RESTORE_OLD_PAGE_FROM_GIT"
-        },
-        {
-          "id": "BVT-0009",
-          "module": "Intelligence / Analytics",
-          "sourceFile": "frontend/src/app/dashboard/reports/page.tsx",
-          "sourceRoute": "/dashboard/reports",
-          "visibleVia": "/dashboard/analytics?tab=ReportsPage",
-          "label": "Sales & Revenue",
-          "lineNumber": 40,
-          "currentTarget": "/dashboard/reports/sales",
-          "currentBehavior": "middleware_redirect",
-          "redirectsTo": "/dashboard/analytics?tab=reports",
-          "whyBroken": "In /dashboard/reports (visible at /dashboard/analytics?tab=ReportsPage): link to \"/dashboard/reports/sales\" — middleware_redirect → /dashboard/analytics?tab=reports",
-          "severity": "medium",
-          "userVisible": true,
-          "evidence": "href: \"/dashboard/reports/sales",
-          "gitHistory": {
-            "found": true,
-            "wasReal": true,
-            "commit": "674b6c5",
-            "commitDate": "2026-05-01",
-            "filePath": "frontend/src/app/dashboard/reports/sales/page.tsx",
-            "preview": "\"use client\";\n\nimport { useState } from \"react\";\nimport { useQuery } from \"@tanstack/react-query\";\nimport { analyticsApi, fmtKES, fmt } from \"@/lib/analytics\";\nimport { RequirePermission } from \"@/com",
-            "note": "Real implementation found in 674b6c5"
-          },
-          "recommendation": "RESTORE_OLD_PAGE_FROM_GIT"
-        },
-        {
-          "id": "BVT-0010",
-          "module": "Intelligence / Analytics",
-          "sourceFile": "frontend/src/app/dashboard/reports/page.tsx",
-          "sourceRoute": "/dashboard/reports",
-          "visibleVia": "/dashboard/analytics?tab=ReportsPage",
-          "label": "Finance",
-          "lineNumber": 49,
-          "currentTarget": "/dashboard/reports/finance",
-          "currentBehavior": "middleware_redirect",
-          "redirectsTo": "/dashboard/analytics?tab=reports",
-          "whyBroken": "In /dashboard/reports (visible at /dashboard/analytics?tab=ReportsPage): link to \"/dashboard/reports/finance\" — middleware_redirect → /dashboard/analytics?tab=reports",
-          "severity": "medium",
-          "userVisible": true,
-          "evidence": "href: \"/dashboard/reports/finance",
-          "gitHistory": {
-            "found": true,
-            "wasReal": true,
-            "commit": "674b6c5",
-            "commitDate": "2026-05-01",
-            "filePath": "frontend/src/app/dashboard/reports/finance/page.tsx",
-            "preview": "\"use client\";\n\nimport { useState } from \"react\";\nimport { useQuery } from \"@tanstack/react-query\";\nimport { analyticsApi, fmtKES } from \"@/lib/analytics\";\nimport { RequirePermission } from \"@/componen",
-            "note": "Real implementation found in 674b6c5"
-          },
-          "recommendation": "RESTORE_OLD_PAGE_FROM_GIT"
-        },
-        {
-          "id": "BVT-0011",
-          "module": "Intelligence / Analytics",
-          "sourceFile": "frontend/src/app/dashboard/reports/page.tsx",
-          "sourceRoute": "/dashboard/reports",
-          "visibleVia": "/dashboard/analytics?tab=ReportsPage",
-          "label": "M-Pesa Payments",
-          "lineNumber": 58,
-          "currentTarget": "/dashboard/reports/payments",
-          "currentBehavior": "middleware_redirect",
-          "redirectsTo": "/dashboard/analytics?tab=reports",
-          "whyBroken": "In /dashboard/reports (visible at /dashboard/analytics?tab=ReportsPage): link to \"/dashboard/reports/payments\" — middleware_redirect → /dashboard/analytics?tab=reports",
-          "severity": "medium",
-          "userVisible": true,
-          "evidence": "href: \"/dashboard/reports/payments",
-          "gitHistory": {
-            "found": true,
-            "wasReal": true,
-            "commit": "674b6c5",
-            "commitDate": "2026-05-01",
-            "filePath": "frontend/src/app/dashboard/reports/payments/page.tsx",
-            "preview": "\"use client\";\n\nimport { useState } from \"react\";\nimport { useQuery } from \"@tanstack/react-query\";\nimport { analyticsApi, fmtKES, fmt } from \"@/lib/analytics\";\nimport { RequirePermission } from \"@/com",
-            "note": "Real implementation found in 674b6c5"
-          },
-          "recommendation": "RESTORE_OLD_PAGE_FROM_GIT"
-        },
-        {
-          "id": "BVT-0012",
-          "module": "Intelligence / Analytics",
-          "sourceFile": "frontend/src/app/dashboard/reports/page.tsx",
-          "sourceRoute": "/dashboard/reports",
-          "visibleVia": "/dashboard/analytics?tab=ReportsPage",
-          "label": "Marketing BI",
-          "lineNumber": 67,
-          "currentTarget": "/dashboard/reports/marketing",
-          "currentBehavior": "middleware_redirect",
-          "redirectsTo": "/dashboard/analytics?tab=reports",
-          "whyBroken": "In /dashboard/reports (visible at /dashboard/analytics?tab=ReportsPage): link to \"/dashboard/reports/marketing\" — middleware_redirect → /dashboard/analytics?tab=reports",
-          "severity": "medium",
-          "userVisible": true,
-          "evidence": "href: \"/dashboard/reports/marketing",
-          "gitHistory": {
-            "found": true,
-            "wasReal": true,
-            "commit": "674b6c5",
-            "commitDate": "2026-05-01",
-            "filePath": "frontend/src/app/dashboard/reports/marketing/page.tsx",
-            "preview": "\"use client\";\n\nimport { useState } from \"react\";\nimport { useQuery } from \"@tanstack/react-query\";\nimport Link from \"next/link\";\nimport {\n  analyticsApi,\n  MarketingBIKPIs,\n  MarketingCampaignsDetail,",
-            "note": "Real implementation found in 674b6c5"
-          },
-          "recommendation": "RESTORE_OLD_PAGE_FROM_GIT"
-        },
-        {
-          "id": "BVT-0013",
-          "module": "Intelligence / Analytics",
-          "sourceFile": "frontend/src/app/dashboard/report-builder/page.tsx",
-          "sourceRoute": "/dashboard/report-builder",
-          "visibleVia": "/dashboard/analytics?tab=ReportBuilderPage",
-          "label": "Dashboards",
-          "lineNumber": 37,
-          "currentTarget": "/dashboard/report-builder/ai",
-          "currentBehavior": "middleware_redirect",
-          "redirectsTo": "/dashboard/analytics?tab=report-builder",
-          "whyBroken": "In /dashboard/report-builder (visible at /dashboard/analytics?tab=ReportBuilderPage): link to \"/dashboard/report-builder/ai\" — middleware_redirect → /dashboard/analytics?tab=report-builder",
-          "severity": "medium",
-          "userVisible": true,
-          "evidence": "href: \"/dashboard/report-builder/ai",
-          "gitHistory": {
-            "found": true,
-            "wasReal": true,
-            "commit": "674b6c5",
-            "commitDate": "2026-05-01",
-            "filePath": "frontend/src/app/dashboard/report-builder/ai/page.tsx",
-            "preview": "\"use client\";\nimport { useEffect, useState } from \"react\";\nimport { reportBuilderApi, RBAIRec, RBAIAgentType, RBAIRecStatus } from \"@/lib/report_builder\";\n\nconst AGENT_META: Record<RBAIAgentType, { la",
-            "note": "Real implementation found in 674b6c5"
-          },
-          "recommendation": "RESTORE_OLD_PAGE_FROM_GIT"
-        }
-      ]
-    },
-    {
-      "module": "Documents & Communication",
-      "brokenCount": 8,
-      "items": [
-        {
-          "id": "BVT-0014",
-          "module": "Documents & Communication",
-          "sourceFile": "frontend/src/app/dashboard/chatter/page.tsx",
-          "sourceRoute": "/dashboard/chatter",
-          "visibleVia": "/dashboard/communication?tab=ChatterPage",
-          "label": "My Feed",
-          "lineNumber": 93,
-          "currentTarget": "/dashboard/chatter/reports",
-          "currentBehavior": "middleware_redirect",
-          "redirectsTo": "/dashboard/communication?tab=chatter",
-          "whyBroken": "In /dashboard/chatter (visible at /dashboard/communication?tab=ChatterPage): link to \"/dashboard/chatter/reports\" — middleware_redirect → /dashboard/communication?tab=chatter",
-          "severity": "medium",
-          "userVisible": true,
-          "evidence": "href: \"/dashboard/chatter/reports",
-          "gitHistory": {
-            "found": true,
-            "wasReal": true,
-            "commit": "674b6c5",
-            "commitDate": "2026-05-01",
-            "filePath": "frontend/src/app/dashboard/chatter/reports/page.tsx",
-            "preview": "\"use client\";\nimport { useEffect, useState } from \"react\";\nimport {\n  chatterApi, ChatterStats, ActivityOut, ActivityType,\n  TYPE_BADGE, REF_LABEL, timeAgo,\n} from \"@/lib/chatter\";\n\ntype Tab = \"volume",
-            "note": "Real implementation found in 674b6c5"
-          },
-          "recommendation": "RESTORE_OLD_PAGE_FROM_GIT"
-        },
-        {
-          "id": "BVT-0015",
-          "module": "Documents & Communication",
-          "sourceFile": "frontend/src/app/dashboard/chatter/page.tsx",
-          "sourceRoute": "/dashboard/chatter",
-          "visibleVia": "/dashboard/communication?tab=ChatterPage",
-          "label": "Search",
-          "lineNumber": 94,
-          "currentTarget": "/dashboard/chatter/ai",
-          "currentBehavior": "middleware_redirect",
-          "redirectsTo": "/dashboard/communication?tab=chatter",
-          "whyBroken": "In /dashboard/chatter (visible at /dashboard/communication?tab=ChatterPage): link to \"/dashboard/chatter/ai\" — middleware_redirect → /dashboard/communication?tab=chatter",
-          "severity": "medium",
-          "userVisible": true,
-          "evidence": "href: \"/dashboard/chatter/ai",
-          "gitHistory": {
-            "found": true,
-            "wasReal": true,
-            "commit": "674b6c5",
-            "commitDate": "2026-05-01",
-            "filePath": "frontend/src/app/dashboard/chatter/ai/page.tsx",
-            "preview": "\"use client\";\nimport { useEffect, useState } from \"react\";\nimport { chatterApi, CTAIRec, CTAIAgentType, CTAIRecStatus } from \"@/lib/chatter\";\n\nconst AGENT_META: Record<CTAIAgentType, { label: string; ",
-            "note": "Real implementation found in 674b6c5"
-          },
-          "recommendation": "RESTORE_OLD_PAGE_FROM_GIT"
-        },
-        {
-          "id": "BVT-0016",
-          "module": "Documents & Communication",
-          "sourceFile": "frontend/src/app/dashboard/notification-center/page.tsx",
-          "sourceRoute": "/dashboard/notification-center",
-          "visibleVia": "/dashboard/communication?tab=NotifPage",
-          "label": "Templates",
-          "lineNumber": 38,
-          "currentTarget": "/dashboard/notification-center/reports",
-          "currentBehavior": "middleware_redirect",
-          "redirectsTo": "/dashboard/communication?tab=notifications",
-          "whyBroken": "In /dashboard/notification-center (visible at /dashboard/communication?tab=NotifPage): link to \"/dashboard/notification-center/reports\" — middleware_redirect → /dashboard/communication?tab=notifications",
-          "severity": "medium",
-          "userVisible": true,
-          "evidence": "href: \"/dashboard/notification-center/reports",
-          "gitHistory": {
-            "found": true,
-            "wasReal": true,
-            "commit": "674b6c5",
-            "commitDate": "2026-05-01",
-            "filePath": "frontend/src/app/dashboard/notification-center/reports/page.tsx",
-            "preview": "\"use client\";\nimport { useEffect, useState } from \"react\";\nimport { notificationsApi, NCNotification, TYPE_COLOR, CHANNEL_LABEL } from \"@/lib/notifications_center\";\n\ntype ReportTab = \"delivery\" | \"unr",
-            "note": "Real implementation found in 674b6c5"
-          },
-          "recommendation": "RESTORE_OLD_PAGE_FROM_GIT"
-        },
-        {
-          "id": "BVT-0017",
-          "module": "Documents & Communication",
-          "sourceFile": "frontend/src/app/dashboard/notification-center/page.tsx",
-          "sourceRoute": "/dashboard/notification-center",
-          "visibleVia": "/dashboard/communication?tab=NotifPage",
-          "label": "Schedules",
-          "lineNumber": 39,
-          "currentTarget": "/dashboard/notification-center/ai",
-          "currentBehavior": "middleware_redirect",
-          "redirectsTo": "/dashboard/communication?tab=notifications",
-          "whyBroken": "In /dashboard/notification-center (visible at /dashboard/communication?tab=NotifPage): link to \"/dashboard/notification-center/ai\" — middleware_redirect → /dashboard/communication?tab=notifications",
-          "severity": "medium",
-          "userVisible": true,
-          "evidence": "href: \"/dashboard/notification-center/ai",
-          "gitHistory": {
-            "found": true,
-            "wasReal": true,
-            "commit": "674b6c5",
-            "commitDate": "2026-05-01",
-            "filePath": "frontend/src/app/dashboard/notification-center/ai/page.tsx",
-            "preview": "\"use client\";\nimport { useEffect, useState } from \"react\";\nimport { notificationsApi, NCNotifAIRec, NCNotifAIAgentType, NCNotifAIRecStatus } from \"@/lib/notifications_center\";\n\nconst AGENT_META: Recor",
-            "note": "Real implementation found in 674b6c5"
-          },
-          "recommendation": "RESTORE_OLD_PAGE_FROM_GIT"
-        },
-        {
-          "id": "BVT-0024",
-          "module": "Documents & Communication",
-          "sourceFile": "frontend/src/app/dashboard/documents/compliance/page.tsx",
-          "sourceRoute": "/dashboard/documents/compliance",
-          "visibleVia": "/dashboard/documents?tab=DocsCompliancePage",
-          "label": "${d.id",
-          "lineNumber": 159,
-          "currentTarget": "/dashboard/documents/${d.id",
-          "currentBehavior": "no_route_file",
-          "redirectsTo": null,
-          "whyBroken": "In /dashboard/documents/compliance (visible at /dashboard/documents?tab=DocsCompliancePage): link to \"/dashboard/documents/${d.id\" — no_route_file",
-          "severity": "high",
-          "userVisible": true,
-          "evidence": "href={`/dashboard/documents/${d.id",
-          "gitHistory": {
-            "found": false,
-            "wasReal": false,
-            "commit": null,
-            "commitDate": null,
-            "note": ""
-          },
-          "recommendation": "CREATE_NEW_REAL_PAGE_REQUIRED"
-        },
-        {
-          "id": "BVT-0025",
-          "module": "Documents & Communication",
-          "sourceFile": "frontend/src/app/dashboard/documents/expiring/page.tsx",
-          "sourceRoute": "/dashboard/documents/expiring",
-          "visibleVia": "/dashboard/documents?tab=DocsExpiringPage",
-          "label": "${d.id",
-          "lineNumber": 146,
-          "currentTarget": "/dashboard/documents/${d.id",
-          "currentBehavior": "no_route_file",
-          "redirectsTo": null,
-          "whyBroken": "In /dashboard/documents/expiring (visible at /dashboard/documents?tab=DocsExpiringPage): link to \"/dashboard/documents/${d.id\" — no_route_file",
-          "severity": "high",
-          "userVisible": true,
-          "evidence": "href={`/dashboard/documents/${d.id",
-          "gitHistory": {
-            "found": false,
-            "wasReal": false,
-            "commit": null,
-            "commitDate": null,
-            "note": ""
-          },
-          "recommendation": "CREATE_NEW_REAL_PAGE_REQUIRED"
-        },
-        {
-          "id": "BVT-0026",
-          "module": "Documents & Communication",
-          "sourceFile": "frontend/src/app/dashboard/knowledge-base/page.tsx",
-          "sourceRoute": "/dashboard/knowledge-base",
-          "visibleVia": "/dashboard/documents?tab=KnowledgeBasePage",
-          "label": "${a.id",
-          "lineNumber": 66,
-          "currentTarget": "/dashboard/knowledge-base/${a.id",
-          "currentBehavior": "middleware_redirect",
-          "redirectsTo": "/dashboard/documents?tab=knowledge-base",
-          "whyBroken": "In /dashboard/knowledge-base (visible at /dashboard/documents?tab=KnowledgeBasePage): link to \"/dashboard/knowledge-base/${a.id\" — middleware_redirect → /dashboard/documents?tab=knowledge-base",
-          "severity": "high",
-          "userVisible": true,
-          "evidence": "href={`/dashboard/knowledge-base/${a.id",
-          "gitHistory": {
-            "found": false,
-            "wasReal": false,
-            "commit": null,
-            "commitDate": null,
-            "note": ""
-          },
-          "recommendation": "CONVERT_TO_WORKSPACE_SUBVIEW"
-        },
-        {
-          "id": "BVT-0027",
-          "module": "Documents & Communication",
-          "sourceFile": "frontend/src/app/dashboard/knowledge-base/page.tsx",
-          "sourceRoute": "/dashboard/knowledge-base",
-          "visibleVia": "/dashboard/documents?tab=KnowledgeBasePage",
-          "label": "Categories",
-          "lineNumber": 99,
-          "currentTarget": "/dashboard/knowledge-base/categories",
-          "currentBehavior": "middleware_redirect",
-          "redirectsTo": "/dashboard/documents?tab=knowledge-base",
-          "whyBroken": "In /dashboard/knowledge-base (visible at /dashboard/documents?tab=KnowledgeBasePage): link to \"/dashboard/knowledge-base/categories\" — middleware_redirect → /dashboard/documents?tab=knowledge-base",
-          "severity": "high",
-          "userVisible": true,
-          "evidence": "href=\"/dashboard/knowledge-base/categories",
-          "gitHistory": {
-            "found": false,
-            "wasReal": false,
-            "commit": null,
-            "commitDate": null,
-            "note": ""
-          },
-          "recommendation": "CONVERT_TO_WORKSPACE_SUBVIEW"
-        }
-      ]
-    },
-    {
       "module": "Commercial / CRM",
       "brokenCount": 6,
       "items": [
         {
-          "id": "BVT-0018",
+          "id": "BVT-0005",
           "module": "Commercial / CRM",
           "sourceFile": "frontend/src/app/dashboard/crm/pipeline/page.tsx",
           "sourceRoute": "/dashboard/crm/pipeline",
@@ -604,7 +158,7 @@
           "recommendation": "CONVERT_TO_WORKSPACE_SUBVIEW"
         },
         {
-          "id": "BVT-0019",
+          "id": "BVT-0006",
           "module": "Commercial / CRM",
           "sourceFile": "frontend/src/app/dashboard/crm/leads/page.tsx",
           "sourceRoute": "/dashboard/crm/leads",
@@ -628,7 +182,7 @@
           "recommendation": "CONVERT_TO_WORKSPACE_SUBVIEW"
         },
         {
-          "id": "BVT-0020",
+          "id": "BVT-0007",
           "module": "Commercial / CRM",
           "sourceFile": "frontend/src/app/dashboard/crm/opportunities/page.tsx",
           "sourceRoute": "/dashboard/crm/opportunities",
@@ -652,7 +206,7 @@
           "recommendation": "CONVERT_TO_WORKSPACE_SUBVIEW"
         },
         {
-          "id": "BVT-0021",
+          "id": "BVT-0008",
           "module": "Commercial / CRM",
           "sourceFile": "frontend/src/app/dashboard/crm/activities/page.tsx",
           "sourceRoute": "/dashboard/crm/activities",
@@ -676,7 +230,7 @@
           "recommendation": "CONVERT_TO_WORKSPACE_SUBVIEW"
         },
         {
-          "id": "BVT-0022",
+          "id": "BVT-0009",
           "module": "Commercial / CRM",
           "sourceFile": "frontend/src/app/dashboard/nps/page.tsx",
           "sourceRoute": "/dashboard/nps",
@@ -700,7 +254,7 @@
           "recommendation": "CONVERT_TO_WORKSPACE_SUBVIEW"
         },
         {
-          "id": "BVT-0023",
+          "id": "BVT-0010",
           "module": "Commercial / CRM",
           "sourceFile": "frontend/src/app/dashboard/surveys/page.tsx",
           "sourceRoute": "/dashboard/surveys",
@@ -726,11 +280,113 @@
       ]
     },
     {
-      "module": "Finance",
-      "brokenCount": 11,
+      "module": "Documents & Communication",
+      "brokenCount": 4,
       "items": [
         {
-          "id": "BVT-0028",
+          "id": "BVT-0011",
+          "module": "Documents & Communication",
+          "sourceFile": "frontend/src/app/dashboard/documents/compliance/page.tsx",
+          "sourceRoute": "/dashboard/documents/compliance",
+          "visibleVia": "/dashboard/documents?tab=DocsCompliancePage",
+          "label": "${d.id",
+          "lineNumber": 159,
+          "currentTarget": "/dashboard/documents/${d.id",
+          "currentBehavior": "no_route_file",
+          "redirectsTo": null,
+          "whyBroken": "In /dashboard/documents/compliance (visible at /dashboard/documents?tab=DocsCompliancePage): link to \"/dashboard/documents/${d.id\" — no_route_file",
+          "severity": "high",
+          "userVisible": true,
+          "evidence": "href={`/dashboard/documents/${d.id",
+          "gitHistory": {
+            "found": false,
+            "wasReal": false,
+            "commit": null,
+            "commitDate": null,
+            "note": ""
+          },
+          "recommendation": "CREATE_NEW_REAL_PAGE_REQUIRED"
+        },
+        {
+          "id": "BVT-0012",
+          "module": "Documents & Communication",
+          "sourceFile": "frontend/src/app/dashboard/documents/expiring/page.tsx",
+          "sourceRoute": "/dashboard/documents/expiring",
+          "visibleVia": "/dashboard/documents?tab=DocsExpiringPage",
+          "label": "${d.id",
+          "lineNumber": 146,
+          "currentTarget": "/dashboard/documents/${d.id",
+          "currentBehavior": "no_route_file",
+          "redirectsTo": null,
+          "whyBroken": "In /dashboard/documents/expiring (visible at /dashboard/documents?tab=DocsExpiringPage): link to \"/dashboard/documents/${d.id\" — no_route_file",
+          "severity": "high",
+          "userVisible": true,
+          "evidence": "href={`/dashboard/documents/${d.id",
+          "gitHistory": {
+            "found": false,
+            "wasReal": false,
+            "commit": null,
+            "commitDate": null,
+            "note": ""
+          },
+          "recommendation": "CREATE_NEW_REAL_PAGE_REQUIRED"
+        },
+        {
+          "id": "BVT-0013",
+          "module": "Documents & Communication",
+          "sourceFile": "frontend/src/app/dashboard/knowledge-base/page.tsx",
+          "sourceRoute": "/dashboard/knowledge-base",
+          "visibleVia": "/dashboard/documents?tab=KnowledgeBasePage",
+          "label": "${a.id",
+          "lineNumber": 66,
+          "currentTarget": "/dashboard/knowledge-base/${a.id",
+          "currentBehavior": "middleware_redirect",
+          "redirectsTo": "/dashboard/documents?tab=knowledge-base",
+          "whyBroken": "In /dashboard/knowledge-base (visible at /dashboard/documents?tab=KnowledgeBasePage): link to \"/dashboard/knowledge-base/${a.id\" — middleware_redirect → /dashboard/documents?tab=knowledge-base",
+          "severity": "high",
+          "userVisible": true,
+          "evidence": "href={`/dashboard/knowledge-base/${a.id",
+          "gitHistory": {
+            "found": false,
+            "wasReal": false,
+            "commit": null,
+            "commitDate": null,
+            "note": ""
+          },
+          "recommendation": "CONVERT_TO_WORKSPACE_SUBVIEW"
+        },
+        {
+          "id": "BVT-0014",
+          "module": "Documents & Communication",
+          "sourceFile": "frontend/src/app/dashboard/knowledge-base/page.tsx",
+          "sourceRoute": "/dashboard/knowledge-base",
+          "visibleVia": "/dashboard/documents?tab=KnowledgeBasePage",
+          "label": "Categories",
+          "lineNumber": 99,
+          "currentTarget": "/dashboard/knowledge-base/categories",
+          "currentBehavior": "middleware_redirect",
+          "redirectsTo": "/dashboard/documents?tab=knowledge-base",
+          "whyBroken": "In /dashboard/knowledge-base (visible at /dashboard/documents?tab=KnowledgeBasePage): link to \"/dashboard/knowledge-base/categories\" — middleware_redirect → /dashboard/documents?tab=knowledge-base",
+          "severity": "high",
+          "userVisible": true,
+          "evidence": "href=\"/dashboard/knowledge-base/categories",
+          "gitHistory": {
+            "found": false,
+            "wasReal": false,
+            "commit": null,
+            "commitDate": null,
+            "note": ""
+          },
+          "recommendation": "CONVERT_TO_WORKSPACE_SUBVIEW"
+        }
+      ]
+    },
+    {
+      "module": "Finance",
+      "brokenCount": 4,
+      "items": [
+        {
+          "id": "BVT-0015",
           "module": "Finance",
           "sourceFile": "frontend/src/app/dashboard/finance/accounting/page.tsx",
           "sourceRoute": "/dashboard/finance/accounting",
@@ -755,33 +411,7 @@
           "recommendation": "CONVERT_TO_WORKSPACE_SUBVIEW"
         },
         {
-          "id": "BVT-0029",
-          "module": "Finance",
-          "sourceFile": "frontend/src/app/dashboard/bank-reconciliation/page.tsx",
-          "sourceRoute": "/dashboard/bank-reconciliation",
-          "visibleVia": "/dashboard/finance?tab=BankReconPage",
-          "label": "Bank vs Ledger",
-          "lineNumber": 59,
-          "currentTarget": "/dashboard/bank-reconciliation/ai",
-          "currentBehavior": "middleware_redirect",
-          "redirectsTo": "/dashboard/finance?tab=bank-recon",
-          "whyBroken": "In /dashboard/bank-reconciliation (visible at /dashboard/finance?tab=BankReconPage): link to \"/dashboard/bank-reconciliation/ai\" — middleware_redirect → /dashboard/finance?tab=bank-recon",
-          "severity": "medium",
-          "userVisible": true,
-          "evidence": "href: \"/dashboard/bank-reconciliation/ai",
-          "gitHistory": {
-            "found": true,
-            "wasReal": true,
-            "commit": "674b6c5",
-            "commitDate": "2026-05-01",
-            "filePath": "frontend/src/app/dashboard/bank-reconciliation/ai/page.tsx",
-            "preview": "\"use client\";\nimport { useState } from \"react\";\nimport { useQuery, useMutation, useQueryClient } from \"@tanstack/react-query\";\nimport {\n  brApi, BRAIRec, BRAIRecStatus, BRAIAgentType,\n  AI_PRIORITY_CO",
-            "note": "Real implementation found in 674b6c5"
-          },
-          "recommendation": "RESTORE_OLD_PAGE_FROM_GIT"
-        },
-        {
-          "id": "BVT-0030",
+          "id": "BVT-0016",
           "module": "Finance",
           "sourceFile": "frontend/src/app/dashboard/bank-reconciliation/page.tsx",
           "sourceRoute": "/dashboard/bank-reconciliation",
@@ -805,33 +435,7 @@
           "recommendation": "CONVERT_TO_WORKSPACE_SUBVIEW"
         },
         {
-          "id": "BVT-0031",
-          "module": "Finance",
-          "sourceFile": "frontend/src/app/dashboard/invoice-match/page.tsx",
-          "sourceRoute": "/dashboard/invoice-match",
-          "visibleVia": "/dashboard/finance?tab=InvoiceMatchPage",
-          "label": "Blocked Invoices",
-          "lineNumber": 109,
-          "currentTarget": "/dashboard/invoice-match/ai",
-          "currentBehavior": "middleware_redirect",
-          "redirectsTo": "/dashboard/finance?tab=invoice-match",
-          "whyBroken": "In /dashboard/invoice-match (visible at /dashboard/finance?tab=InvoiceMatchPage): link to \"/dashboard/invoice-match/ai\" — middleware_redirect → /dashboard/finance?tab=invoice-match",
-          "severity": "medium",
-          "userVisible": true,
-          "evidence": "href: \"/dashboard/invoice-match/ai",
-          "gitHistory": {
-            "found": true,
-            "wasReal": true,
-            "commit": "674b6c5",
-            "commitDate": "2026-05-01",
-            "filePath": "frontend/src/app/dashboard/invoice-match/ai/page.tsx",
-            "preview": "\"use client\";\nimport { useState } from \"react\";\nimport { useQuery, useMutation, useQueryClient } from \"@tanstack/react-query\";\nimport {\n  imApi, IMAIRec, IMAIRecStatus, IMAIAgentType,\n  AI_PRIORITY_CO",
-            "note": "Real implementation found in 674b6c5"
-          },
-          "recommendation": "RESTORE_OLD_PAGE_FROM_GIT"
-        },
-        {
-          "id": "BVT-0032",
+          "id": "BVT-0017",
           "module": "Finance",
           "sourceFile": "frontend/src/app/dashboard/invoice-match/page.tsx",
           "sourceRoute": "/dashboard/invoice-match",
@@ -855,59 +459,7 @@
           "recommendation": "CONVERT_TO_WORKSPACE_SUBVIEW"
         },
         {
-          "id": "BVT-0033",
-          "module": "Finance",
-          "sourceFile": "frontend/src/app/dashboard/fixed-assets/page.tsx",
-          "sourceRoute": "/dashboard/fixed-assets",
-          "visibleVia": "/dashboard/finance?tab=FixedAssetsPage",
-          "label": "Transfers",
-          "lineNumber": 43,
-          "currentTarget": "/dashboard/fixed-assets/ai",
-          "currentBehavior": "middleware_redirect",
-          "redirectsTo": "/dashboard/finance?tab=fixed-assets",
-          "whyBroken": "In /dashboard/fixed-assets (visible at /dashboard/finance?tab=FixedAssetsPage): link to \"/dashboard/fixed-assets/ai\" — middleware_redirect → /dashboard/finance?tab=fixed-assets",
-          "severity": "medium",
-          "userVisible": true,
-          "evidence": "href: \"/dashboard/fixed-assets/ai",
-          "gitHistory": {
-            "found": true,
-            "wasReal": true,
-            "commit": "674b6c5",
-            "commitDate": "2026-05-01",
-            "filePath": "frontend/src/app/dashboard/fixed-assets/ai/page.tsx",
-            "preview": "\"use client\";\nimport { useQuery, useMutation, useQueryClient } from \"@tanstack/react-query\";\nimport { faApi, FAAIRecommendation, FAIAgentType, FAIRecStatus } from \"@/lib/fixed_assets\";\nimport { useSta",
-            "note": "Real implementation found in 674b6c5"
-          },
-          "recommendation": "RESTORE_OLD_PAGE_FROM_GIT"
-        },
-        {
-          "id": "BVT-0034",
-          "module": "Finance",
-          "sourceFile": "frontend/src/app/dashboard/dimensions/page.tsx",
-          "sourceRoute": "/dashboard/dimensions",
-          "visibleVia": "/dashboard/finance?tab=DimensionsPage",
-          "label": "Reclassify",
-          "lineNumber": 16,
-          "currentTarget": "/dashboard/dimensions/ai",
-          "currentBehavior": "middleware_redirect",
-          "redirectsTo": "/dashboard/finance?tab=dimensions",
-          "whyBroken": "In /dashboard/dimensions (visible at /dashboard/finance?tab=DimensionsPage): link to \"/dashboard/dimensions/ai\" — middleware_redirect → /dashboard/finance?tab=dimensions",
-          "severity": "medium",
-          "userVisible": true,
-          "evidence": "href: \"/dashboard/dimensions/ai",
-          "gitHistory": {
-            "found": true,
-            "wasReal": true,
-            "commit": "674b6c5",
-            "commitDate": "2026-05-01",
-            "filePath": "frontend/src/app/dashboard/dimensions/ai/page.tsx",
-            "preview": "\"use client\";\nimport { useState } from \"react\";\nimport { useQuery, useMutation, useQueryClient } from \"@tanstack/react-query\";\nimport { dimApi, DimAIAgentType, DimAIRecStatus, AGENT_LABEL, SEVERITY_BA",
-            "note": "Real implementation found in 674b6c5"
-          },
-          "recommendation": "RESTORE_OLD_PAGE_FROM_GIT"
-        },
-        {
-          "id": "BVT-0035",
+          "id": "BVT-0018",
           "module": "Finance",
           "sourceFile": "frontend/src/app/dashboard/dunning/page.tsx",
           "sourceRoute": "/dashboard/dunning",
@@ -929,356 +481,6 @@
             "note": ""
           },
           "recommendation": "CONVERT_TO_WORKSPACE_SUBVIEW"
-        },
-        {
-          "id": "BVT-0036",
-          "module": "Finance",
-          "sourceFile": "frontend/src/app/dashboard/tax/page.tsx",
-          "sourceRoute": "/dashboard/tax",
-          "visibleVia": "/dashboard/finance?tab=TaxPage",
-          "label": "Regulatory Flags",
-          "lineNumber": 48,
-          "currentTarget": "/dashboard/tax/reports",
-          "currentBehavior": "middleware_redirect",
-          "redirectsTo": "/dashboard/finance?tab=tax",
-          "whyBroken": "In /dashboard/tax (visible at /dashboard/finance?tab=TaxPage): link to \"/dashboard/tax/reports\" — middleware_redirect → /dashboard/finance?tab=tax",
-          "severity": "medium",
-          "userVisible": true,
-          "evidence": "href: \"/dashboard/tax/reports",
-          "gitHistory": {
-            "found": true,
-            "wasReal": true,
-            "commit": "674b6c5",
-            "commitDate": "2026-05-01",
-            "filePath": "frontend/src/app/dashboard/tax/reports/page.tsx",
-            "preview": "\"use client\";\n\nimport { useState } from \"react\";\nimport { useQuery } from \"@tanstack/react-query\";\nimport { taxApi, TaxSummaryRow, RegulatoryStatusRow } from \"@/lib/tax_regulatory\";\nimport { Badge } f",
-            "note": "Real implementation found in 674b6c5"
-          },
-          "recommendation": "RESTORE_OLD_PAGE_FROM_GIT"
-        },
-        {
-          "id": "BVT-0037",
-          "module": "Finance",
-          "sourceFile": "frontend/src/app/dashboard/expenses/page.tsx",
-          "sourceRoute": "/dashboard/expenses",
-          "visibleVia": "/dashboard/finance?tab=ExpensesPage",
-          "label": "Categories",
-          "lineNumber": 30,
-          "currentTarget": "/dashboard/expenses/reports",
-          "currentBehavior": "middleware_redirect",
-          "redirectsTo": "/dashboard/hr?tab=expenses",
-          "whyBroken": "In /dashboard/expenses (visible at /dashboard/finance?tab=ExpensesPage): link to \"/dashboard/expenses/reports\" — middleware_redirect → /dashboard/hr?tab=expenses",
-          "severity": "medium",
-          "userVisible": true,
-          "evidence": "href: \"/dashboard/expenses/reports",
-          "gitHistory": {
-            "found": true,
-            "wasReal": true,
-            "commit": "674b6c5",
-            "commitDate": "2026-05-01",
-            "filePath": "frontend/src/app/dashboard/expenses/reports/page.tsx",
-            "preview": "\"use client\";\nimport { useEffect, useState } from \"react\";\nimport { expensesApi, fmtCurrency } from \"@/lib/expenses\";\n\ntype Tab = \"employee\" | \"category\" | \"violations\";\n\nexport default function Expen",
-            "note": "Real implementation found in 674b6c5"
-          },
-          "recommendation": "RESTORE_OLD_PAGE_FROM_GIT"
-        },
-        {
-          "id": "BVT-0038",
-          "module": "Finance",
-          "sourceFile": "frontend/src/app/dashboard/expenses/page.tsx",
-          "sourceRoute": "/dashboard/expenses",
-          "visibleVia": "/dashboard/finance?tab=ExpensesPage",
-          "label": "Policies",
-          "lineNumber": 31,
-          "currentTarget": "/dashboard/expenses/ai",
-          "currentBehavior": "middleware_redirect",
-          "redirectsTo": "/dashboard/hr?tab=expenses",
-          "whyBroken": "In /dashboard/expenses (visible at /dashboard/finance?tab=ExpensesPage): link to \"/dashboard/expenses/ai\" — middleware_redirect → /dashboard/hr?tab=expenses",
-          "severity": "medium",
-          "userVisible": true,
-          "evidence": "href: \"/dashboard/expenses/ai",
-          "gitHistory": {
-            "found": true,
-            "wasReal": true,
-            "commit": "674b6c5",
-            "commitDate": "2026-05-01",
-            "filePath": "frontend/src/app/dashboard/expenses/ai/page.tsx",
-            "preview": "\"use client\";\nimport { useEffect, useState } from \"react\";\nimport { expensesApi, ExpAIRecommendation, ExpAIAgentType, ExpAIRecStatus, AI_AGENT_LABEL } from \"@/lib/expenses\";\n\nconst AGENTS: { type: Exp",
-            "note": "Real implementation found in 674b6c5"
-          },
-          "recommendation": "RESTORE_OLD_PAGE_FROM_GIT"
-        }
-      ]
-    },
-    {
-      "module": "HR & Payroll",
-      "brokenCount": 9,
-      "items": [
-        {
-          "id": "BVT-0039",
-          "module": "HR & Payroll",
-          "sourceFile": "frontend/src/app/dashboard/recruitment/page.tsx",
-          "sourceRoute": "/dashboard/recruitment",
-          "visibleVia": "/dashboard/hr?tab=RecruitmentPage",
-          "label": "Offers",
-          "lineNumber": 29,
-          "currentTarget": "/dashboard/recruitment/reports",
-          "currentBehavior": "middleware_redirect",
-          "redirectsTo": "/dashboard/hr?tab=recruitment",
-          "whyBroken": "In /dashboard/recruitment (visible at /dashboard/hr?tab=RecruitmentPage): link to \"/dashboard/recruitment/reports\" — middleware_redirect → /dashboard/hr?tab=recruitment",
-          "severity": "medium",
-          "userVisible": true,
-          "evidence": "href: \"/dashboard/recruitment/reports",
-          "gitHistory": {
-            "found": true,
-            "wasReal": true,
-            "commit": "674b6c5",
-            "commitDate": "2026-05-01",
-            "filePath": "frontend/src/app/dashboard/recruitment/reports/page.tsx",
-            "preview": "\"use client\";\nimport { useEffect, useState } from \"react\";\nimport { recruitmentApi } from \"@/lib/recruitment\";\n\ntype Tab = \"pipeline\" | \"source\" | \"offers\";\n\nexport default function RecruitmentReports",
-            "note": "Real implementation found in 674b6c5"
-          },
-          "recommendation": "RESTORE_OLD_PAGE_FROM_GIT"
-        },
-        {
-          "id": "BVT-0040",
-          "module": "HR & Payroll",
-          "sourceFile": "frontend/src/app/dashboard/recruitment/page.tsx",
-          "sourceRoute": "/dashboard/recruitment",
-          "visibleVia": "/dashboard/hr?tab=RecruitmentPage",
-          "label": "Pipeline Stages",
-          "lineNumber": 30,
-          "currentTarget": "/dashboard/recruitment/ai",
-          "currentBehavior": "middleware_redirect",
-          "redirectsTo": "/dashboard/hr?tab=recruitment",
-          "whyBroken": "In /dashboard/recruitment (visible at /dashboard/hr?tab=RecruitmentPage): link to \"/dashboard/recruitment/ai\" — middleware_redirect → /dashboard/hr?tab=recruitment",
-          "severity": "medium",
-          "userVisible": true,
-          "evidence": "href: \"/dashboard/recruitment/ai",
-          "gitHistory": {
-            "found": true,
-            "wasReal": true,
-            "commit": "674b6c5",
-            "commitDate": "2026-05-01",
-            "filePath": "frontend/src/app/dashboard/recruitment/ai/page.tsx",
-            "preview": "\"use client\";\nimport { useEffect, useState } from \"react\";\nimport { recruitmentApi, RTAIRecommendation, RTAIAgentType, RTAIRecStatus, AI_AGENT_LABEL } from \"@/lib/recruitment\";\n\nconst AGENTS: { type: ",
-            "note": "Real implementation found in 674b6c5"
-          },
-          "recommendation": "RESTORE_OLD_PAGE_FROM_GIT"
-        },
-        {
-          "id": "BVT-0041",
-          "module": "HR & Payroll",
-          "sourceFile": "frontend/src/app/dashboard/ess/page.tsx",
-          "sourceRoute": "/dashboard/ess",
-          "visibleVia": "/dashboard/hr?tab=ESSPage",
-          "label": "My Requests",
-          "lineNumber": 21,
-          "currentTarget": "/dashboard/ess/ai",
-          "currentBehavior": "middleware_redirect",
-          "redirectsTo": "/dashboard/hr?tab=ess",
-          "whyBroken": "In /dashboard/ess (visible at /dashboard/hr?tab=ESSPage): link to \"/dashboard/ess/ai\" — middleware_redirect → /dashboard/hr?tab=ess",
-          "severity": "medium",
-          "userVisible": true,
-          "evidence": "href: \"/dashboard/ess/ai",
-          "gitHistory": {
-            "found": true,
-            "wasReal": true,
-            "commit": "674b6c5",
-            "commitDate": "2026-05-01",
-            "filePath": "frontend/src/app/dashboard/ess/ai/page.tsx",
-            "preview": "\"use client\";\nimport { useEffect, useState } from \"react\";\nimport { essApi, ESSAIRecommendation, ESSAIAgentType, ESSAIRecStatus, AI_AGENT_LABEL } from \"@/lib/ess\";\n\nconst AGENTS: { type: ESSAIAgentTyp",
-            "note": "Real implementation found in 674b6c5"
-          },
-          "recommendation": "RESTORE_OLD_PAGE_FROM_GIT"
-        },
-        {
-          "id": "BVT-0042",
-          "module": "HR & Payroll",
-          "sourceFile": "frontend/src/app/dashboard/appraisals/page.tsx",
-          "sourceRoute": "/dashboard/appraisals",
-          "visibleVia": "/dashboard/hr?tab=AppraisalsPage",
-          "label": "HR Review",
-          "lineNumber": 44,
-          "currentTarget": "/dashboard/appraisals/reports",
-          "currentBehavior": "middleware_redirect",
-          "redirectsTo": "/dashboard/hr?tab=appraisals",
-          "whyBroken": "In /dashboard/appraisals (visible at /dashboard/hr?tab=AppraisalsPage): link to \"/dashboard/appraisals/reports\" — middleware_redirect → /dashboard/hr?tab=appraisals",
-          "severity": "medium",
-          "userVisible": true,
-          "evidence": "href: \"/dashboard/appraisals/reports",
-          "gitHistory": {
-            "found": true,
-            "wasReal": true,
-            "commit": "674b6c5",
-            "commitDate": "2026-05-01",
-            "filePath": "frontend/src/app/dashboard/appraisals/reports/page.tsx",
-            "preview": "\"use client\";\nimport { useEffect, useState } from \"react\";\nimport { appraisalsApi, AppraisalPeriod, RATING_COLOR } from \"@/lib/appraisals\";\n\ntype ReportTab = \"completion\" | \"ratings\" | \"promotions\";\n\n",
-            "note": "Real implementation found in 674b6c5"
-          },
-          "recommendation": "RESTORE_OLD_PAGE_FROM_GIT"
-        },
-        {
-          "id": "BVT-0043",
-          "module": "HR & Payroll",
-          "sourceFile": "frontend/src/app/dashboard/appraisals/page.tsx",
-          "sourceRoute": "/dashboard/appraisals",
-          "visibleVia": "/dashboard/hr?tab=AppraisalsPage",
-          "label": "Development Plans",
-          "lineNumber": 45,
-          "currentTarget": "/dashboard/appraisals/ai",
-          "currentBehavior": "middleware_redirect",
-          "redirectsTo": "/dashboard/hr?tab=appraisals",
-          "whyBroken": "In /dashboard/appraisals (visible at /dashboard/hr?tab=AppraisalsPage): link to \"/dashboard/appraisals/ai\" — middleware_redirect → /dashboard/hr?tab=appraisals",
-          "severity": "medium",
-          "userVisible": true,
-          "evidence": "href: \"/dashboard/appraisals/ai",
-          "gitHistory": {
-            "found": true,
-            "wasReal": true,
-            "commit": "674b6c5",
-            "commitDate": "2026-05-01",
-            "filePath": "frontend/src/app/dashboard/appraisals/ai/page.tsx",
-            "preview": "\"use client\";\nimport { useEffect, useState } from \"react\";\nimport { appraisalsApi, APAIRec, APAIAgentType, APAIRecStatus } from \"@/lib/appraisals\";\n\nconst AGENT_META: Record<APAIAgentType, { label: st",
-            "note": "Real implementation found in 674b6c5"
-          },
-          "recommendation": "RESTORE_OLD_PAGE_FROM_GIT"
-        },
-        {
-          "id": "BVT-0044",
-          "module": "HR & Payroll",
-          "sourceFile": "frontend/src/app/dashboard/training/page.tsx",
-          "sourceRoute": "/dashboard/training",
-          "visibleVia": "/dashboard/hr?tab=TrainingPage",
-          "label": "Certifications",
-          "lineNumber": 38,
-          "currentTarget": "/dashboard/training/reports",
-          "currentBehavior": "middleware_redirect",
-          "redirectsTo": "/dashboard/hr?tab=training",
-          "whyBroken": "In /dashboard/training (visible at /dashboard/hr?tab=TrainingPage): link to \"/dashboard/training/reports\" — middleware_redirect → /dashboard/hr?tab=training",
-          "severity": "medium",
-          "userVisible": true,
-          "evidence": "href: \"/dashboard/training/reports",
-          "gitHistory": {
-            "found": true,
-            "wasReal": true,
-            "commit": "674b6c5",
-            "commitDate": "2026-05-01",
-            "filePath": "frontend/src/app/dashboard/training/reports/page.tsx",
-            "preview": "\"use client\";\nimport { useEffect, useState } from \"react\";\nimport { trainingApi, EmployeeSkillRow, LEVEL_COLOR, CATEGORY_COLOR } from \"@/lib/training\";\n\ntype ReportTab = \"skill_gaps\" | \"completion\" | ",
-            "note": "Real implementation found in 674b6c5"
-          },
-          "recommendation": "RESTORE_OLD_PAGE_FROM_GIT"
-        },
-        {
-          "id": "BVT-0045",
-          "module": "HR & Payroll",
-          "sourceFile": "frontend/src/app/dashboard/training/page.tsx",
-          "sourceRoute": "/dashboard/training",
-          "visibleVia": "/dashboard/hr?tab=TrainingPage",
-          "label": "Feedback",
-          "lineNumber": 39,
-          "currentTarget": "/dashboard/training/ai",
-          "currentBehavior": "middleware_redirect",
-          "redirectsTo": "/dashboard/hr?tab=training",
-          "whyBroken": "In /dashboard/training (visible at /dashboard/hr?tab=TrainingPage): link to \"/dashboard/training/ai\" — middleware_redirect → /dashboard/hr?tab=training",
-          "severity": "medium",
-          "userVisible": true,
-          "evidence": "href: \"/dashboard/training/ai",
-          "gitHistory": {
-            "found": true,
-            "wasReal": true,
-            "commit": "674b6c5",
-            "commitDate": "2026-05-01",
-            "filePath": "frontend/src/app/dashboard/training/ai/page.tsx",
-            "preview": "\"use client\";\nimport { useEffect, useState } from \"react\";\nimport { trainingApi, TRAIRec, TRAIAgentType, TRAIRecStatus } from \"@/lib/training\";\n\nconst AGENT_META: Record<TRAIAgentType, { label: string",
-            "note": "Real implementation found in 674b6c5"
-          },
-          "recommendation": "RESTORE_OLD_PAGE_FROM_GIT"
-        },
-        {
-          "id": "BVT-0046",
-          "module": "HR & Payroll",
-          "sourceFile": "frontend/src/app/dashboard/timesheets/page.tsx",
-          "sourceRoute": "/dashboard/timesheets",
-          "visibleVia": "/dashboard/hr?tab=TimesheetsPage",
-          "label": "Weekly View",
-          "lineNumber": 33,
-          "currentTarget": "/dashboard/timesheets/reports",
-          "currentBehavior": "middleware_redirect",
-          "redirectsTo": "/dashboard/hr?tab=timesheets",
-          "whyBroken": "In /dashboard/timesheets (visible at /dashboard/hr?tab=TimesheetsPage): link to \"/dashboard/timesheets/reports\" — middleware_redirect → /dashboard/hr?tab=timesheets",
-          "severity": "medium",
-          "userVisible": true,
-          "evidence": "href: \"/dashboard/timesheets/reports",
-          "gitHistory": {
-            "found": true,
-            "wasReal": true,
-            "commit": "674b6c5",
-            "commitDate": "2026-05-01",
-            "filePath": "frontend/src/app/dashboard/timesheets/reports/page.tsx",
-            "preview": "\"use client\";\nimport { useState } from \"react\";\nimport { timesheetsApi } from \"@/lib/timesheets\";\n\ntype ReportTab = \"summary\" | \"utilization\" | \"overtime\" | \"project\" | \"activity\" | \"payroll\";\n\nexport",
-            "note": "Real implementation found in 674b6c5"
-          },
-          "recommendation": "RESTORE_OLD_PAGE_FROM_GIT"
-        },
-        {
-          "id": "BVT-0047",
-          "module": "HR & Payroll",
-          "sourceFile": "frontend/src/app/dashboard/timesheets/page.tsx",
-          "sourceRoute": "/dashboard/timesheets",
-          "visibleVia": "/dashboard/hr?tab=TimesheetsPage",
-          "label": "Approval Queue",
-          "lineNumber": 34,
-          "currentTarget": "/dashboard/timesheets/ai",
-          "currentBehavior": "middleware_redirect",
-          "redirectsTo": "/dashboard/hr?tab=timesheets",
-          "whyBroken": "In /dashboard/timesheets (visible at /dashboard/hr?tab=TimesheetsPage): link to \"/dashboard/timesheets/ai\" — middleware_redirect → /dashboard/hr?tab=timesheets",
-          "severity": "medium",
-          "userVisible": true,
-          "evidence": "href: \"/dashboard/timesheets/ai",
-          "gitHistory": {
-            "found": true,
-            "wasReal": true,
-            "commit": "674b6c5",
-            "commitDate": "2026-05-01",
-            "filePath": "frontend/src/app/dashboard/timesheets/ai/page.tsx",
-            "preview": "\"use client\";\nimport { useEffect, useState } from \"react\";\nimport { timesheetsApi, TSAIRec, TSAIAgentType, TSAIRecStatus } from \"@/lib/timesheets\";\n\nconst AGENT_META: Record<TSAIAgentType, { label: st",
-            "note": "Real implementation found in 674b6c5"
-          },
-          "recommendation": "RESTORE_OLD_PAGE_FROM_GIT"
-        }
-      ]
-    },
-    {
-      "module": "Administration / Integrations",
-      "brokenCount": 1,
-      "items": [
-        {
-          "id": "BVT-0048",
-          "module": "Administration / Integrations",
-          "sourceFile": "frontend/src/app/dashboard/webhooks/page.tsx",
-          "sourceRoute": "/dashboard/webhooks",
-          "visibleVia": "/dashboard/integrations?tab=WebhooksPage",
-          "label": "Dead-Letter Queue",
-          "lineNumber": 41,
-          "currentTarget": "/dashboard/webhooks/reports",
-          "currentBehavior": "middleware_redirect",
-          "redirectsTo": "/dashboard/integrations?tab=webhooks",
-          "whyBroken": "In /dashboard/webhooks (visible at /dashboard/integrations?tab=WebhooksPage): link to \"/dashboard/webhooks/reports\" — middleware_redirect → /dashboard/integrations?tab=webhooks",
-          "severity": "medium",
-          "userVisible": true,
-          "evidence": "href: \"/dashboard/webhooks/reports",
-          "gitHistory": {
-            "found": true,
-            "wasReal": true,
-            "commit": "674b6c5",
-            "commitDate": "2026-05-01",
-            "filePath": "frontend/src/app/dashboard/webhooks/reports/page.tsx",
-            "preview": "\"use client\";\n\nimport { useState } from \"react\";\nimport { getReport, getHealthMonitor, getPayloadAdvisor, getAnomalyDetector, WebhookReport } from \"@/lib/webhooks\";\nimport { Button } from \"@/component",
-            "note": "Real implementation found in 674b6c5"
-          },
-          "recommendation": "RESTORE_OLD_PAGE_FROM_GIT"
         }
       ]
     },
@@ -1287,7 +489,7 @@
       "brokenCount": 1,
       "items": [
         {
-          "id": "BVT-0049",
+          "id": "BVT-0019",
           "module": "Supply Chain / Inventory",
           "sourceFile": "frontend/src/app/dashboard/traceability/page.tsx",
           "sourceRoute": "/dashboard/traceability",
@@ -1313,43 +515,11 @@
       ]
     },
     {
-      "module": "Logistics",
-      "brokenCount": 1,
-      "items": [
-        {
-          "id": "BVT-0050",
-          "module": "Logistics",
-          "sourceFile": "frontend/src/app/dashboard/fleet/page.tsx",
-          "sourceRoute": "/dashboard/fleet",
-          "visibleVia": "/dashboard/logistics?tab=FleetPage",
-          "label": "Maintenance",
-          "lineNumber": 22,
-          "currentTarget": "/dashboard/fleet/reports",
-          "currentBehavior": "middleware_redirect",
-          "redirectsTo": "/dashboard/logistics?tab=fleet",
-          "whyBroken": "In /dashboard/fleet (visible at /dashboard/logistics?tab=FleetPage): link to \"/dashboard/fleet/reports\" — middleware_redirect → /dashboard/logistics?tab=fleet",
-          "severity": "medium",
-          "userVisible": true,
-          "evidence": "href: \"/dashboard/fleet/reports",
-          "gitHistory": {
-            "found": true,
-            "wasReal": true,
-            "commit": "674b6c5",
-            "commitDate": "2026-05-01",
-            "filePath": "frontend/src/app/dashboard/fleet/reports/page.tsx",
-            "preview": "\"use client\";\n\nimport { useState } from \"react\";\nimport { getUtilizationReport, getFuelReport, getMaintenanceReport, getDriverReport, getRouteEfficiency, getFuelAnomaly, getMaintenancePredictor } from",
-            "note": "Real implementation found in 674b6c5"
-          },
-          "recommendation": "RESTORE_OLD_PAGE_FROM_GIT"
-        }
-      ]
-    },
-    {
       "module": "Commercial / Marketing",
-      "brokenCount": 11,
+      "brokenCount": 10,
       "items": [
         {
-          "id": "BVT-0051",
+          "id": "BVT-0020",
           "module": "Commercial / Marketing",
           "sourceFile": "frontend/src/app/dashboard/marketing/campaigns/page.tsx",
           "sourceRoute": "/dashboard/marketing/campaigns",
@@ -1373,7 +543,7 @@
           "recommendation": "CONVERT_TO_WORKSPACE_SUBVIEW"
         },
         {
-          "id": "BVT-0052",
+          "id": "BVT-0021",
           "module": "Commercial / Marketing",
           "sourceFile": "frontend/src/app/dashboard/marketing/promotions/page.tsx",
           "sourceRoute": "/dashboard/marketing/promotions",
@@ -1397,7 +567,7 @@
           "recommendation": "CONVERT_TO_WORKSPACE_SUBVIEW"
         },
         {
-          "id": "BVT-0053",
+          "id": "BVT-0022",
           "module": "Commercial / Marketing",
           "sourceFile": "frontend/src/app/dashboard/marketing/trade-spend/page.tsx",
           "sourceRoute": "/dashboard/marketing/trade-spend",
@@ -1421,7 +591,7 @@
           "recommendation": "CONVERT_TO_WORKSPACE_SUBVIEW"
         },
         {
-          "id": "BVT-0054",
+          "id": "BVT-0023",
           "module": "Commercial / Marketing",
           "sourceFile": "frontend/src/app/dashboard/marketing/ads/page.tsx",
           "sourceRoute": "/dashboard/marketing/ads",
@@ -1445,7 +615,7 @@
           "recommendation": "CONVERT_TO_WORKSPACE_SUBVIEW"
         },
         {
-          "id": "BVT-0055",
+          "id": "BVT-0024",
           "module": "Commercial / Marketing",
           "sourceFile": "frontend/src/app/dashboard/marketing/social-media/page.tsx",
           "sourceRoute": "/dashboard/marketing/social-media",
@@ -1469,7 +639,7 @@
           "recommendation": "CONVERT_TO_WORKSPACE_SUBVIEW"
         },
         {
-          "id": "BVT-0056",
+          "id": "BVT-0025",
           "module": "Commercial / Marketing",
           "sourceFile": "frontend/src/app/dashboard/marketing/segments/page.tsx",
           "sourceRoute": "/dashboard/marketing/segments",
@@ -1493,7 +663,7 @@
           "recommendation": "CONVERT_TO_WORKSPACE_SUBVIEW"
         },
         {
-          "id": "BVT-0057",
+          "id": "BVT-0026",
           "module": "Commercial / Marketing",
           "sourceFile": "frontend/src/app/dashboard/marketing/influencers/page.tsx",
           "sourceRoute": "/dashboard/marketing/influencers",
@@ -1517,7 +687,7 @@
           "recommendation": "CONVERT_TO_WORKSPACE_SUBVIEW"
         },
         {
-          "id": "BVT-0058",
+          "id": "BVT-0027",
           "module": "Commercial / Marketing",
           "sourceFile": "frontend/src/app/dashboard/marketing/visits/page.tsx",
           "sourceRoute": "/dashboard/marketing/visits",
@@ -1541,7 +711,7 @@
           "recommendation": "CONVERT_TO_WORKSPACE_SUBVIEW"
         },
         {
-          "id": "BVT-0059",
+          "id": "BVT-0028",
           "module": "Commercial / Marketing",
           "sourceFile": "frontend/src/app/dashboard/marketing/brand-spend/page.tsx",
           "sourceRoute": "/dashboard/marketing/brand-spend",
@@ -1565,7 +735,7 @@
           "recommendation": "CONVERT_TO_WORKSPACE_SUBVIEW"
         },
         {
-          "id": "BVT-0060",
+          "id": "BVT-0029",
           "module": "Commercial / Marketing",
           "sourceFile": "frontend/src/app/dashboard/tpm/page.tsx",
           "sourceRoute": "/dashboard/tpm",
@@ -1587,99 +757,15 @@
             "note": ""
           },
           "recommendation": "CONVERT_TO_WORKSPACE_SUBVIEW"
-        },
-        {
-          "id": "BVT-0061",
-          "module": "Commercial / Marketing",
-          "sourceFile": "frontend/src/app/dashboard/tpm/page.tsx",
-          "sourceRoute": "/dashboard/tpm",
-          "visibleVia": "/dashboard/marketing?tab=TPMPage",
-          "label": "Plans Master",
-          "lineNumber": 117,
-          "currentTarget": "/dashboard/tpm/ai",
-          "currentBehavior": "middleware_redirect",
-          "redirectsTo": "/dashboard/marketing?tab=tpm",
-          "whyBroken": "In /dashboard/tpm (visible at /dashboard/marketing?tab=TPMPage): link to \"/dashboard/tpm/ai\" — middleware_redirect → /dashboard/marketing?tab=tpm",
-          "severity": "medium",
-          "userVisible": true,
-          "evidence": "href: \"/dashboard/tpm/ai",
-          "gitHistory": {
-            "found": true,
-            "wasReal": true,
-            "commit": "674b6c5",
-            "commitDate": "2026-05-01",
-            "filePath": "frontend/src/app/dashboard/tpm/ai/page.tsx",
-            "preview": "\"use client\";\nimport { useState } from \"react\";\nimport { useQuery, useMutation, useQueryClient } from \"@tanstack/react-query\";\nimport { tpmApi, TPMAIAgentType, TPMAIRecStatus, AGENT_LABEL, SEVERITY_BA",
-            "note": "Real implementation found in 674b6c5"
-          },
-          "recommendation": "RESTORE_OLD_PAGE_FROM_GIT"
-        }
-      ]
-    },
-    {
-      "module": "Manufacturing / Planning",
-      "brokenCount": 2,
-      "items": [
-        {
-          "id": "BVT-0062",
-          "module": "Manufacturing / Planning",
-          "sourceFile": "frontend/src/app/dashboard/kanban/page.tsx",
-          "sourceRoute": "/dashboard/kanban",
-          "visibleVia": "/dashboard/planning?tab=KanbanPage",
-          "label": "Board View",
-          "lineNumber": 37,
-          "currentTarget": "/dashboard/kanban/reports",
-          "currentBehavior": "middleware_redirect",
-          "redirectsTo": "/dashboard/planning?tab=kanban",
-          "whyBroken": "In /dashboard/kanban (visible at /dashboard/planning?tab=KanbanPage): link to \"/dashboard/kanban/reports\" — middleware_redirect → /dashboard/planning?tab=kanban",
-          "severity": "medium",
-          "userVisible": true,
-          "evidence": "href: \"/dashboard/kanban/reports",
-          "gitHistory": {
-            "found": true,
-            "wasReal": true,
-            "commit": "674b6c5",
-            "commitDate": "2026-05-01",
-            "filePath": "frontend/src/app/dashboard/kanban/reports/page.tsx",
-            "preview": "\"use client\";\nimport { useEffect, useState } from \"react\";\nimport { kanbanApi, KanbanBoard } from \"@/lib/kanban\";\n\nexport default function KanbanReportsPage() {\n  const [boards, setBoards] = useState<",
-            "note": "Real implementation found in 674b6c5"
-          },
-          "recommendation": "RESTORE_OLD_PAGE_FROM_GIT"
-        },
-        {
-          "id": "BVT-0063",
-          "module": "Manufacturing / Planning",
-          "sourceFile": "frontend/src/app/dashboard/kanban/page.tsx",
-          "sourceRoute": "/dashboard/kanban",
-          "visibleVia": "/dashboard/planning?tab=KanbanPage",
-          "label": "All Cards",
-          "lineNumber": 38,
-          "currentTarget": "/dashboard/kanban/ai",
-          "currentBehavior": "middleware_redirect",
-          "redirectsTo": "/dashboard/planning?tab=kanban",
-          "whyBroken": "In /dashboard/kanban (visible at /dashboard/planning?tab=KanbanPage): link to \"/dashboard/kanban/ai\" — middleware_redirect → /dashboard/planning?tab=kanban",
-          "severity": "medium",
-          "userVisible": true,
-          "evidence": "href: \"/dashboard/kanban/ai",
-          "gitHistory": {
-            "found": true,
-            "wasReal": true,
-            "commit": "674b6c5",
-            "commitDate": "2026-05-01",
-            "filePath": "frontend/src/app/dashboard/kanban/ai/page.tsx",
-            "preview": "\"use client\";\nimport { useEffect, useState } from \"react\";\nimport { kanbanApi, KBAIRec, KBAIAgentType, KBAIRecStatus } from \"@/lib/kanban\";\n\nconst AGENT_META: Record<KBAIAgentType, { label: string; de",
-            "note": "Real implementation found in 674b6c5"
-          },
-          "recommendation": "RESTORE_OLD_PAGE_FROM_GIT"
         }
       ]
     },
     {
       "module": "Supply Chain / Procurement",
-      "brokenCount": 8,
+      "brokenCount": 5,
       "items": [
         {
-          "id": "BVT-0064",
+          "id": "BVT-0030",
           "module": "Supply Chain / Procurement",
           "sourceFile": "frontend/src/app/dashboard/procurement/orders/page.tsx",
           "sourceRoute": "/dashboard/procurement/orders",
@@ -1703,7 +789,7 @@
           "recommendation": "CREATE_NEW_REAL_PAGE_REQUIRED"
         },
         {
-          "id": "BVT-0065",
+          "id": "BVT-0031",
           "module": "Supply Chain / Procurement",
           "sourceFile": "frontend/src/app/dashboard/procurement/deliveries/page.tsx",
           "sourceRoute": "/dashboard/procurement/deliveries",
@@ -1727,7 +813,7 @@
           "recommendation": "CREATE_NEW_REAL_PAGE_REQUIRED"
         },
         {
-          "id": "BVT-0066",
+          "id": "BVT-0032",
           "module": "Supply Chain / Procurement",
           "sourceFile": "frontend/src/app/dashboard/procurement/deliveries/page.tsx",
           "sourceRoute": "/dashboard/procurement/deliveries",
@@ -1751,85 +837,7 @@
           "recommendation": "CREATE_NEW_REAL_PAGE_REQUIRED"
         },
         {
-          "id": "BVT-0067",
-          "module": "Supply Chain / Procurement",
-          "sourceFile": "frontend/src/app/dashboard/procurement-suggestion/page.tsx",
-          "sourceRoute": "/dashboard/procurement-suggestion",
-          "visibleVia": "/dashboard/procurement?tab=SuggestionsPage",
-          "label": "Grouped Orders",
-          "lineNumber": 174,
-          "currentTarget": "/dashboard/procurement-suggestion/ai",
-          "currentBehavior": "middleware_redirect",
-          "redirectsTo": "/dashboard/procurement?tab=suggestions",
-          "whyBroken": "In /dashboard/procurement-suggestion (visible at /dashboard/procurement?tab=SuggestionsPage): link to \"/dashboard/procurement-suggestion/ai\" — middleware_redirect → /dashboard/procurement?tab=suggestions",
-          "severity": "medium",
-          "userVisible": true,
-          "evidence": "href: \"/dashboard/procurement-suggestion/ai",
-          "gitHistory": {
-            "found": true,
-            "wasReal": true,
-            "commit": "674b6c5",
-            "commitDate": "2026-05-01",
-            "filePath": "frontend/src/app/dashboard/procurement-suggestion/ai/page.tsx",
-            "preview": "\"use client\";\n\nimport { useState } from \"react\";\nimport { useQuery, useMutation, useQueryClient } from \"@tanstack/react-query\";\nimport { psApi, PSAIRecOut, PSAIAgentType, agentLabel, fmt } from \"@/lib",
-            "note": "Real implementation found in 674b6c5"
-          },
-          "recommendation": "RESTORE_OLD_PAGE_FROM_GIT"
-        },
-        {
-          "id": "BVT-0068",
-          "module": "Supply Chain / Procurement",
-          "sourceFile": "frontend/src/app/dashboard/subcontracting/page.tsx",
-          "sourceRoute": "/dashboard/subcontracting",
-          "visibleVia": "/dashboard/procurement?tab=SubcontractingPage",
-          "label": "Subcontractor Stock",
-          "lineNumber": 107,
-          "currentTarget": "/dashboard/subcontracting/ai",
-          "currentBehavior": "middleware_redirect",
-          "redirectsTo": "/dashboard/procurement?tab=subcontracting",
-          "whyBroken": "In /dashboard/subcontracting (visible at /dashboard/procurement?tab=SubcontractingPage): link to \"/dashboard/subcontracting/ai\" — middleware_redirect → /dashboard/procurement?tab=subcontracting",
-          "severity": "medium",
-          "userVisible": true,
-          "evidence": "href: \"/dashboard/subcontracting/ai",
-          "gitHistory": {
-            "found": true,
-            "wasReal": true,
-            "commit": "674b6c5",
-            "commitDate": "2026-05-01",
-            "filePath": "frontend/src/app/dashboard/subcontracting/ai/page.tsx",
-            "preview": "\"use client\";\nimport { useState } from \"react\";\nimport { useQuery, useMutation, useQueryClient } from \"@tanstack/react-query\";\nimport { scApi, SCAIRecOut, SCAIAgentType, agentLabel, riskBadge, fmt } f",
-            "note": "Real implementation found in 674b6c5"
-          },
-          "recommendation": "RESTORE_OLD_PAGE_FROM_GIT"
-        },
-        {
-          "id": "BVT-0069",
-          "module": "Supply Chain / Procurement",
-          "sourceFile": "frontend/src/app/dashboard/landed-cost/page.tsx",
-          "sourceRoute": "/dashboard/landed-cost",
-          "visibleVia": "/dashboard/procurement?tab=LandedCostPage",
-          "label": "ai",
-          "lineNumber": 107,
-          "currentTarget": "/dashboard/landed-cost/ai",
-          "currentBehavior": "middleware_redirect",
-          "redirectsTo": "/dashboard/procurement?tab=landed-cost",
-          "whyBroken": "In /dashboard/landed-cost (visible at /dashboard/procurement?tab=LandedCostPage): link to \"/dashboard/landed-cost/ai\" — middleware_redirect → /dashboard/procurement?tab=landed-cost",
-          "severity": "medium",
-          "userVisible": true,
-          "evidence": "href=\"/dashboard/landed-cost/ai",
-          "gitHistory": {
-            "found": true,
-            "wasReal": true,
-            "commit": "674b6c5",
-            "commitDate": "2026-05-01",
-            "filePath": "frontend/src/app/dashboard/landed-cost/ai/page.tsx",
-            "preview": "\"use client\";\nimport { useState } from \"react\";\nimport { useQuery, useMutation, useQueryClient } from \"@tanstack/react-query\";\nimport {\n  lcApi, LCAIRec, LCAIRecStatus, AI_AGENT_LABEL, AI_REC_STATUS_C",
-            "note": "Real implementation found in 674b6c5"
-          },
-          "recommendation": "RESTORE_OLD_PAGE_FROM_GIT"
-        },
-        {
-          "id": "BVT-0070",
+          "id": "BVT-0033",
           "module": "Supply Chain / Procurement",
           "sourceFile": "frontend/src/app/dashboard/landed-cost/page.tsx",
           "sourceRoute": "/dashboard/landed-cost",
@@ -1853,7 +861,7 @@
           "recommendation": "CONVERT_TO_WORKSPACE_SUBVIEW"
         },
         {
-          "id": "BVT-0071",
+          "id": "BVT-0034",
           "module": "Supply Chain / Procurement",
           "sourceFile": "frontend/src/app/dashboard/supplier-portal/page.tsx",
           "sourceRoute": "/dashboard/supplier-portal",
@@ -1883,7 +891,7 @@
       "brokenCount": 3,
       "items": [
         {
-          "id": "BVT-0072",
+          "id": "BVT-0035",
           "module": "Manufacturing / Production",
           "sourceFile": "frontend/src/app/dashboard/production/orders/page.tsx",
           "sourceRoute": "/dashboard/production/orders",
@@ -1907,7 +915,7 @@
           "recommendation": "CONVERT_TO_WORKSPACE_SUBVIEW"
         },
         {
-          "id": "BVT-0073",
+          "id": "BVT-0036",
           "module": "Manufacturing / Production",
           "sourceFile": "frontend/src/app/dashboard/production-execution/page.tsx",
           "sourceRoute": "/dashboard/production-execution",
@@ -1931,7 +939,7 @@
           "recommendation": "CONVERT_TO_WORKSPACE_SUBVIEW"
         },
         {
-          "id": "BVT-0074",
+          "id": "BVT-0037",
           "module": "Manufacturing / Production",
           "sourceFile": "frontend/src/app/dashboard/projects/page.tsx",
           "sourceRoute": "/dashboard/projects",
@@ -1958,10 +966,10 @@
     },
     {
       "module": "Factory Operations / Quality",
-      "brokenCount": 4,
+      "brokenCount": 2,
       "items": [
         {
-          "id": "BVT-0075",
+          "id": "BVT-0038",
           "module": "Factory Operations / Quality",
           "sourceFile": "frontend/src/app/dashboard/quality/reports/page.tsx",
           "sourceRoute": "/dashboard/quality/reports",
@@ -1985,59 +993,7 @@
           "recommendation": "CREATE_NEW_REAL_PAGE_REQUIRED"
         },
         {
-          "id": "BVT-0076",
-          "module": "Factory Operations / Quality",
-          "sourceFile": "frontend/src/app/dashboard/qms/page.tsx",
-          "sourceRoute": "/dashboard/qms",
-          "visibleVia": "/dashboard/quality?tab=QMSPage",
-          "label": "Quarantine / Hold",
-          "lineNumber": 107,
-          "currentTarget": "/dashboard/qms/reports",
-          "currentBehavior": "middleware_redirect",
-          "redirectsTo": "/dashboard/quality?tab=qms",
-          "whyBroken": "In /dashboard/qms (visible at /dashboard/quality?tab=QMSPage): link to \"/dashboard/qms/reports\" — middleware_redirect → /dashboard/quality?tab=qms",
-          "severity": "medium",
-          "userVisible": true,
-          "evidence": "href: \"/dashboard/qms/reports",
-          "gitHistory": {
-            "found": true,
-            "wasReal": true,
-            "commit": "674b6c5",
-            "commitDate": "2026-05-01",
-            "filePath": "frontend/src/app/dashboard/qms/reports/page.tsx",
-            "preview": "\"use client\";\nimport { useEffect, useState } from \"react\";\nimport { qmsApi } from \"@/lib/qms\";\n\ninterface QCReport {\n  total: number;\n  by_status: Record<string, number>;\n  pass_rate: number;\n  fail_r",
-            "note": "Real implementation found in 674b6c5"
-          },
-          "recommendation": "RESTORE_OLD_PAGE_FROM_GIT"
-        },
-        {
-          "id": "BVT-0077",
-          "module": "Factory Operations / Quality",
-          "sourceFile": "frontend/src/app/dashboard/qms/page.tsx",
-          "sourceRoute": "/dashboard/qms",
-          "visibleVia": "/dashboard/quality?tab=QMSPage",
-          "label": "Allergen Validation",
-          "lineNumber": 108,
-          "currentTarget": "/dashboard/qms/ai",
-          "currentBehavior": "middleware_redirect",
-          "redirectsTo": "/dashboard/quality?tab=qms",
-          "whyBroken": "In /dashboard/qms (visible at /dashboard/quality?tab=QMSPage): link to \"/dashboard/qms/ai\" — middleware_redirect → /dashboard/quality?tab=qms",
-          "severity": "medium",
-          "userVisible": true,
-          "evidence": "href: \"/dashboard/qms/ai",
-          "gitHistory": {
-            "found": true,
-            "wasReal": true,
-            "commit": "674b6c5",
-            "commitDate": "2026-05-01",
-            "filePath": "frontend/src/app/dashboard/qms/ai/page.tsx",
-            "preview": "\"use client\";\nimport { useEffect, useState } from \"react\";\nimport { qmsApi, QMSAIRecommendation, RISK_BG, QMSAIAgentType, QMSAIRecStatus } from \"@/lib/qms\";\n\nconst AGENT_INFO: Record<QMSAIAgentType, {",
-            "note": "Real implementation found in 674b6c5"
-          },
-          "recommendation": "RESTORE_OLD_PAGE_FROM_GIT"
-        },
-        {
-          "id": "BVT-0078",
+          "id": "BVT-0039",
           "module": "Factory Operations / Quality",
           "sourceFile": "frontend/src/app/dashboard/brand-assets/page.tsx",
           "sourceRoute": "/dashboard/brand-assets",
@@ -2064,10 +1020,10 @@
     },
     {
       "module": "Commercial / Sales",
-      "brokenCount": 16,
+      "brokenCount": 9,
       "items": [
         {
-          "id": "BVT-0079",
+          "id": "BVT-0040",
           "module": "Commercial / Sales",
           "sourceFile": "frontend/src/app/dashboard/sales/orders/page.tsx",
           "sourceRoute": "/dashboard/sales/orders",
@@ -2091,7 +1047,7 @@
           "recommendation": "CREATE_NEW_REAL_PAGE_REQUIRED"
         },
         {
-          "id": "BVT-0080",
+          "id": "BVT-0041",
           "module": "Commercial / Sales",
           "sourceFile": "frontend/src/app/dashboard/sales/invoices/page.tsx",
           "sourceRoute": "/dashboard/sales/invoices",
@@ -2115,7 +1071,7 @@
           "recommendation": "CREATE_NEW_REAL_PAGE_REQUIRED"
         },
         {
-          "id": "BVT-0081",
+          "id": "BVT-0042",
           "module": "Commercial / Sales",
           "sourceFile": "frontend/src/app/dashboard/sales/shipments/page.tsx",
           "sourceRoute": "/dashboard/sales/shipments",
@@ -2139,7 +1095,7 @@
           "recommendation": "CREATE_NEW_REAL_PAGE_REQUIRED"
         },
         {
-          "id": "BVT-0082",
+          "id": "BVT-0043",
           "module": "Commercial / Sales",
           "sourceFile": "frontend/src/app/dashboard/price-lists/page.tsx",
           "sourceRoute": "/dashboard/price-lists",
@@ -2163,7 +1119,7 @@
           "recommendation": "CONVERT_TO_WORKSPACE_SUBVIEW"
         },
         {
-          "id": "BVT-0083",
+          "id": "BVT-0044",
           "module": "Commercial / Sales",
           "sourceFile": "frontend/src/app/dashboard/contracts/page.tsx",
           "sourceRoute": "/dashboard/contracts",
@@ -2187,33 +1143,7 @@
           "recommendation": "CONVERT_TO_WORKSPACE_SUBVIEW"
         },
         {
-          "id": "BVT-0084",
-          "module": "Commercial / Sales",
-          "sourceFile": "frontend/src/app/dashboard/contracts/page.tsx",
-          "sourceRoute": "/dashboard/contracts",
-          "visibleVia": "/dashboard/sales?tab=ContractsPage",
-          "label": "AI Alerts",
-          "lineNumber": 106,
-          "currentTarget": "/dashboard/contracts/ai",
-          "currentBehavior": "middleware_redirect",
-          "redirectsTo": "/dashboard/sales?tab=contracts",
-          "whyBroken": "In /dashboard/contracts (visible at /dashboard/sales?tab=ContractsPage): link to \"/dashboard/contracts/ai\" — middleware_redirect → /dashboard/sales?tab=contracts",
-          "severity": "medium",
-          "userVisible": true,
-          "evidence": "href=\"/dashboard/contracts/ai",
-          "gitHistory": {
-            "found": true,
-            "wasReal": true,
-            "commit": "674b6c5",
-            "commitDate": "2026-05-01",
-            "filePath": "frontend/src/app/dashboard/contracts/ai/page.tsx",
-            "preview": "\"use client\";\nimport { useQuery, useMutation, useQueryClient } from \"@tanstack/react-query\";\nimport { contractsApi, SEVERITY_COLORS } from \"@/lib/contracts\";\n\nconst AGENT_LABELS: Record<string, string",
-            "note": "Real implementation found in 674b6c5"
-          },
-          "recommendation": "RESTORE_OLD_PAGE_FROM_GIT"
-        },
-        {
-          "id": "BVT-0085",
+          "id": "BVT-0045",
           "module": "Commercial / Sales",
           "sourceFile": "frontend/src/app/dashboard/recurring-orders/page.tsx",
           "sourceRoute": "/dashboard/recurring-orders",
@@ -2237,85 +1167,7 @@
           "recommendation": "CONVERT_TO_WORKSPACE_SUBVIEW"
         },
         {
-          "id": "BVT-0086",
-          "module": "Commercial / Sales",
-          "sourceFile": "frontend/src/app/dashboard/recurring-orders/page.tsx",
-          "sourceRoute": "/dashboard/recurring-orders",
-          "visibleVia": "/dashboard/sales?tab=RecurringOrdersPage",
-          "label": "Reports",
-          "lineNumber": 111,
-          "currentTarget": "/dashboard/recurring-orders/reports",
-          "currentBehavior": "middleware_redirect",
-          "redirectsTo": "/dashboard/sales?tab=recurring",
-          "whyBroken": "In /dashboard/recurring-orders (visible at /dashboard/sales?tab=RecurringOrdersPage): link to \"/dashboard/recurring-orders/reports\" — middleware_redirect → /dashboard/sales?tab=recurring",
-          "severity": "medium",
-          "userVisible": true,
-          "evidence": "href=\"/dashboard/recurring-orders/reports",
-          "gitHistory": {
-            "found": true,
-            "wasReal": true,
-            "commit": "674b6c5",
-            "commitDate": "2026-05-01",
-            "filePath": "frontend/src/app/dashboard/recurring-orders/reports/page.tsx",
-            "preview": "\"use client\";\nimport { useQuery } from \"@tanstack/react-query\";\nimport { subscriptionApi, GEN_STATUS_COLORS } from \"@/lib/subscription\";\nimport { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContai",
-            "note": "Real implementation found in 674b6c5"
-          },
-          "recommendation": "RESTORE_OLD_PAGE_FROM_GIT"
-        },
-        {
-          "id": "BVT-0087",
-          "module": "Commercial / Sales",
-          "sourceFile": "frontend/src/app/dashboard/recurring-orders/page.tsx",
-          "sourceRoute": "/dashboard/recurring-orders",
-          "visibleVia": "/dashboard/sales?tab=RecurringOrdersPage",
-          "label": "AI Insights",
-          "lineNumber": 134,
-          "currentTarget": "/dashboard/recurring-orders/ai",
-          "currentBehavior": "middleware_redirect",
-          "redirectsTo": "/dashboard/sales?tab=recurring",
-          "whyBroken": "In /dashboard/recurring-orders (visible at /dashboard/sales?tab=RecurringOrdersPage): link to \"/dashboard/recurring-orders/ai\" — middleware_redirect → /dashboard/sales?tab=recurring",
-          "severity": "medium",
-          "userVisible": true,
-          "evidence": "href=\"/dashboard/recurring-orders/ai",
-          "gitHistory": {
-            "found": true,
-            "wasReal": true,
-            "commit": "674b6c5",
-            "commitDate": "2026-05-01",
-            "filePath": "frontend/src/app/dashboard/recurring-orders/ai/page.tsx",
-            "preview": "\"use client\";\nimport { useQuery, useMutation, useQueryClient } from \"@tanstack/react-query\";\nimport { subscriptionApi, SEVERITY_COLORS } from \"@/lib/subscription\";\n\nconst AGENT_LABELS: Record<string, ",
-            "note": "Real implementation found in 674b6c5"
-          },
-          "recommendation": "RESTORE_OLD_PAGE_FROM_GIT"
-        },
-        {
-          "id": "BVT-0088",
-          "module": "Commercial / Sales",
-          "sourceFile": "frontend/src/app/dashboard/commissions/page.tsx",
-          "sourceRoute": "/dashboard/commissions",
-          "visibleVia": "/dashboard/sales?tab=CommissionsPage",
-          "label": "AI Insights",
-          "lineNumber": 106,
-          "currentTarget": "/dashboard/commissions/ai",
-          "currentBehavior": "middleware_redirect",
-          "redirectsTo": "/dashboard/sales?tab=commissions",
-          "whyBroken": "In /dashboard/commissions (visible at /dashboard/sales?tab=CommissionsPage): link to \"/dashboard/commissions/ai\" — middleware_redirect → /dashboard/sales?tab=commissions",
-          "severity": "medium",
-          "userVisible": true,
-          "evidence": "href=\"/dashboard/commissions/ai",
-          "gitHistory": {
-            "found": true,
-            "wasReal": true,
-            "commit": "674b6c5",
-            "commitDate": "2026-05-01",
-            "filePath": "frontend/src/app/dashboard/commissions/ai/page.tsx",
-            "preview": "\"use client\";\nimport { useQuery, useMutation, useQueryClient } from \"@tanstack/react-query\";\nimport { commissionsApi, SEVERITY_COLORS, AGENT_LABELS } from \"@/lib/commissions\";\n\nexport default function",
-            "note": "Real implementation found in 674b6c5"
-          },
-          "recommendation": "RESTORE_OLD_PAGE_FROM_GIT"
-        },
-        {
-          "id": "BVT-0089",
+          "id": "BVT-0046",
           "module": "Commercial / Sales",
           "sourceFile": "frontend/src/app/dashboard/secondary-sales/page.tsx",
           "sourceRoute": "/dashboard/secondary-sales",
@@ -2339,7 +1191,7 @@
           "recommendation": "CONVERT_TO_WORKSPACE_SUBVIEW"
         },
         {
-          "id": "BVT-0090",
+          "id": "BVT-0047",
           "module": "Commercial / Sales",
           "sourceFile": "frontend/src/app/dashboard/van-sales/page.tsx",
           "sourceRoute": "/dashboard/van-sales",
@@ -2363,85 +1215,7 @@
           "recommendation": "CONVERT_TO_WORKSPACE_SUBVIEW"
         },
         {
-          "id": "BVT-0091",
-          "module": "Commercial / Sales",
-          "sourceFile": "frontend/src/app/dashboard/van-sales/page.tsx",
-          "sourceRoute": "/dashboard/van-sales",
-          "visibleVia": "/dashboard/sales?tab=VanSalesPage",
-          "label": "AI Alerts",
-          "lineNumber": 110,
-          "currentTarget": "/dashboard/van-sales/ai",
-          "currentBehavior": "middleware_redirect",
-          "redirectsTo": "/dashboard/sales?tab=van-sales",
-          "whyBroken": "In /dashboard/van-sales (visible at /dashboard/sales?tab=VanSalesPage): link to \"/dashboard/van-sales/ai\" — middleware_redirect → /dashboard/sales?tab=van-sales",
-          "severity": "medium",
-          "userVisible": true,
-          "evidence": "href=\"/dashboard/van-sales/ai",
-          "gitHistory": {
-            "found": true,
-            "wasReal": true,
-            "commit": "674b6c5",
-            "commitDate": "2026-05-01",
-            "filePath": "frontend/src/app/dashboard/van-sales/ai/page.tsx",
-            "preview": "\"use client\";\nimport { useQuery, useMutation, useQueryClient } from \"@tanstack/react-query\";\nimport { vanSalesApi, SEVERITY_COLORS } from \"@/lib/van_sales\";\n\nconst AGENT_LABELS: Record<string, string>",
-            "note": "Real implementation found in 674b6c5"
-          },
-          "recommendation": "RESTORE_OLD_PAGE_FROM_GIT"
-        },
-        {
-          "id": "BVT-0092",
-          "module": "Commercial / Sales",
-          "sourceFile": "frontend/src/app/dashboard/portal/page.tsx",
-          "sourceRoute": "/dashboard/portal",
-          "visibleVia": "/dashboard/sales?tab=PortalPage",
-          "label": "Portal Users",
-          "lineNumber": 74,
-          "currentTarget": "/dashboard/portal/ai",
-          "currentBehavior": "middleware_redirect",
-          "redirectsTo": "/dashboard/sales?tab=portal",
-          "whyBroken": "In /dashboard/portal (visible at /dashboard/sales?tab=PortalPage): link to \"/dashboard/portal/ai\" — middleware_redirect → /dashboard/sales?tab=portal",
-          "severity": "medium",
-          "userVisible": true,
-          "evidence": "href: \"/dashboard/portal/ai",
-          "gitHistory": {
-            "found": true,
-            "wasReal": true,
-            "commit": "674b6c5",
-            "commitDate": "2026-05-01",
-            "filePath": "frontend/src/app/dashboard/portal/ai/page.tsx",
-            "preview": "\"use client\";\nimport { useEffect, useState } from \"react\";\nimport { portalApi, PortalAIRec, PortalAIAgentType, AI_AGENT_LABELS } from \"@/lib/portal\";\n\nconst PRIORITY_COLORS: Record<string, string> = {",
-            "note": "Real implementation found in 674b6c5"
-          },
-          "recommendation": "RESTORE_OLD_PAGE_FROM_GIT"
-        },
-        {
-          "id": "BVT-0093",
-          "module": "Commercial / Sales",
-          "sourceFile": "frontend/src/app/dashboard/portal/page.tsx",
-          "sourceRoute": "/dashboard/portal",
-          "visibleVia": "/dashboard/sales?tab=PortalPage",
-          "label": "Activity Log",
-          "lineNumber": 75,
-          "currentTarget": "/dashboard/portal/reports",
-          "currentBehavior": "middleware_redirect",
-          "redirectsTo": "/dashboard/sales?tab=portal",
-          "whyBroken": "In /dashboard/portal (visible at /dashboard/sales?tab=PortalPage): link to \"/dashboard/portal/reports\" — middleware_redirect → /dashboard/sales?tab=portal",
-          "severity": "medium",
-          "userVisible": true,
-          "evidence": "href: \"/dashboard/portal/reports",
-          "gitHistory": {
-            "found": true,
-            "wasReal": true,
-            "commit": "674b6c5",
-            "commitDate": "2026-05-01",
-            "filePath": "frontend/src/app/dashboard/portal/reports/page.tsx",
-            "preview": "\"use client\";\nimport { useEffect, useState } from \"react\";\nimport { portalApi } from \"@/lib/portal\";\n\nexport default function PortalReportsPage() {\n  const [adoption, setAdoption] = useState<Record<st",
-            "note": "Real implementation found in 674b6c5"
-          },
-          "recommendation": "RESTORE_OLD_PAGE_FROM_GIT"
-        },
-        {
-          "id": "BVT-0094",
+          "id": "BVT-0048",
           "module": "Commercial / Sales",
           "sourceFile": "frontend/src/app/dashboard/portal/page.tsx",
           "sourceRoute": "/dashboard/portal",
@@ -2463,220 +1237,6 @@
             "note": ""
           },
           "recommendation": "CONVERT_TO_WORKSPACE_SUBVIEW"
-        }
-      ]
-    },
-    {
-      "module": "Factory Operations / Utilities",
-      "brokenCount": 8,
-      "items": [
-        {
-          "id": "BVT-0095",
-          "module": "Factory Operations / Utilities",
-          "sourceFile": "frontend/src/app/dashboard/utility-management/reports/page.tsx",
-          "sourceRoute": "/dashboard/utility-management/reports",
-          "visibleVia": "/dashboard/utility-management?tab=UtilReportsPage",
-          "label": "Daily Consumption",
-          "lineNumber": 20,
-          "currentTarget": "/dashboard/utility-management/reports/daily-consumption",
-          "currentBehavior": "middleware_redirect",
-          "redirectsTo": "/dashboard/utility-management?tab=reports",
-          "whyBroken": "In /dashboard/utility-management/reports (visible at /dashboard/utility-management?tab=UtilReportsPage): link to \"/dashboard/utility-management/reports/daily-consumption\" — middleware_redirect → /dashboard/utility-management?tab=reports",
-          "severity": "medium",
-          "userVisible": true,
-          "evidence": "href: \"/dashboard/utility-management/reports/daily-consumption",
-          "gitHistory": {
-            "found": true,
-            "wasReal": true,
-            "commit": "674b6c5",
-            "commitDate": "2026-05-01",
-            "filePath": "frontend/src/app/dashboard/utility-management/reports/daily-consumption/page.tsx",
-            "preview": "\"use client\";\nimport React, { useState } from \"react\";\nimport Link from \"next/link\";\nimport { useQuery } from \"@tanstack/react-query\";\nimport {\n  LineChart, Line, BarChart, Bar, XAxis, YAxis, Cartesia",
-            "note": "Real implementation found in 674b6c5"
-          },
-          "recommendation": "RESTORE_OLD_PAGE_FROM_GIT"
-        },
-        {
-          "id": "BVT-0096",
-          "module": "Factory Operations / Utilities",
-          "sourceFile": "frontend/src/app/dashboard/utility-management/reports/page.tsx",
-          "sourceRoute": "/dashboard/utility-management/reports",
-          "visibleVia": "/dashboard/utility-management?tab=UtilReportsPage",
-          "label": "Boiler & Steam",
-          "lineNumber": 39,
-          "currentTarget": "/dashboard/utility-management/reports/equipment-efficiency",
-          "currentBehavior": "middleware_redirect",
-          "redirectsTo": "/dashboard/utility-management?tab=reports",
-          "whyBroken": "In /dashboard/utility-management/reports (visible at /dashboard/utility-management?tab=UtilReportsPage): link to \"/dashboard/utility-management/reports/equipment-efficiency\" — middleware_redirect → /dashboard/utility-management?tab=reports",
-          "severity": "medium",
-          "userVisible": true,
-          "evidence": "href: \"/dashboard/utility-management/reports/equipment-efficiency",
-          "gitHistory": {
-            "found": true,
-            "wasReal": true,
-            "commit": "674b6c5",
-            "commitDate": "2026-05-01",
-            "filePath": "frontend/src/app/dashboard/utility-management/reports/equipment-efficiency/page.tsx",
-            "preview": "\"use client\";\nimport React, { useState } from \"react\";\nimport Link from \"next/link\";\nimport { useSearchParams, useRouter } from \"next/navigation\";\nimport { useQuery } from \"@tanstack/react-query\";\nimp",
-            "note": "Real implementation found in 674b6c5"
-          },
-          "recommendation": "RESTORE_OLD_PAGE_FROM_GIT"
-        },
-        {
-          "id": "BVT-0097",
-          "module": "Factory Operations / Utilities",
-          "sourceFile": "frontend/src/app/dashboard/utility-management/reports/page.tsx",
-          "sourceRoute": "/dashboard/utility-management/reports",
-          "visibleVia": "/dashboard/utility-management?tab=UtilReportsPage",
-          "label": "Chemical Treatment",
-          "lineNumber": 65,
-          "currentTarget": "/dashboard/utility-management/reports/treatment",
-          "currentBehavior": "middleware_redirect",
-          "redirectsTo": "/dashboard/utility-management?tab=reports",
-          "whyBroken": "In /dashboard/utility-management/reports (visible at /dashboard/utility-management?tab=UtilReportsPage): link to \"/dashboard/utility-management/reports/treatment\" — middleware_redirect → /dashboard/utility-management?tab=reports",
-          "severity": "medium",
-          "userVisible": true,
-          "evidence": "href: \"/dashboard/utility-management/reports/treatment",
-          "gitHistory": {
-            "found": true,
-            "wasReal": true,
-            "commit": "674b6c5",
-            "commitDate": "2026-05-01",
-            "filePath": "frontend/src/app/dashboard/utility-management/reports/treatment/page.tsx",
-            "preview": "\"use client\";\nimport React, { useState } from \"react\";\nimport Link from \"next/link\";\nimport { useQuery } from \"@tanstack/react-query\";\nimport {\n  LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,\n ",
-            "note": "Real implementation found in 674b6c5"
-          },
-          "recommendation": "RESTORE_OLD_PAGE_FROM_GIT"
-        },
-        {
-          "id": "BVT-0098",
-          "module": "Factory Operations / Utilities",
-          "sourceFile": "frontend/src/app/dashboard/utility-management/reports/page.tsx",
-          "sourceRoute": "/dashboard/utility-management/reports",
-          "visibleVia": "/dashboard/utility-management?tab=UtilReportsPage",
-          "label": "Cost Allocation",
-          "lineNumber": 91,
-          "currentTarget": "/dashboard/utility-management/reports/cost-allocation",
-          "currentBehavior": "middleware_redirect",
-          "redirectsTo": "/dashboard/utility-management?tab=reports",
-          "whyBroken": "In /dashboard/utility-management/reports (visible at /dashboard/utility-management?tab=UtilReportsPage): link to \"/dashboard/utility-management/reports/cost-allocation\" — middleware_redirect → /dashboard/utility-management?tab=reports",
-          "severity": "medium",
-          "userVisible": true,
-          "evidence": "href: \"/dashboard/utility-management/reports/cost-allocation",
-          "gitHistory": {
-            "found": true,
-            "wasReal": true,
-            "commit": "674b6c5",
-            "commitDate": "2026-05-01",
-            "filePath": "frontend/src/app/dashboard/utility-management/reports/cost-allocation/page.tsx",
-            "preview": "\"use client\";\nimport React, { useState } from \"react\";\nimport Link from \"next/link\";\nimport { useQuery } from \"@tanstack/react-query\";\nimport {\n  BarChart, Bar, PieChart, Pie, Cell,\n  XAxis, YAxis, Ca",
-            "note": "Real implementation found in 674b6c5"
-          },
-          "recommendation": "RESTORE_OLD_PAGE_FROM_GIT"
-        },
-        {
-          "id": "BVT-0099",
-          "module": "Factory Operations / Utilities",
-          "sourceFile": "frontend/src/app/dashboard/utility-management/reports/page.tsx",
-          "sourceRoute": "/dashboard/utility-management/reports",
-          "visibleVia": "/dashboard/utility-management?tab=UtilReportsPage",
-          "label": "Base Load Analysis",
-          "lineNumber": 103,
-          "currentTarget": "/dashboard/utility-management/reports/load-analysis",
-          "currentBehavior": "middleware_redirect",
-          "redirectsTo": "/dashboard/utility-management?tab=reports",
-          "whyBroken": "In /dashboard/utility-management/reports (visible at /dashboard/utility-management?tab=UtilReportsPage): link to \"/dashboard/utility-management/reports/load-analysis\" — middleware_redirect → /dashboard/utility-management?tab=reports",
-          "severity": "medium",
-          "userVisible": true,
-          "evidence": "href: \"/dashboard/utility-management/reports/load-analysis",
-          "gitHistory": {
-            "found": true,
-            "wasReal": true,
-            "commit": "674b6c5",
-            "commitDate": "2026-05-01",
-            "filePath": "frontend/src/app/dashboard/utility-management/reports/load-analysis/page.tsx",
-            "preview": "\"use client\";\nimport React, { useState } from \"react\";\nimport Link from \"next/link\";\nimport { useQuery } from \"@tanstack/react-query\";\nimport {\n  BarChart, Bar, LineChart, Line, XAxis, YAxis, Cartesia",
-            "note": "Real implementation found in 674b6c5"
-          },
-          "recommendation": "RESTORE_OLD_PAGE_FROM_GIT"
-        },
-        {
-          "id": "BVT-0100",
-          "module": "Factory Operations / Utilities",
-          "sourceFile": "frontend/src/app/dashboard/utility-management/reports/page.tsx",
-          "sourceRoute": "/dashboard/utility-management/reports",
-          "visibleVia": "/dashboard/utility-management?tab=UtilReportsPage",
-          "label": "Alarm Trend Report",
-          "lineNumber": 122,
-          "currentTarget": "/dashboard/utility-management/reports/anomalies",
-          "currentBehavior": "middleware_redirect",
-          "redirectsTo": "/dashboard/utility-management?tab=reports",
-          "whyBroken": "In /dashboard/utility-management/reports (visible at /dashboard/utility-management?tab=UtilReportsPage): link to \"/dashboard/utility-management/reports/anomalies\" — middleware_redirect → /dashboard/utility-management?tab=reports",
-          "severity": "medium",
-          "userVisible": true,
-          "evidence": "href: \"/dashboard/utility-management/reports/anomalies",
-          "gitHistory": {
-            "found": true,
-            "wasReal": true,
-            "commit": "674b6c5",
-            "commitDate": "2026-05-01",
-            "filePath": "frontend/src/app/dashboard/utility-management/reports/anomalies/page.tsx",
-            "preview": "\"use client\";\nimport React, { useState } from \"react\";\nimport Link from \"next/link\";\nimport { useQuery } from \"@tanstack/react-query\";\nimport {\n  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, R",
-            "note": "Real implementation found in 674b6c5"
-          },
-          "recommendation": "RESTORE_OLD_PAGE_FROM_GIT"
-        },
-        {
-          "id": "BVT-0101",
-          "module": "Factory Operations / Utilities",
-          "sourceFile": "frontend/src/app/dashboard/utility-management/reports/page.tsx",
-          "sourceRoute": "/dashboard/utility-management/reports",
-          "visibleVia": "/dashboard/utility-management?tab=UtilReportsPage",
-          "label": "Sustainability Summary",
-          "lineNumber": 141,
-          "currentTarget": "/dashboard/utility-management/reports/sustainability",
-          "currentBehavior": "middleware_redirect",
-          "redirectsTo": "/dashboard/utility-management?tab=reports",
-          "whyBroken": "In /dashboard/utility-management/reports (visible at /dashboard/utility-management?tab=UtilReportsPage): link to \"/dashboard/utility-management/reports/sustainability\" — middleware_redirect → /dashboard/utility-management?tab=reports",
-          "severity": "medium",
-          "userVisible": true,
-          "evidence": "href: \"/dashboard/utility-management/reports/sustainability",
-          "gitHistory": {
-            "found": true,
-            "wasReal": true,
-            "commit": "674b6c5",
-            "commitDate": "2026-05-01",
-            "filePath": "frontend/src/app/dashboard/utility-management/reports/sustainability/page.tsx",
-            "preview": "\"use client\";\nimport React, { useState } from \"react\";\nimport Link from \"next/link\";\nimport { useQuery } from \"@tanstack/react-query\";\nimport {\n  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,",
-            "note": "Real implementation found in 674b6c5"
-          },
-          "recommendation": "RESTORE_OLD_PAGE_FROM_GIT"
-        },
-        {
-          "id": "BVT-0102",
-          "module": "Factory Operations / Utilities",
-          "sourceFile": "frontend/src/app/dashboard/esg/page.tsx",
-          "sourceRoute": "/dashboard/esg",
-          "visibleVia": "/dashboard/utility-management?tab=ESGPage",
-          "label": "reports",
-          "lineNumber": 98,
-          "currentTarget": "/dashboard/esg/reports",
-          "currentBehavior": "middleware_redirect",
-          "redirectsTo": "/dashboard/utility-management?tab=esg",
-          "whyBroken": "In /dashboard/esg (visible at /dashboard/utility-management?tab=ESGPage): link to \"/dashboard/esg/reports\" — middleware_redirect → /dashboard/utility-management?tab=esg",
-          "severity": "medium",
-          "userVisible": true,
-          "evidence": "href=\"/dashboard/esg/reports",
-          "gitHistory": {
-            "found": true,
-            "wasReal": true,
-            "commit": "27ebada",
-            "commitDate": "2026-05-02",
-            "filePath": "frontend/src/app/dashboard/esg/reports/page.tsx",
-            "preview": "\"use client\";\n\nimport { useState, useEffect } from \"react\";\nimport { esgApi, EmissionSummary, EmissionBySource, ResourceSummary, SOURCE_TYPE_LABELS } from \"@/lib/esg\";\n\nconst SCOPE_COLORS: Record<stri",
-            "note": "Real implementation found in 27ebada"
-          },
-          "recommendation": "RESTORE_OLD_PAGE_FROM_GIT"
         }
       ]
     }

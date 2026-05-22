@@ -1,15 +1,15 @@
 # Page Route Classification Report
 
-Generated: 2026-05-21
+Generated: 2026-05-22
 
 ## Summary
 
 | Classification            | Count |
 |---------------------------|-------|
 | A WORKSPACE_PAGE          | 31     |
-| B REDIRECT_ONLY           | 250     |
+| B REDIRECT_ONLY           | 196     |
 | C LIGHTWEIGHT_WRAPPER     | 213     |
-| D FULL_DUPLICATE_UI       | 242     |
+| D FULL_DUPLICATE_UI       | 296     |
 | E STANDALONE_OPERATIONAL  | 19     |
 | F UNKNOWN                 | 0     |
 | Total                     | 755   |
@@ -48,7 +48,7 @@ Generated: 2026-05-21
 | `/dashboard/analytics/procurement` | C LIGHTWEIGHT_WRAPPER | ❌ | — | — | — |
 | `/dashboard/analytics/production` | C LIGHTWEIGHT_WRAPPER | ❌ | — | — | — |
 | `/dashboard/analytics/sales` | C LIGHTWEIGHT_WRAPPER | ❌ | — | — | — |
-| `/dashboard/appraisals/ai` | B REDIRECT_ONLY | ✅ | — | /dashboard/hr | appraisals |
+| `/dashboard/appraisals/ai` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/hr | appraisals |
 | `/dashboard/appraisals/development-plans` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/hr | appraisals |
 | `/dashboard/appraisals/hr-review` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/hr | appraisals |
 | `/dashboard/appraisals/manager-queue` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/hr | appraisals |
@@ -56,13 +56,13 @@ Generated: 2026-05-21
 | `/dashboard/appraisals/periods` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/hr | appraisals |
 | `/dashboard/appraisals/records/new` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/hr | appraisals |
 | `/dashboard/appraisals/records` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/hr | appraisals |
-| `/dashboard/appraisals/reports` | B REDIRECT_ONLY | ✅ | — | /dashboard/hr | appraisals |
+| `/dashboard/appraisals/reports` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/hr | appraisals |
 | `/dashboard/appraisals/self-review` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/hr | appraisals |
 | `/dashboard/appraisals/templates` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/hr | appraisals |
 | `/dashboard/approvals` | C LIGHTWEIGHT_WRAPPER | ✅ | — | /dashboard/admin | approvals |
 | `/dashboard/bank-api` | C LIGHTWEIGHT_WRAPPER | ✅ | — | /dashboard/finance | bank-api |
 | `/dashboard/bank-reconciliation/accounts` | B REDIRECT_ONLY | ✅ | — | /dashboard/finance | bank-recon |
-| `/dashboard/bank-reconciliation/ai` | B REDIRECT_ONLY | ✅ | — | /dashboard/finance | bank-recon |
+| `/dashboard/bank-reconciliation/ai` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/finance | bank-recon |
 | `/dashboard/bank-reconciliation/balance` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/finance | bank-recon |
 | `/dashboard/bank-reconciliation/import` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/finance | bank-recon |
 | `/dashboard/bank-reconciliation/mpesa` | B REDIRECT_ONLY | ✅ | — | /dashboard/finance | bank-recon |
@@ -93,13 +93,13 @@ Generated: 2026-05-21
 | `/dashboard/calendar/shifts` | B REDIRECT_ONLY | ✅ | — | /dashboard/communication | calendar |
 | `/dashboard/calendar/view` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/communication | calendar |
 | `/dashboard/calls` | C LIGHTWEIGHT_WRAPPER | ✅ | — | /dashboard/communication | calls |
-| `/dashboard/chatter/ai` | B REDIRECT_ONLY | ✅ | — | /dashboard/communication | chatter |
+| `/dashboard/chatter/ai` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/communication | chatter |
 | `/dashboard/chatter/feed` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/communication | chatter |
 | `/dashboard/chatter` | C LIGHTWEIGHT_WRAPPER | ✅ | — | /dashboard/communication | chatter |
-| `/dashboard/chatter/reports` | B REDIRECT_ONLY | ✅ | — | /dashboard/communication | chatter |
+| `/dashboard/chatter/reports` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/communication | chatter |
 | `/dashboard/chatter/search` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/communication | chatter |
 | `/dashboard/chatter/threads` | B REDIRECT_ONLY | ✅ | — | /dashboard/communication | chatter |
-| `/dashboard/commissions/ai` | B REDIRECT_ONLY | ✅ | — | /dashboard/sales | commissions |
+| `/dashboard/commissions/ai` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/sales | commissions |
 | `/dashboard/commissions` | C LIGHTWEIGHT_WRAPPER | ✅ | — | /dashboard/sales | commissions |
 | `/dashboard/commissions/payouts` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/sales | commissions |
 | `/dashboard/commissions/reports` | B REDIRECT_ONLY | ✅ | — | /dashboard/sales | commissions |
@@ -111,7 +111,7 @@ Generated: 2026-05-21
 | `/dashboard/compliance` | A WORKSPACE_PAGE | ❌ | — | — | — |
 | `/dashboard/containers/outstanding` | B REDIRECT_ONLY | ✅ | — | /dashboard/logistics | containers |
 | `/dashboard/containers` | B REDIRECT_ONLY | ✅ | — | /dashboard/logistics | containers |
-| `/dashboard/contracts/ai` | B REDIRECT_ONLY | ✅ | — | /dashboard/sales | contracts |
+| `/dashboard/contracts/ai` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/sales | contracts |
 | `/dashboard/contracts/expiring` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/sales | contracts |
 | `/dashboard/contracts/list/[id]` | B REDIRECT_ONLY | ✅ | — | /dashboard/sales | contracts |
 | `/dashboard/contracts/list` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/sales | contracts |
@@ -134,7 +134,7 @@ Generated: 2026-05-21
 | `/dashboard/crm/territory` | C LIGHTWEIGHT_WRAPPER | ❌ | — | — | — |
 | `/dashboard/crm/win-loss` | C LIGHTWEIGHT_WRAPPER | ❌ | — | — | — |
 | `/dashboard/custom-fields/[id]` | B REDIRECT_ONLY | ✅ | — | /dashboard/admin | custom-fields |
-| `/dashboard/custom-fields/ai` | B REDIRECT_ONLY | ✅ | — | /dashboard/admin | custom-fields |
+| `/dashboard/custom-fields/ai` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/admin | custom-fields |
 | `/dashboard/custom-fields/fields` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/admin | custom-fields |
 | `/dashboard/custom-fields/form-builder` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/admin | custom-fields |
 | `/dashboard/custom-fields/new-field` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/admin | custom-fields |
@@ -151,7 +151,7 @@ Generated: 2026-05-21
 | `/dashboard/developer/graphql` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/integrations | developer |
 | `/dashboard/developer/keys` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/integrations | developer |
 | `/dashboard/developer` | C LIGHTWEIGHT_WRAPPER | ✅ | — | /dashboard/integrations | developer |
-| `/dashboard/dimensions/ai` | B REDIRECT_ONLY | ✅ | — | /dashboard/finance | dimensions |
+| `/dashboard/dimensions/ai` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/finance | dimensions |
 | `/dashboard/dimensions/allocation-run` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/finance | dimensions |
 | `/dashboard/dimensions/allocations` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/finance | dimensions |
 | `/dashboard/dimensions/completeness` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/finance | dimensions |
@@ -184,11 +184,11 @@ Generated: 2026-05-21
 | `/dashboard/esg/factors` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/utility-management | esg |
 | `/dashboard/esg/intelligence` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/utility-management | esg |
 | `/dashboard/esg` | C LIGHTWEIGHT_WRAPPER | ✅ | — | /dashboard/utility-management | esg |
-| `/dashboard/esg/reports` | B REDIRECT_ONLY | ✅ | — | /dashboard/utility-management | esg |
+| `/dashboard/esg/reports` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/utility-management | esg |
 | `/dashboard/esg/targets` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/utility-management | esg |
 | `/dashboard/esign` | C LIGHTWEIGHT_WRAPPER | ✅ | — | /dashboard/documents | esign |
 | `/dashboard/ess/admin` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/hr | ess |
-| `/dashboard/ess/ai` | B REDIRECT_ONLY | ✅ | — | /dashboard/hr | ess |
+| `/dashboard/ess/ai` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/hr | ess |
 | `/dashboard/ess/attendance` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/hr | ess |
 | `/dashboard/ess/documents` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/hr | ess |
 | `/dashboard/ess/leave` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/hr | ess |
@@ -197,7 +197,7 @@ Generated: 2026-05-21
 | `/dashboard/ess/profile` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/hr | ess |
 | `/dashboard/ess/requests` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/hr | ess |
 | `/dashboard/expenses/advances` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/hr | expenses |
-| `/dashboard/expenses/ai` | B REDIRECT_ONLY | ✅ | — | /dashboard/hr | expenses |
+| `/dashboard/expenses/ai` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/hr | expenses |
 | `/dashboard/expenses/approval` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/hr | expenses |
 | `/dashboard/expenses/categories` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/hr | expenses |
 | `/dashboard/expenses/claims/[id]` | B REDIRECT_ONLY | ✅ | — | /dashboard/hr | expenses |
@@ -207,7 +207,7 @@ Generated: 2026-05-21
 | `/dashboard/expenses/policies` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/hr | expenses |
 | `/dashboard/expenses/receipt-ocr` | B REDIRECT_ONLY | ✅ | — | /dashboard/hr | expenses |
 | `/dashboard/expenses/reimbursement` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/hr | expenses |
-| `/dashboard/expenses/reports` | B REDIRECT_ONLY | ✅ | — | /dashboard/hr | expenses |
+| `/dashboard/expenses/reports` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/hr | expenses |
 | `/dashboard/finance/accounting/balance-sheet` | B REDIRECT_ONLY | ✅ | — | /dashboard/finance | accounting |
 | `/dashboard/finance/accounting/chart-of-accounts` | B REDIRECT_ONLY | ✅ | — | /dashboard/finance | accounting |
 | `/dashboard/finance/accounting/controls` | B REDIRECT_ONLY | ✅ | — | /dashboard/finance | accounting |
@@ -231,7 +231,7 @@ Generated: 2026-05-21
 | `/dashboard/finance` | A WORKSPACE_PAGE | ❌ | — | — | — |
 | `/dashboard/finance/receivables` | C LIGHTWEIGHT_WRAPPER | ❌ | — | — | — |
 | `/dashboard/finance/vat-returns` | C LIGHTWEIGHT_WRAPPER | ❌ | — | — | — |
-| `/dashboard/fixed-assets/ai` | B REDIRECT_ONLY | ✅ | — | /dashboard/finance | fixed-assets |
+| `/dashboard/fixed-assets/ai` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/finance | fixed-assets |
 | `/dashboard/fixed-assets/assets/[id]/add-component` | B REDIRECT_ONLY | ✅ | — | /dashboard/finance | fixed-assets |
 | `/dashboard/fixed-assets/assets/[id]` | B REDIRECT_ONLY | ✅ | — | /dashboard/finance | fixed-assets |
 | `/dashboard/fixed-assets/assets/new` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/finance | fixed-assets |
@@ -248,7 +248,7 @@ Generated: 2026-05-21
 | `/dashboard/fleet/incidents` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/logistics | fleet |
 | `/dashboard/fleet/maintenance` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/logistics | fleet |
 | `/dashboard/fleet` | C LIGHTWEIGHT_WRAPPER | ✅ | — | /dashboard/logistics | fleet |
-| `/dashboard/fleet/reports` | B REDIRECT_ONLY | ✅ | — | /dashboard/logistics | fleet |
+| `/dashboard/fleet/reports` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/logistics | fleet |
 | `/dashboard/fleet/trips` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/logistics | fleet |
 | `/dashboard/fleet/vehicles` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/logistics | fleet |
 | `/dashboard/gs1/ai` | B REDIRECT_ONLY | ✅ | — | /dashboard/compliance | gs1 |
@@ -284,7 +284,7 @@ Generated: 2026-05-21
 | `/dashboard/inventory/serials` | C LIGHTWEIGHT_WRAPPER | ❌ | — | — | — |
 | `/dashboard/inventory/valuation` | C LIGHTWEIGHT_WRAPPER | ❌ | — | — | — |
 | `/dashboard/invoice-match/[id]` | B REDIRECT_ONLY | ✅ | — | /dashboard/finance | invoice-match |
-| `/dashboard/invoice-match/ai` | B REDIRECT_ONLY | ✅ | — | /dashboard/finance | invoice-match |
+| `/dashboard/invoice-match/ai` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/finance | invoice-match |
 | `/dashboard/invoice-match/blocked` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/finance | invoice-match |
 | `/dashboard/invoice-match/duplicates` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/finance | invoice-match |
 | `/dashboard/invoice-match/matches` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/finance | invoice-match |
@@ -293,18 +293,18 @@ Generated: 2026-05-21
 | `/dashboard/invoice-match/review-queue` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/finance | invoice-match |
 | `/dashboard/invoice-match/tolerance-rules` | B REDIRECT_ONLY | ✅ | — | /dashboard/finance | invoice-match |
 | `/dashboard/iot` | C LIGHTWEIGHT_WRAPPER | ✅ | ✅ | /dashboard/utility-management | iot |
-| `/dashboard/kanban/ai` | B REDIRECT_ONLY | ✅ | — | /dashboard/planning | kanban |
+| `/dashboard/kanban/ai` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/planning | kanban |
 | `/dashboard/kanban/boards` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/planning | kanban |
 | `/dashboard/kanban/cards` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/planning | kanban |
 | `/dashboard/kanban` | C LIGHTWEIGHT_WRAPPER | ✅ | — | /dashboard/planning | kanban |
-| `/dashboard/kanban/reports` | B REDIRECT_ONLY | ✅ | — | /dashboard/planning | kanban |
+| `/dashboard/kanban/reports` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/planning | kanban |
 | `/dashboard/kanban/view` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/planning | kanban |
 | `/dashboard/knowledge-base/[id]` | B REDIRECT_ONLY | ✅ | — | /dashboard/documents | knowledge-base |
 | `/dashboard/knowledge-base/articles/new` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/documents | knowledge-base |
 | `/dashboard/knowledge-base/articles` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/documents | knowledge-base |
 | `/dashboard/knowledge-base` | C LIGHTWEIGHT_WRAPPER | ✅ | — | /dashboard/documents | knowledge-base |
 | `/dashboard/landed-cost/[id]` | B REDIRECT_ONLY | ✅ | — | /dashboard/procurement | landed-cost |
-| `/dashboard/landed-cost/ai` | B REDIRECT_ONLY | ✅ | — | /dashboard/procurement | landed-cost |
+| `/dashboard/landed-cost/ai` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/procurement | landed-cost |
 | `/dashboard/landed-cost/documents` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/procurement | landed-cost |
 | `/dashboard/landed-cost/new` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/procurement | landed-cost |
 | `/dashboard/landed-cost` | C LIGHTWEIGHT_WRAPPER | ✅ | — | /dashboard/procurement | landed-cost |
@@ -415,11 +415,11 @@ Generated: 2026-05-21
 | `/dashboard/mrp/run` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/planning | mrp |
 | `/dashboard/mrp/suggestions` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/planning | mrp |
 | `/dashboard/mrp/workbench` | B REDIRECT_ONLY | ✅ | — | /dashboard/planning | mrp |
-| `/dashboard/notification-center/ai` | B REDIRECT_ONLY | ✅ | — | /dashboard/communication | notifications |
+| `/dashboard/notification-center/ai` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/communication | notifications |
 | `/dashboard/notification-center/list` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/communication | notifications |
 | `/dashboard/notification-center` | C LIGHTWEIGHT_WRAPPER | ✅ | — | /dashboard/communication | notifications |
 | `/dashboard/notification-center/preferences` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/communication | notifications |
-| `/dashboard/notification-center/reports` | B REDIRECT_ONLY | ✅ | — | /dashboard/communication | notifications |
+| `/dashboard/notification-center/reports` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/communication | notifications |
 | `/dashboard/notification-center/schedules` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/communication | notifications |
 | `/dashboard/notification-center/templates` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/communication | notifications |
 | `/dashboard/npd/[id]` | E STANDALONE_OPERATIONAL | ❌ | — | — | — |
@@ -441,12 +441,12 @@ Generated: 2026-05-21
 | `/dashboard/portal/accounts/[id]/view` | B REDIRECT_ONLY | ✅ | — | /dashboard/sales | portal |
 | `/dashboard/portal/accounts` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/sales | portal |
 | `/dashboard/portal/activity` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/sales | portal |
-| `/dashboard/portal/ai` | B REDIRECT_ONLY | ✅ | — | /dashboard/sales | portal |
+| `/dashboard/portal/ai` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/sales | portal |
 | `/dashboard/portal/claims` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/sales | portal |
 | `/dashboard/portal/drafts` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/sales | portal |
 | `/dashboard/portal/order-tracking` | B REDIRECT_ONLY | ✅ | — | /dashboard/sales | portal |
 | `/dashboard/portal` | C LIGHTWEIGHT_WRAPPER | ✅ | — | /dashboard/sales | portal |
-| `/dashboard/portal/reports` | B REDIRECT_ONLY | ✅ | — | /dashboard/sales | portal |
+| `/dashboard/portal/reports` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/sales | portal |
 | `/dashboard/portal/sell-through` | B REDIRECT_ONLY | ✅ | — | /dashboard/sales | portal |
 | `/dashboard/portal/users` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/sales | portal |
 | `/dashboard/pos` | A WORKSPACE_PAGE | ❌ | — | — | — |
@@ -461,7 +461,7 @@ Generated: 2026-05-21
 | `/dashboard/price-lists/margin` | B REDIRECT_ONLY | ✅ | — | /dashboard/sales | price-lists |
 | `/dashboard/price-lists` | C LIGHTWEIGHT_WRAPPER | ✅ | — | /dashboard/sales | price-lists |
 | `/dashboard/price-lists/reports` | B REDIRECT_ONLY | ✅ | — | /dashboard/sales | price-lists |
-| `/dashboard/procurement-suggestion/ai` | B REDIRECT_ONLY | ✅ | — | /dashboard/procurement | suggestions |
+| `/dashboard/procurement-suggestion/ai` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/procurement | suggestions |
 | `/dashboard/procurement-suggestion/groups` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/procurement | suggestions |
 | `/dashboard/procurement-suggestion` | C LIGHTWEIGHT_WRAPPER | ✅ | — | /dashboard/procurement | suggestions |
 | `/dashboard/procurement-suggestion/reports` | B REDIRECT_ONLY | ✅ | — | /dashboard/procurement | suggestions |
@@ -518,7 +518,7 @@ Generated: 2026-05-21
 | `/dashboard/putaway/execute/[id]` | B REDIRECT_ONLY | ✅ | — | /dashboard/warehouses | wms |
 | `/dashboard/putaway` | B REDIRECT_ONLY | ✅ | — | /dashboard/warehouses | wms |
 | `/dashboard/putaway/rules` | B REDIRECT_ONLY | ✅ | — | /dashboard/warehouses | wms |
-| `/dashboard/qms/ai` | B REDIRECT_ONLY | ✅ | — | /dashboard/quality | qms |
+| `/dashboard/qms/ai` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/quality | qms |
 | `/dashboard/qms/allergen` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/quality | qms |
 | `/dashboard/qms/aql` | B REDIRECT_ONLY | ✅ | — | /dashboard/quality | qms |
 | `/dashboard/qms/audit-checklists` | B REDIRECT_ONLY | ✅ | — | /dashboard/quality | qms |
@@ -531,7 +531,7 @@ Generated: 2026-05-21
 | `/dashboard/qms/inspections` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/quality | qms |
 | `/dashboard/qms` | C LIGHTWEIGHT_WRAPPER | ✅ | — | /dashboard/quality | qms |
 | `/dashboard/qms/quarantine` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/quality | qms |
-| `/dashboard/qms/reports` | B REDIRECT_ONLY | ✅ | — | /dashboard/quality | qms |
+| `/dashboard/qms/reports` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/quality | qms |
 | `/dashboard/qms/supplier-safety` | B REDIRECT_ONLY | ✅ | — | /dashboard/quality | qms |
 | `/dashboard/qms/templates` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/quality | qms |
 | `/dashboard/quality/[id]` | B REDIRECT_ONLY | ❌ | — | — | — |
@@ -542,7 +542,7 @@ Generated: 2026-05-21
 | `/dashboard/quality/reports` | C LIGHTWEIGHT_WRAPPER | ❌ | — | — | — |
 | `/dashboard/recipes/[id]` | E STANDALONE_OPERATIONAL | ❌ | — | — | — |
 | `/dashboard/recipes` | A WORKSPACE_PAGE | ❌ | ✅ | — | — |
-| `/dashboard/recruitment/ai` | B REDIRECT_ONLY | ✅ | — | /dashboard/hr | recruitment |
+| `/dashboard/recruitment/ai` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/hr | recruitment |
 | `/dashboard/recruitment/candidates/[id]` | B REDIRECT_ONLY | ✅ | — | /dashboard/hr | recruitment |
 | `/dashboard/recruitment/candidates/new` | B REDIRECT_ONLY | ✅ | — | /dashboard/hr | recruitment |
 | `/dashboard/recruitment/candidates` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/hr | recruitment |
@@ -550,23 +550,23 @@ Generated: 2026-05-21
 | `/dashboard/recruitment/offers` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/hr | recruitment |
 | `/dashboard/recruitment` | C LIGHTWEIGHT_WRAPPER | ✅ | — | /dashboard/hr | recruitment |
 | `/dashboard/recruitment/pipeline` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/hr | recruitment |
-| `/dashboard/recruitment/reports` | B REDIRECT_ONLY | ✅ | — | /dashboard/hr | recruitment |
+| `/dashboard/recruitment/reports` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/hr | recruitment |
 | `/dashboard/recruitment/requisitions/[id]` | B REDIRECT_ONLY | ✅ | — | /dashboard/hr | recruitment |
 | `/dashboard/recruitment/requisitions/new` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/hr | recruitment |
 | `/dashboard/recruitment/requisitions` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/hr | recruitment |
 | `/dashboard/recruitment/stages` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/hr | recruitment |
-| `/dashboard/recurring-orders/ai` | B REDIRECT_ONLY | ✅ | — | /dashboard/sales | recurring |
+| `/dashboard/recurring-orders/ai` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/sales | recurring |
 | `/dashboard/recurring-orders/billing` | B REDIRECT_ONLY | ✅ | — | /dashboard/sales | recurring |
 | `/dashboard/recurring-orders/generation-log` | B REDIRECT_ONLY | ✅ | — | /dashboard/sales | recurring |
 | `/dashboard/recurring-orders` | C LIGHTWEIGHT_WRAPPER | ✅ | — | /dashboard/sales | recurring |
 | `/dashboard/recurring-orders/pause-skip` | B REDIRECT_ONLY | ✅ | — | /dashboard/sales | recurring |
-| `/dashboard/recurring-orders/reports` | B REDIRECT_ONLY | ✅ | — | /dashboard/sales | recurring |
+| `/dashboard/recurring-orders/reports` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/sales | recurring |
 | `/dashboard/recurring-orders/schedule` | B REDIRECT_ONLY | ✅ | — | /dashboard/sales | recurring |
 | `/dashboard/recurring-orders/templates/[id]` | B REDIRECT_ONLY | ✅ | — | /dashboard/sales | recurring |
 | `/dashboard/recurring-orders/templates/new` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/sales | recurring |
 | `/dashboard/recurring-orders/templates` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/sales | recurring |
 | `/dashboard/recurring-orders/upcoming-demand` | B REDIRECT_ONLY | ✅ | — | /dashboard/sales | recurring |
-| `/dashboard/report-builder/ai` | B REDIRECT_ONLY | ✅ | — | /dashboard/analytics | report-builder |
+| `/dashboard/report-builder/ai` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/analytics | report-builder |
 | `/dashboard/report-builder/builder` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/analytics | report-builder |
 | `/dashboard/report-builder/catalog` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/analytics | report-builder |
 | `/dashboard/report-builder/dashboards` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/analytics | report-builder |
@@ -576,14 +576,14 @@ Generated: 2026-05-21
 | `/dashboard/report-builder/saved` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/analytics | report-builder |
 | `/dashboard/report-builder/schedules` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/analytics | report-builder |
 | `/dashboard/report-builder/viewer` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/analytics | report-builder |
-| `/dashboard/reports/finance` | B REDIRECT_ONLY | ✅ | — | /dashboard/analytics | reports |
-| `/dashboard/reports/inventory` | B REDIRECT_ONLY | ✅ | — | /dashboard/analytics | reports |
-| `/dashboard/reports/marketing` | B REDIRECT_ONLY | ✅ | — | /dashboard/analytics | reports |
+| `/dashboard/reports/finance` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/analytics | reports |
+| `/dashboard/reports/inventory` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/analytics | reports |
+| `/dashboard/reports/marketing` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/analytics | reports |
 | `/dashboard/reports` | C LIGHTWEIGHT_WRAPPER | ✅ | — | /dashboard/analytics | reports |
-| `/dashboard/reports/payments` | B REDIRECT_ONLY | ✅ | — | /dashboard/analytics | reports |
-| `/dashboard/reports/procurement` | B REDIRECT_ONLY | ✅ | — | /dashboard/analytics | reports |
-| `/dashboard/reports/production` | B REDIRECT_ONLY | ✅ | — | /dashboard/analytics | reports |
-| `/dashboard/reports/sales` | B REDIRECT_ONLY | ✅ | — | /dashboard/analytics | reports |
+| `/dashboard/reports/payments` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/analytics | reports |
+| `/dashboard/reports/procurement` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/analytics | reports |
+| `/dashboard/reports/production` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/analytics | reports |
+| `/dashboard/reports/sales` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/analytics | reports |
 | `/dashboard/roles/[id]` | B REDIRECT_ONLY | ✅ | — | /dashboard/admin | roles |
 | `/dashboard/roles` | C LIGHTWEIGHT_WRAPPER | ✅ | — | /dashboard/admin | roles |
 | `/dashboard/sales/collections` | C LIGHTWEIGHT_WRAPPER | ❌ | — | — | — |
@@ -629,7 +629,7 @@ Generated: 2026-05-21
 | `/dashboard/shop-floor/queue` | E STANDALONE_OPERATIONAL | ❌ | — | — | — |
 | `/dashboard/shop-floor/supervisor` | E STANDALONE_OPERATIONAL | ❌ | — | — | — |
 | `/dashboard/shop-floor/terminal` | E STANDALONE_OPERATIONAL | ❌ | — | — | — |
-| `/dashboard/subcontracting/ai` | B REDIRECT_ONLY | ✅ | — | /dashboard/procurement | subcontracting |
+| `/dashboard/subcontracting/ai` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/procurement | subcontracting |
 | `/dashboard/subcontracting/locations` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/procurement | subcontracting |
 | `/dashboard/subcontracting/orders` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/procurement | subcontracting |
 | `/dashboard/subcontracting` | C LIGHTWEIGHT_WRAPPER | ✅ | — | /dashboard/procurement | subcontracting |
@@ -656,17 +656,17 @@ Generated: 2026-05-21
 | `/dashboard/surveys` | C LIGHTWEIGHT_WRAPPER | ✅ | — | /dashboard/crm | surveys |
 | `/dashboard/tax` | C LIGHTWEIGHT_WRAPPER | ✅ | — | /dashboard/finance | tax |
 | `/dashboard/tax/regulatory` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/finance | tax |
-| `/dashboard/tax/reports` | B REDIRECT_ONLY | ✅ | — | /dashboard/finance | tax |
+| `/dashboard/tax/reports` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/finance | tax |
 | `/dashboard/tax/rules` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/finance | tax |
 | `/dashboard/tax/transactions` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/finance | tax |
-| `/dashboard/timesheets/ai` | B REDIRECT_ONLY | ✅ | — | /dashboard/hr | timesheets |
+| `/dashboard/timesheets/ai` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/hr | timesheets |
 | `/dashboard/timesheets/approval-queue` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/hr | timesheets |
 | `/dashboard/timesheets/my-timesheets` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/hr | timesheets |
 | `/dashboard/timesheets` | C LIGHTWEIGHT_WRAPPER | ✅ | — | /dashboard/hr | timesheets |
-| `/dashboard/timesheets/reports` | B REDIRECT_ONLY | ✅ | — | /dashboard/hr | timesheets |
+| `/dashboard/timesheets/reports` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/hr | timesheets |
 | `/dashboard/timesheets/time-entry` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/hr | timesheets |
 | `/dashboard/timesheets/weekly-view` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/hr | timesheets |
-| `/dashboard/tpm/ai` | B REDIRECT_ONLY | ✅ | — | /dashboard/marketing | tpm |
+| `/dashboard/tpm/ai` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/marketing | tpm |
 | `/dashboard/tpm/budget` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/marketing | tpm |
 | `/dashboard/tpm/calendar` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/marketing | tpm |
 | `/dashboard/tpm/claims` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/marketing | tpm |
@@ -688,13 +688,13 @@ Generated: 2026-05-21
 | `/dashboard/traceability/regulatory` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/inventory | traceability |
 | `/dashboard/traceability/search` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/inventory | traceability |
 | `/dashboard/traceability/templates` | B REDIRECT_ONLY | ✅ | — | /dashboard/inventory | traceability |
-| `/dashboard/training/ai` | B REDIRECT_ONLY | ✅ | — | /dashboard/hr | training |
+| `/dashboard/training/ai` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/hr | training |
 | `/dashboard/training/assignments` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/hr | training |
 | `/dashboard/training/certifications` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/hr | training |
 | `/dashboard/training/feedback` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/hr | training |
 | `/dashboard/training` | C LIGHTWEIGHT_WRAPPER | ✅ | — | /dashboard/hr | training |
 | `/dashboard/training/programs` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/hr | training |
-| `/dashboard/training/reports` | B REDIRECT_ONLY | ✅ | — | /dashboard/hr | training |
+| `/dashboard/training/reports` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/hr | training |
 | `/dashboard/training/sessions` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/hr | training |
 | `/dashboard/training/skill-matrix` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/hr | training |
 | `/dashboard/users/[id]` | B REDIRECT_ONLY | ✅ | — | /dashboard/admin | users |
@@ -727,21 +727,21 @@ Generated: 2026-05-21
 | `/dashboard/utility-management/machine-utility` | C LIGHTWEIGHT_WRAPPER | ❌ | — | — | — |
 | `/dashboard/utility-management` | A WORKSPACE_PAGE | ❌ | — | — | — |
 | `/dashboard/utility-management/readings` | C LIGHTWEIGHT_WRAPPER | ❌ | — | — | — |
-| `/dashboard/utility-management/reports/anomalies` | B REDIRECT_ONLY | ✅ | — | /dashboard/utility-management | reports |
-| `/dashboard/utility-management/reports/cost-allocation` | B REDIRECT_ONLY | ✅ | — | /dashboard/utility-management | reports |
-| `/dashboard/utility-management/reports/daily-consumption` | B REDIRECT_ONLY | ✅ | — | /dashboard/utility-management | reports |
-| `/dashboard/utility-management/reports/equipment-efficiency` | B REDIRECT_ONLY | ✅ | — | /dashboard/utility-management | reports |
-| `/dashboard/utility-management/reports/load-analysis` | B REDIRECT_ONLY | ✅ | — | /dashboard/utility-management | reports |
+| `/dashboard/utility-management/reports/anomalies` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/utility-management | reports |
+| `/dashboard/utility-management/reports/cost-allocation` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/utility-management | reports |
+| `/dashboard/utility-management/reports/daily-consumption` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/utility-management | reports |
+| `/dashboard/utility-management/reports/equipment-efficiency` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/utility-management | reports |
+| `/dashboard/utility-management/reports/load-analysis` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/utility-management | reports |
 | `/dashboard/utility-management/reports` | C LIGHTWEIGHT_WRAPPER | ✅ | — | /dashboard/utility-management | reports |
-| `/dashboard/utility-management/reports/sustainability` | B REDIRECT_ONLY | ✅ | — | /dashboard/utility-management | reports |
-| `/dashboard/utility-management/reports/treatment` | B REDIRECT_ONLY | ✅ | — | /dashboard/utility-management | reports |
+| `/dashboard/utility-management/reports/sustainability` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/utility-management | reports |
+| `/dashboard/utility-management/reports/treatment` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/utility-management | reports |
 | `/dashboard/utility-management/soft-water` | C LIGHTWEIGHT_WRAPPER | ❌ | — | — | — |
 | `/dashboard/utility-management/solar` | C LIGHTWEIGHT_WRAPPER | ❌ | — | — | — |
 | `/dashboard/utility-management/steam` | C LIGHTWEIGHT_WRAPPER | ❌ | — | — | — |
 | `/dashboard/utility-management/transactions` | C LIGHTWEIGHT_WRAPPER | ❌ | — | — | — |
 | `/dashboard/utility-management/wastewater` | C LIGHTWEIGHT_WRAPPER | ❌ | — | — | — |
 | `/dashboard/utility-management/water` | C LIGHTWEIGHT_WRAPPER | ❌ | — | — | — |
-| `/dashboard/van-sales/ai` | B REDIRECT_ONLY | ✅ | — | /dashboard/sales | van-sales |
+| `/dashboard/van-sales/ai` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/sales | van-sales |
 | `/dashboard/van-sales/field-rep` | B REDIRECT_ONLY | ✅ | — | /dashboard/sales | van-sales |
 | `/dashboard/van-sales/fraud` | B REDIRECT_ONLY | ✅ | — | /dashboard/sales | van-sales |
 | `/dashboard/van-sales/mpesa` | B REDIRECT_ONLY | ✅ | — | /dashboard/sales | van-sales |
@@ -764,7 +764,7 @@ Generated: 2026-05-21
 | `/dashboard/webhooks/deliveries` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/integrations | webhooks |
 | `/dashboard/webhooks/inbound` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/integrations | webhooks |
 | `/dashboard/webhooks` | C LIGHTWEIGHT_WRAPPER | ✅ | — | /dashboard/integrations | webhooks |
-| `/dashboard/webhooks/reports` | B REDIRECT_ONLY | ✅ | — | /dashboard/integrations | webhooks |
+| `/dashboard/webhooks/reports` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/integrations | webhooks |
 | `/dashboard/webhooks/subscriptions` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/integrations | webhooks |
 | `/dashboard/whatsapp` | C LIGHTWEIGHT_WRAPPER | ✅ | — | /dashboard/communication | whatsapp |
 | `/dashboard/wms/counts/[id]` | B REDIRECT_ONLY | ✅ | — | /dashboard/warehouses | wms |

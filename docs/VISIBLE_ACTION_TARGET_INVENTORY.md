@@ -2,30 +2,30 @@
 
 **Date:** 2026-05-21
 **Total targets found:** 487
-**Working:** 357
-**Broken:** 130 (102 unique)
+**Working:** 419
+**Broken:** 68 (48 unique)
 
 ## By Module
 
 | Module | Working | Broken | Total |
 |--------|---------|--------|-------|
-| Administration | 11 | 6 | 17 |
+| Administration | 12 | 5 | 17 |
 | Other | 13 | 1 | 14 |
-| Intelligence / Analytics | 18 | 8 | 26 |
-| Documents & Communication | 20 | 10 | 30 |
+| Intelligence / Analytics | 26 | 0 | 26 |
+| Documents & Communication | 24 | 6 | 30 |
 | Commercial / CRM | 4 | 11 | 15 |
-| Finance | 53 | 11 | 64 |
-| HR & Payroll | 33 | 9 | 42 |
-| Administration / Integrations | 10 | 1 | 11 |
+| Finance | 60 | 4 | 64 |
+| HR & Payroll | 42 | 0 | 42 |
+| Administration / Integrations | 11 | 0 | 11 |
 | Supply Chain / Inventory | 24 | 1 | 25 |
-| Logistics | 6 | 1 | 7 |
-| Commercial / Marketing | 24 | 14 | 38 |
-| Manufacturing / Planning | 19 | 2 | 21 |
-| Supply Chain / Procurement | 13 | 11 | 24 |
+| Logistics | 7 | 0 | 7 |
+| Commercial / Marketing | 25 | 13 | 38 |
+| Manufacturing / Planning | 21 | 0 | 21 |
+| Supply Chain / Procurement | 17 | 7 | 24 |
 | Manufacturing / Production | 20 | 5 | 25 |
-| Factory Operations / Quality | 11 | 5 | 16 |
-| Commercial / Sales | 23 | 19 | 42 |
-| Factory Operations / Utilities | 55 | 15 | 70 |
+| Factory Operations / Quality | 13 | 3 | 16 |
+| Commercial / Sales | 30 | 12 | 42 |
+| Factory Operations / Utilities | 70 | 0 | 70 |
 
 ## All Broken Targets (first 50)
 
@@ -34,20 +34,7 @@
 | `users/page.tsx` | /dashboard/admin?tab=UsersPage | `/dashboard/users/${r.id` | middleware_redirect |
 | `roles/page.tsx` | /dashboard/admin?tab=RolesPage | `/dashboard/roles/${r.id` | middleware_redirect |
 | `custom-fields/page.tsx` | /dashboard/admin?tab=CustomFieldsPage | `/dashboard/custom-fields/${f.custom_field_id` | middleware_redirect |
-| `custom-fields/page.tsx` | /dashboard/admin?tab=CustomFieldsPage | `/dashboard/custom-fields/ai` | middleware_redirect |
 | `ai/compliance/page.tsx` | /dashboard/ai?tab=AICompliancePage | `/dashboard/production/quality` | no_route_file |
-| `reports/page.tsx` | /dashboard/analytics?tab=ReportsPage | `/dashboard/reports/inventory` | middleware_redirect |
-| `reports/page.tsx` | /dashboard/analytics?tab=ReportsPage | `/dashboard/reports/production` | middleware_redirect |
-| `reports/page.tsx` | /dashboard/analytics?tab=ReportsPage | `/dashboard/reports/procurement` | middleware_redirect |
-| `reports/page.tsx` | /dashboard/analytics?tab=ReportsPage | `/dashboard/reports/sales` | middleware_redirect |
-| `reports/page.tsx` | /dashboard/analytics?tab=ReportsPage | `/dashboard/reports/finance` | middleware_redirect |
-| `reports/page.tsx` | /dashboard/analytics?tab=ReportsPage | `/dashboard/reports/payments` | middleware_redirect |
-| `reports/page.tsx` | /dashboard/analytics?tab=ReportsPage | `/dashboard/reports/marketing` | middleware_redirect |
-| `report-builder/page.tsx` | /dashboard/analytics?tab=ReportBuilderPage | `/dashboard/report-builder/ai` | middleware_redirect |
-| `chatter/page.tsx` | /dashboard/communication?tab=ChatterPage | `/dashboard/chatter/reports` | middleware_redirect |
-| `chatter/page.tsx` | /dashboard/communication?tab=ChatterPage | `/dashboard/chatter/ai` | middleware_redirect |
-| `notification-center/page.tsx` | /dashboard/communication?tab=NotifPage | `/dashboard/notification-center/reports` | middleware_redirect |
-| `notification-center/page.tsx` | /dashboard/communication?tab=NotifPage | `/dashboard/notification-center/ai` | middleware_redirect |
 | `crm/pipeline/page.tsx` | /dashboard/crm?tab=CRMPipelinePage | `/dashboard/crm/records/${rec.id` | middleware_redirect |
 | `crm/leads/page.tsx` | /dashboard/crm?tab=CRMLeadsPage | `/dashboard/crm/records/${rec.id` | middleware_redirect |
 | `crm/opportunities/page.tsx` | /dashboard/crm?tab=CRMOppsPage | `/dashboard/crm/records/${rec.id` | middleware_redirect |
@@ -59,25 +46,36 @@
 | `knowledge-base/page.tsx` | /dashboard/documents?tab=KnowledgeBasePage | `/dashboard/knowledge-base/${a.id` | middleware_redirect |
 | `knowledge-base/page.tsx` | /dashboard/documents?tab=KnowledgeBasePage | `/dashboard/knowledge-base/categories` | middleware_redirect |
 | `finance/accounting/page.tsx` | /dashboard/finance?tab=FinanceAccountingPage | `/dashboard/finance/accounting/controls` | middleware_redirect |
-| `bank-reconciliation/page.tsx` | /dashboard/finance?tab=BankReconPage | `/dashboard/bank-reconciliation/ai` | middleware_redirect |
 | `bank-reconciliation/page.tsx` | /dashboard/finance?tab=BankReconPage | `/dashboard/bank-reconciliation/statements/${s.id` | middleware_redirect |
-| `invoice-match/page.tsx` | /dashboard/finance?tab=InvoiceMatchPage | `/dashboard/invoice-match/ai` | middleware_redirect |
 | `invoice-match/page.tsx` | /dashboard/finance?tab=InvoiceMatchPage | `/dashboard/invoice-match/${m.id` | middleware_redirect |
-| `fixed-assets/page.tsx` | /dashboard/finance?tab=FixedAssetsPage | `/dashboard/fixed-assets/ai` | middleware_redirect |
-| `dimensions/page.tsx` | /dashboard/finance?tab=DimensionsPage | `/dashboard/dimensions/ai` | middleware_redirect |
 | `dunning/page.tsx` | /dashboard/finance?tab=DunningPage | `/dashboard/dunning/cases/${c.id` | middleware_redirect |
-| `tax/page.tsx` | /dashboard/finance?tab=TaxPage | `/dashboard/tax/reports` | middleware_redirect |
-| `expenses/page.tsx` | /dashboard/finance?tab=ExpensesPage | `/dashboard/expenses/reports` | middleware_redirect |
-| `expenses/page.tsx` | /dashboard/finance?tab=ExpensesPage | `/dashboard/expenses/ai` | middleware_redirect |
-| `recruitment/page.tsx` | /dashboard/hr?tab=RecruitmentPage | `/dashboard/recruitment/reports` | middleware_redirect |
-| `recruitment/page.tsx` | /dashboard/hr?tab=RecruitmentPage | `/dashboard/recruitment/ai` | middleware_redirect |
-| `ess/page.tsx` | /dashboard/hr?tab=ESSPage | `/dashboard/ess/ai` | middleware_redirect |
-| `appraisals/page.tsx` | /dashboard/hr?tab=AppraisalsPage | `/dashboard/appraisals/reports` | middleware_redirect |
-| `appraisals/page.tsx` | /dashboard/hr?tab=AppraisalsPage | `/dashboard/appraisals/ai` | middleware_redirect |
-| `training/page.tsx` | /dashboard/hr?tab=TrainingPage | `/dashboard/training/reports` | middleware_redirect |
-| `training/page.tsx` | /dashboard/hr?tab=TrainingPage | `/dashboard/training/ai` | middleware_redirect |
-| `timesheets/page.tsx` | /dashboard/hr?tab=TimesheetsPage | `/dashboard/timesheets/reports` | middleware_redirect |
-| `timesheets/page.tsx` | /dashboard/hr?tab=TimesheetsPage | `/dashboard/timesheets/ai` | middleware_redirect |
-| `webhooks/page.tsx` | /dashboard/integrations?tab=WebhooksPage | `/dashboard/webhooks/reports` | middleware_redirect |
 | `traceability/page.tsx` | /dashboard/inventory?tab=TraceabilityPage | `/dashboard/traceability/recalls/${r.id` | middleware_redirect |
-| `fleet/page.tsx` | /dashboard/logistics?tab=FleetPage | `/dashboard/fleet/reports` | middleware_redirect |
+| `marketing/campaigns/page.tsx` | /dashboard/marketing?tab=MarketingCampaignsPage | `/dashboard/marketing/campaigns/${c.id` | middleware_redirect |
+| `marketing/promotions/page.tsx` | /dashboard/marketing?tab=MarketingPromotionsPage | `/dashboard/marketing/promotions/${p.id` | middleware_redirect |
+| `marketing/trade-spend/page.tsx` | /dashboard/marketing?tab=MarketingTradeSpendPage | `/dashboard/marketing/trade-spend/${t.id` | middleware_redirect |
+| `marketing/ads/page.tsx` | /dashboard/marketing?tab=MarketingAdsPage | `/dashboard/marketing/ads/${a.id` | middleware_redirect |
+| `marketing/social-media/page.tsx` | /dashboard/marketing?tab=MarketingSocialPage | `/dashboard/marketing/social-media/${a.id` | middleware_redirect |
+| `marketing/segments/page.tsx` | /dashboard/marketing?tab=MarketingSegmentsPage | `/dashboard/marketing/segments/${s.id` | middleware_redirect |
+| `marketing/influencers/page.tsx` | /dashboard/marketing?tab=MarketingInfluencersPage | `/dashboard/marketing/influencers/${i.id` | middleware_redirect |
+| `marketing/visits/page.tsx` | /dashboard/marketing?tab=MarketingVisitsPage | `/dashboard/marketing/visits/${v.id` | middleware_redirect |
+| `marketing/brand-spend/page.tsx` | /dashboard/marketing?tab=MarketingBrandSpendPage | `/dashboard/marketing/brand-spend/${b.id` | middleware_redirect |
+| `tpm/page.tsx` | /dashboard/marketing?tab=TPMPage | `/dashboard/tpm/promotions/${p.id` | middleware_redirect |
+| `procurement/orders/page.tsx` | /dashboard/procurement?tab=ProcurementOrdersPage | `/dashboard/procurement/orders/${p.id}` | no_route_file |
+| `procurement/deliveries/page.tsx` | /dashboard/procurement?tab=ProcurementDeliveriesPage | `/dashboard/procurement/orders/${a.po_id}` | no_route_file |
+| `procurement/deliveries/page.tsx` | /dashboard/procurement?tab=ProcurementDeliveriesPage | `/dashboard/procurement/orders/${r.po_id}` | no_route_file |
+| `landed-cost/page.tsx` | /dashboard/procurement?tab=LandedCostPage | `/dashboard/landed-cost/${doc.id` | middleware_redirect |
+| `supplier-portal/page.tsx` | /dashboard/procurement?tab=SupplierPortalPage | `/dashboard/supplier-portal/accounts/${a.id` | middleware_redirect |
+| `production/orders/page.tsx` | /dashboard/production?tab=ProductionOrdersPage | `/dashboard/production/orders/${o.id}` | middleware_redirect |
+| `production-execution/page.tsx` | /dashboard/production?tab=ExecutionPage | `/dashboard/production-execution/${o.id` | middleware_redirect |
+| `projects/page.tsx` | /dashboard/production?tab=ProjectsPage | `/dashboard/projects/${p.id}` | middleware_redirect |
+| `quality/reports/page.tsx` | /dashboard/quality?tab=QualityReportsPage | `/dashboard/quality/${i.id}` | no_route_file |
+| `brand-assets/page.tsx` | /dashboard/quality?tab=BrandAssetsPage | `/dashboard/brand-assets/${a.id` | middleware_redirect |
+| `sales/orders/page.tsx` | /dashboard/sales?tab=SalesOrdersPage | `/dashboard/sales/orders/${r.id}` | no_route_file |
+| `sales/invoices/page.tsx` | /dashboard/sales?tab=SalesInvoicesPage | `/dashboard/sales/invoices/${r.id}` | no_route_file |
+| `sales/shipments/page.tsx` | /dashboard/sales?tab=SalesShipmentsPage | `/dashboard/sales/shipments/${r.id}` | no_route_file |
+| `price-lists/page.tsx` | /dashboard/sales?tab=PriceListsPage | `/dashboard/price-lists/${h.id` | middleware_redirect |
+| `contracts/page.tsx` | /dashboard/sales?tab=ContractsPage | `/dashboard/contracts/list/${c.id` | middleware_redirect |
+| `recurring-orders/page.tsx` | /dashboard/sales?tab=RecurringOrdersPage | `/dashboard/recurring-orders/templates/${t.id` | middleware_redirect |
+| `secondary-sales/page.tsx` | /dashboard/sales?tab=SecondarySalesPage | `/dashboard/secondary-sales/${h.id` | middleware_redirect |
+| `van-sales/page.tsx` | /dashboard/sales?tab=VanSalesPage | `/dashboard/van-sales/vans/${v.id` | middleware_redirect |
+| `portal/page.tsx` | /dashboard/sales?tab=PortalPage | `/dashboard/portal/accounts/${acc.id` | middleware_redirect |
