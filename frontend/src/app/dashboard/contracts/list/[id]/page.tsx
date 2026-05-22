@@ -1,11 +1,12 @@
 "use client";
-import { use, useState } from "react";
+import { useState } from "react";
+import { useParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { contractsApi, STATUS_COLORS, PARTY_COLORS, CONTRACT_TYPE_LABELS, SEVERITY_COLORS } from "@/lib/contracts";
 import Link from "next/link";
 
-export default function ContractDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+export default function ContractDetailPage() {
+  const { id } = useParams<{ id: string }>();
   const qc = useQueryClient();
   const [tab, setTab] = useState<"terms" | "rebates" | "perf" | "history" | "approvals">("terms");
   const [comments, setComments] = useState("");

@@ -1,7 +1,7 @@
 # TASKS
 
 ## Current Phase
-WAVE 2C — COMPLETE. 2026-05-22. BVT: 3 → 0. All broken visible action targets resolved (353 → 0 across all waves). 3 items fixed: NPS surveys href, KB categories page (new), secondary-sales [id] page (new). Type-check CLEAN. Build 757 pages. Backend 482/482. Live smoke pending Docker.
+LIVE SMOKE — COMPLETE. 2026-05-22. 138/141 routes passed. 3 `use(params)` bugs fixed in contracts/list/[id], recurring-orders/templates/[id], van-sales/vans/[id] — all changed to useParams(). 1 transient failure (recruitment/ai). Type-check CLEAN. Smoke rerun skipped per user. Ready to resume manual/screenshot work.
 
 ### Wave 2C (2026-05-22)
 **BVT before:** 3 | **BVT after:** 0 | **Resolved:** 3

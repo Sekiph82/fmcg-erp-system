@@ -1,12 +1,12 @@
 "use client";
-import { use } from "react";
+import { useState } from "react";
+import { useParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { subscriptionApi, STATUS_COLORS, GEN_STATUS_COLORS, RECURRENCE_LABELS } from "@/lib/subscription";
 import Link from "next/link";
-import { useState } from "react";
 
-export default function TemplateDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+export default function TemplateDetailPage() {
+  const { id } = useParams<{ id: string }>();
   const qc = useQueryClient();
   const [tab, setTab] = useState<"lines" | "log" | "pauses">("lines");
   const [pauseForm, setPauseForm] = useState({ reason: "", effective_from: "", effective_to: "" });

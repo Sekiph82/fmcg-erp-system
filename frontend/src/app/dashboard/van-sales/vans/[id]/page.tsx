@@ -1,11 +1,12 @@
 "use client";
-import { use, useState } from "react";
+import { useState } from "react";
+import { useParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { vanSalesApi, VAN_STATUS_COLORS, TXN_STATUS_COLORS, PAYMENT_STATUS_COLORS, VISIT_STATUS_COLORS } from "@/lib/van_sales";
 import Link from "next/link";
 
-export default function VanDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+export default function VanDetailPage() {
+  const { id } = useParams<{ id: string }>();
   const qc = useQueryClient();
   const [tab, setTab] = useState<"txns" | "stock" | "visits" | "recon">("txns");
   const today = new Date().toISOString().split("T")[0];
