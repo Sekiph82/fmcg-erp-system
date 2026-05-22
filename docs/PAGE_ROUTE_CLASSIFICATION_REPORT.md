@@ -9,10 +9,10 @@ Generated: 2026-05-22
 | A WORKSPACE_PAGE          | 31     |
 | B REDIRECT_ONLY           | 154     |
 | C LIGHTWEIGHT_WRAPPER     | 213     |
-| D FULL_DUPLICATE_UI       | 338     |
+| D FULL_DUPLICATE_UI       | 340     |
 | E STANDALONE_OPERATIONAL  | 19     |
 | F UNKNOWN                 | 0     |
-| Total                     | 755   |
+| Total                     | 757   |
 
 ## All Routes
 
@@ -302,6 +302,7 @@ Generated: 2026-05-22
 | `/dashboard/knowledge-base/[id]` | D FULL_DUPLICATE_UI | ❌ | — | — | — |
 | `/dashboard/knowledge-base/articles/new` | D FULL_DUPLICATE_UI | ❌ | — | — | — |
 | `/dashboard/knowledge-base/articles` | D FULL_DUPLICATE_UI | ❌ | — | — | — |
+| `/dashboard/knowledge-base/categories` | D FULL_DUPLICATE_UI | ❌ | — | — | — |
 | `/dashboard/knowledge-base` | C LIGHTWEIGHT_WRAPPER | ❌ | — | — | — |
 | `/dashboard/landed-cost/[id]` | D FULL_DUPLICATE_UI | ❌ | — | — | — |
 | `/dashboard/landed-cost/ai` | D FULL_DUPLICATE_UI | ❌ | — | — | — |
@@ -605,10 +606,11 @@ Generated: 2026-05-22
 | `/dashboard/sales/returns` | C LIGHTWEIGHT_WRAPPER | ❌ | — | — | — |
 | `/dashboard/sales/shipments/[id]` | D FULL_DUPLICATE_UI | ❌ | — | — | — |
 | `/dashboard/sales/shipments` | C LIGHTWEIGHT_WRAPPER | ❌ | — | — | — |
-| `/dashboard/secondary-sales/analysis` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/sales | secondary |
-| `/dashboard/secondary-sales/inventory` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/sales | secondary |
-| `/dashboard/secondary-sales` | C LIGHTWEIGHT_WRAPPER | ✅ | — | /dashboard/sales | secondary |
-| `/dashboard/secondary-sales/upload` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/sales | secondary |
+| `/dashboard/secondary-sales/[id]` | D FULL_DUPLICATE_UI | ❌ | — | — | — |
+| `/dashboard/secondary-sales/analysis` | D FULL_DUPLICATE_UI | ❌ | — | — | — |
+| `/dashboard/secondary-sales/inventory` | D FULL_DUPLICATE_UI | ❌ | — | — | — |
+| `/dashboard/secondary-sales` | C LIGHTWEIGHT_WRAPPER | ❌ | — | — | — |
+| `/dashboard/secondary-sales/upload` | D FULL_DUPLICATE_UI | ❌ | — | — | — |
 | `/dashboard/security/monitor` | B REDIRECT_ONLY | ✅ | — | /dashboard/admin | security |
 | `/dashboard/security` | C LIGHTWEIGHT_WRAPPER | ✅ | — | /dashboard/admin | security |
 | `/dashboard/shelf-life/bulk-hold-monitor` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/inventory | shelf-life |

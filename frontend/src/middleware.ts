@@ -21,7 +21,6 @@ const REDIRECTS: Record<string, { p: string; t?: string; d?: string }> = {
   // Sales
   "/dashboard/dynamic-pricing":                 { p: "/dashboard/sales", t: "dynamic-pricing" },
   "/dashboard/commissions":                     { p: "/dashboard/sales", t: "commissions" },
-  "/dashboard/secondary-sales":                 { p: "/dashboard/sales", t: "secondary" },
   // Sales child routes (static; dynamic [id] handled by file-level redirect to preserve ID)
   "/dashboard/sales/pod":                       { p: "/dashboard/sales", t: "delivery" },
   "/dashboard/sales/customer-statement":        { p: "/dashboard/sales", t: "customers" },
@@ -354,6 +353,7 @@ const BYPASS_PREFIX_REDIRECT = new Set([
   "/dashboard/commissions/rules",
   "/dashboard/commissions/transactions",
   "/dashboard/commissions/payouts",
+  "/dashboard/secondary-sales",
   "/dashboard/secondary-sales/analysis",
   "/dashboard/secondary-sales/inventory",
   "/dashboard/secondary-sales/upload",

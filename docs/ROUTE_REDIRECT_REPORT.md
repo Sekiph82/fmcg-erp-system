@@ -6,8 +6,8 @@ Generated: 2026-05-22
 
 | Check | Count |
 |-------|-------|
-| routeRedirectMap top-level keys | 85 |
-| middleware redirect keys        | 83 |
+| routeRedirectMap top-level keys | 84 |
+| middleware redirect keys        | 82 |
 | In routeRedirectMap NOT middleware | 17 |
 | In middleware NOT routeRedirectMap | 0 |
 | Duplicate keys in routeRedirectMap | 0 |
@@ -113,7 +113,6 @@ Users who navigate directly will NOT be redirected.
 | `/dashboard/reports` | `/dashboard/analytics` | reports |
 | `/dashboard/sales/customer-statement` | `/dashboard/sales` | customers |
 | `/dashboard/sales/pod` | `/dashboard/sales` | delivery |
-| `/dashboard/secondary-sales` | `/dashboard/sales` | secondary |
 | `/dashboard/security` | `/dashboard/admin` | security |
 | `/dashboard/shelf-life` | `/dashboard/inventory` | shelf-life |
 | `/dashboard/subcontracting` | `/dashboard/procurement` | subcontracting |

@@ -1,0 +1,64 @@
+{
+  "reportDate": "2026-05-22",
+  "status": "COMPLETE",
+  "wave": "2C",
+  "bvtBefore": 3,
+  "bvtAfter": 0,
+  "bvtResolved": 3,
+  "items": [
+    {
+      "id": "BVT-0001",
+      "route": "/dashboard/nps/surveys",
+      "fix": "href_change",
+      "sourceFile": "frontend/src/app/dashboard/nps/page.tsx",
+      "sourceLine": 110,
+      "oldTarget": "/dashboard/nps/surveys",
+      "newTarget": "/dashboard/surveys",
+      "middlewareChange": false,
+      "routeRedirectMapChange": false,
+      "newPageCreated": false
+    },
+    {
+      "id": "BVT-0002",
+      "route": "/dashboard/knowledge-base/categories",
+      "fix": "new_page",
+      "newFile": "frontend/src/app/dashboard/knowledge-base/categories/page.tsx",
+      "backendUsed": true,
+      "backendEndpoints": ["GET /api/v1/kb/categories", "POST /api/v1/kb/categories", "PATCH /api/v1/kb/categories/{id}"],
+      "middlewareChange": false,
+      "routeRedirectMapChange": false,
+      "newPageCreated": true
+    },
+    {
+      "id": "BVT-0003",
+      "route": "/dashboard/secondary-sales/[id]",
+      "fix": "new_page_plus_middleware",
+      "newFile": "frontend/src/app/dashboard/secondary-sales/[id]/page.tsx",
+      "backendUsed": true,
+      "backendEndpoints": ["GET /api/v1/secondary-sales/{id}", "POST /api/v1/secondary-sales/{id}/process", "POST /api/v1/secondary-sales/{id}/reject"],
+      "middlewareChange": true,
+      "middlewareChanges": {
+        "removedFromREDIRECTS": ["/dashboard/secondary-sales"],
+        "addedToBYPASS": ["/dashboard/secondary-sales"]
+      },
+      "routeRedirectMapChange": true,
+      "routeRedirectMapRemoved": [
+        "/dashboard/secondary-sales",
+        "/dashboard/secondary-sales/analysis",
+        "/dashboard/secondary-sales/inventory",
+        "/dashboard/secondary-sales/upload"
+      ],
+      "newPageCreated": true
+    }
+  ],
+  "verification": {
+    "typeCheck": "CLEAN",
+    "build": "757 pages",
+    "backendTests": "482 passed",
+    "brokenActionCards": 0,
+    "bvtAudit": 0,
+    "workspaceTabs": "ALL_PASSED",
+    "pageCount": 757,
+    "liveSmoke": "SKIPPED_DOCKER_NOT_RUNNING"
+  }
+}

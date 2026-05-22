@@ -3444,8 +3444,8 @@
       }
     ],
     "fileExists": true,
-    "isRedirectStubAsStandalone": true,
-    "standaloneRedirectsTo": "/dashboard/sales?tab=secondary",
+    "isRedirectStubAsStandalone": false,
+    "standaloneRedirectsTo": null,
     "isStillUserVisibleThroughImport": true,
     "module": "Commercial / Sales"
   },

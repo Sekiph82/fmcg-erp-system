@@ -9,10 +9,10 @@ Generated: 2026-05-22
 | WORKSPACE_PAGE            | A    | 31   |
 | REDIRECT_ONLY             | B    | 154   |
 | LIGHTWEIGHT_WRAPPER       | C    | 213   |
-| FULL_DUPLICATE_UI         | D    | 338   |
+| FULL_DUPLICATE_UI         | D    | 340   |
 | STANDALONE_OPERATIONAL    | E    | 19   |
 | UNKNOWN                   | F    | 0   |
-| **Total**                 |      | **755** |
+| **Total**                 |      | **757** |
 
 ## Definitions
 
@@ -427,6 +427,13 @@ Generated: 2026-05-22
 - `/dashboard/commissions/rules` ✅ MW
 - `/dashboard/commissions/transactions` ✅ MW
 
+### knowledge-base (4 pages)
+
+- `/dashboard/knowledge-base/[id]` ❌ MW
+- `/dashboard/knowledge-base/articles/new` ❌ MW
+- `/dashboard/knowledge-base/articles` ❌ MW
+- `/dashboard/knowledge-base/categories` ❌ MW
+
 ### landed-cost (4 pages)
 
 - `/dashboard/landed-cost/[id]` ❌ MW
@@ -441,6 +448,13 @@ Generated: 2026-05-22
 - `/dashboard/procurement-suggestion/suggestions` ✅ MW
 - `/dashboard/procurement-suggestion/supplier-prices` ✅ MW
 
+### secondary-sales (4 pages)
+
+- `/dashboard/secondary-sales/[id]` ❌ MW
+- `/dashboard/secondary-sales/analysis` ❌ MW
+- `/dashboard/secondary-sales/inventory` ❌ MW
+- `/dashboard/secondary-sales/upload` ❌ MW
+
 ### tax (4 pages)
 
 - `/dashboard/tax/regulatory` ✅ MW
@@ -454,12 +468,6 @@ Generated: 2026-05-22
 - `/dashboard/allergen/material-profiles` ✅ MW
 - `/dashboard/allergen/product-allergens` ✅ MW
 
-### knowledge-base (3 pages)
-
-- `/dashboard/knowledge-base/[id]` ❌ MW
-- `/dashboard/knowledge-base/articles/new` ❌ MW
-- `/dashboard/knowledge-base/articles` ❌ MW
-
 ### mrp (3 pages)
 
 - `/dashboard/mrp/forecast` ✅ MW
@@ -471,12 +479,6 @@ Generated: 2026-05-22
 - `/dashboard/sales/invoices/[id]` ❌ MW
 - `/dashboard/sales/orders/[id]` ❌ MW
 - `/dashboard/sales/shipments/[id]` ❌ MW
-
-### secondary-sales (3 pages)
-
-- `/dashboard/secondary-sales/analysis` ✅ MW
-- `/dashboard/secondary-sales/inventory` ✅ MW
-- `/dashboard/secondary-sales/upload` ✅ MW
 
 ### developer (2 pages)
 

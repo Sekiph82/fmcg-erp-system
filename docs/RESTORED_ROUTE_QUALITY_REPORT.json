@@ -1,7 +1,7 @@
 {
   "summary": {
-    "total": 312,
-    "valid": 312,
+    "total": 313,
+    "valid": 313,
     "missing": 0,
     "redirectOnly": 0,
     "noUI": 0
@@ -1843,6 +1843,14 @@
       "route": "/dashboard/commissions/payouts",
       "exists": true,
       "lineCount": 110,
+      "redirectOnly": false,
+      "hasUI": true,
+      "status": "OK"
+    },
+    {
+      "route": "/dashboard/secondary-sales",
+      "exists": true,
+      "lineCount": 284,
       "redirectOnly": false,
       "hasUI": true,
       "status": "OK"

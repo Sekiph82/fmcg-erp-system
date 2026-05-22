@@ -14,7 +14,7 @@ if it is dynamically imported into a workspace tab.
 |--------|-------|
 | Workspace pages with dynamic imports | 26 |
 | Total dynamically imported pages found | 220 |
-| Pages with middleware-redirected standalone routes | 67 |
+| Pages with middleware-redirected standalone routes | 66 |
 
 ## Import Map (Redirect-Stub Pages That Are Still User-Visible)
 
@@ -81,7 +81,6 @@ if it is dynamically imported into a workspace tab.
 | `allergen/page.tsx` | `/dashboard/allergen` | `/dashboard/quality?tab=allergen` | `/dashboard/quality` |
 | `dynamic-pricing/page.tsx` | `/dashboard/dynamic-pricing` | `/dashboard/sales?tab=dynamic-pricing` | `/dashboard/sales` |
 | `commissions/page.tsx` | `/dashboard/commissions` | `/dashboard/sales?tab=commissions` | `/dashboard/sales` |
-| `secondary-sales/page.tsx` | `/dashboard/secondary-sales` | `/dashboard/sales?tab=secondary` | `/dashboard/sales` |
 | `utility-management/kpi-center/page.tsx` | `/dashboard/utility-management/kpi-center` | `/dashboard/utility-management?tab=kpi-center` | `/dashboard/utility-management` |
 | `utility-management/reports/page.tsx` | `/dashboard/utility-management/reports` | `/dashboard/utility-management?tab=reports` | `/dashboard/utility-management` |
 | `iot/page.tsx` | `/dashboard/iot` | `/dashboard/utility-management?tab=iot` | `/dashboard/utility-management` |

@@ -14,15 +14,15 @@
 | Total dynamic imports found | 222 |
 | Dynamically imported visible pages | 220 |
 | Total visible action targets found | 487 |
-| Working targets | 484 |
-| **Total broken visible action targets** | **3** |
+| Working targets | 487 |
+| **Total broken visible action targets** | **0** |
 | Critical severity (create/run/approve actions) | 0 |
-| High severity | 3 |
+| High severity | 0 |
 | Medium severity | 0 |
 | Git history matches found | 0 |
 | **High-confidence: real page existed in git** | **0** |
 | Medium-confidence: file in git but content unverified | 0 |
-| Unresolved: no git match | 3 |
+| Unresolved: no git match | 0 |
 
 ---
 
@@ -46,9 +46,9 @@ Middleware redirecting `/dashboard/cycle-count` → `/dashboard/inventory?tab=cy
 
 ### Impact
 
-67 pages are in this state — middleware-redirected as standalone routes,
+66 pages are in this state — middleware-redirected as standalone routes,
 but dynamically imported into workspace tabs and therefore fully user-visible.
-Their internal navigation cards/buttons (totalling **3**) all fail silently
+Their internal navigation cards/buttons (totalling **0**) all fail silently
 by looping the user back to the same workspace tab they are already on.
 
 ### The Cycle Count Example (Confirmed Still Broken)
@@ -78,39 +78,11 @@ These were deleted in `bd6faf5` (2026-05-17) and replaced with redirect stubs.
 
 | ID | Module | Visible At | Card/Button | Current Target | Behavior | Git | Recommendation |
 |----|--------|-----------|-------------|----------------|----------|-----|----------------|
-| BVT-0001 | Commercial / CRM | /dashboard/crm?tab=NPSPage | surveys | `/dashboard/nps/surveys` | middleware_redirect | none | CONVERT_TO_WORKSPACE_SUBVIEW |
-| BVT-0002 | Documents & Communication | /dashboard/documents?tab=KnowledgeBasePage | Categories | `/dashboard/knowledge-base/categories` | no_route_file | none | CREATE_NEW_REAL_PAGE_REQUIRED |
-| BVT-0003 | Commercial / Sales | /dashboard/sales?tab=SecondarySalesPage | ${h.id | `/dashboard/secondary-sales/${h.id` | no_route_file | none | CREATE_NEW_REAL_PAGE_REQUIRED |
+
 
 ---
 
 ## Module-by-Module Breakdown
-
-### Commercial / CRM
-
-**Broken count:** 1
-
-| Module | Visible Location | Tab | Source File | Button/Card | Current Target | Current Behavior | Original Page? | Best Match | Confidence | Recommended Fix |
-|--------|-----------------|-----|-------------|-------------|----------------|-----------------|----------------|------------|------------|-----------------|
-| Commercial / CRM | /dashboard/crm | NPSPage | nps/page.tsx | surveys | `/dashboard/nps/surveys` | middleware_redirect | No | not found | low | CONVERT_TO_WORKSPACE_SUBVIEW |
-
-
-### Documents & Communication
-
-**Broken count:** 1
-
-| Module | Visible Location | Tab | Source File | Button/Card | Current Target | Current Behavior | Original Page? | Best Match | Confidence | Recommended Fix |
-|--------|-----------------|-----|-------------|-------------|----------------|-----------------|----------------|------------|------------|-----------------|
-| Documents & Communication | /dashboard/documents | KnowledgeBasePage | knowledge-base/page.tsx | Categories | `/dashboard/knowledge-base/categories` | no_route_file | No | not found | low | CREATE_NEW_REAL_PAGE_REQUIRED |
-
-
-### Commercial / Sales
-
-**Broken count:** 1
-
-| Module | Visible Location | Tab | Source File | Button/Card | Current Target | Current Behavior | Original Page? | Best Match | Confidence | Recommended Fix |
-|--------|-----------------|-----|-------------|-------------|----------------|-----------------|----------------|------------|------------|-----------------|
-| Commercial / Sales | /dashboard/sales | SecondarySalesPage | secondary-sales/page.tsx | ${h.id | `/dashboard/secondary-sales/${h.id` | no_route_file | No | not found | low | CREATE_NEW_REAL_PAGE_REQUIRED |
 
 
 
@@ -144,7 +116,7 @@ because it is dynamically imported into a workspace tab.
 | `notification-center/page.tsx` | `/dashboard/notification-center` | `/dashboard/communication?tab=notifications` | `/dashboard/communication` | 0 |
 | `gs1/page.tsx` | `/dashboard/gs1` | `/dashboard/compliance?tab=gs1` | `/dashboard/compliance` | 0 |
 | `loyalty/page.tsx` | `/dashboard/loyalty` | `/dashboard/crm?tab=loyalty` | `/dashboard/crm` | 0 |
-| `nps/page.tsx` | `/dashboard/nps` | `/dashboard/crm?tab=nps` | `/dashboard/crm` | 1 |
+| `nps/page.tsx` | `/dashboard/nps` | `/dashboard/crm?tab=nps` | `/dashboard/crm` | 0 |
 | `esign/page.tsx` | `/dashboard/esign` | `/dashboard/documents?tab=esign` | `/dashboard/documents` | 0 |
 | `finance/accounting/page.tsx` | `/dashboard/finance/accounting` | `/dashboard/finance?tab=accounting` | `/dashboard/finance` | 0 |
 | `fixed-assets/page.tsx` | `/dashboard/fixed-assets` | `/dashboard/finance?tab=fixed-assets` | `/dashboard/finance` | 0 |
@@ -185,7 +157,6 @@ because it is dynamically imported into a workspace tab.
 | `allergen/page.tsx` | `/dashboard/allergen` | `/dashboard/quality?tab=allergen` | `/dashboard/quality` | 0 |
 | `dynamic-pricing/page.tsx` | `/dashboard/dynamic-pricing` | `/dashboard/sales?tab=dynamic-pricing` | `/dashboard/sales` | 0 |
 | `commissions/page.tsx` | `/dashboard/commissions` | `/dashboard/sales?tab=commissions` | `/dashboard/sales` | 0 |
-| `secondary-sales/page.tsx` | `/dashboard/secondary-sales` | `/dashboard/sales?tab=secondary` | `/dashboard/sales` | 1 |
 | `utility-management/kpi-center/page.tsx` | `/dashboard/utility-management/kpi-center` | `/dashboard/utility-management?tab=kpi-center` | `/dashboard/utility-management` | 0 |
 | `utility-management/reports/page.tsx` | `/dashboard/utility-management/reports` | `/dashboard/utility-management?tab=reports` | `/dashboard/utility-management` | 0 |
 | `iot/page.tsx` | `/dashboard/iot` | `/dashboard/utility-management?tab=iot` | `/dashboard/utility-management` | 0 |
@@ -212,9 +183,7 @@ These broken targets have no known implementation in git history.
 
 | Module | Target Route | Source File | Recommendation |
 |--------|-------------|-------------|----------------|
-| Commercial / CRM | `/dashboard/nps/surveys` | nps/page.tsx | CONVERT_TO_WORKSPACE_SUBVIEW |
-| Documents & Communication | `/dashboard/knowledge-base/categories` | knowledge-base/page.tsx | CREATE_NEW_REAL_PAGE_REQUIRED |
-| Commercial / Sales | `/dashboard/secondary-sales/${h.id` | secondary-sales/page.tsx | CREATE_NEW_REAL_PAGE_REQUIRED |
+
 
 
 ---
@@ -224,8 +193,8 @@ These broken targets have no known implementation in git history.
 | Category | Count | Action |
 |----------|-------|--------|
 | RESTORE_OLD_PAGE_FROM_GIT | 0 | Restore from git commit `674b6c5` + add BYPASS_PREFIX_REDIRECT |
-| CONVERT_TO_WORKSPACE_SUBVIEW | 1 | Change href to `?tab=X&view=Y` pattern in workspace |
-| CREATE_NEW_REAL_PAGE_REQUIRED | 2 | No implementation exists — new page required |
+| CONVERT_TO_WORKSPACE_SUBVIEW | 0 | Change href to `?tab=X&view=Y` pattern in workspace |
+| CREATE_NEW_REAL_PAGE_REQUIRED | 0 | No implementation exists — new page required |
 | NEEDS_BUSINESS_DECISION | 0 | Intent unclear — needs product decision |
 
 ---

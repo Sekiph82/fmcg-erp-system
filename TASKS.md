@@ -1,7 +1,19 @@
 # TASKS
 
 ## Current Phase
-WAVE 2A + 2B — VERIFIED. 2026-05-22. BVT: 47 → 3. All static audits pass. Backend 482/482. Live smoke spec updated (37 new [id] routes in group E). Docker not running — smoke skipped. Wave 2C blocked pending design approval.
+WAVE 2C — COMPLETE. 2026-05-22. BVT: 3 → 0. All broken visible action targets resolved (353 → 0 across all waves). 3 items fixed: NPS surveys href, KB categories page (new), secondary-sales [id] page (new). Type-check CLEAN. Build 757 pages. Backend 482/482. Live smoke pending Docker.
+
+### Wave 2C (2026-05-22)
+**BVT before:** 3 | **BVT after:** 0 | **Resolved:** 3
+**BVT-0001:** `/dashboard/nps/surveys` — changed href to `/dashboard/surveys`
+**BVT-0002:** `/dashboard/knowledge-base/categories` — new real page (kbApi backed)
+**BVT-0003:** `/dashboard/secondary-sales/[id]` — new detail page + removed secondary-sales from REDIRECTS + added to BYPASS
+**Type-check:** CLEAN | **Build:** 757 pages | **Backend tests:** 482 passed
+**Broken action cards:** 0 | **BVT audit:** 0
+**Report:** `docs/ERP_BUTTON_RECOVERY_WAVE2C_REPORT.md`
+**Next:** Docker smoke test (all groups A–E), then manufacturing/manual work
+
+---
 
 ### Wave 2A + 2B (2026-05-22)
 **BVT before:** 47 | **BVT after:** 3 | **Resolved:** 44

@@ -1,9 +1,9 @@
 # Current Status Checkpoint
 
-**Date:** 2026-05-22 (Wave 2A + 2B — Verified)
+**Date:** 2026-05-22 (Wave 2C — Complete)
 **Branch:** main
 **Working tree:** CLEAN
-**Latest commit:** test(ui): verify restored Wave 2A detail routes (pending commit)
+**Latest commit:** fix(ui): resolve final unresolved action targets (pending)
 
 ---
 
@@ -53,7 +53,7 @@
 | Wave 2A — Restore 37 [id] routes | ✅ COMPLETE (c8be2fc) |
 | Wave 2B — Fix 1 href typo | ✅ COMPLETE (c8be2fc) |
 | Wave 2A/2B Verification | ✅ COMPLETE — all static audits pass, smoke spec updated |
-| Wave 2C — 3 new design items | 🔲 BLOCKED — awaiting user approval |
+| **Wave 2C — 3 items** | ✅ COMPLETE — BVT 3 → 0 |
 
 ---
 
@@ -68,8 +68,8 @@
 | Critical remaining | 0 |
 | High remaining | 47 |
 | Medium remaining | 0 |
-| After Wave 2A + 2B | **3** |
-| Unresolved (no git match / Wave 2C) | 3 |
+| After Wave 2A + 2B | 3 |
+| **After Wave 2C** | **0** |
 
 ---
 

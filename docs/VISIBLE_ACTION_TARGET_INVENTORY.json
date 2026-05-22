@@ -1027,13 +1027,13 @@
     "visibleVia": "/dashboard/crm?tab=NPSPage",
     "module": "Commercial / CRM",
     "label": "surveys",
-    "targetRoute": "/dashboard/nps/surveys",
+    "targetRoute": "/dashboard/surveys",
     "targetType": "Link.href",
     "lineNumber": 110,
-    "evidence": "href=\"/dashboard/nps/surveys",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/crm?tab=nps"
+    "evidence": "href=\"/dashboard/surveys",
+    "status": "WORKING",
+    "reason": "real_page_exists",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/surveys/page.tsx",
@@ -1269,8 +1269,8 @@
     "targetType": "Link.href",
     "lineNumber": 99,
     "evidence": "href=\"/dashboard/knowledge-base/categories",
-    "status": "BROKEN",
-    "reason": "no_route_file",
+    "status": "WORKING",
+    "reason": "real_page_exists",
     "redirectsTo": null
   },
   {
@@ -5539,8 +5539,8 @@
     "targetType": "Link.href",
     "lineNumber": 194,
     "evidence": "href={`/dashboard/secondary-sales/${h.id",
-    "status": "BROKEN",
-    "reason": "no_route_file",
+    "status": "WORKING",
+    "reason": "dynamic_id_page_exists",
     "redirectsTo": null
   },
   {

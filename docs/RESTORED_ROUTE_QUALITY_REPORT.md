@@ -2,8 +2,8 @@
 
 | Metric | Count |
 |--------|-------|
-| Total bypass routes | 312 |
-| Valid (has UI) | 312 |
+| Total bypass routes | 313 |
+| Valid (has UI) | 313 |
 | Missing page file | 0 |
 | Redirect-only | 0 |
 | No UI detected | 0 |
@@ -242,6 +242,7 @@
 | `/dashboard/commissions/rules` | true | 183 | false | true | OK |
 | `/dashboard/commissions/transactions` | true | 133 | false | true | OK |
 | `/dashboard/commissions/payouts` | true | 110 | false | true | OK |
+| `/dashboard/secondary-sales` | true | 284 | false | true | OK |
 | `/dashboard/secondary-sales/analysis` | true | 242 | false | true | OK |
 | `/dashboard/secondary-sales/inventory` | true | 238 | false | true | OK |
 | `/dashboard/secondary-sales/upload` | true | 275 | false | true | OK |

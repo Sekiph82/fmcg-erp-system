@@ -1,32 +1,33 @@
 # Auto-Fix Continuation Guide
 
-Date: 2026-05-22 (Wave 2A + 2B — Verified)
+Date: 2026-05-22 (Wave 2C — Complete)
 
 ## Current State
 
-**Latest commit:** c8be2fc — fix(ui): restore unresolved detail routes from git history
-**Working tree:** CLEAN (verification commit pending)
-**Type-check:** CLEAN | **Build:** CLEAN | **Backend tests:** 482/482 PASS
+**Latest commit:** fix(ui): resolve final unresolved action targets (pending)
+**Working tree:** CLEAN
+**Type-check:** CLEAN | **Build:** 757 pages | **Backend tests:** 482/482 PASS
 
-### Wave 2A + 2B Results (2026-05-22)
+### Full Recovery Results
 
-| Metric | Value |
-|--------|-------|
-| BVT before | 47 |
-| BVT after | **3** |
-| Routes restored | 37 [id] detail pages |
-| Middleware entries removed | 31 parent prefixes |
-| Href typo fixed | 1 (ai/compliance) |
-| TS fixes | 9 |
-| Build entity escapes | 4 |
+| Wave | BVT Before | BVT After |
+|------|-----------|-----------|
+| Baseline | 353 | — |
+| Wave 1A+1B+1C | 353 | 48 |
+| Broken action cards fix | 48 | 47 |
+| Wave 2A+2B | 47 | 3 |
+| **Wave 2C** | **3** | **0** |
 
-**Wave 2C BLOCKED — pending user approval (3 items):**
-- BVT-0001: `/dashboard/nps/surveys` — middleware redirect (nps → crm); Option A: fix href; Option B: build page
-- BVT-0002: `/dashboard/knowledge-base/categories` — no page file; Option A: add tab; Option B: build page
-- BVT-0003: `/dashboard/secondary-sales/[id]` — no [id] page; Option A: build page; Option B: drawer
+**All broken visible action targets resolved.**
 
-**Verification report:** `docs/ERP_BUTTON_RECOVERY_WAVE2A_2B_VERIFICATION_REPORT.md`
-**Implementation report:** `docs/ERP_BUTTON_RECOVERY_WAVE2A_2B_REPORT.md`
+**Wave 2C fixes:**
+- BVT-0001: `nps/page.tsx:110` href → `/dashboard/surveys`
+- BVT-0002: Created `knowledge-base/categories/page.tsx` (kbApi backed)
+- BVT-0003: Created `secondary-sales/[id]/page.tsx` + removed secondary-sales from REDIRECTS/routeRedirectMap
+
+**Next recommended task:**
+- Start Docker → run `frontend/e2e/restored-routes-smoke.spec.ts` (groups A–E, 37 new [id] routes in group E)
+- Resume manufacturing/manual/screenshot/PDF work
 
 ### What has been restored (all waves)
 
