@@ -1,12 +1,31 @@
 # Auto-Fix Continuation Guide
 
-Date: 2026-05-22 (Six Broken Action Cards — fixed, 0 remaining)
+Date: 2026-05-22 (Deep Git Search — complete, 43/47 found)
 
 ## Current State
 
-**Latest commit:** TBD — fix(ui): resolve remaining broken action card links
+**Latest commit:** docs(ui): deep-search unresolved ERP action targets
 **Working tree:** CLEAN (post-commit)
 **Type-check:** CLEAN | **Build:** CLEAN | **Backend tests:** 478/482 PASS
+
+### Deep Git Search Results (2026-05-22)
+
+| Result | BVT Items | Unique Routes |
+|--------|-----------|---------------|
+| FOUND in git | 43 | 37 |
+| NOT FOUND (new design) | 4 | 4 |
+
+**Waves ready to implement:**
+- Wave 2A-TypeA: 31 routes — restore [id] page + remove parent from REDIRECTS
+- Wave 2A-TypeB: 6 routes — restore [id] page only (no REDIRECTS change)
+- Wave 2B: 1 item — fix href typo in ai/compliance/page.tsx
+
+**Wave 2C pending user approval (3 items):**
+- BVT-0009: `/dashboard/nps/surveys` — link to existing surveys OR build nps/surveys page
+- BVT-0014: `/dashboard/knowledge-base/categories` — subview tab OR new page
+- BVT-0045: `/dashboard/secondary-sales/[id]` — build [id] page OR use drawer
+
+**Implementation plan:** `docs/UNRESOLVED_47_IMPLEMENTATION_PLAN.md`
 
 ### What has been restored (all waves)
 
@@ -70,8 +89,9 @@ Removed `/dashboard/marketing/crm` and `/dashboard/marketing/surveys` from:
 
 ## Next session tasks (in order)
 
-1. **Unresolved/no-git-match design pass** — 47 routes with no git history match
-   - ~38 are dynamic detail routes (`/dashboard/users/${id}` etc.) → need subview/modal pattern
-   - ~10 are new pages requiring design decisions
-   - Requires user/stakeholder approval before implementation
-2. **E2E regression** — expand smoke test to cover 6 newly restored routes
+1. **Wave 2A** — Restore 37 [id] detail pages from git history (see `docs/UNRESOLVED_47_IMPLEMENTATION_PLAN.md`)
+   - 31 routes: remove parent from REDIRECTS + restore [id] page
+   - 6 routes: restore [id] page only
+2. **Wave 2B** — Fix href typo in `ai/compliance/page.tsx` (`production/quality` → `production/quality-control`)
+3. **Wave 2C** — Requires user approval for 3 design decisions before implementing
+4. **E2E regression** — expand smoke test to cover newly restored [id] routes

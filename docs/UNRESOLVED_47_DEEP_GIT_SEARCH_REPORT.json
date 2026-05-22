@@ -1,0 +1,150 @@
+{
+  "date": "2026-05-22",
+  "branch": "main",
+  "description": "Deep git search results for 47 unresolved BVT items. Six search strategies used per item.",
+  "searchStrategies": [
+    "git show <commit>:path (exact path from VISIBLE_BROKEN_ACTION_TARGETS.json)",
+    "git log --all --full-history -- 'frontend/src/app/dashboard/<segment>/[id]/page.tsx'",
+    "git grep -l '<label text>' <commit>",
+    "git log -S '<ui label text>'",
+    "git log --all --name-only -- '*/[id]/page.tsx'",
+    "git show 674b6c5:frontend/src/app/dashboard/<route>/ (bulk directory scan)"
+  ],
+  "summary": {
+    "totalBVTItems": 47,
+    "totalUniqueRoutes": 41,
+    "found": {
+      "bvtItems": 43,
+      "uniqueRoutes": 37
+    },
+    "notFound": {
+      "bvtItems": 4,
+      "uniqueRoutes": 4
+    }
+  },
+  "gitCommitBreakdown": {
+    "674b6c5": {
+      "description": "2026-05-01 bulk implementation commit",
+      "bvtItems": 37,
+      "uniqueRoutes": 33,
+      "routes": [
+        "frontend/src/app/dashboard/users/[id]/page.tsx",
+        "frontend/src/app/dashboard/roles/[id]/page.tsx",
+        "frontend/src/app/dashboard/custom-fields/[id]/page.tsx",
+        "frontend/src/app/dashboard/crm/records/[id]/page.tsx",
+        "frontend/src/app/dashboard/documents/[id]/page.tsx",
+        "frontend/src/app/dashboard/bank-reconciliation/statements/[id]/page.tsx",
+        "frontend/src/app/dashboard/invoice-match/[id]/page.tsx",
+        "frontend/src/app/dashboard/dunning/cases/[id]/page.tsx",
+        "frontend/src/app/dashboard/traceability/recalls/[id]/page.tsx",
+        "frontend/src/app/dashboard/marketing/campaigns/[id]/page.tsx",
+        "frontend/src/app/dashboard/marketing/promotions/[id]/page.tsx",
+        "frontend/src/app/dashboard/marketing/trade-spend/[id]/page.tsx",
+        "frontend/src/app/dashboard/marketing/ads/[id]/page.tsx",
+        "frontend/src/app/dashboard/marketing/social-media/[id]/page.tsx",
+        "frontend/src/app/dashboard/marketing/segments/[id]/page.tsx",
+        "frontend/src/app/dashboard/marketing/influencers/[id]/page.tsx",
+        "frontend/src/app/dashboard/marketing/visits/[id]/page.tsx",
+        "frontend/src/app/dashboard/marketing/brand-spend/[id]/page.tsx",
+        "frontend/src/app/dashboard/tpm/promotions/[id]/page.tsx",
+        "frontend/src/app/dashboard/procurement/orders/[id]/page.tsx",
+        "frontend/src/app/dashboard/landed-cost/[id]/page.tsx",
+        "frontend/src/app/dashboard/supplier-portal/accounts/[id]/page.tsx",
+        "frontend/src/app/dashboard/production/orders/[id]/page.tsx",
+        "frontend/src/app/dashboard/production-execution/[id]/page.tsx",
+        "frontend/src/app/dashboard/quality/[id]/page.tsx",
+        "frontend/src/app/dashboard/sales/orders/[id]/page.tsx",
+        "frontend/src/app/dashboard/sales/invoices/[id]/page.tsx",
+        "frontend/src/app/dashboard/sales/shipments/[id]/page.tsx",
+        "frontend/src/app/dashboard/price-lists/[id]/page.tsx",
+        "frontend/src/app/dashboard/contracts/list/[id]/page.tsx",
+        "frontend/src/app/dashboard/recurring-orders/templates/[id]/page.tsx",
+        "frontend/src/app/dashboard/van-sales/vans/[id]/page.tsx",
+        "frontend/src/app/dashboard/portal/accounts/[id]/page.tsx"
+      ]
+    },
+    "2b50ec0": {
+      "description": "2026-05-08 surveys detail page",
+      "bvtItems": 1,
+      "uniqueRoutes": 1,
+      "routes": ["frontend/src/app/dashboard/surveys/[id]/page.tsx"]
+    },
+    "7faccdf": {
+      "description": "2026-05-08 knowledge base article detail page",
+      "bvtItems": 1,
+      "uniqueRoutes": 1,
+      "routes": ["frontend/src/app/dashboard/knowledge-base/[id]/page.tsx"]
+    },
+    "8e21ed6": {
+      "description": "2026-05-07 projects detail page with Gantt chart",
+      "bvtItems": 1,
+      "uniqueRoutes": 1,
+      "routes": ["frontend/src/app/dashboard/projects/[id]/page.tsx"]
+    },
+    "de74736": {
+      "description": "2026-05-09 brand assets detail page",
+      "bvtItems": 1,
+      "uniqueRoutes": 1,
+      "routes": ["frontend/src/app/dashboard/brand-assets/[id]/page.tsx"]
+    },
+    "none": {
+      "description": "Not found in any commit",
+      "bvtItems": 4,
+      "uniqueRoutes": 4,
+      "items": [
+        {"id": "BVT-0004", "target": "/dashboard/production/quality", "reason": "Typo — real page is production/quality-control"},
+        {"id": "BVT-0009", "target": "/dashboard/nps/surveys", "reason": "Never created in any commit"},
+        {"id": "BVT-0014", "target": "/dashboard/knowledge-base/categories", "reason": "Never created in any commit"},
+        {"id": "BVT-0045", "target": "/dashboard/secondary-sales/${h.id}", "reason": "Never created in any commit"}
+      ]
+    }
+  },
+  "fixPatternBreakdown": {
+    "RESTORE_FROM_GIT": {
+      "description": "Real page exists in git history — restore to current tree + fix middleware if needed",
+      "bvtItems": 43,
+      "uniqueRoutes": 37,
+      "subPatterns": {
+        "TYPE_A_MIDDLEWARE_REDIRECT": {
+          "description": "Parent route is in REDIRECTS map — prefix matching catches [id] sub-routes. Fix: remove parent from REDIRECTS + routeRedirectMap.ts + audit script; restore [id]/page.tsx; add [id] path to BYPASS.",
+          "uniqueRoutes": 31,
+          "bvtItems": 37
+        },
+        "TYPE_B_NO_ROUTE_FILE": {
+          "description": "Parent route NOT in REDIRECTS (in BYPASS). No middleware redirect. Fix: restore [id]/page.tsx + add [id] path to BYPASS.",
+          "uniqueRoutes": 6,
+          "bvtItems": 6,
+          "routes": [
+            "documents/[id]",
+            "procurement/orders/[id]",
+            "quality/[id]",
+            "sales/orders/[id]",
+            "sales/invoices/[id]",
+            "sales/shipments/[id]"
+          ]
+        }
+      }
+    },
+    "LINK_TO_EXISTING_PAGE": {
+      "description": "Href typo in source file — target route name is wrong. Fix: update href in source page.",
+      "bvtItems": 1,
+      "items": [{"id": "BVT-0004", "sourceFile": "frontend/src/app/dashboard/ai/compliance/page.tsx", "wrongHref": "/dashboard/production/quality", "correctHref": "/dashboard/production/quality-control"}]
+    },
+    "NEW_DESIGN_REQUIRED": {
+      "description": "Route never existed. Backend may exist. Needs design decision before implementation.",
+      "bvtItems": 3,
+      "items": [
+        {"id": "BVT-0009", "target": "/dashboard/nps/surveys", "backendExists": true, "backendFile": "backend/app/api/v1/endpoints/nps.py", "options": ["Build nps/surveys list page", "Link to /dashboard/marketing?tab=surveys"]},
+        {"id": "BVT-0014", "target": "/dashboard/knowledge-base/categories", "backendExists": true, "backendFile": "backend/app/api/v1/endpoints/knowledge_base.py", "options": ["Add categories subview tab to knowledge-base workspace", "Build standalone categories page"]},
+        {"id": "BVT-0045", "target": "/dashboard/secondary-sales/${h.id}", "backendExists": true, "backendFile": "backend/app/api/v1/endpoints/secondary_sales.py", "options": ["Build secondary-sales/[id] detail page", "Open drawer on row click instead"]}
+      ]
+    }
+  },
+  "bvtProjection": {
+    "current": 47,
+    "afterWave2A_restore": 4,
+    "afterWave2B_link": 3,
+    "afterWave2C_design": 0,
+    "notes": "Wave 2C requires design approval before implementation"
+  }
+}

@@ -1,6 +1,20 @@
 # TASKS
 
 ## Current Phase
+DEEP GIT SEARCH — COMPLETE. 2026-05-22. 43/47 unresolved BVT targets found in git history. 4 require new design (Wave 2C, needs approval). Wave 2A (restore 37 routes) + Wave 2B (1 href fix) ready to implement.
+
+### Deep Git Search for 47 Unresolved BVT Targets (2026-05-22)
+**Search strategies:** 6 (exact path, git log --full-history, git grep, git log -S, bulk directory scan, earlier commit sweep)
+**Found in git:** 43/47 BVT items (37 unique routes)
+**Not found (new design):** 4 items (BVT-0004 typo fix, BVT-0009 nps/surveys, BVT-0014 kb/categories, BVT-0045 secondary-sales/[id])
+**BVT projection:** 47 → 4 (Wave 2A) → 3 (Wave 2B) → 0 (Wave 2C, pending approval)
+**Reports:** `docs/UNRESOLVED_47_TARGETS_INVENTORY.md`, `docs/UNRESOLVED_47_DEEP_GIT_SEARCH_REPORT.md`, `docs/UNRESOLVED_47_DESIGN_PASS_REPORT.md`, `docs/UNRESOLVED_47_IMPLEMENTATION_PLAN.md`
+**Type-check:** CLEAN | **Build:** CLEAN | **Broken action cards:** 0
+**Next:** User approval for Wave 2C design decisions, then implement Wave 2A + 2B + 2C
+
+---
+
+## Previous Phase
 SIX BROKEN ACTION CARDS — COMPLETE. 2026-05-22. 6 → 0 broken action cards. 5 pages restored from git 674b6c5 (calendar/events, marketing/crm, marketing/crm/followup, marketing/surveys, marketing/surveys/new). 3 source links updated directly. Type-check clean, build clean. 48 → 47 broken visible targets. 312/312 bypass valid.
 
 ### Six Broken Action Cards Fix (2026-05-22)

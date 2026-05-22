@@ -1,9 +1,9 @@
 # Current Status Checkpoint
 
-**Date:** 2026-05-22 (Six Broken Action Cards — Complete)
+**Date:** 2026-05-22 (Deep Git Search — Complete)
 **Branch:** main
 **Working tree:** CLEAN
-**Latest commit:** TBD — fix(ui): resolve remaining broken action card links
+**Latest commit:** docs(ui): deep-search unresolved ERP action targets
 
 ---
 
@@ -48,7 +48,11 @@
 | Stabilization pass | ✅ COMPLETE |
 | Wave 1C — 54 AI/reports pages | ✅ COMPLETE (eecbba1) |
 | Wave 1C Verification | ✅ COMPLETE (8a1535f) |
-| **Six Broken Action Cards** | ✅ COMPLETE (this commit) |
+| Six Broken Action Cards | ✅ COMPLETE (d9e9c19) |
+| **Deep git search (47 unresolved)** | ✅ COMPLETE (this commit) |
+| Wave 2A — Restore 37 [id] routes | ⏳ READY — awaiting implementation |
+| Wave 2B — Fix 1 href typo | ⏳ READY — awaiting implementation |
+| Wave 2C — 3 new design items | 🔲 BLOCKED — awaiting user approval |
 
 ---
 
@@ -98,7 +102,24 @@
 
 ---
 
+## Deep Git Search Results
+
+| Metric | Count |
+|--------|-------|
+| BVT items searched | 47 |
+| FOUND in git history | 43 |
+| NOT FOUND (new design) | 4 |
+| Unique routes to restore (Wave 2A) | 37 |
+| BVT after Wave 2A+2B | 4 |
+| BVT after Wave 2C (pending approval) | 0 |
+
+---
+
 ## Remaining Work
 
-1. **47 unresolved targets** — no git match; need design decisions for subview/modal patterns
-2. **Unresolved design pass** — requires user approval before implementation
+1. **Wave 2A** — Restore 37 [id] detail pages from git; 31 also need parent removed from REDIRECTS. See `docs/UNRESOLVED_47_IMPLEMENTATION_PLAN.md`.
+2. **Wave 2B** — Fix href typo in `ai/compliance/page.tsx` (trivial, 1-line).
+3. **Wave 2C** — 3 items need design approval:
+   - BVT-0009: `/dashboard/nps/surveys` — link to existing OR build new page
+   - BVT-0014: `/dashboard/knowledge-base/categories` — subview tab OR standalone page
+   - BVT-0045: `/dashboard/secondary-sales/[id]` — real [id] page OR drawer

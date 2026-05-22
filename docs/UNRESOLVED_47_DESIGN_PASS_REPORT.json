@@ -1,0 +1,123 @@
+{
+  "date": "2026-05-22",
+  "branch": "main",
+  "status": "DESIGN_DECISIONS_PENDING_FOR_WAVE_2C",
+  "description": "Design pass results for 47 unresolved BVT targets. Classifies each into implementation wave.",
+
+  "bvtProjection": {
+    "current": 47,
+    "afterWave2A": 4,
+    "afterWave2B": 3,
+    "afterWave2C_approved": 0
+  },
+
+  "waves": {
+    "wave2A": {
+      "name": "Wave 2A — Restore from Git",
+      "description": "Restore real [id] detail pages from git history. Fix middleware prefix-match interference where needed.",
+      "bvtItemsFixed": 43,
+      "uniqueRoutesRestored": 37,
+      "requiresDesignApproval": false,
+      "subWaves": {
+        "wave2A_typeA": {
+          "name": "Wave 2A-TypeA — Remove redirect + restore page",
+          "description": "Parent route is in REDIRECTS map. Must remove parent from REDIRECTS + routeRedirectMap.ts + audit script, then restore [id]/page.tsx.",
+          "uniqueRoutes": 31,
+          "bvtItems": 37,
+          "routes": [
+            {"route": "users/[id]", "parentToRemove": "/dashboard/users", "gitCommit": "674b6c5", "bvtIds": ["BVT-0001"]},
+            {"route": "roles/[id]", "parentToRemove": "/dashboard/roles", "gitCommit": "674b6c5", "bvtIds": ["BVT-0002"]},
+            {"route": "custom-fields/[id]", "parentToRemove": "/dashboard/custom-fields", "gitCommit": "674b6c5", "bvtIds": ["BVT-0003"]},
+            {"route": "crm/records/[id]", "parentToRemove": "/dashboard/crm/records", "gitCommit": "674b6c5", "bvtIds": ["BVT-0005", "BVT-0006", "BVT-0007", "BVT-0008"]},
+            {"route": "surveys/[id]", "parentToRemove": "/dashboard/surveys", "gitCommit": "2b50ec0", "bvtIds": ["BVT-0010"]},
+            {"route": "knowledge-base/[id]", "parentToRemove": "/dashboard/knowledge-base", "gitCommit": "7faccdf", "bvtIds": ["BVT-0013"]},
+            {"route": "bank-reconciliation/statements/[id]", "parentToRemove": "/dashboard/bank-reconciliation", "gitCommit": "674b6c5", "bvtIds": ["BVT-0015"]},
+            {"route": "invoice-match/[id]", "parentToRemove": "/dashboard/invoice-match", "gitCommit": "674b6c5", "bvtIds": ["BVT-0016"]},
+            {"route": "dunning/cases/[id]", "parentToRemove": "/dashboard/dunning", "gitCommit": "674b6c5", "bvtIds": ["BVT-0017"]},
+            {"route": "traceability/recalls/[id]", "parentToRemove": "/dashboard/traceability", "gitCommit": "674b6c5", "bvtIds": ["BVT-0018"]},
+            {"route": "marketing/campaigns/[id]", "parentToRemove": "/dashboard/marketing/campaigns", "gitCommit": "674b6c5", "bvtIds": ["BVT-0019"]},
+            {"route": "marketing/promotions/[id]", "parentToRemove": "/dashboard/marketing/promotions", "gitCommit": "674b6c5", "bvtIds": ["BVT-0020"]},
+            {"route": "marketing/trade-spend/[id]", "parentToRemove": "/dashboard/marketing/trade-spend", "gitCommit": "674b6c5", "bvtIds": ["BVT-0021"]},
+            {"route": "marketing/ads/[id]", "parentToRemove": "/dashboard/marketing/ads", "gitCommit": "674b6c5", "bvtIds": ["BVT-0022"]},
+            {"route": "marketing/social-media/[id]", "parentToRemove": "/dashboard/marketing/social-media", "gitCommit": "674b6c5", "bvtIds": ["BVT-0023"]},
+            {"route": "marketing/segments/[id]", "parentToRemove": "/dashboard/marketing/segments", "gitCommit": "674b6c5", "bvtIds": ["BVT-0024"]},
+            {"route": "marketing/influencers/[id]", "parentToRemove": "/dashboard/marketing/influencers", "gitCommit": "674b6c5", "bvtIds": ["BVT-0025"]},
+            {"route": "marketing/visits/[id]", "parentToRemove": "/dashboard/marketing/visits", "gitCommit": "674b6c5", "bvtIds": ["BVT-0026"]},
+            {"route": "marketing/brand-spend/[id]", "parentToRemove": "/dashboard/marketing/brand-spend", "gitCommit": "674b6c5", "bvtIds": ["BVT-0027"]},
+            {"route": "tpm/promotions/[id]", "parentToRemove": "/dashboard/tpm", "gitCommit": "674b6c5", "bvtIds": ["BVT-0028"]},
+            {"route": "landed-cost/[id]", "parentToRemove": "/dashboard/landed-cost", "gitCommit": "674b6c5", "bvtIds": ["BVT-0032"]},
+            {"route": "supplier-portal/accounts/[id]", "parentToRemove": "/dashboard/supplier-portal", "gitCommit": "674b6c5", "bvtIds": ["BVT-0033"]},
+            {"route": "production/orders/[id]", "parentToRemove": "/dashboard/production/orders", "gitCommit": "674b6c5", "bvtIds": ["BVT-0034"]},
+            {"route": "production-execution/[id]", "parentToRemove": "/dashboard/production-execution", "gitCommit": "674b6c5", "bvtIds": ["BVT-0035"]},
+            {"route": "projects/[id]", "parentToRemove": "/dashboard/projects", "gitCommit": "8e21ed6", "bvtIds": ["BVT-0036"]},
+            {"route": "brand-assets/[id]", "parentToRemove": "/dashboard/brand-assets", "gitCommit": "de74736", "bvtIds": ["BVT-0038"]},
+            {"route": "price-lists/[id]", "parentToRemove": "/dashboard/price-lists", "gitCommit": "674b6c5", "bvtIds": ["BVT-0042"]},
+            {"route": "contracts/list/[id]", "parentToRemove": "/dashboard/contracts", "gitCommit": "674b6c5", "bvtIds": ["BVT-0043"]},
+            {"route": "recurring-orders/templates/[id]", "parentToRemove": "/dashboard/recurring-orders", "gitCommit": "674b6c5", "bvtIds": ["BVT-0044"]},
+            {"route": "van-sales/vans/[id]", "parentToRemove": "/dashboard/van-sales", "gitCommit": "674b6c5", "bvtIds": ["BVT-0046"]},
+            {"route": "portal/accounts/[id]", "parentToRemove": "/dashboard/portal", "gitCommit": "674b6c5", "bvtIds": ["BVT-0047"]}
+          ]
+        },
+        "wave2A_typeB": {
+          "name": "Wave 2A-TypeB — Restore page only (no middleware change)",
+          "description": "Parent route is in BYPASS (not in REDIRECTS). No middleware redirect active. Just restore [id]/page.tsx and add to BYPASS.",
+          "uniqueRoutes": 6,
+          "bvtItems": 6,
+          "routes": [
+            {"route": "documents/[id]", "gitCommit": "674b6c5", "bvtIds": ["BVT-0011", "BVT-0012"]},
+            {"route": "procurement/orders/[id]", "gitCommit": "674b6c5", "bvtIds": ["BVT-0029", "BVT-0030", "BVT-0031"]},
+            {"route": "quality/[id]", "gitCommit": "674b6c5", "bvtIds": ["BVT-0037"]},
+            {"route": "sales/orders/[id]", "gitCommit": "674b6c5", "bvtIds": ["BVT-0039"]},
+            {"route": "sales/invoices/[id]", "gitCommit": "674b6c5", "bvtIds": ["BVT-0040"]},
+            {"route": "sales/shipments/[id]", "gitCommit": "674b6c5", "bvtIds": ["BVT-0041"]}
+          ]
+        }
+      }
+    },
+    "wave2B": {
+      "name": "Wave 2B — Link to Existing Page",
+      "description": "Href typo fix. No new pages, no middleware changes.",
+      "bvtItemsFixed": 1,
+      "requiresDesignApproval": false,
+      "items": [
+        {
+          "bvtId": "BVT-0004",
+          "sourceFile": "frontend/src/app/dashboard/ai/compliance/page.tsx",
+          "change": "Update href from '/dashboard/production/quality' to '/dashboard/production/quality-control'"
+        }
+      ]
+    },
+    "wave2C": {
+      "name": "Wave 2C — New Design Required",
+      "description": "Routes never existed. Requires design approval before implementation.",
+      "bvtItemsFixed": 3,
+      "requiresDesignApproval": true,
+      "items": [
+        {
+          "bvtId": "BVT-0009",
+          "sourceFile": "frontend/src/app/dashboard/nps/page.tsx",
+          "target": "/dashboard/nps/surveys",
+          "recommended": "LINK_TO_WORKSPACE",
+          "recommendedDetail": "Change link in nps/page.tsx to '/dashboard/marketing?tab=surveys'. Low effort, reuses existing surveys workspace.",
+          "alternative": "Build real nps/surveys list page using nps.py survey endpoints"
+        },
+        {
+          "bvtId": "BVT-0014",
+          "sourceFile": "frontend/src/app/dashboard/knowledge-base/page.tsx",
+          "target": "/dashboard/knowledge-base/categories",
+          "recommended": "WORKSPACE_SUBVIEW",
+          "recommendedDetail": "Add 'categories' tab/subview to knowledge-base workspace page. Consistent with app subview pattern.",
+          "alternative": "Build standalone knowledge-base/categories/page.tsx"
+        },
+        {
+          "bvtId": "BVT-0045",
+          "sourceFile": "frontend/src/app/dashboard/secondary-sales/page.tsx",
+          "target": "/dashboard/secondary-sales/${h.id}",
+          "recommended": "REAL_PAGE",
+          "recommendedDetail": "Build secondary-sales/[id]/page.tsx using secondary_sales.py API. Consistent with all other [id] detail pages.",
+          "alternative": "Open side drawer on row click instead of navigating to new page"
+        }
+      ]
+    }
+  }
+}
