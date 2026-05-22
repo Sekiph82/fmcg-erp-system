@@ -1,7 +1,7 @@
 # TASKS
 
 ## Current Phase
-WAVE 2A + 2B — COMPLETE. 2026-05-22. BVT: 47 → 3. 37 [id] detail pages restored from git. 31 parent redirects removed from middleware. 1 href typo fixed. 3 BVTs remain (Wave 2C, pending design approval).
+WAVE 2A + 2B — VERIFIED. 2026-05-22. BVT: 47 → 3. All static audits pass. Backend 482/482. Live smoke spec updated (37 new [id] routes in group E). Docker not running — smoke skipped. Wave 2C blocked pending design approval.
 
 ### Wave 2A + 2B (2026-05-22)
 **BVT before:** 47 | **BVT after:** 3 | **Resolved:** 44

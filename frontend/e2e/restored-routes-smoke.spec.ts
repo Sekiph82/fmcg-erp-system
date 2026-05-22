@@ -212,3 +212,54 @@ test.describe("D. Wave 1C AI and reports pages", () => {
     });
   }
 });
+
+// ── E. Wave 2A restored [id] detail routes ──────────────────────────────────
+
+test.describe("E. Wave 2A restored [id] detail routes", () => {
+  const SAMPLE_ID = "00000000-0000-0000-0000-000000000001";
+  const routes = [
+    `/dashboard/users/${SAMPLE_ID}`,
+    `/dashboard/roles/${SAMPLE_ID}`,
+    `/dashboard/custom-fields/${SAMPLE_ID}`,
+    `/dashboard/crm/records/${SAMPLE_ID}`,
+    `/dashboard/surveys/${SAMPLE_ID}`,
+    `/dashboard/knowledge-base/${SAMPLE_ID}`,
+    `/dashboard/bank-reconciliation/statements/${SAMPLE_ID}`,
+    `/dashboard/invoice-match/${SAMPLE_ID}`,
+    `/dashboard/dunning/cases/${SAMPLE_ID}`,
+    `/dashboard/traceability/recalls/${SAMPLE_ID}`,
+    `/dashboard/marketing/campaigns/${SAMPLE_ID}`,
+    `/dashboard/marketing/promotions/${SAMPLE_ID}`,
+    `/dashboard/marketing/trade-spend/${SAMPLE_ID}`,
+    `/dashboard/marketing/ads/${SAMPLE_ID}`,
+    `/dashboard/marketing/social-media/${SAMPLE_ID}`,
+    `/dashboard/marketing/segments/${SAMPLE_ID}`,
+    `/dashboard/marketing/influencers/${SAMPLE_ID}`,
+    `/dashboard/marketing/visits/${SAMPLE_ID}`,
+    `/dashboard/marketing/brand-spend/${SAMPLE_ID}`,
+    `/dashboard/tpm/promotions/${SAMPLE_ID}`,
+    `/dashboard/landed-cost/${SAMPLE_ID}`,
+    `/dashboard/supplier-portal/accounts/${SAMPLE_ID}`,
+    `/dashboard/production/orders/${SAMPLE_ID}`,
+    `/dashboard/production-execution/${SAMPLE_ID}`,
+    `/dashboard/projects/${SAMPLE_ID}`,
+    `/dashboard/brand-assets/${SAMPLE_ID}`,
+    `/dashboard/price-lists/${SAMPLE_ID}`,
+    `/dashboard/contracts/list/${SAMPLE_ID}`,
+    `/dashboard/recurring-orders/templates/${SAMPLE_ID}`,
+    `/dashboard/van-sales/vans/${SAMPLE_ID}`,
+    `/dashboard/portal/accounts/${SAMPLE_ID}`,
+    `/dashboard/documents/${SAMPLE_ID}`,
+    `/dashboard/procurement/orders/${SAMPLE_ID}`,
+    `/dashboard/quality/${SAMPLE_ID}`,
+    `/dashboard/sales/orders/${SAMPLE_ID}`,
+    `/dashboard/sales/invoices/${SAMPLE_ID}`,
+    `/dashboard/sales/shipments/${SAMPLE_ID}`,
+  ];
+
+  for (const route of routes) {
+    test(route, async ({ page }) => {
+      await checkRoute(page, route, route);
+    });
+  }
+});

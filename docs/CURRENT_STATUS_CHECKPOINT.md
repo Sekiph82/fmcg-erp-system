@@ -1,9 +1,9 @@
 # Current Status Checkpoint
 
-**Date:** 2026-05-22 (Deep Git Search — Complete)
+**Date:** 2026-05-22 (Wave 2A + 2B — Verified)
 **Branch:** main
 **Working tree:** CLEAN
-**Latest commit:** docs(ui): deep-search unresolved ERP action targets
+**Latest commit:** test(ui): verify restored Wave 2A detail routes (pending commit)
 
 ---
 
@@ -50,8 +50,9 @@
 | Wave 1C Verification | ✅ COMPLETE (8a1535f) |
 | Six Broken Action Cards | ✅ COMPLETE (d9e9c19) |
 | **Deep git search (47 unresolved)** | ✅ COMPLETE (this commit) |
-| Wave 2A — Restore 37 [id] routes | ⏳ READY — awaiting implementation |
-| Wave 2B — Fix 1 href typo | ⏳ READY — awaiting implementation |
+| Wave 2A — Restore 37 [id] routes | ✅ COMPLETE (c8be2fc) |
+| Wave 2B — Fix 1 href typo | ✅ COMPLETE (c8be2fc) |
+| Wave 2A/2B Verification | ✅ COMPLETE — all static audits pass, smoke spec updated |
 | Wave 2C — 3 new design items | 🔲 BLOCKED — awaiting user approval |
 
 ---
@@ -63,11 +64,12 @@
 | Before full recovery | 353 |
 | After Wave 1A + 1B | 102 |
 | After Wave 1C | 48 |
-| **After broken action cards fix** | **47** |
+| After broken action cards fix | 47 |
 | Critical remaining | 0 |
 | High remaining | 47 |
 | Medium remaining | 0 |
-| Unresolved (no git match) | 47 |
+| After Wave 2A + 2B | **3** |
+| Unresolved (no git match / Wave 2C) | 3 |
 
 ---
 

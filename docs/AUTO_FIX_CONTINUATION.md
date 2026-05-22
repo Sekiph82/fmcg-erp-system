@@ -1,31 +1,32 @@
 # Auto-Fix Continuation Guide
 
-Date: 2026-05-22 (Deep Git Search — complete, 43/47 found)
+Date: 2026-05-22 (Wave 2A + 2B — Verified)
 
 ## Current State
 
-**Latest commit:** docs(ui): deep-search unresolved ERP action targets
-**Working tree:** CLEAN (post-commit)
-**Type-check:** CLEAN | **Build:** CLEAN | **Backend tests:** 478/482 PASS
+**Latest commit:** c8be2fc — fix(ui): restore unresolved detail routes from git history
+**Working tree:** CLEAN (verification commit pending)
+**Type-check:** CLEAN | **Build:** CLEAN | **Backend tests:** 482/482 PASS
 
-### Deep Git Search Results (2026-05-22)
+### Wave 2A + 2B Results (2026-05-22)
 
-| Result | BVT Items | Unique Routes |
-|--------|-----------|---------------|
-| FOUND in git | 43 | 37 |
-| NOT FOUND (new design) | 4 | 4 |
+| Metric | Value |
+|--------|-------|
+| BVT before | 47 |
+| BVT after | **3** |
+| Routes restored | 37 [id] detail pages |
+| Middleware entries removed | 31 parent prefixes |
+| Href typo fixed | 1 (ai/compliance) |
+| TS fixes | 9 |
+| Build entity escapes | 4 |
 
-**Waves ready to implement:**
-- Wave 2A-TypeA: 31 routes — restore [id] page + remove parent from REDIRECTS
-- Wave 2A-TypeB: 6 routes — restore [id] page only (no REDIRECTS change)
-- Wave 2B: 1 item — fix href typo in ai/compliance/page.tsx
+**Wave 2C BLOCKED — pending user approval (3 items):**
+- BVT-0001: `/dashboard/nps/surveys` — middleware redirect (nps → crm); Option A: fix href; Option B: build page
+- BVT-0002: `/dashboard/knowledge-base/categories` — no page file; Option A: add tab; Option B: build page
+- BVT-0003: `/dashboard/secondary-sales/[id]` — no [id] page; Option A: build page; Option B: drawer
 
-**Wave 2C pending user approval (3 items):**
-- BVT-0009: `/dashboard/nps/surveys` — link to existing surveys OR build nps/surveys page
-- BVT-0014: `/dashboard/knowledge-base/categories` — subview tab OR new page
-- BVT-0045: `/dashboard/secondary-sales/[id]` — build [id] page OR use drawer
-
-**Implementation plan:** `docs/UNRESOLVED_47_IMPLEMENTATION_PLAN.md`
+**Verification report:** `docs/ERP_BUTTON_RECOVERY_WAVE2A_2B_VERIFICATION_REPORT.md`
+**Implementation report:** `docs/ERP_BUTTON_RECOVERY_WAVE2A_2B_REPORT.md`
 
 ### What has been restored (all waves)
 
