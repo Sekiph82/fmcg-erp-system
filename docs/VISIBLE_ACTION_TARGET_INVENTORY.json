@@ -1433,13 +1433,13 @@
     "visibleVia": "/dashboard/finance?tab=FinanceAccountingPage",
     "module": "Finance",
     "label": "Purchase Invoices",
-    "targetRoute": "/dashboard/finance/accounting/controls",
+    "targetRoute": "/dashboard/finance",
     "targetType": "Link.href",
     "lineNumber": 99,
-    "evidence": "href: \"/dashboard/finance/accounting/controls",
-    "status": "BROKEN",
-    "reason": "middleware_redirect",
-    "redirectsTo": "/dashboard/finance?tab=accounting"
+    "evidence": "href: \"/dashboard/finance?tab=accounting",
+    "status": "WORKING",
+    "reason": "real_page_exists",
+    "redirectsTo": null
   },
   {
     "sourceFile": "frontend/src/app/dashboard/finance/accounting/page.tsx",

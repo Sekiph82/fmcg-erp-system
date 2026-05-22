@@ -7,9 +7,9 @@ Generated: 2026-05-22
 | Classification            | Count |
 |---------------------------|-------|
 | A WORKSPACE_PAGE          | 31     |
-| B REDIRECT_ONLY           | 196     |
+| B REDIRECT_ONLY           | 191     |
 | C LIGHTWEIGHT_WRAPPER     | 213     |
-| D FULL_DUPLICATE_UI       | 296     |
+| D FULL_DUPLICATE_UI       | 301     |
 | E STANDALONE_OPERATIONAL  | 19     |
 | F UNKNOWN                 | 0     |
 | Total                     | 755   |
@@ -85,7 +85,7 @@ Generated: 2026-05-22
 | `/dashboard/calendar/ai` | B REDIRECT_ONLY | ✅ | — | /dashboard/communication | calendar |
 | `/dashboard/calendar/availability` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/communication | calendar |
 | `/dashboard/calendar/bookings` | B REDIRECT_ONLY | ✅ | — | /dashboard/communication | calendar |
-| `/dashboard/calendar/events` | B REDIRECT_ONLY | ✅ | — | /dashboard/communication | calendar |
+| `/dashboard/calendar/events` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/communication | calendar |
 | `/dashboard/calendar/new-event` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/communication | calendar |
 | `/dashboard/calendar` | C LIGHTWEIGHT_WRAPPER | ✅ | — | /dashboard/communication | calendar |
 | `/dashboard/calendar/reports` | B REDIRECT_ONLY | ✅ | — | /dashboard/communication | calendar |
@@ -347,9 +347,9 @@ Generated: 2026-05-22
 | `/dashboard/marketing/campaigns/[id]` | B REDIRECT_ONLY | ✅ | — | /dashboard/marketing | campaigns |
 | `/dashboard/marketing/campaigns/new` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/marketing | campaigns |
 | `/dashboard/marketing/campaigns` | C LIGHTWEIGHT_WRAPPER | ✅ | — | /dashboard/marketing | campaigns |
-| `/dashboard/marketing/crm/[id]` | B REDIRECT_ONLY | ✅ | — | /dashboard/marketing | overview |
-| `/dashboard/marketing/crm/followup` | B REDIRECT_ONLY | ✅ | — | /dashboard/marketing | overview |
-| `/dashboard/marketing/crm` | B REDIRECT_ONLY | ✅ | — | /dashboard/marketing | overview |
+| `/dashboard/marketing/crm/[id]` | B REDIRECT_ONLY | ❌ | — | — | — |
+| `/dashboard/marketing/crm/followup` | D FULL_DUPLICATE_UI | ❌ | — | — | — |
+| `/dashboard/marketing/crm` | D FULL_DUPLICATE_UI | ❌ | — | — | — |
 | `/dashboard/marketing/ecommerce/analytics` | B REDIRECT_ONLY | ✅ | — | /dashboard/marketing | ecommerce |
 | `/dashboard/marketing/ecommerce` | C LIGHTWEIGHT_WRAPPER | ✅ | — | /dashboard/marketing | ecommerce |
 | `/dashboard/marketing/ecommerce/performance/[id]` | B REDIRECT_ONLY | ✅ | — | /dashboard/marketing | ecommerce |
@@ -375,9 +375,9 @@ Generated: 2026-05-22
 | `/dashboard/marketing/social-media/[id]` | B REDIRECT_ONLY | ✅ | — | /dashboard/marketing | social-media |
 | `/dashboard/marketing/social-media/new` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/marketing | social-media |
 | `/dashboard/marketing/social-media` | C LIGHTWEIGHT_WRAPPER | ✅ | — | /dashboard/marketing | social-media |
-| `/dashboard/marketing/surveys/[id]` | B REDIRECT_ONLY | ✅ | — | /dashboard/marketing | overview |
-| `/dashboard/marketing/surveys/new` | B REDIRECT_ONLY | ✅ | — | /dashboard/marketing | overview |
-| `/dashboard/marketing/surveys` | B REDIRECT_ONLY | ✅ | — | /dashboard/marketing | overview |
+| `/dashboard/marketing/surveys/[id]` | B REDIRECT_ONLY | ❌ | — | — | — |
+| `/dashboard/marketing/surveys/new` | D FULL_DUPLICATE_UI | ❌ | — | — | — |
+| `/dashboard/marketing/surveys` | D FULL_DUPLICATE_UI | ❌ | — | — | — |
 | `/dashboard/marketing/trade-spend/[id]` | B REDIRECT_ONLY | ✅ | — | /dashboard/marketing | trade-spend |
 | `/dashboard/marketing/trade-spend/new` | D FULL_DUPLICATE_UI | ✅ | — | /dashboard/marketing | trade-spend |
 | `/dashboard/marketing/trade-spend` | C LIGHTWEIGHT_WRAPPER | ✅ | — | /dashboard/marketing | trade-spend |

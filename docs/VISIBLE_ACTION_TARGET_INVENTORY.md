@@ -2,8 +2,8 @@
 
 **Date:** 2026-05-21
 **Total targets found:** 487
-**Working:** 419
-**Broken:** 68 (48 unique)
+**Working:** 420
+**Broken:** 67 (47 unique)
 
 ## By Module
 
@@ -14,7 +14,7 @@
 | Intelligence / Analytics | 26 | 0 | 26 |
 | Documents & Communication | 24 | 6 | 30 |
 | Commercial / CRM | 4 | 11 | 15 |
-| Finance | 60 | 4 | 64 |
+| Finance | 61 | 3 | 64 |
 | HR & Payroll | 42 | 0 | 42 |
 | Administration / Integrations | 11 | 0 | 11 |
 | Supply Chain / Inventory | 24 | 1 | 25 |
@@ -45,7 +45,6 @@
 | `documents/expiring/page.tsx` | /dashboard/documents?tab=DocsExpiringPage | `/dashboard/documents/${d.id` | no_route_file |
 | `knowledge-base/page.tsx` | /dashboard/documents?tab=KnowledgeBasePage | `/dashboard/knowledge-base/${a.id` | middleware_redirect |
 | `knowledge-base/page.tsx` | /dashboard/documents?tab=KnowledgeBasePage | `/dashboard/knowledge-base/categories` | middleware_redirect |
-| `finance/accounting/page.tsx` | /dashboard/finance?tab=FinanceAccountingPage | `/dashboard/finance/accounting/controls` | middleware_redirect |
 | `bank-reconciliation/page.tsx` | /dashboard/finance?tab=BankReconPage | `/dashboard/bank-reconciliation/statements/${s.id` | middleware_redirect |
 | `invoice-match/page.tsx` | /dashboard/finance?tab=InvoiceMatchPage | `/dashboard/invoice-match/${m.id` | middleware_redirect |
 | `dunning/page.tsx` | /dashboard/finance?tab=DunningPage | `/dashboard/dunning/cases/${c.id` | middleware_redirect |

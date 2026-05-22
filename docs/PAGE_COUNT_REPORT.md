@@ -7,9 +7,9 @@ Generated: 2026-05-22
 | Classification            | Code | Count |
 |---------------------------|------|-------|
 | WORKSPACE_PAGE            | A    | 31   |
-| REDIRECT_ONLY             | B    | 196   |
+| REDIRECT_ONLY             | B    | 191   |
 | LIGHTWEIGHT_WRAPPER       | C    | 213   |
-| FULL_DUPLICATE_UI         | D    | 296   |
+| FULL_DUPLICATE_UI         | D    | 301   |
 | STANDALONE_OPERATIONAL    | E    | 19   |
 | UNKNOWN                   | F    | 0   |
 | **Total**                 |      | **755** |
@@ -45,6 +45,23 @@ Generated: 2026-05-22
 - `/dashboard/utility-management/reports/load-analysis` ✅ MW
 - `/dashboard/utility-management/reports/sustainability` ✅ MW
 - `/dashboard/utility-management/reports/treatment` ✅ MW
+
+### marketing (14 pages)
+
+- `/dashboard/marketing/ads/new` ✅ MW
+- `/dashboard/marketing/brand-spend/new` ✅ MW
+- `/dashboard/marketing/campaigns/new` ✅ MW
+- `/dashboard/marketing/crm/followup` ❌ MW
+- `/dashboard/marketing/crm` ❌ MW
+- `/dashboard/marketing/ecommerce/stores` ✅ MW
+- `/dashboard/marketing/influencers/new` ✅ MW
+- `/dashboard/marketing/promotions/new` ✅ MW
+- `/dashboard/marketing/segments/new` ✅ MW
+- `/dashboard/marketing/social-media/new` ✅ MW
+- `/dashboard/marketing/surveys/new` ❌ MW
+- `/dashboard/marketing/surveys` ❌ MW
+- `/dashboard/marketing/trade-spend/new` ✅ MW
+- `/dashboard/marketing/visits/new` ✅ MW
 
 ### shelf-life (11 pages)
 
@@ -85,19 +102,6 @@ Generated: 2026-05-22
 - `/dashboard/dimensions/types` ✅ MW
 - `/dashboard/dimensions/validation` ✅ MW
 - `/dashboard/dimensions/values` ✅ MW
-
-### marketing (10 pages)
-
-- `/dashboard/marketing/ads/new` ✅ MW
-- `/dashboard/marketing/brand-spend/new` ✅ MW
-- `/dashboard/marketing/campaigns/new` ✅ MW
-- `/dashboard/marketing/ecommerce/stores` ✅ MW
-- `/dashboard/marketing/influencers/new` ✅ MW
-- `/dashboard/marketing/promotions/new` ✅ MW
-- `/dashboard/marketing/segments/new` ✅ MW
-- `/dashboard/marketing/social-media/new` ✅ MW
-- `/dashboard/marketing/trade-spend/new` ✅ MW
-- `/dashboard/marketing/visits/new` ✅ MW
 
 ### qms (10 pages)
 
@@ -312,6 +316,14 @@ Generated: 2026-05-22
 - `/dashboard/webhooks/reports` ✅ MW
 - `/dashboard/webhooks/subscriptions` ✅ MW
 
+### calendar (5 pages)
+
+- `/dashboard/calendar/availability` ✅ MW
+- `/dashboard/calendar/events` ✅ MW
+- `/dashboard/calendar/new-event` ✅ MW
+- `/dashboard/calendar/resources` ✅ MW
+- `/dashboard/calendar/view` ✅ MW
+
 ### cycle-count (5 pages)
 
 - `/dashboard/cycle-count/entries` ✅ MW
@@ -367,13 +379,6 @@ Generated: 2026-05-22
 - `/dashboard/subcontracting/orders` ✅ MW
 - `/dashboard/subcontracting/stock` ✅ MW
 - `/dashboard/subcontracting/yield` ✅ MW
-
-### calendar (4 pages)
-
-- `/dashboard/calendar/availability` ✅ MW
-- `/dashboard/calendar/new-event` ✅ MW
-- `/dashboard/calendar/resources` ✅ MW
-- `/dashboard/calendar/view` ✅ MW
 
 ### chatter (4 pages)
 

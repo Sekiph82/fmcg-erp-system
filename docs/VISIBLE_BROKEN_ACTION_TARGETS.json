@@ -338,31 +338,6 @@
   {
     "id": "BVT-0015",
     "module": "Finance",
-    "sourceFile": "frontend/src/app/dashboard/finance/accounting/page.tsx",
-    "sourceRoute": "/dashboard/finance/accounting",
-    "visibleVia": "/dashboard/finance?tab=FinanceAccountingPage",
-    "label": "Purchase Invoices",
-    "lineNumber": 99,
-    "currentTarget": "/dashboard/finance/accounting/controls",
-    "currentBehavior": "middleware_redirect",
-    "redirectsTo": "/dashboard/finance?tab=accounting",
-    "whyBroken": "In /dashboard/finance/accounting (visible at /dashboard/finance?tab=FinanceAccountingPage): link to \"/dashboard/finance/accounting/controls\" — middleware_redirect → /dashboard/finance?tab=accounting",
-    "severity": "high",
-    "userVisible": true,
-    "evidence": "href: \"/dashboard/finance/accounting/controls",
-    "gitHistory": {
-      "found": true,
-      "wasReal": null,
-      "commit": "43dba02",
-      "commitDate": null,
-      "filePath": "frontend/src/app/dashboard/finance/accounting/controls/page.tsx",
-      "note": "File existed in git history (4 commits). Content not checked."
-    },
-    "recommendation": "CONVERT_TO_WORKSPACE_SUBVIEW"
-  },
-  {
-    "id": "BVT-0016",
-    "module": "Finance",
     "sourceFile": "frontend/src/app/dashboard/bank-reconciliation/page.tsx",
     "sourceRoute": "/dashboard/bank-reconciliation",
     "visibleVia": "/dashboard/finance?tab=BankReconPage",
@@ -385,7 +360,7 @@
     "recommendation": "CONVERT_TO_WORKSPACE_SUBVIEW"
   },
   {
-    "id": "BVT-0017",
+    "id": "BVT-0016",
     "module": "Finance",
     "sourceFile": "frontend/src/app/dashboard/invoice-match/page.tsx",
     "sourceRoute": "/dashboard/invoice-match",
@@ -409,7 +384,7 @@
     "recommendation": "CONVERT_TO_WORKSPACE_SUBVIEW"
   },
   {
-    "id": "BVT-0018",
+    "id": "BVT-0017",
     "module": "Finance",
     "sourceFile": "frontend/src/app/dashboard/dunning/page.tsx",
     "sourceRoute": "/dashboard/dunning",
@@ -433,7 +408,7 @@
     "recommendation": "CONVERT_TO_WORKSPACE_SUBVIEW"
   },
   {
-    "id": "BVT-0019",
+    "id": "BVT-0018",
     "module": "Supply Chain / Inventory",
     "sourceFile": "frontend/src/app/dashboard/traceability/page.tsx",
     "sourceRoute": "/dashboard/traceability",
@@ -457,7 +432,7 @@
     "recommendation": "CONVERT_TO_WORKSPACE_SUBVIEW"
   },
   {
-    "id": "BVT-0020",
+    "id": "BVT-0019",
     "module": "Commercial / Marketing",
     "sourceFile": "frontend/src/app/dashboard/marketing/campaigns/page.tsx",
     "sourceRoute": "/dashboard/marketing/campaigns",
@@ -481,7 +456,7 @@
     "recommendation": "CONVERT_TO_WORKSPACE_SUBVIEW"
   },
   {
-    "id": "BVT-0021",
+    "id": "BVT-0020",
     "module": "Commercial / Marketing",
     "sourceFile": "frontend/src/app/dashboard/marketing/promotions/page.tsx",
     "sourceRoute": "/dashboard/marketing/promotions",
@@ -505,7 +480,7 @@
     "recommendation": "CONVERT_TO_WORKSPACE_SUBVIEW"
   },
   {
-    "id": "BVT-0022",
+    "id": "BVT-0021",
     "module": "Commercial / Marketing",
     "sourceFile": "frontend/src/app/dashboard/marketing/trade-spend/page.tsx",
     "sourceRoute": "/dashboard/marketing/trade-spend",
@@ -529,7 +504,7 @@
     "recommendation": "CONVERT_TO_WORKSPACE_SUBVIEW"
   },
   {
-    "id": "BVT-0023",
+    "id": "BVT-0022",
     "module": "Commercial / Marketing",
     "sourceFile": "frontend/src/app/dashboard/marketing/ads/page.tsx",
     "sourceRoute": "/dashboard/marketing/ads",
@@ -553,7 +528,7 @@
     "recommendation": "CONVERT_TO_WORKSPACE_SUBVIEW"
   },
   {
-    "id": "BVT-0024",
+    "id": "BVT-0023",
     "module": "Commercial / Marketing",
     "sourceFile": "frontend/src/app/dashboard/marketing/social-media/page.tsx",
     "sourceRoute": "/dashboard/marketing/social-media",
@@ -577,7 +552,7 @@
     "recommendation": "CONVERT_TO_WORKSPACE_SUBVIEW"
   },
   {
-    "id": "BVT-0025",
+    "id": "BVT-0024",
     "module": "Commercial / Marketing",
     "sourceFile": "frontend/src/app/dashboard/marketing/segments/page.tsx",
     "sourceRoute": "/dashboard/marketing/segments",
@@ -601,7 +576,7 @@
     "recommendation": "CONVERT_TO_WORKSPACE_SUBVIEW"
   },
   {
-    "id": "BVT-0026",
+    "id": "BVT-0025",
     "module": "Commercial / Marketing",
     "sourceFile": "frontend/src/app/dashboard/marketing/influencers/page.tsx",
     "sourceRoute": "/dashboard/marketing/influencers",
@@ -625,7 +600,7 @@
     "recommendation": "CONVERT_TO_WORKSPACE_SUBVIEW"
   },
   {
-    "id": "BVT-0027",
+    "id": "BVT-0026",
     "module": "Commercial / Marketing",
     "sourceFile": "frontend/src/app/dashboard/marketing/visits/page.tsx",
     "sourceRoute": "/dashboard/marketing/visits",
@@ -649,7 +624,7 @@
     "recommendation": "CONVERT_TO_WORKSPACE_SUBVIEW"
   },
   {
-    "id": "BVT-0028",
+    "id": "BVT-0027",
     "module": "Commercial / Marketing",
     "sourceFile": "frontend/src/app/dashboard/marketing/brand-spend/page.tsx",
     "sourceRoute": "/dashboard/marketing/brand-spend",
@@ -673,7 +648,7 @@
     "recommendation": "CONVERT_TO_WORKSPACE_SUBVIEW"
   },
   {
-    "id": "BVT-0029",
+    "id": "BVT-0028",
     "module": "Commercial / Marketing",
     "sourceFile": "frontend/src/app/dashboard/tpm/page.tsx",
     "sourceRoute": "/dashboard/tpm",
@@ -697,7 +672,7 @@
     "recommendation": "CONVERT_TO_WORKSPACE_SUBVIEW"
   },
   {
-    "id": "BVT-0030",
+    "id": "BVT-0029",
     "module": "Supply Chain / Procurement",
     "sourceFile": "frontend/src/app/dashboard/procurement/orders/page.tsx",
     "sourceRoute": "/dashboard/procurement/orders",
@@ -721,7 +696,7 @@
     "recommendation": "CREATE_NEW_REAL_PAGE_REQUIRED"
   },
   {
-    "id": "BVT-0031",
+    "id": "BVT-0030",
     "module": "Supply Chain / Procurement",
     "sourceFile": "frontend/src/app/dashboard/procurement/deliveries/page.tsx",
     "sourceRoute": "/dashboard/procurement/deliveries",
@@ -745,7 +720,7 @@
     "recommendation": "CREATE_NEW_REAL_PAGE_REQUIRED"
   },
   {
-    "id": "BVT-0032",
+    "id": "BVT-0031",
     "module": "Supply Chain / Procurement",
     "sourceFile": "frontend/src/app/dashboard/procurement/deliveries/page.tsx",
     "sourceRoute": "/dashboard/procurement/deliveries",
@@ -769,7 +744,7 @@
     "recommendation": "CREATE_NEW_REAL_PAGE_REQUIRED"
   },
   {
-    "id": "BVT-0033",
+    "id": "BVT-0032",
     "module": "Supply Chain / Procurement",
     "sourceFile": "frontend/src/app/dashboard/landed-cost/page.tsx",
     "sourceRoute": "/dashboard/landed-cost",
@@ -793,7 +768,7 @@
     "recommendation": "CONVERT_TO_WORKSPACE_SUBVIEW"
   },
   {
-    "id": "BVT-0034",
+    "id": "BVT-0033",
     "module": "Supply Chain / Procurement",
     "sourceFile": "frontend/src/app/dashboard/supplier-portal/page.tsx",
     "sourceRoute": "/dashboard/supplier-portal",
@@ -817,7 +792,7 @@
     "recommendation": "CONVERT_TO_WORKSPACE_SUBVIEW"
   },
   {
-    "id": "BVT-0035",
+    "id": "BVT-0034",
     "module": "Manufacturing / Production",
     "sourceFile": "frontend/src/app/dashboard/production/orders/page.tsx",
     "sourceRoute": "/dashboard/production/orders",
@@ -841,7 +816,7 @@
     "recommendation": "CONVERT_TO_WORKSPACE_SUBVIEW"
   },
   {
-    "id": "BVT-0036",
+    "id": "BVT-0035",
     "module": "Manufacturing / Production",
     "sourceFile": "frontend/src/app/dashboard/production-execution/page.tsx",
     "sourceRoute": "/dashboard/production-execution",
@@ -865,7 +840,7 @@
     "recommendation": "CONVERT_TO_WORKSPACE_SUBVIEW"
   },
   {
-    "id": "BVT-0037",
+    "id": "BVT-0036",
     "module": "Manufacturing / Production",
     "sourceFile": "frontend/src/app/dashboard/projects/page.tsx",
     "sourceRoute": "/dashboard/projects",
@@ -889,7 +864,7 @@
     "recommendation": "CONVERT_TO_WORKSPACE_SUBVIEW"
   },
   {
-    "id": "BVT-0038",
+    "id": "BVT-0037",
     "module": "Factory Operations / Quality",
     "sourceFile": "frontend/src/app/dashboard/quality/reports/page.tsx",
     "sourceRoute": "/dashboard/quality/reports",
@@ -913,7 +888,7 @@
     "recommendation": "CREATE_NEW_REAL_PAGE_REQUIRED"
   },
   {
-    "id": "BVT-0039",
+    "id": "BVT-0038",
     "module": "Factory Operations / Quality",
     "sourceFile": "frontend/src/app/dashboard/brand-assets/page.tsx",
     "sourceRoute": "/dashboard/brand-assets",
@@ -937,7 +912,7 @@
     "recommendation": "CONVERT_TO_WORKSPACE_SUBVIEW"
   },
   {
-    "id": "BVT-0040",
+    "id": "BVT-0039",
     "module": "Commercial / Sales",
     "sourceFile": "frontend/src/app/dashboard/sales/orders/page.tsx",
     "sourceRoute": "/dashboard/sales/orders",
@@ -961,7 +936,7 @@
     "recommendation": "CREATE_NEW_REAL_PAGE_REQUIRED"
   },
   {
-    "id": "BVT-0041",
+    "id": "BVT-0040",
     "module": "Commercial / Sales",
     "sourceFile": "frontend/src/app/dashboard/sales/invoices/page.tsx",
     "sourceRoute": "/dashboard/sales/invoices",
@@ -985,7 +960,7 @@
     "recommendation": "CREATE_NEW_REAL_PAGE_REQUIRED"
   },
   {
-    "id": "BVT-0042",
+    "id": "BVT-0041",
     "module": "Commercial / Sales",
     "sourceFile": "frontend/src/app/dashboard/sales/shipments/page.tsx",
     "sourceRoute": "/dashboard/sales/shipments",
@@ -1009,7 +984,7 @@
     "recommendation": "CREATE_NEW_REAL_PAGE_REQUIRED"
   },
   {
-    "id": "BVT-0043",
+    "id": "BVT-0042",
     "module": "Commercial / Sales",
     "sourceFile": "frontend/src/app/dashboard/price-lists/page.tsx",
     "sourceRoute": "/dashboard/price-lists",
@@ -1033,7 +1008,7 @@
     "recommendation": "CONVERT_TO_WORKSPACE_SUBVIEW"
   },
   {
-    "id": "BVT-0044",
+    "id": "BVT-0043",
     "module": "Commercial / Sales",
     "sourceFile": "frontend/src/app/dashboard/contracts/page.tsx",
     "sourceRoute": "/dashboard/contracts",
@@ -1057,7 +1032,7 @@
     "recommendation": "CONVERT_TO_WORKSPACE_SUBVIEW"
   },
   {
-    "id": "BVT-0045",
+    "id": "BVT-0044",
     "module": "Commercial / Sales",
     "sourceFile": "frontend/src/app/dashboard/recurring-orders/page.tsx",
     "sourceRoute": "/dashboard/recurring-orders",
@@ -1081,7 +1056,7 @@
     "recommendation": "CONVERT_TO_WORKSPACE_SUBVIEW"
   },
   {
-    "id": "BVT-0046",
+    "id": "BVT-0045",
     "module": "Commercial / Sales",
     "sourceFile": "frontend/src/app/dashboard/secondary-sales/page.tsx",
     "sourceRoute": "/dashboard/secondary-sales",
@@ -1105,7 +1080,7 @@
     "recommendation": "CONVERT_TO_WORKSPACE_SUBVIEW"
   },
   {
-    "id": "BVT-0047",
+    "id": "BVT-0046",
     "module": "Commercial / Sales",
     "sourceFile": "frontend/src/app/dashboard/van-sales/page.tsx",
     "sourceRoute": "/dashboard/van-sales",
@@ -1129,7 +1104,7 @@
     "recommendation": "CONVERT_TO_WORKSPACE_SUBVIEW"
   },
   {
-    "id": "BVT-0048",
+    "id": "BVT-0047",
     "module": "Commercial / Sales",
     "sourceFile": "frontend/src/app/dashboard/portal/page.tsx",
     "sourceRoute": "/dashboard/portal",

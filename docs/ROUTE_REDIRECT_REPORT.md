@@ -7,7 +7,7 @@ Generated: 2026-05-22
 | Check | Count |
 |-------|-------|
 | routeRedirectMap top-level keys | 88 |
-| middleware redirect keys        | 116 |
+| middleware redirect keys        | 114 |
 | In routeRedirectMap NOT middleware | 0 |
 | In middleware NOT routeRedirectMap | 0 |
 | Duplicate keys in routeRedirectMap | 0 |
@@ -74,13 +74,11 @@ routeRedirectMap.ts and middleware.ts are in sync. No issues found.
 | `/dashboard/marketing/ai-optimizer` | `/dashboard/marketing` | analytics |
 | `/dashboard/marketing/brand-spend` | `/dashboard/marketing` | brand-spend |
 | `/dashboard/marketing/campaigns` | `/dashboard/marketing` | campaigns |
-| `/dashboard/marketing/crm` | `/dashboard/marketing` | overview |
 | `/dashboard/marketing/ecommerce` | `/dashboard/marketing` | ecommerce |
 | `/dashboard/marketing/influencers` | `/dashboard/marketing` | influencers |
 | `/dashboard/marketing/promotions` | `/dashboard/marketing` | promotions |
 | `/dashboard/marketing/segments` | `/dashboard/marketing` | segments |
 | `/dashboard/marketing/social-media` | `/dashboard/marketing` | social-media |
-| `/dashboard/marketing/surveys` | `/dashboard/marketing` | overview |
 | `/dashboard/marketing/trade-spend` | `/dashboard/marketing` | trade-spend |
 | `/dashboard/marketing/visits` | `/dashboard/marketing` | visits |
 | `/dashboard/material-flow` | `/dashboard/production` | material-flow |

@@ -14,14 +14,14 @@
 | Total dynamic imports found | 222 |
 | Dynamically imported visible pages | 220 |
 | Total visible action targets found | 487 |
-| Working targets | 419 |
-| **Total broken visible action targets** | **48** |
+| Working targets | 420 |
+| **Total broken visible action targets** | **47** |
 | Critical severity (create/run/approve actions) | 0 |
-| High severity | 48 |
+| High severity | 47 |
 | Medium severity | 0 |
-| Git history matches found | 1 |
+| Git history matches found | 0 |
 | **High-confidence: real page existed in git** | **0** |
-| Medium-confidence: file in git but content unverified | 1 |
+| Medium-confidence: file in git but content unverified | 0 |
 | Unresolved: no git match | 47 |
 
 ---
@@ -48,7 +48,7 @@ Middleware redirecting `/dashboard/cycle-count` → `/dashboard/inventory?tab=cy
 
 97 pages are in this state — middleware-redirected as standalone routes,
 but dynamically imported into workspace tabs and therefore fully user-visible.
-Their internal navigation cards/buttons (totalling **48**) all fail silently
+Their internal navigation cards/buttons (totalling **47**) all fail silently
 by looping the user back to the same workspace tab they are already on.
 
 ### The Cycle Count Example (Confirmed Still Broken)
@@ -92,12 +92,12 @@ These were deleted in `bd6faf5` (2026-05-17) and replaced with redirect stubs.
 | BVT-0012 | Documents & Communication | /dashboard/documents?tab=DocsExpiringPage | ${d.id | `/dashboard/documents/${d.id` | no_route_file | none | CREATE_NEW_REAL_PAGE_REQUIRED |
 | BVT-0013 | Documents & Communication | /dashboard/documents?tab=KnowledgeBasePage | ${a.id | `/dashboard/knowledge-base/${a.id` | middleware_redirect | none | CONVERT_TO_WORKSPACE_SUBVIEW |
 | BVT-0014 | Documents & Communication | /dashboard/documents?tab=KnowledgeBasePage | Categories | `/dashboard/knowledge-base/categories` | middleware_redirect | none | CONVERT_TO_WORKSPACE_SUBVIEW |
-| BVT-0015 | Finance | /dashboard/finance?tab=FinanceAccountingPage | Purchase Invoices | `/dashboard/finance/accounting/controls` | middleware_redirect | stub | CONVERT_TO_WORKSPACE_SUBVIEW |
-| BVT-0016 | Finance | /dashboard/finance?tab=BankReconPage | ${s.id | `/dashboard/bank-reconciliation/statements/${s.id` | middleware_redirect | none | CONVERT_TO_WORKSPACE_SUBVIEW |
-| BVT-0017 | Finance | /dashboard/finance?tab=InvoiceMatchPage | View | `/dashboard/invoice-match/${m.id` | middleware_redirect | none | CONVERT_TO_WORKSPACE_SUBVIEW |
-| BVT-0018 | Finance | /dashboard/finance?tab=DunningPage | ${c.id | `/dashboard/dunning/cases/${c.id` | middleware_redirect | none | CONVERT_TO_WORKSPACE_SUBVIEW |
-| BVT-0019 | Supply Chain / Inventory | /dashboard/inventory?tab=TraceabilityPage | ${r.id | `/dashboard/traceability/recalls/${r.id` | middleware_redirect | none | CONVERT_TO_WORKSPACE_SUBVIEW |
-| BVT-0020 | Commercial / Marketing | /dashboard/marketing?tab=MarketingCampaignsPage | ${c.id | `/dashboard/marketing/campaigns/${c.id` | middleware_redirect | none | CONVERT_TO_WORKSPACE_SUBVIEW |
+| BVT-0015 | Finance | /dashboard/finance?tab=BankReconPage | ${s.id | `/dashboard/bank-reconciliation/statements/${s.id` | middleware_redirect | none | CONVERT_TO_WORKSPACE_SUBVIEW |
+| BVT-0016 | Finance | /dashboard/finance?tab=InvoiceMatchPage | View | `/dashboard/invoice-match/${m.id` | middleware_redirect | none | CONVERT_TO_WORKSPACE_SUBVIEW |
+| BVT-0017 | Finance | /dashboard/finance?tab=DunningPage | ${c.id | `/dashboard/dunning/cases/${c.id` | middleware_redirect | none | CONVERT_TO_WORKSPACE_SUBVIEW |
+| BVT-0018 | Supply Chain / Inventory | /dashboard/inventory?tab=TraceabilityPage | ${r.id | `/dashboard/traceability/recalls/${r.id` | middleware_redirect | none | CONVERT_TO_WORKSPACE_SUBVIEW |
+| BVT-0019 | Commercial / Marketing | /dashboard/marketing?tab=MarketingCampaignsPage | ${c.id | `/dashboard/marketing/campaigns/${c.id` | middleware_redirect | none | CONVERT_TO_WORKSPACE_SUBVIEW |
+| BVT-0020 | Commercial / Marketing | /dashboard/marketing?tab=MarketingPromotionsPage | ${p.id | `/dashboard/marketing/promotions/${p.id` | middleware_redirect | none | CONVERT_TO_WORKSPACE_SUBVIEW |
 
 ---
 
@@ -151,11 +151,10 @@ These were deleted in `bd6faf5` (2026-05-17) and replaced with redirect stubs.
 
 ### Finance
 
-**Broken count:** 4
+**Broken count:** 3
 
 | Module | Visible Location | Tab | Source File | Button/Card | Current Target | Current Behavior | Original Page? | Best Match | Confidence | Recommended Fix |
 |--------|-----------------|-----|-------------|-------------|----------------|-----------------|----------------|------------|------------|-----------------|
-| Finance | /dashboard/finance | FinanceAccountingPage | finance/accounting/page.tsx | Purchase Invoices | `/dashboard/finance/accounting/controls` | middleware_redirect | Yes — stub only | only redirect stub in git | medium | CONVERT_TO_WORKSPACE_SUBVIEW |
 | Finance | /dashboard/finance | BankReconPage | bank-reconciliation/page.tsx | ${s.id | `/dashboard/bank-reconciliation/statements/${s.id` | middleware_redirect | No | not found | low | CONVERT_TO_WORKSPACE_SUBVIEW |
 | Finance | /dashboard/finance | InvoiceMatchPage | invoice-match/page.tsx | View | `/dashboard/invoice-match/${m.id` | middleware_redirect | No | not found | low | CONVERT_TO_WORKSPACE_SUBVIEW |
 | Finance | /dashboard/finance | DunningPage | dunning/page.tsx | ${c.id | `/dashboard/dunning/cases/${c.id` | middleware_redirect | No | not found | low | CONVERT_TO_WORKSPACE_SUBVIEW |
@@ -277,7 +276,7 @@ because it is dynamically imported into a workspace tab.
 | `surveys/page.tsx` | `/dashboard/surveys` | `/dashboard/crm?tab=surveys` | `/dashboard/crm` | 1 |
 | `knowledge-base/page.tsx` | `/dashboard/knowledge-base` | `/dashboard/documents?tab=knowledge-base` | `/dashboard/documents` | 2 |
 | `esign/page.tsx` | `/dashboard/esign` | `/dashboard/documents?tab=esign` | `/dashboard/documents` | 0 |
-| `finance/accounting/page.tsx` | `/dashboard/finance/accounting` | `/dashboard/finance?tab=accounting` | `/dashboard/finance` | 1 |
+| `finance/accounting/page.tsx` | `/dashboard/finance/accounting` | `/dashboard/finance?tab=accounting` | `/dashboard/finance` | 0 |
 | `bank-reconciliation/page.tsx` | `/dashboard/bank-reconciliation` | `/dashboard/finance?tab=bank-recon` | `/dashboard/finance` | 1 |
 | `invoice-match/page.tsx` | `/dashboard/invoice-match` | `/dashboard/finance?tab=invoice-match` | `/dashboard/finance` | 1 |
 | `fixed-assets/page.tsx` | `/dashboard/fixed-assets` | `/dashboard/finance?tab=fixed-assets` | `/dashboard/finance` | 0 |
@@ -408,7 +407,7 @@ These broken targets have no known implementation in git history.
 | Category | Count | Action |
 |----------|-------|--------|
 | RESTORE_OLD_PAGE_FROM_GIT | 0 | Restore from git commit `674b6c5` + add BYPASS_PREFIX_REDIRECT |
-| CONVERT_TO_WORKSPACE_SUBVIEW | 38 | Change href to `?tab=X&view=Y` pattern in workspace |
+| CONVERT_TO_WORKSPACE_SUBVIEW | 37 | Change href to `?tab=X&view=Y` pattern in workspace |
 | CREATE_NEW_REAL_PAGE_REQUIRED | 10 | No implementation exists — new page required |
 | NEEDS_BUSINESS_DECISION | 0 | Intent unclear — needs product decision |
 
