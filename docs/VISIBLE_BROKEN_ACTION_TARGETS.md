@@ -1,119 +1,35 @@
 # Visible Broken Action Targets
 
 **Date:** 2026-05-21
-**Total:** 47
+**Total:** 3
 
 ## Statistics
 
 | Metric | Count |
 |--------|-------|
 | Critical | 0 |
-| High | 47 |
+| High | 3 |
 | Medium | 0 |
 | Git: real page found | 0 |
 | Recommendation: RESTORE FROM GIT | 0 |
-| Recommendation: CONVERT TO SUBVIEW | 37 |
-| Recommendation: CREATE NEW PAGE | 10 |
+| Recommendation: CONVERT TO SUBVIEW | 1 |
+| Recommendation: CREATE NEW PAGE | 2 |
 
-## Administration (3)
-
-| ID | Source | Visible At | Target | Severity | Git | Recommendation |
-|----|--------|-----------|--------|----------|-----|----------------|
-| BVT-0001 | users/page.tsx | /dashboard/admin?tab=UsersPage | `/dashboard/users/${r.id` | high | NONE | CONVERT_TO_WORKSPACE_SUBVIEW |
-| BVT-0002 | roles/page.tsx | /dashboard/admin?tab=RolesPage | `/dashboard/roles/${r.id` | high | NONE | CONVERT_TO_WORKSPACE_SUBVIEW |
-| BVT-0003 | custom-fields/page.tsx | /dashboard/admin?tab=CustomFieldsPage | `/dashboard/custom-fields/${f.custom_field_id` | high | NONE | CONVERT_TO_WORKSPACE_SUBVIEW |
-
-## Other (1)
+## Commercial / CRM (1)
 
 | ID | Source | Visible At | Target | Severity | Git | Recommendation |
 |----|--------|-----------|--------|----------|-----|----------------|
-| BVT-0004 | ai/compliance/page.tsx | /dashboard/ai?tab=AICompliancePage | `/dashboard/production/quality` | high | NONE | CREATE_NEW_REAL_PAGE_REQUIRED |
+| BVT-0001 | nps/page.tsx | /dashboard/crm?tab=NPSPage | `/dashboard/nps/surveys` | high | NONE | CONVERT_TO_WORKSPACE_SUBVIEW |
 
-## Commercial / CRM (6)
-
-| ID | Source | Visible At | Target | Severity | Git | Recommendation |
-|----|--------|-----------|--------|----------|-----|----------------|
-| BVT-0005 | crm/pipeline/page.tsx | /dashboard/crm?tab=CRMPipelinePage | `/dashboard/crm/records/${rec.id` | high | NONE | CONVERT_TO_WORKSPACE_SUBVIEW |
-| BVT-0006 | crm/leads/page.tsx | /dashboard/crm?tab=CRMLeadsPage | `/dashboard/crm/records/${rec.id` | high | NONE | CONVERT_TO_WORKSPACE_SUBVIEW |
-| BVT-0007 | crm/opportunities/page.tsx | /dashboard/crm?tab=CRMOppsPage | `/dashboard/crm/records/${rec.id` | high | NONE | CONVERT_TO_WORKSPACE_SUBVIEW |
-| BVT-0008 | crm/activities/page.tsx | /dashboard/crm?tab=CRMActivitiesPage | `/dashboard/crm/records/${act.crm_record_id` | high | NONE | CONVERT_TO_WORKSPACE_SUBVIEW |
-| BVT-0009 | nps/page.tsx | /dashboard/crm?tab=NPSPage | `/dashboard/nps/surveys` | high | NONE | CONVERT_TO_WORKSPACE_SUBVIEW |
-| BVT-0010 | surveys/page.tsx | /dashboard/crm?tab=SurveysPage | `/dashboard/surveys/${s.id` | high | NONE | CONVERT_TO_WORKSPACE_SUBVIEW |
-
-## Documents & Communication (4)
+## Documents & Communication (1)
 
 | ID | Source | Visible At | Target | Severity | Git | Recommendation |
 |----|--------|-----------|--------|----------|-----|----------------|
-| BVT-0011 | documents/compliance/page.tsx | /dashboard/documents?tab=DocsCompliancePage | `/dashboard/documents/${d.id` | high | NONE | CREATE_NEW_REAL_PAGE_REQUIRED |
-| BVT-0012 | documents/expiring/page.tsx | /dashboard/documents?tab=DocsExpiringPage | `/dashboard/documents/${d.id` | high | NONE | CREATE_NEW_REAL_PAGE_REQUIRED |
-| BVT-0013 | knowledge-base/page.tsx | /dashboard/documents?tab=KnowledgeBasePage | `/dashboard/knowledge-base/${a.id` | high | NONE | CONVERT_TO_WORKSPACE_SUBVIEW |
-| BVT-0014 | knowledge-base/page.tsx | /dashboard/documents?tab=KnowledgeBasePage | `/dashboard/knowledge-base/categories` | high | NONE | CONVERT_TO_WORKSPACE_SUBVIEW |
+| BVT-0002 | knowledge-base/page.tsx | /dashboard/documents?tab=KnowledgeBasePage | `/dashboard/knowledge-base/categories` | high | NONE | CREATE_NEW_REAL_PAGE_REQUIRED |
 
-## Finance (3)
+## Commercial / Sales (1)
 
 | ID | Source | Visible At | Target | Severity | Git | Recommendation |
 |----|--------|-----------|--------|----------|-----|----------------|
-| BVT-0015 | bank-reconciliation/page.tsx | /dashboard/finance?tab=BankReconPage | `/dashboard/bank-reconciliation/statements/${s.id` | high | NONE | CONVERT_TO_WORKSPACE_SUBVIEW |
-| BVT-0016 | invoice-match/page.tsx | /dashboard/finance?tab=InvoiceMatchPage | `/dashboard/invoice-match/${m.id` | high | NONE | CONVERT_TO_WORKSPACE_SUBVIEW |
-| BVT-0017 | dunning/page.tsx | /dashboard/finance?tab=DunningPage | `/dashboard/dunning/cases/${c.id` | high | NONE | CONVERT_TO_WORKSPACE_SUBVIEW |
-
-## Supply Chain / Inventory (1)
-
-| ID | Source | Visible At | Target | Severity | Git | Recommendation |
-|----|--------|-----------|--------|----------|-----|----------------|
-| BVT-0018 | traceability/page.tsx | /dashboard/inventory?tab=TraceabilityPage | `/dashboard/traceability/recalls/${r.id` | high | NONE | CONVERT_TO_WORKSPACE_SUBVIEW |
-
-## Commercial / Marketing (10)
-
-| ID | Source | Visible At | Target | Severity | Git | Recommendation |
-|----|--------|-----------|--------|----------|-----|----------------|
-| BVT-0019 | marketing/campaigns/page.tsx | /dashboard/marketing?tab=MarketingCampaignsPage | `/dashboard/marketing/campaigns/${c.id` | high | NONE | CONVERT_TO_WORKSPACE_SUBVIEW |
-| BVT-0020 | marketing/promotions/page.tsx | /dashboard/marketing?tab=MarketingPromotionsPage | `/dashboard/marketing/promotions/${p.id` | high | NONE | CONVERT_TO_WORKSPACE_SUBVIEW |
-| BVT-0021 | marketing/trade-spend/page.tsx | /dashboard/marketing?tab=MarketingTradeSpendPage | `/dashboard/marketing/trade-spend/${t.id` | high | NONE | CONVERT_TO_WORKSPACE_SUBVIEW |
-| BVT-0022 | marketing/ads/page.tsx | /dashboard/marketing?tab=MarketingAdsPage | `/dashboard/marketing/ads/${a.id` | high | NONE | CONVERT_TO_WORKSPACE_SUBVIEW |
-| BVT-0023 | marketing/social-media/page.tsx | /dashboard/marketing?tab=MarketingSocialPage | `/dashboard/marketing/social-media/${a.id` | high | NONE | CONVERT_TO_WORKSPACE_SUBVIEW |
-| BVT-0024 | marketing/segments/page.tsx | /dashboard/marketing?tab=MarketingSegmentsPage | `/dashboard/marketing/segments/${s.id` | high | NONE | CONVERT_TO_WORKSPACE_SUBVIEW |
-| BVT-0025 | marketing/influencers/page.tsx | /dashboard/marketing?tab=MarketingInfluencersPage | `/dashboard/marketing/influencers/${i.id` | high | NONE | CONVERT_TO_WORKSPACE_SUBVIEW |
-| BVT-0026 | marketing/visits/page.tsx | /dashboard/marketing?tab=MarketingVisitsPage | `/dashboard/marketing/visits/${v.id` | high | NONE | CONVERT_TO_WORKSPACE_SUBVIEW |
-| BVT-0027 | marketing/brand-spend/page.tsx | /dashboard/marketing?tab=MarketingBrandSpendPage | `/dashboard/marketing/brand-spend/${b.id` | high | NONE | CONVERT_TO_WORKSPACE_SUBVIEW |
-| BVT-0028 | tpm/page.tsx | /dashboard/marketing?tab=TPMPage | `/dashboard/tpm/promotions/${p.id` | high | NONE | CONVERT_TO_WORKSPACE_SUBVIEW |
-
-## Supply Chain / Procurement (5)
-
-| ID | Source | Visible At | Target | Severity | Git | Recommendation |
-|----|--------|-----------|--------|----------|-----|----------------|
-| BVT-0029 | procurement/orders/page.tsx | /dashboard/procurement?tab=ProcurementOrdersPage | `/dashboard/procurement/orders/${p.id}` | high | NONE | CREATE_NEW_REAL_PAGE_REQUIRED |
-| BVT-0030 | procurement/deliveries/page.tsx | /dashboard/procurement?tab=ProcurementDeliveriesPage | `/dashboard/procurement/orders/${a.po_id}` | high | NONE | CREATE_NEW_REAL_PAGE_REQUIRED |
-| BVT-0031 | procurement/deliveries/page.tsx | /dashboard/procurement?tab=ProcurementDeliveriesPage | `/dashboard/procurement/orders/${r.po_id}` | high | NONE | CREATE_NEW_REAL_PAGE_REQUIRED |
-| BVT-0032 | landed-cost/page.tsx | /dashboard/procurement?tab=LandedCostPage | `/dashboard/landed-cost/${doc.id` | high | NONE | CONVERT_TO_WORKSPACE_SUBVIEW |
-| BVT-0033 | supplier-portal/page.tsx | /dashboard/procurement?tab=SupplierPortalPage | `/dashboard/supplier-portal/accounts/${a.id` | high | NONE | CONVERT_TO_WORKSPACE_SUBVIEW |
-
-## Manufacturing / Production (3)
-
-| ID | Source | Visible At | Target | Severity | Git | Recommendation |
-|----|--------|-----------|--------|----------|-----|----------------|
-| BVT-0034 | production/orders/page.tsx | /dashboard/production?tab=ProductionOrdersPage | `/dashboard/production/orders/${o.id}` | high | NONE | CONVERT_TO_WORKSPACE_SUBVIEW |
-| BVT-0035 | production-execution/page.tsx | /dashboard/production?tab=ExecutionPage | `/dashboard/production-execution/${o.id` | high | NONE | CONVERT_TO_WORKSPACE_SUBVIEW |
-| BVT-0036 | projects/page.tsx | /dashboard/production?tab=ProjectsPage | `/dashboard/projects/${p.id}` | high | NONE | CONVERT_TO_WORKSPACE_SUBVIEW |
-
-## Factory Operations / Quality (2)
-
-| ID | Source | Visible At | Target | Severity | Git | Recommendation |
-|----|--------|-----------|--------|----------|-----|----------------|
-| BVT-0037 | quality/reports/page.tsx | /dashboard/quality?tab=QualityReportsPage | `/dashboard/quality/${i.id}` | high | NONE | CREATE_NEW_REAL_PAGE_REQUIRED |
-| BVT-0038 | brand-assets/page.tsx | /dashboard/quality?tab=BrandAssetsPage | `/dashboard/brand-assets/${a.id` | high | NONE | CONVERT_TO_WORKSPACE_SUBVIEW |
-
-## Commercial / Sales (9)
-
-| ID | Source | Visible At | Target | Severity | Git | Recommendation |
-|----|--------|-----------|--------|----------|-----|----------------|
-| BVT-0039 | sales/orders/page.tsx | /dashboard/sales?tab=SalesOrdersPage | `/dashboard/sales/orders/${r.id}` | high | NONE | CREATE_NEW_REAL_PAGE_REQUIRED |
-| BVT-0040 | sales/invoices/page.tsx | /dashboard/sales?tab=SalesInvoicesPage | `/dashboard/sales/invoices/${r.id}` | high | NONE | CREATE_NEW_REAL_PAGE_REQUIRED |
-| BVT-0041 | sales/shipments/page.tsx | /dashboard/sales?tab=SalesShipmentsPage | `/dashboard/sales/shipments/${r.id}` | high | NONE | CREATE_NEW_REAL_PAGE_REQUIRED |
-| BVT-0042 | price-lists/page.tsx | /dashboard/sales?tab=PriceListsPage | `/dashboard/price-lists/${h.id` | high | NONE | CONVERT_TO_WORKSPACE_SUBVIEW |
-| BVT-0043 | contracts/page.tsx | /dashboard/sales?tab=ContractsPage | `/dashboard/contracts/list/${c.id` | high | NONE | CONVERT_TO_WORKSPACE_SUBVIEW |
-| BVT-0044 | recurring-orders/page.tsx | /dashboard/sales?tab=RecurringOrdersPage | `/dashboard/recurring-orders/templates/${t.id` | high | NONE | CONVERT_TO_WORKSPACE_SUBVIEW |
-| BVT-0045 | secondary-sales/page.tsx | /dashboard/sales?tab=SecondarySalesPage | `/dashboard/secondary-sales/${h.id` | high | NONE | CONVERT_TO_WORKSPACE_SUBVIEW |
-| BVT-0046 | van-sales/page.tsx | /dashboard/sales?tab=VanSalesPage | `/dashboard/van-sales/vans/${v.id` | high | NONE | CONVERT_TO_WORKSPACE_SUBVIEW |
-| BVT-0047 | portal/page.tsx | /dashboard/sales?tab=PortalPage | `/dashboard/portal/accounts/${acc.id` | high | NONE | CONVERT_TO_WORKSPACE_SUBVIEW |
+| BVT-0003 | secondary-sales/page.tsx | /dashboard/sales?tab=SecondarySalesPage | `/dashboard/secondary-sales/${h.id` | high | NONE | CREATE_NEW_REAL_PAGE_REQUIRED |
 

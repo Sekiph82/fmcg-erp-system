@@ -1,0 +1,57 @@
+{
+  "reportDate": "2026-05-22",
+  "status": "COMPLETE",
+  "wave": "2A+2B",
+  "bvtBefore": 47,
+  "bvtAfter": 3,
+  "bvtResolved": 44,
+  "bvtRemaining": [
+    { "id": "BVT-0001", "route": "/dashboard/nps/surveys", "reason": "middleware_redirect", "wave": "2C" },
+    { "id": "BVT-0002", "route": "/dashboard/knowledge-base/categories", "reason": "no_route_file", "wave": "2C" },
+    { "id": "BVT-0003", "route": "/dashboard/secondary-sales/${h.id}", "reason": "no_route_file", "wave": "2C" }
+  ],
+  "wave2A": {
+    "typeA": {
+      "count": 31,
+      "description": "Restore [id] page from git + remove parent from REDIRECTS",
+      "gitSources": ["674b6c5", "2b50ec0", "7faccdf", "8e21ed6", "de74736"]
+    },
+    "typeB": {
+      "count": 6,
+      "description": "Restore [id] page only (parent not in REDIRECTS)",
+      "gitSources": ["674b6c5"]
+    }
+  },
+  "wave2B": {
+    "count": 1,
+    "description": "Fix href typo in ai/compliance/page.tsx",
+    "file": "frontend/src/app/dashboard/ai/compliance/page.tsx",
+    "line": 49,
+    "from": "/dashboard/production/quality",
+    "to": "/dashboard/production/quality-control"
+  },
+  "auditScriptEnhancement": {
+    "file": "scripts/audit-visible-import-graph.js",
+    "change": "Added template-literal route handling in classifyTarget() to detect [id]/page.tsx for ${...} patterns"
+  },
+  "middlewareChanges": {
+    "entriesRemovedFromREDIRECTS": 31,
+    "filesModified": [
+      "frontend/src/middleware.ts",
+      "frontend/src/lib/routeRedirectMap.ts",
+      "scripts/audit-visible-import-graph.js"
+    ]
+  },
+  "typescriptFixes": 9,
+  "buildFixes": 4,
+  "verification": {
+    "typeCheck": "CLEAN",
+    "build": "698 static pages",
+    "backendTests": "482 passed",
+    "brokenActionCards": 0,
+    "bvtAudit": 3,
+    "workspaceTabs": "ALL_PASSED",
+    "restoredRoutesQuality": "0 stubs, 0 no-UI",
+    "pageCount": 755
+  }
+}

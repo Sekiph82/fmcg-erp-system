@@ -46,7 +46,7 @@ export default function CompliancePage() {
             title: "Quality Control",
             description: "QC parameters, inspection records, and CoA (Certificate of Analysis) management",
             icon: "✅",
-            href: "/dashboard/production/quality",
+            href: "/dashboard/production/quality-control",
             badge: "Quality Module",
           },
           {

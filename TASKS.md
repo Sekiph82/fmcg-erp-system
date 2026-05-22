@@ -1,6 +1,23 @@
 # TASKS
 
 ## Current Phase
+WAVE 2A + 2B — COMPLETE. 2026-05-22. BVT: 47 → 3. 37 [id] detail pages restored from git. 31 parent redirects removed from middleware. 1 href typo fixed. 3 BVTs remain (Wave 2C, pending design approval).
+
+### Wave 2A + 2B (2026-05-22)
+**BVT before:** 47 | **BVT after:** 3 | **Resolved:** 44
+**Wave 2A-TypeA:** 31 routes — restored [id] pages + removed parent from REDIRECTS
+**Wave 2A-TypeB:** 6 routes — restored [id] pages only (parent not in REDIRECTS)
+**Wave 2B:** 1 href typo fix (ai/compliance/page.tsx:49)
+**Audit script:** enhanced classifyTarget() to handle template-literal ${...} routes
+**TS fixes applied:** 9 | **Build fixes (entity escapes):** 4
+**Type-check:** CLEAN | **Build:** 698 pages | **Backend tests:** 482 passed
+**Broken action cards:** 0 | **BVT audit:** 3 (Wave 2C only)
+**Report:** `docs/ERP_BUTTON_RECOVERY_WAVE2A_2B_REPORT.md`
+**Remaining:** Wave 2C (3 items — nps/surveys, kb/categories, secondary-sales/[id]) needs design approval
+
+---
+
+## Previous Phase
 DEEP GIT SEARCH — COMPLETE. 2026-05-22. 43/47 unresolved BVT targets found in git history. 4 require new design (Wave 2C, needs approval). Wave 2A (restore 37 routes) + Wave 2B (1 href fix) ready to implement.
 
 ### Deep Git Search for 47 Unresolved BVT Targets (2026-05-22)

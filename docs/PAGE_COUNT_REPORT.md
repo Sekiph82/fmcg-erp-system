@@ -7,9 +7,9 @@ Generated: 2026-05-22
 | Classification            | Code | Count |
 |---------------------------|------|-------|
 | WORKSPACE_PAGE            | A    | 31   |
-| REDIRECT_ONLY             | B    | 191   |
+| REDIRECT_ONLY             | B    | 154   |
 | LIGHTWEIGHT_WRAPPER       | C    | 213   |
-| FULL_DUPLICATE_UI         | D    | 301   |
+| FULL_DUPLICATE_UI         | D    | 338   |
 | STANDALONE_OPERATIONAL    | E    | 19   |
 | UNKNOWN                   | F    | 0   |
 | **Total**                 |      | **755** |
@@ -25,6 +25,32 @@ Generated: 2026-05-22
 - **F UNKNOWN** — could not classify from content heuristics.
 
 ## FULL_DUPLICATE_UI pages by module
+
+### marketing (23 pages)
+
+- `/dashboard/marketing/ads/[id]` ❌ MW
+- `/dashboard/marketing/ads/new` ❌ MW
+- `/dashboard/marketing/brand-spend/[id]` ❌ MW
+- `/dashboard/marketing/brand-spend/new` ❌ MW
+- `/dashboard/marketing/campaigns/[id]` ❌ MW
+- `/dashboard/marketing/campaigns/new` ❌ MW
+- `/dashboard/marketing/crm/followup` ❌ MW
+- `/dashboard/marketing/crm` ❌ MW
+- `/dashboard/marketing/ecommerce/stores` ✅ MW
+- `/dashboard/marketing/influencers/[id]` ❌ MW
+- `/dashboard/marketing/influencers/new` ❌ MW
+- `/dashboard/marketing/promotions/[id]` ❌ MW
+- `/dashboard/marketing/promotions/new` ❌ MW
+- `/dashboard/marketing/segments/[id]` ❌ MW
+- `/dashboard/marketing/segments/new` ❌ MW
+- `/dashboard/marketing/social-media/[id]` ❌ MW
+- `/dashboard/marketing/social-media/new` ❌ MW
+- `/dashboard/marketing/surveys/new` ❌ MW
+- `/dashboard/marketing/surveys` ❌ MW
+- `/dashboard/marketing/trade-spend/[id]` ❌ MW
+- `/dashboard/marketing/trade-spend/new` ❌ MW
+- `/dashboard/marketing/visits/[id]` ❌ MW
+- `/dashboard/marketing/visits/new` ❌ MW
 
 ### utility-management (17 pages)
 
@@ -46,23 +72,6 @@ Generated: 2026-05-22
 - `/dashboard/utility-management/reports/sustainability` ✅ MW
 - `/dashboard/utility-management/reports/treatment` ✅ MW
 
-### marketing (14 pages)
-
-- `/dashboard/marketing/ads/new` ✅ MW
-- `/dashboard/marketing/brand-spend/new` ✅ MW
-- `/dashboard/marketing/campaigns/new` ✅ MW
-- `/dashboard/marketing/crm/followup` ❌ MW
-- `/dashboard/marketing/crm` ❌ MW
-- `/dashboard/marketing/ecommerce/stores` ✅ MW
-- `/dashboard/marketing/influencers/new` ✅ MW
-- `/dashboard/marketing/promotions/new` ✅ MW
-- `/dashboard/marketing/segments/new` ✅ MW
-- `/dashboard/marketing/social-media/new` ✅ MW
-- `/dashboard/marketing/surveys/new` ❌ MW
-- `/dashboard/marketing/surveys` ❌ MW
-- `/dashboard/marketing/trade-spend/new` ✅ MW
-- `/dashboard/marketing/visits/new` ✅ MW
-
 ### shelf-life (11 pages)
 
 - `/dashboard/shelf-life/bulk-hold-monitor` ✅ MW
@@ -76,6 +85,20 @@ Generated: 2026-05-22
 - `/dashboard/shelf-life/production-validation` ✅ MW
 - `/dashboard/shelf-life/retest-queue` ✅ MW
 - `/dashboard/shelf-life/shipment-validation` ✅ MW
+
+### tpm (11 pages)
+
+- `/dashboard/tpm/ai` ❌ MW
+- `/dashboard/tpm/budget` ❌ MW
+- `/dashboard/tpm/calendar` ❌ MW
+- `/dashboard/tpm/claims` ❌ MW
+- `/dashboard/tpm/plans/new` ❌ MW
+- `/dashboard/tpm/plans` ❌ MW
+- `/dashboard/tpm/promotions/[id]` ❌ MW
+- `/dashboard/tpm/promotions/new` ❌ MW
+- `/dashboard/tpm/promotions` ❌ MW
+- `/dashboard/tpm/roi` ❌ MW
+- `/dashboard/tpm/settlement` ❌ MW
 
 ### appraisals (10 pages)
 
@@ -115,19 +138,6 @@ Generated: 2026-05-22
 - `/dashboard/qms/quarantine` ✅ MW
 - `/dashboard/qms/reports` ✅ MW
 - `/dashboard/qms/templates` ✅ MW
-
-### tpm (10 pages)
-
-- `/dashboard/tpm/ai` ✅ MW
-- `/dashboard/tpm/budget` ✅ MW
-- `/dashboard/tpm/calendar` ✅ MW
-- `/dashboard/tpm/claims` ✅ MW
-- `/dashboard/tpm/plans/new` ✅ MW
-- `/dashboard/tpm/plans` ✅ MW
-- `/dashboard/tpm/promotions/new` ✅ MW
-- `/dashboard/tpm/promotions` ✅ MW
-- `/dashboard/tpm/roi` ✅ MW
-- `/dashboard/tpm/settlement` ✅ MW
 
 ### expenses (9 pages)
 
@@ -200,6 +210,28 @@ Generated: 2026-05-22
 - `/dashboard/ess/profile` ✅ MW
 - `/dashboard/ess/requests` ✅ MW
 
+### portal (8 pages)
+
+- `/dashboard/portal/accounts/[id]` ❌ MW
+- `/dashboard/portal/accounts` ❌ MW
+- `/dashboard/portal/activity` ❌ MW
+- `/dashboard/portal/ai` ❌ MW
+- `/dashboard/portal/claims` ❌ MW
+- `/dashboard/portal/drafts` ❌ MW
+- `/dashboard/portal/reports` ❌ MW
+- `/dashboard/portal/users` ❌ MW
+
+### traceability (8 pages)
+
+- `/dashboard/traceability/backward` ❌ MW
+- `/dashboard/traceability/forward` ❌ MW
+- `/dashboard/traceability/genealogy` ❌ MW
+- `/dashboard/traceability/mock-recall` ❌ MW
+- `/dashboard/traceability/recalls/[id]` ❌ MW
+- `/dashboard/traceability/recalls` ❌ MW
+- `/dashboard/traceability/regulatory` ❌ MW
+- `/dashboard/traceability/search` ❌ MW
+
 ### training (8 pages)
 
 - `/dashboard/training/ai` ✅ MW
@@ -211,6 +243,37 @@ Generated: 2026-05-22
 - `/dashboard/training/sessions` ✅ MW
 - `/dashboard/training/skill-matrix` ✅ MW
 
+### van-sales (8 pages)
+
+- `/dashboard/van-sales/ai` ❌ MW
+- `/dashboard/van-sales/pos` ❌ MW
+- `/dashboard/van-sales/reconciliation` ❌ MW
+- `/dashboard/van-sales/route` ❌ MW
+- `/dashboard/van-sales/stock` ❌ MW
+- `/dashboard/van-sales/vans/[id]` ❌ MW
+- `/dashboard/van-sales/vans/new` ❌ MW
+- `/dashboard/van-sales/vans` ❌ MW
+
+### bank-reconciliation (7 pages)
+
+- `/dashboard/bank-reconciliation/ai` ❌ MW
+- `/dashboard/bank-reconciliation/balance` ❌ MW
+- `/dashboard/bank-reconciliation/import` ❌ MW
+- `/dashboard/bank-reconciliation/open-items` ❌ MW
+- `/dashboard/bank-reconciliation/rules` ❌ MW
+- `/dashboard/bank-reconciliation/statements/[id]` ❌ MW
+- `/dashboard/bank-reconciliation/statements` ❌ MW
+
+### custom-fields (7 pages)
+
+- `/dashboard/custom-fields/[id]` ❌ MW
+- `/dashboard/custom-fields/ai` ❌ MW
+- `/dashboard/custom-fields/fields` ❌ MW
+- `/dashboard/custom-fields/form-builder` ❌ MW
+- `/dashboard/custom-fields/new-field` ❌ MW
+- `/dashboard/custom-fields/values` ❌ MW
+- `/dashboard/custom-fields/workflow-rules` ❌ MW
+
 ### fleet (7 pages)
 
 - `/dashboard/fleet/drivers` ✅ MW
@@ -220,16 +283,6 @@ Generated: 2026-05-22
 - `/dashboard/fleet/reports` ✅ MW
 - `/dashboard/fleet/trips` ✅ MW
 - `/dashboard/fleet/vehicles` ✅ MW
-
-### portal (7 pages)
-
-- `/dashboard/portal/accounts` ✅ MW
-- `/dashboard/portal/activity` ✅ MW
-- `/dashboard/portal/ai` ✅ MW
-- `/dashboard/portal/claims` ✅ MW
-- `/dashboard/portal/drafts` ✅ MW
-- `/dashboard/portal/reports` ✅ MW
-- `/dashboard/portal/users` ✅ MW
 
 ### report-builder (7 pages)
 
@@ -251,43 +304,23 @@ Generated: 2026-05-22
 - `/dashboard/reports/production` ✅ MW
 - `/dashboard/reports/sales` ✅ MW
 
-### traceability (7 pages)
+### dunning (6 pages)
 
-- `/dashboard/traceability/backward` ✅ MW
-- `/dashboard/traceability/forward` ✅ MW
-- `/dashboard/traceability/genealogy` ✅ MW
-- `/dashboard/traceability/mock-recall` ✅ MW
-- `/dashboard/traceability/recalls` ✅ MW
-- `/dashboard/traceability/regulatory` ✅ MW
-- `/dashboard/traceability/search` ✅ MW
+- `/dashboard/dunning/aging` ❌ MW
+- `/dashboard/dunning/cases/[id]` ❌ MW
+- `/dashboard/dunning/cases` ❌ MW
+- `/dashboard/dunning/credit-holds` ❌ MW
+- `/dashboard/dunning/policies` ❌ MW
+- `/dashboard/dunning/workqueue` ❌ MW
 
-### van-sales (7 pages)
+### invoice-match (6 pages)
 
-- `/dashboard/van-sales/ai` ✅ MW
-- `/dashboard/van-sales/pos` ✅ MW
-- `/dashboard/van-sales/reconciliation` ✅ MW
-- `/dashboard/van-sales/route` ✅ MW
-- `/dashboard/van-sales/stock` ✅ MW
-- `/dashboard/van-sales/vans/new` ✅ MW
-- `/dashboard/van-sales/vans` ✅ MW
-
-### bank-reconciliation (6 pages)
-
-- `/dashboard/bank-reconciliation/ai` ✅ MW
-- `/dashboard/bank-reconciliation/balance` ✅ MW
-- `/dashboard/bank-reconciliation/import` ✅ MW
-- `/dashboard/bank-reconciliation/open-items` ✅ MW
-- `/dashboard/bank-reconciliation/rules` ✅ MW
-- `/dashboard/bank-reconciliation/statements` ✅ MW
-
-### custom-fields (6 pages)
-
-- `/dashboard/custom-fields/ai` ✅ MW
-- `/dashboard/custom-fields/fields` ✅ MW
-- `/dashboard/custom-fields/form-builder` ✅ MW
-- `/dashboard/custom-fields/new-field` ✅ MW
-- `/dashboard/custom-fields/values` ✅ MW
-- `/dashboard/custom-fields/workflow-rules` ✅ MW
+- `/dashboard/invoice-match/[id]` ❌ MW
+- `/dashboard/invoice-match/ai` ❌ MW
+- `/dashboard/invoice-match/blocked` ❌ MW
+- `/dashboard/invoice-match/duplicates` ❌ MW
+- `/dashboard/invoice-match/matches` ❌ MW
+- `/dashboard/invoice-match/review-queue` ❌ MW
 
 ### notification-center (6 pages)
 
@@ -324,6 +357,14 @@ Generated: 2026-05-22
 - `/dashboard/calendar/resources` ✅ MW
 - `/dashboard/calendar/view` ✅ MW
 
+### contracts (5 pages)
+
+- `/dashboard/contracts/ai` ❌ MW
+- `/dashboard/contracts/expiring` ❌ MW
+- `/dashboard/contracts/list/[id]` ❌ MW
+- `/dashboard/contracts/list` ❌ MW
+- `/dashboard/contracts/new` ❌ MW
+
 ### cycle-count (5 pages)
 
 - `/dashboard/cycle-count/entries` ✅ MW
@@ -331,14 +372,6 @@ Generated: 2026-05-22
 - `/dashboard/cycle-count/reports` ✅ MW
 - `/dashboard/cycle-count/tasks` ✅ MW
 - `/dashboard/cycle-count/variances` ✅ MW
-
-### dunning (5 pages)
-
-- `/dashboard/dunning/aging` ✅ MW
-- `/dashboard/dunning/cases` ✅ MW
-- `/dashboard/dunning/credit-holds` ✅ MW
-- `/dashboard/dunning/policies` ✅ MW
-- `/dashboard/dunning/workqueue` ✅ MW
 
 ### esg (5 pages)
 
@@ -356,14 +389,6 @@ Generated: 2026-05-22
 - `/dashboard/finance/accounting/sales-invoices` ✅ MW
 - `/dashboard/finance/accounting/suppliers-ledger` ✅ MW
 
-### invoice-match (5 pages)
-
-- `/dashboard/invoice-match/ai` ✅ MW
-- `/dashboard/invoice-match/blocked` ✅ MW
-- `/dashboard/invoice-match/duplicates` ✅ MW
-- `/dashboard/invoice-match/matches` ✅ MW
-- `/dashboard/invoice-match/review-queue` ✅ MW
-
 ### kanban (5 pages)
 
 - `/dashboard/kanban/ai` ✅ MW
@@ -371,6 +396,14 @@ Generated: 2026-05-22
 - `/dashboard/kanban/cards` ✅ MW
 - `/dashboard/kanban/reports` ✅ MW
 - `/dashboard/kanban/view` ✅ MW
+
+### recurring-orders (5 pages)
+
+- `/dashboard/recurring-orders/ai` ❌ MW
+- `/dashboard/recurring-orders/reports` ❌ MW
+- `/dashboard/recurring-orders/templates/[id]` ❌ MW
+- `/dashboard/recurring-orders/templates/new` ❌ MW
+- `/dashboard/recurring-orders/templates` ❌ MW
 
 ### subcontracting (5 pages)
 
@@ -394,12 +427,12 @@ Generated: 2026-05-22
 - `/dashboard/commissions/rules` ✅ MW
 - `/dashboard/commissions/transactions` ✅ MW
 
-### contracts (4 pages)
+### landed-cost (4 pages)
 
-- `/dashboard/contracts/ai` ✅ MW
-- `/dashboard/contracts/expiring` ✅ MW
-- `/dashboard/contracts/list` ✅ MW
-- `/dashboard/contracts/new` ✅ MW
+- `/dashboard/landed-cost/[id]` ❌ MW
+- `/dashboard/landed-cost/ai` ❌ MW
+- `/dashboard/landed-cost/documents` ❌ MW
+- `/dashboard/landed-cost/new` ❌ MW
 
 ### procurement-suggestion (4 pages)
 
@@ -407,13 +440,6 @@ Generated: 2026-05-22
 - `/dashboard/procurement-suggestion/groups` ✅ MW
 - `/dashboard/procurement-suggestion/suggestions` ✅ MW
 - `/dashboard/procurement-suggestion/supplier-prices` ✅ MW
-
-### recurring-orders (4 pages)
-
-- `/dashboard/recurring-orders/ai` ✅ MW
-- `/dashboard/recurring-orders/reports` ✅ MW
-- `/dashboard/recurring-orders/templates/new` ✅ MW
-- `/dashboard/recurring-orders/templates` ✅ MW
 
 ### tax (4 pages)
 
@@ -428,17 +454,23 @@ Generated: 2026-05-22
 - `/dashboard/allergen/material-profiles` ✅ MW
 - `/dashboard/allergen/product-allergens` ✅ MW
 
-### landed-cost (3 pages)
+### knowledge-base (3 pages)
 
-- `/dashboard/landed-cost/ai` ✅ MW
-- `/dashboard/landed-cost/documents` ✅ MW
-- `/dashboard/landed-cost/new` ✅ MW
+- `/dashboard/knowledge-base/[id]` ❌ MW
+- `/dashboard/knowledge-base/articles/new` ❌ MW
+- `/dashboard/knowledge-base/articles` ❌ MW
 
 ### mrp (3 pages)
 
 - `/dashboard/mrp/forecast` ✅ MW
 - `/dashboard/mrp/run` ✅ MW
 - `/dashboard/mrp/suggestions` ✅ MW
+
+### sales (3 pages)
+
+- `/dashboard/sales/invoices/[id]` ❌ MW
+- `/dashboard/sales/orders/[id]` ❌ MW
+- `/dashboard/sales/shipments/[id]` ❌ MW
 
 ### secondary-sales (3 pages)
 
@@ -451,28 +483,63 @@ Generated: 2026-05-22
 - `/dashboard/developer/graphql` ✅ MW
 - `/dashboard/developer/keys` ✅ MW
 
-### knowledge-base (2 pages)
+### documents (2 pages)
 
-- `/dashboard/knowledge-base/articles/new` ✅ MW
-- `/dashboard/knowledge-base/articles` ✅ MW
+- `/dashboard/documents/[id]` ❌ MW
+- `/dashboard/documents/new` ✅ MW
 
 ### mobile (2 pages)
 
 - `/dashboard/mobile/approvals` ✅ MW
 - `/dashboard/mobile/devices` ✅ MW
 
-### documents (1 pages)
+### price-lists (2 pages)
 
-- `/dashboard/documents/new` ✅ MW
+- `/dashboard/price-lists/[id]` ❌ MW
+- `/dashboard/price-lists/approval-queue` ❌ MW
 
-### price-lists (1 pages)
+### production-execution (2 pages)
 
-- `/dashboard/price-lists/approval-queue` ✅ MW
+- `/dashboard/production-execution/[id]` ❌ MW
+- `/dashboard/production-execution/work-orders` ❌ MW
 
-### production-execution (1 pages)
+### surveys (2 pages)
 
-- `/dashboard/production-execution/work-orders` ✅ MW
+- `/dashboard/surveys/[id]` ❌ MW
+- `/dashboard/surveys/new` ❌ MW
 
-### surveys (1 pages)
+### brand-assets (1 pages)
 
-- `/dashboard/surveys/new` ✅ MW
+- `/dashboard/brand-assets/[id]` ❌ MW
+
+### crm (1 pages)
+
+- `/dashboard/crm/records/[id]` ❌ MW
+
+### procurement (1 pages)
+
+- `/dashboard/procurement/orders/[id]` ❌ MW
+
+### production (1 pages)
+
+- `/dashboard/production/orders/[id]` ❌ MW
+
+### projects (1 pages)
+
+- `/dashboard/projects/[id]` ❌ MW
+
+### quality (1 pages)
+
+- `/dashboard/quality/[id]` ❌ MW
+
+### roles (1 pages)
+
+- `/dashboard/roles/[id]` ❌ MW
+
+### supplier-portal (1 pages)
+
+- `/dashboard/supplier-portal/accounts/[id]` ❌ MW
+
+### users (1 pages)
+
+- `/dashboard/users/[id]` ❌ MW

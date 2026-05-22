@@ -12,8 +12,8 @@
       }
     ],
     "fileExists": true,
-    "isRedirectStubAsStandalone": true,
-    "standaloneRedirectsTo": "/dashboard/admin?tab=users",
+    "isRedirectStubAsStandalone": false,
+    "standaloneRedirectsTo": null,
     "isStillUserVisibleThroughImport": true,
     "module": "Administration"
   },
@@ -30,8 +30,8 @@
       }
     ],
     "fileExists": true,
-    "isRedirectStubAsStandalone": true,
-    "standaloneRedirectsTo": "/dashboard/admin?tab=roles",
+    "isRedirectStubAsStandalone": false,
+    "standaloneRedirectsTo": null,
     "isStillUserVisibleThroughImport": true,
     "module": "Administration"
   },
@@ -120,8 +120,8 @@
       }
     ],
     "fileExists": true,
-    "isRedirectStubAsStandalone": true,
-    "standaloneRedirectsTo": "/dashboard/admin?tab=custom-fields",
+    "isRedirectStubAsStandalone": false,
+    "standaloneRedirectsTo": null,
     "isStillUserVisibleThroughImport": true,
     "module": "Administration"
   },
@@ -936,8 +936,8 @@
       }
     ],
     "fileExists": true,
-    "isRedirectStubAsStandalone": true,
-    "standaloneRedirectsTo": "/dashboard/crm?tab=surveys",
+    "isRedirectStubAsStandalone": false,
+    "standaloneRedirectsTo": null,
     "isStillUserVisibleThroughImport": true,
     "module": "Commercial / CRM"
   },
@@ -990,8 +990,8 @@
       }
     ],
     "fileExists": true,
-    "isRedirectStubAsStandalone": true,
-    "standaloneRedirectsTo": "/dashboard/documents?tab=knowledge-base",
+    "isRedirectStubAsStandalone": false,
+    "standaloneRedirectsTo": null,
     "isStillUserVisibleThroughImport": true,
     "module": "Documents & Communication"
   },
@@ -1188,8 +1188,8 @@
       }
     ],
     "fileExists": true,
-    "isRedirectStubAsStandalone": true,
-    "standaloneRedirectsTo": "/dashboard/finance?tab=bank-recon",
+    "isRedirectStubAsStandalone": false,
+    "standaloneRedirectsTo": null,
     "isStillUserVisibleThroughImport": true,
     "module": "Finance"
   },
@@ -1206,8 +1206,8 @@
       }
     ],
     "fileExists": true,
-    "isRedirectStubAsStandalone": true,
-    "standaloneRedirectsTo": "/dashboard/finance?tab=invoice-match",
+    "isRedirectStubAsStandalone": false,
+    "standaloneRedirectsTo": null,
     "isStillUserVisibleThroughImport": true,
     "module": "Finance"
   },
@@ -1260,8 +1260,8 @@
       }
     ],
     "fileExists": true,
-    "isRedirectStubAsStandalone": true,
-    "standaloneRedirectsTo": "/dashboard/finance?tab=dunning",
+    "isRedirectStubAsStandalone": false,
+    "standaloneRedirectsTo": null,
     "isStillUserVisibleThroughImport": true,
     "module": "Finance"
   },
@@ -1788,8 +1788,8 @@
       }
     ],
     "fileExists": true,
-    "isRedirectStubAsStandalone": true,
-    "standaloneRedirectsTo": "/dashboard/inventory?tab=traceability",
+    "isRedirectStubAsStandalone": false,
+    "standaloneRedirectsTo": null,
     "isStillUserVisibleThroughImport": true,
     "module": "Supply Chain / Inventory"
   },
@@ -2040,8 +2040,8 @@
       }
     ],
     "fileExists": true,
-    "isRedirectStubAsStandalone": true,
-    "standaloneRedirectsTo": "/dashboard/marketing?tab=campaigns",
+    "isRedirectStubAsStandalone": false,
+    "standaloneRedirectsTo": null,
     "isStillUserVisibleThroughImport": true,
     "module": "Commercial / Marketing"
   },
@@ -2058,8 +2058,8 @@
       }
     ],
     "fileExists": true,
-    "isRedirectStubAsStandalone": true,
-    "standaloneRedirectsTo": "/dashboard/marketing?tab=promotions",
+    "isRedirectStubAsStandalone": false,
+    "standaloneRedirectsTo": null,
     "isStillUserVisibleThroughImport": true,
     "module": "Commercial / Marketing"
   },
@@ -2076,8 +2076,8 @@
       }
     ],
     "fileExists": true,
-    "isRedirectStubAsStandalone": true,
-    "standaloneRedirectsTo": "/dashboard/marketing?tab=trade-spend",
+    "isRedirectStubAsStandalone": false,
+    "standaloneRedirectsTo": null,
     "isStillUserVisibleThroughImport": true,
     "module": "Commercial / Marketing"
   },
@@ -2094,8 +2094,8 @@
       }
     ],
     "fileExists": true,
-    "isRedirectStubAsStandalone": true,
-    "standaloneRedirectsTo": "/dashboard/marketing?tab=ads",
+    "isRedirectStubAsStandalone": false,
+    "standaloneRedirectsTo": null,
     "isStillUserVisibleThroughImport": true,
     "module": "Commercial / Marketing"
   },
@@ -2112,8 +2112,8 @@
       }
     ],
     "fileExists": true,
-    "isRedirectStubAsStandalone": true,
-    "standaloneRedirectsTo": "/dashboard/marketing?tab=social-media",
+    "isRedirectStubAsStandalone": false,
+    "standaloneRedirectsTo": null,
     "isStillUserVisibleThroughImport": true,
     "module": "Commercial / Marketing"
   },
@@ -2130,8 +2130,8 @@
       }
     ],
     "fileExists": true,
-    "isRedirectStubAsStandalone": true,
-    "standaloneRedirectsTo": "/dashboard/marketing?tab=segments",
+    "isRedirectStubAsStandalone": false,
+    "standaloneRedirectsTo": null,
     "isStillUserVisibleThroughImport": true,
     "module": "Commercial / Marketing"
   },
@@ -2148,8 +2148,8 @@
       }
     ],
     "fileExists": true,
-    "isRedirectStubAsStandalone": true,
-    "standaloneRedirectsTo": "/dashboard/marketing?tab=influencers",
+    "isRedirectStubAsStandalone": false,
+    "standaloneRedirectsTo": null,
     "isStillUserVisibleThroughImport": true,
     "module": "Commercial / Marketing"
   },
@@ -2202,8 +2202,8 @@
       }
     ],
     "fileExists": true,
-    "isRedirectStubAsStandalone": true,
-    "standaloneRedirectsTo": "/dashboard/marketing?tab=visits",
+    "isRedirectStubAsStandalone": false,
+    "standaloneRedirectsTo": null,
     "isStillUserVisibleThroughImport": true,
     "module": "Commercial / Marketing"
   },
@@ -2220,8 +2220,8 @@
       }
     ],
     "fileExists": true,
-    "isRedirectStubAsStandalone": true,
-    "standaloneRedirectsTo": "/dashboard/marketing?tab=brand-spend",
+    "isRedirectStubAsStandalone": false,
+    "standaloneRedirectsTo": null,
     "isStillUserVisibleThroughImport": true,
     "module": "Commercial / Marketing"
   },
@@ -2238,8 +2238,8 @@
       }
     ],
     "fileExists": true,
-    "isRedirectStubAsStandalone": true,
-    "standaloneRedirectsTo": "/dashboard/marketing?tab=tpm",
+    "isRedirectStubAsStandalone": false,
+    "standaloneRedirectsTo": null,
     "isStillUserVisibleThroughImport": true,
     "module": "Commercial / Marketing"
   },
@@ -2634,8 +2634,8 @@
       }
     ],
     "fileExists": true,
-    "isRedirectStubAsStandalone": true,
-    "standaloneRedirectsTo": "/dashboard/procurement?tab=landed-cost",
+    "isRedirectStubAsStandalone": false,
+    "standaloneRedirectsTo": null,
     "isStillUserVisibleThroughImport": true,
     "module": "Supply Chain / Procurement"
   },
@@ -2652,8 +2652,8 @@
       }
     ],
     "fileExists": true,
-    "isRedirectStubAsStandalone": true,
-    "standaloneRedirectsTo": "/dashboard/procurement?tab=supplier-portal",
+    "isRedirectStubAsStandalone": false,
+    "standaloneRedirectsTo": null,
     "isStillUserVisibleThroughImport": true,
     "module": "Supply Chain / Procurement"
   },
@@ -2670,8 +2670,8 @@
       }
     ],
     "fileExists": true,
-    "isRedirectStubAsStandalone": true,
-    "standaloneRedirectsTo": "/dashboard/production?tab=orders",
+    "isRedirectStubAsStandalone": false,
+    "standaloneRedirectsTo": null,
     "isStillUserVisibleThroughImport": true,
     "module": "Manufacturing / Production"
   },
@@ -2940,8 +2940,8 @@
       }
     ],
     "fileExists": true,
-    "isRedirectStubAsStandalone": true,
-    "standaloneRedirectsTo": "/dashboard/production?tab=execution",
+    "isRedirectStubAsStandalone": false,
+    "standaloneRedirectsTo": null,
     "isStillUserVisibleThroughImport": true,
     "module": "Manufacturing / Production"
   },
@@ -2994,8 +2994,8 @@
       }
     ],
     "fileExists": true,
-    "isRedirectStubAsStandalone": true,
-    "standaloneRedirectsTo": "/dashboard/production?tab=projects",
+    "isRedirectStubAsStandalone": false,
+    "standaloneRedirectsTo": null,
     "isStillUserVisibleThroughImport": true,
     "module": "Manufacturing / Production"
   },
@@ -3102,8 +3102,8 @@
       }
     ],
     "fileExists": true,
-    "isRedirectStubAsStandalone": true,
-    "standaloneRedirectsTo": "/dashboard/quality?tab=brand-assets",
+    "isRedirectStubAsStandalone": false,
+    "standaloneRedirectsTo": null,
     "isStillUserVisibleThroughImport": true,
     "module": "Factory Operations / Quality"
   },
@@ -3354,8 +3354,8 @@
       }
     ],
     "fileExists": true,
-    "isRedirectStubAsStandalone": true,
-    "standaloneRedirectsTo": "/dashboard/sales?tab=price-lists",
+    "isRedirectStubAsStandalone": false,
+    "standaloneRedirectsTo": null,
     "isStillUserVisibleThroughImport": true,
     "module": "Commercial / Sales"
   },
@@ -3390,8 +3390,8 @@
       }
     ],
     "fileExists": true,
-    "isRedirectStubAsStandalone": true,
-    "standaloneRedirectsTo": "/dashboard/sales?tab=contracts",
+    "isRedirectStubAsStandalone": false,
+    "standaloneRedirectsTo": null,
     "isStillUserVisibleThroughImport": true,
     "module": "Commercial / Sales"
   },
@@ -3408,8 +3408,8 @@
       }
     ],
     "fileExists": true,
-    "isRedirectStubAsStandalone": true,
-    "standaloneRedirectsTo": "/dashboard/sales?tab=recurring",
+    "isRedirectStubAsStandalone": false,
+    "standaloneRedirectsTo": null,
     "isStillUserVisibleThroughImport": true,
     "module": "Commercial / Sales"
   },
@@ -3462,8 +3462,8 @@
       }
     ],
     "fileExists": true,
-    "isRedirectStubAsStandalone": true,
-    "standaloneRedirectsTo": "/dashboard/sales?tab=van-sales",
+    "isRedirectStubAsStandalone": false,
+    "standaloneRedirectsTo": null,
     "isStillUserVisibleThroughImport": true,
     "module": "Commercial / Sales"
   },
@@ -3480,8 +3480,8 @@
       }
     ],
     "fileExists": true,
-    "isRedirectStubAsStandalone": true,
-    "standaloneRedirectsTo": "/dashboard/sales?tab=portal",
+    "isRedirectStubAsStandalone": false,
+    "standaloneRedirectsTo": null,
     "isStillUserVisibleThroughImport": true,
     "module": "Commercial / Sales"
   },
