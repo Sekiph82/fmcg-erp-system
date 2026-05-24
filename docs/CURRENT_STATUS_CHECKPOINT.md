@@ -125,8 +125,35 @@
 
 If normal Chrome still shows old redirect: **Chrome DevTools → Application → Storage → Clear site data for localhost:3000**
 
+## Manual Regeneration (2026-05-24)
+
+| Item | Result |
+|------|--------|
+| Old PDFs deleted | 10 (pre-recovery) |
+| New output directories | 13 |
+| Manual markdown files written | 13/13 |
+| PDFs generated | 13/13 |
+| Missing images | 2 (payroll modals — placeholders used) |
+| Static audits post-manual | BVT 0, Action Cards 0 |
+
+### Manual Files
+
+| Manual | Markdown | PDF |
+|--------|----------|-----|
+| Manufacturing | ✅ | ✅ 16.1 MB |
+| Supply Chain | ✅ | ✅ 11.9 MB |
+| Sales & Distribution | ✅ | ✅ 7.9 MB |
+| Commercial/CRM/Marketing | ✅ | ✅ 7.3 MB |
+| Finance & Payroll | ✅ | ✅ 8.2 MB |
+| HR | ✅ | ✅ 6.3 MB |
+| Logistics | ✅ | ✅ 2.2 MB |
+| Maintenance & Utilities | ✅ | ✅ 6.0 MB |
+| Documents & Communication | ✅ | ✅ 3.3 MB |
+| Administration | ✅ | ✅ 6.6 MB |
+| Intelligence & Analytics | ✅ | ✅ 4.0 MB |
+| Kenya Go-Live Training | ✅ | ✅ 1.0 MB |
+| Full Reference | ✅ | ✅ 0.5 MB |
+
 ## Next Work
 
-**ERP button recovery + redirect defense complete.** Ready to resume:
-- Manufacturing module manuals / screenshots
-- Any other non-recovery work
+**All manuals regenerated.** System fully recovered and documented. No pending tasks.
