@@ -36,6 +36,14 @@ Date: 2026-05-24 (ERP Button Recovery — FULLY COMPLETE)
 
 ---
 
+## Compliance regulatory certs JSON fix (2026-05-24)
+
+- Root cause: `quality/certificates/page.tsx` used bare `fetch("/api/v1/...")` → hits Next.js port 3000 → gets HTML → `r.json()` throws SyntaxError
+- Fix: added `API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"` and prefixed all 4 fetch calls; added `credentials: "include"`
+- Regression test: `frontend/e2e/compliance-regulatory-certs.spec.ts`
+- Report: `docs/COMPLIANCE_REGULATORY_CERTS_JSON_FIX.md`
+- **Key rule**: Any new page doing direct `fetch("/api/v1/...")` will break — must use `API_BASE` or `apiClient`
+
 ## Redirect cache defense (2026-05-24)
 
 - Verified: no 308/permanentRedirect anywhere in codebase

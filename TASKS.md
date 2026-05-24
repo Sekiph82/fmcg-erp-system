@@ -1,7 +1,7 @@
 # TASKS
 
 ## Current Phase
-REDIRECT CACHE DEFENSE — COMPLETE. 2026-05-24. Verified no 308/permanentRedirect in codebase. Added no-store headers to both middleware redirect call sites (auth guard + REDIRECTS match). Status remains 302. type-check CLEAN, build CLEAN, all audits green. If normal Chrome still shows old redirect: Chrome DevTools → Application → Storage → Clear site data for localhost:3000.
+COMPLIANCE REGULATORY CERTS JSON FIX — COMPLETE. 2026-05-24. Root cause: bare `fetch("/api/v1/...")` in `quality/certificates/page.tsx` hit Next.js port 3000 instead of backend port 8000, returning HTML 404 which failed JSON.parse. Fix: added `API_BASE` const and prefixed all fetch calls. Redirect cache defense also verified (302 + no-store). type-check CLEAN, build CLEAN, all audits green. If normal Chrome still shows old redirect: Chrome DevTools → Application → Storage → Clear site data for localhost:3000.
 
 ### Prior: ERP BUTTON RECOVERY — FULLY COMPLETE. 2026-05-24. Live smoke confirmed 141/141 passed (exit code 0, 1 transient flaky). All static audits green: BVT 0, broken action cards 0, 313/313 restored routes valid.
 

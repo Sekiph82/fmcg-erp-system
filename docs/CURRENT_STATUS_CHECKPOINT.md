@@ -103,6 +103,17 @@
 
 ---
 
+## Compliance Regulatory Certs JSON Fix (2026-05-24)
+
+| Item | Result |
+|------|--------|
+| Failing URL | `/dashboard/compliance?tab=regulatory-certs` |
+| Root cause | `fetch("/api/v1/...")` → port 3000 (Next.js) → HTML → JSON.parse error |
+| File fixed | `frontend/src/app/dashboard/quality/certificates/page.tsx` |
+| Fix | Added `API_BASE` const, prefixed all 4 fetch calls with it |
+| Regression test | `frontend/e2e/compliance-regulatory-certs.spec.ts` |
+| Report | `docs/COMPLIANCE_REGULATORY_CERTS_JSON_FIX.md` |
+
 ## Redirect Cache Defense (2026-05-24)
 
 | Check | Result |

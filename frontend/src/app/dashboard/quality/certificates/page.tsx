@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
 interface Cert {
   id: string;
   cert_ref: string;
@@ -77,16 +79,16 @@ export default function CertificatesPage() {
 
   const load = () => {
     setLoading(true);
-    const endpoint = expiringOnly ? "/api/v1/regulatory-certs/expiring?days=90" : (() => {
+    const endpoint = expiringOnly ? `${API_BASE}/api/v1/regulatory-certs/expiring?days=90` : (() => {
       const p = new URLSearchParams({ limit: "200" });
       if (filterAuth) p.set("authority", filterAuth);
       if (filterStatus) p.set("status", filterStatus);
       if (filterType) p.set("entity_type", filterType);
-      return `/api/v1/regulatory-certs/?${p}`;
+      return `${API_BASE}/api/v1/regulatory-certs/?${p}`;
     })();
     Promise.all([
-      fetch(endpoint).then((r) => r.json()),
-      fetch("/api/v1/regulatory-certs/stats").then((r) => r.json()),
+      fetch(endpoint, { credentials: "include" }).then((r) => r.json()),
+      fetch(`${API_BASE}/api/v1/regulatory-certs/stats`, { credentials: "include" }).then((r) => r.json()),
     ]).then(([c, s]) => { setCerts(Array.isArray(c) ? c : []); setStats(s); })
       .catch((e) => setError(String(e)))
       .finally(() => setLoading(false));
@@ -98,8 +100,9 @@ export default function CertificatesPage() {
     setSaving(true);
     setError(null);
     try {
-      const r = await fetch("/api/v1/regulatory-certs/", {
+      const r = await fetch(`${API_BASE}/api/v1/regulatory-certs/`, {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           entity_name: form.entity_name,
