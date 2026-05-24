@@ -36,6 +36,14 @@ Date: 2026-05-24 (ERP Button Recovery — FULLY COMPLETE)
 
 ---
 
+## Redirect cache defense (2026-05-24)
+
+- Verified: no 308/permanentRedirect anywhere in codebase
+- Added `Cache-Control: no-store` + `Pragma: no-cache` + `Expires: 0` to both middleware redirect call sites via `tempRedirect()` helper
+- Status is 302 on all dashboard redirects
+- If normal Chrome still shows old redirect: Chrome → DevTools → Application → Storage → Clear site data for localhost:3000
+- Report: `docs/CHROME_REDIRECT_CACHE_FIX.md`
+
 ## Recovery complete
 
 No pending recovery tasks. Next session can start new work directly.

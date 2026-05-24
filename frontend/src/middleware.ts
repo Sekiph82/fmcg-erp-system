@@ -455,6 +455,14 @@ function matchRedirect(pathname: string): { p: string; t?: string; d?: string } 
   return null;
 }
 
+function tempRedirect(url: URL | string, base: string): NextResponse {
+  const response = NextResponse.redirect(typeof url === "string" ? new URL(url, base) : url, { status: 302 });
+  response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+  response.headers.set("Pragma", "no-cache");
+  response.headers.set("Expires", "0");
+  return response;
+}
+
 export function middleware(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
 
@@ -464,7 +472,7 @@ export function middleware(request: NextRequest) {
   if (!request.cookies.has("erp_access_token")) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("next", pathname + search);
-    return NextResponse.redirect(loginUrl, { status: 302 });
+    return tempRedirect(loginUrl, request.url);
   }
 
   const match = matchRedirect(pathname);
@@ -477,7 +485,7 @@ export function middleware(request: NextRequest) {
   const qs = params.toString();
   const dest = qs ? `${match.p}?${qs}` : match.p;
 
-  return NextResponse.redirect(new URL(dest, request.url), { status: 302 });
+  return tempRedirect(dest, request.url);
 }
 
 export const config = {

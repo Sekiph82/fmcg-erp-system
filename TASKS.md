@@ -1,7 +1,9 @@
 # TASKS
 
 ## Current Phase
-ERP BUTTON RECOVERY — FULLY COMPLETE. 2026-05-24. Live smoke confirmed 141/141 passed (exit code 0, 1 transient flaky). All static audits green: BVT 0, broken action cards 0, 313/313 restored routes valid, type-check CLEAN, build CLEAN. Ready to resume manual/screenshot work.
+REDIRECT CACHE DEFENSE — COMPLETE. 2026-05-24. Verified no 308/permanentRedirect in codebase. Added no-store headers to both middleware redirect call sites (auth guard + REDIRECTS match). Status remains 302. type-check CLEAN, build CLEAN, all audits green. If normal Chrome still shows old redirect: Chrome DevTools → Application → Storage → Clear site data for localhost:3000.
+
+### Prior: ERP BUTTON RECOVERY — FULLY COMPLETE. 2026-05-24. Live smoke confirmed 141/141 passed (exit code 0, 1 transient flaky). All static audits green: BVT 0, broken action cards 0, 313/313 restored routes valid.
 
 ### Wave 2C (2026-05-22)
 **BVT before:** 3 | **BVT after:** 0 | **Resolved:** 3

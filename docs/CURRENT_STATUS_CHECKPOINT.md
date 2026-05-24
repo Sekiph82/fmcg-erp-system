@@ -103,8 +103,19 @@
 
 ---
 
+## Redirect Cache Defense (2026-05-24)
+
+| Check | Result |
+|-------|--------|
+| 308/permanentRedirect in codebase | 0 |
+| Middleware redirect status | 302 |
+| no-store headers added | ✅ |
+| Report | `docs/CHROME_REDIRECT_CACHE_FIX.md` |
+
+If normal Chrome still shows old redirect: **Chrome DevTools → Application → Storage → Clear site data for localhost:3000**
+
 ## Next Work
 
-**ERP button recovery fully complete.** Ready to resume:
+**ERP button recovery + redirect defense complete.** Ready to resume:
 - Manufacturing module manuals / screenshots
 - Any other non-recovery work
