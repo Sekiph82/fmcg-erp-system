@@ -55,6 +55,26 @@ const EMPTY_FORM: NewCertForm = {
   status: "ACTIVE", document_url: "",
 };
 
+const EMPTY_STATS: Stats = {
+  total_active: 0,
+  expired: 0,
+  expiring_90d: 0,
+  by_authority: {},
+};
+
+function normalizeStats(input: unknown): Stats {
+  const s = input as Record<string, unknown> | null | undefined;
+  return {
+    total_active: Number(s?.total_active ?? 0),
+    expired: Number(s?.expired ?? 0),
+    expiring_90d: Number(s?.expiring_90d ?? 0),
+    by_authority:
+      s?.by_authority && typeof s.by_authority === "object"
+        ? (s.by_authority as Record<string, number>)
+        : {},
+  };
+}
+
 function urgencyColor(days: number | null): string {
   if (days === null) return "text-gray-400";
   if (days < 0) return "text-red-600 font-bold";
@@ -66,7 +86,7 @@ function urgencyColor(days: number | null): string {
 
 export default function CertificatesPage() {
   const [certs, setCerts] = useState<Cert[]>([]);
-  const [stats, setStats] = useState<Stats | null>(null);
+  const [stats, setStats] = useState<Stats>(EMPTY_STATS);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState<NewCertForm>(EMPTY_FORM);
@@ -89,7 +109,7 @@ export default function CertificatesPage() {
     Promise.all([
       fetch(endpoint, { credentials: "include" }).then((r) => r.json()),
       fetch(`${API_BASE}/api/v1/regulatory-certs/stats`, { credentials: "include" }).then((r) => r.json()),
-    ]).then(([c, s]) => { setCerts(Array.isArray(c) ? c : []); setStats(s); })
+    ]).then(([c, s]) => { setCerts(Array.isArray(c) ? c : []); setStats(normalizeStats(s)); })
       .catch((e) => setError(String(e)))
       .finally(() => setLoading(false));
   };
@@ -143,24 +163,22 @@ export default function CertificatesPage() {
       {error && <div className="bg-red-50 border border-red-200 rounded p-3 text-sm text-red-700">{error}</div>}
 
       {/* KPI strip */}
-      {stats && (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          {[
-            { label: "Total Active", value: stats.total_active, color: "text-gray-800" },
-            { label: "Expiring (90d)", value: stats.expiring_90d, color: "text-amber-600" },
-            { label: "Expired", value: stats.expired, color: "text-red-600" },
-            { label: "Authorities", value: Object.keys(stats.by_authority).length, color: "text-blue-600" },
-          ].map((k) => (
-            <div key={k.label} className={`bg-white border rounded-lg p-4 shadow-sm ${k.label === "Expired" && k.value > 0 ? "border-red-300 bg-red-50" : ""}`}>
-              <p className="text-xs text-gray-500">{k.label}</p>
-              <p className={`text-2xl font-bold mt-1 ${k.color}`}>{k.value}</p>
-            </div>
-          ))}
-        </div>
-      )}
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        {[
+          { label: "Total Active", value: stats.total_active, color: "text-gray-800" },
+          { label: "Expiring (90d)", value: stats.expiring_90d, color: "text-amber-600" },
+          { label: "Expired", value: stats.expired, color: "text-red-600" },
+          { label: "Authorities", value: Object.keys(stats?.by_authority ?? {}).length, color: "text-blue-600" },
+        ].map((k) => (
+          <div key={k.label} className={`bg-white border rounded-lg p-4 shadow-sm ${k.label === "Expired" && k.value > 0 ? "border-red-300 bg-red-50" : ""}`}>
+            <p className="text-xs text-gray-500">{k.label}</p>
+            <p className={`text-2xl font-bold mt-1 ${k.color}`}>{k.value}</p>
+          </div>
+        ))}
+      </div>
 
       {/* Authority breakdown */}
-      {stats && Object.keys(stats.by_authority).length > 0 && (
+      {Object.keys(stats?.by_authority ?? {}).length > 0 && (
         <div className="flex flex-wrap gap-2">
           {Object.entries(stats.by_authority).sort(([, a], [, b]) => b - a).map(([auth, cnt]) => (
             <button key={auth} onClick={() => setFilterAuth(filterAuth === auth ? "" : auth)}
