@@ -3,7 +3,7 @@
 **Version:** 2.0 (post-recovery)  
 **Date:** 2026-05-24  
 **Audience:** All Kenya staff — first-time ERP users going live  
-**Purpose:** Step-by-step guide for the Kenya go-live. Covers login, navigation, daily tasks for each role, and the first 30 days.
+**Purpose:** Step-by-step visual guide for the Kenya go-live. Covers login, navigation, daily tasks for each role, and the first 30 days.
 
 ---
 
@@ -12,7 +12,8 @@
 1. [Welcome & Getting Started](#1-welcome--getting-started)
 2. [Logging In](#2-logging-in)
 3. [Navigating the ERP](#3-navigating-the-erp)
-4. [Role-Based Quick Start Guides](#4-role-based-quick-start-guides)
+4. [Your Daily Workflow — Quick Visual Tour](#4-your-daily-workflow--quick-visual-tour)
+5. [Role-Based Quick Start Guides](#5-role-based-quick-start-guides)
    - [Procurement Officer](#procurement-officer)
    - [Finance / Accountant](#finance--accountant)
    - [Production Manager](#production-manager)
@@ -21,11 +22,11 @@
    - [Sales Representative](#sales-representative)
    - [HR Officer](#hr-officer)
    - [System Administrator](#system-administrator)
-5. [Kenya-Specific Configurations](#5-kenya-specific-configurations)
-6. [Go-Live Checklist](#6-go-live-checklist)
-7. [First 30 Days Guide](#7-first-30-days-guide)
-8. [Common Questions (FAQ)](#8-common-questions-faq)
-9. [Support Contacts](#9-support-contacts)
+6. [Kenya-Specific Configurations](#6-kenya-specific-configurations)
+7. [Go-Live Checklist](#7-go-live-checklist)
+8. [First 30 Days Guide](#8-first-30-days-guide)
+9. [Common Questions (FAQ)](#9-common-questions-faq)
+10. [Support Contacts](#10-support-contacts)
 
 ---
 
@@ -33,7 +34,7 @@
 
 **Congratulations on going live with FMCG ERP!**
 
-This manual is your first guide. It does not cover every feature — it covers what you need to know to start working effectively from Day 1.
+This manual is your first visual guide. It does not cover every feature — it covers what you need to know to start working effectively from Day 1.
 
 **What this system does for your business:**
 - Replaces manual Excel-based ordering, stock tracking, and payroll
@@ -52,37 +53,41 @@ This manual is your first guide. It does not cover every feature — it covers w
 ## 2. Logging In
 
 ![Login Page](../../user-manual/screenshots/captured/001_login.png)
-*The ERP login page.*
+*The ERP login page — enter your email and password provided by IT.*
 
 **URL:** `http://[your-company-erp-address]/login`
 
 **Steps:**
 1. Open Chrome or Edge (do not use Internet Explorer)
 2. Type the ERP URL in the address bar
-3. Enter your email address (given to you by IT)
+3. Enter your username (given to you by IT)
 4. Enter your password (given to you by IT at training)
 5. Click **Sign In**
 
-**First login:** You will be prompted to change your password.
+**First login:** You will be prompted to change your password. Choose something you will remember — at least 8 characters with a number.
 
 **Forgot password:** Click "Forgot password?" on the login page → enter your email → check your inbox for a reset link.
 
-**Account locked?** Contact IT or your System Administrator — your account locked after 5 wrong password attempts.
+**Account locked?** Contact IT or your System Administrator — your account locks after 5 wrong password attempts.
 
 ---
 
 ## 3. Navigating the ERP
 
 ![Dashboard](../../user-manual/screenshots/captured/002_dashboard.png)
-*Main dashboard after login.*
+*Main dashboard after login — KPI cards, quick links, and notifications.*
 
 ### The Left Sidebar
-The left sidebar contains all the modules you have access to. If you don't see a module, your role doesn't have access — contact your administrator.
+
+![Sidebar Navigation](../../user-manual/screenshots/captured/module-ui/kenya-go-live/sidebar-navigation.png)
+*The left sidebar — your main navigation. Modules listed depend on your role and permissions.*
+
+The left sidebar shows all modules you have access to. Click any item to go to that module. If you don't see a module, your role doesn't have access — contact your administrator.
 
 **Common sidebar items:**
 
-| Sidebar Item | What you'll find there |
-|-------------|----------------------|
+| Sidebar Item | What you find there |
+|-------------|---------------------|
 | Dashboard | Home screen with KPIs |
 | Procurement | Purchase requests and orders |
 | Inventory | Stock management |
@@ -115,9 +120,60 @@ Most modules have multiple tabs at the top. Click a tab to switch section. Your 
 
 ---
 
-## 4. Role-Based Quick Start Guides
+## 4. Your Daily Workflow — Quick Visual Tour
+
+### What a Module Looks Like
+
+![Module Overview Example](../../user-manual/screenshots/captured/module-ui/kenya-go-live/module-overview-example.png)
+*Example module view — Procurement. Notice the tabs at top, list of records in the middle, and action buttons.*
+
+Every module has the same layout pattern:
+1. **Tabs** across the top — switch between sections (e.g. Requests, Orders, Deliveries)
+2. **Filter / Search** bar — narrow down the list
+3. **Table of records** — the main data list
+4. **Action buttons** — top-right: "+ New", Export, etc.
+5. **Row actions** — click a row to open detail; icons on right for quick actions
+
+### Creating Something New (Sales Example)
+
+![Create Workflow Example](../../user-manual/screenshots/captured/module-ui/kenya-go-live/create-workflow-example.png)
+*Sales module — orders list with "New Order" button and filters. Same layout pattern for all create workflows.*
+
+**Every "create" workflow follows the same steps:**
+1. Click **+ New [Item]** button
+2. A form or modal appears — fill in required fields (marked with \*)
+3. Click **Save** or **Submit**
+4. Record appears in the list
+
+### The Approvals Queue
+
+![Approvals Queue](../../user-manual/screenshots/captured/module-ui/kenya-go-live/approvals-queue.png)
+*Approvals queue — everything waiting for your decision in one place.*
+
+If you have an approval role (manager, department head, finance officer), you will see pending items in:
+- **Left sidebar → Approvals**
+- **Bell notification** (number badge)
+
+Click any pending item to review and approve or reject.
+
+### Analytics and Reports
+
+![Reports and Filters](../../user-manual/screenshots/captured/module-ui/kenya-go-live/reports-filter-example.png)
+*Analytics module — select date range, module, and KPI to view business performance.*
+
+Management uses the Analytics module to review performance. You do not need to know this on Day 1 but your manager will show you which reports relate to your department.
+
+---
+
+## 5. Role-Based Quick Start Guides
 
 ### Procurement Officer
+
+**Your modules:** Procurement · Inventory  
+**Route:** `/dashboard/procurement`
+
+![Procurement Overview](../../user-manual/screenshots/captured/029_procurement.png)
+*Procurement module — your main workspace.*
 
 **Your daily job in ERP:**
 
@@ -139,7 +195,7 @@ Most modules have multiple tabs at the top. Click a tab to switch section. Your 
 5. Click **Confirm Receipt**
 
 **What to do if a supplier delivers the wrong item:**
-1. Do NOT accept the wrong goods into the system
+1. Do NOT accept wrong goods into the system
 2. Record a discrepancy on the delivery
 3. Contact supplier immediately
 4. Raise a Helpdesk ticket if unsure how to handle
@@ -147,6 +203,12 @@ Most modules have multiple tabs at the top. Click a tab to switch section. Your 
 ---
 
 ### Finance / Accountant
+
+**Your modules:** Finance · Cashbook · Payroll  
+**Route:** `/dashboard/finance`
+
+![Finance Overview](../../user-manual/screenshots/captured/module-ui/finance-payroll/finance/overview-tab.png)
+*Finance hub — your workspace for accounts, cashbook, and payroll.*
 
 **Your daily job in ERP:**
 
@@ -172,6 +234,10 @@ Most modules have multiple tabs at the top. Click a tab to switch section. Your 
 
 **Running Payroll:**
 1. Finance → Payroll → **New Payroll Period**
+
+![Payroll Overview](../../user-manual/screenshots/captured/module-ui/finance-payroll/payroll/overview-tab.png)
+*Payroll workspace — click "New Payroll Period" to start monthly payroll.*
+
 2. Select month and year
 3. Click **Generate**
 4. Review exceptions
@@ -180,6 +246,12 @@ Most modules have multiple tabs at the top. Click a tab to switch section. Your 
 ---
 
 ### Production Manager
+
+**Your modules:** Production · Planning · Shop Floor  
+**Route:** `/dashboard/production`
+
+![Production Overview](../../user-manual/screenshots/captured/038_production.png)
+*Production module — plans, work orders, scheduling, OEE.*
 
 **Your daily job in ERP:**
 
@@ -192,7 +264,7 @@ Most modules have multiple tabs at the top. Click a tab to switch section. Your 
 **Creating a Production Plan:**
 1. Production → Plans → **+ New Plan**
 2. Set name, dates, and products
-3. Add work orders (or they'll be added individually)
+3. Add work orders (or they will be added individually)
 4. Click **Confirm Plan**
 
 **Releasing a Work Order:**
@@ -208,6 +280,12 @@ Most modules have multiple tabs at the top. Click a tab to switch section. Your 
 ---
 
 ### Quality Officer
+
+**Your modules:** Quality · Compliance  
+**Route:** `/dashboard/quality`
+
+![Quality Overview](../../user-manual/screenshots/captured/062_quality.png)
+*Quality module — QC inspections, certificates, allergens, and complaints.*
 
 **Your daily job in ERP:**
 
@@ -238,6 +316,15 @@ Most modules have multiple tabs at the top. Click a tab to switch section. Your 
 ---
 
 ### Warehouse / Store Keeper
+
+**Your modules:** Inventory · WMS · Warehouses  
+**Route:** `/dashboard/inventory`
+
+![Inventory Overview](../../user-manual/screenshots/captured/017_inventory.png)
+*Inventory module — stock levels, movements, and transactions.*
+
+![WMS Overview](../../user-manual/screenshots/captured/025_wms.png)
+*WMS — zones, bin locations, quarantine, and pick waves.*
 
 **Your daily job in ERP:**
 
@@ -270,6 +357,12 @@ Most modules have multiple tabs at the top. Click a tab to switch section. Your 
 
 ### Sales Representative
 
+**Your modules:** Sales · CRM  
+**Route:** `/dashboard/sales`
+
+![Sales Overview](../../user-manual/screenshots/captured/module-ui/sales/sales/overview-tab.png)
+*Sales module — orders, invoices, customers, and performance KPIs.*
+
 **Your daily job in ERP:**
 
 **Morning:**
@@ -299,6 +392,12 @@ Before confirming a date, check:
 
 ### HR Officer
 
+**Your modules:** HR  
+**Route:** `/dashboard/hr`
+
+![HR Overview](../../user-manual/screenshots/captured/module-ui/hr/hr/overview-tab.png)
+*HR module — employees, attendance, leave, and payroll.*
+
 **Your daily job in ERP:**
 
 **Morning:**
@@ -325,6 +424,15 @@ Before confirming a date, check:
 
 ### System Administrator
 
+**Your modules:** Admin · All modules  
+**Route:** `/dashboard/admin`
+
+![Admin Dashboard](../../user-manual/screenshots/captured/003_admin.png)
+*Admin hub — user management, roles, permissions, and security settings.*
+
+![Admin Users](../../user-manual/screenshots/captured/004_admin-users.png)
+*Users list — create, edit, and manage user accounts.*
+
 **Your daily job in ERP:**
 
 **Morning:**
@@ -347,11 +455,14 @@ Before confirming a date, check:
 
 ---
 
-## 5. Kenya-Specific Configurations
+## 6. Kenya-Specific Configurations
 
 ### eTIMS (KRA Electronic Tax Invoice)
 
 All customer invoices must be submitted to KRA via eTIMS. The ERP does this automatically when you post a sales invoice.
+
+![eTIMS Tab](../../user-manual/screenshots/captured/module-ui/finance-payroll/finance/etims-tab.png)
+*eTIMS submission log — status of all KRA invoice submissions.*
 
 **For this to work:**
 - Each customer must have a valid KRA PIN in their profile
@@ -379,9 +490,16 @@ Updated rates apply automatically. Verify in Finance → Payroll → Settings th
 
 VAT is 16% standard rate in Kenya. Zero-rated categories (exports, basic foodstuffs) must be configured in the product master with the correct VAT code.
 
+### M-Pesa Integration
+
+![M-Pesa Integration](../../user-manual/screenshots/captured/134_integrations-mpesa.png)
+*M-Pesa Daraja API configuration for receiving customer payments.*
+
+M-Pesa payments auto-match to invoices when the customer uses the invoice number as their M-Pesa payment reference.
+
 ---
 
-## 6. Go-Live Checklist
+## 7. Go-Live Checklist
 
 ### Week Before Go-Live
 
@@ -417,7 +535,7 @@ VAT is 16% standard rate in Kenya. Zero-rated categories (exports, basic foodstu
 
 ---
 
-## 7. First 30 Days Guide
+## 8. First 30 Days Guide
 
 | Period | Focus |
 |--------|-------|
@@ -440,7 +558,7 @@ VAT is 16% standard rate in Kenya. Zero-rated categories (exports, basic foodstu
 
 ---
 
-## 8. Common Questions (FAQ)
+## 9. Common Questions (FAQ)
 
 **Q: Can I undo an action in the ERP?**  
 A: Depends on the action. You can edit DRAFT documents before posting. Posted journals require a reversal entry — do not delete. Contact Finance Manager or raise a Helpdesk ticket.
@@ -455,17 +573,21 @@ A: If not yet confirmed: edit the delivery record. If already confirmed: contact
 A: Contact your System Administrator. Role permissions may need adjusting.
 
 **Q: The month is over — can I still post a transaction last month?**  
-A: Depends on whether the period is closed. Contact Finance — they control period closure. Do not try to post backdated entries without Finance approval.
+A: Depends on whether the period is closed. Contact Finance — they control period closure. Do not post backdated entries without Finance approval.
 
 **Q: How do I print from the ERP?**  
 A: Open the document (invoice, PO, etc.) → click **Print** or **Export to PDF** → print from your browser.
 
 ---
 
-## 9. Support Contacts
+## 10. Support Contacts
 
 **Internal IT Helpdesk:**
 - Route: Helpdesk module (in the ERP left sidebar)
+
+![Helpdesk](../../user-manual/screenshots/captured/140_helpdesk.png)
+*Helpdesk — raise a support ticket from anywhere in the system.*
+
 - Email: it@[company].co.ke
 - Phone: [internal extension]
 

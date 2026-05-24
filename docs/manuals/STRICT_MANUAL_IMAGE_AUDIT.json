@@ -1,0 +1,2110 @@
+{
+  "generatedAt": "2026-05-24T19:13:15.350Z",
+  "totalMissing": 0,
+  "totalSmall": 0,
+  "totalPlaceholder": 0,
+  "totalOk": 324,
+  "pass": true,
+  "manuals": [
+    {
+      "slug": "manufacturing",
+      "mdFile": "FMCG-ERP-Manufacturing-Manual-v2.md",
+      "totalImages": 53,
+      "ok": 53,
+      "missing": 0,
+      "too_small": 0,
+      "placeholder": 0,
+      "sectionsWithoutImages": 39,
+      "images": [
+        {
+          "ref": "../../user-manual/screenshots/captured/038_production.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\038_production.png",
+          "sizeBytes": 570137,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/manufacturing/recipes/recipes-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\manufacturing\\recipes\\recipes-tab.png",
+          "sizeBytes": 404272,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/manufacturing/recipes/new-recipe-modal.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\manufacturing\\recipes\\new-recipe-modal.png",
+          "sizeBytes": 149022,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/manufacturing/recipes/import-modal-headers-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\manufacturing\\recipes\\import-modal-headers-tab.png",
+          "sizeBytes": 145069,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/manufacturing/recipes/import-modal-bom-items-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\manufacturing\\recipes\\import-modal-bom-items-tab.png",
+          "sizeBytes": 145069,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/manufacturing/recipes/import-modal-process-steps-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\manufacturing\\recipes\\import-modal-process-steps-tab.png",
+          "sizeBytes": 145079,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/manufacturing/bom/bom-list-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\manufacturing\\bom\\bom-list-tab.png",
+          "sizeBytes": 430359,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/manufacturing/bom/new-bom-modal.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\manufacturing\\bom\\new-bom-modal.png",
+          "sizeBytes": 312563,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/manufacturing/bom/substitutes-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\manufacturing\\bom\\substitutes-tab.png",
+          "sizeBytes": 444186,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/manufacturing/bom/new-substitute-group-modal.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\manufacturing\\bom\\new-substitute-group-modal.png",
+          "sizeBytes": 321669,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/manufacturing/bom/compare-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\manufacturing\\bom\\compare-tab.png",
+          "sizeBytes": 397353,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/manufacturing/bom/conversion-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\manufacturing\\bom\\conversion-tab.png",
+          "sizeBytes": 439491,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/038_production.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\038_production.png",
+          "sizeBytes": 570137,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/manufacturing/production/plans-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\manufacturing\\production\\plans-tab.png",
+          "sizeBytes": 408804,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/manufacturing/production/new-plan-modal.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\manufacturing\\production\\new-plan-modal.png",
+          "sizeBytes": 147139,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/manufacturing/production/work-orders-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\manufacturing\\production\\work-orders-tab.png",
+          "sizeBytes": 412853,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/manufacturing/production/new-work-order-modal.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\manufacturing\\production\\new-work-order-modal.png",
+          "sizeBytes": 168874,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/manufacturing/production/scheduling-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\manufacturing\\production\\scheduling-tab.png",
+          "sizeBytes": 417450,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/manufacturing/production/oee-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\manufacturing\\production\\oee-tab.png",
+          "sizeBytes": 411235,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/manufacturing/production/downtime-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\manufacturing\\production\\downtime-tab.png",
+          "sizeBytes": 403433,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/manufacturing/production/waste-yield-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\manufacturing\\production\\waste-yield-tab.png",
+          "sizeBytes": 404078,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/manufacturing/production/costing-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\manufacturing\\production\\costing-tab.png",
+          "sizeBytes": 303176,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/manufacturing/planning/dashboard-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\manufacturing\\planning\\dashboard-tab.png",
+          "sizeBytes": 363401,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/manufacturing/planning/mrp-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\manufacturing\\planning\\mrp-tab.png",
+          "sizeBytes": 229922,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/manufacturing/planning/mps-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\manufacturing\\planning\\mps-tab.png",
+          "sizeBytes": 398941,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/manufacturing/planning/capacity-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\manufacturing\\planning\\capacity-tab.png",
+          "sizeBytes": 442320,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/manufacturing/planning/simulation-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\manufacturing\\planning\\simulation-tab.png",
+          "sizeBytes": 436970,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/manufacturing/planning/new-scenario-modal.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\manufacturing\\planning\\new-scenario-modal.png",
+          "sizeBytes": 292064,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/manufacturing/planning/schedule-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\manufacturing\\planning\\schedule-tab.png",
+          "sizeBytes": 435837,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/manufacturing/planning/bottlenecks-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\manufacturing\\planning\\bottlenecks-tab.png",
+          "sizeBytes": 436588,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/manufacturing/planning/changeover-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\manufacturing\\planning\\changeover-tab.png",
+          "sizeBytes": 437449,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/manufacturing/planning/kanban-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\manufacturing\\planning\\kanban-tab.png",
+          "sizeBytes": 405544,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/manufacturing/shop-floor/overview-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\manufacturing\\shop-floor\\overview-tab.png",
+          "sizeBytes": 441173,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/manufacturing/shop-floor/terminal-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\manufacturing\\shop-floor\\terminal-tab.png",
+          "sizeBytes": 397754,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/manufacturing/shop-floor/supervisor-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\manufacturing\\shop-floor\\supervisor-tab.png",
+          "sizeBytes": 417186,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/manufacturing/shop-floor/queue-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\manufacturing\\shop-floor\\queue-tab.png",
+          "sizeBytes": 428994,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/manufacturing/shop-floor/downtime-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\manufacturing\\shop-floor\\downtime-tab.png",
+          "sizeBytes": 393006,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/manufacturing/shop-floor/handover-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\manufacturing\\shop-floor\\handover-tab.png",
+          "sizeBytes": 409052,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/manufacturing/npd/new-products-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\manufacturing\\npd\\new-products-tab.png",
+          "sizeBytes": 429119,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/manufacturing/npd/new-project-form.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\manufacturing\\npd\\new-project-form.png",
+          "sizeBytes": 326315,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/manufacturing/quality/inspections-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\manufacturing\\quality\\inspections-tab.png",
+          "sizeBytes": 394511,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/manufacturing/quality/new-inspection-modal.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\manufacturing\\quality\\new-inspection-modal.png",
+          "sizeBytes": 165378,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/manufacturing/quality/certificates-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\manufacturing\\quality\\certificates-tab.png",
+          "sizeBytes": 386864,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/manufacturing/quality/parameters-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\manufacturing\\quality\\parameters-tab.png",
+          "sizeBytes": 420965,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/manufacturing/quality/consumer-complaints-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\manufacturing\\quality\\consumer-complaints-tab.png",
+          "sizeBytes": 400161,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/manufacturing/quality/allergen-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\manufacturing\\quality\\allergen-tab.png",
+          "sizeBytes": 407583,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/manufacturing/quality/qms-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\manufacturing\\quality\\qms-tab.png",
+          "sizeBytes": 457041,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/manufacturing/quality/reports-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\manufacturing\\quality\\reports-tab.png",
+          "sizeBytes": 376097,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/manufacturing/compliance/gs1-labels-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\manufacturing\\compliance\\gs1-labels-tab.png",
+          "sizeBytes": 377432,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/manufacturing/compliance/regulatory-certs-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\manufacturing\\compliance\\regulatory-certs-tab.png",
+          "sizeBytes": 379192,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/manufacturing/compliance/regulatory-certs-status-dropdown.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\manufacturing\\compliance\\regulatory-certs-status-dropdown.png",
+          "sizeBytes": 386536,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/manufacturing/compliance/regulatory-certs-entity-type-dropdown.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\manufacturing\\compliance\\regulatory-certs-entity-type-dropdown.png",
+          "sizeBytes": 386996,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/manufacturing/compliance/add-certificate-form.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\manufacturing\\compliance\\add-certificate-form.png",
+          "sizeBytes": 324200,
+          "status": "ok"
+        }
+      ]
+    },
+    {
+      "slug": "supply-chain",
+      "mdFile": "FMCG-ERP-Supply-Chain-Manual-v2.md",
+      "totalImages": 41,
+      "ok": 41,
+      "missing": 0,
+      "too_small": 0,
+      "placeholder": 0,
+      "sectionsWithoutImages": 20,
+      "images": [
+        {
+          "ref": "../../user-manual/screenshots/captured/029_procurement.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\029_procurement.png",
+          "sizeBytes": 558077,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/supply-chain/procurement/purchase-requests-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\supply-chain\\procurement\\purchase-requests-tab.png",
+          "sizeBytes": 406890,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/supply-chain/procurement/new-pr-modal.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\supply-chain\\procurement\\new-pr-modal.png",
+          "sizeBytes": 157843,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/supply-chain/procurement/orders-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\supply-chain\\procurement\\orders-tab.png",
+          "sizeBytes": 417626,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/supply-chain/procurement/new-po-modal.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\supply-chain\\procurement\\new-po-modal.png",
+          "sizeBytes": 160404,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/supply-chain/procurement/rfq-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\supply-chain\\procurement\\rfq-tab.png",
+          "sizeBytes": 426957,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/supply-chain/procurement/new-rfq-modal.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\supply-chain\\procurement\\new-rfq-modal.png",
+          "sizeBytes": 310602,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/supply-chain/procurement/deliveries-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\supply-chain\\procurement\\deliveries-tab.png",
+          "sizeBytes": 399401,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/supply-chain/procurement/blanket-agreements-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\supply-chain\\procurement\\blanket-agreements-tab.png",
+          "sizeBytes": 403324,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/supply-chain/procurement/new-blanket-modal.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\supply-chain\\procurement\\new-blanket-modal.png",
+          "sizeBytes": 298976,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/supply-chain/procurement/reorder-policies-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\supply-chain\\procurement\\reorder-policies-tab.png",
+          "sizeBytes": 404859,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/supply-chain/procurement/new-reorder-policy-modal.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\supply-chain\\procurement\\new-reorder-policy-modal.png",
+          "sizeBytes": 307901,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/supply-chain/procurement/suggestions-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\supply-chain\\procurement\\suggestions-tab.png",
+          "sizeBytes": 386615,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/supply-chain/procurement/subcontracting-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\supply-chain\\procurement\\subcontracting-tab.png",
+          "sizeBytes": 382441,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/supply-chain/procurement/landed-cost-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\supply-chain\\procurement\\landed-cost-tab.png",
+          "sizeBytes": 402073,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/supply-chain/procurement/supplier-portal-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\supply-chain\\procurement\\supplier-portal-tab.png",
+          "sizeBytes": 419289,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/supply-chain/suppliers/suppliers-list-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\supply-chain\\suppliers\\suppliers-list-tab.png",
+          "sizeBytes": 405981,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/supply-chain/suppliers/add-supplier-modal.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\supply-chain\\suppliers\\add-supplier-modal.png",
+          "sizeBytes": 143789,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/supply-chain/inventory/stock-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\supply-chain\\inventory\\stock-tab.png",
+          "sizeBytes": 419215,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/supply-chain/inventory/entry-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\supply-chain\\inventory\\entry-tab.png",
+          "sizeBytes": 287328,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/supply-chain/inventory/issue-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\supply-chain\\inventory\\issue-tab.png",
+          "sizeBytes": 285958,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/supply-chain/inventory/transfer-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\supply-chain\\inventory\\transfer-tab.png",
+          "sizeBytes": 290856,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/supply-chain/movements/movements-list.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\supply-chain\\movements\\movements-list.png",
+          "sizeBytes": 405931,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/supply-chain/cycle-count/cycle-count-dashboard.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\supply-chain\\cycle-count\\cycle-count-dashboard.png",
+          "sizeBytes": 440123,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/supply-chain/shelf-life/shelf-life-dashboard.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\supply-chain\\shelf-life\\shelf-life-dashboard.png",
+          "sizeBytes": 416873,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/supply-chain/warehouses/warehouses-list-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\supply-chain\\warehouses\\warehouses-list-tab.png",
+          "sizeBytes": 36838,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/supply-chain/warehouses/add-warehouse-modal.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\supply-chain\\warehouses\\add-warehouse-modal.png",
+          "sizeBytes": 152624,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/supply-chain/wms/zones-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\supply-chain\\wms\\zones-tab.png",
+          "sizeBytes": 36838,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/supply-chain/wms/new-zone-modal.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\supply-chain\\wms\\new-zone-modal.png",
+          "sizeBytes": 147040,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/supply-chain/wms/locations-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\supply-chain\\wms\\locations-tab.png",
+          "sizeBytes": 421963,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/supply-chain/wms/new-location-modal.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\supply-chain\\wms\\new-location-modal.png",
+          "sizeBytes": 149803,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/supply-chain/wms/handling-units-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\supply-chain\\wms\\handling-units-tab.png",
+          "sizeBytes": 422806,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/supply-chain/wms/pick-waves-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\supply-chain\\wms\\pick-waves-tab.png",
+          "sizeBytes": 416546,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/supply-chain/wms/quarantine-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\supply-chain\\wms\\quarantine-tab.png",
+          "sizeBytes": 420057,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/supply-chain/wms/quarantine-stock-modal.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\supply-chain\\wms\\quarantine-stock-modal.png",
+          "sizeBytes": 176766,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/supply-chain/logistics/overview-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\supply-chain\\logistics\\overview-tab.png",
+          "sizeBytes": 319742,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/supply-chain/logistics/shipments-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\supply-chain\\logistics\\shipments-tab.png",
+          "sizeBytes": 389053,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/supply-chain/logistics/containers-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\supply-chain\\logistics\\containers-tab.png",
+          "sizeBytes": 402325,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/supply-chain/logistics/arrivals-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\supply-chain\\logistics\\arrivals-tab.png",
+          "sizeBytes": 402617,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/supply-chain/logistics/documents-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\supply-chain\\logistics\\documents-tab.png",
+          "sizeBytes": 399468,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/supply-chain/logistics/fleet-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\supply-chain\\logistics\\fleet-tab.png",
+          "sizeBytes": 431203,
+          "status": "ok"
+        }
+      ]
+    },
+    {
+      "slug": "sales-distribution",
+      "mdFile": "FMCG-ERP-Sales-Distribution-Manual-v2.md",
+      "totalImages": 24,
+      "ok": 24,
+      "missing": 0,
+      "too_small": 0,
+      "placeholder": 0,
+      "sectionsWithoutImages": 22,
+      "images": [
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/sales/sales/overview-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\sales\\sales\\overview-tab.png",
+          "sizeBytes": 373355,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/sales/sales/orders-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\sales\\sales\\orders-tab.png",
+          "sizeBytes": 405932,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/sales/orders/new-order-modal.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\sales\\orders\\new-order-modal.png",
+          "sizeBytes": 169922,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/sales/orders/order-dropdowns.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\sales\\orders\\order-dropdowns.png",
+          "sizeBytes": 157694,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/sales/sales/quotes-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\sales\\sales\\quotes-tab.png",
+          "sizeBytes": 437909,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/sales/sales/invoices-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\sales\\sales\\invoices-tab.png",
+          "sizeBytes": 372420,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/sales/sales/shipments-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\sales\\sales\\shipments-tab.png",
+          "sizeBytes": 372708,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/sales/sales/delivery-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\sales\\sales\\delivery-tab.png",
+          "sizeBytes": 450309,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/sales/sales/collections-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\sales\\sales\\collections-tab.png",
+          "sizeBytes": 464720,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/sales/sales/returns-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\sales\\sales\\returns-tab.png",
+          "sizeBytes": 448194,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/sales/sales/pricing-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\sales\\sales\\pricing-tab.png",
+          "sizeBytes": 464380,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/sales/sales/price-lists-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\sales\\sales\\price-lists-tab.png",
+          "sizeBytes": 414096,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/sales/pricing/new-pricing-rule-modal.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\sales\\pricing\\new-pricing-rule-modal.png",
+          "sizeBytes": 174541,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/sales/sales/dynamic-pricing-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\sales\\sales\\dynamic-pricing-tab.png",
+          "sizeBytes": 447917,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/sales/sales/contracts-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\sales\\sales\\contracts-tab.png",
+          "sizeBytes": 399560,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/sales/sales/recurring-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\sales\\sales\\recurring-tab.png",
+          "sizeBytes": 403104,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/sales/sales/van-sales-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\sales\\sales\\van-sales-tab.png",
+          "sizeBytes": 383634,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/sales/sales/secondary-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\sales\\sales\\secondary-tab.png",
+          "sizeBytes": 415324,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/sales/sales/distributors-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\sales\\sales\\distributors-tab.png",
+          "sizeBytes": 405163,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/sales/sales/field-sales-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\sales\\sales\\field-sales-tab.png",
+          "sizeBytes": 393737,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/138_pos.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\138_pos.png",
+          "sizeBytes": 342807,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/sales/sales/reports-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\sales\\sales\\reports-tab.png",
+          "sizeBytes": 339703,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/sales/sales/margin-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\sales\\sales\\margin-tab.png",
+          "sizeBytes": 372122,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/sales/sales/commissions-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\sales\\sales\\commissions-tab.png",
+          "sizeBytes": 408346,
+          "status": "ok"
+        }
+      ]
+    },
+    {
+      "slug": "commercial",
+      "mdFile": "FMCG-ERP-Commercial-CRM-Marketing-Manual-v2.md",
+      "totalImages": 23,
+      "ok": 23,
+      "missing": 0,
+      "too_small": 0,
+      "placeholder": 0,
+      "sectionsWithoutImages": 21,
+      "images": [
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/crm/crm/overview-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\crm\\crm\\overview-tab.png",
+          "sizeBytes": 414318,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/crm/crm/leads-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\crm\\crm\\leads-tab.png",
+          "sizeBytes": 420167,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/crm/leads/new-lead-form.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\crm\\leads\\new-lead-form.png",
+          "sizeBytes": 295764,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/crm/leads/new-lead-source-dropdown.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\crm\\leads\\new-lead-source-dropdown.png",
+          "sizeBytes": 299529,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/crm/leads/leads-dropdowns.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\crm\\leads\\leads-dropdowns.png",
+          "sizeBytes": 427209,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/crm/crm/pipeline-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\crm\\crm\\pipeline-tab.png",
+          "sizeBytes": 467100,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/crm/crm/opportunities-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\crm\\crm\\opportunities-tab.png",
+          "sizeBytes": 430138,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/crm/opportunities/new-opportunity-form.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\crm\\opportunities\\new-opportunity-form.png",
+          "sizeBytes": 307006,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/crm/opportunities/opportunities-dropdowns.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\crm\\opportunities\\opportunities-dropdowns.png",
+          "sizeBytes": 438331,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/crm/crm/activities-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\crm\\crm\\activities-tab.png",
+          "sizeBytes": 466658,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/crm/crm/forecast-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\crm\\crm\\forecast-tab.png",
+          "sizeBytes": 317048,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/crm/crm/territory-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\crm\\crm\\territory-tab.png",
+          "sizeBytes": 403796,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/crm/crm/stages-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\crm\\crm\\stages-tab.png",
+          "sizeBytes": 433830,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/crm/crm/win-loss-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\crm\\crm\\win-loss-tab.png",
+          "sizeBytes": 413494,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/crm/crm/loyalty-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\crm\\crm\\loyalty-tab.png",
+          "sizeBytes": 411507,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/crm/loyalty/enroll-form.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\crm\\loyalty\\enroll-form.png",
+          "sizeBytes": 314914,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/crm/crm/nps-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\crm\\crm\\nps-tab.png",
+          "sizeBytes": 346899,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/crm/nps/log-response-form.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\crm\\nps\\log-response-form.png",
+          "sizeBytes": 293271,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/crm/crm/surveys-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\crm\\crm\\surveys-tab.png",
+          "sizeBytes": 399330,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/128_marketing.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\128_marketing.png",
+          "sizeBytes": 482864,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/crm/crm/overview-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\crm\\crm\\overview-tab.png",
+          "sizeBytes": 414318,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/129_marketing-campaigns.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\129_marketing-campaigns.png",
+          "sizeBytes": 177527,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/130_marketing-tpm.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\130_marketing-tpm.png",
+          "sizeBytes": 521635,
+          "status": "ok"
+        }
+      ]
+    },
+    {
+      "slug": "finance-payroll",
+      "mdFile": "FMCG-ERP-Finance-Payroll-Manual-v2.md",
+      "totalImages": 31,
+      "ok": 31,
+      "missing": 0,
+      "too_small": 0,
+      "placeholder": 0,
+      "sectionsWithoutImages": 12,
+      "images": [
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/finance-payroll/finance/overview-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\finance-payroll\\finance\\overview-tab.png",
+          "sizeBytes": 340282,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/finance-payroll/finance/accounting-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\finance-payroll\\finance\\accounting-tab.png",
+          "sizeBytes": 390925,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/finance-payroll/cashbook/accounts-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\finance-payroll\\cashbook\\accounts-tab.png",
+          "sizeBytes": 405191,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/finance-payroll/cashbook/new-account-modal.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\finance-payroll\\cashbook\\new-account-modal.png",
+          "sizeBytes": 292615,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/finance-payroll/cashbook/account-type-dropdown.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\finance-payroll\\cashbook\\account-type-dropdown.png",
+          "sizeBytes": 292627,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/finance-payroll/cashbook/transactions-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\finance-payroll\\cashbook\\transactions-tab.png",
+          "sizeBytes": 404456,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/finance-payroll/cashbook/journal-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\finance-payroll\\cashbook\\journal-tab.png",
+          "sizeBytes": 404563,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/finance-payroll/finance/receivables-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\finance-payroll\\finance\\receivables-tab.png",
+          "sizeBytes": 308061,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/finance-payroll/finance/dunning-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\finance-payroll\\finance\\dunning-tab.png",
+          "sizeBytes": 374736,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/finance-payroll/finance/budget-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\finance-payroll\\finance\\budget-tab.png",
+          "sizeBytes": 307335,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/finance-payroll/finance/mpesa-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\finance-payroll\\finance\\mpesa-tab.png",
+          "sizeBytes": 410798,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/finance-payroll/finance/costing-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\finance-payroll\\finance\\costing-tab.png",
+          "sizeBytes": 419548,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/finance-payroll/finance/exchange-rates-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\finance-payroll\\finance\\exchange-rates-tab.png",
+          "sizeBytes": 271063,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/finance-payroll/finance/etims-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\finance-payroll\\finance\\etims-tab.png",
+          "sizeBytes": 298410,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/finance-payroll/finance/vat-returns-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\finance-payroll\\finance\\vat-returns-tab.png",
+          "sizeBytes": 354702,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/finance-payroll/bank-reconciliation/bank-recon-dashboard.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\finance-payroll\\bank-reconciliation\\bank-recon-dashboard.png",
+          "sizeBytes": 381192,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/finance-payroll/finance/bank-api-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\finance-payroll\\finance\\bank-api-tab.png",
+          "sizeBytes": 247175,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/finance-payroll/bank-api/bank-api-page.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\finance-payroll\\bank-api\\bank-api-page.png",
+          "sizeBytes": 247175,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/finance-payroll/bank-api/bank-api-dropdowns.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\finance-payroll\\bank-api\\bank-api-dropdowns.png",
+          "sizeBytes": 246061,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/finance-payroll/invoice-match/invoice-match-dashboard.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\finance-payroll\\invoice-match\\invoice-match-dashboard.png",
+          "sizeBytes": 392667,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/finance-payroll/fixed-assets/fixed-assets-dashboard.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\finance-payroll\\fixed-assets\\fixed-assets-dashboard.png",
+          "sizeBytes": 425296,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/finance-payroll/payroll/overview-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\finance-payroll\\payroll\\overview-tab.png",
+          "sizeBytes": 444320,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/finance-payroll/payroll/profiles-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\finance-payroll\\payroll\\profiles-tab.png",
+          "sizeBytes": 444320,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/finance-payroll/payroll/new-period-form.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\finance-payroll\\payroll\\new-period-form.png",
+          "sizeBytes": 507882,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/finance-payroll/payroll/payroll-month-dropdown.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\finance-payroll\\payroll\\payroll-month-dropdown.png",
+          "sizeBytes": 463554,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/finance-payroll/payroll/reports-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\finance-payroll\\payroll\\reports-tab.png",
+          "sizeBytes": 444320,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/finance-payroll/expenses/expenses-dashboard.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\finance-payroll\\expenses\\expenses-dashboard.png",
+          "sizeBytes": 431043,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/finance-payroll/tax/tax-dashboard.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\finance-payroll\\tax\\tax-dashboard.png",
+          "sizeBytes": 417428,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/finance-payroll/finance/tax-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\finance-payroll\\finance\\tax-tab.png",
+          "sizeBytes": 417428,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/finance-payroll/contracts/contracts-dashboard.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\finance-payroll\\contracts\\contracts-dashboard.png",
+          "sizeBytes": 399560,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/finance-payroll/finance/dimensions-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\finance-payroll\\finance\\dimensions-tab.png",
+          "sizeBytes": 441678,
+          "status": "ok"
+        }
+      ]
+    },
+    {
+      "slug": "hr",
+      "mdFile": "FMCG-ERP-HR-Manual-v2.md",
+      "totalImages": 20,
+      "ok": 20,
+      "missing": 0,
+      "too_small": 0,
+      "placeholder": 0,
+      "sectionsWithoutImages": 21,
+      "images": [
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/hr/hr/overview-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\hr\\hr\\overview-tab.png",
+          "sizeBytes": 364256,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/hr/hr/employees-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\hr\\hr\\employees-tab.png",
+          "sizeBytes": 424502,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/hr/employees/new-employee-form.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\hr\\employees\\new-employee-form.png",
+          "sizeBytes": 222597,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/hr/employees/employee-dropdowns.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\hr\\employees\\employee-dropdowns.png",
+          "sizeBytes": 222176,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/hr/hr/attendance-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\hr\\hr\\attendance-tab.png",
+          "sizeBytes": 411249,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/hr/attendance/record-attendance-form.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\hr\\attendance\\record-attendance-form.png",
+          "sizeBytes": 297683,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/hr/attendance/attendance-dropdowns.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\hr\\attendance\\attendance-dropdowns.png",
+          "sizeBytes": 290172,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/hr/hr/leave-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\hr\\hr\\leave-tab.png",
+          "sizeBytes": 426248,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/hr/leave/new-leave-form.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\hr\\leave\\new-leave-form.png",
+          "sizeBytes": 262150,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/hr/leave/leave-type-dropdown.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\hr\\leave\\leave-type-dropdown.png",
+          "sizeBytes": 240997,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/hr/hr/payroll-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\hr\\hr\\payroll-tab.png",
+          "sizeBytes": 444320,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/hr/hr/shifts-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\hr\\hr\\shifts-tab.png",
+          "sizeBytes": 350610,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/hr/shifts/new-template-form.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\hr\\shifts\\new-template-form.png",
+          "sizeBytes": 243174,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/hr/shifts/assign-shift-form.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\hr\\shifts\\assign-shift-form.png",
+          "sizeBytes": 257765,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/hr/hr/recruitment-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\hr\\hr\\recruitment-tab.png",
+          "sizeBytes": 420513,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/hr/hr/ess-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\hr\\hr\\ess-tab.png",
+          "sizeBytes": 459447,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/hr/hr/appraisals-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\hr\\hr\\appraisals-tab.png",
+          "sizeBytes": 369931,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/hr/hr/training-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\hr\\hr\\training-tab.png",
+          "sizeBytes": 387712,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/hr/hr/timesheets-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\hr\\hr\\timesheets-tab.png",
+          "sizeBytes": 399678,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/hr/hr/expenses-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\hr\\hr\\expenses-tab.png",
+          "sizeBytes": 431043,
+          "status": "ok"
+        }
+      ]
+    },
+    {
+      "slug": "logistics",
+      "mdFile": "FMCG-ERP-Logistics-Manual-v2.md",
+      "totalImages": 6,
+      "ok": 6,
+      "missing": 0,
+      "too_small": 0,
+      "placeholder": 0,
+      "sectionsWithoutImages": 27,
+      "images": [
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/supply-chain/logistics/overview-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\supply-chain\\logistics\\overview-tab.png",
+          "sizeBytes": 319742,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/supply-chain/logistics/shipments-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\supply-chain\\logistics\\shipments-tab.png",
+          "sizeBytes": 389053,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/supply-chain/logistics/containers-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\supply-chain\\logistics\\containers-tab.png",
+          "sizeBytes": 402325,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/supply-chain/logistics/arrivals-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\supply-chain\\logistics\\arrivals-tab.png",
+          "sizeBytes": 402617,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/supply-chain/logistics/documents-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\supply-chain\\logistics\\documents-tab.png",
+          "sizeBytes": 399468,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/supply-chain/logistics/fleet-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\supply-chain\\logistics\\fleet-tab.png",
+          "sizeBytes": 431203,
+          "status": "ok"
+        }
+      ]
+    },
+    {
+      "slug": "maintenance",
+      "mdFile": "FMCG-ERP-Maintenance-Utilities-Manual-v2.md",
+      "totalImages": 16,
+      "ok": 16,
+      "missing": 0,
+      "too_small": 0,
+      "placeholder": 0,
+      "sectionsWithoutImages": 16,
+      "images": [
+        {
+          "ref": "../../user-manual/screenshots/captured/119_maintenance.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\119_maintenance.png",
+          "sizeBytes": 478211,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/maintenance/overview/overview-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\maintenance\\overview\\overview-tab.png",
+          "sizeBytes": 478215,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/maintenance/assets/assets-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\maintenance\\assets\\assets-tab.png",
+          "sizeBytes": 561036,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/maintenance/assets/new-asset-modal.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\maintenance\\assets\\new-asset-modal.png",
+          "sizeBytes": 390370,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/maintenance/breakdowns/breakdowns-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\maintenance\\breakdowns\\breakdowns-tab.png",
+          "sizeBytes": 566795,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/maintenance/breakdowns/log-breakdown-modal.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\maintenance\\breakdowns\\log-breakdown-modal.png",
+          "sizeBytes": 415143,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/maintenance/plans/plans-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\maintenance\\plans\\plans-tab.png",
+          "sizeBytes": 567634,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/maintenance/plans/new-plan-modal.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\maintenance\\plans\\new-plan-modal.png",
+          "sizeBytes": 398593,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/maintenance/plans/work-orders-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\maintenance\\plans\\work-orders-tab.png",
+          "sizeBytes": 567636,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/maintenance/predictive/predictive-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\maintenance\\predictive\\predictive-tab.png",
+          "sizeBytes": 469205,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/maintenance/spares/spares-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\maintenance\\spares\\spares-tab.png",
+          "sizeBytes": 562512,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/maintenance/spares/add-part-modal.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\maintenance\\spares\\add-part-modal.png",
+          "sizeBytes": 387465,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/maintenance/reports/reports-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\maintenance\\reports\\reports-tab.png",
+          "sizeBytes": 355640,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/122_utility-management.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\122_utility-management.png",
+          "sizeBytes": 570930,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/123_utility-electricity.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\123_utility-electricity.png",
+          "sizeBytes": 200473,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/124_utility-water.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\124_utility-water.png",
+          "sizeBytes": 207026,
+          "status": "ok"
+        }
+      ]
+    },
+    {
+      "slug": "documents",
+      "mdFile": "FMCG-ERP-Documents-Communication-Manual-v2.md",
+      "totalImages": 8,
+      "ok": 8,
+      "missing": 0,
+      "too_small": 0,
+      "placeholder": 0,
+      "sectionsWithoutImages": 15,
+      "images": [
+        {
+          "ref": "../../user-manual/screenshots/captured/115_documents.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\115_documents.png",
+          "sizeBytes": 545772,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/116_documents-compliance.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\116_documents-compliance.png",
+          "sizeBytes": 729014,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/117_documents-knowledge-base.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\117_documents-knowledge-base.png",
+          "sizeBytes": 482721,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/139_communication.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\139_communication.png",
+          "sizeBytes": 187907,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/140_helpdesk.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\140_helpdesk.png",
+          "sizeBytes": 591747,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/135_approvals.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\135_approvals.png",
+          "sizeBytes": 527759,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/136_logs.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\136_logs.png",
+          "sizeBytes": 506282,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/137_logs-security.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\137_logs-security.png",
+          "sizeBytes": 506282,
+          "status": "ok"
+        }
+      ]
+    },
+    {
+      "slug": "admin",
+      "mdFile": "FMCG-ERP-Administration-Manual-v2.md",
+      "totalImages": 15,
+      "ok": 15,
+      "missing": 0,
+      "too_small": 0,
+      "placeholder": 0,
+      "sectionsWithoutImages": 25,
+      "images": [
+        {
+          "ref": "../../user-manual/screenshots/captured/003_admin.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\003_admin.png",
+          "sizeBytes": 623309,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/004_admin-users.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\004_admin-users.png",
+          "sizeBytes": 472549,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/005_admin-roles.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\005_admin-roles.png",
+          "sizeBytes": 389691,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/006_admin-permissions.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\006_admin-permissions.png",
+          "sizeBytes": 329749,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/007_admin-security.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\007_admin-security.png",
+          "sizeBytes": 568549,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/008_admin-system-config.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\008_admin-system-config.png",
+          "sizeBytes": 550520,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/009_admin-companies.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\009_admin-companies.png",
+          "sizeBytes": 561858,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/010_admin-approvals.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\010_admin-approvals.png",
+          "sizeBytes": 527759,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/011_admin-logs.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\011_admin-logs.png",
+          "sizeBytes": 506282,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/133_integrations.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\133_integrations.png",
+          "sizeBytes": 527689,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/134_integrations-mpesa.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\134_integrations-mpesa.png",
+          "sizeBytes": 571950,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/131_ai.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\131_ai.png",
+          "sizeBytes": 510173,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/132_ai-chat.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\132_ai-chat.png",
+          "sizeBytes": 634325,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/012_products.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\012_products.png",
+          "sizeBytes": 556067,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/013_materials.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\013_materials.png",
+          "sizeBytes": 550452,
+          "status": "ok"
+        }
+      ]
+    },
+    {
+      "slug": "intelligence",
+      "mdFile": "FMCG-ERP-Intelligence-Analytics-AI-Manual-v2.md",
+      "totalImages": 8,
+      "ok": 8,
+      "missing": 0,
+      "too_small": 0,
+      "placeholder": 0,
+      "sectionsWithoutImages": 19,
+      "images": [
+        {
+          "ref": "../../user-manual/screenshots/captured/109_analytics.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\109_analytics.png",
+          "sizeBytes": 552358,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/110_analytics-sales.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\110_analytics-sales.png",
+          "sizeBytes": 509083,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/111_analytics-production.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\111_analytics-production.png",
+          "sizeBytes": 500639,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/112_analytics-inventory.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\112_analytics-inventory.png",
+          "sizeBytes": 494388,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/113_analytics-finance.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\113_analytics-finance.png",
+          "sizeBytes": 516319,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/114_analytics-report-builder.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\114_analytics-report-builder.png",
+          "sizeBytes": 523526,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/131_ai.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\131_ai.png",
+          "sizeBytes": 510173,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/132_ai-chat.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\132_ai-chat.png",
+          "sizeBytes": 634325,
+          "status": "ok"
+        }
+      ]
+    },
+    {
+      "slug": "kenya-go-live",
+      "mdFile": "Kenya-Go-Live-ERP-Training-Manual-v2.md",
+      "totalImages": 21,
+      "ok": 21,
+      "missing": 0,
+      "too_small": 0,
+      "placeholder": 0,
+      "sectionsWithoutImages": 17,
+      "images": [
+        {
+          "ref": "../../user-manual/screenshots/captured/001_login.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\001_login.png",
+          "sizeBytes": 40493,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/002_dashboard.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\002_dashboard.png",
+          "sizeBytes": 576062,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/kenya-go-live/sidebar-navigation.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\kenya-go-live\\sidebar-navigation.png",
+          "sizeBytes": 574208,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/kenya-go-live/module-overview-example.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\kenya-go-live\\module-overview-example.png",
+          "sizeBytes": 562055,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/kenya-go-live/create-workflow-example.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\kenya-go-live\\create-workflow-example.png",
+          "sizeBytes": 517384,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/kenya-go-live/approvals-queue.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\kenya-go-live\\approvals-queue.png",
+          "sizeBytes": 591036,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/kenya-go-live/reports-filter-example.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\kenya-go-live\\reports-filter-example.png",
+          "sizeBytes": 555871,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/029_procurement.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\029_procurement.png",
+          "sizeBytes": 558077,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/finance-payroll/finance/overview-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\finance-payroll\\finance\\overview-tab.png",
+          "sizeBytes": 340282,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/finance-payroll/payroll/overview-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\finance-payroll\\payroll\\overview-tab.png",
+          "sizeBytes": 444320,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/038_production.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\038_production.png",
+          "sizeBytes": 570137,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/062_quality.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\062_quality.png",
+          "sizeBytes": 545827,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/017_inventory.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\017_inventory.png",
+          "sizeBytes": 566661,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/025_wms.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\025_wms.png",
+          "sizeBytes": 574922,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/sales/sales/overview-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\sales\\sales\\overview-tab.png",
+          "sizeBytes": 373355,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/hr/hr/overview-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\hr\\hr\\overview-tab.png",
+          "sizeBytes": 364256,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/003_admin.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\003_admin.png",
+          "sizeBytes": 623309,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/004_admin-users.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\004_admin-users.png",
+          "sizeBytes": 472549,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/finance-payroll/finance/etims-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\finance-payroll\\finance\\etims-tab.png",
+          "sizeBytes": 298410,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/134_integrations-mpesa.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\134_integrations-mpesa.png",
+          "sizeBytes": 571950,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/140_helpdesk.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\140_helpdesk.png",
+          "sizeBytes": 591747,
+          "status": "ok"
+        }
+      ]
+    },
+    {
+      "slug": "full-reference",
+      "mdFile": "FMCG-ERP-Full-Reference-Manual-v2.md",
+      "totalImages": 58,
+      "ok": 58,
+      "missing": 0,
+      "too_small": 0,
+      "placeholder": 0,
+      "sectionsWithoutImages": 45,
+      "images": [
+        {
+          "ref": "../../user-manual/screenshots/captured/001_login.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\001_login.png",
+          "sizeBytes": 40493,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/002_dashboard.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\002_dashboard.png",
+          "sizeBytes": 576062,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/003_admin.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\003_admin.png",
+          "sizeBytes": 623309,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/004_admin-users.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\004_admin-users.png",
+          "sizeBytes": 472549,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/005_admin-roles.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\005_admin-roles.png",
+          "sizeBytes": 389691,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/007_admin-security.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\007_admin-security.png",
+          "sizeBytes": 568549,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/012_products.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\012_products.png",
+          "sizeBytes": 556067,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/013_materials.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\013_materials.png",
+          "sizeBytes": 550452,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/029_procurement.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\029_procurement.png",
+          "sizeBytes": 558077,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/031_procurement-orders.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\031_procurement-orders.png",
+          "sizeBytes": 571896,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/017_inventory.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\017_inventory.png",
+          "sizeBytes": 566661,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/015_warehouses.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\015_warehouses.png",
+          "sizeBytes": 568925,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/025_wms.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\025_wms.png",
+          "sizeBytes": 574922,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/057_recipes.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\057_recipes.png",
+          "sizeBytes": 564413,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/053_bom.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\053_bom.png",
+          "sizeBytes": 584687,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/038_production.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\038_production.png",
+          "sizeBytes": 570137,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/manufacturing/production/plans-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\manufacturing\\production\\plans-tab.png",
+          "sizeBytes": 408804,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/manufacturing/production/work-orders-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\manufacturing\\production\\work-orders-tab.png",
+          "sizeBytes": 412853,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/manufacturing/production/oee-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\manufacturing\\production\\oee-tab.png",
+          "sizeBytes": 411235,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/058_planning.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\058_planning.png",
+          "sizeBytes": 445607,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/manufacturing/planning/mrp-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\manufacturing\\planning\\mrp-tab.png",
+          "sizeBytes": 229922,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/050_shop-floor.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\050_shop-floor.png",
+          "sizeBytes": 600874,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/manufacturing/shop-floor/terminal-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\manufacturing\\shop-floor\\terminal-tab.png",
+          "sizeBytes": 397754,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/062_quality.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\062_quality.png",
+          "sizeBytes": 545827,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/manufacturing/quality/inspections-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\manufacturing\\quality\\inspections-tab.png",
+          "sizeBytes": 394511,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/116_documents-compliance.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\116_documents-compliance.png",
+          "sizeBytes": 729014,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/sales/sales/overview-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\sales\\sales\\overview-tab.png",
+          "sizeBytes": 373355,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/sales/sales/orders-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\sales\\sales\\orders-tab.png",
+          "sizeBytes": 405932,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/138_pos.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\138_pos.png",
+          "sizeBytes": 342807,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/finance-payroll/finance/overview-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\finance-payroll\\finance\\overview-tab.png",
+          "sizeBytes": 340282,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/finance-payroll/finance/accounting-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\finance-payroll\\finance\\accounting-tab.png",
+          "sizeBytes": 390925,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/finance-payroll/cashbook/accounts-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\finance-payroll\\cashbook\\accounts-tab.png",
+          "sizeBytes": 405191,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/finance-payroll/payroll/overview-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\finance-payroll\\payroll\\overview-tab.png",
+          "sizeBytes": 444320,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/finance-payroll/finance/etims-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\finance-payroll\\finance\\etims-tab.png",
+          "sizeBytes": 298410,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/hr/hr/overview-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\hr\\hr\\overview-tab.png",
+          "sizeBytes": 364256,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/hr/hr/employees-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\hr\\hr\\employees-tab.png",
+          "sizeBytes": 424502,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/hr/hr/leave-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\hr\\hr\\leave-tab.png",
+          "sizeBytes": 426248,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/125_crm.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\125_crm.png",
+          "sizeBytes": 522391,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/crm/crm/pipeline-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\crm\\crm\\pipeline-tab.png",
+          "sizeBytes": 467100,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/128_marketing.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\128_marketing.png",
+          "sizeBytes": 482864,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/119_maintenance.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\119_maintenance.png",
+          "sizeBytes": 478211,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/module-ui/maintenance/assets/assets-tab.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\module-ui\\maintenance\\assets\\assets-tab.png",
+          "sizeBytes": 561036,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/122_utility-management.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\122_utility-management.png",
+          "sizeBytes": 570930,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/109_analytics.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\109_analytics.png",
+          "sizeBytes": 552358,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/110_analytics-sales.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\110_analytics-sales.png",
+          "sizeBytes": 509083,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/111_analytics-production.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\111_analytics-production.png",
+          "sizeBytes": 500639,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/113_analytics-finance.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\113_analytics-finance.png",
+          "sizeBytes": 516319,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/114_analytics-report-builder.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\114_analytics-report-builder.png",
+          "sizeBytes": 523526,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/131_ai.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\131_ai.png",
+          "sizeBytes": 510173,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/132_ai-chat.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\132_ai-chat.png",
+          "sizeBytes": 634325,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/115_documents.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\115_documents.png",
+          "sizeBytes": 545772,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/117_documents-knowledge-base.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\117_documents-knowledge-base.png",
+          "sizeBytes": 482721,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/139_communication.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\139_communication.png",
+          "sizeBytes": 187907,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/140_helpdesk.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\140_helpdesk.png",
+          "sizeBytes": 591747,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/135_approvals.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\135_approvals.png",
+          "sizeBytes": 527759,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/136_logs.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\136_logs.png",
+          "sizeBytes": 506282,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/133_integrations.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\133_integrations.png",
+          "sizeBytes": 527689,
+          "status": "ok"
+        },
+        {
+          "ref": "../../user-manual/screenshots/captured/134_integrations-mpesa.png",
+          "absPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\user-manual\\screenshots\\captured\\134_integrations-mpesa.png",
+          "sizeBytes": 571950,
+          "status": "ok"
+        }
+      ]
+    }
+  ]
+}

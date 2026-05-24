@@ -1,80 +1,8 @@
 [
   {
-    "slug": "manufacturing",
-    "status": "ok",
-    "path": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\manuals\\manufacturing\\FMCG-ERP-Manufacturing-Manual-v2-Post-Recovery.pdf",
-    "sizeMB": 16.08
-  },
-  {
-    "slug": "supply-chain",
-    "status": "ok",
-    "path": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\manuals\\supply-chain\\FMCG-ERP-Supply-Chain-Manual-v2-Post-Recovery.pdf",
-    "sizeMB": 11.92
-  },
-  {
-    "slug": "sales-distribution",
-    "status": "ok",
-    "path": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\manuals\\sales-distribution\\FMCG-ERP-Sales-Distribution-Manual-v2-Post-Recovery.pdf",
-    "sizeMB": 7.93
-  },
-  {
-    "slug": "commercial",
-    "status": "ok",
-    "path": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\manuals\\commercial\\FMCG-ERP-Commercial-CRM-Marketing-Manual-v2-Post-Recovery.pdf",
-    "sizeMB": 7.32
-  },
-  {
-    "slug": "finance-payroll",
-    "status": "ok",
-    "path": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\manuals\\finance-payroll\\FMCG-ERP-Finance-Payroll-Manual-v2-Post-Recovery.pdf",
-    "sizeMB": 8.25
-  },
-  {
-    "slug": "hr",
-    "status": "ok",
-    "path": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\manuals\\hr\\FMCG-ERP-HR-Manual-v2-Post-Recovery.pdf",
-    "sizeMB": 6.29
-  },
-  {
-    "slug": "logistics",
-    "status": "ok",
-    "path": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\manuals\\logistics\\FMCG-ERP-Logistics-Manual-v2-Post-Recovery.pdf",
-    "sizeMB": 2.22
-  },
-  {
-    "slug": "maintenance",
-    "status": "ok",
-    "path": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\manuals\\maintenance\\FMCG-ERP-Maintenance-Utilities-Manual-v2-Post-Recovery.pdf",
-    "sizeMB": 6.05
-  },
-  {
-    "slug": "documents",
-    "status": "ok",
-    "path": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\manuals\\documents\\FMCG-ERP-Documents-Communication-Manual-v2-Post-Recovery.pdf",
-    "sizeMB": 3.26
-  },
-  {
-    "slug": "admin",
-    "status": "ok",
-    "path": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\manuals\\admin\\FMCG-ERP-Administration-Manual-v2-Post-Recovery.pdf",
-    "sizeMB": 6.65
-  },
-  {
-    "slug": "intelligence",
-    "status": "ok",
-    "path": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\manuals\\intelligence\\FMCG-ERP-Intelligence-Analytics-AI-Manual-v2-Post-Recovery.pdf",
-    "sizeMB": 4
-  },
-  {
-    "slug": "kenya-go-live",
-    "status": "ok",
-    "path": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\manuals\\kenya-go-live\\Kenya-Go-Live-ERP-Training-Manual-v2-Post-Recovery.pdf",
-    "sizeMB": 0.98
-  },
-  {
     "slug": "full-reference",
     "status": "ok",
     "path": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\manuals\\full-reference\\FMCG-ERP-Full-Reference-Manual-v2-Post-Recovery.pdf",
-    "sizeMB": 0.47
+    "sizeMB": 22.76
   }
 ]

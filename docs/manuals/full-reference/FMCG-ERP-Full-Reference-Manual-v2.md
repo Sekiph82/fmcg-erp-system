@@ -9,6 +9,7 @@
 
 ## Table of Contents
 
+0. [Visual Module Tour](#0-visual-module-tour)
 1. [System Architecture Overview](#1-system-architecture-overview)
 2. [Complete Route Reference](#2-complete-route-reference)
 3. [Module Reference Index](#3-module-reference-index)
@@ -20,6 +21,214 @@
 9. [Keyboard Shortcuts & UI Tips](#9-keyboard-shortcuts--ui-tips)
 10. [Configuration Reference](#10-configuration-reference)
 11. [Glossary](#11-glossary)
+
+---
+
+## 0. Visual Module Tour
+
+Screenshot overview of every major module. Use this section to quickly locate and identify any part of the system.
+
+### Login & Dashboard
+
+![Login](../../user-manual/screenshots/captured/001_login.png)
+*Login page — enter username and password. Route: `/login`*
+
+![Dashboard](../../user-manual/screenshots/captured/002_dashboard.png)
+*Main dashboard — KPI overview after login. Route: `/dashboard`*
+
+### Administration
+
+![Admin Hub](../../user-manual/screenshots/captured/003_admin.png)
+*Administration hub — users, roles, permissions, security. Route: `/dashboard/admin`*
+
+![Admin Users](../../user-manual/screenshots/captured/004_admin-users.png)
+*User management — all user accounts. Route: `/dashboard/admin/users`*
+
+![Admin Roles](../../user-manual/screenshots/captured/005_admin-roles.png)
+*Role management — system roles. Route: `/dashboard/admin/roles`*
+
+![Admin Security](../../user-manual/screenshots/captured/007_admin-security.png)
+*Security settings — password policy and 2FA. Route: `/dashboard/admin/security`*
+
+### Products & Materials
+
+![Products](../../user-manual/screenshots/captured/012_products.png)
+*Products master — all finished goods and SKUs. Route: `/dashboard/products`*
+
+![Materials](../../user-manual/screenshots/captured/013_materials.png)
+*Materials master — raw materials and packaging. Route: `/dashboard/materials`*
+
+### Supply Chain: Procurement & Inventory
+
+![Procurement](../../user-manual/screenshots/captured/029_procurement.png)
+*Procurement hub — PRs, POs, RFQs, deliveries. Route: `/dashboard/procurement`*
+
+![Procurement Orders](../../user-manual/screenshots/captured/031_procurement-orders.png)
+*Purchase orders — all POs with supplier and status. Route: `/dashboard/procurement` → Orders tab*
+
+![Inventory](../../user-manual/screenshots/captured/017_inventory.png)
+*Inventory — stock on hand, movements, cycle count. Route: `/dashboard/inventory`*
+
+![Warehouses](../../user-manual/screenshots/captured/015_warehouses.png)
+*Warehouses — warehouse configuration. Route: `/dashboard/warehouses`*
+
+![WMS](../../user-manual/screenshots/captured/025_wms.png)
+*WMS — zones, locations, pick waves, quarantine. Route: `/dashboard/wms`*
+
+### Manufacturing
+
+![Recipes](../../user-manual/screenshots/captured/057_recipes.png)
+*Recipes — product formulations. Route: `/dashboard/recipes`*
+
+![BOM](../../user-manual/screenshots/captured/053_bom.png)
+*Bill of Materials — components and quantities. Route: `/dashboard/bom`*
+
+![Production](../../user-manual/screenshots/captured/038_production.png)
+*Production hub — plans, orders, scheduling, OEE. Route: `/dashboard/production`*
+
+![Production Plans](../../user-manual/screenshots/captured/module-ui/manufacturing/production/plans-tab.png)
+*Production plans tab — create and manage production plans.*
+
+![Production Work Orders](../../user-manual/screenshots/captured/module-ui/manufacturing/production/work-orders-tab.png)
+*Work orders tab — production orders with status and schedule.*
+
+![Production OEE](../../user-manual/screenshots/captured/module-ui/manufacturing/production/oee-tab.png)
+*OEE dashboard — Availability, Performance, Quality KPIs.*
+
+![Planning](../../user-manual/screenshots/captured/058_planning.png)
+*Advanced planning — MRP, MPS, capacity. Route: `/dashboard/planning`*
+
+![Planning MRP](../../user-manual/screenshots/captured/module-ui/manufacturing/planning/mrp-tab.png)
+*MRP tab — material requirements planning run and recommendations.*
+
+![Shop Floor](../../user-manual/screenshots/captured/050_shop-floor.png)
+*Shop floor — operator terminal and supervisor. Route: `/dashboard/shop-floor`*
+
+![Shop Floor Terminal](../../user-manual/screenshots/captured/module-ui/manufacturing/shop-floor/terminal-tab.png)
+*Shop floor terminal — operator work execution interface.*
+
+### Quality & Compliance
+
+![Quality](../../user-manual/screenshots/captured/062_quality.png)
+*Quality hub — inspections, certificates, allergens. Route: `/dashboard/quality`*
+
+![Quality Inspections](../../user-manual/screenshots/captured/module-ui/manufacturing/quality/inspections-tab.png)
+*QC inspections list — type, product, batch, result, status.*
+
+![Compliance](../../user-manual/screenshots/captured/116_documents-compliance.png)
+*Compliance — GS1 labels and regulatory certificates. Route: `/dashboard/compliance`*
+
+### Sales & Distribution
+
+![Sales Overview](../../user-manual/screenshots/captured/module-ui/sales/sales/overview-tab.png)
+*Sales hub overview — revenue KPIs, orders, and collections. Route: `/dashboard/sales`*
+
+![Sales Orders](../../user-manual/screenshots/captured/module-ui/sales/sales/orders-tab.png)
+*Sales orders — all orders with customer, value, status.*
+
+![POS](../../user-manual/screenshots/captured/138_pos.png)
+*Point of Sale terminal. Route: `/dashboard/pos`*
+
+### Finance & Payroll
+
+![Finance Overview](../../user-manual/screenshots/captured/module-ui/finance-payroll/finance/overview-tab.png)
+*Finance hub — accounting, cashbook, AR, eTIMS. Route: `/dashboard/finance`*
+
+![Finance Accounting](../../user-manual/screenshots/captured/module-ui/finance-payroll/finance/accounting-tab.png)
+*Accounting — chart of accounts and journal entries.*
+
+![Cashbook](../../user-manual/screenshots/captured/module-ui/finance-payroll/cashbook/accounts-tab.png)
+*Cashbook — bank and cash accounts. Route: `/dashboard/cashbook`*
+
+![Payroll Overview](../../user-manual/screenshots/captured/module-ui/finance-payroll/payroll/overview-tab.png)
+*Payroll workspace — run monthly payroll. Route: `/dashboard/payroll`*
+
+![eTIMS](../../user-manual/screenshots/captured/module-ui/finance-payroll/finance/etims-tab.png)
+*eTIMS — KRA invoice submission log.*
+
+### Human Resources
+
+![HR Overview](../../user-manual/screenshots/captured/module-ui/hr/hr/overview-tab.png)
+*HR hub — employees, attendance, leave, payroll. Route: `/dashboard/hr`*
+
+![HR Employees](../../user-manual/screenshots/captured/module-ui/hr/hr/employees-tab.png)
+*Employees list — all staff records.*
+
+![HR Leave](../../user-manual/screenshots/captured/module-ui/hr/hr/leave-tab.png)
+*Leave management — balances, approvals, calendar.*
+
+### CRM & Marketing
+
+![CRM Overview](../../user-manual/screenshots/captured/125_crm.png)
+*CRM hub — leads, pipeline, opportunities. Route: `/dashboard/crm`*
+
+![CRM Pipeline](../../user-manual/screenshots/captured/module-ui/crm/crm/pipeline-tab.png)
+*CRM pipeline — Kanban view of sales opportunities.*
+
+![Marketing](../../user-manual/screenshots/captured/128_marketing.png)
+*Marketing — campaigns and trade promotions. Route: `/dashboard/marketing`*
+
+### Maintenance & Utilities
+
+![Maintenance](../../user-manual/screenshots/captured/119_maintenance.png)
+*Maintenance hub — assets, breakdowns, PM. Route: `/dashboard/maintenance`*
+
+![Maintenance Assets](../../user-manual/screenshots/captured/module-ui/maintenance/assets/assets-tab.png)
+*Asset register — all equipment with status and maintenance schedule.*
+
+![Utility Management](../../user-manual/screenshots/captured/122_utility-management.png)
+*Utility management — electricity and water. Route: `/dashboard/utility-management`*
+
+### Analytics & AI
+
+![Analytics](../../user-manual/screenshots/captured/109_analytics.png)
+*Analytics hub — sales, production, inventory, finance analytics. Route: `/dashboard/analytics`*
+
+![Sales Analytics](../../user-manual/screenshots/captured/110_analytics-sales.png)
+*Sales analytics — revenue trends and customer rankings.*
+
+![Production Analytics](../../user-manual/screenshots/captured/111_analytics-production.png)
+*Production analytics — OEE, yield, and cost variance.*
+
+![Finance Analytics](../../user-manual/screenshots/captured/113_analytics-finance.png)
+*Finance analytics — P&L, cash flow, AR aging.*
+
+![Report Builder](../../user-manual/screenshots/captured/114_analytics-report-builder.png)
+*Report builder — custom report creation from any data source.*
+
+![AI Assistant](../../user-manual/screenshots/captured/131_ai.png)
+*AI assistant — intelligent ERP data queries. Route: `/dashboard/ai`*
+
+![AI Chat](../../user-manual/screenshots/captured/132_ai-chat.png)
+*AI chat — natural language data queries.*
+
+### Documents, Communication & Support
+
+![Documents](../../user-manual/screenshots/captured/115_documents.png)
+*Document library — SOPs, contracts, certifications. Route: `/dashboard/documents`*
+
+![Knowledge Base](../../user-manual/screenshots/captured/117_documents-knowledge-base.png)
+*Knowledge base — searchable SOPs and how-to guides.*
+
+![Communication](../../user-manual/screenshots/captured/139_communication.png)
+*Internal communication — announcements and messaging. Route: `/dashboard/communication`*
+
+![Helpdesk](../../user-manual/screenshots/captured/140_helpdesk.png)
+*Helpdesk — support tickets with SLA tracking. Route: `/dashboard/helpdesk`*
+
+![Approvals](../../user-manual/screenshots/captured/135_approvals.png)
+*Approvals queue — all pending approval requests. Route: `/dashboard/approvals`*
+
+![Logs](../../user-manual/screenshots/captured/136_logs.png)
+*System audit log — full activity trail. Route: `/dashboard/logs`*
+
+### Integrations
+
+![Integrations](../../user-manual/screenshots/captured/133_integrations.png)
+*Integrations hub — M-Pesa, eTIMS, bank API. Route: `/dashboard/integrations`*
+
+![M-Pesa](../../user-manual/screenshots/captured/134_integrations-mpesa.png)
+*M-Pesa integration — Daraja API configuration.*
 
 ---
 

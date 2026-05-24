@@ -1,0 +1,123 @@
+{
+  "generatedAt": "2026-05-24T19:13:34.061Z",
+  "pass": true,
+  "pdfs": [
+    {
+      "slug": "manufacturing",
+      "file": "FMCG-ERP-Manufacturing-Manual-v2-Post-Recovery.pdf",
+      "pdfPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\manuals\\manufacturing\\FMCG-ERP-Manufacturing-Manual-v2-Post-Recovery.pdf",
+      "exists": true,
+      "sizeMB": 16.08,
+      "minMB": 10,
+      "pass": true
+    },
+    {
+      "slug": "supply-chain",
+      "file": "FMCG-ERP-Supply-Chain-Manual-v2-Post-Recovery.pdf",
+      "pdfPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\manuals\\supply-chain\\FMCG-ERP-Supply-Chain-Manual-v2-Post-Recovery.pdf",
+      "exists": true,
+      "sizeMB": 11.92,
+      "minMB": 8,
+      "pass": true
+    },
+    {
+      "slug": "sales-distribution",
+      "file": "FMCG-ERP-Sales-Distribution-Manual-v2-Post-Recovery.pdf",
+      "pdfPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\manuals\\sales-distribution\\FMCG-ERP-Sales-Distribution-Manual-v2-Post-Recovery.pdf",
+      "exists": true,
+      "sizeMB": 7.93,
+      "minMB": 5,
+      "pass": true
+    },
+    {
+      "slug": "commercial",
+      "file": "FMCG-ERP-Commercial-CRM-Marketing-Manual-v2-Post-Recovery.pdf",
+      "pdfPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\manuals\\commercial\\FMCG-ERP-Commercial-CRM-Marketing-Manual-v2-Post-Recovery.pdf",
+      "exists": true,
+      "sizeMB": 7.32,
+      "minMB": 5,
+      "pass": true
+    },
+    {
+      "slug": "finance-payroll",
+      "file": "FMCG-ERP-Finance-Payroll-Manual-v2-Post-Recovery.pdf",
+      "pdfPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\manuals\\finance-payroll\\FMCG-ERP-Finance-Payroll-Manual-v2-Post-Recovery.pdf",
+      "exists": true,
+      "sizeMB": 8.99,
+      "minMB": 7,
+      "pass": true
+    },
+    {
+      "slug": "hr",
+      "file": "FMCG-ERP-HR-Manual-v2-Post-Recovery.pdf",
+      "pdfPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\manuals\\hr\\FMCG-ERP-HR-Manual-v2-Post-Recovery.pdf",
+      "exists": true,
+      "sizeMB": 6.29,
+      "minMB": 4,
+      "pass": true
+    },
+    {
+      "slug": "logistics",
+      "file": "FMCG-ERP-Logistics-Manual-v2-Post-Recovery.pdf",
+      "pdfPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\manuals\\logistics\\FMCG-ERP-Logistics-Manual-v2-Post-Recovery.pdf",
+      "exists": true,
+      "sizeMB": 2.22,
+      "minMB": 1,
+      "pass": true
+    },
+    {
+      "slug": "maintenance",
+      "file": "FMCG-ERP-Maintenance-Utilities-Manual-v2-Post-Recovery.pdf",
+      "pdfPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\manuals\\maintenance\\FMCG-ERP-Maintenance-Utilities-Manual-v2-Post-Recovery.pdf",
+      "exists": true,
+      "sizeMB": 6.05,
+      "minMB": 4,
+      "pass": true
+    },
+    {
+      "slug": "documents",
+      "file": "FMCG-ERP-Documents-Communication-Manual-v2-Post-Recovery.pdf",
+      "pdfPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\manuals\\documents\\FMCG-ERP-Documents-Communication-Manual-v2-Post-Recovery.pdf",
+      "exists": true,
+      "sizeMB": 3.26,
+      "minMB": 2,
+      "pass": true
+    },
+    {
+      "slug": "admin",
+      "file": "FMCG-ERP-Administration-Manual-v2-Post-Recovery.pdf",
+      "pdfPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\manuals\\admin\\FMCG-ERP-Administration-Manual-v2-Post-Recovery.pdf",
+      "exists": true,
+      "sizeMB": 6.65,
+      "minMB": 4,
+      "pass": true
+    },
+    {
+      "slug": "intelligence",
+      "file": "FMCG-ERP-Intelligence-Analytics-AI-Manual-v2-Post-Recovery.pdf",
+      "pdfPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\manuals\\intelligence\\FMCG-ERP-Intelligence-Analytics-AI-Manual-v2-Post-Recovery.pdf",
+      "exists": true,
+      "sizeMB": 4,
+      "minMB": 2,
+      "pass": true
+    },
+    {
+      "slug": "kenya-go-live",
+      "file": "Kenya-Go-Live-ERP-Training-Manual-v2-Post-Recovery.pdf",
+      "pdfPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\manuals\\kenya-go-live\\Kenya-Go-Live-ERP-Training-Manual-v2-Post-Recovery.pdf",
+      "exists": true,
+      "sizeMB": 8.54,
+      "minMB": 5,
+      "pass": true
+    },
+    {
+      "slug": "full-reference",
+      "file": "FMCG-ERP-Full-Reference-Manual-v2-Post-Recovery.pdf",
+      "pdfPath": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system-main\\docs\\manuals\\full-reference\\FMCG-ERP-Full-Reference-Manual-v2-Post-Recovery.pdf",
+      "exists": true,
+      "sizeMB": 22.76,
+      "minMB": 10,
+      "pass": true
+    }
+  ]
+}

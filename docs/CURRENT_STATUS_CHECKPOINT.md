@@ -154,6 +154,29 @@ If normal Chrome still shows old redirect: **Chrome DevTools → Application →
 | Kenya Go-Live Training | ✅ | ✅ 1.0 MB |
 | Full Reference | ✅ | ✅ 0.5 MB |
 
+## Manual Strict Verification Pass (2026-05-24)
+
+| Check | Result |
+|-------|--------|
+| Image audit (strict-validate-manual-images.js) | ✅ 324/324 OK, 0 missing, 0 small, 0 placeholder |
+| PDF verification (strict-verify-manual-pdfs.js) | ✅ 13/13 pass, all meet min size thresholds |
+| Screenshot coverage audit | ✅ 324 total images across 13 manuals |
+| Finance & Payroll PDF regenerated | ✅ 8.25 MB → 9.0 MB (payroll modal screenshots added) |
+| Kenya Go-Live PDF regenerated | ✅ 0.98 MB → 8.5 MB (rewritten from 2 to 21 images) |
+| Full Reference PDF regenerated | ✅ 0.47 MB → 22.8 MB (added Section 0 Visual Tour, 58 images) |
+| find-broken-action-cards.js | ✅ 0 |
+| audit-visible-import-graph.js | ✅ BVT 0 |
+| check-workspace-tabs.js | ✅ All passed |
+
+### PDF Sizes Post-Fix
+
+| Manual | Old MB | New MB |
+|--------|--------|--------|
+| Kenya Go-Live | 0.98 | **8.5** |
+| Full Reference | 0.47 | **22.8** |
+| Finance & Payroll | 8.25 | **9.0** |
+| All others | unchanged | unchanged |
+
 ## Next Work
 
-**All manuals regenerated.** System fully recovered and documented. No pending tasks.
+**All manuals verified and screenshot-complete.** System fully recovered. No pending tasks.
