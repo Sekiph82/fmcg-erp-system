@@ -1,9 +1,9 @@
 # Current Status Checkpoint
 
-**Date:** 2026-05-22 (Wave 2C — Complete)
+**Date:** 2026-05-24 (Full smoke verified — COMPLETE)
 **Branch:** main
 **Working tree:** CLEAN
-**Latest commit:** fix(ui): resolve final unresolved action targets (pending)
+**Latest commit:** see `git log`
 
 ---
 
@@ -12,7 +12,6 @@
 | Item | Value |
 |------|-------|
 | Branch | main |
-| Latest commit | TBD fix(ui): resolve remaining broken action card links |
 | Remote | origin → github.com/Sekiph82/fmcg-erp-system.git |
 | Total files changed in full recovery | ~322 |
 
@@ -22,9 +21,7 @@
 
 | Item | Result |
 |------|--------|
-| pytest | **478/482 PASS** |
-| Pre-existing failures | 4 (migration chain tests — unrelated to frontend) |
-| Warnings | 72 (non-blocking) |
+| pytest | **482/482 PASS** |
 
 ---
 
@@ -41,19 +38,20 @@
 
 | Phase | Status |
 |-------|--------|
-| Wave 0 — MPS (4 pages) | ✅ COMPLETE (prior session) |
+| Wave 0 — MPS (4 pages) | ✅ COMPLETE |
 | Wave 1A — Cycle Count (5 pages) | ✅ COMPLETE |
 | Wave 1A — Critical create/new/run (26 pages) | ✅ COMPLETE |
 | Wave 1B — Operational (~218 pages) | ✅ COMPLETE |
 | Stabilization pass | ✅ COMPLETE |
-| Wave 1C — 54 AI/reports pages | ✅ COMPLETE (eecbba1) |
-| Wave 1C Verification | ✅ COMPLETE (8a1535f) |
-| Six Broken Action Cards | ✅ COMPLETE (d9e9c19) |
-| **Deep git search (47 unresolved)** | ✅ COMPLETE (this commit) |
-| Wave 2A — Restore 37 [id] routes | ✅ COMPLETE (c8be2fc) |
-| Wave 2B — Fix 1 href typo | ✅ COMPLETE (c8be2fc) |
-| Wave 2A/2B Verification | ✅ COMPLETE — all static audits pass, smoke spec updated |
-| **Wave 2C — 3 items** | ✅ COMPLETE — BVT 3 → 0 |
+| Wave 1C — 54 AI/reports pages | ✅ COMPLETE |
+| Wave 1C Verification | ✅ COMPLETE |
+| Six Broken Action Cards | ✅ COMPLETE |
+| Deep git search (47 unresolved) | ✅ COMPLETE |
+| Wave 2A — Restore 37 [id] routes | ✅ COMPLETE |
+| Wave 2B — Fix 1 href typo | ✅ COMPLETE |
+| Wave 2A/2B Verification | ✅ COMPLETE |
+| Wave 2C — 3 items (BVT 3→0) | ✅ COMPLETE |
+| **Full live browser smoke (141/141)** | **✅ COMPLETE** |
 
 ---
 
@@ -65,11 +63,8 @@
 | After Wave 1A + 1B | 102 |
 | After Wave 1C | 48 |
 | After broken action cards fix | 47 |
-| Critical remaining | 0 |
-| High remaining | 47 |
-| Medium remaining | 0 |
 | After Wave 2A + 2B | 3 |
-| **After Wave 2C** | **0** |
+| After Wave 2C | **0** |
 
 ---
 
@@ -77,18 +72,20 @@
 
 | Metric | Count |
 |--------|-------|
-| Before (this session) | 6 |
+| Before | 6 |
 | **After** | **0** |
 
 ---
 
-## Middleware Bypass
+## Live Smoke Test
 
-| Metric | Count |
-|--------|-------|
-| BYPASS_PREFIX_REDIRECT entries | 312 |
-| Missing/redirect-only entries | 0 |
-| Quality check | 312/312 valid |
+| Metric | Result |
+|--------|--------|
+| Total routes | 141 |
+| Passed | 141 |
+| Flaky (transient, retry passed) | 1 |
+| Failed | **0** |
+| Exit code | **0** |
 
 ---
 
@@ -96,32 +93,18 @@
 
 | Audit | Result |
 |-------|--------|
-| Route redirect drift | ✅ 0 issues |
-| Workspace tab checks | ✅ All pass |
-| Restored route quality | ✅ 312/312 valid |
-| Visible broken targets | ✅ 47 remaining (all high, no medium/critical) |
-| Broken action cards | ✅ 0 |
+| `find-broken-action-cards.js` | ✅ 0 |
+| `audit-visible-import-graph.js` | ✅ BVT 0, 487 targets working |
+| `check-restored-routes-quality.js` | ✅ 313/313 valid |
+| `check-workspace-tabs.js` | ✅ All passed |
+| `check-route-redirects.js` | ⚠ Expected "Missing middleware" warnings only |
+| type-check | ✅ CLEAN |
+| build | ✅ CLEAN |
 
 ---
 
-## Deep Git Search Results
+## Next Work
 
-| Metric | Count |
-|--------|-------|
-| BVT items searched | 47 |
-| FOUND in git history | 43 |
-| NOT FOUND (new design) | 4 |
-| Unique routes to restore (Wave 2A) | 37 |
-| BVT after Wave 2A+2B | 4 |
-| BVT after Wave 2C (pending approval) | 0 |
-
----
-
-## Remaining Work
-
-1. **Wave 2A** — Restore 37 [id] detail pages from git; 31 also need parent removed from REDIRECTS. See `docs/UNRESOLVED_47_IMPLEMENTATION_PLAN.md`.
-2. **Wave 2B** — Fix href typo in `ai/compliance/page.tsx` (trivial, 1-line).
-3. **Wave 2C** — 3 items need design approval:
-   - BVT-0009: `/dashboard/nps/surveys` — link to existing OR build new page
-   - BVT-0014: `/dashboard/knowledge-base/categories` — subview tab OR standalone page
-   - BVT-0045: `/dashboard/secondary-sales/[id]` — real [id] page OR drawer
+**ERP button recovery fully complete.** Ready to resume:
+- Manufacturing module manuals / screenshots
+- Any other non-recovery work

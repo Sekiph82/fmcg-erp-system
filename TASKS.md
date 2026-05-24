@@ -1,7 +1,7 @@
 # TASKS
 
 ## Current Phase
-LIVE SMOKE — COMPLETE. 2026-05-22. 138/141 routes passed. 3 `use(params)` bugs fixed in contracts/list/[id], recurring-orders/templates/[id], van-sales/vans/[id] — all changed to useParams(). 1 transient failure (recruitment/ai). Type-check CLEAN. Smoke rerun skipped per user. Ready to resume manual/screenshot work.
+ERP BUTTON RECOVERY — FULLY COMPLETE. 2026-05-24. Live smoke confirmed 141/141 passed (exit code 0, 1 transient flaky). All static audits green: BVT 0, broken action cards 0, 313/313 restored routes valid, type-check CLEAN, build CLEAN. Ready to resume manual/screenshot work.
 
 ### Wave 2C (2026-05-22)
 **BVT before:** 3 | **BVT after:** 0 | **Resolved:** 3

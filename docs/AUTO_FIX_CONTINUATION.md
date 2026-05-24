@@ -1,12 +1,12 @@
 # Auto-Fix Continuation Guide
 
-Date: 2026-05-22 (Wave 2C — Complete)
+Date: 2026-05-24 (ERP Button Recovery — FULLY COMPLETE)
 
 ## Current State
 
-**Latest commit:** fix(ui): resolve final unresolved action targets (pending)
 **Working tree:** CLEAN
-**Type-check:** CLEAN | **Build:** 757 pages | **Backend tests:** 482/482 PASS
+**Type-check:** CLEAN | **Build:** CLEAN | **Backend tests:** 482/482 PASS
+**Live smoke:** 141/141 passed (exit code 0)
 
 ### Full Recovery Results
 
@@ -16,63 +16,9 @@ Date: 2026-05-22 (Wave 2C — Complete)
 | Wave 1A+1B+1C | 353 | 48 |
 | Broken action cards fix | 48 | 47 |
 | Wave 2A+2B | 47 | 3 |
-| **Wave 2C** | **3** | **0** |
+| Wave 2C | 3 | **0** |
 
-**All broken visible action targets resolved.**
-
-**Wave 2C fixes:**
-- BVT-0001: `nps/page.tsx:110` href → `/dashboard/surveys`
-- BVT-0002: Created `knowledge-base/categories/page.tsx` (kbApi backed)
-- BVT-0003: Created `secondary-sales/[id]/page.tsx` + removed secondary-sales from REDIRECTS/routeRedirectMap
-
-**Next recommended task:**
-- Start Docker → run `frontend/e2e/restored-routes-smoke.spec.ts` (groups A–E, 37 new [id] routes in group E)
-- Resume manufacturing/manual/screenshot/PDF work
-
-### What has been restored (all waves)
-
-| Wave | Pages | Status |
-|------|-------|--------|
-| Wave 0 — MPS | 4 | ✅ done (prior session) |
-| Wave 1A — Cycle Count | 5 | ✅ done |
-| Wave 1A — Critical create/new/run | 26 | ✅ done |
-| Wave 1B — High-conf operational | ~218 | ✅ done |
-| Wave 1C — AI and reports | 54 | ✅ done (eecbba1) |
-| Six broken action cards | 8 pages + 3 link fixes | ✅ done (this session) |
-
-### Pages restored this session (6 broken action card fixes)
-
-| Page | Route |
-|------|-------|
-| calendar/events | restored from `674b6c5` |
-| marketing/crm | restored from `674b6c5` |
-| marketing/crm/followup | restored from `674b6c5` |
-| marketing/surveys | restored from `674b6c5` |
-| marketing/surveys/new | restored from `674b6c5` |
-
-### Source links updated (no restore needed)
-
-| File | Old href | New href |
-|------|----------|----------|
-| finance/accounting/page.tsx | `/dashboard/finance/accounting/controls` | `/dashboard/finance?tab=accounting` |
-| marketing/ecommerce/stores/page.tsx | `router.push("/dashboard/marketing/ecommerce/stores/new")` | `router.push("/dashboard/marketing?tab=ecommerce&drawer=create")` |
-| recruitment/candidates/page.tsx | `/dashboard/recruitment/candidates/new` | `/dashboard/hr?tab=recruitment&drawer=create` |
-
-### Broken visible targets
-
-- **Before (Wave 1C complete):** 48 (critical: 0, high: 48, medium: 0)
-- **After (broken action cards fixed):** 47 (critical: 0, high: 47, medium: 0)
-- **Broken action cards:** 6 → 0
-
-### Middleware bypass
-
-312 entries in BYPASS_PREFIX_REDIRECT (was 307). All verified as valid real pages.
-
-### Redirect map
-
-Removed `/dashboard/marketing/crm` and `/dashboard/marketing/surveys` from:
-- `frontend/src/middleware.ts`
-- `frontend/src/lib/routeRedirectMap.ts`
+**All broken visible action targets resolved. Full live smoke verified.**
 
 ---
 
@@ -86,14 +32,10 @@ Removed `/dashboard/marketing/crm` and `/dashboard/marketing/surveys` from:
 - **Git commits for page recovery:** `674b6c5` (2026-05-01) = real page implementations. `bd6faf5` = replaced with stubs.
 - **Do NOT restore pages blindly:** verify type-check passes after each batch.
 - **routeRedirectMap.ts must stay in sync with middleware.ts** redirect map — both must be updated when adding/removing redirects.
+- **`useParams()` not `use(params)`** — Next.js App Router client components must use `useParams<{id:string}>()` from `next/navigation`, not `use(params)` from React. The latter suspends and renders empty `<main>`.
 
 ---
 
-## Next session tasks (in order)
+## Recovery complete
 
-1. **Wave 2A** — Restore 37 [id] detail pages from git history (see `docs/UNRESOLVED_47_IMPLEMENTATION_PLAN.md`)
-   - 31 routes: remove parent from REDIRECTS + restore [id] page
-   - 6 routes: restore [id] page only
-2. **Wave 2B** — Fix href typo in `ai/compliance/page.tsx` (`production/quality` → `production/quality-control`)
-3. **Wave 2C** — Requires user approval for 3 design decisions before implementing
-4. **E2E regression** — expand smoke test to cover newly restored [id] routes
+No pending recovery tasks. Next session can start new work directly.
