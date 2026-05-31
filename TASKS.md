@@ -166,27 +166,61 @@ Rules:
 
 ### Task ID: TASK-003 — Wire M-Pesa production credentials
 
-- **Status:** Pending
+- **Status:** Blocked — waiting for Safaricom Daraja credentials (backend production-ready; env examples updated)
 - **Priority:** P0
 - **Category:** Integration
-- **Why it matters:** `mpesa_service.py` returns fake IDs (`ws_CO_PLACEHOLDER_*`). `mpesa_daraja_service.py` uses `fake_checkout`/`fake_merchant` simulation. No real payments possible.
-- **Source / evidence:** `backend/app/services/mpesa_service.py:39-46`. `backend/app/services/mpesa_daraja_service.py:115-126`. Graphify action plan: production deployment blocker.
-- **Affected area:** `backend/app/services/mpesa_service.py`, `backend/app/services/mpesa_daraja_service.py`, `.env.production`
-- **Risk:** Medium (payment integration; needs Safaricom sandbox testing first)
-- **Recommended timing:** Now
-- **Needs audit before implementation:** Yes — review GAP-006 audit (`docs/planning/GAP-006_REAL_INTEGRATIONS_AUDIT.md`) and integration capability registry first.
-- **Implementation scope:** Replace placeholder Daraja stub with live STK Push call using real `MPESA_CONSUMER_KEY`/`MPESA_CONSUMER_SECRET`/`MPESA_PASSKEY` from Safaricom.
-- **Do not touch:** Payment model/schema unless required, other integrations
-- **Started at:**
+- **Why it matters:** No real payments possible until Safaricom credentials are configured. Both services fall back to simulation mode when credentials are absent.
+- **Source / evidence:**
+  - `backend/app/services/mpesa_daraja_service.py` — **production-ready** full Daraja implementation: OAuth2 token, STK Push, status query, callback handling, retry (max 3), duplicate prevention (409), integration logging. Falls back to simulation if `MPESA_CONFIGURED` is false.
+  - `backend/app/services/mpesa_service.py` — **placeholder** (older, used by sales module SalesOrder model). `_stk_push_request()` returns fake `ws_CO_PLACEHOLDER_*` IDs. Needs separate attention (TASK-003b — see notes).
+  - `backend/app/core/config.py:100-118` — `MPESA_CONFIGURED` property = `bool(CONSUMER_KEY and CONSUMER_SECRET and SHORTCODE and PASSKEY)`.
+  - `backend/app/core/integration_capabilities.py:39-56` — status `SANDBOX_READY`, `production_execution_allowed=True`.
+  - `docs/planning/GAP-006_REAL_INTEGRATIONS_AUDIT.md` — does NOT exist.
+  - `.env.development.example` + `.env.production.example` — M-Pesa section was entirely absent; now added.
+- **Affected area:** `.env.development` or `.env.production` (actual live env — NOT the examples)
+- **Risk:** Medium (payment integration; Safaricom sandbox testing required before production)
+- **Recommended timing:** Now (production blocker)
+- **Needs audit before implementation:** No — backend is production-ready. Only real credentials needed.
+- **Implementation scope:**
+  - `mpesa_daraja_service.py` is ready — no code changes needed.
+  - `mpesa_service.py` (sales module) still uses a placeholder `_stk_push_request()`. This is a separate concern — see Notes below.
+  - To enable live M-Pesa: set all 5 env vars in `.env.production` (or `.env.development` for sandbox testing) and restart backend.
+- **Do not touch:** `mpesa_daraja_service.py` source (already production-ready), payment models, migrations
+- **Started at:** 2026-05-31 (audit)
 - **Completed at:**
-- **Changed files:** None yet
-- **Tests / checks run:** None yet
-- **Result:** Pending
-- **Known limitations:** Requires Safaricom Business shortcode and approved Daraja API credentials.
+- **Changed files:**
+  - `.env.development.example` (added M-Pesa section)
+  - `.env.production.example` (added M-Pesa section)
+  - `TASKS.md` (this card)
+- **Created files:** None
+- **Deleted files:** None
+- **Tests / checks run:**
+  - Read `backend/app/services/mpesa_daraja_service.py` — full Daraja implementation confirmed
+  - Read `backend/app/services/mpesa_service.py` — placeholder confirmed (sales module only)
+  - Read `backend/app/core/config.py:100-118` — `MPESA_CONFIGURED` property confirmed
+  - Read `backend/app/core/integration_capabilities.py:39-56` — `SANDBOX_READY` status confirmed
+  - Checked env examples — M-Pesa section was absent (now added)
+  - No source code modified
+- **Result:** Blocked — backend ready for `mpesa_daraja_service.py`; credentials required for live payments
+- **Known limitations:** Real credentials must NOT be committed to git. `mpesa_service.py` (sales module) still uses placeholder — needs separate wiring to Daraja (see Notes).
 - **Git commit / branch:** Not committed yet
-- **Graphify refresh after implementation:** backend
-- **Graphify refresh status:** Needed after implementation
-- **Notes:** Test in Safaricom sandbox before prod. Never commit real credentials.
+- **Graphify refresh after implementation:** no (config-only change; no new graph edges)
+- **Graphify refresh status:** Not needed
+- **Notes:**
+  - **Required credentials from Safaricom Daraja portal:**
+    - `MPESA_CONSUMER_KEY` — Daraja app consumer key
+    - `MPESA_CONSUMER_SECRET` — Daraja app consumer secret
+    - `MPESA_SHORTCODE` — Paybill or Till number
+    - `MPESA_PASSKEY` — STK Push online passkey
+    - `MPESA_CALLBACK_URL` — public HTTPS URL, e.g. `https://yourdomain.com/api/v1/integrations/mpesa/callback`
+    - `MPESA_ENV=sandbox` (testing) or `MPESA_ENV=production` (live)
+  - **How to enable:**
+    1. Register at https://developer.safaricom.co.ke (sandbox) or https://daraja.safaricom.co.ke (production)
+    2. Create a Daraja app, get Consumer Key + Secret + Passkey
+    3. Set all 6 vars in `.env.production` (never commit)
+    4. Restart backend — `MPESA_CONFIGURED` becomes True automatically
+    5. `mpesa_daraja_service.py` switches from simulation to real Daraja calls
+  - **Technical debt (separate task):** `mpesa_service.py` (used by `SalesOrder` via sales module) has its own placeholder `_stk_push_request()` that is NOT wired to `mpesa_daraja_service.py`. When credentials are available, `mpesa_service.py:35-48` also needs its placeholder replaced with a real Daraja call. This is a low-risk backend change (single function, ~10 lines) but should be done as a follow-on task — do NOT block credential wiring on it.
 
 ---
 
