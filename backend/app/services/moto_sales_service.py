@@ -16,6 +16,7 @@ from app.models.van_sales import (
     VanSalesTxn, VanSalesTxnLine, VanPayment, VanVisit,
     TxnType, TxnStatus, VisitStatus, PaymentStatus,
 )
+from app.services import mpesa_daraja_service as _daraja
 
 
 def _D(v) -> Decimal:
@@ -31,13 +32,15 @@ async def initiate_stk_push(
     amount: Decimal,
 ) -> VanMpesaPayment:
     """
-    In production, call Safaricom Daraja API here.
-    Here we create the record and return PENDING status.
-    The callback endpoint updates it when Safaricom responds.
+    Delegates to mpesa_daraja_service._stk_push_request.
+    Simulation fallback is used when MPESA_CONFIGURED is False.
+    When credentials are configured, real Daraja STK Push is made automatically.
     """
-    import random, string
-    merchant_req_id = "MS-" + "".join(random.choices(string.ascii_uppercase + string.digits, k=12))
-    checkout_req_id = "ws_CO_" + datetime.utcnow().strftime("%d%m%Y%H%M%S") + str(random.randint(100000, 999999))
+    checkout_req_id, merchant_req_id, _resp = await _daraja._stk_push_request(
+        phone=phone,
+        amount=int(amount),
+        reference=str(txn_id)[:20],
+    )
 
     mpesa = VanMpesaPayment(
         txn_id=txn_id,

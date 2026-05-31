@@ -216,7 +216,19 @@ Rules:
     - Tests: `pytest tests/test_mpesa_service_delegation.py tests/test_gap006_integration_capabilities.py` → **10/10 PASS**
     - `python -c "import app.main"` → **IMPORT OK** (warnings are pre-existing, unrelated to this change)
     - Graphify refresh: backend — recommended after credential wiring; not running now.
-    - Known: `moto_sales_service.py:initiate_stk_push()` still has its own independent placeholder for VanMpesaPayment model (van sales module) — separate follow-on if needed.
+    - Known: `moto_sales_service.py:initiate_stk_push()` placeholder wired in the follow-on sub-task below.
+  - **Van/Moto Sales M-Pesa service wiring — 2026-05-31 — Done:**
+    - `moto_sales_service.initiate_stk_push()` was replaced with delegation to `mpesa_daraja_service._stk_push_request()`.
+    - Independent fake `ws_CO_<timestamp><random>` + `MS-<random>` IDs eliminated. Now uses Daraja simulation pair (`ws_CO_SIM_*`, `SIM_*`) when uncredentialed, or real Daraja IDs when credentials set.
+    - Both `checkout_request_id` and `merchant_request_id` now sourced from the shared Daraja service (VanMpesaPayment stores both).
+    - No model changes, no migrations, no endpoint changes, no frontend changes.
+    - Changed: `backend/app/services/moto_sales_service.py`
+    - Created: `backend/tests/test_moto_sales_mpesa_delegation.py`
+    - Tests: `pytest tests/test_moto_sales_mpesa_delegation.py tests/test_mpesa_service_delegation.py tests/test_gap006_integration_capabilities.py` → **13/13 PASS**
+    - `python -c "import app.main"` → **IMPORT OK**
+    - Warnings: `utcnow()` deprecation and SQLAlchemy relationship overlap — both pre-existing, unrelated to this change.
+    - Graphify refresh: backend — recommended after credential wiring; not running now.
+    - All three M-Pesa service paths (integrations, sales, van/moto sales) now share the same Daraja service for STK Push.
   - **Required credentials from Safaricom Daraja portal:**
     - `MPESA_CONSUMER_KEY` — Daraja app consumer key
     - `MPESA_CONSUMER_SECRET` — Daraja app consumer secret
