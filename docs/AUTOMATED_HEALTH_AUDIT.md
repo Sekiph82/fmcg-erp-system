@@ -1,0 +1,523 @@
+# Automated ERP Health Audit
+
+Generated: 2026-05-31 19:22 UTC
+
+## Summary
+
+| Severity | Count |
+|----------|-------|
+| HIGH     | 1 |
+| MEDIUM   | 499 |
+| LOW      | 0 |
+| INFO     | 1 |
+| **Total**| **501** |
+
+## HIGH (1)
+
+- **[token_storage]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\frontend\src\app\dashboard\qms\inspections\page.tsx:42` — Auth token stored in localStorage — use HttpOnly cookies instead
+
+## MEDIUM (499)
+
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\appraisals_service.py:69` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\appraisals_service.py:104` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\appraisals_service.py:147` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\appraisals_service.py:351` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\appraisals_service.py:390` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\appraisals_service.py:438` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\appraisals_service.py:455` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\appraisals_service.py:467` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\appraisals_service.py:490` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\appraisals_service.py:517` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\appraisals_service.py:554` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\appraisals_service.py:581` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\approval_service.py:53` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\approval_service.py:71` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\approval_service.py:253` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\approval_service.py:279` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\bank_api_service.py:83` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\bank_reconciliation_service.py:84` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\bank_reconciliation_service.py:269` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\bank_reconciliation_service.py:408` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\bank_reconciliation_service.py:745` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\bank_reconciliation_service.py:763` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\bank_reconciliation_service.py:850` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\bom_ai_service.py:62` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\bom_ai_service.py:134` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\bom_ai_service.py:138` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\bom_ai_service.py:193` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\bom_compliance_service.py:32` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\bom_costing_service.py:48` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\bom_costing_service.py:123` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\bom_costing_service.py:124` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\bom_scaling_service.py:60` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\bom_service.py:98` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\bom_service.py:138` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\bom_service.py:280` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\bom_service.py:303` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\bom_service.py:323` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\bom_service.py:334` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\bom_service.py:354` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\calendar_service.py:32` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\calendar_service.py:77` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\calendar_service.py:201` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\calendar_service.py:340` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\calendar_service.py:400` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\calendar_service.py:437` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\calendar_service.py:477` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\chatter_service.py:270` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\commissions_service.py:119` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\commissions_service.py:352` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\commissions_service.py:369` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\commissions_service.py:435` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\contracts_service.py:294` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\contracts_service.py:333` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\contracts_service.py:356` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\contracts_service.py:365` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\contracts_service.py:397` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\crm_pipeline_service.py:38` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\crm_pipeline_service.py:798` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\crm_pipeline_service.py:823` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\crm_pipeline_service.py:847` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\custom_fields_service.py:158` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\custom_fields_service.py:237` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\custom_fields_service.py:465` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\custom_fields_service.py:521` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\custom_fields_service.py:566` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\custom_fields_service.py:608` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\custom_fields_service.py:646` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\custom_fields_service.py:693` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\cycle_count_service.py:463` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\cycle_count_service.py:775` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\dimensions_service.py:33` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\dimensions_service.py:71` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\dimensions_service.py:101` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\dimensions_service.py:167` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\dimensions_service.py:204` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\dimensions_service.py:236` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\dimensions_service.py:257` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\dimensions_service.py:280` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\dimensions_service.py:369` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\dimensions_service.py:385` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\dimensions_service.py:455` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\dimensions_service.py:519` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\dimensions_service.py:537` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\dimensions_service.py:552` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\dimensions_service.py:579` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\dimensions_service.py:600` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\electricity_service.py:162` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\esg_service.py:121` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\esg_service.py:570` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\ess_service.py:124` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\ess_service.py:174` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\ess_service.py:220` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\ess_service.py:295` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\ess_service.py:450` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\ess_service.py:527` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\ess_service.py:594` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\ess_service.py:637` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\ess_service.py:661` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\ess_service.py:811` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\ess_service.py:846` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\expenses_service.py:41` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\expenses_service.py:72` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\expenses_service.py:394` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\expenses_service.py:495` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\expenses_service.py:533` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\expenses_service.py:577` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\expenses_service.py:595` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\expenses_service.py:614` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\finance_service.py:286` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\finance_service.py:570` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\finance_service.py:660` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\finance_service.py:710` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\finance_service.py:862` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\finance_service.py:895` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\integration_service.py:93` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\integration_service.py:211` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\inventory_service.py:663` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\inventory_service.py:706` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\inventory_service.py:802` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\invoice_match_service.py:71` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\invoice_match_service.py:95` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\invoice_match_service.py:466` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\invoice_match_service.py:607` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\invoice_match_service.py:897` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\iot_service.py:103` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\kanban_service.py:58` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\kanban_service.py:232` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\kanban_service.py:412` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\kanban_service.py:514` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\landed_cost_service.py:166` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\landed_cost_service.py:626` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\logistics_service.py:32` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\logistics_service.py:90` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\machine_operator_service.py:141` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\machine_operator_service.py:296` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\machine_operator_service.py:707` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\machine_operator_service.py:708` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\maintenance_service.py:152` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\maintenance_service.py:194` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\maintenance_service.py:274` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\maintenance_service.py:316` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\maintenance_service.py:389` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\maintenance_service.py:399` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\material_flow_service.py:67` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\material_flow_service.py:347` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\material_flow_service.py:396` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\material_flow_service.py:425` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\material_flow_service.py:609` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\material_flow_service.py:610` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\moto_sales_service.py:301` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\moto_sales_service.py:314` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\mpesa_service.py:132` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\mpesa_service.py:174` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\mps_ai_service.py:46` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\mps_ai_service.py:125` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\mps_ai_service.py:158` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\mps_ai_service.py:294` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\mps_campaign_service.py:72` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\mps_campaign_service.py:189` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\mps_capacity_service.py:79` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\mps_capacity_service.py:83` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\mps_capacity_service.py:215` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\mps_capacity_service.py:223` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\mps_capacity_service.py:303` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\mps_service.py:104` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\mps_service.py:156` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\mps_service.py:281` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\mps_whatif_service.py:156` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\mps_whatif_service.py:160` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\mps_whatif_service.py:231` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\mrp_service.py:469` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\notifications_service.py:193` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\notifications_service.py:242` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\notifications_service.py:317` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\notifications_service.py:553` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\payroll_ke_service.py:156` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\payroll_ke_service.py:165` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\payroll_ke_service.py:386` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\payroll_ke_service.py:467` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\payroll_ke_service.py:492` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\payroll_ke_service.py:515` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\payroll_ke_service.py:538` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\payroll_ke_service.py:561` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\payroll_ke_service.py:603` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\planning_ai_service.py:63` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\planning_ai_service.py:143` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\planning_ai_service.py:220` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\planning_ai_service.py:247` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\planning_ai_service.py:270` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\planning_ai_service.py:331` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\planning_bottleneck_service.py:62` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\planning_bottleneck_service.py:88` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\planning_bottleneck_service.py:127` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\planning_capacity_service.py:137` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\planning_capacity_service.py:153` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\planning_capacity_service.py:373` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\planning_capacity_service.py:412` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\planning_scenario_service.py:49` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\planning_simulation_service.py:51` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\planning_simulation_service.py:109` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\planning_simulation_service.py:160` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\portal_service.py:138` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\portal_service.py:454` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\portal_service.py:563` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\portal_service.py:606` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\portal_service.py:826` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\procurement_service.py:209` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\procurement_service.py:448` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\procurement_suggestion_service.py:224` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\procurement_suggestion_service.py:304` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\procurement_suggestion_service.py:319` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\procurement_suggestion_service.py:458` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\procurement_suggestion_service.py:475` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\procurement_suggestion_service.py:599` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\procurement_suggestion_service.py:695` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\procurement_suggestion_service.py:816` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\procurement_suggestion_service.py:927` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\procurement_suggestion_service.py:944` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\procurement_suggestion_service.py:984` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\procurement_suggestion_service.py:1042` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\procurement_suggestion_service.py:1085` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\production_cost_service.py:418` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\production_execution_service.py:75` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\production_execution_service.py:110` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\production_execution_service.py:291` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\production_execution_service.py:300` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\production_execution_service.py:491` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\production_execution_service.py:498` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\production_execution_service.py:625` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\production_exec_ai_service.py:43` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\production_exec_ai_service.py:48` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\production_exec_ai_service.py:217` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\production_service.py:350` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\production_service.py:471` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\promotions_service.py:44` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\promotions_service.py:318` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\promotions_service.py:473` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\promotions_service.py:499` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\promotions_service.py:591` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\promotions_service.py:677` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\quality_service.py:148` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\quality_service.py:192` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\quality_service.py:352` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\recall_service.py:264` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\recall_service.py:322` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\recall_service.py:346` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\recall_service.py:386` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\recall_service.py:466` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\recall_service.py:509` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\recall_service.py:514` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\recall_service.py:646` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\recall_service.py:831` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\recall_service.py:860` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\recall_service.py:906` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\recall_service.py:949` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\recall_service.py:978` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\recruitment_service.py:45` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\recruitment_service.py:182` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\recruitment_service.py:282` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\recruitment_service.py:383` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\recruitment_service.py:441` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\recruitment_service.py:627` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\recruitment_service.py:659` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\recruitment_service.py:753` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\report_builder_service.py:357` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\report_builder_service.py:514` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\report_builder_service.py:544` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\report_builder_service.py:662` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\sales_service.py:86` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\sales_service.py:102` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\sales_service.py:118` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\sales_service.py:162` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\sales_service.py:175` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\sales_service.py:210` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\sales_service.py:258` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\sales_service.py:315` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\sales_service.py:361` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\sales_service.py:510` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\shelf_life_service.py:78` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\shelf_life_service.py:96` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\shelf_life_service.py:167` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\shelf_life_service.py:295` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\shelf_life_service.py:303` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\shelf_life_service.py:352` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\shelf_life_service.py:790` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\shelf_life_service.py:814` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\shelf_life_service.py:1037` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\shop_floor_ai_service.py:103` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\shop_floor_ai_service.py:155` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\shop_floor_ai_service.py:180` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\shop_floor_ai_service.py:203` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\shop_floor_ai_service.py:225` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\shop_floor_ai_service.py:269` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\shop_floor_ai_service.py:295` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\shop_floor_ai_service.py:326` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\shop_floor_service.py:129` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\shop_floor_service.py:488` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\subcontracting_service.py:91` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\subcontracting_service.py:496` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\subcontracting_service.py:509` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\subcontracting_service.py:686` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\subcontracting_service.py:936` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\subcontracting_service.py:968` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\subscription_service.py:327` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\subscription_service.py:438` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\subscription_service.py:464` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\subscription_service.py:522` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\subscription_service.py:536` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\subscription_service.py:594` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\tax_service.py:49` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\tax_service.py:71` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\tax_service.py:234` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\timesheets_service.py:63` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\timesheets_service.py:182` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\timesheets_service.py:202` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\timesheets_service.py:221` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\timesheets_service.py:246` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\timesheets_service.py:267` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\timesheets_service.py:315` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\timesheets_service.py:383` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\timesheets_service.py:471` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\tpm_service.py:36` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\tpm_service.py:109` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\tpm_service.py:238` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\tpm_service.py:540` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\traceability_service.py:119` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\traceability_service.py:157` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\traceability_service.py:165` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\training_service.py:79` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\training_service.py:218` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\training_service.py:257` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\training_service.py:328` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\training_service.py:413` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\training_service.py:471` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\training_service.py:476` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\training_service.py:509` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\training_service.py:538` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\training_service.py:554` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\training_service.py:652` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\training_service.py:681` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\utility_alarm_service.py:385` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\utility_integration_service.py:155` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\utility_integration_service.py:651` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\van_sales_service.py:83` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\van_sales_service.py:183` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\van_sales_service.py:418` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\van_sales_service.py:441` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\van_sales_service.py:644` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\webhook_service.py:136` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\webhook_service.py:547` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\webhook_service.py:756` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\wms_service.py:298` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\wms_service.py:344` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\wms_service.py:838` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\wms_service.py:868` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\wms_service.py:1073` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\wms_service.py:1083` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\wms_service.py:1142` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\ai.py:234` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\ai.py:977` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\ai.py:1115` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\ai.py:1167` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\api_portal.py:119` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\approvals.py:197` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\audit.py:150` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\audit.py:257` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\bom.py:181` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\brand_assets.py:227` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\chemical_treatment.py:138` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\chemical_treatment.py:219` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\company.py:173` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\company.py:192` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\company.py:240` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\compressor.py:179` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\consumer_complaints.py:249` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\containers.py:63` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\documents.py:80` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\documents.py:345` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\documents.py:376` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\documents.py:464` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\documents.py:480` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\electricity.py:152` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\email_integration.py:53` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\email_integration.py:101` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\email_integration.py:343` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\esign.py:187` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\esign.py:253` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\finance.py:590` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\finance.py:728` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\finance.py:758` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\finance.py:806` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\finance.py:902` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\finance.py:942` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\finance.py:1053` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\finance.py:1219` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\finance.py:1450` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\finance.py:1544` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\fixed_assets.py:88` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\fixed_assets.py:543` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\fixed_assets.py:572` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\fixed_assets.py:598` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\hr.py:125` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\hr.py:182` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\hr.py:408` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\hr.py:431` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\hr.py:539` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\integrations.py:797` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\integrations.py:885` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\integrations.py:894` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\inventory.py:141` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\iot.py:313` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\iot.py:405` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\machine_utility.py:99` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\machine_utility.py:167` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\marketing.py:214` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\marketing.py:326` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\marketing.py:702` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\marketing.py:742` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\marketing.py:829` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\marketing.py:1017` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\messaging.py:105` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\messaging.py:361` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\messaging.py:419` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\mobile.py:138` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\modules.py:28` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\modules.py:34` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\mrp.py:281` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\mrp.py:764` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\payroll_ke.py:142` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\payroll_ke.py:169` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\payroll_ke.py:285` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\payroll_ke.py:314` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\payroll_ke.py:533` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\planning.py:196` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\planning.py:355` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\planning.py:385` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\procurement.py:520` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\procurement.py:529` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\procurement.py:544` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\procurement.py:604` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\procurement.py:756` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\procurement.py:903` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\procurement.py:977` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\production_advanced.py:358` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\regulatory_certs.py:176` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\report_builder.py:457` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\roles.py:256` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\roles.py:276` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\roles.py:310` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\serial_tracking.py:193` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\shop_floor.py:367` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\soft_water.py:249` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\solar.py:142` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\steam.py:210` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\subcontracting.py:200` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\subcontracting.py:236` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\tax_regulatory.py:405` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\users.py:285` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\users.py:305` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\users.py:339` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\wastewater.py:159` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\whatsapp.py:118` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\whatsapp.py:371` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\whatsapp.py:419` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\wms.py:778` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\wms.py:861` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\wms.py:943` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\wms.py:1049` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\wms.py:1126` — .scalars().all() without .limit() nearby
+- **[row_lock]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\crud\finance.py:295` — with_for_update() — verify atomic SQL UPDATE is not feasible
+- **[row_lock]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\crud\maintenance.py:154` — with_for_update() — verify atomic SQL UPDATE is not feasible
+- **[row_lock]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\crud\maintenance.py:221` — with_for_update() — verify atomic SQL UPDATE is not feasible
+- **[row_lock]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\crud\maintenance.py:246` — with_for_update() — verify atomic SQL UPDATE is not feasible
+- **[row_lock]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\crud\maintenance.py:325` — with_for_update() — verify atomic SQL UPDATE is not feasible
+- **[row_lock]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\crud\secondary_sales.py:148` — with_for_update() — verify atomic SQL UPDATE is not feasible
+- **[row_lock]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\inventory_service.py:108` — with_for_update() — verify atomic SQL UPDATE is not feasible
+- **[row_lock]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\inventory_service.py:317` — with_for_update() — verify atomic SQL UPDATE is not feasible
+- **[row_lock]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\inventory_service.py:371` — with_for_update() — verify atomic SQL UPDATE is not feasible
+- **[row_lock]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\inventory_service.py:444` — with_for_update() — verify atomic SQL UPDATE is not feasible
+- **[row_lock]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\mpesa_service.py:120` — with_for_update() — verify atomic SQL UPDATE is not feasible
+- **[row_lock]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\mpesa_service.py:153` — with_for_update() — verify atomic SQL UPDATE is not feasible
+- **[row_lock]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\procurement_service.py:413` — with_for_update() — verify atomic SQL UPDATE is not feasible
+- **[row_lock]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\procurement_service.py:434` — with_for_update() — verify atomic SQL UPDATE is not feasible
+- **[row_lock]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\production_service.py:69` — with_for_update() — verify atomic SQL UPDATE is not feasible
+- **[row_lock]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\production_service.py:169` — with_for_update() — verify atomic SQL UPDATE is not feasible
+- **[row_lock]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\quality_service.py:147` — with_for_update() — verify atomic SQL UPDATE is not feasible
+- **[row_lock]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\quality_service.py:191` — with_for_update() — verify atomic SQL UPDATE is not feasible
+- **[row_lock]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\sales_service.py:116` — with_for_update() — verify atomic SQL UPDATE is not feasible
+- **[row_lock]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\sales_service.py:173` — with_for_update() — verify atomic SQL UPDATE is not feasible
+- **[row_lock]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\sales_service.py:256` — with_for_update() — verify atomic SQL UPDATE is not feasible
+- **[row_lock]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\sales_service.py:301` — with_for_update() — verify atomic SQL UPDATE is not feasible
+- **[row_lock]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\sales_service.py:317` — with_for_update() — verify atomic SQL UPDATE is not feasible
+- **[row_lock]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\sales_service.py:412` — with_for_update() — verify atomic SQL UPDATE is not feasible
+- **[row_lock]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\utilities_service.py:34` — with_for_update() — verify atomic SQL UPDATE is not feasible
+- **[row_lock]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\wms_service.py:268` — with_for_update() — verify atomic SQL UPDATE is not feasible
+- **[row_lock]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\wms_service.py:297` — with_for_update() — verify atomic SQL UPDATE is not feasible
+- **[row_lock]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\wms_service.py:343` — with_for_update() — verify atomic SQL UPDATE is not feasible
+- **[row_lock]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\wms_service.py:538` — with_for_update() — verify atomic SQL UPDATE is not feasible
+- **[row_lock]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\wms_service.py:1052` — with_for_update() — verify atomic SQL UPDATE is not feasible
+
+## INFO (1)
+
+- **[env_files]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\.env.production.example` — Example env file has no corresponding .env.production — copy and fill it

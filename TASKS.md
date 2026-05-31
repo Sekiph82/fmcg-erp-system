@@ -678,27 +678,93 @@ ERP_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN: bool = True
 
 ### Task ID: TASK-008 — Run erp-health-audit.py and address findings
 
-- **Status:** Pending
+- **Status:** Audited — 1 HIGH fix pending; MEDIUM findings classified
 - **Priority:** P1
 - **Category:** QA / Performance
-- **Why it matters:** Last known run (2026-05-16) showed 52 HIGH / 624 MEDIUM findings. Subsequent code fixes addressed many. Current state unknown. Unbounded queries, missing guards, and other issues may remain.
-- **Source / evidence:** `scripts/erp-health-audit.py`. TASKS.md historical: "python scripts/erp-health-audit.py → 52 HIGH / 624 MEDIUM findings". `check_unbounded_queries()` is a god node in scripts Graphify (7 edges). Previous rounds of fixes (Passes 1-2) fixed many but not all.
-- **Affected area:** `scripts/erp-health-audit.py`, backend app code per findings
-- **Risk:** Medium (query performance and security)
-- **Recommended timing:** Next
-- **Needs audit before implementation:** No — just run the script, review output, then decide which findings to fix.
-- **Implementation scope:** Run script, analyze output, fix remaining HIGH findings, document MEDIUM findings. Do not over-fix — focus on real unbounded queries and security issues.
-- **Do not touch:** Working business logic unless directly flagged as broken
-- **Started at:**
-- **Completed at:**
-- **Changed files:** None yet
-- **Tests / checks run:** None yet
-- **Result:** Pending
-- **Known limitations:** Requires Docker/PostgreSQL running for some checks.
+- **Why it matters:** Previous run (2026-05-16): 52 HIGH / 624 MEDIUM. Current run (2026-05-31): **1 HIGH / 499 MEDIUM / 1 INFO** — 51 HIGH fixed by prior work, 125 MEDIUM fixed.
+
+---
+
+#### AUDIT RUN — 2026-05-31
+
+**Command:** `python scripts/erp-health-audit.py`
+**Output:** `docs/AUTOMATED_HEALTH_AUDIT.md`
+**Script:** read-only, no DB required, no network
+
+| Severity | Count | Category breakdown |
+|----------|-------|--------------------|
+| HIGH | 1 | `token_storage` ×1 |
+| MEDIUM | 499 | `unbounded_query` ×469, `row_lock` ×30 |
+| LOW | 0 | — |
+| INFO | 1 | `env_files` ×1 |
+
+---
+
+#### HIGH FINDING
+
+| # | Category | File | Line | Finding | False positive? | Fix scope |
+|---|----------|------|------|---------|----------------|-----------|
+| 1 | `token_storage` | `frontend/src/app/dashboard/qms/inspections/page.tsx` | 42 | `localStorage.getItem("access_token")` — raw fetch with Bearer token instead of `apiClient` (HttpOnly cookie) | No — real issue | Single file (replace fetch with `apiClient.get`) |
+
+**Stale/solved by prior work:** None — this finding is new/remaining.
+
+**INFO finding:**
+- `env_files`: `.env.production` missing — expected (not committed by design). False positive / intentional.
+
+---
+
+#### MEDIUM FINDING GROUPS
+
+**Group 1 — `unbounded_query` in `services/` (358 findings)**
+Nature: internal service functions loading full related-entity lists for computation (BOM costing, appraisals, training cycles, payroll, shelf-life). Many are legitimately unbounded by business logic (e.g., BOM costing needs all materials). Risk: performance under large data — not security.
+
+Top files: `dimensions_service.py` ×16, `recall_service.py` ×13, `procurement_suggestion_service.py` ×13, `training_service.py` ×12, `appraisals_service.py` ×12, `ess_service.py` ×11.
+
+**Group 2 — `unbounded_query` in `endpoints/` (111 findings)**
+Nature: user-facing API endpoints returning all rows without pagination. Higher priority than Group 1.
+
+Top files: `finance.py` ×10, `procurement.py` ×7, `marketing.py` ×6, `wms.py` ×5, `payroll_ke.py` ×5, `hr.py` ×5, `documents.py` ×5.
+
+**Group 3 — `row_lock` in services (30 findings, 11 files)**
+Nature: `with_for_update()` on stock/inventory/sales mutations. These are correct for concurrency safety (prevent double-allocation). Audit flags them for review but they are intentional patterns. Low priority.
+
+Top files: `sales_service.py` ×6, `wms_service.py` ×5, `inventory_service.py` ×4, `maintenance.py` ×4.
+
+---
+
+#### IMPLEMENTATION BATCHES
+
+**Batch A — Immediate HIGH fix (1 change, 1 file)**
+- `frontend/src/app/dashboard/qms/inspections/page.tsx:42` — replace raw `fetch` + `localStorage.getItem("access_token")` with `apiClient.get("/api/v1/quality/inspections/", { params })` from `@/lib/api`
+
+**Batch B — Endpoint unbounded queries (medium urgency, 111 findings)**
+- Add `.limit()` + pagination to user-facing endpoints that return unbounded lists
+- Top priority: `finance.py`, `procurement.py`, `marketing.py`
+- Approach: add `skip: int = 0, limit: int = 100` query params pattern already used elsewhere
+
+**Batch C — Service unbounded queries (lower urgency, 358 findings)**
+- Review service functions; add to `_KNOWN_FP_CONTEXTS` if provably bounded, or add `.limit()` guards
+- Most are internal computation — low production risk unless data set is huge
+
+**Batch D — row_lock review (informational, 30 findings)**
+- Verify each `with_for_update()` is necessary; replace with atomic UPDATE where simpler
+- `inventory_service` and `sales_service` are highest priority (stock mutation correctness)
+
+---
+
+- **Source / evidence:** `scripts/erp-health-audit.py`, `docs/AUTOMATED_HEALTH_AUDIT.md`
+- **Affected area:** `frontend/src/app/dashboard/qms/inspections/page.tsx` (Batch A); `backend/app/api/v1/endpoints/` (Batch B)
+- **Risk:** HIGH fix = medium (frontend auth pattern change); MEDIUM = low (additive limits)
+- **Started at:** 2026-05-31
+- **Completed at:** (audit done; Batch A implementation pending)
+- **Changed files:** `TASKS.md` only (audit update); `docs/AUTOMATED_HEALTH_AUDIT.md` (script output)
+- **Tests / checks run:** `python scripts/erp-health-audit.py` → 1 HIGH / 499 MEDIUM / 1 INFO
+- **Result:** Audit complete. 51 HIGH findings resolved by prior work. 1 HIGH remains (`token_storage`).
+- **Known limitations:** Script does not require DB — all findings are static analysis only.
 - **Git commit / branch:** Not committed yet
-- **Graphify refresh after implementation:** backend
-- **Graphify refresh status:** Needed if backend query code changed
-- **Notes:** `check_unbounded_queries()` in scripts has 7 Graphify edges — well-connected audit tool.
+- **Graphify refresh after implementation:** backend (if endpoint query patterns change)
+- **Graphify refresh status:** Not needed for Batch A (frontend only)
+- **Notes:** `row_lock` findings are intentional concurrency safety patterns — do not blindly remove.
 
 ---
 
