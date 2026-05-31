@@ -1,1284 +1,828 @@
 # TASKS
 
-## GS1 Product Master Label Data Integration — 2026-05-31
+## Tracking Policy
 
-### Files Changed
-| File | Change |
-|---|---|
-| `frontend/src/app/dashboard/gs1/page.tsx` | Product selector, product_id passthrough, A4 grid fix, copies fix |
-| `frontend/src/lib/gs1.ts` | Added `net_weight_g`, `net_volume_ml`, `product_sku_code` to `ProductGS1Config` TS interface |
-
-**Backend source files touched:** NO  
-**Migrations added:** NO — by design. No new DB columns in this phase.
-
-### Product Master Integration
-**How it works:**
-- Product selector added to Generate Label form (search-filter input + select dropdown)
-- Products fetched from existing `GET /api/v1/products/` via `productsApi.list(0, 500)` — same pattern used across 6 other pages
-- On product select, `onProductSelect()` auto-fills: Product Name (from `product.name`), SKU (from `product.sku`), Net Weight (from `product.weight_kg` × 1000 → grams)
-- Then fetches `GET /api/v1/gs1/products/by-product/{product_id}` (existing endpoint) for canonical GTIN-14 (`gs1Config.gtin`) and GS1 packaging weights (`net_weight_g`, `net_volume_ml`)
-- GTIN resolution priority: GS1Config.gtin → product.barcode → warning ("Selected product has no GTIN — enter GTIN manually")
-- All auto-filled fields remain editable by user
-
-**product_id support:** `BarcodeGenerateRequest` already has `product_id: Optional[uuid.UUID]` on the backend. Frontend passes `product_id` when generating barcode. No migration needed — field existed.
-
-**Product fields mapped:**
-| Source field | Label field |
-|---|---|
-| `Product.name` | Product Name |
-| `Product.sku` | SKU |
-| `Product.weight_kg × 1000` | Net Weight (grams) |
-| `Product.barcode` | GTIN fallback |
-| `ProductGS1Config.gtin` | GTIN (canonical GTIN-14, preferred) |
-| `ProductGS1Config.net_weight_g` | Net Weight override (GS1 packaging weight) |
-| `ProductGS1Config.net_volume_ml` | Net Weight (volume, if weight not set) |
-
-**Product Master data is sourced on the frontend only; barcode record is not permanently linked to product_id unless product was selected at generate time.**
-
-### A4 Grid Fix
-**Problem:** All A4 label cells were in one `<div class="grid">` with `page-break-after` on each cell → broken pagination for copies > 4.
-
-**Fix:** `openPrintWindow` now groups A4 cells into pages of 4 (`A4_CELLS_PER_PAGE = 4`). Each group gets its own `<div class="a4-page">` with `page-break-after:always` only between page groups. Individual cells never receive `page-break-after`.
-
-**Result:**
-- Copies 1–4 → 1 A4 page (2×2 grid)
-- Copies 5–8 → 2 A4 pages
-- Copies 9–12 → 3 A4 pages
-- Thermal labels unchanged (one label per physical page)
-
-### Recent Barcodes Row Print — Copies Fix
-**Problem:** `printMut.onSuccess` passed `copies: 1` hardcoded to `openPrintWindow`.
-
-**Fix:** Now uses `copies` state variable. Row Print button uses selected Copies value, selected Label Template, and selected Printer Preset from the form panel.
-
-### Verification
-| Check | Result |
-|---|---|
-| Frontend type-check (`tsc --noEmit`) | CLEAN |
-| Frontend build (`npm run build`) | CLEAN (exit 0) |
-| Backend source changed | NO |
-| Migrations added | NO |
-| New npm dependencies | NONE |
-
-### Manual Test Steps
-1. Open `/dashboard/gs1`
-2. Click **Generate Label**
-3. Type product name in filter box, select product from dropdown
-4. Confirm Product Name and SKU auto-fill
-5. Confirm GTIN auto-fills if product has GS1 config or barcode; otherwise amber warning appears
-6. Enter Lot Number: `LOT-001`
-7. Set Copies: `3`, select 70×40 mm / Zebra Thermal
-8. Click **Generate Barcode** → confirm preview shows product data
-9. Click **Print 3 Labels (70×40 mm)** → confirm 3 thermal labels render
-10. Change template to A4, Copies: `4`
-11. Click **Preview / Export PDF** → confirm 4 labels on one A4 page in 2×2 grid
-12. Click **Print** on a Recent Barcodes row → confirm it uses selected copies value
-
-### Known Limitations
-- **Browser printing only.** Zebra/TSC/Godex/Godex presets set CSS `@page` dimensions and paper size — no ZPL/EPL/TSPL command generation, no USB/network printer driver.
-- **Thermal paper sizing:** Chrome/Edge respect `@page { size: 70mm 40mm }` when printer driver has matching paper size. Firefox ignores custom `@page` sizes and defaults to A4.
-- **PDF export:** Uses browser "Save as PDF" in print dialog. No programmatic PDF generation (no jsPDF, pdfmake, puppeteer).
-- **Product Master completeness:** Product Name/SKU/GTIN auto-fill only as complete as existing Product Master records. If a product has no `barcode` and no `ProductGS1Config`, GTIN warning appears and user must enter manually.
-- **barcode record not permanently linked to product:** Barcode record gets `product_id` only when a product is selected at generate time. Existing barcode rows in Recent Barcodes table have no product metadata — row Print opens window with barcode record fields only.
-- **No migration in this phase by design.** No new DB columns. Product Master integration is frontend-only for GS1 label data population.
-- **Copies counter (print window):** Each copy is a separate HTML page in the print window. Browser print dialog "Number of copies" is independent — keep browser copies at 1 to avoid doubling.
+- TASKS.md is the **only active in-repo task tracker**.
+- PLANS.md is kept as architecture/strategic reference (not a task tracker).
+- CODEX_PROGRESS.md is superseded by this file and deleted after merge.
+- TODO files, roadmap/progress/status files are not used anymore.
+- External Graphify files are architecture/reference files only — not task trackers.
+- Every completed task must update this file.
+- Every relevant completed task must also update `C:\Users\sekip\Desktop\graphify-erp-maps\GRAPHIFY_UPDATE_LOG.md`.
+- No new tracking files inside the repo.
+- Graphify is for architecture mapping, risk detection, and post-change refresh decisions — not a replacement for TASKS.md.
 
 ---
 
-## GS1 Label Printing Workflow Enhancement — 2026-05-31
+## What Graphify Is Used For
 
-### Scope
-Enhanced `frontend/src/app/dashboard/gs1/page.tsx` with professional label printing workflow. No other files changed.
+Graphify helps us:
+- Understand ERP architecture before risky edits
+- Identify high-coupling files and god nodes
+- Decide whether backend/frontend/docs/scripts maps need refresh after a task
+- Prevent editing dangerous areas without audit
+- Reduce repeated discovery work
 
-### Features Added
-1. **Label template selector** — 50×30 mm Thermal Small, 70×40 mm Thermal Standard, 100×50 mm Thermal Wide, A4 Office/Sheet Labels
-2. **Printer preset selector** — Browser Default, Zebra Thermal, TSC Thermal, Godex Thermal, A4 Office Printer (all browser-based; no ZPL/EPL/TSPL, no raw printer commands)
-3. **Copies field** — 1–100 copies; each copy rendered as a separate page in the print window with page-break-after
-4. **`@page` CSS** — correct physical dimensions per template (e.g. `size: 70mm 40mm; margin: 3mm`)
-5. **Product fields** — Product Name, SKU, Net Weight / Volume, Production Date (all optional; printed on label if provided)
-6. **Two print mutations**: `printMut` (row-level, 1 copy, current template) and `printGeneratedMut` (form-level, full config + copies)
-7. **"Preview / Export PDF" button** — opens same print window; user chooses "Save as PDF" in browser print dialog (no jsPDF/pdfmake dependency)
-8. **Print Job History section** (`PrintHistorySection` sub-component) — real data from `GET /labels/print` via `gs1Api.listPrintJobs()`, shows job_no, trigger, status badge, item count, printer name, printed_at, created_at
-9. **Validation** — GTIN required, Lot Number required, copies 1–100; form error shown inline
-10. **A4 grid layout** — 4-up (2×2) grid with `break-inside:avoid` cells; thermal templates use full-page per label
+Graphify must NOT:
+- Become another task tracker
+- Create repo-local permanent outputs (graphify-out/ must NOT be committed)
+- Be run as a background service
+- Run full repo automatically
+- Create hooks, scheduled tasks, daemons, or watchers
 
-### Helper functions
-- `getPageCSS(size)` — returns `@page { size: ... }` CSS string
-- `buildLabelHTML(cfg + index/isLast)` — per-copy HTML; branches on isA4 for cell vs page layout
-- `openPrintWindow(cfg)` — assembles full HTML, opens `window.open`, calls `window.print()` after 400ms
-
-### Known Limitations
-- **Thermal printer sizing**: `@page { size: 70mm 40mm }` is respected by Chrome/Edge when the correct paper size is configured in the printer driver. Firefox ignores custom `@page` sizes and defaults to A4. Users must set the paper size in the Windows printer driver to match the label template.
-- **Zebra / TSC / Godex**: These presets use the browser print path — no ZPL/EPL/TSPL command generation. The preset choice affects only the label template dimensions and the page CSS. Raw command printing is outside scope.
-- **PDF export**: Uses browser "Save as PDF" via the print dialog. No programmatic PDF generation (no jsPDF, pdfmake, puppeteer). Image quality in PDF depends on the browser's PDF renderer.
-- **Copies counter**: Copies are rendered as separate HTML pages in the print window. The browser's built-in "Number of copies" field in the print dialog is independent — set browser copies to 1 to avoid duplicating.
-- **Print history**: Requires Docker + PostgreSQL running. If `GET /labels/print` fails, the section shows a red error message; the rest of the dashboard remains functional.
-
-### Verification
-| Check | Result |
-|---|---|
-| Frontend type-check (`tsc --noEmit`) | CLEAN |
-| No new npm dependencies | Confirmed — zero package.json changes |
-| Hard-stop rules (no jsPDF, no ZPL, no new modules) | All respected |
+**Note:** `graphify-out/` is currently tracked by git (132 files). See TASK-010.
 
 ---
 
-## GS1 Barcode Label Create/Print Bug Fix — 2026-05-31
+## Task Tracking Template
 
-### Root Cause
-`frontend/src/app/dashboard/gs1/page.tsx` displayed dashboard KPIs and recent barcode rows but had **zero UI** for creating or printing labels:
-- No "Generate Label" form / button — `gs1Api.generateBarcode()` was never called
-- No "Print" button on barcode rows — `gs1Api.createPrintJob()` and `gs1Api.completePrintJob()` were never called
-- No barcode image display — `barcode_image_b64` in `LotBarcodeRecord` was never rendered
+```
+### Task ID: TASK-XXX — Task Title
 
-Backend was fully implemented (38 routes, service layer, schemas, migration). Frontend lib (`/lib/gs1.ts`) had all API functions. Only the page UI was missing.
+- **Status:** Pending / In Progress / Done / Blocked / Superseded
+- **Priority:** P0 / P1 / P2 / P3
+- **Category:** UI / GS1 / Product Master / Utilities / Production / Inventory / Finance / AI / Integration / Docs / QA / Cleanup / Security / Deployment
+- **Why it matters:**
+- **Source / evidence:**
+- **Affected area:**
+- **Risk:** Low / Medium / High
+- **Recommended timing:** Now / Next / Later
+- **Needs audit before implementation:** Yes / No
+- **Implementation scope:**
+- **Do not touch:**
+- **Started at:**
+- **Completed at:**
+- **Changed files:** None yet
+- **Created files:** None yet
+- **Deleted files:** None yet
+- **Tests / checks run:** None yet
+- **Result:** Pending
+- **Known limitations:** None yet
+- **Git commit / branch:** Not committed yet
+- **Graphify refresh after implementation:** backend / frontend / docs / scripts / no
+- **Graphify refresh status:** Not needed / Needed / Pending approval / Done
+- **Graphify output location if refreshed:** None
+- **Notes:**
+```
 
-No auth issue (GS1 endpoints have no auth guard). No URL mismatch (BASE URL correct).
-
-### Fix
-**File changed:** `frontend/src/app/dashboard/gs1/page.tsx` only.
-
-Added:
-1. **"Generate Label" button** in header → toggles inline form
-2. **Generate form** — GTIN + Lot Number (required), Expiry Date, Barcode Type (select) → calls `gs1Api.generateBarcode({ ..., save_record: true })`
-3. **Generated result panel** — renders `barcode_image_b64` and `qr_image_b64` as `<img>` + GS1 AI string display + "Print This Label" button
-4. **Print flow** — calls `createPrintJob → getBarcode → completePrintJob` then opens `window.open()` print window with barcode image
-5. **"Print" button on each barcode row** in Recent Barcodes table (fetches fresh record + same print flow)
-6. `printBarcodeInWindow()` helper — renders barcode image in a new window and calls `window.print()`
-
-**Tests added:** `backend/tests/test_gap018_gs1_label_printing.py` — 7 new schema/service contract tests (16 total, all pass).
-
-### Verification
-| Check | Result |
-|---|---|
-| Frontend type-check | CLEAN |
-| Frontend build | CLEAN |
-| GS1 backend tests | 16/16 passed |
-| Full pytest suite | 482/482 passed (pre-existing) |
-
-### Manual Flow
-1. Go to `/dashboard/gs1` (or `/dashboard/compliance?tab=gs1`)
-2. Click **"Generate Label"** button (top right, green)
-3. Enter GTIN (e.g. `05901234123457`), Lot Number (e.g. `LOT-001`), optional Expiry Date
-4. Click **"Generate Barcode"** → barcode image appears below form
-5. Click **"Print This Label"** → print dialog opens with barcode image
-6. Alternatively: click **"Print"** on any row in the Recent Barcodes table
-
-Note: Browser must allow popups for `localhost:3000` for print window to open.
+Rules:
+1. Every planned task uses this format.
+2. When a task completes, update its card — do not create a new file.
+3. List exact file paths changed, created, and deleted.
+4. List exact test commands and pass/fail results.
+5. If Graphify refresh is needed, mark it and ask user before running.
+6. TASKS.md is the single source of truth for task status.
+7. GRAPHIFY_UPDATE_LOG.md is only for Graphify architecture map refresh history.
 
 ---
 
-## Post Button-Recovery Verification — 2026-05-31
+## Current Priority Queue
 
-### Results
+---
 
-| Check | Result | Notes |
+### Task ID: TASK-001 — Login page POVU logo size
+
+- **Status:** Pending
+- **Priority:** P0
+- **Category:** UI
+- **Why it matters:** POVU logo appears too small on the login page.
+- **Source / evidence:** User visual review.
+- **Affected area:** `frontend/src/app/(auth)/login/page.tsx` or equivalent login layout
+- **Risk:** Low
+- **Recommended timing:** Now
+- **Needs audit before implementation:** No
+- **Implementation scope:** Increase logo size only. Find logo `<img>` or `<Image>` in login page and increase width/height CSS.
+- **Do not touch:** Auth logic, backend, routing, global layout, other pages
+- **Started at:**
+- **Completed at:**
+- **Changed files:** None yet
+- **Created files:** None yet
+- **Deleted files:** None yet
+- **Tests / checks run:** None yet
+- **Result:** Pending
+- **Known limitations:** None yet
+- **Git commit / branch:** Not committed yet
+- **Graphify refresh after implementation:** no
+- **Graphify refresh status:** Not needed
+- **Graphify output location if refreshed:** None
+- **Notes:** Small visual fix only.
+
+---
+
+### Task ID: TASK-002 — Enable AI live mode
+
+- **Status:** Pending
+- **Priority:** P0
+- **Category:** AI / Integration
+- **Why it matters:** `AI_PROVIDER=mock` or `auto` with no API key means all AI features return fake responses. No AI value in production.
+- **Source / evidence:** `backend/app/core/config.py:123` `AI_PROVIDER: str = "auto"`. `backend/app/services/ai_provider.py:421` "No AI API key found — using mock provider". Graphify action plan: production deployment blocker.
+- **Affected area:** `.env.development`, `.env.production`, `backend/app/core/config.py`
+- **Risk:** Low (config-only change if API key is available)
+- **Recommended timing:** Now
+- **Needs audit before implementation:** No
+- **Implementation scope:** Set `AI_PROVIDER=anthropic` (or `openai`/`gemini`) in env files. Add real API key. No code changes unless key validation fails.
+- **Do not touch:** AI service code, AI provider logic, frontend AI pages
+- **Started at:**
+- **Completed at:**
+- **Changed files:** None yet
+- **Created files:** None yet
+- **Deleted files:** None yet
+- **Tests / checks run:** None yet
+- **Result:** Pending
+- **Known limitations:** Requires real API key from Anthropic/OpenAI/Google.
+- **Git commit / branch:** Not committed yet
+- **Graphify refresh after implementation:** no
+- **Graphify refresh status:** Not needed
+- **Notes:** Highest feature unlock per effort. Once set, all AI formulation, predictive maintenance, APS optimization features become live.
+
+---
+
+### Task ID: TASK-003 — Wire M-Pesa production credentials
+
+- **Status:** Pending
+- **Priority:** P0
+- **Category:** Integration
+- **Why it matters:** `mpesa_service.py` returns fake IDs (`ws_CO_PLACEHOLDER_*`). `mpesa_daraja_service.py` uses `fake_checkout`/`fake_merchant` simulation. No real payments possible.
+- **Source / evidence:** `backend/app/services/mpesa_service.py:39-46`. `backend/app/services/mpesa_daraja_service.py:115-126`. Graphify action plan: production deployment blocker.
+- **Affected area:** `backend/app/services/mpesa_service.py`, `backend/app/services/mpesa_daraja_service.py`, `.env.production`
+- **Risk:** Medium (payment integration; needs Safaricom sandbox testing first)
+- **Recommended timing:** Now
+- **Needs audit before implementation:** Yes — review GAP-006 audit (`docs/planning/GAP-006_REAL_INTEGRATIONS_AUDIT.md`) and integration capability registry first.
+- **Implementation scope:** Replace placeholder Daraja stub with live STK Push call using real `MPESA_CONSUMER_KEY`/`MPESA_CONSUMER_SECRET`/`MPESA_PASSKEY` from Safaricom.
+- **Do not touch:** Payment model/schema unless required, other integrations
+- **Started at:**
+- **Completed at:**
+- **Changed files:** None yet
+- **Tests / checks run:** None yet
+- **Result:** Pending
+- **Known limitations:** Requires Safaricom Business shortcode and approved Daraja API credentials.
+- **Git commit / branch:** Not committed yet
+- **Graphify refresh after implementation:** backend
+- **Graphify refresh status:** Needed after implementation
+- **Notes:** Test in Safaricom sandbox before prod. Never commit real credentials.
+
+---
+
+### Task ID: TASK-004 — Wire WhatsApp production config
+
+- **Status:** Pending
+- **Priority:** P0
+- **Category:** Integration
+- **Why it matters:** `WhatsAppConfig.is_demo_mode = True` by default — all messages are simulated, nothing is sent to customers.
+- **Source / evidence:** `backend/app/models/whatsapp.py:47`. `backend/app/core/integration_capabilities.py:87-92` (STUB_ONLY). Graphify action plan: production blocker.
+- **Affected area:** `backend/app/models/whatsapp.py`, WhatsApp service/router, `.env.production`
+- **Risk:** Medium (customer-facing messaging; test template approvals needed)
+- **Recommended timing:** Now
+- **Needs audit before implementation:** Yes — review WhatsApp Business API setup requirements (Meta Business Manager, phone number, template approvals).
+- **Implementation scope:** Configure real WhatsApp Business API credentials (`WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`). Set `is_demo_mode=False` via API config endpoint.
+- **Do not touch:** Message log model, notification system
+- **Started at:**
+- **Completed at:**
+- **Changed files:** None yet
+- **Tests / checks run:** None yet
+- **Result:** Pending
+- **Known limitations:** Requires approved Meta Business Manager account and message templates.
+- **Git commit / branch:** Not committed yet
+- **Graphify refresh after implementation:** backend
+- **Graphify refresh status:** Needed after implementation
+- **Notes:** WhatsApp template messages must be pre-approved by Meta before sending.
+
+---
+
+### Task ID: TASK-005 — eTIMS live integration (KRA Kenya)
+
+- **Status:** Pending
+- **Priority:** P0
+- **Category:** Integration / Deployment
+- **Why it matters:** `payroll_ke.py:452` — "Stub: submit invoice to KRA eTIMS." `tax_regulatory.py:215` — "Simulation-ready: set ETIMS_API_URL in config to enable live calls." Kenya VAT-registered businesses are legally required to submit invoices to KRA eTIMS.
+- **Source / evidence:** `backend/app/api/v1/endpoints/payroll_ke.py:448-456`. `backend/app/models/tax_regulatory.py:212-222`. `backend/app/core/integration_capabilities.py:786` (status: "beta"). Graphify action plan: production deployment blocker.
+- **Affected area:** `backend/app/api/v1/endpoints/payroll_ke.py`, `backend/app/models/tax_regulatory.py`, `backend/app/models/payroll_ke.py`, `.env.production`
+- **Risk:** High (legal compliance requirement; incorrect submissions can trigger KRA audit)
+- **Recommended timing:** Now (legal requirement before go-live)
+- **Needs audit before implementation:** Yes — review eTIMS API docs (https://etims.kra.go.ke/), review existing `ETimsSubmission` model and `etims_submit` endpoint.
+- **Implementation scope:** Replace stub return in `etims_submit` with real KRA eTIMS API call. Wire `ETIMS_API_URL`, `ETIMS_API_KEY` env vars.
+- **Do not touch:** Invoice model, payroll model, other tax logic
+- **Started at:**
+- **Completed at:**
+- **Changed files:** None yet
+- **Tests / checks run:** None yet
+- **Result:** Pending
+- **Known limitations:** Requires KRA developer registration, sandbox testing, and certificate installation for production.
+- **Git commit / branch:** Not committed yet
+- **Graphify refresh after implementation:** backend
+- **Graphify refresh status:** Needed after implementation
+- **Notes:** Test in KRA sandbox environment first. This is the highest compliance risk before go-live.
+
+---
+
+### Task ID: TASK-006 — GS1 routes auth guard (38 unprotected endpoints)
+
+- **Status:** Pending
+- **Priority:** P1
+- **Category:** Security
+- **Why it matters:** Graphify backend graph (Community 133) found 38 GS1 routes with no auth guard. Any unauthenticated caller can generate and print barcodes.
+- **Source / evidence:** Graphify backend GRAPH_REPORT.md Community 133 finding. `backend/app/api/v1/endpoints/` gs1/barcode router inspection needed.
+- **Affected area:** `backend/app/api/v1/endpoints/` (GS1/barcode/label endpoints)
+- **Risk:** Medium (data integrity; unauthorized label generation)
+- **Recommended timing:** Next
+- **Needs audit before implementation:** Yes — run `grep -n "router\." backend/app/api/v1/endpoints/gs1*.py` to confirm which routes lack `Depends(get_current_user)` or `require_permission`.
+- **Implementation scope:** Add `Depends(get_current_user)` or `RequirePermission("gs1.print")` to unprotected GS1 endpoints. Do not change business logic.
+- **Do not touch:** GS1 service logic, barcode generation algorithm, frontend
+- **Started at:**
+- **Completed at:**
+- **Changed files:** None yet
+- **Tests / checks run:** None yet
+- **Result:** Pending
+- **Known limitations:** None expected.
+- **Git commit / branch:** Not committed yet
+- **Graphify refresh after implementation:** backend
+- **Graphify refresh status:** Needed after implementation
+- **Notes:** Graphify finding: `adminCredentials`, `limitedCredentials` — also check E2E test file for exposed test credentials.
+
+---
+
+### Task ID: TASK-007 — E2E test credentials investigation
+
+- **Status:** Pending
+- **Priority:** P1
+- **Category:** Security / QA
+- **Why it matters:** Graphify frontend graph (Community 133) found `adminCredentials` and `limitedCredentials` nodes — potential hardcoded test credentials in frontend E2E tests. Must verify these are not committed passwords.
+- **Source / evidence:** Graphify frontend GRAPH_REPORT.md Community 133 nodes.
+- **Affected area:** `frontend/e2e/` test files
+- **Risk:** Medium (if real credentials hardcoded in committed files)
+- **Recommended timing:** Next
+- **Needs audit before implementation:** Yes — read `frontend/e2e/` files and search for `adminCredentials`, `limitedCredentials`, hardcoded passwords.
+- **Implementation scope:** If real credentials are hardcoded, move to environment variables or fixture files excluded by .gitignore.
+- **Do not touch:** E2E test logic, auth flow
+- **Started at:**
+- **Completed at:**
+- **Changed files:** None yet
+- **Tests / checks run:** None yet
+- **Result:** Pending
+- **Known limitations:** None.
+- **Git commit / branch:** Not committed yet
+- **Graphify refresh after implementation:** no
+- **Graphify refresh status:** Not needed
+- **Notes:** This is read-only investigation first. Only modify if real credentials found.
+
+---
+
+### Task ID: TASK-008 — Run erp-health-audit.py and address findings
+
+- **Status:** Pending
+- **Priority:** P1
+- **Category:** QA / Performance
+- **Why it matters:** Last known run (2026-05-16) showed 52 HIGH / 624 MEDIUM findings. Subsequent code fixes addressed many. Current state unknown. Unbounded queries, missing guards, and other issues may remain.
+- **Source / evidence:** `scripts/erp-health-audit.py`. TASKS.md historical: "python scripts/erp-health-audit.py → 52 HIGH / 624 MEDIUM findings". `check_unbounded_queries()` is a god node in scripts Graphify (7 edges). Previous rounds of fixes (Passes 1-2) fixed many but not all.
+- **Affected area:** `scripts/erp-health-audit.py`, backend app code per findings
+- **Risk:** Medium (query performance and security)
+- **Recommended timing:** Next
+- **Needs audit before implementation:** No — just run the script, review output, then decide which findings to fix.
+- **Implementation scope:** Run script, analyze output, fix remaining HIGH findings, document MEDIUM findings. Do not over-fix — focus on real unbounded queries and security issues.
+- **Do not touch:** Working business logic unless directly flagged as broken
+- **Started at:**
+- **Completed at:**
+- **Changed files:** None yet
+- **Tests / checks run:** None yet
+- **Result:** Pending
+- **Known limitations:** Requires Docker/PostgreSQL running for some checks.
+- **Git commit / branch:** Not committed yet
+- **Graphify refresh after implementation:** backend
+- **Graphify refresh status:** Needed if backend query code changed
+- **Notes:** `check_unbounded_queries()` in scripts has 7 Graphify edges — well-connected audit tool.
+
+---
+
+### Task ID: TASK-009 — Utilities module real factory seed data foundation
+
+- **Status:** Pending
+- **Priority:** P1
+- **Category:** Utilities
+- **Why it matters:** Utilities module (water, electricity, soft water, boiler, compressed air, solar, chemicals, wastewater) exists in backend but has no realistic seed data. Dashboard shows empty charts. Useless for demos, testing, or KPI verification.
+- **Source / evidence:** PLANS.md — Phases U1-U22 defined. U22 = Seed Data. CODEX_PROGRESS.md — module registry shows `utilities | ModuleDefinition | DEFAULT_ACTIONS`. Backend utility models exist.
+- **Affected area:** `backend/app/db/seed.py` or new `backend/scripts/seed_utilities.py`
+- **Risk:** Low (seed data only; no model changes)
+- **Recommended timing:** Next
+- **Needs audit before implementation:** Yes — inspect what utility data structures exist in `backend/app/models/` before writing seed data.
+- **Implementation scope:** Create realistic FMCG factory utility seed records: assets, devices, readings, utility transactions, tariffs. No new DB columns.
+- **Do not touch:** Utility models/schemas/endpoints unless broken
+- **Started at:**
+- **Completed at:**
+- **Changed files:** None yet
+- **Tests / checks run:** None yet
+- **Result:** Pending
+- **Known limitations:** Only useful with Docker/PostgreSQL running.
+- **Git commit / branch:** Not committed yet
+- **Graphify refresh after implementation:** backend
+- **Graphify refresh status:** Needed
+- **Notes:** PLANS.md phases U1-U22 describe the full Utilities build. Before adding seed data, verify U1-U14 (asset CRUD, readings, transactions, tariffs) are implemented.
+
+---
+
+### Task ID: TASK-010 — Remove graphify-out/ folders from git tracking
+
+- **Status:** Pending (awaiting user decision — do NOT act without explicit approval)
+- **Priority:** P1
+- **Category:** Cleanup
+- **Why it matters:** Multiple graphify-out/ folders are tracked by git (863 total generated files). These are generated/binary output files and should not be in version control. They belong at `C:\Users\sekip\Desktop\graphify-erp-maps\` (already there).
+- **Source / evidence:** `git ls-files` results: `graphify-out/` (132), `backend/graphify-out/` (672), `frontend/graphify-out/` (5), `docs/graphify-out/` (52), `scripts/graphify-out/` (2) = 863 tracked files. User rule: "Do not add graphify-out/ to git."
+- **Affected area:** All `graphify-out/` folders, `.gitignore`
+- **Risk:** Low (removal of generated files; no source code change — but large git history modification)
+- **Recommended timing:** Next (when user approves)
+- **Needs audit before implementation:** Yes — confirm external folder has all important outputs AND confirm user explicitly approves before touching git.
+- **Implementation scope:** (1) Verify `C:\Users\sekip\Desktop\graphify-erp-maps\` has all 4 stage outputs. (2) Run `git rm -r --cached graphify-out/ backend/graphify-out/ frontend/graphify-out/ docs/graphify-out/ scripts/graphify-out/`. (3) Add all `graphify-out/` patterns to `.gitignore`. (4) Commit.
+- **Do not touch:** External `C:\Users\sekip\Desktop\graphify-erp-maps\` folder; source code
+- **Started at:**
+- **Completed at:**
+- **Changed files:** None yet
+- **Tests / checks run:** None yet
+- **Result:** Pending
+- **Known limitations:** After `git rm --cached`, folders remain locally but become untracked. Correct behavior.
+- **Git commit / branch:** Not committed yet
+- **Graphify refresh after implementation:** no
+- **Graphify refresh status:** Not needed
+- **Notes:** User said "Do not delete graphify-out file" — this task requires explicit user approval before any git rm is run.
+
+---
+
+### Task ID: TASK-011 — Redis AUTH password for production
+
+- **Status:** Pending
+- **Priority:** P2
+- **Category:** Deployment / Security
+- **Why it matters:** Redis has no AUTH password configured. In production, Redis without AUTH is accessible to any process on the network.
+- **Source / evidence:** TASKS.md historical: "A.15 Redis no AUTH — LOW" finding from full repository review (2026-05-17). `docs/PERFORMANCE_REVIEW.md`.
+- **Affected area:** `docker-compose.prod.yml`, `backend/app/core/config.py`, `.env.production.example`
+- **Risk:** Low (config change; requires Redis restart)
+- **Recommended timing:** Soon
+- **Needs audit before implementation:** No
+- **Implementation scope:** Add `REDIS_PASSWORD` env var; configure `requirepass` in Redis service; update `CELERY_BROKER_URL`/`REDIS_URL` in backend config.
+- **Do not touch:** Redis data, cache logic
+- **Started at:**
+- **Completed at:**
+- **Changed files:** None yet
+- **Tests / checks run:** None yet
+- **Result:** Pending
+- **Known limitations:** Requires Docker restart.
+- **Git commit / branch:** Not committed yet
+- **Graphify refresh after implementation:** no
+- **Graphify refresh status:** Not needed
+- **Notes:** Architecture decision: password management for Redis (manual secret vs Docker secrets vs Vault).
+
+---
+
+### Task ID: TASK-012 — Wire SMTP + test email OTP end-to-end
+
+- **Status:** Pending
+- **Priority:** P2
+- **Category:** Integration
+- **Why it matters:** Email OTP (2FA) was implemented but SMTP credentials were never set in a staging/production environment. `email_sender.py` uses console log in dev mode.
+- **Source / evidence:** TASKS.md historical: "Production SMTP not tested end-to-end (requires real SMTP server)." `backend/app/services/email_sender.py`. `.env.production.example` has SMTP vars.
+- **Affected area:** `.env.production`, `backend/app/services/email_sender.py`
+- **Risk:** Low (config only; email_sender.py already implemented)
+- **Recommended timing:** Soon
+- **Needs audit before implementation:** No
+- **Implementation scope:** Set `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM` in staging env. Test email OTP flow end-to-end.
+- **Do not touch:** email_sender.py unless bugs found
+- **Started at:**
+- **Completed at:**
+- **Changed files:** None yet
+- **Tests / checks run:** None yet
+- **Result:** Pending
+- **Known limitations:** Requires real SMTP server (Gmail/SendGrid/SES).
+- **Git commit / branch:** Not committed yet
+- **Graphify refresh after implementation:** no
+- **Graphify refresh status:** Not needed
+- **Notes:** OTP hashing (bcrypt) already implemented. Login-verify fixed. Just missing SMTP config.
+
+---
+
+### Task ID: TASK-013 — Playwright smoke re-run (post recent changes)
+
+- **Status:** Pending
+- **Priority:** P2
+- **Category:** QA
+- **Why it matters:** Last confirmed Playwright run: 52/52 pass (2026-05-17). Multiple large changes since then: button recovery waves, GS1 overhaul, compliance fixes, redirect fixes. Smoke tests may have regressions.
+- **Source / evidence:** TASKS.md historical: "Playwright smoke re-run to confirm 52/52 still pass after frontend changes." Last run was at the 2026-05-17 stage before all button recovery work.
+- **Affected area:** `frontend/e2e/smoke.spec.ts`, Docker environment
+- **Risk:** Low (read-only test run)
+- **Recommended timing:** Soon
+- **Needs audit before implementation:** No
+- **Implementation scope:** Run `npm run test:smoke` inside Docker frontend container. Review failures. Fix any regressions.
+- **Do not touch:** Business logic unless test failure reveals a real bug
+- **Started at:**
+- **Completed at:**
+- **Changed files:** None yet
+- **Tests / checks run:** None yet
+- **Result:** Pending
+- **Known limitations:** Requires Docker running (db, redis, backend, frontend all healthy).
+- **Git commit / branch:** Not committed yet
+- **Graphify refresh after implementation:** no
+- **Graphify refresh status:** Not needed
+- **Notes:** 52 tests: auth (3), dashboard (1), workspaces (C), tabs (D), static/dynamic redirects (E/F), theme/layout (G).
+
+---
+
+### Task ID: TASK-014 — python-jose → PyJWT migration evaluation
+
+- **Status:** Pending
+- **Priority:** P2
+- **Category:** Security
+- **Why it matters:** `python-jose` has known CVEs and is less actively maintained than `PyJWT`. Full repository review flagged this as a Medium security issue.
+- **Source / evidence:** TASKS.md historical: "Evaluate python-jose → PyJWT migration (needs test coverage)." `docs/SECURITY_REVIEW.md` — Medium finding.
+- **Affected area:** `backend/requirements.txt`, `backend/app/core/security.py` or JWT helper files
+- **Risk:** Medium (JWT library swap affects token signing/verification)
+- **Recommended timing:** Soon
+- **Needs audit before implementation:** Yes — review all files that import `jose` or `python-jose`. Check token format compatibility.
+- **Implementation scope:** Audit usage, create test coverage for JWT generation/verification, swap library, verify all tests pass.
+- **Do not touch:** Auth flow logic unless forced by library API difference
+- **Started at:**
+- **Completed at:**
+- **Changed files:** None yet
+- **Tests / checks run:** None yet
+- **Result:** Pending
+- **Known limitations:** Must verify JWKS endpoint still works if used.
+- **Git commit / branch:** Not committed yet
+- **Graphify refresh after implementation:** backend
+- **Graphify refresh status:** Needed
+- **Notes:** This is an evaluation first. If migration is risky or complex, document and defer.
+
+---
+
+### Task ID: TASK-015 — Production module real data (Phase P1-P11)
+
+- **Status:** Pending
+- **Priority:** P2
+- **Category:** Production
+- **Why it matters:** Production module (orders, work orders, work centers, routing, batch tracking, QC, yield) models exist in backend but KPIs and dashboards show empty data. No realistic seed data for demo or testing.
+- **Source / evidence:** PLANS.md — Phases P1-P11. CODEX_PROGRESS.md — `production | ModuleDefinition | view, create, edit, approve, export`. Backend production models confirmed.
+- **Affected area:** `backend/app/db/seed.py` or new production seed script
+- **Risk:** Low (seed data only)
+- **Recommended timing:** Soon
+- **Needs audit before implementation:** Yes — inspect production models (orders, work orders, work centers, routing) to understand required field structure.
+- **Implementation scope:** Seed realistic FMCG production data: production orders, work orders, work centers, routings, batch records. No new columns.
+- **Do not touch:** Production model code
+- **Started at:**
+- **Completed at:**
+- **Changed files:** None yet
+- **Tests / checks run:** None yet
+- **Result:** Pending
+- **Git commit / branch:** Not committed yet
+- **Graphify refresh after implementation:** backend
+- **Graphify refresh status:** Needed
+- **Notes:** Coordinate with Utilities (TASK-009) so utility consumption data links to production batches.
+
+---
+
+### Task ID: TASK-016 — Inventory/Stock real data (Phase I1-I7)
+
+- **Status:** Pending
+- **Priority:** P2
+- **Category:** Inventory
+- **Why it matters:** Inventory module (warehouses, products, raw materials, stock tracking, movements) KPIs show empty. No realistic factory stock data.
+- **Source / evidence:** PLANS.md — Phases I1-I7. CODEX_PROGRESS.md — `inventory | ModuleDefinition | DEFAULT_ACTIONS`. Backend inventory models confirmed.
+- **Affected area:** `backend/app/db/seed.py` or inventory seed script
+- **Risk:** Low (seed data only)
+- **Recommended timing:** Soon
+- **Needs audit before implementation:** Yes — inspect inventory models: warehouses, stock ledger, movements.
+- **Implementation scope:** Seed FMCG inventory data: warehouses, locations, raw materials, finished goods, initial stock movements.
+- **Do not touch:** Inventory model/schema code
+- **Started at:**
+- **Completed at:**
+- **Changed files:** None yet
+- **Tests / checks run:** None yet
+- **Result:** Pending
+- **Git commit / branch:** Not committed yet
+- **Graphify refresh after implementation:** backend
+- **Graphify refresh status:** Needed
+- **Notes:** Must coordinate with Production (TASK-015) — production orders consume inventory.
+
+---
+
+### Task ID: TASK-017 — Finance cost allocation engine (Phase F4-F6)
+
+- **Status:** Pending
+- **Priority:** P2
+- **Category:** Finance
+- **Why it matters:** Cost allocation (utility cost → per machine → per batch → per product) is the core value driver of this ERP. Without it, product costing and profitability are not available. PLANS.md Phase F4-F6 explicitly defines this as a required phase.
+- **Source / evidence:** PLANS.md — Phases F4 (Cost Allocation), F5 (Product Costing), F6 (Profitability). GAP-001/GAP-002 completed accounting core and posting integration, but cost allocation still pending.
+- **Affected area:** `backend/app/crud/finance.py`, `backend/app/services/` cost allocation service, new frontend cost allocation page
+- **Risk:** High (core business logic; incorrect costing affects financial reports)
+- **Recommended timing:** Soon (foundational to ERP value)
+- **Needs audit before implementation:** Yes — review GAP-001/002 implementation notes to understand what posting infrastructure exists. Read `docs/planning/GAP-001_ACCOUNTING_CORE_IMPLEMENTATION_NOTES.md`.
+- **Implementation scope:** Implement cost allocation service: distribute utility costs (from TASK-009) per machine/line/batch/product. Frontend cost allocation report.
+- **Do not touch:** Accounting journal logic, existing finance endpoints
+- **Started at:**
+- **Completed at:**
+- **Changed files:** None yet
+- **Tests / checks run:** None yet
+- **Result:** Pending
+- **Git commit / branch:** Not committed yet
+- **Graphify refresh after implementation:** backend, frontend
+- **Graphify refresh status:** Needed
+- **Notes:** Requires TASK-009 (Utilities seed data) and TASK-015 (Production seed data) to be meaningful.
+
+---
+
+### Task ID: TASK-018 — Full ERP Reference Manual PDF generation script
+
+- **Status:** Pending
+- **Priority:** P2
+- **Category:** Docs
+- **Why it matters:** Kenya Go-Live Manual PDF was generated (2026-05-19). Full ERP Reference Manual PDF was listed as remaining work.
+- **Source / evidence:** TASKS.md historical: "Full ERP Reference Manual PDF (create generate-full-reference-pdf.mjs, same pipeline)." `docs/user-manual/pdf-export/generate-kenya-pdf.mjs` exists as template.
+- **Affected area:** `docs/user-manual/pdf-export/`, `docs/user-manual/full-reference/`
+- **Risk:** Low (new script only; no source code changes)
+- **Recommended timing:** Soon
+- **Needs audit before implementation:** No
+- **Implementation scope:** Create `generate-full-reference-pdf.mjs` following `generate-kenya-pdf.mjs` pattern. Combine all 15 full-reference chapters.
+- **Do not touch:** Kenya Go-Live PDF script, existing manual content
+- **Started at:**
+- **Completed at:**
+- **Changed files:** None yet
+- **Tests / checks run:** None yet
+- **Result:** Pending
+- **Git commit / branch:** Not committed yet
+- **Graphify refresh after implementation:** docs
+- **Graphify refresh status:** Needed if docs structure changes
+- **Notes:** Generated PDF is gitignored. Script gets committed.
+
+---
+
+### Task ID: TASK-019 — GS1 GTIN coverage — product master completeness
+
+- **Status:** Pending
+- **Priority:** P3
+- **Category:** GS1 / Product Master
+- **Why it matters:** When selecting a product in the GS1 label generator, many products will show a "no GTIN" warning if `ProductGS1Config` and `product.barcode` are both empty. Label printing requires GTIN.
+- **Source / evidence:** GS1 integration known limitations in TASKS.md (2026-05-31): "Product Master completeness: Product Name/SKU/GTIN auto-fill only as complete as existing Product Master records."
+- **Affected area:** Product Master data, `frontend/src/app/dashboard/gs1/page.tsx`, `GET /api/v1/gs1/products/by-product/{id}`
+- **Risk:** Low
+- **Recommended timing:** Later
+- **Needs audit before implementation:** No
+- **Implementation scope:** (1) Bulk-update Product Master records with GTIN-14s via import. (2) Consider adding GS1 config creation flow directly from product page.
+- **Do not touch:** GS1 backend code
+- **Started at:**
+- **Completed at:**
+- **Changed files:** None yet
+- **Tests / checks run:** None yet
+- **Result:** Pending
+- **Git commit / branch:** Not committed yet
+- **Graphify refresh after implementation:** no
+- **Graphify refresh status:** Not needed (data-only change)
+- **Notes:** This is primarily a data entry task, not a code task.
+
+---
+
+### Task ID: TASK-020 — CRM real integration
+
+- **Status:** Pending
+- **Priority:** P3
+- **Category:** Integration
+- **Why it matters:** `crm_service.py` — "PLACEHOLDER: logs intent, creates/updates CrmCustomerMapping records." No real CRM API is called.
+- **Source / evidence:** `backend/app/services/crm_service.py:42-85`. `backend/app/core/integration_capabilities.py:107` STUB_ONLY.
+- **Affected area:** `backend/app/services/crm_service.py`, `.env.production`
+- **Risk:** Medium
+- **Recommended timing:** Later
+- **Needs audit before implementation:** Yes — decide which CRM platform (Salesforce, HubSpot, Pipedrive, custom).
+- **Implementation scope:** Replace placeholder log calls with real CRM API calls. Depends on CRM vendor selection.
+- **Do not touch:** CrmCustomerMapping model unless required
+- **Started at:**
+- **Completed at:**
+- **Changed files:** None yet
+- **Tests / checks run:** None yet
+- **Result:** Pending
+- **Git commit / branch:** Not committed yet
+- **Graphify refresh after implementation:** backend
+- **Graphify refresh status:** Needed
+- **Notes:** Blocked on CRM vendor selection.
+
+---
+
+### Task ID: TASK-021 — E-commerce real integration
+
+- **Status:** Pending
+- **Priority:** P3
+- **Category:** Integration
+- **Why it matters:** `ecommerce_service.py:42-45` — "PLACEHOLDER: would call platform API here; simulates 3 orders max." No real orders imported.
+- **Source / evidence:** `backend/app/services/ecommerce_service.py:39-109`. `backend/app/core/integration_capabilities.py:115` STUB_ONLY.
+- **Affected area:** `backend/app/services/ecommerce_service.py`
+- **Risk:** Medium
+- **Recommended timing:** Later
+- **Needs audit before implementation:** Yes — decide platform (Shopify, WooCommerce, etc.).
+- **Implementation scope:** Replace placeholder with real platform API (Shopify REST/GraphQL or WooCommerce REST).
+- **Started at:**
+- **Completed at:**
+- **Changed files:** None yet
+- **Tests / checks run:** None yet
+- **Result:** Pending
+- **Git commit / branch:** Not committed yet
+- **Graphify refresh after implementation:** backend
+- **Graphify refresh status:** Needed
+- **Notes:** Blocked on platform vendor selection.
+
+---
+
+### Task ID: TASK-022 — IoT/Machine real integration (MQTT/streaming)
+
+- **Status:** Pending
+- **Priority:** P3
+- **Category:** Integration / AI
+- **Why it matters:** `iot_service.py` — "IoT / Machine Integration Service — placeholder." `integration_capabilities.py:102` — "Current service is a placeholder for a future MQTT/streaming bridge."
+- **Source / evidence:** `backend/app/services/iot_service.py:2`. `backend/app/core/integration_capabilities.py:98-102`. GAP-022 (IoT Machine Streaming) is implemented as a module/permissions skeleton but the actual IoT bridge is still a stub.
+- **Affected area:** `backend/app/services/iot_service.py`, IoT configuration
+- **Risk:** High (real-time machine data; requires factory hardware integration)
+- **Recommended timing:** Later
+- **Needs audit before implementation:** Yes — review factory hardware, MQTT broker, sensor types.
+- **Implementation scope:** Wire MQTT broker connection. Subscribe to machine topics. Map sensor data to IoT readings.
+- **Started at:**
+- **Completed at:**
+- **Changed files:** None yet
+- **Tests / checks run:** None yet
+- **Result:** Pending
+- **Git commit / branch:** Not committed yet
+- **Graphify refresh after implementation:** backend
+- **Graphify refresh status:** Needed
+- **Notes:** Requires real factory hardware/MQTT broker. High effort, high value.
+
+---
+
+### Task ID: TASK-023 — Bank API replace mock Kenyan bank sync
+
+- **Status:** Pending
+- **Priority:** P3
+- **Category:** Integration
+- **Why it matters:** `bank_api_service.py` — "Bank API / Open Banking service with mock Kenyan bank sync." Generates fake transactions with `MOCK-` prefix.
+- **Source / evidence:** `backend/app/services/bank_api_service.py:1,144`. `backend/app/core/integration_capabilities.py:134`. `backend/app/models/bank_api.py:24` `MOCK = "MOCK"` default.
+- **Affected area:** `backend/app/services/bank_api_service.py`, bank API model
+- **Risk:** Medium (financial data; requires bank API agreement)
+- **Recommended timing:** Later
+- **Needs audit before implementation:** Yes — determine which Kenyan bank(s) to integrate and their Open Banking API docs.
+- **Implementation scope:** Replace mock sync with real bank API (Equity Bank, KCB, NCBA, or Pesalink).
+- **Started at:**
+- **Completed at:**
+- **Changed files:** None yet
+- **Tests / checks run:** None yet
+- **Result:** Pending
+- **Git commit / branch:** Not committed yet
+- **Graphify refresh after implementation:** backend
+- **Graphify refresh status:** Needed
+- **Notes:** Blocked on bank API agreement/credentials.
+
+---
+
+### Task ID: TASK-024 — Label printer SDK integration (ZPL/EPL/TSPL)
+
+- **Status:** Pending
+- **Priority:** P3
+- **Category:** GS1
+- **Why it matters:** `barcode_service.py:6` — "Printing: Returns a print job record (placeholder — integrate with label printer SDK)." `integration_capabilities.py:126` — "Label generation exists; physical printer SDK integration is still a placeholder." Current implementation is browser print only.
+- **Source / evidence:** `backend/app/services/barcode_service.py:6`. GS1 label printing known limitations (browser print only, no ZPL/EPL/TSPL).
+- **Affected area:** `backend/app/services/barcode_service.py`, new `backend/app/services/label_printer_service.py`
+- **Risk:** Medium (printer driver integration; platform-specific)
+- **Recommended timing:** Later
+- **Needs audit before implementation:** Yes — determine printer model (Zebra ZT/GK/GX, TSC TTP, Godex G300) and network/USB connectivity.
+- **Implementation scope:** Add ZPL/EPL/TSPL generation for specific printer model. Send to printer via network (TCP/IP) or Windows spooler.
+- **Started at:**
+- **Completed at:**
+- **Changed files:** None yet
+- **Tests / checks run:** None yet
+- **Result:** Pending
+- **Git commit / branch:** Not committed yet
+- **Graphify refresh after implementation:** backend
+- **Graphify refresh status:** Needed
+- **Notes:** Do not add `jsPDF`, `pdfmake`, `puppeteer`, or printer drivers to frontend. Backend-side ZPL generation only.
+
+---
+
+### Task ID: TASK-025 — Prophet/AI demand forecasting
+
+- **Status:** Pending
+- **Priority:** P3
+- **Category:** AI
+- **Why it matters:** `forecast_service.py:5` — "Prophet-style AI forecasting is stubbed for future integration." Falls back to Exponential Smoothing. `models/mrp.py:21` — `PROPHET = "PROPHET"` AI-ready stub.
+- **Source / evidence:** `backend/app/services/forecast_service.py:5,231`. `backend/app/models/mrp.py:21`. PLANS.md Phase AI1-AI6.
+- **Affected area:** `backend/app/services/forecast_service.py`
+- **Risk:** Medium (ML library dependency; Prophet requires `pystan`)
+- **Recommended timing:** Later
+- **Needs audit before implementation:** Yes — evaluate whether Prophet (Meta's library) or a simpler alternative (Holt-Winters already there) is sufficient.
+- **Implementation scope:** Implement real Prophet or ARIMA-based forecasting in `forecast_service.py`.
+- **Started at:**
+- **Completed at:**
+- **Changed files:** None yet
+- **Tests / checks run:** None yet
+- **Result:** Pending
+- **Git commit / branch:** Not committed yet
+- **Graphify refresh after implementation:** backend
+- **Graphify refresh status:** Needed
+- **Notes:** Requires TASK-002 (AI live mode) and historical sales/production data (TASK-015/016).
+
+---
+
+### Task ID: TASK-026 — Multi-replica migration safety
+
+- **Status:** Pending
+- **Priority:** P3
+- **Category:** Deployment
+- **Why it matters:** In a multi-replica deployment, multiple containers may run `alembic upgrade head` simultaneously, causing race conditions on migrations.
+- **Source / evidence:** TASKS.md historical: "C.31: Multi-replica migration race." `docs/DEPLOYMENT.md` — documented, not yet fixed.
+- **Affected area:** `backend/scripts/dev_migrate.py`, `backend/scripts/prod_bootstrap.py`, `docker-compose.prod.yml`
+- **Risk:** Low in single-replica; High in multi-replica
+- **Recommended timing:** Later
+- **Needs audit before implementation:** Yes — review `docs/DEPLOYMENT.md` architecture decision section.
+- **Implementation scope:** Add `pg_advisory_lock` or use a dedicated migration runner container that exits before app containers start.
+- **Started at:**
+- **Completed at:**
+- **Changed files:** None yet
+- **Tests / checks run:** None yet
+- **Result:** Pending
+- **Git commit / branch:** Not committed yet
+- **Graphify refresh after implementation:** no
+- **Graphify refresh status:** Not needed
+- **Notes:** Not urgent for single-replica deployment.
+
+---
+
+### Task ID: TASK-027 — Next ERP module gap implementation (GAP-026+)
+
+- **Status:** Pending
+- **Priority:** P2
+- **Category:** Various (per gap)
+- **Why it matters:** GAP-001 through GAP-025 complete. The ERP roadmap continues with further module depth. Next gap TBD from ERP_ROADMAP_AND_MANUAL_PLAN.md.
+- **Source / evidence:** CODEX_PROGRESS.md "Next Task: Continue from GAP-025A. Inspect the next unimplemented gap in TASKS.md roadmap." `docs/planning/ERP_ROADMAP_AND_MANUAL_PLAN.md`.
+- **Affected area:** TBD per gap
+- **Risk:** Medium
+- **Recommended timing:** Soon
+- **Needs audit before implementation:** Yes — read `docs/planning/ERP_ROADMAP_AND_MANUAL_PLAN.md` and identify next unimplemented gap. Create audit doc before implementation.
+- **Implementation scope:** Audit → Schema Design → Migration → Models → Schemas → Service → Endpoints → Frontend → Permissions → Tests → Docs → Checks (12-step GAP pattern).
+- **Started at:**
+- **Completed at:**
+- **Changed files:** None yet
+- **Tests / checks run:** None yet
+- **Result:** Pending
+- **Git commit / branch:** Not committed yet
+- **Graphify refresh after implementation:** backend, frontend
+- **Graphify refresh status:** Needed
+- **Notes:** Follow 12-step GAP pattern established in GAP-001 through GAP-025.
+
+---
+
+## Completed / Historical Summary
+
+| Date | Task | Result |
 |---|---|---|
-| Docker compose (db, redis, backend, frontend) | HEALTHY | All 4 services up; `docker compose ps` confirms healthy status |
-| Backend import check (`python -c "import app.main"`) | OK | No module-registration failures after venv fix (see Root Cause below) |
-| Alembic current | `20260518_0001 (head)` | DB at head; single head confirmed |
-| Alembic heads | `20260518_0001 (head)` | One head in migration chain |
-| Backend pytest | **482 passed, 0 failed** | 175 warnings (pre-existing; no new failures) |
-| Frontend type-check (`tsc --noEmit`) | **CLEAN** | 0 errors |
-| Frontend build (`npm run build`) | **CLEAN** | Build completed; 818 dashboard routes |
-| `find-redirect-stubs.js` | 153 redirect stubs | Expected; all are consolidation redirects |
-| `summarize-redirect-stubs.js` | Saved `docs/REDIRECT_STUB_ROUTE_AUDIT.json` | OK |
-| `find-broken-action-cards.js` | **0 broken action cards** | Clean |
-| `audit-action-card-sources.js` | 813 hrefs scanned; 0 stub refs | Saved `docs/ACTION_CARD_SOURCE_INVENTORY.json` |
-
-### Root Cause — Venv Missing Packages
-
-**Problem:** `pyotp`, `python-dateutil`, `qrcode[pil]` listed in `backend/requirements.txt` but absent from local `backend/venv`. Caused module-registry failures for `auth` and `fixed_assets` on import check.
-
-**Fix (smallest safe change):** Installed all 3 into venv:
-```
-backend/venv/Scripts/pip install pyotp>=2.9.0 python-dateutil>=2.9.0 "qrcode[pil]>=7.4.2"
-```
-No code changes. Packages now resolve to `backend/venv/Lib/site-packages/`. Import check clean after install.
-
-**Residual warnings (pre-existing, non-blocking):**
-- `SAWarning`: `TaskDependency.task` relationship overlap in `chemical_treatment.py:151`
-- `UserWarning`: Pydantic `model_params`/`model_no` namespace conflict
-- `DeprecationWarning`: `regex` → `pattern` in `allergen.py` (FastAPI Query)
-- `DeprecationWarning`: `datetime.utcnow()` in jose JWT
-
-### Pending — Barcode Label Print Bug
-
-User reported: cannot create and print barcode labels in the app. Investigation deferred — verify requires Docker running. Track as next task.
+| 2026-05-31 | GS1 Product Master integration — auto-fill product name/SKU/GTIN/weight, A4 pagination fix, row-print copies fix | Done. tsc CLEAN, build CLEAN |
+| 2026-05-31 | GS1 professional label printing — template/preset/copies/PDF export/print history | Done. tsc CLEAN, build CLEAN |
+| 2026-05-31 | GS1 barcode create/print bug fix — full generate+print UI added to gs1 page | Done. 16/16 tests pass |
+| 2026-05-31 | Post button-recovery verification — 482/482 pytest, tsc CLEAN, build CLEAN, 0 broken action cards | Done |
+| 2026-05-31 | Graphify ERP-wide analysis — backend/frontend/docs/scripts mapped | Done. Reports at `C:\Users\sekip\Desktop\graphify-erp-maps\` |
+| 2026-05-31 | Tracking consolidation — TASKS.md becomes single source of truth; CODEX_PROGRESS.md deleted | Done |
+| 2026-05-24 | Compliance regulatory certs JSON fix — bare fetch → API_BASE prefix | Done. tsc CLEAN, build CLEAN |
+| 2026-05-24 | ERP button recovery — 141/141 live smoke, 0 broken action cards, 313/313 valid routes | Done |
+| 2026-05-22 | Wave 2A/2B/2C — 47 unresolved BVT → 0 | Done. tsc CLEAN, build 757 pages |
+| 2026-05-22 | Six broken action cards fix — 6 → 0 | Done |
+| 2026-05-22 | Wave 1A/1B/1C — 353 broken targets → 0 | Done |
+| 2026-05-20 | MPS redirect stub recovery — 4 broken action targets fixed | Done |
+| 2026-05-19 | PDF export pipeline — Kenya Go-Live Manual 17.5 MB, 45/45 images | Done |
+| 2026-05-19 | Screenshot manual system — 140/140 routes captured | Done |
+| 2026-05-18 | 2FA OTP (email + SMS) implementation | Done. 478/478 tests |
+| 2026-05-17 | Playwright smoke — 52/52 pass (exit 0) | Done |
+| 2026-05-17 | CI verification pass — all local CI commands pass | Done |
+| 2026-05-17 | Full repository review — health 72/100, 5 safe fixes applied | Done |
+| 2026-05-17 | Docker dev startup fix — 5 root causes resolved | Done |
+| 2026-05-16 | GAP-025: Multi-Company/Branch — module promoted, 22 tests pass | Done |
+| 2026-05-16 | GAP-022/023/024: IoT, Predictive Maintenance, AI Prompt Registry | Done |
+| 2026-05-16 | GAP-001 through GAP-021: All 21 gaps complete (accounting, security, WMS, APS, procurement, CRM, HRMS, GS1, etc.) | Done |
+| 2026-05-16 | Performance pass 1+2 — 35 indexes, unbounded queries fixed across 13+ files | Done |
+| 2026-05-17 | Page consolidation passes 1–6 — D=0 | Done |
 
 ---
 
-## Current Phase
-COMPLIANCE REGULATORY CERTS JSON FIX — COMPLETE. 2026-05-24. Root cause: bare `fetch("/api/v1/...")` in `quality/certificates/page.tsx` hit Next.js port 3000 instead of backend port 8000, returning HTML 404 which failed JSON.parse. Fix: added `API_BASE` const and prefixed all fetch calls. Redirect cache defense also verified (302 + no-store). type-check CLEAN, build CLEAN, all audits green. If normal Chrome still shows old redirect: Chrome DevTools → Application → Storage → Clear site data for localhost:3000.
+## Post-Task Update Rule
 
-### Prior: ERP BUTTON RECOVERY — FULLY COMPLETE. 2026-05-24. Live smoke confirmed 141/141 passed (exit code 0, 1 transient flaky). All static audits green: BVT 0, broken action cards 0, 313/313 restored routes valid.
+At the end of every future Claude Code task:
 
-### Wave 2C (2026-05-22)
-**BVT before:** 3 | **BVT after:** 0 | **Resolved:** 3
-**BVT-0001:** `/dashboard/nps/surveys` — changed href to `/dashboard/surveys`
-**BVT-0002:** `/dashboard/knowledge-base/categories` — new real page (kbApi backed)
-**BVT-0003:** `/dashboard/secondary-sales/[id]` — new detail page + removed secondary-sales from REDIRECTS + added to BYPASS
-**Type-check:** CLEAN | **Build:** 757 pages | **Backend tests:** 482 passed
-**Broken action cards:** 0 | **BVT audit:** 0
-**Report:** `docs/ERP_BUTTON_RECOVERY_WAVE2C_REPORT.md`
-**Next:** Docker smoke test (all groups A–E), then manufacturing/manual work
-
----
-
-### Wave 2A + 2B (2026-05-22)
-**BVT before:** 47 | **BVT after:** 3 | **Resolved:** 44
-**Wave 2A-TypeA:** 31 routes — restored [id] pages + removed parent from REDIRECTS
-**Wave 2A-TypeB:** 6 routes — restored [id] pages only (parent not in REDIRECTS)
-**Wave 2B:** 1 href typo fix (ai/compliance/page.tsx:49)
-**Audit script:** enhanced classifyTarget() to handle template-literal ${...} routes
-**TS fixes applied:** 9 | **Build fixes (entity escapes):** 4
-**Type-check:** CLEAN | **Build:** 698 pages | **Backend tests:** 482 passed
-**Broken action cards:** 0 | **BVT audit:** 3 (Wave 2C only)
-**Report:** `docs/ERP_BUTTON_RECOVERY_WAVE2A_2B_REPORT.md`
-**Remaining:** Wave 2C (3 items — nps/surveys, kb/categories, secondary-sales/[id]) needs design approval
+1. Run `git status --short`.
+2. Identify changed files.
+3. Update TASKS.md task card (status, changed files, created files, deleted files, tests/checks, result, known limitations, git commit/branch).
+4. Update `C:\Users\sekip\Desktop\graphify-erp-maps\GRAPHIFY_UPDATE_LOG.md` if the task changed architecture, backend, frontend, docs, scripts, or important workflow.
+5. If backend/frontend/docs/scripts changed and Graphify refresh may be useful, ask user before running.
+6. Never run full repo Graphify unless user explicitly approves.
+7. Never create a new tracking file inside the repo.
+8. Never create hooks, scheduled tasks, daemons, watchers, or background automation.
+9. Never add `graphify-out/` to git.
 
 ---
 
-## Previous Phase
-DEEP GIT SEARCH — COMPLETE. 2026-05-22. 43/47 unresolved BVT targets found in git history. 4 require new design (Wave 2C, needs approval). Wave 2A (restore 37 routes) + Wave 2B (1 href fix) ready to implement.
-
-### Deep Git Search for 47 Unresolved BVT Targets (2026-05-22)
-**Search strategies:** 6 (exact path, git log --full-history, git grep, git log -S, bulk directory scan, earlier commit sweep)
-**Found in git:** 43/47 BVT items (37 unique routes)
-**Not found (new design):** 4 items (BVT-0004 typo fix, BVT-0009 nps/surveys, BVT-0014 kb/categories, BVT-0045 secondary-sales/[id])
-**BVT projection:** 47 → 4 (Wave 2A) → 3 (Wave 2B) → 0 (Wave 2C, pending approval)
-**Reports:** `docs/UNRESOLVED_47_TARGETS_INVENTORY.md`, `docs/UNRESOLVED_47_DEEP_GIT_SEARCH_REPORT.md`, `docs/UNRESOLVED_47_DESIGN_PASS_REPORT.md`, `docs/UNRESOLVED_47_IMPLEMENTATION_PLAN.md`
-**Type-check:** CLEAN | **Build:** CLEAN | **Broken action cards:** 0
-**Next:** User approval for Wave 2C design decisions, then implement Wave 2A + 2B + 2C
-
----
-
-## Previous Phase
-SIX BROKEN ACTION CARDS — COMPLETE. 2026-05-22. 6 → 0 broken action cards. 5 pages restored from git 674b6c5 (calendar/events, marketing/crm, marketing/crm/followup, marketing/surveys, marketing/surveys/new). 3 source links updated directly. Type-check clean, build clean. 48 → 47 broken visible targets. 312/312 bypass valid.
-
-### Six Broken Action Cards Fix (2026-05-22)
-**Pages restored:** 5 (calendar/events, marketing/crm, marketing/crm/followup, marketing/surveys, marketing/surveys/new) from `674b6c5`
-**Source links updated:** 3 (finance/accounting/controls → finance?tab=accounting, stores/new → marketing?tab=ecommerce&drawer=create, candidates/new → hr?tab=recruitment&drawer=create)
-**Broken action cards:** 6 → 0
-**Broken visible targets:** 48 → 47
-**Middleware BYPASS entries:** 307 → 312 (all verified valid)
-**Redirect map entries removed:** marketing/crm, marketing/surveys (from middleware.ts + routeRedirectMap.ts)
-**Type-check:** CLEAN | **Build:** CLEAN
-**Report:** `docs/SIX_BROKEN_ACTION_CARDS_FIX_REPORT.md`
-**Next:** Design pass for 47 unresolved targets (requires user approval)
-
-### ERP Button Recovery Wave 1C (2026-05-22)
-**Source git commit for pages:** `674b6c5` (2026-05-01), `27ebada` for esg/reports
-**Pages restored:** 54 (all AI sub-pages and reports sub-pages across modules)
-**Broken visible targets:** 102 → 48 (-54)
-**Critical:** 0 → 0 | **High:** 48 → 48 | **Medium:** 54 → 0
-**Unresolved (no git match):** 47 (unchanged)
-**Middleware BYPASS entries:** 253 → 307 (all verified valid)
-**audit-visible-import-graph.js BYPASS set:** synced to 307
-**Type-check:** CLEAN | **Build:** CLEAN | **Backend:** 478/482 pass
-**Live smoke:** 104/104 PASS (1 flaky transient on invoice-match/ai, exit 0)
-**TypeScript fixes:** unknown-as-ReactNode, Set iteration, Recharts formatter, PieLabelRenderProps, API double-cast, unescaped entities
-**Quality report:** `docs/RESTORED_ROUTE_QUALITY_REPORT.md` (307/307 valid)
-**Wave 1C report:** `docs/ERP_BUTTON_RECOVERY_WAVE1C_REPORT.md`
-**Next:** Design pass for 47 unresolved targets (requires user approval)
-
-### ERP Button Recovery Wave 1A + 1B (2026-05-21)
-**Source git commit for pages:** `674b6c5` (2026-05-01)
-**Pages restored — Cycle Count:** 5 (plans, tasks, entries, variances, reports)
-**Pages restored — Critical create/new/run:** 26
-**Pages restored — Wave 1B operational:** ~218
-**Total pages restored:** ~249 (commit: 7de5623, 252 files changed)
-**Broken visible targets:** 353 → 102 (-251)
-**Critical:** 26 → 0
-**High:** ~272 → 48
-**Medium:** ~55 → 54
-**Unresolved (no git match):** 47
-**Middleware BYPASS entries:** 253 (all verified valid)
-**Type-check:** CLEAN | **Build:** CLEAN | **Backend:** 478/482 pass
-**Stabilization fixes:** performance page .data wrap, 7 files react/no-unescaped-entities
-**Quality report:** `docs/RESTORED_ROUTE_QUALITY_REPORT.md` (253/253 valid)
-**Stabilization report:** `docs/ERP_BUTTON_RECOVERY_STABILIZATION_REPORT.md`
-**Next:** Wave 1C (54 remaining high-conf pages) — CLEARED after smoke test
-
-### ERP-Wide Action Card Recovery (2026-05-20)
-
-### ERP-Wide Action Card Recovery (2026-05-20)
-**Audit scope:** 63 source files, 557 href/push references scanned
-**Redirect stubs found (total):** 491 (unchanged)
-**Total broken card refs (pre-fix):** 314
-**User-visible broken cards fixed:** 18
-**User-visible broken cards remaining:** 0
-**Old standalone page cards (never user-visible):** 296 — safe, pages themselves redirect via middleware
-**Files changed:**
-- `frontend/src/lib/actionRegistry.ts` — 16 command palette hrefs updated to direct workspace URLs
-- `frontend/src/app/dashboard/marketing/page.tsx` — 4 instances: campaigns/new + promotions/new → direct URLs with drawer=create
-- `frontend/src/app/dashboard/crm/page.tsx` — 2 quick links: crm/overdue + crm/ai → direct tab URLs
-- `frontend/src/app/dashboard/documents/page.tsx` — 1 button: documents/new push → direct URL
-**Scripts created:** `scripts/audit-action-card-sources.js`
-**Reports created:** `docs/ERP_ACTION_CARD_RECOVERY_REPORT.md`, `docs/ACTION_CARD_REDIRECT_MAP.md`, `docs/ACTION_CARD_SOURCE_INVENTORY.json/md`
-**Tests updated:** `frontend/e2e/action-card-health.spec.ts` — added MPS regression, actionRegistry href tests, Marketing drawer tests, CRM stub regression
-**Type-check:** CLEAN | **Build:** CLEAN | **Backend tests:** 482/482 PASS
-
-### MPS Redirect Stub Recovery (2026-05-20)
-
-### MPS Redirect Stub Recovery (2026-05-20)
-**Redirect stubs found:** 492 (491 safe consolidation redirects, 4 broken MPS action targets)
-**Broken action targets fixed:** 4 (planning-board, capacity, campaigns, whatif)
-**Root cause 1:** Page files were redirect stubs pointing back to `/dashboard/planning?tab=mps`
-**Root cause 2:** middleware.ts `/dashboard/mps` prefix-redirect caught all sub-routes before pages rendered
-**Fix applied:**
-- `mps/whatif/page.tsx` — restored from git commit `12bcbf5` (original MPS engine)
-- `mps/planning-board/page.tsx`, `mps/capacity/page.tsx`, `mps/campaigns/page.tsx` — already restored in prior session (commit `ced1b1b`)
-- `middleware.ts` — added `BYPASS_PREFIX_REDIRECT` set to skip prefix matching for the 4 real MPS pages
-- `routeRedirectMap.ts` — removed 4 stub entries (kept `/dashboard/mps` base redirect)
-**Type-check:** CLEAN | **Build:** CLEAN | **Backend tests:** 482/482 PASS
-**Reports:** `docs/REDIRECT_STUB_RECOVERY_REPORT.md`, `docs/REDIRECT_STUB_ROUTE_AUDIT.md`, `docs/REDIRECT_STUB_ROUTE_AUDIT.json`
-**Audit scripts:** `scripts/find-redirect-stubs.js`, `scripts/find-broken-action-cards.js`, `scripts/summarize-redirect-stubs.js`
-
-## Previous Phase — Action Card Health Audit
-ACTION CARD HEALTH AUDIT — COMPLETE. 2026-05-19. ERP-wide audit of navigation tiles and action cards. Zero dead-click broken cards found. Two UX context bugs fixed: Logistics and Maintenance overview tabs now navigate within workspace via ?tab= params. Audit infrastructure created. Frontend type-check/build clean. All repo audits pass.
-
-### Action Card Health Audit (2026-05-19)
-**Scope:** All dashboard pages, 23 routes, 30+ tabs, 120+ card/tile elements
-**Broken (dead-click):** 0
-**UX context bugs fixed:** 2
-- `frontend/src/app/dashboard/logistics/page.tsx` — 11 cards now use `?tab=` URLs
-- `frontend/src/app/dashboard/maintenance/page.tsx` — 14 cards now use `?tab=` URLs
-**Needs review:** 2 (Fleet sub-nav, Cycle Count cross-context — documented, routes work)
-**Reports:** `docs/ACTION_CARD_HEALTH_AUDIT.md`, `docs/ACTION_CARD_HEALTH_AUDIT.json`
-**Tests:** `frontend/e2e/action-card-health.spec.ts`, `frontend/e2e/audit-action-cards.spec.ts`
-**Type-check:** CLEAN
-**Build:** CLEAN
-**Repo audits:** D=0, no redirect drift, tabs pass
-
-## Previous Phase — PDF Export Pipeline
-PDF EXPORT PIPELINE — COMPLETE. 2026-05-19. Kenya Go-Live ERP Training Manual PDF generated: 17.5 MB, 45/45 images loaded. Playwright Chromium + marked pipeline. PDF gitignored (not committed). Export scripts committed. All tests pass.
-
-### PDF Export (2026-05-19)
-- **Kenya PDF:** `docs/user-manual/pdf-output/Kenya-Go-Live-ERP-Training-Manual.pdf` (17.5 MB, gitignored)
-- **Export scripts:** `docs/user-manual/pdf-export/` — generate-kenya-pdf.mjs, export-kenya-go-live.ps1, export-kenya-go-live.sh, pdf-style.css, README.md
-- **Regenerate PDF:** `node docs/user-manual/pdf-export/generate-kenya-pdf.mjs` (from repo root)
-- **Chapters:** 10 Kenya go-live files combined with cover page, page breaks, A4 CSS
-- **Images:** 45/45 loaded, 0 failed
-
-### Previous Phase — Screenshot Manual System (2026-05-19)
-- **Captured:** 140/140 routes — all modules complete including Kenya-critical (Sales, Finance, HR, Payroll)
-- **Failed:** 0
-- **PNGs:** ~70 MB, gitignored — regenerate with `cd frontend && E2E_SKIP_WEBSERVER=1 npm run test:manual-screenshots`
-- **Kenya go-live manuals:** `docs/user-manual/kenya-go-live/` (10 files, role-based)
-- **Full reference:** `docs/user-manual/full-reference/` (15 chapters)
-- **Index:** `docs/user-manual/screenshots/screenshots-index.json`
-
-### Files Changed (Round 12 — PDF Export)
-- `docs/user-manual/pdf-export/generate-kenya-pdf.mjs` — main PDF generation script (new)
-- `docs/user-manual/pdf-export/export-kenya-go-live.ps1` — Windows wrapper (new)
-- `docs/user-manual/pdf-export/export-kenya-go-live.sh` — Bash wrapper (new)
-- `docs/user-manual/pdf-export/pdf-style.css` — A4 print stylesheet (new)
-- `docs/user-manual/pdf-export/README.md` — setup + usage instructions (new)
-- `docs/user-manual/PDF_EXPORT_REPORT.md` — export results (new)
-- `frontend/package.json` — marked added as dev dependency
-- `.gitignore` — pdf-output/ added
-
-### Verification Results (2026-05-19)
-| Check | Result |
-|---|---|
-| Backend pytest | 482/482 pass |
-| Frontend build | clean |
-| Type-check | clean |
-| Auth-public E2E | 4/4 pass |
-| Playwright smoke | 52/52 pass |
-| Route/redirect/tab audits | all green |
-| Health audit | 0 HIGH |
-| PDF generated | YES — 17.5 MB, 45/45 images |
-| PDF committed | NO — gitignored |
-
-### Remaining Work
-- Full ERP Reference Manual PDF (create generate-full-reference-pdf.mjs, same pipeline)
-- Optional: in-app help integration
-- Optional: Pandoc setup for clickable TOC
-
-### Files Changed (Round 11)
-- `frontend/e2e/manual-screenshots.spec.ts` — rewritten v2: failed-only/batch/role/ID filter, retry, fresh context after crash
-- `frontend/scripts/validate-manual-routes.mjs` — route validation script (new)
-- `frontend/package.json` — added `manual:validate-routes` script
-- `docker-compose.yml` — frontend memory 1G→2G (prevents OOM during 140-route capture)
-- `docs/user-manual/screenshots/screenshots-index.json` — 140/140 captured
-- `docs/user-manual/kenya-go-live/*.md` — 24 screenshot placeholders → real PNG links (8 files)
-- `docs/user-manual/full-reference/*.md` — real PNG links (13 files)
-- `docs/user-manual/SCREENSHOT_CAPTURE_REPORT.md` — updated 140/140
-- `docs/user-manual/UNCAPTURED_SCREENSHOTS_REPORT.md` — root cause + recapture log (new)
-- `docs/user-manual/FULL_MANUAL_GENERATION_AUDIT.md` — updated complete status
-
-### Verification Results (2026-05-19)
-| Check | Result |
-|---|---|
-| Backend pytest | 482/482 pass |
-| Frontend build | clean |
-| Type-check | clean |
-| Screenshots captured | **140/140** |
-| Screenshots failed | 0 |
-| Auth-public E2E | 4/4 pass |
-| Playwright smoke | pass |
-| Kenya go-live manuals | 10/10 created |
-| Full reference chapters | 15/15 created |
-| Screenshot placeholders remaining | 0 (all replaced) |
-
-## Previous Phase
-PRODUCTION DOCKER ENV-FILE FIX — COMPLETE. 2026-05-18. Changed service-level `env_file: .env.production` to long-form `required: false` in docker-compose.prod.yml (db, backend, frontend). Config validation now passes with `--env-file .env.production.example`. Real prod deployment unchanged — file loads when present. Backend: 478/478 pytest pass. Frontend: type-check + build clean. Audits: D=0, no redirect drift, tabs pass. Health: 0 HIGH.
-
-### Docker Config Fix (2026-05-18)
-- **Root cause:** Service-level `env_file: .env.production` (hardcoded path) caused `config` to fail when `.env.production` absent locally. `--env-file` flag only handles YAML interpolation, not service env injection.
-- **Fix:** Long-form `env_file: - path: .env.production, required: false` on db/backend/frontend services
-- **Validation command:** `docker compose -f docker-compose.prod.yml --env-file .env.production.example config --quiet`
-- **Production unchanged:** File loads normally when present at runtime
-
-### Files Changed
-- `docker-compose.prod.yml` — db/backend/frontend env_file: required: false
-- `docs/DEPLOYMENT.md` — added config validation section
-
-### Verification Results (2026-05-18)
-| Check | Result |
-|---|---|
-| Prod compose config (example env) | pass |
-| Dev compose config | pass |
-| Backend pytest | 478/478 pass |
-| Frontend type-check | clean |
-| Frontend build | clean |
-| D (duplicate pages) | 0 |
-| Route redirect drift | 0 |
-| Workspace tabs | pass |
-| Health audit | 0 HIGH |
-
-## Previous Phase
-2FA SMS/EMAIL OTP IMPLEMENTATION — COMPLETE. 2026-05-18. Real OTP delivery implemented for Email and SMS. OTP now hashed (bcrypt) in DB. Login-verify uses hash comparison. SMS/email setup flow fully wired. Resend endpoint added. Frontend enables all 3 methods. Backend: 478/478 pytest pass. Frontend: type-check + build clean. Audits: D=0, no redirect drift, tabs pass.
-
-### 2FA OTP Status (2026-05-18)
-- **TOTP:** Unchanged, working
-- **Email OTP:** Implemented — dev=console log, prod=SMTP (smtplib)
-- **SMS OTP:** Implemented — dev=console log, prod=Twilio via httpx
-- **OTP hashing:** bcrypt (passlib, existing context)
-- **Login-verify:** Fixed — was plaintext compare, now verify_otp_hash()
-- **Setup flow:** Fixed — SMS/email setup sends OTP, creates session, returns session_token
-- **Verify/enable:** Fixed — handles SMS/email via session_token
-- **Resend:** New endpoint POST /auth/2fa/resend-otp with 60s cooldown
-- **Production guard:** OTP_DEV_DELIVERY_MODE=true blocked in production
-- **Frontend:** SMS/Email buttons enabled, phone input for SMS, OTP entry step, resend countdown
-
-### Files Changed (Round 8)
-- `backend/app/core/config.py` — OTP/SMTP/SMS config vars + production guard
-- `backend/app/core/totp.py` — hash_otp(), verify_otp_hash(), create/decode_setup_2fa_token()
-- `backend/app/models/two_factor.py` — challenge_code String(10)→String(255)
-- `backend/app/schemas/two_factor.py` — session_token in setup response, OTPResendRequest/Response
-- `backend/app/api/v1/endpoints/auth.py` — hash OTP before store, dispatch via sender
-- `backend/app/api/v1/endpoints/two_factor.py` — fix SMS/email enable, add resend endpoint
-- `backend/app/services/email_sender.py` — NEW: email OTP sender
-- `backend/app/services/sms_sender.py` — NEW: SMS OTP sender (Twilio)
-- `backend/alembic/versions/20260518_0001_otp_delivery.py` — NEW: migration challenge_code String(255)
-- `backend/tests/test_otp.py` — NEW: 16 OTP/sender/token/config tests
-- `backend/tests/test_hardening.py` — add OTP_DEV_DELIVERY_MODE=False to production base dict
-- `backend/tests/test_gap018_gs1_label_printing.py` — update Alembic head to 20260518_0001
-- `.env.development.example` — OTP/SMTP/SMS vars
-- `.env.production.example` — OTP/SMTP/SMS vars
-- `frontend/src/lib/twoFactor.ts` — session_token in setup response type, resendOTP()
-- `frontend/src/app/dashboard/security/page.tsx` — SMS/email enabled, OTP input step, resend countdown
-- `docs/2FA_IMPLEMENTATION_REPORT.md` — NEW: full audit + implementation record
-
-### Backend Test Results (2026-05-18)
-| Suite | Result |
-|---|---|
-| pytest (all tests) | 478/478 pass |
-| test_otp.py (new) | 16/16 pass |
-| test_security.py | 20/20 pass |
-| test_hardening.py | all pass |
-| compileall | clean |
-
-### Verification Results (2026-05-18)
-| Check | Result |
-|---|---|
-| Backend pytest | 478/478 pass |
-| Frontend type-check | clean |
-| Frontend build | clean |
-| D (duplicate pages) | 0 |
-| Route redirect drift | 0 |
-| Workspace tabs | pass |
-| Health audit | 0 HIGH |
-| Docker dev config | pass |
-| Alembic head | 20260518_0001 (single head) |
-
-### Remaining Risks
-- Step-up 2FA for SMS/email not implemented (TOTP step-up still works)
-- Playwright smoke tests not re-run (52/52 pass from previous round; no smoke-affecting changes made)
-- SMS provider beyond Twilio: pluggable via SMS_PROVIDER env var
-- Production SMTP not tested end-to-end (requires real SMTP server)
-- GitHub Actions not directly observable
-
-### Next Recommended Task
-- Playwright smoke re-run to confirm 52/52 still pass after frontend changes
-- Wire SMTP credentials in staging environment and test email OTP end-to-end
-
-## Previous Phase
-PLAYWRIGHT SMOKE TEST PASS — COMPLETE. 2026-05-17. 52/52 tests pass (exit 0) in 4.9 minutes. Root cause of all prior failures: Docker frontend container memory limit of 512MB caused ERR_EMPTY_RESPONSE on heavy pages (production page has 20 dynamic imports). Fixed by increasing to 1G. See docs/PLAYWRIGHT_SMOKE_TEST_REPORT.md.
-
-### Playwright Smoke Test Summary (2026-05-17)
-- **Result:** 52/52 PASSED, 0 failed, 0 flaky — exit 0
-- **Duration:** 4.9 minutes
-- **Coverage:** Auth (3), Dashboard root (1), 11 workspaces (C), 18 tab URLs (D), 10 static redirects (E), 6 dynamic redirects (F), 2 theme/layout (G)
-- **Infra fixes:** retries=2, timeout=60s, setup warmup (300s), docker frontend 512M→1G/cpus1→2
-- **Backend:** 462/462 pytest still passing
-- **Frontend:** type-check clean, build passes
-- **Audits:** D=0, no redirect drift, workspace tabs pass
-- **Artifacts:** gitignored (test-results/, playwright-report/, playwright/.auth/)
-- **Report:** docs/PLAYWRIGHT_SMOKE_TEST_REPORT.md
-
-### Files Changed This Session
-- `docker-compose.yml` — frontend: memory 512M→1G, cpus 1.0→2.0
-- `frontend/playwright.config.ts` — retries:2, timeout:60s, setup project timeout:300s
-- `frontend/e2e/auth.setup.ts` — added 30-route warmup (workspace + tab pages)
-- `frontend/e2e/smoke.spec.ts` — tab button timeout 10s→20s
-- `frontend/package.json` — added test:smoke script
-- `frontend/next-env.d.ts` — auto-updated by Next.js build
-- `.gitignore` — added playwright artifact exclusions
-- `docs/PLAYWRIGHT_SMOKE_TEST_REPORT.md` — new report
-
-### Remaining Risks
-- `npm run dev` mode for E2E: production build (`next start`) would be more reliable long-term
-- No Firefox/WebKit coverage (Chromium only)
-- No mobile viewport testing
-- 2FA OTP still unimplemented
-- GitHub Actions not verified directly (`gh` CLI unavailable)
-
-## Previous Phase
-CI VERIFICATION PASS — COMPLETE. 2026-05-17. All local CI-equivalent commands pass. `gh` CLI not available so GitHub Actions results not directly observable, but all CI commands verified locally and in Docker. Push confirmed to origin/main. See CI_FAILURE_REPORT.md for full details.
-
-### CI Verification Summary (2026-05-17)
-- **Backend CI (local equivalent):** pip-audit clean; compileall clean; import ok; pytest 462/462; alembic single head `20260516_0060` confirmed
-- **Frontend CI (local equivalent):** npm ci exit 0; npm audit --audit-level=critical exit 0; type-check clean; build exit 0
-- **Docker-config CI (local equivalent):** dev config exit 0; prod config (cp .env.production.example) exit 0
-- **pip-audit in Docker/Linux:** No known vulnerabilities found
-- **Page count audit:** D=0 restored (payroll/runs/[id] correctly classified as B via path-specific override)
-- **Push status:** Committed and pushed to origin/main (auto-sync confirmed at 1241716)
-- **gh CLI:** Not available — cannot directly observe GitHub Actions run status
-
-### Local CI-Equivalent Results
-| Command | Result |
-|---------|--------|
-| `pip-audit -r requirements.txt` | No known vulnerabilities found |
-| `python -m compileall app scripts` | Clean (exit 0) |
-| `python -c "import app.main"` | backend import ok |
-| `python -m pytest tests/` | 462 passed, 0 failed |
-| `alembic heads` | 20260516_0060 (head) — single head |
-| `npm ci` | exit 0 |
-| `npm audit --audit-level=critical` | exit 0 (8 non-critical remain) |
-| `npm run type-check` | clean (tsc --noEmit) |
-| `npm run build` (NEXT_PUBLIC_API_URL set) | exit 0 |
-| `docker compose config` (dev) | exit 0 |
-| `docker compose -f docker-compose.prod.yml config` (prod) | exit 0 |
-
-### Files Changed This Session
-- `scripts/audit-page-count.js` — payroll/runs/[id] path-specific override (B not D)
-- `docs/AUTOMATED_HEALTH_AUDIT.md` — refreshed report
-- `docs/PAGE_ROUTE_CLASSIFICATION_REPORT.md` — refreshed, D=0
-- `docs/CI_FAILURE_REPORT.md` — updated with Round 6/7 fixes and local CI-equivalent results
-- `TASKS.md` — this update
-
-### Remaining Risks
-- 7 high npm audit vulnerabilities (pre-existing, not critical; next@15+ required to fix)
-- 2FA OTP (SMS/Email) still unimplemented — UI shows "coming soon"
-- `gh` CLI unavailable — GitHub Actions run status not directly observed (but all CI commands pass locally)
-
-## Previous Phase
-FULL REPOSITORY REVIEW — COMPLETE. 2026-05-17. Senior multi-role review covering backend, frontend, DevOps, DB, security, performance, QA. 7 report documents created. 5 safe code fixes applied. See docs/FULL_REPOSITORY_REVIEW.md for executive summary and docs/FIX_ROADMAP.md for phased fix plan.
-
-### Review Summary
-- **Health score:** 72/100 (Functional, Production-conditional)
-- **Critical issues found:** 1 (FIXED — /auth/me 500 due to EmailStr re-validation of .local TLD)
-- **High issues found:** 3 (fresh-DB deploy failure; unbounded CRUD queries x35 files; 2FA OTP never dispatched)
-- **Medium issues found:** 5 (CORS wildcard methods; RequestTimeout missing from .env.production.example; python-jose vs PyJWT; permission_codes O(n); 401 hard redirect)
-- **Low issues found:** 4 (Redis no AUTH; SAWarning on self-referential models; seeding on every startup; no CI pipeline)
-- **Safe fixes applied:** 5
-- **Fixes requiring manual decision:** 7
-- **Production ready?** NO — fresh DB deploy will fail; 2FA OTP unimplemented; no CI
-
-### Safe Fixes Applied (2026-05-17)
-1. `backend/app/schemas/user.py` — `UserRead.email: str` (CRITICAL: fixed /auth/me 500)
-2. `backend/app/db/session.py` — added `await session.rollback()` on exception in `get_db`
-3. `start-dev.bat:226` — updated outdated `--reload` comment
-4. `docker-compose.prod.yml` — added `env_file: .env.production` to `db` service
-5. `backend/app/main.py` — removed dead `AUTO_CREATE_TABLES` block + orphaned imports
-
-### Reports Created (2026-05-17)
-- `docs/FULL_REPOSITORY_REVIEW.md` — executive summary, health score, all findings
-- `docs/PROJECT_INVENTORY.md` — complete backend/frontend/DevOps/DB/docs inventory
-- `docs/MIGRATION_CHAIN_REVIEW.md` — Alembic chain analysis, production risk
-- `docs/SECURITY_REVIEW.md` — 1 CRITICAL (fixed), 0 HIGH, 3 MEDIUM, 2 LOW
-- `docs/PERFORMANCE_REVIEW.md` — 35 unbounded CRUD files, DB pool sizing, AuthContext
-- `docs/QA_TEST_PLAN.md` — Playwright smoke, API contract, migration, permission tests
-- `docs/FIX_ROADMAP.md` — phased fix plan: Phase 0-6, ~2-3 weeks to production-ready
-
-### Previous Phase
-DOCKER DEV STARTUP FIX — COMPLETE. 2026-05-17. Fixed 5 root causes: (1) uvicorn --reload killing child on Windows volume mount, (2) missing INITIAL_ADMIN_PASSWORD, (3) Docker Compose env var substitution, (4) migration chain broken for fresh DBs, (5) dev_migrate.py not importing app.models so create_all() created nothing. See docs/RUNTIME_STARTUP_REPORT.md and docs/MIGRATION_CHAIN_REPORT.md.
-
-## Execution Rules
-- Always read this file before starting work.
-- Always read CODEX_PROGRESS.md before starting work.
-- Never restart completed work.
-- Pick the first TODO task whose dependencies are satisfied.
-- Work on one small task at a time.
-- Prefer small, safe commits.
-- Run relevant tests/checks after each task.
-- Update this file before stopping.
-- If blocked, mark the task BLOCKED and continue with the next safe task.
-- If context/usage limit is near, stop after updating TASKS.md and CODEX_PROGRESS.md.
-
-## In Progress
-None.
-
-## Completed — Docker Dev Startup Fix (2026-05-17)
-
-Five root causes found and fixed. Gordon/AI-assisted diagnosis confirmed issues.
-
-- `backend/Dockerfile.dev`: removed `--reload` (WatchFiles kills child before port bind on Windows volumes)
-- `.env.development`: added `INITIAL_ADMIN_PASSWORD` + seed fields (were missing, admin never seeded)
-- `backend/scripts/dev_migrate.py`: full rewrite — Alembic-first with dev fallback for fresh DBs; imports `app.models` so `create_all()` actually creates all tables; stamps head after bootstrap so future migrations work
-- `backend/alembic/versions/3c45d9071c98_initial_schema.py`: kept Gordon's conditional guards (correct); fixed bare `except:` → `except Exception:`
-- `docker-compose.yml`: kept Gordon's `env_file:` on db + 90s start_period + resource increases; fixed wrong healthcheck defaults `:-postgres` → `:-erp_user`/`:-fmcg_erp`
-- `docs/RUNTIME_STARTUP_REPORT.md`: full root cause analysis, Gordon assessment, verification steps
-- `docs/MIGRATION_CHAIN_REPORT.md`: migration dependency map, why chain fails on fresh DBs, production note
-
-## Completed — Page Consolidation Passes 4–6 (2026-05-17)
-
-All page consolidation passes complete. D=0. See docs/PAGE_CONSOLIDATION_HISTORY.md for full per-pass details.
-
-Final state: A=31, B=496, C=213, D=0, E=14, F=0, Total=754. All checks pass.
-
-## Completed — Page Consolidation Passes 1–3 (2026-05-16)
-
-All page consolidation passes complete. See docs/PAGE_CONSOLIDATION_HISTORY.md for full per-pass details.
-
-## Page Count Status (2026-05-17 — FINAL)
-
-| Classification          | Count |
-|-------------------------|-------|
-| A WORKSPACE_PAGE        | 31    |
-| B REDIRECT_ONLY         | 496   |
-| C LIGHTWEIGHT_WRAPPER   | 213   |
-| D FULL_DUPLICATE_UI     | 0     |
-| E STANDALONE_OPERATIONAL| 14    |
-| F UNKNOWN               | 0     |
-| Total physical pages    | 754   |
-
-## Files Changed This Run
-- frontend/src/middleware.ts (added 23 child-route prefix entries)
-- frontend/src/lib/routeRedirectMap.ts (added matching 23 exact entries)
-- frontend/src/components/nav-config.tsx (fixed 4 wrong tab keys/entries)
-
-## Completed in Last Run (2026-05-16)
-### Pass 1
-- DB connection pool: pool_size, max_overflow, pool_recycle, pool_timeout, pool_pre_ping
-- Finance CRUD unbounded queries (5 list_* functions) paginated
-- Finance atomic balance UPDATE (removed with_for_update + Python race)
-- db.add_all() for JournalLine and BudgetLine
-- Health: /live /ready /health with 8s cache
-- Middleware: import time module-level
-- Docker dev + prod: resource limits; prod DB/Redis not port-exposed; /live healthcheck
-- Alembic 20260516_0060_performance_indexes.py: 35 indexes
-
-### Pass 2
-- 34 real CRUD unbounded queries fixed across 13 files: procurement, sales, quality, role, maintenance, esg, field_sales, logistics, pricing, distribution, tax_regulatory, wms, production_advanced
-- pagination helper: backend/app/core/pagination.py
-- Request timeout middleware: asyncio.wait_for + 504 response + REQUEST_TIMEOUT_SECONDS setting
-- Audit script updated: 18 false positives documented and suppressed; 0 HIGH remaining
-- Auth audit logging verified: LOGIN_SUCCESS, LOGIN_FAILED, LOGOUT, TWO_FA_CHALLENGE_SENT, PASSWORD_CHANGED
-- AI mock mode UI verified: AIModeBanner on all /dashboard/ai/* pages
-- DEPLOYMENT.md created: dev/prod startup, migrations, rollback, backup, health, port exposure, resource limits
-- Verification report updated: all D.47, E.47, B.23, C.34 resolved
-
-## Next Immediate Task
-
-### Completed This Run (2026-05-17 — Round 2)
-
-**Option E — Safe security fixes:** ALL DONE
-- `backend/app/main.py`: CORS restricted to `["GET","POST","PUT","PATCH","DELETE","OPTIONS"]`
-- `.env.production.example`: Added `REQUEST_TIMEOUT_SECONDS=60`
-- `frontend/src/context/AuthContext.tsx`: permission_codes converted to `Set<string>` via `useMemo` + wired `setAppRouter`
-- `frontend/src/lib/api.ts`: 401 redirect uses Next.js router ref (`_router.push`) with `window.location.href` fallback
-- `backend/app/models/dimensions.py`: Added `overlaps="parent"` to `DimValue.children` and `CostCenter.children`
-
-**Option C — CRUD pagination:** VERIFIED COMPLETE (all real unbounded queries were already fixed in Pass 2; remaining `.all()` calls are paginated or bounded by parent-ID filters)
-
-**Option D — CI/CD:** IMPROVED (`.github/workflows/ci.yml` already existed; fixed `alembic upgrade head` → `python scripts/dev_migrate.py` + added missing env vars `SEED_INITIAL_ADMIN`, `SYNC_INITIAL_ADMIN_PASSWORD`, `AUTH_COOKIE_SECURE`, `INITIAL_ADMIN_USERNAME/EMAIL/FULL_NAME`, padded `SECRET_KEY` for CI)
-
-**Option A — Production Bootstrap:** DONE (`backend/scripts/prod_bootstrap.py` created with `BOOTSTRAP_PRODUCTION=true` guard, empty-DB check, `create_all()` + `alembic stamp head`, refuses if tables exist)
-
-**Option B — 2FA OTP:** INTERIM FIX DONE (`frontend/src/app/dashboard/security/page.tsx`: SMS and Email 2FA methods disabled in UI with "coming soon" tooltip; TOTP still works)
-
-**Additional fixes:**
-- `frontend/src/middleware.ts`: Added auth guard — unauthenticated requests to `/dashboard/*` redirect to `/login?next=<path>`
-
-### Next Immediate Task
-
-**Remaining (manual decision required):**
-- Wire 2FA OTP dispatch: pick notification service (SMTP email or Twilio SMS)
-- Evaluate python-jose → PyJWT migration (needs test coverage)
-- Add Redis AUTH password for production (password management decision)
-- Multi-replica migration safety strategy (architecture decision)
-
-**Safe to apply in next round:**
-- Add Playwright E2E smoke tests (`frontend/tests/e2e/`)
-- Add permission enforcement test (`backend/tests/`)
-- Add real-DB integration test fixture (`backend/tests/conftest.py`)
-- Add migration chain test (`backend/tests/test_migrations.py`)
-- Write complete production first-deploy runbook in `docs/DEPLOYMENT.md`
-
-### Previously Optional (still open)
-1. Wire Redis caching for COA and product reference data (A.15)
-2. Add streaming for large export endpoints (A.14)
-3. Multi-replica migration advisory lock (C.31 — documented in DEPLOYMENT.md)
-
-## Blockers
-- Live alembic upgrade head blocked until Docker/PostgreSQL running
-- pytest blocked until Docker running (DB required)
-
-## Issues Fixed
-See docs/ISSUE_FIX_VERIFICATION_REPORT.md for full status of all 64 issues.
-
-## Issues Still Open
-- A.9: 52 unbounded CRUD queries in non-finance modules
-- A.14: Large export streaming not implemented
-- A.15: Reference data caching not implemented
-- B.23: No request timeout middleware
-- C.31: Multi-replica migration race
-- C.34: No DEPLOYMENT.md
-- D.47: Auth audit logging not verified
-- E.47-56: AI mock mode UI safety not verified
-
-## Tests Run
-- python -m compileall backend/app/ → PASS
-- python -m compileall backend/alembic/versions/20260516_0060_performance_indexes.py → PASS
-- python scripts/erp-health-audit.py → 52 HIGH / 624 MEDIUM findings
-
-## Files Changed
-- backend/app/core/config.py (added 5 pool settings)
-- backend/app/db/session.py (added pool_size/max_overflow/recycle/timeout/pre_ping)
-- backend/app/main.py (import time module-level; /live /ready; cached /health)
-- backend/app/crud/finance.py (limits on 5 list_* funcs; atomic balance update; db.add_all)
-- docker-compose.yml (resource limits)
-- docker-compose.prod.yml (resource limits+reservations; no DB/Redis port exposure; /live healthcheck)
-- backend/alembic/versions/20260516_0060_performance_indexes.py (NEW: 35 indexes)
-- scripts/erp-health-audit.py (NEW: repeatable audit script)
-- docs/ISSUE_FIX_VERIFICATION_REPORT.md (NEW)
-- docs/AUTOMATED_HEALTH_AUDIT.md (updated by audit script)
-
-## Risks / Manual Decisions
-- pool_pre_ping=True adds one extra round-trip per new connection acquired; acceptable for reliability
-- Atomic balance UPDATE removes the Python-side with_for_update; transactions still roll back on error
-- upsert_product_cost still uses with_for_update — this is correct (read-then-upsert pattern needs lock)
-- Alembic index migration is idempotent (checks pg_indexes before creating) — safe to run multiple times
-
-## Roadmap Task Queue
-| ID | Tier | Task | Status | Dependencies | Acceptance Criteria | Notes |
-|---|---|---|---|---|---|---|
-| PHASE0-001 | Phase 0 | Parse planning document and produce clean markdown source extraction | DONE | - | DOCX requirements are preserved in docs/planning/ERP_ROADMAP_AND_MANUAL_PLAN.md. | Completed in this run. |
-| PHASE0-002 | Phase 0 | Create autonomous workflow, implementation plan, status matrix, TASKS.md, and CODEX_PROGRESS.md | DONE | PHASE0-001 | Resume/checkpoint files exist and define how future Codex runs continue safely. | Completed in this run. |
-
-| GAP-001A | Tier 1 - Critical Gaps | Audit current implementation: Enterprise-Grade Accounting Core Depth | DONE | USER_OVERRIDE_AFTER_GAP-028K_BLOCKED | Record what exists, what is partial, and what is missing for this gap. | Created `docs/planning/GAP-001_ACCOUNTING_CORE_AUDIT.md`; documented current accounting implementation, gaps, files, migrations, and next design direction. |
-| GAP-001B | Tier 1 - Critical Gaps | Design data model/schema: Enterprise-Grade Accounting Core Depth | DONE | GAP-001A | Define schema/model changes only if needed and review existing models first. | Created `docs/planning/GAP-001_ACCOUNTING_CORE_SCHEMA_DESIGN.md`; next migration should be additive and reconciliation-first. |
-| GAP-001C | Tier 1 - Critical Gaps | Add or update database migrations: Enterprise-Grade Accounting Core Depth | DONE | GAP-001B | Create Alembic migrations only for required schema changes. | Added `backend/alembic/versions/20260511_0010_enterprise_accounting_core.py`; py_compile, Alembic head/history, and offline SQL generation passed. Live DB upgrade was attempted but Docker/PostgreSQL was not running. |
-| GAP-001D | Tier 1 - Critical Gaps | Add or update backend models: Enterprise-Grade Accounting Core Depth | DONE | GAP-001C | Implement ORM/model changes following existing conventions. | Updated `backend/app/models/finance.py` with additive accounting core ORM models matching the migration; compile/import/metadata/mapper checks passed. |
-| GAP-001E | Tier 1 - Critical Gaps | Add or update schemas: Enterprise-Grade Accounting Core Depth | DONE | GAP-001D | Implement request/response schemas and validation. | Updated `backend/app/schemas/finance.py` with schemas for fiscal years, close checks, recurring journals, posting batches/rules, payment allocations, and FX revaluation; compile/import/smoke checks passed. |
-| GAP-001F | Tier 1 - Critical Gaps | Add or update services/business logic: Enterprise-Grade Accounting Core Depth | DONE | GAP-001E | Implement service-layer or existing-pattern business logic. | Added service helpers for journal balance validation, posting-account checks, period/fiscal-year posting guards, journal posting state changes, reversal drafts, and idempotent posting batches. |
-| GAP-001G | Tier 1 - Critical Gaps | Add or update API endpoints: Enterprise-Grade Accounting Core Depth | DONE | GAP-001F | Expose endpoints with auth, permissions, validation, and error handling. | Wired journal validation/posting/reversal, fiscal years, period close checks, recurring journals, posting batches/rules, payment allocations, and currency revaluation endpoints; route import checks passed. |
-| GAP-001H | Tier 1 - Critical Gaps | Add or update frontend screens/components: Enterprise-Grade Accounting Core Depth | DONE | GAP-001G | Build UI using existing layout, table, form, modal, and dashboard patterns. | Added `frontend/src/app/dashboard/finance/accounting/controls/page.tsx`, finance API client types/methods, and accounting navigation links; frontend type-check passed via `npm.cmd run type-check`. |
-| GAP-001I | Tier 1 - Critical Gaps | Add or update permissions/roles: Enterprise-Grade Accounting Core Depth | DONE | GAP-001H | Register permissions and update role templates/UI visibility as required. | Added `finance.configure` to module registry, seed permissions, CFO/finance-manager roles, protected setup endpoints, and sidebar visibility. |
-| GAP-001J | Tier 1 - Critical Gaps | Add or update tests: Enterprise-Grade Accounting Core Depth | DONE | GAP-001I | Add focused backend/frontend tests for the implemented behavior. | Added `backend/tests/test_gap001_accounting_core.py`; 9 focused tests passed in backend venv. |
-| GAP-001K | Tier 1 - Critical Gaps | Add or update documentation: Enterprise-Grade Accounting Core Depth | DONE | GAP-001J | Update user/admin/developer docs for this change. | Added `docs/planning/GAP-001_ACCOUNTING_CORE_IMPLEMENTATION_NOTES.md`. |
-| GAP-001L | Tier 1 - Critical Gaps | Run checks and record result: Enterprise-Grade Accounting Core Depth | DONE | GAP-001K | Run relevant compile, lint, type, test, migration, or smoke checks. | Final checks passed: backend compile/import, focused pytest, Alembic head/history/offline SQL, frontend type-check, and docs checks. Live `alembic upgrade head` remains blocked until Docker/PostgreSQL is running. |
-| GAP-002A | Tier 1 - Critical Gaps | Audit current implementation: Accounting-to-Inventory-to-Manufacturing Posting Integration | DONE | GAP-001L | Record what exists, what is partial, and what is missing for this gap. | Created `docs/planning/GAP-002_POSTING_INTEGRATION_AUDIT.md`; documented existing stock/procurement/production movement logic and missing GL posting integration. |
-| GAP-002B | Tier 1 - Critical Gaps | Design data model/schema: Accounting-to-Inventory-to-Manufacturing Posting Integration | DONE | GAP-002A | Define schema/model changes only if needed and review existing models first. | Created `docs/planning/GAP-002_POSTING_INTEGRATION_SCHEMA_DESIGN.md`; design covers additive posting links, operational posting events, inventory account mappings, idempotency, period enforcement, and migration scope. |
-| GAP-002C | Tier 1 - Critical Gaps | Add or update database migrations: Accounting-to-Inventory-to-Manufacturing Posting Integration | DONE | GAP-002B | Create Alembic migrations only for required schema changes. | Added `backend/alembic/versions/20260511_0020_operational_posting_integration.py`; py_compile, Alembic heads/history, and offline SQL generation passed. Live `alembic upgrade head` is blocked until PostgreSQL is available. |
-| GAP-002D | Tier 1 - Critical Gaps | Add or update backend models: Accounting-to-Inventory-to-Manufacturing Posting Integration | DONE | GAP-002C | Implement ORM/model changes following existing conventions. | Added matching ORM fields/models for operational posting events, inventory account mappings, and source document posting links; py_compile/import/mapper/model smoke checks passed. |
-| GAP-002E | Tier 1 - Critical Gaps | Add or update schemas: Accounting-to-Inventory-to-Manufacturing Posting Integration | DONE | GAP-002D | Implement request/response schemas and validation. | Added operational posting event, inventory account mapping, reusable posting-link, and read-schema posting status fields; py_compile and Pydantic smoke checks passed. |
-| GAP-002F | Tier 1 - Critical Gaps | Add or update services/business logic: Accounting-to-Inventory-to-Manufacturing Posting Integration | DONE | GAP-002E | Implement service-layer or existing-pattern business logic. | Added finance service helpers for operational idempotency keys, account-mapping lookup, posting-event creation, source-row link application, and posted/failed state updates; py_compile and service smoke checks passed. |
-| GAP-002G | Tier 1 - Critical Gaps | Add or update API endpoints: Accounting-to-Inventory-to-Manufacturing Posting Integration | DONE | GAP-002F | Expose endpoints with auth, permissions, validation, and error handling. | Added finance accounting endpoints for operational posting event audit reads and inventory account mapping CRUD; py_compile and route smoke checks passed. |
-| GAP-002H | Tier 1 - Critical Gaps | Add or update frontend screens/components: Accounting-to-Inventory-to-Manufacturing Posting Integration | DONE | GAP-002G | Build UI using existing layout, table, form, modal, and dashboard patterns. | Extended Accounting Controls with operational posting event visibility and inventory account mapping configuration; frontend type-check passed. |
-| GAP-002I | Tier 1 - Critical Gaps | Add or update permissions/roles: Accounting-to-Inventory-to-Manufacturing Posting Integration | DONE | GAP-002H | Register permissions and update role templates/UI visibility as required. | Verified existing `finance.view` and `finance.configure` permissions cover audit reads and account mapping writes; CFO and finance manager seed roles already include `finance.configure`. No new permission was required. |
-| GAP-002J | Tier 1 - Critical Gaps | Add or update tests: Accounting-to-Inventory-to-Manufacturing Posting Integration | DONE | GAP-002I | Add focused backend/frontend tests for the implemented behavior. | Added `backend/tests/test_gap002_posting_integration.py`; focused GAP-002 tests passed, and GAP-001/GAP-002 regression tests passed. |
-| GAP-002K | Tier 1 - Critical Gaps | Add or update documentation: Accounting-to-Inventory-to-Manufacturing Posting Integration | DONE | GAP-002J | Update user/admin/developer docs for this change. | Added `docs/planning/GAP-002_POSTING_INTEGRATION_IMPLEMENTATION_NOTES.md`; documentation content check passed. |
-| GAP-002L | Tier 1 - Critical Gaps | Run checks and record result: Accounting-to-Inventory-to-Manufacturing Posting Integration | DONE | GAP-002K | Run relevant compile, lint, type, test, migration, or smoke checks. | Final GAP-002 checks passed: backend compile, focused/regression pytest, Alembic heads/history/offline SQL, frontend type-check, and docs checks. Live `alembic upgrade head` remains blocked until PostgreSQL is available. |
-| GAP-003A | Tier 1 - Critical Gaps | Audit current implementation: Permission and Security Hardening Across All New Modules | DONE | GAP-002L | Record what exists, what is partial, and what is missing for this gap. | Created `docs/planning/GAP-003_PERMISSION_SECURITY_AUDIT.md`; audited auth dependency, RBAC dependency, module registry coverage, seed roles, finance controls, and sidebar permission filtering. |
-| GAP-SEC-001A | Security Foundation | Audit current implementation: ERP-wide permission + scope-based access control | DONE | GAP-003A | Current auth, role, permission, company, branch, warehouse, frontend auth, and endpoint protection patterns are recorded. | Added `docs/planning/GAP-SEC-001_ACCESS_CONTROL_AUDIT.md`. GAP-003B is paused and must resume after GAP-SEC-001 is complete. |
-| GAP-SEC-001B | Security Foundation | Design data model/schema: ERP-wide permission + scope-based access control | DONE | GAP-SEC-001A | Define minimal additive schema and service architecture for permission + scope + status access rules without creating a competing RBAC system. | Added `docs/planning/GAP-SEC-001_ACCESS_CONTROL_SCHEMA_DESIGN.md`. |
-| GAP-SEC-001C | Security Foundation | Add or update database migrations: ERP-wide permission + scope-based access control | DONE | GAP-SEC-001B | Create additive Alembic migration for generic access scopes and any required indexes/constraints. | Added `backend/alembic/versions/20260511_0030_access_scopes.py`; offline SQL passed initially, and live DB upgrade/schema verification was completed later by GAP-DB-001. |
-| GAP-SEC-001D | Security Foundation | Add or update backend models: ERP-wide permission + scope-based access control | DONE | GAP-SEC-001C | Add ORM model/relationships for generic access scopes using existing User, Role, and Permission models. | Added `AccessScope`, `Permission.is_active`, `Role.is_system_role`, and user/role relationships. |
-| GAP-SEC-001E | Security Foundation | Add or update schemas and `/auth/me`: ERP-wide permission + scope-based access control | DONE | GAP-SEC-001D | Expose effective permissions, modules, scopes, and feature flags from the authenticated user endpoint without leaking secrets. | Added access-control schemas and extended `/api/v1/auth/me` payload while preserving `permission_codes`. |
-| GAP-SEC-001F | Security Foundation | Add backend access-control service/helpers: ERP-wide permission + scope-based access control | DONE | GAP-SEC-001E | Implement reusable helpers for permission checks, scoped checks, record scope resolution, and workflow status locking. | Added `backend/app/core/access_control.py`; `require_permission` now delegates to shared permission logic. |
-| GAP-SEC-001G | Security Foundation | Apply scoped enforcement to first critical modules | DONE | GAP-SEC-001F | Apply helper patterns to inventory/WMS, production, quality, finance, sales, procurement, and admin surfaces in small safe slices. | Admin scope assignment endpoints are implemented. Inventory/WMS stock/movement mutations enforce warehouse scopes. Production order lifecycle operations enforce broad-view vs scoped mutation using warehouse scope until factory/line IDs exist. Sales customer/order flows enforce broad-view vs region-scoped mutation. Procurement PR/PO flows enforce broad-view vs department-scoped mutation. Quality inspection decisions/releases enforce scoped approval/release. Finance journal create/view/post/reversal now uses nullable company/branch/cost-center scope fields. |
-| GAP-SEC-001H | Security Foundation | Update frontend auth helpers and sidebar/action UX | DONE | GAP-SEC-001G | Frontend auth context exposes permission/scope helpers; sidebar and buttons reflect backend access data. | Scoped permission aliases now satisfy base permission checks for sidebar/guards/command palette. Inventory rows show `View only` and action buttons/forms disable by warehouse mutation scope. User and role detail pages include scope management panels. |
-| GAP-SEC-001I | Security Foundation | Add or update seed roles, permissions, and default scopes | DONE | GAP-SEC-001H | Seed idempotent scope-aware permissions and role templates without duplicate grants. | Scope-aware permissions and conservative role templates added. Owner/admin receive global scopes; operational roles require explicit `AccessScope` assignment. |
-| GAP-SEC-001J | Security Foundation | Add tests and smoke checks for scoped access control | DONE | GAP-SEC-001I | Cover unauthenticated access, broad view, view-only mutation denial, scoped mutation allow/deny, admin bypass, and auth/me access payload. | Added focused helper tests, seed-contract tests, finance/status-lock tests, module source contract tests, and ran hardening/RBAC regressions. |
-| GAP-SEC-001K | Security Foundation | Add or update documentation for scoped access control | DONE | GAP-SEC-001J | Document architecture, role/scope behavior, admin workflow, and module rollout rules. | Updated GAP-SEC-001 implementation notes with backend rollout, frontend UX, admin scope management, checks, and remaining follow-up improvements. |
-| GAP-SEC-001L | Security Foundation | Run checks and record result: ERP-wide permission + scope-based access control | DONE | GAP-SEC-001K | Run relevant compile, import, pytest, Alembic, frontend type-check, and docs checks; record any blockers honestly. | Compile passed, focused/regression pytest passed, frontend type-check passed, Alembic heads/offline SQL passed. Live DB migration was later verified by GAP-DB-001. |
-| GAP-DB-001 | Urgent Blocker Fix | Apply and verify live PostgreSQL migrations after GAP-SEC-001 | DONE | GAP-SEC-001L | Local development PostgreSQL is running; live `alembic upgrade head` succeeds; current revision equals latest head; `access_scopes`, `permissions.is_active`, and `roles.is_system_role` are verified; backend import and focused access-control/RBAC tests pass; trackers and GAP-SEC-001 docs are updated. | DONE at 2026-05-14T17:43:57+03:00. Verification recorded in `docs/planning/GAP-DB-001_LIVE_MIGRATION_VERIFICATION.md`. GAP-004F resumed. |
-| GAP-003B | Tier 1 - Critical Gaps | Design data model/schema: Permission and Security Hardening Across All New Modules | DONE | GAP-SEC-001L | Define schema/model changes only if needed and review existing models first. | Added `docs/planning/GAP-003_PERMISSION_SECURITY_SCHEMA_DESIGN.md`; decision: reuse GAP-SEC-001 AccessScope/RBAC foundation and avoid duplicate schema. |
-| GAP-003C | Tier 1 - Critical Gaps | Add or update database migrations: Permission and Security Hardening Across All New Modules | SKIPPED | GAP-003B | Create Alembic migrations only for required schema changes. | Skipped by design: GAP-SEC-001C and `20260511_0040_finance_journal_scopes` already delivered the required migrations. |
-| GAP-003D | Tier 1 - Critical Gaps | Add or update backend models: Permission and Security Hardening Across All New Modules | SKIPPED | GAP-003C | Implement ORM/model changes following existing conventions. | Skipped by design: `AccessScope`, permission active flag, role system flag, and finance journal scope model fields already exist. |
-| GAP-003E | Tier 1 - Critical Gaps | Add or update schemas: Permission and Security Hardening Across All New Modules | SKIPPED | GAP-003D | Implement request/response schemas and validation. | Skipped by design: access-scope schemas and `/auth/me` effective access payload already exist. |
-| GAP-003F | Tier 1 - Critical Gaps | Add or update services/business logic: Permission and Security Hardening Across All New Modules | DONE | GAP-003E | Implement service-layer or existing-pattern business logic. | Added scoped permission coverage helpers in `backend/app/core/module_registry.py` and tests for exact/scoped coverage behavior. |
-| GAP-003G | Tier 1 - Critical Gaps | Add or update API endpoints: Permission and Security Hardening Across All New Modules | DONE | GAP-003F | Expose endpoints with auth, permissions, validation, and error handling. | Updated the module manifest endpoint to honor scoped permission aliases and added protected `/api/v1/modules/permissions/coverage` for registry/database permission drift review. |
-| GAP-003H | Tier 1 - Critical Gaps | Add or update frontend screens/components: Permission and Security Hardening Across All New Modules | DONE | GAP-003G | Build UI using existing layout, table, form, modal, and dashboard patterns. | Added permission coverage/drift summary to the Permission Matrix page and a typed frontend client for the protected coverage endpoint. |
-| GAP-003I | Tier 1 - Critical Gaps | Add or update permissions/roles: Permission and Security Hardening Across All New Modules | DONE | GAP-003H | Register permissions and update role templates/UI visibility as required. | No new permission needed: the coverage endpoint and Permission Matrix page use existing `roles.view`; seed and nav already include it for admin/operator-safe roles. |
-| GAP-003J | Tier 1 - Critical Gaps | Add or update tests: Permission and Security Hardening Across All New Modules | DONE | GAP-003I | Add focused backend/frontend tests for the implemented behavior. | Focused backend permission/manifest/RBAC tests passed, 25 tests; frontend type-check passed. |
-| GAP-003K | Tier 1 - Critical Gaps | Add or update documentation: Permission and Security Hardening Across All New Modules | DONE | GAP-003J | Update user/admin/developer docs for this change. | Added `docs/planning/GAP-003_PERMISSION_SECURITY_IMPLEMENTATION_NOTES.md`; documentation content check passed. |
-| GAP-003L | Tier 1 - Critical Gaps | Run checks and record result: Permission and Security Hardening Across All New Modules | DONE | GAP-003K | Run relevant compile, lint, type, test, migration, or smoke checks. | Final GAP-003 checks passed: backend py_compile, focused backend pytest/RBAC regressions, frontend type-check, and docs/tracker checks. |
-| GAP-004A | Tier 1 - Critical Gaps | Audit current implementation: End-to-End Workflow Completion Testing | DONE | GAP-003L | Record what exists, what is partial, and what is missing for this gap. | Added `docs/planning/GAP-004_E2E_WORKFLOW_TESTING_AUDIT.md`; documented existing backend/CI/manual coverage and missing browser/API workflow tests. |
-| GAP-004B | Tier 1 - Critical Gaps | Design data model/schema: End-to-End Workflow Completion Testing | DONE | GAP-004A | Define schema/model changes only if needed and review existing models first. | Added `docs/planning/GAP-004_E2E_WORKFLOW_TESTING_SCHEMA_DESIGN.md`; decision: use test fixtures/harnesses, not new production tables. |
-| GAP-004C | Tier 1 - Critical Gaps | Add or update database migrations: End-to-End Workflow Completion Testing | SKIPPED | GAP-004B | Create Alembic migrations only for required schema changes. | Skipped by design: no application DB migration is needed for E2E test harness work. |
-| GAP-004D | Tier 1 - Critical Gaps | Add or update backend models: End-to-End Workflow Completion Testing | SKIPPED | GAP-004C | Implement ORM/model changes following existing conventions. | Skipped by design: no production ORM model is needed for this testing foundation. |
-| GAP-004E | Tier 1 - Critical Gaps | Add or update schemas: End-to-End Workflow Completion Testing | SKIPPED | GAP-004D | Implement request/response schemas and validation. | Skipped by design: no production API schema is needed for this testing foundation. |
-| GAP-004F | Tier 1 - Critical Gaps | Add or update services/business logic: End-to-End Workflow Completion Testing | DONE | GAP-004E | Implement service-layer or existing-pattern business logic. | Added deterministic backend E2E fixture/persona helpers under `backend/tests/e2e`; py_compile and focused pytest passed. |
-| GAP-004G | Tier 1 - Critical Gaps | Add or update API endpoints: End-to-End Workflow Completion Testing | SKIPPED | GAP-004F | Expose endpoints with auth, permissions, validation, and error handling. | Skipped by design: Docker backend route review confirmed existing auth, module manifest, inventory, procurement, production, quality, and finance API surfaces are sufficient for the planned E2E workflow tests. Added `docs/planning/GAP-004_E2E_WORKFLOW_TESTING_API_REVIEW.md`. |
-| GAP-004H | Tier 1 - Critical Gaps | Add or update frontend screens/components: End-to-End Workflow Completion Testing | DONE | GAP-004G | Build UI using existing layout, table, form, modal, and dashboard patterns. | Added Playwright config, E2E scripts, browser test helpers/specs, stable selectors for login/dashboard/sidebar/access-denied/inventory markers, and `docs/testing/E2E.md`. Frontend type-check, E2E list, and public auth browser smoke passed. |
-| GAP-004I | Tier 1 - Critical Gaps | Add or update permissions/roles: End-to-End Workflow Completion Testing | DONE | GAP-004H | Register permissions and update role templates/UI visibility as required. | Verified existing scope-aware seed roles are sufficient for E2E personas, added role expectation docs, and added backend E2E seed-contract tests; py_compile and `pytest tests/e2e -q` passed. |
-| GAP-004J | Tier 1 - Critical Gaps | Add or update tests: End-to-End Workflow Completion Testing | DONE | GAP-004I | Add focused backend/frontend tests for the implemented behavior. | Added workflow control specs for production, quality, finance, procurement, sales, and limited-route safety; extended stable selectors; frontend type-check passed, Playwright listed 18 tests, and full no-secret suite passed with 3 public tests and 15 credential-dependent skips. |
-| GAP-004K | Tier 1 - Critical Gaps | Add or update documentation: End-to-End Workflow Completion Testing | DONE | GAP-004J | Update user/admin/developer docs for this change. | Expanded `docs/testing/E2E.md`, added GAP-004 implementation notes, documented role expectations, skip behavior, commands, stable selectors, and troubleshooting; documentation content checks passed. |
-| GAP-004L | Tier 1 - Critical Gaps | Run checks and record result: End-to-End Workflow Completion Testing | DONE | GAP-004K | Run relevant compile, lint, type, test, migration, or smoke checks. | Final checks passed: git status reviewed, backend E2E py_compile and pytest passed, frontend type-check passed, frontend lint passed, Playwright full no-secret suite passed with 3 public tests and 15 credential-dependent skips, and docs/tracker checks passed. No migrations were touched. |
-| GAP-005A | Tier 1 - Critical Gaps | Audit current implementation: Production-Grade Frontend Parity With Backend | DONE | GAP-004L | Record what exists, what is partial, and what is missing for this gap. | Added `docs/planning/GAP-005_FRONTEND_BACKEND_PARITY_AUDIT.md`; documented existing route/page/client coverage, backend registry scope, raw `/api/v1` frontend risk, naming aliases, stub signals, and recommended parity-manifest direction. |
-| GAP-005B | Tier 1 - Critical Gaps | Design data model/schema: Production-Grade Frontend Parity With Backend | DONE | GAP-005A | Define schema/model changes only if needed and review existing models first. | Added `docs/planning/GAP-005_FRONTEND_BACKEND_PARITY_SCHEMA_DESIGN.md`; decision: no database schema/Alembic migration, use a source-owned parity manifest plus static check. |
-| GAP-005C | Tier 1 - Critical Gaps | Add or update database migrations: Production-Grade Frontend Parity With Backend | SKIPPED | GAP-005B | Create Alembic migrations only for required schema changes. | Skipped by design: parity metadata is source-code/build-time metadata and does not require PostgreSQL schema. |
-| GAP-005D | Tier 1 - Critical Gaps | Add or update backend models: Production-Grade Frontend Parity With Backend | SKIPPED | GAP-005C | Implement ORM/model changes following existing conventions. | Skipped by design: no ORM model is needed for frontend/backend route-client parity metadata. |
-| GAP-005E | Tier 1 - Critical Gaps | Add or update schemas: Production-Grade Frontend Parity With Backend | SKIPPED | GAP-005D | Implement request/response schemas and validation. | Skipped by design: no runtime API request/response schema is needed for the source-level parity contract. |
-| GAP-005F | Tier 1 - Critical Gaps | Add or update services/business logic: Production-Grade Frontend Parity With Backend | DONE | GAP-005E | Implement service-layer or existing-pattern business logic. | Added source-level parity manifest and `check-api-parity` script; strict mode passes with 35 manifest entries, 753 dashboard pages scanned, 51 known raw API pages, and 0 uncovered raw API pages. |
-| GAP-005G | Tier 1 - Critical Gaps | Add or update API endpoints: Production-Grade Frontend Parity With Backend | SKIPPED | GAP-005F | Expose endpoints with auth, permissions, validation, and error handling. | Skipped by design: parity checking is a local/CI static check and no runtime API endpoint is needed. |
-| GAP-005H | Tier 1 - Critical Gaps | Add or update frontend screens/components: Production-Grade Frontend Parity With Backend | SKIPPED | GAP-005G | Build UI using existing layout, table, form, modal, and dashboard patterns. | Skipped by design: GAP-005F added no visible UI; the next user-facing changes should be incremental client conversions in later work. |
-| GAP-005I | Tier 1 - Critical Gaps | Add or update permissions/roles: Production-Grade Frontend Parity With Backend | SKIPPED | GAP-005H | Register permissions and update role templates/UI visibility as required. | Skipped by design: static parity checks run locally/CI and require no ERP permissions or roles. |
-| GAP-005J | Tier 1 - Critical Gaps | Add or update tests: Production-Grade Frontend Parity With Backend | DONE | GAP-005I | Add focused backend/frontend tests for the implemented behavior. | Used the API parity checker as the focused static test; syntax checks passed and `npm run check:api-parity -- --strict` passed with 35 manifest entries, 753 dashboard pages scanned, 51 known raw API pages, and 0 uncovered raw API pages. |
-| GAP-005K | Tier 1 - Critical Gaps | Add or update documentation: Production-Grade Frontend Parity With Backend | DONE | GAP-005J | Update user/admin/developer docs for this change. | Added `docs/testing/API_PARITY.md` and GAP-005 implementation notes documenting the checker, manifest rules, strict mode, current baseline, skipped subtasks, and cleanup workflow. |
-| GAP-005L | Tier 1 - Critical Gaps | Run checks and record result: Production-Grade Frontend Parity With Backend | DONE | GAP-005K | Run relevant compile, lint, type, test, migration, or smoke checks. | Final checks passed: node syntax checks for parity scripts, strict API parity check, frontend type-check, frontend lint, git status review, and docs/tracker checks. Backend/Alembic checks were not needed because no backend runtime or migration files changed in GAP-005. |
-| GAP-006A | Tier 1 - Critical Gaps | Audit current implementation: Real Integrations Instead of Stub/Placeholder Integrations | DONE | GAP-005L | Record what exists, what is partial, and what is missing for this gap. | Added `docs/planning/GAP-006_REAL_INTEGRATIONS_AUDIT.md`; documented real integration foundations, M-Pesa Daraja partial live support, webhook/event engine, AI provider status, explicit stub/demo areas, production risks, and recommended provider capability matrix direction. |
-| GAP-006B | Tier 1 - Critical Gaps | Design data model/schema: Real Integrations Instead of Stub/Placeholder Integrations | DONE | GAP-006A | Define schema/model changes only if needed and review existing models first. | Added `docs/planning/GAP-006_REAL_INTEGRATIONS_SCHEMA_DESIGN.md`; decision: reuse existing integration tables and add a code-owned provider capability registry, not a database migration. |
-| GAP-006C | Tier 1 - Critical Gaps | Add or update database migrations: Real Integrations Instead of Stub/Placeholder Integrations | SKIPPED | GAP-006B | Create Alembic migrations only for required schema changes. | Skipped by design: integration capability definitions are source metadata and do not require PostgreSQL schema. |
-| GAP-006D | Tier 1 - Critical Gaps | Add or update backend models: Real Integrations Instead of Stub/Placeholder Integrations | SKIPPED | GAP-006C | Implement ORM/model changes following existing conventions. | Skipped by design: existing integration ORM models are sufficient for this first capability-registry slice. |
-| GAP-006E | Tier 1 - Critical Gaps | Add or update schemas: Real Integrations Instead of Stub/Placeholder Integrations | SKIPPED | GAP-006D | Implement request/response schemas and validation. | Skipped by design: no new runtime request/response schema is needed before the capability registry/service helpers. |
-| GAP-006F | Tier 1 - Critical Gaps | Add or update services/business logic: Real Integrations Instead of Stub/Placeholder Integrations | DONE | GAP-006E | Implement service-layer or existing-pattern business logic. | Added `backend/app/core/integration_capabilities.py` with source-owned provider capability statuses, production execution guards, effective status resolution, and production-block reasons. |
-| GAP-006G | Tier 1 - Critical Gaps | Add or update API endpoints: Real Integrations Instead of Stub/Placeholder Integrations | DONE | GAP-006F | Expose endpoints with auth, permissions, validation, and error handling. | Added protected `GET /api/v1/integrations/capabilities` using existing `integrations.view`; endpoint returns capability metadata without exposing secrets. |
-| GAP-006H | Tier 1 - Critical Gaps | Add or update frontend screens/components: Real Integrations Instead of Stub/Placeholder Integrations | DONE | GAP-006G | Build UI using existing layout, table, form, modal, and dashboard patterns. | Added Integration Hub capability status panel and typed frontend client support. |
-| GAP-006I | Tier 1 - Critical Gaps | Add or update permissions/roles: Real Integrations Instead of Stub/Placeholder Integrations | DONE | GAP-006H | Register permissions and update role templates/UI visibility as required. | Verified no new seed permission is needed; the read-only governance endpoint uses existing `integrations.view`. |
-| GAP-006J | Tier 1 - Critical Gaps | Add or update tests: Real Integrations Instead of Stub/Placeholder Integrations | DONE | GAP-006I | Add focused backend/frontend tests for the implemented behavior. | Added `backend/tests/test_gap006_integration_capabilities.py` covering provider classification, production blocking, block reasons, and endpoint permission registration. |
-| GAP-006K | Tier 1 - Critical Gaps | Add or update documentation: Real Integrations Instead of Stub/Placeholder Integrations | DONE | GAP-006J | Update user/admin/developer docs for this change. | Added `docs/planning/GAP-006_REAL_INTEGRATIONS_IMPLEMENTATION_NOTES.md`. |
-| GAP-006L | Tier 1 - Critical Gaps | Run checks and record result: Real Integrations Instead of Stub/Placeholder Integrations | DONE | GAP-006K | Run relevant compile, lint, type, test, migration, or smoke checks. | Final GAP-006 checks passed: backend py_compile, focused pytest, frontend type-check, frontend lint, and documentation term checks. |
-| GAP-007A | Tier 2 - High Importance | Audit current implementation: Advanced Manufacturing Capacity Planning / APS | DONE | GAP-006L | Record what exists, what is partial, and what is missing for this gap. | Added `docs/planning/GAP-007_APS_CAPACITY_PLANNING_AUDIT.md`; documented existing production/advanced-production/MRP/MPS foundations and missing APS capabilities. |
-| GAP-007B | Tier 2 - High Importance | Design data model/schema: Advanced Manufacturing Capacity Planning / APS | DONE | GAP-007A | Define schema/model changes only if needed and review existing models first. | Added `docs/planning/GAP-007_APS_CAPACITY_PLANNING_SCHEMA_DESIGN.md`; decision: reuse existing `planning.py` APS models, create migration ownership for those tables in GAP-007C, and reconcile service/model field mismatches before relying on scheduler runtime. |
-| GAP-007C | Tier 2 - High Importance | Add or update database migrations: Advanced Manufacturing Capacity Planning / APS | DONE | GAP-007B | Create Alembic migrations only for required schema changes. | Added `backend/alembic/versions/20260514_0010_aps_planning_tables.py` for the existing APS planning tables. Alembic heads/history/offline SQL passed; live dev `alembic upgrade head` succeeded and verified all planning tables plus `operation_queue` columns on PostgreSQL. |
-| GAP-007D | Tier 2 - High Importance | Add or update backend models: Advanced Manufacturing Capacity Planning / APS | SKIPPED | GAP-007C | Implement ORM/model changes following existing conventions. | Skipped by design: existing APS models in `backend/app/models/planning.py` already define the schema, and GAP-007C added migration ownership. Do not add duplicate fields just to satisfy current service assumptions. |
-| GAP-007E | Tier 2 - High Importance | Add or update schemas: Advanced Manufacturing Capacity Planning / APS | DONE | GAP-007D | Implement request/response schemas and validation. | Existing Pydantic schemas already covered APS payloads; during final hardening `AIRecAction.actioned_by_id` was made optional so the backend-authored authenticated user contract matches the frontend and endpoint. |
-| GAP-007F | Tier 2 - High Importance | Add or update services/business logic: Advanced Manufacturing Capacity Planning / APS | DONE | GAP-007E | Implement service-layer or existing-pattern business logic. | Reconciled `planning_capacity_service.py` with existing `RoutingStep.operation`, `RoutingStep.standard_time_minutes`, `Product.name`, `Product.sku`, and `WorkCenter.capacity` fields; no-work-center operations now block safely. Added focused GAP-007 service tests. |
-| GAP-007G | Tier 2 - High Importance | Add or update API endpoints: Advanced Manufacturing Capacity Planning / APS | DONE | GAP-007F | Expose endpoints with auth, permissions, validation, and error handling. | Hardened `backend/app/api/v1/endpoints/planning.py`: scenario creation and simulation publishing now use authenticated user IDs, AI recommendation actions cannot spoof `actioned_by_id`, and read/write/calculate/approve routes require planning permissions. |
-| GAP-007H | Tier 2 - High Importance | Add or update frontend screens/components: Advanced Manufacturing Capacity Planning / APS | DONE | GAP-007G | Build UI using existing layout, table, form, modal, and dashboard patterns. | Updated planning frontend permissions/constants, planning sidebar permissions, scenario create visibility, bottleneck/AI action visibility, and AI action client payload to match backend-authored planning permissions. Frontend type-check passed. |
-| GAP-007I | Tier 2 - High Importance | Add or update permissions/roles: Advanced Manufacturing Capacity Planning / APS | DONE | GAP-007H | Register permissions and update role templates/UI visibility as required. | Registered `planning` as a module-owned route, removed duplicate endpoint-route ownership, seeded scope-aware planning permissions, and granted conservative APS permissions to production-oriented roles. |
-| GAP-007J | Tier 2 - High Importance | Add or update tests: Advanced Manufacturing Capacity Planning / APS | DONE | GAP-007I | Add focused backend/frontend tests for the implemented behavior. | Added/extended `backend/tests/test_gap007_aps_planning_service.py` covering service helpers, missing-field regressions, API auth placeholder removal, module-registry ownership, and planning seed permissions. Backend focused tests and frontend type-check passed. |
-| GAP-007K | Tier 2 - High Importance | Add or update documentation: Advanced Manufacturing Capacity Planning / APS | DONE | GAP-007J | Update user/admin/developer docs for this change. | Added `docs/planning/GAP-007_APS_CAPACITY_PLANNING_IMPLEMENTATION_NOTES.md` covering migration ownership, scheduler reconciliation, API permission model, frontend permission UX, role seeds, checks, and follow-ups. |
-| GAP-007L | Tier 2 - High Importance | Run checks and record result: Advanced Manufacturing Capacity Planning / APS | DONE | GAP-007K | Run relevant compile, lint, type, test, migration, or smoke checks. | Final GAP-007 checks passed: backend py_compile/import, focused pytest, Alembic heads/history/offline SQL, live dev `alembic upgrade head/current`, live APS schema verification, frontend type-check, frontend lint, and docs/tracker checks. Local venv `app.main` import exits successfully but logs existing missing optional dependency diagnostics for `pyotp`/`dateutil`; Docker backend import is clean. |
-| GAP-008A | Tier 2 - High Importance | Audit current implementation: Warehouse Management Depth | DONE | GAP-007L | Record what exists, what is partial, and what is missing for this gap. | Added `docs/planning/GAP-008_WAREHOUSE_MANAGEMENT_DEPTH_AUDIT.md`; documented existing warehouse master data, inventory stock ledger, WMS bins/putaway/counts/picking/packing/replenishment, cycle count, frontend parity, permissions, migration ownership risks, and roadmap gaps. |
-| GAP-008B | Tier 2 - High Importance | Design data model/schema: Warehouse Management Depth | DONE | GAP-008A | Define schema/model changes only if needed and review existing models first. | Added `docs/planning/GAP-008_WAREHOUSE_MANAGEMENT_DEPTH_SCHEMA_DESIGN.md`; design reuses existing WMS architecture and scopes GAP-008C to additive migration reconciliation, handling units/license plates, pick waves, location-aware movement fields, and WMS permission/scope boundaries. |
-| GAP-008C | Tier 2 - High Importance | Add or update database migrations: Warehouse Management Depth | DONE | GAP-008B | Create Alembic migrations only for required schema changes. | Added `backend/alembic/versions/20260514_0020_wms_depth_reconciliation.py`; py_compile, Alembic heads/history/offline SQL, live dev `alembic upgrade head/current`, and live schema verification passed. |
-| GAP-008D | Tier 2 - High Importance | Add or update backend models: Warehouse Management Depth | DONE | GAP-008C | Implement ORM/model changes following existing conventions. | Added ORM models and relationships for WMS handling units, handling-unit items, pick waves, picking wave ownership, and stock movement location/HU references; py_compile and mapper checks passed. |
-| GAP-008E | Tier 2 - High Importance | Add or update schemas: Warehouse Management Depth | DONE | GAP-008D | Implement request/response schemas and validation. | Added WMS access hints, handling-unit schemas, pick-wave schemas, picking wave fields, and inventory movement/location/HU schema fields; py_compile and Pydantic smoke checks passed. |
-| GAP-008F | Tier 2 - High Importance | Add or update services/business logic: Warehouse Management Depth | DONE | GAP-008E | Implement service-layer or existing-pattern business logic. | Added WMS service helpers for per-warehouse access hints, scoped action guards, WMS status lock rules, handling-unit creation/update, and pick-wave creation/update; py_compile and focused pytest passed. |
-| GAP-008G | Tier 2 - High Importance | Add or update API endpoints: Warehouse Management Depth | DONE | GAP-008F | Expose endpoints with auth, permissions, validation, and error handling. | Added WMS handling-unit and pick-wave endpoints, response access hints, and scoped guards for WMS execution APIs; py_compile, endpoint import, and focused pytest passed. |
-| GAP-008H | Tier 2 - High Importance | Add or update frontend screens/components: Warehouse Management Depth | DONE | GAP-008G | Build UI using existing layout, table, form, modal, and dashboard patterns. | Added WMS client types/methods and WMS dashboard tabs for handling units, pick waves, and backend access hints; frontend type-check and lint passed. |
-| GAP-008I | Tier 2 - High Importance | Add or update permissions/roles: Warehouse Management Depth | DONE | GAP-008H | Register permissions and update role templates/UI visibility as required. | Added `wms.view` to the Warehouse Manager role so scoped warehouse users can see WMS navigation while mutations remain inventory-scope controlled; focused seed/access tests passed. |
-| GAP-008J | Tier 2 - High Importance | Add or update tests: Warehouse Management Depth | DONE | GAP-008I | Add focused backend/frontend tests for the implemented behavior. | Added focused tests for WMS access hints, status locks, seed role coverage, endpoint registration/guards, and frontend WMS contract coverage; py_compile and focused pytest passed. |
-| GAP-008K | Tier 2 - High Importance | Add or update documentation: Warehouse Management Depth | DONE | GAP-008J | Update user/admin/developer docs for this change. | Added `docs/planning/GAP-008_WAREHOUSE_MANAGEMENT_DEPTH_IMPLEMENTATION_NOTES.md` covering implementation scope, APIs, permissions, frontend behavior, checks, and remaining follow-ups; heading/content checks passed. |
-| GAP-008L | Tier 2 - High Importance | Run checks and record result: Warehouse Management Depth | DONE | GAP-008K | Run relevant compile, lint, type, test, migration, or smoke checks. | Final WMS checks passed: git status reviewed, backend py_compile, focused pytest, Alembic heads/current, Docker compose health, frontend type-check/lint, docs checks, and tracker checks. |
-| GAP-009A | Tier 2 - High Importance | Audit current implementation: Procurement and Supplier Management Maturity | DONE | GAP-008L | Record what exists, what is partial, and what is missing for this gap. | Added `docs/planning/GAP-009_PROCUREMENT_SUPPLIER_MANAGEMENT_AUDIT.md`; documented existing PR/PO/GRN/RFQ/BPA/reorder/supplier foundations, partial scope/security coverage, migration ownership risk, and GAP-009B design direction. |
-| GAP-009B | Tier 2 - High Importance | Design data model/schema: Procurement and Supplier Management Maturity | DONE | GAP-009A | Define schema/model changes only if needed and review existing models first. | Added `docs/planning/GAP-009_PROCUREMENT_SUPPLIER_MANAGEMENT_SCHEMA_DESIGN.md`; design reuses existing procurement models and scopes GAP-009C to additive reconciliation fields plus approval rules. |
-| GAP-009C | Tier 2 - High Importance | Add or update database migrations: Procurement and Supplier Management Maturity | DONE | GAP-009B | Create Alembic migrations only for required schema changes. | Added `backend/alembic/versions/20260514_0030_procurement_scope_governance.py`; py_compile, Alembic heads/history/offline SQL, live dev `alembic upgrade head/current`, and live schema verification passed. |
-| GAP-009D | Tier 2 - High Importance | Add or update backend models: Procurement and Supplier Management Maturity | DONE | GAP-009C | Implement ORM/model changes following existing conventions. | Updated Supplier governance fields, procurement scope fields, and `ProcurementApprovalRule` ORM model; py_compile/import/mapper checks passed. |
-| GAP-009E | Tier 2 - High Importance | Add or update schemas: Procurement and Supplier Management Maturity | DONE | GAP-009D | Implement request/response schemas and validation. | Added optional scope fields, supplier governance fields, procurement access hints, and procurement approval-rule schemas; py_compile and schema import smoke checks passed. |
-| GAP-009F | Tier 2 - High Importance | Add or update services/business logic: Procurement and Supplier Management Maturity | DONE | GAP-009E | Implement service-layer or existing-pattern business logic. | Added procurement scope inheritance, access hints, status-lock helpers, approval-rule lookup, and PR-to-PO scope propagation; py_compile and helper import checks passed. |
-| GAP-009G | Tier 2 - High Importance | Add or update API endpoints: Procurement and Supplier Management Maturity | DONE | GAP-009F | Expose endpoints with auth, permissions, validation, and error handling. | Applied centralized procurement guards/access hints to key endpoints and added protected approval-rule management endpoints; py_compile, endpoint import, and source checks passed. |
-| GAP-009H | Tier 2 - High Importance | Add or update frontend screens/components: Procurement and Supplier Management Maturity | DONE | GAP-009G | Build UI using existing layout, table, form, modal, and dashboard patterns. | Updated procurement client types/methods for scopes/access/approval rules and added PR-list access badges; frontend type-check passed. |
-| GAP-009I | Tier 2 - High Importance | Add or update permissions/roles: Procurement and Supplier Management Maturity | DONE | GAP-009H | Register permissions and update role templates/UI visibility as required. | Expanded procurement module actions and seeded scoped receive/post/cancel/export/import/delete permissions; procurement manager receives conservative scoped grants; py_compile and registry smoke checks passed. |
-| GAP-009J | Tier 2 - High Importance | Add or update tests: Procurement and Supplier Management Maturity | DONE | GAP-009I | Add focused backend/frontend tests for the implemented behavior. | Added `backend/tests/test_gap009_procurement_maturity.py`; py_compile and focused pytest passed with 6 tests and existing unrelated SQLAlchemy mapper warnings. |
-| GAP-009K | Tier 2 - High Importance | Add or update documentation: Procurement and Supplier Management Maturity | DONE | GAP-009J | Update user/admin/developer docs for this change. | Added `docs/planning/GAP-009_PROCUREMENT_SUPPLIER_MANAGEMENT_IMPLEMENTATION_NOTES.md`; docs content checks passed. |
-| GAP-009L | Tier 2 - High Importance | Run checks and record result: Procurement and Supplier Management Maturity | DONE | GAP-009K | Run relevant compile, lint, type, test, migration, or smoke checks. | Final GAP-009 checks passed: git status reviewed, backend py_compile/import, focused pytest, Alembic heads/history/offline SQL, live Docker Alembic current/schema verification, frontend type-check/lint, docs checks, and tracker checks. |
-| GAP-010A | Tier 2 - High Importance | Audit current implementation: CRM / Sales Pipeline Depth | DONE | GAP-009L | Record what exists, what is partial, and what is missing for this gap. | Added `docs/planning/GAP-010_CRM_SALES_PIPELINE_AUDIT.md`; found real Sales/CRM/Quotation foundations, partial scoped sales controls, unauthenticated/unscoped CRM endpoints, likely CRM territory migration reconciliation risk, and next design direction. |
-| GAP-010B | Tier 2 - High Importance | Design data model/schema: CRM / Sales Pipeline Depth | DONE | GAP-010A | Define schema/model changes only if needed and review existing models first. | Added `docs/planning/GAP-010_CRM_SALES_PIPELINE_SCHEMA_DESIGN.md`; design reuses existing Sales/CRM/Quotation models, plans idempotent CRM territory reconciliation, additive commercial scope fields, access hints, service helpers, endpoint hardening, frontend UX, permissions, and tests. |
-| GAP-010C | Tier 2 - High Importance | Add or update database migrations: CRM / Sales Pipeline Depth | DONE | GAP-010B | Create Alembic migrations only for required schema changes. | Added `backend/alembic/versions/20260515_0010_crm_sales_scope_reconciliation.py`; py_compile, Alembic heads/history, offline SQL, live `alembic upgrade head`, live current revision, and live schema verification passed after fixing CRM territory column/index ordering. |
-| GAP-010D | Tier 2 - High Importance | Add or update backend models: CRM / Sales Pipeline Depth | DONE | GAP-010C | Implement ORM/model changes following existing conventions. | Updated `backend/app/models/sales.py`, `backend/app/models/crm.py`, and `backend/app/models/quotation.py` with commercial scope, approval, CRM record, and customer assignment fields matching the verified migration; py_compile, model import, and mapper smoke checks passed. |
-| GAP-010E | Tier 2 - High Importance | Add or update schemas: CRM / Sales Pipeline Depth | DONE | GAP-010D | Implement request/response schemas and validation. | Updated `backend/app/schemas/sales.py`, `backend/app/schemas/crm.py`, and `backend/app/schemas/quotation.py` with commercial scope fields, approval fields, CRM links, and access-hint schemas; py_compile and Pydantic smoke checks passed. |
-| GAP-010F | Tier 2 - High Importance | Add or update services/business logic: CRM / Sales Pipeline Depth | DONE | GAP-010E | Implement service-layer or existing-pattern business logic. | Added `backend/app/services/commercial_access_service.py` with commercial scope inheritance, module/document resolution, status-lock checks, access-hint generation, and enforce-or-403 helpers; py_compile and service smoke checks passed. |
-| GAP-010G | Tier 2 - High Importance | Add or update API endpoints: CRM / Sales Pipeline Depth | DONE | GAP-010F | Expose endpoints with auth, permissions, validation, and error handling. | Applied commercial access helpers to sales customer/order builders, quotation list/detail/create/status/convert flows, and CRM record/territory list/detail/create/update flows; added access hints and scoped action guards while preserving existing paths. Backend py_compile and endpoint import checks passed. |
-| GAP-010H | Tier 2 - High Importance | Add or update frontend screens/components: CRM / Sales Pipeline Depth | DONE | GAP-010G | Build UI using existing layout, table, form, modal, and dashboard patterns. | Updated frontend commercial access-hint types, enabled CRM cookie credentials, and added view-only badges/action suppression to Sales customers, Sales orders, Quotations, and CRM pipeline board; frontend type-check passed. |
-| GAP-010I | Tier 2 - High Importance | Add or update permissions/roles: CRM / Sales Pipeline Depth | DONE | GAP-010H | Register permissions and update role templates/UI visibility as required. | Registered CRM as a module-owned route, removed the duplicate CRM endpoint-route registration, expanded Sales/CRM commercial scoped actions, added convert/discount-approve access-control mappings, and seeded commercial permissions/role grants for regional sales manager, sales manager, and CMO without broadening normal mutation access. |
-| GAP-010J | Tier 2 - High Importance | Add or update tests: CRM / Sales Pipeline Depth | DONE | GAP-010I | Add focused backend/frontend tests for the implemented behavior. | Added `backend/tests/test_gap010_crm_sales_commercial_access.py` covering broad-view/scoped-mutation behavior, quote conversion status/scope gates, CRM scoped edit/admin bypass, module registry/seed permission contracts, and frontend view-only wiring. Py_compile and focused pytest passed. |
-| GAP-010K | Tier 2 - High Importance | Add or update documentation: CRM / Sales Pipeline Depth | DONE | GAP-010J | Update user/admin/developer docs for this change. | Added `docs/planning/GAP-010_CRM_SALES_PIPELINE_IMPLEMENTATION_NOTES.md` documenting migration, models, schemas, service helpers, endpoints, frontend view-only UX, permissions/roles, admin setup, tests, and known follow-ups; docs content/no-secret checks passed. |
-| GAP-010L | Tier 2 - High Importance | Run checks and record result: CRM / Sales Pipeline Depth | DONE | GAP-010K | Run relevant compile, lint, type, test, migration, or smoke checks. | Final checks passed: git status review, backend py_compile, endpoint/service import, app import with existing optional dependency diagnostics, focused pytest, Alembic heads/history/offline SQL, frontend type-check, frontend lint, and docs/tracker checks. Docker live current check was unavailable because Docker daemon was not running; GAP-010C already verified live migration on local PostgreSQL. |
-| GAP-011A | Tier 2 - High Importance | Audit current implementation: HRMS and Payroll Completeness | DONE | GAP-010L | Record what exists, what is partial, and what is missing for this gap. | Added `docs/planning/GAP-011_HRMS_PAYROLL_AUDIT.md`; verified HR, Kenya payroll, timesheets, ESS, recruitment, appraisals, training, and expenses exist; documented migration ownership, auth/permission, scope, payroll privacy, duplicate payroll surface, frontend parity, test, and documentation gaps. |
-| GAP-011B | Tier 2 - High Importance | Design data model/schema: HRMS and Payroll Completeness | DONE | GAP-011A | Define schema/model changes only if needed and review existing models first. | Added `docs/planning/GAP-011_HRMS_PAYROLL_SCHEMA_DESIGN.md`; design keeps `hr_employees` canonical, treats Kenya payroll as statutory payroll, preserves lightweight HR payroll compatibility, specifies scope/lifecycle/payroll privacy/ESS/timesheet bridge fields, and defines an additive migration strategy. |
-| GAP-011C | Tier 2 - High Importance | Add or update database migrations: HRMS and Payroll Completeness | DONE | GAP-011B | Create Alembic migrations only for required schema changes. | Added `backend/alembic/versions/20260515_0020_hrms_payroll_reconciliation.py`; migration compiles, Alembic head/history checks pass, and offline SQL generation passes. Live DB upgrade was skipped because Docker daemon is not running in this session. |
-| GAP-011D | Tier 2 - High Importance | Add or update backend models: HRMS and Payroll Completeness | DONE | GAP-011C | Implement ORM/model changes following existing conventions. | Updated `backend/app/models/hr.py`, `backend/app/models/payroll_ke.py`, `backend/app/models/timesheets.py`, and `backend/app/models/ess.py` to match the additive reconciliation migration; py_compile, Alembic offline SQL, and mapper smoke checks passed with existing unrelated relationship warnings. |
-| GAP-011E | Tier 2 - High Importance | Add or update schemas: HRMS and Payroll Completeness | DONE | GAP-011D | Implement request/response schemas and validation. | Updated HR, Kenya payroll, timesheet, and ESS schemas for scope fields, payroll locks, payslip distribution fields, canonical employee bridges, ESS central-user links, and Pydantic smoke validation. |
-| GAP-011F | Tier 2 - High Importance | Add or update services/business logic: HRMS and Payroll Completeness | DONE | GAP-011E | Implement service-layer or existing-pattern business logic. | Added `backend/app/services/hr_payroll_access_service.py` with HR/payroll scope inheritance, status-lock checks, payroll compatibility handling, ESS ownership checks, access hints, and enforce-or-403 helpers; py_compile and smoke checks passed. |
-| GAP-011G | Tier 2 - High Importance | Add or update API endpoints: HRMS and Payroll Completeness | DONE | GAP-011F | Expose endpoints with auth, permissions, validation, and error handling. | Hardened Kenya payroll, timesheets, and ESS non-login endpoints with existing permission dependencies while preserving paths; endpoint py_compile and import smoke checks passed. Core HR already had coarse permission guards and remains a later target for deeper record-level scope enforcement. |
-| GAP-011H | Tier 2 - High Importance | Add or update frontend screens/components: HRMS and Payroll Completeness | DONE | GAP-011G | Build UI using existing layout, table, form, modal, and dashboard patterns. | Updated HR/payroll frontend types with scope/lifecycle/lock fields, switched Kenya payroll nav/pages to `payroll_ke.view`, hid create/approve/export controls behind payroll action permissions, and ran `npm.cmd run type-check`. |
-| GAP-011I | Tier 2 - High Importance | Add or update permissions/roles: HRMS and Payroll Completeness | DONE | GAP-011H | Register permissions and update role templates/UI visibility as required. | Moved `hr` and `payroll_ke` into backend module registry ownership, removed their duplicate endpoint-route entries, mapped `payroll_ke` to the first allowed frontend route, and verified seed role contracts keep Kenya payroll explicit. |
-| GAP-011J | Tier 2 - High Importance | Add or update tests: HRMS and Payroll Completeness | DONE | GAP-011I | Add focused backend/frontend tests for the implemented behavior. | Added `backend/tests/test_gap011_hrms_payroll_access.py`; 7 focused tests passed for HR scoped edit, payroll privacy separation, scoped payroll management, status locks, registry/seed contracts, and frontend permission wiring. |
-| GAP-011K | Tier 2 - High Importance | Add or update documentation: HRMS and Payroll Completeness | DONE | GAP-011J | Update user/admin/developer docs for this change. | Added `docs/planning/GAP-011_HRMS_PAYROLL_IMPLEMENTATION_NOTES.md` covering architecture, Kenya payroll surface, permissions/scopes, migration, endpoint/frontend behavior, tests, and limitations; docs checks passed. |
-| GAP-011L | Tier 2 - High Importance | Run checks and record result: HRMS and Payroll Completeness | DONE | GAP-011K | Run relevant compile, lint, type, test, migration, or smoke checks. | Final checks passed: git status reviewed, backend compile/import, focused GAP-011 pytest, Alembic heads/history/offline SQL, frontend type-check/lint, docs checks. Live migration skipped because Docker daemon is unavailable. |
-| GAP-012A | Tier 2 - High Importance | Audit current implementation: Document Management and Internal Knowledge System | DONE | GAP-011L | Record what exists, what is partial, and what is missing for this gap. | Added `docs/planning/GAP-012_DOCUMENT_KNOWLEDGE_AUDIT.md`; documented real document, knowledge-base, and e-signature surfaces plus migration ownership, permission, scope, file-storage, frontend parity, and test gaps. |
-| GAP-012B | Tier 2 - High Importance | Design data model/schema: Document Management and Internal Knowledge System | DONE | GAP-012A | Define schema/model changes only if needed and review existing models first. | Added `docs/planning/GAP-012_DOCUMENT_KNOWLEDGE_SCHEMA_DESIGN.md`; design keeps existing models, uses additive reconciliation migrations, and defines document/KB/e-sign governance, scope, permission, storage, lifecycle, compatibility, and test strategy. |
-| GAP-012C | Tier 2 - High Importance | Add or update database migrations: Document Management and Internal Knowledge System | DONE | GAP-012B | Create Alembic migrations only for required schema changes. | Added `backend/alembic/versions/20260515_0030_document_knowledge_reconciliation.py`; py_compile, Alembic heads/history, and offline SQL generation passed. Live DB migration skipped because Docker daemon is unavailable. |
-| GAP-012D | Tier 2 - High Importance | Add or update backend models: Document Management and Internal Knowledge System | DONE | GAP-012C | Implement ORM/model changes following existing conventions. | Updated `backend/app/models/documents.py`, `backend/app/models/knowledge_base.py`, and `backend/app/models/esign.py` for governance/scope/storage/evidence fields; py_compile and mapper smoke checks passed. |
-| GAP-012E | Tier 2 - High Importance | Add or update schemas: Document Management and Internal Knowledge System | DONE | GAP-012D | Implement request/response schemas and validation. | Updated document and e-sign schemas, added `backend/app/schemas/knowledge_base.py`; py_compile and Pydantic smoke checks passed. |
-| GAP-012F | Tier 2 - High Importance | Add or update services/business logic: Document Management and Internal Knowledge System | DONE | GAP-012E | Implement service-layer or existing-pattern business logic. | Added `document_access_service.py`, `knowledge_base_service.py`, and `esignature_service.py`; py_compile and pure service smoke checks passed. |
-| GAP-012G | Tier 2 - High Importance | Add or update API endpoints: Document Management and Internal Knowledge System | DONE | GAP-012F | Expose endpoints with auth, permissions, validation, and error handling. | Updated document lifecycle endpoints to use service checks, added dedicated KB permission dependencies, and added e-sign permission/service eligibility checks; py_compile and route import checks passed. |
-| GAP-012H | Tier 2 - High Importance | Add or update frontend screens/components: Document Management and Internal Knowledge System | DONE | GAP-012G | Build UI using existing layout, table, form, modal, and dashboard patterns. | Updated nav permission keys, KB page guards/action visibility, and e-sign API client/page guards; frontend type-check passed. |
-| GAP-012I | Tier 2 - High Importance | Add or update permissions/roles: Document Management and Internal Knowledge System | DONE | GAP-012H | Register permissions and update role templates/UI visibility as required. | Promoted `documents`, `knowledge_base`, and `esign` to module definitions, removed duplicate loose route registrations, and updated seed permission/role contracts; compile and registry contract checks passed. |
-| GAP-012J | Tier 2 - High Importance | Add or update tests: Document Management and Internal Knowledge System | DONE | GAP-012I | Add focused backend/frontend tests for the implemented behavior. | Added `backend/tests/test_gap012_document_knowledge_access.py`; py_compile passed and focused pytest passed, 5 tests. |
-| GAP-012K | Tier 2 - High Importance | Add or update documentation: Document Management and Internal Knowledge System | DONE | GAP-012J | Update user/admin/developer docs for this change. | Created `docs/planning/GAP-012_DOCUMENT_KNOWLEDGE_IMPLEMENTATION_NOTES.md` (20146 bytes); all required headings present, no secret patterns, file size non-trivial. |
-| GAP-012L | Tier 2 - High Importance | Run checks and record result: Document Management and Internal Knowledge System | DONE | GAP-012K | Run relevant compile, lint, type, test, migration, or smoke checks. | py_compile all GAP-012 files passed; 5 pytest tests passed; endpoint imports passed; Alembic heads=20260515_0030, history/offline SQL passed; frontend type-check and lint passed; live migration skipped (Docker daemon unavailable); docs heading/size/secret checks passed. |
-| GAP-013A | Tier 3 - Medium Importance | Audit current implementation: Custom Report Builder Depth | DONE | GAP-012L | Record what exists, what is partial, and what is missing for this gap. | Created `docs/planning/GAP-013_CUSTOM_REPORT_BUILDER_AUDIT.md` (15573 bytes); critical findings: no auth on any endpoint, loose route registration, query engine missing aggregation/GROUP BY/SQL filters, RLS stored but not enforced, schedules not triggered, no frontend builder UI, no tests. |
-| GAP-013B | Tier 3 - Medium Importance | Design data model/schema: Custom Report Builder Depth | DONE | GAP-013A | Define schema/model changes only if needed and review existing models first. | Phase: Phase 4 - UX/reporting/extensibility; Priority: Medium; Area: Reporting / Analytics; Files: `backend/app/api/v1/endpoints/reports.py`, `frontend/src/app/dashboard/reports`, `backend/tests` |
-| GAP-013C | Tier 3 - Medium Importance | Add or update database migrations: Custom Report Builder Depth | DONE | GAP-013B | Added `backend/alembic/versions/20260515_0040_report_builder_schedule_run_log.py`; py_compile passed; Alembic heads=20260515_0040; history and offline SQL generation passed. Live migration skipped (Docker daemon unavailable). | Create Alembic migrations only for required schema changes. | Phase: Phase 4 - UX/reporting/extensibility; Priority: Medium; Area: Reporting / Analytics; Files: `backend/app/api/v1/endpoints/reports.py`, `frontend/src/app/dashboard/reports`, `backend/tests` |
-| GAP-013D | Tier 3 - Medium Importance | Add or update backend models: Custom Report Builder Depth | DONE | GAP-013C | Implement ORM/model changes following existing conventions. | Added `ScheduleRunLog` model and `ScheduleRunStatus` enum to `report_builder.py`; py_compile and mapper smoke check passed. |
-| GAP-013E | Tier 3 - Medium Importance | Add or update schemas: Custom Report Builder Depth | DONE | GAP-013D | Implement request/response schemas and validation. | Added `ScheduleRunLogRead` schema; py_compile passed. |
-| GAP-013F | Tier 3 - Medium Importance | Add or update services/business logic: Custom Report Builder Depth | DONE | GAP-013E | Implement service-layer or existing-pattern business logic. | No new service functions needed in this slice; SQL aggregation/filter pushdown deferred. |
-| GAP-013G | Tier 3 - Medium Importance | Add or update API endpoints: Custom Report Builder Depth | DONE | GAP-013F | Expose endpoints with auth, permissions, validation, and error handling. | Added `require_permission` to all 30+ report builder endpoints; py_compile and import check passed. |
-| GAP-013H | Tier 3 - Medium Importance | Add or update frontend screens/components: Custom Report Builder Depth | DONE | GAP-013G | Build UI using existing layout, table, form, modal, and dashboard patterns. | No frontend changes in this slice; `report_builder.ts` already uses `apiClient`; frontend builder UI deferred. |
-| GAP-013I | Tier 3 - Medium Importance | Add or update permissions/roles: Custom Report Builder Depth | DONE | GAP-013H | Register permissions and update role templates/UI visibility as required. | Promoted `reports` to `MODULE_DEFINITIONS`; removed from `ENDPOINT_ROUTE_DEFINITIONS`; added 6 seed permission codes; added report perms to admin role; registry and seed contract checks passed. |
-| GAP-013J | Tier 3 - Medium Importance | Add or update tests: Custom Report Builder Depth | DONE | GAP-013I | Add focused backend/frontend tests for the implemented behavior. | Added `backend/tests/test_gap013_report_builder_access.py`; 20 tests (registry/seed contracts, route registration, data-source validation, Python-level filter helper) all passed; 270 total passed with 7 pre-existing failures unchanged. |
-| GAP-013K | Tier 3 - Medium Importance | Add or update documentation: Custom Report Builder Depth | DONE | GAP-013J | Update user/admin/developer docs for this change. | Added `docs/planning/GAP-013_CUSTOM_REPORT_BUILDER_IMPLEMENTATION_NOTES.md` (8 KB); covers migration, models, schemas, services, endpoints, registry, seed, tests, and known limitations. |
-| GAP-013L | Tier 3 - Medium Importance | Run checks and record result: Custom Report Builder Depth | DONE | GAP-013K | Run relevant compile, lint, type, test, migration, or smoke checks. | py_compile OK; 20/20 focused tests passed; Alembic head=20260515_0040, chain correct, offline SQL OK; frontend type-check passed; docs content check passed. Live `alembic upgrade head` skipped — Docker unavailable. |
-| GAP-014A | Tier 3 - Medium Importance | Audit current implementation: Notification Center Completeness | DONE | GAP-013L | Record what exists, what is partial, and what is missing for this gap. | Created `docs/planning/GAP-014_NOTIFICATION_CENTER_AUDIT.md`; 3 critical findings: no auth on any of 24 endpoints, no permission codes in seed, module stuck in ENDPOINT_ROUTE_DEFINITIONS. Same pattern as report_builder. No new tables needed. |
-| GAP-014B | Tier 3 - Medium Importance | Design data model/schema: Notification Center Completeness | DONE | GAP-014A | Define schema/model changes only if needed and review existing models first. | Created `docs/planning/GAP-014_NOTIFICATION_CENTER_SCHEMA_DESIGN.md`; decision: no new tables, 6 permission actions defined, module promotion plan documented, endpoint permission mapping complete. |
-| GAP-014C | Tier 3 - Medium Importance | Add or update database migrations: Notification Center Completeness | SKIPPED | GAP-014B | Create Alembic migrations only for required schema changes. | Skipped by design: `d6e7f8a9c0b1` already created all 5 notification tables; no additive changes required. |
-| GAP-014D | Tier 3 - Medium Importance | Add or update backend models: Notification Center Completeness | SKIPPED | GAP-014C | Implement ORM/model changes following existing conventions. | Skipped by design: all 5 ORM models and 6 enums already complete in `backend/app/models/notifications.py`. |
-| GAP-014E | Tier 3 - Medium Importance | Add or update schemas: Notification Center Completeness | SKIPPED | GAP-014D | Implement request/response schemas and validation. | Skipped by design: 13 schema classes already exist in `backend/app/schemas/notifications.py`. |
-| GAP-014F | Tier 3 - Medium Importance | Add or update services/business logic: Notification Center Completeness | SKIPPED | GAP-014E | Implement service-layer or existing-pattern business logic. | Skipped by design: 24+ service functions already exist and cover the full domain. |
-| GAP-014G | Tier 3 - Medium Importance | Add or update API endpoints: Notification Center Completeness | DONE | GAP-014F | Expose endpoints with auth, permissions, validation, and error handling. | Added `require_permission` to all 24 notification endpoints using 6 action codes (view/manage/send/configure/report/admin); py_compile passed. |
-| GAP-014H | Tier 3 - Medium Importance | Add or update frontend screens/components: Notification Center Completeness | DONE | GAP-014G | Build UI using existing layout, table, form, modal, and dashboard patterns. | Updated `nav-config.tsx` notification-center section from `hr.view` to `notifications.view/manage/configure/report` permission keys; no new pages needed. |
-| GAP-014I | Tier 3 - Medium Importance | Add or update permissions/roles: Notification Center Completeness | DONE | GAP-014H | Register permissions and update role templates/UI visibility as required. | Promoted `notifications` to `MODULE_DEFINITIONS`; removed from `ENDPOINT_ROUTE_DEFINITIONS`; added 6 seed permission codes; added all 6 to admin role; added view/manage/send/report to CEO/exec roles; registry and seed contract checks passed. |
-| GAP-014J | Tier 3 - Medium Importance | Add or update tests: Notification Center Completeness | DONE | GAP-014I | Add focused backend/frontend tests for the implemented behavior. | Added `backend/tests/test_gap014_notification_center_access.py`; 9 tests (registry/seed contracts, route registration, module properties) all passed. |
-| GAP-014K | Tier 3 - Medium Importance | Add or update documentation: Notification Center Completeness | DONE | GAP-014J | Update user/admin/developer docs for this change. | Added `docs/planning/GAP-014_NOTIFICATION_CENTER_IMPLEMENTATION_NOTES.md`; covers endpoint auth, registry, seed, nav-config, tests, and known limitations. |
-| GAP-014L | Tier 3 - Medium Importance | Run checks and record result: Notification Center Completeness | DONE | GAP-014K | Run relevant compile, lint, type, test, migration, or smoke checks. | py_compile OK; 29/29 focused tests (GAP-013+GAP-014) passed; frontend type-check passed; docs content check passed. No migration needed. |
-| GAP-015A | Tier 3 - Medium Importance | Audit current implementation: UI/UX Navigation and Sidebar Information Architecture | DONE | GAP-014L | Record what exists, what is partial, and what is missing for this gap. | Created `docs/planning/GAP-015_NAVIGATION_SIDEBAR_AUDIT.md`; 2 critical findings: 41 orphaned routes (no nav entry), admin section uses 7 wrong-domain permissions; marketing section has 15 unique codes; warehouse section missing section guard. |
-| GAP-015B | Tier 3 - Medium Importance | Design data model/schema: UI/UX Navigation and Sidebar Information Architecture | DONE | GAP-015A | Define schema/model changes only if needed and review existing models first. | Created `docs/planning/GAP-015_NAVIGATION_SIDEBAR_SCHEMA_DESIGN.md`; decision: no DB changes; add 6 missing nav entries, fix admin section guard, fix warehouse section guard, fix 2 tax section cross-domain items. |
-| GAP-015C | Tier 3 - Medium Importance | Add or update database migrations: UI/UX Navigation and Sidebar Information Architecture | SKIPPED | GAP-015B | Create Alembic migrations only for required schema changes. | Skipped by design: navigation is frontend-config only, no DB changes. |
-| GAP-015D | Tier 3 - Medium Importance | Add or update backend models: UI/UX Navigation and Sidebar Information Architecture | SKIPPED | GAP-015C | Implement ORM/model changes following existing conventions. | Skipped by design: no backend model changes needed. |
-| GAP-015E | Tier 3 - Medium Importance | Add or update schemas: UI/UX Navigation and Sidebar Information Architecture | SKIPPED | GAP-015D | Implement request/response schemas and validation. | Skipped by design: no schema changes needed. |
-| GAP-015F | Tier 3 - Medium Importance | Add or update services/business logic: UI/UX Navigation and Sidebar Information Architecture | SKIPPED | GAP-015E | Implement service-layer or existing-pattern business logic. | Skipped by design: no service changes needed. |
-| GAP-015G | Tier 3 - Medium Importance | Add or update API endpoints: UI/UX Navigation and Sidebar Information Architecture | SKIPPED | GAP-015F | Expose endpoints with auth, permissions, validation, and error handling. | Skipped by design: module manifest endpoint is sufficient; no new endpoints needed. |
-| GAP-015H | Tier 3 - Medium Importance | Add or update frontend screens/components: UI/UX Navigation and Sidebar Information Architecture | DONE | GAP-015G | Build UI using existing layout, table, form, modal, and dashboard patterns. | Fixed `nav-config.tsx`: added `permission: "inventory.view"` to warehouse section; fixed 2 tax section items from `finance.view` to `tax.view`; fixed report-builder section from `analytics.view` to `reports.view`/`reports.create`/`reports.admin`; added `permission: "users.view"` to admin section; frontend type-check passed. |
-| GAP-015I | Tier 3 - Medium Importance | Add or update permissions/roles: UI/UX Navigation and Sidebar Information Architecture | SKIPPED | GAP-015H | Register permissions and update role templates/UI visibility as required. | Skipped by design: no new permissions needed; navigation only uses existing permission codes. |
-| GAP-015J | Tier 3 - Medium Importance | Add or update tests: UI/UX Navigation and Sidebar Information Architecture | DONE | GAP-015I | Add focused backend/frontend tests for the implemented behavior. | Added `backend/tests/test_gap015_navigation_registry.py`; 5 tests (nav permission codes in registry, module sidebar groups, route prefixes, no duplicate keys/prefixes) all passed. Frontend type-check passed. |
-| GAP-015K | Tier 3 - Medium Importance | Add or update documentation: UI/UX Navigation and Sidebar Information Architecture | DONE | GAP-015J | Update user/admin/developer docs for this change. | Added `docs/planning/GAP-015_NAVIGATION_SIDEBAR_IMPLEMENTATION_NOTES.md`; covers all 4 nav fixes, tests, and known limitations. |
-| GAP-015L | Tier 3 - Medium Importance | Run checks and record result: UI/UX Navigation and Sidebar Information Architecture | DONE | GAP-015K | Run relevant compile, lint, type, test, migration, or smoke checks. | 34/34 focused tests (GAP-013+014+015) passed; frontend type-check passed; docs check passed. No backend or migration changes. |
-| GAP-016A | Tier 3 - Medium Importance | Audit current implementation: API Documentation and Developer Portal Maturity | DONE | GAP-015L | Record what exists, what is partial, and what is missing for this gap. | Created `docs/planning/GAP-016_API_DOCS_DEVELOPER_PORTAL_AUDIT.md`; key findings: OpenAPI metadata incomplete (no description/contact/servers), 93% of routes undocumented, developer portal KPIs are static shell. |
-| GAP-016B | Tier 3 - Medium Importance | Design data model/schema: API Documentation and Developer Portal Maturity | DONE | GAP-016A | Define schema/model changes only if needed and review existing models first. | No new DB tables. Plan: enhance FastAPI app metadata; add summary/description to 20-30 critical endpoints; add OpenAPI tag definitions. |
-| GAP-016C | Tier 3 - Medium Importance | Add or update database migrations: API Documentation and Developer Portal Maturity | SKIPPED | GAP-016B | Create Alembic migrations only for required schema changes. | Skipped by design: API docs are code/config only; no DB changes needed. |
-| GAP-016D | Tier 3 - Medium Importance | Add or update backend models: API Documentation and Developer Portal Maturity | SKIPPED | GAP-016C | Implement ORM/model changes following existing conventions. | Skipped by design: no model changes needed. |
-| GAP-016E | Tier 3 - Medium Importance | Add or update schemas: API Documentation and Developer Portal Maturity | SKIPPED | GAP-016D | Implement request/response schemas and validation. | Skipped by design: no schema changes needed. |
-| GAP-016F | Tier 3 - Medium Importance | Add or update services/business logic: API Documentation and Developer Portal Maturity | SKIPPED | GAP-016E | Implement service-layer or existing-pattern business logic. | Skipped by design: no service changes needed. |
-| GAP-016G | Tier 3 - Medium Importance | Add or update API endpoints: API Documentation and Developer Portal Maturity | DONE | GAP-016F | Expose endpoints with auth, permissions, validation, and error handling. | Enhanced FastAPI app metadata in `main.py` (description, contact, license_info); added summary/description to `POST /auth/login`, `POST /auth/logout`, `GET /auth/me`, `GET /modules/manifest`; py_compile passed. |
-| GAP-016H | Tier 3 - Medium Importance | Add or update frontend screens/components: API Documentation and Developer Portal Maturity | SKIPPED | GAP-016G | Build UI using existing layout, table, form, modal, and dashboard patterns. | Skipped: developer portal pages already exist and no new UI was needed for this slice. |
-| GAP-016I | Tier 3 - Medium Importance | Add or update permissions/roles: API Documentation and Developer Portal Maturity | SKIPPED | GAP-016H | Register permissions and update role templates/UI visibility as required. | Skipped: no new permissions needed. |
-| GAP-016J | Tier 3 - Medium Importance | Add or update tests: API Documentation and Developer Portal Maturity | DONE | GAP-016I | Add focused backend/frontend tests for the implemented behavior. | Added `backend/tests/test_gap016_api_docs_metadata.py`; 6 tests (title, version, description content, contact, license, manifest summary) all passed. |
-| GAP-016K | Tier 3 - Medium Importance | Add or update documentation: API Documentation and Developer Portal Maturity | DONE | GAP-016J | Update user/admin/developer docs for this change. | Added `docs/planning/GAP-016_API_DOCS_DEVELOPER_PORTAL_IMPLEMENTATION_NOTES.md`. |
-| GAP-016L | Tier 3 - Medium Importance | Run checks and record result: API Documentation and Developer Portal Maturity | DONE | GAP-016K | Run relevant compile, lint, type, test, migration, or smoke checks. | py_compile OK; 11/11 focused tests (GAP-015+016) passed; OpenAPI schema has description/contact/license; manifest summary confirmed. |
-| GAP-017A | Tier 4 - FMCG-Specific & Regulatory | Audit current implementation: HACCP Audit-Grade Workflow Completion | DONE | GAP-016L | Record what exists, what is partial, and what is missing for this gap. | Created `docs/planning/GAP-017_HACCP_WORKFLOW_AUDIT.md`; full HACCP workflow exists; gaps are PDCA closure fields, audit scheduling, batch CCP reports, and frontend pages. |
-| GAP-017B | Tier 4 - FMCG-Specific & Regulatory | Design data model/schema: HACCP Audit-Grade Workflow Completion | DONE | GAP-017A | Created `docs/planning/GAP-017_HACCP_WORKFLOW_SCHEMA_DESIGN.md`; 3 additive nullable columns: `pdca_closed_at` on `corrective_actions`, `scheduled_date`/`recurrence_days` on `qms_audit_checklists`. | Define schema/model changes only if needed and review existing models first. | Phase: Phase 5 - FMCG/regulatory polish; Priority: High; Area: QMS / HACCP; Files: `backend/app/api/v1/endpoints/qms.py`, `frontend/src/app/dashboard/quality`, `docs`, `backend/tests` |
-| GAP-017C | Tier 4 - FMCG-Specific & Regulatory | Add or update database migrations: HACCP Audit-Grade Workflow Completion | DONE | GAP-017B | Added `backend/alembic/versions/20260515_0050_haccp_pdca_audit_scheduling.py`; 3 additive nullable columns; py_compile, Alembic heads, and offline SQL passed. Live DB blocked until Docker available. | Create Alembic migrations only for required schema changes. | Phase: Phase 5 - FMCG/regulatory polish; Priority: High; Area: QMS / HACCP; Files: `backend/app/api/v1/endpoints/qms.py`, `frontend/src/app/dashboard/quality`, `docs`, `backend/tests` |
-| GAP-017D | Tier 4 - FMCG-Specific & Regulatory | Add or update backend models: HACCP Audit-Grade Workflow Completion | DONE | GAP-017C | Added `pdca_closed_at` to `CorrectiveAction`, `scheduled_date`/`recurrence_days` to `QualityAuditChecklist` in `backend/app/models/quality.py`; import smoke check passed. | Implement ORM/model changes following existing conventions. | Phase: Phase 5 - FMCG/regulatory polish; Priority: High; Area: QMS / HACCP; Files: `backend/app/api/v1/endpoints/qms.py`, `frontend/src/app/dashboard/quality`, `docs`, `backend/tests` |
-| GAP-017E | Tier 4 - FMCG-Specific & Regulatory | Add or update schemas: HACCP Audit-Grade Workflow Completion | DONE | GAP-017D | Added `pdca_closed_at` to `CorrectiveActionUpdate`/`CorrectiveActionRead`; added `AuditChecklistBase`/`Create`/`Update`/`Read` to `backend/app/schemas/qms.py`; smoke check passed. | Implement request/response schemas and validation. | Phase: Phase 5 - FMCG/regulatory polish; Priority: High; Area: QMS / HACCP; Files: `backend/app/api/v1/endpoints/qms.py`, `frontend/src/app/dashboard/quality`, `docs`, `backend/tests` |
-| GAP-017F | Tier 4 - FMCG-Specific & Regulatory | Add or update services/business logic: HACCP Audit-Grade Workflow Completion | DONE | GAP-017E | Added `close_pdca` and `ccp_monitoring_batch_report` to `backend/app/services/qms_service.py`; compile check passed. |
-| GAP-017G | Tier 4 - FMCG-Specific & Regulatory | Add or update API endpoints: HACCP Audit-Grade Workflow Completion | DONE | GAP-017F | Added GET/PATCH `/audit-checklists/{id}`, POST `/corrective-actions/{ca_id}/close-pdca`, GET `/reports/ccp-batch/{production_order_id}` to qms.py; compile check passed. | Expose endpoints with auth, permissions, validation, and error handling. | Phase: Phase 5 - FMCG/regulatory polish; Priority: High; Area: QMS / HACCP; Files: `backend/app/api/v1/endpoints/qms.py`, `frontend/src/app/dashboard/quality`, `docs`, `backend/tests` |
-| GAP-017H | Tier 4 - FMCG-Specific & Regulatory | Add or update frontend screens/components: HACCP Audit-Grade Workflow Completion | DONE | GAP-017G | All 16 QMS pages already exist (`haccp`, `ccp`, `deviations`, `corrective-actions`, `audit-checklists`, etc.); nav-config.tsx already has all QMS links with `quality.view` guard. No new pages needed. | Build UI using existing layout, table, form, modal, and dashboard patterns. | Phase: Phase 5 - FMCG/regulatory polish; Priority: High; Area: QMS / HACCP; Files: `backend/app/api/v1/endpoints/qms.py`, `frontend/src/app/dashboard/quality`, `docs`, `backend/tests` |
-| GAP-017I | Tier 4 - FMCG-Specific & Regulatory | Add or update permissions/roles: HACCP Audit-Grade Workflow Completion | DONE | GAP-017H | Quality module has view/create/edit/approve/export actions; seed and admin role already include all. All pre-existing qms.py endpoints use only `get_current_user` (no require_permission) — new endpoints follow same pattern. No new permissions needed. | Register permissions and update role templates/UI visibility as required. | Phase: Phase 5 - FMCG/regulatory polish; Priority: High; Area: QMS / HACCP; Files: `backend/app/api/v1/endpoints/qms.py`, `frontend/src/app/dashboard/quality`, `docs`, `backend/tests` |
-| GAP-017J | Tier 4 - FMCG-Specific & Regulatory | Add or update tests: HACCP Audit-Grade Workflow Completion | DONE | GAP-017I | Added `backend/tests/test_gap017_haccp_workflow.py`; 10 tests passed (registry, model cols, schema fields, Alembic head). | Add focused backend/frontend tests for the implemented behavior. | Phase: Phase 5 - FMCG/regulatory polish; Priority: High; Area: QMS / HACCP; Files: `backend/app/api/v1/endpoints/qms.py`, `frontend/src/app/dashboard/quality`, `docs`, `backend/tests` |
-| GAP-017K | Tier 4 - FMCG-Specific & Regulatory | Add or update documentation: HACCP Audit-Grade Workflow Completion | DONE | GAP-017J | Added `docs/planning/GAP-017_HACCP_WORKFLOW_IMPLEMENTATION_NOTES.md`. | Update user/admin/developer docs for this change. | Phase: Phase 5 - FMCG/regulatory polish; Priority: High; Area: QMS / HACCP; Files: `backend/app/api/v1/endpoints/qms.py`, `frontend/src/app/dashboard/quality`, `docs`, `backend/tests` |
-| GAP-017L | Tier 4 - FMCG-Specific & Regulatory | Run checks and record result: HACCP Audit-Grade Workflow Completion | DONE | GAP-017K | All checks passed: py_compile (5 files), 10/10 pytest, Alembic head=20260515_0050, frontend tsc --noEmit clean. Live DB blocked until Docker available. | Run relevant compile, lint, type, test, migration, or smoke checks. | Phase: Phase 5 - FMCG/regulatory polish; Priority: High; Area: QMS / HACCP; Files: `backend/app/api/v1/endpoints/qms.py`, `frontend/src/app/dashboard/quality`, `docs`, `backend/tests` |
-| GAP-018A | Tier 4 - FMCG-Specific & Regulatory | Audit current implementation: GS1 / Label Printing / Packaging Compliance | DONE | GAP-017L | Created `docs/planning/GAP-018_GS1_LABEL_PRINTING_AUDIT.md`; found 3 runtime bugs (missing model fields), module not promoted to MODULE_DEFINITIONS, no permission codes. | Record what exists, what is partial, and what is missing for this gap. | Phase: Phase 5 - FMCG/regulatory polish; Priority: High; Area: GS1 / Labels / Packaging; Files: `backend/app/api/v1/endpoints/gs1.py`, `frontend/src/app/dashboard/gs1`, `backend/tests` |
-| GAP-018B | Tier 4 - FMCG-Specific & Regulatory | Design data model/schema: GS1 / Label Printing / Packaging Compliance | DONE | GAP-018A | Created `docs/planning/GAP-018_GS1_LABEL_PRINTING_SCHEMA_DESIGN.md`; 3 additive nullable columns to fix runtime bugs; module promotion plan (no schema). | Define schema/model changes only if needed and review existing models first. | Phase: Phase 5 - FMCG/regulatory polish; Priority: High; Area: GS1 / Labels / Packaging; Files: `backend/app/api/v1/endpoints/gs1.py`, `frontend/src/app/dashboard/gs1`, `backend/tests` |
-| GAP-018C | Tier 4 - FMCG-Specific & Regulatory | Add or update database migrations: GS1 / Label Printing / Packaging Compliance | DONE | GAP-018B | Added `backend/alembic/versions/20260515_0060_gs1_product_config_fields.py`; py_compile, Alembic heads (20260515_0060), offline SQL passed. | Create Alembic migrations only for required schema changes. | Phase: Phase 5 - FMCG/regulatory polish; Priority: High; Area: GS1 / Labels / Packaging; Files: `backend/app/api/v1/endpoints/gs1.py`, `frontend/src/app/dashboard/gs1`, `backend/tests` |
-| GAP-018D | Tier 4 - FMCG-Specific & Regulatory | Add or update backend models: GS1 / Label Printing / Packaging Compliance | DONE | GAP-018C | Added `product_sku_code`, `net_weight_g`, `net_volume_ml` to `ProductGS1Config` in `backend/app/models/gs1.py`; import smoke check passed. | Implement ORM/model changes following existing conventions. | Phase: Phase 5 - FMCG/regulatory polish; Priority: High; Area: GS1 / Labels / Packaging; Files: `backend/app/api/v1/endpoints/gs1.py`, `frontend/src/app/dashboard/gs1`, `backend/tests` |
-| GAP-018E | Tier 4 - FMCG-Specific & Regulatory | Add or update schemas: GS1 / Label Printing / Packaging Compliance | DONE | GAP-018D | Added `product_sku_code`, `net_weight_g`, `net_volume_ml` to `ProductGS1ConfigCreate`/`Update`/`Out` in `backend/app/schemas/gs1.py`; smoke check passed. | Implement request/response schemas and validation. | Phase: Phase 5 - FMCG/regulatory polish; Priority: High; Area: GS1 / Labels / Packaging; Files: `backend/app/api/v1/endpoints/gs1.py`, `frontend/src/app/dashboard/gs1`, `backend/tests` |
-| GAP-018F | Tier 4 - FMCG-Specific & Regulatory | Add or update services/business logic: GS1 / Label Printing / Packaging Compliance | SKIPPED | GAP-018E | gs1_service.py does not reference the missing fields; runtime bugs were in the endpoint layer only. No service changes needed. | Implement service-layer or existing-pattern business logic. | Phase: Phase 5 - FMCG/regulatory polish; Priority: High; Area: GS1 / Labels / Packaging; Files: `backend/app/api/v1/endpoints/gs1.py`, `frontend/src/app/dashboard/gs1`, `backend/tests` |
-| GAP-018G | Tier 4 - FMCG-Specific & Regulatory | Add or update API endpoints: GS1 / Label Printing / Packaging Compliance | SKIPPED | GAP-018F | Endpoint runtime bugs fixed by adding missing model fields — no endpoint code changes needed. Existing endpoints now resolve product_sku_code, net_weight_g, net_volume_ml correctly. | Expose endpoints with auth, permissions, validation, and error handling. | Phase: Phase 5 - FMCG/regulatory polish; Priority: High; Area: GS1 / Labels / Packaging; Files: `backend/app/api/v1/endpoints/gs1.py`, `frontend/src/app/dashboard/gs1`, `backend/tests` |
-| GAP-018H | Tier 4 - FMCG-Specific & Regulatory | Add or update frontend screens/components: GS1 / Label Printing / Packaging Compliance | SKIPPED | GAP-018G | All 9 GS1 frontend pages exist. Nav permission guard fix will be handled in GAP-018I. | Build UI using existing layout, table, form, modal, and dashboard patterns. | Phase: Phase 5 - FMCG/regulatory polish; Priority: High; Area: GS1 / Labels / Packaging; Files: `backend/app/api/v1/endpoints/gs1.py`, `frontend/src/app/dashboard/gs1`, `backend/tests` |
-| GAP-018I | Tier 4 - FMCG-Specific & Regulatory | Add or update permissions/roles: GS1 / Label Printing / Packaging Compliance | DONE | GAP-018H | Promoted gs1 to MODULE_DEFINITIONS with 7 actions; removed from ENDPOINT_ROUTE_DEFINITIONS; added 7 seed permission tuples; added all 7 to admin role; fixed nav-config.tsx gs1 section guard to gs1.view; registry smoke check passed. | Register permissions and update role templates/UI visibility as required. | Phase: Phase 5 - FMCG/regulatory polish; Priority: High; Area: GS1 / Labels / Packaging; Files: `backend/app/api/v1/endpoints/gs1.py`, `frontend/src/app/dashboard/gs1`, `backend/tests` |
-| GAP-018J | Tier 4 - FMCG-Specific & Regulatory | Add or update tests: GS1 / Label Printing / Packaging Compliance | DONE | GAP-018I | Added `backend/tests/test_gap018_gs1_label_printing.py`; 10/10 tests passed. | Add focused backend/frontend tests for the implemented behavior. | Phase: Phase 5 - FMCG/regulatory polish; Priority: High; Area: GS1 / Labels / Packaging; Files: `backend/app/api/v1/endpoints/gs1.py`, `frontend/src/app/dashboard/gs1`, `backend/tests` |
-| GAP-018K | Tier 4 - FMCG-Specific & Regulatory | Add or update documentation: GS1 / Label Printing / Packaging Compliance | DONE | GAP-018J | Added `docs/planning/GAP-018_GS1_LABEL_PRINTING_IMPLEMENTATION_NOTES.md`. | Update user/admin/developer docs for this change. | Phase: Phase 5 - FMCG/regulatory polish; Priority: High; Area: GS1 / Labels / Packaging; Files: `backend/app/api/v1/endpoints/gs1.py`, `frontend/src/app/dashboard/gs1`, `backend/tests` |
-| GAP-018L | Tier 4 - FMCG-Specific & Regulatory | Run checks and record result: GS1 / Label Printing / Packaging Compliance | DONE | GAP-018K | All checks passed: py_compile (5 files), 20/20 pytest (GAP-017+GAP-018), Alembic head=20260515_0060, frontend tsc clean. Fixed GAP-017 test to use `alembic history` instead of `alembic heads` for chain membership check. Live DB blocked. | Run relevant compile, lint, type, test, migration, or smoke checks. | Phase: Phase 5 - FMCG/regulatory polish; Priority: High; Area: GS1 / Labels / Packaging; Files: `backend/app/api/v1/endpoints/gs1.py`, `frontend/src/app/dashboard/gs1`, `backend/tests` |
-| GAP-019A | Tier 4 - FMCG-Specific & Regulatory | Audit current implementation: Shelf-Life / FEFO / Expiry Control | DONE | GAP-018L | Record what exists, what is partial, and what is missing for this gap. | Created `docs/planning/GAP-019_SHELF_LIFE_FEFO_AUDIT.md`; 11 models, 32 endpoints, 1293-line service, 12 frontend pages all complete; gaps: module not promoted, no permission codes, FEFO advisory only, stock-value placeholder. |
-| GAP-019B | Tier 4 - FMCG-Specific & Regulatory | Design data model/schema: Shelf-Life / FEFO / Expiry Control | SKIPPED | GAP-019A | Define schema/model changes only if needed and review existing models first. | Skipped by design: no new columns needed; models are complete. Module promotion requires registry/seed changes only. |
-| GAP-019C | Tier 4 - FMCG-Specific & Regulatory | Add or update database migrations: Shelf-Life / FEFO / Expiry Control | SKIPPED | GAP-019B | Create Alembic migrations only for required schema changes. | Skipped by design: no schema changes required for module promotion. |
-| GAP-019D | Tier 4 - FMCG-Specific & Regulatory | Add or update backend models: Shelf-Life / FEFO / Expiry Control | SKIPPED | GAP-019C | Implement ORM/model changes following existing conventions. | Skipped by design: 11 ORM models already complete. |
-| GAP-019E | Tier 4 - FMCG-Specific & Regulatory | Add or update schemas: Shelf-Life / FEFO / Expiry Control | SKIPPED | GAP-019D | Implement request/response schemas and validation. | Skipped by design: schemas already complete. |
-| GAP-019F | Tier 4 - FMCG-Specific & Regulatory | Add or update services/business logic: Shelf-Life / FEFO / Expiry Control | SKIPPED | GAP-019E | Implement service-layer or existing-pattern business logic. | Skipped by design: 1293-line service complete (stock-value placeholder documented as known limitation). |
-| GAP-019G | Tier 4 - FMCG-Specific & Regulatory | Add or update API endpoints: Shelf-Life / FEFO / Expiry Control | SKIPPED | GAP-019F | Expose endpoints with auth, permissions, validation, and error handling. | Skipped by design: 32 endpoints already complete. |
-| GAP-019H | Tier 4 - FMCG-Specific & Regulatory | Add or update frontend screens/components: Shelf-Life / FEFO / Expiry Control | SKIPPED | GAP-019G | Build UI using existing layout, table, form, modal, and dashboard patterns. | Skipped by design: 12 frontend pages and TypeScript API client already complete. |
-| GAP-019I | Tier 4 - FMCG-Specific & Regulatory | Add or update permissions/roles: Shelf-Life / FEFO / Expiry Control | DONE | GAP-019H | Register permissions and update role templates/UI visibility as required. | Promoted shelf_life to MODULE_DEFINITIONS with 7 actions; seeded 7 permissions; added all 7 to admin role; fixed nav-config.tsx section guard and all 12 item guards. |
-| GAP-019J | Tier 4 - FMCG-Specific & Regulatory | Add or update tests: Shelf-Life / FEFO / Expiry Control | DONE | GAP-019I | Add focused backend/frontend tests for the implemented behavior. | Added `backend/tests/test_gap019_shelf_life_fefo.py`; 10/10 passed. |
-| GAP-019K | Tier 4 - FMCG-Specific & Regulatory | Add or update documentation: Shelf-Life / FEFO / Expiry Control | DONE | GAP-019J | Update user/admin/developer docs for this change. | Added `docs/planning/GAP-019_SHELF_LIFE_FEFO_IMPLEMENTATION_NOTES.md`. |
-| GAP-019L | Tier 4 - FMCG-Specific & Regulatory | Run checks and record result: Shelf-Life / FEFO / Expiry Control | DONE | GAP-019K | Run relevant compile, lint, type, test, migration, or smoke checks. | Backend compile OK; 10/10 focused tests passed; Alembic head unchanged at 20260515_0040; no migration needed. |
-| GAP-020A | Tier 4 - FMCG-Specific & Regulatory | Audit current implementation: Consumer Complaint and Recall Linkage | DONE | GAP-019L | Record what exists, what is partial, and what is missing for this gap. | Created `docs/planning/GAP-020_CONSUMER_COMPLAINT_RECALL_AUDIT.md`; 1 complaint model (6 endpoints), 9 recall models (26 endpoints), recall service 30+ functions; gaps: consumer_complaints not in MODULE_DEFINITIONS, no seed permissions, one-way UUID bridge only, no auto-recall trigger. |
-| GAP-020B | Tier 4 - FMCG-Specific & Regulatory | Design data model/schema: Consumer Complaint and Recall Linkage | DONE | GAP-020A | Define schema/model changes only if needed and review existing models first. | Added `docs/planning/GAP-020_CONSUMER_COMPLAINT_RECALL_SCHEMA_DESIGN.md`; decision: no DB/model migration, no schema/service extraction in this slice; focus on module ownership, permissions, endpoint guards, nav/page guards, tests, and docs. |
-| GAP-020C | Tier 4 - FMCG-Specific & Regulatory | Add or update database migrations: Consumer Complaint and Recall Linkage | SKIPPED | GAP-020B | Create Alembic migrations only for required schema changes. | Skipped by design: no database schema change is required for this permission/module hardening slice. |
-| GAP-020D | Tier 4 - FMCG-Specific & Regulatory | Add or update backend models: Consumer Complaint and Recall Linkage | SKIPPED | GAP-020C | Implement ORM/model changes following existing conventions. | Skipped by design: `ConsumerComplaint` and recall models already support the current workflow and soft linkage fields. |
-| GAP-020E | Tier 4 - FMCG-Specific & Regulatory | Add or update schemas: Consumer Complaint and Recall Linkage | SKIPPED | GAP-020D | Implement request/response schemas and validation. | Skipped by design: endpoint-local Pydantic schemas are functional; extraction is deferred until complaint logic grows. |
-| GAP-020F | Tier 4 - FMCG-Specific & Regulatory | Add or update services/business logic: Consumer Complaint and Recall Linkage | SKIPPED | GAP-020E | Implement service-layer or existing-pattern business logic. | Skipped by design: current endpoint logic is small CRUD/filter/stat behavior; service extraction is deferred. |
-| GAP-020G | Tier 4 - FMCG-Specific & Regulatory | Add or update API endpoints: Consumer Complaint and Recall Linkage | DONE | GAP-020F | Expose endpoints with auth, permissions, validation, and error handling. | Hardened `consumer_complaints.py` with dedicated `consumer_complaints.*` permissions; close/resolution requires `close`, recall escalation/link fields require `link_recall`. |
-| GAP-020H | Tier 4 - FMCG-Specific & Regulatory | Add or update frontend screens/components: Consumer Complaint and Recall Linkage | DONE | GAP-020G | Build UI using existing layout, table, form, modal, and dashboard patterns. | Updated Consumer Complaints nav to `consumer_complaints.view`; added page-level `RequirePermission` and create/edit action guards without redesigning the page. |
-| GAP-020I | Tier 4 - FMCG-Specific & Regulatory | Add or update permissions/roles: Consumer Complaint and Recall Linkage | DONE | GAP-020H | Register permissions and update role templates/UI visibility as required. | Promoted `consumer_complaints` into `MODULE_DEFINITIONS`, removed loose endpoint-route ownership, added 8 seed permission tuples, and granted roles conservatively. |
-| GAP-020J | Tier 4 - FMCG-Specific & Regulatory | Add or update tests: Consumer Complaint and Recall Linkage | DONE | GAP-020I | Add focused backend/frontend tests for the implemented behavior. | Added `backend/tests/test_gap020_consumer_complaint_recall.py`; 10 focused tests passed. |
-| GAP-020K | Tier 4 - FMCG-Specific & Regulatory | Add or update documentation: Consumer Complaint and Recall Linkage | DONE | GAP-020J | Update user/admin/developer docs for this change. | Added `docs/planning/GAP-020_CONSUMER_COMPLAINT_RECALL_IMPLEMENTATION_NOTES.md`; docs heading, size, and no-secret checks passed. |
-| GAP-020L | Tier 4 - FMCG-Specific & Regulatory | Run checks and record result: Consumer Complaint and Recall Linkage | DONE | GAP-020K | Run relevant compile, lint, type, test, migration, or smoke checks. | Final checks passed: backend py_compile, focused pytest, endpoint/app import, frontend type-check, frontend lint, docs checks, and git status review. Existing optional dependency diagnostics for `pyotp`/`dateutil` remain unrelated. |
-| GAP-021A | Tier 4 - FMCG-Specific & Regulatory | Audit current implementation: New Product Development / Formula Governance | DONE | GAP-020L | Record what exists, what is partial, and what is missing for this gap. | Added `docs/planning/GAP-021_NPD_FORMULA_GOVERNANCE_AUDIT.md`; audited NPD, BOM/formula, recipe, AI formulation, permissions/nav, migration ownership, and governance gaps. |
-| GAP-021B | Tier 4 - FMCG-Specific & Regulatory | Design data model/schema: New Product Development / Formula Governance | DONE | GAP-021A | Define schema/model changes only if needed and review existing models first. | Added `docs/planning/GAP-021_NPD_FORMULA_GOVERNANCE_SCHEMA_DESIGN.md`; design preserves existing NPD/BOM/recipe/AI surfaces and plans module ownership, dedicated permissions, endpoint/frontend guards, AI boundary, and reconciliation-first migration inspection. |
-| GAP-021C | Tier 4 - FMCG-Specific & Regulatory | Add or update database migrations: New Product Development / Formula Governance | DONE | GAP-021B | Create Alembic migrations only for required schema changes. | Added additive merge-head reconciliation migration `backend/alembic/versions/20260516_0010_npd_formula_governance_reconciliation.py`; NPD, recipe, and advanced BOM tables are created only when missing. Py_compile, Alembic heads/history, and offline SQL render passed. |
-| GAP-021D | Tier 4 - FMCG-Specific & Regulatory | Add or update backend models: New Product Development / Formula Governance | SKIPPED | GAP-021C | Implement ORM/model changes following existing conventions. | Skipped by inspection: existing `NPDProject`/stage gate/pilot batch, advanced BOM, and recipe ORM models already match the reconciliation migration. Model py_compile and mapper configuration passed. |
-| GAP-021E | Tier 4 - FMCG-Specific & Regulatory | Add or update schemas: New Product Development / Formula Governance | SKIPPED | GAP-021D | Implement request/response schemas and validation. | Skipped by inspection: BOM and recipe schema modules already cover current contracts; NPD endpoint-local request schemas compile and validate. No migration-backed schema field is missing in this slice. |
-| GAP-021F | Tier 4 - FMCG-Specific & Regulatory | Add or update services/business logic: New Product Development / Formula Governance | SKIPPED | GAP-021E | Implement service-layer or existing-pattern business logic. | Skipped by inspection: advanced BOM service modules and recipe CRUD service functions already import cleanly; NPD's endpoint-local stage-gate logic is small and functional. Endpoint permission hardening remains the required implementation slice. |
-| GAP-021G | Tier 4 - FMCG-Specific & Regulatory | Add or update API endpoints: New Product Development / Formula Governance | DONE | GAP-021F | Expose endpoints with auth, permissions, validation, and error handling. | NPD, BOM, and recipe endpoints now require dedicated permissions; module registry promoted `npd`, `bom`, and `recipe` to module-owned routes and removed duplicate loose route ownership. Backend py_compile/import checks passed. |
-| GAP-021H | Tier 4 - FMCG-Specific & Regulatory | Add or update frontend screens/components: New Product Development / Formula Governance | DONE | GAP-021G | Build UI using existing layout, table, form, modal, and dashboard patterns. | Updated NPD, BOM, recipe, and related BOM operational pages to use dedicated page/action guards. Frontend type-check and lint passed. |
-| GAP-021I | Tier 4 - FMCG-Specific & Regulatory | Add or update permissions/roles: New Product Development / Formula Governance | DONE | GAP-021H | Register permissions and update role templates/UI visibility as required. | Registered `npd.*`, `bom.*`, and `recipe.*` permission families; added scoped variants and conservative role grants in seed data; module registry exposes owned route manifests. |
-| GAP-021J | Tier 4 - FMCG-Specific & Regulatory | Add or update tests: New Product Development / Formula Governance | DONE | GAP-021I | Add focused backend/frontend tests for the implemented behavior. | Added `backend/tests/test_gap021_npd_formula_governance.py`; 11 focused contract tests passed. |
-| GAP-021K | Tier 4 - FMCG-Specific & Regulatory | Add or update documentation: New Product Development / Formula Governance | DONE | GAP-021J | Update user/admin/developer docs for this change. | Added `docs/planning/GAP-021_NPD_FORMULA_GOVERNANCE_IMPLEMENTATION_NOTES.md`; docs heading, size, and secret-pattern checks passed. |
-| GAP-021L | Tier 4 - FMCG-Specific & Regulatory | Run checks and record result: New Product Development / Formula Governance | DONE | GAP-021K | Run relevant compile, lint, type, test, migration, or smoke checks. | Final checks passed: backend py_compile, focused pytest, endpoint import smoke, Alembic heads/history/offline SQL render, frontend type-check/lint, docs checks. GAP-021 complete. |
-| GAP-022A | Tier 5 - Advanced / Future Roadmap | Audit current implementation: True IoT / Machine Streaming | DONE | GAP-021L | Record what exists, what is partial, and what is missing for this gap. | Added `docs/planning/GAP-022_TRUE_IOT_MACHINE_STREAMING_AUDIT.md`; audited dedicated IoT endpoint/models, integrations IoT placeholder, machine-ops, utility meters/sensors, permissions, migration ownership, and streaming gaps. |
-| GAP-022B | Tier 5 - Advanced / Future Roadmap | Design data model/schema: True IoT / Machine Streaming | DONE | GAP-022A | Define schema/model changes only if needed and review existing models first. | Added `docs/planning/GAP-022_TRUE_IOT_MACHINE_STREAMING_SCHEMA_DESIGN.md`; design recommends module ownership, `iot.*` permissions, device/channel registry, secure ingest, existing table reconciliation, and bridge boundaries. |
-| GAP-022C | Tier 5 - Advanced / Future Roadmap | Add or update database migrations: True IoT / Machine Streaming | DONE | GAP-022B | Create Alembic migrations only for required schema changes. | Added `20260516_0020_iot_machine_streaming_reconciliation.py`; creates iot_devices, iot_channels, iot_ingest_messages, extends iot_sensor_data/iot_machine_states/iot_alert_thresholds/iot_alerts with FK cols, creates machine_events. Single head `20260516_0020`. |
-| GAP-022D | Tier 5 - Advanced / Future Roadmap | Add or update backend models: True IoT / Machine Streaming | DONE | GAP-022C | Implement ORM/model changes following existing conventions. | Updated `app/models/iot.py` with IoTDevice, IoTChannel, IoTIngestMessage classes and all new FK columns on existing models. Mappers compile clean. |
-| GAP-022E | Tier 5 - Advanced / Future Roadmap | Add or update schemas: True IoT / Machine Streaming | DONE | GAP-022D | Implement request/response schemas and validation. | Inline request schemas in iot.py endpoint (SensorIn, SensorBatchIn, StateIn, ThresholdIn). Response dicts match ORM fields. |
-| GAP-022F | Tier 5 - Advanced / Future Roadmap | Add or update services/business logic: True IoT / Machine Streaming | DONE | GAP-022E | Implement service-layer or existing-pattern business logic. | Ingest/threshold/alert logic inline in endpoint (existing pattern). `iot_service.py` handles machine events (integrations path). No new service layer required. |
-| GAP-022G | Tier 5 - Advanced / Future Roadmap | Add or update API endpoints: True IoT / Machine Streaming | DONE | GAP-022F | Expose endpoints with auth, permissions, validation, and error handling. | All endpoints protected with require_permission(iot, view/ingest/configure/acknowledge). Added GET /devices and GET /devices/{id}/channels. |
-| GAP-022H | Tier 5 - Advanced / Future Roadmap | Add or update frontend screens/components: True IoT / Machine Streaming | DONE | GAP-022G | Build UI using existing layout, table, form, modal, and dashboard patterns. | Added RequirePermission(iot.view) page guard. Added PermissionGuard(iot.ingest) on ingest panel. Added PermissionGuard(iot.configure) on threshold panel. Nav guard changed to iot.view. |
-| GAP-022I | Tier 5 - Advanced / Future Roadmap | Add or update permissions/roles: True IoT / Machine Streaming | DONE | GAP-022H | Register permissions and update role templates/UI visibility as required. | iot promoted to ModuleDefinition. 6 permission actions. Full permission family in seed. Role grants: admin/cto full, coo view+acknowledge+export, factory_manager view+acknowledge, maintenance_technician view. |
-| GAP-022J | Tier 5 - Advanced / Future Roadmap | Add or update tests: True IoT / Machine Streaming | DONE | GAP-022I | Add focused backend/frontend tests for the implemented behavior. | Added `tests/test_gap022_iot_machine_streaming.py`, 22 tests, all passed. |
-| GAP-022K | Tier 5 - Advanced / Future Roadmap | Add or update documentation: True IoT / Machine Streaming | DONE | GAP-022J | Update user/admin/developer docs for this change. | Added `docs/planning/GAP-022_TRUE_IOT_MACHINE_STREAMING_IMPLEMENTATION_NOTES.md`. |
-| GAP-022L | Tier 5 - Advanced / Future Roadmap | Run checks and record result: True IoT / Machine Streaming | DONE | GAP-022K | Run relevant compile, lint, type, test, migration, or smoke checks. | py_compile all touched files: passed. Import smoke: passed. 22 pytest tests: passed. Frontend tsc: passed. alembic heads: single head 20260516_0020. |
-| GAP-023A | Tier 5 - Advanced / Future Roadmap | Audit current implementation: ML-Based Predictive Maintenance | TODO | GAP-022L | Record what exists, what is partial, and what is missing for this gap. | Phase: Phase 6 - Advanced/future roadmap; Priority: Future; Area: Maintenance / ML; Files: `backend/app/api/v1/endpoints/maintenance.py`, `backend/app/services`, `frontend/src/app/dashboard/maintenance`, `backend/tests` |
-| GAP-023B | Tier 5 - Advanced / Future Roadmap | Design data model/schema: ML-Based Predictive Maintenance | TODO | GAP-023A | Define schema/model changes only if needed and review existing models first. | Phase: Phase 6 - Advanced/future roadmap; Priority: Future; Area: Maintenance / ML; Files: `backend/app/api/v1/endpoints/maintenance.py`, `backend/app/services`, `frontend/src/app/dashboard/maintenance`, `backend/tests` |
-| GAP-023C | Tier 5 - Advanced / Future Roadmap | Add or update database migrations: ML-Based Predictive Maintenance | TODO | GAP-023B | Create Alembic migrations only for required schema changes. | Phase: Phase 6 - Advanced/future roadmap; Priority: Future; Area: Maintenance / ML; Files: `backend/app/api/v1/endpoints/maintenance.py`, `backend/app/services`, `frontend/src/app/dashboard/maintenance`, `backend/tests` |
-| GAP-023D | Tier 5 - Advanced / Future Roadmap | Add or update backend models: ML-Based Predictive Maintenance | TODO | GAP-023C | Implement ORM/model changes following existing conventions. | Phase: Phase 6 - Advanced/future roadmap; Priority: Future; Area: Maintenance / ML; Files: `backend/app/api/v1/endpoints/maintenance.py`, `backend/app/services`, `frontend/src/app/dashboard/maintenance`, `backend/tests` |
-| GAP-023E | Tier 5 - Advanced / Future Roadmap | Add or update schemas: ML-Based Predictive Maintenance | TODO | GAP-023D | Implement request/response schemas and validation. | Phase: Phase 6 - Advanced/future roadmap; Priority: Future; Area: Maintenance / ML; Files: `backend/app/api/v1/endpoints/maintenance.py`, `backend/app/services`, `frontend/src/app/dashboard/maintenance`, `backend/tests` |
-| GAP-023F | Tier 5 - Advanced / Future Roadmap | Add or update services/business logic: ML-Based Predictive Maintenance | TODO | GAP-023E | Implement service-layer or existing-pattern business logic. | Phase: Phase 6 - Advanced/future roadmap; Priority: Future; Area: Maintenance / ML; Files: `backend/app/api/v1/endpoints/maintenance.py`, `backend/app/services`, `frontend/src/app/dashboard/maintenance`, `backend/tests` |
-| GAP-023G | Tier 5 - Advanced / Future Roadmap | Add or update API endpoints: ML-Based Predictive Maintenance | TODO | GAP-023F | Expose endpoints with auth, permissions, validation, and error handling. | Phase: Phase 6 - Advanced/future roadmap; Priority: Future; Area: Maintenance / ML; Files: `backend/app/api/v1/endpoints/maintenance.py`, `backend/app/services`, `frontend/src/app/dashboard/maintenance`, `backend/tests` |
-| GAP-023H | Tier 5 - Advanced / Future Roadmap | Add or update frontend screens/components: ML-Based Predictive Maintenance | TODO | GAP-023G | Build UI using existing layout, table, form, modal, and dashboard patterns. | Phase: Phase 6 - Advanced/future roadmap; Priority: Future; Area: Maintenance / ML; Files: `backend/app/api/v1/endpoints/maintenance.py`, `backend/app/services`, `frontend/src/app/dashboard/maintenance`, `backend/tests` |
-| GAP-023I | Tier 5 - Advanced / Future Roadmap | Add or update permissions/roles: ML-Based Predictive Maintenance | TODO | GAP-023H | Register permissions and update role templates/UI visibility as required. | Phase: Phase 6 - Advanced/future roadmap; Priority: Future; Area: Maintenance / ML; Files: `backend/app/api/v1/endpoints/maintenance.py`, `backend/app/services`, `frontend/src/app/dashboard/maintenance`, `backend/tests` |
-| GAP-023J | Tier 5 - Advanced / Future Roadmap | Add or update tests: ML-Based Predictive Maintenance | TODO | GAP-023I | Add focused backend/frontend tests for the implemented behavior. | Phase: Phase 6 - Advanced/future roadmap; Priority: Future; Area: Maintenance / ML; Files: `backend/app/api/v1/endpoints/maintenance.py`, `backend/app/services`, `frontend/src/app/dashboard/maintenance`, `backend/tests` |
-| GAP-023K | Tier 5 - Advanced / Future Roadmap | Add or update documentation: ML-Based Predictive Maintenance | TODO | GAP-023J | Update user/admin/developer docs for this change. | Phase: Phase 6 - Advanced/future roadmap; Priority: Future; Area: Maintenance / ML; Files: `backend/app/api/v1/endpoints/maintenance.py`, `backend/app/services`, `frontend/src/app/dashboard/maintenance`, `backend/tests` |
-| GAP-023L | Tier 5 - Advanced / Future Roadmap | Run checks and record result: ML-Based Predictive Maintenance | TODO | GAP-023K | Run relevant compile, lint, type, test, migration, or smoke checks. | Phase: Phase 6 - Advanced/future roadmap; Priority: Future; Area: Maintenance / ML; Files: `backend/app/api/v1/endpoints/maintenance.py`, `backend/app/services`, `frontend/src/app/dashboard/maintenance`, `backend/tests` |
-| GAP-024A | Tier 5 - Advanced / Future Roadmap | Audit current implementation: AI Agent Governance and Prompt Registry | DONE | GAP-023L | Record what exists, what is partial, and what is missing for this gap. | Created `docs/planning/GAP-024_AI_AGENT_GOVERNANCE_AUDIT.md`. |
-| GAP-024B | Tier 5 - Advanced / Future Roadmap | Design data model/schema: AI Agent Governance and Prompt Registry | DONE | GAP-024A | Define schema/model changes only if needed and review existing models first. | Created `docs/planning/GAP-024_AI_AGENT_GOVERNANCE_SCHEMA_DESIGN.md`. |
-| GAP-024C | Tier 5 - Advanced / Future Roadmap | Add or update database migrations: AI Agent Governance and Prompt Registry | DONE | GAP-024B | Create Alembic migrations only for required schema changes. | Added `20260516_0040_ai_prompt_registry_reconciliation.py`; creates ai_prompts table. |
-| GAP-024D | Tier 5 - Advanced / Future Roadmap | Add or update backend models: AI Agent Governance and Prompt Registry | DONE | GAP-024C | Implement ORM/model changes following existing conventions. | Added AIPrompt ORM model in `backend/app/models/ai.py`. |
-| GAP-024E | Tier 5 - Advanced / Future Roadmap | Add or update schemas: AI Agent Governance and Prompt Registry | DONE | GAP-024D | Implement request/response schemas and validation. | Created `backend/app/schemas/ai.py` with AIPromptCreate/Update/Read. |
-| GAP-024F | Tier 5 - Advanced / Future Roadmap | Add or update services/business logic: AI Agent Governance and Prompt Registry | DONE | GAP-024E | Implement service-layer or existing-pattern business logic. | Added `resolve_prompt()` helper in `backend/app/services/ai_service.py`. |
-| GAP-024G | Tier 5 - Advanced / Future Roadmap | Add or update API endpoints: AI Agent Governance and Prompt Registry | DONE | GAP-024F | Expose endpoints with auth, permissions, validation, and error handling. | Added 5 prompt CRUD endpoints in `backend/app/api/v1/endpoints/ai.py`; fixed forecast-baseline guard. |
-| GAP-024H | Tier 5 - Advanced / Future Roadmap | Add or update frontend screens/components: AI Agent Governance and Prompt Registry | DONE | GAP-024G | Build UI using existing layout, table, form, modal, and dashboard patterns. | Added RequirePermission guards to all 9 AI pages. |
-| GAP-024I | Tier 5 - Advanced / Future Roadmap | Add or update permissions/roles: AI Agent Governance and Prompt Registry | DONE | GAP-024H | Register permissions and update role templates/UI visibility as required. | Added ai.export and ai.configure; updated admin/cto/ceo/coo grants. |
-| GAP-024J | Tier 5 - Advanced / Future Roadmap | Add or update tests: AI Agent Governance and Prompt Registry | DONE | GAP-024I | Add focused backend/frontend tests for the implemented behavior. | Added `backend/tests/test_gap024_ai_agent_governance.py`; 28 tests passed. |
-| GAP-024K | Tier 5 - Advanced / Future Roadmap | Add or update documentation: AI Agent Governance and Prompt Registry | DONE | GAP-024J | Update user/admin/developer docs for this change. | Created `docs/planning/GAP-024_AI_AGENT_GOVERNANCE_IMPLEMENTATION_NOTES.md`. |
-| GAP-024L | Tier 5 - Advanced / Future Roadmap | Run checks and record result: AI Agent Governance and Prompt Registry | DONE | GAP-024K | Run relevant compile, lint, type, test, migration, or smoke checks. | All checks passed: py_compile, pytest (28 tests), alembic heads (20260516_0040), type-check, lint. |
-| GAP-025A | Tier 5 - Advanced / Future Roadmap | Audit current implementation: Multi-Company / Multi-Branch / Franchise Scaling | DONE | GAP-024L | Record what exists, what is partial, and what is missing for this gap. | Created `docs/planning/GAP-025_MULTI_COMPANY_BRANCH_AUDIT.md`. |
-| GAP-025B | Tier 5 - Advanced / Future Roadmap | Design data model/schema: Multi-Company / Multi-Branch / Franchise Scaling | DONE | GAP-025A | Define schema/model changes only if needed and review existing models first. | Created `docs/planning/GAP-025_MULTI_COMPANY_BRANCH_SCHEMA_DESIGN.md`. |
-| GAP-025C | Tier 5 - Advanced / Future Roadmap | Add or update database migrations: Multi-Company / Multi-Branch / Franchise Scaling | DONE | GAP-025B | Create Alembic migrations only for required schema changes. | Added `20260516_0050_multi_company_warehouse_reconciliation.py`; adds company_id/branch_id to warehouses. |
-| GAP-025D | Tier 5 - Advanced / Future Roadmap | Add or update backend models: Multi-Company / Multi-Branch / Franchise Scaling | DONE | GAP-025C | Implement ORM/model changes following existing conventions. | Added company_id/branch_id to Warehouse ORM in `backend/app/models/master.py`. |
-| GAP-025E | Tier 5 - Advanced / Future Roadmap | Add or update schemas: Multi-Company / Multi-Branch / Franchise Scaling | DONE | GAP-025D | Implement request/response schemas and validation. | Added company_id/branch_id to WarehouseBase in `backend/app/schemas/master.py`. |
-| GAP-025F | Tier 5 - Advanced / Future Roadmap | Add or update services/business logic: Multi-Company / Multi-Branch / Franchise Scaling | DONE | GAP-025E | Implement service-layer or existing-pattern business logic. | _check_company_access helper in company.py serves as ownership check. No separate service needed. |
-| GAP-025G | Tier 5 - Advanced / Future Roadmap | Add or update API endpoints: Multi-Company / Multi-Branch / Franchise Scaling | DONE | GAP-025F | Expose endpoints with auth, permissions, validation, and error handling. | Rewrote `backend/app/api/v1/endpoints/company.py`; all 12 endpoints use company.* guards + _check_company_access. |
-| GAP-025H | Tier 5 - Advanced / Future Roadmap | Add or update frontend screens/components: Multi-Company / Multi-Branch / Franchise Scaling | DONE | GAP-025G | Build UI using existing layout, table, form, modal, and dashboard patterns. | Added RequirePermission guard to `frontend/src/app/dashboard/companies/page.tsx`. |
-| GAP-025I | Tier 5 - Advanced / Future Roadmap | Add or update permissions/roles: Multi-Company / Multi-Branch / Franchise Scaling | DONE | GAP-025H | Register permissions and update role templates/UI visibility as required. | Added 6 company.* permissions; updated admin/company_admin/ceo/coo/cto grants; company promoted to ModuleDefinition. |
-| GAP-025J | Tier 5 - Advanced / Future Roadmap | Add or update tests: Multi-Company / Multi-Branch / Franchise Scaling | DONE | GAP-025I | Add focused backend/frontend tests for the implemented behavior. | Added `backend/tests/test_gap025_multi_company_branch.py`; 22 tests passed. |
-| GAP-025K | Tier 5 - Advanced / Future Roadmap | Add or update documentation: Multi-Company / Multi-Branch / Franchise Scaling | DONE | GAP-025J | Update user/admin/developer docs for this change. | Created `docs/planning/GAP-025_MULTI_COMPANY_BRANCH_IMPLEMENTATION_NOTES.md`. |
-| GAP-025L | Tier 5 - Advanced / Future Roadmap | Run checks and record result: Multi-Company / Multi-Branch / Franchise Scaling | DONE | GAP-025K | Run relevant compile, lint, type, test, migration, or smoke checks. | All checks passed: py_compile (7 files), pytest (22 tests), alembic heads (20260516_0050), type-check, lint. |
-
-| GAP-026A | Manual Workflow | Audit current implementation: Manual Audit / Repo Analysis | DONE | PHASE0-002 | Record what exists, what is partial, and what is missing for this gap. | Created `docs/user-manual/MANUAL_AUDIT.md` from static frontend/backend code inspection. |
-| GAP-026J | Manual Workflow | Add or update tests: Manual Audit / Repo Analysis | DONE | GAP-026A | Add focused backend/frontend tests for the implemented behavior. | Added `backend/tests/test_manual_audit_docs.py` to verify required audit sections, inventory depth, and honest uncertainty language. |
-| GAP-026K | Manual Workflow | Add or update documentation: Manual Audit / Repo Analysis | DONE | GAP-026J | Update user/admin/developer docs for this change. | Added `docs/user-manual/README.md` explaining the audit artifact, usage flow, limits, and verification command. |
-| GAP-026L | Manual Workflow | Run checks and record result: Manual Audit / Repo Analysis | DONE | GAP-026K | Run relevant compile, lint, type, test, migration, or smoke checks. | Ran manual audit pytest, heading verification, and file-size sanity checks; all passed. |
-| GAP-027A | Manual Workflow | Audit current implementation: Screenshot Automation / Playwright Capture | DONE | GAP-026L | Record what exists, what is partial, and what is missing for this gap. | Created `docs/user-manual/SCREENSHOT_AUTOMATION_AUDIT.md` recording missing screenshot tooling, route sources, required future files, env vars, and blockers. |
-| GAP-027J | Manual Workflow | Add or update tests: Screenshot Automation / Playwright Capture | DONE | GAP-027A | Add focused backend/frontend tests for the implemented behavior. | Added screenshot automation contract tests and implemented the required package script, Playwright dependency, capture script, route manifest, screenshot index, and screenshot README so tests pass. |
-| GAP-027K | Manual Workflow | Add or update documentation: Screenshot Automation / Playwright Capture | DONE | GAP-027J | Update user/admin/developer docs for this change. | Updated `docs/user-manual/README.md` and `docs/user-manual/screenshots/README.md` with screenshot command, env vars, file locations, safety rules, and verification commands. |
-| GAP-027L | Manual Workflow | Run checks and record result: Screenshot Automation / Playwright Capture | DONE | GAP-027K | Run relevant compile, lint, type, test, migration, or smoke checks. | Ran screenshot automation contract tests, frontend type-check, and missing-credentials guard; all passed as expected. |
-| GAP-028A | Manual Workflow | Audit current implementation: Full User Manual Generation | DONE | GAP-027L | Record what exists, what is partial, and what is missing for this gap. | Created `docs/user-manual/FULL_MANUAL_GENERATION_AUDIT.md`; documented that final screenshot-rich manual generation is not ready until screenshots are captured. |
-| GAP-028J | Manual Workflow | Add or update tests: Full User Manual Generation | DONE | GAP-028A | Add focused backend/frontend tests for the implemented behavior. | Added `backend/tests/test_full_manual_generation_readiness.py` to verify required manual-generation inputs and explicitly guard the empty screenshot-index blocker. |
-| GAP-028K | Manual Workflow | Add or update documentation: Full User Manual Generation | BLOCKED | GAP-028J | Update user/admin/developer docs for this change. | Blocked because `docs/user-manual/screenshots/screenshots-index.json` is empty. Planning document says final manual should be generated after screenshot capture, unless the user explicitly approves a screenshot-free draft. |
-| GAP-028L | Manual Workflow | Run checks and record result: Full User Manual Generation | TODO | GAP-028K | Run relevant compile, lint, type, test, migration, or smoke checks. | Phase: Phase 1 - Documentation manual workflow; Priority: Critical; Area: Documentation / User Manual; Files: `docs/user-manual`, `docs/user-manual/MANUAL_AUDIT.md`, `docs/user-manual/screenshots/screenshots-index.json` |
-
-## Completed in Last Run
-- GAP-012J: Added focused document/KB/e-sign service and registry contract tests; 5 focused tests passed.
-- GAP-012I: Registered document, knowledge-base, and e-signature module/permission seed contracts; py_compile and registry contract checks passed.
-- GAP-012H: Updated frontend nav guards, KB action visibility, and e-sign shared API client; frontend type-check passed.
-- GAP-012G: Hardened document, knowledge-base, and e-signature endpoints with dedicated permission/service checks; py_compile and route imports passed.
-- GAP-012F: Added document, knowledge-base, and e-signature service helpers; py_compile and pure service smoke checks passed.
-- GAP-012E: Updated document and e-sign schemas and added knowledge-base schemas; py_compile and Pydantic smoke checks passed.
-- GAP-012D: Updated document, knowledge-base, and e-signature ORM models; py_compile and mapper smoke checks passed.
-- GAP-012C: Added `backend/alembic/versions/20260515_0030_document_knowledge_reconciliation.py`; py_compile, Alembic heads/history, and offline SQL generation passed. Live migration skipped because Docker daemon is unavailable.
-- GAP-012B: Added `docs/planning/GAP-012_DOCUMENT_KNOWLEDGE_SCHEMA_DESIGN.md`; heading, size, and secret-pattern checks passed.
-- GAP-012A: Added `docs/planning/GAP-012_DOCUMENT_KNOWLEDGE_AUDIT.md`; heading, size, and secret-pattern checks passed.
-- GAP-011G: Added permission dependencies to Kenya payroll, timesheets, and ESS non-login endpoints; endpoint py_compile/import checks passed.
-- GAP-011F: Added `backend/app/services/hr_payroll_access_service.py`; service py_compile and smoke checks passed.
-- GAP-011E: Updated HR, Kenya payroll, timesheet, and ESS schemas for scope/bridge/privacy fields; py_compile and Pydantic smoke checks passed.
-- GAP-011D: Updated HR, Kenya payroll, timesheet, and ESS ORM models for scope, payroll lock, ESS ownership, and timesheet payroll bridge fields; py_compile and mapper smoke checks passed.
-- GAP-011C: Added `backend/alembic/versions/20260515_0020_hrms_payroll_reconciliation.py`; py_compile, Alembic heads/history, and offline SQL generation passed. Live DB upgrade skipped because Docker daemon is unavailable.
-- GAP-011B: Added `docs/planning/GAP-011_HRMS_PAYROLL_SCHEMA_DESIGN.md`; design heading, file-size, and no-secret checks passed.
-- GAP-011A: Added `docs/planning/GAP-011_HRMS_PAYROLL_AUDIT.md`; required audit headings, file-size, and no-secret checks passed.
-- GAP-010L: Ran final CRM/Sales checks; backend compile/import, focused pytest, Alembic offline checks, frontend type-check/lint, and docs/tracker checks passed. Docker live current check was unavailable because Docker daemon was not running; prior GAP-010C live migration verification remains recorded.
-- GAP-010K: Added `docs/planning/GAP-010_CRM_SALES_PIPELINE_IMPLEMENTATION_NOTES.md`; docs heading, size, and no-secret checks passed.
-- GAP-010J: Added focused CRM/Sales commercial access tests in `backend/tests/test_gap010_crm_sales_commercial_access.py`; py_compile and focused pytest passed.
-- GAP-010I: Registered CRM as a module-owned route, expanded scoped CRM/Sales commercial action permissions, seeded role grants conservatively, and verified module registry/seed/access-control checks.
-- GAP-010H: Updated frontend commercial access types and view-only/action UX for customers, orders, quotations, and CRM pipeline; frontend type-check passed.
-- GAP-010G: Hardened Sales, Quotation, and CRM record/territory endpoints with commercial access helpers, scoped guards, and access hints; backend py_compile and endpoint import checks passed.
-- GAP-010F: Added `backend/app/services/commercial_access_service.py` with scope inheritance, access hints, and status-lock helpers for commercial workflows; py_compile and service smoke checks passed.
-- GAP-010E: Updated Sales, CRM, and Quotation Pydantic schemas with commercial scope fields, approval fields, CRM links, and access-hint contracts; py_compile and schema smoke checks passed.
-- GAP-010D: Updated CRM, Sales, and Quotation ORM models with verified commercial scope, approval, CRM record, and assignment fields; py_compile, imports, and mapper checks passed.
-- GAP-010C: Added `backend/alembic/versions/20260515_0010_crm_sales_scope_reconciliation.py`; verified Alembic heads/history/offline SQL, applied it to live local PostgreSQL, confirmed `alembic_version=20260515_0010`, and verified required CRM/sales commercial scope columns.
-- GAP-010B: Added `docs/planning/GAP-010_CRM_SALES_PIPELINE_SCHEMA_DESIGN.md`; designed additive CRM/sales scope reconciliation, access hints, service/API/frontend/permission/test direction, and moved the queue to GAP-010C.
-- GAP-010A: Added `docs/planning/GAP-010_CRM_SALES_PIPELINE_AUDIT.md`; audited Sales, CRM pipeline, Quotation, frontend pages, permissions/scopes, migrations, tests, and risks; moved the queue to GAP-010B.
-- GAP-009L: Ran final procurement maturity checks; backend, frontend, Alembic, live DB, docs, and tracker checks passed.
-- GAP-009K: Added procurement maturity implementation notes and verified required documentation sections.
-- GAP-009J: Added focused procurement maturity tests and verified them with py_compile plus pytest.
-- GAP-009I: Expanded procurement module actions and seed permissions/role grants for scoped procurement maturity.
-- GAP-009H: Updated procurement frontend types/API client and PR list access badges; frontend type-check passed.
-- GAP-009G: Applied procurement API guards/access hints and added approval-rule endpoints.
-- GAP-009F: Added procurement service/business helpers for scope inheritance, access hints, status locks, approval-rule lookup, and PR-to-PO scope propagation.
-- GAP-009E: Updated procurement and supplier schemas with optional scope, governance, approval-rule, and access-hint contracts.
-- GAP-009D: Updated procurement and supplier ORM models to match the migration; py_compile/import/mapper checks passed.
-- GAP-009C: Added procurement scope/governance Alembic migration and verified it offline plus live local PostgreSQL.
-- GAP-009B: Completed procurement/supplier schema design and moved the queue to GAP-009C.
-- GAP-009A: Completed procurement/supplier maturity audit and moved the queue to GAP-009B.
-- GAP-008L: Ran final WMS depth checks: git status, backend py_compile, focused pytest, Alembic heads/current, Docker compose health, frontend type-check/lint, docs checks, and tracker checks all passed.
-- GAP-008K: Added WMS depth implementation notes documenting implementation scope, APIs, permissions, frontend behavior, checks, and remaining follow-ups; docs content checks passed.
-- GAP-008J: Added focused tests for WMS access hints, status locks, seed role coverage, endpoint registration/guards, and frontend WMS contracts; backend py_compile and `pytest backend/tests/test_gap008_wms_service.py -q` passed.
-- GAP-008I: Added `wms.view` to the Warehouse Manager seed role and focused tests proving WMS navigation is visible while warehouse mutation remains scoped; seed py_compile and access-control pytest passed.
-- GAP-008H: Added frontend WMS client types/methods and dashboard tabs for handling units, pick waves, and access hints; frontend type-check and lint passed.
-- GAP-008G: Added WMS handling-unit and pick-wave endpoints plus scoped access hints/guards on WMS execution APIs; backend py_compile, endpoint import, and focused pytest passed.
-- GAP-008F: Added WMS service/business helpers for access hints, scoped action guards, status locks, handling units, and pick waves; py_compile and `pytest backend/tests/test_gap008_wms_service.py -q` passed.
-- GAP-008E: Added WMS Pydantic schemas for handling units, handling-unit items, pick waves, access hints, picking wave IDs, and inventory movement location/HU fields; backend py_compile and schema smoke checks passed.
-- GAP-001A: Created `docs/planning/GAP-001_ACCOUNTING_CORE_AUDIT.md`.
-- GAP-001B: Created `docs/planning/GAP-001_ACCOUNTING_CORE_SCHEMA_DESIGN.md`.
-- GAP-001C: Added additive Alembic migration `backend/alembic/versions/20260511_0010_enterprise_accounting_core.py`.
-- GAP-001D: Added matching finance ORM models in `backend/app/models/finance.py`.
-- GAP-001E: Added matching Pydantic schemas in `backend/app/schemas/finance.py`.
-- GAP-001F: Added accounting service/business helpers in `backend/app/services/finance_service.py`.
-- GAP-001G: Added protected accounting foundation endpoints in `backend/app/api/v1/endpoints/finance.py`.
-- GAP-001H: Added frontend Accounting Controls page and finance API client wiring.
-- GAP-001I: Added `finance.configure` permission/role/sidebar wiring.
-- GAP-001J: Added focused GAP-001 accounting core tests.
-- GAP-001K: Added implementation notes documentation.
-- GAP-001L: Ran final GAP-001 checks and recorded the live DB migration blocker.
-- GAP-002A: Created `docs/planning/GAP-002_POSTING_INTEGRATION_AUDIT.md`.
-- GAP-002B: Created `docs/planning/GAP-002_POSTING_INTEGRATION_SCHEMA_DESIGN.md`.
-- GAP-002C: Added additive Alembic migration `backend/alembic/versions/20260511_0020_operational_posting_integration.py`.
-- GAP-002D: Added matching ORM model changes in finance, inventory, procurement, production, and landed-cost models.
-- GAP-002E: Added matching Pydantic schemas and posting-link read fields.
-- GAP-002F: Added finance service helpers for operational posting integration.
-- GAP-002G: Added protected finance API endpoints for operational posting events and inventory account mappings.
-- GAP-002H: Extended frontend finance Accounting Controls for operational posting audit/configuration.
-- GAP-002I: Verified existing finance permission/role surface covers the new operational posting endpoints and UI.
-- GAP-002J: Added focused backend tests for GAP-002 posting integration foundations.
-- GAP-002K: Added GAP-002 implementation notes documentation.
-- GAP-002L: Ran final GAP-002 checks and recorded the live PostgreSQL migration blocker.
-- GAP-003A: Created `docs/planning/GAP-003_PERMISSION_SECURITY_AUDIT.md`.
-- Audited finance/accounting models, schemas, API endpoints, services, frontend pages, and migrations.
-- Documented existing/partial/missing accounting capabilities and the additive schema direction for fiscal years, posted-ledger controls, recurring/reversal journals, posting batches, payment allocations, and FX revaluation.
-- Documented additive schema direction for accounting-to-inventory-to-manufacturing posting integration: movement/source document links, operational posting events, inventory account mappings, idempotent posting, period enforcement, and reversal traceability.
-- Verified the GAP-002C migration with py_compile, Alembic heads/history, and offline SQL generation; live DB upgrade remains blocked by PostgreSQL availability.
-- Verified GAP-002D with model py_compile, imports, mapper configuration, and table/column smoke checks.
-- Verified GAP-002E with schema py_compile and Pydantic smoke validation.
-- Verified GAP-002F with service py_compile and deterministic-key/mapping/link smoke checks.
-- Verified GAP-002G with finance endpoint py_compile and route registration smoke checks.
-- Verified GAP-002H with frontend `npm.cmd run type-check`.
-- Verified GAP-002I by inspecting finance module registry permissions and seeded CFO/finance-manager role templates.
-- Verified GAP-002J with focused pytest and GAP-001/GAP-002 regression pytest.
-- Verified GAP-002K with documentation content and file-size checks.
-- Verified GAP-002L with backend compile, GAP-001/GAP-002 pytest, Alembic head/history/offline SQL, frontend type-check, docs checks, and live migration attempt.
-- Verified GAP-003A with documentation content and file-size checks.
-- GAP-SEC-001A: Added `docs/planning/GAP-SEC-001_ACCESS_CONTROL_AUDIT.md`.
-- GAP-SEC-001B: Added `docs/planning/GAP-SEC-001_ACCESS_CONTROL_SCHEMA_DESIGN.md`.
-- GAP-SEC-001C: Added additive migration `backend/alembic/versions/20260511_0030_access_scopes.py`.
-- GAP-SEC-001D: Added `AccessScope`, permission active flag, role system flag, and access-scope relationships.
-- GAP-SEC-001E: Extended access schemas and `/api/v1/auth/me` with effective modules/scopes/feature flags.
-- GAP-SEC-001F: Added centralized backend access-control helper/service functions.
-- GAP-SEC-001G: Applied first-pass backend scoped enforcement to inventory/WMS, production, sales, procurement, quality, finance journals, and admin scope APIs.
-- GAP-SEC-001H: Updated frontend permission alias handling, inventory scoped actions/view-only badges, and user/role scope management panels.
-- GAP-SEC-001I: Added idempotent scope-aware permission codes, conservative role templates, and owner/admin global scope seeds.
-- GAP-SEC-001J: Added helper/seed/route-contract tests and ran hardening/RBAC regression checks.
-- GAP-SEC-001K: Updated GAP-SEC-001 implementation documentation.
-- GAP-SEC-001L: Ran final compile, pytest, frontend type-check, Alembic head/offline SQL checks, and recorded the live DB blocker.
-- GAP-003B: Added `docs/planning/GAP-003_PERMISSION_SECURITY_SCHEMA_DESIGN.md` and confirmed no new schema/model/payload migration should be added on top of GAP-SEC-001.
-- GAP-003C: Skipped because the required database migrations were already delivered by GAP-SEC-001.
-- GAP-003D: Skipped because the required ORM model foundation was already delivered by GAP-SEC-001.
-- GAP-003E: Skipped because the required access-control schemas and `/auth/me` payload were already delivered by GAP-SEC-001.
-- GAP-003F: Added shared scoped permission coverage helpers in the backend module registry and regression tests covering scoped module visibility.
-- GAP-003G: Hardened the module manifest endpoint for scoped permissions and added protected permission coverage/drift API support.
-- GAP-003H: Added permission coverage/drift summary to the frontend Permission Matrix page and typed API client support.
-- GAP-003I: Verified existing `roles.view` permission/role/nav wiring covers the new admin permission coverage endpoint; no new seed permission was needed.
-- GAP-003J: Ran focused backend permission/manifest/RBAC tests and frontend type-check; both passed.
-- GAP-003K: Added `docs/planning/GAP-003_PERMISSION_SECURITY_IMPLEMENTATION_NOTES.md` and verified required documentation content.
-- GAP-003L: Ran final GAP-003 compile, focused backend pytest/RBAC regressions, frontend type-check, and docs/tracker checks; all passed.
-- GAP-004A: Added `docs/planning/GAP-004_E2E_WORKFLOW_TESTING_AUDIT.md` and verified required audit coverage terms.
-- GAP-004B: Added `docs/planning/GAP-004_E2E_WORKFLOW_TESTING_SCHEMA_DESIGN.md`; decided to use deterministic test fixtures/harnesses rather than new production schema.
-- GAP-004C: Skipped because no application DB migration is required for the E2E testing foundation.
-- GAP-004D: Skipped because no production ORM model is required.
-- GAP-004E: Skipped because no production API schema is required.
-- GAP-DB-001: Created urgent blocker-fix task and paused GAP-004F until live PostgreSQL migration verification succeeds or is explicitly blocked with exact error.
-- GAP-DB-001: Started Docker Desktop, started development `db` and `redis`, ran live Alembic upgrade/current/head checks, verified `access_scopes` schema, verified `permissions.is_active` and `roles.is_system_role`, ran backend import and focused access-control/RBAC tests, and updated GAP-SEC-001 documentation.
-- GAP-004F: Completed deterministic backend E2E fixture/persona helpers and verified them with py_compile plus focused pytest.
-- GAP-004G: Reviewed registered Docker backend routes for E2E contract areas and skipped production endpoint changes because existing APIs are sufficient.
-- GAP-004H: Added Playwright E2E scaffolding, stable browser selectors, E2E scripts, and initial docs; verified type-check, test listing, and public auth browser smoke.
-- GAP-004I: Verified scope-aware seed roles are sufficient for E2E personas, documented required admin/limited/auditor users, and added backend role contract tests.
-- GAP-004J: Added focused Playwright workflow control tests and stable selectors for production, quality, finance controls, procurement, and sales customer screens.
-- GAP-004K: Expanded E2E workflow testing documentation, implementation notes, role expectations, skip behavior, command reference, and troubleshooting.
-- GAP-004L: Ran final GAP-004 checks: backend E2E py_compile/pytest, frontend type-check, lint, Playwright no-secret full suite, and docs/tracker checks all passed.
-- GAP-005A: Audited frontend/backend parity and documented route/page/client coverage, raw API path risks, naming aliases, partial placeholders, and next design direction.
-- GAP-005B: Designed source-owned parity manifest/static-check approach and decided no database schema is needed.
-- GAP-005C/D/E: Skipped by design because GAP-005 needs no migration, ORM model, or runtime API schema.
-- GAP-005F: Added the source-level parity manifest and `check-api-parity` script with strict verification.
-- GAP-005G/H/I: Skipped by design because no runtime API endpoint, visible UI, or ERP permission change is needed for the static parity checker.
-- GAP-005J: Verified the parity checker with syntax checks and strict mode; it passes with zero uncovered raw API dashboard pages.
-- GAP-005K: Documented the API parity checker, manifest rules, current baseline, strict mode, CI recommendation, and cleanup workflow.
-- GAP-005L: Ran final GAP-005 checks: node syntax, strict API parity, frontend type-check, frontend lint, git status review, and docs/tracker checks passed.
-- GAP-006A: Audited real integration foundations versus stub/demo/simulated integration surfaces and documented risks plus provider capability direction.
-- GAP-006B: Designed the integration capability registry approach and decided no database schema is needed for the first hardening slice.
-- GAP-006C/D/E: Skipped by design because existing integration tables are sufficient and capability definitions should be source-owned.
-- GAP-006F: Added backend integration capability registry/helpers for live, sandbox, simulated, stub-only, and disabled providers.
-- GAP-006G: Added protected `GET /api/v1/integrations/capabilities` using existing `integrations.view`.
-- GAP-006H: Added Integration Hub capability status UI and frontend API client support.
-- GAP-006I: Verified existing integration permissions/seed roles are sufficient; no new permission was required.
-- GAP-006J: Added focused backend tests for capability classification, production guards, block reasons, and endpoint permission registration.
-- GAP-006K: Added GAP-006 implementation notes.
-- GAP-006L: Ran final backend/frontend/docs checks for GAP-006; all passed.
-- GAP-007A: Added APS/capacity-planning audit documentation and verified required audit terms.
-- GAP-007B: Added APS schema design documentation, confirmed existing planning models should be reused, identified missing Alembic ownership, and listed service/model reconciliation issues.
-- GAP-007C: Added APS planning-table Alembic migration and verified it offline and against live local PostgreSQL.
-- GAP-007D: Skipped new ORM changes because existing APS planning models are sufficient after migration ownership.
-- GAP-007E: Skipped new schema changes because existing planning schemas already cover the current APS payloads.
-- GAP-007F: Reconciled APS scheduling service with existing model fields and added focused tests for helper behavior plus missing-field regressions.
-- GAP-007G: Hardened planning API authentication/permission dependencies and removed generated placeholder user IDs.
-- GAP-007H: Updated planning frontend/nav/action controls to use planning permissions and removed client-supplied AI action user IDs.
-- GAP-007I: Registered planning as a module-owned route and seeded planning permissions/role grants.
-- GAP-007J: Added focused GAP-007 tests and verified backend/frontend checks.
-- GAP-007K: Added GAP-007 APS implementation notes and verified required documentation sections.
-- GAP-007L: Ran final GAP-007 checks, fixed the AI recommendation action schema contract, verified live APS migration/schema on local PostgreSQL, and moved the queue to GAP-008A.
-- GAP-008A: Added Warehouse Management Depth audit documentation and verified required audit sections.
-- GAP-008B: Added Warehouse Management Depth schema design documentation and verified required design sections.
-- GAP-008C: Added WMS depth reconciliation migration and verified offline plus live local PostgreSQL schema state.
-- GAP-008D: Added WMS handling-unit, pick-wave, picking-task, and stock-movement ORM relationship updates and verified model import/mapper configuration.
-- Recorded explicit user override to start GAP-001 while GAP-028K remains blocked.
-
-## Blockers
-- GAP-028K is blocked because `docs/user-manual/screenshots/screenshots-index.json` is empty.
-- To unblock, run ERP services, set `MANUAL_TEST_BASE_URL`, `MANUAL_TEST_USERNAME`, and `MANUAL_TEST_PASSWORD`, then run `npm run manual:screenshots` from `frontend`.
-- Alternative unblock: explicitly approve a screenshot-free manual draft with caveats.
-
-## Resume Instructions
-If a future Codex session starts, it must:
-1. Read TASKS.md.
-2. Read CODEX_PROGRESS.md.
-3. Find the first TODO task with satisfied dependencies.
-4. Continue from that task.
-5. Never restart from the beginning.
+## Do Not Do Now
+
+- Full repo Graphify rerun (unless user approves)
+- Large backend rewrite
+- New migrations without audit
+- Direct Zebra/TSC/Godex printer drivers in frontend
+- Fake AI features or fake integration data
+- Deleting archived recovery reports (`docs/archive/` or `docs/planning/` GAP docs)
+- Scheduled/background automation
+- Creating new tracking files inside the repo
+- Deleting `graphify-out/` from git without user confirmation (TASK-010)
+- Deleting `PLANS.md` — it is kept as architecture/strategic reference
