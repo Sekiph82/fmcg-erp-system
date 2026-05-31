@@ -678,7 +678,7 @@ ERP_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN: bool = True
 
 ### Task ID: TASK-008 — Run erp-health-audit.py and address findings
 
-- **Status:** Audited — 1 HIGH fix pending; MEDIUM findings classified
+- **Status:** Batch A Done — HIGH fixed (0 HIGH); MEDIUM backlog remains for Batch B/C/D
 - **Priority:** P1
 - **Category:** QA / Performance
 - **Why it matters:** Previous run (2026-05-16): 52 HIGH / 624 MEDIUM. Current run (2026-05-31): **1 HIGH / 499 MEDIUM / 1 INFO** — 51 HIGH fixed by prior work, 125 MEDIUM fixed.
@@ -756,10 +756,15 @@ Top files: `sales_service.py` ×6, `wms_service.py` ×5, `inventory_service.py` 
 - **Affected area:** `frontend/src/app/dashboard/qms/inspections/page.tsx` (Batch A); `backend/app/api/v1/endpoints/` (Batch B)
 - **Risk:** HIGH fix = medium (frontend auth pattern change); MEDIUM = low (additive limits)
 - **Started at:** 2026-05-31
-- **Completed at:** (audit done; Batch A implementation pending)
-- **Changed files:** `TASKS.md` only (audit update); `docs/AUTOMATED_HEALTH_AUDIT.md` (script output)
-- **Tests / checks run:** `python scripts/erp-health-audit.py` → 1 HIGH / 499 MEDIUM / 1 INFO
-- **Result:** Audit complete. 51 HIGH findings resolved by prior work. 1 HIGH remains (`token_storage`).
+- **Completed at:** 2026-05-31 (Batch A)
+- **Changed files:**
+  - `frontend/src/app/dashboard/qms/inspections/page.tsx` — removed `localStorage.getItem("access_token")` + raw fetch; replaced with `apiClient.get` (`withCredentials: true`)
+  - `docs/AUTOMATED_HEALTH_AUDIT.md` (script output — regenerated)
+  - `TASKS.md` — this update
+- **Tests / checks run:**
+  - `npx tsc --noEmit` → CLEAN
+  - `python scripts/erp-health-audit.py` → **0 HIGH** / 499 MEDIUM / 1 INFO
+- **Result:** Batch A complete. `token_storage` HIGH fixed. 0 HIGH findings remain. 499 MEDIUM backlog (unbounded_query, row_lock) remains for Batch B/C/D.
 - **Known limitations:** Script does not require DB — all findings are static analysis only.
 - **Git commit / branch:** Not committed yet
 - **Graphify refresh after implementation:** backend (if endpoint query patterns change)

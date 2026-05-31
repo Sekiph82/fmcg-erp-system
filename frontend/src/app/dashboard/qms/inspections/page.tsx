@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { apiClient } from "@/lib/api";
 import { STATUS_BG } from "@/lib/qms";
 
 interface Inspection {
@@ -36,15 +37,12 @@ export default function QCInspectionsPage() {
   const [statusFilter, setStatusFilter] = useState("");
 
   useEffect(() => {
-    const q = new URLSearchParams();
-    if (typeFilter) q.set("qc_type", typeFilter);
-    if (statusFilter) q.set("status", statusFilter);
-    const token = localStorage.getItem("access_token");
-    fetch(`/api/v1/quality/inspections/?${q}`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    })
-      .then(r => r.json())
-      .then(setInspections)
+    const params: Record<string, string> = {};
+    if (typeFilter) params.qc_type = typeFilter;
+    if (statusFilter) params.status = statusFilter;
+    apiClient
+      .get<Inspection[]>("/api/v1/quality/inspections/", { params })
+      .then(r => setInspections(r.data))
       .catch(console.error)
       .finally(() => setLoading(false));
   }, [typeFilter, statusFilter]);
