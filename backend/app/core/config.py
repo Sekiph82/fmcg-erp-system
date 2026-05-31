@@ -179,6 +179,23 @@ class Settings(BaseSettings):
             return self.GEMINI_MODEL
         return "mock-v1"
 
+    # ── KRA eTIMS (Kenya e-Invoice) ───────────────────────────────────────────
+    # Provider/middleware decision is still pending. Final connector may be:
+    #   direct KRA OSCU/VSCU API, certified middleware, or third-party service provider.
+    # Do NOT use in production until KRA sandbox/provider validation is complete.
+    ETIMS_PROVIDER: str = "simulation"       # "simulation" | "http"
+    ETIMS_API_URL: str = ""                  # Base URL — provider/KRA-spec dependent
+    # Endpoint path is provider/KRA-spec dependent — confirm before use.
+    ETIMS_SALES_SUBMIT_PATH: str = "/api/method/saveSales"
+    ETIMS_PIN: str = ""                      # KRA taxpayer PIN
+    ETIMS_BRANCH_ID: str = ""               # Branch ID / bhfId
+    ETIMS_DEVICE_SERIAL_NO: str = ""        # OSCU/VSCU device serial number
+    ETIMS_ENV: str = "sandbox"              # "sandbox" | "production"
+
+    @property
+    def ETIMS_CONFIGURED(self) -> bool:
+        return bool(self.ETIMS_API_URL and self.ETIMS_PIN and self.ETIMS_BRANCH_ID)
+
     @model_validator(mode="after")
     def _production_guards(self) -> "Settings":
         if self.ENVIRONMENT == "production":

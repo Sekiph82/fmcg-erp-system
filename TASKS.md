@@ -351,27 +351,49 @@ Rules:
 
 ### Task ID: TASK-005 — eTIMS live integration (KRA Kenya)
 
-- **Status:** Pending
+- **Status:** Blocked — connector-ready skeleton implemented, waiting for KRA-approved provider / VSCU-OSCU middleware decision and sandbox credentials
 - **Priority:** P0
 - **Category:** Integration / Deployment
-- **Why it matters:** `payroll_ke.py:452` — "Stub: submit invoice to KRA eTIMS." `tax_regulatory.py:215` — "Simulation-ready: set ETIMS_API_URL in config to enable live calls." Kenya VAT-registered businesses are legally required to submit invoices to KRA eTIMS.
-- **Source / evidence:** `backend/app/api/v1/endpoints/payroll_ke.py:448-456`. `backend/app/models/tax_regulatory.py:212-222`. `backend/app/core/integration_capabilities.py:786` (status: "beta"). Graphify action plan: production deployment blocker.
-- **Affected area:** `backend/app/api/v1/endpoints/payroll_ke.py`, `backend/app/models/tax_regulatory.py`, `backend/app/models/payroll_ke.py`, `.env.production`
+- **Why it matters:** Kenya VAT-registered businesses are legally required to submit invoices to KRA eTIMS. Track A (`tax_regulatory.py`) is the active integration path wired to the frontend at `/dashboard/finance/etims`.
+- **Source / evidence:** `backend/app/api/v1/endpoints/tax_regulatory.py` (submit_etims), `backend/app/services/etims_connector.py` (new), `backend/app/core/config.py` (ETIMS_* vars), `backend/app/core/integration_capabilities.py` (ETIMS capability entry).
+- **Affected area:** `backend/app/api/v1/endpoints/tax_regulatory.py`, `backend/app/services/etims_connector.py`, `backend/app/core/config.py`, `backend/app/core/integration_capabilities.py`, `.env.development.example`, `.env.production.example`
 - **Risk:** High (legal compliance requirement; incorrect submissions can trigger KRA audit)
-- **Recommended timing:** Now (legal requirement before go-live)
-- **Needs audit before implementation:** Yes — review eTIMS API docs (https://etims.kra.go.ke/), review existing `ETimsSubmission` model and `etims_submit` endpoint.
-- **Implementation scope:** Replace stub return in `etims_submit` with real KRA eTIMS API call. Wire `ETIMS_API_URL`, `ETIMS_API_KEY` env vars.
-- **Do not touch:** Invoice model, payroll model, other tax logic
-- **Started at:**
-- **Completed at:**
-- **Changed files:** None yet
-- **Tests / checks run:** None yet
-- **Result:** Pending
-- **Known limitations:** Requires KRA developer registration, sandbox testing, and certificate installation for production.
-- **Git commit / branch:** Not committed yet
+- **Recommended timing:** Now (legal requirement before go-live) — unblocked once provider is confirmed
+- **Do not touch:** Invoice model, payroll model, Track B (`payroll_ke.py`), other tax logic
+- **Started at:** 2026-05-31
+- **Completed at:** (blocked — implementation skeleton done, not production-ready)
+- **Changed files:**
+  - `backend/app/services/etims_connector.py` (NEW — connector layer)
+  - `backend/app/api/v1/endpoints/tax_regulatory.py` (submit_etims updated)
+  - `backend/app/core/config.py` (ETIMS_* vars added)
+  - `backend/app/core/integration_capabilities.py` (ETIMS entry added)
+  - `.env.development.example` (eTIMS section added)
+  - `.env.production.example` (eTIMS section added)
+  - `backend/tests/test_etims_skeleton.py` (NEW — 6 tests)
+- **Tests / checks run:** `pytest tests/test_etims_skeleton.py` — 6/6 PASSED. `python -c "import app.main"` — CLEAN.
+- **Result:** Connector-ready skeleton implemented; live provider validation pending.
+- **What IS implemented:**
+  - ERP-side invoice payload builder (`build_etims_payload`) — loads header + lines + customer
+  - Connector/adapter abstraction (`ETIMSConnector` Protocol, `ETIMSResult` dataclass)
+  - `SimulationETIMSConnector` — preserves existing demo behavior (fake TIMS serial, hash, QR data, ACCEPTED status)
+  - `HttpETIMSConnector` skeleton — httpx call, normalized response mapping; activated by ETIMS_PROVIDER=http
+  - `get_etims_connector(settings)` factory — routes to simulation or HTTP based on config
+  - ETIMS_* config vars (ETIMS_PROVIDER, ETIMS_API_URL, ETIMS_SALES_SUBMIT_PATH, ETIMS_PIN, ETIMS_BRANCH_ID, ETIMS_DEVICE_SERIAL_NO, ETIMS_ENV)
+  - Integration capabilities entry (SANDBOX_READY, production_execution_allowed=False)
+- **What is NOT yet implemented (still blocked):**
+  - Real provider/middleware decision still pending (direct KRA OSCU/VSCU, certified middleware, or third-party service)
+  - KRA sandbox credentials still required (ETIMS_PIN, ETIMS_BRANCH_ID, ETIMS_DEVICE_SERIAL_NO, ETIMS_API_URL)
+  - Official KRA/provider API spec still required (endpoint paths, auth scheme, response format)
+  - Device registration/initialization (initialize_device) must be validated later
+  - Product KRA item classification code mapping still pending (itemCd / taxTyCd not in Product model)
+  - Provider-specific auth header not yet added (Bearer token / HMAC / mTLS — provider-dependent)
+  - Not marked production-ready — production_execution_allowed=False
+- **Track B payroll_ke.py note:** Track B is a duplicate/legacy eTIMS stub (ke_etims_invoices table). Do NOT remove. Keep until Track A connector-ready flow is validated. Later decision: deprecate, redirect to Track A, or remove with migration.
+- **Known limitations:** Requires KRA developer registration, sandbox testing, and provider/middleware selection before any live use.
+- **Git commit / branch:** Not committed yet (awaiting approval)
 - **Graphify refresh after implementation:** backend
 - **Graphify refresh status:** Needed after implementation
-- **Notes:** Test in KRA sandbox environment first. This is the highest compliance risk before go-live.
+- **Notes:** Do NOT say "KRA production integration complete." Connector-ready eTIMS skeleton implemented; live provider validation pending.
 
 ---
 

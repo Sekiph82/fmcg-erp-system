@@ -101,6 +101,31 @@ CAPABILITIES: tuple[IntegrationCapability, ...] = (
         ),
     ),
     IntegrationCapability(
+        provider="ETIMS",
+        label="KRA eTIMS (Kenya e-Invoice)",
+        status=IntegrationCapabilityStatus.SANDBOX_READY,
+        live_env_vars=(
+            "ETIMS_API_URL",
+            "ETIMS_PIN",
+            "ETIMS_BRANCH_ID",
+            "ETIMS_DEVICE_SERIAL_NO",
+        ),
+        sandbox_supported=True,
+        simulation_supported=True,
+        production_execution_allowed=False,
+        requires_signature_validation=True,
+        frontend_route="/dashboard/finance/etims",
+        notes=(
+            "Connector-ready skeleton implemented. "
+            "SimulationETIMSConnector active when ETIMS_PROVIDER=simulation (default). "
+            "HttpETIMSConnector skeleton prepared for KRA OSCU/VSCU or certified middleware. "
+            "Final provider/middleware decision still pending. "
+            "KRA sandbox credentials, official API spec, and device registration required before live use. "
+            "Set ETIMS_PROVIDER=http and all ETIMS_* vars to enable HTTP connector. "
+            "Not production-ready — production_execution_allowed=False until KRA validation is complete."
+        ),
+    ),
+    IntegrationCapability(
         provider="IOT",
         label="IoT / Machine Streaming",
         status=IntegrationCapabilityStatus.STUB_ONLY,

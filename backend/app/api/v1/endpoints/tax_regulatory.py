@@ -316,7 +316,6 @@ from app.models.tax_regulatory import (
     VATReturn, VATReturnStatus,
     WithholdingTaxRecord,
 )
-import hashlib
 
 
 @router.get("/etims/submissions", response_model=List[ETimsSubmissionRead])
@@ -349,19 +348,25 @@ async def submit_etims(
     current_user: User = Depends(get_current_user),
 ):
     """
-    Submit invoice to KRA eTIMS. In production, calls ETIMS_API_URL.
-    In demo mode, simulates acceptance with a generated TIMS serial.
+    Submit invoice to KRA eTIMS via connector-ready adapter layer.
+
+    Routes to SimulationETIMSConnector (demo) or HttpETIMSConnector (live)
+    based on ETIMS_PROVIDER and ETIMS_CONFIGURED settings.
+    Live provider/middleware decision is still pending — not production-ready.
     """
-    from app.models.sales import Invoice
-    import os
+    from app.models.sales import Invoice, InvoiceLine
+    from sqlalchemy.orm import selectinload
+    from app.core.config import settings
+    from app.services.etims_connector import build_etims_payload, get_etims_connector
 
     invoice = (await db.execute(
-        _tsel(Invoice).where(Invoice.id == invoice_id)
+        _tsel(Invoice)
+        .options(selectinload(Invoice.lines).selectinload(InvoiceLine.product))
+        .where(Invoice.id == invoice_id)
     )).scalar_one_or_none()
     if not invoice:
         raise HTTPException(404, "Invoice not found")
 
-    # Get or create submission record
     sub = (await db.execute(
         _tsel(ETimsSubmission).where(ETimsSubmission.invoice_id == invoice_id)
     )).scalar_one_or_none()
@@ -373,30 +378,18 @@ async def submit_etims(
         sub = ETimsSubmission(invoice_id=invoice_id, submitted_by_id=current_user.id)
         db.add(sub)
 
-    etims_api_url = os.environ.get("ETIMS_API_URL", "")
+    payload = build_etims_payload(invoice, settings)
+    connector = get_etims_connector(settings)
+    result = await connector.submit_sales_invoice(payload)
 
-    if etims_api_url:
-        # Real integration — placeholder for live KRA call
-        # In production: POST to ETIMS_API_URL with signed invoice payload
-        sub.status = ETimsStatus.SUBMITTED
-        sub.transmitted_at = datetime.now(timezone.utc)
-        sub.kra_response_message = "Submitted to KRA (awaiting response)"
-    else:
-        # Simulation mode
-        invoice_hash = hashlib.sha256(
-            f"{invoice.invoice_no}:{invoice.total_amount}:{invoice.invoice_date}".encode()
-        ).hexdigest()
-        tims_serial = f"KRA-{invoice.invoice_no}-{invoice.invoice_date.strftime('%Y%m%d')}"
-        qr_data = f"INV={invoice.invoice_no}|DATE={invoice.invoice_date}|TOTAL={invoice.total_amount}|HASH={invoice_hash[:16]}"
-
-        sub.status = ETimsStatus.ACCEPTED
-        sub.control_unit_invoice_no = tims_serial
-        sub.signed_invoice_hash = invoice_hash
-        sub.invoice_qr_data = qr_data
-        sub.transmitted_at = datetime.now(timezone.utc)
-        sub.kra_response_code = "00"
-        sub.kra_response_message = "Accepted (simulation mode — set ETIMS_API_URL for live integration)"
-        sub.retry_count += 1
+    sub.status = ETimsStatus(result.status)
+    sub.transmitted_at = datetime.now(timezone.utc)
+    sub.control_unit_invoice_no = result.control_unit_invoice_no
+    sub.signed_invoice_hash = result.signed_invoice_hash
+    sub.invoice_qr_data = result.invoice_qr_data
+    sub.kra_response_code = result.response_code
+    sub.kra_response_message = result.response_message
+    sub.retry_count += 1
 
     await db.commit()
     await db.refresh(sub)
