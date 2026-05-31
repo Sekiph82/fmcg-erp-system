@@ -19,8 +19,9 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime, timezone
-from typing import List, Optional, Any
+from typing import Any, List, Optional, Tuple
 
+import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from sqlalchemy import select, or_
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -32,12 +33,74 @@ from app.models.whatsapp import (
     WAMessageDirection, WAMessageType, WAMessageStatus,
 )
 from app.schemas.whatsapp import (
-    WAConfigCreate, WAConfigRead,
+    WAConfigCreate, WAConfigRead, WAConfigUpdate,
     WASendText, WASendTemplate,
     WAMessageRead,
     WATemplateCreate, WATemplateRead,
     WASimulateInbound,
 )
+
+_META_GRAPH_URL = "https://graph.facebook.com/v19.0"
+
+
+async def _meta_send_text(
+    phone_number_id: str, api_token: str, to: str, body: str
+) -> Tuple[Optional[str], Optional[str]]:
+    """Call Meta Cloud API for a text message. Returns (external_msg_id, error_message)."""
+    url = f"{_META_GRAPH_URL}/{phone_number_id}/messages"
+    payload = {
+        "messaging_product": "whatsapp",
+        "to": to.lstrip("+"),
+        "type": "text",
+        "text": {"body": body},
+    }
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.post(
+                url, json=payload,
+                headers={"Authorization": f"Bearer {api_token}"},
+            )
+        data = resp.json()
+        if resp.is_success:
+            msg_id = (data.get("messages") or [{}])[0].get("id")
+            return msg_id, None
+        error = data.get("error", {}).get("message", resp.text[:300])
+        return None, error
+    except httpx.RequestError as exc:
+        return None, f"Network error: {exc}"
+
+
+async def _meta_send_template(
+    phone_number_id: str, api_token: str, to: str,
+    template_name: str, language: str, variables: List[str],
+) -> Tuple[Optional[str], Optional[str]]:
+    """Call Meta Cloud API for a template message. Returns (external_msg_id, error_message)."""
+    url = f"{_META_GRAPH_URL}/{phone_number_id}/messages"
+    template: dict[str, Any] = {"name": template_name, "language": {"code": language}}
+    if variables:
+        template["components"] = [
+            {"type": "body", "parameters": [{"type": "text", "text": v} for v in variables]}
+        ]
+    payload = {
+        "messaging_product": "whatsapp",
+        "to": to.lstrip("+"),
+        "type": "template",
+        "template": template,
+    }
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.post(
+                url, json=payload,
+                headers={"Authorization": f"Bearer {api_token}"},
+            )
+        data = resp.json()
+        if resp.is_success:
+            msg_id = (data.get("messages") or [{}])[0].get("id")
+            return msg_id, None
+        error = data.get("error", {}).get("message", resp.text[:300])
+        return None, error
+    except httpx.RequestError as exc:
+        return None, f"Network error: {exc}"
 
 router = APIRouter()
 
@@ -68,6 +131,23 @@ async def add_config(
     return WAConfigRead.model_validate(config)
 
 
+@router.patch("/configs/{config_id}", response_model=WAConfigRead)
+async def update_config(
+    config_id: uuid.UUID,
+    body: WAConfigUpdate,
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(get_current_user),
+):
+    config = await db.get(WhatsAppConfig, config_id)
+    if not config or not config.is_active:
+        raise HTTPException(404, "WhatsApp config not found or inactive")
+    for key, value in body.model_dump(exclude_unset=True).items():
+        setattr(config, key, value)
+    await db.commit()
+    await db.refresh(config)
+    return WAConfigRead.model_validate(config)
+
+
 # ── Send Messages ─────────────────────────────────────────────────────────────
 
 async def _get_config_or_404(db: AsyncSession, config_id: uuid.UUID) -> WhatsAppConfig:
@@ -85,9 +165,19 @@ async def send_text(
 ):
     config = await _get_config_or_404(db, body.config_id)
 
-    # In demo mode: immediately mark DELIVERED
-    status = WAMessageStatus.DELIVERED if config.is_demo_mode else WAMessageStatus.QUEUED
-    external_id = f"demo_{uuid.uuid4().hex[:12]}" if config.is_demo_mode else None
+    if config.is_demo_mode:
+        status = WAMessageStatus.DELIVERED
+        external_id: Optional[str] = f"demo_{uuid.uuid4().hex[:12]}"
+        error_msg: Optional[str] = None
+        delivered_at: Optional[datetime] = datetime.now(tz=timezone.utc)
+    else:
+        if not config.api_token or not config.business_phone_id:
+            raise HTTPException(400, "Live mode requires api_token and business_phone_id in WhatsApp config")
+        external_id, error_msg = await _meta_send_text(
+            config.business_phone_id, config.api_token, body.phone, body.body
+        )
+        status = WAMessageStatus.SENT if external_id else WAMessageStatus.FAILED
+        delivered_at = None
 
     msg = WhatsAppMessage(
         config_id=config.id,
@@ -98,7 +188,8 @@ async def send_text(
         contact_name=body.contact_name,
         body=body.body,
         external_msg_id=external_id,
-        delivered_at=datetime.now(tz=timezone.utc) if config.is_demo_mode else None,
+        error_message=error_msg,
+        delivered_at=delivered_at,
         linked_module=body.linked_module,
         linked_object_id=body.linked_object_id,
         linked_object_ref=body.linked_object_ref,
@@ -118,7 +209,7 @@ async def send_template(
 ):
     config = await _get_config_or_404(db, body.config_id)
 
-    # Resolve template body for logging
+    # Resolve template for body rendering and language
     tmpl_q = await db.execute(
         select(WhatsAppTemplate).where(WhatsAppTemplate.template_name == body.template_name)
     )
@@ -129,8 +220,21 @@ async def send_template(
         for i, var in enumerate(body.variables, start=1):
             rendered_body = rendered_body.replace(f"{{{{{i}}}}}", var)
 
-    status = WAMessageStatus.DELIVERED if config.is_demo_mode else WAMessageStatus.QUEUED
-    external_id = f"demo_{uuid.uuid4().hex[:12]}" if config.is_demo_mode else None
+    if config.is_demo_mode:
+        status = WAMessageStatus.DELIVERED
+        external_id = f"demo_{uuid.uuid4().hex[:12]}"
+        error_msg = None
+        delivered_at = datetime.now(tz=timezone.utc)
+    else:
+        if not config.api_token or not config.business_phone_id:
+            raise HTTPException(400, "Live mode requires api_token and business_phone_id in WhatsApp config")
+        language = tmpl.language if tmpl else "en"
+        external_id, error_msg = await _meta_send_template(
+            config.business_phone_id, config.api_token, body.phone,
+            body.template_name, language, body.variables,
+        )
+        status = WAMessageStatus.SENT if external_id else WAMessageStatus.FAILED
+        delivered_at = None
 
     msg = WhatsAppMessage(
         config_id=config.id,
@@ -143,7 +247,8 @@ async def send_template(
         template_name=body.template_name,
         template_vars=body.variables,
         external_msg_id=external_id,
-        delivered_at=datetime.now(tz=timezone.utc) if config.is_demo_mode else None,
+        error_message=error_msg,
+        delivered_at=delivered_at,
         linked_module=body.linked_module,
         linked_object_id=body.linked_object_id,
         linked_object_ref=body.linked_object_ref,

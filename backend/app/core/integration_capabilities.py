@@ -86,11 +86,19 @@ CAPABILITIES: tuple[IntegrationCapability, ...] = (
     IntegrationCapability(
         provider="WHATSAPP",
         label="WhatsApp",
-        status=IntegrationCapabilityStatus.SIMULATED_ONLY,
+        status=IntegrationCapabilityStatus.SANDBOX_READY,
+        live_env_vars=(),  # credentials stored in DB per WhatsAppConfig row, not env vars
+        sandbox_supported=True,
         simulation_supported=True,
+        production_execution_allowed=True,
         requires_signature_validation=True,
         frontend_route="/dashboard/whatsapp",
-        notes="Demo-mode send, inbound, and template flows exist.",
+        notes=(
+            "Live Meta Cloud API send implemented. "
+            "Credentials (api_token, business_phone_id, webhook_verify_token) stored in whatsapp_configs table. "
+            "Set is_demo_mode=False via Config tab PATCH to enable live sends. "
+            "Requires Meta Business Manager account, approved phone number, and system user access token."
+        ),
     ),
     IntegrationCapability(
         provider="IOT",

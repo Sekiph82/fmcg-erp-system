@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-  waApi, WAConfig, WAMessage, WATemplate,
+  waApi, WAConfig, WAConfigUpdate, WAMessage, WATemplate,
   WADirection, STATUS_COLOR, STATUS_ICON,
 } from "@/lib/whatsapp";
 import { Button } from "@/components/ui/Button";
@@ -62,6 +62,8 @@ export default function WhatsAppPage() {
   const [showSend, setShowSend] = useState(false);
   const [showNewConfig, setShowNewConfig] = useState(false);
   const [newConfigForm, setNewConfigForm] = useState({ display_name: "", business_phone_no: "", provider: "META" });
+  const [editingConfig, setEditingConfig] = useState<WAConfig | null>(null);
+  const [editForm, setEditForm] = useState<WAConfigUpdate>({});
 
   const { data: configs = [] } = useQuery({
     queryKey: ["wa-configs"],
@@ -122,6 +124,16 @@ export default function WhatsAppPage() {
       setActiveConfig(c);
       setShowNewConfig(false);
       setNewConfigForm({ display_name: "", business_phone_no: "", provider: "META" });
+    },
+  });
+
+  const updateConfig = useMutation({
+    mutationFn: () => waApi.updateConfig(editingConfig!.id, editForm),
+    onSuccess: (c) => {
+      qc.invalidateQueries({ queryKey: ["wa-configs"] });
+      if (activeConfig?.id === c.id) setActiveConfig(c);
+      setEditingConfig(null);
+      setEditForm({});
     },
   });
 
@@ -317,6 +329,7 @@ export default function WhatsAppPage() {
                 <th className="px-4 py-2 text-left">Provider</th>
                 <th className="px-4 py-2 text-center">Mode</th>
                 <th className="px-4 py-2 text-center">Status</th>
+                <th className="px-4 py-2 text-center">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -335,10 +348,18 @@ export default function WhatsAppPage() {
                       {c.is_active ? "Active" : "Inactive"}
                     </span>
                   </td>
+                  <td className="px-4 py-3 text-center">
+                    <button
+                      className="text-xs text-blue-600 hover:underline"
+                      onClick={() => { setEditingConfig(c); setEditForm({ is_demo_mode: c.is_demo_mode }); }}
+                    >
+                      Edit
+                    </button>
+                  </td>
                 </tr>
               ))}
               {configs.length === 0 && (
-                <tr><td colSpan={5} className="px-5 py-8 text-center text-gray-400">No accounts — add one above</td></tr>
+                <tr><td colSpan={6} className="px-5 py-8 text-center text-gray-400">No accounts — add one above</td></tr>
               )}
             </tbody>
           </table>
@@ -390,6 +411,86 @@ export default function WhatsAppPage() {
               >
                 Send
               </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit config modal */}
+      {editingConfig && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="font-semibold text-lg">Edit WhatsApp Account</h2>
+              <span className={`text-xs px-2 py-0.5 rounded font-medium ${editForm.is_demo_mode === false ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"}`}>
+                {editForm.is_demo_mode === false ? "Live Mode" : "Demo Mode"}
+              </span>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Phone Number ID <span className="text-gray-400">(Meta Phone Number ID)</span></label>
+                <input
+                  className="w-full border rounded px-3 py-2 text-sm font-mono"
+                  placeholder="e.g. 123456789012345"
+                  value={editForm.business_phone_id ?? ""}
+                  onChange={(e) => setEditForm((f) => ({ ...f, business_phone_id: e.target.value || undefined }))}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Business Phone Number</label>
+                <input
+                  className="w-full border rounded px-3 py-2 text-sm"
+                  placeholder="+254700000000"
+                  value={editForm.business_phone_no ?? ""}
+                  onChange={(e) => setEditForm((f) => ({ ...f, business_phone_no: e.target.value || undefined }))}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Access Token <span className="text-gray-400">(System User token)</span></label>
+                <input
+                  type="password"
+                  className="w-full border rounded px-3 py-2 text-sm font-mono"
+                  placeholder="Enter token to update (leave blank to keep current)"
+                  value={editForm.api_token ?? ""}
+                  onChange={(e) => setEditForm((f) => ({ ...f, api_token: e.target.value || undefined }))}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Webhook Verify Token</label>
+                <input
+                  type="password"
+                  className="w-full border rounded px-3 py-2 text-sm font-mono"
+                  placeholder="Enter verify token to update"
+                  value={editForm.webhook_verify_token ?? ""}
+                  onChange={(e) => setEditForm((f) => ({ ...f, webhook_verify_token: e.target.value || undefined }))}
+                />
+              </div>
+              <div className="flex items-center gap-3 pt-1">
+                <label className="text-sm font-medium text-gray-700">Mode:</label>
+                <button
+                  type="button"
+                  className={`px-3 py-1.5 rounded text-xs font-medium border ${editForm.is_demo_mode !== false ? "bg-amber-50 border-amber-300 text-amber-700" : "bg-white border-gray-200 text-gray-500"}`}
+                  onClick={() => setEditForm((f) => ({ ...f, is_demo_mode: true }))}
+                >
+                  Demo (simulated)
+                </button>
+                <button
+                  type="button"
+                  className={`px-3 py-1.5 rounded text-xs font-medium border ${editForm.is_demo_mode === false ? "bg-green-50 border-green-400 text-green-700" : "bg-white border-gray-200 text-gray-500"}`}
+                  onClick={() => setEditForm((f) => ({ ...f, is_demo_mode: false }))}
+                >
+                  Live (calls Meta API)
+                </button>
+              </div>
+              {editForm.is_demo_mode === false && (
+                <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2">
+                  Live mode will call the real Meta Cloud API. Ensure Phone Number ID and Access Token are set above.
+                </p>
+              )}
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button variant="secondary" onClick={() => { setEditingConfig(null); setEditForm({}); }}>Cancel</Button>
+              <Button loading={updateConfig.isPending} onClick={() => updateConfig.mutate()}>Save</Button>
             </div>
           </div>
         </div>

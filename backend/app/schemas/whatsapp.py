@@ -104,6 +104,17 @@ class WATemplateRead(BaseModel):
     created_at:     datetime
 
 
+class WAConfigUpdate(BaseModel):
+    display_name:         Optional[str] = None
+    business_phone_id:    Optional[str] = None
+    business_phone_no:    Optional[str] = None
+    api_token:            Optional[str] = None
+    webhook_verify_token: Optional[str] = None
+    provider:             Optional[str] = None
+    is_demo_mode:         Optional[bool] = None
+    is_active:            Optional[bool] = None
+
+
 class WASimulateInbound(BaseModel):
     config_id:         uuid.UUID
     phone:             str

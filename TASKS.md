@@ -257,7 +257,7 @@ Rules:
 
 ### Task ID: TASK-004 — Wire WhatsApp production config
 
-- **Status:** Audited — implementation required (2 missing code pieces + Meta account setup)
+- **Status:** Blocked — implementation done, waiting for Meta credentials/live test
 - **Priority:** P0
 - **Category:** Integration
 - **Why it matters:** `WhatsAppConfig.is_demo_mode = True` by default — all messages are simulated, nothing is sent to customers. Setting `is_demo_mode=False` currently saves to DB with QUEUED status but never actually calls Meta Cloud API.
@@ -295,26 +295,38 @@ Rules:
     5. `whatsapp.ts` / `page.tsx` — add `updateConfig` API call + live-mode toggle UI in Config tab (~20 lines total)
   - Total estimated: ~80 lines across 4 files. No migrations, no schema changes, no new files.
 - **Do not touch:** `WhatsAppMessage`, `WhatsAppTemplate` models; message log; notification system; messaging.py (internal team chat — unrelated)
-- **Started at:** 2026-05-31 (audit)
-- **Completed at:**
-- **Changed files:** None yet (audit only)
+- **Started at:** 2026-05-31 (audit) / 2026-05-31 (implementation)
+- **Completed at:** Blocked on Meta credentials
+- **Changed files:**
+  - `backend/app/api/v1/endpoints/whatsapp.py` (added `_meta_send_text`, `_meta_send_template` helpers; updated `send_text`, `send_template`; added `PATCH /configs/{id}`)
+  - `backend/app/schemas/whatsapp.py` (added `WAConfigUpdate` schema)
+  - `backend/app/core/integration_capabilities.py` (updated WhatsApp status `SIMULATED_ONLY` → `SANDBOX_READY`, set `production_execution_allowed=True`)
+  - `frontend/src/lib/whatsapp.ts` (added `WAConfigUpdate` type, added `updateConfig(id, data)` method)
+  - `frontend/src/app/dashboard/whatsapp/page.tsx` (added Edit button in Config tab, edit modal with credential fields + live/demo toggle)
+  - `TASKS.md` (this card)
+- **Created files:**
+  - `backend/tests/test_whatsapp_live_send.py` (6 tests for live send helpers)
+- **Deleted files:** None
 - **Tests / checks run:**
-  - Read `backend/app/models/whatsapp.py` — full model confirmed
-  - Read `backend/app/api/v1/endpoints/whatsapp.py` — send flow gap confirmed (no Meta API call when `is_demo_mode=False`)
-  - Read `backend/app/core/integration_capabilities.py:87-93` — `SIMULATED_ONLY` confirmed
-  - Searched `backend/app/core/config.py` — zero WhatsApp env vars confirmed
-  - Searched `backend/app/` for `graph.facebook.com` — zero hits confirmed (no Meta API call anywhere in backend)
-  - Read `.env.development.example` + `.env.production.example` — no WhatsApp section (correct by design)
-  - Read `frontend/src/app/dashboard/whatsapp/page.tsx` — full UI confirmed, `is_demo_mode: true` hardcoded on new config
-  - Read `frontend/src/lib/whatsapp.ts` — no `updateConfig` function confirmed
-- **Result:** Audited — code implementation required before live sends are possible
+  - `python -W all -c "import app.main"` → **IMPORT OK** (all warnings pre-existing, none from WhatsApp changes)
+  - `pytest tests/test_whatsapp_live_send.py -v` → **6/6 PASS**
+  - `npx tsc --noEmit` → **CLEAN** (exit 0)
+- **Result:** Live send code complete. Meta Cloud API will be called when `is_demo_mode=False`. Blocked on Meta Business Manager account + credentials.
 - **Known limitations:**
-  - Meta template messages must be pre-approved in Meta Business Manager before `send_template` will succeed live.
-  - `POST /webhook` has no app-secret HMAC signature validation — security gap (lower priority, can add later).
-  - `api_token` is stored in DB plaintext — comment in model says "store encrypted in prod" (future hardening).
-- **Git commit / branch:** Not committed yet
-- **Graphify refresh after implementation:** backend
-- **Graphify refresh status:** Needed after implementation
+  - Meta Business Manager account required
+  - WhatsApp Business Account required
+  - Phone Number ID required (from Meta developer portal)
+  - Permanent System User access token with `whatsapp_business_messaging` permission required
+  - Public HTTPS webhook URL required, configured in Meta webhook settings
+  - `messages` webhook subscription required in Meta
+  - Approved message templates required for `send_template` to succeed in live mode (Meta approval 24-48h)
+  - Live send / webhook flow not tested — blocked on real Meta credentials
+  - `POST /webhook` HMAC app-secret signature validation not implemented — future hardening
+  - `api_token` stored as DB plaintext — model comment notes encryption as future hardening
+- **Git commit / branch:** Not committed yet (awaiting user approval)
+- **Graphify refresh after implementation:** backend + frontend
+- **Graphify refresh status:** Pending user approval — do not run now
+- **Next action:** Configure Meta credentials in WhatsApp Config UI (Config tab → Edit → enter Phone Number ID, Access Token, Verify Token, toggle Live mode) and run live sandbox/production test when Meta account is ready.
 - **Notes:**
   - **Architecture decision:** WhatsApp credentials are DB-stored per config row, NOT env vars. This supports multiple WA accounts (e.g. Sales team number + Support number). No `.env` changes needed.
   - **Meta credentials to enter via `POST /api/v1/whatsapp/configs` (once PATCH endpoint exists, via PATCH):**

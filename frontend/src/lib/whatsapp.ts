@@ -14,6 +14,17 @@ export interface WAConfig {
   created_at: string;
 }
 
+export interface WAConfigUpdate {
+  display_name?: string;
+  business_phone_id?: string;
+  business_phone_no?: string;
+  api_token?: string;
+  webhook_verify_token?: string;
+  provider?: string;
+  is_demo_mode?: boolean;
+  is_active?: boolean;
+}
+
 export interface WAMessage {
   id: string;
   config_id: string;
@@ -63,6 +74,10 @@ export const waApi = {
     display_name: string; business_phone_no?: string; provider?: string; is_demo_mode?: boolean;
   }): Promise<WAConfig> {
     const r = await apiClient.post<WAConfig>(`${BASE}/configs`, data);
+    return r.data;
+  },
+  async updateConfig(id: string, data: WAConfigUpdate): Promise<WAConfig> {
+    const r = await apiClient.patch<WAConfig>(`${BASE}/configs/${id}`, data);
     return r.data;
   },
   async sendText(data: {
