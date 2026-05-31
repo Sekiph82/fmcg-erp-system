@@ -399,27 +399,111 @@ Rules:
 
 ### Task ID: TASK-006 — GS1 routes auth guard (38 unprotected endpoints)
 
-- **Status:** Pending
+- **Status:** Audited — implementation plan ready
 - **Priority:** P1
 - **Category:** Security
-- **Why it matters:** Graphify backend graph (Community 133) found 38 GS1 routes with no auth guard. Any unauthenticated caller can generate and print barcodes.
-- **Source / evidence:** Graphify backend GRAPH_REPORT.md Community 133 finding. `backend/app/api/v1/endpoints/` gs1/barcode router inspection needed.
-- **Affected area:** `backend/app/api/v1/endpoints/` (GS1/barcode/label endpoints)
-- **Risk:** Medium (data integrity; unauthorized label generation)
+- **Why it matters:** ALL 36 GS1/barcode/label routes in `gs1.py` have zero auth guards. Any unauthenticated HTTP caller can generate barcodes, create print jobs, trigger AI agents, and read all internal GS1/SSCC/pallet data.
+- **Source / evidence:**
+  - Full manual read of `backend/app/api/v1/endpoints/gs1.py`. Zero occurrences of `get_current_user` or `require_permission` in that file.
+  - Graphify `ERP_GRAPHIFY_ACTION_PLAN.md` line 507: `GS1/Label Printing — Recently changed; 38 backend routes; Community 48 (96 nodes) — gs1.py, gs1_service.py, gs1.py`
+  - **Discrepancy:** Graphify said 38 routes; current code has 36 routes. Trust current code — 36 routes confirmed by manual read. 2-route difference likely from Graphify snapshot lag.
+  - **Community 133 correction:** Original TASK-006 text incorrectly cited "Community 133 finding for GS1 auth". Community 133 in Graphify is about `adminCredentials`/`limitedCredentials` (E2E test fixture — TASK-007 topic). GS1 is in Community 48 (96 nodes). No explicit Graphify finding about "38 unprotected routes" — that was an inference from the route count.
+- **Affected area:** `backend/app/api/v1/endpoints/gs1.py` — single file, all 36 routes. Route prefix: `/api/v1/gs1`.
+- **Risk:** Medium-High (data integrity; unauthorized barcode generation; unauthorized label printing; unauthorized AI agent triggering)
 - **Recommended timing:** Next
-- **Needs audit before implementation:** Yes — run `grep -n "router\." backend/app/api/v1/endpoints/gs1*.py` to confirm which routes lack `Depends(get_current_user)` or `require_permission`.
-- **Implementation scope:** Add `Depends(get_current_user)` or `RequirePermission("gs1.print")` to unprotected GS1 endpoints. Do not change business logic.
-- **Do not touch:** GS1 service logic, barcode generation algorithm, frontend
-- **Started at:**
+- **Needs audit before implementation:** Done.
+- **Implementation scope:** Add `_=Depends(require_permission("gs1", "<action>"))` to each route. Permission codes already defined in module_registry: `gs1.view`, `gs1.create`, `gs1.edit`, `gs1.approve`, `gs1.print`, `gs1.report`, `gs1.admin`. One import line needed: `from app.core.deps import require_permission`.
+- **Do not touch:** GS1 service logic, barcode generation algorithm, frontend, schemas, DB schema
+- **Started at:** 2026-05-31
 - **Completed at:**
-- **Changed files:** None yet
-- **Tests / checks run:** None yet
-- **Result:** Pending
-- **Known limitations:** None expected.
+- **Changed files:** `backend/app/api/v1/endpoints/gs1.py` only
+- **Tests / checks run:** Audit-only. No source changes yet.
+- **Result:** Audited.
+- **Known limitations:** `complete_print_job` has `printed_by: str = Query("system")` — after adding auth, this should be replaced with `current_user.username` or `current_user.full_name`. Note separately; do not block auth guard implementation on it.
 - **Git commit / branch:** Not committed yet
 - **Graphify refresh after implementation:** backend
 - **Graphify refresh status:** Needed after implementation
-- **Notes:** Graphify finding: `adminCredentials`, `limitedCredentials` — also check E2E test file for exposed test credentials.
+
+#### Audit — Routes Found: 36 (all unguarded)
+
+| # | Method | Path | Function | Guard | Sensitivity | Recommended Guard |
+|---|--------|------|----------|-------|-------------|------------------|
+| 1 | GET | /gs1/dashboard | get_dashboard | None | Auth-only | `gs1.view` |
+| 2 | POST | /gs1/config | create_company_config | None | Admin | `gs1.admin` |
+| 3 | GET | /gs1/config | list_company_configs | None | Auth-only | `gs1.view` |
+| 4 | GET | /gs1/config/{cfg_id} | get_company_config | None | Auth-only | `gs1.view` |
+| 5 | POST | /gs1/products | create_product_config | None | Permission | `gs1.create` |
+| 6 | GET | /gs1/products | list_product_configs | None | Auth-only | `gs1.view` |
+| 7 | GET | /gs1/products/{cfg_id} | get_product_config | None | Auth-only | `gs1.view` |
+| 8 | PATCH | /gs1/products/{cfg_id} | update_product_config | None | Permission | `gs1.edit` |
+| 9 | GET | /gs1/products/by-product/{product_id} | get_config_by_product | None | Auth-only | `gs1.view` |
+| 10 | POST | /gs1/barcode/generate | generate_barcode | None | Permission | `gs1.create` |
+| 11 | GET | /gs1/barcode | list_barcodes | None | Auth-only | `gs1.view` |
+| 12 | GET | /gs1/barcode/{record_id} | get_barcode | None | Auth-only | `gs1.view` |
+| 13 | POST | /gs1/scan/decode | decode_gs1 | None | Auth-only | `gs1.view` |
+| 14 | GET | /gs1/scan/decode | decode_gs1_get | None | Auth-only | `gs1.view` |
+| 15 | POST | /gs1/sscc/generate | generate_sscc | None | Permission | `gs1.create` |
+| 16 | GET | /gs1/sscc | list_sscc_pallets | None | Auth-only | `gs1.view` |
+| 17 | GET | /gs1/sscc/{sscc_id} | get_sscc_pallet | None | Auth-only | `gs1.view` |
+| 18 | POST | /gs1/sscc/{sscc_id}/lots | add_lot_to_sscc | None | Permission | `gs1.create` |
+| 19 | PATCH | /gs1/sscc/{sscc_id}/status | update_sscc_status | None | Permission | `gs1.edit` |
+| 20 | POST | /gs1/labels/templates | create_template | None | Permission | `gs1.create` |
+| 21 | GET | /gs1/labels/templates | list_templates | None | Auth-only | `gs1.view` |
+| 22 | GET | /gs1/labels/templates/{tmpl_id} | get_template | None | Auth-only | `gs1.view` |
+| 23 | PATCH | /gs1/labels/templates/{tmpl_id} | update_template | None | Permission | `gs1.edit` |
+| 24 | POST | /gs1/labels/print | create_print_job | None | Permission | `gs1.print` |
+| 25 | GET | /gs1/labels/print | list_print_jobs | None | Auth-only | `gs1.view` |
+| 26 | POST | /gs1/labels/print/{job_id}/complete | complete_print_job | None | Permission | `gs1.print` |
+| 27 | POST | /gs1/ai/run-label-validator | run_label_validator | None | Admin | `gs1.admin` |
+| 28 | POST | /gs1/ai/run-packaging-optimizer | run_packaging_optimizer | None | Admin | `gs1.admin` |
+| 29 | GET | /gs1/ai/recommendations | list_recommendations | None | Auth-only | `gs1.view` |
+| 30 | PATCH | /gs1/ai/recommendations/{rec_id} | review_recommendation | None | Permission | `gs1.approve` |
+| 31 | GET | /gs1/reports/print-history | print_history | None | Auth-only | `gs1.report` |
+| 32 | GET | /gs1/reports/sscc-tracking | sscc_tracking | None | Auth-only | `gs1.report` |
+| 33 | GET | /gs1/reports/packaging-hierarchy | packaging_hierarchy | None | Auth-only | `gs1.report` |
+| 34 | GET | /gs1/reports/barcode-usage | barcode_usage | None | Auth-only | `gs1.report` |
+| 35 | POST | /gs1/scan/dispatch-validate | dispatch_validate | None | Auth-only | `gs1.view` |
+| 36 | GET | /gs1/gtin/lookup | gtin_lookup | None | Auth-only | `gs1.view` |
+
+**Guard counts:**
+- `gs1.view` — 18 routes (includes scan, decode, SSCC reads, barcode reads)
+- `gs1.create` — 6 routes
+- `gs1.edit` — 3 routes
+- `gs1.print` — 2 routes
+- `gs1.report` — 4 routes
+- `gs1.approve` — 1 route
+- `gs1.admin` — 3 routes
+
+**Breaking risk if guards added:** LOW. Frontend dashboard users are already authenticated. Only risk is undocumented external callers polling these endpoints without a session cookie.
+
+#### Auth pattern to use (from `bom.py` and `consumer_complaints.py`)
+
+```python
+# Import (add to gs1.py line 8)
+from app.core.deps import require_permission
+
+# Usage
+_=Depends(require_permission("gs1", "view"))   # GET reads
+_=Depends(require_permission("gs1", "create")) # POST writes
+_=Depends(require_permission("gs1", "edit"))   # PATCH
+_=Depends(require_permission("gs1", "print"))  # print job create/complete
+_=Depends(require_permission("gs1", "report")) # GET /reports/*
+_=Depends(require_permission("gs1", "approve"))# AI rec review
+_=Depends(require_permission("gs1", "admin"))  # config create, AI agent triggers
+```
+
+#### Tests needed (to add during implementation)
+
+1. `GET /gs1/dashboard` unauthenticated → 401
+2. `POST /gs1/barcode/generate` unauthenticated → 401
+3. `POST /gs1/barcode/generate` no `gs1.create` → 403
+4. `POST /gs1/labels/print` no `gs1.print` → 403
+5. `POST /gs1/ai/run-label-validator` no `gs1.admin` → 403
+6. Authorized user with `gs1.print` can create print job → 201
+
+#### Additional fix to note (non-blocking)
+
+`complete_print_job` uses `printed_by: str = Query("system")` — after auth guard added, replace with `current_user.username` (or `.full_name`). Not blocking the auth guard PR but should be done in same commit.
 
 ---
 
