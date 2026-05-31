@@ -1,5 +1,45 @@
 # TASKS
 
+## Post Button-Recovery Verification — 2026-05-31
+
+### Results
+
+| Check | Result | Notes |
+|---|---|---|
+| Docker compose (db, redis, backend, frontend) | HEALTHY | All 4 services up; `docker compose ps` confirms healthy status |
+| Backend import check (`python -c "import app.main"`) | OK | No module-registration failures after venv fix (see Root Cause below) |
+| Alembic current | `20260518_0001 (head)` | DB at head; single head confirmed |
+| Alembic heads | `20260518_0001 (head)` | One head in migration chain |
+| Backend pytest | **482 passed, 0 failed** | 175 warnings (pre-existing; no new failures) |
+| Frontend type-check (`tsc --noEmit`) | **CLEAN** | 0 errors |
+| Frontend build (`npm run build`) | **CLEAN** | Build completed; 818 dashboard routes |
+| `find-redirect-stubs.js` | 153 redirect stubs | Expected; all are consolidation redirects |
+| `summarize-redirect-stubs.js` | Saved `docs/REDIRECT_STUB_ROUTE_AUDIT.json` | OK |
+| `find-broken-action-cards.js` | **0 broken action cards** | Clean |
+| `audit-action-card-sources.js` | 813 hrefs scanned; 0 stub refs | Saved `docs/ACTION_CARD_SOURCE_INVENTORY.json` |
+
+### Root Cause — Venv Missing Packages
+
+**Problem:** `pyotp`, `python-dateutil`, `qrcode[pil]` listed in `backend/requirements.txt` but absent from local `backend/venv`. Caused module-registry failures for `auth` and `fixed_assets` on import check.
+
+**Fix (smallest safe change):** Installed all 3 into venv:
+```
+backend/venv/Scripts/pip install pyotp>=2.9.0 python-dateutil>=2.9.0 "qrcode[pil]>=7.4.2"
+```
+No code changes. Packages now resolve to `backend/venv/Lib/site-packages/`. Import check clean after install.
+
+**Residual warnings (pre-existing, non-blocking):**
+- `SAWarning`: `TaskDependency.task` relationship overlap in `chemical_treatment.py:151`
+- `UserWarning`: Pydantic `model_params`/`model_no` namespace conflict
+- `DeprecationWarning`: `regex` → `pattern` in `allergen.py` (FastAPI Query)
+- `DeprecationWarning`: `datetime.utcnow()` in jose JWT
+
+### Pending — Barcode Label Print Bug
+
+User reported: cannot create and print barcode labels in the app. Investigation deferred — verify requires Docker running. Track as next task.
+
+---
+
 ## Current Phase
 COMPLIANCE REGULATORY CERTS JSON FIX — COMPLETE. 2026-05-24. Root cause: bare `fetch("/api/v1/...")` in `quality/certificates/page.tsx` hit Next.js port 3000 instead of backend port 8000, returning HTML 404 which failed JSON.parse. Fix: added `API_BASE` const and prefixed all fetch calls. Redirect cache defense also verified (302 + no-store). type-check CLEAN, build CLEAN, all audits green. If normal Chrome still shows old redirect: Chrome DevTools → Application → Storage → Clear site data for localhost:3000.
 

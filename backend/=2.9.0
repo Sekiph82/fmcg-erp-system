@@ -1,0 +1,12 @@
+Collecting pyotp
+  Using cached pyotp-2.9.0-py3-none-any.whl.metadata (9.8 kB)
+Collecting python-dateutil
+  Using cached python_dateutil-2.9.0.post0-py2.py3-none-any.whl.metadata (8.4 kB)
+Requirement already satisfied: six>=1.5 in c:\users\sekip\desktop\fmcg-erp-system-main\backend\venv\lib\site-packages (from python-dateutil) (1.17.0)
+Using cached pyotp-2.9.0-py3-none-any.whl (13 kB)
+Using cached python_dateutil-2.9.0.post0-py2.py3-none-any.whl (229 kB)
+Installing collected packages: python-dateutil, pyotp
+Successfully installed pyotp-2.9.0 python-dateutil-2.9.0.post0
+
+[notice] A new release of pip is available: 25.0.1 -> 26.1.1
+[notice] To update, run: C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\venv\Scripts\python.exe -m pip install --upgrade pip
