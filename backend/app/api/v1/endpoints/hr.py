@@ -116,12 +116,13 @@ async def delete_employee(employee_id: uuid.UUID, db: AsyncSession = Depends(get
             dependencies=[Depends(require_permission("hr", "view"))])
 async def list_shift_templates(
     active_only: bool = Query(True),
+    limit: int = Query(200, le=500),
     db: AsyncSession = Depends(get_db),
 ):
     q = select(ShiftTemplate)
     if active_only:
         q = q.where(ShiftTemplate.is_active == True)
-    result = await db.execute(q.order_by(ShiftTemplate.name))
+    result = await db.execute(q.order_by(ShiftTemplate.name).limit(limit))
     return result.scalars().all()
 
 
@@ -160,6 +161,7 @@ async def list_shift_assignments(
     employee_id: Optional[uuid.UUID] = Query(None),
     department: Optional[str] = Query(None),
     as_of: Optional[date] = Query(None),
+    limit: int = Query(200, le=500),
     db: AsyncSession = Depends(get_db),
 ):
     q = (
@@ -178,7 +180,7 @@ async def list_shift_assignments(
         )
     if department:
         q = q.join(Employee, EmployeeShiftAssignment.employee_id == Employee.id).where(Employee.department == department)
-    result = await db.execute(q)
+    result = await db.execute(q.limit(limit))
     return result.scalars().all()
 
 
@@ -397,6 +399,7 @@ async def review_leave_request(
 async def list_leave_balances(
     employee_id: Optional[uuid.UUID] = Query(None),
     year: Optional[int] = Query(None),
+    limit: int = Query(200, le=500),
     db: AsyncSession = Depends(get_db),
 ):
     q = select(LeaveBalance)
@@ -404,7 +407,7 @@ async def list_leave_balances(
         q = q.where(LeaveBalance.employee_id == employee_id)
     if year:
         q = q.where(LeaveBalance.year == year)
-    result = await db.execute(q)
+    result = await db.execute(q.limit(limit))
     rows = result.scalars().all()
     return [
         LeaveBalanceRead(
@@ -424,9 +427,12 @@ async def list_leave_balances(
 
 @router.get("/payroll/periods/", response_model=List[PayrollPeriodRead],
             dependencies=[Depends(require_permission("hr", "view"))])
-async def list_payroll_periods(db: AsyncSession = Depends(get_db)):
+async def list_payroll_periods(
+    limit: int = Query(200, le=500),
+    db: AsyncSession = Depends(get_db),
+):
     result = await db.execute(
-        select(PayrollPeriod).order_by(PayrollPeriod.period_year.desc(), PayrollPeriod.period_month.desc())
+        select(PayrollPeriod).order_by(PayrollPeriod.period_year.desc(), PayrollPeriod.period_month.desc()).limit(limit)
     )
     return result.scalars().all()
 

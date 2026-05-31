@@ -352,6 +352,7 @@ async def get_version_history(doc_id: uuid.UUID, db: AsyncSession = Depends(get_
 async def list_expiring_documents(
     days: int = Query(30, ge=1, le=365),
     include_expired: bool = Query(True),
+    limit: int = Query(200, le=500),
     db: AsyncSession = Depends(get_db),
 ):
     """List documents expiring within the next N days (plus already expired if requested)."""
@@ -371,7 +372,7 @@ async def list_expiring_documents(
         conditions.append(Document.expiry_date <= cutoff)
 
     result = await db.execute(
-        select(Document).where(*conditions).order_by(Document.expiry_date.asc())
+        select(Document).where(*conditions).order_by(Document.expiry_date.asc()).limit(limit)
     )
     docs = result.scalars().all()
     return [
@@ -468,6 +469,7 @@ async def list_tags(doc_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
             dependencies=[Depends(require_permission("documents", "view"))])
 async def search_by_tag(
     tag: str = Query(...),
+    limit: int = Query(200, le=500),
     db: AsyncSession = Depends(get_db),
 ):
     """Return documents that have a given tag."""
@@ -476,6 +478,7 @@ async def search_by_tag(
         .join(DocumentTag, Document.id == DocumentTag.document_id)
         .where(DocumentTag.tag == tag.strip().lower(), Document.is_latest == True)
         .order_by(Document.created_at.desc())
+        .limit(limit)
     )
     docs = result.scalars().all()
     return [

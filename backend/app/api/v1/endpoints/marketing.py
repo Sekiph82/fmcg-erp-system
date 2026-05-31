@@ -209,8 +209,11 @@ async def delete_promotion(pid: str, db: AsyncSession = Depends(get_db)):
 
 @router.get("/segments", response_model=List[SegmentRead],
             dependencies=[Depends(require_permission("segments", "view"))])
-async def list_segments(db: AsyncSession = Depends(get_db)):
-    r = await db.execute(select(CustomerSegment).order_by(CustomerSegment.segment_name))
+async def list_segments(
+    limit: int = Query(200, le=500),
+    db: AsyncSession = Depends(get_db),
+):
+    r = await db.execute(select(CustomerSegment).order_by(CustomerSegment.segment_name).limit(limit))
     return r.scalars().all()
 
 
@@ -731,6 +734,7 @@ async def update_influencer_link(lid: str, data: InfluencerLinkUpdate, db: Async
 async def list_attribution(
     influencer_id: Optional[str] = Query(None),
     campaign_id:   Optional[str] = Query(None),
+    limit: int = Query(200, le=500),
     db: AsyncSession = Depends(get_db),
 ):
     q = select(InfluencerAttribution).order_by(InfluencerAttribution.attribution_date.desc())
@@ -738,7 +742,7 @@ async def list_attribution(
         q = q.where(InfluencerAttribution.influencer_id == influencer_id)
     if campaign_id:
         q = q.where(InfluencerAttribution.campaign_id == campaign_id)
-    r = await db.execute(q)
+    r = await db.execute(q.limit(limit))
     return r.scalars().all()
 
 
@@ -824,8 +828,11 @@ async def delete_social(sid: str, db: AsyncSession = Depends(get_db)):
 
 @router.get("/ecommerce/stores", response_model=List[StoreRead],
             dependencies=[Depends(require_permission("ecommerce", "view"))])
-async def list_stores(db: AsyncSession = Depends(get_db)):
-    r = await db.execute(select(Store).order_by(Store.store_name))
+async def list_stores(
+    limit: int = Query(200, le=500),
+    db: AsyncSession = Depends(get_db),
+):
+    r = await db.execute(select(Store).order_by(Store.store_name).limit(limit))
     return r.scalars().all()
 
 
@@ -1006,6 +1013,7 @@ async def delete_product_channel_perf(pid: str, db: AsyncSession = Depends(get_d
 async def list_channel_stock(
     store_id:   Optional[str] = Query(None),
     product_id: Optional[str] = Query(None),
+    limit: int = Query(200, le=500),
     db: AsyncSession = Depends(get_db),
 ):
     q = select(ChannelStock)
@@ -1013,7 +1021,7 @@ async def list_channel_stock(
         q = q.where(ChannelStock.store_id == store_id)
     if product_id:
         q = q.where(ChannelStock.product_id == product_id)
-    r = await db.execute(q)
+    r = await db.execute(q.limit(limit))
     return r.scalars().all()
 
 

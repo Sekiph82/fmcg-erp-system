@@ -762,6 +762,7 @@ def _handling_unit_options():
 async def list_handling_units(
     warehouse_id: Optional[uuid.UUID] = None,
     status: Optional[HandlingUnitStatus] = None,
+    limit: int = Query(200, le=500),
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
@@ -774,7 +775,7 @@ async def list_handling_units(
         q = q.where(HandlingUnit.warehouse_id == warehouse_id)
     if status:
         q = q.where(HandlingUnit.status == status)
-    result = await db.execute(q.order_by(HandlingUnit.created_at.desc()))
+    result = await db.execute(q.order_by(HandlingUnit.created_at.desc()).limit(limit))
     rows = [_handling_unit_read(hu, current_user) for hu in result.scalars().all()]
     return [row for row in rows if row.access and row.access.can_view]
 
@@ -845,6 +846,7 @@ def _pick_wave_options():
 async def list_pick_waves(
     warehouse_id: Optional[uuid.UUID] = None,
     status: Optional[PickWaveStatus] = None,
+    limit: int = Query(200, le=500),
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
@@ -857,7 +859,7 @@ async def list_pick_waves(
         q = q.where(PickWave.warehouse_id == warehouse_id)
     if status:
         q = q.where(PickWave.status == status)
-    result = await db.execute(q.order_by(PickWave.created_at.desc()))
+    result = await db.execute(q.order_by(PickWave.created_at.desc()).limit(limit))
     rows = [_pick_wave_read(wave, current_user) for wave in result.scalars().all()]
     return [row for row in rows if row.access and row.access.can_view]
 
@@ -918,6 +920,7 @@ async def list_picking_tasks(
     warehouse_id: Optional[uuid.UUID] = None,
     status: Optional[PickingTaskStatus] = None,
     assigned_to_id: Optional[uuid.UUID] = None,
+    limit: int = Query(200, le=500),
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
@@ -939,7 +942,7 @@ async def list_picking_tasks(
         q = q.where(PickingTask.status == status)
     if assigned_to_id:
         q = q.where(PickingTask.assigned_to_id == assigned_to_id)
-    result = await db.execute(q.order_by(PickingTask.created_at.desc()))
+    result = await db.execute(q.order_by(PickingTask.created_at.desc()).limit(limit))
     tasks = result.scalars().all()
     rows = []
     for t in tasks:
@@ -1033,6 +1036,7 @@ async def update_picking_task(
 async def list_packing_records(
     warehouse_id: Optional[uuid.UUID] = None,
     status: Optional[PackingStatus] = None,
+    limit: int = Query(200, le=500),
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
@@ -1045,7 +1049,7 @@ async def list_packing_records(
         q = q.where(PackingRecord.warehouse_id == warehouse_id)
     if status:
         q = q.where(PackingRecord.status == status)
-    result = await db.execute(q.order_by(PackingRecord.created_at.desc()))
+    result = await db.execute(q.order_by(PackingRecord.created_at.desc()).limit(limit))
     records = result.scalars().all()
     rows = []
     for rec in records:
@@ -1106,6 +1110,7 @@ async def update_packing_record(
 async def list_replenishment_tasks(
     warehouse_id: Optional[uuid.UUID] = None,
     status: Optional[ReplenishmentStatus] = None,
+    limit: int = Query(200, le=500),
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
@@ -1122,7 +1127,7 @@ async def list_replenishment_tasks(
         q = q.where(ReplenishmentTask.warehouse_id == warehouse_id)
     if status:
         q = q.where(ReplenishmentTask.status == status)
-    result = await db.execute(q.order_by(ReplenishmentTask.created_at.desc()))
+    result = await db.execute(q.order_by(ReplenishmentTask.created_at.desc()).limit(limit))
     tasks = result.scalars().all()
     rows = []
     for t in tasks:

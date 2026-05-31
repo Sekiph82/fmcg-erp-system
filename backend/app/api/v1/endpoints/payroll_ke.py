@@ -132,13 +132,14 @@ async def update_profile(
 @router.get("/tax-bands", response_model=List[TaxBandRead])
 async def list_tax_bands(
     tax_year: Optional[int] = None,
+    limit: int = Query(200, le=500),
     db: AsyncSession = Depends(get_db),
     _=Depends(get_current_user),
 ):
     q = select(KeTaxBand).order_by(KeTaxBand.tax_year.desc(), KeTaxBand.lower_limit)
     if tax_year:
         q = q.where(KeTaxBand.tax_year == tax_year)
-    result = await db.execute(q)
+    result = await db.execute(q.limit(limit))
     return list(result.scalars().all())
 
 
@@ -160,11 +161,12 @@ async def create_tax_band(
 
 @router.get("/statutory-rates", response_model=List[StatutoryRateRead])
 async def list_statutory_rates(
+    limit: int = Query(200, le=500),
     db: AsyncSession = Depends(get_db),
     _=Depends(get_current_user),
 ):
     result = await db.execute(
-        select(KeStatutoryRate).order_by(KeStatutoryRate.rate_year.desc())
+        select(KeStatutoryRate).order_by(KeStatutoryRate.rate_year.desc()).limit(limit)
     )
     return list(result.scalars().all())
 
@@ -527,10 +529,13 @@ async def create_shif_tier(payload: SHIFTierIn, db: AsyncSession = Depends(get_d
 
 @router.get("/shif-tiers",
             dependencies=[Depends(get_current_user)])
-async def list_shif_tiers(db: AsyncSession = Depends(get_db)):
+async def list_shif_tiers(
+    limit: int = Query(200, le=500),
+    db: AsyncSession = Depends(get_db),
+):
     from app.models.payroll_ke import SHIFTier
     rows = (await db.execute(select(SHIFTier).where(SHIFTier.is_active == True)
-                             .order_by(SHIFTier.gross_min))).scalars().all()
+                             .order_by(SHIFTier.gross_min).limit(limit))).scalars().all()
     return [
         {"id": str(r.id), "tier_name": r.tier_name,
          "gross_min": float(r.gross_min) if r.gross_min else None,

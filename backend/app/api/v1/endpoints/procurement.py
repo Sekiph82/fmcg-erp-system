@@ -590,6 +590,7 @@ async def delivery_alerts(
 @router.get("/approval-rules", response_model=List[ProcurementApprovalRuleRead])
 async def list_approval_rules(
     active_only: bool = True,
+    limit: int = Query(200, le=500),
     db: AsyncSession = Depends(get_db),
     current_user=Depends(require_any_permission(("procurement.approve_all", "roles.manage"))),
 ):
@@ -600,7 +601,7 @@ async def list_approval_rules(
     )
     if active_only:
         query = query.where(ProcurementApprovalRule.is_active.is_(True))
-    result = await db.execute(query)
+    result = await db.execute(query.limit(limit))
     return list(result.scalars().all())
 
 
@@ -746,13 +747,14 @@ def _build_eval_read(ev: SupplierEvaluation, current_user=None) -> SupplierEvalu
 @router.get("/rfq/", response_model=List[RFQRead])
 async def list_rfqs(
     status: Optional[RFQStatus] = None,
+    limit: int = Query(200, le=500),
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
     q = select(RFQRequest).options(selectinload(RFQRequest.responses))
     if status:
         q = q.where(RFQRequest.status == status)
-    result = await db.execute(q.order_by(RFQRequest.created_at.desc()))
+    result = await db.execute(q.order_by(RFQRequest.created_at.desc()).limit(limit))
     rfqs = result.scalars().all()
     rfqs = [rfq for rfq in rfqs if _can_view_procurement_record(current_user, rfq)]
     rows = []
@@ -889,6 +891,7 @@ def _build_rfq_detail(rfq: RFQRequest, current_user=None) -> RFQDetailRead:
 async def list_bpas(
     supplier_id: Optional[uuid.UUID] = None,
     status: Optional[BPAStatus] = None,
+    limit: int = Query(200, le=500),
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
@@ -899,7 +902,7 @@ async def list_bpas(
         q = q.where(BlanketPurchaseAgreement.supplier_id == supplier_id)
     if status:
         q = q.where(BlanketPurchaseAgreement.status == status)
-    result = await db.execute(q.order_by(BlanketPurchaseAgreement.valid_to.desc()))
+    result = await db.execute(q.order_by(BlanketPurchaseAgreement.valid_to.desc()).limit(limit))
     bpas = result.scalars().all()
     bpas = [b for b in bpas if _can_view_procurement_record(current_user, b)]
     rows = []
@@ -965,6 +968,7 @@ async def update_bpa(
 @router.get("/reorder-policies/", response_model=List[AutoReorderPolicyRead])
 async def list_reorder_policies(
     active_only: bool = False,
+    limit: int = Query(200, le=500),
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
@@ -973,7 +977,7 @@ async def list_reorder_policies(
     )
     if active_only:
         q = q.where(AutoReorderPolicy.active_flag == True)
-    result = await db.execute(q.order_by(AutoReorderPolicy.created_at.desc()))
+    result = await db.execute(q.order_by(AutoReorderPolicy.created_at.desc()).limit(limit))
     policies = result.scalars().all()
     policies = [p for p in policies if _can_view_procurement_record(current_user, p)]
     rows = []

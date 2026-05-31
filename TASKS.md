@@ -678,7 +678,7 @@ ERP_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN: bool = True
 
 ### Task ID: TASK-008 — Run erp-health-audit.py and address findings
 
-- **Status:** Batch A + B.1 Done — 0 HIGH; finance.py 5/5 real unbounded fixed; Batch B.2+/C/D remain
+- **Status:** Batch A + B.1 + B.2 Done — 0 HIGH; 27/27 real endpoint unbounded fixed across 7 endpoint files; service-layer/row_lock backlog remains
 - **Priority:** P1
 - **Category:** QA / Performance
 - **Why it matters:** Previous run (2026-05-16): 52 HIGH / 624 MEDIUM. Current run (2026-05-31): **1 HIGH / 499 MEDIUM / 1 INFO** — 51 HIGH fixed by prior work, 125 MEDIUM fixed.
@@ -785,8 +785,30 @@ Known limitations:
 - Batch B.2 `procurement.py` (×7 findings) still pending
 - Graphify backend refresh not run — will run after full Batch B group complete
 
-**Batch B.2+ — Remaining endpoint targets (not yet started)**
-- `procurement.py` ×7, `marketing.py` ×6, `wms.py` ×5, `payroll_ke.py` ×5, `hr.py` ×5, `documents.py` ×5
+**Batch B.2 — Remaining 6 endpoint files (DONE — 2026-05-31)**
+
+Inspected 33 findings across procurement.py, marketing.py, wms.py, payroll_ke.py, hr.py, documents.py.
+Classified 22 real + 11 false positives. Fixed all 22.
+
+Fixed functions:
+- `procurement.py`: `list_approval_rules`, `list_rfqs`, `list_bpas`, `list_reorder_policies`
+- `marketing.py`: `list_segments`, `list_attribution`, `list_stores`, `list_channel_stock`
+- `wms.py`: `list_handling_units`, `list_pick_waves`, `list_picking_tasks`, `list_packing_records`, `list_replenishment_tasks`
+- `payroll_ke.py`: `list_tax_bands`, `list_statutory_rates`, `list_shif_tiers`
+- `hr.py`: `list_shift_templates`, `list_shift_assignments`, `list_leave_balances`, `list_payroll_periods`
+- `documents.py`: `list_expiring_documents`, `search_by_tag`
+
+False positives left untouched (11):
+- `procurement.py`: `supplier_dashboard` outer (dashboard compute), inner PO/eval loops (FK-bounded)
+- `marketing.py`: `list_interactions` (FK path param `cid`), `list_influencer_links` (FK path param `iid`)
+- `payroll_ke.py`: `get_run_lines`, `get_run_payslips` (FK path param `run_id`)
+- `hr.py`: `export_payroll_period` (FK-bounded + intentional export of all period lines)
+- `documents.py`: `list_documents_for_entity` (required entity_type + entity_id), version history (bounded series), `list_tags` (FK path param `doc_id`)
+
+Other endpoint files (not in scope for B.2) — 65 remaining endpoint findings across 37 other endpoint files. Deferred to future batch if needed.
+
+Health audit after B.2: **0 HIGH / 473 findings** (was 495; -22 exactly matching 22 fixes)
+No dedicated tests exist for these 6 files. Import check clean.
 
 **Batch C — Service unbounded queries (lower urgency, 358 findings)**
 - Review service functions; add to `_KNOWN_FP_CONTEXTS` if provably bounded, or add `.limit()` guards
@@ -802,17 +824,23 @@ Known limitations:
 - **Affected area:** `frontend/src/app/dashboard/qms/inspections/page.tsx` (Batch A); `backend/app/api/v1/endpoints/` (Batch B)
 - **Risk:** HIGH fix = medium (frontend auth pattern change); MEDIUM = low (additive limits)
 - **Started at:** 2026-05-31
-- **Completed at:** 2026-05-31 (Batch A + B.1)
+- **Completed at:** 2026-05-31 (Batch A + B.1 + B.2)
 - **Changed files:**
   - `frontend/src/app/dashboard/qms/inspections/page.tsx` — removed `localStorage.getItem("access_token")` + raw fetch; replaced with `apiClient.get` (`withCredentials: true`)
-  - `backend/app/api/v1/endpoints/finance.py` — added `limit: int = Query(200, le=500)` + `.limit(limit)` to 5 unbounded endpoints
+  - `backend/app/api/v1/endpoints/finance.py` — 5 real unbounded endpoints limited
+  - `backend/app/api/v1/endpoints/procurement.py` — 4 real unbounded endpoints limited
+  - `backend/app/api/v1/endpoints/marketing.py` — 4 real unbounded endpoints limited
+  - `backend/app/api/v1/endpoints/wms.py` — 5 real unbounded endpoints limited
+  - `backend/app/api/v1/endpoints/payroll_ke.py` — 3 real unbounded endpoints limited
+  - `backend/app/api/v1/endpoints/hr.py` — 4 real unbounded endpoints limited
+  - `backend/app/api/v1/endpoints/documents.py` — 2 real unbounded endpoints limited
   - `docs/AUTOMATED_HEALTH_AUDIT.md` (script output — regenerated)
   - `TASKS.md` — this update
 - **Tests / checks run:**
   - `npx tsc --noEmit` → CLEAN (Batch A)
-  - `python -c "import app.main"` → CLEAN (Batch B.1)
-  - `python scripts/erp-health-audit.py` → **0 HIGH** / 495 findings (was 499; -4 net)
-- **Result:** Batch A complete (`token_storage` HIGH fixed). Batch B.1 complete (5/5 real finance.py unbounded endpoints limited). 0 HIGH remains. 495 findings remain for Batch B.2+/C/D.
+  - `python -c "import app.main"` → CLEAN (Batch B.1 + B.2)
+  - `python scripts/erp-health-audit.py` → **0 HIGH / 473 findings** (was 499 originally; -26 net across all batches)
+- **Result:** Batch A + B.1 + B.2 complete. 0 HIGH remains. 27 real endpoint unbounded findings fixed across 7 files. 473 findings remain (service-layer unbounded + row_lock backlog).
 - **Known limitations:** Script does not require DB — all findings are static analysis only.
 - **Git commit / branch:** Not committed yet
 - **Graphify refresh after implementation:** backend (if endpoint query patterns change)
