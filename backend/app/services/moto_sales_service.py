@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Any, Dict, List, Optional
 
@@ -49,7 +49,7 @@ async def initiate_stk_push(
         merchant_request_id=merchant_req_id,
         checkout_request_id=checkout_req_id,
         status=MpesaStkStatus.PENDING.value,
-        request_time=datetime.utcnow(),
+        request_time=datetime.now(timezone.utc),
     )
     db.add(mpesa)
     await db.commit()
@@ -74,7 +74,7 @@ async def handle_stk_callback(
 
     mpesa.result_code = result_code
     mpesa.result_desc = result_desc
-    mpesa.callback_time = datetime.utcnow()
+    mpesa.callback_time = datetime.now(timezone.utc)
     mpesa.raw_callback = raw
 
     if result_code == "0":
@@ -86,7 +86,7 @@ async def handle_stk_callback(
             method="MPESA",
             amount=mpesa.amount,
             reference_no=mpesa_receipt_no,
-            collected_at=datetime.utcnow(),
+            collected_at=datetime.now(timezone.utc),
             receipt_no=mpesa_receipt_no,
         )
         db.add(pay)
@@ -132,7 +132,7 @@ def _severity_from_score(score: Decimal) -> str:
 
 async def run_fraud_scan(db: AsyncSession, cutoff_days: int = 7) -> List[VanFraudAlert]:
     alerts: list[VanFraudAlert] = []
-    cutoff = datetime.utcnow() - timedelta(days=cutoff_days)
+    cutoff = datetime.now(timezone.utc) - timedelta(days=cutoff_days)
 
     # 1 — Abnormal discounts (avg > 20%)
     disc_q = await db.execute(
@@ -193,7 +193,7 @@ async def run_fraud_scan(db: AsyncSession, cutoff_days: int = 7) -> List[VanFrau
         select(VanSalesTxn).where(
             VanSalesTxn.status == TxnStatus.CONFIRMED.value,
             VanSalesTxn.payment_status == PaymentStatus.UNPAID.value,
-            VanSalesTxn.created_at <= datetime.utcnow() - timedelta(hours=72),
+            VanSalesTxn.created_at <= datetime.now(timezone.utc) - timedelta(hours=72),
         ).limit(50)
     )
     for txn in mismatch_q.scalars().all():
@@ -248,7 +248,7 @@ async def review_fraud_alert(
         alert.status = new_status
         alert.resolution = resolution
         alert.reviewed_by = reviewer_id
-        alert.reviewed_at = datetime.utcnow()
+        alert.reviewed_at = datetime.now(timezone.utc)
         await db.commit()
         await db.refresh(alert)
     return alert

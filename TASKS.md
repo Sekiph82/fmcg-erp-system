@@ -229,6 +229,15 @@ Rules:
     - Warnings: `utcnow()` deprecation and SQLAlchemy relationship overlap — both pre-existing, unrelated to this change.
     - Graphify refresh: backend — recommended after credential wiring; not running now.
     - All three M-Pesa service paths (integrations, sales, van/moto sales) now share the same Daraja service for STK Push.
+  - **Backend import warning cleanup — 2026-05-31 — Done:**
+    - Fixed two pre-existing backend warnings found during M-Pesa test run.
+    - Warning 1 — SQLAlchemy `SAWarning: relationship 'TaskDependency.task' overlaps`: added `back_populates="task"` / `back_populates="dependencies"` to both sides of `ProjectTask.dependencies` ↔ `TaskDependency.task` in `backend/app/models/project.py`.
+    - Warning 2 — `DeprecationWarning: datetime.utcnow()` (Python 3.12): replaced all 6 occurrences with `datetime.now(timezone.utc)` in `backend/app/services/moto_sales_service.py`; added `timezone` to the datetime import.
+    - No model/schema/migration changes, no payment behavior changes.
+    - Changed: `backend/app/models/project.py`, `backend/app/services/moto_sales_service.py`
+    - Verification: `python -W all -c "import app.main"` → **IMPORT OK**, `SAWarning` for `TaskDependency` GONE (only pre-existing FastAPIDeprecationWarning for `allergen.py` regex remains — out of scope)
+    - Tests: `pytest tests/test_moto_sales_mpesa_delegation.py tests/test_mpesa_service_delegation.py tests/test_gap006_integration_capabilities.py` → **13/13 PASS**
+    - Graphify refresh: no (structural fix only; no new edges)
   - **Required credentials from Safaricom Daraja portal:**
     - `MPESA_CONSUMER_KEY` — Daraja app consumer key
     - `MPESA_CONSUMER_SECRET` — Daraja app consumer secret
@@ -872,6 +881,7 @@ Rules:
 
 | Date | Task | Result |
 |---|---|---|
+| 2026-05-31 | Backend import warning cleanup — SQLAlchemy `TaskDependency.task` overlap + `datetime.utcnow()` deprecation | Done. 13/13 tests pass, IMPORT OK |
 | 2026-05-31 | GS1 Product Master integration — auto-fill product name/SKU/GTIN/weight, A4 pagination fix, row-print copies fix | Done. tsc CLEAN, build CLEAN |
 | 2026-05-31 | GS1 professional label printing — template/preset/copies/PDF export/print history | Done. tsc CLEAN, build CLEAN |
 | 2026-05-31 | GS1 barcode create/print bug fix — full generate+print UI added to gs1 page | Done. 16/16 tests pass |

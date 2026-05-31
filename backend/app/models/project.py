@@ -102,7 +102,7 @@ class ProjectTask(Base, TimestampMixin):
                                 uselist=False, lazy="select")
     # Dependencies: tasks this task depends on
     dependencies = relationship("TaskDependency", foreign_keys="TaskDependency.task_id",
-                                cascade="all, delete-orphan")
+                                cascade="all, delete-orphan", back_populates="task")
 
 
 class TaskDependency(Base, TimestampMixin):
@@ -114,5 +114,5 @@ class TaskDependency(Base, TimestampMixin):
     task_id           = Column(UUID(as_uuid=True), ForeignKey("project_tasks.id", ondelete="CASCADE"), nullable=False)
     depends_on_task_id = Column(UUID(as_uuid=True), ForeignKey("project_tasks.id", ondelete="CASCADE"), nullable=False)
 
-    task        = relationship("ProjectTask", foreign_keys=[task_id])
+    task        = relationship("ProjectTask", foreign_keys=[task_id], back_populates="dependencies")
     depends_on  = relationship("ProjectTask", foreign_keys=[depends_on_task_id])
