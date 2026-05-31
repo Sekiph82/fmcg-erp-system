@@ -1,5 +1,43 @@
 # TASKS
 
+## GS1 Label Printing Workflow Enhancement — 2026-05-31
+
+### Scope
+Enhanced `frontend/src/app/dashboard/gs1/page.tsx` with professional label printing workflow. No other files changed.
+
+### Features Added
+1. **Label template selector** — 50×30 mm Thermal Small, 70×40 mm Thermal Standard, 100×50 mm Thermal Wide, A4 Office/Sheet Labels
+2. **Printer preset selector** — Browser Default, Zebra Thermal, TSC Thermal, Godex Thermal, A4 Office Printer (all browser-based; no ZPL/EPL/TSPL, no raw printer commands)
+3. **Copies field** — 1–100 copies; each copy rendered as a separate page in the print window with page-break-after
+4. **`@page` CSS** — correct physical dimensions per template (e.g. `size: 70mm 40mm; margin: 3mm`)
+5. **Product fields** — Product Name, SKU, Net Weight / Volume, Production Date (all optional; printed on label if provided)
+6. **Two print mutations**: `printMut` (row-level, 1 copy, current template) and `printGeneratedMut` (form-level, full config + copies)
+7. **"Preview / Export PDF" button** — opens same print window; user chooses "Save as PDF" in browser print dialog (no jsPDF/pdfmake dependency)
+8. **Print Job History section** (`PrintHistorySection` sub-component) — real data from `GET /labels/print` via `gs1Api.listPrintJobs()`, shows job_no, trigger, status badge, item count, printer name, printed_at, created_at
+9. **Validation** — GTIN required, Lot Number required, copies 1–100; form error shown inline
+10. **A4 grid layout** — 4-up (2×2) grid with `break-inside:avoid` cells; thermal templates use full-page per label
+
+### Helper functions
+- `getPageCSS(size)` — returns `@page { size: ... }` CSS string
+- `buildLabelHTML(cfg + index/isLast)` — per-copy HTML; branches on isA4 for cell vs page layout
+- `openPrintWindow(cfg)` — assembles full HTML, opens `window.open`, calls `window.print()` after 400ms
+
+### Known Limitations
+- **Thermal printer sizing**: `@page { size: 70mm 40mm }` is respected by Chrome/Edge when the correct paper size is configured in the printer driver. Firefox ignores custom `@page` sizes and defaults to A4. Users must set the paper size in the Windows printer driver to match the label template.
+- **Zebra / TSC / Godex**: These presets use the browser print path — no ZPL/EPL/TSPL command generation. The preset choice affects only the label template dimensions and the page CSS. Raw command printing is outside scope.
+- **PDF export**: Uses browser "Save as PDF" via the print dialog. No programmatic PDF generation (no jsPDF, pdfmake, puppeteer). Image quality in PDF depends on the browser's PDF renderer.
+- **Copies counter**: Copies are rendered as separate HTML pages in the print window. The browser's built-in "Number of copies" field in the print dialog is independent — set browser copies to 1 to avoid duplicating.
+- **Print history**: Requires Docker + PostgreSQL running. If `GET /labels/print` fails, the section shows a red error message; the rest of the dashboard remains functional.
+
+### Verification
+| Check | Result |
+|---|---|
+| Frontend type-check (`tsc --noEmit`) | CLEAN |
+| No new npm dependencies | Confirmed — zero package.json changes |
+| Hard-stop rules (no jsPDF, no ZPL, no new modules) | All respected |
+
+---
+
 ## GS1 Barcode Label Create/Print Bug Fix — 2026-05-31
 
 ### Root Cause
