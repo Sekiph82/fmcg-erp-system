@@ -742,6 +742,28 @@ Top files: `sales_service.py` ×6, `wms_service.py` ×5, `inventory_service.py` 
 - Top priority: `finance.py`, `procurement.py`, `marketing.py`
 - Approach: add `skip: int = 0, limit: int = 100` query params pattern already used elsewhere
 
+**Batch B.1 — finance.py audit (AUDIT COMPLETE — 2026-05-31)**
+
+10 findings in `backend/app/api/v1/endpoints/finance.py`. Classification:
+
+| Line | Function | Route | Classification | Action |
+|------|----------|-------|---------------|--------|
+| 590 | `budget_copy_from` | POST (internal write) | False positive — FK-bounded `budget_id == old.id` | None |
+| 728 | `list_fiscal_years` | GET `/accounting/fiscal-years/` | Real unbounded — low risk (~5 rows in practice) | Add limit |
+| 758 | `list_period_close_checks` | GET `/accounting/period-close-checks/` | False positive — required `period_id` FK filter | None |
+| 806 | `list_recurring_journals` | GET `/accounting/recurring-journals/` | Real unbounded — config table grows | Add limit |
+| 902 | `list_posting_rules` | GET `/accounting/posting-rules/` | Real unbounded — optional `source_module` filter | Add limit |
+| 942 | `list_inventory_account_mappings` | GET `/accounting/inventory-account-mappings/` | Real unbounded — scales with products | Add limit |
+| 1053 | `list_periods` | GET `/accounting/periods/` | Real unbounded — grows 12/year | Add limit |
+| 1219 | exchange rates latest | GET `/accounting/exchange-rates/latest/` | False positive — subquery bounded by distinct currencies | None |
+| 1450 | `list_sales_invoices` | GET `/accounting/sales-invoices/` | False positive — already has `.limit(limit)` + `Query(100, le=500)` | None |
+| 1544 | `list_purchase_invoices` | GET `/accounting/purchase-invoices/` | False positive — already has `.limit(limit)` + `Query(100, le=500)` | None |
+
+**Real unbounded: 5 endpoints** (lines 728, 806, 902, 942, 1053).
+**Fix pattern:** add `limit: int = Query(200, le=500)` param + `.limit(limit)` to query.
+**False positives: 5** (lines 590, 758, 1219, 1450, 1544) — no changes needed.
+**Status: Not yet fixed — audit only.**
+
 **Batch C — Service unbounded queries (lower urgency, 358 findings)**
 - Review service functions; add to `_KNOWN_FP_CONTEXTS` if provably bounded, or add `.limit()` guards
 - Most are internal computation — low production risk unless data set is huge
