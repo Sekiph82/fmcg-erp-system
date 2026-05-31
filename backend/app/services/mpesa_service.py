@@ -1,15 +1,12 @@
 """
-M-Pesa (Safaricom Daraja) payment service.
+M-Pesa (Safaricom Daraja) payment service — sales module.
 
-This module is intentionally isolated from the rest of the sales logic so it can be
-swapped for a real Daraja integration without touching order/shipment code.
+Delegates STK Push to mpesa_daraja_service, which handles OAuth2 token fetch,
+real Daraja API calls, and simulation fallback when credentials are not configured.
 
-Current state: placeholder implementation that simulates the STK Push flow.
-To connect to live Daraja:
-  1. Set MPESA_CONSUMER_KEY, MPESA_CONSUMER_SECRET, MPESA_SHORTCODE,
-     MPESA_PASSKEY, MPESA_CALLBACK_URL in the environment.
-  2. Replace `_stk_push_request()` with a real HTTP call to
-     https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest
+When MPESA_CONFIGURED is False, mpesa_daraja_service returns a simulation response
+(ws_CO_SIM_* prefix). When credentials are set, real Daraja calls are made.
+No changes to this file or calling code are needed when credentials are added.
 """
 from __future__ import annotations
 
@@ -18,6 +15,8 @@ import logging
 from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Optional
+
+from app.services import mpesa_daraja_service as _daraja
 
 from fastapi import HTTPException
 from sqlalchemy import select
@@ -30,22 +29,19 @@ from app.models.sales import (
 logger = logging.getLogger(__name__)
 
 
-# ── Daraja stub ───────────────────────────────────────────────────────────────
+# ── Daraja delegation ─────────────────────────────────────────────────────────
 
 async def _stk_push_request(phone: str, amount: Decimal, reference: str) -> str:
     """
-    Sends an STK Push request to Safaricom Daraja and returns a CheckoutRequestID.
-
-    PLACEHOLDER: returns a deterministic fake ID so the rest of the flow works
-    without live credentials. Replace the body of this function with a real
-    aiohttp / httpx call when credentials are available.
+    Delegates to mpesa_daraja_service._stk_push_request.
+    Returns the CheckoutRequestID (simulation ID when credentials absent, real ID otherwise).
     """
-    fake_request_id = f"ws_CO_PLACEHOLDER_{uuid.uuid4().hex[:16].upper()}"
-    logger.info(
-        "M-Pesa STK Push [PLACEHOLDER] phone=%s amount=%s ref=%s → %s",
-        phone, amount, reference, fake_request_id,
+    checkout_id, _merchant_id, _resp = await _daraja._stk_push_request(
+        phone=phone,
+        amount=int(amount),
+        reference=reference,
     )
-    return fake_request_id
+    return checkout_id
 
 
 # ── Public API ────────────────────────────────────────────────────────────────

@@ -207,6 +207,16 @@ Rules:
 - **Graphify refresh after implementation:** no (config-only change; no new graph edges)
 - **Graphify refresh status:** Not needed
 - **Notes:**
+  - **Sales module placeholder wiring — 2026-05-31 — Done:**
+    - `mpesa_service._stk_push_request()` was replaced with delegation to `mpesa_daraja_service._stk_push_request()`.
+    - `ws_CO_PLACEHOLDER_*` fake IDs eliminated. Now uses `ws_CO_SIM_*` (Daraja simulation) when uncredentialed, or real Daraja ID when credentials set.
+    - No model changes, no migrations, no endpoint changes, no frontend changes.
+    - Changed: `backend/app/services/mpesa_service.py`
+    - Created: `backend/tests/test_mpesa_service_delegation.py`
+    - Tests: `pytest tests/test_mpesa_service_delegation.py tests/test_gap006_integration_capabilities.py` → **10/10 PASS**
+    - `python -c "import app.main"` → **IMPORT OK** (warnings are pre-existing, unrelated to this change)
+    - Graphify refresh: backend — recommended after credential wiring; not running now.
+    - Known: `moto_sales_service.py:initiate_stk_push()` still has its own independent placeholder for VanMpesaPayment model (van sales module) — separate follow-on if needed.
   - **Required credentials from Safaricom Daraja portal:**
     - `MPESA_CONSUMER_KEY` — Daraja app consumer key
     - `MPESA_CONSUMER_SECRET` — Daraja app consumer secret
