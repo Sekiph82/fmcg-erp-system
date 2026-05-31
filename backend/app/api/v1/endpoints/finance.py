@@ -721,10 +721,13 @@ from app.models.finance import AccountingPeriod, PeriodStatus
 
 @router.get("/accounting/fiscal-years/", response_model=List[FiscalYearRead],
             dependencies=[Depends(require_permission("finance", "view"))])
-async def list_fiscal_years(db: AsyncSession = Depends(get_db)):
+async def list_fiscal_years(
+    limit: int = Query(200, le=500),
+    db: AsyncSession = Depends(get_db),
+):
     from sqlalchemy import select as _sel
     rows = (await db.execute(
-        _sel(FiscalYear).order_by(FiscalYear.start_date.desc())
+        _sel(FiscalYear).order_by(FiscalYear.start_date.desc()).limit(limit)
     )).scalars().all()
     return [FiscalYearRead.model_validate(r) for r in rows]
 
@@ -796,13 +799,17 @@ async def update_period_close_check(
 
 @router.get("/accounting/recurring-journals/", response_model=List[RecurringJournalTemplateRead],
             dependencies=[Depends(require_permission("finance", "view"))])
-async def list_recurring_journals(db: AsyncSession = Depends(get_db)):
+async def list_recurring_journals(
+    limit: int = Query(200, le=500),
+    db: AsyncSession = Depends(get_db),
+):
     from sqlalchemy import select as _sel
     from sqlalchemy.orm import selectinload as _selectinload
     rows = (await db.execute(
         _sel(RecurringJournalTemplate)
         .options(_selectinload(RecurringJournalTemplate.lines))
         .order_by(RecurringJournalTemplate.template_no)
+        .limit(limit)
     )).scalars().all()
     return [RecurringJournalTemplateRead.model_validate(r) for r in rows]
 
@@ -889,6 +896,7 @@ async def get_operational_posting_event(
             dependencies=[Depends(require_permission("finance", "view"))])
 async def list_posting_rules(
     source_module: Optional[str] = None,
+    limit: int = Query(200, le=500),
     db: AsyncSession = Depends(get_db),
 ):
     from sqlalchemy import select as _sel
@@ -899,7 +907,7 @@ async def list_posting_rules(
     )
     if source_module:
         q = q.where(AccountingPostingRule.source_module == source_module)
-    rows = (await db.execute(q)).scalars().all()
+    rows = (await db.execute(q.limit(limit))).scalars().all()
     return [AccountingPostingRuleRead.model_validate(r) for r in rows]
 
 
@@ -923,6 +931,7 @@ async def list_inventory_account_mappings(
     product_id: Optional[uuid.UUID] = None,
     material_id: Optional[uuid.UUID] = None,
     active_only: bool = True,
+    limit: int = Query(200, le=500),
     db: AsyncSession = Depends(get_db),
 ):
     from sqlalchemy import select as _sel
@@ -939,7 +948,7 @@ async def list_inventory_account_mappings(
         q = q.where(InventoryAccountMapping.product_id == product_id)
     if material_id:
         q = q.where(InventoryAccountMapping.material_id == material_id)
-    rows = (await db.execute(q)).scalars().all()
+    rows = (await db.execute(q.limit(limit))).scalars().all()
     return [InventoryAccountMappingRead.model_validate(r) for r in rows]
 
 
@@ -1046,10 +1055,13 @@ async def create_currency_revaluation(
 
 @router.get("/accounting/periods/", response_model=List[PeriodRead],
             dependencies=[Depends(require_permission("finance", "view"))])
-async def list_periods(db: AsyncSession = Depends(get_db)):
+async def list_periods(
+    limit: int = Query(200, le=500),
+    db: AsyncSession = Depends(get_db),
+):
     from sqlalchemy import select as _sel
     rows = (await db.execute(
-        _sel(AccountingPeriod).order_by(AccountingPeriod.period_ym.desc())
+        _sel(AccountingPeriod).order_by(AccountingPeriod.period_ym.desc()).limit(limit)
     )).scalars().all()
     return [PeriodRead.model_validate(r) for r in rows]
 

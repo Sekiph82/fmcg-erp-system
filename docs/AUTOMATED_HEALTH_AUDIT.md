@@ -1,18 +1,18 @@
 # Automated ERP Health Audit
 
-Generated: 2026-05-31 19:28 UTC
+Generated: 2026-05-31 19:42 UTC
 
 ## Summary
 
 | Severity | Count |
 |----------|-------|
 | HIGH     | 0 |
-| MEDIUM   | 499 |
+| MEDIUM   | 494 |
 | LOW      | 0 |
 | INFO     | 1 |
-| **Total**| **500** |
+| **Total**| **495** |
 
-## MEDIUM (499)
+## MEDIUM (494)
 
 - **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\appraisals_service.py:69` — .scalars().all() without .limit() nearby
 - **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\appraisals_service.py:104` — .scalars().all() without .limit() nearby
@@ -402,15 +402,10 @@ Generated: 2026-05-31 19:28 UTC
 - **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\esign.py:187` — .scalars().all() without .limit() nearby
 - **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\esign.py:253` — .scalars().all() without .limit() nearby
 - **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\finance.py:590` — .scalars().all() without .limit() nearby
-- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\finance.py:728` — .scalars().all() without .limit() nearby
-- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\finance.py:758` — .scalars().all() without .limit() nearby
-- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\finance.py:806` — .scalars().all() without .limit() nearby
-- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\finance.py:902` — .scalars().all() without .limit() nearby
-- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\finance.py:942` — .scalars().all() without .limit() nearby
-- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\finance.py:1053` — .scalars().all() without .limit() nearby
-- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\finance.py:1219` — .scalars().all() without .limit() nearby
-- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\finance.py:1450` — .scalars().all() without .limit() nearby
-- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\finance.py:1544` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\finance.py:761` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\finance.py:1231` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\finance.py:1462` — .scalars().all() without .limit() nearby
+- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\finance.py:1556` — .scalars().all() without .limit() nearby
 - **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\fixed_assets.py:88` — .scalars().all() without .limit() nearby
 - **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\fixed_assets.py:543` — .scalars().all() without .limit() nearby
 - **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\api\v1\endpoints\fixed_assets.py:572` — .scalars().all() without .limit() nearby

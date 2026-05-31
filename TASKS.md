@@ -678,7 +678,7 @@ ERP_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN: bool = True
 
 ### Task ID: TASK-008 — Run erp-health-audit.py and address findings
 
-- **Status:** Batch A Done — HIGH fixed (0 HIGH); MEDIUM backlog remains for Batch B/C/D
+- **Status:** Batch A + B.1 Done — 0 HIGH; finance.py 5/5 real unbounded fixed; Batch B.2+/C/D remain
 - **Priority:** P1
 - **Category:** QA / Performance
 - **Why it matters:** Previous run (2026-05-16): 52 HIGH / 624 MEDIUM. Current run (2026-05-31): **1 HIGH / 499 MEDIUM / 1 INFO** — 51 HIGH fixed by prior work, 125 MEDIUM fixed.
@@ -762,7 +762,31 @@ Top files: `sales_service.py` ×6, `wms_service.py` ×5, `inventory_service.py` 
 **Real unbounded: 5 endpoints** (lines 728, 806, 902, 942, 1053).
 **Fix pattern:** add `limit: int = Query(200, le=500)` param + `.limit(limit)` to query.
 **False positives: 5** (lines 590, 758, 1219, 1450, 1544) — no changes needed.
-**Status: Not yet fixed — audit only.**
+**Status: FIXED — 2026-05-31**
+
+**Batch B.1 — finance.py implementation (DONE — 2026-05-31)**
+
+Fixed all 5 real unbounded endpoints in `backend/app/api/v1/endpoints/finance.py`:
+- `list_fiscal_years` (line 724) — added `limit: int = Query(200, le=500)` + `.limit(limit)`
+- `list_recurring_journals` (line 799) — added `limit: int = Query(200, le=500)` + `.limit(limit)`
+- `list_posting_rules` (line 890) — added `limit: int = Query(200, le=500)` + `q.limit(limit)` (preserves `source_module` filter)
+- `list_inventory_account_mappings` (line 921) — added `limit: int = Query(200, le=500)` + `q.limit(limit)` (preserves all 4 existing filters)
+- `list_periods` (line 1049) — added `limit: int = Query(200, le=500)` + `.limit(limit)`
+
+5 false positives untouched (lines 590, 761, 1231, 1462, 1556 in updated file — all confirmed FPs).
+
+Checks run:
+- `python -c "import app.main"` → CLEAN (only pre-existing `allergen.py` FastAPIDeprecationWarning)
+- No finance endpoint tests exist
+- `python scripts/erp-health-audit.py` → **0 HIGH** / 495 findings (-4 from 499; all 5 real finance.py unbounded cleared; -4 net due to 1-finding offset in regenerated audit doc)
+
+Known limitations:
+- No `offset` added — response shape unchanged, no pagination wrapper
+- Batch B.2 `procurement.py` (×7 findings) still pending
+- Graphify backend refresh not run — will run after full Batch B group complete
+
+**Batch B.2+ — Remaining endpoint targets (not yet started)**
+- `procurement.py` ×7, `marketing.py` ×6, `wms.py` ×5, `payroll_ke.py` ×5, `hr.py` ×5, `documents.py` ×5
 
 **Batch C — Service unbounded queries (lower urgency, 358 findings)**
 - Review service functions; add to `_KNOWN_FP_CONTEXTS` if provably bounded, or add `.limit()` guards
@@ -778,15 +802,17 @@ Top files: `sales_service.py` ×6, `wms_service.py` ×5, `inventory_service.py` 
 - **Affected area:** `frontend/src/app/dashboard/qms/inspections/page.tsx` (Batch A); `backend/app/api/v1/endpoints/` (Batch B)
 - **Risk:** HIGH fix = medium (frontend auth pattern change); MEDIUM = low (additive limits)
 - **Started at:** 2026-05-31
-- **Completed at:** 2026-05-31 (Batch A)
+- **Completed at:** 2026-05-31 (Batch A + B.1)
 - **Changed files:**
   - `frontend/src/app/dashboard/qms/inspections/page.tsx` — removed `localStorage.getItem("access_token")` + raw fetch; replaced with `apiClient.get` (`withCredentials: true`)
+  - `backend/app/api/v1/endpoints/finance.py` — added `limit: int = Query(200, le=500)` + `.limit(limit)` to 5 unbounded endpoints
   - `docs/AUTOMATED_HEALTH_AUDIT.md` (script output — regenerated)
   - `TASKS.md` — this update
 - **Tests / checks run:**
-  - `npx tsc --noEmit` → CLEAN
-  - `python scripts/erp-health-audit.py` → **0 HIGH** / 499 MEDIUM / 1 INFO
-- **Result:** Batch A complete. `token_storage` HIGH fixed. 0 HIGH findings remain. 499 MEDIUM backlog (unbounded_query, row_lock) remains for Batch B/C/D.
+  - `npx tsc --noEmit` → CLEAN (Batch A)
+  - `python -c "import app.main"` → CLEAN (Batch B.1)
+  - `python scripts/erp-health-audit.py` → **0 HIGH** / 495 findings (was 499; -4 net)
+- **Result:** Batch A complete (`token_storage` HIGH fixed). Batch B.1 complete (5/5 real finance.py unbounded endpoints limited). 0 HIGH remains. 495 findings remain for Batch B.2+/C/D.
 - **Known limitations:** Script does not require DB — all findings are static analysis only.
 - **Git commit / branch:** Not committed yet
 - **Graphify refresh after implementation:** backend (if endpoint query patterns change)
