@@ -56,3 +56,11 @@ git-auto-pull.bat
 
 # Large files — exceed GitHub 100MB limit
 KenyaFactoryAI/imports/**/*.pdf
+
+# Graphify generated outputs — stored outside the repo at:
+# C:\Users\sekip\Desktop\graphify-erp-maps
+graphify-out/
+backend/graphify-out/
+frontend/graphify-out/
+docs/graphify-out/
+scripts/graphify-out/

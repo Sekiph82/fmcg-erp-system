@@ -595,27 +595,29 @@ _=Depends(require_permission("gs1", "admin"))  # config create, AI agent trigger
 
 ### Task ID: TASK-010 — Remove graphify-out/ folders from git tracking
 
-- **Status:** Pending (awaiting user decision — do NOT act without explicit approval)
+- **Status:** Done
 - **Priority:** P1
 - **Category:** Cleanup
-- **Why it matters:** Multiple graphify-out/ folders are tracked by git (863 total generated files). These are generated/binary output files and should not be in version control. They belong at `C:\Users\sekip\Desktop\graphify-erp-maps\` (already there).
-- **Source / evidence:** `git ls-files` results: `graphify-out/` (132), `backend/graphify-out/` (672), `frontend/graphify-out/` (5), `docs/graphify-out/` (52), `scripts/graphify-out/` (2) = 863 tracked files. User rule: "Do not add graphify-out/ to git."
+- **Why it matters:** Multiple graphify-out/ folders were tracked by git (883 total generated files after TASK-006 backend refresh auto-sync committed them in e6b58df). These are generated/binary output files and should not be in version control. External source of truth: `C:\Users\sekip\Desktop\graphify-erp-maps\`.
+- **Source / evidence:** `git ls-files` pre-fix: `graphify-out/` (132+), `backend/graphify-out/` (672+22 from TASK-006 refresh), `frontend/graphify-out/` (5), `docs/graphify-out/` (52), `scripts/graphify-out/` (2) = 883 tracked files.
 - **Affected area:** All `graphify-out/` folders, `.gitignore`
-- **Risk:** Low (removal of generated files; no source code change — but large git history modification)
-- **Recommended timing:** Next (when user approves)
-- **Needs audit before implementation:** Yes — confirm external folder has all important outputs AND confirm user explicitly approves before touching git.
-- **Implementation scope:** (1) Verify `C:\Users\sekip\Desktop\graphify-erp-maps\` has all 4 stage outputs. (2) Run `git rm -r --cached graphify-out/ backend/graphify-out/ frontend/graphify-out/ docs/graphify-out/ scripts/graphify-out/`. (3) Add all `graphify-out/` patterns to `.gitignore`. (4) Commit.
+- **Risk:** Low (removal of generated files; no source code change)
 - **Do not touch:** External `C:\Users\sekip\Desktop\graphify-erp-maps\` folder; source code
-- **Started at:**
-- **Completed at:**
-- **Changed files:** None yet
-- **Tests / checks run:** None yet
-- **Result:** Pending
-- **Known limitations:** After `git rm --cached`, folders remain locally but become untracked. Correct behavior.
-- **Git commit / branch:** Not committed yet
+- **Started at:** 2026-05-31
+- **Completed at:** 2026-05-31
+- **Changed files:**
+  - `.gitignore` — added `graphify-out/`, `backend/graphify-out/`, `frontend/graphify-out/`, `docs/graphify-out/`, `scripts/graphify-out/`
+  - `TASKS.md` — this update
+  - Removed from git index (files stay on disk): all 883 `graphify-out/` tracked files across all stages
+- **Tests / checks run:**
+  - `git ls-files graphify-out backend/graphify-out frontend/graphify-out docs/graphify-out scripts/graphify-out` → 0 (clean)
+  - External folder verified: `graph.json`, `GRAPH_REPORT.md`, `GRAPHIFY_UPDATE_LOG.md`, `cost.json`, `graph.html`, `graph.json` all present
+- **Result:** Graphify outputs no longer tracked by git. Future Graphify refreshes will not trigger auto-sync commits of analysis artifacts.
+- **Known limitations:** Local repo `graphify-out/` folders remain on disk (untracked). Delete locally only if approved by user.
+- **Git commit / branch:** Pending user commit approval
 - **Graphify refresh after implementation:** no
 - **Graphify refresh status:** Not needed
-- **Notes:** User said "Do not delete graphify-out file" — this task requires explicit user approval before any git rm is run.
+- **Notes:** Root `graphify-out/` useful outputs (`cost.json`, `graph.html`, `graph.json`, `GRAPH_REPORT.md`) copied to external folder top level before untracking. `backend/graphify-out/` outputs were already current in external `backend/` subfolder.
 
 ---
 
