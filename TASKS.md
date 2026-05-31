@@ -399,7 +399,7 @@ Rules:
 
 ### Task ID: TASK-006 — GS1 routes auth guard (38 unprotected endpoints)
 
-- **Status:** Audited — implementation plan ready
+- **Status:** Done
 - **Priority:** P1
 - **Category:** Security
 - **Why it matters:** ALL 36 GS1/barcode/label routes in `gs1.py` have zero auth guards. Any unauthenticated HTTP caller can generate barcodes, create print jobs, trigger AI agents, and read all internal GS1/SSCC/pallet data.
@@ -415,14 +415,17 @@ Rules:
 - **Implementation scope:** Add `_=Depends(require_permission("gs1", "<action>"))` to each route. Permission codes already defined in module_registry: `gs1.view`, `gs1.create`, `gs1.edit`, `gs1.approve`, `gs1.print`, `gs1.report`, `gs1.admin`. One import line needed: `from app.core.deps import require_permission`.
 - **Do not touch:** GS1 service logic, barcode generation algorithm, frontend, schemas, DB schema
 - **Started at:** 2026-05-31
-- **Completed at:**
-- **Changed files:** `backend/app/api/v1/endpoints/gs1.py` only
-- **Tests / checks run:** Audit-only. No source changes yet.
-- **Result:** Audited.
-- **Known limitations:** `complete_print_job` has `printed_by: str = Query("system")` — after adding auth, this should be replaced with `current_user.username` or `current_user.full_name`. Note separately; do not block auth guard implementation on it.
-- **Git commit / branch:** Not committed yet
+- **Completed at:** 2026-05-31
+- **Changed files:**
+  - `backend/app/api/v1/endpoints/gs1.py` (36 guards added, `printed_by` Query removed)
+  - `backend/tests/test_gs1_auth.py` (NEW — 10 tests)
+  - `TASKS.md`
+- **Tests / checks run:** `pytest tests/test_gs1_auth.py tests/test_gap018_gs1_label_printing.py` — **26/26 PASSED**. `python -c "import app.main"` — CLEAN.
+- **Result:** 36/36 GS1 routes guarded. `complete_print_job` now uses `current_user.username` (no `Query("system")` spoofing).
+- **Known limitations:** 401 tests require TestClient + real auth session (no TestClient infrastructure in this test suite). 403 behaviour tested directly via `require_permission` dep invocation. Happy-path authorized HTTP tests not added — dependency wiring confirmed by route inspection test.
+- **Git commit / branch:** Not committed yet (awaiting approval)
 - **Graphify refresh after implementation:** backend
-- **Graphify refresh status:** Needed after implementation
+- **Graphify refresh status:** Pending user approval — do not run now
 
 #### Audit — Routes Found: 36 (all unguarded)
 

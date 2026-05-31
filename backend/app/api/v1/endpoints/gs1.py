@@ -10,6 +10,7 @@ from pydantic import BaseModel as _BM
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.deps import require_permission
 from app.db.session import get_db
 from app.schemas.gs1 import (
     GS1CompanyConfigCreate, GS1CompanyConfigOut,
@@ -32,7 +33,10 @@ router = APIRouter()
 # ── Dashboard ─────────────────────────────────────────────────────────────────
 
 @router.get("/dashboard", response_model=GS1DashboardOut)
-async def get_dashboard(db: AsyncSession = Depends(get_db)):
+async def get_dashboard(
+    db: AsyncSession = Depends(get_db),
+    _=Depends(require_permission("gs1", "view")),
+):
     return await svc.get_dashboard(db)
 
 
@@ -42,6 +46,7 @@ async def get_dashboard(db: AsyncSession = Depends(get_db)):
 async def create_company_config(
     payload: GS1CompanyConfigCreate,
     db: AsyncSession = Depends(get_db),
+    _=Depends(require_permission("gs1", "admin")),
 ):
     cfg = await svc.create_company_config(db, payload.model_dump())
     await db.commit()
@@ -50,12 +55,19 @@ async def create_company_config(
 
 
 @router.get("/config", response_model=List[GS1CompanyConfigOut])
-async def list_company_configs(db: AsyncSession = Depends(get_db)):
+async def list_company_configs(
+    db: AsyncSession = Depends(get_db),
+    _=Depends(require_permission("gs1", "view")),
+):
     return await svc.list_company_configs(db)
 
 
 @router.get("/config/{cfg_id}", response_model=GS1CompanyConfigOut)
-async def get_company_config(cfg_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+async def get_company_config(
+    cfg_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(require_permission("gs1", "view")),
+):
     cfg = await svc.get_company_config(db, cfg_id)
     if not cfg:
         raise HTTPException(404, "Company config not found")
@@ -68,6 +80,7 @@ async def get_company_config(cfg_id: uuid.UUID, db: AsyncSession = Depends(get_d
 async def create_product_config(
     payload: ProductGS1ConfigCreate,
     db: AsyncSession = Depends(get_db),
+    _=Depends(require_permission("gs1", "create")),
 ):
     cfg = await svc.create_product_config(db, payload.model_dump())
     await db.commit()
@@ -76,13 +89,20 @@ async def create_product_config(
 
 
 @router.get("/products", response_model=List[ProductGS1ConfigOut])
-async def list_product_configs(db: AsyncSession = Depends(get_db)):
+async def list_product_configs(
+    db: AsyncSession = Depends(get_db),
+    _=Depends(require_permission("gs1", "view")),
+):
     rows = await svc.list_product_configs(db)
     return [ProductGS1ConfigOut.model_validate(r) for r in rows]
 
 
 @router.get("/products/{cfg_id}", response_model=ProductGS1ConfigOut)
-async def get_product_config(cfg_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+async def get_product_config(
+    cfg_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(require_permission("gs1", "view")),
+):
     cfg = await svc.get_product_config(db, cfg_id)
     if not cfg:
         raise HTTPException(404, "Product GS1 config not found")
@@ -94,6 +114,7 @@ async def update_product_config(
     cfg_id: uuid.UUID,
     payload: ProductGS1ConfigUpdate,
     db: AsyncSession = Depends(get_db),
+    _=Depends(require_permission("gs1", "edit")),
 ):
     cfg = await svc.update_product_config(db, cfg_id, payload.model_dump(exclude_none=True))
     if not cfg:
@@ -104,7 +125,11 @@ async def update_product_config(
 
 
 @router.get("/products/by-product/{product_id}", response_model=ProductGS1ConfigOut)
-async def get_config_by_product(product_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+async def get_config_by_product(
+    product_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(require_permission("gs1", "view")),
+):
     cfg = await svc.get_product_config_by_product(db, product_id)
     if not cfg:
         raise HTTPException(404, "No GS1 config for this product")
@@ -117,6 +142,7 @@ async def get_config_by_product(product_id: uuid.UUID, db: AsyncSession = Depend
 async def generate_barcode(
     payload: BarcodeGenerateRequest,
     db: AsyncSession = Depends(get_db),
+    _=Depends(require_permission("gs1", "create")),
 ):
     gtin = payload.gtin
     product_config_id = None
@@ -160,12 +186,17 @@ async def list_barcodes(
     limit: int = Query(50, le=200),
     offset: int = 0,
     db: AsyncSession = Depends(get_db),
+    _=Depends(require_permission("gs1", "view")),
 ):
     return await svc.list_lot_barcodes(db, product_config_id, lot_id, limit, offset)
 
 
 @router.get("/barcode/{record_id}", response_model=LotBarcodeOut)
-async def get_barcode(record_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+async def get_barcode(
+    record_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(require_permission("gs1", "view")),
+):
     from sqlalchemy import select
     from app.models.gs1 import LotBarcodeRecord
     r = await db.execute(select(LotBarcodeRecord).where(LotBarcodeRecord.id == record_id))
@@ -178,7 +209,11 @@ async def get_barcode(record_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
 # ── GS1 String Decode / Scan ──────────────────────────────────────────────────
 
 @router.post("/scan/decode", response_model=GS1DecodeResponse)
-async def decode_gs1(payload: GS1DecodeRequest, db: AsyncSession = Depends(get_db)):
+async def decode_gs1(
+    payload: GS1DecodeRequest,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(require_permission("gs1", "view")),
+):
     return GS1DecodeResponse.model_validate(
         await svc.decode_and_validate(db, payload.gs1_string)
     )
@@ -188,6 +223,7 @@ async def decode_gs1(payload: GS1DecodeRequest, db: AsyncSession = Depends(get_d
 async def decode_gs1_get(
     gs1_string: str = Query(...),
     db: AsyncSession = Depends(get_db),
+    _=Depends(require_permission("gs1", "view")),
 ):
     return await svc.decode_and_validate(db, gs1_string)
 
@@ -198,6 +234,7 @@ async def decode_gs1_get(
 async def generate_sscc(
     payload: SSCCGenerateRequest,
     db: AsyncSession = Depends(get_db),
+    _=Depends(require_permission("gs1", "create")),
 ):
     pallet = await svc.create_sscc_pallet(
         db,
@@ -220,6 +257,7 @@ async def list_sscc_pallets(
     limit: int = Query(50, le=200),
     offset: int = 0,
     db: AsyncSession = Depends(get_db),
+    _=Depends(require_permission("gs1", "view")),
 ):
     pallets = await svc.list_sscc_pallets(db, status, limit, offset)
     result = []
@@ -232,7 +270,11 @@ async def list_sscc_pallets(
 
 
 @router.get("/sscc/{sscc_id}", response_model=SSCCPalletOut)
-async def get_sscc_pallet(sscc_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+async def get_sscc_pallet(
+    sscc_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(require_permission("gs1", "view")),
+):
     pallet = await svc.get_sscc_pallet(db, sscc_id)
     if not pallet:
         raise HTTPException(404, "SSCC pallet not found")
@@ -247,6 +289,7 @@ async def add_lot_to_sscc(
     sscc_id: uuid.UUID,
     payload: SSCCAddLotRequest,
     db: AsyncSession = Depends(get_db),
+    _=Depends(require_permission("gs1", "create")),
 ):
     link = await svc.add_lot_to_sscc(
         db, sscc_id, payload.lot_barcode_id, payload.quantity, payload.packaging_level
@@ -261,6 +304,7 @@ async def update_sscc_status(
     status: str = Query(...),
     shipment_reference: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
+    _=Depends(require_permission("gs1", "edit")),
 ):
     pallet = await svc.get_sscc_pallet(db, sscc_id)
     if not pallet:
@@ -278,6 +322,7 @@ async def update_sscc_status(
 async def create_template(
     payload: LabelTemplateCreate,
     db: AsyncSession = Depends(get_db),
+    _=Depends(require_permission("gs1", "create")),
 ):
     t = await svc.create_label_template(db, payload.model_dump())
     await db.commit()
@@ -290,12 +335,17 @@ async def list_templates(
     packaging_level: Optional[str] = None,
     active_only: bool = True,
     db: AsyncSession = Depends(get_db),
+    _=Depends(require_permission("gs1", "view")),
 ):
     return await svc.list_label_templates(db, packaging_level, active_only)
 
 
 @router.get("/labels/templates/{tmpl_id}", response_model=LabelTemplateOut)
-async def get_template(tmpl_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+async def get_template(
+    tmpl_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(require_permission("gs1", "view")),
+):
     t = await svc.get_label_template(db, tmpl_id)
     if not t:
         raise HTTPException(404, "Label template not found")
@@ -307,6 +357,7 @@ async def update_template(
     tmpl_id: uuid.UUID,
     payload: LabelTemplateUpdate,
     db: AsyncSession = Depends(get_db),
+    _=Depends(require_permission("gs1", "edit")),
 ):
     t = await svc.update_label_template(db, tmpl_id, payload.model_dump(exclude_none=True))
     if not t:
@@ -322,6 +373,7 @@ async def update_template(
 async def create_print_job(
     payload: PrintJobCreate,
     db: AsyncSession = Depends(get_db),
+    _=Depends(require_permission("gs1", "print")),
 ):
     data = payload.model_dump()
     job = await svc.create_print_job(db, data)
@@ -338,6 +390,7 @@ async def list_print_jobs(
     limit: int = Query(50, le=200),
     offset: int = 0,
     db: AsyncSession = Depends(get_db),
+    _=Depends(require_permission("gs1", "view")),
 ):
     jobs = await svc.list_print_jobs(db, status, limit, offset)
     return [
@@ -351,10 +404,10 @@ async def list_print_jobs(
 @router.post("/labels/print/{job_id}/complete")
 async def complete_print_job(
     job_id: uuid.UUID,
-    printed_by: str = Query("system"),
     db: AsyncSession = Depends(get_db),
+    current_user=Depends(require_permission("gs1", "print")),
 ):
-    job = await svc.complete_print_job(db, job_id, printed_by)
+    job = await svc.complete_print_job(db, job_id, current_user.username)
     if not job:
         raise HTTPException(404, "Print job not found")
     await db.commit()
@@ -364,14 +417,20 @@ async def complete_print_job(
 # ── AI Agents ─────────────────────────────────────────────────────────────────
 
 @router.post("/ai/run-label-validator", status_code=201)
-async def run_label_validator(db: AsyncSession = Depends(get_db)):
+async def run_label_validator(
+    db: AsyncSession = Depends(get_db),
+    _=Depends(require_permission("gs1", "admin")),
+):
     recs = await svc.run_label_validator(db)
     await db.commit()
     return {"generated": len(recs)}
 
 
 @router.post("/ai/run-packaging-optimizer", status_code=201)
-async def run_packaging_optimizer(db: AsyncSession = Depends(get_db)):
+async def run_packaging_optimizer(
+    db: AsyncSession = Depends(get_db),
+    _=Depends(require_permission("gs1", "admin")),
+):
     recs = await svc.run_packaging_optimizer(db)
     await db.commit()
     return {"generated": len(recs)}
@@ -382,6 +441,7 @@ async def list_recommendations(
     agent_type: Optional[str] = None,
     status: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
+    _=Depends(require_permission("gs1", "view")),
 ):
     return await svc.list_ai_recommendations(db, agent_type, status)
 
@@ -391,6 +451,7 @@ async def review_recommendation(
     rec_id: uuid.UUID,
     payload: GS1AIRecReview,
     db: AsyncSession = Depends(get_db),
+    current_user=Depends(require_permission("gs1", "approve")),
 ):
     rec = await svc.review_ai_recommendation(db, rec_id, payload.status, payload.reviewed_by)
     if not rec:
@@ -403,22 +464,36 @@ async def review_recommendation(
 # ── Reports ───────────────────────────────────────────────────────────────────
 
 @router.get("/reports/print-history")
-async def print_history(limit: int = 100, db: AsyncSession = Depends(get_db)):
+async def print_history(
+    limit: int = 100,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(require_permission("gs1", "report")),
+):
     return await svc.get_print_history(db, limit)
 
 
 @router.get("/reports/sscc-tracking")
-async def sscc_tracking(limit: int = 100, db: AsyncSession = Depends(get_db)):
+async def sscc_tracking(
+    limit: int = 100,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(require_permission("gs1", "report")),
+):
     return await svc.get_sscc_tracking_report(db, limit)
 
 
 @router.get("/reports/packaging-hierarchy")
-async def packaging_hierarchy(db: AsyncSession = Depends(get_db)):
+async def packaging_hierarchy(
+    db: AsyncSession = Depends(get_db),
+    _=Depends(require_permission("gs1", "report")),
+):
     return await svc.get_packaging_hierarchy_report(db)
 
 
 @router.get("/reports/barcode-usage")
-async def barcode_usage(db: AsyncSession = Depends(get_db)):
+async def barcode_usage(
+    db: AsyncSession = Depends(get_db),
+    _=Depends(require_permission("gs1", "report")),
+):
     from sqlalchemy import select, func
     from app.models.gs1 import LotBarcodeRecord, ProductGS1Config
     from app.models.master import Product
@@ -453,6 +528,7 @@ class DispatchScanIn(_BM):
 async def dispatch_validate(
     payload: DispatchScanIn,
     db: AsyncSession = Depends(get_db),
+    _=Depends(require_permission("gs1", "view")),
 ):
     """
     Validate a barcode scan during dispatch.
@@ -524,6 +600,7 @@ async def dispatch_validate(
 async def gtin_lookup(
     gtin: str = Query(..., description="14-digit GTIN"),
     db: AsyncSession = Depends(get_db),
+    _=Depends(require_permission("gs1", "view")),
 ):
     """Look up product details by GTIN."""
     from app.models.gs1 import ProductGS1Config
