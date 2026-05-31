@@ -115,29 +115,52 @@ Rules:
 
 ### Task ID: TASK-002 — Enable AI live mode
 
-- **Status:** Pending
+- **Status:** Blocked — waiting for real API key (env examples updated; no backend code change needed)
 - **Priority:** P0
 - **Category:** AI / Integration
-- **Why it matters:** `AI_PROVIDER=mock` or `auto` with no API key means all AI features return fake responses. No AI value in production.
-- **Source / evidence:** `backend/app/core/config.py:123` `AI_PROVIDER: str = "auto"`. `backend/app/services/ai_provider.py:421` "No AI API key found — using mock provider". Graphify action plan: production deployment blocker.
-- **Affected area:** `.env.development`, `.env.production`, `backend/app/core/config.py`
-- **Risk:** Low (config-only change if API key is available)
-- **Recommended timing:** Now
-- **Needs audit before implementation:** No
-- **Implementation scope:** Set `AI_PROVIDER=anthropic` (or `openai`/`gemini`) in env files. Add real API key. No code changes unless key validation fails.
-- **Do not touch:** AI service code, AI provider logic, frontend AI pages
-- **Started at:**
+- **Why it matters:** `AI_PROVIDER=auto` with no keys → MockProvider. All AI features (predictions, formulations, recommendations, chat) return canned demo responses. Not acceptable for production.
+- **Source / evidence:** `backend/app/core/config.py:123` `AI_PROVIDER: str = "auto"`. `backend/app/services/ai_provider.py:421` "No AI API key found — using mock provider". `.env.development.example` and `.env.production.example` both have all three keys empty.
+- **Affected area:** `.env.development` or `.env.production` (actual live env file — NOT the examples)
+- **Risk:** Low (config-only change; API key in env only, never committed)
+- **Recommended timing:** Now (production blocker)
+- **Needs audit before implementation:** No — backend is production-ready. Only real API key needed.
+- **Implementation scope:**
+  - Backend already supports Anthropic (Claude), OpenAI (GPT-4o), Google Gemini, and Mock.
+  - `AI_PROVIDER=auto` auto-selects whichever key is present (Anthropic → OpenAI → Gemini → Mock).
+  - `AIModeBanner` frontend component already shows amber "MOCK MODE" or green "LIVE AI MODE" banner.
+  - High-risk AI guards (`ai_modes.py` LLM_POWERED tier) already enforce backend permissions + audit logging.
+  - **No source code changes needed.** Task is 100% configuration.
+  - To enable: add one real key to `.env.development` (dev) or `.env.production` (prod) and restart backend.
+- **Do not touch:** `ai_provider.py`, `ai_modes.py`, `ai_service.py`, frontend AI pages, `AIModeBanner.tsx`
+- **Started at:** 2026-05-31 (audit)
 - **Completed at:**
-- **Changed files:** None yet
-- **Created files:** None yet
-- **Deleted files:** None yet
-- **Tests / checks run:** None yet
-- **Result:** Pending
-- **Known limitations:** Requires real API key from Anthropic/OpenAI/Google.
+- **Changed files:**
+  - `.env.development.example` (added AI section comment — no values changed)
+  - `.env.production.example` (added AI section comment — no values changed)
+  - `TASKS.md` (this card)
+- **Created files:** None
+- **Deleted files:** None
+- **Tests / checks run:**
+  - Read `backend/app/core/config.py` — AI config confirmed at lines 120-180
+  - Read `backend/app/services/ai_provider.py` — full Anthropic/OpenAI/Gemini/Mock factory confirmed
+  - Read `backend/app/core/ai_modes.py` — mode classification confirmed (LLM_POWERED, RULE_BASED, STATISTICAL, HYBRID)
+  - Read `frontend/src/components/ai/AIModeBanner.tsx` — mock/live banner confirmed
+  - Read all three env example files — no keys set
+- **Result:** Blocked — backend ready, env examples clarified, real API key required before status can be Done
+- **Known limitations:** Cannot be Done until user provides real API key. Key must NOT be committed to git.
 - **Git commit / branch:** Not committed yet
 - **Graphify refresh after implementation:** no
 - **Graphify refresh status:** Not needed
-- **Notes:** Highest feature unlock per effort. Once set, all AI formulation, predictive maintenance, APS optimization features become live.
+- **Notes:**
+  - **How to enable live AI (single step):** In `.env.development` or `.env.production`, set one of:
+    - `ANTHROPIC_API_KEY=sk-ant-...` (recommended — model already set to `claude-sonnet-4-6`)
+    - `OPENAI_API_KEY=sk-...` (model: `gpt-4o`)
+    - `GEMINI_API_KEY=...` (model: `gemini-1.5-pro`)
+  - Then restart backend (`docker compose restart backend` or equivalent).
+  - `AI_PROVIDER=auto` does NOT need to change — it auto-detects the key.
+  - After restart, `AIModeBanner` turns green ("LIVE AI MODE") automatically.
+  - LLM_POWERED features affected: predictions, recommendations, scenarios, formulations, copilot chat.
+  - RULE_BASED and STATISTICAL modules (procurement, production, payroll, etc.) are unaffected — they never call LLM.
 
 ---
 
