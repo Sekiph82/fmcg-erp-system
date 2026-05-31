@@ -510,29 +510,149 @@ _=Depends(require_permission("gs1", "admin"))  # config create, AI agent trigger
 
 ---
 
-### Task ID: TASK-007 — E2E test credentials investigation
+### Task ID: TASK-007 — E2E/admin credentials audit + management user env strategy
 
-- **Status:** Needs Audit (low risk — verified no production credential leak)
+- **Status:** Audited — implementation plan ready
 - **Priority:** P1
 - **Category:** Security / QA
-- **Why it matters:** Graphify frontend graph (Community 133) found `adminCredentials` and `limitedCredentials` nodes — investigated; they are just JS variable names reading from env vars, not hardcoded passwords.
-- **Source / evidence:** `frontend/e2e/helpers/auth.ts` — `credentials()` helper uses `process.env.E2E_ADMIN_PASSWORD` etc. `frontend/e2e/auth.setup.ts:47` — `"Admin1234!"` hardcoded (this is the documented dev default from README.md, not a production secret). `frontend/e2e/critical-workflows.spec.ts` — `adminCredentials = credentials("admin")` reads from env vars.
-- **Affected area:** `frontend/e2e/auth.setup.ts` only
-- **Risk:** Low (not a production credential; documented dev default)
-- **Recommended timing:** Next
-- **Needs audit before implementation:** Already investigated.
-- **Already completed:** Credentials helper uses env vars. No production secrets committed.
-- **Remaining work (optional):** Replace hardcoded `"Admin1234!"` in `auth.setup.ts:47` with `process.env.E2E_PASSWORD || "Admin1234!"` for best practice. Not urgent.
-- **Started at:**
-- **Completed at:**
-- **Changed files:** None yet
-- **Tests / checks run:** Code search confirmed
-- **Result:** Investigation complete — low risk. Optional cleanup remains.
-- **Known limitations:** None.
+- **Why it matters:** Full credential audit completed. Expanded scope from original E2E-only investigation to include management user seed strategy (CEO/CTO/CMO/COO/admin via env vars).
+
+---
+
+#### AUDIT FINDINGS
+
+**A. Hardcoded credentials — classified**
+
+| File | Credential | Category | Risk |
+|------|-----------|----------|------|
+| `frontend/e2e/auth.setup.ts:47` | `"Admin1234!"` (literal string) | C — E2E test | Low — dev default only; production E2E must set env var |
+| `.env.development.example` (tracked) | `INITIAL_ADMIN_PASSWORD=Admin1234!` | D — documented dev default | Low — documented as dev-only in README |
+| `.env.development.example` (tracked) | `DEMO_USER_PASSWORD=Demo1234!` | D — documented dev default | Low |
+| `README.md` / `docs/*.md` | `Admin1234!` in login tables | E — documentation | Low — clearly labeled dev default |
+| `.env` (untracked) | `INITIAL_ADMIN_PASSWORD=Admin1234!` | Local dev config | Not committed |
+| `.env.development` (untracked) | `INITIAL_ADMIN_PASSWORD=Admin1234!` | Local dev config | Not committed |
+| `backend/tests/fixtures.py:86` | `"ValidPass1"` | C — unit test fixture | Low — no-DB tests only |
+| `backend/tests/test_hardening.py:197` | `"StrongerAdmin1!"` | C — hardening test | Low — tests password policy |
+| `backend/tests/test_attack_simulation.py` | `"password"`, `"SecureP@ss1!"` | C — policy tests | Low — testing policy validator |
+
+**No production secrets found in tracked files.** `.env` and `.env.development` are untracked (gitignored). `.env.production.example` uses `CHANGE_ME_*` placeholders correctly.
+
+**B. E2E credential architecture — already good**
+
+- `frontend/e2e/helpers/auth.ts` — `credentials()` reads `process.env.E2E_ADMIN_PASSWORD`, `E2E_ADMIN_USERNAME`, `E2E_LIMITED_PASSWORD`, `E2E_LIMITED_USERNAME`, `E2E_PASSWORD`, `E2E_USERNAME`
+- Tests skip (`test.skip`) if env vars not set — no silent fallback
+- Only exception: `auth.setup.ts:47` fills `"Admin1234!"` directly — not env-driven
+
+**C. Admin seed architecture — already env-driven**
+
+`backend/app/core/config.py` already has:
+- `SEED_INITIAL_ADMIN: bool = True`
+- `SEED_DEMO_DATA: bool = False`
+- `SYNC_INITIAL_ADMIN_PASSWORD: bool = False`
+- `INITIAL_ADMIN_USERNAME: str = "admin"`
+- `INITIAL_ADMIN_EMAIL: str = "admin@erp.local"`
+- `INITIAL_ADMIN_PASSWORD: str = ""`
+- `INITIAL_ADMIN_FULL_NAME: str = "System Administrator"`
+- `DEMO_USER_PASSWORD: str = ""`
+- Production validator: raises if `INITIAL_ADMIN_PASSWORD` empty or starts with `CHANGE_ME`
+
+**D. Existing management roles (already seeded)**
+
+`backend/app/db/seed.py` — `ROLE_DEFINITIONS` already defines: `owner`, `admin`, `ceo`, `coo`, `cfo`, `cto`, `cmo`, `data_manager`, `finance_manager`, `sales_manager`, and 24 more.
+
+**Missing role:** `technical_manager` — not in `ROLE_DEFINITIONS`.
+
+**E. Existing demo user seed (DEMO_USERS — `SEED_DEMO_DATA=true` only)**
+
+Users created only when `SEED_DEMO_DATA=true`: `ceo`, `coo`, `cfo`, `cto`, `cmo`, `mkt_manager`, `data_manager` — all share one password `DEMO_USER_PASSWORD`. Emails: `ceo@erp.com`, etc.
+
+Problem: C-suite users share a single `DEMO_USER_PASSWORD` — no per-user password env var. They use generic `@erp.com` emails. Flagged for production: management users need individual passwords and real org emails.
+
+**F. `must_change_password` — fully supported**
+
+`User.must_change_password` column exists. Auth endpoint exposes it. Seed currently sets `must_change_password=False` for all users. Can be flipped to `True` to force password change on first login.
+
+---
+
+#### PROPOSED ENV VARIABLE STRATEGY
+
+**Scope:** Management users seeded at bootstrap. Per-user passwords. No shared `DEMO_USER_PASSWORD` for production users.
+
+**Config additions needed in `backend/app/core/config.py`:**
+
+```
+# ── Management user seed (optional — only seeded if all 3 vars set) ──────────
+ERP_SEED_MANAGEMENT_USERS: bool = False
+
+ERP_ADMIN_EMAIL: str = ""
+ERP_ADMIN_PASSWORD: str = ""
+ERP_ADMIN_FULL_NAME: str = "System Administrator"
+
+ERP_CEO_EMAIL: str = ""
+ERP_CEO_PASSWORD: str = ""
+ERP_CEO_FULL_NAME: str = "Chief Executive Officer"
+
+ERP_CTO_EMAIL: str = ""
+ERP_CTO_PASSWORD: str = ""
+ERP_CTO_FULL_NAME: str = "Chief Technology Officer"
+
+ERP_CMO_EMAIL: str = ""
+ERP_CMO_PASSWORD: str = ""
+ERP_CMO_FULL_NAME: str = "Chief Marketing Officer"
+
+ERP_COO_EMAIL: str = ""
+ERP_COO_PASSWORD: str = ""
+ERP_COO_FULL_NAME: str = "Chief Operating Officer"
+
+ERP_TECHNICAL_MANAGER_EMAIL: str = ""
+ERP_TECHNICAL_MANAGER_PASSWORD: str = ""
+ERP_TECHNICAL_MANAGER_FULL_NAME: str = "Technical Manager"
+
+ERP_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN: bool = True
+```
+
+**Production rules:**
+- Empty password = skip seeding that user (no silent fallback)
+- `ERP_SEED_MANAGEMENT_USERS=false` default — explicit opt-in
+- Production validator: if `ERP_SEED_MANAGEMENT_USERS=true` and any password is empty or starts with `CHANGE_ME`, raise `ValueError`
+- `must_change_password=True` by default for all seeded management users
+- `.env.*.example` files: placeholders only (`CHANGE_ME_*` or empty)
+
+**`technical_manager` role:** Must be added to `ROLE_DEFINITIONS` before this user can be seeded. Suggest: inherits from a combination of `cto`-level IT perms + `factory_manager` ops perms.
+
+---
+
+#### IMPLEMENTATION SCOPE
+
+| # | Change | Required |
+|---|--------|----------|
+| 1 | `frontend/e2e/auth.setup.ts:47` — replace `"Admin1234!"` with `process.env.E2E_PASSWORD \|\| "Admin1234!"` | Yes (P1 security best practice) |
+| 2 | `backend/app/core/config.py` — add `ERP_*` management user vars + production validator | Yes |
+| 3 | `backend/app/db/seed.py` — add `seed_management_users()` function; add `technical_manager` role to `ROLE_DEFINITIONS` | Yes |
+| 4 | `.env.development.example` — add `ERP_*` placeholder vars (keep `Admin1234!` dev default for `INITIAL_ADMIN_PASSWORD` — documented) | Yes |
+| 5 | `.env.production.example` — add `ERP_*` `CHANGE_ME_*` placeholders | Yes |
+| 6 | Backend tests — test production validator rejects empty management passwords when `ERP_SEED_MANAGEMENT_USERS=true` | Yes |
+| 7 | Docs — update `DEPLOYMENT.md` with management user env vars | Yes |
+
+**Graphify refresh after implementation:** backend (seed + config changed)
+
+---
+
+- **Source / evidence:** `frontend/e2e/auth.setup.ts:47`, `backend/app/db/seed.py:15-58` (DEMO_USERS), `backend/app/core/config.py:28-38`, `.env.development.example:24`
+- **Affected area:** `frontend/e2e/auth.setup.ts`, `backend/app/core/config.py`, `backend/app/db/seed.py`, `.env.*.example`, `backend/tests/`
+- **Risk:** Low (no schema changes; additive seed logic; env-gated)
+- **Recommended timing:** Next (before first production deployment)
+- **Do not touch:** Existing demo user logic (`SEED_DEMO_DATA`), production `.env` files, real passwords
+- **Started at:** 2026-05-31
+- **Completed at:** (audit done; implementation pending)
+- **Changed files:** `TASKS.md` only (audit update)
+- **Tests / checks run:** Full credential search, seed.py inspection, config.py inspection, e2e helper inspection
+- **Result:** Audit complete. No production credential leak found. Implementation plan ready.
+- **Known limitations:** `technical_manager` role does not exist yet — must define permissions before seeding.
 - **Git commit / branch:** Not committed yet
-- **Graphify refresh after implementation:** no
-- **Graphify refresh status:** Not needed
-- **Notes:** Graphify node names (`adminCredentials`, `limitedCredentials`) do not indicate hardcoded passwords — they are variable names for env-var-sourced credential objects.
+- **Graphify refresh after implementation:** backend
+- **Graphify refresh status:** Not needed until implementation
+- **Notes:** Graphify node names (`adminCredentials`, `limitedCredentials`) are variable names for env-var-sourced credential objects — not hardcoded passwords. `Admin1234!` in `auth.setup.ts` is only remaining hardcoded dev credential; low risk but should be env-driven.
 
 ---
 
