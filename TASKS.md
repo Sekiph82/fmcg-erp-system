@@ -1,5 +1,90 @@
 # TASKS
 
+## GS1 Product Master Label Data Integration — 2026-05-31
+
+### Files Changed
+| File | Change |
+|---|---|
+| `frontend/src/app/dashboard/gs1/page.tsx` | Product selector, product_id passthrough, A4 grid fix, copies fix |
+| `frontend/src/lib/gs1.ts` | Added `net_weight_g`, `net_volume_ml`, `product_sku_code` to `ProductGS1Config` TS interface |
+
+**Backend source files touched:** NO  
+**Migrations added:** NO — by design. No new DB columns in this phase.
+
+### Product Master Integration
+**How it works:**
+- Product selector added to Generate Label form (search-filter input + select dropdown)
+- Products fetched from existing `GET /api/v1/products/` via `productsApi.list(0, 500)` — same pattern used across 6 other pages
+- On product select, `onProductSelect()` auto-fills: Product Name (from `product.name`), SKU (from `product.sku`), Net Weight (from `product.weight_kg` × 1000 → grams)
+- Then fetches `GET /api/v1/gs1/products/by-product/{product_id}` (existing endpoint) for canonical GTIN-14 (`gs1Config.gtin`) and GS1 packaging weights (`net_weight_g`, `net_volume_ml`)
+- GTIN resolution priority: GS1Config.gtin → product.barcode → warning ("Selected product has no GTIN — enter GTIN manually")
+- All auto-filled fields remain editable by user
+
+**product_id support:** `BarcodeGenerateRequest` already has `product_id: Optional[uuid.UUID]` on the backend. Frontend passes `product_id` when generating barcode. No migration needed — field existed.
+
+**Product fields mapped:**
+| Source field | Label field |
+|---|---|
+| `Product.name` | Product Name |
+| `Product.sku` | SKU |
+| `Product.weight_kg × 1000` | Net Weight (grams) |
+| `Product.barcode` | GTIN fallback |
+| `ProductGS1Config.gtin` | GTIN (canonical GTIN-14, preferred) |
+| `ProductGS1Config.net_weight_g` | Net Weight override (GS1 packaging weight) |
+| `ProductGS1Config.net_volume_ml` | Net Weight (volume, if weight not set) |
+
+**Product Master data is sourced on the frontend only; barcode record is not permanently linked to product_id unless product was selected at generate time.**
+
+### A4 Grid Fix
+**Problem:** All A4 label cells were in one `<div class="grid">` with `page-break-after` on each cell → broken pagination for copies > 4.
+
+**Fix:** `openPrintWindow` now groups A4 cells into pages of 4 (`A4_CELLS_PER_PAGE = 4`). Each group gets its own `<div class="a4-page">` with `page-break-after:always` only between page groups. Individual cells never receive `page-break-after`.
+
+**Result:**
+- Copies 1–4 → 1 A4 page (2×2 grid)
+- Copies 5–8 → 2 A4 pages
+- Copies 9–12 → 3 A4 pages
+- Thermal labels unchanged (one label per physical page)
+
+### Recent Barcodes Row Print — Copies Fix
+**Problem:** `printMut.onSuccess` passed `copies: 1` hardcoded to `openPrintWindow`.
+
+**Fix:** Now uses `copies` state variable. Row Print button uses selected Copies value, selected Label Template, and selected Printer Preset from the form panel.
+
+### Verification
+| Check | Result |
+|---|---|
+| Frontend type-check (`tsc --noEmit`) | CLEAN |
+| Frontend build (`npm run build`) | CLEAN (exit 0) |
+| Backend source changed | NO |
+| Migrations added | NO |
+| New npm dependencies | NONE |
+
+### Manual Test Steps
+1. Open `/dashboard/gs1`
+2. Click **Generate Label**
+3. Type product name in filter box, select product from dropdown
+4. Confirm Product Name and SKU auto-fill
+5. Confirm GTIN auto-fills if product has GS1 config or barcode; otherwise amber warning appears
+6. Enter Lot Number: `LOT-001`
+7. Set Copies: `3`, select 70×40 mm / Zebra Thermal
+8. Click **Generate Barcode** → confirm preview shows product data
+9. Click **Print 3 Labels (70×40 mm)** → confirm 3 thermal labels render
+10. Change template to A4, Copies: `4`
+11. Click **Preview / Export PDF** → confirm 4 labels on one A4 page in 2×2 grid
+12. Click **Print** on a Recent Barcodes row → confirm it uses selected copies value
+
+### Known Limitations
+- **Browser printing only.** Zebra/TSC/Godex/Godex presets set CSS `@page` dimensions and paper size — no ZPL/EPL/TSPL command generation, no USB/network printer driver.
+- **Thermal paper sizing:** Chrome/Edge respect `@page { size: 70mm 40mm }` when printer driver has matching paper size. Firefox ignores custom `@page` sizes and defaults to A4.
+- **PDF export:** Uses browser "Save as PDF" in print dialog. No programmatic PDF generation (no jsPDF, pdfmake, puppeteer).
+- **Product Master completeness:** Product Name/SKU/GTIN auto-fill only as complete as existing Product Master records. If a product has no `barcode` and no `ProductGS1Config`, GTIN warning appears and user must enter manually.
+- **barcode record not permanently linked to product:** Barcode record gets `product_id` only when a product is selected at generate time. Existing barcode rows in Recent Barcodes table have no product metadata — row Print opens window with barcode record fields only.
+- **No migration in this phase by design.** No new DB columns. Product Master integration is frontend-only for GS1 label data population.
+- **Copies counter (print window):** Each copy is a separate HTML page in the print window. Browser print dialog "Number of copies" is independent — keep browser copies at 1 to avoid doubling.
+
+---
+
 ## GS1 Label Printing Workflow Enhancement — 2026-05-31
 
 ### Scope

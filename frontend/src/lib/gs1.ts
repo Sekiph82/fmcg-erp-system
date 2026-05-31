@@ -47,6 +47,9 @@ export interface ProductGS1Config {
   is_active: boolean;
   notes: string | null;
   product_name: string | null;
+  product_sku_code: string | null;
+  net_weight_g: string | null;
+  net_volume_ml: string | null;
   created_at: string;
 }
 

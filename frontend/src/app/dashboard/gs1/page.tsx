@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { gs1Api, statusColor, BarcodeGenerateResponse, BarcodeType, PrintJob } from "@/lib/gs1";
+import { productsApi, Product } from "@/lib/products";
 
 // ── Local types ────────────────────────────────────────────────────────────────
 
@@ -41,6 +42,8 @@ const PRINTER_PRESETS: { value: PrinterPreset; label: string; hint: string }[] =
   { value: "a4office", label: "A4 Office Printer", hint: "Standard A4 sheet, 4-up grid" },
 ];
 
+const A4_CELLS_PER_PAGE = 4;
+
 // ── Print helpers ──────────────────────────────────────────────────────────────
 
 function getPageCSS(size: LabelSize): string {
@@ -53,28 +56,28 @@ function getPageCSS(size: LabelSize): string {
 function buildLabelHTML(cfg: PrintConfig & { index: number; isLast: boolean }): string {
   const { b64, aiString, gtin, lotNo, expiry, productionDate, productName, sku, netWeight, labelSize, index, copies, isLast } = cfg;
   const isA4 = labelSize === "a4";
-  const breakAttr = !isLast ? 'style="page-break-after:always"' : "";
   const maxImgH = labelSize === "50x30" ? "14mm" : labelSize === "70x40" ? "20mm" : "28mm";
+  // A4 cells: page-break is managed at the page-group level, not per cell
+  const breakAttr = (!isA4 && !isLast) ? ' style="page-break-after:always"' : "";
 
   const metaLines = [
-    productName && `<div class="ml"><b>Product:</b> ${productName}</div>`,
-    sku         && `<div class="ml"><b>SKU:</b> ${sku}</div>`,
-                   `<div class="ml"><b>GTIN:</b> <span class="mn">${gtin}</span></div>`,
-                   `<div class="ml"><b>Lot:</b> ${lotNo}</div>`,
-    expiry         && `<div class="ml"><b>Expiry:</b> ${expiry}</div>`,
-    productionDate && `<div class="ml"><b>Prod:</b> ${productionDate}</div>`,
-    netWeight      && `<div class="ml"><b>Net Wt:</b> ${netWeight}</div>`,
+    productName       && `<div class="ml"><b>Product:</b> ${productName}</div>`,
+    sku               && `<div class="ml"><b>SKU:</b> ${sku}</div>`,
+                          `<div class="ml"><b>GTIN:</b> <span class="mn">${gtin}</span></div>`,
+                          `<div class="ml"><b>Lot:</b> ${lotNo}</div>`,
+    expiry            && `<div class="ml"><b>Expiry:</b> ${expiry}</div>`,
+    productionDate    && `<div class="ml"><b>Prod:</b> ${productionDate}</div>`,
+    netWeight         && `<div class="ml"><b>Net Wt:</b> ${netWeight}</div>`,
   ].filter(Boolean).join("");
 
   const badge = copies > 1 ? `<div class="badge">${index + 1}/${copies}</div>` : "";
 
-  const inner = `
-    <img src="data:image/png;base64,${b64}" alt="barcode" style="max-width:100%;max-height:${maxImgH};display:block;margin:0 auto 1.5mm"/>
-    <div class="ai">${aiString}</div>
-    ${metaLines}${badge}`;
+  const inner =
+    `<img src="data:image/png;base64,${b64}" alt="barcode" style="max-width:100%;max-height:${maxImgH};display:block;margin:0 auto 1.5mm"/>` +
+    `<div class="ai">${aiString}</div>${metaLines}${badge}`;
 
-  if (isA4) return `<div class="cell" ${breakAttr}>${inner}</div>`;
-  return `<div class="page" ${breakAttr}><div class="inner">${inner}</div></div>`;
+  if (isA4) return `<div class="cell">${inner}</div>`;
+  return `<div class="page"${breakAttr}><div class="inner">${inner}</div></div>`;
 }
 
 function openPrintWindow(cfg: PrintConfig): void {
@@ -85,7 +88,21 @@ function openPrintWindow(cfg: PrintConfig): void {
   const labels = Array.from({ length: copies }, (_, i) =>
     buildLabelHTML({ ...cfg, index: i, isLast: i === copies - 1 })
   );
-  const body = isA4 ? `<div class="grid">${labels.join("")}</div>` : labels.join("");
+
+  let body: string;
+  if (isA4) {
+    // Group into pages of 4 cells; page-break-after between pages only
+    const pages: string[] = [];
+    for (let start = 0; start < labels.length; start += A4_CELLS_PER_PAGE) {
+      const chunk = labels.slice(start, start + A4_CELLS_PER_PAGE);
+      const isLastPage = start + A4_CELLS_PER_PAGE >= labels.length;
+      const pb = isLastPage ? "" : ' style="page-break-after:always"';
+      pages.push(`<div class="a4-page"${pb}>${chunk.join("")}</div>`);
+    }
+    body = pages.join("");
+  } else {
+    body = labels.join("");
+  }
 
   const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/>
 <title>GS1 Label — ${cfg.gtin} / ${cfg.lotNo}</title>
@@ -95,7 +112,7 @@ ${getPageCSS(labelSize)}
 body{margin:0;padding:0;font-family:monospace;font-size:${fs}px;background:#fff;color:#000}
 .page{width:100%;height:100vh;display:flex;align-items:center;justify-content:center}
 .inner{text-align:center}
-.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6mm;padding:4mm}
+.a4-page{display:grid;grid-template-columns:repeat(2,1fr);gap:6mm;padding:4mm}
 .cell{border:.4mm solid #ccc;padding:3mm;text-align:center;break-inside:avoid}
 .ai{font-size:${fs - 1}px;color:#333;margin-bottom:1.5mm;word-break:break-all}
 .ml{font-size:${fs}px;text-align:left;line-height:1.4}
@@ -192,23 +209,94 @@ export default function GS1DashboardPage() {
     queryFn: gs1Api.getDashboard,
   });
 
+  const { data: products } = useQuery({
+    queryKey: ["products-for-gs1"],
+    queryFn: () => productsApi.list(0, 500),
+  });
+
   // Barcode / product fields
-  const [showForm, setShowForm]           = useState(false);
-  const [gtin, setGtin]                   = useState("");
-  const [lotNo, setLotNo]                 = useState("");
-  const [expiry, setExpiry]               = useState("");
-  const [productionDate, setProdDate]     = useState("");
-  const [productName, setProductName]     = useState("");
-  const [sku, setSku]                     = useState("");
-  const [netWeight, setNetWeight]         = useState("");
-  const [barcodeType, setBarcodeType]     = useState<BarcodeType>("GS1_128");
+  const [showForm, setShowForm]         = useState(false);
+  const [selectedProductId, setSelectedProductId] = useState("");
+  const [productSearch, setProductSearch]         = useState("");
+  const [gtinWarning, setGtinWarning]             = useState(false);
+  const [productLoading, setProductLoading]       = useState(false);
+  const [gtin, setGtin]                 = useState("");
+  const [lotNo, setLotNo]               = useState("");
+  const [expiry, setExpiry]             = useState("");
+  const [productionDate, setProdDate]   = useState("");
+  const [productName, setProductName]   = useState("");
+  const [sku, setSku]                   = useState("");
+  const [netWeight, setNetWeight]       = useState("");
+  const [barcodeType, setBarcodeType]   = useState<BarcodeType>("GS1_128");
   // Print settings
-  const [labelSize, setLabelSize]         = useState<LabelSize>("70x40");
-  const [printerPreset, setPreset]        = useState<PrinterPreset>("browser");
-  const [copies, setCopies]               = useState(1);
+  const [labelSize, setLabelSize]       = useState<LabelSize>("70x40");
+  const [printerPreset, setPreset]      = useState<PrinterPreset>("browser");
+  const [copies, setCopies]             = useState(1);
   // UI state
-  const [formError, setFormError]         = useState("");
-  const [generated, setGenerated]         = useState<BarcodeGenerateResponse | null>(null);
+  const [formError, setFormError]       = useState("");
+  const [generated, setGenerated]       = useState<BarcodeGenerateResponse | null>(null);
+
+  // ── Product selector helpers ──────────────────────────────────────────────
+
+  const filteredProducts = useMemo<Product[]>(() => {
+    if (!products) return [];
+    if (!productSearch.trim()) return products;
+    const q = productSearch.toLowerCase();
+    return products.filter(
+      (p) => p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q)
+    );
+  }, [products, productSearch]);
+
+  async function onProductSelect(productId: string) {
+    setSelectedProductId(productId);
+    setGtinWarning(false);
+
+    if (!productId) {
+      setProductName("");
+      setSku("");
+      setNetWeight("");
+      setGtin("");
+      return;
+    }
+
+    const product = products?.find((p) => p.id === productId);
+    if (!product) return;
+
+    // Auto-fill from product record
+    setProductName(product.name);
+    setSku(product.sku);
+    if (product.weight_kg) {
+      const wG = product.weight_kg * 1000;
+      setNetWeight(`${Number.isInteger(wG) ? wG : wG.toFixed(1)}g`);
+    }
+
+    // Fetch GS1 config for canonical GTIN-14 and packaging weights
+    setProductLoading(true);
+    try {
+      const gs1Config = await gs1Api.getConfigByProduct(productId);
+      if (gs1Config.gtin) {
+        setGtin(gs1Config.gtin);
+      } else if (product.barcode) {
+        setGtin(product.barcode);
+      } else {
+        setGtinWarning(true);
+      }
+      if (gs1Config.net_weight_g) {
+        setNetWeight(`${parseFloat(String(gs1Config.net_weight_g)).toFixed(1)}g`);
+      } else if (gs1Config.net_volume_ml) {
+        setNetWeight(`${parseFloat(String(gs1Config.net_volume_ml)).toFixed(1)}ml`);
+      }
+    } catch {
+      // No GS1 config for this product — fall back to product.barcode
+      if (product.barcode) {
+        setGtin(product.barcode);
+      } else {
+        setGtinWarning(true);
+      }
+    } finally {
+      setProductLoading(false);
+    }
+  }
 
   // ── Mutations ────────────────────────────────────────────────────────────────
 
@@ -235,6 +323,7 @@ export default function GS1DashboardPage() {
       if (!lotNo.trim()) { setFormError("Lot Number is required."); throw new Error("validation"); }
       if (copies < 1 || copies > 100) { setFormError("Copies must be 1–100."); throw new Error("validation"); }
       return gs1Api.generateBarcode({
+        product_id: selectedProductId || undefined,
         gtin: gtin.trim(),
         lot_number: lotNo.trim(),
         expiry_date: expiry || undefined,
@@ -252,12 +341,12 @@ export default function GS1DashboardPage() {
     },
   });
 
-  // Row Print: fetch barcode image + create/complete job + open window
+  // Row Print: uses selected copies + label settings from form
   const printMut = useMutation({
     mutationFn: async (recordId: string) => {
       const job = await gs1Api.createPrintJob({
         trigger: "MANUAL",
-        items: [{ lot_barcode_id: recordId, copies: 1 }],
+        items: [{ lot_barcode_id: recordId, copies }],
       });
       const barcode = await gs1Api.getBarcode(recordId);
       await gs1Api.completePrintJob(job.id);
@@ -274,7 +363,7 @@ export default function GS1DashboardPage() {
           productionDate: barcode.production_date ?? undefined,
           labelSize,
           preset: printerPreset,
-          copies: 1,
+          copies,
         });
       } else {
         alert("No barcode image — regenerate with save_record=true.");
@@ -285,7 +374,7 @@ export default function GS1DashboardPage() {
     onError: (err: Error) => alert(`Print failed: ${err.message}`),
   });
 
-  // Form Print: create/complete job then open window with full product fields + copies
+  // Form Print: includes full product fields + selected copies
   const printGeneratedMut = useMutation({
     mutationFn: async () => {
       if (!generated?.record_id || !generated.barcode_image_b64)
@@ -344,7 +433,17 @@ export default function GS1DashboardPage() {
         </div>
         <div className="flex gap-2 flex-wrap">
           <button
-            onClick={() => { setShowForm((v) => !v); setGenerated(null); setFormError(""); }}
+            onClick={() => {
+              const next = !showForm;
+              setShowForm(next);
+              if (!next) {
+                setGenerated(null);
+                setFormError("");
+                setSelectedProductId("");
+                setProductSearch("");
+                setGtinWarning(false);
+              }
+            }}
             className="px-3 py-1.5 text-sm bg-green-600 text-white rounded hover:bg-green-700"
           >
             {showForm ? "Close Form" : "Generate Label"}
@@ -371,7 +470,41 @@ export default function GS1DashboardPage() {
         <div className="bg-white border rounded-lg p-5 space-y-4">
           <h2 className="text-sm font-semibold text-gray-800">Generate Barcode Label</h2>
 
-          {/* Row 1 — Barcode fields */}
+          {/* Product selector */}
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">
+              Product <span className="text-gray-400">(optional — auto-fills GTIN, SKU, weight)</span>
+            </label>
+            <div className="flex gap-2">
+              <input
+                value={productSearch}
+                onChange={(e) => setProductSearch(e.target.value)}
+                placeholder="Filter by name or SKU…"
+                className="w-44 border rounded px-2 py-1.5 text-sm"
+              />
+              <select
+                value={selectedProductId}
+                onChange={(e) => onProductSelect(e.target.value)}
+                disabled={productLoading || !products}
+                className="flex-1 border rounded px-2 py-1.5 text-sm"
+              >
+                <option value="">{products ? "— select product —" : "Loading products…"}</option>
+                {filteredProducts.map((p) => (
+                  <option key={p.id} value={p.id}>{p.name} ({p.sku})</option>
+                ))}
+              </select>
+              {productLoading && (
+                <span className="text-xs text-gray-400 self-center whitespace-nowrap">Loading data…</span>
+              )}
+            </div>
+            {gtinWarning && (
+              <p className="text-xs text-amber-600 mt-1">
+                Selected product has no GTIN — enter GTIN manually below.
+              </p>
+            )}
+          </div>
+
+          {/* Row 1: Barcode fields */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div>
               <label className="block text-xs text-gray-500 mb-1">
@@ -415,7 +548,7 @@ export default function GS1DashboardPage() {
             </div>
           </div>
 
-          {/* Row 2 — Product fields */}
+          {/* Row 2: Product fields (auto-filled if product selected; editable) */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div>
               <label className="block text-xs text-gray-500 mb-1">Product Name</label>
@@ -460,7 +593,7 @@ export default function GS1DashboardPage() {
             </div>
           </div>
 
-          {/* Row 3 — Print settings */}
+          {/* Row 3: Print settings */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 border-t pt-4">
             <div>
               <label className="block text-xs text-gray-500 mb-1">Label Template</label>
@@ -582,7 +715,7 @@ export default function GS1DashboardPage() {
                   </div>
                 ) : (
                   <p className="text-xs text-amber-600 mt-1">
-                    Barcode not saved — re-generate with save_record=true to enable printing.
+                    Barcode not saved — re-generate to enable printing.
                   </p>
                 )}
               </div>
