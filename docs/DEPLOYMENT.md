@@ -286,6 +286,48 @@ After this hardening pass: **0 HIGH, ~500 MEDIUM** (mostly service-layer computa
 
 ---
 
+## Management User Seed via Environment Variables
+
+Top-level management accounts can be created on first deployment using env vars.
+This is optional — disabled by default (`ERP_SEED_MANAGEMENT_USERS=false`).
+
+**Supported roles:**
+
+| Env prefix | Role assigned | Notes |
+|------------|--------------|-------|
+| `ERP_ADMIN_*` | `admin` | Full user/role management |
+| `ERP_CEO_*` | `ceo` | Full executive access |
+| `ERP_CTO_*` | `cto` | Technical / IT management — also the technical manager role |
+| `ERP_CMO_*` | `cmo` | Marketing management |
+| `ERP_COO_*` | `coo` | Operations management |
+| `ERP_CFO_*` | `cfo` | Finance management |
+
+**Per-role variables (repeat pattern for each prefix):**
+
+```
+ERP_CEO_EMAIL=ceo@yourdomain.com
+ERP_CEO_PASSWORD=<strong unique password>
+ERP_CEO_FULL_NAME=Chief Executive Officer
+```
+
+**Toggle variables:**
+
+```
+ERP_SEED_MANAGEMENT_USERS=true          # enable seed (default: false)
+ERP_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN=true  # force reset on first login
+```
+
+**Rules:**
+
+- Roles with blank `EMAIL` or `PASSWORD` are silently skipped.
+- Seed is idempotent — existing users (matched by email) are never overwritten.
+- Set `ERP_SEED_MANAGEMENT_USERS=false` after first successful deployment.
+- Production startup rejects `CHANGE_ME` passwords when seeding is enabled.
+- Never commit real passwords. Store in `.env.production` (gitignored) or a secret manager.
+- No `technical_manager` role exists — use `ERP_CTO_*` for the technical management user.
+
+---
+
 ## Known Limitations
 
 1. **Multi-replica migration race**: The prod Dockerfile runs `alembic upgrade head`

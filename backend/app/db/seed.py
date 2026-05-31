@@ -1442,3 +1442,69 @@ async def seed_admin(db: AsyncSession) -> None:
             logger.info("  DEMO USER: username=%s  role=%s", demo["username"], demo["role"])
 
     await db.commit()
+
+
+async def seed_management_users(db: AsyncSession) -> None:
+    """
+    Seed env-configured top-level management accounts (idempotent by email).
+
+    Only runs when ERP_SEED_MANAGEMENT_USERS=true. Roles without both EMAIL and
+    PASSWORD set are skipped silently. Never overwrites existing users.
+    """
+    if not settings.ERP_SEED_MANAGEMENT_USERS:
+        return
+
+    candidates = [
+        {"email": settings.ERP_ADMIN_EMAIL, "password": settings.ERP_ADMIN_PASSWORD,
+         "full_name": settings.ERP_ADMIN_FULL_NAME, "username": "erp_admin", "role": "admin"},
+        {"email": settings.ERP_CEO_EMAIL,   "password": settings.ERP_CEO_PASSWORD,
+         "full_name": settings.ERP_CEO_FULL_NAME,   "username": "ceo",       "role": "ceo"},
+        {"email": settings.ERP_CTO_EMAIL,   "password": settings.ERP_CTO_PASSWORD,
+         "full_name": settings.ERP_CTO_FULL_NAME,   "username": "cto",       "role": "cto"},
+        {"email": settings.ERP_CMO_EMAIL,   "password": settings.ERP_CMO_PASSWORD,
+         "full_name": settings.ERP_CMO_FULL_NAME,   "username": "cmo",       "role": "cmo"},
+        {"email": settings.ERP_COO_EMAIL,   "password": settings.ERP_COO_PASSWORD,
+         "full_name": settings.ERP_COO_FULL_NAME,   "username": "coo",       "role": "coo"},
+        {"email": settings.ERP_CFO_EMAIL,   "password": settings.ERP_CFO_PASSWORD,
+         "full_name": settings.ERP_CFO_FULL_NAME,   "username": "cfo",       "role": "cfo"},
+    ]
+
+    result = await db.execute(select(Role))
+    role_map: dict[str, Role] = {r.name: r for r in result.scalars().all()}
+
+    for c in candidates:
+        if not c["email"] or not c["password"]:
+            continue
+
+        existing = await db.execute(select(User).where(User.email == c["email"]))
+        if existing.scalar_one_or_none() is not None:
+            logger.info("  MANAGEMENT USER: skipped (email already exists) email=%s", c["email"])
+            continue
+
+        username = c["username"]
+        existing_un = await db.execute(select(User).where(User.username == username))
+        if existing_un.scalar_one_or_none() is not None:
+            username = f"{username}_{c['email'].split('@')[0]}"
+
+        user = User(
+            email=c["email"],
+            username=username,
+            full_name=c["full_name"],
+            hashed_password=hash_password(c["password"]),
+            is_active=True,
+            is_superuser=False,
+            must_change_password=settings.ERP_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN,
+        )
+        db.add(user)
+        await db.flush()
+
+        role = role_map.get(c["role"])
+        if role:
+            await db.execute(insert(user_role).values(user_id=user.id, role_id=role.id))
+
+        logger.info(
+            "  MANAGEMENT USER CREATED: username=%s  role=%s  must_change_password=%s",
+            username, c["role"], settings.ERP_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN,
+        )
+
+    await db.commit()

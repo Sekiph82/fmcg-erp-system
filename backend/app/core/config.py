@@ -196,6 +196,38 @@ class Settings(BaseSettings):
     def ETIMS_CONFIGURED(self) -> bool:
         return bool(self.ETIMS_API_URL and self.ETIMS_PIN and self.ETIMS_BRANCH_ID)
 
+    # ── Management user seed (optional) ──────────────────────────────────────────
+    # Set ERP_SEED_MANAGEMENT_USERS=true to create top-level management accounts on
+    # first deploy. Only roles with both EMAIL and PASSWORD set are created.
+    # ERP_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN forces a password reset on first login.
+    # Production startup rejects CHANGE_ME passwords when seeding is enabled.
+    ERP_SEED_MANAGEMENT_USERS: bool = False
+    ERP_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN: bool = True
+
+    ERP_ADMIN_EMAIL: str = ""
+    ERP_ADMIN_PASSWORD: str = ""
+    ERP_ADMIN_FULL_NAME: str = "System Administrator"
+
+    ERP_CEO_EMAIL: str = ""
+    ERP_CEO_PASSWORD: str = ""
+    ERP_CEO_FULL_NAME: str = "Chief Executive Officer"
+
+    ERP_CTO_EMAIL: str = ""
+    ERP_CTO_PASSWORD: str = ""
+    ERP_CTO_FULL_NAME: str = "Chief Technology Officer"
+
+    ERP_CMO_EMAIL: str = ""
+    ERP_CMO_PASSWORD: str = ""
+    ERP_CMO_FULL_NAME: str = "Chief Marketing Officer"
+
+    ERP_COO_EMAIL: str = ""
+    ERP_COO_PASSWORD: str = ""
+    ERP_COO_FULL_NAME: str = "Chief Operating Officer"
+
+    ERP_CFO_EMAIL: str = ""
+    ERP_CFO_PASSWORD: str = ""
+    ERP_CFO_FULL_NAME: str = "Chief Financial Officer"
+
     @model_validator(mode="after")
     def _production_guards(self) -> "Settings":
         if self.ENVIRONMENT == "production":
@@ -222,6 +254,24 @@ class Settings(BaseSettings):
                     "This flag logs OTPs to the console instead of sending real email/SMS. "
                     "Set OTP_DEV_DELIVERY_MODE=false in .env.production."
                 )
+            if self.ERP_SEED_MANAGEMENT_USERS:
+                mgmt = [
+                    ("ERP_ADMIN", self.ERP_ADMIN_EMAIL, self.ERP_ADMIN_PASSWORD),
+                    ("ERP_CEO",   self.ERP_CEO_EMAIL,   self.ERP_CEO_PASSWORD),
+                    ("ERP_CTO",   self.ERP_CTO_EMAIL,   self.ERP_CTO_PASSWORD),
+                    ("ERP_CMO",   self.ERP_CMO_EMAIL,   self.ERP_CMO_PASSWORD),
+                    ("ERP_COO",   self.ERP_COO_EMAIL,   self.ERP_COO_PASSWORD),
+                    ("ERP_CFO",   self.ERP_CFO_EMAIL,   self.ERP_CFO_PASSWORD),
+                ]
+                for prefix, email, password in mgmt:
+                    if not email and not password:
+                        continue  # intentionally skipped
+                    if email and not password:
+                        raise ValueError(f"{prefix}_PASSWORD is required when {prefix}_EMAIL is set")
+                    if password and not email:
+                        raise ValueError(f"{prefix}_EMAIL is required when {prefix}_PASSWORD is set")
+                    if password.startswith("CHANGE_ME"):
+                        raise ValueError(f"{prefix}_PASSWORD must not use a CHANGE_ME placeholder in production")
         return self
 
     @field_validator("BACKEND_CORS_ORIGINS", mode="before")

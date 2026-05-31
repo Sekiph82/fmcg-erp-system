@@ -512,7 +512,7 @@ _=Depends(require_permission("gs1", "admin"))  # config create, AI agent trigger
 
 ### Task ID: TASK-007 — E2E/admin credentials audit + management user env strategy
 
-- **Status:** Audited — implementation plan ready
+- **Status:** Done
 - **Priority:** P1
 - **Category:** Security / QA
 - **Why it matters:** Full credential audit completed. Expanded scope from original E2E-only investigation to include management user seed strategy (CEO/CTO/CMO/COO/admin via env vars).
@@ -644,15 +644,35 @@ ERP_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN: bool = True
 - **Recommended timing:** Next (before first production deployment)
 - **Do not touch:** Existing demo user logic (`SEED_DEMO_DATA`), production `.env` files, real passwords
 - **Started at:** 2026-05-31
-- **Completed at:** (audit done; implementation pending)
-- **Changed files:** `TASKS.md` only (audit update)
-- **Tests / checks run:** Full credential search, seed.py inspection, config.py inspection, e2e helper inspection
-- **Result:** Audit complete. No production credential leak found. Implementation plan ready.
-- **Known limitations:** `technical_manager` role does not exist yet — must define permissions before seeding.
+- **Completed at:** 2026-05-31
+- **Changed files:**
+  - `frontend/e2e/auth.setup.ts` — `"Admin1234!"` → `process.env.E2E_PASSWORD || "Admin1234!"`
+  - `backend/app/core/config.py` — added `ERP_SEED_MANAGEMENT_USERS`, `ERP_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN`, `ERP_ADMIN/CEO/CTO/CMO/COO/CFO_*` vars, production validator for management seed
+  - `backend/app/db/seed.py` — added `seed_management_users()` function
+  - `backend/app/main.py` — wired `seed_management_users` into lifespan
+  - `.env.development.example` — added `ERP_*` placeholder section
+  - `.env.production.example` — added `ERP_*` `CHANGE_ME_*` section with production warning
+  - `backend/tests/test_hardening.py` — added 7 management seed tests
+  - `docs/DEPLOYMENT.md` — added "Management user seed" section
+  - `TASKS.md` — this update
+- **Tests / checks run:**
+  - `pytest tests/test_hardening.py` → **25/25 PASSED**
+  - `python -c 'import app.main'` → CLEAN
+  - `npx tsc --noEmit` → CLEAN
+- **Result:**
+  - E2E password is env-driven (`process.env.E2E_PASSWORD || "Admin1234!"`)
+  - Management user seed vars added for Admin/CEO/CTO/CMO/COO/CFO
+  - No `technical_manager` role — CTO is the technical management role
+  - Production validator rejects `CHANGE_ME` passwords when `ERP_SEED_MANAGEMENT_USERS=true`
+  - All seed is idempotent (skips existing users by email)
+  - `ERP_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN=true` default forces password reset on first login
+- **Known limitations:**
+  - Real values must be set in `.env.production` or secret manager — no defaults seeded
+  - No users created unless `ERP_SEED_MANAGEMENT_USERS=true` and email+password both set
 - **Git commit / branch:** Not committed yet
 - **Graphify refresh after implementation:** backend
-- **Graphify refresh status:** Not needed until implementation
-- **Notes:** Graphify node names (`adminCredentials`, `limitedCredentials`) are variable names for env-var-sourced credential objects — not hardcoded passwords. `Admin1234!` in `auth.setup.ts` is only remaining hardcoded dev credential; low risk but should be env-driven.
+- **Graphify refresh status:** Pending user approval — do not run automatically
+- **Notes:** `technical_manager` role deliberately not created. `ERP_CTO_*` covers technical management. No `ERP_TECHNICAL_MANAGER_*` vars exist.
 
 ---
 

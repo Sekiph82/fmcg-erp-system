@@ -24,7 +24,7 @@ from app.core.observability import (
     record_request,
 )
 from app.core.security_headers import SecurityHeadersMiddleware
-from app.db.seed import seed_admin
+from app.db.seed import seed_admin, seed_management_users
 from app.db.session import AsyncSessionLocal
 import app.models  # noqa: F401 - ensure all models are registered
 
@@ -41,6 +41,8 @@ async def lifespan(app: FastAPI):
     try:
         async with AsyncSessionLocal() as db:
             await seed_admin(db)
+        async with AsyncSessionLocal() as db:
+            await seed_management_users(db)
         logger.info("Seed completed")
     except Exception:
         logger.exception("Seed failed; admin user may not exist yet")

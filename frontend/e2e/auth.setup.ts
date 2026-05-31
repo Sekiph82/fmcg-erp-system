@@ -44,7 +44,7 @@ setup("authenticate as admin", async ({ page }) => {
   await expect(page.getByTestId("login-form")).toBeVisible();
 
   await page.getByTestId("login-username").fill("admin");
-  await page.getByTestId("login-password").fill("Admin1234!");
+  await page.getByTestId("login-password").fill(process.env.E2E_PASSWORD || "Admin1234!");
   await page.getByTestId("login-submit").click();
 
   await page.waitForURL(/\/dashboard/, { timeout: 20_000 });

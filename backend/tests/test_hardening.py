@@ -212,6 +212,84 @@ def test_production_config_rejects_security_landmines():
         Settings(**{**base, "AUTH_COOKIE_SECURE": False})
 
 
+_PROD_BASE = {
+    "_env_file": None,
+    "ENVIRONMENT": "production",
+    "SECRET_KEY": "production-secret-key",
+    "PASSWORD_REQUIRE_SPECIAL": True,
+    "SEED_DEMO_DATA": False,
+    "SEED_INITIAL_ADMIN": True,
+    "SYNC_INITIAL_ADMIN_PASSWORD": False,
+    "OTP_DEV_DELIVERY_MODE": False,
+    "INITIAL_ADMIN_PASSWORD": "StrongerAdmin1!",
+    "AUTH_COOKIE_SECURE": True,
+}
+
+
+def test_management_seed_defaults_off(monkeypatch):
+    """ERP_SEED_MANAGEMENT_USERS defaults false; no management vars leak into code defaults."""
+    for var in ("ERP_SEED_MANAGEMENT_USERS", "ERP_CEO_PASSWORD", "ERP_CTO_PASSWORD"):
+        monkeypatch.delenv(var, raising=False)
+    isolated = Settings(_env_file=None)
+    assert isolated.ERP_SEED_MANAGEMENT_USERS is False
+    assert isolated.ERP_CEO_PASSWORD == ""
+    assert isolated.ERP_CTO_PASSWORD == ""
+
+
+def test_no_technical_manager_config_vars():
+    """No ERP_TECHNICAL_MANAGER_* variables should exist on Settings."""
+    isolated = Settings(_env_file=None)
+    assert not hasattr(isolated, "ERP_TECHNICAL_MANAGER_EMAIL")
+    assert not hasattr(isolated, "ERP_TECHNICAL_MANAGER_PASSWORD")
+
+
+def test_cto_config_var_exists():
+    """ERP_CTO_* vars exist — CTO is the technical management role."""
+    isolated = Settings(_env_file=None)
+    assert hasattr(isolated, "ERP_CTO_EMAIL")
+    assert hasattr(isolated, "ERP_CTO_PASSWORD")
+    assert hasattr(isolated, "ERP_CTO_FULL_NAME")
+
+
+def test_production_rejects_change_me_management_passwords():
+    """Production startup must reject CHANGE_ME passwords when management seed is enabled."""
+    with pytest.raises(ValueError, match="ERP_CEO_PASSWORD"):
+        Settings(**{
+            **_PROD_BASE,
+            "ERP_SEED_MANAGEMENT_USERS": True,
+            "ERP_CEO_EMAIL": "ceo@example.com",
+            "ERP_CEO_PASSWORD": "CHANGE_ME_CEO_PASSWORD",
+        })
+
+
+def test_production_rejects_email_without_password():
+    """Production startup must reject email set without matching password."""
+    with pytest.raises(ValueError, match="ERP_CFO_PASSWORD"):
+        Settings(**{
+            **_PROD_BASE,
+            "ERP_SEED_MANAGEMENT_USERS": True,
+            "ERP_CFO_EMAIL": "cfo@example.com",
+            "ERP_CFO_PASSWORD": "",
+        })
+
+
+def test_production_allows_partial_management_seed():
+    """Production accepts management seed when only some roles are configured (others blank)."""
+    s = Settings(**{
+        **_PROD_BASE,
+        "ERP_SEED_MANAGEMENT_USERS": True,
+        "ERP_CEO_EMAIL": "ceo@example.com",
+        "ERP_CEO_PASSWORD": "StrongCeo1!",
+        # all other ERP_*_EMAIL and ERP_*_PASSWORD remain "" — should be skipped
+    })
+    assert s.ERP_CEO_EMAIL == "ceo@example.com"
+
+
+def test_production_allows_management_seed_all_blank():
+    """ERP_SEED_MANAGEMENT_USERS=true with all blank emails/passwords is valid (nothing to seed)."""
+    Settings(**{**_PROD_BASE, "ERP_SEED_MANAGEMENT_USERS": True})
+
+
 def test_seed_defaults_do_not_enable_demo_users_or_plaintext_passwords(monkeypatch):
     # Clear vars that .env.development may inject so we test code defaults only.
     for var in ("SEED_DEMO_DATA", "DEMO_USER_PASSWORD"):
