@@ -82,7 +82,7 @@ Rules:
 
 ### Task ID: TASK-001 — Login page POVU logo size
 
-- **Status:** Pending
+- **Status:** Done
 - **Priority:** P0
 - **Category:** UI
 - **Why it matters:** POVU logo appears too small on the login page.
@@ -93,19 +93,23 @@ Rules:
 - **Needs audit before implementation:** No
 - **Implementation scope:** Logo already exists at `width={64} height={64}` (line 43-44). Increase to user-preferred size (e.g. 96px or 128px).
 - **Do not touch:** Auth logic, backend, routing, global layout, other pages
-- **Started at:**
-- **Completed at:**
-- **Changed files:** None yet
-- **Created files:** None yet
-- **Deleted files:** None yet
-- **Tests / checks run:** None yet
-- **Result:** Pending
-- **Known limitations:** None yet
+- **Started at:** 2026-05-31
+- **Completed at:** 2026-05-31
+- **Changed files:**
+  - `frontend/src/app/login/page.tsx` (width/height 64 → 128)
+  - `TASKS.md` (this card updated)
+- **Created files:** None
+- **Deleted files:** None
+- **Tests / checks run:**
+  - `npx tsc --noEmit` → PASS (exit 0)
+  - `npm run build` → PASS (exit 0, /login 3.79 kB)
+- **Result:** Login page POVU logo increased from 64×64 to 128×128
+- **Known limitations:** None
 - **Git commit / branch:** Not committed yet
 - **Graphify refresh after implementation:** no
 - **Graphify refresh status:** Not needed
 - **Graphify output location if refreshed:** None
-- **Notes:** Logo added previously at 64×64px. Task is to increase the size. File confirmed: `frontend/src/app/login/page.tsx:40-46`.
+- **Notes:** Visual-only change. No auth/backend/routing/layout changes. Single line pair changed.
 
 ---
 

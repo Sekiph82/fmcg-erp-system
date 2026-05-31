@@ -40,8 +40,8 @@ export default function LoginPage() {
             <Image
               src="/povu-logo.jpg"
               alt="POVU"
-              width={64}
-              height={64}
+              width={128}
+              height={128}
               priority
             />
           </div>
