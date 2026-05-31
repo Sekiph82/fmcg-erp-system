@@ -87,11 +87,11 @@ Rules:
 - **Category:** UI
 - **Why it matters:** POVU logo appears too small on the login page.
 - **Source / evidence:** User visual review.
-- **Affected area:** `frontend/src/app/(auth)/login/page.tsx` or equivalent login layout
+- **Affected area:** `frontend/src/app/login/page.tsx`
 - **Risk:** Low
 - **Recommended timing:** Now
 - **Needs audit before implementation:** No
-- **Implementation scope:** Increase logo size only. Find logo `<img>` or `<Image>` in login page and increase width/height CSS.
+- **Implementation scope:** Logo already exists at `width={64} height={64}` (line 43-44). Increase to user-preferred size (e.g. 96px or 128px).
 - **Do not touch:** Auth logic, backend, routing, global layout, other pages
 - **Started at:**
 - **Completed at:**
@@ -105,7 +105,7 @@ Rules:
 - **Graphify refresh after implementation:** no
 - **Graphify refresh status:** Not needed
 - **Graphify output location if refreshed:** None
-- **Notes:** Small visual fix only.
+- **Notes:** Logo added previously at 64×64px. Task is to increase the size. File confirmed: `frontend/src/app/login/page.tsx:40-46`.
 
 ---
 
@@ -243,27 +243,27 @@ Rules:
 
 ### Task ID: TASK-007 — E2E test credentials investigation
 
-- **Status:** Pending
+- **Status:** Needs Audit (low risk — verified no production credential leak)
 - **Priority:** P1
 - **Category:** Security / QA
-- **Why it matters:** Graphify frontend graph (Community 133) found `adminCredentials` and `limitedCredentials` nodes — potential hardcoded test credentials in frontend E2E tests. Must verify these are not committed passwords.
-- **Source / evidence:** Graphify frontend GRAPH_REPORT.md Community 133 nodes.
-- **Affected area:** `frontend/e2e/` test files
-- **Risk:** Medium (if real credentials hardcoded in committed files)
+- **Why it matters:** Graphify frontend graph (Community 133) found `adminCredentials` and `limitedCredentials` nodes — investigated; they are just JS variable names reading from env vars, not hardcoded passwords.
+- **Source / evidence:** `frontend/e2e/helpers/auth.ts` — `credentials()` helper uses `process.env.E2E_ADMIN_PASSWORD` etc. `frontend/e2e/auth.setup.ts:47` — `"Admin1234!"` hardcoded (this is the documented dev default from README.md, not a production secret). `frontend/e2e/critical-workflows.spec.ts` — `adminCredentials = credentials("admin")` reads from env vars.
+- **Affected area:** `frontend/e2e/auth.setup.ts` only
+- **Risk:** Low (not a production credential; documented dev default)
 - **Recommended timing:** Next
-- **Needs audit before implementation:** Yes — read `frontend/e2e/` files and search for `adminCredentials`, `limitedCredentials`, hardcoded passwords.
-- **Implementation scope:** If real credentials are hardcoded, move to environment variables or fixture files excluded by .gitignore.
-- **Do not touch:** E2E test logic, auth flow
+- **Needs audit before implementation:** Already investigated.
+- **Already completed:** Credentials helper uses env vars. No production secrets committed.
+- **Remaining work (optional):** Replace hardcoded `"Admin1234!"` in `auth.setup.ts:47` with `process.env.E2E_PASSWORD || "Admin1234!"` for best practice. Not urgent.
 - **Started at:**
 - **Completed at:**
 - **Changed files:** None yet
-- **Tests / checks run:** None yet
-- **Result:** Pending
+- **Tests / checks run:** Code search confirmed
+- **Result:** Investigation complete — low risk. Optional cleanup remains.
 - **Known limitations:** None.
 - **Git commit / branch:** Not committed yet
 - **Graphify refresh after implementation:** no
 - **Graphify refresh status:** Not needed
-- **Notes:** This is read-only investigation first. Only modify if real credentials found.
+- **Notes:** Graphify node names (`adminCredentials`, `limitedCredentials`) do not indicate hardcoded passwords — they are variable names for env-var-sourced credential objects.
 
 ---
 
@@ -295,27 +295,32 @@ Rules:
 
 ### Task ID: TASK-009 — Utilities module real factory seed data foundation
 
-- **Status:** Pending
+- **Status:** Done
 - **Priority:** P1
 - **Category:** Utilities
-- **Why it matters:** Utilities module (water, electricity, soft water, boiler, compressed air, solar, chemicals, wastewater) exists in backend but has no realistic seed data. Dashboard shows empty charts. Useless for demos, testing, or KPI verification.
-- **Source / evidence:** PLANS.md — Phases U1-U22 defined. U22 = Seed Data. CODEX_PROGRESS.md — module registry shows `utilities | ModuleDefinition | DEFAULT_ACTIONS`. Backend utility models exist.
-- **Affected area:** `backend/app/db/seed.py` or new `backend/scripts/seed_utilities.py`
-- **Risk:** Low (seed data only; no model changes)
-- **Recommended timing:** Next
-- **Needs audit before implementation:** Yes — inspect what utility data structures exist in `backend/app/models/` before writing seed data.
-- **Implementation scope:** Create realistic FMCG factory utility seed records: assets, devices, readings, utility transactions, tariffs. No new DB columns.
-- **Do not touch:** Utility models/schemas/endpoints unless broken
-- **Started at:**
-- **Completed at:**
-- **Changed files:** None yet
-- **Tests / checks run:** None yet
-- **Result:** Pending
-- **Known limitations:** Only useful with Docker/PostgreSQL running.
-- **Git commit / branch:** Not committed yet
-- **Graphify refresh after implementation:** backend
-- **Graphify refresh status:** Needed
-- **Notes:** PLANS.md phases U1-U22 describe the full Utilities build. Before adding seed data, verify U1-U14 (asset CRUD, readings, transactions, tariffs) are implemented.
+- **Why it matters:** Utilities seed data is needed for demos and KPI verification.
+- **Source / evidence:** `backend/app/db/seed_utilities.py` EXISTS and is comprehensive. Covers: main power meter, compressor, boiler gas, raw water, soft water, solar inverter, wastewater aeration, chemical dosing, anomaly scenarios (high night compressor, soft water hardness deviation, wastewater pH issue), alarm rules, and `UtilityCostAllocation` records for 30 days.
+- **Affected area:** `backend/app/db/seed_utilities.py` (already exists)
+- **Risk:** N/A
+- **Recommended timing:** Done
+- **Needs audit before implementation:** N/A
+- **Implementation scope:** Already implemented.
+- **Do not touch:** N/A
+- **Started at:** Before 2026-05-31 (exact commit unknown)
+- **Completed at:** Before 2026-05-31
+- **Changed files:**
+  - `backend/app/db/seed_utilities.py` (created)
+- **Created files:**
+  - `backend/app/db/seed_utilities.py`
+- **Deleted files:** None
+- **Tests / checks run:** File confirmed to exist and contain realistic utility seed data
+- **Result:** Done — comprehensive utility seed data including cost allocations
+- **Known limitations:** Requires Docker/PostgreSQL running to apply. Run: `python -m app.db.seed_utilities` from backend/.
+- **Git commit / branch:** Committed (exact hash not identified — part of prior auto-sync)
+- **Graphify refresh after implementation:** backend (already done)
+- **Graphify refresh status:** Done (included in 2026-05-31 analysis)
+- **Graphify output location if refreshed:** `C:\Users\sekip\Desktop\graphify-erp-maps\backend\`
+- **Notes:** This task was already complete before TASKS.md was written. `seed_utilities.py` has 1000+ lines of realistic FMCG factory utility data.
 
 ---
 
@@ -501,51 +506,64 @@ Rules:
 
 ### Task ID: TASK-017 — Finance cost allocation engine (Phase F4-F6)
 
-- **Status:** Pending
+- **Status:** In Progress (utility layer done; BOM costing done; GL-level cross-module allocation pending)
 - **Priority:** P2
 - **Category:** Finance
-- **Why it matters:** Cost allocation (utility cost → per machine → per batch → per product) is the core value driver of this ERP. Without it, product costing and profitability are not available. PLANS.md Phase F4-F6 explicitly defines this as a required phase.
-- **Source / evidence:** PLANS.md — Phases F4 (Cost Allocation), F5 (Product Costing), F6 (Profitability). GAP-001/GAP-002 completed accounting core and posting integration, but cost allocation still pending.
-- **Affected area:** `backend/app/crud/finance.py`, `backend/app/services/` cost allocation service, new frontend cost allocation page
-- **Risk:** High (core business logic; incorrect costing affects financial reports)
-- **Recommended timing:** Soon (foundational to ERP value)
-- **Needs audit before implementation:** Yes — review GAP-001/002 implementation notes to understand what posting infrastructure exists. Read `docs/planning/GAP-001_ACCOUNTING_CORE_IMPLEMENTATION_NOTES.md`.
-- **Implementation scope:** Implement cost allocation service: distribute utility costs (from TASK-009) per machine/line/batch/product. Frontend cost allocation report.
-- **Do not touch:** Accounting journal logic, existing finance endpoints
-- **Started at:**
+- **Why it matters:** Full cost allocation (utility cost → per machine → per batch → per product → GL journal) is the core value driver.
+- **Source / evidence:** Already implemented: `UtilityCostAllocation` model (`backend/app/models/utility_management.py`), `backend/app/crud/utility_billing.py` (CRUD for tariffs/bills/allocations), `backend/app/services/utility_billing_service.py`, `backend/app/services/bom_costing_service.py` (BOM standard_batch_cost including utility_cost), `backend/app/db/seed_utilities.py:953` (_cost_allocations generates 30 days of cost records), `backend/app/services/utility_kpi_service.py`, `backend/app/api/v1/endpoints/utility_billing.py`. Still missing: cross-module GL posting (utility costs → finance journals), product-level profitability report, frontend cost allocation drilldown page.
+- **Affected area:** Already done: utility billing + BOM costing layer. Remaining: `backend/app/services/` GL-level cost allocation, frontend profitability page.
+- **Risk:** High (touches accounting journals)
+- **Recommended timing:** Soon
+- **Needs audit before implementation:** Yes — audit what `utility_integration_service.py` and `utility_billing_service.py` already provide before writing new code.
+- **Already completed:**
+  - `UtilityCostAllocation` ORM + CRUD
+  - Utility tariff/billing service
+  - BOM costing with `total_batch_cost` including utility_cost
+  - Cost allocation seed data (30 days)
+  - KPI service
+- **Remaining work:**
+  - Cross-module GL posting: push utility cost allocations into finance journals
+  - Product-level profitability report (F6)
+  - Frontend cost allocation drilldown (report page)
+- **Started at:** Part of prior GAP implementations (date not tracked)
 - **Completed at:**
-- **Changed files:** None yet
-- **Tests / checks run:** None yet
-- **Result:** Pending
-- **Git commit / branch:** Not committed yet
+- **Changed files:** See existing files above
+- **Tests / checks run:** Part of prior GAP test runs
+- **Result:** In Progress
+- **Git commit / branch:** Committed (exact hash not identified)
 - **Graphify refresh after implementation:** backend, frontend
-- **Graphify refresh status:** Needed
-- **Notes:** Requires TASK-009 (Utilities seed data) and TASK-015 (Production seed data) to be meaningful.
+- **Graphify refresh status:** Needed when remaining work is done
+- **Notes:** TASK-009 (Utilities seed) is Done. TASK-015 (Production seed) still needed for full product-level costing.
 
 ---
 
 ### Task ID: TASK-018 — Full ERP Reference Manual PDF generation script
 
-- **Status:** Pending
+- **Status:** Done
 - **Priority:** P2
 - **Category:** Docs
-- **Why it matters:** Kenya Go-Live Manual PDF was generated (2026-05-19). Full ERP Reference Manual PDF was listed as remaining work.
-- **Source / evidence:** TASKS.md historical: "Full ERP Reference Manual PDF (create generate-full-reference-pdf.mjs, same pipeline)." `docs/user-manual/pdf-export/generate-kenya-pdf.mjs` exists as template.
-- **Affected area:** `docs/user-manual/pdf-export/`, `docs/user-manual/full-reference/`
-- **Risk:** Low (new script only; no source code changes)
-- **Recommended timing:** Soon
-- **Needs audit before implementation:** No
-- **Implementation scope:** Create `generate-full-reference-pdf.mjs` following `generate-kenya-pdf.mjs` pattern. Combine all 15 full-reference chapters.
-- **Do not touch:** Kenya Go-Live PDF script, existing manual content
-- **Started at:**
-- **Completed at:**
-- **Changed files:** None yet
-- **Tests / checks run:** None yet
-- **Result:** Pending
-- **Git commit / branch:** Not committed yet
-- **Graphify refresh after implementation:** docs
-- **Graphify refresh status:** Needed if docs structure changes
-- **Notes:** Generated PDF is gitignored. Script gets committed.
+- **Why it matters:** Provides a combined PDF of all 15 full-reference ERP chapters.
+- **Source / evidence:** `docs/user-manual/pdf-export/generate-full-reference-pdf.mjs` EXISTS. Confirmed by glob search. Script header confirms: "FMCG ERP Full Reference Manual — PDF Generator. Run from repo root: `node docs/user-manual/pdf-export/generate-full-reference-pdf.mjs`"
+- **Affected area:** `docs/user-manual/pdf-export/generate-full-reference-pdf.mjs`
+- **Risk:** N/A
+- **Recommended timing:** Done
+- **Needs audit before implementation:** N/A
+- **Implementation scope:** Already implemented.
+- **Do not touch:** N/A
+- **Started at:** Before 2026-05-31 (exact date unknown)
+- **Completed at:** Before 2026-05-31
+- **Changed files:**
+  - `docs/user-manual/pdf-export/generate-full-reference-pdf.mjs` (created)
+- **Created files:**
+  - `docs/user-manual/pdf-export/generate-full-reference-pdf.mjs`
+- **Deleted files:** None
+- **Tests / checks run:** File existence confirmed
+- **Result:** Done — script exists and is ready to run
+- **Known limitations:** Requires Node.js 18+, `frontend/node_modules/playwright` installed, `docs/user-manual/screenshots/captured/` with 140 PNGs.
+- **Git commit / branch:** Committed (exact hash not identified — part of prior auto-sync)
+- **Graphify refresh after implementation:** no
+- **Graphify refresh status:** Not needed
+- **Notes:** This task was already complete before TASKS.md was written. Run from repo root: `node docs/user-manual/pdf-export/generate-full-reference-pdf.mjs`
 
 ---
 
@@ -725,21 +743,21 @@ Rules:
 - **Priority:** P3
 - **Category:** Deployment
 - **Why it matters:** In a multi-replica deployment, multiple containers may run `alembic upgrade head` simultaneously, causing race conditions on migrations.
-- **Source / evidence:** TASKS.md historical: "C.31: Multi-replica migration race." `docs/DEPLOYMENT.md` — documented, not yet fixed.
+- **Source / evidence:** TASKS.md historical: "C.31: Multi-replica migration race." `docs/DEPLOYMENT.md:149` — "Multi-replica warning: ensure only one container runs migrations." `docs/DEPLOYMENT.md:291-294` — documented and guidance given: "use a Kubernetes init container or a separate migration job for multi-replica setups." `backend/scripts/prod_bootstrap.py` exists with `BOOTSTRAP_PRODUCTION=true` guard and empty-DB check. NO `pg_advisory_lock` code exists.
 - **Affected area:** `backend/scripts/dev_migrate.py`, `backend/scripts/prod_bootstrap.py`, `docker-compose.prod.yml`
 - **Risk:** Low in single-replica; High in multi-replica
 - **Recommended timing:** Later
-- **Needs audit before implementation:** Yes — review `docs/DEPLOYMENT.md` architecture decision section.
+- **Needs audit before implementation:** Yes — review `docs/DEPLOYMENT.md:291-294` and decide: pg_advisory_lock vs init container vs external migration job.
 - **Implementation scope:** Add `pg_advisory_lock` or use a dedicated migration runner container that exits before app containers start.
 - **Started at:**
 - **Completed at:**
 - **Changed files:** None yet
 - **Tests / checks run:** None yet
-- **Result:** Pending
+- **Result:** Pending (documented only; no code fix applied)
 - **Git commit / branch:** Not committed yet
 - **Graphify refresh after implementation:** no
 - **Graphify refresh status:** Not needed
-- **Notes:** Not urgent for single-replica deployment.
+- **Notes:** Not urgent for single-replica deployment. DEPLOYMENT.md documents the risk and gives guidance, but no code implementation exists.
 
 ---
 
