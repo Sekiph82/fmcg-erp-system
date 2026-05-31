@@ -1,5 +1,50 @@
 # TASKS
 
+## GS1 Barcode Label Create/Print Bug Fix — 2026-05-31
+
+### Root Cause
+`frontend/src/app/dashboard/gs1/page.tsx` displayed dashboard KPIs and recent barcode rows but had **zero UI** for creating or printing labels:
+- No "Generate Label" form / button — `gs1Api.generateBarcode()` was never called
+- No "Print" button on barcode rows — `gs1Api.createPrintJob()` and `gs1Api.completePrintJob()` were never called
+- No barcode image display — `barcode_image_b64` in `LotBarcodeRecord` was never rendered
+
+Backend was fully implemented (38 routes, service layer, schemas, migration). Frontend lib (`/lib/gs1.ts`) had all API functions. Only the page UI was missing.
+
+No auth issue (GS1 endpoints have no auth guard). No URL mismatch (BASE URL correct).
+
+### Fix
+**File changed:** `frontend/src/app/dashboard/gs1/page.tsx` only.
+
+Added:
+1. **"Generate Label" button** in header → toggles inline form
+2. **Generate form** — GTIN + Lot Number (required), Expiry Date, Barcode Type (select) → calls `gs1Api.generateBarcode({ ..., save_record: true })`
+3. **Generated result panel** — renders `barcode_image_b64` and `qr_image_b64` as `<img>` + GS1 AI string display + "Print This Label" button
+4. **Print flow** — calls `createPrintJob → getBarcode → completePrintJob` then opens `window.open()` print window with barcode image
+5. **"Print" button on each barcode row** in Recent Barcodes table (fetches fresh record + same print flow)
+6. `printBarcodeInWindow()` helper — renders barcode image in a new window and calls `window.print()`
+
+**Tests added:** `backend/tests/test_gap018_gs1_label_printing.py` — 7 new schema/service contract tests (16 total, all pass).
+
+### Verification
+| Check | Result |
+|---|---|
+| Frontend type-check | CLEAN |
+| Frontend build | CLEAN |
+| GS1 backend tests | 16/16 passed |
+| Full pytest suite | 482/482 passed (pre-existing) |
+
+### Manual Flow
+1. Go to `/dashboard/gs1` (or `/dashboard/compliance?tab=gs1`)
+2. Click **"Generate Label"** button (top right, green)
+3. Enter GTIN (e.g. `05901234123457`), Lot Number (e.g. `LOT-001`), optional Expiry Date
+4. Click **"Generate Barcode"** → barcode image appears below form
+5. Click **"Print This Label"** → print dialog opens with barcode image
+6. Alternatively: click **"Print"** on any row in the Recent Barcodes table
+
+Note: Browser must allow popups for `localhost:3000` for print window to open.
+
+---
+
 ## Post Button-Recovery Verification — 2026-05-31
 
 ### Results

@@ -67,6 +67,53 @@ def test_gs1_product_config_out_has_new_fields():
         assert field in ProductGS1ConfigOut.model_fields, f"ProductGS1ConfigOut missing {field}"
 
 
+# ── Service / schema contract for create+print flow ──────────────────────────
+
+def test_barcode_generate_request_schema():
+    """BarcodeGenerateRequest accepts all fields used by the frontend generate form."""
+    from app.schemas.gs1 import BarcodeGenerateRequest
+    fields = BarcodeGenerateRequest.model_fields
+    for f in ("gtin", "lot_number", "expiry_date", "barcode_type", "save_record"):
+        assert f in fields, f"BarcodeGenerateRequest missing field: {f}"
+
+
+def test_print_job_create_schema_has_items():
+    """PrintJobCreate must have items list so frontend can pass lot_barcode_id."""
+    from app.schemas.gs1 import PrintJobCreate
+    fields = PrintJobCreate.model_fields
+    assert "items" in fields, "PrintJobCreate missing items field"
+    assert "trigger" in fields, "PrintJobCreate missing trigger field"
+
+
+def test_print_job_out_schema():
+    """PrintJobOut exposes id and status needed by completePrintJob call."""
+    from app.schemas.gs1 import PrintJobOut
+    fields = PrintJobOut.model_fields
+    for f in ("id", "status", "job_no", "item_count"):
+        assert f in fields, f"PrintJobOut missing field: {f}"
+
+
+def test_lot_barcode_out_has_image_fields():
+    """LotBarcodeOut must expose barcode_image_b64 for print window rendering."""
+    from app.schemas.gs1 import LotBarcodeOut
+    fields = LotBarcodeOut.model_fields
+    for f in ("barcode_image_b64", "qr_image_b64", "gs1_ai_string", "is_printed"):
+        assert f in fields, f"LotBarcodeOut missing field: {f}"
+
+
+def test_gs1_service_has_create_and_complete_print_job():
+    """Service layer exposes both create_print_job and complete_print_job."""
+    import app.services.gs1_service as svc
+    assert callable(getattr(svc, "create_print_job", None)), "gs1_service missing create_print_job"
+    assert callable(getattr(svc, "complete_print_job", None)), "gs1_service missing complete_print_job"
+
+
+def test_gs1_service_has_generate_barcode():
+    """Service layer exposes generate_barcode used by the create flow."""
+    import app.services.gs1_service as svc
+    assert callable(getattr(svc, "generate_barcode", None)), "gs1_service missing generate_barcode"
+
+
 # ── Migration head ────────────────────────────────────────────────────────────
 
 def test_alembic_head_is_gs1_migration():
