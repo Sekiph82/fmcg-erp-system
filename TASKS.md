@@ -1617,7 +1617,7 @@ Previous MEDIUM: 322. Suppressed: 6 confirmed C.4 false positives.
 
 ### Task ID: TASK-014 — python-jose → PyJWT migration evaluation
 
-- **Status:** Audited — migration plan ready (Option B: tests-first)
+- **Status:** TASK-014.1 Done — JWT behavior tests added; PyJWT migration pending (TASK-014.2)
 - **Priority:** P2
 - **Category:** Security
 - **Why it matters:** `python-jose` has known CVEs and is less actively maintained than `PyJWT`. Full repository review flagged this as a Medium security issue.
@@ -1732,6 +1732,30 @@ Why not Option C (keep python-jose):
   - Risk re-rated LOW (was Medium): only 1 file, 2 lines, HS256 symmetric, no JWKS/JWE/JWK, PyJWT API is a drop-in
   - The 4 legacy RSA deps (`ecdsa`, `pyasn1`, `rsa`) removed with python-jose — minor dependency cleanup bonus
   - `cryptography` stays (used by `passlib`, `httpx`, and others)
+
+**Batch TASK-014.1 — JWT behavior tests (DONE — 2026-06-01)**
+
+Files changed:
+- `backend/tests/test_security.py` — added `TestJWTBehavior` class with 6 tests
+
+Tests added:
+
+| Test | Behavior verified |
+|------|------------------|
+| `test_create_access_token_returns_str` | `create_access_token` returns `str`, non-empty |
+| `test_valid_token_decodes_to_subject` | valid token → `decode_token` returns correct subject |
+| `test_expired_token_returns_none` | `expires_delta=timedelta(seconds=-1)` → `decode_token` returns `None` |
+| `test_tampered_signature_returns_none` | modified signature segment → `decode_token` returns `None` |
+| `test_wrong_secret_returns_none` | token signed with wrong key → `decode_token` returns `None` |
+| `test_garbage_input_returns_none` | `"not-a-jwt"`, `"a.b.c"` → `decode_token` returns `None` |
+
+No source code changed. No dependency changes. Library still `python-jose`.
+
+Checks run:
+- `python -m pytest tests/test_security.py::TestJWTBehavior -v` → **6/6 PASS** ✓
+- `python -m pytest tests/test_security.py -v` → **54/54 PASS** ✓
+
+Behavioral baseline locked. Safe to proceed with TASK-014.2 (PyJWT swap).
 
 ---
 

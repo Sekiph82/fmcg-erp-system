@@ -141,6 +141,44 @@ class TestTokenBlocklist:
         assert not await is_blocked("different-token")
 
 
+# ── JWT behavior tests ────────────────────────────────────────────────────────
+
+from datetime import timedelta, datetime, timezone
+from app.core.security import create_access_token, decode_token
+
+
+class TestJWTBehavior:
+    def test_create_access_token_returns_str(self):
+        token = create_access_token("user-123")
+        assert isinstance(token, str)
+        assert len(token) > 0
+
+    def test_valid_token_decodes_to_subject(self):
+        token = create_access_token("user-abc")
+        assert decode_token(token) == "user-abc"
+
+    def test_expired_token_returns_none(self):
+        expired = create_access_token("user-123", expires_delta=timedelta(seconds=-1))
+        assert decode_token(expired) is None
+
+    def test_tampered_signature_returns_none(self):
+        token = create_access_token("user-123")
+        parts = token.split(".")
+        sig = parts[2]
+        parts[2] = sig[:-1] + ("A" if sig[-1] != "A" else "B")
+        assert decode_token(".".join(parts)) is None
+
+    def test_wrong_secret_returns_none(self):
+        from jose import jwt as _jose_jwt
+        payload = {"sub": "user-x", "exp": datetime.now(timezone.utc) + timedelta(minutes=10)}
+        bad_token = _jose_jwt.encode(payload, "completely-wrong-secret", algorithm="HS256")
+        assert decode_token(bad_token) is None
+
+    def test_garbage_input_returns_none(self):
+        assert decode_token("not-a-jwt") is None
+        assert decode_token("a.b.c") is None
+
+
 # ── Input sanitizer tests ──────────────────────────────────────────────────────
 
 from app.core.input_sanitizer import _sanitize_value
