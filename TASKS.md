@@ -1969,26 +1969,129 @@ Known limitations:
 
 ### Task ID: TASK-016 — Inventory/Stock real data (Phase I1-I7)
 
-- **Status:** Pending
+- **Status:** Audited — implementation plan ready (2026-06-01)
 - **Priority:** P2
 - **Category:** Inventory
 - **Why it matters:** Inventory module (warehouses, products, raw materials, stock tracking, movements) KPIs show empty. No realistic factory stock data.
 - **Source / evidence:** PLANS.md — Phases I1-I7. CODEX_PROGRESS.md — `inventory | ModuleDefinition | DEFAULT_ACTIONS`. Backend inventory models confirmed.
-- **Affected area:** `backend/app/db/seed.py` or inventory seed script
+- **Affected area:** New `backend/app/db/seed_inventory.py`
 - **Risk:** Low (seed data only)
 - **Recommended timing:** Soon
-- **Needs audit before implementation:** Yes — inspect inventory models: warehouses, stock ledger, movements.
-- **Implementation scope:** Seed FMCG inventory data: warehouses, locations, raw materials, finished goods, initial stock movements.
+- **Needs audit before implementation:** Done — 2026-06-01
+- **Implementation scope:** Seed FMCG inventory: lots, stock balances, stock movements (opening + GRN + issue + production receipt), FIFO cost layers. Reuse products/materials/warehouses from TASK-015.
 - **Do not touch:** Inventory model/schema code
-- **Started at:**
-- **Completed at:**
+- **Started at:** 2026-06-01 (audit)
+- **Completed at:** Pending implementation
 - **Changed files:** None yet
 - **Tests / checks run:** None yet
 - **Result:** Pending
+
+---
+
+#### AUDIT FINDINGS — 2026-06-01
+
+**Model files inspected:**
+
+| File | Key Models |
+|------|-----------|
+| `backend/app/models/inventory.py` | `Stock`, `Lot`, `StockMovement`, `CostLayer`, `SerialNumber` |
+| `backend/app/models/master.py` | `Product`, `Material`, `Warehouse` (upstream — from TASK-015) |
+| `backend/app/models/wms.py` | `WarehouseZone`, `StorageLocation` (skip in initial seed) |
+| `backend/app/db/seed_production.py` | Creates Warehouse PROD-WH + FG-WH, 5 Products, 7 Materials |
+
+**Enum values (verified from source):**
+
+| Enum | Values |
+|------|--------|
+| `MovementType` | RECEIPT, ISSUE, TRANSFER, ADJUSTMENT, RETURN, WRITE_OFF |
+| `StockType` | PRODUCT, MATERIAL |
+| `InventoryValuationMethod` | FIFO, WEIGHTED_AVG, STANDARD (String field on StockMovement) |
+
+**Required fields per model:**
+
+| Model | Required (non-nullable, no default) | Key nullable FKs |
+|-------|-------------------------------------|-----------------|
+| `Stock` | `stock_type`, `warehouse_id` | `product_id`, `material_id`, `lot_id` (one must be set) |
+| `Lot` | `lot_number` (not unique!) | `product_id`, `material_id`, `supplier_id` |
+| `StockMovement` | `reference_number` (not unique!), `movement_type`, `stock_type`, `movement_date`, `quantity` | `product_id`, `material_id`, `source_warehouse_id`, `destination_warehouse_id` |
+| `CostLayer` | `stock_type`, `receipt_date`, `qty_received`, `qty_remaining`, `unit_cost`, `total_value`, `is_exhausted` | `product_id`, `material_id`, `warehouse_id`, `movement_id` |
+
+**Critical constraint notes:**
+- `Stock`: NO UniqueConstraint — idempotency by `(warehouse_id, product_id, material_id, lot_id=None)` query
+- `Lot.lot_number`: NOT unique — check-by-lot_number before insert
+- `StockMovement.reference_number`: NOT unique — use stable reference string as idempotency key
+- `StockMovement.posting_batch_id`, `journal_entry_id`: nullable — **no accounting dependency** ✓
+- WMS zones/locations: not needed for basic inventory seed (skip)
+- Serial numbers: FMCG liquid products don't use serial tracking (skip)
+
+**TASK-015 dependency (already seeded):**
+- Warehouse `PROD-WH` (RAW_MATERIAL) ✓
+- Warehouse `FG-WH` (FINISHED_GOODS) ✓
+- 5 Products (POVU-LD-1L, FS-500ML, DW-500ML, SC-750ML, HS-200ML) ✓
+- 7 Materials (RAW-SURF-LAS, RAW-FRAG-LAV, RAW-THICK-SALT, PKG-BTL-1L, PKG-BTL-500, PKG-CAP-28, PKG-LBL-ROLL) ✓
+
+TASK-016 must look them up (select by code/sku) rather than recreate them.
+
+**Recommended strategy: Option B — dedicated `backend/app/db/seed_inventory.py`**
+
+Reasons: scope is large (lots + stock balances + movements + cost layers); isolated from production seed; reuses TASK-015 master data via lookup.
+
+**Proposed FMCG inventory dataset:**
+
+*Lots (7 raw material lots with expiry):*
+| Lot Number | Material | Expiry |
+|-----------|----------|--------|
+| LOT-SURF-2025-001 | LAS Surfactant | 2027-06-01 |
+| LOT-FRAG-2025-001 | Lavender Fragrance | 2027-12-01 |
+| LOT-THICK-2025-001 | Sodium Chloride | 2028-01-01 |
+| LOT-BTL1L-2025-001 | PET Bottle 1L | 2029-01-01 |
+| LOT-BTL500-2025-001 | PET Bottle 500ml | 2029-01-01 |
+| LOT-CAP-2025-001 | HDPE Cap 28mm | 2029-06-01 |
+| LOT-LBL-2025-001 | Label Stock Roll | 2028-06-01 |
+
+*Stock balances (PROD-WH raw materials):*
+| Material | Quantity | Unit |
+|---------|---------|------|
+| LAS Surfactant | 5,000 KG | |
+| Lavender Fragrance | 200 KG | |
+| Sodium Chloride | 1,500 KG | |
+| PET Bottle 1L | 15,000 PCS | |
+| PET Bottle 500ml | 25,000 PCS | |
+| HDPE Cap 28mm | 40,000 PCS | |
+| Label Stock Roll | 40,000 PCS | |
+
+*Stock balances (FG-WH finished goods, reflecting TASK-015 completed orders):*
+| Product | Quantity | |
+|---------|---------|--|
+| POVU Liquid Detergent 1L | 4,500 L | from 5,000L order minus distribution |
+| POVU Fabric Softener 500ml | 2,800 L | |
+| POVU Dishwashing Liquid 500ml | 3,600 L | |
+| POVU Surface Cleaner 750ml | 2,300 L | |
+| POVU Hand Sanitizer 200ml | 7,500 ML | |
+
+*StockMovements (per raw material and finished good):*
+1. `ADJUSTMENT` opening balance — day -90 (initial stock setup)
+2. `RECEIPT` GRN — day -60 (supplier receipt matching raw material quantities)
+3. `ISSUE` production issue — day -50 to -38 (matching TASK-015 completed orders)
+4. `RECEIPT` production receipt — day -55 to -38 (finished goods into FG-WH)
+
+*CostLayers (per raw material RECEIPT movement):* `unit_cost` from Material.standard_cost, `qty_received = qty_remaining` (no consumption yet modeled)
+
+**Risks/blockers:**
+- `Stock` has no UniqueConstraint — must query `(warehouse_id, product_id/material_id, lot_id IS NULL)` to avoid duplicate rows on re-run
+- `StockMovement.reference_number` not unique — use stable string like `SEED-ADJ-SURF-2025` as idempotency key
+- TASK-015 must be seeded before TASK-016 (products/materials/warehouses must exist)
+- `StockMovement` quantities must match `Stock.quantity_on_hand` for data consistency
+- Accounting FKs all nullable — no accounting seed needed ✓
+- No migration needed — all models exist ✓
+
+**Implementation plan:**
+- **TASK-016.1** — Create `backend/app/db/seed_inventory.py`; wire into `main.py` after `seed_production_data` under `SEED_DEMO_DATA=true`; run import check + idempotency verification
+
 - **Git commit / branch:** Not committed yet
 - **Graphify refresh after implementation:** backend
-- **Graphify refresh status:** Needed
-- **Notes:** Must coordinate with Production (TASK-015) — production orders consume inventory.
+- **Graphify refresh status:** Needed after TASK-016.1
+- **Notes:** Must coordinate with Production (TASK-015) — production orders consume inventory. Seed order in main.py: `seed_admin` → `seed_management_users` → `seed_production_data` → `seed_inventory_data`.
 
 ---
 
