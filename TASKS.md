@@ -678,7 +678,7 @@ ERP_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN: bool = True
 
 ### Task ID: TASK-008 — Run erp-health-audit.py and address findings
 
-- **Status:** Batch A + B.1 + B.2 + C.1 + C.2 + C.3.1 + D Done — 0 HIGH; 328 MEDIUM; C.3.2/C.3.3/C.3.4/C.4 pending
+- **Status:** Batch A + B.1 + B.2 + C.1 + C.2 + C.3.1 + C.3.2 + D Done — 0 HIGH; 326 MEDIUM; C.3.3/C.3.4/C.4 pending
 - **Priority:** P1
 - **Category:** QA / Performance
 - **Why it matters:** Previous run (2026-05-16): 52 HIGH / 624 MEDIUM. Current run (2026-05-31): **1 HIGH / 499 MEDIUM / 1 INFO** — 51 HIGH fixed by prior work, 125 MEDIUM fixed.
@@ -1197,7 +1197,30 @@ Remaining C.3 sub-batches:
 - C.3.3: implement chunked `broadcast_notification` in `ess_service.py`
 - C.3.4: endpoint guardrail for `get_duplicate_suspicions` (defer)
 
-**Status: Batch A + B.1 + B.2 + C.1 + C.2 + C.3.1 + D Done — 0 HIGH; 328 MEDIUM; C.3.2/C.3.3/C.3.4/C.4 pending**
+**Batch C.3.2 — Two missed safe service list limits (DONE — 2026-06-01)**
+
+Files changed:
+- `backend/app/services/invoice_match_service.py` — `list_ai_recs`: added `limit: int = 200` param + `q.limit(limit)` before execute
+- `backend/app/services/report_builder_service.py` — `list_ai_recs`: added `limit: int = 200` param + `q.limit(limit)` before execute
+
+Pattern: plain Python `limit: int = 200` (NOT FastAPI `Query()` — service layer only). Existing ordering and status filter preserved. No response shape change.
+
+Checks run:
+- `python -c "import app.main"` → CLEAN (only pre-existing allergen.py FastAPIDeprecationWarning)
+- `python scripts/erp-health-audit.py` → **0 HIGH / 326 MEDIUM / 1 INFO** (was 328; -2 matching both fixes)
+
+Remaining C.3.3/C.3.4 still visible:
+- `ess_service.py:663` (`list_accounts_raw`) — C.3.3 chunking candidate ✓
+- `invoice_match_service.py:607` (`get_duplicate_suspicions`) — C.3.4 defer ✓
+- `webhook_service.py` (3), `promotions_service.py` (6) — C.4 ✓
+- row_lock (30) ✓
+
+Remaining:
+- C.3.3 — implement chunked `broadcast_notification` in `ess_service.py`
+- C.3.4 — endpoint guardrail for `get_duplicate_suspicions` (deferred)
+- C.4 — product-owner decisions on webhook/promotions
+
+**Status: Batch A + B.1 + B.2 + C.1 + C.2 + C.3.1 + C.3.2 + D Done — 0 HIGH; 326 MEDIUM; C.3.3/C.3.4/C.4 pending**
 
 ---
 

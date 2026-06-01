@@ -654,10 +654,11 @@ async def run_performance_optimizer(db: AsyncSession) -> List[RBAIRecommendation
     return recs[:10]
 
 
-async def list_ai_recs(db: AsyncSession, status: Optional[str] = None) -> List[RBAIRecommendation]:
+async def list_ai_recs(db: AsyncSession, status: Optional[str] = None, limit: int = 200) -> List[RBAIRecommendation]:
     q = select(RBAIRecommendation).order_by(RBAIRecommendation.created_at.desc())
     if status:
         q = q.where(RBAIRecommendation.status == status)
+    q = q.limit(limit)
     result = await db.execute(q)
     return result.scalars().all()
 

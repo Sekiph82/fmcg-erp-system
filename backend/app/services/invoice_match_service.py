@@ -887,12 +887,14 @@ async def list_ai_recs(
     db: AsyncSession,
     header_id: Optional[UUID] = None,
     status: Optional[str] = None,
+    limit: int = 200,
 ) -> List[IMAIRecommendation]:
     q = select(IMAIRecommendation).order_by(IMAIRecommendation.created_at.desc())
     if header_id:
         q = q.where(IMAIRecommendation.header_id == header_id)
     if status:
         q = q.where(IMAIRecommendation.status == status)
+    q = q.limit(limit)
     result = await db.execute(q)
     return list(result.scalars().all())
 
