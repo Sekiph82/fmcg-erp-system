@@ -1994,7 +1994,7 @@ Note: batch_lots count is 9 (not 7 as designed) — 2 extra lots created during 
 
 ### Task ID: TASK-016 — Inventory/Stock real data (Phase I1-I7)
 
-- **Status:** TASK-016.1 Done — inventory demo seed implemented and DB-validated; Graphify refresh recommended
+- **Status:** TASK-016.1 Done — inventory demo seed implemented and DB-validated; Graphify refresh complete
 - **Priority:** P2
 - **Category:** Inventory
 - **Why it matters:** Inventory module (warehouses, products, raw materials, stock tracking, movements) KPIs show empty. No realistic factory stock data.
@@ -2115,7 +2115,8 @@ Reasons: scope is large (lots + stock balances + movements + cost layers); isola
 
 - **Git commit / branch:** Not committed yet
 - **Graphify refresh after implementation:** backend
-- **Graphify refresh status:** Needed after TASK-016.1
+- **Graphify refresh status:** Done — 2026-06-01 (incremental `--update`, code-only, no LLM)
+- **Graphify output location if refreshed:** `C:\Users\sekip\Desktop\graphify-erp-maps\backend\`
 - **Notes:** Must coordinate with Production (TASK-015) — production orders consume inventory. Seed order in main.py: `seed_admin` → `seed_management_users` → `seed_production_data` → `seed_inventory_data`.
 
 **Batch TASK-016.1 — Inventory demo seed (DONE — 2026-06-01)**
@@ -2161,6 +2162,16 @@ Live DB validation (Docker backend container, dev PostgreSQL):
 | materials | 7 | 7 (+0) | 7 (+0) | ✓ (from TASK-015) |
 
 IDEMPOTENCY PASSED — second run added 0 records across all 7 models checked.
+
+**Backend Graphify refresh after TASK-016.1 (DONE — 2026-06-01)**
+
+- Command: `/graphify C:\Users\sekip\Desktop\fmcg-erp-system-main\backend --update` (incremental)
+- Mode: code-only AST extraction — no LLM tokens consumed
+- Changed files detected: `seed_inventory.py` + `main.py`
+- Graph stats: 2160 nodes (+33), 10009 edges (+58), 90 communities
+- Output: `C:\Users\sekip\Desktop\graphify-erp-maps\backend\` (GRAPH_REPORT.md, graph.json, graph.html, cost.json, manifest.json)
+- Map now includes: `seed_inventory_data`, `StockMovement`, `CostLayer`, `seed_production_data → seed_inventory_data` call order, `SEED_DEMO_DATA` wiring in `main.py`
+- `git status --short` after refresh: clean — `graphify-out/` gitignored and untracked ✓
 
 Known limitations:
 - `Stock.quantity_on_hand` set directly (not computed from movements) — movement totals are narrative only; production service would normally manage these via `_get_stock_for_update` with row locks
