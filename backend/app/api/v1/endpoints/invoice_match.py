@@ -57,8 +57,12 @@ async def blocked_invoices(db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/duplicate-suspicions", response_model=List[DuplicateLogOut])
-async def duplicate_suspicions(db: AsyncSession = Depends(get_db)):
-    return await svc.get_duplicate_suspicions(db)
+async def duplicate_suspicions(
+    db: AsyncSession = Depends(get_db),
+    limit: int = Query(200, ge=1, le=500),
+):
+    items = await svc.get_duplicate_suspicions(db)
+    return items[:limit]
 
 
 @router.get("/{header_id}", response_model=MatchHeaderOut)

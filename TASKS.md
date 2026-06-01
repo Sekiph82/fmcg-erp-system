@@ -678,7 +678,7 @@ ERP_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN: bool = True
 
 ### Task ID: TASK-008 — Run erp-health-audit.py and address findings
 
-- **Status:** Batch A + B.1 + B.2 + C.1 + C.2 + C.3.1 + C.3.2 + C.3.3 + D Done — 0 HIGH; 325 MEDIUM; C.3.4/C.4 pending
+- **Status:** Batch A + B.1 + B.2 + C.1 + C.2 + C.3.1–C.3.4 + D Done — 0 HIGH; 325 MEDIUM; C.4 pending
 - **Priority:** P1
 - **Category:** QA / Performance
 - **Why it matters:** Previous run (2026-05-16): 52 HIGH / 624 MEDIUM. Current run (2026-05-31): **1 HIGH / 499 MEDIUM / 1 INFO** — 51 HIGH fixed by prior work, 125 MEDIUM fixed.
@@ -1252,7 +1252,29 @@ Remaining:
 - C.3.4 — endpoint guardrail for `get_duplicate_suspicions` (deferred, low urgency)
 - C.4 — product-owner decisions on webhook/promotions
 
-**Status: Batch A + B.1 + B.2 + C.1 + C.2 + C.3.1 + C.3.2 + C.3.3 + D Done — 0 HIGH; 325 MEDIUM; C.3.4/C.4 pending**
+**Batch C.3.4 — Endpoint guardrail for get_duplicate_suspicions (DONE — 2026-06-01)**
+
+Files changed:
+- `backend/app/api/v1/endpoints/invoice_match.py`
+
+Endpoint route: `GET /invoice-match/duplicate-suspicions`
+
+Change: added `limit: int = Query(200, ge=1, le=500)` param + `return items[:limit]` after service call.
+
+Service `invoice_match_service.get_duplicate_suspicions` signature **unchanged** — service remains unbounded so full audit list is still accessible internally or via admin tooling.
+
+Response shape unchanged (`List[DuplicateLogOut]`). `Query` was already imported.
+
+Checks run:
+- `git diff --name-only` → only `backend/app/api/v1/endpoints/invoice_match.py` ✓
+- `python -c "import app.main"` → CLEAN
+- `python scripts/erp-health-audit.py` → **0 HIGH / 325 MEDIUM / 1 INFO** (unchanged — service-layer finding at :607 remains visible by design)
+
+Known limitation: static audit still flags `invoice_match_service.get_duplicate_suspicions` (line 607) because the service is intentionally unbounded. This is correct — the audit finding serves as a reminder that the service returns all unresolved items. The endpoint guardrail bounds the API caller without hiding that from the audit.
+
+Remaining: C.4 product-owner decisions on webhook_service (3) and promotions_service (6).
+
+**Status: Batch A + B.1 + B.2 + C.1 + C.2 + C.3.1 + C.3.2 + C.3.3 + C.3.4 + D Done — 0 HIGH; 325 MEDIUM; C.4 pending**
 
 ---
 
