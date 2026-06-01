@@ -1,30 +1,24 @@
 # Automated ERP Health Audit
 
-Generated: 2026-06-01 04:12 UTC
+Generated: 2026-06-01 05:50 UTC
 
 ## Summary
 
 | Severity | Count |
 |----------|-------|
 | HIGH     | 0 |
-| MEDIUM   | 340 |
+| MEDIUM   | 328 |
 | LOW      | 0 |
 | INFO     | 1 |
-| **Total**| **341** |
+| **Total**| **329** |
 
-## MEDIUM (340)
+## MEDIUM (328)
 
 - **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\approval_service.py:53` — .scalars().all() without .limit() nearby
 - **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\approval_service.py:71` — .scalars().all() without .limit() nearby
 - **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\approval_service.py:253` — .scalars().all() without .limit() nearby
 - **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\approval_service.py:279` — .scalars().all() without .limit() nearby
 - **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\bank_api_service.py:83` — .scalars().all() without .limit() nearby
-- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\bank_reconciliation_service.py:84` — .scalars().all() without .limit() nearby
-- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\bank_reconciliation_service.py:269` — .scalars().all() without .limit() nearby
-- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\bank_reconciliation_service.py:408` — .scalars().all() without .limit() nearby
-- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\bank_reconciliation_service.py:745` — .scalars().all() without .limit() nearby
-- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\bank_reconciliation_service.py:763` — .scalars().all() without .limit() nearby
-- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\bank_reconciliation_service.py:850` — .scalars().all() without .limit() nearby
 - **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\bom_ai_service.py:62` — .scalars().all() without .limit() nearby
 - **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\bom_ai_service.py:134` — .scalars().all() without .limit() nearby
 - **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\bom_ai_service.py:138` — .scalars().all() without .limit() nearby
@@ -91,9 +85,6 @@ Generated: 2026-06-01 04:12 UTC
 - **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\inventory_service.py:663` — .scalars().all() without .limit() nearby
 - **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\inventory_service.py:706` — .scalars().all() without .limit() nearby
 - **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\inventory_service.py:802` — .scalars().all() without .limit() nearby
-- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\invoice_match_service.py:71` — .scalars().all() without .limit() nearby
-- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\invoice_match_service.py:95` — .scalars().all() without .limit() nearby
-- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\invoice_match_service.py:466` — .scalars().all() without .limit() nearby
 - **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\invoice_match_service.py:607` — .scalars().all() without .limit() nearby
 - **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\invoice_match_service.py:897` — .scalars().all() without .limit() nearby
 - **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\iot_service.py:103` — .scalars().all() without .limit() nearby
@@ -188,9 +179,6 @@ Generated: 2026-06-01 04:12 UTC
 - **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\recall_service.py:906` — .scalars().all() without .limit() nearby
 - **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\recruitment_service.py:630` — .scalars().all() without .limit() nearby
 - **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\recruitment_service.py:662` — .scalars().all() without .limit() nearby
-- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\report_builder_service.py:357` — .scalars().all() without .limit() nearby
-- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\report_builder_service.py:514` — .scalars().all() without .limit() nearby
-- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\report_builder_service.py:544` — .scalars().all() without .limit() nearby
 - **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\report_builder_service.py:662` — .scalars().all() without .limit() nearby
 - **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\shelf_life_service.py:96` — .scalars().all() without .limit() nearby
 - **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\shelf_life_service.py:790` — .scalars().all() without .limit() nearby

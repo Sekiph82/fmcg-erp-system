@@ -204,6 +204,42 @@ _KNOWN_FP_CONTEXTS = [
      re.compile(r"list_dim_types|list_cost_centers|list_validation_rules"
                 r"|list_allocation_rules|list_default_rules|run_ai_agents"
                 r"|transaction_type\s*==|dim_type_id\s*==")),
+
+    # ── C.3.1 Confirmed false positives from C.3 chunking audit (2026-06-01) ─
+    # NOT suppressed: invoice_match_service.get_duplicate_suspicions (C.3.4 defer),
+    #   invoice_match_service.list_ai_recs (C.3.2 missing limit),
+    #   report_builder_service.list_ai_recs (C.3.2 missing limit),
+    #   ess_service.list_accounts_raw (C.3.3 real chunking candidate),
+    #   webhook_service, promotions_service (C.4 product decision).
+
+    # bank_reconciliation_service confirmed FPs:
+    #   list_bank_accounts — ~5-50 active bank accounts, small config
+    #   get_statement_lines — FK-bounded by stmt_id
+    #   run_auto_match inner queries — statement lines FK-bounded by stmt_id;
+    #     raw SQL txns bounded by statement period dates; rules = small config
+    #   list_adjustments — FK-bounded by stmt_id
+    #   list_rules — small reconciliation rules config table
+    #   get_balance_summary — iterates few active bank accounts
+    (os.path.join("services", "bank_reconciliation_service.py"),
+     re.compile(r"stmt_id\s*==|get_statement_lines|list_bank_accounts|list_rules"
+                r"|get_balance_summary|BRBankAccount|BRRule|BRStatementLine")),
+
+    # invoice_match_service confirmed FPs (3 only — get_duplicate_suspicions and
+    #   list_ai_recs deliberately NOT suppressed):
+    #   list_tolerance_rules — small config, few tolerance rules
+    #   _find_tolerance — same small config, best-match by priority scan
+    #   _detect_duplicate — FK-bounded by supplier_id + invoice_no/date/amount
+    (os.path.join("services", "invoice_match_service.py"),
+     re.compile(r"list_tolerance_rules|_find_tolerance|_detect_duplicate"
+                r"|InvoiceMatchTolerance|supplier_id\s*==|PurchaseInvoice")),
+
+    # report_builder_service confirmed FPs (3 only — list_ai_recs deliberately NOT suppressed):
+    #   list_reports — admin report config, bounded by created reports (10-100 typical)
+    #   list_schedules — one schedule per report, small config
+    #   list_dashboards — small admin dashboard config
+    (os.path.join("services", "report_builder_service.py"),
+     re.compile(r"list_reports|list_schedules|list_dashboards"
+                r"|ReportDefinition|ReportSchedule|ReportDashboard")),
 ]
 
 

@@ -678,7 +678,7 @@ ERP_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN: bool = True
 
 ### Task ID: TASK-008 — Run erp-health-audit.py and address findings
 
-- **Status:** Batch A + B.1 + B.2 + C.1 + C.2 + C.3 + D Done — 0 HIGH; 340 MEDIUM; C.3 audited (11 FP/2 missed-limit/1 real-chunk/1 guardrail); C.4 pending
+- **Status:** Batch A + B.1 + B.2 + C.1 + C.2 + C.3.1 + D Done — 0 HIGH; 328 MEDIUM; C.3.2/C.3.3/C.3.4/C.4 pending
 - **Priority:** P1
 - **Category:** QA / Performance
 - **Why it matters:** Previous run (2026-05-16): 52 HIGH / 624 MEDIUM. Current run (2026-05-31): **1 HIGH / 499 MEDIUM / 1 INFO** — 51 HIGH fixed by prior work, 125 MEDIUM fixed.
@@ -1146,6 +1146,58 @@ Pattern identical to C.1. No response shape change. Can be done in same commit.
 No source code changed during this audit. No `.limit()` added. No with_for_update() removed. No Graphify run.
 
 **Status: Batch C.3 Audited — chunking architecture selected; 11 FP identified; 1 real chunk candidate; implementation pending (C.3.1→C.3.3)**
+
+**Batch C.3.1 — Allowlist confirmed C.3 false positives (DONE — 2026-06-01)**
+
+Files changed:
+- `scripts/erp-health-audit.py` — 3 new `_KNOWN_FP_CONTEXTS` entries added
+- `docs/AUTOMATED_HEALTH_AUDIT.md` — regenerated after allowlist applied
+
+Allowlisted C.3 confirmed false positives (12 findings suppressed):
+
+`bank_reconciliation_service.py` (6 findings suppressed):
+- `list_bank_accounts` — few active bank accounts, small config
+- `get_statement_lines` — FK-bounded by `stmt_id` (BRStatementLine in window)
+- `run_auto_match` inner queries — statement lines FK-bounded by `stmt_id`; txns bounded by period dates; rules = small config (skipped by `.in_()` audit check)
+- `list_adjustments` — FK-bounded by `stmt_id`
+- `list_rules` — small reconciliation rules config
+- `get_balance_summary` — iterates few active bank accounts
+
+`invoice_match_service.py` (3 findings suppressed — only confirmed FPs):
+- `list_tolerance_rules` — small config
+- `_find_tolerance` — same small config, best-match scan
+- `_detect_duplicate` — FK-bounded (PurchaseInvoice in window)
+
+`report_builder_service.py` (3 findings suppressed — only confirmed FPs):
+- `list_reports` — admin report config, bounded by user-created reports
+- `list_schedules` — one schedule per report, small config
+- `list_dashboards` — small admin config
+
+Deliberately NOT suppressed:
+- `invoice_match_service.py` list_ai_recs (line 897) — C.3.2 missing limit
+- `report_builder_service.py` list_ai_recs (line 662) — C.3.2 missing limit
+- `ess_service.py` list_accounts_raw (line 663) — C.3.3 real chunking candidate
+- `invoice_match_service.py` get_duplicate_suspicions (line 607) — C.3.4 endpoint guardrail
+- `webhook_service.py` (3 findings) — C.4 product decision
+- `promotions_service.py` (6 findings) — C.4 product decision
+- row_lock findings (30) — all retained
+
+Health audit after C.3.1:
+| Severity | Count |
+|----------|-------|
+| HIGH | 0 |
+| MEDIUM | 328 |
+| INFO | 1 |
+| **Total** | **329** |
+
+Previous MEDIUM: 340. Suppressed: 12 confirmed C.3 false positives. No ERP business logic changed. No `.limit()` added.
+
+Remaining C.3 sub-batches:
+- C.3.2: add `limit: int = 200` to `invoice_match_service.list_ai_recs` and `report_builder_service.list_ai_recs`
+- C.3.3: implement chunked `broadcast_notification` in `ess_service.py`
+- C.3.4: endpoint guardrail for `get_duplicate_suspicions` (defer)
+
+**Status: Batch A + B.1 + B.2 + C.1 + C.2 + C.3.1 + D Done — 0 HIGH; 328 MEDIUM; C.3.2/C.3.3/C.3.4/C.4 pending**
 
 ---
 
