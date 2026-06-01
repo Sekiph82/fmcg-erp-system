@@ -147,3 +147,21 @@ class TestProductionConfigGuard:
                 OTP_DEV_DELIVERY_MODE=True,
                 INITIAL_ADMIN_PASSWORD="StrongPass1!",
             )
+
+    def test_missing_smtp_host_blocked_in_production_when_email_otp_enabled(self):
+        from pydantic import ValidationError
+        from app.core.config import Settings
+        with pytest.raises((ValidationError, ValueError), match="SMTP_HOST"):
+            Settings(
+                ENVIRONMENT="production",
+                SECRET_KEY="a" * 64,
+                AUTH_COOKIE_SECURE=True,
+                PASSWORD_REQUIRE_SPECIAL=True,
+                SEED_DEMO_DATA=False,
+                SYNC_INITIAL_ADMIN_PASSWORD=False,
+                OTP_DEV_DELIVERY_MODE=False,
+                INITIAL_ADMIN_PASSWORD="StrongPass1!",
+                REDIS_PASSWORD="str0ngR3disP@ss",
+                TWO_FACTOR_EMAIL_ENABLED=True,
+                SMTP_HOST="",  # empty — should fail
+            )

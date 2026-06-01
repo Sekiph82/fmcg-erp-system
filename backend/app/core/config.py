@@ -257,6 +257,12 @@ class Settings(BaseSettings):
                 )
             if not self.REDIS_PASSWORD or self.REDIS_PASSWORD.startswith("CHANGE_ME"):
                 raise ValueError("REDIS_PASSWORD must be set to a strong value in production")
+            if self.TWO_FACTOR_EMAIL_ENABLED and not self.SMTP_HOST:
+                raise ValueError(
+                    "SMTP_HOST must be configured in production when TWO_FACTOR_EMAIL_ENABLED=true. "
+                    "Set SMTP_HOST, SMTP_USERNAME, SMTP_PASSWORD, and SMTP_FROM_EMAIL in .env.production, "
+                    "or set TWO_FACTOR_EMAIL_ENABLED=false to disable email OTP."
+                )
             if self.ERP_SEED_MANAGEMENT_USERS:
                 mgmt = [
                     ("ERP_ADMIN", self.ERP_ADMIN_EMAIL, self.ERP_ADMIN_PASSWORD),
