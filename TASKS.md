@@ -1797,25 +1797,130 @@ Known limitations:
 
 ### Task ID: TASK-015 — Production module real data (Phase P1-P11)
 
-- **Status:** Pending
+- **Status:** Audited — implementation plan ready (2026-06-01)
 - **Priority:** P2
 - **Category:** Production
 - **Why it matters:** Production module (orders, work orders, work centers, routing, batch tracking, QC, yield) models exist in backend but KPIs and dashboards show empty data. No realistic seed data for demo or testing.
 - **Source / evidence:** PLANS.md — Phases P1-P11. CODEX_PROGRESS.md — `production | ModuleDefinition | view, create, edit, approve, export`. Backend production models confirmed.
-- **Affected area:** `backend/app/db/seed.py` or new production seed script
+- **Affected area:** New `backend/app/db/seed_production.py`
 - **Risk:** Low (seed data only)
 - **Recommended timing:** Soon
-- **Needs audit before implementation:** Yes — inspect production models (orders, work orders, work centers, routing) to understand required field structure.
-- **Implementation scope:** Seed realistic FMCG production data: production orders, work orders, work centers, routings, batch records. No new columns.
+- **Needs audit before implementation:** Done — 2026-06-01
+- **Implementation scope:** Seed realistic FMCG production data: work centers, routings, products, materials, warehouses, recipes, production plans, production orders, work orders, batch lots. No new columns.
 - **Do not touch:** Production model code
-- **Started at:**
-- **Completed at:**
+- **Started at:** 2026-06-01 (audit)
+- **Completed at:** Pending implementation
 - **Changed files:** None yet
 - **Tests / checks run:** None yet
 - **Result:** Pending
+
+---
+
+#### AUDIT FINDINGS — 2026-06-01
+
+**Model files inspected (4 production + 2 upstream):**
+
+| File | Key Models |
+|------|-----------|
+| `backend/app/models/production.py` | `ProductionPlan`, `ProductionPlanLine`, `ProductionOrder`, `MaterialConsumption`, `FinishedGoodsReceipt`, `DowntimeLog` |
+| `backend/app/models/production_execution.py` | `ProdExecOrder`, `ExecWorkOrder`, `ExecOrderMaterial`, `BatchGenealogy`, `ExecAIRec` |
+| `backend/app/models/production_advanced.py` | `WorkCenter`, `Routing`, `RoutingStep`, `WorkOrder`, `Shift`, `ProductionSchedule`, `BatchLot`, `OEERecord`, `WasteRecord`, `LaborLog`, `AdvQCInspection` |
+| `backend/app/models/shop_floor.py` | `SFSession`, `WOActivityLog`, `SFDowntimeLog`, `ShiftHandover`, `SFAIRec` |
+| `backend/app/models/bom.py` | `AdvancedBOM`, `AdvancedBOMLine`, `BOMYieldConfig` |
+| `backend/app/models/recipe.py` | `Recipe`, `RecipeItem`, `ProcessParameter` |
+
+**Required upstream (master data):** `Product`, `Material`, `Warehouse` from `backend/app/models/master.py`
+
+**Current seed state:**
+- `backend/app/db/seed.py` — permissions/roles ONLY; zero products, materials, warehouses, work centers, or production records
+- `backend/app/db/seed_utilities.py` — utility meters/sensors ONLY; no production link
+- **No production seed data exists anywhere**
+
+**Dependency chain (must be seeded in order):**
+
+```
+1. Warehouse (target_warehouse_id FK on ProductionOrder)
+2. Product (product_id FK on ProductionOrder, Recipe)
+3. Material (material_id FK on RecipeItem)
+4. Recipe + RecipeItem (recipe_id FK on ProductionOrder)
+5. WorkCenter (work_center_id FK on RoutingStep, WorkOrder)
+6. Routing + RoutingStep (routing_id FK on WorkOrder)
+7. ProductionPlan (plan_id FK on ProductionPlanLine)
+8. ProductionOrder (production_order_id FK on WorkOrder, BatchLot)
+9. WorkOrder (work_order_id FK on TimeTracking, LaborLog)
+10. BatchLot (production_order_id + product_id FK)
+```
+
+**Required fields for minimal seed (no-nullable, no-default):**
+
+| Model | Required fields |
+|-------|----------------|
+| `WorkCenter` | `work_center_id` (str), `name` (str), `type` (enum) |
+| `Routing` | `routing_id` (str), `product_id` FK, `version` (int) |
+| `RoutingStep` | `routing_id` FK, `step_number` (int), `operation` (str), `work_center_id` FK, `standard_time_minutes` (int) |
+| `ProductionOrder` | `order_no` (str), `product_id` FK, `recipe_id` FK, `planned_quantity`, `target_warehouse_id` FK, `scheduled_start`, `scheduled_end` |
+| `WorkOrder` | `work_order_id` (str), `production_order_id` FK, `work_center_id` FK, `operation` (str), `status` (enum) |
+| `BatchLot` | `batch_id` (str), `production_order_id` FK, `product_id` FK, `quantity`, `status` (enum) |
+| `Recipe` | `product_id` FK, `version` (str), `name` (str), `status` (enum), `is_active` (bool) |
+| `RecipeItem` | `recipe_id` FK, `material_id` FK, `line_no` (int), `quantity`, `unit` (str), `loss_percentage`, `is_optional` (bool) |
+
+**Recommended strategy: Option B — dedicated `backend/app/db/seed_production.py`**
+
+Reasons: scope is large (10 model tiers), should be isolated from auth/permission seed, must be idempotent, gated by `SEED_DEMO_DATA=true` flag.
+
+**Proposed FMCG dataset:**
+
+*Work Centers (5):*
+| ID | Name | Type |
+|----|------|------|
+| WC-MIX-01 | Mixing & Blending Line A | PROCESS |
+| WC-MIX-02 | Mixing & Blending Line B | PROCESS |
+| WC-FILL-BOT | Bottle Filling Line | MACHINE |
+| WC-FILL-SAC | Sachet Filling Line | MACHINE |
+| WC-PACK-01 | Packaging & Labelling | ASSEMBLY |
+
+*Products (5):*
+| SKU | Name | Category | UoM |
+|-----|------|----------|-----|
+| POVU-LD-1L | POVU Liquid Detergent 1L | FINISHED_GOODS | LITRE |
+| POVU-FS-500ML | POVU Fabric Softener 500ml | FINISHED_GOODS | LITRE |
+| POVU-DW-500ML | POVU Dishwashing Liquid 500ml | FINISHED_GOODS | LITRE |
+| POVU-SC-750ML | POVU Surface Cleaner 750ml | FINISHED_GOODS | LITRE |
+| POVU-HS-200ML | POVU Hand Sanitizer 200ml | FINISHED_GOODS | LITRE |
+
+*Materials (6):*
+| Code | Name | Type | UoM |
+|------|------|------|-----|
+| RAW-SURF-LAS | LAS Surfactant Blend | RAW_MATERIAL | KG |
+| RAW-FRAG-LAV | Lavender Fragrance Oil | RAW_MATERIAL | KG |
+| PKG-BTL-1L | PET Bottle 1L Clear | PACKAGING | EACH |
+| PKG-BTL-500 | PET Bottle 500ml White | PACKAGING | EACH |
+| PKG-CAP-28 | HDPE Cap 28mm | PACKAGING | EACH |
+| PKG-LBL-ROLL | Label Stock Roll | PACKAGING | EACH |
+
+*Warehouse (2):* PROD-WH (production), FG-WH (finished goods)
+
+*Routings:* 1 per product — steps: Mix (WC-MIX-01) → Fill (WC-FILL-BOT) → Pack (WC-PACK-01)
+
+*Production Orders (15):* 5 COMPLETED (past), 4 IN_PROGRESS (current), 4 PLANNED (future), 2 QUALITY_HOLD; quantities 1,000–10,000 units; spanning -60d to +30d
+
+*Work Orders:* 3 per production order (one per routing step)
+
+*Batch Lots:* one per completed/in-progress production order
+
+**Implementation plan:**
+- **TASK-015.1** — Create `backend/app/db/seed_production.py` with full dataset; wire into `main.py` lifespan under `SEED_DEMO_DATA=true`; run `python -c "import app.main"` + manual seed test
+
+**Blockers/risks:**
+- Product category and UoM field enums must be verified against `master.py` before writing seed values
+- Recipe and RecipeItem `unit` field type (str vs enum) needs confirmation
+- `WorkCenter.type` enum values need verification from `production_advanced.py`
+- Seed must be idempotent (check-by-code pattern to avoid duplicates on restart)
+- No migration needed — all models exist
+
 - **Git commit / branch:** Not committed yet
 - **Graphify refresh after implementation:** backend
-- **Graphify refresh status:** Needed
+- **Graphify refresh status:** Needed after seed implementation
 - **Notes:** Coordinate with Utilities (TASK-009) so utility consumption data links to production batches.
 
 ---
