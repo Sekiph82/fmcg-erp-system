@@ -1617,7 +1617,7 @@ Previous MEDIUM: 322. Suppressed: 6 confirmed C.4 false positives.
 
 ### Task ID: TASK-014 — python-jose → PyJWT migration evaluation
 
-- **Status:** TASK-014.1 Done — JWT behavior tests added; PyJWT migration pending (TASK-014.2)
+- **Status:** TASK-014.2 Done — PyJWT migration complete; python-jose removed
 - **Priority:** P2
 - **Category:** Security
 - **Why it matters:** `python-jose` has known CVEs and is less actively maintained than `PyJWT`. Full repository review flagged this as a Medium security issue.
@@ -1756,6 +1756,42 @@ Checks run:
 - `python -m pytest tests/test_security.py -v` → **54/54 PASS** ✓
 
 Behavioral baseline locked. Safe to proceed with TASK-014.2 (PyJWT swap).
+
+**Batch TASK-014.2 — PyJWT migration (DONE — 2026-06-01)**
+
+Files changed:
+- `backend/app/core/security.py` — `from jose import jwt, JWTError` → `import jwt`; `except JWTError` → `except jwt.PyJWTError`
+- `backend/requirements.txt` — `python-jose[cryptography]>=3.4.0` → `PyJWT>=2.8.0`
+- `backend/tests/test_security.py` — `test_wrong_secret_returns_none`: `from jose import jwt as _jose_jwt` → `import jwt as _jwt`
+- `backend/tests/test_hardening.py` — added `REDIS_PASSWORD` + `TWO_FACTOR_EMAIL_ENABLED: False` to `base` dict and `_PROD_BASE` (pre-existing failures from TASK-011/TASK-012 guards, not PyJWT-related)
+- `TASKS.md` — this update
+
+Dependency change: `python-jose[cryptography]>=3.4.0` removed → `PyJWT>=2.8.0` installed (2.13.0)
+
+security.py change (2 lines):
+```python
+# Before
+from jose import jwt, JWTError
+...
+except JWTError as e:
+
+# After
+import jwt
+...
+except jwt.PyJWTError as e:
+```
+
+Checks run:
+- `pip show PyJWT` → **2.13.0** ✓
+- `grep` jose in source → clean (no jose imports remain) ✓
+- `python -m pytest tests/test_security.py tests/test_otp.py tests/test_hardening.py -v` → **96/96 PASS** ✓
+- `python -c "import app.main"` → **CLEAN** ✓
+
+Known limitations:
+- `InsecureKeyLengthWarning` from PyJWT 2.13.0 when dev `SECRET_KEY="changeme"` (8 bytes < 32 bytes RFC 7518 minimum) — warning only, not an error; production SECRET_KEY will be long enough
+- Docker backend container must be rebuilt to pick up `PyJWT` / remove `python-jose` from installed packages
+- Existing tokens signed with same `SECRET_KEY` + `HS256` remain valid (token format is identical between libraries)
+- `ecdsa`, `pyasn1`, `rsa` (python-jose transitive deps) not yet removed from venv — will be cleaned on next `pip install -r requirements.txt` in fresh env or Docker rebuild (TASK-014.4)
 
 ---
 

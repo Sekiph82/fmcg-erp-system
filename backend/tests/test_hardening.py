@@ -196,6 +196,8 @@ def test_production_config_rejects_security_landmines():
         "OTP_DEV_DELIVERY_MODE": False,
         "INITIAL_ADMIN_PASSWORD": "StrongerAdmin1!",
         "AUTH_COOKIE_SECURE": True,
+        "REDIS_PASSWORD": "str0ngRedisPass4Tests",
+        "TWO_FACTOR_EMAIL_ENABLED": False,
     }
 
     Settings(**base)
@@ -223,6 +225,8 @@ _PROD_BASE = {
     "OTP_DEV_DELIVERY_MODE": False,
     "INITIAL_ADMIN_PASSWORD": "StrongerAdmin1!",
     "AUTH_COOKIE_SECURE": True,
+    "REDIS_PASSWORD": "str0ngRedisPass4Tests",
+    "TWO_FACTOR_EMAIL_ENABLED": False,
 }
 
 

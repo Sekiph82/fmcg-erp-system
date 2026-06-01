@@ -169,9 +169,9 @@ class TestJWTBehavior:
         assert decode_token(".".join(parts)) is None
 
     def test_wrong_secret_returns_none(self):
-        from jose import jwt as _jose_jwt
+        import jwt as _jwt
         payload = {"sub": "user-x", "exp": datetime.now(timezone.utc) + timedelta(minutes=10)}
-        bad_token = _jose_jwt.encode(payload, "completely-wrong-secret", algorithm="HS256")
+        bad_token = _jwt.encode(payload, "completely-wrong-secret", algorithm="HS256")
         assert decode_token(bad_token) is None
 
     def test_garbage_input_returns_none(self):
