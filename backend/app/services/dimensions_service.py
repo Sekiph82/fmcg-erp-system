@@ -358,14 +358,14 @@ async def run_allocation(db: AsyncSession, req: AllocationRunRequest, posted_by_
     return run
 
 
-async def list_allocation_runs(db: AsyncSession, rule_id=None):
+async def list_allocation_runs(db: AsyncSession, rule_id=None, limit: int = 200):
     q = select(AllocationRun).options(
         selectinload(AllocationRun.rule),
         selectinload(AllocationRun.lines).selectinload(AllocationRunLine.target_dim_value),
     )
     if rule_id:
         q = q.where(AllocationRun.rule_id == rule_id)
-    result = await db.execute(q.order_by(AllocationRun.created_at.desc()))
+    result = await db.execute(q.order_by(AllocationRun.created_at.desc()).limit(limit))
     runs = result.scalars().all()
     for run in runs:
         run.rule_name = run.rule.rule_name if run.rule else None
@@ -443,7 +443,7 @@ async def reclassify(db: AsyncSession, req: ReclassifyRequest, user_id=None) -> 
     return rec
 
 
-async def list_reclassifications(db: AsyncSession, transaction_type: str = None):
+async def list_reclassifications(db: AsyncSession, transaction_type: str = None, limit: int = 200):
     q = select(DimReclassification).options(
         selectinload(DimReclassification.dim_type),
         selectinload(DimReclassification.old_dim_value),
@@ -451,7 +451,7 @@ async def list_reclassifications(db: AsyncSession, transaction_type: str = None)
     )
     if transaction_type:
         q = q.where(DimReclassification.transaction_type == transaction_type)
-    result = await db.execute(q.order_by(DimReclassification.created_at.desc()))
+    result = await db.execute(q.order_by(DimReclassification.created_at.desc()).limit(limit))
     recs = result.scalars().all()
     for r in recs:
         r.dim_type_name = r.dim_type.type_name if r.dim_type else None
@@ -592,11 +592,11 @@ async def run_ai_agents(db: AsyncSession) -> List[DimAIRecommendation]:
     return created
 
 
-async def list_ai_recs(db: AsyncSession, status: DimAIRecStatus = None):
+async def list_ai_recs(db: AsyncSession, status: DimAIRecStatus = None, limit: int = 200):
     q = select(DimAIRecommendation)
     if status:
         q = q.where(DimAIRecommendation.status == status)
-    result = await db.execute(q.order_by(DimAIRecommendation.created_at.desc()))
+    result = await db.execute(q.order_by(DimAIRecommendation.created_at.desc()).limit(limit))
     return result.scalars().all()
 
 

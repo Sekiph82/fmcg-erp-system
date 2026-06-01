@@ -125,6 +125,7 @@ async def list_records(
     employee_id: Optional[str] = None,
     department_id: Optional[str] = None,
     status: Optional[str] = None,
+    limit: int = 200,
 ) -> List[AppraisalRecord]:
     q = (
         select(AppraisalRecord)
@@ -143,6 +144,7 @@ async def list_records(
         q = q.where(AppraisalRecord.department_id == department_id)
     if status:
         q = q.where(AppraisalRecord.status == status)
+    q = q.limit(limit)
     result = await db.execute(q)
     return result.scalars().all()
 
@@ -341,12 +343,13 @@ async def update_development_plan(db: AsyncSession, plan_id: UUID, data: Develop
     return plan
 
 
-async def list_development_plans(db: AsyncSession, employee_id: Optional[str] = None, status: Optional[str] = None) -> List[AppraisalDevelopmentPlan]:
+async def list_development_plans(db: AsyncSession, employee_id: Optional[str] = None, status: Optional[str] = None, limit: int = 200) -> List[AppraisalDevelopmentPlan]:
     q = select(AppraisalDevelopmentPlan).order_by(AppraisalDevelopmentPlan.due_date)
     if employee_id:
         q = q.where(AppraisalDevelopmentPlan.employee_id == employee_id)
     if status:
         q = q.where(AppraisalDevelopmentPlan.status == status)
+    q = q.limit(limit)
     result = await db.execute(q)
     return result.scalars().all()
 
@@ -573,10 +576,11 @@ async def run_development_plan_agent(db: AsyncSession) -> List[APAIRecommendatio
     return recs
 
 
-async def list_ai_recs(db: AsyncSession, status: Optional[str] = None) -> List[APAIRecommendation]:
+async def list_ai_recs(db: AsyncSession, status: Optional[str] = None, limit: int = 200) -> List[APAIRecommendation]:
     q = select(APAIRecommendation).order_by(APAIRecommendation.created_at.desc())
     if status:
         q = q.where(APAIRecommendation.status == status)
+    q = q.limit(limit)
     result = await db.execute(q)
     return result.scalars().all()
 

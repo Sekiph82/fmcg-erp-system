@@ -232,12 +232,13 @@ async def create_template(db: AsyncSession, data: TemplateCreate) -> Notificatio
     return tpl
 
 
-async def list_templates(db: AsyncSession, module: Optional[str] = None, active_only: bool = False) -> List[NotificationTemplate]:
+async def list_templates(db: AsyncSession, module: Optional[str] = None, active_only: bool = False, limit: int = 200) -> List[NotificationTemplate]:
     q = select(NotificationTemplate).order_by(NotificationTemplate.template_code)
     if module:
         q = q.where(NotificationTemplate.module == module)
     if active_only:
         q = q.where(NotificationTemplate.active_flag == True)
+    q = q.limit(limit)
     result = await db.execute(q)
     return result.scalars().all()
 
@@ -307,12 +308,13 @@ async def create_schedule(db: AsyncSession, data: ScheduleCreate) -> Notificatio
     return schedule
 
 
-async def list_schedules(db: AsyncSession, user_id: Optional[str] = None, active_only: bool = True) -> List[NotificationSchedule]:
+async def list_schedules(db: AsyncSession, user_id: Optional[str] = None, active_only: bool = True, limit: int = 200) -> List[NotificationSchedule]:
     q = select(NotificationSchedule).order_by(NotificationSchedule.scheduled_for)
     if user_id:
         q = q.where(NotificationSchedule.user_id == user_id)
     if active_only:
         q = q.where(NotificationSchedule.active_flag == True)
+    q = q.limit(limit)
     result = await db.execute(q)
     return result.scalars().all()
 
@@ -545,10 +547,11 @@ async def run_behavior_analyzer(db: AsyncSession) -> List[NCNotifAIRecommendatio
     return recs[:10]
 
 
-async def list_ai_recs(db: AsyncSession, status: Optional[str] = None) -> List[NCNotifAIRecommendation]:
+async def list_ai_recs(db: AsyncSession, status: Optional[str] = None, limit: int = 200) -> List[NCNotifAIRecommendation]:
     q = select(NCNotifAIRecommendation).order_by(NCNotifAIRecommendation.created_at.desc())
     if status:
         q = q.where(NCNotifAIRecommendation.status == status)
+    q = q.limit(limit)
     result = await db.execute(q)
     return result.scalars().all()
 

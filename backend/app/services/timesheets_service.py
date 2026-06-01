@@ -45,6 +45,7 @@ async def list_timesheets(
     status: Optional[str] = None,
     period_start: Optional[date] = None,
     department_id: Optional[str] = None,
+    limit: int = 200,
 ) -> List[TimesheetHeader]:
     q = (
         select(TimesheetHeader)
@@ -59,6 +60,7 @@ async def list_timesheets(
         q = q.where(TimesheetHeader.period_start >= period_start)
     if department_id:
         q = q.where(TimesheetHeader.department_id == department_id)
+    q = q.limit(limit)
     result = await db.execute(q)
     return result.scalars().all()
 
@@ -463,10 +465,11 @@ async def run_anomaly_detector(db: AsyncSession) -> List[TSAIRecommendation]:
     return recs[:10]
 
 
-async def list_ai_recs(db: AsyncSession, status: Optional[str] = None) -> List[TSAIRecommendation]:
+async def list_ai_recs(db: AsyncSession, status: Optional[str] = None, limit: int = 200) -> List[TSAIRecommendation]:
     q = select(TSAIRecommendation).order_by(TSAIRecommendation.created_at.desc())
     if status:
         q = q.where(TSAIRecommendation.status == status)
+    q = q.limit(limit)
     result = await db.execute(q)
     return result.scalars().all()
 

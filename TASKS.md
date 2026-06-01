@@ -678,7 +678,7 @@ ERP_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN: bool = True
 
 ### Task ID: TASK-008 — Run erp-health-audit.py and address findings
 
-- **Status:** Batch A + B.1 + B.2 Done — 0 HIGH; 27/27 real endpoint unbounded fixed across 7 endpoint files; service-layer/row_lock backlog remains
+- **Status:** Batch A + B.1 + B.2 + C.1 Done — 0 HIGH; 444 MEDIUM; 27 endpoint + 27 service list-fetch limits fixed; C.2/C.3/C.4/D pending
 - **Priority:** P1
 - **Category:** QA / Performance
 - **Why it matters:** Previous run (2026-05-16): 52 HIGH / 624 MEDIUM. Current run (2026-05-31): **1 HIGH / 499 MEDIUM / 1 INFO** — 51 HIGH fixed by prior work, 125 MEDIUM fixed.
@@ -866,7 +866,26 @@ NOT `Query(200, le=500)` — that is FastAPI endpoint syntax; service-layer uses
 - webhook_service.py (3): delivery log pagination — what is max retention?
 - promotions_service.py (6): analytics or list? Decide before capping.
 
-**Status: Audit only done. No service files modified. Awaiting user approval to start C.1 implementation.**
+**Batch C.1 — Safe service list-fetch limits (DONE — 2026-06-01)**
+
+27 functions across 8 service files fixed with `limit: int = 200` + `.limit(limit)`:
+
+| File | Functions fixed |
+|------|----------------|
+| training_service.py | list_sessions, list_assignments, list_certifications, list_feedback, list_ai_recs |
+| appraisals_service.py | list_records, list_development_plans, list_ai_recs |
+| dimensions_service.py | list_allocation_runs, list_reclassifications, list_ai_recs |
+| notifications_service.py | list_templates, list_schedules, list_ai_recs |
+| ess_service.py | list_accounts, list_leave_requests, list_requests, list_ai_recs |
+| timesheets_service.py | list_timesheets, list_ai_recs |
+| recruitment_service.py | list_postings, list_pipelines, list_interviews, list_offers, list_ai_recs |
+| expenses_service.py | list_advances, list_ai_recs |
+
+Checks: `python -c "import ..."` verified all 27 signatures (27/27 passed). Health audit: 473 → 444 MEDIUM (29 resolved).
+Pattern: plain Python `limit: int = 200` (NOT FastAPI `Query()` syntax — service layer only).
+`list_accounts_raw` (ess_service) skipped — C.3 chunking candidate (used by `broadcast_notification`).
+
+**Status: C.1 DONE. C.2/C.3/C.4 pending.**
 
 **Batch D — row_lock review (informational, 30 findings)**
 - Verify each `with_for_update()` is necessary; replace with atomic UPDATE where simpler

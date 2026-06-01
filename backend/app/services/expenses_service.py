@@ -381,6 +381,7 @@ async def list_advances(
     db: AsyncSession,
     employee_id: Optional[UUID] = None,
     status: Optional[AdvanceSettlementStatus] = None,
+    limit: int = 200,
 ) -> List[ExpenseAdvance]:
     q = select(ExpenseAdvance)
     filters = []
@@ -390,7 +391,7 @@ async def list_advances(
         filters.append(ExpenseAdvance.settlement_status == status)
     if filters:
         q = q.where(and_(*filters))
-    result = await db.execute(q.order_by(ExpenseAdvance.advance_date.desc()))
+    result = await db.execute(q.order_by(ExpenseAdvance.advance_date.desc()).limit(limit))
     return list(result.scalars().all())
 
 
@@ -606,11 +607,11 @@ async def run_reimbursement_assistant(db: AsyncSession) -> int:
     return count
 
 
-async def list_ai_recs(db: AsyncSession, status: Optional[ExpAIRecStatus] = None) -> List[ExpAIRecommendation]:
+async def list_ai_recs(db: AsyncSession, status: Optional[ExpAIRecStatus] = None, limit: int = 200) -> List[ExpAIRecommendation]:
     q = select(ExpAIRecommendation)
     if status:
         q = q.where(ExpAIRecommendation.status == status)
-    result = await db.execute(q.order_by(ExpAIRecommendation.created_at.desc()))
+    result = await db.execute(q.order_by(ExpAIRecommendation.created_at.desc()).limit(limit))
     return list(result.scalars().all())
 
 

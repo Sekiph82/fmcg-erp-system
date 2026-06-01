@@ -174,11 +174,11 @@ async def update_requisition(db: AsyncSession, req_id: UUID, data: dict) -> Opti
 
 # ── Job Posting CRUD ──────────────────────────────────────────────────────────
 
-async def list_postings(db: AsyncSession, requisition_id: Optional[UUID] = None) -> List[JobPosting]:
+async def list_postings(db: AsyncSession, requisition_id: Optional[UUID] = None, limit: int = 200) -> List[JobPosting]:
     q = select(JobPosting)
     if requisition_id:
         q = q.where(JobPosting.requisition_id == requisition_id)
-    result = await db.execute(q.order_by(JobPosting.created_at.desc()))
+    result = await db.execute(q.order_by(JobPosting.created_at.desc()).limit(limit))
     return list(result.scalars().all())
 
 
@@ -263,6 +263,7 @@ async def list_pipelines(
     requisition_id: Optional[UUID] = None,
     stage_id: Optional[UUID] = None,
     status: Optional[PipelineStatus] = None,
+    limit: int = 200,
 ) -> List[CandidatePipeline]:
     q = select(CandidatePipeline).options(
         selectinload(CandidatePipeline.candidate),
@@ -278,7 +279,7 @@ async def list_pipelines(
         filters.append(CandidatePipeline.status == status)
     if filters:
         q = q.where(and_(*filters))
-    result = await db.execute(q.order_by(CandidatePipeline.created_at.desc()))
+    result = await db.execute(q.order_by(CandidatePipeline.created_at.desc()).limit(limit))
     return list(result.scalars().all())
 
 
@@ -370,6 +371,7 @@ async def list_interviews(
     db: AsyncSession,
     candidate_id: Optional[UUID] = None,
     requisition_id: Optional[UUID] = None,
+    limit: int = 200,
 ) -> List[Interview]:
     q = select(Interview)
     filters = []
@@ -379,7 +381,7 @@ async def list_interviews(
         filters.append(Interview.requisition_id == requisition_id)
     if filters:
         q = q.where(and_(*filters))
-    result = await db.execute(q.order_by(Interview.interview_date.desc()))
+    result = await db.execute(q.order_by(Interview.interview_date.desc()).limit(limit))
     return list(result.scalars().all())
 
 
@@ -428,6 +430,7 @@ async def list_offers(
     db: AsyncSession,
     requisition_id: Optional[UUID] = None,
     status: Optional[OfferStatus] = None,
+    limit: int = 200,
 ) -> List[Offer]:
     q = select(Offer)
     filters = []
@@ -437,7 +440,7 @@ async def list_offers(
         filters.append(Offer.status == status)
     if filters:
         q = q.where(and_(*filters))
-    result = await db.execute(q.order_by(Offer.created_at.desc()))
+    result = await db.execute(q.order_by(Offer.created_at.desc()).limit(limit))
     return list(result.scalars().all())
 
 
@@ -745,11 +748,11 @@ async def run_pipeline_optimizer(db: AsyncSession) -> int:
     return count
 
 
-async def list_ai_recs(db: AsyncSession, status: Optional[RTAIRecStatus] = None) -> List[RTAIRecommendation]:
+async def list_ai_recs(db: AsyncSession, status: Optional[RTAIRecStatus] = None, limit: int = 200) -> List[RTAIRecommendation]:
     q = select(RTAIRecommendation)
     if status:
         q = q.where(RTAIRecommendation.status == status)
-    result = await db.execute(q.order_by(RTAIRecommendation.created_at.desc()))
+    result = await db.execute(q.order_by(RTAIRecommendation.created_at.desc()).limit(limit))
     return list(result.scalars().all())
 
 

@@ -119,8 +119,8 @@ async def login(db: AsyncSession, email: str, password: str) -> Optional[dict]:
     }
 
 
-async def list_accounts(db: AsyncSession) -> List[ESSAccount]:
-    r = await db.execute(select(ESSAccount).order_by(ESSAccount.created_at.desc()))
+async def list_accounts(db: AsyncSession, limit: int = 200) -> List[ESSAccount]:
+    r = await db.execute(select(ESSAccount).order_by(ESSAccount.created_at.desc()).limit(limit))
     return list(r.scalars().all())
 
 
@@ -282,6 +282,7 @@ async def list_leave_requests(
     db: AsyncSession,
     employee_id: Optional[UUID] = None,
     status: Optional[LeaveStatus] = None,
+    limit: int = 200,
 ) -> List[ESSLeaveRequest]:
     q = select(ESSLeaveRequest)
     filters = []
@@ -291,7 +292,7 @@ async def list_leave_requests(
         filters.append(ESSLeaveRequest.status == status)
     if filters:
         q = q.where(and_(*filters))
-    r = await db.execute(q.order_by(ESSLeaveRequest.created_at.desc()))
+    r = await db.execute(q.order_by(ESSLeaveRequest.created_at.desc()).limit(limit))
     return list(r.scalars().all())
 
 
@@ -514,6 +515,7 @@ async def list_requests(
     db: AsyncSession,
     employee_id: Optional[UUID] = None,
     status: Optional[ESSRequestStatus] = None,
+    limit: int = 200,
 ) -> List[ESSRequest]:
     q = select(ESSRequest)
     filters = []
@@ -523,7 +525,7 @@ async def list_requests(
         filters.append(ESSRequest.status == status)
     if filters:
         q = q.where(and_(*filters))
-    r = await db.execute(q.order_by(ESSRequest.created_at.desc()))
+    r = await db.execute(q.order_by(ESSRequest.created_at.desc()).limit(limit))
     return list(r.scalars().all())
 
 
@@ -838,11 +840,11 @@ async def run_hr_support_assistant(db: AsyncSession) -> int:
     return count
 
 
-async def list_ai_recs(db: AsyncSession, status: Optional[ESSAIRecStatus] = None) -> List[ESSAIRecommendation]:
+async def list_ai_recs(db: AsyncSession, status: Optional[ESSAIRecStatus] = None, limit: int = 200) -> List[ESSAIRecommendation]:
     q = select(ESSAIRecommendation)
     if status:
         q = q.where(ESSAIRecommendation.status == status)
-    r = await db.execute(q.order_by(ESSAIRecommendation.created_at.desc()))
+    r = await db.execute(q.order_by(ESSAIRecommendation.created_at.desc()).limit(limit))
     return list(r.scalars().all())
 
 

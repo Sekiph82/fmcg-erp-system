@@ -245,7 +245,7 @@ async def create_session(db: AsyncSession, data: SessionCreate) -> TrainingSessi
     return session
 
 
-async def list_sessions(db: AsyncSession, training_id: Optional[UUID] = None, status: Optional[str] = None, upcoming_only: bool = False) -> List[TrainingSession]:
+async def list_sessions(db: AsyncSession, training_id: Optional[UUID] = None, status: Optional[str] = None, upcoming_only: bool = False, limit: int = 200) -> List[TrainingSession]:
     q = select(TrainingSession).order_by(TrainingSession.session_date)
     if training_id:
         q = q.where(TrainingSession.training_id == training_id)
@@ -253,6 +253,7 @@ async def list_sessions(db: AsyncSession, training_id: Optional[UUID] = None, st
         q = q.where(TrainingSession.status == status)
     if upcoming_only:
         q = q.where(TrainingSession.session_date >= date.today())
+    q = q.limit(limit)
     result = await db.execute(q)
     sessions = result.scalars().all()
     # attach training name
@@ -316,7 +317,7 @@ async def create_assignment(db: AsyncSession, data: AssignmentCreate) -> Trainin
     return assignment
 
 
-async def list_assignments(db: AsyncSession, employee_id: Optional[str] = None, training_id: Optional[UUID] = None, status: Optional[str] = None) -> List[TrainingAssignment]:
+async def list_assignments(db: AsyncSession, employee_id: Optional[str] = None, training_id: Optional[UUID] = None, status: Optional[str] = None, limit: int = 200) -> List[TrainingAssignment]:
     q = select(TrainingAssignment).order_by(TrainingAssignment.due_date)
     if employee_id:
         q = q.where(TrainingAssignment.employee_id == employee_id)
@@ -324,6 +325,7 @@ async def list_assignments(db: AsyncSession, employee_id: Optional[str] = None, 
         q = q.where(TrainingAssignment.training_id == training_id)
     if status:
         q = q.where(TrainingAssignment.status == status)
+    q = q.limit(limit)
     result = await db.execute(q)
     assignments = result.scalars().all()
     for a in assignments:
@@ -400,7 +402,7 @@ async def create_certification(db: AsyncSession, data: CertificationCreate) -> C
     return cert
 
 
-async def list_certifications(db: AsyncSession, employee_id: Optional[str] = None, status: Optional[str] = None, expiring_days: Optional[int] = None) -> List[CertificationRecord]:
+async def list_certifications(db: AsyncSession, employee_id: Optional[str] = None, status: Optional[str] = None, expiring_days: Optional[int] = None, limit: int = 200) -> List[CertificationRecord]:
     q = select(CertificationRecord).order_by(CertificationRecord.expiry_date)
     if employee_id:
         q = q.where(CertificationRecord.employee_id == employee_id)
@@ -409,6 +411,7 @@ async def list_certifications(db: AsyncSession, employee_id: Optional[str] = Non
     if expiring_days is not None:
         cutoff = date.today() + timedelta(days=expiring_days)
         q = q.where(and_(CertificationRecord.expiry_date <= cutoff, CertificationRecord.expiry_date >= date.today()))
+    q = q.limit(limit)
     result = await db.execute(q)
     certs = result.scalars().all()
     for c in certs:
@@ -463,10 +466,11 @@ async def submit_feedback(db: AsyncSession, data: FeedbackCreate) -> TrainingFee
     return feedback
 
 
-async def list_feedback(db: AsyncSession, training_id: Optional[UUID] = None) -> List[TrainingFeedback]:
+async def list_feedback(db: AsyncSession, training_id: Optional[UUID] = None, limit: int = 200) -> List[TrainingFeedback]:
     q = select(TrainingFeedback).order_by(TrainingFeedback.created_at.desc())
     if training_id:
         q = q.where(TrainingFeedback.training_id == training_id)
+    q = q.limit(limit)
     result = await db.execute(q)
     return result.scalars().all()
 
@@ -673,10 +677,11 @@ async def run_compliance_risk_monitor(db: AsyncSession) -> List[TRAIRecommendati
     return recs
 
 
-async def list_ai_recs(db: AsyncSession, status: Optional[str] = None) -> List[TRAIRecommendation]:
+async def list_ai_recs(db: AsyncSession, status: Optional[str] = None, limit: int = 200) -> List[TRAIRecommendation]:
     q = select(TRAIRecommendation).order_by(TRAIRecommendation.created_at.desc())
     if status:
         q = q.where(TRAIRecommendation.status == status)
+    q = q.limit(limit)
     result = await db.execute(q)
     return result.scalars().all()
 
