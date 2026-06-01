@@ -678,7 +678,7 @@ ERP_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN: bool = True
 
 ### Task ID: TASK-008 — Run erp-health-audit.py and address findings
 
-- **Status:** Batch A + B.1 + B.2 + C.1 Done — 0 HIGH; 444 MEDIUM; 27 endpoint + 27 service list-fetch limits fixed; C.2/C.3/C.4/D pending
+- **Status:** Batch A + B.1 + B.2 + C.1 + C.2 Done — 0 HIGH; 340 MEDIUM; 104 service FPs allowlisted; C.3/C.4/D pending
 - **Priority:** P1
 - **Category:** QA / Performance
 - **Why it matters:** Previous run (2026-05-16): 52 HIGH / 624 MEDIUM. Current run (2026-05-31): **1 HIGH / 499 MEDIUM / 1 INFO** — 51 HIGH fixed by prior work, 125 MEDIUM fixed.
@@ -977,7 +977,42 @@ Add targeted suppression entries to `scripts/erp-health-audit.py` `_KNOWN_FP_CON
 
 No source code changed during C.2 audit. No `.limit()` added. No suppressions applied yet.
 
-**Status: Batch C.2 Audited — confirmed false-positive strategy ready**
+**Batch C.2 — Narrow allowlist implementation (DONE — 2026-06-01)**
+
+Files changed:
+- `scripts/erp-health-audit.py` — 19 new `_KNOWN_FP_CONTEXTS` entries added
+- `docs/AUTOMATED_HEALTH_AUDIT.md` — regenerated after allowlist applied
+
+Allowlist strategy: Option B (narrow `_KNOWN_FP_CONTEXTS` entries). Each entry uses file-suffix + discriminating regex. No whole-file suppressions. No global suppression.
+
+Confirmed groups suppressed:
+- Group A (FK-bounded inner queries): recall_service, sales_service, timesheets_service, bom_costing_service, wms_service, notifications_service, ess_service
+- Group B (computation engines): procurement_suggestion_service (13 findings), payroll_ke_service, mps_service, mrp_service, shop_floor_service
+- Group C (regulatory full-scan): shelf_life_service, bom_compliance_service
+- Group D+E (config tables + analytics): appraisals_service, training_service, recruitment_service, expenses_service, dimensions_service
+
+Confirmed groups NOT suppressed:
+- C.3 chunking candidates: bank_reconciliation_service (6), invoice_match_service (5), report_builder_service (4), ess_service.list_accounts_raw (line 663)
+- C.4 product-decision items: webhook_service (3), promotions_service (6)
+- row_lock findings: 30 (all retained)
+
+Health audit after C.2 implementation:
+| Severity | Count |
+|----------|-------|
+| HIGH | 0 |
+| MEDIUM | 340 |
+| INFO | 1 |
+| **Total** | **341** |
+
+Previous MEDIUM: 444. Suppressed: 104 confirmed service-layer false positives.
+No service behavior changed. No `.limit()` added. No ERP business logic touched.
+
+Known limitations:
+- 19 allowlist entries must be reviewed when new service functions are added to suppressed files
+- Patterns are window-based (8 lines before / 5 lines after scalars().all()) — deep functions may need wider patterns
+- C.3/C.4/D batches remain outstanding
+
+**Status: Batch A + B.1 + B.2 + C.1 + C.2 Done — 0 HIGH; confirmed service FPs allowlisted; C.3/C.4/D remain**
 
 **Batch D — row_lock review (informational, 30 findings)**
 - Verify each `with_for_update()` is necessary; replace with atomic UPDATE where simpler

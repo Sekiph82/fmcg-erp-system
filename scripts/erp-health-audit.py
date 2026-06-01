@@ -99,6 +99,111 @@ _KNOWN_FP_CONTEXTS = [
     (os.path.join("crud", "procurement.py"), re.compile(r"po\.id|payment_status|total_paid|Recalculate")),
     # two_factor: per-user ops bounded by user_id
     (os.path.join("crud", "two_factor.py"), re.compile(r"user_id\s*==|recovery_code|TwoFASession")),
+
+    # ── C.2 Service-layer confirmed false positives (2026-06-01) ─────────────
+    # Each entry is narrow: file suffix + discriminating context regex.
+    # NOT suppressed: bank_reconciliation_service, invoice_match_service,
+    #   report_builder_service (C.3 chunking), webhook_service, promotions_service
+    #   (C.4 product decision), ess_service.list_accounts_raw (C.3 chunking).
+
+    # Group A — FK-bounded inner queries
+    # recall_service: contain_recall, list_actions, build_customer_impact — recall_id FK
+    (os.path.join("services", "recall_service.py"),
+     re.compile(r"recall_id\s*==")),
+    # sales_service: allocate_so, _release_so_allocation, pick_line, create_invoice —
+    #   so_id / shipment_id FK; Stock ops use with_for_update; flag_overdue_invoices —
+    #   operational full-scan bounded by overdue status + date; get_customer_statement —
+    #   customer_id FK
+    (os.path.join("services", "sales_service.py"),
+     re.compile(r"so_id\s*==|SOLine|with_for_update|shipment_id\s*==|customer_id\s*==|OVERDUE|flag_overdue")),
+    # timesheets_service: add_line, update_line, delete_line, auto_fill_from_attendance —
+    #   timesheet_id FK; get_payroll_input — bounded by period dates;
+    #   get_dashboard, report_summary — analytics aggregation
+    (os.path.join("services", "timesheets_service.py"),
+     re.compile(r"timesheet_id\s*==|get_payroll_input|get_dashboard|report_summary")),
+    # bom_costing_service: cost_bom inner line fetch, compare_bom_versions — bom_id FK
+    (os.path.join("services", "bom_costing_service.py"),
+     re.compile(r"bom_id\s*==|AdvancedBOMLine")),
+    # wms_service: inner pick/put-away line queries — zone_id / warehouse_id / task_id FK;
+    #   Stock hold/release ops use with_for_update
+    (os.path.join("services", "wms_service.py"),
+     re.compile(r"with_for_update|zone_id\s*==|warehouse_id\s*==|task_id\s*==")),
+    # notifications_service: list_preferences — user_id FK, ~8 rows per user
+    (os.path.join("services", "notifications_service.py"),
+     re.compile(r"user_id\s*==|list_preferences")),
+    # ess_service: get_leave_balances, list_documents, mark_all_read — employee_id FK;
+    #   list_attendance — employee_id FK (window offset means attendance_date in window);
+    #   list_leave_types — small config; run_hr_support_assistant — AI agent (ESSRequest);
+    #   DELIBERATELY EXCLUDED: list_accounts_raw (C.3 chunking candidate)
+    (os.path.join("services", "ess_service.py"),
+     re.compile(r"employee_id\s*==|list_leave_types|ESSAttendanceRecord|ESSRequest")),
+
+    # Group B — Computation engines (limiting would silently corrupt results)
+    # procurement_suggestion_service: engine checks ALL active materials vs safety stock /
+    #   reorder point; suggestion lines / groups / AI recs are FK-bounded by run_id
+    (os.path.join("services", "procurement_suggestion_service.py"),
+     re.compile(r"MRPSuggestion|SupplierItemPrice|material_id|reorder_point|safety_stock"
+                r"|ProcurementSuggestion|run_id\s*==|is_active")),
+    # payroll_ke_service: calculate_payroll_run — must process ALL active employees;
+    #   paye/nhif/nssf/payroll_summary reports — run_id FK-bounded;
+    #   _get_tax_bands / _get_nhif_tiers — small config filtered by tax_year + is_active;
+    #   ai_compliance_monitor — scans all active payroll profiles
+    (os.path.join("services", "payroll_ke_service.py"),
+     re.compile(r"KeTaxBand|KeNhifTier|EmployeePayrollProfile|run_id\s*==|KePayrollLine")),
+    # mps_service: get_mps_lines, release_to_production — mps_id FK;
+    #   MRP result integration — mrp_run_id FK
+    (os.path.join("services", "mps_service.py"),
+     re.compile(r"mps_id\s*==|mrp_run_id\s*==")),
+    # mrp_service: planning engine must load ALL active products to check reorder points
+    (os.path.join("services", "mrp_service.py"),
+     re.compile(r"_build_incoming|_build_material_stock|reorder_point")),
+    # shop_floor_service: get_active_sessions, get_active_downtimes —
+    #   scheduling engine needs full open set of active sessions / downtimes
+    (os.path.join("services", "shop_floor_service.py"),
+     re.compile(r"get_active_sessions|get_active_downtimes|SFSession|SFDowntimeLog")),
+
+    # Group C — Regulatory / operational full-scan (must be complete by law or FEFO)
+    # shelf_life_service: list_near_expiry, list_expired, rank_lots_fefo — FEFO must rank
+    #   ALL lots; expiry scan must be complete; config tables (list_item_configs,
+    #   list_picking_strategies, list_customer_rules) are small seeded reference data
+    (os.path.join("services", "shelf_life_service.py"),
+     re.compile(r"ShelfLife|near_expiry|list_expired|rank_lots_fefo|LotShelfLifeProfile|fefo|FEFO")),
+    # bom_compliance_service: compute_compliance_summary — must check ALL BOM components
+    #   for allergen roll-up and regulatory compliance; bom_id FK
+    (os.path.join("services", "bom_compliance_service.py"),
+     re.compile(r"bom_id\s*==|compute_compliance_summary|AdvancedBOMLine")),
+
+    # Group D — Small config / static tables (bounded by design; seeded reference data)
+    # appraisals_service: list_periods, list_templates — HR config tables;
+    #   get_dashboard, report_* — analytics aggregation across appraisal records;
+    #   run_* — AI insight agents (read-only, bounded by period/template scope)
+    (os.path.join("services", "appraisals_service.py"),
+     re.compile(r"list_periods|list_templates|get_dashboard|report_completion"
+                r"|report_rating_distribution|report_promotions"
+                r"|run_performance_insight|run_calibration_risk|run_development_plan_agent")),
+    # training_service: list_skills, list_programs — training catalog config;
+    #   get_program_effectiveness — training_id FK; get_dashboard, report_completion,
+    #   report_certification_expiry, run_compliance_risk_monitor — analytics/compliance
+    (os.path.join("services", "training_service.py"),
+     re.compile(r"list_skills|list_programs|training_id\s*==|get_dashboard"
+                r"|report_completion|report_certification_expiry|run_compliance_risk_monitor")),
+    # recruitment_service: list_stages — 11 seeded pipeline stages (static config)
+    (os.path.join("services", "recruitment_service.py"),
+     re.compile(r"list_stages|RecruitmentStage")),
+    # expenses_service: list_categories, list_policies — small config filtered by active_flag
+    (os.path.join("services", "expenses_service.py"),
+     re.compile(r"list_categories|list_policies|ExpenseCategory|ExpensePolicy")),
+
+    # Group D+E — Config tables + analytics (dimensions module)
+    # dimensions_service: list_dim_types, list_cost_centers, list_validation_rules,
+    #   list_allocation_rules, list_default_rules — reference config tables;
+    #   get_transaction_dimensions, derive_dimensions, validate_dimensions —
+    #   FK-bounded by transaction_type / dim_type_id;
+    #   run_ai_agents — analytics agents (4 findings)
+    (os.path.join("services", "dimensions_service.py"),
+     re.compile(r"list_dim_types|list_cost_centers|list_validation_rules"
+                r"|list_allocation_rules|list_default_rules|run_ai_agents"
+                r"|transaction_type\s*==|dim_type_id\s*==")),
 ]
 
 
