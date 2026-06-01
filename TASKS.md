@@ -887,6 +887,98 @@ Pattern: plain Python `limit: int = 200` (NOT FastAPI `Query()` syntax — servi
 
 **Status: C.1 DONE. C.2/C.3/C.4 pending.**
 
+**Batch C.2 — Confirmed service-layer false positives (Audited — 2026-06-01)**
+
+354 remaining service-layer findings. Code-verified and classified into 5 FP groups + 2 deferred groups.
+
+**Group A — FK-bounded inner queries (~80 findings)**
+These queries are bounded by a parent entity key passed as a parameter. NOT unbounded. Do NOT add `.limit()`.
+
+| File | Functions | Bound |
+|------|-----------|-------|
+| recall_service.py | contain_recall, list_actions, build_customer_impact | recall_id == param |
+| sales_service.py | allocate_so + inner stock queries | so.id (FK per line) |
+| timesheets_service.py | add_line, update_line, delete_line, auto_fill_from_attendance | timesheet_id == param |
+| bom_costing_service.py | cost_bom inner line fetch | bom_id == param |
+| wms_service.py | inner pick/put-away line queries | task_id / header FK |
+| notifications_service.py | list_preferences | user_id == param (~8 rows) |
+| ess_service.py | get_leave_balances, mark_all_read | employee_id / FK |
+
+**Group B — Computation engines (~70 findings)**
+Must process ALL rows to produce correct results. `.limit()` would silently corrupt output.
+**CRITICAL: Do NOT add `.limit()` to any of these.**
+
+| File | Functions | Why full scan required |
+|------|-----------|----------------------|
+| procurement_suggestion_service.py | _engine_logic (× 13) | Must check ALL active materials vs safety stock |
+| payroll_ke_service.py | calculate_payroll_run | Must process every active employee |
+| bom_costing_service.py | cost_bom recursive lines | Must cost ALL BOM lines or result wrong |
+| mps_service.py / mrp_service.py | planning engine queries | MPS/MRP must see full demand/supply picture |
+| shop_floor_service.py | AI agent queries | Scheduling must see all open work orders |
+
+**Group C — Regulatory full-scan (~15 findings)**
+Must be complete by law or operational necessity (FEFO, recall trace).
+**CRITICAL: Do NOT add `.limit()` to any of these.**
+
+| File | Functions | Why |
+|------|-----------|-----|
+| shelf_life_service.py | list_near_expiry, list_expired, rank_lots_fefo | FEFO must rank ALL lots; expiry scan must be complete |
+| recall_service.py | trace overlap with Group A | Full traceability required |
+| bom_compliance_service.py | compliance scan | Must check all components |
+
+**Group D — Small config tables (~20 findings)**
+Tables with bounded row counts by design (seeded config, reference data).
+
+| File | Functions | Evidence |
+|------|-----------|----------|
+| appraisals_service.py | list_periods, list_templates | Config — bounded by HR setup |
+| training_service.py | list_skills, list_programs | Config — bounded by training catalog |
+| payroll_ke_service.py | _get_tax_bands, _get_nhif_tiers | ~5 rows, filtered by tax_year + is_active |
+| recruitment_service.py | list_stages | 11 seeded pipeline stages |
+| expenses_service.py | list_categories, list_policies | Filtered by active_flag; small config |
+| dimensions_service.py | list_dim_types, list_cost_centers, list_validation_rules, list_allocation_rules, list_default_rules | Config reference tables |
+
+**Group E — Analytics / dashboard aggregation (~30 findings)**
+Aggregate queries (COUNT, AVG, GROUP BY) or dashboard summaries — not row-returning lists.
+
+| File | Functions |
+|------|-----------|
+| appraisals_service.py | get_dashboard, report_completion, report_rating_distribution, report_promotions, run_calibration_risk, run_development_plan_agent |
+| training_service.py | get_dashboard, report_completion, report_certification_expiry, run_compliance_risk_monitor |
+| timesheets_service.py | get_dashboard, report_summary |
+| dimensions_service.py | run_ai_agents (×4) |
+
+**Batch C.3 — Chunking candidates (~25 findings, deferred)**
+Architecture-level batching required — not a simple `.limit()` fix.
+- bank_reconciliation_service.py (6 findings)
+- invoice_match_service.py (5 findings)
+- report_builder_service.py (4 findings)
+- ess_service.py `list_accounts_raw` — used by `broadcast_notification` (must reach ALL active accounts)
+
+**Batch C.4 — Product decisions (~9 findings, deferred)**
+Requires product owner decision on retention/capping strategy before any change.
+- webhook_service.py (3): delivery log — what is max retention?
+- promotions_service.py (6): analytics or list? Decide before capping.
+
+**Recommended C.2 strategy: Option B — narrow `_KNOWN_FP_CONTEXTS` allowlist**
+Add targeted suppression entries to `scripts/erp-health-audit.py` `_KNOWN_FP_CONTEXTS` for confirmed FP service files.
+- Format: `(os.path.join("services", "filename.py"), re.compile(r"<discriminating_pattern>"))`
+- Do NOT suppress entire files. Use discriminating regex matching the FP function context.
+- Implementation: pending approval. See `scripts/erp-health-audit.py` lines 1-30.
+
+**EXPLICIT DO-NOT-LIMIT warnings:**
+- recall_service.py — recall trace, contain_recall, build_customer_impact
+- procurement_suggestion_service.py — _engine_logic, any planning fetch
+- shelf_life_service.py — rank_lots_fefo, list_near_expiry, list_expired
+- payroll_ke_service.py — calculate_payroll_run
+- bom_costing_service.py — cost_bom recursive lines
+- mps_service.py / mrp_service.py / shop_floor_service.py — any planning/scheduling engine
+- Any function inside a `for` loop that aggregates a full result set
+
+No source code changed during C.2 audit. No `.limit()` added. No suppressions applied yet.
+
+**Status: Batch C.2 Audited — confirmed false-positive strategy ready**
+
 **Batch D — row_lock review (informational, 30 findings)**
 - Verify each `with_for_update()` is necessary; replace with atomic UPDATE where simpler
 - `inventory_service` and `sales_service` are highest priority (stock mutation correctness)
