@@ -2196,7 +2196,7 @@ Known limitations:
 - **Result:** Audited — 5 gaps identified; implementation plan in notes below
 - **Git commit / branch:** Committed (exact hash not identified)
 - **Graphify refresh after implementation:** backend, frontend
-- **Graphify refresh status:** Needed when remaining work is done
+- **Graphify refresh status:** Backend refreshed after TASK-017.1 (2026-06-01) — see refresh record in TASK-017.1 block below; frontend refresh pending remaining sub-tasks
 
 ---
 
@@ -2441,7 +2441,22 @@ Known limitations:
 - `is_control=True` accounts (1000, 2000, 4000, 5000) cannot be posted to directly (`finance_service.assert_journal_lines_postable` enforces this)
 - Docker backend container must be rebuilt to pick up `seed_finance.py` when `SEED_DEMO_DATA=true`
 
-Graphify refresh after implementation: backend — needed
+Graphify refresh after implementation: backend — Done (2026-06-01)
+
+**Graphify backend refresh record — TASK-017.1 (2026-06-01)**
+
+- Command: `/graphify C:\Users\sekip\Desktop\fmcg-erp-system-main\backend --update`
+- Mode: incremental, code-only AST extraction — no LLM tokens consumed
+- Backend analyzed: `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend`
+- Temporary repo output: `C:\Users\sekip\Desktop\fmcg-erp-system-main\graphify-out` (gitignored, not tracked)
+- External output folder: `C:\Users\sekip\Desktop\graphify-erp-maps\backend\`
+- Files copied: GRAPH_REPORT.md, graph.json, graph.html, cost.json, manifest.json
+- Graph stats: 2178 nodes / 10046 edges / 92 communities (was 2160 / 10009 / 90 before TASK-017.1)
+- New community: Community 35 — Finance Seed Data (seed_finance.py, ChartOfAccount, CostCenter, FiscalYear, AccountingPeriod)
+- Map includes: seed_finance.py, seed_finance_data, app/main.py, seed_production_data → seed_inventory_data → seed_finance_data order, ChartOfAccount, CostCenter, FiscalYear, AccountingPeriod
+- git status after refresh: clean
+- git ls-files graphify-out: empty (not tracked) ✓
+- Source code changed: no
 
 ---
 
