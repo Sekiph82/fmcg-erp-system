@@ -678,7 +678,7 @@ ERP_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN: bool = True
 
 ### Task ID: TASK-008 — Run erp-health-audit.py and address findings
 
-- **Status:** Batch A + B.1 + B.2 + C.1 + C.2 + C.3.1–C.3.4 + C.4 audited + D Done — 0 HIGH; 325 MEDIUM; C.4.1/C.4.4 implementation pending
+- **Status:** Batch A + B.1 + B.2 + C.1 + C.2 + C.3.1–C.3.4 + C.4.1 + D Done — 0 HIGH; 322 MEDIUM; C.4.4 pending
 - **Priority:** P1
 - **Category:** QA / Performance
 - **Why it matters:** Previous run (2026-05-16): 52 HIGH / 624 MEDIUM. Current run (2026-05-31): **1 HIGH / 499 MEDIUM / 1 INFO** — 51 HIGH fixed by prior work, 125 MEDIUM fixed.
@@ -1315,6 +1315,42 @@ Expected result: ~6 fewer MEDIUM findings after C.4.1 + C.4.4.
 No source code changed during this audit. No `.limit()` added. No Graphify run.
 
 **Status: Batch C.4 Audited — 6 FPs identified; 3 simple list limits needed; allowlist + limit implementation pending**
+
+**Batch C.4.1 — Three safe simple list limits in promotions_service.py (DONE — 2026-06-01)**
+
+Files changed:
+- `backend/app/services/promotions_service.py`
+
+Functions fixed (plain Python `limit: int = 200` — NOT FastAPI `Query()` syntax):
+
+| Function | Change |
+|----------|--------|
+| `list_schemes` | Added `limit: int = 200` param; chained `.limit(limit)` to `order_by` before execute |
+| `list_override_requests` | Added `limit: int = 200` param; chained `.limit(limit)` to `order_by` before execute |
+| `list_ai_recs` | Added `limit: int = 200` param; chained `.limit(limit)` to `order_by` before execute |
+
+Functions deliberately NOT touched:
+- `evaluate_order` — promotion engine must load ALL active valid schemes; limit = missed promos = financial error
+- `get_order_promos` — FK-bounded by `sales_order_id`; few promos per order
+- `run_ai_agents` — AI engine must see all schemes + all tallies for conflict/cost/upsell analysis
+
+Pattern: `limit: int = 200` (service-layer plain Python, not FastAPI endpoint syntax). Existing ordering and filters preserved. No response shape change. No endpoint files modified. No webhook_service.py modified.
+
+Checks run:
+- `git diff --name-only` → `backend/app/services/promotions_service.py` only ✓
+- `python -c "import app.main"` → CLEAN (only pre-existing allergen.py FastAPIDeprecationWarning)
+- `python scripts/erp-health-audit.py` → **0 HIGH / 322 MEDIUM / 1 INFO** (was 325; -3 matching all three fixes)
+
+Verified still visible (FP findings for C.4.4):
+- `promotions_service.py:318` (`evaluate_order`) ✓
+- `promotions_service.py:473` (`get_order_promos`) ✓
+- `promotions_service.py:591` (`run_ai_agents`) ✓
+- `webhook_service.py:136` (`publish_event`) ✓
+- `webhook_service.py:547` (`list_inbound_endpoints`) ✓
+- `webhook_service.py:756` (`ai_health_monitor`) ✓
+- row_lock findings (30) ✓
+
+Remaining: C.4.4 — allowlist 6 confirmed FPs in `scripts/erp-health-audit.py`
 
 ---
 

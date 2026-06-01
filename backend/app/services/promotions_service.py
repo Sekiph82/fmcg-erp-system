@@ -26,7 +26,7 @@ import uuid as uuid_mod
 
 # ── Scheme CRUD ────────────────────────────────────────────────────────────────
 
-async def list_schemes(db: AsyncSession, status: SchemeStatus = None, active_only: bool = False):
+async def list_schemes(db: AsyncSession, status: SchemeStatus = None, active_only: bool = False, limit: int = 200):
     q = select(PromoScheme).options(
         selectinload(PromoScheme.eligibility_scopes),
         selectinload(PromoScheme.rule_lines),
@@ -40,7 +40,7 @@ async def list_schemes(db: AsyncSession, status: SchemeStatus = None, active_onl
             PromoScheme.valid_from <= today,
             PromoScheme.valid_to >= today,
         )
-    result = await db.execute(q.order_by(PromoScheme.priority_rank, PromoScheme.scheme_code))
+    result = await db.execute(q.order_by(PromoScheme.priority_rank, PromoScheme.scheme_code).limit(limit))
     schemes = result.scalars().all()
     # attach usage counts
     tally_q = select(
@@ -491,11 +491,11 @@ async def create_override_request(
     return obj
 
 
-async def list_override_requests(db: AsyncSession, status: OverrideStatus = None):
+async def list_override_requests(db: AsyncSession, status: OverrideStatus = None, limit: int = 200):
     q = select(PromoOverrideRequest)
     if status:
         q = q.where(PromoOverrideRequest.status == status)
-    result = await db.execute(q.order_by(PromoOverrideRequest.created_at.desc()))
+    result = await db.execute(q.order_by(PromoOverrideRequest.created_at.desc()).limit(limit))
     return result.scalars().all()
 
 
@@ -669,11 +669,11 @@ async def run_ai_agents(db: AsyncSession) -> List[PromoAIRecommendation]:
     return created
 
 
-async def list_ai_recs(db: AsyncSession, status: PromoAIRecStatus = None):
+async def list_ai_recs(db: AsyncSession, status: PromoAIRecStatus = None, limit: int = 200):
     q = select(PromoAIRecommendation)
     if status:
         q = q.where(PromoAIRecommendation.status == status)
-    result = await db.execute(q.order_by(PromoAIRecommendation.created_at.desc()))
+    result = await db.execute(q.order_by(PromoAIRecommendation.created_at.desc()).limit(limit))
     return result.scalars().all()
 
 

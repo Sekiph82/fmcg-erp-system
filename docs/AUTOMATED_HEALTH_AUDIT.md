@@ -1,18 +1,18 @@
 # Automated ERP Health Audit
 
-Generated: 2026-06-01 06:06 UTC
+Generated: 2026-06-01 06:20 UTC
 
 ## Summary
 
 | Severity | Count |
 |----------|-------|
 | HIGH     | 0 |
-| MEDIUM   | 325 |
+| MEDIUM   | 322 |
 | LOW      | 0 |
 | INFO     | 1 |
-| **Total**| **326** |
+| **Total**| **323** |
 
-## MEDIUM (325)
+## MEDIUM (322)
 
 - **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\approval_service.py:53` — .scalars().all() without .limit() nearby
 - **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\approval_service.py:71` — .scalars().all() without .limit() nearby
@@ -165,12 +165,9 @@ Generated: 2026-06-01 06:06 UTC
 - **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\production_exec_ai_service.py:217` — .scalars().all() without .limit() nearby
 - **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\production_service.py:350` — .scalars().all() without .limit() nearby
 - **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\production_service.py:471` — .scalars().all() without .limit() nearby
-- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\promotions_service.py:44` — .scalars().all() without .limit() nearby
 - **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\promotions_service.py:318` — .scalars().all() without .limit() nearby
 - **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\promotions_service.py:473` — .scalars().all() without .limit() nearby
-- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\promotions_service.py:499` — .scalars().all() without .limit() nearby
 - **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\promotions_service.py:591` — .scalars().all() without .limit() nearby
-- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\promotions_service.py:677` — .scalars().all() without .limit() nearby
 - **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\quality_service.py:148` — .scalars().all() without .limit() nearby
 - **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\quality_service.py:192` — .scalars().all() without .limit() nearby
 - **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\quality_service.py:352` — .scalars().all() without .limit() nearby
