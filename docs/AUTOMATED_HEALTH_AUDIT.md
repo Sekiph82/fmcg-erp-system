@@ -1,18 +1,18 @@
 # Automated ERP Health Audit
 
-Generated: 2026-06-01 05:56 UTC
+Generated: 2026-06-01 06:01 UTC
 
 ## Summary
 
 | Severity | Count |
 |----------|-------|
 | HIGH     | 0 |
-| MEDIUM   | 326 |
+| MEDIUM   | 325 |
 | LOW      | 0 |
 | INFO     | 1 |
-| **Total**| **327** |
+| **Total**| **326** |
 
-## MEDIUM (326)
+## MEDIUM (325)
 
 - **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\approval_service.py:53` — .scalars().all() without .limit() nearby
 - **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\approval_service.py:71` — .scalars().all() without .limit() nearby
@@ -69,7 +69,6 @@ Generated: 2026-06-01 05:56 UTC
 - **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\electricity_service.py:162` — .scalars().all() without .limit() nearby
 - **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\esg_service.py:121` — .scalars().all() without .limit() nearby
 - **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\esg_service.py:570` — .scalars().all() without .limit() nearby
-- **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\ess_service.py:663` — .scalars().all() without .limit() nearby
 - **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\expenses_service.py:496` — .scalars().all() without .limit() nearby
 - **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\expenses_service.py:534` — .scalars().all() without .limit() nearby
 - **[unbounded_query]** `C:\Users\sekip\Desktop\fmcg-erp-system-main\backend\app\services\expenses_service.py:578` — .scalars().all() without .limit() nearby

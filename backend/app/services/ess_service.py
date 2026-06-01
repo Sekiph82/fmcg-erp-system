@@ -644,23 +644,41 @@ async def mark_all_read(db: AsyncSession, employee_id: UUID) -> int:
     return len(unread)
 
 
-async def broadcast_notification(db: AsyncSession, n_type: NotificationType, title: str, body: str) -> int:
-    accs = await list_accounts_raw(db)
-    for acc in accs:
-        n = ESSNotification(
-            employee_id=acc.employee_id,
-            notification_type=n_type,
-            title=title,
-            body=body,
+async def broadcast_notification(
+    db: AsyncSession,
+    n_type: NotificationType,
+    title: str,
+    body: str,
+    chunk_size: int = 200,
+) -> int:
+    # Process all active accounts in chunks to avoid loading all rows into memory
+    # at once and creating one massive transaction. Commit per chunk — partial
+    # delivery is possible if a later chunk fails, but this is acceptable for
+    # local-scale HR announcements. A full background job is a future enhancement.
+    total = 0
+    offset = 0
+    while True:
+        result = await db.execute(
+            select(ESSAccount)
+            .where(ESSAccount.status == ESSAccountStatus.ACTIVE)
+            .order_by(ESSAccount.ess_account_id)
+            .limit(chunk_size)
+            .offset(offset)
         )
-        db.add(n)
-    await db.commit()
-    return len(accs)
-
-
-async def list_accounts_raw(db: AsyncSession) -> List[ESSAccount]:
-    r = await db.execute(select(ESSAccount).where(ESSAccount.status == ESSAccountStatus.ACTIVE))
-    return list(r.scalars().all())
+        chunk = result.scalars().all()
+        if not chunk:
+            break
+        for acc in chunk:
+            db.add(ESSNotification(
+                employee_id=acc.employee_id,
+                notification_type=n_type,
+                title=title,
+                body=body,
+            ))
+        await db.commit()
+        total += len(chunk)
+        offset += chunk_size
+    return total
 
 
 # ── Activity Log ──────────────────────────────────────────────────────────────

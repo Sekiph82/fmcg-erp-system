@@ -678,7 +678,7 @@ ERP_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN: bool = True
 
 ### Task ID: TASK-008 — Run erp-health-audit.py and address findings
 
-- **Status:** Batch A + B.1 + B.2 + C.1 + C.2 + C.3.1 + C.3.2 + D Done — 0 HIGH; 326 MEDIUM; C.3.3/C.3.4/C.4 pending
+- **Status:** Batch A + B.1 + B.2 + C.1 + C.2 + C.3.1 + C.3.2 + C.3.3 + D Done — 0 HIGH; 325 MEDIUM; C.3.4/C.4 pending
 - **Priority:** P1
 - **Category:** QA / Performance
 - **Why it matters:** Previous run (2026-05-16): 52 HIGH / 624 MEDIUM. Current run (2026-05-31): **1 HIGH / 499 MEDIUM / 1 INFO** — 51 HIGH fixed by prior work, 125 MEDIUM fixed.
@@ -1220,7 +1220,39 @@ Remaining:
 - C.3.4 — endpoint guardrail for `get_duplicate_suspicions` (deferred)
 - C.4 — product-owner decisions on webhook/promotions
 
-**Status: Batch A + B.1 + B.2 + C.1 + C.2 + C.3.1 + C.3.2 + D Done — 0 HIGH; 326 MEDIUM; C.3.3/C.3.4/C.4 pending**
+**Batch C.3.3 — Chunked ESS broadcast notification (DONE — 2026-06-01)**
+
+Files changed:
+- `backend/app/services/ess_service.py`
+
+What changed in `broadcast_notification`:
+- **Before**: called `list_accounts_raw(db)` → loaded all active accounts in one query → single `db.commit()` at end.
+- **After**: offset-based chunk loop. `SELECT ... WHERE status=ACTIVE ORDER BY ess_account_id LIMIT 200 OFFSET n`. Each chunk: create notifications, `db.commit()`. Loop until empty chunk. Returns total count.
+
+Chunk size: 200 (default param `chunk_size: int = 200`, backward-compatible).
+Cursor/order key: `ESSAccount.ess_account_id` (UUID PK, stable, indexed).
+`list_accounts_raw` removed — it became dead code after refactor (sole caller was `broadcast_notification`).
+
+Checks run:
+- `git diff --name-only` → `backend/app/services/ess_service.py` only ✓
+- `python -c "import app.main"` → CLEAN
+- No targeted ESS broadcast tests exist — relied on import check + audit verification
+- `python scripts/erp-health-audit.py` → **0 HIGH / 325 MEDIUM / 1 INFO** (was 326 MEDIUM; -1 from ess_service:663)
+
+Result:
+- `broadcast_notification` still reaches ALL active accounts — no total recipient cap
+- Memory pressure reduced: max 200 accounts loaded at a time instead of all at once
+- Transaction size reduced: one commit per chunk vs one massive commit for all employees
+
+Known limitations:
+- Commit-per-chunk means partial delivery is possible if a later chunk fails (e.g., DB error). Already-committed chunks deliver; remaining do not. Acceptable for HR announcements at local FMCG scale.
+- No background job / progress tracking — still a synchronous HTTP request. Full async background job is a future enhancement (C.3.3 future).
+
+Remaining:
+- C.3.4 — endpoint guardrail for `get_duplicate_suspicions` (deferred, low urgency)
+- C.4 — product-owner decisions on webhook/promotions
+
+**Status: Batch A + B.1 + B.2 + C.1 + C.2 + C.3.1 + C.3.2 + C.3.3 + D Done — 0 HIGH; 325 MEDIUM; C.3.4/C.4 pending**
 
 ---
 
