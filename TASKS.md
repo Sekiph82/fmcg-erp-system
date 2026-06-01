@@ -2182,34 +2182,199 @@ Known limitations:
 
 ### Task ID: TASK-017 — Finance cost allocation engine (Phase F4-F6)
 
-- **Status:** In Progress (utility layer done; BOM costing done; GL-level cross-module allocation pending)
+- **Status:** Audited 2026-06-01 — implementation plan ready; more exists than notes indicated; 5 true gaps identified
 - **Priority:** P2
 - **Category:** Finance
 - **Why it matters:** Full cost allocation (utility cost → per machine → per batch → per product → GL journal) is the core value driver.
-- **Source / evidence:** Already implemented: `UtilityCostAllocation` model (`backend/app/models/utility_management.py`), `backend/app/crud/utility_billing.py` (CRUD for tariffs/bills/allocations), `backend/app/services/utility_billing_service.py`, `backend/app/services/bom_costing_service.py` (BOM standard_batch_cost including utility_cost), `backend/app/db/seed_utilities.py:953` (_cost_allocations generates 30 days of cost records), `backend/app/services/utility_kpi_service.py`, `backend/app/api/v1/endpoints/utility_billing.py`. Still missing: cross-module GL posting (utility costs → finance journals), product-level profitability report, frontend cost allocation drilldown page.
-- **Affected area:** Already done: utility billing + BOM costing layer. Remaining: `backend/app/services/` GL-level cost allocation, frontend profitability page.
 - **Risk:** High (touches accounting journals)
 - **Recommended timing:** Soon
-- **Needs audit before implementation:** Yes — audit what `utility_integration_service.py` and `utility_billing_service.py` already provide before writing new code.
-- **Already completed:**
-  - `UtilityCostAllocation` ORM + CRUD
-  - Utility tariff/billing service
-  - BOM costing with `total_batch_cost` including utility_cost
-  - Cost allocation seed data (30 days)
-  - KPI service
-- **Remaining work:**
-  - Cross-module GL posting: push utility cost allocations into finance journals
-  - Product-level profitability report (F6)
-  - Frontend cost allocation drilldown (report page)
+- **Needs audit before implementation:** Done — 2026-06-01
 - **Started at:** Part of prior GAP implementations (date not tracked)
 - **Completed at:**
 - **Changed files:** See existing files above
 - **Tests / checks run:** Part of prior GAP test runs
-- **Result:** In Progress
+- **Result:** Audited — 5 gaps identified; implementation plan in notes below
 - **Git commit / branch:** Committed (exact hash not identified)
 - **Graphify refresh after implementation:** backend, frontend
 - **Graphify refresh status:** Needed when remaining work is done
-- **Notes:** TASK-009 (Utilities seed) is Done. TASK-015 (Production seed) still needed for full product-level costing.
+
+---
+
+#### AUDIT — 2026-06-01
+
+**Files inspected:**
+- `backend/app/models/finance.py` — JournalEntry, JournalLine, AccountingPostingBatch, OperationalPostingEvent, ProductCost, ProductionCostEntry, InventoryAccountMapping, CostType, ChartOfAccount, AccountingPeriod, FiscalYear
+- `backend/app/models/utility_management.py` — UtilityType, AllocationMethod, TargetType, UtilityCostAllocation, UtilityBill
+- `backend/app/services/finance_service.py` — rollup_production_order_costs, rollup_product_cost, get_or_create_posting_batch, get_or_create_operational_posting_event, mark_journal_posted, create_reversal_journal, assert_posting_period_open, validate_journal_lines_balance
+- `backend/app/services/production_cost_service.py` — compute_order_cost, finalize_order_cost, get_cost_report, get_cost_trend, get_cost_kpis (UNDOCUMENTED — not in prior TASK-017 notes)
+- `backend/app/services/utility_integration_service.py` — post_bill_to_finance, post_allocations_to_production_costs, sync_chemical_to_inventory, create_maintenance_action_from_alarm
+- `backend/app/services/bom_costing_service.py` — compute_bom_cost (persists standard_batch_cost, cost_per_uom, total_raw_cost, total_packaging_cost, by_product_credit, utility_cost to AdvancedBOM)
+- `backend/app/api/v1/endpoints/production_costing.py` — full production cost API (UNDOCUMENTED — not in prior TASK-017 notes)
+- `backend/app/api/v1/endpoints/finance.py` — rollup_production_costs, rollup_product_cost endpoints
+- `backend/app/api/v1/endpoints/utility_integration.py` — post_bill_to_gl_route, post_allocations_route
+- `frontend/src/app/dashboard/finance/costing/page.tsx` — product cost rollup page (ALREADY EXISTS — not noted in TASK-017)
+- `frontend/src/app/dashboard/utility-management/reports/cost-allocation/page.tsx` — utility cost-allocation report page (in utility module)
+- `backend/app/db/seed.py` — no ChartOfAccount, CostCenter, or AccountingPeriod seed data found
+
+---
+
+#### EXISTING ARCHITECTURE MAP
+
+**Finance GL models (all exist):**
+- `ChartOfAccount` — COA hierarchy, account types (ASSET/LIABILITY/EQUITY/REVENUE/EXPENSE), `is_control` (roll-up accounts can't be posted to)
+- `JournalEntry` / `JournalLine` — standard double-entry: entry_no, entry_date, source_module, source_id, status (DRAFT/POSTED/REVERSED/VOID), is_posted, reversal linkage
+- `AccountingPostingBatch` — idempotency: `UniqueConstraint("idempotency_key")` + `UniqueConstraint("source_module", "source_event", "source_id")`
+- `OperationalPostingEvent` — per-line idempotency for stock movements
+- `AccountingPeriod` — period_ym (YYYY-MM), status (OPEN/CLOSED/LOCKED), fiscal year linkage
+- `FiscalYear` — status (OPEN/CLOSING/CLOSED/LOCKED), locked_at
+- `InventoryAccountMapping` — maps product/material/stock_type → GL accounts (inventory, WIP, FG, COGS, GRNI, variance, scrap)
+
+**Cost accounting models (all exist):**
+- `ProductCost` — rolled-up cost per product per period (raw_material, packaging, labor, utility, overhead, actual_cpu, std_cpu, variance)
+- `ProductionCostEntry` — per-order cost lines by CostType (RAW_MATERIAL/PACKAGING/LABOR/UTILITY/OVERHEAD)
+- `CostType` enum — RAW_MATERIAL, PACKAGING, LABOR, UTILITY, OVERHEAD, MARKETING_TRADE, MARKETING_BRAND
+
+**Utility cost allocation models (all exist):**
+- `UtilityCostAllocation` — allocation_no, utility_type, allocation_date, allocation_method (METERED/PROPORTIONAL/FIXED/CALCULATED/RUNTIME/STANDARD_CONSUMPTION/COST_CENTER), target_type (DEPARTMENT/PRODUCTION_LINE/MACHINE/PRODUCT/PRODUCTION_ORDER/BATCH), production_order_id FK, product_id FK, batch_lot_id FK, production_cost_entry_id FK, allocated_cost, is_approved, bill_id FK
+
+**Finance service functions (all exist):**
+- `get_or_create_posting_batch()` — idempotent by `idempotency_key`, returns `(batch, created)` tuple
+- `get_or_create_operational_posting_event()` — full idempotency pipeline with period check
+- `mark_journal_posted()` — validates balance, postable accounts, open period
+- `create_reversal_journal()` — reversal draft with flipped debit/credit
+- `assert_posting_period_open()` — blocks posting to CLOSED/LOCKED periods and fiscal years
+- `validate_journal_lines_balance()` — debit==credit within tolerance
+- `rollup_production_order_costs()` — derives RAW_MATERIAL/PACKAGING `ProductionCostEntry` from MaterialConsumption records
+- `rollup_product_cost()` — aggregates `ProductionCostEntry` by type → `ProductCost` row with actual_cpu + variance
+
+**Production cost service (UNDOCUMENTED — found during audit):**
+- `compute_order_cost()` — live computation: material (actual_qty × std_cost) + labor (hours × labor_rate) + machine (duration × machine_rate) + energy (UtilityTransaction.total_cost WHERE batch_id = order.batch_no)
+- `finalize_order_cost()` — persists cost fields to ProductionOrder (total_material_cost, total_labor_cost, total_machine_cost, total_energy_cost, total_cost, cost_per_unit, standard_cost_per_unit, cost_variance_pct, costing_finalized_at)
+- `get_cost_report()` — aggregated per-product cost report (grouped by product)
+- `get_cost_trend()` — daily trend by actual_end
+- `get_cost_kpis()` — high-level KPIs
+
+**Utility integration functions (all wired to endpoints):**
+- `post_bill_to_finance()` — creates JournalEntry (debit utility expense / credit payable) for a utility bill; idempotency: checks `bill.journal_entry_id is not None` (simple, NOT using AccountingPostingBatch pattern)
+- `post_allocations_to_production_costs()` — for each approved UtilityCostAllocation with production_order_id, creates `ProductionCostEntry(cost_type=UTILITY)`; idempotency: `production_cost_entry_id.is_(None)` check
+
+**Production costing API (UNDOCUMENTED — found during audit):**
+- `GET /production-cost/kpis` — dashboard KPIs
+- `GET /production-cost/report` — per-product aggregated cost report
+- `GET /production-cost/trend` — daily cost trend
+- `GET /production-cost/orders/{order_id}/cost` — live cost breakdown for one order
+- `POST /production-cost/orders/{order_id}/finalize` — compute + persist cost
+
+**Frontend pages that already exist:**
+- `frontend/src/app/dashboard/finance/costing/page.tsx` — product cost rollup by period (shows raw_material, packaging, labor, utility, overhead per product)
+- `frontend/src/app/dashboard/utility-management/reports/cost-allocation/page.tsx` — utility cost allocation report (in utility module)
+
+---
+
+#### TRUE GAPS (5 identified)
+
+**Gap 1 — No GL journal for utility cost allocation to cost center accounts (HIGH — the core missing piece)**
+
+`post_allocations_to_production_costs()` creates `ProductionCostEntry(cost_type=UTILITY)` records but does NOT create JournalEntry GL lines.
+The intended final state is: Debit "Production Overhead / WIP Cost" account → Credit "Utility Expense Clearing" account, per allocation record.
+This debit/credit GL posting is entirely missing. The cost is tracked in `ProductionCostEntry` but not in the accounting ledger.
+
+**Gap 2 — No ChartOfAccount or AccountingPeriod seed data**
+
+`post_bill_to_finance()` requires `debit_account_id` + `credit_account_id` (UUID FKs to `chart_of_accounts`).
+No seed file creates GL account codes (Utility Expense, Utilities Payable, WIP-Manufacturing, etc.).
+No `AccountingPeriod` rows → `assert_posting_period_open()` passes silently (returns None when no period exists, unless `require_period=True`).
+Without GL accounts and periods, the finance posting API cannot be used meaningfully.
+
+**Gap 3 — `post_bill_to_finance` uses weak idempotency**
+
+Current guard: `if bill.journal_entry_id is not None: raise ValueError`.
+This does NOT use `AccountingPostingBatch.idempotency_key` (the rest of `finance_service.py` uses this pattern).
+Race condition: two concurrent calls both see `journal_entry_id=None` → both create JournalEntry → duplicate GL entries.
+Fix: wrap in `get_or_create_posting_batch()` before creating JournalEntry.
+
+**Gap 4 — No product-level profitability report (revenue + cost → gross margin)**
+
+`rollup_product_cost()` and `get_cost_report()` have cost data but no revenue.
+No function joins `ProductCost` / `ProductionCostEntry` with `Invoice` revenue.
+`ProductCost` model has no `revenue`, `gross_margin`, or `gross_margin_pct` columns.
+To build profitability: need invoice revenue by product per period (from `SalesOrder`/`Invoice` line items or `InvoiceStatus`).
+Decision needed: which revenue definition to use (net revenue? gross? by delivery date? by invoice date?).
+
+**Gap 5 — No finance-side profitability drilldown frontend page**
+
+`finance/costing/page.tsx` shows cost breakdown but not revenue/gross margin.
+The profitability page (cost + revenue + gross margin per product) does not exist.
+The utility cost-allocation report page is in the utility module — not surfaced under `/dashboard/finance/`.
+
+---
+
+#### RECOMMENDED IMPLEMENTATION PLAN
+
+**TASK-017.1 — Finance seed data (prerequisite for everything)**
+- Create `backend/app/db/seed_finance.py` with idempotent seed for:
+  - ChartOfAccount rows: Utility Expense (EXPENSE), Utilities Payable (LIABILITY), WIP-Manufacturing (ASSET), Production Overhead Clearing (EXPENSE), Finished Goods Inventory (ASSET), COGS (EXPENSE)
+  - CostCenter rows: LINE-1, LINE-2, OVERHEAD
+  - AccountingPeriod rows: current + prior 3 months (OPEN status)
+- Wire into `main.py` under `SEED_DEMO_DATA=true` after `seed_inventory_data`
+- Risk: LOW — additive, no accounting logic
+
+**TASK-017.2 — Fix `post_bill_to_finance` idempotency**
+- Replace `bill.journal_entry_id is not None` guard with `get_or_create_posting_batch()` pattern from `finance_service.py`
+- idempotency_key: `"utility_billing:bill_posted:{bill_id}"`
+- Return early if batch.status == POSTED (already done)
+- Risk: MEDIUM — touches existing posting path; add test to verify idempotency on double-call
+
+**TASK-017.3 — GL journal for utility cost allocations**
+- Add `post_allocations_to_gl()` to `utility_integration_service.py`
+- For each approved `UtilityCostAllocation` with `production_cost_entry_id` set (post 017.2), create JournalEntry:
+  - Debit: WIP-Manufacturing / Production Overhead account (from `InventoryAccountMapping` or `AccountingPostingRule`)
+  - Credit: Utility Expense Clearing account
+  - idempotency_key: `"utility_billing:alloc_gl:{allocation_id}"`
+- Use `get_or_create_posting_batch()` + `mark_journal_posted()` + `assert_posting_period_open()`
+- Requires Gap 1 (accounts) and Gap 2 (idempotency fix) first
+- Risk: HIGH — accountant must confirm account codes before running; no reversal logic needed until first posting validated
+- **Accountant decisions needed BEFORE implementation:**
+  - Which GL account code for "Production Overhead / WIP Cost" debit
+  - Which GL account code for "Utility Expense Clearing" credit
+  - Whether to post per allocation or aggregate per bill/period
+
+**TASK-017.4 — Product-level profitability report (read-only)**
+- Add `get_product_profitability()` to `production_cost_service.py`
+- Join `ProductCost` (cost by period) with Invoice line revenue (by product, by invoice_date period)
+- Output: product_id, sku, period_ym, total_cost, total_revenue, gross_margin, gross_margin_pct
+- Expose as `GET /production-cost/profitability?period_ym=YYYY-MM`
+- **Product owner decision needed:** revenue definition (invoice total? net of trade discounts? by shipped date?)
+- Risk: LOW — read-only
+
+**TASK-017.5 — Frontend profitability drilldown**
+- Add `frontend/src/app/dashboard/finance/profitability/page.tsx`
+- Show: product list + gross margin % per period, drilldown to cost components
+- Only after TASK-017.4 API is stable
+- Risk: LOW — frontend only, no DB changes
+
+---
+
+#### RISK AND READINESS TABLE
+
+| Sub-task | Ready? | Blocker |
+|----------|--------|---------|
+| TASK-017.1 seed | Ready | None — implement now |
+| TASK-017.2 idempotency fix | Ready | None — implement now |
+| TASK-017.3 GL allocation posting | Blocked | Accountant must confirm GL account codes |
+| TASK-017.4 profitability report | Blocked | Product owner must define revenue definition |
+| TASK-017.5 frontend profitability | Blocked | Requires 017.4 API first |
+
+**Critical rules (never violate):**
+- Never create accounting journal entries without idempotency
+- Never post duplicate journals on re-run
+- Never post into closed fiscal periods (`assert_posting_period_open` is already wired)
+- Always keep GL posting separate from cost calculation (preview/calculation first, post after)
+- Always validate `validate_journal_lines_balance` before posting
+
+---
+
+- **Notes:** TASK-009 (Utilities seed) is Done. TASK-015/016 (Production+Inventory seed) Done. `production_cost_service.py` and `production_costing.py` endpoint were undocumented — discovered during audit. `finance/costing/page.tsx` frontend already exists. TASK-017.1 and TASK-017.2 are safe to start immediately; TASK-017.3 blocked on accountant input.
 
 ---
 
