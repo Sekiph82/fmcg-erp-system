@@ -678,7 +678,7 @@ ERP_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN: bool = True
 
 ### Task ID: TASK-008 — Run erp-health-audit.py and address findings
 
-- **Status:** Batch A + B.1 + B.2 + C.1 + C.2 + C.3.1–C.3.4 + D Done — 0 HIGH; 325 MEDIUM; C.4 pending
+- **Status:** Batch A + B.1 + B.2 + C.1 + C.2 + C.3.1–C.3.4 + C.4 audited + D Done — 0 HIGH; 325 MEDIUM; C.4.1/C.4.4 implementation pending
 - **Priority:** P1
 - **Category:** QA / Performance
 - **Why it matters:** Previous run (2026-05-16): 52 HIGH / 624 MEDIUM. Current run (2026-05-31): **1 HIGH / 499 MEDIUM / 1 INFO** — 51 HIGH fixed by prior work, 125 MEDIUM fixed.
@@ -1274,7 +1274,47 @@ Known limitation: static audit still flags `invoice_match_service.get_duplicate_
 
 Remaining: C.4 product-owner decisions on webhook_service (3) and promotions_service (6).
 
-**Status: Batch A + B.1 + B.2 + C.1 + C.2 + C.3.1 + C.3.2 + C.3.3 + C.3.4 + D Done — 0 HIGH; 325 MEDIUM; C.4 pending**
+**Batch C.4 — Product-owner decision audit (DONE — 2026-06-01)**
+
+All 9 C.4 findings inspected. Result: 6 confirmed FPs + 3 real list findings. Original "product decision" framing was overly cautious — after reading actual code, decisions are clear.
+
+**⚠ WARNING: Do NOT add simple `.limit()` to `evaluate_order` (promotions engine) or `run_ai_agents`. These must scan all active schemes. Limiting would silently miss applicable promotions → financial error.**
+
+**C.4 detailed decision table:**
+
+| File | Line | Function | Type | Why `.limit()` unsafe | Decision | Action |
+|------|------|----------|------|-----------------------|----------|--------|
+| `webhook_service.py` | 136 | `publish_event` | Routing engine | Must check ALL active subscriptions — limit = silent delivery failure | FP → allowlist | C.4.4 allowlist |
+| `webhook_service.py` | 547 | `list_inbound_endpoints` | Small config | ~2-10 inbound endpoints, naturally bounded | FP → allowlist | C.4.4 allowlist |
+| `webhook_service.py` | 756 | `ai_health_monitor` | Analytics/24h window | Must see all active subscriptions to compute failure rates | FP → allowlist | C.4.4 allowlist |
+| `promotions_service.py` | 44 | `list_schemes` | User-facing list | Safe — optional status/active_only filters; could grow | Real — `limit: int = 200` safe | C.4.1 simple limit |
+| `promotions_service.py` | 318 | `evaluate_order` | Promotion engine | Must load ALL active, valid schemes — limit = missed applicable promo = revenue/compliance error | FP → allowlist | C.4.4 allowlist |
+| `promotions_service.py` | 473 | `get_order_promos` | FK-bounded | FK-bounded by `sales_order_id` (few promos per order) | FP → allowlist | C.4.4 allowlist |
+| `promotions_service.py` | 499 | `list_override_requests` | Admin list | Safe — optional status filter; grows over time | Real — `limit: int = 200` safe | C.4.1 simple limit |
+| `promotions_service.py` | 591 | `run_ai_agents` | AI engine | Must see all schemes + all tallies for conflict/performance analysis | FP → allowlist | C.4.4 allowlist |
+| `promotions_service.py` | 677 | `list_ai_recs` | AI rec list | Safe — missed C.1 pattern | Real — `limit: int = 200` safe | C.4.1 simple limit |
+
+Summary: 6 FPs (webhook×3, promotions×3) | 3 real list findings (promotions×3)
+
+**No retention policy decision needed for these 9 findings.** Webhook delivery log retention (a future concern) is not flagged in the current audit — the webhook findings are about subscription routing and analytics, not log volume.
+
+**C.4 implementation sub-batches:**
+
+**C.4.1 — Three safe simple list limits (low risk, same C.1 pattern)**
+- `promotions_service.py list_schemes`: add `limit: int = 200` param + `q.limit(limit)` before execute
+- `promotions_service.py list_override_requests`: add `limit: int = 200` param + `q.limit(limit)` before execute
+- `promotions_service.py list_ai_recs`: add `limit: int = 200` param + `q.limit(limit)` before execute
+
+**C.4.4 — Allowlist 6 confirmed FPs in audit script**
+Add `_KNOWN_FP_CONTEXTS` entries:
+- `webhook_service.py`: pattern `publish_event|active_flag.*True|list_inbound_endpoints|InboundEndpoint|ai_health_monitor|Subscription`
+- `promotions_service.py`: pattern `evaluate_order|sales_order_id\s*==|run_ai_agents|PromoScheme|PromoUsageTally`
+
+Expected result: ~6 fewer MEDIUM findings after C.4.1 + C.4.4.
+
+No source code changed during this audit. No `.limit()` added. No Graphify run.
+
+**Status: Batch C.4 Audited — 6 FPs identified; 3 simple list limits needed; allowlist + limit implementation pending**
 
 ---
 
