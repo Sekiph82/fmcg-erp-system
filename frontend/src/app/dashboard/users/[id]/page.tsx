@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
 import { usersApi } from "@/lib/users";
@@ -15,6 +15,8 @@ export default function UserDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const qc = useQueryClient();
+
+  useEffect(() => { router.replace("/dashboard/admin"); }, []);
 
   const [resetOpen, setResetOpen] = useState(false);
   const [rolesOpen, setRolesOpen] = useState(false);

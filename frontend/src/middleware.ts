@@ -19,6 +19,8 @@ const REDIRECTS: Record<string, { p: string; t?: string; d?: string }> = {
   "/dashboard/subcontracting":                  { p: "/dashboard/procurement", t: "subcontracting" },
   "/dashboard/copacking":                       { p: "/dashboard/procurement", t: "subcontracting" },
   // Sales
+  "/dashboard/van-sales":                       { p: "/dashboard/sales" },
+  "/dashboard/portal":                          { p: "/dashboard/sales" },
   "/dashboard/dynamic-pricing":                 { p: "/dashboard/sales", t: "dynamic-pricing" },
   "/dashboard/commissions":                     { p: "/dashboard/sales", t: "commissions" },
   // Sales child routes (static; dynamic [id] handled by file-level redirect to preserve ID)
@@ -38,6 +40,7 @@ const REDIRECTS: Record<string, { p: string; t?: string; d?: string }> = {
   "/dashboard/marketing/ecommerce":             { p: "/dashboard/marketing", t: "ecommerce" },
   "/dashboard/marketing/ai-optimizer":          { p: "/dashboard/marketing", t: "analytics" },
   // Finance
+  "/dashboard/bank-reconciliation":             { p: "/dashboard/finance" },
   "/dashboard/finance/accounting":              { p: "/dashboard/finance", t: "accounting" },
   "/dashboard/fixed-assets":                    { p: "/dashboard/finance", t: "fixed-assets" },
   "/dashboard/dimensions":                      { p: "/dashboard/finance", t: "dimensions" },
