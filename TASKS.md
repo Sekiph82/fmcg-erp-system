@@ -810,9 +810,63 @@ Other endpoint files (not in scope for B.2) — 65 remaining endpoint findings a
 Health audit after B.2: **0 HIGH / 473 findings** (was 495; -22 exactly matching 22 fixes)
 No dedicated tests exist for these 6 files. Import check clean.
 
-**Batch C — Service unbounded queries (lower urgency, 358 findings)**
-- Review service functions; add to `_KNOWN_FP_CONTEXTS` if provably bounded, or add `.limit()` guards
-- Most are internal computation — low production risk unless data set is huge
+**Batch C — Service unbounded queries — AUDIT COMPLETE 2026-06-01**
+
+358 service-layer findings across 65 service files. Deep-classified top 5 files (78 findings, 27% of total).
+
+**Top-10 files by count:**
+
+| File | Findings | FP | Real | Notes |
+|------|----------|----|------|-------|
+| dimensions_service.py | 16 | 13 | 3 | list_allocation_runs, list_reclassifications, list_ai_recs |
+| recall_service.py | 13 | 13 | 0 | ALL FK-bounded by `recall_id` — intentional |
+| procurement_suggestion_service.py | 13 | 13 | 0 | ALL engine computation (FK-bounded or planning engine) |
+| training_service.py | 12 | 7 | 5 | list_sessions, list_assignments, list_certifications, list_feedback, list_ai_recs |
+| appraisals_service.py | 12 | 9 | 3 | list_records, list_development_plans, list_ai_recs |
+| ess_service.py | 11 | ~5 | ~6 | Employee self-service lists — needs read to confirm |
+| sales_service.py | 10 | 10 | 0 | FK-bounded per-order + stock reservation (row_lock nearby) |
+| payroll_ke_service.py | 9 | ~7 | ~2 | Mostly statutory tables (small) + payroll computation |
+| shelf_life_service.py | 9 | ~9 | 0 | FEFO/expiry monitoring intentionally needs all lots |
+| timesheets_service.py | 9 | ~3 | ~6 | List functions grow with headcount × periods |
+
+**Overall estimate (358 findings):**
+
+| Category | Count | Description |
+|----------|-------|-------------|
+| FP — computation | ~130 | BOM costing, payroll engine, MPS/MRP planning, recall trace, procurement suggestion engine |
+| FP — FK-bounded | ~70 | Inner queries bounded by parent ID (recall_id, run_id, order_id) |
+| FP — config/small tables | ~25 | Dim types, tax bands, approval rules, skill masters |
+| FP — analytics/dashboard | ~20 | Report functions that legitimately need full dataset for aggregation |
+| **Real — list functions** | **~70** | List endpoints without effective row cap |
+| Chunking candidates | ~25 | Matching algorithms, report execution, shelf-life scan |
+| Product decision needed | ~18 | Notifications volume, webhook delivery logs, promotions analytics |
+
+**Sub-batch plan:**
+
+**C.1 — Safe service list-fetch limits (~35 findings, low risk)**
+Priority files: training_service.py (5 real), appraisals_service.py (3 real), dimensions_service.py (3 real), ess_service.py (~6), timesheets_service.py (~6), recruitment_service.py (~5), expenses_service.py (~4), notifications_service.py (~3).
+Pattern: add `limit: int = 200` param to service function signature + `.limit(limit)` on query.
+NOT `Query(200, le=500)` — that is FastAPI endpoint syntax; service-layer uses plain int parameter.
+
+**C.2 — Confirmed FPs (document, no code change)**
+- recall_service.py (13): all FK-bounded by `recall_id` — regulatory recall must be complete
+- procurement_suggestion_service.py (13): planning engine needs all active materials
+- sales_service.py (10): stock reservation with row locks, FK-bounded per order
+- shelf_life_service.py (9): FEFO monitoring must see all lots
+- payroll_ke_service.py (most): statutory tables + run computation
+- All bom_*, mps_*, planning_* services: computation engines
+
+**C.3 — Chunking candidates (defer — needs architecture decision)**
+- bank_reconciliation_service.py (6): 3-way match algorithm needs all unmatched items
+- invoice_match_service.py (5): invoice matching must see full open set
+- report_builder_service.py (4): report execution loads full datasets
+- shelf_life_service.py (9): already in C.2 — intentional; chunked scanning is a future enhancement
+
+**C.4 — Product decision needed (defer)**
+- webhook_service.py (3): delivery log pagination — what is max retention?
+- promotions_service.py (6): analytics or list? Decide before capping.
+
+**Status: Audit only done. No service files modified. Awaiting user approval to start C.1 implementation.**
 
 **Batch D — row_lock review (informational, 30 findings)**
 - Verify each `with_for_update()` is necessary; replace with atomic UPDATE where simpler
