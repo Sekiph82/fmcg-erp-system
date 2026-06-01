@@ -1994,7 +1994,7 @@ Note: batch_lots count is 9 (not 7 as designed) — 2 extra lots created during 
 
 ### Task ID: TASK-016 — Inventory/Stock real data (Phase I1-I7)
 
-- **Status:** Audited — implementation plan ready (2026-06-01)
+- **Status:** TASK-016.1 Done — inventory demo seed implemented and DB-validated; Graphify refresh recommended
 - **Priority:** P2
 - **Category:** Inventory
 - **Why it matters:** Inventory module (warehouses, products, raw materials, stock tracking, movements) KPIs show empty. No realistic factory stock data.
@@ -2117,6 +2117,55 @@ Reasons: scope is large (lots + stock balances + movements + cost layers); isola
 - **Graphify refresh after implementation:** backend
 - **Graphify refresh status:** Needed after TASK-016.1
 - **Notes:** Must coordinate with Production (TASK-015) — production orders consume inventory. Seed order in main.py: `seed_admin` → `seed_management_users` → `seed_production_data` → `seed_inventory_data`.
+
+**Batch TASK-016.1 — Inventory demo seed (DONE — 2026-06-01)**
+
+Files changed:
+- `backend/app/db/seed_inventory.py` — NEW: full idempotent FMCG inventory seed
+- `backend/app/main.py` — wired `seed_inventory_data(db)` after `seed_production_data` under `SEED_DEMO_DATA=true`
+
+Enum values verified:
+- `MovementType`: RECEIPT, ISSUE, ADJUSTMENT (uppercase) ✓
+- `StockType`: PRODUCT, MATERIAL (uppercase) ✓
+- `valuation_method`: String field `"FIFO"` on StockMovement (not enum) ✓
+
+Dataset seeded:
+| Layer | Records |
+|-------|---------|
+| Lots (raw material, with expiry dates) | 7 |
+| Stock records (7 raw materials PROD-WH + 5 FG products FG-WH) | 12 |
+| StockMovements (7 opening ADJ + 7 GRN RECEIPT + 7 prod ISSUE + 5 prod RECEIPT) | 26 |
+| CostLayers (FIFO, per GRN receipt) | 7 |
+
+Idempotency strategy:
+- Lot: `(lot_number, material_id)` compound query
+- Stock: `(warehouse_id, stock_type, product_id, material_id, lot_id)` compound query
+- StockMovement: `(reference_number, movement_type, stock_type)` compound query
+- CostLayer: `(movement_id)` lookup
+
+TASK-015 data reused: Warehouse PROD-WH + FG-WH, 5 Products, 7 Materials — all looked up by code/sku. Seed exits gracefully if upstream data missing.
+
+Accounting FKs (`posting_batch_id`, `journal_entry_id`) left null — no accounting dependency ✓
+WMS zones/locations not seeded — out of scope for initial demo ✓
+Serial numbers not seeded — FMCG liquids don't use serial tracking ✓
+
+Live DB validation (Docker backend container, dev PostgreSQL):
+| Model | Before | After run 1 | After run 2 | Idempotency |
+|-------|--------|-------------|-------------|-------------|
+| lots | 0 | 7 (+7) | 7 (+0) | ✓ |
+| stocks | 0 | 12 (+12) | 12 (+0) | ✓ |
+| stock_movements | 0 | 26 (+26) | 26 (+0) | ✓ |
+| cost_layers | 0 | 7 (+7) | 7 (+0) | ✓ |
+| warehouses | 2 | 2 (+0) | 2 (+0) | ✓ (from TASK-015) |
+| products | 5 | 5 (+0) | 5 (+0) | ✓ (from TASK-015) |
+| materials | 7 | 7 (+0) | 7 (+0) | ✓ (from TASK-015) |
+
+IDEMPOTENCY PASSED — second run added 0 records across all 7 models checked.
+
+Known limitations:
+- `Stock.quantity_on_hand` set directly (not computed from movements) — movement totals are narrative only; production service would normally manage these via `_get_stock_for_update` with row locks
+- CostLayer `qty_remaining` = `qty_received` (no consumption deduction modeled — acceptable for demo)
+- Docker backend container must be rebuilt to pick up `seed_inventory.py` when `SEED_DEMO_DATA=true`
 
 ---
 
