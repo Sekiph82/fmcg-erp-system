@@ -240,6 +240,30 @@ _KNOWN_FP_CONTEXTS = [
     (os.path.join("services", "report_builder_service.py"),
      re.compile(r"list_reports|list_schedules|list_dashboards"
                 r"|ReportDefinition|ReportSchedule|ReportDashboard")),
+
+    # ── C.4 Confirmed false positives from C.4 product-owner audit (2026-06-01) ─
+    # NOT suppressed: list_schemes, list_override_requests, list_ai_recs (fixed C.4.1),
+    #   row_lock findings (all intentional), invoice_match_service:607 (C.3.4 defer).
+
+    # webhook_service confirmed FPs:
+    #   publish_event (line 136) — routing engine must check ALL active subscriptions;
+    #     Subscription.active_flag==True in window
+    #   list_inbound_endpoints (line 547) — small inbound endpoint config table;
+    #     InboundEndpoint in window
+    #   ai_health_monitor (line 756) — analytics over all active subscriptions,
+    #     24h delivery history; Subscription.active_flag==True in window
+    (os.path.join("services", "webhook_service.py"),
+     re.compile(r"active_flag|InboundEndpoint|list_inbound_endpoints")),
+
+    # promotions_service confirmed FPs:
+    #   evaluate_order (line 318) — promotion engine must load ALL active valid schemes;
+    #     SchemeStatus.ACTIVE in window (function def is 24 lines above, outside 8-line lookback)
+    #   get_order_promos (line 473) — FK-bounded by sales_order_id;
+    #     SalesOrderPromo.sales_order_id==sales_order_id in window
+    #   run_ai_agents (line 591) — AI/analytics engine needs all schemes + usage tallies;
+    #     run_ai_agents def at line 585 in window; PromoUsageTally in window
+    (os.path.join("services", "promotions_service.py"),
+     re.compile(r"SchemeStatus|sales_order_id|run_ai_agents|PromoUsageTally")),
 ]
 
 

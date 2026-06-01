@@ -678,7 +678,7 @@ ERP_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN: bool = True
 
 ### Task ID: TASK-008 — Run erp-health-audit.py and address findings
 
-- **Status:** Batch A + B.1 + B.2 + C.1 + C.2 + C.3.1–C.3.4 + C.4.1 + D Done — 0 HIGH; 322 MEDIUM; C.4.4 pending
+- **Status:** Done — Batch A + B.1 + B.2 + C.1 + C.2 + C.3.1–C.3.4 + C.4.1 + C.4.4 + D — 0 HIGH; 316 MEDIUM backlog accepted/documented
 - **Priority:** P1
 - **Category:** QA / Performance
 - **Why it matters:** Previous run (2026-05-16): 52 HIGH / 624 MEDIUM. Current run (2026-05-31): **1 HIGH / 499 MEDIUM / 1 INFO** — 51 HIGH fixed by prior work, 125 MEDIUM fixed.
@@ -1351,6 +1351,50 @@ Verified still visible (FP findings for C.4.4):
 - row_lock findings (30) ✓
 
 Remaining: C.4.4 — allowlist 6 confirmed FPs in `scripts/erp-health-audit.py`
+
+**Batch C.4.4 — Allowlist 6 confirmed webhook/promotions false positives (DONE — 2026-06-01)**
+
+Files changed:
+- `scripts/erp-health-audit.py` — 2 new `_KNOWN_FP_CONTEXTS` entries added
+
+Allowlisted confirmed false positives:
+
+| File | Line | Function | Pattern matched in window |
+|------|------|----------|--------------------------|
+| `webhook_service.py` | 136 | `publish_event` | `active_flag` (from `Subscription.active_flag == True`) |
+| `webhook_service.py` | 547 | `list_inbound_endpoints` | `InboundEndpoint` (model name in select) |
+| `webhook_service.py` | 756 | `ai_health_monitor` | `active_flag` (function def at line 748 is 1 line outside 8-line lookback) |
+| `promotions_service.py` | 318 | `evaluate_order` | `SchemeStatus` (from `SchemeStatus.ACTIVE` in where clause; function def at line 294 is 24 lines above window) |
+| `promotions_service.py` | 473 | `get_order_promos` | `sales_order_id` (from `SalesOrderPromo.sales_order_id == sales_order_id`) |
+| `promotions_service.py` | 591 | `run_ai_agents` | `run_ai_agents` (function def at line 585 is within 8-line lookback) + `PromoUsageTally` |
+
+Note: suggested patterns `evaluate_order` and `ai_health_monitor` (function names) would NOT have matched — function defs were 24 and 1 lines outside the 8-line lookback window respectively. Patterns adjusted to use model names / enum names present in the actual windows.
+
+Confirmed:
+- No service behavior changed
+- No `.limit()` added
+- No whole-file suppressions
+- No global unbounded_query suppression
+- row_lock findings: 30 (all retained) ✓
+- `invoice_match_service.py:607` remains visible by design ✓
+- `list_schemes`, `list_override_requests`, `list_ai_recs` not re-suppressed (already fixed C.4.1; `.limit()` check runs before FP context check) ✓
+
+Health audit after C.4.4:
+| Severity | Count |
+|----------|-------|
+| HIGH | 0 |
+| MEDIUM | 316 |
+| INFO | 1 |
+| **Total** | **317** |
+
+Previous MEDIUM: 322. Suppressed: 6 confirmed C.4 false positives.
+
+**Remaining 316 MEDIUM — accepted backlog:**
+- `row_lock` ×30 — intentional concurrency safety; Class A locks documented in Batch D; do not remove
+- `invoice_match_service.py:607` (`get_duplicate_suspicions`) ×1 — endpoint guardrail added in C.3.4; service intentionally unbounded for admin audit visibility
+- Remaining ~285 — service-layer and endpoint findings across files not yet in scope; deferred to future batches (no HIGH risk; performance only)
+
+**TASK-008 STATUS: DONE — 0 HIGH achieved. All planned batches (A/B.1/B.2/C.1/C.2/C.3.1–C.3.4/C.4.1/C.4.4/D) complete.**
 
 ---
 
