@@ -1797,7 +1797,7 @@ Known limitations:
 
 ### Task ID: TASK-015 — Production module real data (Phase P1-P11)
 
-- **Status:** TASK-015.1 Done — production demo seed implemented; Graphify backend refresh recommended
+- **Status:** TASK-015.1 Done — production demo seed implemented; Graphify backend refresh done (2026-06-01)
 - **Priority:** P2
 - **Category:** Production
 - **Why it matters:** Production module (orders, work orders, work centers, routing, batch tracking, QC, yield) models exist in backend but KPIs and dashboards show empty data. No realistic seed data for demo or testing.
@@ -1962,7 +1962,7 @@ Known limitations:
 
 - **Git commit / branch:** Not committed yet
 - **Graphify refresh after implementation:** backend
-- **Graphify refresh status:** Needed after seed implementation
+- **Graphify refresh status:** Done — 2026-06-01 via `/graphify backend --update`; output at `C:\Users\sekip\Desktop\graphify-erp-maps\backend\`; 2127 nodes / 9951 edges / 92 communities; `seed_production.py`, `seed_production_data`, `main.py` SEED_DEMO_DATA wiring, and PyJWT requirements all reflected in map; `graphify-out/` remains gitignored and untracked
 - **Notes:** Coordinate with Utilities (TASK-009) so utility consumption data links to production batches.
 
 ---
