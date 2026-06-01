@@ -1617,27 +1617,121 @@ Previous MEDIUM: 322. Suppressed: 6 confirmed C.4 false positives.
 
 ### Task ID: TASK-014 — python-jose → PyJWT migration evaluation
 
-- **Status:** Pending
+- **Status:** Audited — migration plan ready (Option B: tests-first)
 - **Priority:** P2
 - **Category:** Security
 - **Why it matters:** `python-jose` has known CVEs and is less actively maintained than `PyJWT`. Full repository review flagged this as a Medium security issue.
 - **Source / evidence:** TASKS.md historical: "Evaluate python-jose → PyJWT migration (needs test coverage)." `docs/SECURITY_REVIEW.md` — Medium finding.
-- **Affected area:** `backend/requirements.txt`, `backend/app/core/security.py` or JWT helper files
-- **Risk:** Medium (JWT library swap affects token signing/verification)
+- **Affected area:** `backend/requirements.txt`, `backend/app/core/security.py`
+- **Risk:** LOW (not Medium — see audit findings below)
 - **Recommended timing:** Soon
-- **Needs audit before implementation:** Yes — review all files that import `jose` or `python-jose`. Check token format compatibility.
-- **Implementation scope:** Audit usage, create test coverage for JWT generation/verification, swap library, verify all tests pass.
-- **Do not touch:** Auth flow logic unless forced by library API difference
-- **Started at:**
-- **Completed at:**
-- **Changed files:** None yet
-- **Tests / checks run:** None yet
-- **Result:** Pending
-- **Known limitations:** Must verify JWKS endpoint still works if used.
+- **Needs audit before implementation:** Done — 2026-06-01.
+- **Implementation scope:** Add JWT behavior tests, then swap library in 1 file (2 lines changed).
+- **Do not touch:** Auth flow logic — no changes needed; API is compatible
+- **Started at:** 2026-06-01
+- **Completed at:** Audited — implementation pending
+- **Changed files:** None (audit only)
+- **Tests / checks run:**
+  - Read `backend/app/core/security.py` ✓
+  - Read `backend/app/core/totp.py` ✓
+  - Read `backend/tests/test_security.py` ✓
+  - Read `backend/requirements.txt` ✓
+  - `pip show python-jose` → `3.5.0` ✓
+  - `pip show PyJWT` → NOT INSTALLED ✓
+  - `pip show cryptography` → `46.0.7` ✓
+
+---
+
+#### AUDIT FINDINGS — 2026-06-01
+
+**jose usage — exhaustive scan:**
+
+| File | Line | Usage |
+|------|------|-------|
+| `backend/app/core/security.py` | 6 | `from jose import jwt, JWTError` |
+| `backend/app/core/security.py` | 53 | `jwt.encode({"sub": ..., "exp": ..., "jti": ...}, SECRET_KEY, algorithm="HS256")` |
+| `backend/app/core/security.py` | 58 | `jwt.decode(token, SECRET_KEY, algorithms=["HS256"])` |
+| `backend/app/core/security.py` | 60 | `except JWTError` |
+
+All other token functions (`totp.py` — 2FA setup/pending/stepup tokens) delegate to `create_access_token` + `decode_token` — no direct `jose` imports anywhere else.
+
+**Algorithm and key strategy:**
+- Algorithm: `HS256` (symmetric, `SECRET_KEY` string)
+- No public/private key pair
+- No JWE, JWS, or JWK features used anywhere
+- **No JWKS endpoint** — `JWKS endpoint` concern from TASK creation is a non-issue
+
+**Dependency audit:**
+- `python-jose 3.5.0` — requires `ecdsa, pyasn1, rsa` (legacy RSA deps not needed for HS256)
+- `python-jose[cryptography]` — uses `cryptography` as backend (needed only for RSA/EC algorithms; overkill for HS256-only usage)
+- `cryptography 46.0.7` already installed (used by many other packages; not going away)
+- `PyJWT` NOT installed
+
+**PyJWT API compatibility (HS256 path):**
+
+| Behavior | python-jose 3.5.0 | PyJWT 2.x | Impact |
+|----------|------------------|-----------|-|
+| `jwt.encode(...)` return type | `str` | `str` | None ✓ |
+| `jwt.decode(...)` signature | `jwt.decode(token, key, algorithms=[...])` | Same | None ✓ |
+| `exp` as `datetime` object | Accepted | Accepted | None ✓ |
+| Exception base class | `jose.JWTError` | `jwt.PyJWTError` | 1 line ✓ |
+| Import | `from jose import jwt, JWTError` | `import jwt` | 1 line ✓ |
+| `sub` claim | `payload.get("sub")` | Same | None ✓ |
+| `jti` extra claim | Accepted | Accepted | None ✓ |
+| JWKS | Supported | Supported | N/A — not used |
+
+**Code change required to migrate: 2 lines in 1 file:**
+```python
+# Before (security.py line 6)
+from jose import jwt, JWTError
+# After
+import jwt
+
+# Before (security.py line 60)
+except JWTError as e:
+# After
+except jwt.PyJWTError as e:
+```
+
+**Existing JWT test coverage:**
+- `test_security.py` — ZERO JWT tests (covers password policy, login limiter, blocklist, sanitizer, business guards, file validator, headers)
+- `test_hardening.py` — monkeypatches `decode_token` — does NOT test actual jwt.encode/decode behavior
+- `test_attack_simulation.py` — tests token blocklist (revoked token), NOT JWT encoding/decoding
+- `test_otp.py` — tests 2FA token round-trips via `create_setup_2fa_token`/`decode_setup_2fa_token` — DOES test encode+decode indirectly, but only for 2FA payload structure, not JWT security properties
+
+**Missing JWT tests before migration:**
+1. `create_access_token` returns a str (not bytes)
+2. `decode_token` returns subject for a valid token
+3. `decode_token` returns None for expired token
+4. `decode_token` returns None for tampered token (signature modified)
+5. `decode_token` returns None for wrong secret key
+6. `decode_token` returns None for empty/None/garbage input
+
+**Recommendation: Option B — Add tests first, then migrate**
+
+Why not Option A (migrate immediately):
+- JWT encoding/decoding behavior has zero direct test coverage
+- Adding 6 tests establishes a behavioral baseline and provides a safety net for the 2-line swap
+- The test-first effort is ~20 minutes; migration is ~5 minutes after
+
+Why not Option C (keep python-jose):
+- Usage is trivially simple (HS256 only, 1 file, 2 functions)
+- No JWE/JWS/JWK used — no advanced feature lock-in
+- `python-jose` maintenance is effectively stalled (last release 2022); security risk is real
+
+**Proposed implementation batches:**
+- **TASK-014.1** — Add 6 JWT behavior tests to `backend/tests/test_security.py` (while still on python-jose); all must pass as baseline
+- **TASK-014.2** — Replace `from jose import jwt, JWTError` with `import jwt`; replace `except JWTError` with `except jwt.PyJWTError`; add `PyJWT>=2.8.0` to `requirements.txt`; rebuild Docker backend
+- **TASK-014.3** — Run `pytest tests/test_security.py tests/test_otp.py tests/test_hardening.py` + Playwright smoke 56/56
+- **TASK-014.4** — Remove `python-jose[cryptography]` from `requirements.txt` (after TASK-014.3 confirms clean)
+
 - **Git commit / branch:** Not committed yet
 - **Graphify refresh after implementation:** backend
-- **Graphify refresh status:** Needed
-- **Notes:** This is an evaluation first. If migration is risky or complex, document and defer.
+- **Graphify refresh status:** Needed after TASK-014.4
+- **Notes:**
+  - Risk re-rated LOW (was Medium): only 1 file, 2 lines, HS256 symmetric, no JWKS/JWE/JWK, PyJWT API is a drop-in
+  - The 4 legacy RSA deps (`ecdsa`, `pyasn1`, `rsa`) removed with python-jose — minor dependency cleanup bonus
+  - `cryptography` stays (used by `passlib`, `httpx`, and others)
 
 ---
 
