@@ -1580,7 +1580,7 @@ Previous MEDIUM: 322. Suppressed: 6 confirmed C.4 false positives.
 
 ### Task ID: TASK-013 — Playwright smoke re-run (post recent changes)
 
-- **Status:** Failed — 4 missing redirect rules, needs fix
+- **Status:** Done — 56/56 pass (2026-06-01)
 - **Priority:** P2
 - **Category:** QA
 - **Why it matters:** Last confirmed Playwright run: 52/52 pass (2026-05-17). Multiple large changes since then: button recovery waves, GS1 overhaul, compliance fixes, redirect fixes. Smoke tests may have regressions.
@@ -1592,33 +1592,26 @@ Previous MEDIUM: 322. Suppressed: 6 confirmed C.4 false positives.
 - **Implementation scope:** Run `npm run test:smoke` inside Docker frontend container. Review failures. Fix any regressions.
 - **Do not touch:** Business logic unless test failure reveals a real bug
 - **Started at:** 2026-06-01
-- **Completed at:** Failed — fix pending
-- **Changed files:** None (test run only)
+- **Completed at:** 2026-06-01
+- **Changed files:**
+  - `frontend/src/middleware.ts` — added 3 entries to `REDIRECTS`: `van-sales→sales`, `portal→sales`, `bank-reconciliation→finance`
+  - `frontend/src/app/dashboard/users/[id]/page.tsx` — added `useEffect(() => { router.replace("/dashboard/admin"); }, [])` + `useEffect` import
+  - `TASKS.md` — this update
 - **Tests / checks run:**
-  - Command: `cd frontend && E2E_SKIP_WEBSERVER=true E2E_BASE_URL=http://localhost:3000 E2E_API_URL=http://localhost:8000 npx playwright test e2e/smoke.spec.ts`
-  - Docker stack: db + redis + backend + frontend all healthy ✓
-  - Result: **52 passed / 4 failed** (56 total, 7.2 min)
-- **Result:** 4 regressions — all Category C (missing redirect rules in Next.js config or missing client-side redirect):
-
-  | # | Section | Test | Error | Classification |
-  |---|---------|------|-------|---------------|
-  | 1 | E | `/dashboard/van-sales → /dashboard/sales` | URL stayed at `/dashboard/van-sales` — no redirect | C — missing `next.config.js` redirect |
-  | 2 | E | `/dashboard/portal → /dashboard/sales` | URL stayed at `/dashboard/portal` | C — missing `next.config.js` redirect |
-  | 3 | E | `/dashboard/bank-reconciliation → /dashboard/finance` | URL stayed at `/dashboard/bank-reconciliation` | C — missing `next.config.js` redirect |
-  | 4 | F | `/dashboard/users/test-id → /dashboard/admin` | `waitForURL` timeout 15s — URL stayed at `/dashboard/users/test-id` | C — missing client-side redirect in `users/[id]` page |
-
-  Note: test count increased from 52 to 56 since 2026-05-17 (smoke.spec.ts last modified 2026-05-20 added H section + additional redirect assertions). All new tests passed except the 4 above.
-
-- **Known limitations:** Requires Docker running (db, redis, backend, frontend all healthy). Fix requires adding redirect rules — pending user approval.
+  - First run (pre-fix): `52 passed / 4 failed` (56 total, 7.2 min)
+  - `npx tsc --noEmit` → CLEAN ✓
+  - Docker rebuild: `docker compose up -d --build frontend` ✓
+  - Re-run post-fix: **56/56 passed** (5.7 min, exit code 0, no retries) ✓
+- **Result:** All 56 smoke tests pass. Redirect fixes:
+  - Middleware: 3 new `REDIRECTS` entries for `van-sales`, `portal`, `bank-reconciliation` — sub-paths protected by existing `BYPASS_PREFIX_REDIRECT` entries ✓
+  - `users/[id]/page.tsx`: `useEffect` client-side redirect to `/dashboard/admin` ✓
+  - No backend changes ✓
+- **Known limitations:** `users/[id]` detail page now redirects all user detail URLs to admin workspace (legacy route treatment per task spec). Requires Docker rebuild when middleware.ts changes (dev server hot-reloads; production container needs rebuild).
 - **Playwright report:** `frontend/playwright-report/index.html`
-- **Failure artifacts:** `frontend/test-results/`
-- **Git commit / branch:** Not committed yet (TASKS.md only)
+- **Git commit / branch:** Not committed yet
 - **Graphify refresh after implementation:** no
 - **Graphify refresh status:** Not needed
-- **Notes:**
-  - All A/B/C/D/F(partial)/G/H sections pass — auth, dashboards, workspaces, tabs, dynamic routes, theme, MPS sub-routes all healthy ✓
-  - Only Section E static redirects and one F dynamic redirect fail — specific missing rules
-  - **Recommended fix batch (TASK-013.1):** Add 3 entries to `next.config.js` `redirects()`: `/dashboard/van-sales → /dashboard/sales`, `/dashboard/portal → /dashboard/sales`, `/dashboard/bank-reconciliation → /dashboard/finance`; investigate `frontend/src/app/dashboard/users/[id]` page for missing `router.replace('/dashboard/admin')` redirect logic
+- **Notes:** Redirect mechanism is `frontend/src/middleware.ts` (not `next.config.js`). All static redirects live in the `REDIRECTS` map in middleware. Dynamic client-side redirects use `useEffect` + `router.replace()`.
 
 ---
 
