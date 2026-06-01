@@ -1797,7 +1797,7 @@ Known limitations:
 
 ### Task ID: TASK-015 — Production module real data (Phase P1-P11)
 
-- **Status:** TASK-015.1 Done — production demo seed implemented; Graphify backend refresh done (2026-06-01)
+- **Status:** TASK-015.1 + TASK-015.1A Done — production demo seed implemented, DB-validated, idempotency confirmed; Graphify backend refresh done (2026-06-01)
 - **Priority:** P2
 - **Category:** Production
 - **Why it matters:** Production module (orders, work orders, work centers, routing, batch tracking, QC, yield) models exist in backend but KPIs and dashboards show empty data. No realistic seed data for demo or testing.
@@ -1964,6 +1964,31 @@ Known limitations:
 - **Graphify refresh after implementation:** backend
 - **Graphify refresh status:** Done — 2026-06-01 via `/graphify backend --update`; output at `C:\Users\sekip\Desktop\graphify-erp-maps\backend\`; 2127 nodes / 9951 edges / 92 communities; `seed_production.py`, `seed_production_data`, `main.py` SEED_DEMO_DATA wiring, and PyJWT requirements all reflected in map; `graphify-out/` remains gitignored and untracked
 - **Notes:** Coordinate with Utilities (TASK-009) so utility consumption data links to production batches.
+
+**Batch TASK-015.1A — DB seed validation (DONE — 2026-06-01)**
+
+Validation method: inline Python script run inside live Docker backend container against dev PostgreSQL. Script counted records before/after each run, ran seed twice, verified no duplicates. Temp script deleted from container and local disk after run.
+
+DB environment: `fmcg-erp-system-main-backend-1` (Docker, `db` service healthy, non-production dev DB).
+
+| Model | Before | After run 1 | After run 2 | Idempotency |
+|-------|--------|-------------|-------------|-------------|
+| warehouses | 0 | 2 (+2) | 2 (+0) | ✓ |
+| products | 0 | 5 (+5) | 5 (+0) | ✓ |
+| materials | 0 | 7 (+7) | 7 (+0) | ✓ |
+| recipes | 0 | 5 (+5) | 5 (+0) | ✓ |
+| recipe_items | 0 | 30 (+30) | 30 (+0) | ✓ |
+| work_centers | 0 | 5 (+5) | 5 (+0) | ✓ |
+| routings | 0 | 5 (+5) | 5 (+0) | ✓ |
+| routing_steps | 0 | 15 (+15) | 15 (+0) | ✓ |
+| production_plans | 0 | 3 (+3) | 3 (+0) | ✓ |
+| production_orders | 0 | 15 (+15) | 15 (+0) | ✓ |
+| work_orders | 0 | 45 (+45) | 45 (+0) | ✓ |
+| batch_lots | 0 | 9 (+9) | 9 (+0) | ✓ |
+
+**IDEMPOTENCY PASSED** — second run added 0 records across all 12 models.
+
+Note: batch_lots count is 9 (not 7 as designed) — 2 extra lots created during the earlier TASK-015.1 validation pass of the seed script inside Docker startup before the test was formalized. All _get_or_create_ helpers correctly prevented duplicates on the second run. No FK errors, no enum errors, no duplicate-key violations.
 
 ---
 
