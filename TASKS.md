@@ -678,7 +678,7 @@ ERP_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN: bool = True
 
 ### Task ID: TASK-008 — Run erp-health-audit.py and address findings
 
-- **Status:** Batch A + B.1 + B.2 + C.1 + C.2 + D Done — 0 HIGH; 340 MEDIUM; 104 service FPs allowlisted; 30 row_locks audited (27 keep/3 atomic-candidate); C.3/C.4 pending
+- **Status:** Batch A + B.1 + B.2 + C.1 + C.2 + C.3 + D Done — 0 HIGH; 340 MEDIUM; C.3 audited (11 FP/2 missed-limit/1 real-chunk/1 guardrail); C.4 pending
 - **Priority:** P1
 - **Category:** QA / Performance
 - **Why it matters:** Previous run (2026-05-16): 52 HIGH / 624 MEDIUM. Current run (2026-05-31): **1 HIGH / 499 MEDIUM / 1 INFO** — 51 HIGH fixed by prior work, 125 MEDIUM fixed.
@@ -1085,6 +1085,67 @@ Only pursue D.2 if lock contention on Asset or Stock.location_id is measured as 
 No source code changed during this audit. No `.limit()` added. No `with_for_update()` removed.
 
 **Status: Batch D Audited — row_lock findings classified; 27 intentional / 3 atomic-UPDATE candidates; no code change needed**
+
+**Batch C.3 — Chunking design audit (DONE — 2026-06-01)**
+
+15 flagged findings across 4 files inspected. Finding: most originally-classified C.3 candidates are confirmed false positives (FK-bounded or small config). Only 1 genuine chunking candidate found.
+
+**⚠ WARNING: Do NOT add simple `.limit()` to reconciliation matching, invoice matching (engine functions), or `broadcast_notification`. It would silently drop records or skip employees.**
+
+**C.3 detailed finding classification:**
+
+| File | Line | Function | Real Issue? | Why `.limit()` Unsafe | Design | Action |
+|------|------|----------|------------|----------------------|--------|--------|
+| `bank_reconciliation_service.py` | 84 | `list_bank_accounts` | No — FP | N/A — few accounts (5-50) | FP → allowlist Group D | Allowlist in C.3.1 |
+| `bank_reconciliation_service.py` | 269 | `get_statement_lines` | No — FP | N/A — FK-bounded by `stmt_id` | FP → allowlist Group A | Allowlist in C.3.1 |
+| `bank_reconciliation_service.py` | 408 | `run_auto_match` (lines + rules) | No — FP | Lines FK-bounded by `stmt_id`; txns bounded by statement period dates; rules = small config | FP → allowlist Group A + D | Allowlist in C.3.1 |
+| `bank_reconciliation_service.py` | 745 | `list_adjustments` | No — FP | N/A — FK-bounded by `stmt_id` | FP → allowlist Group A | Allowlist in C.3.1 |
+| `bank_reconciliation_service.py` | 763 | `list_rules` | No — FP | N/A — small reconciliation rules config table | FP → allowlist Group D | Allowlist in C.3.1 |
+| `bank_reconciliation_service.py` | 850 | `get_balance_summary` | No — FP | N/A — iterates few active bank accounts | FP → allowlist Group D | Allowlist in C.3.1 |
+| `invoice_match_service.py` | 71 | `list_tolerance_rules` | No — FP | N/A — small config, few tolerance rules | FP → allowlist Group D | Allowlist in C.3.1 |
+| `invoice_match_service.py` | 95 | `_find_tolerance` | No — FP | N/A — loads same small config to find best match by priority | FP → allowlist Group D | Allowlist in C.3.1 |
+| `invoice_match_service.py` | 466 | `_detect_duplicate` | No — FP | N/A — FK-bounded by `supplier_id` + invoice_no/date/amount conditions | FP → allowlist Group A | Allowlist in C.3.1 |
+| `invoice_match_service.py` | 607 | `get_duplicate_suspicions` | Mild | Limit truncates audit view — admin must see all unresolved | D — add `.limit(200)` at endpoint only, keep service signature | C.3.4 endpoint guardrail |
+| `invoice_match_service.py` | 897 | `list_ai_recs` | Yes — missed C.1 | Safe to limit — missed in C.1 batch | C.1 missed fix — `limit: int = 200` | C.3.2 simple limit |
+| `report_builder_service.py` | 357 | `list_reports` | No — FP | N/A — admin report config, bounded by reports created (10-100 typical) | FP → allowlist Group D | Allowlist in C.3.1 |
+| `report_builder_service.py` | 514 | `list_schedules` | No — FP | N/A — one schedule per report, small config | FP → allowlist Group D | Allowlist in C.3.1 |
+| `report_builder_service.py` | 544 | `list_dashboards` | No — FP | N/A — small admin config | FP → allowlist Group D | Allowlist in C.3.1 |
+| `report_builder_service.py` | 662 | `list_ai_recs` | Yes — missed C.1 | Safe to limit — missed in C.1 batch | C.1 missed fix — `limit: int = 200` | C.3.2 simple limit |
+| `ess_service.py` | 663 | `list_accounts_raw` → `broadcast_notification` | **Yes — real** | Limit silently skips employees — some won't receive HR announcement | **A — chunked iteration in `broadcast_notification`** | **C.3.3 chunked broadcast** |
+
+**C.3 implementation sub-batches:**
+
+**C.3.1 — Allowlist 11 confirmed FPs (audit script only, no source change)**
+Add `_KNOWN_FP_CONTEXTS` entries in `scripts/erp-health-audit.py`:
+- `bank_reconciliation_service.py`: pattern `stmt_id\s*==|list_bank_accounts|list_rules|get_balance_summary|BRBankAccount|BRRule`
+- `invoice_match_service.py`: pattern `list_tolerance_rules|_find_tolerance|_detect_duplicate|InvoiceMatchTolerance|supplier_id\s*==`
+- `report_builder_service.py`: pattern `list_reports|list_schedules|list_dashboards|ReportDefinition|ReportSchedule|ReportDashboard`
+Expected result: ~11 fewer MEDIUM findings
+
+**C.3.2 — Two missed C.1 simple limit fixes (low risk, same C.1 pattern)**
+- `invoice_match_service.py`: `list_ai_recs` → add `limit: int = 200` param + `.limit(limit)` on query
+- `report_builder_service.py`: `list_ai_recs` → add `limit: int = 200` param + `.limit(limit)` on query
+Pattern identical to C.1. No response shape change. Can be done in same commit.
+
+**C.3.3 — Broadcast chunking (real change required)**
+- `ess_service.broadcast_notification`: refactor to iterate `ESSAccount` in chunks instead of loading all at once
+  - Chunk size: 200 employees per batch
+  - Cursor key: `ESSAccount.employee_id` (stable UUID, orderable)
+  - Pattern: `offset`-based or keyset cursor loop, `db.commit()` per chunk
+  - `list_accounts_raw` can be removed or replaced with a chunked generator
+  - No API change (endpoint still calls `broadcast_notification`, return count unchanged)
+  - Test: broadcast with >200 active accounts; verify all receive notification
+
+**C.3.4 — Endpoint guardrail for get_duplicate_suspicions (very low urgency)**
+- In `backend/app/api/v1/endpoints/invoice_match.py`: apply `.limit(200)` at endpoint level
+- Keep `invoice_match_service.get_duplicate_suspicions` signature unchanged
+- Milestone: only if duplicate log grows beyond ~100 unresolved items in practice
+
+**Priority order:** C.3.1 (allowlist, audit-only, no risk) → C.3.2 (simple, same as C.1) → C.3.3 (broadcast chunking, needs test) → C.3.4 (defer)
+
+No source code changed during this audit. No `.limit()` added. No with_for_update() removed. No Graphify run.
+
+**Status: Batch C.3 Audited — chunking architecture selected; 11 FP identified; 1 real chunk candidate; implementation pending (C.3.1→C.3.3)**
 
 ---
 
