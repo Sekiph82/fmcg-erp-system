@@ -678,7 +678,7 @@ ERP_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN: bool = True
 
 ### Task ID: TASK-008 — Run erp-health-audit.py and address findings
 
-- **Status:** Batch A + B.1 + B.2 + C.1 + C.2 Done — 0 HIGH; 340 MEDIUM; 104 service FPs allowlisted; C.3/C.4/D pending
+- **Status:** Batch A + B.1 + B.2 + C.1 + C.2 + D Done — 0 HIGH; 340 MEDIUM; 104 service FPs allowlisted; 30 row_locks audited (27 keep/3 atomic-candidate); C.3/C.4 pending
 - **Priority:** P1
 - **Category:** QA / Performance
 - **Why it matters:** Previous run (2026-05-16): 52 HIGH / 624 MEDIUM. Current run (2026-05-31): **1 HIGH / 499 MEDIUM / 1 INFO** — 51 HIGH fixed by prior work, 125 MEDIUM fixed.
@@ -1017,6 +1017,74 @@ Known limitations:
 **Batch D — row_lock review (informational, 30 findings)**
 - Verify each `with_for_update()` is necessary; replace with atomic UPDATE where simpler
 - `inventory_service` and `sales_service` are highest priority (stock mutation correctness)
+
+**Batch D — row_lock audit (DONE — 2026-06-01)**
+
+Total findings: 30 across 11 files.
+
+Classification:
+- **A — Correct and intentional:** 27 findings
+- **B — Atomic UPDATE candidate (later, low urgency):** 3 findings
+- **C — Deeper transaction design needed:** 0
+- **D — Possibly unnecessary:** 0
+
+**⚠ CRITICAL WARNING: Do NOT remove row locks from stock/inventory/sales/WMS mutation flows without a concurrency test. All Class A locks prevent real data corruption (duplicate rows, negative stock, double-allocation, corrupted sequence numbers).**
+
+**Detailed audit table:**
+
+| File | Line | Function | Locked Entity | Mutation After Lock | Class | Reason | Recommended Action | Risk If Removed |
+|------|------|----------|--------------|--------------------|----|--------|-------------------|-|
+| `crud/finance.py` | 295 | `upsert_product_cost` | `ProductCost` | Insert or update cost fields (upsert) | A | Upsert: concurrent creates would both see None → duplicate rows | Keep lock | Duplicate ProductCost rows per period |
+| `crud/maintenance.py` | 154 | `complete_work_order` | `PMPlan` | Sets `last_completed_date`, `next_due_date` | A | Concurrent WO completions would corrupt plan scheduling dates | Keep lock | Plan next_due_date corrupted by concurrent completions |
+| `crud/maintenance.py` | 221 | `create_breakdown` | `Asset` | Sets `asset.status = UNDER_MAINTENANCE` | B | Single-field status set; could be atomic UPDATE later | Keep lock now; atomic UPDATE candidate later | Low — only risk is concurrent breakdown creates racing |
+| `crud/maintenance.py` | 246 | `resolve_breakdown` | `Asset` | Sets `asset.status = ACTIVE` only if currently `UNDER_MAINTENANCE` | A | Conditional transition requires read-before-write | Keep lock | Concurrent create/resolve could leave asset in wrong state |
+| `crud/maintenance.py` | 325 | `record_spare_usage` | `SparePart` | Decrements `current_stock` | A | Stock counter decrement — concurrent usage records would both read same value → stock goes negative | Keep lock | Spare parts inventory negative or wrong |
+| `crud/secondary_sales.py` | 148 | `create_snapshot` | `DistributorInventorySnapshot` | Upsert by (distributor_id, product_id, snapshot_date) | A | Upsert: concurrent uploads for same key would both insert → duplicate snapshot rows | Keep lock | Duplicate distributor snapshots per day |
+| `services/inventory_service.py` | 108 | `_get_stock_for_update` | `Stock` | `quantity_on_hand += delta`, recalculate `quantity_available` | A | Core stock quantity mutation — all GRN/issue/transfer/adjust flows go through here | Keep lock | Inventory quantity corruption; negative stock |
+| `services/inventory_service.py` | 317 | `adjust_stock` | `Stock` | Reads current qty, computes delta, writes new qty + movement | A | Delta computed from current value — TOCTOU if two adjustments run concurrently | Keep lock | Incorrect adjustment delta; inconsistent movement + stock |
+| `services/inventory_service.py` | 371 | `delete_stock_record` | `Stock` | Deletes row after validating `quantity_on_hand == 0` | A | Prevents deletion between zero-check and concurrent receipt | Keep lock | Row deleted while concurrent GRN pushes qty > 0 |
+| `services/inventory_service.py` | 444 | reverse/delete movement | `Stock` | Reverses delta; checks new qty ≥ 0 | A | Reversal reads current qty to verify not going negative | Keep lock | Negative stock; or reversal silently applied twice |
+| `services/mpesa_service.py` | 120 | `process_callback` (success) | `SalesOrder` | Sets `so.mpesa_reference`, `so.payment_status` | A | M-Pesa callbacks can retry; concurrent callbacks must not both update SO simultaneously | Keep lock | SO payment_status overwritten by concurrent callbacks |
+| `services/mpesa_service.py` | 153 | `process_callback` (failure) | `SalesOrder` | Sets `so.payment_status = FAILED` | A | Same function, failure branch — same concurrency concern | Keep lock | Payment status set FAILED on successful callback or vice versa |
+| `services/procurement_service.py` | 413 | `post_grn` | `Stock` | `quantity_on_hand += qty`, recalculate `quantity_available` | A | GRN posting receives stock — concurrent postings for same product/warehouse corrupt quantity | Keep lock | Received quantity under-counted |
+| `services/procurement_service.py` | 434 | `post_grn` | `POLine` | `received_quantity += qty` | A | Cumulative counter — concurrent GRNs for same PO line would both increment from same base | Keep lock | PO received quantity under-counted; PO may never close |
+| `services/production_service.py` | 69 | `_get_material_stock` | `Stock` (MATERIAL) | Material deducted from `quantity_on_hand` before issue | A | Availability check + deduction must be atomic — two concurrent issues both pass check then both deduct | Keep lock | Negative material stock; over-issuance to production |
+| `services/production_service.py` | 169 | finished goods receipt | `Stock` (PRODUCT) | `quantity_on_hand += quantity` | A | Concurrent receipts for same product/lot/warehouse corrupt quantity | Keep lock | Finished goods qty under-counted |
+| `services/quality_service.py` | 147 | `quarantine_stock` | `Stock` (multiple rows) | `is_blocked = True`, `quantity_available = 0` | A | Must prevent concurrent picking between read and quarantine write | Keep lock | Stock could be picked during quarantine application |
+| `services/quality_service.py` | 191 | `release_quarantine` | `Stock` (multiple rows) | `is_blocked = False`, restore `quantity_available` | A | Symmetric with quarantine — prevents concurrent re-quarantine or pick during release | Keep lock | Stock released while concurrent re-quarantine is in progress |
+| `services/sales_service.py` | 116 | `allocate_so` | `Stock` | `quantity_reserved += allocation`, `quantity_available -= allocation` | A | **Critical** — prevents double-allocation of same stock to two SOs | Keep lock | Same stock allocated to two orders simultaneously (catastrophic) |
+| `services/sales_service.py` | 173 | `_release_so_allocation` | `Stock` | Decrements `quantity_reserved`, restores `quantity_available` | A | Symmetric with allocation — concurrent release + re-allocation race | Keep lock | Over-release or under-release of reservation |
+| `services/sales_service.py` | 256 | shipment dispatch | `Stock` | Deducts shipped qty from `quantity_on_hand` | A | Read-validate-deduct must be atomic for correct stock deduction | Keep lock | Stock deducted twice or shipment fails incorrectly |
+| `services/sales_service.py` | 301 | `dispatch_so` | `SOLine` | `shipped_quantity += line.quantity` | A | Cumulative counter on shipment dispatch | Keep lock | shipped_quantity under-counted; SO may never reach SHIPPED |
+| `services/sales_service.py` | 317 | `dispatch_so` | `SalesOrder` | Transitions `so.status` to SHIPPED or PICKING | A | SO status transition must be serialized to prevent incorrect partial-ship state | Keep lock | SO stuck in wrong status after concurrent dispatch |
+| `services/sales_service.py` | 412 | `create_invoice` | `SalesOrder` | Transitions `so.status = INVOICED` if SHIPPED | A | Prevents concurrent invoice creation seeing stale SO status | Keep lock | SO invoiced twice or SO status corrupted |
+| `services/utilities_service.py` | 34 | `get_next_number` | `NumberSeries` | `current_number += 1` (sequence counter) | A | **Classic sequence lock** — code comment explicitly states purpose; two concurrent calls would get same sequence number | Keep lock | Duplicate document numbers (PO/SO/GRN/etc.) — compliance failure |
+| `services/wms_service.py` | 268 | `assign_stock_to_location` | `Stock` | Sets `stock.location_id` | B | Simple location field update; no quantity mutation; could be atomic UPDATE later | Keep lock now; atomic UPDATE candidate later | Low — concurrent assigns to same stock row race |
+| `services/wms_service.py` | 297 | `block_stock` | `Stock` (multiple rows) | `is_blocked = True`, `quantity_reserved/available` updated | A | Must prevent concurrent picking during hold application | Keep lock | Stock picked while WMS hold is being applied |
+| `services/wms_service.py` | 343 | `release_stock` | `Stock` (multiple rows) | `is_blocked = False`, restore `quantity_available` | A | Symmetric with block | Keep lock | Stock released while concurrent re-block in progress |
+| `services/wms_service.py` | 538 | `approve_stock_count` | `Stock` | `quantity_on_hand += variance` | A | Variance adjustment — concurrent count approvals would both adjust from same base | Keep lock | Stock quantity wrong after concurrent count approvals |
+| `services/wms_service.py` | 1052 | `complete_putaway_task` | `Stock` | Sets `stock.location_id` | B | Simple location update; no quantity mutation; could be atomic UPDATE later | Keep lock now; atomic UPDATE candidate later | Low — concurrent putaway tasks for same stock race |
+
+**Recommended implementation plan:**
+
+**D.1 — Document all Class A locks (no code change)**
+All 27 Class A findings are correct and intentional. No action needed beyond this audit documentation. The audit script will continue to flag them — these findings should remain visible as a reminder to reviewers that these are load-bearing locks.
+
+**D.2 — Atomic UPDATE candidates (3 findings, low urgency)**
+These 3 locks could be replaced with atomic UPDATEs in a future optimization pass:
+- `crud/maintenance.py:221` — `UPDATE asset SET status='UNDER_MAINTENANCE' WHERE id=?`
+- `services/wms_service.py:268` — `UPDATE stock SET location_id=? WHERE id=?`
+- `services/wms_service.py:1052` — `UPDATE stock SET location_id=? WHERE actual_location_id IS DISTINCT FROM ?`
+
+Only pursue D.2 if lock contention on Asset or Stock.location_id is measured as a real bottleneck under load. Do not optimize speculatively.
+
+**D.3 — Deeper transaction design: none required**
+
+**D.4 — Remove unnecessary locks: none — all 30 are justified**
+
+No source code changed during this audit. No `.limit()` added. No `with_for_update()` removed.
+
+**Status: Batch D Audited — row_lock findings classified; 27 intentional / 3 atomic-UPDATE candidates; no code change needed**
 
 ---
 
