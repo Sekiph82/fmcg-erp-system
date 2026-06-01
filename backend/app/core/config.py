@@ -56,6 +56,7 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: str = "postgresql+asyncpg://erp_user:changeme@localhost:5432/fmcg_erp"
     REDIS_URL: str = "redis://localhost:6379/0"
+    REDIS_PASSWORD: str = ""  # required in production; empty = no auth (dev only)
 
     # Request timeout
     REQUEST_TIMEOUT_SECONDS: int = 120  # recommended: 60 in production
@@ -254,6 +255,8 @@ class Settings(BaseSettings):
                     "This flag logs OTPs to the console instead of sending real email/SMS. "
                     "Set OTP_DEV_DELIVERY_MODE=false in .env.production."
                 )
+            if not self.REDIS_PASSWORD or self.REDIS_PASSWORD.startswith("CHANGE_ME"):
+                raise ValueError("REDIS_PASSWORD must be set to a strong value in production")
             if self.ERP_SEED_MANAGEMENT_USERS:
                 mgmt = [
                     ("ERP_ADMIN", self.ERP_ADMIN_EMAIL, self.ERP_ADMIN_PASSWORD),

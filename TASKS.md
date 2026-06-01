@@ -1488,7 +1488,7 @@ Previous MEDIUM: 322. Suppressed: 6 confirmed C.4 false positives.
 
 ### Task ID: TASK-011 — Redis AUTH password for production
 
-- **Status:** Pending
+- **Status:** Done
 - **Priority:** P2
 - **Category:** Deployment / Security
 - **Why it matters:** Redis has no AUTH password configured. In production, Redis without AUTH is accessible to any process on the network.
@@ -1497,18 +1497,37 @@ Previous MEDIUM: 322. Suppressed: 6 confirmed C.4 false positives.
 - **Risk:** Low (config change; requires Redis restart)
 - **Recommended timing:** Soon
 - **Needs audit before implementation:** No
-- **Implementation scope:** Add `REDIS_PASSWORD` env var; configure `requirepass` in Redis service; update `CELERY_BROKER_URL`/`REDIS_URL` in backend config.
+- **Implementation scope:** Add `REDIS_PASSWORD` env var; configure `requirepass` in Redis service; update `REDIS_URL` in backend config. No Celery — not present in this stack.
 - **Do not touch:** Redis data, cache logic
-- **Started at:**
-- **Completed at:**
-- **Changed files:** None yet
-- **Tests / checks run:** None yet
-- **Result:** Pending
-- **Known limitations:** Requires Docker restart.
+- **Started at:** 2026-06-01
+- **Completed at:** 2026-06-01
+- **Changed files:**
+  - `backend/app/core/config.py` — added `REDIS_PASSWORD: str = ""`; added production validator rejecting empty/CHANGE_ME value
+  - `docker-compose.prod.yml` — Redis service: added `environment.REDIS_PASSWORD`, `command` with `--requirepass`, auth-aware healthcheck; backend env: `REDIS_URL` now uses `${REDIS_PASSWORD}`
+  - `.env.production.example` — updated `REDIS_URL` to include password, added `REDIS_PASSWORD=CHANGE_ME_STRONG_REDIS_PASSWORD` placeholder with generation instructions
+  - `TASKS.md` — this update
+- **Created files:** None
+- **Deleted files:** None
+- **Tests / checks run:**
+  - `git diff` — no real secrets; only `CHANGE_ME_*` placeholder ✓
+  - `python -c "import app.main"` → CLEAN (only pre-existing allergen.py FastAPIDeprecationWarning)
+- **Result:**
+  - `REDIS_PASSWORD` field added to `Settings`; defaults empty (dev — no auth required)
+  - Production validator rejects empty or `CHANGE_ME_*` `REDIS_PASSWORD`
+  - Redis service in `docker-compose.prod.yml` starts with `--requirepass ${REDIS_PASSWORD}`
+  - Redis healthcheck updated to `redis-cli -a $REDIS_PASSWORD ping --no-auth-warning`
+  - Backend `REDIS_URL` in `docker-compose.prod.yml` is now `redis://:${REDIS_PASSWORD}@redis:6379/0`
+  - Local development unaffected — `docker-compose.yml` unchanged, empty password allowed in dev
+  - No Celery broker/result backend URLs — Celery not present in this stack
+- **Known limitations:**
+  - Production deployment must set `REDIS_PASSWORD` in `.env.production` before restart
+  - Redis restart required — existing connections will drop briefly
+  - Existing Redis data is preserved (restart, not wipe)
+  - All backend services connecting to Redis must use the password-aware URL (only one service: `backend`)
 - **Git commit / branch:** Not committed yet
 - **Graphify refresh after implementation:** no
 - **Graphify refresh status:** Not needed
-- **Notes:** Architecture decision: password management for Redis (manual secret vs Docker secrets vs Vault).
+- **Notes:** No Docker secrets or Vault integration — env var in `.env.production` is sufficient for single-server deployment. For multi-server or K8s, use Docker secrets or a secrets manager instead.
 
 ---
 
