@@ -2182,7 +2182,7 @@ Known limitations:
 
 ### Task ID: TASK-017 — Finance cost allocation engine (Phase F4-F6)
 
-- **Status:** Audited 2026-06-01 — implementation plan ready; more exists than notes indicated; 5 true gaps identified
+- **Status:** TASK-017.1 Done — finance seed data implemented and DB-validated; TASK-017.2 ready to start; TASK-017.3 blocked on accountant GL account decisions
 - **Priority:** P2
 - **Category:** Finance
 - **Why it matters:** Full cost allocation (utility cost → per machine → per batch → per product → GL journal) is the core value driver.
@@ -2374,7 +2374,74 @@ The utility cost-allocation report page is in the utility module — not surface
 
 ---
 
-- **Notes:** TASK-009 (Utilities seed) is Done. TASK-015/016 (Production+Inventory seed) Done. `production_cost_service.py` and `production_costing.py` endpoint were undocumented — discovered during audit. `finance/costing/page.tsx` frontend already exists. TASK-017.1 and TASK-017.2 are safe to start immediately; TASK-017.3 blocked on accountant input.
+- **Notes:** TASK-009 (Utilities seed) is Done. TASK-015/016 (Production+Inventory seed) Done. `production_cost_service.py` and `production_costing.py` endpoint were undocumented — discovered during audit. `finance/costing/page.tsx` frontend already exists. TASK-017.1 Done (see below). TASK-017.2 safe to start; TASK-017.3 blocked on accountant input.
+
+---
+
+**Batch TASK-017.1 — Finance seed data (DONE — 2026-06-01)**
+
+Files changed:
+- `backend/app/db/seed_finance.py` — NEW: idempotent finance seed
+- `backend/app/main.py` — wired `seed_finance_data(db)` after `seed_inventory_data` under `SEED_DEMO_DATA=true`
+
+Model/enum values verified from source:
+- `ChartOfAccount`: unique key `code` (String(20)), types: ASSET/LIABILITY/EQUITY/REVENUE/EXPENSE, `is_control` (roll-up flag), `parent_id` nullable, `currency` default "KES"
+- `FiscalYear`: unique key `year_code` (String(20)), status: OPEN/CLOSING/CLOSED/LOCKED, `start_date`/`end_date` non-nullable
+- `AccountingPeriod`: unique key `period_ym` (String(7), "YYYY-MM"), `fiscal_year_id` nullable, status: OPEN/CLOSED/LOCKED
+- `CostCenter`: in `dimensions.py`, unique key `cost_center_code` (String(50)), types: PRODUCTION/WAREHOUSE/ADMIN/SALES/SUPPORT/BOTH
+
+Dataset seeded:
+| Layer | Records |
+|-------|---------|
+| ChartOfAccount — control (roll-up) accounts | 4 |
+| ChartOfAccount — leaf/postable accounts | 13 |
+| CostCenter | 6 |
+| FiscalYear | 1 |
+| AccountingPeriod (current month + prior 3) | 4 |
+
+ChartOfAccount codes seeded:
+- 1000 Assets (control), 1200 Raw Material Inventory, 1210 WIP Inventory, 1220 Finished Goods Inventory
+- 2000 Liabilities (control), 2100 Utilities Payable, 2110 GRNI
+- 4000 Revenue (control), 4100 Product Sales Revenue
+- 5000 Expenses (control), 5100 COGS, 5200 Utility Expense, 5210 Utility Expense Clearing, 5300 Production Overhead, 5310 Production Overhead Absorbed, 5400 Manufacturing Variance, 5500 Scrap and Waste Expense
+
+CostCenter codes seeded: LINE-1, LINE-2, MIXING, FILLING, PACKING, OVERHEAD
+
+FiscalYear seeded: FY2026 (2026-01-01 → 2026-12-31, OPEN)
+
+AccountingPeriods seeded: 2026-06, 2026-05, 2026-04, 2026-03 (all OPEN)
+
+Idempotency strategy:
+- ChartOfAccount: by `code`
+- CostCenter: by `cost_center_code`
+- FiscalYear: by `year_code`
+- AccountingPeriod: by `period_ym`
+
+Live DB validation (Docker backend container, dev PostgreSQL):
+| Model | Before | After run 1 | After run 2 | Idempotency |
+|-------|--------|-------------|-------------|-------------|
+| chart_of_accounts | 0 | 17 (+17) | 17 (+0) | ✓ |
+| cost_centers | 0 | 6 (+6) | 6 (+0) | ✓ |
+| fiscal_years | 0 | 1 (+1) | 1 (+0) | ✓ |
+| accounting_periods | 0 | 4 (+4) | 4 (+0) | ✓ |
+| journal_entries | 0 | 0 (+0) | 0 (+0) | ✓ |
+| journal_lines | 0 | 0 (+0) | 0 (+0) | ✓ |
+
+IDEMPOTENCY PASSED — second run added 0 records across all models checked.
+NO JournalEntry or JournalLine records created ✓
+
+Checks run:
+- `python -c "from app.db.seed_finance import seed_finance_data; print('seed finance import OK')"` → PASS
+- `python -c "import app.main; print('app import OK')"` → PASS (only pre-existing allergen.py FastAPIDeprecationWarning)
+- Live DB validation → PASS (see table above)
+
+Known limitations:
+- AccountingPeriods for months before 2026-01 (e.g. 2025-12, 2025-10) get `fiscal_year_id=None` since only FY2026 is seeded
+- Fiscal year is computed dynamically from `date.today().year` — will create a new FY row each January automatically
+- `is_control=True` accounts (1000, 2000, 4000, 5000) cannot be posted to directly (`finance_service.assert_journal_lines_postable` enforces this)
+- Docker backend container must be rebuilt to pick up `seed_finance.py` when `SEED_DEMO_DATA=true`
+
+Graphify refresh after implementation: backend — needed
 
 ---
 
