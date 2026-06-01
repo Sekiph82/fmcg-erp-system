@@ -1797,7 +1797,7 @@ Known limitations:
 
 ### Task ID: TASK-015 — Production module real data (Phase P1-P11)
 
-- **Status:** Audited — implementation plan ready (2026-06-01)
+- **Status:** TASK-015.1 Done — production demo seed implemented; Graphify backend refresh recommended
 - **Priority:** P2
 - **Category:** Production
 - **Why it matters:** Production module (orders, work orders, work centers, routing, batch tracking, QC, yield) models exist in backend but KPIs and dashboards show empty data. No realistic seed data for demo or testing.
@@ -1908,15 +1908,57 @@ Reasons: scope is large (10 model tiers), should be isolated from auth/permissio
 
 *Batch Lots:* one per completed/in-progress production order
 
-**Implementation plan:**
-- **TASK-015.1** — Create `backend/app/db/seed_production.py` with full dataset; wire into `main.py` lifespan under `SEED_DEMO_DATA=true`; run `python -c "import app.main"` + manual seed test
+**Batch TASK-015.1 — Production demo seed (DONE — 2026-06-01)**
 
-**Blockers/risks:**
-- Product category and UoM field enums must be verified against `master.py` before writing seed values
-- Recipe and RecipeItem `unit` field type (str vs enum) needs confirmation
-- `WorkCenter.type` enum values need verification from `production_advanced.py`
-- Seed must be idempotent (check-by-code pattern to avoid duplicates on restart)
-- No migration needed — all models exist
+Files changed:
+- `backend/app/db/seed_production.py` — NEW: full idempotent FMCG production seed
+- `backend/app/main.py` — wired `seed_production_data(db)` into lifespan under `SEED_DEMO_DATA=true`
+
+Verified enum values before coding:
+- `ProductCategory`: HOUSEHOLD, PERSONAL_CARE ✓
+- `MaterialType`: RAW, PACKAGING ✓
+- `WarehouseType`: RAW_MATERIAL, FINISHED_GOODS ✓
+- `UnitOfMeasure`: L, KG, ML, PCS ✓
+- `WorkCenterType`: LINE, MACHINE ✓
+- `WorkCenterStatus`: `"active"` (lowercase string) ✓
+- `WorkOrderStatus`: `"planned"`, `"in_progress"`, `"completed"` (lowercase) ✓
+- `BatchLotStatus`: `"released"`, `"quarantine"` (lowercase) ✓
+- `ProductionOrderStatus`: `"PLANNED"`, `"RELEASED"`, `"IN_PROGRESS"`, `"COMPLETED"` (UPPERCASE) ✓
+- `ProductionPlanStatus`: `"DRAFT"`, `"CONFIRMED"`, `"IN_PROGRESS"`, `"COMPLETED"` (UPPERCASE) ✓
+- `RecipeStatus`: `"APPROVED"` (UPPERCASE) ✓
+- `RoutingStep.routing_id` = UUID FK to `routings.id` (not string `routing_id`) ✓
+- `Recipe.version` = `String(20)` — seeded as `"1.0"` (not int) ✓
+
+Dataset seeded:
+| Layer | Records |
+|-------|---------|
+| Warehouses | 2 (PROD-WH raw material, FG-WH finished goods) |
+| Products | 5 (LD-1L, FS-500ML, DW-500ML, SC-750ML, HS-200ML) |
+| Materials | 7 (3 raw: surfactant, fragrance, thickener; 4 packaging: bottles, cap, label) |
+| Recipes | 5 (one APPROVED per product, version 1.0, 6 items each) |
+| Work Centres | 5 (MIX-01, MIX-02, FILL-BOT, FILL-SAC, PACK-01) |
+| Routings + Steps | 5 routings × 3 steps = 15 steps |
+| Production Plans | 3 (April completed, June in-progress, July confirmed) |
+| Production Orders | 15 (5 COMPLETED, 4 IN_PROGRESS, 2 RELEASED, 4 PLANNED) |
+| Work Orders | 3 per production order = 45 |
+| Batch Lots | 7 (completed=RELEASED, in-progress=QUARANTINE) |
+
+Idempotency: every model uses `_get_or_create_*` helper — looks up by unique string code before inserting. Safe to run on every startup.
+
+Wiring: `main.py` lifespan calls `seed_production_data(db)` only when `settings.SEED_DEMO_DATA=true`. Import is lazy (inside the `if` block) to avoid loading seed module in production.
+
+Checks run:
+- `python -c "from app.db.seed_production import seed_production_data; print('import OK:', ...)"` → **CLEAN** ✓
+- `python -c "import app.main; print('OK')"` → **CLEAN** ✓
+- DB seed not run locally — no live database connection available; idempotency verified by code review
+
+Known limitations:
+- `ProductionOrder.uom` is String (not enum) — seeded as `"L"` or `"ML"` per product
+- `RecipeItem.unit` is String — seeded as `"KG"` or `"PCS"` matching material UoM
+- Batch lot manufacture_date calculation is approximate for demo data
+- Docker backend must be rebuilt + `SEED_DEMO_DATA=true` in `.env` to trigger seed
+- Optional records (OEE, downtime logs, QC inspections, waste records) not seeded — required fields too complex for initial demo; can be added as TASK-015.2
+- No `FinishedGoodsReceipt` or `MaterialConsumption` records — those have accounting FKs (journal_entries, posting_batches) that would require accounting seed first
 
 - **Git commit / branch:** Not committed yet
 - **Graphify refresh after implementation:** backend

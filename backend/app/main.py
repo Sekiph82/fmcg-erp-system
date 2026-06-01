@@ -43,6 +43,10 @@ async def lifespan(app: FastAPI):
             await seed_admin(db)
         async with AsyncSessionLocal() as db:
             await seed_management_users(db)
+        if settings.SEED_DEMO_DATA:
+            from app.db.seed_production import seed_production_data
+            async with AsyncSessionLocal() as db:
+                await seed_production_data(db)
         logger.info("Seed completed")
     except Exception:
         logger.exception("Seed failed; admin user may not exist yet")
