@@ -588,6 +588,23 @@ GL JournalEntry (POSTED) — finance_service.mark_journal_posted()
 - No backend modified; no credentials; no live calls; no Graphify
 - Next: TASK-005.1F.3 — eTIMS card in invoice detail page (`sales/invoices/[id]/page.tsx`)
 
+**TASK-005.1F.3 — Done (2026-06-02)**
+- File: `frontend/src/app/dashboard/sales/invoices/[id]/page.tsx`
+- Added imports: `ETimsSubmission`, `ETimsStatus`, `etimsApi` from `@/lib/tax_regulatory`
+- Added `ETIMS_STATUS_BADGE` record and `ETIMS_RETRY_STATUSES` set (consistent with finance/etims page)
+- Added query: `["etims-submission", id]` via `etimsApi.getByInvoice(id)`; 404 → null (not submitted yet)
+- Note: `etims == null` used (loose equality) to narrow both `null` and `undefined` — TanStack Query v5 types `data` as `T | undefined` even after `isLoading=false`
+- Added mutations: `etimsSubmitMut`, `etimsRetryMut`, `etimsCancelMut`, `etimsPollMut`; all invalidate `["etims-submission", id]` and `["etims-submissions"]` on success
+- Added eTIMS Fiscalization card after Payment History, before modals:
+  - "Not submitted" state: shows Submit button
+  - Submitted state: shows metadata grid (provider, TIMS No, KRA response, accepted_at, last_attempt, attempts), error panel, action buttons, debug details collapsible
+  - Button rules: Submit disabled for ACCEPTED/SUBMITTED/PENDING; Retry for RETRY_STATUSES only; Cancel disabled for CANCELLED; Poll disabled without provider_reference
+- Added cancel confirm modal: reason required; ACCEPTED shows red warning; `allow_cancel_accepted` auto-set
+- All existing payment functionality unchanged
+- Type-check: `npm run type-check` — CLEAN (0 errors, including fix for v5 `data: T | undefined` narrowing)
+- No backend modified; no credentials; no live calls; no Graphify
+- Next: TASK-005.1F.4 — UX hardening / permission guards (optional); or Graphify frontend refresh
+
 ---
 
 ##### Blockers Summary
