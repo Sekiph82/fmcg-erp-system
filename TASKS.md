@@ -351,7 +351,7 @@ Rules:
 
 ### Task ID: TASK-005 — eTIMS live integration (KRA Kenya)
 
-- **Status:** TASK-005.1 Audited — provider/integrator architecture plan ready; TASK-005.1A–C safe to start; TASK-005.1D needs accountant approval; TASK-005.1E blocked on provider selection + KRA sandbox credentials
+- **Status:** TASK-005.1A Done — provider config model and submission tracking fields implemented; TASK-005.1B–C safe to start; TASK-005.1D needs accountant approval; TASK-005.1E blocked on provider selection + KRA sandbox credentials
 - **Priority:** P0
 - **Category:** Integration / Deployment
 - **Why it matters:** Kenya VAT-registered businesses are legally required to submit invoices to KRA eTIMS. Track A (`tax_regulatory.py`) is the active integration path wired to the frontend at `/dashboard/finance/etims`.
@@ -591,6 +591,80 @@ GL JournalEntry (POSTED) — finance_service.mark_journal_posted()
 ##### Source Code Changed During Audit
 
 None — audit only. TASKS.md updated only.
+
+---
+
+#### TASK-005.1A Implementation — Provider Config Model + Submission Tracking Fields (2026-06-02)
+
+**Status:** Done — no live provider calls; models + migration only
+
+**Files changed:**
+- `backend/app/models/tax_regulatory.py` — extended ETimsStatus, enhanced ETimsSubmission, added EtimsProviderConfig
+- `backend/alembic/versions/20260602_0001_etims_provider_config_submission_fields.py` — NEW additive migration
+- `backend/tests/test_task005_1a_etims_models.py` — NEW: 10 targeted model tests
+
+**ETimsStatus values added (5 new, 5 original preserved):**
+| New value | Meaning |
+|-----------|---------|
+| DRAFT | payload built, not yet submitted |
+| READY | pre-submission validation passed, ready to submit |
+| RETRY_PENDING | waiting for next automatic retry attempt |
+| CANCELLED | submission explicitly cancelled |
+| ERROR | unexpected system error (not provider rejection) |
+
+**ETimsSubmission fields added:**
+
+| Field | Type | Purpose |
+|-------|------|---------|
+| provider_name | String(100) | e.g. "simulation", "kra_direct" |
+| provider_reference | String(200) | provider's own submission ID (indexed) |
+| environment | String(50) | "sandbox", "production", "simulation" |
+| request_payload | JSON | snapshot of payload sent |
+| response_payload | JSON | snapshot of full provider response |
+| accepted_at | DateTime(tz) | timestamp KRA accepted |
+| last_attempt_at | DateTime(tz) | timestamp of last attempt |
+| attempt_count | Integer (default 0) | total submission attempts |
+| error_code | String(50) | provider/KRA error code |
+
+**EtimsProviderConfig model created:**
+- Table: `etims_provider_configs`
+- Fields: id, provider_name, provider_type, environment, base_url, branch_id, device_serial, taxpayer_pin, client_id, secret_ref, is_active, is_demo_mode, production_execution_allowed, timeout_seconds, max_retries, notes, created_at, updated_at
+- Unique constraint: (provider_name, environment)
+- `production_execution_allowed` defaults FALSE ✓
+- `is_demo_mode` defaults TRUE ✓
+- `secret_ref` is reference name only — no raw secret stored ✓
+
+**Migration:** `20260602_0001` → down_revision `20260518_0001`
+- ALTER TYPE etimsstatus ADD VALUE IF NOT EXISTS (5 values)
+- ADD COLUMN × 9 on etims_submissions
+- CREATE TABLE etims_provider_configs
+- CREATE INDEX × 4
+- `alembic heads` → `20260602_0001 (head)` ✓
+
+**Checks/tests:**
+- `python -c "from app.models.tax_regulatory import ..."` → PASS
+- `pytest tests/test_task005_1a_etims_models.py -v` → **10/10 PASSED**
+- `alembic heads` → single head `20260602_0001` ✓
+
+**Safety confirmed:**
+- No live KRA/provider call made
+- No credentials added
+- `production_execution_allowed` unchanged in integration_capabilities.py (remains False)
+- Finance posting logic unchanged
+- Frontend unchanged
+- No env file changes
+
+**Known limitations:**
+- Migration not run against live DB yet — run `alembic upgrade head` after commit approval
+- ETimsStatus ALTER TYPE requires PostgreSQL 12+ for transaction-safe ADD VALUE
+- No cancel/retry/status-poll endpoints yet (TASK-005.1C)
+- No finance posting gate yet (TASK-005.1D)
+- Product KRA item codes (itemCd, taxTyCd) still hardcoded TODOs in payload builder
+- HttpETIMSConnector auth header still TODO (TASK-005.1E)
+
+**Next:**
+- TASK-005.1B — provider-neutral adapter interface + enhanced stub/sandbox connector
+- TASK-005.1C — submit/retry/cancel/status-poll endpoints
 
 ---
 

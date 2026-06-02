@@ -2,7 +2,7 @@ import uuid
 import enum
 from sqlalchemy import (
     Column, String, Text, Numeric, Boolean, Integer,
-    ForeignKey, Enum, DateTime, Date, UniqueConstraint,
+    ForeignKey, Enum, DateTime, Date, UniqueConstraint, JSON, Index,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
@@ -202,11 +202,16 @@ class TransactionTax(Base, TimestampMixin):
 # ── eTIMS / KRA e-Invoice ──────────────────────────────────────────────────────
 
 class ETimsStatus(str, enum.Enum):
+    DRAFT = "DRAFT"           # payload built, not yet submitted
+    READY = "READY"           # ready for submission, pre-submission validation passed
     PENDING = "PENDING"
     SUBMITTED = "SUBMITTED"
     ACCEPTED = "ACCEPTED"
     REJECTED = "REJECTED"
+    RETRY_PENDING = "RETRY_PENDING"  # waiting for next retry attempt
+    CANCELLED = "CANCELLED"
     FAILED = "FAILED"
+    ERROR = "ERROR"           # unexpected system error (not provider rejection)
 
 
 class ETimsSubmission(Base, TimestampMixin):
@@ -215,6 +220,9 @@ class ETimsSubmission(Base, TimestampMixin):
     One-to-one with Invoice. Simulation-ready: set ETIMS_API_URL in config to enable live calls.
     """
     __tablename__ = "etims_submissions"
+    __table_args__ = (
+        Index("ix_etims_submissions_status", "status"),
+    )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     invoice_id = Column(UUID(as_uuid=True), ForeignKey("invoices.id", ondelete="CASCADE"),
@@ -230,8 +238,53 @@ class ETimsSubmission(Base, TimestampMixin):
     retry_count = Column(Integer, nullable=False, default=0)
     submitted_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
 
+    # Provider / integrator tracking fields (TASK-005.1A)
+    provider_name = Column(String(100), nullable=True)            # e.g. "simulation", "kra_direct"
+    provider_reference = Column(String(200), nullable=True, index=True)  # provider submission ID
+    environment = Column(String(50), nullable=True)               # "sandbox", "production", "simulation"
+    request_payload = Column(JSON, nullable=True)                 # snapshot of payload sent
+    response_payload = Column(JSON, nullable=True)                # snapshot of full provider response
+    accepted_at = Column(DateTime(timezone=True), nullable=True)
+    last_attempt_at = Column(DateTime(timezone=True), nullable=True)
+    attempt_count = Column(Integer, nullable=False, default=0)    # total submission attempts
+    error_code = Column(String(50), nullable=True)                # provider/KRA error code
+
     invoice = relationship("Invoice")
     submitted_by = relationship("User")
+
+
+class EtimsProviderConfig(Base, TimestampMixin):
+    """
+    Configuration for a Kenya eTIMS provider/integrator adapter.
+    Supports multiple provider types (simulation, VSCU/OSCU, approved provider, KRA direct).
+
+    Safety defaults: is_demo_mode=True, production_execution_allowed=False.
+    secret_ref stores a reference name only — never a raw credential.
+    """
+    __tablename__ = "etims_provider_configs"
+    __table_args__ = (
+        UniqueConstraint("provider_name", "environment", name="uq_etims_provider_env"),
+        Index("ix_etims_provider_configs_is_active", "is_active"),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    provider_name = Column(String(100), nullable=False, index=True)
+    # provider_type: DIRECT_KRA | VSCU_OSCU | APPROVED_PROVIDER | SANDBOX_STUB
+    provider_type = Column(String(50), nullable=False)
+    # environment: sandbox | production | simulation
+    environment = Column(String(50), nullable=False)
+    base_url = Column(String(500), nullable=True)
+    branch_id = Column(String(100), nullable=True)
+    device_serial = Column(String(100), nullable=True)
+    taxpayer_pin = Column(String(50), nullable=True)
+    client_id = Column(String(200), nullable=True)
+    secret_ref = Column(String(200), nullable=True)   # reference/name only — NOT a raw secret
+    is_active = Column(Boolean, nullable=False, default=True)
+    is_demo_mode = Column(Boolean, nullable=False, default=True)
+    production_execution_allowed = Column(Boolean, nullable=False, default=False)
+    timeout_seconds = Column(Integer, nullable=False, default=30)
+    max_retries = Column(Integer, nullable=False, default=3)
+    notes = Column(Text, nullable=True)
 
 
 class VATReturnStatus(str, enum.Enum):
