@@ -1,7 +1,8 @@
 @echo off
 setlocal
 
-set "REPO=C:\Users\sekip\Desktop\fmcg-erp-system-main"
+set "REPO=%~dp0"
+if "%REPO:~-1%"=="\" set "REPO=%REPO:~0,-1%"
 set "SYNC_BAT=%REPO%\sync-to-github.bat"
 set "TASK_NAME=FMCG-ERP-GitSync"
 

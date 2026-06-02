@@ -1,7 +1,8 @@
 @echo off
 setlocal enabledelayedexpansion
 
-set "REPO=C:\Users\sekip\Desktop\fmcg-erp-system-main"
+set "REPO=%~dp0"
+if "%REPO:~-1%"=="\" set "REPO=%REPO:~0,-1%"
 set "GIT=C:\Program Files\Git\cmd\git.exe"
 set "LOG=%REPO%\git-sync.log"
 
