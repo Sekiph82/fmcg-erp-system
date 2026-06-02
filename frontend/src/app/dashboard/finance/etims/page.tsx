@@ -51,6 +51,9 @@ export default function ETimsPage() {
 
   const [health, setHealth] = useState<ETimsProviderHealth | null>(null);
 
+  const [retryingId, setRetryingId] = useState<string | null>(null);
+  const [pollingId, setPollingId] = useState<string | null>(null);
+
   // ── Query ──────────────────────────────────────────────────────────────────
 
   const { data = [], isLoading } = useQuery<ETimsSubmission[]>({
@@ -77,10 +80,11 @@ export default function ETimsPage() {
   const retryMut = useMutation({
     mutationFn: (submissionId: string) => etimsApi.retry(submissionId),
     onSuccess: (sub) => {
+      setRetryingId(null);
       invalidate();
       toast("success", `Retry sent — status: ${sub.status}`);
     },
-    onError: (e) => toast("error", extractApiError(e)),
+    onError: (e) => { setRetryingId(null); toast("error", extractApiError(e)); },
   });
 
   const cancelMut = useMutation({
@@ -98,10 +102,11 @@ export default function ETimsPage() {
   const pollMut = useMutation({
     mutationFn: (submissionId: string) => etimsApi.poll(submissionId),
     onSuccess: (sub) => {
+      setPollingId(null);
       invalidate();
       toast("success", `Status polled — ${sub.status}`);
     },
-    onError: (e) => toast("error", extractApiError(e)),
+    onError: (e) => { setPollingId(null); toast("error", extractApiError(e)); },
   });
 
   const healthMut = useMutation({
@@ -327,9 +332,9 @@ export default function ETimsPage() {
                         <Button
                           variant="secondary"
                           className="text-xs !px-2 !py-1"
-                          disabled={!RETRY_STATUSES.has(sub.status) || retryMut.isPending}
-                          loading={retryMut.isPending}
-                          onClick={() => retryMut.mutate(sub.id)}
+                          disabled={!RETRY_STATUSES.has(sub.status) || retryingId === sub.id}
+                          loading={retryingId === sub.id}
+                          onClick={() => { setRetryingId(sub.id); retryMut.mutate(sub.id); }}
                         >
                           Retry
                         </Button>
@@ -344,9 +349,9 @@ export default function ETimsPage() {
                         <Button
                           variant="secondary"
                           className="text-xs !px-2 !py-1"
-                          disabled={!sub.provider_reference || pollMut.isPending}
-                          loading={pollMut.isPending}
-                          onClick={() => pollMut.mutate(sub.id)}
+                          disabled={!sub.provider_reference || pollingId === sub.id}
+                          loading={pollingId === sub.id}
+                          onClick={() => { setPollingId(sub.id); pollMut.mutate(sub.id); }}
                         >
                           Poll
                         </Button>

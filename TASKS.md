@@ -605,6 +605,23 @@ GL JournalEntry (POSTED) — finance_service.mark_journal_posted()
 - No backend modified; no credentials; no live calls; no Graphify
 - Next: TASK-005.1F.4 — UX hardening / permission guards (optional); or Graphify frontend refresh
 
+**TASK-005.1F.4 — Done (2026-06-02)**
+- Files: `frontend/src/app/dashboard/finance/etims/page.tsx` only (invoice detail page has no multi-row loading issue)
+- **Permission guard decision:** Skipped — no `finance.approve` or `finance.write` permission exists in frontend. Only `finance.view` is used throughout finance module. Adding a non-existent permission string would lock out all current users. Superusers bypass all guards. Row-level loading isolation is the real UX fix.
+- **Row-level loading isolation (global eTIMS page):**
+  - Added `retryingId: string | null` state — tracks which row's Retry is in-flight
+  - Added `pollingId: string | null` state — tracks which row's Poll is in-flight
+  - `retryMut.onSuccess/onError` clears `retryingId`
+  - `pollMut.onSuccess/onError` clears `pollingId`
+  - Retry button: `loading={retryingId === sub.id}`, `disabled={!RETRY_STATUSES.has(sub.status) || retryingId === sub.id}`, `onClick={() => { setRetryingId(sub.id); retryMut.mutate(sub.id); }}`
+  - Poll button: `loading={pollingId === sub.id}`, `disabled={!sub.provider_reference || pollingId === sub.id}`, `onClick={() => { setPollingId(sub.id); pollMut.mutate(sub.id); }}`
+  - Result: retrying row A no longer shows loading spinner on rows B, C, D
+- Invoice detail page: no change needed — single-invoice page, loading states are already isolated per mutation
+- Type-check: `npm run type-check` — CLEAN (0 errors)
+- No backend modified; no API client modified; no credentials; no live calls; no Graphify
+- **Frontend TASK-005.1F core workflow complete:** 1F.1 (API client) + 1F.2 (global page) + 1F.3 (invoice card) + 1F.4 (UX hardening) + 1F.5 (nav-config fix)
+- Next: commit TASK-005.1F.4, then frontend Graphify refresh recommended
+
 ---
 
 ##### Blockers Summary
