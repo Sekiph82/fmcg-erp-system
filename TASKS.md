@@ -554,12 +554,21 @@ GL JournalEntry (POSTED) — finance_service.mark_journal_posted()
 - Risk: HIGH — live external calls
 
 **TASK-005.1F — Frontend fiscalization panel**
-- **Status:** Audited — implementation plan ready (2026-06-02)
+- **Status:** 1F.1 Done (2026-06-02) — API client types + functions added; UI implementation pending
 - `/dashboard/finance/etims` page exists and is already wired as a tab in `/dashboard/finance`
 - Existing page: 5 statuses, 2 API functions (list + submit), no retry/cancel/poll/health, missing 9 fields
 - Implementation plan: 5 sub-batches (see TASK-005.1F Audit section below)
 - Blocker: none — TASK-005.1C endpoints are live
 - Risk: LOW
+
+**TASK-005.1F.1 — Done (2026-06-02)**
+- File: `frontend/src/lib/tax_regulatory.ts`
+- Types added: `ETimsStatus` (10 values), `ETimsSubmission` (21 fields), `ETimsCancelRequest`, `ETimsProviderHealth`
+- API object added: `etimsApi` (7 functions: listSubmissions, getByInvoice, submit, retry, cancel, poll, health)
+- Endpoint base: `/api/v1/tax/etims`
+- Type-check: `npm run type-check` — CLEAN (0 errors)
+- No UI pages modified; no backend modified; no credentials; no live calls; no Graphify
+- Next: TASK-005.1F.2 — update `finance/etims/page.tsx` with full 10-status set, retry/cancel/poll/health actions, toasts, confirm modal
 
 ---
 

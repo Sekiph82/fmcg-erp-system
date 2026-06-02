@@ -242,3 +242,96 @@ export const taxApi = {
     return res.data;
   },
 };
+
+// ── eTIMS / KRA e-Invoice ─────────────────────────────────────────────────────
+
+export type ETimsStatus =
+  | "DRAFT"
+  | "READY"
+  | "PENDING"
+  | "SUBMITTED"
+  | "ACCEPTED"
+  | "REJECTED"
+  | "RETRY_PENDING"
+  | "CANCELLED"
+  | "FAILED"
+  | "ERROR";
+
+export interface ETimsSubmission {
+  id: string;
+  invoice_id: string;
+  status: ETimsStatus;
+  control_unit_invoice_no?: string | null;
+  signed_invoice_hash?: string | null;
+  invoice_qr_data?: string | null;
+  transmitted_at?: string | null;
+  kra_response_code?: string | null;
+  kra_response_message?: string | null;
+  error_message?: string | null;
+  retry_count: number;
+  provider_name?: string | null;
+  provider_reference?: string | null;
+  environment?: string | null;
+  request_payload?: Record<string, unknown> | null;
+  response_payload?: Record<string, unknown> | null;
+  accepted_at?: string | null;
+  last_attempt_at?: string | null;
+  attempt_count: number;
+  error_code?: string | null;
+  created_at: string;
+}
+
+export interface ETimsCancelRequest {
+  reason: string;
+  allow_cancel_accepted?: boolean;
+}
+
+export interface ETimsProviderHealth {
+  status?: string;
+  provider?: string;
+  environment?: string;
+  live?: boolean;
+  production_execution_allowed: boolean;
+  detail?: string;
+  note?: string;
+  [key: string]: unknown;
+}
+
+const ETIMS_BASE = "/api/v1/tax/etims";
+
+export const etimsApi = {
+  listSubmissions: async (params?: { status?: ETimsStatus; limit?: number }): Promise<ETimsSubmission[]> => {
+    const { data } = await apiClient.get<ETimsSubmission[]>(`${ETIMS_BASE}/submissions`, { params });
+    return data;
+  },
+
+  getByInvoice: async (invoiceId: string): Promise<ETimsSubmission> => {
+    const { data } = await apiClient.get<ETimsSubmission>(`${ETIMS_BASE}/submissions/${invoiceId}`);
+    return data;
+  },
+
+  submit: async (invoiceId: string): Promise<ETimsSubmission> => {
+    const { data } = await apiClient.post<ETimsSubmission>(`${ETIMS_BASE}/submit/${invoiceId}`);
+    return data;
+  },
+
+  retry: async (submissionId: string): Promise<ETimsSubmission> => {
+    const { data } = await apiClient.post<ETimsSubmission>(`${ETIMS_BASE}/retry/${submissionId}`);
+    return data;
+  },
+
+  cancel: async (submissionId: string, body: ETimsCancelRequest): Promise<ETimsSubmission> => {
+    const { data } = await apiClient.post<ETimsSubmission>(`${ETIMS_BASE}/cancel/${submissionId}`, body);
+    return data;
+  },
+
+  poll: async (submissionId: string): Promise<ETimsSubmission> => {
+    const { data } = await apiClient.post<ETimsSubmission>(`${ETIMS_BASE}/status/${submissionId}/poll`);
+    return data;
+  },
+
+  health: async (): Promise<ETimsProviderHealth> => {
+    const { data } = await apiClient.get<ETimsProviderHealth>(`${ETIMS_BASE}/provider/health`);
+    return data;
+  },
+};
