@@ -392,7 +392,7 @@ Rules:
 - **Known limitations:** Requires KRA developer registration, sandbox testing, and provider/middleware selection before any live use.
 - **Git commit / branch:** Not committed yet (awaiting approval)
 - **Graphify refresh after implementation:** backend
-- **Graphify refresh status:** Needed after implementation
+- **Graphify refresh status:** Done — 2026-06-02 after TASK-005.1A/1B/1C via `/graphify backend --update`; output at `C:\Users\sekip\Desktop\graphify-erp-maps\backend\`; 17,696 nodes / 47,459 edges / 673 communities; all TASK-005.1A/1B/1C entities reflected in map; `graphify-out/` remains gitignored and untracked
 - **Notes:** Do NOT say "KRA production integration complete." Connector-ready eTIMS skeleton implemented; live provider validation pending.
 
 ---
@@ -787,6 +787,64 @@ request_payload, response_payload, provider_name, provider_reference, environmen
 - TASK-005.1D — finance posting gate (blocked on accountant approval for which invoice types require eTIMS gate before GL posting)
 - TASK-005.1E — live provider adapter (blocked on provider selection + KRA sandbox credentials + official API spec)
 - TASK-005.1F — frontend fiscalization panel (can start after TASK-005.1C endpoints are live)
+
+---
+
+#### Backend Graphify Refresh — After TASK-005.1A/1B/1C (2026-06-02)
+
+**Command:** `/graphify C:\Users\sekip\Masaüstü\fmcg-erp-system-main\backend --update`
+
+**Output folder:** `C:\Users\sekip\Desktop\graphify-erp-maps\backend\`
+
+**Files:** `GRAPH_REPORT.md` (current), `graph.json` (current), `cost.json`, `manifest.json`, `graph.html` (prior run — graph has 17,696 nodes, exceeds 5,000-node HTML visualization limit; GRAPH_REPORT.md and graph.json are current)
+
+**`graphify-out/` status:** gitignored, untracked — `git ls-files graphify-out` returns empty
+
+**Graph stats:** 17,696 nodes · 47,459 edges · 673 communities
+
+**eTIMS communities:**
+- Community 24 — "eTIMS Tax Regulatory" (80 nodes): `ETimsStatus`, `tax_regulatory.py`, `submit_etims`, `cancel_etims`, `ETimsSubmission`, `ETimsCancelRequest`, `User`, `UUID`
+- Community 29 — "eTIMS Tests & Health" (76 nodes): `etims_provider_health`, `ETimsConnectorResponse`, `build_etims_payload`, `ETIMSConnector`, `test_etims_skeleton`, `SimulationETIMSConnector`, `HttpETIMSConnector`
+
+**TASK-005.1A/1B/1C entities confirmed in map:**
+`EtimsProviderConfig`, `ETimsSubmission`, `ETimsStatus`, `ETimsConnectorResponse`, `SimulationETIMSConnector`, `HttpETIMSConnector`, `build_etims_payload`, `get_etims_connector`, `_apply_etims_response_to_submission`, `submit_etims`, `retry_etims`, `cancel_etims`, `poll_etims_status`, `etims_provider_health`, `ETimsCancelRequest`, `test_task005_1a_etims_models.py`, `test_task005_1b_connector.py`, `test_task005_1c_endpoints.py`
+
+**Source code changed:** no | **Frontend changed:** no | **Credentials added:** no
+
+---
+
+#### Trace Note — `_apply_etims_response_to_submission` Bridge (2026-06-02)
+
+Graph degree 18. Bridges Community 24 (eTIMS Tax Regulatory) and Community 29 (eTIMS Tests & Health).
+
+**Callers and flags:**
+
+| Endpoint | `increment_attempt` | `update_transmitted` |
+|---|---|---|
+| `submit_etims` | True | True |
+| `retry_etims` | True | True |
+| `cancel_etims` | True | False (default) |
+| `poll_etims_status` | True | False (default) |
+
+`update_transmitted=True` only on submit/retry — these are actual invoice payload submissions. Cancel and poll are provider interactions but not submissions.
+
+**Field mapping summary:**
+- Always written: `status`, `kra_response_code`, `kra_response_message`, `request_payload`, `response_payload`, `provider_name`, `provider_reference`, `environment`, `last_attempt_at`
+- Conditionally written (only when not None): `control_unit_invoice_no`, `signed_invoice_hash`, `invoice_qr_data`, `accepted_at`
+- On success: clears `error_code` and `error_message`
+- On failure: sets `error_code` and `error_message` from result
+- When `increment_attempt=True`: increments both `retry_count` and `attempt_count` together
+- When `update_transmitted=True`: sets `transmitted_at`
+
+**Minor future test coverage gaps:**
+- cancel `request_payload` format (`{"action": "cancel", ...}`)
+- poll `request_payload` format (`{"action": "poll_status", ...}`)
+- cancel fallback `LOCAL-{id}` behavior when `provider_reference` is None
+- `retry_etims` sets `submitted_by_id` outside helper — no test covers this
+- `None → 0` counter initialization path (tests use `retry_count = 0` directly)
+
+**Future refactor recommendation:**
+Move `_apply_etims_response_to_submission` from `tax_regulatory.py` endpoint file into `backend/app/services/etims_service.py` (does not exist yet) when background retry jobs, provider webhooks, or live provider integration is added. Current placement is acceptable while all callers are in the same file.
 
 ---
 
