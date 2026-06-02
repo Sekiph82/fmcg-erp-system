@@ -351,7 +351,7 @@ Rules:
 
 ### Task ID: TASK-005 — eTIMS live integration (KRA Kenya)
 
-- **Status:** Blocked — connector-ready skeleton implemented, waiting for KRA-approved provider / VSCU-OSCU middleware decision and sandbox credentials
+- **Status:** TASK-005.1 Audited — provider/integrator architecture plan ready; TASK-005.1A–C safe to start; TASK-005.1D needs accountant approval; TASK-005.1E blocked on provider selection + KRA sandbox credentials
 - **Priority:** P0
 - **Category:** Integration / Deployment
 - **Why it matters:** Kenya VAT-registered businesses are legally required to submit invoices to KRA eTIMS. Track A (`tax_regulatory.py`) is the active integration path wired to the frontend at `/dashboard/finance/etims`.
@@ -394,6 +394,203 @@ Rules:
 - **Graphify refresh after implementation:** backend
 - **Graphify refresh status:** Needed after implementation
 - **Notes:** Do NOT say "KRA production integration complete." Connector-ready eTIMS skeleton implemented; live provider validation pending.
+
+---
+
+#### TASK-005.1 Audit — Provider/Integrator Architecture (2026-06-02)
+
+**Status:** TASK-005.1 Audited — provider/integrator architecture plan ready; implementation pending provider selection and accountant approval
+
+**Audit scope:** Full read of etims_connector.py, tax_regulatory.py (model + endpoint), integration_capabilities.py, config.py ETIMS_* vars, Invoice model, ETimsSubmission model, finance posting flow.
+
+---
+
+##### Existing Architecture (what IS implemented)
+
+| Component | File | Status |
+|-----------|------|--------|
+| ETIMSConnector Protocol | etims_connector.py:34 | ✓ Done |
+| ETIMSResult dataclass | etims_connector.py:22 | ✓ Done |
+| build_etims_payload() | etims_connector.py:38 | ✓ Done (with TODOs) |
+| SimulationETIMSConnector | etims_connector.py:81 | ✓ Done — fake ACCEPTED, no network |
+| HttpETIMSConnector skeleton | etims_connector.py:111 | Skeleton only — auth TODO, not tested |
+| get_etims_connector() factory | etims_connector.py:164 | ✓ Done |
+| ETimsStatus enum | tax_regulatory.py:204 | ✓ PENDING/SUBMITTED/ACCEPTED/REJECTED/FAILED |
+| ETimsSubmission model | tax_regulatory.py:212 | ✓ Done — 1:1 with Invoice |
+| POST /etims/submit/{invoice_id} | tax_regulatory.py endpoint:344 | ✓ Done |
+| GET /etims/submissions | tax_regulatory.py endpoint:321 | ✓ Done |
+| ETIMS_* config vars | config.py | ✓ Done |
+| production_execution_allowed=False | integration_capabilities.py:115 | ✓ Safe |
+| VATReturn monthly aggregate | tax_regulatory.py:243 | ✓ Done |
+| WithholdingTaxRecord | tax_regulatory.py:276 | ✓ Done |
+| Invoice.tax_amount field | sales.py:279 | ✓ Done |
+| InvoiceStatus enum | sales.py:78 | ✓ DRAFT/ISSUED/PARTIALLY_PAID/PAID/OVERDUE/CANCELLED |
+
+---
+
+##### Missing / Gaps Identified
+
+**A. ETimsSubmission model gaps:**
+- No `request_payload` column — cannot snapshot what was sent to provider
+- No `response_payload` column — only stores code/message, not full JSON response
+- No `provider_reference` column — provider's own submission ID before KRA control number arrives
+- No `provider_name` column — which provider/adapter was used for this submission
+- No `environment` column — sandbox vs production flag per submission
+- No `last_attempt_at` column — has `transmitted_at` but not last retry timestamp
+- No `accepted_at` column — no timestamp for when KRA accepted
+- Missing statuses: DRAFT, READY, RETRY_PENDING, CANCELLED, ERROR (only 5 states exist)
+
+**B. Provider config — no DB table:**
+- Currently provider is purely env-var driven (ETIMS_PROVIDER, ETIMS_API_URL etc.)
+- No `EtimsProviderConfig` table for multi-provider support, environment switching, or per-branch config
+- No `provider_type` enum (DIRECT_KRA, VSCU_OSCU, APPROVED_PROVIDER, SANDBOX_STUB)
+
+**C. Connector/adapter gaps:**
+- `HttpETIMSConnector` auth scheme not implemented (TODO comment at line 130)
+- No `cancel_invoice()` method on ETIMSConnector Protocol
+- No `get_submission_status()` polling method
+- No `validate_taxpayer()` method
+- No `health_check()` method
+- No `normalize_response()` standard layer
+
+**D. Endpoint gaps:**
+- No cancel/credit note submission endpoint
+- No retry endpoint (retry_count field exists but no retry route)
+- No submission status polling endpoint
+- No fiscal payload preview endpoint (dry-run build without submit)
+
+**E. Invoice model gaps:**
+- Invoice has no direct `fiscal_accepted` boolean (have to join ETimsSubmission)
+- Invoice has no `FISCALIZED` status in InvoiceStatus enum
+- No `etims_submission_id` FK on Invoice (relationship is on ETimsSubmission side — OK but limits query efficiency)
+
+**F. Finance posting gate — missing:**
+- `finance_service.py` JournalEntry posting has NO check on invoice eTIMS status
+- Invoices can be posted to GL regardless of REJECTED/ERROR eTIMS status
+- No `require_fiscal_acceptance` config flag per invoice type
+
+**G. Product KRA code fields — missing:**
+- `Product.etims_item_code` (itemCd) not in Product model — hardcoded "" in payload builder
+- `Product.tax_type_code` (taxTyCd) not in Product model — hardcoded "VAT"
+- These require migration + accountant/tax advisor confirmation of HS codes
+
+**H. Track B legacy:**
+- `payroll_ke.py` has duplicate `eTIMSInvoiceStatus` enum and `eTIMSInvoiceRecord` table
+- Not connected to Track A connector flow
+- Not yet deprecated
+
+---
+
+##### Recommended Workflow: ERP → Provider → KRA
+
+```
+Invoice (ISSUED)
+    ↓
+[prepare_fiscal_payload]  — build_etims_payload(), validate, snapshot request
+    ↓
+ETimsSubmission (READY)
+    ↓
+[ProviderAdapter.submit_invoice(payload)]
+    ↓  ↓  ↓  ↓
+  Stub  Sandbox  VSCU/OSCU  ApprovedProvider  (future: KRADirect)
+                        ↓
+              KRA eTIMS API
+                        ↓
+              ACCEPTED / REJECTED
+    ↓
+ETimsSubmission (ACCEPTED / REJECTED) — store control_unit_invoice_no, qr, hash, response snapshot
+    ↓
+[Finance gate]
+  If ACCEPTED → allow final GL journal posting
+  If REJECTED → block journal; show error; allow admin override in demo mode
+    ↓
+GL JournalEntry (POSTED) — finance_service.mark_journal_posted()
+```
+
+---
+
+##### Staged Implementation Plan
+
+**TASK-005.1A — Enhanced models + migration (safe to start)**
+- Add to `ETimsSubmission`: `request_payload` (JSON), `response_payload` (JSON), `provider_reference` (String), `provider_name` (String), `environment` (String), `last_attempt_at` (DateTime), `accepted_at` (DateTime)
+- Add statuses to `ETimsStatus`: DRAFT, READY, RETRY_PENDING, CANCELLED, ERROR
+- Create `EtimsProviderConfig` model: provider_name, provider_type enum, environment, base_url, is_active, is_demo_mode, production_execution_allowed
+- Migration required — additive only, no DROP
+- Blocker: none (structural only)
+- Risk: LOW
+
+**TASK-005.1B — Enhanced adapter interface + stub provider (safe to start)**
+- Extend `ETIMSConnector` Protocol: add cancel_invoice(), get_submission_status(), health_check()
+- Implement `SandboxStubProvider` (richer responses, configurable ACCEPTED/REJECTED simulation)
+- Add `normalize_response()` utility
+- No live network calls
+- Blocker: none
+- Risk: LOW
+
+**TASK-005.1C — Fiscalization endpoints (safe to start)**
+- POST /etims/prepare/{invoice_id} — build payload, create ETimsSubmission(READY), no submit yet
+- POST /etims/submit/{invoice_id} — existing, enhance to use new submission fields
+- POST /etims/retry/{submission_id} — retry REJECTED/FAILED submission
+- POST /etims/cancel/{invoice_id} — mark CANCELLED, cancel at provider if applicable
+- GET /etims/submissions/{invoice_id} — existing, enhance
+- GET /etims/status/{submission_id} — poll provider for status
+- Blocker: TASK-005.1A models must exist first
+- Risk: LOW (all stub-safe)
+
+**TASK-005.1D — Finance posting gate (needs accountant approval)**
+- Add `require_fiscal_acceptance` flag to invoice type config or CountryTaxConfig
+- In finance posting path: if invoice type requires eTIMS and submission status != ACCEPTED → raise or warn
+- Demo mode override allowed if is_demo_mode=True on provider config
+- Add tests
+- Blocker: accountant must confirm which invoice types require fiscal gate (all VAT invoices? threshold?)
+- Risk: MEDIUM — touches posting flow
+
+**TASK-005.1E — Live provider adapter (blocked)**
+- Blockers: provider selected, sandbox credentials, API spec confirmed, device registered
+- Add auth header to HttpETIMSConnector
+- Add VSCU/OSCU-specific path and payload differences if needed
+- Set ETIMS_PROVIDER=http in .env.development (NOT committed)
+- production_execution_allowed remains False
+- Risk: HIGH — live external calls
+
+**TASK-005.1F — Frontend fiscalization panel**
+- `/dashboard/finance/etims` route already registered in integration_capabilities
+- Show: submission status, provider reference, KRA control number, QR, audit trail
+- Buttons: prepare, submit, retry, cancel
+- Blocker: TASK-005.1C endpoints must exist
+- Risk: LOW
+
+---
+
+##### Blockers Summary
+
+| Blocker | Required by | Owner |
+|---------|-------------|-------|
+| Provider/middleware decision (VSCU/OSCU vs approved provider vs KRA direct) | TASK-005.1E | Business/IT |
+| KRA sandbox credentials (PIN, branch_id, device_serial, API_URL) | TASK-005.1E | Tax team |
+| Official KRA/provider API spec (endpoint paths, auth scheme, payload format) | TASK-005.1E | Tax team + provider |
+| Device registration/initialization (OSCU/VSCU onboarding) | TASK-005.1E | KRA/provider |
+| Product HS/KRA classification codes (itemCd, taxTyCd) | TASK-005.1A+payload | Accountant/tax advisor |
+| Which invoice types require fiscal gate before GL posting | TASK-005.1D | Accountant |
+| VAT rate confirmation (standard 16%, zero-rated, exempt) | Payload accuracy | Tax advisor |
+
+---
+
+##### Safety Flags (never violate)
+
+- `production_execution_allowed=False` — do NOT change without full UAT sign-off
+- No credentials in code or committed .env files
+- SimulationETIMSConnector is default — no live calls unless ETIMS_PROVIDER=http explicitly set
+- No duplicate submission: idempotency key must be invoice_id (ETimsSubmission.invoice_id is UNIQUE)
+- No finance journal posting for invoices with REJECTED/ERROR eTIMS status (once gate is implemented)
+- Full request/response snapshot stored on every submission attempt
+- audit log must be immutable — no UPDATE on submitted records, only new rows
+
+---
+
+##### Source Code Changed During Audit
+
+None — audit only. TASKS.md updated only.
 
 ---
 
