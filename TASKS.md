@@ -554,10 +554,11 @@ GL JournalEntry (POSTED) — finance_service.mark_journal_posted()
 - Risk: HIGH — live external calls
 
 **TASK-005.1F — Frontend fiscalization panel**
-- `/dashboard/finance/etims` route already registered in integration_capabilities
-- Show: submission status, provider reference, KRA control number, QR, audit trail
-- Buttons: prepare, submit, retry, cancel
-- Blocker: TASK-005.1C endpoints must exist
+- **Status:** Audited — implementation plan ready (2026-06-02)
+- `/dashboard/finance/etims` page exists and is already wired as a tab in `/dashboard/finance`
+- Existing page: 5 statuses, 2 API functions (list + submit), no retry/cancel/poll/health, missing 9 fields
+- Implementation plan: 5 sub-batches (see TASK-005.1F Audit section below)
+- Blocker: none — TASK-005.1C endpoints are live
 - Risk: LOW
 
 ---
@@ -786,7 +787,250 @@ request_payload, response_payload, provider_name, provider_reference, environmen
 **Next:**
 - TASK-005.1D — finance posting gate (blocked on accountant approval for which invoice types require eTIMS gate before GL posting)
 - TASK-005.1E — live provider adapter (blocked on provider selection + KRA sandbox credentials + official API spec)
-- TASK-005.1F — frontend fiscalization panel (can start after TASK-005.1C endpoints are live)
+- TASK-005.1F — frontend fiscalization panel (audited; implementation can start)
+
+---
+
+#### TASK-005.1F Audit — Frontend Fiscalization Panel (2026-06-02)
+
+**Status:** Audited — no source code changed
+
+##### Working Tree State Before Audit
+Clean — `b87bce3` HEAD = origin/main.
+
+##### Existing Frontend eTIMS Structure Found
+
+| Item | Path | Status |
+|------|------|--------|
+| eTIMS global page | `frontend/src/app/dashboard/finance/etims/page.tsx` | EXISTS — partial |
+| Finance tab registration | `frontend/src/app/dashboard/finance/page.tsx` line 199 | EXISTS — tab key `etims` |
+| Tax regulatory API lib | `frontend/src/lib/tax_regulatory.ts` | EXISTS — no eTIMS functions |
+| Invoice detail page | `frontend/src/app/dashboard/sales/invoices/[id]/page.tsx` | EXISTS — no eTIMS card |
+| Nav-config eTIMS link | `frontend/src/components/nav-config.tsx` line 268 | EXISTS — points to `tab: "tax"` (should be `tab: "etims"`) |
+
+##### Existing eTIMS Page Gaps vs TASK-005.1C Backend
+
+| Gap | Detail |
+|-----|--------|
+| Statuses missing | Only 5: PENDING/SUBMITTED/ACCEPTED/REJECTED/FAILED. Missing: DRAFT, READY, RETRY_PENDING, CANCELLED, ERROR |
+| Interface fields missing | provider_name, provider_reference, environment, request_payload, response_payload, accepted_at, last_attempt_at, attempt_count, error_code |
+| API functions missing | retry, cancel, poll status, provider health check |
+| Action buttons missing | Retry, Cancel, Poll per-row buttons |
+| Toast notifications | None — no `useToast`/`ToastContainer` |
+| Confirm dialog | None — cancel-accepted requires confirmation |
+| Health check panel | None |
+| Debug details | None — request/response payload not collapsible |
+| Provider metadata columns | None — provider_name, environment, provider_reference not shown |
+| Status filter | 5 statuses only; missing 5 new statuses |
+
+##### Existing eTIMS Page Strengths (keep)
+
+- Correct URL prefix `/api/v1/tax/`
+- Amber simulation-mode warning banner
+- Status filter dropdown
+- KPI counters (total/accepted/pending/rejected)
+- Invoice UUID submit form
+- TanStack Query v5 + `queryClient.invalidateQueries()` pattern
+- `staleTime: 30_000` (sensible default)
+
+##### API Client Pattern
+
+- `apiClient` from `@/lib/api` (axios, `baseURL: NEXT_PUBLIC_API_URL ?? localhost:8000`, cookie-based auth)
+- TanStack Query v5 (`@tanstack/react-query ^5.35.1`)
+- `useQuery` for reads, `useMutation` for writes
+- `useQueryClient().invalidateQueries()` after successful mutations
+- `useToast()` hook + `ToastContainer` for user feedback
+- `extractApiError()` from `@/lib/inventory` for error message extraction
+- Auth: `PermissionGuard` / `RequirePermission` using `hasPermission()` from auth context
+
+##### UI Component Patterns
+
+| Component | Import | Key Props |
+|-----------|--------|-----------|
+| `Badge` | `@/components/ui/Badge` | `label`, `variant`: green/red/yellow/blue/gray |
+| `Button` | `@/components/ui/Button` | `variant`: primary/secondary/danger; `loading` bool |
+| `Modal` | `@/components/ui/Modal` | `open`, `onClose`, `title`, children |
+| `Toast/ToastContainer` | `@/components/ui/Toast` | `toasts`, `onDismiss`; auto-dismiss 4s/7s |
+| `useToast()` | `@/hooks/useToast` | `toast(type, title, body?)`, `dismiss(id)` |
+| `Table` | `@/components/ui/Table` | column-accessor pattern |
+| `Input` | `@/components/ui/Input` | standard input |
+| `Select` | `@/components/ui/Select` | standard select |
+
+##### Backend Endpoint URL Map (verified prefix: `/api/v1/tax/`)
+
+| Frontend action | HTTP | URL |
+|----------------|------|-----|
+| List submissions | GET | `/api/v1/tax/etims/submissions?status=&limit=` |
+| Get by invoice | GET | `/api/v1/tax/etims/submissions/{invoice_id}` |
+| Submit | POST | `/api/v1/tax/etims/submit/{invoice_id}` |
+| Retry | POST | `/api/v1/tax/etims/retry/{submission_id}` |
+| Cancel | POST | `/api/v1/tax/etims/cancel/{submission_id}` body: `{reason, allow_cancel_accepted}` |
+| Poll status | POST | `/api/v1/tax/etims/status/{submission_id}/poll` |
+| Provider health | GET | `/api/v1/tax/etims/provider/health` |
+
+##### ETimsSubmission TypeScript Interface (full — to replace partial existing)
+
+```typescript
+export type ETimsStatus =
+  | "DRAFT" | "READY" | "PENDING" | "SUBMITTED" | "ACCEPTED"
+  | "REJECTED" | "RETRY_PENDING" | "CANCELLED" | "FAILED" | "ERROR";
+
+export interface ETimsSubmission {
+  id: string;
+  invoice_id: string;
+  status: ETimsStatus;
+  control_unit_invoice_no?: string;
+  signed_invoice_hash?: string;
+  invoice_qr_data?: string;
+  transmitted_at?: string;
+  kra_response_code?: string;
+  kra_response_message?: string;
+  error_message?: string;
+  retry_count: number;
+  provider_name?: string;
+  provider_reference?: string;
+  environment?: string;
+  request_payload?: Record<string, unknown>;
+  response_payload?: Record<string, unknown>;
+  accepted_at?: string;
+  last_attempt_at?: string;
+  attempt_count: number;
+  error_code?: string;
+  created_at: string;
+}
+
+export interface ETimsCancelRequest {
+  reason: string;
+  allow_cancel_accepted?: boolean;
+}
+
+export interface ETimsProviderHealth {
+  provider: string;
+  healthy: boolean;
+  environment: string;
+  production_execution_allowed: boolean;
+  detail?: string;
+}
+```
+
+##### Panel Fields — User-Facing vs Developer-Only
+
+| Field | Show | Notes |
+|-------|------|-------|
+| status | Always | Badge with full 10-status set |
+| control_unit_invoice_no | Always | KRA/TIMS number |
+| kra_response_code | Always | KRA code |
+| kra_response_message | Always | KRA message |
+| accepted_at | Always | When accepted by KRA |
+| transmitted_at | Always | When first sent |
+| invoice_qr_data | Always | QR text or render |
+| signed_invoice_hash | Collapsible | Long hex — collapse |
+| provider_name | Always | "simulation" or live name |
+| environment | Always | "simulation" / "sandbox" / "production" |
+| provider_reference | Always | Reference from provider |
+| error_code | When failed | Show only for REJECTED/FAILED/ERROR |
+| error_message | When failed | Show only for REJECTED/FAILED/ERROR |
+| attempt_count | Always | Total attempts |
+| retry_count | Always | Retry attempts |
+| last_attempt_at | Always | Last attempt timestamp |
+| request_payload | Debug collapsible | Developer only — behind toggle |
+| response_payload | Debug collapsible | Developer only — behind toggle |
+
+##### Button Enable/Disable Rules
+
+| Button | Enabled when | Disabled when |
+|--------|-------------|---------------|
+| Submit | No submission OR status DRAFT/READY | ACCEPTED, SUBMITTED, PENDING |
+| Retry | REJECTED, FAILED, ERROR, RETRY_PENDING | All other statuses |
+| Cancel | Any non-CANCELLED | CANCELLED |
+| Cancel ACCEPTED | Requires confirm modal + `allow_cancel_accepted=true` | — |
+| Poll Status | `provider_reference` is not null | `provider_reference` is null |
+| Provider Health | Always | — |
+
+##### UX Safety Rules
+
+- Never show "KRA production connected" — always show simulation/environment label
+- production_execution_allowed shown as boolean in health check; never hide it
+- No automatic polling — all actions manual
+- Health check not auto-run on page load — user-triggered button
+- `request_payload` / `response_payload` behind collapsible "Debug details" section
+- Cancel ACCEPTED: confirm Modal with explicit checkbox or text entry required
+- Simulation mode amber banner: keep existing, add provider_name + environment from health check
+
+##### Testing Framework
+
+No unit test framework (Vitest/Jest) in frontend. Only Playwright e2e. api-parity-manifest notes "VAT/eTIMS pages still need conversion" to shared API client pattern.
+
+**Test plan (Playwright e2e — future):**
+- Navigate to `/dashboard/finance?tab=etims` — page loads without error
+- Simulation mode banner visible
+- Status filter shows all 10 statuses
+- Submit button disabled for row with status ACCEPTED
+- Retry button enabled only for REJECTED/FAILED/ERROR/RETRY_PENDING rows
+- Cancel button disabled for CANCELLED row
+- Cancel ACCEPTED row opens confirm modal
+- Poll button disabled when provider_reference is null
+- Health check shows `production_execution_allowed: false`
+
+##### Implementation Sub-Batches
+
+**TASK-005.1F.1 — API client types + functions in `lib/tax_regulatory.ts`**
+- Add `ETimsStatus` union (all 10)
+- Add `ETimsSubmission`, `ETimsCancelRequest`, `ETimsProviderHealth` interfaces
+- Add `etimsApi` object with 7 functions (listSubmissions, getByInvoice, submit, retry, cancel, poll, health)
+- No UI changes; no DB changes
+- Safe to implement now
+
+**TASK-005.1F.2 — Update `finance/etims/page.tsx` (global monitoring)**
+- Expand status enum/pills to all 10 statuses
+- Update `ETimsSubmission` interface to full field set
+- Switch from inline `taxApi` to `etimsApi` from `lib/tax_regulatory.ts`
+- Add per-row action buttons: Retry, Cancel, Poll
+- Add health check panel (GET health, show provider/environment/production_execution_allowed)
+- Add `useToast`/`ToastContainer` for action feedback
+- Add cancel confirm modal (using existing `Modal` component)
+- Add provider metadata columns (provider_name, environment)
+- Expand status filter to 10 statuses
+- Add attempt_count column
+- Add debug details collapsible (request/response payload)
+- Keep simulation mode amber banner
+- Safe to implement now
+
+**TASK-005.1F.3 — eTIMS card in invoice detail page (`sales/invoices/[id]/page.tsx`)**
+- Add eTIMS submission card below invoice header
+- Load submission via `GET /etims/submissions/{invoice_id}` (404 = not submitted yet)
+- Show: status badge, control_unit_invoice_no, provider_reference, error if failed
+- Action buttons: Submit (if not submitted), Retry, Cancel, Poll
+- Pattern: same as existing payment section in that page
+- Blocked on: none — safe to implement after TASK-005.1F.2
+
+**TASK-005.1F.4 — UX hardening**
+- Loading states on all action buttons (`loading` prop on `Button`)
+- Error display for failed mutations (toast + inline)
+- Confirm dialog for cancel-accepted with `allow_cancel_accepted=true`
+- `PermissionGuard` if `finance.approve` permission is appropriate for submit/retry/cancel
+- Safe to implement after TASK-005.1F.2
+
+**TASK-005.1F.5 — Nav-config fix**
+- nav-config.tsx line 268: change `tab: "tax"` → `tab: "etims"` for "eTIMS / e-Invoice" link
+- One-line change; very low risk
+
+##### Risk Classification
+
+| Item | Classification |
+|------|---------------|
+| API client types + functions | Safe now |
+| Update etims/page.tsx statuses/fields | Safe now |
+| Retry/cancel/poll action buttons | Safe now — simulation only |
+| Health check panel | Safe now — reads only |
+| Invoice detail eTIMS card | Safe now — simulation only |
+| Finance posting gate | Blocked — accountant decision |
+| Live provider adapter | Blocked — credentials + spec |
+| production_execution_allowed=true | Never — requires full UAT |
+| KRA production label in UI | Never without live adapter |
+
+##### Source Code Changed During Audit
+None — audit only. TASKS.md updated only.
 
 ---
 
