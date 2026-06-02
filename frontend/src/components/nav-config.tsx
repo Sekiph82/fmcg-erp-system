@@ -265,7 +265,7 @@ export const NAV_CONFIG: NavEntry[] = [
       { label: "Dunning",             tab: "dunning" },
       { label: "Tax",                 tab: "tax" },
       { label: "Journal Entries",     tab: "accounting" },
-      { label: "eTIMS / e-Invoice",   tab: "tax" },
+      { label: "eTIMS / e-Invoice",   tab: "etims" },
     ]}),
 
   // ── Factory Operations ──────────────────────────────────────────────────────
