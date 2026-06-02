@@ -114,15 +114,16 @@ def test_gs1_service_has_generate_barcode():
     assert callable(getattr(svc, "generate_barcode", None)), "gs1_service missing generate_barcode"
 
 
-# ── Migration head ────────────────────────────────────────────────────────────
+# ── Migration existence ───────────────────────────────────────────────────────
 
-def test_alembic_head_is_gs1_migration():
-    import subprocess, sys
-    result = subprocess.run(
-        [sys.executable, "-m", "alembic", "heads"],
-        capture_output=True, text=True,
-        cwd=__file__[:__file__.index("tests")],
-    )
-    assert "20260518_0001" in result.stdout, (
-        f"Alembic head should be 20260518_0001; got: {result.stdout.strip()}"
+def test_gs1_migration_exists_in_alembic_versions():
+    # 20260518_0001 was the migration created alongside GAP-018 work.
+    # It must remain in alembic/versions/ but is not required to be the current
+    # head — later migrations (e.g. eTIMS 20260602_0001) supersede it as head.
+    from pathlib import Path
+    versions_dir = Path(__file__).parent.parent / "alembic" / "versions"
+    matches = list(versions_dir.glob("20260518_0001*.py"))
+    assert matches, (
+        f"Migration 20260518_0001 not found in {versions_dir}; "
+        "it may have been accidentally deleted"
     )

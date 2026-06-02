@@ -1334,9 +1334,19 @@ Move `_apply_etims_response_to_submission` from `tax_regulatory.py` endpoint fil
 - **Tests / checks run:** `pytest tests/test_gs1_auth.py tests/test_gap018_gs1_label_printing.py` — **26/26 PASSED**. `python -c "import app.main"` — CLEAN.
 - **Result:** 36/36 GS1 routes guarded. `complete_print_job` now uses `current_user.username` (no `Query("system")` spoofing).
 - **Known limitations:** 401 tests require TestClient + real auth session (no TestClient infrastructure in this test suite). 403 behaviour tested directly via `require_permission` dep invocation. Happy-path authorized HTTP tests not added — dependency wiring confirmed by route inspection test.
-- **Git commit / branch:** Not committed yet (awaiting approval)
+- **Git commit / branch:** `370e1c4` Auto-sync 2026-05-31 — committed
 - **Graphify refresh after implementation:** backend
-- **Graphify refresh status:** Pending user approval — do not run now
+- **Graphify refresh status:** Pending
+
+**TASK-006.1 — Fix stale Alembic head assertion (2026-06-02)**
+- **File:** `backend/tests/test_gap018_gs1_label_printing.py`
+- **Problem:** `test_alembic_head_is_gs1_migration` hardcoded `20260518_0001` as current Alembic head. TASK-005.1A added migration `20260602_0001_etims_provider_config_submission_fields.py`, making `20260518_0001` no longer head.
+- **Fix:** Renamed test to `test_gs1_migration_exists_in_alembic_versions`. Now checks that `20260518_0001*.py` file exists in `alembic/versions/` (file existence, not current head).
+- **Old assertion:** `assert "20260518_0001" in alembic_heads_stdout`
+- **New assertion:** `assert list(versions_dir.glob("20260518_0001*.py"))` — file existence check
+- **Checks run:** `pytest tests/test_gap018_gs1_label_printing.py tests/test_gs1_auth.py` — **26/26 PASSED**
+- No app code, migrations, frontend, or .env files changed
+- Next: backend Graphify refresh for TASK-006 + TASK-006.1 + TASK-007
 
 #### Audit — Routes Found: 36 (all unguarded)
 
