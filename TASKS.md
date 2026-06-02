@@ -568,7 +568,25 @@ GL JournalEntry (POSTED) — finance_service.mark_journal_posted()
 - Endpoint base: `/api/v1/tax/etims`
 - Type-check: `npm run type-check` — CLEAN (0 errors)
 - No UI pages modified; no backend modified; no credentials; no live calls; no Graphify
-- Next: TASK-005.1F.2 — update `finance/etims/page.tsx` with full 10-status set, retry/cancel/poll/health actions, toasts, confirm modal
+
+**TASK-005.1F.2 — Done (2026-06-02)**
+- File: `frontend/src/app/dashboard/finance/etims/page.tsx`
+- Replaced inline local types (`ETimsStatus` 5-value, `ETimsSubmission` 12-field) with imports from `@/lib/tax_regulatory`
+- Replaced inline `taxApi` with `etimsApi` from shared client
+- Added imports: `Badge`, `Button`, `Modal`, `ToastContainer`, `useToast`, `extractApiError`
+- Status support: expanded to all 10 statuses with `STATUS_BADGE` variant mapping
+- Status filter: all 10 statuses in dropdown
+- KPI counters: Pending/Submitted combined; Rejected/Failed/Error combined
+- Provider health panel: manual "Check Health" button; shows provider/environment/live/production_execution_allowed as Badges; note/detail field
+- Action buttons per row: Retry (enabled only for REJECTED/FAILED/ERROR/RETRY_PENDING), Cancel (disabled for CANCELLED), Poll (disabled when provider_reference null)
+- Toast notifications on all mutation success/error
+- Cancel confirm modal: reason textarea required; ACCEPTED status shows red warning; `allow_cancel_accepted=true` sent automatically for ACCEPTED submissions
+- Table columns expanded: Invoice, Status, Provider (name+environment), TIMS No, KRA Response, Attempts (attempt_count/retry_count), Last Attempt, Actions
+- Debug details: collapsible `<details>` per row — error_code, provider_reference, signed_invoice_hash, request_payload, response_payload
+- Simulation banner updated: shows `production_execution_allowed = false`
+- Type-check: `npm run type-check` — CLEAN (0 errors)
+- No backend modified; no credentials; no live calls; no Graphify
+- Next: TASK-005.1F.3 — eTIMS card in invoice detail page (`sales/invoices/[id]/page.tsx`)
 
 ---
 
