@@ -14,7 +14,8 @@ from app.schemas.tax_regulatory import (
     RegulatoryFlagCreate, RegulatoryFlagUpdate, RegulatoryFlagRead,
     TransactionTaxCreate, TransactionTaxUpdate, TransactionTaxRead,
     TaxSummaryRow, RegulatoryStatusRow, ApplyTaxRequest,
-    ETimsSubmissionRead, VATReturnCreate, VATReturnRead,
+    ETimsSubmissionRead, ETimsCancelRequest,
+    VATReturnCreate, VATReturnRead,
     WithholdingTaxCreate, WithholdingTaxRead,
 )
 import app.crud.tax_regulatory as crud
@@ -317,6 +318,43 @@ from app.models.tax_regulatory import (
     WithholdingTaxRecord,
 )
 
+_RETRY_ALLOWED_STATUSES = frozenset({
+    ETimsStatus.REJECTED, ETimsStatus.FAILED,
+    ETimsStatus.ERROR, ETimsStatus.RETRY_PENDING,
+})
+
+
+def _apply_etims_response_to_submission(sub, request_payload, result, now, *, increment_attempt=True, update_transmitted=False):
+    """Apply connector response fields to an ETimsSubmission row. No DB commit."""
+    sub.status = ETimsStatus(result.status)
+    sub.kra_response_code = result.kra_response_code
+    sub.kra_response_message = result.kra_response_message
+    sub.request_payload = request_payload
+    sub.response_payload = result.raw_response
+    sub.provider_name = result.provider_name
+    sub.provider_reference = result.provider_reference
+    sub.environment = result.environment
+    sub.last_attempt_at = now
+    if result.control_unit_invoice_no is not None:
+        sub.control_unit_invoice_no = result.control_unit_invoice_no
+    if result.signed_invoice_hash is not None:
+        sub.signed_invoice_hash = result.signed_invoice_hash
+    if result.invoice_qr_data is not None:
+        sub.invoice_qr_data = result.invoice_qr_data
+    if result.accepted_at is not None:
+        sub.accepted_at = result.accepted_at
+    if result.success:
+        sub.error_code = None
+        sub.error_message = None
+    else:
+        sub.error_code = result.error_code
+        sub.error_message = result.error_message
+    if increment_attempt:
+        sub.retry_count = (sub.retry_count or 0) + 1
+        sub.attempt_count = (sub.attempt_count or 0) + 1
+    if update_transmitted:
+        sub.transmitted_at = now
+
 
 @router.get("/etims/submissions", response_model=List[ETimsSubmissionRead])
 async def list_etims_submissions(
@@ -371,8 +409,9 @@ async def submit_etims(
         _tsel(ETimsSubmission).where(ETimsSubmission.invoice_id == invoice_id)
     )).scalar_one_or_none()
 
-    if sub and sub.status == ETimsStatus.ACCEPTED:
-        raise HTTPException(422, "Invoice already accepted by KRA")
+    # Return existing for ACCEPTED/in-flight states — do not duplicate submissions
+    if sub and sub.status in {ETimsStatus.ACCEPTED, ETimsStatus.SUBMITTED, ETimsStatus.PENDING}:
+        return ETimsSubmissionRead.model_validate(sub)
 
     if not sub:
         sub = ETimsSubmission(invoice_id=invoice_id, submitted_by_id=current_user.id)
@@ -381,33 +420,141 @@ async def submit_etims(
     payload = build_etims_payload(invoice, settings)
     connector = get_etims_connector(settings)
     now = datetime.now(timezone.utc)
-    result = await connector.submit_sales_invoice(payload)
+    result = await connector.submit_invoice(payload)
 
-    sub.status = ETimsStatus(result.status)
-    sub.transmitted_at = now
-    sub.control_unit_invoice_no = result.control_unit_invoice_no
-    sub.signed_invoice_hash = result.signed_invoice_hash
-    sub.invoice_qr_data = result.invoice_qr_data
-    sub.kra_response_code = result.kra_response_code
-    sub.kra_response_message = result.kra_response_message
-    sub.retry_count += 1
-    # Persist new 005.1A provider/integrator tracking fields
-    sub.request_payload = payload
-    sub.response_payload = result.raw_response
-    sub.provider_name = result.provider_name
-    sub.provider_reference = result.provider_reference
-    sub.environment = result.environment
-    sub.last_attempt_at = now
-    sub.attempt_count = (sub.attempt_count or 0) + 1
-    sub.error_code = result.error_code
-    if result.error_message:
-        sub.error_message = result.error_message
-    if result.accepted_at:
-        sub.accepted_at = result.accepted_at
+    _apply_etims_response_to_submission(sub, payload, result, now, increment_attempt=True, update_transmitted=True)
 
     await db.commit()
     await db.refresh(sub)
     return ETimsSubmissionRead.model_validate(sub)
+
+
+@router.post("/etims/retry/{submission_id}", response_model=ETimsSubmissionRead)
+async def retry_etims(
+    submission_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Retry a REJECTED, FAILED, ERROR, or RETRY_PENDING submission."""
+    from app.models.sales import Invoice, InvoiceLine
+    from sqlalchemy.orm import selectinload
+    from app.core.config import settings
+    from app.services.etims_connector import build_etims_payload, get_etims_connector
+
+    sub = (await db.execute(
+        _tsel(ETimsSubmission).where(ETimsSubmission.id == submission_id)
+    )).scalar_one_or_none()
+    if not sub:
+        raise HTTPException(404, "eTIMS submission not found")
+
+    if sub.status not in _RETRY_ALLOWED_STATUSES:
+        raise HTTPException(422, f"Cannot retry submission with status={sub.status.value}")
+
+    invoice = (await db.execute(
+        _tsel(Invoice)
+        .options(selectinload(Invoice.lines).selectinload(InvoiceLine.product))
+        .where(Invoice.id == sub.invoice_id)
+    )).scalar_one_or_none()
+    if not invoice:
+        raise HTTPException(404, "Invoice not found for submission")
+
+    payload = build_etims_payload(invoice, settings)
+    connector = get_etims_connector(settings)
+    now = datetime.now(timezone.utc)
+    result = await connector.submit_invoice(payload)
+
+    _apply_etims_response_to_submission(sub, payload, result, now, increment_attempt=True, update_transmitted=True)
+    sub.submitted_by_id = current_user.id
+
+    await db.commit()
+    await db.refresh(sub)
+    return ETimsSubmissionRead.model_validate(sub)
+
+
+@router.post("/etims/cancel/{submission_id}", response_model=ETimsSubmissionRead)
+async def cancel_etims(
+    submission_id: UUID,
+    body: ETimsCancelRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Cancel a submission through the connector. Requires reason."""
+    from app.core.config import settings
+    from app.services.etims_connector import get_etims_connector
+
+    sub = (await db.execute(
+        _tsel(ETimsSubmission).where(ETimsSubmission.id == submission_id)
+    )).scalar_one_or_none()
+    if not sub:
+        raise HTTPException(404, "eTIMS submission not found")
+
+    if sub.status == ETimsStatus.CANCELLED:
+        raise HTTPException(422, "Submission is already CANCELLED")
+
+    if sub.status == ETimsStatus.ACCEPTED and not body.allow_cancel_accepted:
+        raise HTTPException(
+            422,
+            "Submission already ACCEPTED — set allow_cancel_accepted=true to force cancel",
+        )
+
+    provider_ref = sub.provider_reference or f"LOCAL-{sub.id}"
+    connector = get_etims_connector(settings)
+    now = datetime.now(timezone.utc)
+    result = await connector.cancel_invoice(provider_ref, body.reason)
+
+    cancel_req = {"action": "cancel", "provider_reference": provider_ref, "reason": body.reason}
+    _apply_etims_response_to_submission(sub, cancel_req, result, now, increment_attempt=True)
+
+    await db.commit()
+    await db.refresh(sub)
+    return ETimsSubmissionRead.model_validate(sub)
+
+
+@router.post("/etims/status/{submission_id}/poll", response_model=ETimsSubmissionRead)
+async def poll_etims_status(
+    submission_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(get_current_user),
+):
+    """Poll provider for current submission status. Requires provider_reference."""
+    from app.core.config import settings
+    from app.services.etims_connector import get_etims_connector
+
+    sub = (await db.execute(
+        _tsel(ETimsSubmission).where(ETimsSubmission.id == submission_id)
+    )).scalar_one_or_none()
+    if not sub:
+        raise HTTPException(404, "eTIMS submission not found")
+
+    if not sub.provider_reference:
+        raise HTTPException(422, "No provider_reference — cannot poll status (submit first)")
+
+    connector = get_etims_connector(settings)
+    now = datetime.now(timezone.utc)
+    result = await connector.get_submission_status(sub.provider_reference)
+
+    poll_req = {"action": "poll_status", "provider_reference": sub.provider_reference}
+    _apply_etims_response_to_submission(sub, poll_req, result, now, increment_attempt=True)
+
+    await db.commit()
+    await db.refresh(sub)
+    return ETimsSubmissionRead.model_validate(sub)
+
+
+@router.get("/etims/provider/health")
+async def etims_provider_health():
+    """Health check for the current eTIMS connector/provider."""
+    from app.core.config import settings
+    from app.services.etims_connector import get_etims_connector
+    from app.core.integration_capabilities import get_integration_capability
+
+    connector = get_etims_connector(settings)
+    health = await connector.health_check()
+    etims_cap = get_integration_capability("ETIMS")
+    health["production_execution_allowed"] = (
+        etims_cap.production_execution_allowed if etims_cap else False
+    )
+    return health
 
 
 # ── VAT Returns ───────────────────────────────────────────────────────────────

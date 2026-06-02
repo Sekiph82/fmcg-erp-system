@@ -351,7 +351,7 @@ Rules:
 
 ### Task ID: TASK-005 — eTIMS live integration (KRA Kenya)
 
-- **Status:** TASK-005.1A+1B Done — provider config model, submission tracking fields, and provider-neutral adapter interface implemented; TASK-005.1C safe to start; TASK-005.1D needs accountant approval; TASK-005.1E blocked on provider selection + KRA sandbox credentials
+- **Status:** TASK-005.1A+1B+1C Done — provider config model, submission tracking fields, provider-neutral adapter interface, and fiscalization workflow endpoints implemented; no live provider calls; TASK-005.1D needs accountant approval; TASK-005.1E blocked on provider selection + KRA sandbox credentials
 - **Priority:** P0
 - **Category:** Integration / Deployment
 - **Why it matters:** Kenya VAT-registered businesses are legally required to submit invoices to KRA eTIMS. Track A (`tax_regulatory.py`) is the active integration path wired to the frontend at `/dashboard/finance/etims`.
@@ -722,6 +722,71 @@ request_payload, response_payload, provider_name, provider_reference, environmen
 **Next:**
 - TASK-005.1C — submit/retry/cancel/status-poll endpoints
 - TASK-005.1D — finance posting gate (blocked on accountant approval)
+
+---
+
+#### TASK-005.1C Implementation — Fiscalization Workflow Endpoints (2026-06-02)
+
+**Files changed:**
+- `backend/app/api/v1/endpoints/tax_regulatory.py` — helper + 4 new endpoints + submit refactor
+- `backend/app/schemas/tax_regulatory.py` — ETimsCancelRequest added
+- `backend/tests/test_task005_1c_endpoints.py` — 21 new tests
+
+**Endpoints added/updated:**
+
+| Route | Method | Description |
+|---|---|---|
+| `/etims/submit/{invoice_id}` | POST | Updated: returns existing if ACCEPTED/SUBMITTED/PENDING; uses helper; calls `submit_invoice` |
+| `/etims/retry/{submission_id}` | POST | NEW: retry REJECTED/FAILED/ERROR/RETRY_PENDING submissions |
+| `/etims/cancel/{submission_id}` | POST | NEW: cancel via connector; body: `ETimsCancelRequest` |
+| `/etims/status/{submission_id}/poll` | POST | NEW: poll provider for current status |
+| `/etims/provider/health` | GET | NEW: connector health check + production_execution_allowed flag |
+
+**Helper added:** `_apply_etims_response_to_submission(sub, request_payload, result, now, *, increment_attempt=True, update_transmitted=False)`
+- Sets: status, kra_response_code/message, request/response_payload, provider fields, last_attempt_at
+- Conditionally sets: control_unit_invoice_no, signed_invoice_hash, invoice_qr_data, accepted_at (only when not None in result)
+- On success: clears error_code/error_message; on failure: sets them
+- increment_attempt=True (default): increments both retry_count and attempt_count
+- update_transmitted=True: sets transmitted_at (used on submit/retry only)
+
+**Status transition rules:**
+- Submit: returns existing if ACCEPTED/SUBMITTED/PENDING; resubmits for all other statuses
+- Retry: allowed only for REJECTED, FAILED, ERROR, RETRY_PENDING; blocks all others (422)
+- Cancel: blocks CANCELLED (422); blocks ACCEPTED unless `allow_cancel_accepted=true`; allows all others
+- Poll: requires provider_reference (422 if missing); increments attempt_count (provider call)
+
+**Submit duplicate guard:** yes — returns existing for ACCEPTED/SUBMITTED/PENDING (changed from 422 for ACCEPTED)
+
+**Schema added:** `ETimsCancelRequest(reason: str, allow_cancel_accepted: bool = False)`
+
+**DB integration tests note:** Endpoint handler integration tests (requires live async session + PostgreSQL enum types) were intentionally skipped. The helper `_apply_etims_response_to_submission` is the core new logic and is fully tested with bare SQLAlchemy model instances (no DB needed). Status-transition rules tested via `_RETRY_ALLOWED_STATUSES` frozenset.
+
+**Checks/tests:**
+- `python -c "from app.api.v1.endpoints.tax_regulatory import router, ..."` → PASS
+- `python -c "from app.schemas.tax_regulatory import ETimsCancelRequest; ..."` → PASS
+- `pytest tests/test_task005_1c_endpoints.py -v` → **21/21 PASSED**
+- `pytest tests/test_task005_1a_etims_models.py tests/test_task005_1b_connector.py -v` → **23/23 PASSED**
+- Total: **44/44 PASSED**
+
+**Safety confirmed:**
+- No live KRA/provider call made
+- No credentials added
+- production_execution_allowed unchanged (remains False)
+- Finance posting logic unchanged
+- Frontend unchanged
+- No migrations added
+- No etims_connector.py changes
+
+**Known limitations:**
+- No finance posting gate (TASK-005.1D — blocked on accountant approval)
+- Product KRA item codes (itemCd/taxTyCd) still hardcoded TODOs in payload builder
+- HttpETIMSConnector cancel/status/health raise NotImplementedError (provider spec not yet confirmed)
+- Status poll increments attempt_count (counts as provider call even for simulation)
+
+**Next:**
+- TASK-005.1D — finance posting gate (blocked on accountant approval for which invoice types require eTIMS gate before GL posting)
+- TASK-005.1E — live provider adapter (blocked on provider selection + KRA sandbox credentials + official API spec)
+- TASK-005.1F — frontend fiscalization panel (can start after TASK-005.1C endpoints are live)
 
 ---
 

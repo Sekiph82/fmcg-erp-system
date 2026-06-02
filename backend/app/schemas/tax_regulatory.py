@@ -313,6 +313,11 @@ class ETimsSubmissionRead(BaseModel):
     created_at: datetime
 
 
+class ETimsCancelRequest(BaseModel):
+    reason: str
+    allow_cancel_accepted: bool = False
+
+
 class VATReturnCreate(BaseModel):
     period_ym: str
     notes: Optional[str] = None
