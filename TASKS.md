@@ -2182,7 +2182,7 @@ Known limitations:
 
 ### Task ID: TASK-017 — Finance cost allocation engine (Phase F4-F6)
 
-- **Status:** TASK-017.1 Done — finance seed data implemented and DB-validated; TASK-017.2 ready to start; TASK-017.3 blocked on accountant GL account decisions
+- **Status:** TASK-017.1 + TASK-017.2 Done — finance seed data and utility bill posting idempotency fixed; TASK-017.3 blocked on accountant GL account decisions
 - **Priority:** P2
 - **Category:** Finance
 - **Why it matters:** Full cost allocation (utility cost → per machine → per batch → per product → GL journal) is the core value driver.
@@ -2457,6 +2457,51 @@ Graphify refresh after implementation: backend — Done (2026-06-01)
 - git status after refresh: clean
 - git ls-files graphify-out: empty (not tracked) ✓
 - Source code changed: no
+
+**Batch TASK-017.2 — Fix post_bill_to_finance idempotency (DONE — 2026-06-02)**
+
+Files changed:
+- `backend/app/services/utility_integration_service.py` — added `PostingBatchStatus` to finance model imports, added `get_or_create_posting_batch` + `validate_journal_lines_balance` imports from `finance_service`, refactored `post_bill_to_finance`
+- `backend/tests/test_task017_2_idempotency.py` — NEW: 5 targeted idempotency tests
+
+Old idempotency behavior:
+- `if bill.journal_entry_id is not None: raise ValueError(...)` — weak guard, race condition possible on concurrent calls
+
+New idempotency behavior:
+1. Call `get_or_create_posting_batch()` before creating JournalEntry
+2. If batch already exists (POSTED): return existing `journal_entry_id` without creating new rows — idempotent
+3. If batch exists but not POSTED (FAILED/DRAFT): raise ValueError with clear message — inconsistent state requires manual review
+4. If batch newly created: create JournalEntry + 2 JournalLines, call `validate_journal_lines_balance`, link `bill.journal_entry_id`, mark `batch.status = POSTED`
+5. Defensive guard: if batch newly created but `bill.journal_entry_id` already set, raise ValueError
+
+Idempotency key used: `utility_billing:bill_posted:{bill_id}`
+
+source_module / source_event / source_id:
+- `source_module="utility_billing"`
+- `source_event="bill_posted"`
+- `source_id=str(bill.id)`
+
+Tests run:
+- `pytest backend/tests/test_task017_2_idempotency.py -v` → **5/5 PASSED**
+  - `test_imports_ok` — all required symbols importable ✓
+  - `test_first_call_creates_journal_and_marks_batch_posted` — batch created, status set POSTED ✓
+  - `test_second_call_idempotent_no_new_journal` — second call returns same je_id, no db.add called ✓
+  - `test_incomplete_batch_raises_value_error` — FAILED/DRAFT batch raises ValueError ✓
+  - `test_defensive_guard_existing_journal_entry_id_raises` — inconsistent state raises ValueError ✓
+- Targeted import check: `python -c "from app.services.utility_integration_service import post_bill_to_finance; ..."` → PASS
+
+Live DB smoke check: not run — tests cover mock-based idempotency; live run blocked by `jwt` not in local venv (Docker-only backend)
+
+Source models changed: no
+Schema changed: no
+Migrations added: no
+Frontend changed: no
+`post_allocations_to_gl` implemented: no (TASK-017.3 still blocked on accountant GL decisions)
+
+Remaining TASK-017 sub-tasks:
+- TASK-017.3: GL allocation posting — blocked on accountant GL account decisions
+- TASK-017.4: profitability report — blocked on revenue definition
+- TASK-017.5: frontend profitability — blocked on TASK-017.4
 
 ---
 

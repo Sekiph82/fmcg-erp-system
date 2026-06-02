@@ -25,8 +25,9 @@ from app.models.utility_management import (
     BillStatus, SourceMethod,
 )
 from app.models.finance import (
-    JournalEntry, JournalLine, ProductionCostEntry, CostType,
+    JournalEntry, JournalLine, ProductionCostEntry, CostType, PostingBatchStatus,
 )
+from app.services.finance_service import get_or_create_posting_batch, validate_journal_lines_balance
 from app.models.inventory import StockMovement, Lot, MovementType, StockType
 from app.models.maintenance import (
     PMWorkOrder, BreakdownRecord, PMPlan, Asset,
@@ -61,9 +62,36 @@ async def post_bill_to_finance(
     bill = result.scalar_one_or_none()
     if bill is None:
         raise ValueError(f"UtilityBill {bill_id} not found")
+
+    # Idempotency gate — prevents duplicate JournalEntry on concurrent or repeated calls
+    idempotency_key = f"utility_billing:bill_posted:{bill.id}"
+    batch, created = await get_or_create_posting_batch(
+        db,
+        source_module="utility_billing",
+        source_event="bill_posted",
+        source_id=str(bill.id),
+        idempotency_key=idempotency_key,
+        source_ref=bill.bill_no,
+    )
+
+    if not created:
+        if batch.status == PostingBatchStatus.POSTED:
+            # Already posted — return idempotent response without creating new rows
+            return {
+                "bill_id": bill.id,
+                "journal_entry_id": bill.journal_entry_id,
+                "entry_no": f"JE-UTIL-{bill.bill_no}",
+                "amount": _D(bill.total_amount),
+            }
+        raise ValueError(
+            f"UtilityBill {bill_id} has an incomplete posting batch "
+            f"(status={batch.status.value}) — manual review required"
+        )
+
+    # Defensive: batch newly created but bill already linked — inconsistent state
     if bill.journal_entry_id is not None:
         raise ValueError(
-            f"UtilityBill {bill_id} is already linked to journal entry {bill.journal_entry_id}"
+            f"UtilityBill {bill_id} already linked to journal {bill.journal_entry_id}"
         )
 
     entry_date = bill.invoice_date or date.today()
@@ -106,10 +134,14 @@ async def post_bill_to_finance(
     db.add(debit_line)
     db.add(credit_line)
 
+    validate_journal_lines_balance([debit_line, credit_line])
+
     await db.flush()
 
     bill.journal_entry_id = journal_entry.id
     db.add(bill)
+    batch.status = PostingBatchStatus.POSTED
+    db.add(batch)
     await db.flush()
 
     logger.info("Posted bill %s to GL as %s (amount=%s)", bill.bill_no, entry_no, bill.total_amount)
