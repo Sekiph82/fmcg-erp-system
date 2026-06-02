@@ -300,6 +300,16 @@ class ETimsSubmissionRead(BaseModel):
     kra_response_message: Optional[str]
     error_message: Optional[str]
     retry_count: int
+    # Provider/integrator tracking fields (TASK-005.1A)
+    provider_name: Optional[str] = None
+    provider_reference: Optional[str] = None
+    environment: Optional[str] = None
+    request_payload: Optional[dict] = None
+    response_payload: Optional[dict] = None
+    accepted_at: Optional[datetime] = None
+    last_attempt_at: Optional[datetime] = None
+    attempt_count: int = 0
+    error_code: Optional[str] = None
     created_at: datetime
 
 

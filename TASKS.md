@@ -351,7 +351,7 @@ Rules:
 
 ### Task ID: TASK-005 — eTIMS live integration (KRA Kenya)
 
-- **Status:** TASK-005.1A Done — provider config model and submission tracking fields implemented; TASK-005.1B–C safe to start; TASK-005.1D needs accountant approval; TASK-005.1E blocked on provider selection + KRA sandbox credentials
+- **Status:** TASK-005.1A+1B Done — provider config model, submission tracking fields, and provider-neutral adapter interface implemented; TASK-005.1C safe to start; TASK-005.1D needs accountant approval; TASK-005.1E blocked on provider selection + KRA sandbox credentials
 - **Priority:** P0
 - **Category:** Integration / Deployment
 - **Why it matters:** Kenya VAT-registered businesses are legally required to submit invoices to KRA eTIMS. Track A (`tax_regulatory.py`) is the active integration path wired to the frontend at `/dashboard/finance/etims`.
@@ -663,8 +663,65 @@ None — audit only. TASKS.md updated only.
 - HttpETIMSConnector auth header still TODO (TASK-005.1E)
 
 **Next:**
-- TASK-005.1B — provider-neutral adapter interface + enhanced stub/sandbox connector
+- TASK-005.1B — Done (see below)
 - TASK-005.1C — submit/retry/cancel/status-poll endpoints
+
+---
+
+#### TASK-005.1B Implementation — Provider-Neutral Adapter Interface + Enhanced Simulation Connector (2026-06-02)
+
+**Status:** Done — no live provider calls; connector + schema + endpoint persistence only
+
+**Files changed:**
+- `backend/app/services/etims_connector.py` — rewritten: ETimsConnectorResponse, enhanced SimulationETIMSConnector, HttpETIMSConnector updated, factory unchanged
+- `backend/app/schemas/tax_regulatory.py` — ETimsSubmissionRead extended with 9 new provider/tracking fields
+- `backend/app/api/v1/endpoints/tax_regulatory.py` — submit_etims now persists all 005.1A fields
+- `backend/tests/test_task005_1b_connector.py` — NEW: 13 connector tests
+
+**Response contract (ETimsConnectorResponse dataclass):**
+- Fields: success, status, provider_name, environment, provider_reference, control_unit_invoice_no, signed_invoice_hash, invoice_qr_data, kra_response_code, kra_response_message, error_code, error_message, accepted_at, raw_response
+- `ETIMSResult = ETimsConnectorResponse` backward-compat alias preserved
+- Protocol extended: submit_invoice, cancel_invoice, get_submission_status, health_check
+- Legacy `submit_sales_invoice()` kept on both connectors for endpoint compatibility
+
+**SimulationETIMSConnector enhancements:**
+- Returns provider_name="simulation", environment="simulation"
+- Generates deterministic provider_reference: `SIM-ETIMS-{invoice_no}-{hash[:8]}`
+- Populates accepted_at, raw_response snapshot on ACCEPTED path
+- `_simulate_reject=True` in payload → REJECTED + error_code (test/demo only)
+- `_simulate_error=True` in payload → ERROR + error_code (test/demo only)
+- cancel_invoice → CANCELLED
+- get_submission_status → ACCEPTED
+- health_check → `{status: ok, live: False}`
+
+**HttpETIMSConnector:** Skeleton only. cancel_invoice/get_submission_status raise NotImplementedError (provider spec not confirmed). Factory still defaults to SimulationETIMSConnector unless ETIMS_CONFIGURED=True + ETIMS_PROVIDER=http.
+
+**Endpoint persistence (submit_etims) — now stores:**
+request_payload, response_payload, provider_name, provider_reference, environment, last_attempt_at, attempt_count, error_code, error_message, accepted_at
+
+**Also fixed:** old endpoint used `result.response_code` (wrong field name); corrected to `result.kra_response_code`
+
+**Checks/tests:**
+- `python -c "from app.services.etims_connector import get_etims_connector, ..."` → PASS
+- `pytest tests/test_task005_1b_connector.py tests/test_task005_1a_etims_models.py -v` → **23/23 PASSED**
+
+**Safety confirmed:**
+- No live KRA/provider call made
+- No credentials added
+- production_execution_allowed unchanged (remains False)
+- Finance posting logic unchanged
+- Frontend unchanged
+- No migrations added
+
+**Known limitations:**
+- No cancel/retry/status-poll endpoints yet (TASK-005.1C)
+- No finance posting gate yet (TASK-005.1D)
+- Product KRA item codes (itemCd/taxTyCd) still hardcoded TODOs in payload builder
+- HttpETIMSConnector auth header still TODO (TASK-005.1E)
+
+**Next:**
+- TASK-005.1C — submit/retry/cancel/status-poll endpoints
+- TASK-005.1D — finance posting gate (blocked on accountant approval)
 
 ---
 

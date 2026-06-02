@@ -380,16 +380,30 @@ async def submit_etims(
 
     payload = build_etims_payload(invoice, settings)
     connector = get_etims_connector(settings)
+    now = datetime.now(timezone.utc)
     result = await connector.submit_sales_invoice(payload)
 
     sub.status = ETimsStatus(result.status)
-    sub.transmitted_at = datetime.now(timezone.utc)
+    sub.transmitted_at = now
     sub.control_unit_invoice_no = result.control_unit_invoice_no
     sub.signed_invoice_hash = result.signed_invoice_hash
     sub.invoice_qr_data = result.invoice_qr_data
-    sub.kra_response_code = result.response_code
-    sub.kra_response_message = result.response_message
+    sub.kra_response_code = result.kra_response_code
+    sub.kra_response_message = result.kra_response_message
     sub.retry_count += 1
+    # Persist new 005.1A provider/integrator tracking fields
+    sub.request_payload = payload
+    sub.response_payload = result.raw_response
+    sub.provider_name = result.provider_name
+    sub.provider_reference = result.provider_reference
+    sub.environment = result.environment
+    sub.last_attempt_at = now
+    sub.attempt_count = (sub.attempt_count or 0) + 1
+    sub.error_code = result.error_code
+    if result.error_message:
+        sub.error_message = result.error_message
+    if result.accepted_at:
+        sub.accepted_at = result.accepted_at
 
     await db.commit()
     await db.refresh(sub)
