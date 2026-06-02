@@ -684,9 +684,98 @@ ETimsPage() / InvoiceDetailPage() (hop 4)
 **Structural note:** Community 50 is the canonical frontend eTIMS community. `ETimsPage` and `InvoiceDetailPage` are co-located in it because they share `etimsApi`, `RETRY_STATUSES`, `STATUS_BADGE`, `fmtDt()`, and the `Button`/`Modal`/`Badge` UI primitives.
 
 **Next options:**
-- Reverse trace: backend connector response → `_apply_etims_response_to_submission` → DB row → TanStack Query invalidation → frontend re-render (if desired)
+- Reverse trace: backend connector response → `_apply_etims_response_to_submission` → DB row → TanStack Query invalidation → frontend re-render (see section below)
 - TASK-005.1D — finance posting gate remains blocked on accountant confirmation
 - TASK-005.1E — live provider adapter remains blocked on provider selection + KRA sandbox credentials + official API spec
+
+---
+
+#### Reverse Trace — eTIMS Response Round Trip (2026-06-02)
+
+**Scope:** backend connector response → `_apply_etims_response_to_submission` → `ETimsSubmission` DB row → `ETimsSubmissionRead` API response → frontend `ETimsSubmission` type → TanStack Query invalidation → UI re-render
+
+##### Backend persistence path
+
+| Endpoint | Connector method | `update_transmitted` |
+|----------|-----------------|---------------------|
+| `submit_etims` | `connector.submit_invoice(payload)` | `True` |
+| `retry_etims` | `connector.submit_invoice(payload)` | `True` |
+| `cancel_etims` | `connector.cancel_invoice(provider_ref, reason)` | `False` |
+| `poll_etims_status` | `connector.get_submission_status(provider_ref)` | `False` |
+
+All four follow: `helper() → db.commit() → db.refresh(sub) → ETimsSubmissionRead.model_validate(sub) → HTTP response`
+
+`transmitted_at` = "first wire transmission" — set only by submit/retry. Cancel and poll do not update it.
+
+##### Connector response → DB field mapping
+
+- **Always written:** `status`, `kra_response_code`, `kra_response_message`, `request_payload`, `response_payload`, `provider_name`, `provider_reference`, `environment`, `last_attempt_at`
+- **Conditionally written (only if not None):** `control_unit_invoice_no`, `signed_invoice_hash`, `invoice_qr_data`, `accepted_at`
+  - Guard protects KRA-issued TIMS data from being overwritten by later retry/cancel/poll responses
+- **Success clears:** `error_code`, `error_message`
+- **Failure sets:** `error_code`, `error_message`
+- **`increment_attempt=True` increments:** `retry_count` + `attempt_count`
+- **`update_transmitted=True` sets:** `transmitted_at`
+
+##### Backend schema → frontend type parity
+
+`ETimsSubmissionRead` (backend Pydantic) vs `ETimsSubmission` (frontend TypeScript): **21/21 exposed fields match**
+
+- `UUID` → `string` (JSON serialization)
+- `datetime` → `string` (ISO format)
+- `Optional[dict]` → `Record<string, unknown> | null`
+- `submitted_by_id` exists in DB model — intentionally not exposed in schema or frontend (privacy)
+
+##### Frontend invalidation / re-render path
+
+**Global page** (`finance/etims/page.tsx`):
+- Query key: `["etims-submissions", filterStatus]`
+- `invalidate()` = `qc.invalidateQueries({ queryKey: ["etims-submissions"] })` — TanStack Query v5 prefix matching invalidates ALL filtered variants (`["etims-submissions", "ACCEPTED"]`, etc.). No stale query risk.
+- All 4 mutations call `invalidate()` on success → immediate re-fetch → table re-renders
+
+**Invoice detail page** (`sales/invoices/[id]/page.tsx`):
+- Query key: `["etims-submission", id]`
+- `invalidateEtims()` invalidates both `["etims-submission", id]` and `["etims-submissions"]`
+- `404` from `getByInvoice` → `null` → "not submitted yet" state
+- Both per-invoice and global list invalidated on every detail-page action
+
+**Re-render flow:**
+```
+user action → mutation → HTTP POST → backend helper → db.commit()
+  → ETimsSubmissionRead returned → onSuccess → invalidate() → TanStack re-fetch
+  → GET /etims/submissions → badge/table/card/debug details re-render
+```
+
+##### Graphify trace note
+
+- Frontend and backend graphs are separate — the HTTP boundary is best verified by code reading, not Graphify.
+- Backend graph confirms `_apply_etims_response_to_submission` bridges `ETimsConnectorResponse` to `ETimsSubmission` (Community 24 — eTIMS Tax Regulatory).
+- Frontend graph confirms `etimsApi` feeds both `ETimsPage` (Community 50) and `InvoiceDetailPage` (Community 50).
+
+##### Production gap analysis
+
+| Gap | Severity | When it matters |
+|-----|----------|-----------------|
+| `HttpETIMSConnector.cancel_invoice` raises `NotImplementedError` | HIGH | `ETIMS_PROVIDER=http` + cancel action → 500 |
+| `HttpETIMSConnector.get_submission_status` raises `NotImplementedError` | HIGH | `ETIMS_PROVIDER=http` + poll action → 500 |
+| No `finance.approve` permission guard on submit/retry/cancel | MEDIUM | Before live provider; `finance.view` users can fiscalize |
+| `request_payload` stores full invoice payload (TIN, sdcId) in DB/API | MEDIUM | Production: real TIN/device serial exposed via debug payload |
+| No background retry job for `RETRY_PENDING` | MEDIUM | Live async status may require user manual polling |
+| No webhook listener for provider/KRA callbacks | MEDIUM | If provider pushes async status updates (vs polling) |
+| Finance posting gate (TASK-005.1D) not implemented | MEDIUM | GL posting can proceed even if eTIMS REJECTED/ERROR |
+| Frontend auto-poll is manual-only | LOW | SUBMITTED/PENDING requires user to click Poll Status |
+| Global cancel toast does not show returned status | LOW | Minor UX — toast says "Submission cancelled", not new status |
+| `_apply_etims_response_to_submission` lives in endpoint layer | LOW | Move to `services/etims_service.py` before background jobs/webhooks |
+
+**Simulation safety note:** All HIGH and MEDIUM gaps are masked by simulation mode (`production_execution_allowed = False`). No immediate fix needed while `ETIMS_PROVIDER=simulation`.
+
+**Before enabling live provider:**
+1. Implement `HttpETIMSConnector.cancel_invoice` and `.get_submission_status` after provider spec confirmed (TASK-005.1E blocker)
+2. Add `finance.approve` or equivalent to permission model and guard submit/retry/cancel with `PermissionGuard`
+3. Decide whether `request_payload`/`response_payload` should be redacted or role-gated in production
+4. Implement finance posting gate after accountant confirmation (TASK-005.1D)
+5. Consider background retry worker and/or webhook receiver for async KRA acceptance
+6. Move `_apply_etims_response_to_submission` to `services/etims_service.py` before background jobs/webhooks are added
 
 ---
 
