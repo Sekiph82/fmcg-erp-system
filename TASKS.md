@@ -624,6 +624,72 @@ GL JournalEntry (POSTED) — finance_service.mark_journal_posted()
 
 ---
 
+#### Frontend Graphify Refresh — After TASK-005.1F (2026-06-02)
+
+**Command:** `/graphify C:\Users\sekip\Masaüstü\fmcg-erp-system-main\frontend --update`
+
+**Output folder:** `C:\Users\sekip\Desktop\graphify-erp-maps\frontend\`
+
+**Files:** `GRAPH_REPORT.md` (current), `graph.json` (current), `cost.json`, `manifest.json`, `graph.html` (prior build — frontend graph has 6,392 nodes, exceeds 5,000-node HTML visualization limit; GRAPH_REPORT.md and graph.json are current)
+
+**`graphify-out/` status:** gitignored, untracked — `git ls-files graphify-out` returns empty
+
+**Graph stats:** 6,392 nodes · 11,006 edges · 424 communities
+
+**eTIMS communities:**
+- Community 42 — "Tax Regulatory & Rules" (42 nodes): `ETimsCancelRequest`, `ETimsProviderHealth`, `taxApi`, `taxType`, tax rules, regulatory flags, VAT returns, `tax_regulatory.ts`
+- Community 50 — "eTIMS Fiscalization & Invoice Detail" (39 nodes): `etimsApi`, `ETimsStatus`, `ETimsSubmission`, `ETimsPage()`, `InvoiceDetailPage()`, `ALL_STATUSES`, `RETRY_STATUSES`, `STATUS_BADGE`, `ETIMS_RETRY_STATUSES`, `ETIMS_STATUS_BADGE`
+- Community 113 — "Finance Dashboard & eTIMS Tab" (20 nodes): `FinanceDashboardPage()`, `FinanceEtimsPage`, all Finance tab components
+
+**TASK-005.1F entities confirmed in map:**
+- `etimsApi`, `ETimsStatus`, `ETimsSubmission`, `ETimsCancelRequest`, `ETimsProviderHealth` — in `lib/tax_regulatory.ts`
+- `ETimsPage()` — global finance eTIMS monitoring page
+- `InvoiceDetailPage()` — invoice detail eTIMS fiscalization card
+- `FinanceEtimsPage` — Finance dashboard eTIMS tab registration
+- nav-config eTIMS tab fix reflected (nav-config.tsx in corpus)
+
+---
+
+#### Trace Note — `apiClient → etimsApi` Frontend eTIMS Workflow (2026-06-02)
+
+**Question traced:** How does `apiClient` reach the KRA eTIMS submission path in the frontend — which modules does it cross, and what permission gates exist?
+
+**Path (all edges EXTRACTED, confidence_score = 1.0):**
+
+```
+lib/api.ts            apiClient
+  --imports-->
+lib/tax_regulatory.ts             (hop 1)
+  --contains-->
+etimsApi                          (hop 2)
+  --imports-->  (both consumers)
+finance/etims/page.tsx            (hop 3)
+sales/invoices/[id]/page.tsx      (hop 3)
+  --contains-->
+ETimsPage() / InvoiceDetailPage() (hop 4)
+```
+
+**What happens at each hop:**
+- **Hop 1 — `lib/api.ts` → `lib/tax_regulatory.ts`:** `tax_regulatory.ts` is the only module that imports `apiClient` for eTIMS calls. Clean module boundary — no consumer calls `apiClient` directly for eTIMS.
+- **Hop 2 — `tax_regulatory.ts` → `etimsApi`:** All 7 eTIMS endpoint paths (`/api/v1/tax/etims/...`) are defined here and nowhere else. `submit`, `retry`, `cancel`, `poll`, `health`, `listSubmissions`, `getByInvoice`.
+- **Hop 3 — `etimsApi` → pages:** Two consumers: global finance eTIMS page (4 mutations) and sales invoice detail card (4 mutations). Both import `etimsApi` directly.
+- **Hop 4 — pages → components:** `ETimsPage()` and `InvoiceDetailPage()` contain the mutations. Both share `useToast()` (god node, degree 84) for mutation success/error feedback.
+
+**Permission gate analysis (from graph):**
+- `RequirePermission()` has degree 106 — guards AI pages, analytics, BI. **Not present in either eTIMS page.** Path from `RequirePermission` to `ETimsPage` is 3 hops via `useToast.ts` — shared-dependency coincidence, not a guard.
+- **Current effective gate:** Finance tab requires `finance.view`, Sales module requires `sales.view`. Anyone with module access can call `etimsApi.submit()`, `retry()`, and `cancel()`.
+- **Why no `finance.approve` guard:** `finance.approve` / `finance.write` do not exist in the frontend permission model (confirmed by codebase search in TASK-005.1F.4). Adding a non-existent permission would lock out all users.
+- **Risk note:** Acceptable for simulation mode (`production_execution_allowed = false`). Should be revisited before enabling live provider — at that point, add `finance.approve` to backend permission model and guard `eTIMS submit/retry/cancel` with `PermissionGuard permission="finance.approve"`.
+
+**Structural note:** Community 50 is the canonical frontend eTIMS community. `ETimsPage` and `InvoiceDetailPage` are co-located in it because they share `etimsApi`, `RETRY_STATUSES`, `STATUS_BADGE`, `fmtDt()`, and the `Button`/`Modal`/`Badge` UI primitives.
+
+**Next options:**
+- Reverse trace: backend connector response → `_apply_etims_response_to_submission` → DB row → TanStack Query invalidation → frontend re-render (if desired)
+- TASK-005.1D — finance posting gate remains blocked on accountant confirmation
+- TASK-005.1E — live provider adapter remains blocked on provider selection + KRA sandbox credentials + official API spec
+
+---
+
 ##### Blockers Summary
 
 | Blocker | Required by | Owner |
