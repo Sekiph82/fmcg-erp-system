@@ -1,7 +1,7 @@
 # git-auto-sync.ps1
 # Run by Claude Code Stop hook - stages, commits, and pushes all local changes.
 
-$RepoPath = "C:\Users\sekip\Desktop\fmcg-erp-system-main"
+$RepoPath = $PSScriptRoot
 $LogFile  = "$RepoPath\git-sync.log"
 $Branch   = "main"
 $Remote   = "origin"
