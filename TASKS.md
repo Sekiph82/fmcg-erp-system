@@ -3016,7 +3016,7 @@ Note: batch_lots count is 9 (not 7 as designed) — 2 extra lots created during 
 
 ### Task ID: TASK-016 — Inventory/Stock real data (Phase I1-I7)
 
-- **Status:** TASK-016.1–TASK-016.6 Done — inventory demo seed + WMS zones/locations + trace events + cycle count plans + shelf life profiles/alerts + demand forecasts seeded 2026-06-04; Graphify refresh complete (2026-06-01 after TASK-016.1; 2026-06-04 after TASK-016.2/016.3/016.4)
+- **Status:** TASK-016.1–TASK-016.7 Done — full inventory seed complete (lots, stocks, movements, WMS, trace events, cycle counts, MRP run, demand forecasts, shelf life profiles/alerts); Graphify refresh complete (2026-06-01 after TASK-016.1; 2026-06-04 after TASK-016.2/016.3/016.4); Graphify refresh pending for I5/I6/I7
 - **Priority:** P2
 - **Category:** Inventory
 - **Why it matters:** Inventory module (warehouses, products, raw materials, stock tracking, movements) KPIs show empty. No realistic factory stock data.
@@ -3218,6 +3218,34 @@ Idempotency: by `plan_code` (unique) ✓
 Checks: `import app.main` CLEAN · 25/25 hardening PASS ✓
 
 Git commit: `a81a077` feat(inventory): add cycle count plans seed (TASK-016 I4)
+
+**Batch TASK-016.7 — MRP Run, Results, Suggestions, Exceptions (DONE — 2026-06-04)**
+
+Files changed:
+- `backend/app/db/seed_inventory.py` — added imports (`MRPRun`, `MRPResult`, `MRPSuggestion`, `MRPException`, related enums); 4 helpers (`_get_or_create_mrp_run`, `_get_or_create_mrp_result`, `_get_or_create_mrp_suggestion`, `_get_or_create_mrp_exception`); I7 seed section
+
+Dataset added:
+| Layer | Records |
+|-------|---------|
+| MRPRun `MRP-SEED-001` (COMPLETED, 90-day horizon) | 1 |
+| MRPResult (1 per product, with shortage_flag for POVU-HS) | 5 |
+| MRPSuggestion (PRODUCTION: HS 2500 units; PROCUREMENT: SURF 5000 kg) | 2 |
+| MRPException (SHORTAGE: HS HIGH; EXCESS_STOCK: LD LOW) | 2 |
+
+Idempotency:
+- MRPRun: `run_no` unique ✓
+- MRPResult: UniqueConstraint `(run_id, product_id)` ✓
+- MRPSuggestion: compound `(run_id, suggestion_type, product_id, material_id)` ✓
+- MRPException: compound `(run_id, exception_type, product_id, material_id)` ✓
+
+Checks:
+- `python -c "from app.db.seed_inventory import seed_inventory_data"` → CLEAN ✓
+- `python -c "import app.main"` → CLEAN ✓
+- 32/32 pytest (hardening + gap012) → PASS ✓
+
+No schema / model / migration / frontend / .env changes made.
+
+- **Graphify refresh status:** Needed — I5/I6/I7 introduce new model graph links (MRPRun, DemandForecast, LotShelfLifeProfile, ShelfLifeAlert). Run backend Graphify after TASK-016.7 commit.
 
 **Batch TASK-016.6 — Demand Forecasts (DONE — 2026-06-04)**
 

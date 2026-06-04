@@ -34,7 +34,17 @@ from app.models.mrp import (
     DemandForecastLine,
     ForecastModelType,
     ForecastStatus,
+    MRPException,
+    MRPExceptionSeverity,
+    MRPExceptionType,
+    MRPResult,
+    MRPRun,
+    MRPRunStatus,
+    MRPSuggestion,
+    MRPTrigger,
     PeriodType,
+    SuggestionStatus,
+    SuggestionType,
 )
 from app.models.shelf_life import (
     AlertSeverity,
@@ -207,6 +217,73 @@ async def _get_or_create_trace_event(db: AsyncSession, reference_number: str, ev
     )).scalar_one_or_none()
     if not obj:
         obj = TraceEvent(reference_number=reference_number, trace_event_type=event_type, **kw)
+        db.add(obj)
+        await db.flush()
+    return obj
+
+
+async def _get_or_create_mrp_run(db: AsyncSession, run_no: str, **kw) -> MRPRun:
+    obj = (await db.execute(
+        select(MRPRun).where(MRPRun.run_no == run_no)
+    )).scalar_one_or_none()
+    if not obj:
+        obj = MRPRun(run_no=run_no, **kw)
+        db.add(obj)
+        await db.flush()
+    return obj
+
+
+async def _get_or_create_mrp_result(db: AsyncSession, run_id, product_id, **kw) -> MRPResult:
+    obj = (await db.execute(
+        select(MRPResult).where(
+            MRPResult.run_id == run_id,
+            MRPResult.product_id == product_id,
+        )
+    )).scalar_one_or_none()
+    if not obj:
+        obj = MRPResult(run_id=run_id, product_id=product_id, **kw)
+        db.add(obj)
+        await db.flush()
+    return obj
+
+
+async def _get_or_create_mrp_suggestion(
+    db: AsyncSession, run_id, suggestion_type: SuggestionType,
+    product_id=None, material_id=None, **kw
+) -> MRPSuggestion:
+    q = select(MRPSuggestion).where(
+        MRPSuggestion.run_id == run_id,
+        MRPSuggestion.suggestion_type == suggestion_type,
+    )
+    q = q.where(MRPSuggestion.product_id == product_id) if product_id else q.where(MRPSuggestion.product_id.is_(None))
+    q = q.where(MRPSuggestion.material_id == material_id) if material_id else q.where(MRPSuggestion.material_id.is_(None))
+    obj = (await db.execute(q)).scalar_one_or_none()
+    if not obj:
+        obj = MRPSuggestion(
+            run_id=run_id, suggestion_type=suggestion_type,
+            product_id=product_id, material_id=material_id, **kw
+        )
+        db.add(obj)
+        await db.flush()
+    return obj
+
+
+async def _get_or_create_mrp_exception(
+    db: AsyncSession, run_id, exception_type: MRPExceptionType,
+    product_id=None, material_id=None, **kw
+) -> MRPException:
+    q = select(MRPException).where(
+        MRPException.run_id == run_id,
+        MRPException.exception_type == exception_type,
+    )
+    q = q.where(MRPException.product_id == product_id) if product_id else q.where(MRPException.product_id.is_(None))
+    q = q.where(MRPException.material_id == material_id) if material_id else q.where(MRPException.material_id.is_(None))
+    obj = (await db.execute(q)).scalar_one_or_none()
+    if not obj:
+        obj = MRPException(
+            run_id=run_id, exception_type=exception_type,
+            product_id=product_id, material_id=material_id, **kw
+        )
         db.add(obj)
         await db.flush()
     return obj
@@ -654,6 +731,113 @@ async def seed_inventory_data(db: AsyncSession) -> None:
             notes="Bi-weekly item-level count for all POVU finished goods SKUs",
         )
 
+    # ── MRP Run, Results, Suggestions, Exceptions (TASK-016 I7) ─────────────
+
+    _mrp_run_date = _today - timedelta(days=7)
+    _mrp_horizon_date = _today + timedelta(days=90)
+    _mrp_now = datetime(_mrp_run_date.year, _mrp_run_date.month, _mrp_run_date.day,
+                        6, 0, 0, tzinfo=timezone.utc)
+
+    mrp_run = await _get_or_create_mrp_run(
+        db, "MRP-SEED-001",
+        run_date=_mrp_run_date,
+        planning_horizon_days=90,
+        frozen_horizon_days=0,
+        status=MRPRunStatus.COMPLETED,
+        trigger=MRPTrigger.MANUAL,
+        include_forecast=True,
+        include_safety_stock=True,
+        warehouse_id=wh_rm.id,
+        product_count=5,
+        shortage_count=1,
+        suggestion_count=2,
+        started_at=_mrp_now,
+        completed_at=_mrp_now + timedelta(seconds=12),
+        notes="Demo MRP run — 90-day planning horizon for POVU product range",
+    )
+
+    # MRP Results: 90-day demand at monthly rates × 3
+    # (sku, stock_on_hand, forecast_3mo, safety_stock, net)
+    _mrp_result_specs = [
+        ("POVU-LD-1L",    Decimal("4500.000"), Decimal("3600.000"), Decimal("0.000")),
+        ("POVU-FS-500ML", Decimal("2800.000"), Decimal("2400.000"), Decimal("0.000")),
+        ("POVU-DW-500ML", Decimal("3600.000"), Decimal("3000.000"), Decimal("0.000")),
+        ("POVU-SC-750ML", Decimal("2300.000"), Decimal("2100.000"), Decimal("0.000")),
+        ("POVU-HS-200ML", Decimal("7500.000"), Decimal("6000.000"), Decimal("2000.000")),
+    ]
+    for sku, soh, fc_demand, safety in _mrp_result_specs:
+        prod = await _get_product(db, sku)
+        if not prod:
+            continue
+        gross = fc_demand + safety
+        net = soh - gross
+        shortage = net < Decimal("0")
+        await _get_or_create_mrp_result(
+            db, mrp_run.id, prod.id,
+            forecast_demand_qty=fc_demand,
+            safety_stock_qty=safety,
+            gross_demand_qty=gross,
+            stock_on_hand_qty=soh,
+            total_supply_qty=soh,
+            net_requirement_qty=abs(net) if shortage else Decimal("0.000"),
+            shortage_flag=shortage,
+            suggested_production_qty=abs(net) + Decimal("500.000") if shortage else None,
+        )
+
+    # Suggestions: produce HS (shortage) + procure SURF (near-expiry + consumption)
+    p_hs_obj = await _get_product(db, "POVU-HS-200ML")
+    if p_hs_obj:
+        await _get_or_create_mrp_suggestion(
+            db, mrp_run.id, SuggestionType.PRODUCTION,
+            product_id=p_hs_obj.id,
+            suggested_qty=Decimal("2500.000"),
+            uom="UNIT",
+            required_date=_today + timedelta(days=30),
+            planned_start_date=_today + timedelta(days=14),
+            net_requirement_qty=Decimal("500.000"),
+            status=SuggestionStatus.DRAFT,
+            notes="Produce 2,500 POVU HS units to cover 90-day shortage + buffer",
+        )
+
+    if mat_surf:
+        await _get_or_create_mrp_suggestion(
+            db, mrp_run.id, SuggestionType.PROCUREMENT,
+            material_id=mat_surf.id,
+            suggested_qty=Decimal("5000.000"),
+            uom="KG",
+            required_date=_today + timedelta(days=45),
+            planned_start_date=_today + timedelta(days=21),
+            net_requirement_qty=Decimal("3500.000"),
+            status=SuggestionStatus.DRAFT,
+            estimated_cost=Decimal("600000.0000"),
+            notes=(
+                "Replenish LAS Surfactant: current lot near expiry in ~362 days "
+                "and 3,500 KG consumed in recent production runs."
+            ),
+        )
+
+    # Exceptions: HS shortage + SURF excess warning
+    if p_hs_obj:
+        await _get_or_create_mrp_exception(
+            db, mrp_run.id, MRPExceptionType.SHORTAGE,
+            product_id=p_hs_obj.id,
+            severity=MRPExceptionSeverity.HIGH,
+            message="POVU Hand Sanitizer 200ml: net requirement -500 units over 90-day horizon (safety stock breach).",
+            action_required="Create production order for 2,500 units within 14 days.",
+            qty=Decimal("500.000"),
+            due_date=_today + timedelta(days=30),
+        )
+    if p_ld:
+        await _get_or_create_mrp_exception(
+            db, mrp_run.id, MRPExceptionType.EXCESS_STOCK,
+            product_id=p_ld.id,
+            severity=MRPExceptionSeverity.LOW,
+            message="POVU Liquid Detergent 1L: stock on hand 4,500 L exceeds 3-month demand of 3,600 L by 25%.",
+            action_required="No immediate action. Consider deferring next production run by 3–4 weeks.",
+            qty=Decimal("900.000"),
+            due_date=None,
+        )
+
     # ── Demand Forecasts (TASK-016 I6) ───────────────────────────────────────
     # 6-month monthly EXPONENTIAL_SMOOTHING forecasts for each finished product.
     # start_date = first day of current month; 6 monthly periods forward.
@@ -803,7 +987,8 @@ async def seed_inventory_data(db: AsyncSession) -> None:
     logger.info(
         "Inventory seed complete: 7 lots, %d raw stocks, %d FG stocks, "
         "%d movements, 7 cost layers, WMS zones, storage locations, trace events, "
-        "cycle count plans, 5 demand forecasts (30 lines), 7 lot shelf-life profiles, 3 shelf-life alerts",
+        "cycle count plans, 1 MRP run (5 results/2 suggestions/2 exceptions), "
+        "5 demand forecasts (30 lines), 7 lot shelf-life profiles, 3 shelf-life alerts",
         len(raw_stocks), len(fg_stocks),
         len(raw_adj_specs) + len(raw_grn_specs) + len(issue_specs) + len(prod_rcpt_specs),
     )
