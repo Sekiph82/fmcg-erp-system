@@ -3016,7 +3016,7 @@ Note: batch_lots count is 9 (not 7 as designed) — 2 extra lots created during 
 
 ### Task ID: TASK-016 — Inventory/Stock real data (Phase I1-I7)
 
-- **Status:** TASK-016.1 Done — inventory demo seed implemented and DB-validated; Graphify refresh complete
+- **Status:** TASK-016.1 + TASK-016.2 Done — inventory demo seed + WMS zones/storage locations seeded 2026-06-04; Graphify refresh complete (2026-06-01)
 - **Priority:** P2
 - **Category:** Inventory
 - **Why it matters:** Inventory module (warehouses, products, raw materials, stock tracking, movements) KPIs show empty. No realistic factory stock data.
@@ -3184,6 +3184,21 @@ Live DB validation (Docker backend container, dev PostgreSQL):
 | materials | 7 | 7 (+0) | 7 (+0) | ✓ (from TASK-015) |
 
 IDEMPOTENCY PASSED — second run added 0 records across all 7 models checked.
+
+**Batch TASK-016.2 — WMS Zones and Storage Locations (DONE — 2026-06-04)**
+
+Files changed:
+- `backend/app/db/seed_inventory.py` — added WMS import, 2 helper functions (`_get_or_create_zone`, `_get_or_create_location`), WMS zone/location seed section
+
+Dataset added:
+| Layer | Records |
+|-------|---------|
+| WarehouseZone (PROD-WH: RM + quarantine + staging; FG-WH: FG + returns) | 5 |
+| StorageLocation (4 bins PROD-WH RM + 1 quarantine + 1 staging + 4 bins FG-WH + 1 returns) | 11 |
+
+Idempotency: `(warehouse_id, code)` for zones; `(zone_id, code)` for locations ✓
+
+Checks: `import app.main` CLEAN · 86/86 pytest PASS ✓
 
 **Backend Graphify refresh after TASK-016.1 (DONE — 2026-06-01)**
 

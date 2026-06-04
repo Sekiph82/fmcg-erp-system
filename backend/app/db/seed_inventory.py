@@ -28,6 +28,7 @@ from app.models.inventory import (
     StockType,
 )
 from app.models.master import Material, Product, Warehouse
+from app.models.wms import StorageLocation, WarehouseZone, ZoneType
 
 logger = logging.getLogger(__name__)
 
@@ -148,6 +149,28 @@ async def _get_or_create_cost_layer(
 
 
 # ── main seed function ────────────────────────────────────────────────────────
+
+
+async def _get_or_create_zone(db: AsyncSession, warehouse_id, code: str, **kw) -> WarehouseZone:
+    obj = (await db.execute(
+        select(WarehouseZone).where(WarehouseZone.warehouse_id == warehouse_id, WarehouseZone.code == code)
+    )).scalar_one_or_none()
+    if not obj:
+        obj = WarehouseZone(warehouse_id=warehouse_id, code=code, **kw)
+        db.add(obj)
+        await db.flush()
+    return obj
+
+
+async def _get_or_create_location(db: AsyncSession, zone_id, code: str, **kw) -> StorageLocation:
+    obj = (await db.execute(
+        select(StorageLocation).where(StorageLocation.zone_id == zone_id, StorageLocation.code == code)
+    )).scalar_one_or_none()
+    if not obj:
+        obj = StorageLocation(zone_id=zone_id, code=code, **kw)
+        db.add(obj)
+        await db.flush()
+    return obj
 
 
 async def seed_inventory_data(db: AsyncSession) -> None:
@@ -371,10 +394,75 @@ async def seed_inventory_data(db: AsyncSession) -> None:
                 is_exhausted=False,
             )
 
+    # ── WMS Zones and Storage Locations (TASK-016 I2) ────────────────────────
+
+    wh_rm = await _get_warehouse(db, "PROD-WH")
+    wh_fg = await _get_warehouse(db, "FG-WH")
+
+    if wh_rm:
+        # PROD-WH zones
+        zone_rm = await _get_or_create_zone(db, wh_rm.id, "PROD-WH-RM",
+            name="Raw Material Storage", zone_type=ZoneType.RAW_MATERIAL,
+            description="Bulk raw materials and packaging components")
+        zone_quar = await _get_or_create_zone(db, wh_rm.id, "PROD-WH-QR",
+            name="Quarantine Zone", zone_type=ZoneType.QUARANTINE,
+            description="Materials under quality hold or inspection")
+        zone_stg = await _get_or_create_zone(db, wh_rm.id, "PROD-WH-STG",
+            name="Production Staging", zone_type=ZoneType.STAGING,
+            description="Materials staged for imminent production")
+
+        # Bins in raw material zone (A aisle)
+        for bin_no in range(1, 5):
+            await _get_or_create_location(db, zone_rm.id, f"PROD-WH-RM-A{bin_no:02d}",
+                name=f"Rack A Row {bin_no}",
+                barcode=f"PWHRMR{bin_no:03d}",
+                max_weight_kg=Decimal("2000.00"),
+                is_active=True,
+            )
+        # Quarantine holding
+        await _get_or_create_location(db, zone_quar.id, "PROD-WH-QR-H01",
+            name="Quarantine Hold Bay 1",
+            barcode="PWHQRH001",
+            max_weight_kg=Decimal("500.00"),
+            is_active=True,
+        )
+        # Staging area
+        await _get_or_create_location(db, zone_stg.id, "PROD-WH-STG-S01",
+            name="Staging Pallet Bay 1",
+            barcode="PWHSTGS001",
+            max_weight_kg=Decimal("1000.00"),
+            is_active=True,
+        )
+
+    if wh_fg:
+        # FG-WH zones
+        zone_fg = await _get_or_create_zone(db, wh_fg.id, "FG-WH-FG",
+            name="Finished Goods Storage", zone_type=ZoneType.FINISHED_GOODS,
+            description="Packed finished goods ready for dispatch")
+        zone_ret = await _get_or_create_zone(db, wh_fg.id, "FG-WH-RET",
+            name="Returns Bay", zone_type=ZoneType.RETURNS,
+            description="Customer returns pending quality assessment")
+
+        # Finished goods racking (B aisle)
+        for bin_no in range(1, 5):
+            await _get_or_create_location(db, zone_fg.id, f"FG-WH-FG-B{bin_no:02d}",
+                name=f"Rack B Row {bin_no}",
+                barcode=f"FGWHFGR{bin_no:03d}",
+                max_weight_kg=Decimal("3000.00"),
+                is_active=True,
+            )
+        # Returns bay
+        await _get_or_create_location(db, zone_ret.id, "FG-WH-RET-R01",
+            name="Returns Assessment Bay 1",
+            barcode="FGWHRETR001",
+            max_weight_kg=Decimal("500.00"),
+            is_active=True,
+        )
+
     await db.commit()
     logger.info(
         "Inventory seed complete: 7 lots, %d raw stocks, %d FG stocks, "
-        "%d movements, 7 cost layers",
+        "%d movements, 7 cost layers, WMS zones and locations",
         len(raw_stocks), len(fg_stocks),
         len(raw_adj_specs) + len(raw_grn_specs) + len(issue_specs) + len(prod_rcpt_specs),
     )
