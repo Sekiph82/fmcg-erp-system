@@ -29,6 +29,13 @@ from app.models.inventory import (
 )
 from app.models.cycle_count import CycleCountPlan, PlanStatus, PlanType
 from app.models.master import Material, Product, Warehouse
+from app.models.mrp import (
+    DemandForecast,
+    DemandForecastLine,
+    ForecastModelType,
+    ForecastStatus,
+    PeriodType,
+)
 from app.models.shelf_life import (
     AlertSeverity,
     AlertType,
@@ -200,6 +207,51 @@ async def _get_or_create_trace_event(db: AsyncSession, reference_number: str, ev
     )).scalar_one_or_none()
     if not obj:
         obj = TraceEvent(reference_number=reference_number, trace_event_type=event_type, **kw)
+        db.add(obj)
+        await db.flush()
+    return obj
+
+
+async def _get_or_create_demand_forecast(
+    db: AsyncSession,
+    product_id,
+    period_type: PeriodType,
+    start_date: date,
+    forecast_model: ForecastModelType,
+    **kw,
+) -> DemandForecast:
+    obj = (await db.execute(
+        select(DemandForecast).where(
+            DemandForecast.product_id == product_id,
+            DemandForecast.period_type == period_type,
+            DemandForecast.start_date == start_date,
+            DemandForecast.forecast_model == forecast_model,
+        )
+    )).scalar_one_or_none()
+    if not obj:
+        obj = DemandForecast(
+            product_id=product_id,
+            period_type=period_type,
+            start_date=start_date,
+            forecast_model=forecast_model,
+            **kw,
+        )
+        db.add(obj)
+        await db.flush()
+    return obj
+
+
+async def _get_or_create_forecast_line(
+    db: AsyncSession, forecast_id, period_date: date, **kw
+) -> DemandForecastLine:
+    obj = (await db.execute(
+        select(DemandForecastLine).where(
+            DemandForecastLine.forecast_id == forecast_id,
+            DemandForecastLine.period_date == period_date,
+        )
+    )).scalar_one_or_none()
+    if not obj:
+        obj = DemandForecastLine(forecast_id=forecast_id, period_date=period_date, **kw)
         db.add(obj)
         await db.flush()
     return obj
@@ -602,6 +654,59 @@ async def seed_inventory_data(db: AsyncSession) -> None:
             notes="Bi-weekly item-level count for all POVU finished goods SKUs",
         )
 
+    # ── Demand Forecasts (TASK-016 I6) ───────────────────────────────────────
+    # 6-month monthly EXPONENTIAL_SMOOTHING forecasts for each finished product.
+    # start_date = first day of current month; 6 monthly periods forward.
+
+    _first_of_month = _today.replace(day=1)
+    _forecast_end = date(
+        _first_of_month.year + ((_first_of_month.month + 5) // 12),
+        ((_first_of_month.month + 5) % 12) or 12,
+        1,
+    )
+
+    # (sku, monthly_forecast_qty) — realistic FMCG detergent volumes
+    _forecast_specs = [
+        ("POVU-LD-1L",     Decimal("1200.000")),
+        ("POVU-FS-500ML",  Decimal("800.000")),
+        ("POVU-DW-500ML",  Decimal("1000.000")),
+        ("POVU-SC-750ML",  Decimal("700.000")),
+        ("POVU-HS-200ML",  Decimal("2000.000")),
+    ]
+    for sku, monthly_qty in _forecast_specs:
+        prod = await _get_product(db, sku)
+        if not prod:
+            continue
+        fc = await _get_or_create_demand_forecast(
+            db, prod.id,
+            period_type=PeriodType.MONTHLY,
+            start_date=_first_of_month,
+            forecast_model=ForecastModelType.EXPONENTIAL_SMOOTHING,
+            end_date=_forecast_end,
+            warehouse_id=wh_fg.id,
+            status=ForecastStatus.APPROVED,
+            is_approved=True,
+            model_params={"alpha": 0.3, "periods": 6},
+            notes=f"Demo 6-month FMCG demand forecast — {sku}",
+        )
+        # 6 monthly periods: month 0 through month 5
+        for m_offset in range(6):
+            month = _first_of_month.month + m_offset
+            year = _first_of_month.year + (month - 1) // 12
+            period_date = date(year, ((month - 1) % 12) + 1, 1)
+            # Slight seasonal uplift: Q4 (+15%), Q1 (-10%)
+            _month_no = period_date.month
+            if _month_no in (10, 11, 12):
+                qty = monthly_qty * Decimal("1.15")
+            elif _month_no in (1, 2):
+                qty = monthly_qty * Decimal("0.90")
+            else:
+                qty = monthly_qty
+            await _get_or_create_forecast_line(
+                db, fc.id, period_date,
+                forecast_qty=qty.quantize(Decimal("0.001")),
+            )
+
     # ── Shelf Life Profiles and Alerts (TASK-016 I5) ─────────────────────────
 
     _manufacture_date = date(2025, 1, 15)
@@ -698,7 +803,7 @@ async def seed_inventory_data(db: AsyncSession) -> None:
     logger.info(
         "Inventory seed complete: 7 lots, %d raw stocks, %d FG stocks, "
         "%d movements, 7 cost layers, WMS zones, storage locations, trace events, "
-        "cycle count plans, 7 lot shelf-life profiles, 3 shelf-life alerts",
+        "cycle count plans, 5 demand forecasts (30 lines), 7 lot shelf-life profiles, 3 shelf-life alerts",
         len(raw_stocks), len(fg_stocks),
         len(raw_adj_specs) + len(raw_grn_specs) + len(issue_specs) + len(prod_rcpt_specs),
     )

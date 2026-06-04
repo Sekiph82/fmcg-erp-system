@@ -3016,7 +3016,7 @@ Note: batch_lots count is 9 (not 7 as designed) — 2 extra lots created during 
 
 ### Task ID: TASK-016 — Inventory/Stock real data (Phase I1-I7)
 
-- **Status:** TASK-016.1–TASK-016.5 Done — inventory demo seed + WMS zones/locations + trace events + cycle count plans + shelf life profiles/alerts seeded 2026-06-04; Graphify refresh complete (2026-06-01 after TASK-016.1; 2026-06-04 after TASK-016.2/016.3/016.4)
+- **Status:** TASK-016.1–TASK-016.6 Done — inventory demo seed + WMS zones/locations + trace events + cycle count plans + shelf life profiles/alerts + demand forecasts seeded 2026-06-04; Graphify refresh complete (2026-06-01 after TASK-016.1; 2026-06-04 after TASK-016.2/016.3/016.4)
 - **Priority:** P2
 - **Category:** Inventory
 - **Why it matters:** Inventory module (warehouses, products, raw materials, stock tracking, movements) KPIs show empty. No realistic factory stock data.
@@ -3218,6 +3218,30 @@ Idempotency: by `plan_code` (unique) ✓
 Checks: `import app.main` CLEAN · 25/25 hardening PASS ✓
 
 Git commit: `a81a077` feat(inventory): add cycle count plans seed (TASK-016 I4)
+
+**Batch TASK-016.6 — Demand Forecasts (DONE — 2026-06-04)**
+
+Files changed:
+- `backend/app/db/seed_inventory.py` — added imports (`DemandForecast`, `DemandForecastLine`, `ForecastModelType`, `ForecastStatus`, `PeriodType` from `app.models.mrp`); 2 helpers (`_get_or_create_demand_forecast`, `_get_or_create_forecast_line`); I6 seed section
+
+Dataset added:
+| Layer | Records |
+|-------|---------|
+| DemandForecast (1 per product, EXPONENTIAL_SMOOTHING, MONTHLY, APPROVED) | 5 |
+| DemandForecastLine (6 monthly periods per forecast, with Q4 +15% / Q1 -10% seasonal factor) | 30 |
+
+Idempotency:
+- DemandForecast: UniqueConstraint `(product_id, period_type, start_date, forecast_model)` ✓
+- DemandForecastLine: UniqueConstraint `(forecast_id, period_date)` ✓
+
+Checks:
+- `python -c "from app.db.seed_inventory import seed_inventory_data"` → CLEAN ✓
+- `python -c "import app.main"` → CLEAN ✓
+- 25/25 pytest hardening → PASS ✓
+
+No schema / model / migration / frontend / .env changes made. Prophet not used (enum stub only).
+
+- **Graphify refresh status:** Deferred — accumulate more seed phases before next refresh.
 
 **Batch TASK-016.5 — Shelf Life Profiles and Alerts (DONE — 2026-06-04)**
 
