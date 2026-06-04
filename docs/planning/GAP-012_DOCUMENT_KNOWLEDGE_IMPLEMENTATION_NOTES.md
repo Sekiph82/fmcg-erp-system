@@ -302,13 +302,14 @@ From `CODEX_PROGRESS.md`:
 | `document_access_service.py` with lifecycle lock and status checks | Complete |
 | `knowledge_base_service.py` with publication permission separation | Complete |
 | `esignature_service.py` with signer eligibility and expiry checks | Complete |
-| Endpoints hardened with `require_permission` + service checks | Complete |
+| Endpoints hardened with `require_permission` + service checks | Complete — 4 missing e-sign guards added 2026-06-04 |
 | Module registry ownership (no duplicate route definitions) | Complete |
 | Seed permission codes and role assignments | Complete |
 | Frontend nav permission keys updated | Complete |
-| Frontend KB pages use `knowledge_base.*` permissions | Complete |
+| Frontend KB pages use `knowledge_base.*` permissions | Complete — main page + articles/new page guarded |
+| E-sign frontend page uses `RequirePermission("esign.view")` | Complete — guard added 2026-06-04 |
 | E-sign frontend uses `apiClient` only | Complete |
-| 5 focused pytest tests passing | Complete |
+| 7 focused pytest tests passing | Complete (5 pre-existing + 2 new permission contract tests 2026-06-04) |
 | Migration offline SQL generation passed | Complete |
 | Live DB migration applied | **Pending** — Docker unavailable in GAP-012 session |
 | File upload pipeline | **Not implemented** — metadata-only |

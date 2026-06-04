@@ -2,8 +2,9 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { kbApi, KBCategory } from "@/lib/knowledge_base";
+import { RequirePermission } from "@/components/PermissionGuard";
 
-export default function NewArticlePage() {
+function NewArticlePageInner() {
   const router = useRouter();
   const [categories, setCategories] = useState<KBCategory[]>([]);
   const [form, setForm] = useState({
@@ -149,5 +150,13 @@ export default function NewArticlePage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function NewArticlePage() {
+  return (
+    <RequirePermission permission="knowledge_base.create">
+      <NewArticlePageInner />
+    </RequirePermission>
   );
 }
