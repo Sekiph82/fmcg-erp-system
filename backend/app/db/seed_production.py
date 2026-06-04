@@ -30,11 +30,19 @@ from app.models.production import (
     ProductionPlanLine,
     ProductionPlanStatus,
 )
+from app.models.production import DowntimeLog, DowntimeReason
 from app.models.production_advanced import (
+    AdvQCInspection,
+    AdvQCStatus,
     BatchLot,
     BatchLotStatus,
+    OEERecord,
+    QCInspectionType,
     Routing,
     RoutingStep,
+    WasteRecord,
+    WasteType,
+    WasteCategory,
     WorkCenter,
     WorkCenterStatus,
     WorkCenterType,
@@ -160,6 +168,47 @@ async def _get_or_create_batch_lot(db: AsyncSession, batch_id: str, **kw) -> Bat
 
 
 # ── main seed function ────────────────────────────────────────────────────────
+
+
+async def _get_or_create_oee(db: AsyncSession, oee_id: str, **kw) -> OEERecord:
+    obj = (await db.execute(select(OEERecord).where(OEERecord.oee_id == oee_id))).scalar_one_or_none()
+    if not obj:
+        obj = OEERecord(oee_id=oee_id, **kw)
+        db.add(obj)
+        await db.flush()
+    return obj
+
+
+async def _get_or_create_qc(db: AsyncSession, qc_id: str, **kw) -> AdvQCInspection:
+    obj = (await db.execute(select(AdvQCInspection).where(AdvQCInspection.qc_id == qc_id))).scalar_one_or_none()
+    if not obj:
+        obj = AdvQCInspection(qc_id=qc_id, **kw)
+        db.add(obj)
+        await db.flush()
+    return obj
+
+
+async def _get_or_create_waste(db: AsyncSession, waste_id: str, **kw) -> WasteRecord:
+    obj = (await db.execute(select(WasteRecord).where(WasteRecord.waste_id == waste_id))).scalar_one_or_none()
+    if not obj:
+        obj = WasteRecord(waste_id=waste_id, **kw)
+        db.add(obj)
+        await db.flush()
+    return obj
+
+
+async def _get_or_create_downtime(db: AsyncSession, production_order_id, start_time: datetime, **kw) -> DowntimeLog:
+    obj = (await db.execute(
+        select(DowntimeLog).where(
+            DowntimeLog.production_order_id == production_order_id,
+            DowntimeLog.start_time == start_time,
+        )
+    )).scalar_one_or_none()
+    if not obj:
+        obj = DowntimeLog(production_order_id=production_order_id, start_time=start_time, **kw)
+        db.add(obj)
+        await db.flush()
+    return obj
 
 
 async def seed_production_data(db: AsyncSession) -> None:
@@ -511,9 +560,124 @@ async def seed_production_data(db: AsyncSession) -> None:
             warehouse_id=wh_fg.id,
         )
 
+    # ── 11. OEE Records (1 per work centre per day for last 5 working days) ─────
+
+    _wc_list = [wc_mix_a, wc_mix_b, wc_fill_bot, wc_fill_sac, wc_pack]
+    _wc_oee_base = [0.82, 0.79, 0.88, 0.84, 0.91]  # realistic OEE targets per WC
+
+    for day_offset in range(-4, 1):  # last 5 days (day -4 to day 0)
+        rec_date = (date.today() + timedelta(days=day_offset))
+        for wc_idx, wc in enumerate(_wc_list):
+            oee_id = f"OEE-{wc.work_center_id}-{rec_date.strftime('%Y%m%d')}"
+            base = _wc_oee_base[wc_idx]
+            # Slight variation each day
+            avail = round(base + (day_offset * 0.005), 4)
+            perf = round(base - 0.03 + (wc_idx * 0.01), 4)
+            qual = round(0.97 + (wc_idx * 0.002), 4)
+            oee = round(avail * perf * qual, 4)
+            planned_min = 480  # 8-hour shift
+            actual_min = int(planned_min * avail)
+            units = 800 + wc_idx * 50 + day_offset * 10
+            good_units = int(units * qual)
+            await _get_or_create_oee(db, oee_id,
+                work_center_id=wc.id,
+                record_date=rec_date,
+                planned_production_time_min=planned_min,
+                actual_production_time_min=actual_min,
+                downtime_min=planned_min - actual_min,
+                total_units_produced=units,
+                good_units_produced=good_units,
+                availability=Decimal(str(avail)),
+                performance=Decimal(str(perf)),
+                quality=Decimal(str(qual)),
+                oee_score=Decimal(str(oee)),
+                ideal_cycle_time_sec=Decimal("30.0"),
+            )
+
+    # ── 12. QC Inspections (inline + final per production order) ─────────────
+
+    for i, (po, _batch_pfx) in enumerate(prod_orders):
+        status_str = order_specs[i][4]
+        if status_str == ProductionOrderStatus.PLANNED:
+            continue  # no inspections for unstarted orders
+        sd = order_specs[i][6]
+        # inline inspection (mid-production)
+        qc_inline_id = f"QC-INL-{po.order_no}"
+        inline_status = AdvQCStatus.PASSED if status_str == ProductionOrderStatus.COMPLETED else AdvQCStatus.PENDING
+        await _get_or_create_qc(db, qc_inline_id,
+            production_order_id=po.id,
+            inspection_type=QCInspectionType.INLINE,
+            status=inline_status,
+            checked_by="QC Supervisor",
+            inspected_at=_d(sd + 1) if status_str == ProductionOrderStatus.COMPLETED else None,
+            batch_ref=f"{po.order_no}-BATCH",
+            notes="Inline viscosity and pH check",
+        )
+        # final inspection (end of order)
+        qc_final_id = f"QC-FNL-{po.order_no}"
+        final_status = AdvQCStatus.PASSED if status_str == ProductionOrderStatus.COMPLETED else AdvQCStatus.PENDING
+        await _get_or_create_qc(db, qc_final_id,
+            production_order_id=po.id,
+            inspection_type=QCInspectionType.FINAL,
+            status=final_status,
+            checked_by="QA Manager",
+            inspected_at=_d(sd + 2) if status_str == ProductionOrderStatus.COMPLETED else None,
+            batch_ref=f"{po.order_no}-BATCH",
+            notes="Final label, weight, and seal inspection",
+        )
+
+    # ── 13. Waste Records (1 per completed/in-progress order) ─────────────────
+
+    for i, (po, _batch_pfx) in enumerate(prod_orders):
+        status_str = order_specs[i][4]
+        if status_str == ProductionOrderStatus.PLANNED:
+            continue
+        waste_id = f"WASTE-{po.order_no}"
+        expected = Decimal(str(po.planned_quantity))
+        loss_pct = Decimal("0.03")  # 3% typical FMCG loss
+        actual = (expected * (1 - loss_pct)).quantize(Decimal("0.01"))
+        loss_qty = (expected - actual).quantize(Decimal("0.01"))
+        await _get_or_create_waste(db, waste_id,
+            production_order_id=po.id,
+            waste_type=WasteType.PRODUCT,
+            waste_category=WasteCategory.NORMAL,
+            expected_qty=expected,
+            actual_qty=actual,
+            loss_qty=loss_qty,
+            loss_pct=loss_pct * 100,
+            uom="L",
+            reason="Normal processing losses during filling/mixing",
+        )
+
+    # ── 14. Downtime Logs (1 per completed/in-progress order) ─────────────────
+
+    _downtime_reasons = [
+        DowntimeReason.CHANGEOVER,
+        DowntimeReason.MAINTENANCE,
+        DowntimeReason.BREAKDOWN,
+        DowntimeReason.QUALITY_HOLD,
+        DowntimeReason.MATERIAL_SHORTAGE,
+    ]
+    for i, (po, _batch_pfx) in enumerate(prod_orders):
+        status_str = order_specs[i][4]
+        if status_str == ProductionOrderStatus.PLANNED:
+            continue
+        sd = order_specs[i][6]
+        start_time = _d(sd)
+        end_time = _d(sd) + timedelta(minutes=30 + (i % 3) * 15)
+        reason = _downtime_reasons[i % len(_downtime_reasons)]
+        await _get_or_create_downtime(db, po.id, start_time,
+            end_time=end_time,
+            duration_minutes=int((end_time - start_time).total_seconds() / 60),
+            reason=reason,
+            machine_id=f"MCH-{_wc_list[i % len(_wc_list)].work_center_id}",
+            notes="Scheduled stop logged during production run",
+        )
+
     await db.commit()
     logger.info(
         "Production seed complete: 2 warehouses, 5 products, 7 materials, "
-        "5 recipes, 5 work centres, 5 routings, 3 plans, %d orders, work orders, batch lots",
+        "5 recipes, 5 work centres, 5 routings, 3 plans, %d orders, work orders, batch lots, "
+        "OEE records, QC inspections, waste records, downtime logs",
         len(prod_orders),
     )

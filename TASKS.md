@@ -2794,7 +2794,7 @@ TASK-014 fully closed.
 
 ### Task ID: TASK-015 — Production module real data (Phase P1-P11)
 
-- **Status:** TASK-015.1 + TASK-015.1A Done — production demo seed implemented, DB-validated, idempotency confirmed; Graphify backend refresh done (2026-06-01)
+- **Status:** TASK-015.1 + TASK-015.1A + TASK-015.2 Done — production demo seed implemented, DB-validated, idempotency confirmed; OEE/QC/waste/downtime seed added 2026-06-04; Graphify backend refresh done (2026-06-01)
 - **Priority:** P2
 - **Category:** Production
 - **Why it matters:** Production module (orders, work orders, work centers, routing, batch tracking, QC, yield) models exist in backend but KPIs and dashboards show empty data. No realistic seed data for demo or testing.
@@ -2954,8 +2954,33 @@ Known limitations:
 - `RecipeItem.unit` is String — seeded as `"KG"` or `"PCS"` matching material UoM
 - Batch lot manufacture_date calculation is approximate for demo data
 - Docker backend must be rebuilt + `SEED_DEMO_DATA=true` in `.env` to trigger seed
-- Optional records (OEE, downtime logs, QC inspections, waste records) not seeded — required fields too complex for initial demo; can be added as TASK-015.2
+- Optional records (OEE, downtime logs, QC inspections, waste records) added as TASK-015.2 (DONE — 2026-06-04)
 - No `FinishedGoodsReceipt` or `MaterialConsumption` records — those have accounting FKs (journal_entries, posting_batches) that would require accounting seed first
+
+**Batch TASK-015.2 — OEE, QC Inspections, Waste, Downtime seed (DONE — 2026-06-04)**
+
+Files changed:
+- `backend/app/db/seed_production.py` — added imports for OEERecord, AdvQCInspection, WasteRecord, DowntimeLog + 4 idempotent helper functions + sections 11–14 in `seed_production_data()`
+
+Dataset added:
+| Layer | Records |
+|-------|---------|
+| OEERecord (5 work centres × 5 days) | 25 |
+| AdvQCInspection (inline + final per non-PLANNED order) | ~20 |
+| WasteRecord (1 per completed/in-progress order, 3% loss) | ~11 |
+| DowntimeLog (1 per completed/in-progress order) | ~11 |
+
+Idempotency:
+- OEERecord: by `oee_id` (unique index) ✓
+- AdvQCInspection: by `qc_id` (unique index) ✓
+- WasteRecord: by `waste_id` (unique index) ✓
+- DowntimeLog: by `(production_order_id, start_time)` compound query ✓
+
+Checks:
+- `python -c "from app.db.seed_production import seed_production_data"` → CLEAN ✓
+- `python -c "import app.main"` → CLEAN ✓
+- 86/86 pytest (regression) → PASS ✓
+- Docker live run required to validate actual DB insertion (not run — Docker not started)
 
 - **Git commit / branch:** Not committed yet
 - **Graphify refresh after implementation:** backend
