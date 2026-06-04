@@ -3016,7 +3016,7 @@ Note: batch_lots count is 9 (not 7 as designed) — 2 extra lots created during 
 
 ### Task ID: TASK-016 — Inventory/Stock real data (Phase I1-I7)
 
-- **Status:** TASK-016.1–TASK-016.4 Done — inventory demo seed + WMS zones/locations + trace events + cycle count plans seeded 2026-06-04; Graphify refresh complete (2026-06-01 after TASK-016.1; 2026-06-04 after TASK-016.2/016.3/016.4)
+- **Status:** TASK-016.1–TASK-016.5 Done — inventory demo seed + WMS zones/locations + trace events + cycle count plans + shelf life profiles/alerts seeded 2026-06-04; Graphify refresh complete (2026-06-01 after TASK-016.1; 2026-06-04 after TASK-016.2/016.3/016.4)
 - **Priority:** P2
 - **Category:** Inventory
 - **Why it matters:** Inventory module (warehouses, products, raw materials, stock tracking, movements) KPIs show empty. No realistic factory stock data.
@@ -3218,6 +3218,32 @@ Idempotency: by `plan_code` (unique) ✓
 Checks: `import app.main` CLEAN · 25/25 hardening PASS ✓
 
 Git commit: `a81a077` feat(inventory): add cycle count plans seed (TASK-016 I4)
+
+**Batch TASK-016.5 — Shelf Life Profiles and Alerts (DONE — 2026-06-04)**
+
+Files changed:
+- `backend/app/db/seed_inventory.py` — added imports (`LotShelfLifeProfile`, `ShelfLifeAlert`, `AlertType`, `AlertSeverity`, `ShelfLifeStatus` from `app.models.shelf_life`); 2 idempotent helper functions (`_get_or_create_lot_shelf_profile`, `_get_or_create_shelf_alert`); I5 seed section
+
+Dataset added:
+| Layer | Records |
+|-------|---------|
+| LotShelfLifeProfile (one per raw material lot) | 7 |
+| ShelfLifeAlert — SURF warning (near_expiry, AlertSeverity.warning) | 1 |
+| ShelfLifeAlert — SURF critical (high_risk_value, AlertSeverity.critical) | 1 |
+| ShelfLifeAlert — FRAG info (near_expiry, AlertSeverity.info) | 1 |
+
+Idempotency:
+- LotShelfLifeProfile: by `lot_id` (unique index) ✓
+- ShelfLifeAlert: by `(lot_id, alert_type, is_resolved=False)` compound query ✓
+
+Checks:
+- `python -c "from app.db.seed_inventory import seed_inventory_data"` → CLEAN ✓
+- `python -c "import app.main"` → CLEAN ✓
+- 32/32 pytest (hardening + gap012) → PASS ✓
+
+No schema / model / migration / frontend / .env changes made.
+
+- **Graphify refresh status:** Deferred — accumulate more seed phases before next refresh.
 
 **Batch TASK-016.3 — Trace Events for Lot Genealogy (DONE — 2026-06-04)**
 

@@ -29,6 +29,13 @@ from app.models.inventory import (
 )
 from app.models.cycle_count import CycleCountPlan, PlanStatus, PlanType
 from app.models.master import Material, Product, Warehouse
+from app.models.shelf_life import (
+    AlertSeverity,
+    AlertType,
+    LotShelfLifeProfile,
+    ShelfLifeAlert,
+    ShelfLifeStatus,
+)
 from app.models.traceability import TraceEvent, TraceEventType
 from app.models.wms import StorageLocation, WarehouseZone, ZoneType
 
@@ -193,6 +200,36 @@ async def _get_or_create_trace_event(db: AsyncSession, reference_number: str, ev
     )).scalar_one_or_none()
     if not obj:
         obj = TraceEvent(reference_number=reference_number, trace_event_type=event_type, **kw)
+        db.add(obj)
+        await db.flush()
+    return obj
+
+
+async def _get_or_create_lot_shelf_profile(
+    db: AsyncSession, lot_id, **kw
+) -> LotShelfLifeProfile:
+    obj = (await db.execute(
+        select(LotShelfLifeProfile).where(LotShelfLifeProfile.lot_id == lot_id)
+    )).scalar_one_or_none()
+    if not obj:
+        obj = LotShelfLifeProfile(lot_id=lot_id, **kw)
+        db.add(obj)
+        await db.flush()
+    return obj
+
+
+async def _get_or_create_shelf_alert(
+    db: AsyncSession, lot_id, alert_type: AlertType, **kw
+) -> ShelfLifeAlert:
+    obj = (await db.execute(
+        select(ShelfLifeAlert).where(
+            ShelfLifeAlert.lot_id == lot_id,
+            ShelfLifeAlert.alert_type == alert_type,
+            ShelfLifeAlert.is_resolved == False,  # noqa: E712
+        )
+    )).scalar_one_or_none()
+    if not obj:
+        obj = ShelfLifeAlert(lot_id=lot_id, alert_type=alert_type, **kw)
         db.add(obj)
         await db.flush()
     return obj
@@ -565,10 +602,103 @@ async def seed_inventory_data(db: AsyncSession) -> None:
             notes="Bi-weekly item-level count for all POVU finished goods SKUs",
         )
 
+    # ── Shelf Life Profiles and Alerts (TASK-016 I5) ─────────────────────────
+
+    _manufacture_date = date(2025, 1, 15)
+
+    # (lot_key, original_shelf_life_days, status, near_expiry_flag)
+    _sl_specs = [
+        ("LOT-SURF-2025-001",   867,  ShelfLifeStatus.near_expiry, True),
+        ("LOT-FRAG-2025-001",  1051,  ShelfLifeStatus.active,      False),
+        ("LOT-THICK-2025-001", 1082,  ShelfLifeStatus.active,      False),
+        ("LOT-BTL1L-2025-001", 1447,  ShelfLifeStatus.active,      False),
+        ("LOT-BTL500-2025-001",1447,  ShelfLifeStatus.active,      False),
+        ("LOT-CAP-2025-001",   1597,  ShelfLifeStatus.active,      False),
+        ("LOT-LBL-2025-001",   1232,  ShelfLifeStatus.active,      False),
+    ]
+    for lot_key, orig_sl, sl_status, near_flag in _sl_specs:
+        lot = lots.get(lot_key)
+        if not lot or not lot.expiry_date:
+            continue
+        remaining = (lot.expiry_date - _today).days
+        age = (_today - _manufacture_date).days
+        pct = round(Decimal(str(remaining)) / Decimal(str(orig_sl)) * 100, 2) if orig_sl else None
+        await _get_or_create_lot_shelf_profile(
+            db, lot.id,
+            manufacturing_date=_manufacture_date,
+            expiry_date=lot.expiry_date,
+            remaining_shelf_life_days=remaining,
+            age_since_production_days=age,
+            original_shelf_life_days=orig_sl,
+            pct_remaining=pct,
+            shelf_life_status=sl_status,
+            near_expiry_flag=near_flag,
+            expired_flag=False,
+            blocked_for_issue_flag=False,
+            blocked_for_shipment_flag=False,
+            blocked_for_consumption_flag=False,
+        )
+
+    # Alerts: warning + critical for SURF lot (nearest expiry), info for FRAG lot
+    surf_lot = lots.get("LOT-SURF-2025-001")
+    frag_lot = lots.get("LOT-FRAG-2025-001")
+
+    if surf_lot and surf_lot.expiry_date and mat_surf:
+        surf_remaining = (surf_lot.expiry_date - _today).days
+        await _get_or_create_shelf_alert(
+            db, surf_lot.id, AlertType.near_expiry,
+            severity=AlertSeverity.warning,
+            material_id=mat_surf.id,
+            warehouse_id=wh_rm.id,
+            title=f"LOT-SURF-2025-001 approaching expiry — {surf_remaining} days remaining",
+            message=(
+                f"Raw surfactant lot LOT-SURF-2025-001 expires {surf_lot.expiry_date}. "
+                f"Only {surf_remaining} days remaining (threshold: 365 days). "
+                "Review consumption plan and prioritise in upcoming production orders."
+            ),
+            days_remaining=surf_remaining,
+            quantity_affected=Decimal("5000.000"),
+            stock_value_at_risk=Decimal("600000.00"),
+        )
+        await _get_or_create_shelf_alert(
+            db, surf_lot.id, AlertType.high_risk_value,
+            severity=AlertSeverity.critical,
+            material_id=mat_surf.id,
+            warehouse_id=wh_rm.id,
+            title="HIGH VALUE: Surfactant stock KES 600K at expiry risk",
+            message=(
+                "LOT-SURF-2025-001 represents KES 600,000 of surfactant (5,000 kg × KES 120/kg) "
+                f"with only {surf_remaining} days remaining shelf life. "
+                "Immediate production planning recommended to consume before expiry."
+            ),
+            days_remaining=surf_remaining,
+            quantity_affected=Decimal("5000.000"),
+            stock_value_at_risk=Decimal("600000.00"),
+        )
+
+    if frag_lot and frag_lot.expiry_date and mat_frag:
+        frag_remaining = (frag_lot.expiry_date - _today).days
+        await _get_or_create_shelf_alert(
+            db, frag_lot.id, AlertType.near_expiry,
+            severity=AlertSeverity.info,
+            material_id=mat_frag.id,
+            warehouse_id=wh_rm.id,
+            title=f"LOT-FRAG-2025-001 shelf life monitoring — {frag_remaining} days remaining",
+            message=(
+                f"Lavender fragrance lot LOT-FRAG-2025-001 expires {frag_lot.expiry_date}. "
+                f"{frag_remaining} days remaining. No immediate action required; "
+                "monitor and incorporate in production planning for Q3–Q4 next year."
+            ),
+            days_remaining=frag_remaining,
+            quantity_affected=Decimal("200.000"),
+            stock_value_at_risk=Decimal("170000.00"),
+        )
+
     await db.commit()
     logger.info(
         "Inventory seed complete: 7 lots, %d raw stocks, %d FG stocks, "
-        "%d movements, 7 cost layers, WMS zones, storage locations, trace events, cycle count plans",
+        "%d movements, 7 cost layers, WMS zones, storage locations, trace events, "
+        "cycle count plans, 7 lot shelf-life profiles, 3 shelf-life alerts",
         len(raw_stocks), len(fg_stocks),
         len(raw_adj_specs) + len(raw_grn_specs) + len(issue_specs) + len(prod_rcpt_specs),
     )
