@@ -27,6 +27,7 @@ from app.models.inventory import (
     StockMovement,
     StockType,
 )
+from app.models.cycle_count import CycleCountPlan, PlanStatus, PlanType
 from app.models.master import Material, Product, Warehouse
 from app.models.traceability import TraceEvent, TraceEventType
 from app.models.wms import StorageLocation, WarehouseZone, ZoneType
@@ -169,6 +170,15 @@ async def _get_or_create_location(db: AsyncSession, zone_id, code: str, **kw) ->
     )).scalar_one_or_none()
     if not obj:
         obj = StorageLocation(zone_id=zone_id, code=code, **kw)
+        db.add(obj)
+        await db.flush()
+    return obj
+
+
+async def _get_or_create_cycle_count_plan(db: AsyncSession, plan_code: str, **kw) -> CycleCountPlan:
+    obj = (await db.execute(select(CycleCountPlan).where(CycleCountPlan.plan_code == plan_code))).scalar_one_or_none()
+    if not obj:
+        obj = CycleCountPlan(plan_code=plan_code, **kw)
         db.add(obj)
         await db.flush()
     return obj
@@ -520,10 +530,45 @@ async def seed_inventory_data(db: AsyncSession) -> None:
             notes=f"Finished goods receipt from production order {po.order_no}",
         )
 
+    # ── Cycle Count Plans (TASK-016 I4) ──────────────────────────────────────
+    _today_date = date.today()
+    if wh_rm:
+        await _get_or_create_cycle_count_plan(db, "CCP-RM-ABC-2026",
+            name="Raw Material ABC Annual Cycle Count 2026",
+            warehouse_id=wh_rm.id,
+            plan_type=PlanType.ABC,
+            status=PlanStatus.ACTIVE,
+            start_date=_today_date.replace(month=1, day=1),
+            end_date=_today_date.replace(month=12, day=31),
+            frequency_days=30,
+            notes="Annual ABC-based cycle count for raw material and packaging store",
+        )
+        await _get_or_create_cycle_count_plan(db, "CCP-RM-FREQ-Q1-2026",
+            name="Raw Material Quarterly Frequency Count Q1-2026",
+            warehouse_id=wh_rm.id,
+            plan_type=PlanType.FREQUENCY,
+            status=PlanStatus.COMPLETED,
+            start_date=_today_date.replace(month=1, day=1),
+            end_date=_today_date.replace(month=3, day=31),
+            frequency_days=90,
+            notes="Q1 quarterly frequency count — raw materials",
+        )
+    if wh_fg:
+        await _get_or_create_cycle_count_plan(db, "CCP-FG-ITEM-2026",
+            name="Finished Goods Item-Level Cycle Count 2026",
+            warehouse_id=wh_fg.id,
+            plan_type=PlanType.ITEM,
+            status=PlanStatus.ACTIVE,
+            start_date=_today_date.replace(month=1, day=1),
+            end_date=_today_date.replace(month=12, day=31),
+            frequency_days=14,
+            notes="Bi-weekly item-level count for all POVU finished goods SKUs",
+        )
+
     await db.commit()
     logger.info(
         "Inventory seed complete: 7 lots, %d raw stocks, %d FG stocks, "
-        "%d movements, 7 cost layers, WMS zones, storage locations, trace events",
+        "%d movements, 7 cost layers, WMS zones, storage locations, trace events, cycle count plans",
         len(raw_stocks), len(fg_stocks),
         len(raw_adj_specs) + len(raw_grn_specs) + len(issue_specs) + len(prod_rcpt_specs),
     )

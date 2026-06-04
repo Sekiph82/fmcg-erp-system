@@ -3016,7 +3016,7 @@ Note: batch_lots count is 9 (not 7 as designed) — 2 extra lots created during 
 
 ### Task ID: TASK-016 — Inventory/Stock real data (Phase I1-I7)
 
-- **Status:** TASK-016.1 + TASK-016.2 + TASK-016.3 Done — inventory demo seed + WMS zones/locations + trace events seeded 2026-06-04; Graphify refresh complete (2026-06-01)
+- **Status:** TASK-016.1–TASK-016.4 Done — inventory demo seed + WMS zones/locations + trace events + cycle count plans seeded 2026-06-04; Graphify refresh complete (2026-06-01)
 - **Priority:** P2
 - **Category:** Inventory
 - **Why it matters:** Inventory module (warehouses, products, raw materials, stock tracking, movements) KPIs show empty. No realistic factory stock data.
@@ -3199,6 +3199,21 @@ Dataset added:
 Idempotency: `(warehouse_id, code)` for zones; `(zone_id, code)` for locations ✓
 
 Checks: `import app.main` CLEAN · 86/86 pytest PASS ✓
+
+**Batch TASK-016.4 — Cycle Count Plans (DONE — 2026-06-04)**
+
+Files changed:
+- `backend/app/db/seed_inventory.py` — added `CycleCountPlan`, `PlanType`, `PlanStatus` imports, `_get_or_create_cycle_count_plan` helper, I4 seed section
+
+Dataset added:
+| Layer | Records |
+|-------|---------|
+| CycleCountPlan PROD-WH ABC (annual, ACTIVE) | 1 |
+| CycleCountPlan PROD-WH FREQUENCY (Q1, COMPLETED) | 1 |
+| CycleCountPlan FG-WH ITEM (annual, ACTIVE) | 1 |
+
+Idempotency: by `plan_code` (unique) ✓
+Checks: `import app.main` CLEAN · 25/25 hardening PASS ✓
 
 **Batch TASK-016.3 — Trace Events for Lot Genealogy (DONE — 2026-06-04)**
 
