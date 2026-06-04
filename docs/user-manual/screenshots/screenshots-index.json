@@ -183,8 +183,9 @@
     "module": "inventory",
     "priority": 1,
     "screenshot": "captured/017_inventory.png",
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "captured"
+    "capturedAt": "2026-06-04T16:30:30.678Z",
+    "status": "captured",
+    "filename": "017_inventory.png"
   },
   {
     "id": "inventory-stock",
@@ -194,8 +195,9 @@
     "module": "inventory",
     "priority": 1,
     "screenshot": "captured/018_inventory-stock.png",
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "captured"
+    "capturedAt": "2026-06-04T16:30:30.678Z",
+    "status": "captured",
+    "filename": "018_inventory-stock.png"
   },
   {
     "id": "inventory-movements",
@@ -216,8 +218,9 @@
     "module": "inventory",
     "priority": 1,
     "screenshot": "captured/020_inventory-shelf-life.png",
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "captured"
+    "capturedAt": "2026-06-04T16:30:30.678Z",
+    "status": "captured",
+    "filename": "020_inventory-shelf-life.png"
   },
   {
     "id": "inventory-cycle-count",
@@ -227,8 +230,9 @@
     "module": "inventory",
     "priority": 1,
     "screenshot": "captured/021_inventory-cycle-count.png",
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "captured"
+    "capturedAt": "2026-06-04T16:30:30.678Z",
+    "status": "captured",
+    "filename": "021_inventory-cycle-count.png"
   },
   {
     "id": "inventory-traceability",
@@ -238,8 +242,9 @@
     "module": "inventory",
     "priority": 2,
     "screenshot": "captured/022_inventory-traceability.png",
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "captured"
+    "capturedAt": "2026-06-04T16:30:30.678Z",
+    "status": "captured",
+    "filename": "022_inventory-traceability.png"
   },
   {
     "id": "inventory-serials",
@@ -271,8 +276,9 @@
     "module": "wms",
     "priority": 1,
     "screenshot": "captured/025_wms.png",
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "captured"
+    "capturedAt": "2026-06-04T16:30:30.678Z",
+    "status": "captured",
+    "filename": "025_wms.png"
   },
   {
     "id": "wms-zones",
@@ -293,8 +299,9 @@
     "module": "wms",
     "priority": 2,
     "screenshot": "captured/027_wms-locations.png",
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "captured"
+    "capturedAt": "2026-06-04T16:30:30.678Z",
+    "status": "captured",
+    "filename": "027_wms-locations.png"
   },
   {
     "id": "wms-quarantine",
@@ -482,7 +489,7 @@
     "module": "production",
     "priority": 2,
     "screenshot": "captured/044_production-quality-control.png",
-    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "capturedAt": "2026-06-04T16:30:30.678Z",
     "status": "captured",
     "filename": "044_production-quality-control.png"
   },
@@ -494,7 +501,7 @@
     "module": "production",
     "priority": 2,
     "screenshot": "captured/045_production-oee.png",
-    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "capturedAt": "2026-06-04T16:30:30.678Z",
     "status": "captured",
     "filename": "045_production-oee.png"
   },
@@ -506,7 +513,7 @@
     "module": "production",
     "priority": 2,
     "screenshot": "captured/046_production-downtime.png",
-    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "capturedAt": "2026-06-04T16:30:30.678Z",
     "status": "captured",
     "filename": "046_production-downtime.png"
   },
@@ -542,7 +549,7 @@
     "module": "production",
     "priority": 2,
     "screenshot": "captured/049_production-waste-yield.png",
-    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "capturedAt": "2026-06-04T16:30:30.678Z",
     "status": "captured",
     "filename": "049_production-waste-yield.png"
   },
@@ -662,7 +669,7 @@
     "module": "planning",
     "priority": 1,
     "screenshot": "captured/059_planning-mrp.png",
-    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "capturedAt": "2026-06-04T16:30:30.678Z",
     "status": "captured",
     "filename": "059_planning-mrp.png"
   },
@@ -794,7 +801,7 @@
     "module": "compliance",
     "priority": 2,
     "screenshot": "captured/070_compliance-gs1.png",
-    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "capturedAt": "2026-06-04T16:30:30.678Z",
     "status": "captured",
     "filename": "070_compliance-gs1.png"
   },
@@ -1094,7 +1101,7 @@
     "module": "finance",
     "priority": 2,
     "screenshot": "captured/095_finance-tax.png",
-    "capturedAt": "2026-05-18T21:06:11.966Z",
+    "capturedAt": "2026-06-04T16:30:30.678Z",
     "status": "captured",
     "filename": "095_finance-tax.png"
   },
@@ -1328,8 +1335,9 @@
     "module": "documents",
     "priority": 2,
     "screenshot": "captured/115_documents.png",
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "captured"
+    "capturedAt": "2026-06-04T16:30:30.678Z",
+    "status": "captured",
+    "filename": "115_documents.png"
   },
   {
     "id": "documents-compliance",
@@ -1350,8 +1358,9 @@
     "module": "documents",
     "priority": 3,
     "screenshot": "captured/117_documents-knowledge-base.png",
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "captured"
+    "capturedAt": "2026-06-04T16:30:30.678Z",
+    "status": "captured",
+    "filename": "117_documents-knowledge-base.png"
   },
   {
     "id": "npd",
@@ -1504,8 +1513,9 @@
     "module": "ai",
     "priority": 3,
     "screenshot": "captured/131_ai.png",
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "captured"
+    "capturedAt": "2026-06-04T16:30:30.678Z",
+    "status": "captured",
+    "filename": "131_ai.png"
   },
   {
     "id": "ai-chat",

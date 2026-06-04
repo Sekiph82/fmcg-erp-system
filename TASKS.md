@@ -4669,7 +4669,39 @@ The following modules changed substantially since v2-Post-Recovery manuals were 
   7. Admin/Deployment — advisory lock note in deployment docs
 - If screenshot automation script exists (`docs/user-manual/SCREENSHOT_CAPTURE_PLAN.md`), review and update routes list
 - If automation unavailable, document exact screenshot checklist per page
-- **Status: Pending — do not start until MANUAL-001 audit complete and user approves**
+- **Status: Done — 2026-06-04**
+
+#### MANUAL-002 Capture Results — 2026-06-04
+
+- **Tool:** Playwright `e2e/manual-screenshots.spec.ts` with `MANUAL_CAPTURE_IDS` filter
+- **Docker stack:** Frontend :3000, Backend :8000, DB :5432, Redis :6379 (all healthy)
+- **Auth:** Admin / Admin1234! via existing `playwright/.auth/state.json`
+- **Routes captured:** 17 / 17 — 0 failed
+- **Existing screenshots preserved:** ~123 unchanged PNGs kept; only 17 stale routes re-captured
+- **Output folder:** `docs/user-manual/screenshots/captured/` (gitignored; local only — 70.4 MB / 140 PNGs total)
+- **Index updated:** `docs/user-manual/screenshots/screenshots-index.json` — 140 captured, 1 failed (pre-existing failure, not from this run)
+
+| Route ID | File | Size | Notes |
+|----------|------|------|-------|
+| `inventory` | `017_inventory.png` | 468 KB | I1-I7 seed data visible |
+| `inventory-stock` | `018_inventory-stock.png` | 468 KB | Stock levels from seed |
+| `inventory-shelf-life` | `020_inventory-shelf-life.png` | 582 KB | Shelf-life alerts from seed |
+| `inventory-cycle-count` | `021_inventory-cycle-count.png` | 590 KB | Cycle count records from seed |
+| `inventory-traceability` | `022_inventory-traceability.png` | 558 KB | Traceability chain from seed |
+| `wms` | `025_wms.png` | 564 KB | WMS bin locations from I1-I7 seed |
+| `wms-locations` | `027_wms-locations.png` | 564 KB | WMS location detail from seed |
+| `production-quality-control` | `044_production-quality-control.png` | 551 KB | QC checks from TASK-015 seed |
+| `production-oee` | `045_production-oee.png` | 360 KB | OEE metrics from TASK-015 seed |
+| `production-downtime` | `046_production-downtime.png` | 554 KB | Downtime log from TASK-015 seed |
+| `production-waste-yield` | `049_production-waste-yield.png` | 556 KB | Waste/yield from TASK-015 seed |
+| `planning-mrp` | `059_planning-mrp.png` | 261 KB | MRP demand forecasts from seed |
+| `compliance-gs1` | `070_compliance-gs1.png` | 444 KB | GS1 page (auth-gated) |
+| `finance-tax` | `095_finance-tax.png` | 565 KB | Finance tax tab — eTIMS section (TASK-005) |
+| `documents` | `115_documents.png` | 537 KB | Documents list (TASK-027 permission gates) |
+| `documents-knowledge-base` | `117_documents-knowledge-base.png` | 474 KB | Knowledge base (permission gates) |
+| `ai` | `131_ai.png` | 501 KB | AI/forecasting page (PROPHET → Holt-Winters) |
+
+**Gap noted:** No dedicated `/dashboard/esign` route exists in `routes.json`. E-sign is accessible via documents module. No separate esign route added — covered by `documents` capture.
 
 **MANUAL-003 — Rewrite changed module manuals**
 - Do NOT patch old content — rewrite affected sections fully from current UI state
