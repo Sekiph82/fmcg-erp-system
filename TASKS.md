@@ -3876,25 +3876,52 @@ Remaining TASK-017 sub-tasks:
 
 ### Task ID: TASK-025 — Prophet/AI demand forecasting
 
-- **Status:** Pending
+- **Status:** Audited 2026-06-04. PROPHET stub found. Recommended: statsmodels Holt-Winters (no C++, ~20MB). Pending user approval for dependency.
 - **Priority:** P3
 - **Category:** AI
 - **Why it matters:** `forecast_service.py:5` — "Prophet-style AI forecasting is stubbed for future integration." Falls back to Exponential Smoothing. `models/mrp.py:21` — `PROPHET = "PROPHET"` AI-ready stub.
 - **Source / evidence:** `backend/app/services/forecast_service.py:5,231`. `backend/app/models/mrp.py:21`. PLANS.md Phase AI1-AI6.
-- **Affected area:** `backend/app/services/forecast_service.py`
-- **Risk:** Medium (ML library dependency; Prophet requires `pystan`)
-- **Recommended timing:** Later
-- **Needs audit before implementation:** Yes — evaluate whether Prophet (Meta's library) or a simpler alternative (Holt-Winters already there) is sufficient.
-- **Implementation scope:** Implement real Prophet or ARIMA-based forecasting in `forecast_service.py`.
-- **Started at:**
-- **Completed at:**
+- **Affected area:** `backend/app/services/forecast_service.py`, `backend/requirements.txt`
+- **Risk:** Low-Medium (adding `statsmodels` dep — pure Python, no C++ compilation, ~20MB)
+- **Recommended timing:** After user approves adding statsmodels dependency
+- **Needs audit before implementation:** Done — 2026-06-04 (see below)
+- **Implementation scope:** Replace PROPHET stub fallback at `forecast_service.py:231-234` with `statsmodels.tsa.holtwinters.ExponentialSmoothing` (Holt-Winters with additive trend + seasonality). Add `statsmodels>=0.14` to `requirements.txt`.
+- **Started at:** 2026-06-04 (audit)
+- **Completed at:** Pending implementation
 - **Changed files:** None yet
 - **Tests / checks run:** None yet
-- **Result:** Pending
+- **Result:** Audit complete
 - **Git commit / branch:** Not committed yet
 - **Graphify refresh after implementation:** backend
-- **Graphify refresh status:** Needed
-- **Notes:** Requires TASK-002 (AI live mode) and historical sales/production data (TASK-015/016).
+- **Graphify refresh status:** Needed after implementation
+- **Notes:** TASK-002 (AI live mode) is NOT a hard blocker — statsmodels/Prophet are standalone libraries, no external API keys needed. Historical production+inventory seed data available from TASK-015/016. Blocker: user approval to add `statsmodels>=0.14` to requirements.txt.
+
+---
+
+#### AUDIT FINDINGS — 2026-06-04 (TASK-025)
+
+**Files inspected:**
+- `backend/app/services/forecast_service.py` — 295 lines; 4 working algorithms
+- `backend/app/models/mrp.py:16-21` — `ForecastModelType.PROPHET = "PROPHET"` enum stub
+- `backend/requirements.txt` — no Prophet, statsmodels, scipy, sklearn, or ARIMA libraries installed
+
+**Current state:**
+- Working: `MOVING_AVG`, `WEIGHTED_MOVING_AVG`, `EXPONENTIAL_SMOOTHING`, `SEASONAL`
+- PROPHET falls back to ES silently at `forecast_service.py:231` — no error, no log warning
+
+**Upgrade paths ranked:**
+
+| Option | Library | Size | C++ | Accuracy |
+|--------|---------|------|-----|---------|
+| A. Holt-Winters (`statsmodels`) | `statsmodels>=0.14` | ~20 MB | No | Good |
+| B. SARIMA (`statsmodels`) | Same | ~20 MB | No | Better |
+| C. Meta Prophet | `prophet` | ~300 MB | Yes (`pystan`) | Excellent |
+
+**Recommended: Option A** — `statsmodels.tsa.holtwinters.ExponentialSmoothing`
+
+Handles trend + seasonality natively; pure Python wheel; no C++ build; sufficient for 6-month FMCG horizon. Implement PROPHET enum value as "Holt-Winters ES" without changing API surface. Fall back to current ES if history < 4 periods (statsmodels needs at least 2 seasonal cycles).
+
+**Not blocked by TASK-002** — no external API keys needed. Blocked only on approval to add dependency.
 
 ---
 
