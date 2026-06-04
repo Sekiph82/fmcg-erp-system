@@ -13,7 +13,7 @@ Idempotency notes:
 from __future__ import annotations
 
 import logging
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 
 from sqlalchemy import select
@@ -28,6 +28,7 @@ from app.models.inventory import (
     StockType,
 )
 from app.models.master import Material, Product, Warehouse
+from app.models.traceability import TraceEvent, TraceEventType
 from app.models.wms import StorageLocation, WarehouseZone, ZoneType
 
 logger = logging.getLogger(__name__)
@@ -168,6 +169,20 @@ async def _get_or_create_location(db: AsyncSession, zone_id, code: str, **kw) ->
     )).scalar_one_or_none()
     if not obj:
         obj = StorageLocation(zone_id=zone_id, code=code, **kw)
+        db.add(obj)
+        await db.flush()
+    return obj
+
+
+async def _get_or_create_trace_event(db: AsyncSession, reference_number: str, event_type: TraceEventType, **kw) -> TraceEvent:
+    obj = (await db.execute(
+        select(TraceEvent).where(
+            TraceEvent.reference_number == reference_number,
+            TraceEvent.trace_event_type == event_type,
+        )
+    )).scalar_one_or_none()
+    if not obj:
+        obj = TraceEvent(reference_number=reference_number, trace_event_type=event_type, **kw)
         db.add(obj)
         await db.flush()
     return obj
@@ -459,10 +474,56 @@ async def seed_inventory_data(db: AsyncSession) -> None:
             is_active=True,
         )
 
+    # ── Trace Events (TASK-016 I3) ────────────────────────────────────────────
+    # GRN receipt events — one per raw material lot (material received from supplier)
+
+    _now_utc = datetime.now(timezone.utc)
+    _grn_date = _today - timedelta(days=60)
+    _grn_dt = datetime(_grn_date.year, _grn_date.month, _grn_date.day, 8, 0, 0, tzinfo=timezone.utc)
+
+    _raw_mat_codes = [
+        "RAW-SURF-LAS", "RAW-FRAG-LAV", "RAW-THICK-SALT",
+        "PKG-BTL-1L", "PKG-BTL-500", "PKG-CAP-28", "PKG-LBL-ROLL",
+    ]
+    for mat_code in _raw_mat_codes:
+        mat = await _get_material(db, mat_code)
+        if not mat:
+            continue
+        await _get_or_create_trace_event(
+            db, f"SEED-TRACE-GRN-{mat_code}", TraceEventType.RECEIPT,
+            event_datetime=_grn_dt,
+            source_document_type="PURCHASE_ORDER",
+            notes=f"GRN receipt of {mat.name} from supplier — opening stock",
+        )
+
+    # Production consumption events — one per completed production order
+    from app.models.production import ProductionOrder, ProductionOrderStatus
+    result = await db.execute(
+        select(ProductionOrder).where(ProductionOrder.status == ProductionOrderStatus.COMPLETED)
+    )
+    completed_orders = result.scalars().all()
+    for po in completed_orders:
+        # consumption (material issued to production)
+        await _get_or_create_trace_event(
+            db, f"SEED-TRACE-ISSUE-{po.order_no}", TraceEventType.CONSUMPTION,
+            event_datetime=_now_utc - timedelta(days=50),
+            production_order_id=po.id,
+            source_document_type="PRODUCTION_ORDER",
+            notes=f"Material issue to production order {po.order_no}",
+        )
+        # transformation (production receipt — finished goods)
+        await _get_or_create_trace_event(
+            db, f"SEED-TRACE-PROD-{po.order_no}", TraceEventType.TRANSFORMATION,
+            event_datetime=_now_utc - timedelta(days=45),
+            production_order_id=po.id,
+            source_document_type="PRODUCTION_ORDER",
+            notes=f"Finished goods receipt from production order {po.order_no}",
+        )
+
     await db.commit()
     logger.info(
         "Inventory seed complete: 7 lots, %d raw stocks, %d FG stocks, "
-        "%d movements, 7 cost layers, WMS zones and locations",
+        "%d movements, 7 cost layers, WMS zones, storage locations, trace events",
         len(raw_stocks), len(fg_stocks),
         len(raw_adj_specs) + len(raw_grn_specs) + len(issue_specs) + len(prod_rcpt_specs),
     )

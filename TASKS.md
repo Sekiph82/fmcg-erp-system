@@ -3016,7 +3016,7 @@ Note: batch_lots count is 9 (not 7 as designed) — 2 extra lots created during 
 
 ### Task ID: TASK-016 — Inventory/Stock real data (Phase I1-I7)
 
-- **Status:** TASK-016.1 + TASK-016.2 Done — inventory demo seed + WMS zones/storage locations seeded 2026-06-04; Graphify refresh complete (2026-06-01)
+- **Status:** TASK-016.1 + TASK-016.2 + TASK-016.3 Done — inventory demo seed + WMS zones/locations + trace events seeded 2026-06-04; Graphify refresh complete (2026-06-01)
 - **Priority:** P2
 - **Category:** Inventory
 - **Why it matters:** Inventory module (warehouses, products, raw materials, stock tracking, movements) KPIs show empty. No realistic factory stock data.
@@ -3199,6 +3199,22 @@ Dataset added:
 Idempotency: `(warehouse_id, code)` for zones; `(zone_id, code)` for locations ✓
 
 Checks: `import app.main` CLEAN · 86/86 pytest PASS ✓
+
+**Batch TASK-016.3 — Trace Events for Lot Genealogy (DONE — 2026-06-04)**
+
+Files changed:
+- `backend/app/db/seed_inventory.py` — added `TraceEvent` import, `_get_or_create_trace_event` helper, I3 trace event seed section
+
+Dataset added:
+| Layer | Records |
+|-------|---------|
+| TraceEvent RECEIPT (GRN per raw material) | 7 |
+| TraceEvent CONSUMPTION (material issue per completed order) | ~5 |
+| TraceEvent TRANSFORMATION (FG receipt per completed order) | ~5 |
+
+Idempotency: `(reference_number, trace_event_type)` compound query ✓
+
+Checks: `import app.main` CLEAN · 32/32 pytest (gap012 + hardening) PASS ✓
 
 **Backend Graphify refresh after TASK-016.1 (DONE — 2026-06-01)**
 
