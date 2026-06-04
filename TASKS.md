@@ -2588,7 +2588,7 @@ Previous MEDIUM: 322. Suppressed: 6 confirmed C.4 false positives.
 
 ### Task ID: TASK-014 — python-jose → PyJWT migration evaluation
 
-- **Status:** TASK-014.3 Done — final verification passed 96/96; TASK-014.4 (Graphify refresh) pending
+- **Status:** DONE — All batches complete (014.1 + 014.2 + 014.3 + 014.4)
 - **Priority:** P2
 - **Category:** Security
 - **Why it matters:** `python-jose` has known CVEs and is less actively maintained than `PyJWT`. Full repository review flagged this as a Medium security issue.
@@ -2694,11 +2694,11 @@ Why not Option C (keep python-jose):
 - **TASK-014.1** — Add 6 JWT behavior tests to `backend/tests/test_security.py` (while still on python-jose); all must pass as baseline
 - **TASK-014.2** — Replace `from jose import jwt, JWTError` with `import jwt`; replace `except JWTError` with `except jwt.PyJWTError`; add `PyJWT>=2.8.0` to `requirements.txt`; rebuild Docker backend
 - **TASK-014.3** — Run `pytest tests/test_security.py tests/test_otp.py tests/test_hardening.py` + Playwright smoke 56/56 ✅ DONE 2026-06-04
-- **TASK-014.4** — Remove `python-jose[cryptography]` from `requirements.txt` (after TASK-014.3 confirms clean) — Pending Graphify refresh
+- **TASK-014.4** — Backend Graphify refresh ✅ DONE 2026-06-04
 
-- **Git commit / branch:** Not committed yet
+- **Git commit / branch:** ab0353c (TASK-014.3 record)
 - **Graphify refresh after implementation:** backend
-- **Graphify refresh status:** Needed after TASK-014.4
+- **Graphify refresh status:** Done — 2026-06-04
 - **Notes:**
   - Risk re-rated LOW (was Medium): only 1 file, 2 lines, HS256 symmetric, no JWKS/JWE/JWK, PyJWT API is a drop-in
   - The 4 legacy RSA deps (`ecdsa`, `pyasn1`, `rsa`) removed with python-jose — minor dependency cleanup bonus
@@ -2771,7 +2771,24 @@ Checks run:
 - `python -c "import app.main"` → **CLEAN** (FastAPIDeprecationWarning in allergen.py is pre-existing, unrelated) ✓
 - Playwright smoke: deferred — not re-run as no code changes since 56/56 pass on 2026-06-01 (TASK-013)
 
-TASK-014.3 closed. TASK-014.4 (backend Graphify refresh) is next.
+TASK-014.3 closed. TASK-014.4 Graphify refresh completed next.
+
+**Batch TASK-014.4 — Backend Graphify Refresh (DONE — 2026-06-04)**
+
+Command: `/graphify C:\Users\sekip\Masaüstü\fmcg-erp-system-main\backend --update`
+Final mode: Full backend-only rebuild (manifest was clean backend-only from prior TASK-007 run)
+Extraction mode: AST-only, zero LLM tokens (all 687 files cache-hit)
+Graph stats: 17,052 nodes · 38,763 edges · 713 communities (35 named, 678 generic)
+Output: `C:\Users\sekip\Desktop\graphify-erp-maps\backend\`
+
+Verification:
+- `security.py` nodes: 130 ✓
+- `test_security` nodes: 70 ✓
+- JWT-related nodes: 8 ✓
+- `python-jose` not present as import (replaced by `PyJWT`) ✓
+- `graphify-out/` remains untracked ✓
+
+TASK-014 fully closed.
 
 ---
 
