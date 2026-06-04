@@ -3893,7 +3893,7 @@ Remaining TASK-017 sub-tasks:
 - **Result:** Implementation complete. No external API. No credentials. No models/migrations/frontend changed.
 - **Git commit / branch:** See batch below
 - **Graphify refresh after implementation:** backend (needed when desired — service architecture extended)
-- **Graphify refresh status:** Pending (not required immediately)
+- **Graphify refresh status:** Done — 2026-06-04 backend incremental refresh (AST-only); 17,118 nodes / 39,625 edges / 690 communities; _holt_winters_forecast, ForecastModelType.PROPHET, test_forecast_service nodes all confirmed in graph; output at `C:\Users\sekip\Desktop\graphify-erp-maps\backend\`
 - **Notes:** TASK-002 (AI live mode) is NOT a hard blocker — statsmodels/Prophet are standalone libraries, no external API keys needed. Historical production+inventory seed data available from TASK-015/016.
 
 #### Batch TASK-025.1 — statsmodels Holt-Winters forecasting implementation (DONE — 2026-06-04)
@@ -3953,8 +3953,8 @@ Handles trend + seasonality natively; pure Python wheel; no C++ build; sufficien
 - **Tests / checks run:** 13/13 advisory lock contract tests PASS; 54/54 combined suite PASS; app import OK
 - **Result:** Implementation complete. Lock key 20260517. PostgreSQL-only. Offline migrations unchanged. No live DB migration run.
 - **Git commit / branch:** See batch below
-- **Graphify refresh after implementation:** Deferred (not urgent)
-- **Graphify refresh status:** Deferred
+- **Graphify refresh after implementation:** backend
+- **Graphify refresh status:** Done — 2026-06-04 backend incremental refresh (AST-only); MIGRATION_ADVISORY_LOCK_KEY, pg_advisory_lock, pg_advisory_unlock, do_run_migrations, test_migration_advisory_lock nodes all confirmed in graph; output at `C:\Users\sekip\Desktop\graphify-erp-maps\backend\`
 - **Notes:** Safe now (single replica). Now also safe for multi-replica scale-up.
 
 #### Batch TASK-026.1 — Alembic PostgreSQL advisory lock (DONE — 2026-06-04)
@@ -4009,6 +4009,44 @@ with connectable.connect() as connection:
 Lock key `20260517` = squashed baseline migration date (stable, project-specific).
 
 **Deferred:** No immediate need. Safe to implement when first scaling to 2+ replicas.
+
+---
+
+#### Backend Graphify Refresh — After TASK-025 / TASK-026 (2026-06-04)
+
+- **Command:** `/graphify C:\Users\sekip\Masaüstü\fmcg-erp-system-main\backend --update`
+- **Mode:** Incremental update (manifest-based diff)
+- **Extraction:** AST-only — all 5 changed files are code (.py) or dependency list (requirements.txt); semantic LLM extraction skipped per remote-control "AST-only / zero LLM tokens preferred" rule
+- **Backend path analyzed:** `C:\Users\sekip\Masaüstü\fmcg-erp-system-main\backend`
+- **External output folder:** `C:\Users\sekip\Desktop\graphify-erp-maps\backend\`
+- **Files copied:** GRAPH_REPORT.md, graph.json, cost.json, manifest.json
+- **graph.html status:** Not regenerated — graph has 17,118 nodes (exceeds 5,000 node HTML limit); previous graph.html preserved but is stale
+- **Graph stats:** 17,118 nodes / 39,625 edges / 690 communities
+- **Files changed in this refresh:**
+  - `backend/alembic/env.py` — advisory lock constants and migration runner
+  - `backend/app/services/forecast_service.py` — Holt-Winters implementation
+  - `backend/tests/test_forecast_service.py` — 16 forecast unit tests
+  - `backend/tests/test_migration_advisory_lock.py` — 13 advisory lock contract tests
+  - `backend/requirements.txt` — statsmodels>=0.14
+- **TASK-025 verification:**
+  - `_holt_winters_forecast()` — confirmed in graph (community containing forecast service nodes)
+  - `_exponential_smoothing()` — confirmed
+  - `ForecastModelType` — confirmed (in Core Data Models community, 40 nodes)
+  - `ExponentialSmoothing` label — confirmed via GRAPH_REPORT.md community listing
+  - `test_forecast_service.py` — confirmed ("Unit tests for forecast_service — pure helper functions, no DB required." node)
+  - `statsmodels` / Holt-Winters path — represented via AST nodes for functions
+- **TASK-026 verification:**
+  - `TestLockConstant` — confirmed in graph (GRAPH_REPORT.md line 1786 community)
+  - `test_pg_advisory_lock_in_source` — confirmed node ID in graph.json
+  - `test_pg_advisory_unlock_in_source` — confirmed node ID in graph.json
+  - `do_run_migrations()` — confirmed (GRAPH_REPORT.md line 2686)
+  - `run_async_migrations()` — confirmed
+  - `run_migrations_online()` — confirmed
+  - `test_migration_advisory_lock.py` — confirmed (contract test file represented)
+- **Git status after refresh:** clean — graphify-out untracked, no source code modified
+- **graphify-out untracked:** confirmed (`git ls-files backend/graphify-out` returned empty)
+- **Source code changed:** no
+- **TASKS.md changed:** yes — this record + TASK-025/TASK-026 Graphify refresh status fields updated
 
 ---
 
