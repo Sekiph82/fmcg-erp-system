@@ -3016,7 +3016,7 @@ Note: batch_lots count is 9 (not 7 as designed) — 2 extra lots created during 
 
 ### Task ID: TASK-016 — Inventory/Stock real data (Phase I1-I7)
 
-- **Status:** TASK-016.1–TASK-016.7 Done — full inventory seed complete (lots, stocks, movements, WMS, trace events, cycle counts, MRP run, demand forecasts, shelf life profiles/alerts); Graphify refresh complete (2026-06-01 after TASK-016.1; 2026-06-04 after TASK-016.2/016.3/016.4); Graphify refresh pending for I5/I6/I7
+- **Status:** TASK-016.1–TASK-016.7 Done — full inventory seed complete (lots, stocks, movements, WMS, trace events, cycle counts, MRP run, demand forecasts, shelf life profiles/alerts); Graphify refresh complete (2026-06-01 after 016.1; 2026-06-04 after 016.2/3/4; 2026-06-04 after 016.5/6/7)
 - **Priority:** P2
 - **Category:** Inventory
 - **Why it matters:** Inventory module (warehouses, products, raw materials, stock tracking, movements) KPIs show empty. No realistic factory stock data.
@@ -3245,7 +3245,7 @@ Checks:
 
 No schema / model / migration / frontend / .env changes made.
 
-- **Graphify refresh status:** Needed — I5/I6/I7 introduce new model graph links (MRPRun, DemandForecast, LotShelfLifeProfile, ShelfLifeAlert). Run backend Graphify after TASK-016.7 commit.
+- **Graphify refresh status:** Done — 2026-06-04 (full rebuild after TASK-016.5/016.6/016.7); 17053 nodes / 39447 edges / 702 communities; `MRPRun`, `MRPResult`, `MRPSuggestion`, `DemandForecast`, `DemandForecastLine`, `LotShelfLifeProfile`, `ShelfLifeAlert`, `_get_or_create_mrp_run`, `_get_or_create_demand_forecast`, `_get_or_create_lot_shelf_profile` all represented in map; AST-only 0 LLM tokens; output at `C:\Users\sekip\Desktop\graphify-erp-maps\backend\`; `graphify-out/` gitignored and untracked ✓
 
 **Batch TASK-016.6 — Demand Forecasts (DONE — 2026-06-04)**
 
