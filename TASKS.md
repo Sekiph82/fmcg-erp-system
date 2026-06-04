@@ -3728,7 +3728,7 @@ Remaining TASK-017 sub-tasks:
 
 ### Task ID: TASK-027 — Next ERP module gap implementation (GAP-026+)
 
-- **Status:** In Progress — GAP-012G/H/J done 2026-06-04; remaining: service layer, migration verification, frontend e-sign KB article pages
+- **Status:** In Progress — GAP-012 permission hardening complete 2026-06-04; remaining: GAP-012F (inline service → service layer refactor, deferred), live migration verification, file upload pipeline (blocked: storage adapter decision)
 - **Priority:** P2
 - **Category:** Document Management / Knowledge Base / E-Sign
 - **Why it matters:** GAP-001 through GAP-025 complete. ERP_ROADMAP_STATUS_MATRIX.md shows GAP-012 (Document Management / Knowledge System) as IN_PROGRESS — audit done but permission model, KB/e-sign hardening, and tests incomplete.
@@ -3750,9 +3750,14 @@ Remaining TASK-017 sub-tasks:
   - **GAP-012K** Docs — update implementation notes
   - **GAP-012L** Final checks — pytest, tsc, import
 - **Started at:** 2026-06-04
-- **Changed files:** `backend/app/api/v1/endpoints/esign.py`, `frontend/src/app/dashboard/esign/page.tsx`, `backend/tests/test_gap012_document_knowledge_access.py`
-- **Tests / checks run:** `pytest tests/test_gap012_document_knowledge_access.py` 7/7 PASS · `tsc --noEmit` CLEAN · `python -c "import app.main"` CLEAN
-- **Result:** In progress — permission hardening complete; remaining scope TBD
+- **Changed files:**
+  - `backend/app/api/v1/endpoints/esign.py` — 4 missing `require_permission` guards added
+  - `frontend/src/app/dashboard/esign/page.tsx` — `RequirePermission("esign.view")` wrapper added
+  - `frontend/src/app/dashboard/knowledge-base/articles/new/page.tsx` — `RequirePermission("knowledge_base.create")` wrapper added
+  - `backend/tests/test_gap012_document_knowledge_access.py` — 2 new tests (all-routes-guarded, sign/decline require esign.sign)
+  - `docs/planning/GAP-012_DOCUMENT_KNOWLEDGE_IMPLEMENTATION_NOTES.md` — acceptance criteria updated
+- **Tests / checks run:** `pytest test_gap012 + test_security + test_hardening` 86/86 PASS · `tsc --noEmit` CLEAN · `python -c "import app.main"` CLEAN
+- **Result:** Permission hardening complete. GAP-012 core security surface closed. Remaining deferred items documented in implementation notes.
 - **Git commit / branch:** TBD
 - **Graphify refresh after implementation:** backend, frontend
 - **Graphify refresh status:** Needed after GAP-012 completion
