@@ -12,6 +12,7 @@ import {
 import { apiClient } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/Button";
+import { RequirePermission } from "@/components/PermissionGuard";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -481,7 +482,7 @@ function SignersPopover({ req }: { req: SignatureRequest }) {
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
-export default function ESignPage() {
+function ESignPageInner() {
   const { user } = useAuth();
   const [tab, setTab] = useState<"all" | "mine">("mine");
   const [statusFilter, setStatusFilter] = useState("");
@@ -627,5 +628,13 @@ export default function ESignPage() {
         <DeclineModal req={declineTarget} onClose={() => setDeclineTarget(null)} />
       )}
     </div>
+  );
+}
+
+export default function ESignPage() {
+  return (
+    <RequirePermission permission="esign.view">
+      <ESignPageInner />
+    </RequirePermission>
   );
 }

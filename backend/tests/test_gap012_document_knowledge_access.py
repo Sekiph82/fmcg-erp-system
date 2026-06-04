@@ -128,3 +128,51 @@ def test_document_knowledge_esign_routes_register_from_module_registry():
     assert any(path.startswith("/documents") for path in paths)
     assert any(path.startswith("/kb") for path in paths)
     assert any(path.startswith("/esign") for path in paths)
+
+
+def _route_permission_codes(route) -> set[str]:
+    """Extract all permission codes from a route's require_permission dependencies."""
+    codes = set()
+    for dep in (route.dependencies or []):
+        fn = dep.dependency
+        qualname = getattr(fn, "__qualname__", "")
+        if "require_permission" in qualname:
+            closure = getattr(fn, "__closure__", None) or []
+            for cell in closure:
+                try:
+                    val = cell.cell_contents
+                    if isinstance(val, str) and "." in val:
+                        codes.add(val)
+                except ValueError:
+                    pass
+    return codes
+
+
+def test_esign_permission_contract_all_routes_guarded():
+    """All e-sign routes must declare require_permission — no auth-only gaps."""
+    from app.api.v1.endpoints import esign as esign_mod
+
+    unguarded = []
+    for route in esign_mod.router.routes:
+        if not _route_permission_codes(route):
+            unguarded.append(route.path)
+
+    assert not unguarded, f"E-sign routes missing require_permission: {unguarded}"
+
+
+def test_esign_sign_and_decline_require_sign_permission():
+    """Sign and decline actions specifically require esign.sign, not just view."""
+    from app.api.v1.endpoints import esign as esign_mod
+
+    sign_route = next(
+        r for r in esign_mod.router.routes
+        if r.path.endswith("/sign") and "request_id" in r.path
+    )
+    decline_route = next(
+        r for r in esign_mod.router.routes
+        if r.path.endswith("/decline") and "request_id" in r.path
+    )
+    for route in (sign_route, decline_route):
+        assert "esign.sign" in _route_permission_codes(route), (
+            f"Route {route.path} does not require esign.sign permission"
+        )

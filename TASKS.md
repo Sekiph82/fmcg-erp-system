@@ -3728,25 +3728,71 @@ Remaining TASK-017 sub-tasks:
 
 ### Task ID: TASK-027 — Next ERP module gap implementation (GAP-026+)
 
-- **Status:** Pending
+- **Status:** In Progress — GAP-012G/H/J done 2026-06-04; remaining: service layer, migration verification, frontend e-sign KB article pages
 - **Priority:** P2
-- **Category:** Various (per gap)
-- **Why it matters:** GAP-001 through GAP-025 complete. The ERP roadmap continues with further module depth. Next gap TBD from ERP_ROADMAP_AND_MANUAL_PLAN.md.
-- **Source / evidence:** CODEX_PROGRESS.md "Next Task: Continue from GAP-025A. Inspect the next unimplemented gap in TASKS.md roadmap." `docs/planning/ERP_ROADMAP_AND_MANUAL_PLAN.md`.
-- **Affected area:** TBD per gap
-- **Risk:** Medium
-- **Recommended timing:** Soon
-- **Needs audit before implementation:** Yes — read `docs/planning/ERP_ROADMAP_AND_MANUAL_PLAN.md` and identify next unimplemented gap. Create audit doc before implementation.
-- **Implementation scope:** Audit → Schema Design → Migration → Models → Schemas → Service → Endpoints → Frontend → Permissions → Tests → Docs → Checks (12-step GAP pattern).
-- **Started at:**
-- **Completed at:**
-- **Changed files:** None yet
-- **Tests / checks run:** None yet
-- **Result:** Pending
-- **Git commit / branch:** Not committed yet
+- **Category:** Document Management / Knowledge Base / E-Sign
+- **Why it matters:** GAP-001 through GAP-025 complete. ERP_ROADMAP_STATUS_MATRIX.md shows GAP-012 (Document Management / Knowledge System) as IN_PROGRESS — audit done but permission model, KB/e-sign hardening, and tests incomplete.
+- **Source / evidence:** `docs/planning/ERP_ROADMAP_STATUS_MATRIX.md` — GAP-012 IN_PROGRESS. `docs/planning/GAP-012_DOCUMENT_KNOWLEDGE_AUDIT.md` — audit complete, 5 key findings.
+- **Affected area:** `backend/app/api/v1/endpoints/knowledge_base.py`, `backend/app/api/v1/endpoints/esign.py`, `backend/app/db/seed.py`, `frontend/src/components/nav-config.tsx`, `frontend/src/lib/esign.ts`
+- **Risk:** Low-Medium (permission model + test additions, no DB schema changes for safe parts)
+- **Recommended timing:** Now — no external blockers
+- **Implementation scope (12-step GAP pattern):**
+  - ~~**GAP-012A** Audit~~ ✅ Done (2026-06-04 read, findings summarized below)
+  - **GAP-012B** Design — permission contract for KB + e-sign
+  - **GAP-012C** Migration — additive migration for documents/kb/esign table ownership verification
+  - **GAP-012D** Models — minor additions if needed
+  - **GAP-012E** Schemas — review completeness
+  - **GAP-012F** Service — extract service layer or harden inline CRUD
+  - **GAP-012G** Endpoints — add `require_permission` to KB + e-sign routes ✅ DONE 2026-06-04
+  - **GAP-012H** Frontend — fix e-sign page `RequirePermission` guard added ✅ DONE 2026-06-04
+  - **GAP-012I** Permissions — `knowledge_base.*` + `esign.*` already in seed.py ✅ Pre-existing
+  - **GAP-012J** Tests — 2 new tests added (all routes guarded + sign/decline require esign.sign) ✅ DONE 2026-06-04 · 7/7 PASS
+  - **GAP-012K** Docs — update implementation notes
+  - **GAP-012L** Final checks — pytest, tsc, import
+- **Started at:** 2026-06-04
+- **Changed files:** `backend/app/api/v1/endpoints/esign.py`, `frontend/src/app/dashboard/esign/page.tsx`, `backend/tests/test_gap012_document_knowledge_access.py`
+- **Tests / checks run:** `pytest tests/test_gap012_document_knowledge_access.py` 7/7 PASS · `tsc --noEmit` CLEAN · `python -c "import app.main"` CLEAN
+- **Result:** In progress — permission hardening complete; remaining scope TBD
+- **Git commit / branch:** TBD
 - **Graphify refresh after implementation:** backend, frontend
-- **Graphify refresh status:** Needed
-- **Notes:** Follow 12-step GAP pattern established in GAP-001 through GAP-025.
+- **Graphify refresh status:** Needed after GAP-012 completion
+- **Notes:** Follow 12-step GAP pattern.
+
+**TASK-027 Audit Findings (2026-06-04):**
+
+Next unimplemented gap: **GAP-012 — Document Management / Knowledge System / E-Sign** (Tier 2, Medium-High importance)
+
+Audit source: `docs/planning/GAP-012_DOCUMENT_KNOWLEDGE_AUDIT.md` (existing audit)
+
+Existing code (all present):
+- `backend/app/models/documents.py` (7.7 KB) — Document, DocumentTag, DocumentStatus, DocumentCategory
+- `backend/app/schemas/documents.py` (5.6 KB)
+- `backend/app/api/v1/endpoints/documents.py` (19.2 KB) — inline CRUD, no service layer
+- `backend/app/models/knowledge_base.py`, `backend/app/api/v1/endpoints/knowledge_base.py`
+- `backend/app/models/esign.py`, `backend/app/api/v1/endpoints/esign.py`
+- `frontend/src/app/dashboard/documents/` — multiple pages
+- `frontend/src/app/dashboard/knowledge-base/` — list + article pages
+- `frontend/src/app/dashboard/esign/page.tsx`
+- `frontend/src/lib/documents.ts`, `frontend/src/lib/knowledge_base.ts`, `frontend/src/lib/esign.ts`
+
+Key gaps (from audit):
+1. **Migration ownership** — no Alembic migration clearly creates `documents`, `kb_*`, `signature_requests`, `signature_records` tables. Need to verify + add additive migration if missing.
+2. **KB permission model** — KB endpoints use `get_current_user` only, no `require_permission`. Frontend KB nav uses `hr.view` (wrong scope).
+3. **E-sign governance** — no dedicated `esign.*` permissions. Request/list/dashboard endpoints unguarded. `esign.ts` uses raw `fetch` instead of `apiClient`.
+4. **File storage** — document model stores file metadata only. No upload pipeline (deferred — needs storage adapter decision).
+5. **No focused tests** — no tests for document lifecycle, KB permissions, e-sign signer authorization.
+
+Safe implementation scope (no external blockers):
+- GAP-012I: Add `knowledge_base.*` + `esign.*` permissions to seed.py ✅ safe
+- GAP-012G: Add `require_permission` to KB + e-sign endpoints ✅ safe
+- GAP-012H: Fix KB nav guard + e-sign API client ✅ safe
+- GAP-012J: Add focused tests ✅ safe
+- GAP-012C: Verify migration / add additive if missing ⚠️ careful
+
+Deferred (needs external decision):
+- File upload storage adapter (S3/local/Azure) — blocked on provider decision
+- E-sign cryptographic hash — needs security design decision
+- E-sign expiry automation — needs scheduler integration decision
 
 ---
 

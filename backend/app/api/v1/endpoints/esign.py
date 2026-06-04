@@ -165,7 +165,8 @@ async def create_request(
     return _enrich_request(req)
 
 
-@router.get("/requests/pending-for-me", response_model=List[SignatureRequestRead])
+@router.get("/requests/pending-for-me", response_model=List[SignatureRequestRead],
+            dependencies=[Depends(require_permission("esign", "view"))])
 async def pending_for_me(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -254,7 +255,8 @@ async def list_requests(
     return [_enrich_request(r) for r in requests]
 
 
-@router.get("/requests/{request_id}", response_model=SignatureRequestDetail)
+@router.get("/requests/{request_id}", response_model=SignatureRequestDetail,
+            dependencies=[Depends(require_permission("esign", "view"))])
 async def get_request(
     request_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
@@ -275,7 +277,8 @@ async def get_request(
     return _enrich_request(req)
 
 
-@router.post("/requests/{request_id}/sign", response_model=SignatureRequestRead)
+@router.post("/requests/{request_id}/sign", response_model=SignatureRequestRead,
+             dependencies=[Depends(require_permission("esign", "sign"))])
 async def sign_request(
     request_id: uuid.UUID,
     body: SignAction,
@@ -333,7 +336,8 @@ async def sign_request(
     return _enrich_request(req)
 
 
-@router.post("/requests/{request_id}/decline", response_model=SignatureRequestRead)
+@router.post("/requests/{request_id}/decline", response_model=SignatureRequestRead,
+             dependencies=[Depends(require_permission("esign", "sign"))])
 async def decline_request(
     request_id: uuid.UUID,
     body: DeclineAction,
