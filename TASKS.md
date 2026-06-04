@@ -1336,7 +1336,7 @@ Move `_apply_etims_response_to_submission` from `tax_regulatory.py` endpoint fil
 - **Known limitations:** 401 tests require TestClient + real auth session (no TestClient infrastructure in this test suite). 403 behaviour tested directly via `require_permission` dep invocation. Happy-path authorized HTTP tests not added — dependency wiring confirmed by route inspection test.
 - **Git commit / branch:** `370e1c4` Auto-sync 2026-05-31 — committed
 - **Graphify refresh after implementation:** backend
-- **Graphify refresh status:** Pending
+- **Graphify refresh status:** Done — backend Graphify refresh completed after TASK-006 + TASK-006.1 + TASK-007 (2026-06-02). GS1 endpoint nodes found (57 nodes from `app/api/v1/endpoints/gs1.py`, 231 total GS1-related nodes). `complete_print_job` found. `test_gs1_migration_exists_in_alembic_versions` (TASK-006.1 stale test fix) found. `require_permission` nodes present (18 nodes) — direct edges to gs1.py routes not captured (FastAPI `Depends()` injection is a runtime pattern; AST extraction does not produce structural call edges for it). Source remains verified by test assertions. Output at `C:\Users\sekip\Desktop\graphify-erp-maps\backend\`.
 
 **TASK-006.1 — Fix stale Alembic head assertion (2026-06-02)**
 - **File:** `backend/tests/test_gap018_gs1_label_printing.py`
@@ -1592,8 +1592,58 @@ ERP_FORCE_PASSWORD_CHANGE_ON_FIRST_LOGIN: bool = True
   - No users created unless `ERP_SEED_MANAGEMENT_USERS=true` and email+password both set
 - **Git commit / branch:** Not committed yet
 - **Graphify refresh after implementation:** backend
-- **Graphify refresh status:** Pending user approval — do not run automatically
+- **Graphify refresh status:** Done — backend Graphify refresh completed after TASK-006 + TASK-006.1 + TASK-007 (2026-06-02). `seed_management_users()` found (3 nodes: `seed.py` + test rationale in `test_hardening.py`). `ERP_SEED_MANAGEMENT_USERS` partially found (2 rationale nodes in `test_hardening.py`). `main.py` seed wiring not surfaced as a labeled graph node — startup/lifespan hook wiring is present in source but AST extraction does not produce a named node for it. Source remains verified by `python -c 'import app.main'` import check and 25/25 test_hardening.py passes. Output at `C:\Users\sekip\Desktop\graphify-erp-maps\backend\`.
 - **Notes:** `technical_manager` role deliberately not created. `ERP_CTO_*` covers technical management. No `ERP_TECHNICAL_MANAGER_*` vars exist.
+
+---
+
+#### Backend Graphify Refresh — After TASK-006 / TASK-006.1 / TASK-007 (2026-06-02)
+
+**Command:** `/graphify C:\Users\sekip\Masaüstü\fmcg-erp-system-main\backend --update`
+
+**Final mode:** Full rebuild on backend/ scope
+
+**Reason for full rebuild:** Prior manifest mixed frontend and backend paths (`687 backend + 992 frontend = 1679 entries`). Running incremental on `backend/` only would have reported 992 frontend files as "deleted" and risked incorrect graph state. Full rebuild produced a clean backend-only graph.
+
+**Extraction mode:** AST-only — all 685 files are `.py`; zero LLM tokens used
+
+**Backend analyzed:** `C:\Users\sekip\Masaüstü\fmcg-erp-system-main\backend`
+
+**Files analyzed:** 687 total — 685 `.py` + 2 docs
+
+**Temporary output:** `C:\Users\sekip\Masaüstü\fmcg-erp-system-main\graphify-out` (gitignored, untracked)
+
+**External output:** `C:\Users\sekip\Desktop\graphify-erp-maps\backend\`
+
+**Files copied to external output:**
+- `GRAPH_REPORT.md` — refreshed
+- `graph.json` — refreshed
+- `cost.json` — refreshed
+- `manifest.json` — refreshed (backend-only scope)
+- `graph.html` — old file retained; not regenerated (17,008 nodes exceeds 5,000-node HTML visualization limit)
+
+**Graph stats:** 17,008 nodes · 38,739 edges · 683 communities (30 named, 653 generic)
+
+**Repo status after refresh:**
+- `git status --short` → clean
+- `git ls-files graphify-out` → empty (untracked)
+
+**Source code changed:** No
+**TASKS.md changed:** Yes — this update
+
+**Verification summary:**
+
+| Check | Result |
+|---|---|
+| GS1 endpoint nodes in map | Found — 57 nodes from `app/api/v1/endpoints/gs1.py`; 231 total GS1-related nodes |
+| `complete_print_job` / `printed_by` | Found — 8 `complete_print_job` nodes; 2 `printed_by` nodes (test asserting no Query param exposure) |
+| `require_permission` connected to GS1 routes | `require_permission` nodes present (18); direct edges to gs1.py routes not captured — FastAPI `Depends()` injection is a runtime pattern; AST does not produce structural edges for it |
+| TASK-006.1 stale test fix | Found — `test_gs1_migration_exists_in_alembic_versions()` node in `test_gap018_gs1_label_printing.py`; old `test_alembic_head_is_gs1_migration` not found (correctly replaced) |
+| `20260518_0001` migration | Found — 3 nodes in `alembic/versions/` |
+| `seed_management_users` | Found — 3 nodes (`seed.py` + test rationale in `test_hardening.py`) |
+| `ERP_SEED_MANAGEMENT_USERS` | Partially found — 2 rationale nodes in `test_hardening.py` (env var string literals not AST-extractable as top-level identifiers) |
+| `main.py` seed wiring | Not surfaced as labeled graph node — lifespan/startup hook wiring present in source but AST does not produce a named node for it |
+| `test_hardening.py` | Found — 57 nodes |
 
 ---
 
