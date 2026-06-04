@@ -146,10 +146,12 @@ alembic upgrade +1
 alembic downgrade -1
 ```
 
-**Multi-replica warning:** if you run multiple backend replicas, ensure only one
-runs `alembic upgrade head` at startup. Use a separate migration job or an
-advisory lock strategy. The current prod Dockerfile runs migrations inside the
-`CMD` — this is safe for single-replica but risky for simultaneous scaling.
+**Multi-replica:** `alembic/env.py` now acquires `pg_advisory_lock(20260517)` before
+running online migrations and releases it in a `finally` block. This prevents race
+conditions when 2+ containers start simultaneously and each calls `alembic upgrade head`.
+The lock is PostgreSQL-only; SQLite/test dialects skip it. For mature Kubernetes
+deployments a dedicated migration init container is still recommended to avoid holding
+a worker slot during migration.
 
 ---
 

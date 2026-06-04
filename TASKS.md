@@ -3937,25 +3937,38 @@ Handles trend + seasonality natively; pure Python wheel; no C++ build; sufficien
 
 ### Task ID: TASK-026 — Multi-replica migration safety
 
-- **Status:** Audited — 2026-06-04. No code fix applied. Risk documented. Implementation deferred until scaling needed.
+- **Status:** Done — pg_advisory_lock implemented in Alembic online migrations 2026-06-04
 - **Priority:** P3
 - **Category:** Deployment
 - **Why it matters:** In a multi-replica deployment, multiple containers may run `alembic upgrade head` simultaneously, causing race conditions on migrations.
 - **Source / evidence:** TASKS.md historical: "C.31: Multi-replica migration race." `docs/DEPLOYMENT.md:149` — "Multi-replica warning: ensure only one container runs migrations." `backend/scripts/prod_bootstrap.py` exists with `BOOTSTRAP_PRODUCTION=true` guard and empty-DB check. NO `pg_advisory_lock` code exists.
-- **Affected area:** `backend/scripts/dev_migrate.py`, `backend/scripts/prod_bootstrap.py`, `docker-compose.prod.yml`, `backend/Dockerfile.prod`
+- **Affected area:** `backend/alembic/env.py`
 - **Risk:** Low in single-replica; High in multi-replica
 - **Recommended timing:** Before scaling beyond 1 replica
 - **Needs audit before implementation:** Done — 2026-06-04 (see below)
-- **Implementation scope:** Add `pg_advisory_lock` in `backend/alembic/env.py` `run_migrations_online()` — preferred; or use a dedicated migration init container.
+- **Implementation scope:** Added `pg_advisory_lock` in `backend/alembic/env.py` `do_run_migrations()` — PostgreSQL-only, non-PostgreSQL dialects skip lock.
 - **Started at:** 2026-06-04 (audit)
-- **Completed at:** Pending implementation
-- **Changed files:** None yet
-- **Tests / checks run:** None yet
-- **Result:** Audit complete — see below
-- **Git commit / branch:** Not committed yet
-- **Graphify refresh after implementation:** no
-- **Graphify refresh status:** Not needed
-- **Notes:** Safe now (single replica). Fix required before multi-replica scale-up.
+- **Completed at:** 2026-06-04
+- **Changed files:** `backend/alembic/env.py`, `backend/tests/test_migration_advisory_lock.py`, `docs/DEPLOYMENT.md`
+- **Tests / checks run:** 13/13 advisory lock contract tests PASS; 54/54 combined suite PASS; app import OK
+- **Result:** Implementation complete. Lock key 20260517. PostgreSQL-only. Offline migrations unchanged. No live DB migration run.
+- **Git commit / branch:** See batch below
+- **Graphify refresh after implementation:** Deferred (not urgent)
+- **Graphify refresh status:** Deferred
+- **Notes:** Safe now (single replica). Now also safe for multi-replica scale-up.
+
+#### Batch TASK-026.1 — Alembic PostgreSQL advisory lock (DONE — 2026-06-04)
+
+- Lock key: `20260517` (encodes squashed baseline date — stable, project-specific)
+- File changed: `backend/alembic/env.py` — `MIGRATION_ADVISORY_LOCK_KEY` constant + `is_postgres` check in `do_run_migrations()`
+- Behavior:
+  - PostgreSQL online migrations acquire `pg_advisory_lock(20260517)` before `context.run_migrations()`
+  - `finally` block releases `pg_advisory_unlock(20260517)`; exceptions propagate normally
+  - Non-PostgreSQL dialects (SQLite, tests): skip lock entirely
+  - Offline migrations (`run_migrations_offline`): unchanged
+- Tests added: `backend/tests/test_migration_advisory_lock.py` (13 source-inspection contract tests, no live DB)
+- Documentation updated: `docs/DEPLOYMENT.md` — multi-replica warning replaced with implementation note
+- Safety: no live DB migration run; no migrations added; no models changed; no frontend changed; no .env changed; no credentials
 
 ---
 

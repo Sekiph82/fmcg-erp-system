@@ -20,6 +20,11 @@ if config.config_file_name is not None:
 
 target_metadata = Base.metadata
 
+# Advisory lock key — encodes squashed baseline date so it is stable and project-specific.
+# Prevents multi-replica migration races when 2+ containers run `alembic upgrade head`
+# simultaneously at startup. Only applied for PostgreSQL; SQLite/test dialects skip it.
+MIGRATION_ADVISORY_LOCK_KEY = 20260517
+
 
 def run_migrations_offline() -> None:
     url = settings.DATABASE_URL.replace("postgresql+asyncpg", "postgresql")
@@ -170,6 +175,13 @@ def do_run_migrations(connection: Connection) -> None:
     Operations.create_index = _create_index
     Operations.create_foreign_key = _create_foreign_key
 
+    is_postgres = connection.dialect.name == "postgresql"
+    if is_postgres:
+        connection.execute(
+            sa.text("SELECT pg_advisory_lock(:lock_key)"),
+            {"lock_key": MIGRATION_ADVISORY_LOCK_KEY},
+        )
+
     try:
         context.configure(connection=connection, target_metadata=target_metadata)
         with context.begin_transaction():
@@ -181,6 +193,11 @@ def do_run_migrations(connection: Connection) -> None:
         Operations.create_foreign_key = _orig_fk
         if _have_pg_patch:
             _PgNamedType._on_table_create = _orig_nt_otc
+        if is_postgres:
+            connection.execute(
+                sa.text("SELECT pg_advisory_unlock(:lock_key)"),
+                {"lock_key": MIGRATION_ADVISORY_LOCK_KEY},
+            )
 
 
 async def run_async_migrations() -> None:
