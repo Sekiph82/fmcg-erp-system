@@ -105,7 +105,7 @@ Rules:
   - `npm run build` → PASS (exit 0, /login 3.79 kB)
 - **Result:** Login page POVU logo increased from 64×64 to 128×128
 - **Known limitations:** None
-- **Git commit / branch:** Not committed yet
+- **Git commit / branch:** Committed via auto-sync (2026-05-31 era)
 - **Graphify refresh after implementation:** no
 - **Graphify refresh status:** Not needed
 - **Graphify output location if refreshed:** None
@@ -148,9 +148,24 @@ Rules:
   - Read all three env example files — no keys set
 - **Result:** Blocked — backend ready, env examples clarified, real API key required before status can be Done
 - **Known limitations:** Cannot be Done until user provides real API key. Key must NOT be committed to git.
-- **Git commit / branch:** Not committed yet
+- **Git commit / branch:** Committed via auto-sync (env examples only; no source code changes)
 - **Graphify refresh after implementation:** no
 - **Graphify refresh status:** Not needed
+
+#### Backlog Audit — 2026-06-04
+
+- **Current status:** Blocked — needs user action, not code
+- **Why not Done:** No real AI API key set in .env.development or .env.production
+- **Exact blocker:** `ANTHROPIC_API_KEY` (or OpenAI/Gemini) not configured in runtime env file
+- **What user must provide:** One real API key — Anthropic (`sk-ant-...`), OpenAI (`sk-...`), or Google Gemini — added to `.env.production` or `.env.development` (never commit to git)
+- **Recommended next action:** User sets key in .env, restarts backend; `AIModeBanner` turns green automatically
+- **Implementation scope if unblocked:** Zero code changes — config only
+- **Expected files to change:** `.env.production` or `.env.development` (not tracked by git)
+- **Tests/checks to run:** Restart backend; confirm AIModeBanner shows green "LIVE AI MODE"; test one LLM_POWERED AI feature
+- **Graphify needed after:** no
+- **Risk level:** Low
+- **Claude may proceed autonomously:** No — needs user to provide credentials
+- **Suggested prompt label:** Blocked until user provides API key
 - **Notes:**
   - **How to enable live AI (single step):** In `.env.development` or `.env.production`, set one of:
     - `ANTHROPIC_API_KEY=sk-ant-...` (recommended — model already set to `claude-sonnet-4-6`)
@@ -203,8 +218,23 @@ Rules:
   - No source code modified
 - **Result:** Blocked — backend ready for `mpesa_daraja_service.py`; credentials required for live payments
 - **Known limitations:** Real credentials must NOT be committed to git. `mpesa_service.py` (sales module) still uses placeholder — needs separate wiring to Daraja (see Notes).
-- **Git commit / branch:** Not committed yet
+- **Git commit / branch:** Committed via auto-sync (env examples + mpesa_service delegation changes; 2026-05-31 era)
 - **Graphify refresh after implementation:** no (config-only change; no new graph edges)
+
+#### Backlog Audit — 2026-06-04
+
+- **Current status:** Blocked — needs Safaricom Daraja credentials
+- **Why not Done:** No Safaricom Consumer Key/Secret/Shortcode/Passkey/Callback URL set in .env.production
+- **Exact blocker:** Safaricom Daraja developer account + production/sandbox credentials not provided
+- **What user must provide:** 6 Safaricom Daraja env vars: `MPESA_CONSUMER_KEY`, `MPESA_CONSUMER_SECRET`, `MPESA_SHORTCODE`, `MPESA_PASSKEY`, `MPESA_CALLBACK_URL`, `MPESA_ENV`
+- **Recommended next action:** Register at developer.safaricom.co.ke (sandbox) or daraja.safaricom.co.ke (production); get credentials; set in .env.production
+- **Implementation scope if unblocked:** Zero code changes — credentials only; `mpesa_daraja_service.py` is production-ready
+- **Expected files to change:** `.env.production` (not tracked by git)
+- **Tests/checks to run:** STK Push test to real M-Pesa number; verify callback receipt; verify 409 duplicate prevention
+- **Graphify needed after:** no
+- **Risk level:** Medium (payment integration; test thoroughly in sandbox first)
+- **Claude may proceed autonomously:** No — needs user to provide Safaricom credentials/vendor decision
+- **Suggested prompt label:** Blocked until user provides Safaricom Daraja credentials
 - **Graphify refresh status:** Not needed
 - **Notes:**
   - **Sales module placeholder wiring — 2026-05-31 — Done:**
@@ -323,9 +353,24 @@ Rules:
   - Live send / webhook flow not tested — blocked on real Meta credentials
   - `POST /webhook` HMAC app-secret signature validation not implemented — future hardening
   - `api_token` stored as DB plaintext — model comment notes encryption as future hardening
-- **Git commit / branch:** Not committed yet (awaiting user approval)
+- **Git commit / branch:** Committed via auto-sync (backend WhatsApp endpoint + frontend config changes; 2026-05-31 era)
 - **Graphify refresh after implementation:** backend + frontend
-- **Graphify refresh status:** Pending user approval — do not run now
+- **Graphify refresh status:** Pending — run after live test confirmed
+
+#### Backlog Audit — 2026-06-04
+
+- **Current status:** Blocked — needs Meta credentials / live account
+- **Why not Done:** Code is complete; live send not tested; Meta Business Manager account + WhatsApp Business Account not set up
+- **Exact blocker:** No Meta Phone Number ID, Access Token, or Webhook Verify Token configured in WhatsApp Config (DB-stored, not env-vars)
+- **What user must provide:** Meta Business Manager account → WABA → Phone Number ID → System User access token → Webhook URL configured → message templates approved
+- **Recommended next action:** User creates Meta Business Manager account; enters credentials via WhatsApp Config UI (Config tab → Edit); tests in sandbox first
+- **Implementation scope if unblocked:** Zero code changes — all backend/frontend code committed; DB credential entry only
+- **Expected files to change:** None (DB config entry only)
+- **Tests/checks to run:** Send test message to real WhatsApp number; verify webhook receipt; verify template approval
+- **Graphify needed after:** yes — backend + frontend (when live test confirmed)
+- **Risk level:** Medium (customer-facing messaging; requires Meta template approvals; no credential-leak risk since DB-stored)
+- **Claude may proceed autonomously:** No — needs Meta account setup by user/vendor
+- **Suggested prompt label:** Blocked until user provides Meta WhatsApp credentials
 - **Next action:** Configure Meta credentials in WhatsApp Config UI (Config tab → Edit → enter Phone Number ID, Access Token, Verify Token, toggle Live mode) and run live sandbox/production test when Meta account is ready.
 - **Notes:**
   - **Architecture decision:** WhatsApp credentials are DB-stored per config row, NOT env vars. This supports multiple WA accounts (e.g. Sales team number + Support number). No `.env` changes needed.
@@ -390,10 +435,40 @@ Rules:
   - Not marked production-ready — production_execution_allowed=False
 - **Track B payroll_ke.py note:** Track B is a duplicate/legacy eTIMS stub (ke_etims_invoices table). Do NOT remove. Keep until Track A connector-ready flow is validated. Later decision: deprecate, redirect to Track A, or remove with migration.
 - **Known limitations:** Requires KRA developer registration, sandbox testing, and provider/middleware selection before any live use.
-- **Git commit / branch:** Not committed yet (awaiting approval)
+- **Git commit / branch:** Committed via auto-sync (etims_connector.py, tax_regulatory.py, config.py, integration_capabilities.py, env examples, test_etims_skeleton.py; 2026-06-02 era)
 - **Graphify refresh after implementation:** backend
 - **Graphify refresh status:** Done — 2026-06-02 after TASK-005.1A/1B/1C via `/graphify backend --update`; output at `C:\Users\sekip\Desktop\graphify-erp-maps\backend\`; 17,696 nodes / 47,459 edges / 673 communities; all TASK-005.1A/1B/1C entities reflected in map; `graphify-out/` remains gitignored and untracked
 - **Notes:** Do NOT say "KRA production integration complete." Connector-ready eTIMS skeleton implemented; live provider validation pending.
+
+#### Backlog Audit — TASK-005.1D / TASK-005.1E (2026-06-04)
+
+**TASK-005.1D — GL finance posting gate for eTIMS status:**
+- **Current status:** Blocked — needs accountant approval
+- **Why not Done:** `finance_service.py` JournalEntry posting has no eTIMS status check; invoices can be posted to GL regardless of REJECTED/ERROR eTIMS status
+- **Exact blocker:** Accountant must confirm which invoice types require eTIMS ACCEPTED status before GL posting is allowed; may vary by invoice type (retail vs. B2B)
+- **What user must provide:** Accountant decision: (a) which invoice types must be fiscalized before GL post, (b) whether admin override is allowed in demo mode, (c) whether to implement as a flag (`require_fiscal_acceptance`) or hard block
+- **Recommended next action:** User consults accountant; returns decision → Claude implements `require_etims_acceptance` guard in `finance_service.py:mark_journal_posted()`
+- **Implementation scope if unblocked:** `backend/app/services/finance_service.py` — add eTIMS status check in `mark_journal_posted()`; add `require_fiscal_acceptance` config or invoice-type-based flag; ~20-30 lines; 1 file change
+- **Expected files:** `backend/app/services/finance_service.py`, `backend/tests/test_etims_finance_gate.py` (new)
+- **Tests/checks to run:** Test that REJECTED eTIMS invoice blocks GL posting; test admin override path; pytest suite
+- **Graphify needed after:** yes — backend
+- **Risk level:** High (touches accounting journal posting path)
+- **Claude may proceed autonomously:** No — needs accountant confirmation first
+- **Suggested prompt label:** Blocked until user provides accountant decision on eTIMS GL gate
+
+**TASK-005.1E — KRA provider selection + sandbox credentials:**
+- **Current status:** Blocked — needs provider decision + KRA sandbox credentials
+- **Why not Done:** HttpETIMSConnector auth scheme not implemented; no KRA sandbox credentials; official API spec not confirmed; `production_execution_allowed=False`
+- **Exact blocker:** (1) Provider/middleware not selected (direct KRA OSCU/VSCU vs. approved middleware vs. third-party service), (2) KRA sandbox credentials not obtained (ETIMS_PIN, ETIMS_BRANCH_ID, ETIMS_DEVICE_SERIAL_NO, ETIMS_API_URL), (3) Official API spec needed for auth scheme
+- **What user must provide:** (1) Provider/middleware selection, (2) KRA developer registration + sandbox credentials, (3) Provider API spec/documentation
+- **Recommended next action:** User registers at KRA eTIMS developer portal; selects provider; provides credentials → Claude implements auth scheme in `HttpETIMSConnector`
+- **Implementation scope if unblocked:** `backend/app/services/etims_connector.py:HttpETIMSConnector` — add auth scheme (~20 lines); add device registration/initialization method; validate against real KRA sandbox API
+- **Expected files:** `backend/app/services/etims_connector.py`, `backend/tests/test_etims_live.py` (new), `.env.development` (credentials, not committed)
+- **Tests/checks to run:** Real KRA sandbox submission; verify ACCEPTED/REJECTED response; verify QR code and control number returned
+- **Graphify needed after:** yes — backend
+- **Risk level:** High (legal compliance; KRA audit risk if incorrect)
+- **Claude may proceed autonomously:** No — needs provider selection and KRA credentials from user
+- **Suggested prompt label:** Blocked until user provides KRA provider selection and sandbox credentials
 
 ---
 
@@ -2538,9 +2613,24 @@ Previous MEDIUM: 322. Suppressed: 6 confirmed C.4 false positives.
   - Supported providers: Gmail App Password, SendGrid, SES, Mailgun (any SMTP-compatible)
   - No HTML email template — plain text only; acceptable for OTP delivery
   - Live end-to-end test requires user to approve staging credential setup
-- **Git commit / branch:** Not committed yet
+- **Git commit / branch:** Committed via auto-sync (config.py guard + test_otp.py; 2026-06-01 era)
 - **Graphify refresh after implementation:** no
 - **Graphify refresh status:** Not needed
+
+#### Backlog Audit — 2026-06-04
+
+- **Current status:** Blocked — needs SMTP credentials
+- **Why not Done:** Live email OTP delivery not tested; requires real SMTP credentials in .env.production
+- **Exact blocker:** `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_FROM_EMAIL` not set in `.env.production`
+- **What user must provide:** SMTP credentials (Gmail App Password, SendGrid API key, SES, or Mailgun); domain SPF/DKIM records configured for `SMTP_FROM_EMAIL`
+- **Recommended next action:** User sets SMTP vars in `.env.production`; restarts Docker stack; tests 2FA login OTP flow end-to-end
+- **Implementation scope if unblocked:** Zero code changes — config only; `email_sender.py` production-ready; startup guard already in place
+- **Expected files to change:** `.env.production` (not tracked by git)
+- **Tests/checks to run:** Live 2FA login → real email received with OTP code; test expiry; test wrong OTP rejection
+- **Graphify needed after:** no
+- **Risk level:** Low (config only; backend code complete)
+- **Claude may proceed autonomously:** No — needs user to provide SMTP credentials/provider
+- **Suggested prompt label:** Blocked until user provides SMTP credentials
 - **Notes:**
   - **How to enable live SMTP (single step):** In `.env.production`, set `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_FROM_EMAIL`, and `OTP_DEV_DELIVERY_MODE=false`. Restart backend. First login with 2FA user will send real email.
   - **Gmail App Password example:** `SMTP_HOST=smtp.gmail.com`, `SMTP_PORT=587`, `SMTP_USERNAME=your@gmail.com`, `SMTP_PASSWORD=<16-char app password>`, `SMTP_FROM_EMAIL=your@gmail.com`
@@ -3696,6 +3786,49 @@ Remaining TASK-017 sub-tasks:
 - TASK-017.4: profitability report — blocked on revenue definition
 - TASK-017.5: frontend profitability — blocked on TASK-017.4
 
+#### Backlog Audit — TASK-017.3 / 017.4 / 017.5 (2026-06-04)
+
+**TASK-017.3 — GL journal for utility cost allocations:**
+- **Current status:** Blocked — needs accountant GL account decisions
+- **Why not Done:** `post_allocations_to_production_costs()` creates `ProductionCostEntry` records but no GL JournalEntry debit/credit lines; GL accounts confirmed in seed (5210 Utility Expense Clearing, 5300 Production Overhead) but accountant must confirm which are correct debits/credits per allocation type
+- **Exact blocker:** Accountant must confirm: (1) which GL account for "Production Overhead / WIP Cost" debit, (2) which GL account for "Utility Expense Clearing" credit, (3) whether to post per allocation or aggregate per bill/period
+- **What user must provide:** Accountant decision on debit/credit GL codes per allocation type; available codes: 1210 WIP Inventory, 5200 Utility Expense, 5210 Utility Expense Clearing, 5300 Production Overhead, 5310 Production Overhead Absorbed
+- **Recommended next action:** User consults accountant on GL mapping; returns decision → Claude adds `post_allocations_to_gl()` to `utility_integration_service.py`
+- **Implementation scope if unblocked:** `backend/app/services/utility_integration_service.py` — add `post_allocations_to_gl()`; use `get_or_create_posting_batch()` with key `"utility_billing:alloc_gl:{allocation_id}"`; create JournalEntry + 2 JournalLines; ~40 lines; new test file
+- **Expected files:** `backend/app/services/utility_integration_service.py`, `backend/tests/test_task017_3_gl_allocation.py` (new)
+- **Tests/checks to run:** Idempotency test (double-call); balance validation test; open-period guard test; pytest suite
+- **Graphify needed after:** yes — backend
+- **Risk level:** High (accounting journal creation; never duplicate GL entries)
+- **Claude may proceed autonomously:** No — needs accountant GL account decision first
+- **Suggested prompt label:** Blocked until user provides accountant GL allocation decision
+
+**TASK-017.4 — Product-level profitability report:**
+- **Current status:** Blocked — needs product owner revenue definition decision
+- **Why not Done:** `ProductCost` has cost data but no revenue; no function joins ProductCost with Invoice revenue; revenue definition not decided
+- **Exact blocker:** Product owner must define: (1) revenue definition (gross invoice total? net of trade discounts? by shipped date or invoice date?), (2) period granularity (monthly? quarterly?), (3) whether to include cancelled/partial invoices
+- **What user must provide:** Revenue definition decision from product owner
+- **Recommended next action:** User provides revenue definition → Claude adds `get_product_profitability()` to `production_cost_service.py` and `GET /production-cost/profitability` endpoint
+- **Implementation scope if unblocked:** `backend/app/services/production_cost_service.py` (~30 lines), `backend/app/api/v1/endpoints/production_costing.py` (~20 lines), `backend/tests/test_profitability.py` (new); read-only, no schema changes
+- **Expected files:** `backend/app/services/production_cost_service.py`, `backend/app/api/v1/endpoints/production_costing.py`, `backend/tests/test_profitability.py` (new)
+- **Tests/checks to run:** Unit test profitability computation; verify margin calculation; pytest suite
+- **Graphify needed after:** yes — backend
+- **Risk level:** Low (read-only report; no GL writes)
+- **Claude may proceed autonomously:** No — needs product owner revenue definition decision
+- **Suggested prompt label:** Blocked until user provides product owner revenue definition
+
+**TASK-017.5 — Frontend profitability drilldown:**
+- **Current status:** Blocked — depends on TASK-017.4 API being stable
+- **Why not Done:** TASK-017.4 API not yet implemented
+- **Exact blocker:** TASK-017.4 must be done first; no `/production-cost/profitability` endpoint exists
+- **Recommended next action:** Complete TASK-017.4 first; then Claude adds `frontend/src/app/dashboard/finance/profitability/page.tsx`
+- **Implementation scope if unblocked:** ~100-150 lines new frontend page; no backend changes; uses existing `apiClient` pattern
+- **Expected files:** `frontend/src/app/dashboard/finance/profitability/page.tsx` (new), `frontend/src/lib/production_cost.ts` (new or extend)
+- **Tests/checks to run:** `npx tsc --noEmit` CLEAN; visual review of margin table/chart
+- **Graphify needed after:** yes — frontend
+- **Risk level:** Low (frontend only; no DB changes)
+- **Claude may proceed autonomously:** Yes, if unblocked (TASK-017.4 done)
+- **Suggested prompt label:** Ready prompt can be created (after TASK-017.4)
+
 ---
 
 ### Task ID: TASK-018 — Full ERP Reference Manual PDF generation script
@@ -3751,6 +3884,21 @@ Remaining TASK-017 sub-tasks:
 - **Graphify refresh status:** Not needed (data-only change)
 - **Notes:** This is primarily a data entry task, not a code task.
 
+#### Backlog Audit — 2026-06-04
+
+- **Current status:** Pending — blocked on GS1 company prefix and GTIN assignments
+- **Why not Done:** No GTIN-14s assigned to products; label printing shows "no GTIN" warning; GS1 company prefix not obtained
+- **Exact blocker:** (1) GS1 company prefix not registered (GS1 Kenya or GS1 US), (2) GTIN-14 values not assigned to each product SKU, (3) Bulk import tooling not set up
+- **What user must provide:** (1) GS1 company prefix from GS1 Kenya/US, (2) GTIN assignment table (SKU → GTIN-14), or decision to assign GTINs internally
+- **Recommended next action:** User registers GS1 company prefix; assigns GTINs to products via bulk import or Product Master UI → Claude writes import script or assists with bulk update
+- **Implementation scope if unblocked:** Bulk SQL/CSV import to `product_gs1_config` table + `product.barcode` field; no code changes to GS1 backend; optionally add GS1 config creation shortcut from product page (~30 lines frontend)
+- **Expected files:** Import script or admin bulk-update command; optionally `frontend/src/app/dashboard/products/[id]/page.tsx` (minor addition)
+- **Tests/checks to run:** GS1 label generator shows GTIN for all products; barcode scans correctly
+- **Graphify needed after:** no (data-only)
+- **Risk level:** Low (data entry; no code changes)
+- **Claude may proceed autonomously:** No — needs GS1 company prefix and GTIN assignments from user/vendor
+- **Suggested prompt label:** Blocked until user provides GS1 company prefix and GTIN assignments
+
 ---
 
 ### Task ID: TASK-020 — CRM real integration
@@ -3776,6 +3924,21 @@ Remaining TASK-017 sub-tasks:
 - **Graphify refresh status:** Needed
 - **Notes:** Blocked on CRM vendor selection.
 
+#### Backlog Audit — 2026-06-04
+
+- **Current status:** Pending — blocked on CRM vendor decision
+- **Why not Done:** `crm_service.py` logs intent only; no real CRM API called; `integration_capabilities.py:107` = STUB_ONLY
+- **Exact blocker:** CRM platform not selected (Salesforce, HubSpot, Pipedrive, or custom)
+- **What user must provide:** CRM vendor selection + API credentials for that platform
+- **Recommended next action:** User selects CRM platform → Claude replaces placeholder in `crm_service.py:42-85` with real API calls for selected platform
+- **Implementation scope if unblocked:** `backend/app/services/crm_service.py` — replace placeholder log calls with real CRM API calls (~50-80 lines depending on platform); update `integration_capabilities.py` status; add tests; `.env.production` credentials
+- **Expected files:** `backend/app/services/crm_service.py`, `backend/app/core/integration_capabilities.py`, `backend/tests/test_crm_live.py` (new), `.env.production` (credentials, not committed)
+- **Tests/checks to run:** CRM sync test with sandbox account; verify customer mapping; pytest suite
+- **Graphify needed after:** yes — backend
+- **Risk level:** Medium (external API; data sync risk)
+- **Claude may proceed autonomously:** No — needs CRM vendor decision and API credentials from user
+- **Suggested prompt label:** Blocked until user provides CRM vendor selection
+
 ---
 
 ### Task ID: TASK-021 — E-commerce real integration
@@ -3799,6 +3962,21 @@ Remaining TASK-017 sub-tasks:
 - **Graphify refresh after implementation:** backend
 - **Graphify refresh status:** Needed
 - **Notes:** Blocked on platform vendor selection.
+
+#### Backlog Audit — 2026-06-04
+
+- **Current status:** Pending — blocked on e-commerce platform decision
+- **Why not Done:** `ecommerce_service.py:42-45` is a placeholder returning max 3 simulated orders; no real platform API called; `integration_capabilities.py:115` = STUB_ONLY
+- **Exact blocker:** E-commerce platform not selected (Shopify, WooCommerce, custom, etc.)
+- **What user must provide:** Platform selection + API credentials (Shopify API key, WooCommerce consumer key/secret, or equivalent)
+- **Recommended next action:** User selects platform → Claude replaces placeholder in `ecommerce_service.py:39-109` with real REST/GraphQL calls
+- **Implementation scope if unblocked:** `backend/app/services/ecommerce_service.py` — replace placeholder with platform API (~60-100 lines); update integration capabilities; add tests; `.env.production` credentials
+- **Expected files:** `backend/app/services/ecommerce_service.py`, `backend/app/core/integration_capabilities.py`, `backend/tests/test_ecommerce_live.py` (new), `.env.production` (credentials, not committed)
+- **Tests/checks to run:** Order import test with sandbox store; verify order mapping to SalesOrder; pytest suite
+- **Graphify needed after:** yes — backend
+- **Risk level:** Medium (order data sync; potential duplicate order risk)
+- **Claude may proceed autonomously:** No — needs platform selection and API credentials from user
+- **Suggested prompt label:** Blocked until user provides e-commerce platform selection
 
 ---
 
@@ -3824,6 +4002,21 @@ Remaining TASK-017 sub-tasks:
 - **Graphify refresh status:** Needed
 - **Notes:** Requires real factory hardware/MQTT broker. High effort, high value.
 
+#### Backlog Audit — 2026-06-04
+
+- **Current status:** Pending — blocked on factory hardware and MQTT broker decisions
+- **Why not Done:** `iot_service.py` is a placeholder; `integration_capabilities.py:98-102` = placeholder; no MQTT broker configured; no sensor types defined; no machine topic mapping
+- **Exact blocker:** (1) MQTT broker not selected or provisioned (Mosquitto, HiveMQ, AWS IoT Core, etc.), (2) Factory sensor hardware not audited for MQTT compatibility, (3) Machine topic naming scheme not defined, (4) Sensor data schema not defined
+- **What user must provide:** (1) MQTT broker URL/credentials, (2) Factory hardware list and sensor types, (3) Machine topic naming scheme, (4) Sensor data format/schema
+- **Recommended next action:** User audits factory hardware; selects MQTT broker; provides topic schema → Claude implements MQTT bridge in `iot_service.py`
+- **Implementation scope if unblocked:** `backend/app/services/iot_service.py` — MQTT client (paho-mqtt or asyncio-mqtt); subscribe to machine topics; parse sensor payloads; write to IoT readings model; ~100-200 lines; requires `paho-mqtt` or `asyncio-mqtt` dep; potentially a background worker
+- **Expected files:** `backend/app/services/iot_service.py`, `backend/requirements.txt` (new MQTT dep), `backend/app/workers/iot_worker.py` (new if background needed), `.env.production` (MQTT credentials, not committed)
+- **Tests/checks to run:** MQTT connection test; sensor data parse test; OEE reading persistence test
+- **Graphify needed after:** yes — backend
+- **Risk level:** High (real-time factory data; hardware integration; requires careful testing before production)
+- **Claude may proceed autonomously:** No — needs factory hardware audit, MQTT broker decision, and topic schema from user
+- **Suggested prompt label:** Blocked until user provides MQTT broker and factory hardware details
+
 ---
 
 ### Task ID: TASK-023 — Bank API replace mock Kenyan bank sync
@@ -3848,6 +4041,21 @@ Remaining TASK-017 sub-tasks:
 - **Graphify refresh status:** Needed
 - **Notes:** Blocked on bank API agreement/credentials.
 
+#### Backlog Audit — 2026-06-04
+
+- **Current status:** Pending — blocked on bank API agreement and credentials
+- **Why not Done:** `bank_api_service.py` generates fake `MOCK-` prefix transactions; `integration_capabilities.py:134` = MOCK; no real bank Open Banking API credentials
+- **Exact blocker:** (1) Kenyan bank(s) not selected (Equity Bank, KCB, NCBA, or Pesalink), (2) Bank API agreement/onboarding not initiated, (3) Open Banking API credentials not obtained
+- **What user must provide:** (1) Bank selection, (2) Bank API agreement/onboarding completion, (3) API credentials (OAuth2 client ID/secret or API key from bank developer portal)
+- **Recommended next action:** User selects bank; initiates API onboarding; obtains sandbox credentials → Claude replaces mock sync in `bank_api_service.py` with real bank API calls
+- **Implementation scope if unblocked:** `backend/app/services/bank_api_service.py` — replace mock sync with real bank API OAuth2 + transaction fetch (~80-120 lines); update `BankConnection` model status field; update integration capabilities; `.env.production` credentials
+- **Expected files:** `backend/app/services/bank_api_service.py`, `backend/app/core/integration_capabilities.py`, `backend/tests/test_bank_sync_live.py` (new), `.env.production` (credentials, not committed)
+- **Tests/checks to run:** Sandbox bank sync test; verify transaction de-duplication; verify `MOCK-` prefix gone; pytest suite
+- **Graphify needed after:** yes — backend
+- **Risk level:** Medium (financial data; bank API SLA compliance required)
+- **Claude may proceed autonomously:** No — needs bank selection and API agreement from user
+- **Suggested prompt label:** Blocked until user provides bank API agreement and credentials
+
 ---
 
 ### Task ID: TASK-024 — Label printer SDK integration (ZPL/EPL/TSPL)
@@ -3871,6 +4079,21 @@ Remaining TASK-017 sub-tasks:
 - **Graphify refresh after implementation:** backend
 - **Graphify refresh status:** Needed
 - **Notes:** Do not add `jsPDF`, `pdfmake`, `puppeteer`, or printer drivers to frontend. Backend-side ZPL generation only.
+
+#### Backlog Audit — 2026-06-04
+
+- **Current status:** Pending — blocked on printer model and SDK decision
+- **Why not Done:** `barcode_service.py` returns a placeholder print job record; no ZPL/EPL/TSPL generation; no TCP/IP or spooler printer connection; `integration_capabilities.py:126` = placeholder; browser print only
+- **Exact blocker:** (1) Printer model not selected (Zebra ZT/GK/GX, TSC TTP, Godex G300), (2) Connectivity method not decided (TCP/IP network, USB, Windows spooler), (3) ZPL/EPL/TSPL language depends on printer model
+- **What user must provide:** (1) Printer model and brand, (2) Connectivity method (TCP/IP preferred for server-side), (3) Printer IP address or port for network printing
+- **Recommended next action:** User provides printer model → Claude adds ZPL/TSPL generation to `barcode_service.py`; adds TCP/IP socket send to new `label_printer_service.py`
+- **Implementation scope if unblocked:** `backend/app/services/barcode_service.py` (update print job), new `backend/app/services/label_printer_service.py` (ZPL/TSPL generator + TCP socket, ~80-120 lines); no frontend changes; no frontend printer drivers; add `zebra-zpl` or equivalent dep if available
+- **Expected files:** `backend/app/services/barcode_service.py`, `backend/app/services/label_printer_service.py` (new), `backend/requirements.txt` (new dep if any), `backend/tests/test_label_printer.py` (new)
+- **Tests/checks to run:** ZPL template generation test; TCP socket mock test; GS1-128 barcode format validation
+- **Graphify needed after:** yes — backend
+- **Risk level:** Medium (printer hardware integration; platform-specific TCP/IP socket behavior)
+- **Claude may proceed autonomously:** No — needs printer model and connectivity decision from user
+- **Suggested prompt label:** Blocked until user provides printer model and connectivity details
 
 ---
 
@@ -4082,10 +4305,52 @@ Lock key `20260517` = squashed baseline migration date (stable, project-specific
   - `docs/planning/GAP-012_DOCUMENT_KNOWLEDGE_IMPLEMENTATION_NOTES.md` — acceptance criteria updated
 - **Tests / checks run:** `pytest test_gap012 + test_security + test_hardening` 86/86 PASS · `tsc --noEmit` CLEAN · `python -c "import app.main"` CLEAN
 - **Result:** Permission hardening complete. GAP-012 core security surface closed. Remaining deferred items documented in implementation notes.
-- **Git commit / branch:** TBD
+- **Git commit / branch:** GAP-012G/H/J — commit 2a4d27a (feat(esign): add require_permission guards); commit 1158b4d (feat(knowledge-base): add RequirePermission guard); commit 896196b (chore(tasks): update TASK-027 record)
 - **Graphify refresh after implementation:** backend, frontend
-- **Graphify refresh status:** Needed after GAP-012 completion
+- **Graphify refresh status:** Needed after full GAP-012 completion (deferred items below)
 - **Notes:** Follow 12-step GAP pattern.
+
+#### Backlog Audit — TASK-027 Remaining Items (2026-06-04)
+
+**GAP-012F — Service layer extraction (deferred):**
+- **Current status:** Deferred — lower priority; not blocking any live feature
+- **Why not Done:** `documents.py` endpoint uses inline CRUD instead of a service layer; deferred by design — security surface now closed by GAP-012G/H/J; refactor is low urgency
+- **Exact blocker:** None technical — architectural improvement only
+- **Recommended next action:** User decides priority; if proceeding, Claude extracts `documents.py` inline CRUD to `backend/app/services/document_service.py`
+- **Implementation scope:** `backend/app/api/v1/endpoints/documents.py` (remove inline CRUD), new `backend/app/services/document_service.py`; no model/schema/migration changes; ~100-150 lines refactor
+- **Expected files:** `backend/app/api/v1/endpoints/documents.py`, `backend/app/services/document_service.py` (new)
+- **Tests/checks to run:** `pytest` suite; verify all document endpoints still pass; `python -c "import app.main"` CLEAN
+- **Graphify needed after:** yes — backend
+- **Risk level:** Low (pure refactor; no behavior change)
+- **Claude may proceed autonomously:** Yes, if user approves
+- **Suggested prompt label:** Ready prompt can be created (user approval needed to start)
+
+**Live migration verification:**
+- **Current status:** Blocked — requires Docker/dev DB availability
+- **Why not Done:** GAP-012C (verify migration ownership for documents/kb/esign tables) — migration verification requires running Docker PostgreSQL to inspect actual table creation history
+- **Exact blocker:** Requires Docker dev stack running; cannot verify migration DDL without live DB
+- **Recommended next action:** User starts Docker dev stack (`docker compose up db`) → Claude runs migration inspection query to verify `documents`, `kb_*`, `signature_requests` tables are created by tracked Alembic migrations
+- **Implementation scope:** Read-only inspection only; if migration missing, add additive Alembic migration (~20 lines)
+- **Expected files:** Possibly `backend/alembic/versions/new_migration.py` if gap found
+- **Tests/checks to run:** `alembic history`, `alembic current`, inspect `alembic_version` table, verify column names match models
+- **Graphify needed after:** yes — backend (if new migration added)
+- **Risk level:** Low (read-only verification; additive migration only if needed)
+- **Claude may proceed autonomously:** Yes, if Docker dev stack available
+- **Suggested prompt label:** Ready prompt can be created (needs Docker stack running)
+
+**File upload pipeline — GAP-012 file storage:**
+- **Current status:** Blocked — needs storage adapter decision
+- **Why not Done:** Document model stores metadata only; no actual file upload/download pipeline; `integration_capabilities.py` shows no file storage capability configured
+- **Exact blocker:** Storage adapter not selected: (1) local filesystem, (2) AWS S3, (3) Azure Blob Storage, (4) Google Cloud Storage, (5) MinIO (self-hosted S3-compatible)
+- **What user must provide:** Storage adapter decision + credentials/bucket name
+- **Recommended next action:** User selects storage backend → Claude adds `backend/app/services/storage_service.py` with adapter pattern + file upload/download endpoints
+- **Implementation scope:** New `backend/app/services/storage_service.py` (adapter pattern, ~80-120 lines); update `documents.py` endpoint to call storage service for upload/download; `requirements.txt` (boto3 for S3, azure-storage-blob for Azure, etc.); `.env.production` credentials
+- **Expected files:** `backend/app/services/storage_service.py` (new), `backend/app/api/v1/endpoints/documents.py` (add file upload endpoint), `backend/requirements.txt`, `.env.production` (credentials, not committed)
+- **Tests/checks to run:** File upload test; file download test; storage mock test; pytest suite
+- **Graphify needed after:** yes — backend
+- **Risk level:** Medium (binary file handling; storage cost/security implications)
+- **Claude may proceed autonomously:** No — needs storage adapter decision from user
+- **Suggested prompt label:** Blocked until user provides storage adapter decision
 
 **TASK-027 Audit Findings (2026-06-04):**
 
