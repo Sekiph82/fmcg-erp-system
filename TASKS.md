@@ -3900,25 +3900,65 @@ Remaining TASK-017 sub-tasks:
 
 ### Task ID: TASK-026 — Multi-replica migration safety
 
-- **Status:** Pending
+- **Status:** Audited — 2026-06-04. No code fix applied. Risk documented. Implementation deferred until scaling needed.
 - **Priority:** P3
 - **Category:** Deployment
 - **Why it matters:** In a multi-replica deployment, multiple containers may run `alembic upgrade head` simultaneously, causing race conditions on migrations.
-- **Source / evidence:** TASKS.md historical: "C.31: Multi-replica migration race." `docs/DEPLOYMENT.md:149` — "Multi-replica warning: ensure only one container runs migrations." `docs/DEPLOYMENT.md:291-294` — documented and guidance given: "use a Kubernetes init container or a separate migration job for multi-replica setups." `backend/scripts/prod_bootstrap.py` exists with `BOOTSTRAP_PRODUCTION=true` guard and empty-DB check. NO `pg_advisory_lock` code exists.
-- **Affected area:** `backend/scripts/dev_migrate.py`, `backend/scripts/prod_bootstrap.py`, `docker-compose.prod.yml`
+- **Source / evidence:** TASKS.md historical: "C.31: Multi-replica migration race." `docs/DEPLOYMENT.md:149` — "Multi-replica warning: ensure only one container runs migrations." `backend/scripts/prod_bootstrap.py` exists with `BOOTSTRAP_PRODUCTION=true` guard and empty-DB check. NO `pg_advisory_lock` code exists.
+- **Affected area:** `backend/scripts/dev_migrate.py`, `backend/scripts/prod_bootstrap.py`, `docker-compose.prod.yml`, `backend/Dockerfile.prod`
 - **Risk:** Low in single-replica; High in multi-replica
-- **Recommended timing:** Later
-- **Needs audit before implementation:** Yes — review `docs/DEPLOYMENT.md:291-294` and decide: pg_advisory_lock vs init container vs external migration job.
-- **Implementation scope:** Add `pg_advisory_lock` or use a dedicated migration runner container that exits before app containers start.
-- **Started at:**
-- **Completed at:**
+- **Recommended timing:** Before scaling beyond 1 replica
+- **Needs audit before implementation:** Done — 2026-06-04 (see below)
+- **Implementation scope:** Add `pg_advisory_lock` in `backend/alembic/env.py` `run_migrations_online()` — preferred; or use a dedicated migration init container.
+- **Started at:** 2026-06-04 (audit)
+- **Completed at:** Pending implementation
 - **Changed files:** None yet
 - **Tests / checks run:** None yet
-- **Result:** Pending (documented only; no code fix applied)
+- **Result:** Audit complete — see below
 - **Git commit / branch:** Not committed yet
 - **Graphify refresh after implementation:** no
 - **Graphify refresh status:** Not needed
-- **Notes:** Not urgent for single-replica deployment. DEPLOYMENT.md documents the risk and gives guidance, but no code implementation exists.
+- **Notes:** Safe now (single replica). Fix required before multi-replica scale-up.
+
+---
+
+#### AUDIT FINDINGS — 2026-06-04
+
+**Files inspected:**
+- `backend/Dockerfile.prod:19` — `CMD ["sh", "-c", "alembic upgrade head && gunicorn ..."]` — EVERY container replica runs migrations at startup
+- `backend/scripts/dev_migrate.py:154-156` — production branch calls `command.upgrade(config, "head")` directly; no lock; no concurrent-run check
+- `backend/scripts/prod_bootstrap.py:100-109` — `BOOTSTRAP_PRODUCTION=true` guard + empty-DB abort guard; this script is deprecated and safe (never runs in normal startup)
+- `docker-compose.prod.yml` — single `backend` service, no `deploy.replicas` key → defaults to 1 replica → **currently safe**
+- `docs/DEPLOYMENT.md:149-152` — risk already documented: "use a separate migration job or advisory lock strategy"
+- No `pg_advisory_lock` found anywhere in `alembic/env.py` or migration scripts
+
+**Current risk level: LOW** — docker-compose.prod.yml is single-replica. No concurrent migration race can occur with 1 replica.
+
+**Future risk level: HIGH** — if scaled to 2+ replicas (K8s, Docker Swarm, ECS, or `docker compose scale`), two containers starting simultaneously would both run `alembic upgrade head`. Alembic's `alembic_version` table has no built-in lock. Race condition: both containers read "not applied" → both attempt to apply → one succeeds → the other errors on duplicate column/table or leaves DB in inconsistent state.
+
+**Implementation options ranked:**
+
+| Option | Effort | Scope | Recommended |
+|--------|--------|-------|------------|
+| A. `pg_advisory_lock` in `alembic/env.py` | Low | 1 file | ✅ Best for any multi-replica scenario |
+| B. Separate migration init container | Medium | Dockerfile + compose | Good for K8s |
+| C. `docker compose` `stop-first` update order | Low | compose only | Partial — doesn't help fresh scale-up |
+
+**Recommended implementation (Option A):**
+Add to `backend/alembic/env.py` in `run_migrations_online()`:
+```python
+with connectable.connect() as connection:
+    connection.execute(text("SELECT pg_advisory_lock(20260517)"))
+    try:
+        context.configure(connection=connection, ...)
+        with context.begin_transaction():
+            context.run_migrations()
+    finally:
+        connection.execute(text("SELECT pg_advisory_unlock(20260517)"))
+```
+Lock key `20260517` = squashed baseline migration date (stable, project-specific).
+
+**Deferred:** No immediate need. Safe to implement when first scaling to 2+ replicas.
 
 ---
 
