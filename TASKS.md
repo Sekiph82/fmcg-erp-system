@@ -4453,7 +4453,208 @@ The following modules changed substantially since v2-Post-Recovery manuals were 
 - Identify which screenshots are stale vs. still valid
 - Identify PDF generation script(s) (check `docs/user-manual/PDF_EXPORT_PLAN.md`, `module-manuals/*/PDF_EXPORT_REPORT.md`)
 - Output: chapter-by-chapter audit table with OUTDATED / VALID / NEEDS_SCREENSHOT labels
-- **Status: Pending — awaiting user approval**
+- **Status: Done — 2026-06-04**
+
+#### MANUAL-001 Audit Results — 2026-06-04
+
+##### 1. Asset Inventory
+
+**PDF bundles (`docs/manuals/` — 13 PDFs, all v2-Post-Recovery, generated 2026-05-19):**
+
+| Subfolder | MD source file | PDF size |
+|-----------|---------------|----------|
+| admin | FMCG-ERP-Administration-Manual-v2.md | 6.9 MB |
+| commercial | FMCG-ERP-Commercial-CRM-Marketing-Manual-v2.md | 7.7 MB |
+| documents | FMCG-ERP-Documents-Communication-Manual-v2.md | 3.4 MB |
+| finance-payroll | FMCG-ERP-Finance-Payroll-Manual-v2.md | 9.4 MB |
+| full-reference | FMCG-ERP-Full-Reference-Manual-v2.md | 23.9 MB |
+| hr | FMCG-ERP-HR-Manual-v2.md | 6.6 MB |
+| intelligence | FMCG-ERP-Intelligence-Analytics-AI-Manual-v2.md | 4.2 MB |
+| kenya-go-live | Kenya-Go-Live-ERP-Training-Manual-v2.md | 9.0 MB |
+| logistics | FMCG-ERP-Logistics-Manual-v2.md | 2.3 MB |
+| maintenance | FMCG-ERP-Maintenance-Utilities-Manual-v2.md | 6.3 MB |
+| manufacturing | FMCG-ERP-Manufacturing-Manual-v2.md | 16.9 MB |
+| sales-distribution | FMCG-ERP-Sales-Distribution-Manual-v2.md | 8.3 MB |
+| supply-chain | FMCG-ERP-Supply-Chain-Manual-v2.md | 12.5 MB |
+
+**Markdown sources (`docs/user-manual/` — all dated 2026-05-19):**
+
+| Location | Count | Notable files |
+|----------|-------|---------------|
+| `full-reference/` | 14 chapters | 01_DASHBOARD…14_OLD_ROUTE_COMPATIBILITY |
+| `kenya-go-live/` | 9 chapters | 01_ADMIN…09_FAQ |
+| `module-manuals/manufacturing/` | 12 chapters | 01-recipes…12-compliance |
+| `module-manuals/supply-chain/` | 11 chapters | 01-purchase-requisitions…11-logistics |
+| `module-manuals/finance-payroll/` | 11 chapters | includes 07-tax-etims.md |
+| `module-manuals/sales/` | 8 chapters | 01-sales-overview…08-commissions |
+| `module-manuals/hr/` | 9 chapters | 01-hr-overview…09-timesheets-expenses |
+| `module-manuals/crm/` | 9 chapters | 01-crm-dashboard…09-nps-surveys |
+| `module-manuals/marketing/` | 7 chapters | 01-campaigns…07-visits-intel-analytics |
+| `module-manuals/logistics/` | 5 chapters | 01-shipments…05-fleet |
+| `module-manuals/maintenance/` | 6 chapters | 01-assets…06-reports |
+| `module-manuals/pos/` | 2 chapters | 01-pos-terminal, 02-sales-sessions |
+
+**Screenshots (`docs/user-manual/screenshots/`):**
+- `captured/` folder: **477 PNG files** (captured 2026-05-19; filename pattern `NNN_route-slug.png`)
+- Manifest JSONs: `routes.json` (35 KB), `screenshots-index.json` (47 KB), plus per-module manifests (manufacturing 38 KB, supply-chain 24 KB, finance-payroll 21 KB, sales 15 KB, etc.)
+- No PNG files outside `captured/` — manifests are metadata only
+
+**PDF generation scripts found:**
+- `docs/user-manual/pdf-export/export-full-reference.sh`
+- `docs/user-manual/pdf-export/export-kenya-go-live.sh`
+- `docs/user-manual/module-manuals/manufacturing/pdf-export/run-manufacturing-pdf.sh`
+- `docs/user-manual/module-manuals/supply-chain/pdf-export/run-supply-chain-pdf.sh`
+- No general-purpose export script for all 13 modules — per-module scripts only
+
+**Existing version/date:** All manuals v2-Post-Recovery, generated 2026-05-19. `MANUAL_AUDIT.md` dated 2026-05-16 (older than the manuals — captures pre-screenshot-capture state).
+
+##### 2. Outdated vs. Valid Analysis
+
+**Manuals that need FULL REWRITE (content fundamentally changed):**
+
+| Manual | Reason |
+|--------|--------|
+| `module-manuals/finance-payroll/07-tax-etims.md` | eTIMS was a skeleton on 2026-05-19; TASK-005 delivered real connector, 10-status model, global page, invoice card — entirely new workflow |
+| `docs/manuals/documents/FMCG-ERP-Documents-Communication-Manual-v2.md` | TASK-027 added esign.* and knowledge_base.* permission guards; permission tables and access flows are wrong |
+
+**Manuals that need SECTION UPDATE (structure valid, sections outdated):**
+
+| Manual | Outdated section | Reason |
+|--------|-----------------|--------|
+| `full-reference/08_FINANCE.md` | eTIMS section | Same as finance-payroll/07 — skeleton vs. real |
+| `full-reference/10_ADMIN_AND_SECURITY.md` | GS1 auth, PyJWT, env seed | TASK-006/007/014 changed auth posture |
+| `full-reference/11_AI_AND_AUTOMATION.md` | PROPHET/Forecasting | TASK-025: PROPHET = local statsmodels, no external API |
+| `module-manuals/supply-chain/07-inventory-stock.md` | Stock levels, lot tracking | TASK-016 I1-I7 seed added real data — pages no longer show empty states |
+| `module-manuals/supply-chain/10-wms.md` | WMS locations, cycle counts | TASK-016 I1-I7 WMS seed |
+| `module-manuals/manufacturing/07-quality-control.md` | QC checks listing | TASK-015 OEE/QC seed added real QC data |
+| `module-manuals/manufacturing/11-oee-reporting.md` | OEE metrics | TASK-015 OEE seed — pages show real values not zeros |
+| `docs/manuals/admin/FMCG-ERP-Administration-Manual-v2.md` | Deployment, security, GS1, env seed | TASK-006/007/014/026 all touch admin content |
+| `kenya-go-live/01_ADMIN_USER_MANUAL.md` | Security posture, admin creation | TASK-007 env-seed admin; TASK-014 PyJWT |
+
+**Manuals that are MOSTLY VALID (screenshots stale, content structure correct):**
+
+| Manual | What's stale |
+|--------|-------------|
+| `module-manuals/sales/` | No functional changes; screenshots may show slightly different UI states |
+| `module-manuals/hr/` | No functional changes |
+| `module-manuals/crm/` | No functional changes |
+| `module-manuals/logistics/` | No functional changes |
+| `module-manuals/maintenance/` | No functional changes |
+| `module-manuals/marketing/` | No functional changes |
+| `module-manuals/pos/` | No functional changes |
+| `module-manuals/manufacturing/` chapters 01-06, 08-10, 12 | Functional content valid; only OEE/QC screenshots stale |
+| `module-manuals/supply-chain/` chapters 01-06, 08-09, 11 | Functional content valid; only inventory/WMS screenshots stale |
+| `kenya-go-live/` chapters 02-09 | Mostly valid; minor screenshots stale for changed modules |
+| `docs/manuals/commercial/`, `hr/`, `sales-distribution/`, `logistics/`, `maintenance/` PDFs | No source changes needed; only regenerate PDFs if MD updated |
+
+**Screenshots likely outdated (477 total; approximate count needing replacement: ~20-30):**
+
+| Module/Route area | Reason screenshots stale |
+|-------------------|--------------------------|
+| Finance / eTIMS pages | eTIMS was skeleton on capture date; real UI exists now |
+| Documents / KB / E-sign | Permission guards added after capture (TASK-027) |
+| Manufacturing / OEE, QC, downtime | Pages showed empty/zero data; seed data now present |
+| Supply Chain / inventory lots, WMS | Pages showed empty states; I1-I7 seed now present |
+| Admin / users | Env-seed admin user changes login flow screenshot |
+| GS1 pages | Auth guard added — unauthenticated flow now shows login gate |
+| MRP / Forecast | PROPHET label now shows Holt-Winters local (minor UI text) |
+
+##### 3. Module → Manual Mapping Table
+
+| Changed module | Related task / commits | Manual files affected | Screenshot needed | Rewrite level | Notes |
+|----------------|----------------------|----------------------|-------------------|---------------|-------|
+| eTIMS fiscalization | TASK-005 (commits pre-2026-06) | `module-manuals/finance-payroll/07-tax-etims.md`, `full-reference/08_FINANCE.md`, `docs/manuals/finance-payroll/FMCG-ERP-Finance-Payroll-Manual-v2.md` | YES — eTIMS global page, invoice eTIMS card, provider health panel | Full rewrite | 10-status model (PENDING→SUBMITTED→APPROVED…CANCELLED); real connector; retry/cancel/poll UI |
+| GS1 route guards | TASK-006 (1b5f…) | `docs/manuals/admin/FMCG-ERP-Administration-Manual-v2.md`, `full-reference/10_ADMIN_AND_SECURITY.md` | YES — GS1 page showing login gate | Section update | 38 endpoints now auth-protected; GS1 label requires authenticated role |
+| PyJWT migration | TASK-014 | `docs/manuals/admin/FMCG-ERP-Administration-Manual-v2.md`, `full-reference/10_ADMIN_AND_SECURITY.md` | NO | Section update | Token expiry semantics changed; security posture note needed |
+| Management user env seed | TASK-007 | `docs/manuals/admin/FMCG-ERP-Administration-Manual-v2.md`, `kenya-go-live/01_ADMIN_USER_MANUAL.md` | NO | Section update | No hardcoded admin; MANAGEMENT_USER_EMAIL/PASSWORD env vars; no code change needed for screenshot |
+| Document / KB / e-sign permission hardening | TASK-027 (commits 2a4d27a/1158b4d/896196b) | `docs/manuals/documents/FMCG-ERP-Documents-Communication-Manual-v2.md` | YES — permission-gated documents list, KB list, e-sign list | Full rewrite | New `esign.*` and `knowledge_base.*` permission guards; access denied state also worth capturing |
+| OEE / QC / waste / downtime seed | TASK-015 | `docs/manuals/manufacturing/FMCG-ERP-Manufacturing-Manual-v2.md`, `module-manuals/manufacturing/07-quality-control.md`, `module-manuals/manufacturing/11-oee-reporting.md` | YES — OEE dashboard with real data, QC checks list, downtime log | Screenshots + content update | Pages no longer show zeros/empty; seed values visible; update demo-data description |
+| Inventory I1-I7 seed | TASK-016 | `docs/manuals/supply-chain/FMCG-ERP-Supply-Chain-Manual-v2.md`, `module-manuals/supply-chain/07-inventory-stock.md`, `module-manuals/supply-chain/10-wms.md` | YES — inventory lots view, WMS bin locations, cycle count list, shelf-life alerts, MRP demand forecast | Screenshots + content update | Real lots/batches now in system; traceability chain visible; cycle counts seeded; shelf-life expiry rows present |
+| PROPHET → local Holt-Winters | TASK-025 (commit 84914d8) | `docs/manuals/intelligence/FMCG-ERP-Intelligence-Analytics-AI-Manual-v2.md`, `full-reference/11_AI_AND_AUTOMATION.md` | NO (UI text change only — minor) | Section update | PROPHET model now uses statsmodels; no external API key required; update description and any "requires AI service" warning |
+| Alembic advisory lock | TASK-026 (commit 1b215ed) | `docs/manuals/admin/FMCG-ERP-Administration-Manual-v2.md` (deployment appendix) | NO | Technical note append | One paragraph: pg_advisory_lock(20260517) prevents concurrent migration; already in DEPLOYMENT.md |
+
+##### 4. Screenshot Checklist (no screenshots — plan only)
+
+**Priority 1 — Finance / eTIMS (TASK-005):**
+
+| Route | Purpose | Demo data required | Manual section | Target filename | Prerequisites |
+|-------|---------|-------------------|----------------|-----------------|---------------|
+| `/dashboard/finance/etims` | eTIMS global status dashboard | Seeded invoices with eTIMS status | `07-tax-etims.md` §eTIMS Dashboard | `etims-dashboard.png` | Login as finance admin; eTIMS seed data present |
+| `/dashboard/finance/invoices/[id]` | Invoice detail showing eTIMS status card | Invoice with eTIMS lifecycle (PENDING/SUBMITTED/APPROVED) | `07-tax-etims.md` §Invoice eTIMS Card | `invoice-etims-card.png` | Seeded invoice with eTIMS record |
+| `/dashboard/finance/etims` (provider health) | Provider health panel showing connectivity | Any state | `07-tax-etims.md` §Provider Health | `etims-provider-health.png` | Dev mode; health endpoint responding |
+
+**Priority 2 — Documents / permissions (TASK-027):**
+
+| Route | Purpose | Demo data required | Manual section | Target filename | Prerequisites |
+|-------|---------|-------------------|----------------|-----------------|---------------|
+| `/dashboard/documents` | Document list with esign.view guard active | Seeded documents | Documents manual §Document List | `documents-list-permission.png` | Login as user WITH esign.view permission |
+| `/dashboard/knowledge-base` | KB with knowledge_base.view guard | Seeded KB articles | Documents manual §Knowledge Base | `kb-list-permission.png` | Login as user WITH knowledge_base.view |
+| `/dashboard/esign` | E-sign page with esign.* gates | Seeded e-sign docs | Documents manual §E-Sign | `esign-list.png` | Login as user WITH esign.view/esign.sign |
+
+**Priority 3 — Manufacturing / OEE and QC (TASK-015):**
+
+| Route | Purpose | Demo data required | Manual section | Target filename | Prerequisites |
+|-------|---------|-------------------|----------------|-----------------|---------------|
+| `/dashboard/manufacturing/oee` or OEE sub-route | OEE dashboard showing real batch metrics | OEE seed batches | Manufacturing manual §OEE Reporting | `oee-dashboard-seeded.png` | OEE seed data present (TASK-015) |
+| `/dashboard/quality` or QC route | QC check list with seeded checks | QC seed data | Manufacturing manual §Quality Control | `qc-checklist-seeded.png` | QC seed present |
+| Downtime/waste route | Downtime log with seeded entries | Downtime seed | Manufacturing manual §Shop Floor | `downtime-log-seeded.png` | Downtime seed present |
+
+**Priority 4 — Supply Chain / Inventory (TASK-016):**
+
+| Route | Purpose | Demo data required | Manual section | Target filename | Prerequisites |
+|-------|---------|-------------------|----------------|-----------------|---------------|
+| `/dashboard/supply-chain/inventory` or lots route | Inventory with seeded lots and traceability | I1-I7 seed lots | Supply Chain §Inventory & Stock | `inventory-lots-seeded.png` | I1-I7 seed present |
+| `/dashboard/supply-chain/wms` | WMS bin locations with seeded stock | I1-I7 WMS seed | Supply Chain §WMS | `wms-locations-seeded.png` | I1-I7 WMS seed |
+| `/dashboard/mrp/forecast` | MRP demand forecast with seeded history | I1-I7 demand seed | Supply Chain §MRP / Demand | `mrp-forecast-seeded.png` | I1-I7 demand seed |
+
+**Priority 5 — Admin / GS1 auth gate (TASK-006):**
+
+| Route | Purpose | Demo data required | Manual section | Target filename | Prerequisites |
+|-------|---------|-------------------|----------------|-----------------|---------------|
+| `/dashboard/gs1` (unauthenticated or wrong role) | GS1 page showing login/permission redirect | None | Admin manual §GS1 | `gs1-auth-gate.png` | Login as user WITHOUT GS1 role |
+
+**Priority 6 — AI / Forecasting (TASK-025):**
+
+| Route | Purpose | Demo data required | Manual section | Target filename | Prerequisites |
+|-------|---------|-------------------|----------------|-----------------|---------------|
+| `/dashboard/mrp/forecast` | Forecast results showing PROPHET/Holt-Winters label | Forecast seed | Intelligence manual §AI Forecasting | `forecast-holt-winters.png` | Forecast data present; PROPHET model enabled |
+
+**Total new screenshots needed: ~14-16** (exact count depends on route discovery in MANUAL-002)
+
+##### 5. Refined Phase Scope (MANUAL-002 through MANUAL-006)
+
+**MANUAL-002 (Screenshot capture) — refined scope:**
+- Target: ~14-16 new screenshots (see checklist above) to replace stale ones
+- Keep all 477 existing PNGs for unchanged modules (do not re-capture the ~460 still-valid screenshots)
+- Tool preference: Playwright automation script (existing `SCREENSHOT_CAPTURE_PLAN.md`); update routes list with only the 14-16 new targets
+- Capture order: eTIMS (3) → Documents/permissions (3) → Manufacturing OEE/QC/downtime (3) → Supply Chain inventory/WMS/MRP (3) → Admin GS1 gate (1) → AI forecast (1) → Admin user (1 if env-seed changed UI)
+- Resolution: 1280×800, light mode, data loaded before capture
+- Output: Replace stale PNGs in `docs/user-manual/screenshots/captured/`; update manifest JSONs
+
+**MANUAL-003 (Rewrite changed modules) — refined scope:**
+- Full rewrite: `module-manuals/finance-payroll/07-tax-etims.md` (eTIMS connector workflow), Documents manual
+- Section update: `full-reference/08_FINANCE.md` (eTIMS section only), `module-manuals/supply-chain/07-inventory-stock.md`, `module-manuals/supply-chain/10-wms.md`, `module-manuals/manufacturing/07-quality-control.md`, `module-manuals/manufacturing/11-oee-reporting.md`
+- Note update only: `full-reference/11_AI_AND_AUTOMATION.md` (PROPHET → Holt-Winters; one paragraph update)
+- Skip: sales, hr, crm, logistics, maintenance, marketing, pos module manuals (no functional changes)
+- Estimated effort: 5 full-rewrite chapters + 5 section updates + 2 note updates
+
+**MANUAL-004 (Technical/admin manuals) — refined scope:**
+- `docs/manuals/admin/FMCG-ERP-Administration-Manual-v2.md`: 4 section updates (GS1 auth, PyJWT, env seed, advisory lock)
+- `full-reference/10_ADMIN_AND_SECURITY.md`: 3 section updates (GS1 auth, PyJWT, env seed)
+- `kenya-go-live/01_ADMIN_USER_MANUAL.md`: 2 section updates (admin creation via env, token security)
+- No new screenshots needed for this phase
+
+**MANUAL-005 (Validate) — scope confirmed:**
+- Check all internal links in rewritten chapters
+- Verify all 14-16 new PNG filenames exist in `captured/`
+- Grep for `/Desktop/fmcg-erp-system-main` in manual text (stale path)
+- Grep for "Meta Prophet" or "Prophet API" in intelligence/AI sections (should say statsmodels/Holt-Winters)
+- Grep for old 5-status eTIMS model references
+
+**MANUAL-006 (PDF regeneration) — scope confirmed:**
+- Re-run PDF scripts for: finance-payroll, documents, supply-chain, manufacturing, admin, intelligence, full-reference, kenya-go-live (8 of 13 PDFs)
+- No PDF regeneration needed for: sales-distribution, hr, commercial, logistics, maintenance (no content changes)
+- Note: only 4 shell scripts exist; need to create or extend for remaining 4 affected modules before this phase can run
 
 **MANUAL-002 — Capture fresh screenshots for changed modules**
 - Start frontend locally (or Docker dev stack)
