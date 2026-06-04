@@ -167,6 +167,47 @@ def _seasonal_indices(history: list[tuple[date, Decimal]], period_type: PeriodTy
     return indices
 
 
+def _holt_winters_forecast(
+    history: list[Decimal],
+    periods_ahead: int,
+    period_type: PeriodType,
+    alpha: float = 0.3,
+) -> list[Decimal]:
+    """
+    Holt-Winters ExponentialSmoothing for the PROPHET model type.
+    Additive trend always; additive seasonality only when >= 2 full cycles available.
+    Falls back to simple ES if statsmodels is unavailable or history is too short.
+    """
+    SEASONAL_PERIODS = {PeriodType.MONTHLY: 12, PeriodType.WEEKLY: 52}
+    sp = SEASONAL_PERIODS.get(period_type, 0)
+    use_seasonal = sp > 0 and len(history) >= 2 * sp
+
+    try:
+        from statsmodels.tsa.holtwinters import ExponentialSmoothing as HoltWinters  # noqa: PLC0415
+
+        floats = [float(v) for v in history]
+        if len(floats) < 2:
+            raise ValueError("history too short")
+
+        if use_seasonal:
+            model = HoltWinters(
+                floats, trend="add", seasonal="add",
+                seasonal_periods=sp, initialization_method="estimated",
+            )
+        else:
+            model = HoltWinters(
+                floats, trend="add", seasonal=None,
+                initialization_method="estimated",
+            )
+        fit = model.fit(optimized=True, disp=False)
+        raw = fit.forecast(periods_ahead)
+        return [max(Decimal("0"), _R(Decimal(str(float(v))))) for v in raw]
+    except Exception:
+        smoothed = _exponential_smoothing(history, alpha)
+        base = smoothed[-1] if smoothed else Decimal("0")
+        return [max(Decimal("0"), base)] * periods_ahead
+
+
 def _detect_spike(value: Decimal, mean: Decimal, std_dev: float, z_threshold: float = 2.5) -> bool:
     if std_dev == 0 or mean == 0:
         return False
@@ -228,10 +269,8 @@ async def generate_forecast(
         base = smoothed[-1] if smoothed else Decimal("0")
         forecast_base = [base] * periods_ahead   # will be multiplied by seasonal index below
 
-    else:  # PROPHET stub — fall back to ES
-        smoothed = _exponential_smoothing(history_values, alpha)
-        base = smoothed[-1] if smoothed else Decimal("0")
-        forecast_base = [base] * periods_ahead
+    else:  # PROPHET → local Holt-Winters (statsmodels); ES fallback if data insufficient
+        forecast_base = _holt_winters_forecast(history_values, periods_ahead, pt, alpha)
 
     # Seasonal indices (used for SEASONAL model and optionally others)
     seasonal_idx = {}
@@ -357,8 +396,8 @@ async def _compute_mape(
         elif fm == ForecastModelType.WEIGHTED_MOVING_AVG:
             pred = _weighted_moving_average(train_window, n_ma)
         else:
-            smoothed = _exponential_smoothing(train_window, alpha)
-            pred = smoothed[-1] if smoothed else Decimal("0")
+            hw = _holt_winters_forecast(train_window, 1, period_type, alpha)
+            pred = hw[0] if hw else Decimal("0")
 
         if actual > 0:
             err = abs(float(pred - actual)) / float(actual) * 100

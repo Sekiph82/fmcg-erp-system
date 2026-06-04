@@ -3876,7 +3876,7 @@ Remaining TASK-017 sub-tasks:
 
 ### Task ID: TASK-025 — Prophet/AI demand forecasting
 
-- **Status:** Audited 2026-06-04. PROPHET stub found. Recommended: statsmodels Holt-Winters (no C++, ~20MB). Pending user approval for dependency.
+- **Status:** Done — statsmodels Holt-Winters implementation added 2026-06-04
 - **Priority:** P3
 - **Category:** AI
 - **Why it matters:** `forecast_service.py:5` — "Prophet-style AI forecasting is stubbed for future integration." Falls back to Exponential Smoothing. `models/mrp.py:21` — `PROPHET = "PROPHET"` AI-ready stub.
@@ -3887,14 +3887,24 @@ Remaining TASK-017 sub-tasks:
 - **Needs audit before implementation:** Done — 2026-06-04 (see below)
 - **Implementation scope:** Replace PROPHET stub fallback at `forecast_service.py:231-234` with `statsmodels.tsa.holtwinters.ExponentialSmoothing` (Holt-Winters with additive trend + seasonality). Add `statsmodels>=0.14` to `requirements.txt`.
 - **Started at:** 2026-06-04 (audit)
-- **Completed at:** Pending implementation
-- **Changed files:** None yet
-- **Tests / checks run:** None yet
-- **Result:** Audit complete
-- **Git commit / branch:** Not committed yet
-- **Graphify refresh after implementation:** backend
-- **Graphify refresh status:** Needed after implementation
-- **Notes:** TASK-002 (AI live mode) is NOT a hard blocker — statsmodels/Prophet are standalone libraries, no external API keys needed. Historical production+inventory seed data available from TASK-015/016. Blocker: user approval to add `statsmodels>=0.14` to requirements.txt.
+- **Completed at:** 2026-06-04
+- **Changed files:** `backend/app/services/forecast_service.py`, `backend/requirements.txt`, `backend/tests/test_forecast_service.py`
+- **Tests / checks run:** 16/16 forecast unit tests PASS; 25/25 hardening PASS; app import OK; statsmodels 0.14.6
+- **Result:** Implementation complete. No external API. No credentials. No models/migrations/frontend changed.
+- **Git commit / branch:** See batch below
+- **Graphify refresh after implementation:** backend (needed when desired — service architecture extended)
+- **Graphify refresh status:** Pending (not required immediately)
+- **Notes:** TASK-002 (AI live mode) is NOT a hard blocker — statsmodels/Prophet are standalone libraries, no external API keys needed. Historical production+inventory seed data available from TASK-015/016.
+
+#### Batch TASK-025.1 — statsmodels Holt-Winters forecasting implementation (DONE — 2026-06-04)
+
+- `ForecastModelType.PROPHET` now uses local `statsmodels.tsa.holtwinters.ExponentialSmoothing` (additive trend; additive seasonality when ≥ 2 full seasonal cycles available).
+- If history is too short (< 2 data points) or statsmodels raises for any reason, falls back safely to existing exponential smoothing — no crash, no silent wrong result.
+- `_compute_mape` also updated to use Holt-Winters for PROPHET model type during MAPE back-calculation.
+- `ForecastModelType.PROPHET` enum name unchanged — API surface unchanged.
+- This is local statistical forecasting, not external AI. No network calls. No credentials.
+- Dependency added: `statsmodels>=0.14` in `backend/requirements.txt`.
+- 16 new unit tests in `backend/tests/test_forecast_service.py` — cover HW path, fallback, non-negative output, no-network assertion, all period types, existing ES/MA/WMA helpers.
 
 ---
 
