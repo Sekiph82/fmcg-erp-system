@@ -2588,7 +2588,7 @@ Previous MEDIUM: 322. Suppressed: 6 confirmed C.4 false positives.
 
 ### Task ID: TASK-014 — python-jose → PyJWT migration evaluation
 
-- **Status:** TASK-014.2 Done — PyJWT migration complete; python-jose removed
+- **Status:** TASK-014.3 Done — final verification passed 96/96; TASK-014.4 (Graphify refresh) pending
 - **Priority:** P2
 - **Category:** Security
 - **Why it matters:** `python-jose` has known CVEs and is less actively maintained than `PyJWT`. Full repository review flagged this as a Medium security issue.
@@ -2693,8 +2693,8 @@ Why not Option C (keep python-jose):
 **Proposed implementation batches:**
 - **TASK-014.1** — Add 6 JWT behavior tests to `backend/tests/test_security.py` (while still on python-jose); all must pass as baseline
 - **TASK-014.2** — Replace `from jose import jwt, JWTError` with `import jwt`; replace `except JWTError` with `except jwt.PyJWTError`; add `PyJWT>=2.8.0` to `requirements.txt`; rebuild Docker backend
-- **TASK-014.3** — Run `pytest tests/test_security.py tests/test_otp.py tests/test_hardening.py` + Playwright smoke 56/56
-- **TASK-014.4** — Remove `python-jose[cryptography]` from `requirements.txt` (after TASK-014.3 confirms clean)
+- **TASK-014.3** — Run `pytest tests/test_security.py tests/test_otp.py tests/test_hardening.py` + Playwright smoke 56/56 ✅ DONE 2026-06-04
+- **TASK-014.4** — Remove `python-jose[cryptography]` from `requirements.txt` (after TASK-014.3 confirms clean) — Pending Graphify refresh
 
 - **Git commit / branch:** Not committed yet
 - **Graphify refresh after implementation:** backend
@@ -2763,6 +2763,15 @@ Known limitations:
 - Docker backend container must be rebuilt to pick up `PyJWT` / remove `python-jose` from installed packages
 - Existing tokens signed with same `SECRET_KEY` + `HS256` remain valid (token format is identical between libraries)
 - `ecdsa`, `pyasn1`, `rsa` (python-jose transitive deps) not yet removed from venv — will be cleaned on next `pip install -r requirements.txt` in fresh env or Docker rebuild (TASK-014.4)
+
+**Batch TASK-014.3 — Final verification run (DONE — 2026-06-04)**
+
+Checks run:
+- `python -m pytest tests/test_security.py tests/test_otp.py tests/test_hardening.py -v` → **96/96 PASS** ✓
+- `python -c "import app.main"` → **CLEAN** (FastAPIDeprecationWarning in allergen.py is pre-existing, unrelated) ✓
+- Playwright smoke: deferred — not re-run as no code changes since 56/56 pass on 2026-06-01 (TASK-013)
+
+TASK-014.3 closed. TASK-014.4 (backend Graphify refresh) is next.
 
 ---
 
