@@ -2794,7 +2794,7 @@ TASK-014 fully closed.
 
 ### Task ID: TASK-015 — Production module real data (Phase P1-P11)
 
-- **Status:** TASK-015.1 + TASK-015.1A + TASK-015.2 Done — production demo seed implemented, DB-validated, idempotency confirmed; OEE/QC/waste/downtime seed added 2026-06-04; Graphify backend refresh done (2026-06-01)
+- **Status:** TASK-015.1 + TASK-015.1A + TASK-015.2 Done — production demo seed implemented, DB-validated, idempotency confirmed; OEE/QC/waste/downtime seed added 2026-06-04; Graphify backend refresh done (2026-06-01 after TASK-015.1; 2026-06-04 after TASK-015.2)
 - **Priority:** P2
 - **Category:** Production
 - **Why it matters:** Production module (orders, work orders, work centers, routing, batch tracking, QC, yield) models exist in backend but KPIs and dashboards show empty data. No realistic seed data for demo or testing.
@@ -2982,9 +2982,9 @@ Checks:
 - 86/86 pytest (regression) → PASS ✓
 - Docker live run required to validate actual DB insertion (not run — Docker not started)
 
-- **Git commit / branch:** Not committed yet
+- **Git commit / branch:** `6af54c4` feat(production): add OEE/QC/waste/downtime demo seed records (TASK-015.2)
 - **Graphify refresh after implementation:** backend
-- **Graphify refresh status:** Done — 2026-06-01 via `/graphify backend --update`; output at `C:\Users\sekip\Desktop\graphify-erp-maps\backend\`; 2127 nodes / 9951 edges / 92 communities; `seed_production.py`, `seed_production_data`, `main.py` SEED_DEMO_DATA wiring, and PyJWT requirements all reflected in map; `graphify-out/` remains gitignored and untracked
+- **Graphify refresh status:** Done — 2026-06-04 (full rebuild after TASK-015.2 + TASK-016.2/016.3/016.4 combined); 17031 nodes / 39177 edges / 697 communities; `OEERecord`, `AdvQCInspection`, `WasteRecord`, `DowntimeLog`, `_get_or_create_oee`, `_get_or_create_qc`, `_get_or_create_waste`, `_get_or_create_downtime`, `seed_production.py` all represented in map; output at `C:\Users\sekip\Desktop\graphify-erp-maps\backend\`; `graphify-out/` gitignored and untracked ✓
 - **Notes:** Coordinate with Utilities (TASK-009) so utility consumption data links to production batches.
 
 **Batch TASK-015.1A — DB seed validation (DONE — 2026-06-01)**
@@ -3016,7 +3016,7 @@ Note: batch_lots count is 9 (not 7 as designed) — 2 extra lots created during 
 
 ### Task ID: TASK-016 — Inventory/Stock real data (Phase I1-I7)
 
-- **Status:** TASK-016.1–TASK-016.4 Done — inventory demo seed + WMS zones/locations + trace events + cycle count plans seeded 2026-06-04; Graphify refresh complete (2026-06-01)
+- **Status:** TASK-016.1–TASK-016.4 Done — inventory demo seed + WMS zones/locations + trace events + cycle count plans seeded 2026-06-04; Graphify refresh complete (2026-06-01 after TASK-016.1; 2026-06-04 after TASK-016.2/016.3/016.4)
 - **Priority:** P2
 - **Category:** Inventory
 - **Why it matters:** Inventory module (warehouses, products, raw materials, stock tracking, movements) KPIs show empty. No realistic factory stock data.
@@ -3200,6 +3200,8 @@ Idempotency: `(warehouse_id, code)` for zones; `(zone_id, code)` for locations �
 
 Checks: `import app.main` CLEAN · 86/86 pytest PASS ✓
 
+Git commit: `f895424` feat(inventory): add WMS zones and storage locations seed (TASK-016 I2)
+
 **Batch TASK-016.4 — Cycle Count Plans (DONE — 2026-06-04)**
 
 Files changed:
@@ -3214,6 +3216,8 @@ Dataset added:
 
 Idempotency: by `plan_code` (unique) ✓
 Checks: `import app.main` CLEAN · 25/25 hardening PASS ✓
+
+Git commit: `a81a077` feat(inventory): add cycle count plans seed (TASK-016 I4)
 
 **Batch TASK-016.3 — Trace Events for Lot Genealogy (DONE — 2026-06-04)**
 
@@ -3231,6 +3235,8 @@ Idempotency: `(reference_number, trace_event_type)` compound query ✓
 
 Checks: `import app.main` CLEAN · 32/32 pytest (gap012 + hardening) PASS ✓
 
+Git commit: `d6c5f34` feat(inventory): add trace event seed for lot genealogy (TASK-016 I3)
+
 **Backend Graphify refresh after TASK-016.1 (DONE — 2026-06-01)**
 
 - Command: `/graphify C:\Users\sekip\Desktop\fmcg-erp-system-main\backend --update` (incremental)
@@ -3245,6 +3251,47 @@ Known limitations:
 - `Stock.quantity_on_hand` set directly (not computed from movements) — movement totals are narrative only; production service would normally manage these via `_get_stock_for_update` with row locks
 - CostLayer `qty_remaining` = `qty_received` (no consumption deduction modeled — acceptable for demo)
 - Docker backend container must be rebuilt to pick up `seed_inventory.py` when `SEED_DEMO_DATA=true`
+
+**Backend Graphify Refresh — After TASK-015.2 / TASK-016.2 / TASK-016.3 / TASK-016.4 (DONE — 2026-06-04)**
+
+- Command: `/graphify C:\Users\sekip\Masaüstü\fmcg-erp-system-main\backend --update` (initially); switched to full rebuild
+- Final mode: backend-only full rebuild
+- Reason for full rebuild: `detect_incremental` returned 687/687 files changed because manifest had path-encoding mismatch from prior run (Turkish characters in `Masaüstü` path); incremental baseline was unusable so full rebuild was safer and correct
+- Extraction: AST-only — zero LLM tokens consumed; 2 doc files (`requirements.txt`, `tests/SECURITY_REPORT.md`) skipped as LLM extraction not strictly necessary
+- Backend analyzed path: `C:\Users\sekip\Masaüstü\fmcg-erp-system-main\backend`
+- Temporary output: `C:\Users\sekip\Masaüstü\fmcg-erp-system-main\backend\graphify-out\` (gitignored, not committed)
+- External output: `C:\Users\sekip\Desktop\graphify-erp-maps\backend\`
+- Files copied: `GRAPH_REPORT.md`, `graph.json`, `cost.json`, `manifest.json`
+- graph.html: NOT regenerated — graph has 17,031 nodes which exceeds the 5,000-node HTML visualization limit; previous `graph.html` in external folder is from prior run
+- Graph stats: 17,031 nodes · 39,177 edges · 697 communities · 181× token reduction
+- Token cost this run: 0 input / 0 output (AST-only)
+
+Verification table:
+
+| Task | Model / Symbol | In Map |
+|------|----------------|--------|
+| TASK-015.2 | `seed_production.py` | ✓ |
+| TASK-015.2 | `seed_production_data` | ✓ |
+| TASK-015.2 | `OEERecord` | ✓ |
+| TASK-015.2 | `AdvQCInspection` | ✓ |
+| TASK-015.2 | `WasteRecord` | ✓ |
+| TASK-015.2 | `DowntimeLog` | ✓ |
+| TASK-015.2 | `_get_or_create_oee` | ✓ |
+| TASK-016.2 | `seed_inventory.py` | ✓ |
+| TASK-016.2 | `WarehouseZone` | ✓ |
+| TASK-016.2 | `StorageLocation` | ✓ |
+| TASK-016.2 | `ZoneType` | ✓ |
+| TASK-016.3 | `TraceEvent` | ✓ |
+| TASK-016.3 | `TraceEventType` | ✓ |
+| TASK-016.3 | `_get_or_create_trace_event` | ✓ |
+| TASK-016.4 | `CycleCountPlan` | ✓ |
+| TASK-016.4 | `PlanStatus` / `PlanType` | ✓ |
+| TASK-016.4 | `_get_or_create_cycle_count_plan` | ✓ |
+
+- `git status --short` after refresh: CLEAN ✓
+- `git ls-files graphify-out`: EMPTY (not tracked) ✓
+- Source code changed: no
+- TASKS.md changed: yes — this update
 
 ---
 
