@@ -11,8 +11,8 @@
 
 The Quality module manages all QC inspections across three inspection contexts: incoming raw materials, in-process production checks, and finished goods release. Each inspection records test results, a pass/fail decision, and optional quarantine actions.
 
-![Quality workspace](../../../screenshots/captured/module-ui/manufacturing/quality/inspections-tab.png)
-*Quality workspace showing the Inspections tab with dashboard counters and inspection list.*
+![Production — Quality Control](../../../screenshots/captured/044_production-quality-control.png)
+*Quality workspace showing the Inspections tab with seeded QC inspections, dashboard counters, and inspection list.*
 
 ---
 
@@ -179,3 +179,34 @@ The detail page provides:
 | **QMS** | Quality Management System documents and workflows |
 | **Allergen** | Allergen declarations per product and BOM; cross-contamination risk matrix |
 | **Brand Assets** | Brand-related quality standards and packaging specifications |
+
+---
+
+## Demo Data — QC Inspection Seed (TASK-015.2)
+
+The system ships with seeded QC inspections covering all three inspection types. These use the production master data (work centers, products, materials, batch lots) seeded in TASK-015.
+
+### Seeded Inspection Types
+
+| QC Type | Scope |
+|---|---|
+| `INCOMING` | Raw material receipt inspections with supplier and material references |
+| `IN_PROCESS` | In-process checks linked to production work orders and batch numbers |
+| `FINISHED_GOODS` | Final product release inspections |
+
+### Seeded Status Distribution
+
+| Status | Meaning |
+|---|---|
+| `PASSED` | Inspection completed with all tests within spec |
+| `FAILED` | One or more tests outside spec |
+| `CONDITIONAL_RELEASE` | Released with documented conditions |
+| `PENDING` | Created; awaiting test entry |
+
+### Seeded Test Parameters
+
+Each seeded inspection has test results with `actual_value`, `target_value`, and `pass_fail` recorded per parameter. Critical fail (`critical_fail = true`) is set on inspections where a critical specification breach is simulated.
+
+### Idempotency
+
+The QC seed is idempotent — re-running Docker startup does not duplicate inspections. The `_get_or_create_qc` helper uses `inspection_no` as the unique key.

@@ -7,11 +7,11 @@
 
 ## Overall Equipment Effectiveness (OEE)
 
-**Tab key:** `oee`  
+**Tab key:** `oee`
 **Route:** `/dashboard/production/oee/page`
 
-![Production — OEE tab](../../../screenshots/captured/module-ui/manufacturing/production/oee-tab.png)
-*OEE tab showing Availability, Performance, and Quality metrics per work center.*
+![Production — OEE](../../../screenshots/captured/045_production-oee.png)
+*OEE tab showing seeded Availability, Performance, and Quality metrics per work center from TASK-015.2 seed data.*
 
 OEE is the primary manufacturing performance metric. It measures how effectively production equipment is being used compared to its full potential.
 
@@ -53,11 +53,11 @@ Historical OEE trend for the selected work center and date range. Used to detect
 
 ## Downtime Analysis
 
-**Tab key:** `downtime`  
+**Tab key:** `downtime`
 **Route:** `/dashboard/production/downtime/page`
 
-![Production — Downtime tab](../../../screenshots/captured/module-ui/manufacturing/production/downtime-tab.png)
-*Downtime tab showing downtime events, categories, duration, and Pareto analysis.*
+![Production — Downtime](../../../screenshots/captured/046_production-downtime.png)
+*Downtime tab showing seeded downtime log with categories, durations, work center, and Pareto analysis.*
 
 ### Downtime Impact on OEE
 
@@ -81,11 +81,11 @@ The downtime tab provides a Pareto chart of downtime by category. The 80/20 rule
 
 ## Waste & Yield
 
-**Tab key:** `waste-yield`  
+**Tab key:** `waste-yield`
 **Route:** `/dashboard/production/waste-yield/page`
 
-![Production — Waste & Yield tab](../../../screenshots/captured/module-ui/manufacturing/production/waste-yield-tab.png)
-*Waste & Yield tab showing scrap quantities, yield percentages, and trend analysis per work order.*
+![Production — Waste & Yield](../../../screenshots/captured/049_production-waste-yield.png)
+*Waste & Yield tab showing seeded scrap quantities, yield percentages, and trend analysis per work order.*
 
 ### Key Metrics
 
@@ -160,3 +160,41 @@ For each work order or production period, the variance report shows:
 - Variance type breakdown
 
 Variances above the configured threshold (e.g. ±5%) are flagged for management review and root cause documentation.
+
+---
+
+## Demo Data — OEE, Downtime, and Waste Seed (TASK-015.2)
+
+The system ships with seeded OEE, downtime, and waste/yield data. Pages show real metrics, not empty states.
+
+### Seeded OEE Records
+
+`OEERecord` entries seeded per work center with:
+- `availability_pct`, `performance_pct`, `quality_pct`, `oee_pct` values
+- `planned_time_min`, `downtime_min`, `planned_production`, `actual_production`, `good_units`
+- Multiple work centers covered; one record per shift period per work center
+
+OEE scores are representative FMCG line performance values. Some work centers are seeded below the 85% world-class threshold to demonstrate the alert highlighting.
+
+### Seeded Downtime Logs
+
+`DowntimeLog` entries seeded with:
+- `start_time`, `end_time`, `duration_min` per event
+- `downtime_category` (UNPLANNED, PLANNED, SETUP, CHANGEOVER, BREAKDOWN)
+- `root_cause` description
+- Work center assignment
+
+Downtime feeds directly into OEE Availability calculations — `availability_pct = (planned_time - total_downtime) / planned_time`.
+
+### Seeded Waste Records
+
+`WasteRecord` entries seeded with:
+- `scrap_qty`, `waste_category`
+- `good_qty`, `total_qty`, `yield_pct` per work order
+- Waste categories: STARTUP, SHUTDOWN, QUALITY_REJECT, OVERFLOW
+
+Yield variance shown against the BOM standard loss percentage.
+
+### Idempotency
+
+All TASK-015.2 seed helpers use `_get_or_create_*` patterns. Re-running Docker startup does not create duplicate records.

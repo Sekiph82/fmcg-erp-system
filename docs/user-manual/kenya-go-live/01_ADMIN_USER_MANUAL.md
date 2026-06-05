@@ -32,6 +32,23 @@ As admin, you set up and maintain the ERP. You create user accounts, assign role
 
 ---
 
+## Before You Start — Security Checklist
+
+Before going live, verify the following with IT/DevOps:
+
+| Item | Action required |
+|---|---|
+| Management user password changed | First login forces password change — confirm this completed |
+| `SECRET_KEY` set in production | Must be a long random string — never the example value |
+| `OTP_DEV_DELIVERY_MODE=false` | Confirm disabled in production (enables real OTP delivery) |
+| eTIMS live mode | Do NOT enable until KRA provider is selected and credentials are ready |
+| M-Pesa credentials | Use Safaricom production (not sandbox) credentials in live |
+| `SEED_DEMO_DATA=false` | Confirm demo seed is OFF in production — demo data should not be in a live DB |
+| GS1 auth gate | Confirm GS1 label page requires login (all 38 endpoints are auth-protected by default) |
+| PyJWT `SECRET_KEY` rotated | If the default example key was ever used, rotate before go-live |
+
+---
+
 ## Step 1: Initial System Setup
 
 ### 1.1 Configure Company Details
@@ -209,17 +226,29 @@ Shows:
 
 ## Troubleshooting
 
-**Problem:** User cannot log in — "Account inactive"  
+**Problem:** User cannot log in — "Account inactive"
 **Solution:** Admin → Users → find user → Activate Account
 
-**Problem:** User sees "Permission denied"  
-**Solution:** Check the user's role → ensure correct permissions are assigned
+**Problem:** User sees "Permission denied"
+**Solution:** Check the user's role → ensure correct permissions are assigned; check that `knowledge_base.*` and `esign.*` permissions are assigned for users who need Documents module access
 
-**Problem:** Emails not being sent  
-**Solution:** Admin → System Config → Email Settings → Send Test Email → check SMTP logs
+**Problem:** Emails not being sent
+**Solution:** Admin → System Config → Email Settings → Send Test Email → check SMTP logs; confirm `OTP_DEV_DELIVERY_MODE=false` in production
 
-**Problem:** M-Pesa payments not reconciling  
+**Problem:** M-Pesa payments not reconciling
 **Solution:** Integrations → M-Pesa → check API logs; verify credentials are for production not sandbox
+
+**Problem:** Knowledge Base or E-Sign shows "Access denied"
+**Solution:** The user lacks `knowledge_base.view` or `esign.view` permission — assign via Admin → Roles → Edit Permissions
+
+**Problem:** eTIMS submissions stay in PENDING / never get accepted
+**Solution:** In simulation mode this is expected — SimulationETIMSConnector returns ACCEPTED immediately. If stuck in PENDING, check provider health panel. Live provider requires KRA credentials — do not enable without authorization.
+
+**Problem:** GS1 label page shows login prompt unexpectedly
+**Solution:** This is correct behaviour — all GS1 endpoints require authentication (TASK-006). Ensure the user is logged in with a valid session before accessing `/dashboard/compliance/gs1`.
+
+**Problem:** Database migration fails at startup with "lock not acquired"
+**Solution:** Another replica holds the `pg_advisory_lock(20260517)`. Wait for it to release (migration in progress on another container). If it persists after 5 minutes, check if a prior deployment crashed mid-migration — may need manual lock release: `SELECT pg_advisory_unlock(20260517);` on the database.
 
 ---
 

@@ -39,10 +39,50 @@
 
 ## Kenya-Specific Finance Features
 
-**eTIMS:** Electronic Tax Invoice Management System — mandatory for VAT-registered companies  
-**M-Pesa:** Mobile money reconciliation and payment processing  
-**VAT returns:** Automated VAT return calculation for KRA filing  
+**eTIMS:** Electronic Tax Invoice Management System — mandatory for VAT-registered companies. See below for current implementation status.
+**M-Pesa:** Mobile money reconciliation and payment processing
+**VAT returns:** Automated VAT return calculation for KRA filing
 **Housing Levy:** 1.5% employer + 1.5% employee on gross salary (2024 requirement)
+
+---
+
+## eTIMS Implementation Status
+
+eTIMS fiscalization uses a provider-neutral connector architecture. The connector is complete; live provider calls are not yet active.
+
+### Current State
+
+| Component | Status |
+|---|---|
+| Backend adapter interface (`ETIMSConnector` protocol) | Done |
+| `SimulationETIMSConnector` (fake ACCEPTED; no network) | Done — active by default |
+| `HttpETIMSConnector` skeleton | Skeleton only — auth scheme not yet wired |
+| All fiscalization endpoints (prepare/submit/retry/cancel/poll/health) | Done |
+| Frontend global eTIMS page (`/dashboard/finance/etims`) | Done — 10-status model, provider health panel, retry/cancel/poll |
+| Frontend eTIMS card in invoice detail | Done — submit/retry/cancel/poll per invoice |
+| `production_execution_allowed` | `false` — no live KRA calls |
+| GL posting gate (require ACCEPTED before posting) | Not implemented — blocked on accountant decision |
+| Live provider credentials | Not configured — requires KRA provider selection |
+
+### eTIMS Status Values
+
+10 statuses: `DRAFT`, `READY`, `PENDING`, `SUBMITTED`, `RETRY_PENDING`, `ACCEPTED`, `REJECTED`, `FAILED`, `ERROR`, `CANCELLED`
+
+### What Users Can Do (Simulation Mode)
+
+- View all eTIMS submissions and their status
+- Submit, retry, cancel, and poll submissions (all routed to SimulationETIMSConnector)
+- Check provider health
+- View debug payload details per submission
+- Access eTIMS card on individual invoice detail pages
+
+### What Is Blocked Until Live Provider Configured
+
+- Real KRA submission and fiscal acceptance
+- GL posting gate enforcement
+- Production eTIMS control numbers (`control_unit_invoice_no`)
+
+> For full workflow and field reference, see the Finance-Payroll module manual: `module-manuals/finance-payroll/07-tax-etims.md`
 
 ---
 

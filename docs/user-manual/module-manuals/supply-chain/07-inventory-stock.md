@@ -174,9 +174,151 @@ CSV columns (inspect ImportModal configuration for exact headers — the module 
 | `stock` | Stock Ledger | Stock summary, entry, issue, transfer |
 | `movements` | Movements | Full movement ledger |
 | `cycle-count` | Cycle Count | Physical count sheets and reconciliation |
-| `shelf-life` | Shelf Life | Expiry management |
+| `shelf-life` | Shelf Life | Expiry management and FEFO alerts |
 | `traceability` | Traceability | Forward and backward lot trace |
 | `serials` | Serials | Serial number tracking |
 | `valuation` | Valuation | Inventory value reports |
 
 All tabs require `inventory.view`.
+
+---
+
+## Demo Data — Inventory Seed (I1–I7)
+
+The system ships with FMCG inventory seed data populated across all inventory tabs. This data represents a realistic starting state for demonstration, training, and testing.
+
+![Inventory — Stock Ledger](../../../screenshots/captured/017_inventory.png)
+*Inventory workspace showing seeded stock positions across PROD-WH and FG-WH warehouses.*
+
+![Inventory — Stock tab](../../../screenshots/captured/018_inventory-stock.png)
+*Stock Ledger tab with seeded stock levels, lot numbers, and reorder alerts.*
+
+### Seed Warehouses
+
+| Code | Name | Purpose |
+|---|---|---|
+| `PROD-WH` | Production Warehouse | Raw materials and in-process stock |
+| `FG-WH` | Finished Goods Warehouse | Completed product stock |
+
+### Seeded Products (5) and Materials (7)
+
+Products and materials are sourced from the production master data seed (TASK-015). Each inventory record links to these items via SKU/material code.
+
+### I1 — Lots and Stock Positions
+
+Opening lot records and stock balances seeded for all 5 products and 7 materials across both warehouses. Each lot has a `lot_number`, `expiry_date`, and opening quantity.
+
+### I2 — WMS Zones and Storage Locations
+
+WMS zones (PROD-WH and FG-WH) and bin locations seeded. See the WMS manual for zone/location details.
+
+### I3 — Trace Events for Lot Genealogy
+
+Trace events seeded to support forward and backward lot traceability. Each lot has receipt, issue, and production consumption events recorded.
+
+![Inventory — Traceability](../../../screenshots/captured/022_inventory-traceability.png)
+*Traceability tab showing lot genealogy chain from raw material receipt through production consumption.*
+
+### I4 — Cycle Count Plans
+
+Cycle count plans seeded for both warehouses with planned count dates and item assignments.
+
+![Inventory — Cycle Count](../../../screenshots/captured/021_inventory-cycle-count.png)
+*Cycle Count tab showing seeded count plans with status and item coverage.*
+
+### I5 — Shelf Life Profiles and Alerts
+
+Lot shelf life profiles seeded with `expiry_date`, `best_before_date`, and `days_remaining` calculations. Shelf life alerts generated for lots approaching expiry thresholds.
+
+![Inventory — Shelf Life](../../../screenshots/captured/020_inventory-shelf-life.png)
+*Shelf Life tab showing seeded lots with expiry alerts and FEFO ranking.*
+
+### I6 — Demand Forecasts
+
+Demand forecasts seeded using `ForecastModelType.PROPHET` (implemented as local statsmodels Holt-Winters). See the AI & Automation manual for details on the forecasting engine.
+
+Forecast records include:
+- Forecast model type: `PROPHET` (maps to local Holt-Winters — no external API required)
+- Forecast status: `COMPLETED`
+- Period type: `MONTHLY`
+- Forecast lines per product with predicted demand quantities
+
+### I7 — MRP Run, Results, Suggestions, and Exceptions
+
+An MRP run (`MRP-SEED-001`) is seeded with a 90-day planning horizon:
+
+| Data type | Count |
+|---|---|
+| MRP run | 1 (`MRP-SEED-001`, status `COMPLETED`) |
+| MRP results | 5 (one per product) |
+| MRP suggestions | Multiple per product |
+| MRP exceptions | Includes shortage flag for `POVU-HS` |
+
+![Planning — MRP](../../../screenshots/captured/059_planning-mrp.png)
+*MRP page showing seeded MRP run with demand forecasts, results, and shortage alerts.*
+
+**Shortage flag:** Product `POVU-HS` has `shortage_flag = true` in the MRP result, indicating projected stock-out within the planning horizon.
+
+---
+
+## Shelf Life Management
+
+**Tab:** `shelf-life`
+
+The Shelf Life tab manages lot expiry, FEFO picking order, and near-expiry alerts.
+
+### Shelf Life Alert Types
+
+| Alert type | Trigger |
+|---|---|
+| Near expiry | Lot within the configured warning threshold days of expiry |
+| Expired | Lot past expiry date |
+| Best before breach | Lot past best-before date (quality advisory; not a hard block) |
+
+### FEFO Picking
+
+Lots are ranked by expiry date. The oldest-expiry lot is issued first (First Expired, First Out). This ranking is enforced by `shelf_life_service.py` which reads all lots — FEFO must see the complete lot list to rank correctly.
+
+---
+
+## Traceability
+
+**Tab:** `traceability`
+
+Forward and backward lot tracing across the supply chain:
+
+| Direction | Coverage |
+|---|---|
+| Backward (upstream) | From finished lot → production batch → raw material receipt |
+| Forward (downstream) | From raw material lot → which work orders consumed it → which finished batches |
+
+Trace events record: receipt, issue, production consumption, inter-warehouse transfer, and adjustment.
+
+---
+
+## Cycle Count
+
+**Tab:** `cycle-count`
+
+Cycle count plans schedule periodic physical counts of stock locations. Each plan defines:
+- Count date
+- Warehouses in scope
+- Items or item categories to count
+- Assigned counter
+
+After counting, actual quantities are entered and variance reports are generated. Discrepancies trigger stock adjustments.
+
+---
+
+## Valuation
+
+**Tab:** `valuation`
+
+Inventory valuation uses FIFO cost layers. Each receipt creates a cost layer. Issues are costed using the oldest available cost layer first.
+
+| Metric | Description |
+|---|---|
+| Total inventory value (KES) | Sum of all on-hand stock at FIFO cost |
+| Value by warehouse | Per-warehouse inventory value |
+| Value by product | Per-product inventory value |
+| Cost layer details | Unit cost and quantity per open FIFO layer |

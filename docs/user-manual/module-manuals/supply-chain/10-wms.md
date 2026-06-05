@@ -163,3 +163,32 @@ Quarantine blocks specific stock from being picked or issued. It applies at the 
 ## WMS and Inventory Relationship
 
 WMS locations are informational overlays on the inventory ledger. The authoritative stock quantity is always in the inventory ledger (`quantity_on_hand`). WMS provides the physical location data. Discrepancies between WMS and the ledger are resolved via cycle count.
+
+---
+
+## Demo Data — WMS Seed (I2)
+
+WMS zones and storage locations are seeded as part of the inventory demo data (TASK-016 I2). Both PROD-WH and FG-WH warehouses have pre-configured zones and bin locations.
+
+![WMS — main view](../../../screenshots/captured/025_wms.png)
+*WMS workspace showing seeded zones across PROD-WH and FG-WH warehouses.*
+
+![WMS — Locations tab](../../../screenshots/captured/027_wms-locations.png)
+*WMS Locations tab with seeded bin locations including zone assignment and barcode.*
+
+### Seeded Zone Types
+
+| Warehouse | Zone types seeded |
+|---|---|
+| PROD-WH | RAW_MATERIAL, SEMI_FINISHED, STAGING |
+| FG-WH | FINISHED_GOODS, QUARANTINE, RETURNS |
+
+### Seeded Bin Locations
+
+Each zone has bin locations in aisle-rack-level format (e.g. `A-01-01`, `B-02-03`). Locations have:
+- Zone assignment
+- Scannable barcode (`LOC-{code}`)
+- Active status
+- Blocked status (false by default)
+
+In a live deployment, replace seeded locations with the actual warehouse layout codes and barcodes before going live.

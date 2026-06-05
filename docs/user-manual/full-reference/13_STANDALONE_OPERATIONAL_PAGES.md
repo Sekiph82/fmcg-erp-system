@@ -97,10 +97,11 @@ Used for internal IT support and customer service tickets. Links to Consumer Com
 
 ## Documents
 
-**URL:** `/dashboard/documents`  
+**URL:** `/dashboard/documents`
 **Permission:** `documents.view`
 
 ![Documents Workspace](../screenshots/captured/115_documents.png)
+*Documents workspace showing document library with permission-gated upload and management actions.*
 
 | Tab | Purpose |
 |---|---|
@@ -109,6 +110,57 @@ Used for internal IT support and customer service tickets. Links to Consumer Com
 | Expiring | Documents expiring soon |
 | Knowledge Base | SOPs, guides, FAQs |
 | E-Sign | Electronic signature queue |
+
+### Document Management
+
+The documents module stores file metadata (name, category, status, tags, owner). File content storage requires a storage adapter (S3, local, or Azure) — this is not yet configured in the default installation. Documents currently track metadata only.
+
+### Knowledge Base — Permission Requirements
+
+The Knowledge Base tab requires dedicated permissions added in TASK-027:
+
+| Action | Permission required |
+|---|---|
+| View KB articles | `knowledge_base.view` |
+| Create KB article | `knowledge_base.create` |
+| Edit KB article | `knowledge_base.edit` |
+| Delete KB article | `knowledge_base.delete` |
+
+![Documents — Knowledge Base](../screenshots/captured/117_documents-knowledge-base.png)
+*Knowledge Base tab showing permission-gated article list. Users without `knowledge_base.view` see an access-denied message.*
+
+**Before TASK-027:** KB endpoints used `get_current_user` only — any authenticated user could access all KB routes.
+**After TASK-027:** All KB endpoints require `require_permission("knowledge_base.*")`. Frontend KB navigation is guarded with `RequirePermission("knowledge_base.view")`.
+
+The article creation page at `/dashboard/knowledge-base/articles/new` is wrapped with `RequirePermission("knowledge_base.create")`. Users without this permission see the standard access-denied screen.
+
+### E-Sign — Permission Requirements
+
+The E-Sign page at `/dashboard/esign` requires:
+
+| Action | Permission required |
+|---|---|
+| View signature queue | `esign.view` |
+| Sign or decline a document | `esign.sign` |
+| Request a signature | `esign.request` |
+
+**Before TASK-027:** E-sign request, list, and dashboard endpoints were unguarded.
+**After TASK-027:** All 4 e-sign endpoints require `require_permission("esign.*")`. Frontend e-sign page is wrapped with `RequirePermission("esign.view")`.
+
+> **Note:** There is no dedicated `/dashboard/esign` route separate from the Documents workspace. The E-Sign tab is nested inside `/dashboard/documents`. The `esign/page.tsx` exists but is accessed via the Documents module. Captures of the Documents page cover the E-Sign access path.
+
+### File Upload Limitation
+
+Document file upload (actual file content) is deferred — requires storage adapter configuration (S3 bucket, local volume, or Azure Blob). Until a storage adapter is configured, documents store metadata only. File upload fields in the UI reflect this limitation.
+
+### Deferred Items
+
+| Feature | Status | Blocker |
+|---|---|---|
+| File storage adapter | Not configured | Storage provider decision (S3/local/Azure) |
+| E-sign cryptographic hash | Not implemented | Security design decision |
+| E-sign expiry automation | Not implemented | Scheduler integration decision |
+| Documents service layer refactor | Low priority | Inline CRUD currently used; no blocker |
 
 ---
 
