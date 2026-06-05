@@ -11,6 +11,8 @@
 ![AI Workspace](../screenshots/captured/131_ai.png)
 *AI workspace showing demand forecasting and PROPHET model type (implemented as local Holt-Winters).*
 
+> Hover over the ? icon in the page header for quick field, status, and workflow guidance.
+
 ---
 
 ## AI Workspace Tabs

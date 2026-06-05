@@ -4,6 +4,8 @@
 **Permission required:** `inventory.view`  
 **Workspace tabs:** Zones, Locations, Handling Units, Pick Waves, Quarantine
 
+> Hover over the ? icon in the page header for quick field, status, and workflow guidance.
+
 ---
 
 ## What It Does

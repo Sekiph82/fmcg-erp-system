@@ -4897,7 +4897,76 @@ finance-etims, sales-invoice-etims, inventory-stock, inventory-shelf-life, inven
 Frontend Graphify optional later — not needed immediately for this UI-only change.
 
 #### Screenshots / manual follow-up
-Pending — pages now show a small "?" icon that was not in prior screenshots. Recapture optional (not blocking). Screenshots are gitignored/local-only so no git impact.
+Done — see HELP-002 below.
+
+---
+
+### Task ID: HELP-002 — Recapture Screenshots and Add Manual Notes After Help Popovers
+
+- **Status:** Done (2026-06-05)
+- **Priority:** P2
+- **Category:** Docs
+- **Why it matters:** HELP-001 added a small "?" icon to 17 page headers; prior screenshots no longer showed the icon. Manual sections needed one-line guidance note.
+- **Affected area:** docs only — no frontend/backend/migration/.env/PDF changes
+- **Commit:** (see git log — chore(manuals): recapture help popover screenshots and add manual notes)
+
+#### Screenshots recaptured (17 routes)
+
+All 17 captured at 0 failures. Docker stack was healthy (frontend :3000, backend :8000, db :5432, redis :6379).
+
+| Route ID | Path | File |
+|---|---|---|
+| inventory | /dashboard/inventory | 017_inventory.png |
+| inventory-stock | /dashboard/inventory?tab=stock | 018_inventory-stock.png |
+| inventory-movements | /dashboard/inventory?tab=movements | 019_inventory-movements.png |
+| inventory-shelf-life | /dashboard/inventory?tab=shelf-life | 020_inventory-shelf-life.png |
+| inventory-cycle-count | /dashboard/inventory?tab=cycle-count | 021_inventory-cycle-count.png |
+| inventory-traceability | /dashboard/inventory?tab=traceability | 022_inventory-traceability.png |
+| inventory-serials | /dashboard/inventory?tab=serials | 023_inventory-serials.png |
+| inventory-valuation | /dashboard/inventory?tab=valuation | 024_inventory-valuation.png |
+| wms | /dashboard/wms | 025_wms.png |
+| wms-zones | /dashboard/wms?tab=zones | 026_wms-zones.png |
+| wms-locations | /dashboard/wms?tab=locations | 027_wms-locations.png |
+| wms-quarantine | /dashboard/wms?tab=quarantine | 028_wms-quarantine.png |
+| documents | /dashboard/documents | 115_documents.png |
+| documents-compliance | /dashboard/documents?tab=compliance | 116_documents-compliance.png |
+| documents-knowledge-base | /dashboard/documents?tab=knowledge-base | 117_documents-knowledge-base.png |
+| ai | /dashboard/ai | 131_ai.png |
+| ai-chat | /dashboard/ai?tab=chat | 132_ai-chat.png |
+
+#### Standalone pages with no screenshot routes (gaps recorded)
+
+These pages were updated with the "?" icon in HELP-001 but have no routes.json entry for standalone capture:
+- `/dashboard/finance/etims` — no route ID
+- `/dashboard/shelf-life`, `/dashboard/traceability`, `/dashboard/cycle-count` — standalone pages
+- `/dashboard/mrp` — standalone (planning-mrp → different workspace route)
+- `/dashboard/production/oee`, `/dashboard/production/quality-control`, `/dashboard/production/downtime`, `/dashboard/production/waste-yield` — standalone sub-routes
+- `/dashboard/gs1` — standalone (compliance-gs1 → different workspace route)
+- `/dashboard/knowledge-base` — standalone
+- `/dashboard/esign` — no route ID in routes.json
+- `/dashboard/security` — capture:false in routes.json
+
+#### Manual notes added
+
+One-line note `> Hover over the ? icon in the page header for quick field, status, and workflow guidance.` added to:
+- `module-manuals/finance-payroll/07-tax-etims.md` — eTIMS section
+- `module-manuals/supply-chain/07-inventory-stock.md` — header block
+- `module-manuals/supply-chain/10-wms.md` — header block
+- `module-manuals/manufacturing/07-quality-control.md` — header block
+- `module-manuals/manufacturing/11-oee-reporting.md` — header block
+- `full-reference/11_AI_AND_AUTOMATION.md` — after screenshot
+- `full-reference/13_STANDALONE_OPERATIONAL_PAGES.md` — Documents section
+
+#### No changes to
+- Frontend source code
+- Backend source code
+- Migrations
+- .env files
+- Generated PDFs (pdf-output/)
+- PNG files in git (PNGs are gitignored; screenshots-index.json is committed)
+
+#### Remaining limitation
+PDFs not regenerated — the one-line help notes are in markdown only. Optional PDF regeneration if user wants the notes in the printed manuals.
 
 ---
 

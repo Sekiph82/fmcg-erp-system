@@ -100,6 +100,8 @@ Used for internal IT support and customer service tickets. Links to Consumer Com
 **URL:** `/dashboard/documents`
 **Permission:** `documents.view`
 
+> Hover over the ? icon in the page header for quick field, status, and workflow guidance.
+
 ![Documents Workspace](../screenshots/captured/115_documents.png)
 *Documents workspace showing document library with permission-gated upload and management actions.*
 

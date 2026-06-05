@@ -3,6 +3,8 @@
 **Routes:** `/dashboard/production?tab=oee`, `?tab=downtime`, `?tab=waste-yield`, `?tab=reports`, `?tab=variance`  
 **Permission required:** `production.view`
 
+> Hover over the ? icon in the page header for quick field, status, and workflow guidance.
+
 ---
 
 ## Overall Equipment Effectiveness (OEE)

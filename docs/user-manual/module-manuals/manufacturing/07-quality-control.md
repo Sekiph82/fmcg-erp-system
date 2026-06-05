@@ -5,6 +5,8 @@
 **Tab key:** `inspections`  
 **Workspace tabs:** Inspections, Certificates, Parameters, Consumer Complaints, Reports, QMS, Allergen, Brand Assets
 
+> Hover over the ? icon in the page header for quick field, status, and workflow guidance.
+
 ---
 
 ## What It Does

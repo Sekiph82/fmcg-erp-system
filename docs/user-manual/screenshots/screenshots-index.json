@@ -183,7 +183,7 @@
     "module": "inventory",
     "priority": 1,
     "screenshot": "captured/017_inventory.png",
-    "capturedAt": "2026-06-04T16:30:30.678Z",
+    "capturedAt": "2026-06-05T13:57:45.490Z",
     "status": "captured",
     "filename": "017_inventory.png"
   },
@@ -195,7 +195,7 @@
     "module": "inventory",
     "priority": 1,
     "screenshot": "captured/018_inventory-stock.png",
-    "capturedAt": "2026-06-04T16:30:30.678Z",
+    "capturedAt": "2026-06-05T13:57:45.490Z",
     "status": "captured",
     "filename": "018_inventory-stock.png"
   },
@@ -207,8 +207,9 @@
     "module": "inventory",
     "priority": 1,
     "screenshot": "captured/019_inventory-movements.png",
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "captured"
+    "capturedAt": "2026-06-05T13:57:45.490Z",
+    "status": "captured",
+    "filename": "019_inventory-movements.png"
   },
   {
     "id": "inventory-shelf-life",
@@ -218,7 +219,7 @@
     "module": "inventory",
     "priority": 1,
     "screenshot": "captured/020_inventory-shelf-life.png",
-    "capturedAt": "2026-06-04T16:30:30.678Z",
+    "capturedAt": "2026-06-05T13:57:45.490Z",
     "status": "captured",
     "filename": "020_inventory-shelf-life.png"
   },
@@ -230,7 +231,7 @@
     "module": "inventory",
     "priority": 1,
     "screenshot": "captured/021_inventory-cycle-count.png",
-    "capturedAt": "2026-06-04T16:30:30.678Z",
+    "capturedAt": "2026-06-05T13:57:45.490Z",
     "status": "captured",
     "filename": "021_inventory-cycle-count.png"
   },
@@ -242,7 +243,7 @@
     "module": "inventory",
     "priority": 2,
     "screenshot": "captured/022_inventory-traceability.png",
-    "capturedAt": "2026-06-04T16:30:30.678Z",
+    "capturedAt": "2026-06-05T13:57:45.490Z",
     "status": "captured",
     "filename": "022_inventory-traceability.png"
   },
@@ -254,8 +255,9 @@
     "module": "inventory",
     "priority": 2,
     "screenshot": "captured/023_inventory-serials.png",
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "captured"
+    "capturedAt": "2026-06-05T13:57:45.490Z",
+    "status": "captured",
+    "filename": "023_inventory-serials.png"
   },
   {
     "id": "inventory-valuation",
@@ -265,8 +267,9 @@
     "module": "inventory",
     "priority": 2,
     "screenshot": "captured/024_inventory-valuation.png",
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "captured"
+    "capturedAt": "2026-06-05T13:57:45.490Z",
+    "status": "captured",
+    "filename": "024_inventory-valuation.png"
   },
   {
     "id": "wms",
@@ -276,7 +279,7 @@
     "module": "wms",
     "priority": 1,
     "screenshot": "captured/025_wms.png",
-    "capturedAt": "2026-06-04T16:30:30.678Z",
+    "capturedAt": "2026-06-05T13:57:45.490Z",
     "status": "captured",
     "filename": "025_wms.png"
   },
@@ -288,8 +291,9 @@
     "module": "wms",
     "priority": 2,
     "screenshot": "captured/026_wms-zones.png",
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "captured"
+    "capturedAt": "2026-06-05T13:57:45.490Z",
+    "status": "captured",
+    "filename": "026_wms-zones.png"
   },
   {
     "id": "wms-locations",
@@ -299,7 +303,7 @@
     "module": "wms",
     "priority": 2,
     "screenshot": "captured/027_wms-locations.png",
-    "capturedAt": "2026-06-04T16:30:30.678Z",
+    "capturedAt": "2026-06-05T13:57:45.490Z",
     "status": "captured",
     "filename": "027_wms-locations.png"
   },
@@ -311,8 +315,9 @@
     "module": "wms",
     "priority": 2,
     "screenshot": "captured/028_wms-quarantine.png",
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "captured"
+    "capturedAt": "2026-06-05T13:57:45.490Z",
+    "status": "captured",
+    "filename": "028_wms-quarantine.png"
   },
   {
     "id": "procurement",
@@ -1335,7 +1340,7 @@
     "module": "documents",
     "priority": 2,
     "screenshot": "captured/115_documents.png",
-    "capturedAt": "2026-06-04T16:30:30.678Z",
+    "capturedAt": "2026-06-05T13:57:45.490Z",
     "status": "captured",
     "filename": "115_documents.png"
   },
@@ -1347,8 +1352,9 @@
     "module": "documents",
     "priority": 2,
     "screenshot": "captured/116_documents-compliance.png",
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "captured"
+    "capturedAt": "2026-06-05T13:57:45.490Z",
+    "status": "captured",
+    "filename": "116_documents-compliance.png"
   },
   {
     "id": "documents-knowledge-base",
@@ -1358,7 +1364,7 @@
     "module": "documents",
     "priority": 3,
     "screenshot": "captured/117_documents-knowledge-base.png",
-    "capturedAt": "2026-06-04T16:30:30.678Z",
+    "capturedAt": "2026-06-05T13:57:45.490Z",
     "status": "captured",
     "filename": "117_documents-knowledge-base.png"
   },
@@ -1513,7 +1519,7 @@
     "module": "ai",
     "priority": 3,
     "screenshot": "captured/131_ai.png",
-    "capturedAt": "2026-06-04T16:30:30.678Z",
+    "capturedAt": "2026-06-05T13:57:45.490Z",
     "status": "captured",
     "filename": "131_ai.png"
   },
@@ -1525,8 +1531,9 @@
     "module": "ai",
     "priority": 3,
     "screenshot": "captured/132_ai-chat.png",
-    "capturedAt": "2026-05-18T20:20:53.975Z",
-    "status": "captured"
+    "capturedAt": "2026-06-05T13:57:45.490Z",
+    "status": "captured",
+    "filename": "132_ai-chat.png"
   },
   {
     "id": "integrations",

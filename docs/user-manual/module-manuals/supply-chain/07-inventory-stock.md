@@ -4,6 +4,8 @@
 **Permission required:** `inventory.view`  
 **Workspace tabs:** Stock Ledger, Movements, Cycle Count, Shelf Life, Traceability, Serials, Valuation
 
+> Hover over the ? icon in the page header for quick field, status, and workflow guidance.
+
 ---
 
 ## What It Does

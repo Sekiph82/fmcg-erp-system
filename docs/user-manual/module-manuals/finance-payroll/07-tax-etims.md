@@ -110,6 +110,8 @@ Finance JournalEntry (POSTED) — currently posts regardless of eTIMS status
 
 **Route:** `/dashboard/finance/etims` (also accessible via Finance → eTIMS tab)
 
+> Hover over the ? icon in the page header for quick field, status, and workflow guidance.
+
 #### Provider Health Panel
 
 Shows the current adapter configuration. Click **Check Health** to query the provider adapter:
