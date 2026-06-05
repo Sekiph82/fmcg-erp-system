@@ -4991,6 +4991,60 @@ PDFs not regenerated — the one-line help notes are in markdown only. Optional 
 
 ---
 
+### Task ID: PUSH-001 — GitHub Push and Deployment Readiness Checkpoint
+
+- **Status:** Done
+- **Date:** 2026-06-05
+- **Branch:** main
+- **Local HEAD before push:** 849987b — chore: record frontend Graphify refresh for help popovers
+- **Commits ahead of origin/main before push:** 31
+- **Commits remote ahead of local:** 0 (clean fast-forward)
+
+#### Checks Run
+
+| Check | Result |
+|---|---|
+| Backend `python -c "import app.main"` | OK (2 pre-existing FastAPIDeprecationWarning, unrelated) |
+| `tests/test_hardening.py` | 25/25 PASS |
+| `tests/test_forecast_service.py` + `tests/test_migration_advisory_lock.py` | 29/29 PASS |
+| Frontend `npm run type-check` | CLEAN — 0 errors |
+
+#### Tracking Status
+
+| Item | Status |
+|---|---|
+| Training PDFs (`docs/user-manual/pdf-output/*.pdf`) | 13 PDFs tracked ✓ |
+| Screenshot PNGs (`docs/user-manual/screenshots/captured/`) | 0 tracked (gitignored) ✓ |
+| `graphify-out/` (root, frontend, backend) | 0 tracked (gitignored) ✓ |
+
+#### What Was NOT Changed During Checkpoint
+
+- Source code: no changes
+- `.env` files: no changes
+- Migrations: not run
+- Production deployment: not run
+- Production DB migration: not run
+- Live integrations: not enabled
+
+#### Remaining Deployment Blockers
+
+1. eTIMS live provider / KRA credentials / API spec (TASK-005)
+2. M-Pesa Safaricom Daraja credentials (TASK-004)
+3. WhatsApp Meta credentials (TASK-003)
+4. SMTP credentials for email integration
+5. Accountant decision for eTIMS GL posting gate
+6. GS1 real company prefix and GTIN assignments (TASK-006)
+7. Storage adapter decision for file upload pipeline (Documents module — S3/local/Azure)
+8. CRM / e-commerce / IoT / bank / printer vendor decisions where relevant
+
+#### Recommended Next Steps
+
+- Staging deployment plan (Docker Compose to VPS/cloud)
+- Decide storage adapter for Documents file upload
+- Obtain live integration credentials in priority order above
+
+---
+
 ## Do Not Do Now
 
 - Full repo Graphify rerun (unless user approves)
