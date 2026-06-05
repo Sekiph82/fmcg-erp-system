@@ -4970,6 +4970,27 @@ PDFs not regenerated — the one-line help notes are in markdown only. Optional 
 
 ---
 
+#### Frontend Graphify Refresh — After HELP-001 / HELP-002 (2026-06-05)
+
+**Command:** `/graphify C:\Users\sekip\Masaüstü\fmcg-erp-system-main\frontend --update`
+
+**Output folder:** `C:\Users\sekip\Desktop\graphify-erp-maps\frontend\`
+
+**Files:** `GRAPH_REPORT.md` (current), `graph.json` (current), `manifest.json` (current), `graph.html` (current)
+
+**`graphify-out/` status:** gitignored, untracked
+
+**Graph stats:** 6,433 nodes · 11,059 edges · 429 communities (+41 nodes, +53 edges since TASK-005.1F refresh)
+
+**HELP-001 entities confirmed in map (20 nodes):**
+- `pagehelp_PageHelpTooltip` — `src/components/help/PageHelpTooltip.tsx`
+- `helpcontent_helpTopics`, `helpcontent_HelpTopic` — `src/lib/help-content.ts`
+- 18 topic config nodes: `topic:finance-etims`, `topic:ai-forecasting`, `topic:inventory-stock`, `topic:inventory-shelf-life`, `topic:inventory-traceability`, `topic:inventory-cycle-count`, `topic:wms`, `topic:planning-mrp`, `topic:production-oee`, `topic:production-qc`, `topic:production-downtime`, `topic:production-waste`, `topic:gs1`, `topic:documents`, `topic:knowledge-base`, `topic:esign`, `topic:admin-security`, `topic:sales-invoice-etims`
+
+**All 17 page components confirmed wired to `PageHelpTooltip` via EXTRACTED edges (confidence 1.0).**
+
+---
+
 ## Do Not Do Now
 
 - Full repo Graphify rerun (unless user approves)
