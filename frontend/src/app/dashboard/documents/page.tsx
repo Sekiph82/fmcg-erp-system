@@ -12,6 +12,7 @@ import {
 import { RequirePermission } from "@/components/PermissionGuard";
 import { Badge } from "@/components/ui/Badge";
 import { PermissionGuard } from "@/components/PermissionGuard";
+import { PageHelpTooltip } from "@/components/help/PageHelpTooltip";
 
 const STATUS_VARIANT: Record<DocumentStatus, "yellow" | "green" | "gray" | "red"> = {
   DRAFT: "yellow",
@@ -84,14 +85,17 @@ function DocumentsContent() {
             {stats ? `${stats.total} total · ${stats.latest_only_count} latest versions` : `${docs.length} shown`}
           </p>
         </div>
-        <PermissionGuard permission="documents.create">
-          <button
-            onClick={() => router.push("/dashboard/documents?drawer=create")}
-            className="px-4 py-2 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700"
-          >
-            + New Document
-          </button>
-        </PermissionGuard>
+        <div className="flex items-center gap-2">
+          <PageHelpTooltip topic="documents" />
+          <PermissionGuard permission="documents.create">
+            <button
+              onClick={() => router.push("/dashboard/documents?drawer=create")}
+              className="px-4 py-2 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700"
+            >
+              + New Document
+            </button>
+          </PermissionGuard>
+        </div>
       </div>
 
       {/* Expiry warnings */}

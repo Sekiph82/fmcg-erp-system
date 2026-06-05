@@ -4824,6 +4824,83 @@ At the end of every future Claude Code task:
 
 ---
 
+---
+
+### Task ID: HELP-001 — Contextual Question Mark Hover Help Popovers
+
+- **Status:** Done (2026-06-05)
+- **Priority:** P1
+- **Category:** UI / Docs
+- **Why it matters:** ERP pages are complex and recently changed; users need inline guidance without leaving the page or opening a full modal.
+- **Affected area:** Frontend only — no backend, no migrations, no .env, no PDFs changed.
+- **Risk:** Low
+- **Commit:** (see git log — feat(frontend): add contextual question mark help popovers)
+
+#### What was built
+
+**New files:**
+- `frontend/src/components/help/PageHelpTooltip.tsx` — reusable hover popover component. Circular "?" trigger (28px). Mouse enter → open. Mouse onto popover → stays open (150ms close delay). Mouse leave both → close. ESC key closes. Focus/blur keyboard support. Touch tap toggles. role="dialog", aria-label, aria-expanded. No dependencies beyond React.
+- `frontend/src/lib/help-content.ts` — centralized HelpTopic registry. 18 topics.
+
+**Topics added (18):**
+finance-etims, sales-invoice-etims, inventory-stock, inventory-shelf-life, inventory-traceability, inventory-cycle-count, wms, planning-mrp, production-oee, production-qc, production-downtime, production-waste, gs1, documents, knowledge-base, esign, ai-forecasting, admin-security
+
+**Pages updated (18):**
+1. `finance/etims/page.tsx` — topic: finance-etims
+2. `inventory/page.tsx` — topic: inventory-stock
+3. `shelf-life/page.tsx` — topic: inventory-shelf-life
+4. `traceability/page.tsx` — topic: inventory-traceability
+5. `cycle-count/page.tsx` — topic: inventory-cycle-count
+6. `wms/page.tsx` — topic: wms
+7. `mrp/page.tsx` — topic: planning-mrp
+8. `production/oee/page.tsx` — topic: production-oee
+9. `production/quality-control/page.tsx` — topic: production-qc
+10. `production/downtime/page.tsx` — topic: production-downtime
+11. `production/waste-yield/page.tsx` — topic: production-waste
+12. `gs1/page.tsx` — topic: gs1
+13. `documents/page.tsx` — topic: documents
+14. `knowledge-base/page.tsx` — topic: knowledge-base
+15. `esign/page.tsx` — topic: esign
+16. `ai/page.tsx` — topic: ai-forecasting
+17. `security/page.tsx` — topic: admin-security
+
+#### Behavior confirmed
+- Hover opens popover (mouse enter trigger)
+- Moving mouse from trigger into popover: popover stays open (150ms delay guards the gap)
+- Mouse leaves both trigger and popover: popover closes after 150ms
+- ESC key: closes popover
+- Touch/mobile: tap toggles popover (onClick handler)
+- Keyboard: focus opens, blur closes
+- No route change, no new page, no full modal, no right drawer
+
+#### Type-check result
+`npm run type-check` — PASS (no errors)
+
+#### Popover content sections (per topic)
+- Title
+- Purpose paragraph
+- Main Actions (bullet list)
+- Key Fields (if present)
+- Status Meanings (if present)
+- Warnings (amber box, if present)
+- Related Manual reference
+
+#### No changes to
+- Backend source code
+- Database models
+- Migrations
+- .env files
+- Generated PDFs
+- Screenshot PNGs
+
+#### Graphify status
+Frontend Graphify optional later — not needed immediately for this UI-only change.
+
+#### Screenshots / manual follow-up
+Pending — pages now show a small "?" icon that was not in prior screenshots. Recapture optional (not blocking). Screenshots are gitignored/local-only so no git impact.
+
+---
+
 ## Do Not Do Now
 
 - Full repo Graphify rerun (unless user approves)

@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { ToastContainer } from "@/components/ui/Toast";
 import { useToast } from "@/hooks/useToast";
+import { PageHelpTooltip } from "@/components/help/PageHelpTooltip";
 
 const ZONE_TYPES: { value: ZoneType; label: string }[] = [
   { value: "RAW_MATERIAL", label: "Raw Material" },
@@ -120,7 +121,8 @@ export default function WMSPage() {
             {zones.length} zones · {locations.length} locations · {handlingUnits.length} handling units · {pickWaves.length} waves
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
+          <PageHelpTooltip topic="wms" />
           {tab === "zones" && <Button onClick={() => setZoneModal(true)}>+ New Zone</Button>}
           {tab === "locations" && <Button onClick={() => setLocModal(true)}>+ New Location</Button>}
           {tab === "quarantine" && (

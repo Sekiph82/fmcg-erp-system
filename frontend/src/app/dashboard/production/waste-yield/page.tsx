@@ -12,6 +12,7 @@ import { Select } from "@/components/ui/Select";
 import { ToastContainer } from "@/components/ui/Toast";
 import { useToast } from "@/hooks/useToast";
 import { ImportModal } from "@/components/import/ImportModal";
+import { PageHelpTooltip } from "@/components/help/PageHelpTooltip";
 
 const TYPE_OPTS = [{value:"MATERIAL",label:"Material"},{value:"PRODUCT",label:"Product"},{value:"PACKAGING",label:"Packaging"}];
 const CAT_OPTS  = [{value:"normal",label:"Normal"},{value:"abnormal",label:"Abnormal"}];
@@ -41,7 +42,8 @@ export default function WasteYieldPage() {
           <h1 className="text-2xl font-bold text-gray-900">Waste & Yield Tracking</h1>
           <p className="text-sm text-gray-500 mt-1">Total loss: <strong>{totalLoss.toFixed(2)} units</strong> · <span className="text-red-600">{anomalies} anomal{anomalies===1?"y":"ies"}</span></p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
+          <PageHelpTooltip topic="production-waste" />
           <ImportModal module="waste_records" onSuccess={()=>qc.invalidateQueries({queryKey:["waste"]})}/>
           <Button onClick={()=>setOpen(true)}>+ Log Waste</Button>
         </div>

@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import {
   traceApi, RecallDashboard, RECALL_STATUS_BG, SEVERITY_BG,
 } from "@/lib/traceability";
+import { PageHelpTooltip } from "@/components/help/PageHelpTooltip";
 
 function KPI({ label, value, sub, color }: { label: string; value: string | number; sub?: string; color?: string }) {
   return (
@@ -32,6 +33,7 @@ export default function TraceabilityDashboardPage() {
           <h1 className="text-2xl font-bold text-gray-900">Lot Traceability + Recall Management</h1>
           <p className="text-sm text-gray-500 mt-0.5">Forward/backward traceability, genealogy, recall execution, regulatory reporting</p>
         </div>
+        <PageHelpTooltip topic="inventory-traceability" />
       </div>
 
       {/* KPIs */}

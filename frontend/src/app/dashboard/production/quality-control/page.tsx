@@ -12,6 +12,7 @@ import { Select } from "@/components/ui/Select";
 import { ToastContainer } from "@/components/ui/Toast";
 import { useToast } from "@/hooks/useToast";
 import { ImportModal } from "@/components/import/ImportModal";
+import { PageHelpTooltip } from "@/components/help/PageHelpTooltip";
 
 const TYPE_OPTS   = [{value:"inline",label:"Inline"},{value:"final",label:"Final"},{value:"input",label:"Input"}];
 const STATUS_OPTS = [{value:"pending",label:"Pending"},{value:"pass",label:"Passed"},{value:"fail",label:"Failed"},{value:"on_hold",label:"On Hold"}];
@@ -59,7 +60,8 @@ export default function QualityControlPage() {
           <h1 className="text-2xl font-bold text-gray-900">Quality Control</h1>
           <p className="text-sm text-gray-500 mt-1">{items.length} inspections — <span className="text-green-600 font-medium">{pass} passed</span> · <span className="text-red-600 font-medium">{fail} failed</span></p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
+          <PageHelpTooltip topic="production-qc" />
           <ImportModal module="qc_inspections" onSuccess={()=>qc.invalidateQueries({queryKey:["qc"]})}/>
           <Button onClick={()=>setOpen(true)}>+ New Inspection</Button>
         </div>

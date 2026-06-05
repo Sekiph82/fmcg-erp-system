@@ -12,6 +12,7 @@ import { Select } from "@/components/ui/Select";
 import { ToastContainer } from "@/components/ui/Toast";
 import { useToast } from "@/hooks/useToast";
 import { ImportModal } from "@/components/import/ImportModal";
+import { PageHelpTooltip } from "@/components/help/PageHelpTooltip";
 
 const CAT_OPTS    = [{value:"",label:"All"}         ,{value:"planned",label:"Planned"},{value:"unplanned",label:"Unplanned"},{value:"external",label:"External"}];
 const CAT_CREATE  = [{value:"planned",label:"Planned"},{value:"unplanned",label:"Unplanned"},{value:"external",label:"External"}];
@@ -41,7 +42,8 @@ export default function DowntimePage() {
           <h1 className="text-2xl font-bold text-gray-900">Downtime Tracking</h1>
           <p className="text-sm text-gray-500 mt-1">Total downtime: <strong>{totalMin.toLocaleString()} min</strong> ({items.length} events)</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
+          <PageHelpTooltip topic="production-downtime" />
           <ImportModal module="downtime_events" onSuccess={()=>qc.invalidateQueries({queryKey:["downtime"]})}/>
           <Button onClick={()=>setOpen(true)}>+ Log Downtime</Button>
         </div>

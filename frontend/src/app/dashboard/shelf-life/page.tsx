@@ -5,6 +5,7 @@ import {
   SL_STATUS_BG, ALERT_SEV_BG, DISPOSITION_ACTION_LABEL, AI_AGENT_LABEL,
   fmtDays, expiryBgColor,
 } from "@/lib/shelfLife";
+import { PageHelpTooltip } from "@/components/help/PageHelpTooltip";
 
 function KPI({ label, value, sub, color }: { label: string; value: string | number; sub?: string; color?: string }) {
   return (
@@ -36,7 +37,8 @@ export default function ShelfLifeDashboardPage() {
           <h1 className="text-2xl font-bold text-gray-900">FEFO + Shelf-Life Control</h1>
           <p className="text-sm text-gray-500 mt-0.5">Expiry tracking, FEFO enforcement, near-expiry monitoring</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
+          <PageHelpTooltip topic="inventory-shelf-life" />
           <button
             onClick={() => shelfLifeApi.generateAlerts().then(() => window.location.reload())}
             className="px-3 py-2 text-sm border border-gray-200 rounded-lg hover:bg-gray-50"

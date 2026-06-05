@@ -24,6 +24,7 @@ import { useToast } from "@/hooks/useToast";
 import { RequirePermission } from "@/components/PermissionGuard";
 import { ImportModal } from "@/components/import/ImportModal";
 import { useAuth } from "@/context/AuthContext";
+import { PageHelpTooltip } from "@/components/help/PageHelpTooltip";
 
 type Tab = "stock" | "entry" | "issue" | "transfer";
 
@@ -204,6 +205,7 @@ function InventoryContent() {
           <p className="text-sm text-gray-500 mt-1">{summary.length} stock positions</p>
         </div>
         <div className="flex items-center gap-2">
+          <PageHelpTooltip topic="inventory-stock" />
           <ImportModal
             module="inventory_stock"
             onSuccess={() => refetchSummary()}

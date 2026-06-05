@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { ToastContainer } from "@/components/ui/Toast";
 import { useToast } from "@/hooks/useToast";
+import { PageHelpTooltip } from "@/components/help/PageHelpTooltip";
 
 const ALL_STATUSES: ETimsStatus[] = [
   "DRAFT", "READY", "PENDING", "SUBMITTED", "ACCEPTED",
@@ -156,7 +157,10 @@ export default function ETimsPage() {
 
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">eTIMS — KRA e-Invoice</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-gray-900">eTIMS — KRA e-Invoice</h1>
+          <PageHelpTooltip topic="finance-etims" />
+        </div>
         <p className="text-sm text-gray-400 mt-0.5">
           Electronic Tax Invoice Management System — Kenya Revenue Authority
         </p>

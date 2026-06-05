@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { gs1Api, statusColor, BarcodeGenerateResponse, BarcodeType, PrintJob } from "@/lib/gs1";
 import { productsApi, Product } from "@/lib/products";
+import { PageHelpTooltip } from "@/components/help/PageHelpTooltip";
 
 // ── Local types ────────────────────────────────────────────────────────────────
 
@@ -431,7 +432,8 @@ export default function GS1DashboardPage() {
             Global product identification · SSCC pallet tracking · Label management
           </p>
         </div>
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-2 flex-wrap items-center">
+          <PageHelpTooltip topic="gs1" />
           <button
             onClick={() => {
               const next = !showForm;

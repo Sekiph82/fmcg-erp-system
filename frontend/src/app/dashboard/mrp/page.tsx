@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { mrpApi, STATUS_COLOR, fmtQty, SUGGESTION_TYPE_COLOR } from "@/lib/mrp";
+import { PageHelpTooltip } from "@/components/help/PageHelpTooltip";
 
 const StatusBadge = ({ s }: { s: string }) => (
   <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLOR[s] ?? "bg-gray-100 text-gray-600"}`}>{s}</span>
@@ -53,7 +54,8 @@ export default function MRPDashboardPage() {
           </h1>
           <p className="text-sm text-gray-500 mt-1">Material Requirements Planning · Demand Forecasting · Planning Engine</p>
         </div>
-        <div className="flex gap-3 flex-wrap">
+        <div className="flex gap-3 flex-wrap items-center">
+          <PageHelpTooltip topic="planning-mrp" />
           <Link href="/dashboard/mrp/forecast" className="px-4 py-2 rounded-lg text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50">
             📈 Forecasts
           </Link>

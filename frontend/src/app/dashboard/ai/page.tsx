@@ -6,6 +6,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { aiApi, AIDashboard, AIPrediction, AIRecommendation, parseAIError } from "@/lib/aiApi";
 import { RequirePermission } from "@/components/PermissionGuard";
+import { PageHelpTooltip } from "@/components/help/PageHelpTooltip";
 
 const RISK_PILL: Record<string, string> = {
   low: "bg-green-100 text-green-700",
@@ -104,7 +105,8 @@ function AIDashboardTab() {
             )}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
+          <PageHelpTooltip topic="ai-forecasting" />
           <button
             onClick={() => generatePreds.mutate()}
             disabled={generatePreds.isPending}

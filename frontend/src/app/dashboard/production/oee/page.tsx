@@ -12,6 +12,7 @@ import { Select } from "@/components/ui/Select";
 import { ToastContainer } from "@/components/ui/Toast";
 import { useToast } from "@/hooks/useToast";
 import { ImportModal } from "@/components/import/ImportModal";
+import { PageHelpTooltip } from "@/components/help/PageHelpTooltip";
 
 const fmt = (v?: number | null) => v != null ? `${(Number(v)*100).toFixed(1)}%` : "—";
 const oeeColor = (v?: number | null) => !v ? "text-gray-500" : Number(v)>=0.85?"text-green-600":Number(v)>=0.65?"text-yellow-600":"text-red-600";
@@ -69,7 +70,8 @@ export default function OEEPage() {
             &nbsp;·&nbsp;<span className="text-yellow-600">{highDT} high downtime</span>
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
+          <PageHelpTooltip topic="production-oee" />
           <ImportModal module="oee_records" onSuccess={()=>qc.invalidateQueries({queryKey:["oee"]})}/>
           <Button variant="secondary" onClick={()=>{ setShowInsights(v=>!v); setShowSummary(false); }}>{showInsights?"Hide AI Insights":"AI Insights"}</Button>
           <Button variant="secondary" onClick={()=>{ setShowSummary(v=>!v); setShowInsights(false); }}>{showSummary?"Hide Summary":"KPI Summary"}</Button>

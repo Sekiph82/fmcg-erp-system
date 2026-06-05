@@ -9,6 +9,7 @@ import {
 } from "@/lib/twoFactor";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { PageHelpTooltip } from "@/components/help/PageHelpTooltip";
 
 type Step = "idle" | "qr" | "otp_input" | "done" | "disable";
 
@@ -161,7 +162,10 @@ export default function SecurityPage() {
   return (
     <div className="max-w-2xl mx-auto py-8 px-4 space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Security Settings</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-gray-900">Security Settings</h1>
+          <PageHelpTooltip topic="admin-security" />
+        </div>
         <p className="text-sm text-gray-500 mt-1">Manage two-factor authentication for your account.</p>
       </div>
 

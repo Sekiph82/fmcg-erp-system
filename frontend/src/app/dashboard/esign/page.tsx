@@ -13,6 +13,7 @@ import { apiClient } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/Button";
 import { RequirePermission } from "@/components/PermissionGuard";
+import { PageHelpTooltip } from "@/components/help/PageHelpTooltip";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -520,7 +521,10 @@ function ESignPageInner() {
           <h1 className="text-2xl font-bold text-gray-900">Electronic Signatures</h1>
           <p className="text-sm text-gray-500 mt-0.5">Manage and track document signing requests</p>
         </div>
-        <Button onClick={() => setShowCreate(true)}>+ New Request</Button>
+        <div className="flex items-center gap-2">
+          <PageHelpTooltip topic="esign" />
+          <Button onClick={() => setShowCreate(true)}>+ New Request</Button>
+        </div>
       </div>
 
       {/* KPI Cards */}

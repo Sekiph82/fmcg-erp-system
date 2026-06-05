@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getDashboard, Dashboard } from "@/lib/cycleCount";
+import { PageHelpTooltip } from "@/components/help/PageHelpTooltip";
 
 export default function CycleCountDashboardPage() {
   const [data, setData] = useState<Dashboard | null>(null);
@@ -36,7 +37,10 @@ export default function CycleCountDashboardPage() {
   return (
     <div className="max-w-5xl mx-auto py-8 px-4 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Cycle Count</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-gray-900">Cycle Count</h1>
+          <PageHelpTooltip topic="inventory-cycle-count" />
+        </div>
         <p className="text-sm text-gray-500 mt-1">Inventory accuracy through scheduled periodic counting</p>
       </div>
 
