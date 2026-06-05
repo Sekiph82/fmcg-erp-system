@@ -35,8 +35,8 @@ frontend/playwright/.auth/
 # User manual captured screenshots — regenerate locally with npm run test:manual-screenshots
 docs/user-manual/screenshots/captured/
 
-# PDF output — regenerate locally with node docs/user-manual/pdf-export/generate-kenya-pdf.mjs
-docs/user-manual/pdf-output/
+# PDF output — tracked; regenerate with node docs/user-manual/pdf-export/generate-*-pdf.mjs
+# docs/user-manual/pdf-output/  ← intentionally un-gitignored; PDFs committed as training deliverables
 
 # Docker
 postgres_data/
