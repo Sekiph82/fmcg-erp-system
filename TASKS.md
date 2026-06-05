@@ -5045,6 +5045,74 @@ PDFs not regenerated — the one-line help notes are in markdown only. Optional 
 
 ---
 
+### Task ID: LOCAL-STAGING-001 — Local Docker Compose Staging Environment
+
+- **Status:** Deferred — not started
+- **Priority:** P2
+- **Category:** Deployment
+- **Date deferred:** 2026-06-05
+- **Why it matters:** Enables end-to-end local testing with real DB, migrations, and backend before cloud deployment.
+- **Affected area:** Docker Compose stack, `.env.local`/`.env.staging`, Nginx/Caddy proxy config
+- **Risk:** Low (local only, no production impact)
+- **Recommended timing:** Before first cloud staging deployment
+- **Blocked by:** No current blocker — deferred by user decision on 2026-06-05
+- **Do not touch:** Production DB, production `.env`, live integration credentials
+- **Scope when started:**
+  1. Create `docker-compose.staging.yml` with backend, frontend, postgres, redis services
+  2. Set `SEED_DEMO_DATA=true` in staging `.env` for demo data
+  3. Run Alembic migrations against staging DB
+  4. Verify `http://localhost:3000` serves frontend, `http://localhost:8000/docs` serves API
+  5. Run `pytest tests/test_hardening.py` against staging DB
+- **Notes:** Do not run now. Docker Compose staging requires storage adapter decision (Documents), SMTP config, and at least one live integration credential before useful. Revisit after PUSH-001 blockers are resolved.
+
+---
+
+### Task ID: DATA-CLEANUP-001 — Demo Seed Data Audit and Gate Verification
+
+- **Status:** Done
+- **Priority:** P1
+- **Category:** Cleanup / Deployment
+- **Date:** 2026-06-05
+
+#### Audit Findings
+
+All demo business data is already gated by `SEED_DEMO_DATA: bool = False` in `backend/app/core/config.py`. Default is `False`. A production guard at `config.py:239-240` raises `ValueError` if `SEED_DEMO_DATA=True` in production environment.
+
+**Classification:**
+
+| Seed file / code | Group | Gate status |
+|---|---|---|
+| `seed.py` — PERMISSIONS + ROLE_DEFINITIONS + `seed_admin()` | Group 1: Required | Unconditional ✓ |
+| `seed.py` — `seed_management_users()` | Group 1: Required | Unconditional (env-gated internally) ✓ |
+| `seed_finance.py` — CoA, Cost Centers, Fiscal Year, Periods | **Group 1: Required** | **Fixed — was inside SEED_DEMO_DATA gate (bug)** |
+| `seed.py` DEMO_USERS — CEO/COO/CFO/CTO demo accounts | Group 2: Demo | Inside SEED_DEMO_DATA gate ✓ |
+| `seed_production.py` — products, materials, recipes, OEE | Group 2: Demo | Inside SEED_DEMO_DATA gate ✓ |
+| `seed_inventory.py` — lots, stock, WMS, MRP, forecasts | Group 2: Demo | Inside SEED_DEMO_DATA gate ✓ |
+| `seed_utilities.py` | Group 3: Standalone | Not called at startup; manual script only ✓ |
+
+#### Change Made
+
+**`backend/app/main.py`** — Moved `seed_finance_data()` out of the `SEED_DEMO_DATA` block.
+
+`seed_finance_data()` seeds Chart of Accounts, Cost Centers, Fiscal Year, and Accounting Periods. These are structural prerequisites for GL posting (TASK-017.2+). The file header explicitly states "Prerequisite for GL posting. Idempotent — safe to call on every startup." It was incorrectly placed inside the `SEED_DEMO_DATA` gate, meaning GL posting would fail on any fresh DB without `SEED_DEMO_DATA=True`.
+
+After fix: `seed_finance_data()` runs unconditionally after `seed_management_users()`, like `seed_admin()`.
+
+#### Tests
+
+- `tests/test_hardening.py` — 25 tests, all assert `SEED_DEMO_DATA=False` in production settings. No test change needed (they test the config flag, not the startup call order).
+- No seed function unit tests exist for `seed_finance_data` — idempotency is guaranteed by `_get_or_create_*` helpers.
+
+#### Changed Files
+
+- `backend/app/main.py` — moved `seed_finance_data` import + call outside `SEED_DEMO_DATA` block
+
+#### Result
+
+Demo data gate: verified fully gated (no leakage). One structural fix made. No demo data removed from codebase — it was already disabled by default. ERP runs with `SEED_DEMO_DATA=False` (default) and will not seed any demo products, customers, orders, or sample business records.
+
+---
+
 ## Do Not Do Now
 
 - Full repo Graphify rerun (unless user approves)
