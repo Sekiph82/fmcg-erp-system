@@ -4704,46 +4704,40 @@ The following modules changed substantially since v2-Post-Recovery manuals were 
 **Gap noted:** No dedicated `/dashboard/esign` route exists in `routes.json`. E-sign is accessible via documents module. No separate esign route added — covered by `documents` capture.
 
 **MANUAL-003 — Rewrite changed module manuals**
-- Do NOT patch old content — rewrite affected sections fully from current UI state
-- Affected chapters (in priority order):
-  1. `module-manuals/finance-payroll/07-tax-etims.md` — full rewrite (eTIMS connector, global page, invoice card, provider health, retry/cancel/poll flow)
-  2. `full-reference/08_FINANCE.md` — update eTIMS section
-  3. `module-manuals/supply-chain/07-inventory-stock.md` through `10-wms.md` — update with I1-I7 seed data presence; traceability, cycle counts, shelf life, demand forecasts, MRP run
-  4. `full-reference/04_INVENTORY_AND_WAREHOUSE.md` — update
-  5. `module-manuals/manufacturing/` — update OEE/QC/waste/downtime pages with seed data presence
-  6. `full-reference/05_PRODUCTION.md` — update
-  7. `module-manuals/documents/` (new if needed) — update Document/KB/e-sign sections for new permissions
-  8. `full-reference/11_AI_AND_AUTOMATION.md` — update PROPHET/forecasting description
-  9. `full-reference/10_ADMIN_AND_SECURITY.md` — update GS1 auth, management user seed, PyJWT notes
-- Rules:
-  - Remove obsolete screenshots (replace with new MANUAL-002 captures)
-  - Update all workflows to reflect current UI
-  - Update permission tables and role descriptions
-  - Update demo data explanations (show what seed data is present)
-  - Add/update warnings and limitations where applicable
-- **Status: Pending — do not start until MANUAL-002 screenshots complete and user approves**
+- **Status: Done — 2026-06-05 — commit 581374e**
+- Files changed (10): `module-manuals/finance-payroll/07-tax-etims.md` (full rewrite — 10-status eTIMS, SimulationETIMSConnector, global page, invoice card, GL gate note), `module-manuals/supply-chain/07-inventory-stock.md` (I1-I7 seed data sections), `module-manuals/supply-chain/10-wms.md` (I2 seed + new screenshots), `module-manuals/manufacturing/07-quality-control.md` (new screenshot + TASK-015.2 seed section), `module-manuals/manufacturing/11-oee-reporting.md` (new screenshots 045/046/049 + OEE/downtime/waste seed section), `full-reference/08_FINANCE.md` (eTIMS status table), `full-reference/11_AI_AND_AUTOMATION.md` (PROPHET = local Holt-Winters, no external API, fallback, tests), `full-reference/10_ADMIN_AND_SECURITY.md` (management user seed, PyJWT, GS1 auth gate, advisory lock, blocked integrations), `full-reference/13_STANDALONE_OPERATIONAL_PAGES.md` (Documents/KB/esign TASK-027 permission gates), `kenya-go-live/01_ADMIN_USER_MANUAL.md` (go-live checklist, new troubleshooting entries)
+- No source code changed. No credentials touched. No .env files touched.
 
 **MANUAL-004 — Update technical/admin manuals**
-- `docs/DEPLOYMENT.md` — advisory lock note already updated (TASK-026); verify and add to admin manual
-- `docs/user-manual/full-reference/10_ADMIN_AND_SECURITY.md` — GS1 auth guard, management user env seed strategy, PyJWT notes
-- `kenya-go-live/01_ADMIN_USER_MANUAL.md` — update for new security posture
-- `docs/manuals/admin/FMCG-ERP-Administration-Manual-v2.md` — full update
-- **Status: Pending — after MANUAL-003**
+- **Status: Done — 2026-06-05 — commit 6178ccb**
+- Files changed (1): `docs/manuals/admin/FMCG-ERP-Administration-Manual-v2.md` updated to v2.1 — eTIMS simulation status, management user env seed, PyJWT security, GS1 auth gate, advisory lock troubleshooting, blocked integrations table
+- `docs/DEPLOYMENT.md` already had advisory lock from TASK-026 — no change needed
+- No source code changed. No credentials touched.
 
 **MANUAL-005 — Validate links, screenshots, and markdown**
-- Check all internal markdown links
-- Verify all screenshot file paths exist and are non-empty
-- Run markdown lint if available (`markdownlint` or equivalent)
-- Verify no references to old `/Desktop/fmcg-erp-system-main` paths in manual text
-- **Status: Pending — after MANUAL-004**
+- **Status: Done — 2026-06-05**
+- Screenshot refs: all 17 MANUAL-002 captures confirmed in `docs/user-manual/screenshots/captured/`. Pre-existing module-ui subdirectory screenshots also confirmed present on disk.
+- Stale term check: no "Meta Prophet", "Prophet API", "5-status eTIMS", "eTIMS skeleton", "empty inventory", "empty OEE", old desktop/OneDrive paths in any changed file. "python-jose" references are intentional deprecation warnings — correct.
+- Old path check: no `/Desktop/fmcg-erp-system-main` or `OneDrive\Masaüstü` in manual files.
+- Markdown lint: `markdownlint` not installed; skipped to avoid heavy dependency. Manual visual check — no broken fences, consistent headings, valid table separators.
+- Known limitation: `docs/user-manual/screenshots/captured/` is gitignored (local only, 70.4 MB). Screenshot refs are valid on this machine; PDF generation cannot inline gitignored files.
 
 **MANUAL-006 — Regenerate PDF bundles**
-- Check if PDF generation scripts exist (`docs/user-manual/PDF_EXPORT_PLAN.md`, existing `PDF_EXPORT_REPORT.md` files)
-- If `wkhtmltopdf`, `pandoc`, or custom PDF script exists: re-run for changed modules
-- Generate new v3 PDFs (or v2-Post-ERP-Changes): replace `v2-Post-Recovery.pdf` files for changed manuals
-- Bundle `kenya-go-live` PDF if go-live training manual updated
-- If PDF tooling is not available/broken: document exact command and required tool version
-- **Status: Pending — after MANUAL-005**
+- **Status: Done — 2026-06-05 (PDFs regenerated locally; gitignored)**
+- Tool: Playwright Chromium + marked (Node.js 24.14; both already in `frontend/node_modules`)
+- PDFs generated successfully (all 0 failed images):
+
+| PDF | Script | Size | Images |
+|---|---|---|---|
+| `FMCG-ERP-Full-Reference-Manual.pdf` | `pdf-export/generate-full-reference-pdf.mjs` | 10.2 MB | 25/25 |
+| `Kenya-Go-Live-ERP-Training-Manual.pdf` | `pdf-export/generate-kenya-pdf.mjs` | 17.4 MB | 45/45 |
+| `FMCG-ERP-Manufacturing-Manual.pdf` | `manufacturing/pdf-export/generate-manufacturing-pdf.mjs` | 19.3 MB | 64/64 |
+| `FMCG-ERP-Supply-Chain-Manual.pdf` | `supply-chain/pdf-export/generate-supply-chain-pdf.mjs` | 12.7 MB | 44/44 |
+
+- Output dir: `docs/user-manual/pdf-output/` — **gitignored by design** (`.gitignore` line: `docs/user-manual/pdf-output/`). PDFs are not committed.
+- Regeneration command (from repo root): `node docs/user-manual/pdf-export/generate-full-reference-pdf.mjs` (or use `.sh`/`.ps1` wrapper scripts)
+- Finance-Payroll, Documents, Admin module PDFs: no dedicated generation scripts found. These manuals are covered by the full-reference PDF and the admin manual in `docs/manuals/admin/`.
+- `docs/manuals/admin/FMCG-ERP-Administration-Manual-v2.md` is a standalone markdown file — no dedicated PDF script. Generate manually with pandoc if needed: `pandoc FMCG-ERP-Administration-Manual-v2.md -o FMCG-ERP-Administration-Manual-v2.pdf` (pandoc not verified as installed).
 
 #### Screenshot Requirements (if captured)
 
