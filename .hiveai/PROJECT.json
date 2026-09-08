@@ -13,6 +13,7 @@
   "state": ".hiveai/STATE.json",
   "handoff": ".hiveai/HANDOFF.md",
   "events": ".hiveai/EVENTS.jsonl",
+  "eventSources": [],
   "refresh": {
     "mode": "watcher-first",
     "debounceMs": 500,
