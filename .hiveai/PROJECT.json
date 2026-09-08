@@ -1,0 +1,22 @@
+{
+  "schema": "hiveai-project/v1",
+  "projectKey": "fmcg-erp-system",
+  "displayName": "fmcg-erp-system",
+  "repository": "Sekiph82/fmcg-erp-system",
+  "trackedBranch": "main",
+  "canonicalTaskSource": "TASKS.md",
+  "rulesSource": ".hiveai/RULES.md",
+  "stateSource": ".hiveai/STATE.json",
+  "handoffSource": ".hiveai/HANDOFF.md",
+  "eventSource": ".hiveai/EVENTS.jsonl",
+  "refresh": {
+    "mode": "watcher-first",
+    "debounceMs": 500,
+    "safetyReconcileSeconds": 60
+  },
+  "git": {
+    "remoteExpected": true,
+    "localGitPreferred": true,
+    "nonGitLocalFolderMustBeReported": true
+  }
+}
