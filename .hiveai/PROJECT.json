@@ -1,14 +1,18 @@
 {
-  "schema": "hiveai-project/v1",
+  "schema": "hiveai-project-control-plane/v1",
   "projectKey": "fmcg-erp-system",
   "displayName": "fmcg-erp-system",
-  "repository": "Sekiph82/fmcg-erp-system",
+  "repository": {
+    "owner": "Sekiph82",
+    "name": "fmcg-erp-system",
+    "branch": "main"
+  },
   "trackedBranch": "main",
   "canonicalTaskSource": "TASKS.md",
-  "rulesSource": ".hiveai/RULES.md",
-  "stateSource": ".hiveai/STATE.json",
-  "handoffSource": ".hiveai/HANDOFF.md",
-  "eventSource": ".hiveai/EVENTS.jsonl",
+  "rules": ".hiveai/RULES.md",
+  "state": ".hiveai/STATE.json",
+  "handoff": ".hiveai/HANDOFF.md",
+  "events": ".hiveai/EVENTS.jsonl",
   "refresh": {
     "mode": "watcher-first",
     "debounceMs": 500,
