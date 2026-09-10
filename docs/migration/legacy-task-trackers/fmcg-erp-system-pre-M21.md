@@ -1,19 +1,3 @@
-# fmcg-erp-system — Canonical GitHub Task State
-
-This root TASKS.md is the only authoritative project-status tracker consumed by H!veAI. GitHub repository metadata and the latest commit are the remaining project-truth inputs. Hidden .hiveai control-plane files are historical only and are not read for current project state.
-
-## Project Status
-
-- Current Milestone: TASK-005
-- Current Sprint: TASK-005.1F
-- Current Task: TASK-005.1F.3 — eTIMS card in invoice detail page
-- Current Task Status: READY
-- Next Task/Action: Implement or explicitly defer TASK-005.1F.3 under the canonical task ledger.
-- Required Actor: BUILDER
-- Tracking Repository: Sekiph82/fmcg-erp-system
-- Tracking Branch: main
-
-## Tasks
 # TASKS
 
 ## Tracking Policy
@@ -5141,5 +5125,3 @@ Demo data gate: verified fully gated (no leakage). One structural fix made. No d
 - Creating new tracking files inside the repo
 - Deleting `graphify-out/` from git without user confirmation (TASK-010)
 - Deleting `PLANS.md` — it is kept as architecture/strategic reference
-
-
