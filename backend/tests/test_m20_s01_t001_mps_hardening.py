@@ -147,6 +147,14 @@ def test_release_query_filters_by_feasible_status_only():
     assert "MPSStatus.DRAFT" not in source
 
 
+def test_release_eligible_and_ineligible_queries_exclude_already_released_lines():
+    # Repeated release cannot duplicate orders: both the eligible-lines query
+    # and the ineligible-count query only ever consider lines with no
+    # production_order_id yet, so a line released once is never reconsidered.
+    source = inspect.getsource(svc.release_mps_plan)
+    assert source.count("MPSLine.production_order_id == None") == 2
+
+
 # ── F5 — MRP run validation ─────────────────────────────────────────────────────
 
 async def test_generate_from_mrp_rejects_missing_run():
