@@ -11,10 +11,10 @@ The previous canonical tracker is preserved without reinterpretation as `TASKS_H
 ## Project Status
 
 - **Current Milestone:** M00 — Governance & Repository Baseline
-- **Current Sprint:** M00.S02 — Repository Capability Inventory
-- **Current Task:** M00.S02.T002 — Frontend routes/pages/components inventory
+- **Current Sprint:** M00.S03 — Existing-System Audit M01-M19
+- **Current Task:** M00.S03.T001 — Audit M01 Platform / Infrastructure
 - **Current Task Status:** READY
-- **Next Task/Action:** Inventory the frontend route/page/component architecture, then continue database/API/event/import/integration/test/deployment inventories before M01-M35 reconciliation.
+- **Next Task/Action:** Audit M01 Platform / Infrastructure against current repository evidence, classify capability completeness, then continue sequentially through M19 before M20-M35 reconciliation.
 - **Required Actor:** AUDITOR
 - **Tracking Repository:** Sekiph82/fmcg-erp-system
 - **Tracking Branch:** main
@@ -164,21 +164,72 @@ M00 is the mandatory truth-reconciliation milestone. It preserves historical acc
   - Persistence architecture: asynchronous SQLAlchemy sessions + PostgreSQL-oriented Alembic migrations. `main.py` explicitly disables automatic table creation and requires Alembic for schema changes.
   - Seed layers identified: authorization/admin/roles (`seed.py`), structural finance (`seed_finance.py`), production demo (`seed_production.py`), inventory demo (`seed_inventory.py`), standalone utilities (`seed_utilities.py`).
   - Module registry confirms substantial existing domain coverage including Users/Roles, Inventory, Production, Advanced Planning, NPD, Advanced BOM/Formula, Recipes, Procurement, Sales, CRM, Finance, HR, Kenya Payroll, Quality, Consumer Complaints, GS1, Maintenance, Utilities, Report Builder, Notifications, Documents, Knowledge Base, E-Sign, AI, Shelf-Life/FEFO, IoT/Machine Streaming, and Company/Branches.
-  - Permission architecture in the registry supports both standard actions and scoped variants such as own-company/branch/warehouse/factory/line/department/region/category access.
-  - Service layer is extensive and domain-specific; sampled services include AI provider/runtime, approvals, banking/reconciliation, barcode/GS1, BOM AI/compliance/costing/explosion/scaling and many other module services. T004 will inventory API/service pairs in detail.
-  - Model layer is extensive and split by business domain; sampled models confirm AI, allergens, API portal, appraisals, audit log, bank API/reconciliation, BOM, brand assets, calendar, chatter and many other families. T003 will inventory models/schema/migrations in detail.
-  - Alembic history already contains enterprise migrations for accounting core/operational posting/access scopes, APS planning tables, WMS depth reconciliation and procurement governance, which is strong evidence that M32/M33/M34 scopes may overlap existing implementation.
-  - Preliminary architecture conclusion: this is already a broad enterprise ERP backend, not a thin prototype. M20-M35 must therefore be capability-by-capability reconciliation rather than greenfield implementation.
-  - Inventory-only anomaly to revisit in M19 cleanup/audit: an unusual root backend file named `backend/=2.9.0` exists and should be classified before any cleanup action.
-  - No source code was modified during this inventory. No historical Done state was reopened.
-- [ ] **M00.S02.T002 — Frontend routes/pages/components inventory**
-- [ ] **M00.S02.T003 — Database models/migrations/schema inventory**
-- [ ] **M00.S02.T004 — API/router/service inventory**
-- [ ] **M00.S02.T005 — Jobs/queues/schedulers/websocket/event mechanisms inventory**
-- [ ] **M00.S02.T006 — CSV/import/export/reporting infrastructure inventory**
-- [ ] **M00.S02.T007 — Integration provider/capability inventory**
-- [ ] **M00.S02.T008 — Tests/CI/Docker/deployment/environment inventory**
-- [ ] **M00.S02.T009 — Documentation/reference inventory**
+  - Permission architecture supports standard and scoped variants including company/branch/warehouse/factory/line/department/region/category scope.
+  - Alembic history already contains enterprise migrations for accounting core/operational posting/access scopes, APS planning, WMS depth reconciliation and procurement governance.
+  - Preliminary conclusion: this is already a broad enterprise ERP backend, not a thin prototype; M20-M35 require capability-by-capability reconciliation.
+  - Inventory-only anomaly for later M19 audit: unusual root backend file `backend/=2.9.0`; classify before any cleanup.
+  - No source code modified; no historical Done state reopened.
+
+- [x] **M00.S02.T002 — Frontend routes/pages/components inventory**
+  - Frontend uses Next.js App Router structure under `frontend/src/app`, with shared `components`, `context`, `hooks`, `lib`, and `middleware.ts` layers.
+  - Shared shell/security/navigation layer includes `DashboardShell`, `Sidebar`, `CommandPalette`, `NotificationBell`, `ProtectedRoute`, `PermissionGuard`, `ErrorBoundary`, and reusable domain/UI component families.
+  - `nav-config.tsx` defines the consolidated workspace information architecture: 33 workspaces grouped into 9 clusters; child functions are tabs/workspace functions rather than uncontrolled sidebar sprawl.
+  - Middleware preserves standalone operational pages while redirecting legacy routes to consolidated workspace/tab destinations.
+  - `AuthContext` and permission guards provide frontend permission-aware behavior; shared Axios `apiClient` centralizes API access.
+  - Existing visible workspace/tab capabilities include Inventory Cycle Count, Shelf Life/FEFO, Lot Traceability, Serial/Batch, Stock Movements; WMS Picking/Putaway/Bin Replenishment; Procurement Subcontracting/Landed Cost/Supplier Portal/AI Suggestions; Production Execution/Machine Operators/Material Flow/OEE/Batch-Lots; Planning MRP/MPS/Kanban/Capacity Board/Simulation; BOM Formula Versions/Substitutes/BOM Compare/Conversion Profiles; Quality QMS/HACCP/Allergen/Complaints/CAPA/COA.
+  - This frontend evidence materially overlaps M20-M35 and must be validated against working APIs during S04, not treated as proof of completion by itself.
+
+- [x] **M00.S02.T003 — Database models/migrations/schema inventory**
+  - `backend/app/models/__init__.py` imports a very large domain model registry covering core ERP, scoped RBAC, webhook/event models, inventory/WMS, procurement, production, finance, quality, maintenance, logistics, tax, integration/plugin, document/e-sign, AI, MRP, BOM, shop floor, execution, planning, MPS, machine/operator, traceability/recall, subcontracting, invoice matching, landed cost, FEFO/shelf-life, GS1 and many other families.
+  - Direct M20-M35 overlap exists at model-family level: `MPSPlan/MPSLine/MPSCampaign/MPSCapacitySlot/MPSWhatIfScenario`, `PlanningScenario/ResourceCalendar/OperationQueue/CapacityLoadSnapshot/ChangeoverMatrix/PlanningSimulation`, `ProdExecOrder/ExecWorkOrder/ExecOrderMaterial/BatchGenealogy`, `Machine/OperatorProfile/MachineRuntimeLog/LaborTimeLog/MachinePerformanceSnapshot/DowntimeIntelligence`, `TraceEvent/LotGenealogyLink/RecallHeader`, `LandedCostHeader/LandedCostAllocationLine`, `FEFOAuditLog`, Shop Floor session/activity/handover records, and advanced quality/QMS models.
+  - Alembic is the schema source of change truth. Existing migration history includes APS planning, WMS reconciliation, procurement governance, accounting/posting/access scope and other enterprise additions.
+  - Inventory only: schema/model presence is recorded here; constraints, migration ownership, orphan/drift, index quality and referential integrity remain for M00.S05 strict audit.
+
+- [x] **M00.S02.T004 — API/router/service inventory**
+  - Central API registration is backed by a very large endpoint directory and domain service layer.
+  - Endpoint modules exist for major baseline and enhancement domains including `mps`, `mrp`, `planning`, `production_execution`, `shop_floor`, `material_flow`, `machine_operator`, `traceability`, `landed_cost`, `procurement_suggestion`, `subcontracting`, `supplier_portal`, `invoice_match`, `qms`, `quality`, `wms`, `shelf_life`, `cycle_count`, `serial_tracking`, `webhooks`, `iot`, `integrations`, `bulk_import`, `report_builder`, finance, HR, maintenance, utilities, sales and many others.
+  - Services are split by domain rather than concentrated in one monolith; examples include planning/MRP/MPS engines, WMS/inventory, BOM costing/scaling/compliance, finance posting/costing, AI provider/runtime, maintenance, utilities, integration/webhook and procurement services.
+  - Presence of endpoint+service pairs strongly suggests many M20-M35 features have executable backend surfaces; S03/S04 must test semantics and completeness rather than infer completion from file names.
+
+- [x] **M00.S02.T005 — Jobs/queues/schedulers/websocket/event mechanisms inventory**
+  - A persistent webhook/event engine exists with event definitions, event log, subscriptions, delivery attempts, payload filtering/transforms, outbound Bearer/Basic/HMAC authentication, HTTP delivery, exponential retry, dead-letter status and replay/process functions.
+  - Standard events include generic record/status/approval/payment/inventory/shipment/login events plus sales-order, PO, invoice, production-order, quality-inspection and 2FA events.
+  - The webhook service explicitly describes pending/retry delivery processors as being called by a background endpoint or cron.
+  - Repository searches during this inventory did not surface an always-running Celery/APScheduler/WebSocket worker architecture. Treat automatic dispatch/scheduling as `AUDIT_REQUIRED`, not absent by fiat; M31 and M00.S05.T020 must verify runtime invocation paths.
+
+- [x] **M00.S02.T006 — CSV/import/export/reporting infrastructure inventory**
+  - Central `bulk_import.py` router implements a reusable import lifecycle: CSV template download, validate-only, full import, filtered import history and downloadable error CSV.
+  - Adapter architecture includes products, materials, suppliers, warehouses, employees, initial inventory stock, recipes and recipe/BOM items, plus extensive utilities import support.
+  - Import framework uses module permissions, Pydantic validation, unique/business keys, relation resolution and persisted `ImportHistory`.
+  - Reporting/analytics infrastructure includes `report_builder`, analytics/dashboard endpoints and multiple module report surfaces.
+  - Because CSV/template usability is important to this project, M00.S05.T019 must explicitly test actual template downloads, parsing, validation, relation resolution, duplicate handling, error CSV and round-trip behavior rather than assuming correctness from implementation presence.
+
+- [x] **M00.S02.T007 — Integration provider/capability inventory**
+  - Central `integration_capabilities.py` distinguishes live/sandbox/simulated/stub states and guards production execution.
+  - M-Pesa Daraja: sandbox-ready/simulation-capable; live production requires credentials and validation.
+  - WhatsApp: sandbox-ready with DB-stored credentials; live validation still external-account dependent.
+  - eTIMS: sandbox-ready connector architecture, production disabled pending provider/KRA decisions and validation.
+  - AI providers: provider abstraction exists and can become live when configured; historical live-key blocker remains.
+  - Webhooks: implemented but production execution/runtime delivery path requires audit.
+  - IoT, CRM sync, e-commerce sync and GraphQL API remain stub-only in capability registry.
+  - Barcode physical printing remains stub-only despite label generation capability; bank API is simulated-only; marketing sync also remains stub-only.
+  - Historical external blockers therefore remain broadly consistent with current source evidence and must be revalidated in M17/M18 audits.
+
+- [x] **M00.S02.T008 — Tests/CI/Docker/deployment/environment inventory**
+  - GitHub Actions CI has backend, frontend and Docker configuration jobs.
+  - Backend CI provisions PostgreSQL 16 + Redis 7, installs dependencies, runs `pip-audit`, compile/import checks, test DB bootstrap+migrations, verifies exactly one Alembic head and runs full `pytest`.
+  - Frontend CI runs `npm ci`, critical-level dependency audit, type-check and production build.
+  - Docker CI validates both development and production compose configuration.
+  - Backend test suite contains focused security, attack simulation, eTIMS, forecasting and GAP/module tests, including APS planning, WMS and procurement maturity tests. Frontend has substantial Playwright E2E coverage for auth, shell, critical workflows, action-card health and module/manual screenshot workflows.
+  - Development compose runs PostgreSQL, Redis, backend and frontend with health checks and mounted source. Production compose keeps DB/Redis unexposed to host, enables Redis AUTH, configures backend pool sizing and resource reservations/limits.
+  - This is inventory evidence only. Latest CI status, complete test pass rate, migration runtime and deployment readiness will be re-run/verified during M00.S05.T022/T021.
+
+- [x] **M00.S02.T009 — Documentation/reference inventory**
+  - `PLANS.md` remains strategic architecture reference and explicitly prioritizes data integrity, modularity, incremental implementation and not rewriting working modules.
+  - `docs/` contains repository reviews, health/performance/security/QA/deployment evidence, action-card and route audits, project inventory and other engineering references.
+  - `docs/planning/` contains the ERP roadmap/status matrix plus GAP audit/schema/implementation-note families, providing historical design evidence that must be cross-checked against current source rather than accepted blindly.
+  - `docs/user-manual/` contains manual audits, screenshot/PDF pipelines, in-app-help reports/plans and full-reference/module manual assets.
+  - Documentation is rich but may contain stale historical assertions. Current repository source + tests + migrations take precedence during S03/S04/S05; docs are supporting evidence, not implementation truth.
 
 ## M00.S03 — Existing-System Audit M01-M19
 
@@ -441,7 +492,7 @@ Historical health/performance work touched HR services and the production domain
 
 # M15 — Reporting / Analytics
 
-Historical manuals and dashboard/report infrastructure exist, but current report/analytics capability needs source inventory.
+Historical manuals and dashboard/report infrastructure exist, but current report/analytics capability needs source audit.
 
 - [A] M15.S00.T001 — Audit reporting/analytics baseline during M00.S03.T015
 
@@ -567,16 +618,16 @@ Historical manuals and dashboard/report infrastructure exist, but current report
 
 # M20-M35 — Provisional Enhancement Scope Pending M00 Reconciliation
 
-These are NOT automatically new implementation milestones. Each already has evidence suggesting some planned capabilities may exist. M00.S04 must decompose every prompt capability and classify it before work is created.
+These are NOT automatically new implementation milestones. Repository inventory now proves that many have models, APIs, services and frontend surfaces already. M00.S04 must decompose every intended prompt capability and classify it before work is created.
 
 # M20 — Master Production Scheduling
 
 **Status:** AUDIT_REQUIRED
 
-Preliminary existing evidence, not final classification:
-- `TASK-016.6` demand forecasts exist.
-- `TASK-016.7` MRP runs/results/suggestions/exceptions exist.
-- Historical audits referenced `mps_service.py` / `mrp_service.py` as computation engines.
+Preliminary existing evidence:
+- Demand Forecast and MRP structures exist historically.
+- Current model registry includes `MPSPlan`, `MPSLine`, `MPSCampaign`, `MPSCapacitySlot`, `MPSWhatIfScenario`, `MPSAIRecommendation`.
+- Dedicated `mps` endpoint exists and Planning workspace exposes MPS.
 
 - [A] M20.S00.T001 — Compare MPS prompt against existing MPS/MRP/forecast/services/UI and classify sub-capabilities
 
@@ -585,7 +636,9 @@ Preliminary existing evidence, not final classification:
 **Status:** AUDIT_REQUIRED
 
 Preliminary evidence:
-- TASK-015 audit identified `AdvancedBOM`, `AdvancedBOMLine`, `BOMYieldConfig`, Recipe and RecipeItem structures.
+- `AdvancedBOM`, `AdvancedBOMLine`, substitute/yield structures and conversion profiles exist.
+- BOM workspace visibly exposes Formula Versions, Substitutes, BOM Compare and Conversion Profiles.
+- Bulk import supports recipe/BOM items.
 
 - [A] M21.S00.T001 — Compare multi-level BOM, bulk-to-unit, yield/loss, packaging, substitution and versioning scope against existing code
 
@@ -594,7 +647,8 @@ Preliminary evidence:
 **Status:** AUDIT_REQUIRED
 
 Preliminary evidence:
-- TASK-015 validated ProductionOrder, WorkOrder, WorkCenter, Routing, RoutingStep, production-plan and batch-lot structures with live DB seed data.
+- ProductionOrder, WorkOrder, WorkCenter, Routing, RoutingStep, ProductionPlan and BatchLot structures exist and were historically DB-seeded/validated.
+- Production/execution endpoints and UI surfaces exist.
 
 - [A] M22.S00.T001 — Determine which planned production/work-order capabilities are ALREADY_DONE vs PARTIAL/MISSING
 
@@ -603,7 +657,8 @@ Preliminary evidence:
 **Status:** AUDIT_REQUIRED
 
 Preliminary evidence:
-- TASK-015 audit identified `shop_floor.py` with SFSession, WOActivityLog, SFDowntimeLog, ShiftHandover and SFAIRec structures.
+- Shop Floor models include SFSession, WOActivityLog, SFDowntimeLog, ShiftHandover, SupervisorOverride and AI recommendations.
+- Dedicated `shop_floor` endpoint and Production Execution frontend surface exist.
 
 - [A] M23.S00.T001 — Reconcile operator/shop-floor execution prompt with current backend and UI
 
@@ -612,7 +667,9 @@ Preliminary evidence:
 **Status:** AUDIT_REQUIRED
 
 Preliminary evidence:
-- Production and inventory models include material/stock movement structures; historical seed intentionally did not fully exercise MaterialConsumption/FinishedGoodsReceipt accounting-linked flows.
+- Production/inventory material movement structures exist.
+- Dedicated `material_flow` endpoint and Production workspace Material Flow surface exist.
+- Historical seed did not fully exercise all accounting-linked MaterialConsumption/FinishedGoodsReceipt paths.
 
 - [A] M24.S00.T001 — Audit staged issue/consume/return/WIP/bulk-to-pack material-flow behavior
 
@@ -620,15 +677,21 @@ Preliminary evidence:
 
 **Status:** AUDIT_REQUIRED
 
-- [A] M25.S00.T001 — Search current procurement/inventory/finance/import logistics for landed-cost and in-transit implementation before creating work
+Preliminary evidence:
+- Dedicated landed-cost models and `landed_cost` API exist.
+- Procurement workspace exposes Landed Cost.
+- Logistics models include InternationalShipment, ShipmentContainer, customs documents/clearance and arrival notification.
+
+- [A] M25.S00.T001 — Audit current import/in-transit/customs/freight/insurance/allocation/posting behavior against planned cross-border engine
 
 # M26 — Machine & Operator Intelligence
 
 **Status:** AUDIT_REQUIRED
 
 Preliminary evidence:
-- Existing production domain includes WorkCenter, OEERecord, LaborLog, downtime and shift-related structures.
-- TASK-022 also records an IoT machine integration skeleton.
+- Current models include Machine, OperatorProfile, teams/members, skills/certifications, assignments/history, MachineRuntimeLog, LaborTimeLog, MachinePerformanceSnapshot, DowntimeIntelligence, SupervisorReview and AI recommendations.
+- Dedicated `machine_operator` endpoint and Machine Operators frontend surface exist.
+- IoT live bridge remains stub-only in integration registry.
 
 - [A] M26.S00.T001 — Compare machine/operator intelligence prompt with current machine, labor, OEE, shift, costing and IoT structures
 
@@ -637,7 +700,8 @@ Preliminary evidence:
 **Status:** AUDIT_REQUIRED
 
 Preliminary evidence:
-- `AdvQCInspection` and broader QMS/quality routes exist historically.
+- Quality models include inspections/results, templates, sampling, HACCP/CCP, corrective actions, deviation/release status, lot quality and QMS AI recommendations.
+- `quality` and `qms` endpoints and Quality workspace surfaces exist.
 
 - [A] M27.S00.T001 — Determine whether operational QC blocking/release gates already exist and where gaps remain
 
@@ -646,8 +710,9 @@ Preliminary evidence:
 **Status:** AUDIT_REQUIRED
 
 Preliminary evidence:
-- `TASK-016.3` trace events / lot genealogy is Done.
-- TASK-015 audit identified BatchGenealogy structures.
+- TraceEvent/TraceEventLine, LotGenealogyLink and recall header/scope/action/customer-impact/return models exist.
+- BatchGenealogy exists in Production Execution.
+- Dedicated `traceability` endpoint and inventory traceability UI exist.
 
 - [A] M28.S00.T001 — Compare forward/backward trace, genealogy, recall and customer-impact scope against current implementation
 
@@ -656,8 +721,9 @@ Preliminary evidence:
 **Status:** AUDIT_REQUIRED
 
 Preliminary evidence:
-- `TASK-015.2` OEE/downtime seed is Done.
-- Historical completed-gap summary records Predictive Maintenance as implemented at module level.
+- Maintenance assets/PM/work orders/breakdowns/spares exist.
+- OEE/downtime/waste production structures and seeded records exist.
+- Historical GAP work records Predictive Maintenance at module level.
 
 - [A] M29.S00.T001 — Reconcile preventive/corrective maintenance, MTBF/MTTR/OEE/calibration/predictive scope
 
@@ -666,7 +732,8 @@ Preliminary evidence:
 **Status:** AUDIT_REQUIRED
 
 Preliminary evidence:
-- AI provider layer and local forecasting exist; repository historically contains AI recommendations/agents across modules.
+- AI provider/runtime, production predictions/anomalies/suggestions/model metrics, planning simulations, MPS what-if scenarios and AI recommendations across modules exist.
+- AI live external-provider mode is still blocked on credentials.
 
 - [A] M30.S00.T001 — Audit prediction/anomaly/recommendation/scenario/decision/simulation architecture before enhancement work
 
@@ -675,18 +742,21 @@ Preliminary evidence:
 **Status:** AUDIT_REQUIRED
 
 Preliminary evidence:
-- REST APIs exist extensively.
-- Historical health audit referenced webhook subscription/event routing and AI health monitoring.
+- Broad REST APIs and shared API client exist.
+- Persistent webhook/event engine has subscriptions, delivery attempts, HMAC/Bearer/Basic auth, retry/dead-letter and replay logic.
+- Runtime scheduling/worker path for automated dispatch remains audit-required.
+- Integration registry marks GraphQL API as stub-only.
 
-- [A] M31.S00.T001 — Audit REST/OpenAPI, webhook/event bus, idempotency, retry, integration log and external API security coverage
+- [A] M31.S00.T001 — Audit REST/OpenAPI, webhook/event bus, idempotency, retry, background delivery, external API security and GraphQL need
 
 # M32 — Advanced Production Planning
 
 **Status:** AUDIT_REQUIRED
 
 Preliminary evidence:
-- ProductionPlan, ProductionSchedule, Shift, WorkCenter, MRP/MPS and forecast components already exist historically.
-- M00.S02 backend inventory also found an explicit APS planning migration (`20260514_0010_aps_planning_tables.py`), strengthening the likelihood of substantial existing finite/advanced planning scope.
+- Models include PlanningScenario, ResourceCalendar, OperationQueue, CapacityLoadSnapshot, ChangeoverMatrix, PlanningBottleneck, PlanningAIRec and PlanningSimulation.
+- Dedicated APS planning migration and `planning` API exist.
+- Planning workspace exposes MRP, MPS, Kanban, Capacity Board and Simulation.
 
 - [A] M32.S00.T001 — Compare shift/day/week/month/machine/order/section/campaign/finite-capacity planning prompt to current implementation
 
@@ -694,14 +764,11 @@ Preliminary evidence:
 
 **Status:** AUDIT_REQUIRED
 
-Preliminary evidence from TASK-016:
-- WMS zones/locations
-- lot/stock/movements/cost layers
-- cycle-count plans
-- shelf-life profiles/alerts
-- trace events/genealogy
-- MRP/demand forecast data
-- M00.S02 backend inventory found an explicit WMS depth reconciliation migration (`20260514_0020_wms_depth_reconciliation.py`).
+Preliminary evidence:
+- WMS zones/locations, lot/stock/movements/cost layers, cycle counts, FEFO/shelf-life, traceability and serial/batch structures exist.
+- WMS, inventory, shelf-life, cycle-count and serial-tracking APIs exist.
+- WMS workspace exposes Picking, Putaway and Bin Replenishment.
+- Dedicated WMS depth reconciliation migration exists.
 
 - [A] M33.S00.T001 — Compare enterprise warehouse prompt to current WMS/inventory/FEFO/reservation/picking/quarantine/in-transit/valuation features
 
@@ -710,8 +777,9 @@ Preliminary evidence from TASK-016:
 **Status:** AUDIT_REQUIRED
 
 Preliminary evidence:
-- Procurement endpoints, approval rules, RFQs, BPAs/reorder policies and procurement suggestion services were present during historical health audits.
-- M00.S02 backend inventory found an explicit procurement governance migration (`20260514_0030_procurement_scope_governance.py`).
+- Procurement models and APIs include PR/PO/GRN/import shipments/supplier evaluation/payment plus RFQ/quotation-oriented surfaces, supplier portal, subcontracting, procurement suggestions and invoice matching.
+- Procurement workspace exposes Subcontracting, Landed Cost, Supplier Portal and AI Suggestions.
+- Dedicated procurement-governance migration exists.
 
 - [A] M34.S00.T001 — Compare RFQ/tender/quotation/PO/contract/supplier-scorecard/import/subcontracting prompt to current procurement implementation
 
@@ -720,7 +788,8 @@ Preliminary evidence:
 **Status:** AUDIT_REQUIRED
 
 Preliminary evidence:
-- Existing quality/QMS models, inspections and production QC structures are present historically.
+- Quality/QMS models and endpoints cover QC parameters/inspections/results, templates, sampling, HACCP/CCP, corrective action, deviation/release status, lot quality, allergen validation and QMS AI recommendations.
+- Quality workspace exposes QMS/HACCP, Allergen Matrix, Consumer Complaints, CAPA and COA.
 
 - [A] M35.S00.T001 — Compare specification/QCP/check/release/NCR/CAPA/quality-review/supplier-quality prompt against current implementation
 
@@ -773,4 +842,4 @@ Migration rule: nested historical task IDs remain valid evidence references even
 
 **Do not implement M20-M35 yet.**
 
-The next work is M00.S02.T002 frontend capability inventory, followed by the remaining M00.S02 inventories, M00.S03 M01-M19 source audit and M00.S04 M20-M35 cross-comparison. Only after M00.S05 strict full audit and M00.S06 roadmap regeneration may post-audit implementation begin.
+M00.S02 repository capability inventory is complete. The next work is M00.S03.T001, a source-based audit of M01 Platform / Infrastructure, followed sequentially by M02-M19. After M01-M19 classification, M00.S04 will compare every M20-M35 capability against the actual implementation. Only after M00.S05 strict full audit and M00.S06 roadmap regeneration may post-audit implementation begin.
