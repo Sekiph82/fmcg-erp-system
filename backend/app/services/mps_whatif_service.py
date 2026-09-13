@@ -38,10 +38,19 @@ def _R(v: Decimal, dp: int = 3) -> Decimal:
     return v.quantize(Decimal(10) ** -dp, rounding=ROUND_HALF_UP)
 
 
+# Change types not yet executed by the simulator. Presenting these as
+# computed would be dishonest — see M20.S01.T001 F7 — so they are rejected
+# rather than silently no-op'd. Full support belongs to M20.S04/M32.
+_UNSUPPORTED_CHANGE_TYPES = {MPSChangeType.MERGE, MPSChangeType.SHIFT_ADD}
+
+
 def _apply_change(line_snapshot: dict, change: dict) -> dict:
     """Apply one change dict to a line snapshot copy."""
     ct = change["change_type"]
     val = change["new_value"]
+
+    if ct in _UNSUPPORTED_CHANGE_TYPES:
+        raise ValueError(f"What-if change type {ct} is not yet simulated (planned for M20.S04)")
 
     if ct == MPSChangeType.DELAY:
         # val = number of days to delay
@@ -199,10 +208,15 @@ async def create_whatif_scenario(
         summary_parts.append(f"{delays} line(s) will be delayed")
     if cost_delta != 0:
         direction = "increase" if cost_delta > 0 else "decrease"
-        summary_parts.append(f"cost will {direction} by KES {abs(float(cost_delta)):,.0f}")
+        summary_parts.append(f"estimated cost will {direction} by KES {abs(float(cost_delta)):,.0f}")
     if not summary_parts:
         summary_parts.append("No negative impact detected")
-    impact_summary = "; ".join(summary_parts) + f". Projected service level: {svc:.1f}%."
+    if any(c.change_type == MPSChangeType.SPLIT for c in data.changes):
+        summary_parts.append(
+            "SPLIT is approximated as a single-line quantity halving; a full two-line "
+            "finite-capacity re-simulation is not performed (planned for M20.S04)"
+        )
+    impact_summary = "; ".join(summary_parts) + f". Projected service level: {svc:.1f}% (estimated)."
 
     scenario = MPSWhatIfScenario(
         scenario_no=f"WI-{mps_id.hex[:6].upper()}-{seq:04d}",

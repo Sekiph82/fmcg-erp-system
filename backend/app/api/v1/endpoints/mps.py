@@ -11,7 +11,8 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.session import get_db
+from app.core.deps import get_db, require_permission
+from app.models.user import User
 from app.schemas.mps import (
     MPSPlanCreate, MPSPlanOut, MPSPlanSummary,
     MPSLineUpdate, MPSLineOut,
@@ -42,17 +43,14 @@ from app.services.mps_ai_service import (
 
 router = APIRouter()
 
-_SYSTEM_USER = uuid.UUID("00000000-0000-0000-0000-000000000001")
-
-
-def _get_current_user_id() -> uuid.UUID:
-    return _SYSTEM_USER
-
 
 # ── Dashboard ─────────────────────────────────────────────────────────────────
 
 @router.get("/dashboard", response_model=MPSDashboard, tags=["mps"])
-async def mps_dashboard(db: AsyncSession = Depends(get_db)):
+async def mps_dashboard(
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(require_permission("mps", "view")),
+):
     return await get_mps_dashboard(db)
 
 
@@ -62,9 +60,10 @@ async def mps_dashboard(db: AsyncSession = Depends(get_db)):
 async def create_plan(
     body: MPSPlanCreate,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_permission("mps", "create")),
 ):
     async with db.begin():
-        plan = await create_mps_plan(db, body, _get_current_user_id())
+        plan = await create_mps_plan(db, body, current_user.id)
     return plan
 
 
@@ -73,13 +72,18 @@ async def list_plans(
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
     db: AsyncSession = Depends(get_db),
+    _: User = Depends(require_permission("mps", "view")),
 ):
     async with db.begin():
         return await list_mps_plans(db, limit, offset)
 
 
 @router.get("/plans/{mps_id}", response_model=MPSPlanOut, tags=["mps"])
-async def get_plan(mps_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+async def get_plan(
+    mps_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(require_permission("mps", "view")),
+):
     async with db.begin():
         plan = await get_mps_plan(db, mps_id)
     if not plan:
@@ -92,6 +96,7 @@ async def generate_from_mrp(
     mps_id: uuid.UUID,
     body: GenerateFromMRPRequest,
     db: AsyncSession = Depends(get_db),
+    _: User = Depends(require_permission("mps", "calculate")),
 ):
     async with db.begin():
         try:
@@ -102,7 +107,11 @@ async def generate_from_mrp(
 
 
 @router.post("/plans/{mps_id}/run-capacity", tags=["mps"])
-async def run_capacity(mps_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+async def run_capacity(
+    mps_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(require_permission("mps", "calculate")),
+):
     async with db.begin():
         try:
             result = await run_capacity_scheduling(db, mps_id)
@@ -112,7 +121,11 @@ async def run_capacity(mps_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/plans/{mps_id}/run-campaigns", tags=["mps"])
-async def run_campaigns(mps_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+async def run_campaigns(
+    mps_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(require_permission("mps", "calculate")),
+):
     async with db.begin():
         try:
             result = await run_campaign_grouping(db, mps_id)
@@ -122,7 +135,11 @@ async def run_campaigns(mps_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/plans/{mps_id}/run-ai", tags=["mps"])
-async def run_ai(mps_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+async def run_ai(
+    mps_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(require_permission("mps", "ai")),
+):
     async with db.begin():
         try:
             result = await run_all_ai_agents(db, mps_id)
@@ -132,10 +149,14 @@ async def run_ai(mps_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
 
 
 @router.patch("/plans/{mps_id}/approve", response_model=MPSPlanOut, tags=["mps"])
-async def approve_plan(mps_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+async def approve_plan(
+    mps_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_permission("mps", "approve")),
+):
     async with db.begin():
         try:
-            plan = await approve_mps_plan(db, mps_id, _get_current_user_id())
+            plan = await approve_mps_plan(db, mps_id, current_user.id)
         except ValueError as e:
             raise HTTPException(400, str(e))
     return plan
@@ -146,10 +167,11 @@ async def release_plan(
     mps_id: uuid.UUID,
     target_warehouse_id: uuid.UUID = Query(...),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_permission("mps", "release")),
 ):
     async with db.begin():
         try:
-            result = await release_mps_plan(db, mps_id, _get_current_user_id(), target_warehouse_id)
+            result = await release_mps_plan(db, mps_id, current_user.id, target_warehouse_id)
         except ValueError as e:
             raise HTTPException(400, str(e))
     return result
@@ -161,6 +183,7 @@ async def release_plan(
 async def list_lines(
     mps_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
+    _: User = Depends(require_permission("mps", "view")),
 ):
     async with db.begin():
         return await get_mps_lines(db, mps_id)
@@ -172,6 +195,7 @@ async def update_line(
     line_id: uuid.UUID,
     body: MPSLineUpdate,
     db: AsyncSession = Depends(get_db),
+    _: User = Depends(require_permission("mps", "edit")),
 ):
     async with db.begin():
         line = await update_mps_line(db, line_id, body)
@@ -183,7 +207,11 @@ async def update_line(
 # ── Capacity ──────────────────────────────────────────────────────────────────
 
 @router.get("/plans/{mps_id}/capacity-heatmap", response_model=CapacityHeatmap, tags=["mps"])
-async def capacity_heatmap(mps_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+async def capacity_heatmap(
+    mps_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(require_permission("mps", "view")),
+):
     async with db.begin():
         return await get_capacity_heatmap(db, mps_id)
 
@@ -192,6 +220,7 @@ async def capacity_heatmap(mps_id: uuid.UUID, db: AsyncSession = Depends(get_db)
 async def reschedule_suggestion(
     line_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
+    _: User = Depends(require_permission("mps", "view")),
 ):
     async with db.begin():
         try:
@@ -203,7 +232,11 @@ async def reschedule_suggestion(
 # ── Campaigns ─────────────────────────────────────────────────────────────────
 
 @router.get("/plans/{mps_id}/campaigns", response_model=List[MPSCampaignOut], tags=["mps"])
-async def get_campaigns(mps_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+async def get_campaigns(
+    mps_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(require_permission("mps", "view")),
+):
     async with db.begin():
         return await list_campaigns(db, mps_id)
 
@@ -215,23 +248,32 @@ async def create_whatif(
     mps_id: uuid.UUID,
     body: MPSWhatIfCreate,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_permission("mps", "simulate")),
 ):
     async with db.begin():
         try:
-            scenario = await create_whatif_scenario(db, mps_id, body, _get_current_user_id())
+            scenario = await create_whatif_scenario(db, mps_id, body, current_user.id)
         except ValueError as e:
             raise HTTPException(400, str(e))
     return scenario
 
 
 @router.get("/plans/{mps_id}/whatif", response_model=List[MPSWhatIfOut], tags=["mps"])
-async def list_whatif(mps_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+async def list_whatif(
+    mps_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(require_permission("mps", "view")),
+):
     async with db.begin():
         return await list_whatif_scenarios(db, mps_id)
 
 
 @router.get("/whatif/{scenario_id}", response_model=MPSWhatIfOut, tags=["mps"])
-async def get_whatif(scenario_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+async def get_whatif(
+    scenario_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(require_permission("mps", "view")),
+):
     async with db.begin():
         s = await get_whatif_scenario(db, scenario_id)
     if not s:
@@ -242,26 +284,38 @@ async def get_whatif(scenario_id: uuid.UUID, db: AsyncSession = Depends(get_db))
 # ── AI Recommendations ────────────────────────────────────────────────────────
 
 @router.get("/plans/{mps_id}/ai-recommendations", response_model=List[MPSAIRecOut], tags=["mps"])
-async def get_ai_recs(mps_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+async def get_ai_recs(
+    mps_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(require_permission("mps", "view")),
+):
     async with db.begin():
         return await list_ai_recommendations(db, mps_id)
 
 
 @router.patch("/ai-recommendations/{rec_id}/accept", response_model=MPSAIRecOut, tags=["mps"])
-async def accept_rec(rec_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+async def accept_rec(
+    rec_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_permission("mps", "ai")),
+):
     async with db.begin():
         try:
-            rec = await review_recommendation(db, rec_id, True, _get_current_user_id())
+            rec = await review_recommendation(db, rec_id, True, current_user.id)
         except ValueError as e:
             raise HTTPException(404, str(e))
     return rec
 
 
 @router.patch("/ai-recommendations/{rec_id}/reject", response_model=MPSAIRecOut, tags=["mps"])
-async def reject_rec(rec_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+async def reject_rec(
+    rec_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_permission("mps", "ai")),
+):
     async with db.begin():
         try:
-            rec = await review_recommendation(db, rec_id, False, _get_current_user_id())
+            rec = await review_recommendation(db, rec_id, False, current_user.id)
         except ValueError as e:
             raise HTTPException(404, str(e))
     return rec

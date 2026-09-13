@@ -397,6 +397,17 @@ MODULE_DEFINITIONS: tuple[ModuleDefinition, ...] = (
         ai_mode=AIMode.RULE_BASED,
         critical=True,
     ),
+    ModuleDefinition(
+        key="mps",
+        label="Master Production Scheduling",
+        route_prefix="/mps",
+        import_path="app.api.v1.endpoints.mps",
+        permission_actions=("view", "create", "edit", "approve", "release", "calculate", "simulate", "ai"),
+        sidebar_group="Manufacturing",
+        icon_key="calendar-clock",
+        ai_mode=MODULE_AI_MODES.get("mps", AIMode.STATISTICAL),
+        critical=True,
+    ),
 )
 
 
@@ -448,7 +459,7 @@ ENDPOINT_ROUTE_DEFINITIONS: tuple[EndpointRouteDefinition, ...] = (
     EndpointRouteDefinition(key="utility_alarm", route_prefix="/alarms", import_path="app.api.v1.endpoints.utility_alarm", tags=('utility-alarms',)),
     EndpointRouteDefinition(key="utility_kpi", route_prefix="/utility-kpi", import_path="app.api.v1.endpoints.utility_kpi", tags=('utility-kpi',)),
     EndpointRouteDefinition(key="mrp", route_prefix="/mrp", import_path="app.api.v1.endpoints.mrp", tags=('mrp',)),
-    EndpointRouteDefinition(key="mps", route_prefix="/mps", import_path="app.api.v1.endpoints.mps", tags=('mps',)),
+    # mps promoted to MODULE_DEFINITIONS — see above
     EndpointRouteDefinition(key="production_execution", route_prefix="/production-execution", import_path="app.api.v1.endpoints.production_execution", tags=('production-execution',)),
     EndpointRouteDefinition(key="shop_floor", route_prefix="/shop-floor", import_path="app.api.v1.endpoints.shop_floor", tags=('shop-floor',)),
     EndpointRouteDefinition(key="material_flow", route_prefix="/material-flow", import_path="app.api.v1.endpoints.material_flow", tags=('material-flow',)),

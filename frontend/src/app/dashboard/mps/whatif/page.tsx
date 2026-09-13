@@ -12,8 +12,7 @@ const CHANGE_TYPES: { value: MPSChangeType; label: string; desc: string }[] = [
   { value: "QTY_ADJUST", label: "Adjust Qty",   desc: "Set new planned quantity" },
   { value: "BATCH_SIZE", label: "Batch Size",   desc: "Change batch size (units)" },
   { value: "LINE_CHANGE",label: "Change Line",  desc: "Move to different work center ID" },
-  { value: "SPLIT",      label: "Split Batch",  desc: "Split this line into two halves" },
-  { value: "MERGE",      label: "Merge",        desc: "Flag for merge (mark only)" },
+  { value: "SPLIT",      label: "Split Batch",  desc: "Approximate: halves quantity on this line only" },
 ];
 
 export default function WhatIfPage() {

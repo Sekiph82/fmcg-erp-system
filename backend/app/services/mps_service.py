@@ -45,6 +45,26 @@ def _seq(prefix: str, n: int) -> str:
     return f"{prefix}-{n:06d}"
 
 
+def _phase_periods(start_date: date, end_date: date, period_days: int) -> list:
+    """Partition [start_date, end_date] into consecutive period_days-sized
+    windows, returning (period_start, period_end, fraction_of_total) tuples.
+    Each fraction is the period's own actual day count over the total
+    horizon day count, so fractions sum to exactly 1 and phased quantities
+    conserve the source total regardless of a partial final period —
+    see M20.S01.T001 F6.
+    """
+    total_days = max((end_date - start_date).days + 1, 1)
+    periods = []
+    cursor = start_date
+    while cursor <= end_date:
+        p_end = min(cursor + timedelta(days=period_days - 1), end_date)
+        actual_days = (p_end - cursor).days + 1
+        fraction = Decimal(str(actual_days)) / Decimal(str(total_days))
+        periods.append((cursor, p_end, fraction))
+        cursor = p_end + timedelta(days=1)
+    return periods
+
+
 async def _next_seq(db: AsyncSession, prefix: str, col) -> str:
     result = await db.execute(
         select(func.count()).select_from(MPSPlan if "MPS-" in prefix else MPSLine)
@@ -144,6 +164,13 @@ async def generate_mps_from_mrp(
     if plan.status != MPSStatus.DRAFT:
         raise ValueError("Can only generate lines for DRAFT plans")
 
+    mrp_run_result = await db.execute(select(MRPRun).where(MRPRun.id == req.mrp_run_id))
+    mrp_run = mrp_run_result.scalar_one_or_none()
+    if not mrp_run:
+        raise ValueError("MRP run not found")
+    if mrp_run.status != MRPRunStatus.COMPLETED:
+        raise ValueError(f"MRP run must be COMPLETED (current status: {mrp_run.status})")
+
     # Load MRP results for this run
     mrp_q = await db.execute(
         select(MRPResult)
@@ -172,19 +199,13 @@ async def generate_mps_from_mrp(
     period_days = {"DAILY": 1, "WEEKLY": 7, "MONTHLY": 30}.get(req.period_type, 7)
     created = 0
 
-    for mrp in mrp_results:
-        # Divide horizon into periods
-        cursor = plan.start_date
-        while cursor < plan.end_date:
-            p_end = min(cursor + timedelta(days=period_days - 1), plan.end_date)
+    periods = _phase_periods(plan.start_date, plan.end_date, period_days)
 
-            # Pro-rate net_requirement across periods
-            horizon = max((plan.end_date - plan.start_date).days, 1)
-            period_fraction = Decimal(str(period_days)) / Decimal(str(horizon))
+    for mrp in mrp_results:
+        for cursor, p_end, period_fraction in periods:
             net_req = _R(_D(mrp.net_requirement_qty) * period_fraction)
 
             if net_req <= 0:
-                cursor = p_end + timedelta(days=1)
                 continue
 
             # Snap to batch size
@@ -225,7 +246,6 @@ async def generate_mps_from_mrp(
             db.add(line)
             seq += 1
             created += 1
-            cursor = p_end + timedelta(days=1)
 
     await db.flush()
 
@@ -268,7 +288,7 @@ async def release_mps_plan(
     plan = plan_result.scalar_one_or_none()
     if not plan:
         raise ValueError("MPS plan not found")
-    if plan.status not in (MPSStatus.APPROVED, MPSStatus.DRAFT):
+    if plan.status != MPSStatus.APPROVED:
         raise ValueError("Plan must be APPROVED before release")
 
     lines_result = await db.execute(
@@ -276,9 +296,20 @@ async def release_mps_plan(
             MPSLine.mps_id == mps_id,
             MPSLine.production_order_id == None,
             MPSLine.planned_production_qty > 0,
+            MPSLine.feasibility_status == MPSFeasibilityStatus.FEASIBLE,
         )
     )
     lines = lines_result.scalars().all()
+
+    ineligible_count_result = await db.execute(
+        select(func.count()).select_from(MPSLine).where(
+            MPSLine.mps_id == mps_id,
+            MPSLine.production_order_id == None,
+            MPSLine.planned_production_qty > 0,
+            MPSLine.feasibility_status != MPSFeasibilityStatus.FEASIBLE,
+        )
+    )
+    ineligible_count = ineligible_count_result.scalar() or 0
 
     po_count_q = await db.execute(select(func.count()).select_from(ProductionOrder))
     po_seq = (po_count_q.scalar() or 0) + 1
@@ -327,7 +358,11 @@ async def release_mps_plan(
     plan.status = MPSStatus.RELEASED
     plan.released_at = datetime.now(timezone.utc)
     await db.flush()
-    return {"released_orders": created, "skipped": len(lines) - created}
+    return {
+        "released_orders": created,
+        "skipped_no_recipe": len(lines) - created,
+        "skipped_ineligible": ineligible_count,
+    }
 
 
 # ── Dashboard ─────────────────────────────────────────────────────────────────
