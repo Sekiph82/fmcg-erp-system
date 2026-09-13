@@ -12,9 +12,9 @@ The previous canonical tracker is preserved without reinterpretation as `TASKS_H
 
 - **Current Milestone:** M00 — Governance & Repository Baseline
 - **Current Sprint:** M00.S02 — Repository Capability Inventory
-- **Current Task:** M00.S02.T001 — Backend architecture and module inventory
+- **Current Task:** M00.S02.T002 — Frontend routes/pages/components inventory
 - **Current Task Status:** READY
-- **Next Task/Action:** Audit the actual repository module-by-module, then reconcile M01-M35 against current implementation before scheduling enhancement work.
+- **Next Task/Action:** Inventory the frontend route/page/component architecture, then continue database/API/event/import/integration/test/deployment inventories before M01-M35 reconciliation.
 - **Required Actor:** AUDITOR
 - **Tracking Repository:** Sekiph82/fmcg-erp-system
 - **Tracking Branch:** main
@@ -156,7 +156,21 @@ M00 is the mandatory truth-reconciliation milestone. It preserves historical acc
 
 ## M00.S02 — Repository Capability Inventory
 
-- [ ] **M00.S02.T001 — Backend architecture and module inventory**
+- [x] **M00.S02.T001 — Backend architecture and module inventory**
+  - Evidence inspected: `backend/`, `backend/app/`, `backend/app/main.py`, `backend/app/core/`, `backend/app/core/module_registry.py`, `backend/app/models/`, `backend/app/services/`, `backend/app/api/v1/endpoints/`, `backend/app/db/`, and `backend/alembic/versions/`.
+  - Backend framework: FastAPI application with centralized API router and dynamic module/endpoint registration through `module_registry.py`.
+  - Main application layers identified: `api`, `core`, `crud`, `db`, `models`, `prompts`, `schemas`, `services`.
+  - Runtime infrastructure identified: CORS, GZip, security headers, input sanitization, request timeout handling, request IDs, logging/error tracking, request metrics, `/live`, `/ready`, `/health`, and `/metrics` endpoints.
+  - Persistence architecture: asynchronous SQLAlchemy sessions + PostgreSQL-oriented Alembic migrations. `main.py` explicitly disables automatic table creation and requires Alembic for schema changes.
+  - Seed layers identified: authorization/admin/roles (`seed.py`), structural finance (`seed_finance.py`), production demo (`seed_production.py`), inventory demo (`seed_inventory.py`), standalone utilities (`seed_utilities.py`).
+  - Module registry confirms substantial existing domain coverage including Users/Roles, Inventory, Production, Advanced Planning, NPD, Advanced BOM/Formula, Recipes, Procurement, Sales, CRM, Finance, HR, Kenya Payroll, Quality, Consumer Complaints, GS1, Maintenance, Utilities, Report Builder, Notifications, Documents, Knowledge Base, E-Sign, AI, Shelf-Life/FEFO, IoT/Machine Streaming, and Company/Branches.
+  - Permission architecture in the registry supports both standard actions and scoped variants such as own-company/branch/warehouse/factory/line/department/region/category access.
+  - Service layer is extensive and domain-specific; sampled services include AI provider/runtime, approvals, banking/reconciliation, barcode/GS1, BOM AI/compliance/costing/explosion/scaling and many other module services. T004 will inventory API/service pairs in detail.
+  - Model layer is extensive and split by business domain; sampled models confirm AI, allergens, API portal, appraisals, audit log, bank API/reconciliation, BOM, brand assets, calendar, chatter and many other families. T003 will inventory models/schema/migrations in detail.
+  - Alembic history already contains enterprise migrations for accounting core/operational posting/access scopes, APS planning tables, WMS depth reconciliation and procurement governance, which is strong evidence that M32/M33/M34 scopes may overlap existing implementation.
+  - Preliminary architecture conclusion: this is already a broad enterprise ERP backend, not a thin prototype. M20-M35 must therefore be capability-by-capability reconciliation rather than greenfield implementation.
+  - Inventory-only anomaly to revisit in M19 cleanup/audit: an unusual root backend file named `backend/=2.9.0` exists and should be classified before any cleanup action.
+  - No source code was modified during this inventory. No historical Done state was reopened.
 - [ ] **M00.S02.T002 — Frontend routes/pages/components inventory**
 - [ ] **M00.S02.T003 — Database models/migrations/schema inventory**
 - [ ] **M00.S02.T004 — API/router/service inventory**
@@ -672,6 +686,7 @@ Preliminary evidence:
 
 Preliminary evidence:
 - ProductionPlan, ProductionSchedule, Shift, WorkCenter, MRP/MPS and forecast components already exist historically.
+- M00.S02 backend inventory also found an explicit APS planning migration (`20260514_0010_aps_planning_tables.py`), strengthening the likelihood of substantial existing finite/advanced planning scope.
 
 - [A] M32.S00.T001 — Compare shift/day/week/month/machine/order/section/campaign/finite-capacity planning prompt to current implementation
 
@@ -686,6 +701,7 @@ Preliminary evidence from TASK-016:
 - shelf-life profiles/alerts
 - trace events/genealogy
 - MRP/demand forecast data
+- M00.S02 backend inventory found an explicit WMS depth reconciliation migration (`20260514_0020_wms_depth_reconciliation.py`).
 
 - [A] M33.S00.T001 — Compare enterprise warehouse prompt to current WMS/inventory/FEFO/reservation/picking/quarantine/in-transit/valuation features
 
@@ -695,6 +711,7 @@ Preliminary evidence from TASK-016:
 
 Preliminary evidence:
 - Procurement endpoints, approval rules, RFQs, BPAs/reorder policies and procurement suggestion services were present during historical health audits.
+- M00.S02 backend inventory found an explicit procurement governance migration (`20260514_0030_procurement_scope_governance.py`).
 
 - [A] M34.S00.T001 — Compare RFQ/tender/quotation/PO/contract/supplier-scorecard/import/subcontracting prompt to current procurement implementation
 
@@ -756,4 +773,4 @@ Migration rule: nested historical task IDs remain valid evidence references even
 
 **Do not implement M20-M35 yet.**
 
-The next work is M00.S02 repository capability inventory, followed by M00.S03 M01-M19 source audit and M00.S04 M20-M35 cross-comparison. Only after M00.S05 strict full audit and M00.S06 roadmap regeneration may post-audit implementation begin.
+The next work is M00.S02.T002 frontend capability inventory, followed by the remaining M00.S02 inventories, M00.S03 M01-M19 source audit and M00.S04 M20-M35 cross-comparison. Only after M00.S05 strict full audit and M00.S06 roadmap regeneration may post-audit implementation begin.
