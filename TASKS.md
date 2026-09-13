@@ -12,9 +12,9 @@ The previous canonical tracker is preserved without reinterpretation as `TASKS_H
 
 - **Current Milestone:** M00 — Governance & Repository Baseline
 - **Current Sprint:** M00.S03 — Existing-System Audit M01-M19
-- **Current Task:** M00.S03.T002 — Audit M02 Authentication / RBAC
+- **Current Task:** M00.S03.T003 — Audit M03 Master Data
 - **Current Task Status:** READY
-- **Next Task/Action:** Audit M02 Authentication / RBAC against backend/frontend/current tests and classify completeness without reopening accepted historical Done work.
+- **Next Task/Action:** Audit M03 Master Data against current models, APIs, UI, imports, governance/versioning and tests; classify completeness without implementing enhancement work.
 - **Required Actor:** AUDITOR
 - **Tracking Repository:** Sekiph82/fmcg-erp-system
 - **Tracking Branch:** main
@@ -49,7 +49,7 @@ No M20-M35 capability may be assumed missing merely because it appears in the en
 2. `TASKS_HISTORY.md` is immutable historical/reference evidence, not a competing current tracker.
 3. Existing historical tasks are never deleted. Their historical IDs remain traceable here.
 4. If `TASKS_HISTORY.md` says Done, migration accepts Done.
-5. Manual, Help, Push/Checkpoint, Local Staging, Data Cleanup, blocked credential/vendor, and nested task families must be preserved.
+5. Manual, Help, Push, Local Staging, Data Cleanup, blocked credential/vendor, and nested task families must be preserved.
 6. M00 compares actual repository implementation, historical task state, `PLANS.md`, and M01-M35 before defining remaining work.
 7. M20-M35 are provisional enhancement scopes until M00.S04 reconciliation.
 8. M00.S05 is the strict audit gate before new enhancement implementation.
@@ -122,10 +122,8 @@ M00 is the mandatory truth-reconciliation milestone. It preserves historical acc
 
 ### M00 Historical Governance / Documentation Tasks
 
-- [x] **M00.S01.H001 — Repository Graphify output cleanup**  
-  Historical Task ID: `TASK-010` · Historical status: Done.
-- [x] **M00.S01.H002 — Full ERP Reference Manual PDF generation script**  
-  Historical Task ID: `TASK-018` · Historical status: Done.
+- [x] **M00.S01.H001 — Repository Graphify output cleanup** · Historical Task ID: `TASK-010` · Done.
+- [x] **M00.S01.H002 — Full ERP Reference Manual PDF generation script** · Historical Task ID: `TASK-018` · Done.
 - [x] **M00.S01.H003 — Manual asset audit** · Historical Task ID: `MANUAL-001` · Done.
 - [x] **M00.S01.H004 — Capture refreshed screenshots** · Historical Task ID: `MANUAL-002` · Done.
 - [x] **M00.S01.H005 — Rewrite changed module manuals** · Historical Task ID: `MANUAL-003` · Done.
@@ -195,7 +193,22 @@ M00 is the mandatory truth-reconciliation milestone. It preserves historical acc
   - Plugin/module-lifecycle concepts appear historically in architecture/model references but were not sufficiently proven during this audit to claim a complete dependency-aware plugin marketplace/lifecycle. Revisit in strict architecture audit rather than creating new implementation now.
   - **No remediation implemented during M01 audit.** Existing working platform code remains untouched. Partial items stay as bounded existing tasks/audit targets rather than reopening completed infrastructure.
 
-- [ ] M00.S03.T002 — Audit M02 Authentication / RBAC
+- [x] **M00.S03.T002 — Audit M02 Authentication / RBAC**
+  - **Classification: PARTIAL.** Authentication and authorization are substantially implemented with strong enterprise controls, but session lifecycle and production verification have bounded gaps.
+  - **ALREADY_DONE — authentication:** cookie-based JWT authentication; bcrypt password hashing; JWT expiry and JTI; HttpOnly auth cookie; production guard requires secure cookie; active-user validation; explicit logout token revocation; audit events for login success/failure/logout; username + IP brute-force lockout with Redis support and in-memory fallback.
+  - **ALREADY_DONE — password controls:** password policy validates minimum length, uppercase/lowercase/digit, optional special character, common-password blocklist and username equality; policy is enforced on user creation, admin password reset and self-service password change; production configuration requires special characters.
+  - **ALREADY_DONE — 2FA:** TOTP, email OTP and SMS OTP setup/login paths; pending/setup session tokens; expiry/attempt limits; recovery codes; recovery-code regeneration/use; password-protected disable flow; audit events; production configuration rejects development OTP delivery mode and requires SMTP when email 2FA is enabled.
+  - **ALREADY_DONE — RBAC model:** normalized `Role`, `Permission`, role-permission association and user-role relationships; permission codes use `module.action`; active role/permission filtering; superuser bypass; role CRUD/activation/deactivation; permission assignment; user role assignment; changes are audit logged.
+  - **ALREADY_DONE — row/scope authorization:** generic `AccessScope` supports user- or role-owned scopes with DB ownership constraint, uniqueness/indexes and per-action flags for view/create/edit/delete/approve/post/release/cancel/export/import/transfer/adjust/receive/dispatch. Scope types include company, branch, warehouse, factory, production line, department, region/team, categories, quality lab, cost center, project, machine and utility area. Backend helpers implement all-vs-own-scope permissions, user override semantics, record-scope resolution and locked-status mutation guards.
+  - **ALREADY_DONE — frontend authorization:** `AuthContext` bootstraps `/auth/me`, stores no access JWT in normal browser state, supports 2FA redirect/completion, module and permission checks, scoped action checks, record scope resolution and first-allowed-route routing. This mirrors the backend scope vocabulary closely enough to provide UI gating while backend remains authoritative.
+  - **ALREADY_DONE — security tests/evidence:** repository security report records 150/150 controlled security tests passing at the time of the report, including brute force, token replay after logout, password-policy and superuser/permission checks. Current CI also runs the backend test suite, but M00 audit did not execute tests itself.
+  - **PARTIAL — session lifecycle:** `SESSION_INACTIVITY_TIMEOUT_MINUTES` and `REFRESH_TOKEN_EXPIRE_DAYS` are configured but no repository usage was found during this audit. No implemented refresh-token rotation flow was established. Access JWT lifetime remains 8 hours by default. Treat inactivity timeout/refresh rotation as unimplemented until strict audit proves otherwise.
+  - **PARTIAL — global user revocation:** token blocklist has a `revoke_all_for_user()` helper, but `get_current_user()` only checks the presented token's blocklist entry; this audit did not establish enforcement of a user-level revocation marker for all already-issued sessions. Per-token logout revocation is implemented.
+  - **PARTIAL — production verification:** historical security report explicitly leaves live-DB checks for portal tenant isolation, supplier portal scoping and related cross-account isolation. Admin/finance mandatory-2FA policy is listed as a production retest item rather than proven enforced globally.
+  - **PARTIAL — CSRF/session hardening:** normal auth relies on SameSite HttpOnly cookies and backend authorization. No dedicated CSRF token/double-submit mechanism was established during this audit. This is not declared exploitable here, but must be assessed in M00.S05.T005 against actual deployment/origin policy.
+  - **Audit conclusion:** M02 is not missing and should not be rebuilt. Remaining work is hardening/verification: refresh/inactivity lifecycle, user-wide session revocation semantics, mandatory privileged-role 2FA policy if required, live tenant/scope isolation tests and CSRF posture verification.
+  - **No remediation implemented during M02 audit.** Existing authentication/RBAC code remains untouched.
+
 - [ ] M00.S03.T003 — Audit M03 Master Data
 - [ ] M00.S03.T004 — Audit M04 Product / Material / Supplier Master
 - [ ] M00.S03.T005 — Audit M05 Warehouse & Inventory
@@ -253,296 +266,84 @@ Every capability receives `ALREADY_DONE`, `PARTIAL`, `MISSING`, `SUPERSEDED`, or
 - [ ] M00.S05.T014 — HR/operator/shift/payroll integration audit
 - [ ] M00.S05.T015 — AI grounding/safety/explainability/execution audit
 - [ ] M00.S05.T016 — External integrations/provider-readiness audit
-- [ ] M00.S05.T017 — Kenya localization/eTIMS/M-Pesa/statutory-readiness audit
-- [ ] M00.S05.T018 — Cross-module data-flow/referential-integrity audit
-- [ ] M00.S05.T019 — Import/export/CSV/data-cleanup audit
-- [ ] M00.S05.T020 — Performance/scalability/background-job audit
-- [ ] M00.S05.T021 — Deployment/Docker/CI/observability audit
-- [ ] M00.S05.T022 — Full tests/build/runtime verification
-- [ ] M00.S05.T023 — Consolidated P0/P1/P2/P3 findings register
-
-## M00.S06 — Canonical Roadmap Regeneration
-
-- [ ] M00.S06.T001 — Merge M01-M19 audit results into current task state
-- [ ] M00.S06.T002 — Mark M20-M35 capabilities already implemented as ALREADY_DONE
-- [ ] M00.S06.T003 — Convert partial capabilities into bounded upgrade/remediation tasks
-- [ ] M00.S06.T004 — Mark duplicate future work SUPERSEDED without deleting history
-- [ ] M00.S06.T005 — Add missing work discovered by strict audit
-- [ ] M00.S06.T006 — Recalculate dependencies and milestone ordering
-- [ ] M00.S06.T007 — Recalculate milestone progress from reconciled states
-- [ ] M00.S06.T008 — Set evidence-based current milestone/sprint/task
-- [ ] M00.S06.T009 — Owner review of regenerated roadmap
-- [ ] M00.S06.T010 — Close M00 gate and authorize first post-audit implementation
-
-### M00 Exit Criteria
-
-M00 closes only after historical mapping, M01-M19 audit, M20-M35 comparison, strict full audit, P0/P1 triage, canonical roadmap regeneration and owner acceptance.
+- [ ] M00.S05.T017 — CSV/template/import/export/report audit
+- [ ] M00.S05.T018 — Jobs/queues/events/retry/DLQ/idempotency audit
+- [ ] M00.S05.T019 — Tests/CI/deployment/observability audit
+- [ ] M00.S05.T020 — P0/P1/P2/P3 finding register and remediation plan
 
 ---
 
-# M01 — Platform / Infrastructure
+# Baseline Historical Capability Map — M01-M19
 
-**M00 audit classification: PARTIAL.** The foundational platform is mature and should not be rewritten. Remaining work is bounded to existing document-storage/migration-verification, runtime scheduler/worker verification and deferred staging/lifecycle questions.
+Historical Done state is preserved. M00.S03 determines current completeness and maps remaining work without rewriting history.
 
-## M01.S01 — Platform UX and Enterprise Support Services
-
-- [x] **M01.S01.T001 — Login page POVU logo size** · Historical Task ID: `TASK-001` · Done.
-- [P] **M01.S01.T002 — Document Management / Knowledge Base / E-Sign hardening** · Historical Task ID: `TASK-027`  
-  Completed permission hardening/tests; remaining service extraction is deferred, migration ownership needs live DB, binary storage pipeline needs adapter decision.
-- [x] **M01.S01.T003 — Contextual question-mark help popovers** · Historical Task ID: `HELP-001` · Done.
-- [x] **M01.S01.T004 — Recapture screenshots/manual notes after help popovers** · Historical Task ID: `HELP-002` · Done.
-- [P] **M01.S02.T001 — Platform runtime/event execution verification**  
-  Webhook/event persistence/retry/dead-letter exists; strict audit must verify the production scheduler/worker/invocation mechanism rather than introduce a duplicate queue system.
-- [D] **M01.S02.T002 — Local staging platform** · Historical Task ID: `LOCAL-STAGING-001`  
-  Deferred; reconsider after strict deployment audit.
-
----
-
-# M02 — Authentication / RBAC
-
-## M02.S01 — Identity, Credentials and 2FA
-
-- [x] **M02.S01.T001 — E2E/admin credentials audit + management-user environment strategy** · Historical Task ID: `TASK-007` · Done.
-- [!] **M02.S01.T002 — SMTP + email OTP live end-to-end verification** · Historical Task ID: `TASK-012` · Blocked on real SMTP credentials/live staging test.
-
----
-
-# M03 — Master Data
-
-- [A] M03.S00.T001 — Reconcile existing master-data capabilities during M00 audit
+- **M01 Platform / Infrastructure** — PARTIAL after M00.S03.T001.
+- **M02 Authentication / RBAC** — PARTIAL after M00.S03.T002; strong auth/RBAC/scope/2FA controls exist, with bounded session-lifecycle and production-verification gaps.
+- **M03 Master Data** — Audit required.
+- **M04 Product / Material / Supplier Master** — Audit required.
+- **M05 Warehouse & Inventory** — Audit required.
+- **M06 Procurement** — Audit required.
+- **M07 Sales / Distributor Operations** — Audit required.
+- **M08 Production Core** — Audit required.
+- **M09 Recipes / BOM** — Audit required.
+- **M10 Quality** — Audit required.
+- **M11 Maintenance** — Audit required.
+- **M12 Utilities** — Audit required.
+- **M13 Finance / Costing** — Audit required.
+- **M14 HR / Operator / Shift** — Audit required.
+- **M15 Reporting / Analytics** — Audit required.
+- **M16 AI** — Audit required.
+- **M17 Integrations** — Audit required.
+- **M18 Kenya Localization** — Audit required.
+- **M19 Security / Deployment / Hardening** — Audit required.
 
 ---
 
-# M04 — Product / Material / Supplier Master
+# M20-M35 Enhancement Roadmap — Provisional Until Reconciliation
 
-- [!] **M04.S01.T001 — GS1 GTIN coverage / product master completeness** · Historical Task ID: `TASK-019` · Blocked on GS1 prefix/GTIN assignments.
-- [A] M04.S00.T002 — Audit material and supplier-master completeness under M00.S03.T004
+These milestones remain intentionally compact here. M00.S04 will rewrite each into only the capabilities that are actually missing or partial after source-level comparison.
 
----
-
-# M05 — Warehouse & Inventory
-
-- [x] **M05.S01.T001 — Inventory/Stock real data Phase I1-I7** · Historical Task ID: `TASK-016` · Done for historical seed scope: lots/stocks/movements/cost layers, WMS zones/locations, trace events, cycle count, shelf life, forecasts and MRP.
-- [A] M05.S02.T001 — Audit transactional warehouse/inventory completeness during M00.S03.T005
-
----
-
-# M06 — Procurement
-
-- [A] M06.S00.T001 — Audit procurement baseline, RFQ/supplier/approval/replenishment functionality during M00.S03.T006
-
----
-
-# M07 — Sales / Distributor Operations
-
-- [A] M07.S00.T001 — Audit Sales / Distributor Operations during M00.S03.T007
+- **M20 Master Production Scheduling:** demand/forecast-driven MPS, replenishment/procurement suggestions, safety stock, capacity/material checks, scenario comparison, approval/release.
+- **M21 Advanced BOM / Fluid-to-Unit:** bulk-to-pack conversion, nested/multi-output BOM, yield/loss/spillage, packaging hierarchy, version/effective-date governance.
+- **M22 Production Order / Work Order:** routing, operations, work centers, dependencies, split/merge/backorder/rework/subcontracting and execution state.
+- **M23 Shop Floor Execution:** operator/tablet execution, start/pause/finish, quantities/scrap/downtime, instructions/SOP, QC gates, time/labor capture, offline/mobile where justified.
+- **M24 Material Flow:** staging/WIP/issue/consumption/return/FG receipt, tank-line-packaging flow, pick lists, reservations, 1/2/3-step production and genealogy linkage.
+- **M25 Cross-Border / Landed Cost:** in-transit ownership/warehouses, shipment/customs/freight/insurance, landed-cost allocation and valuation/accounting integration.
+- **M26 Machine & Operator Intelligence:** runtime/operator logs, efficiency, downtime reasons, energy/labor cost, qualifications, line/shift KPIs and anomaly signals.
+- **M27 Quality Gates:** configurable incoming/in-process/final/logistics gates, mandatory hold/release/block semantics, sampling/evidence/spec integration.
+- **M28 Full Traceability:** lot genealogy, forward/backward trace, recall simulation/execution, packaging/pallet hierarchy and complaint-to-recall linkage.
+- **M29 Maintenance / OEE Upgrade:** equipment lifecycle, PM, MTBF/MTTR, downtime/OEE, calibration, predictive signals, work orders and production scheduling integration.
+- **M30 AI Decision & Simulation:** observe/analyze/decide/simulate/approve/execute/learn, confidence/explanations, risk-tier autonomy, rollback and outcome tracking.
+- **M31 API / Event Architecture:** headless partner API, scoped credentials/OAuth/API keys, webhooks/events/outbox/retry/DLQ/idempotency, integration observability.
+- **M32 Advanced Production Planning:** shift/day/week/month/campaign/resource/order/section planning, finite capacity, changeover/CIP/tank/utility/QC/material constraints, freeze horizons, scenarios and planning KPIs.
+- **M33 Warehouse / Inventory Enterprise Upgrade:** hierarchy/bins/zones, stock states, FEFO, reservation/allocation, putaway/replenishment/waves, barcode/GS1/license plates, cycle count, cross-border/WIP/QC integration.
+- **M34 Strategic Procurement Upgrade:** PR/RFQ/quotation comparison/PO/receipt/bill/landed cost, blanket/tender/split awards, supplier pricing/scorecards, import/subcontracting, approvals, portal and analytics.
+- **M35 QC / QA Enterprise Upgrade:** specs/QCP/templates, incoming/in-process/final/logistics checks, holds/releases, NCR/CAPA/deviation, supplier quality, sampling/AQL/SPC, COA/retain samples, complaints/audits/change control/training dependencies.
 
 ---
 
-# M08 — Production Core
+# Preserved Historical Deferred / Blocked Work
 
-- [x] **M08.S01.T001 — Production module real data Phase P1-P11** · Historical Task ID: `TASK-015` · Done for historical seed scope including work centers/routings, plans/orders/work orders/batches and OEE/QC/waste/downtime seed.
-- [A] M08.S02.T001 — Audit production lifecycle and execution completeness during M00.S03.T008
+These are not erased by the new roadmap.
 
----
-
-# M09 — Recipes / BOM
-
-- [A] M09.S00.T001 — Audit current Recipe/BOM implementation during M00.S03.T009
-
----
-
-# M10 — Quality
-
-- [A] M10.S00.T001 — Audit current quality/QMS implementation during M00.S03.T010
-
----
-
-# M11 — Maintenance
-
-- [A] M11.S00.T001 — Audit Maintenance baseline during M00.S03.T011
+- [D] **Historical TASK-012 — Local staging environment setup**
+  - Deferred intentionally; existing compose/configuration retained.
+- [P] **Historical TASK-019 — Document Management, Knowledge Base & E-Sign hardening**
+  - Existing UI/API/service work retained.
+  - Binary file storage adapter/upload pipeline and migration ownership/live-DB verification remain outstanding.
+- [!] **Historical TASK-020 — Integration credentials / provider enablement**
+  - External credentials/provider choices remain manual blockers where applicable.
+- [P] **Historical TASK-021 — Push / checkpoint / staging verification family**
+  - Preserve existing branch/push/checkpoint status from history; do not reinterpret as feature incompleteness.
+- [P] **Historical TASK-022 — Data cleanup / local production-data normalization family**
+  - Preserve local/manual nature; do not silently run destructive cleanup.
 
 ---
 
-# M12 — Utilities
+# H!veAI Current State
 
-- [x] **M12.S01.T001 — Utilities module real factory seed data foundation** · Historical Task ID: `TASK-009` · Done.
-- [A] M12.S02.T001 — Audit utility module functional completeness/cross-module integration
-
----
-
-# M13 — Finance / Costing
-
-- [P] **M13.S01.T001 — Finance cost allocation engine Phase F4-F6** · Historical Task ID: `TASK-017`  
-  Completed historical finance seed/posting work; remaining GL allocation mapping, profitability definition/API and dependent frontend remain bounded/blocked.
-- [A] M13.S02.T001 — Audit accounting/costing completeness during M00.S03.T013
-
----
-
-# M14 — HR / Operator / Shift
-
-- [A] M14.S00.T001 — Audit HR/operator/shift baseline during M00.S03.T014
-
----
-
-# M15 — Reporting / Analytics
-
-- [A] M15.S00.T001 — Audit reporting/analytics baseline during M00.S03.T015
-
----
-
-# M16 — AI
-
-- [!] **M16.S01.T001 — Enable AI live mode** · Historical Task ID: `TASK-002` · Blocked on provider key/live configuration.
-- [x] **M16.S01.T002 — Demand forecasting upgrade using local Holt-Winters** · Historical Task ID: `TASK-025` · Done.
-- [A] M16.S02.T001 — Audit remaining prediction/recommendation/optimization/agent capability during M00.S03.T016
-
----
-
-# M17 — Integrations
-
-- [!] **M17.S01.T001 — WhatsApp production validation** · Historical Task ID: `TASK-004` · Blocked on Meta credentials/live test.
-- [!] **M17.S01.T002 — CRM real integration** · `TASK-020` · Blocked on vendor/credentials.
-- [!] **M17.S01.T003 — E-commerce real integration** · `TASK-021` · Blocked on platform/credentials.
-- [!] **M17.S01.T004 — IoT/Machine MQTT integration** · `TASK-022` · Blocked on hardware/broker/schema.
-- [!] **M17.S01.T005 — Bank API sync** · `TASK-023` · Blocked on bank agreement/credentials.
-- [!] **M17.S01.T006 — Label printer SDK integration** · `TASK-024` · Blocked on printer/connectivity.
-- [A] M17.S02.T001 — Audit all integration capabilities/simulation-live boundaries
-
----
-
-# M18 — Kenya Localization
-
-- [!] **M18.S01.T001 — Wire M-Pesa production credentials** · Historical Task ID: `TASK-003` · Daraja/delegation implemented historically; blocked on credentials/live test.
-- [P] **M18.S02.T001 — eTIMS live integration** · Historical Task ID: `TASK-005`  
-  Provider config/models/connector/workflow/frontend monitoring/invoice card/UX/nav historical scope complete; finance posting policy and live provider remain blocked.
-- [A] M18.S03.T001 — Audit broader Kenya statutory/localization coverage
-
----
-
-# M19 — Security / Deployment / Hardening
-
-- [x] **M19.S01.T001 — GS1 route authorization guards** · `TASK-006` · Done.
-- [x] **M19.S01.T002 — ERP health audit/remediation** · `TASK-008` · Done; historical 0 HIGH with accepted/documented MEDIUM backlog.
-- [x] **M19.S01.T003 — Redis AUTH production** · `TASK-011` · Done.
-- [x] **M19.S01.T004 — python-jose → PyJWT** · `TASK-014` · Done.
-- [x] **M19.S02.T001 — Playwright smoke rerun** · `TASK-013` · Done, historical 56/56.
-- [x] **M19.S02.T002 — Multi-replica migration safety** · `TASK-026` · Done.
-- [x] **M19.S02.T003 — GitHub push/deployment-readiness checkpoint** · `PUSH-001` · Done.
-- [D] **M19.S02.T004 — Local Docker Compose staging** · `LOCAL-STAGING-001` · Deferred.
-- [x] **M19.S02.T005 — Demo seed-data gate audit** · `DATA-CLEANUP-001` · Done.
-- [A] M19.S03.T001 — Strict current security/deployment/hardening audit
-
----
-
-# M20-M35 — Provisional Enhancement Scope Pending M00 Reconciliation
-
-These are NOT automatically new implementation milestones. Repository inventory proves many already have models, APIs, services and frontend surfaces. M00.S04 must classify each intended capability before work is created.
-
-# M20 — Master Production Scheduling
-**Status:** AUDIT_REQUIRED. Evidence: Demand Forecast/MRP + MPS model family + `mps` API + Planning workspace MPS.
-- [A] M20.S00.T001 — Compare full MPS prompt with current MPS/MRP/forecast/service/UI
-
-# M21 — Advanced BOM / Fluid-to-Unit
-**Status:** AUDIT_REQUIRED. Evidence: AdvancedBOM/lines/substitutes/yield/conversion profiles, BOM workspace and BOM-item bulk import.
-- [A] M21.S00.T001 — Compare multi-level/bulk-to-unit/yield/loss/packaging/substitution/versioning scope
-
-# M22 — Production Order / Work Order
-**Status:** AUDIT_REQUIRED. Evidence: ProductionOrder/WorkOrder/WorkCenter/Routing/Plan/Batch + execution APIs/UI.
-- [A] M22.S00.T001 — Classify planned production/work-order capabilities
-
-# M23 — Shop Floor Execution
-**Status:** AUDIT_REQUIRED. Evidence: SFSession/activity/downtime/handover/supervisor models + `shop_floor` API + execution UI.
-- [A] M23.S00.T001 — Reconcile operator/shop-floor execution scope
-
-# M24 — Material Flow
-**Status:** AUDIT_REQUIRED. Evidence: material/inventory movement models + `material_flow` API/UI; full accounting-linked consumption/receipt path needs validation.
-- [A] M24.S00.T001 — Audit issue/consume/return/WIP/bulk-to-pack behavior
-
-# M25 — Cross-Border / Landed Cost
-**Status:** AUDIT_REQUIRED. Evidence: landed-cost models/API/UI + international shipment/container/customs/clearance models.
-- [A] M25.S00.T001 — Audit import/in-transit/customs/freight/insurance/allocation/posting behavior
-
-# M26 — Machine & Operator Intelligence
-**Status:** AUDIT_REQUIRED. Evidence: machine/operator/team/skill/cert/assignment/runtime/labor/performance/downtime models + API/UI; IoT live bridge stub.
-- [A] M26.S00.T001 — Compare machine/operator intelligence scope
-
-# M27 — Quality Gates
-**Status:** AUDIT_REQUIRED. Evidence: inspections/results/templates/sampling/HACCP/CCP/corrective action/deviation/release/lot quality + Quality/QMS APIs/UI.
-- [A] M27.S00.T001 — Determine operational QC block/release completeness
-
-# M28 — Full Traceability
-**Status:** AUDIT_REQUIRED. Evidence: TraceEvent/Line, LotGenealogyLink, recall family, BatchGenealogy, `traceability` API/UI.
-- [A] M28.S00.T001 — Compare forward/backward genealogy/recall/customer-impact scope
-
-# M29 — Maintenance / OEE Upgrade
-**Status:** AUDIT_REQUIRED. Evidence: maintenance asset/PM/WO/breakdown/spares + OEE/downtime/waste + historical predictive-maintenance GAP.
-- [A] M29.S00.T001 — Reconcile maintenance/OEE/calibration/predictive scope
-
-# M30 — AI Decision & Simulation
-**Status:** AUDIT_REQUIRED. Evidence: provider/runtime + production predictions/anomalies/suggestions/metrics + planning simulations + MPS what-if + cross-module AI recommendations.
-- [A] M30.S00.T001 — Audit prediction/anomaly/recommendation/scenario/decision/simulation architecture
-
-# M31 — API / Event Architecture
-**Status:** AUDIT_REQUIRED. Evidence: broad REST, persistent webhook event/subscription/delivery/retry/DLQ/replay; worker path unproven; GraphQL stub-only.
-- [A] M31.S00.T001 — Audit API/event/idempotency/retry/worker/security/GraphQL need
-
-# M32 — Advanced Production Planning
-**Status:** AUDIT_REQUIRED. Evidence: PlanningScenario/Calendar/Queue/Capacity/Changeover/Bottleneck/AI/Simulation + APS migration + API + MRP/MPS/Kanban/Capacity/Simulation UI.
-- [A] M32.S00.T001 — Compare shift/day/week/month/machine/order/section/campaign/finite-capacity planning
-
-# M33 — Warehouse / Inventory Enterprise Upgrade
-**Status:** AUDIT_REQUIRED. Evidence: WMS/stock/lot/movement/cost/cycle/FEFO/trace/serial + APIs + Picking/Putaway/Replenishment + WMS migration.
-- [A] M33.S00.T001 — Compare enterprise WMS/inventory/FEFO/reservation/picking/quarantine/in-transit/valuation scope
-
-# M34 — Strategic Procurement Upgrade
-**Status:** AUDIT_REQUIRED. Evidence: PR/PO/GRN/import/supplier evaluation/payment + procurement/quotation/supplier portal/subcontracting/suggestions/invoice-match + governance migration.
-- [A] M34.S00.T001 — Compare RFQ/tender/quotation/PO/contract/scorecard/import/subcontracting scope
-
-# M35 — QC / QA Enterprise Upgrade
-**Status:** AUDIT_REQUIRED. Evidence: QC/QMS inspection/template/sampling/HACCP/corrective/deviation/release/lot/allergen models + APIs + CAPA/COA/complaints UI.
-- [A] M35.S00.T001 — Compare specification/QCP/check/release/NCR/CAPA/review/supplier-quality scope
-
----
-
-# Active Blockers / Human Decisions Carried Forward
-
-- AI provider API key (`TASK-002`)
-- Safaricom Daraja credentials (`TASK-003`)
-- Meta WhatsApp credentials (`TASK-004`)
-- eTIMS accountant fiscalization policy (`TASK-005.1D`)
-- eTIMS provider/KRA credentials/spec (`TASK-005.1E`)
-- SMTP credentials/live OTP (`TASK-012`)
-- Utility allocation GL mapping (`TASK-017.3`)
-- Product profitability revenue definition (`TASK-017.4`)
-- GS1 prefix/GTIN assignments (`TASK-019`)
-- CRM vendor/credentials (`TASK-020`)
-- E-commerce platform/credentials (`TASK-021`)
-- MQTT hardware/broker/topic schema (`TASK-022`)
-- Bank API agreement/credentials (`TASK-023`)
-- Printer model/connectivity (`TASK-024`)
-- Document storage adapter (`TASK-027`)
-- Live document/KB/e-sign migration ownership verification needs Docker/dev DB (`TASK-027`)
-
-M00 audit may prove blockers obsolete/superseded/resolved. Until then they remain carried-forward state.
-
----
-
-# Historical Migration Coverage
-
-- `TASK-001` through `TASK-027`: mapped into M00-M19; detailed original cards remain in `TASKS_HISTORY.md`.
-- `MANUAL-001` through `MANUAL-006`: M00 historical documentation tasks; Done.
-- `HELP-001/002`: M01; Done.
-- `PUSH-001`: M19; Done.
-- `LOCAL-STAGING-001`: M01/M19 platform/deployment dependency; Deferred.
-- `DATA-CLEANUP-001`: M19; Done.
-
-Nested historical IDs remain valid evidence references even when canonical IDs differ.
-
----
-
-# Next Execution Gate
-
-**Do not implement M20-M35 yet.**
-
-M00.S02 repository inventory is complete and M01 Platform / Infrastructure has been classified `PARTIAL` without changing source code. Next is M00.S03.T002 Authentication / RBAC, followed sequentially through M19. M00.S04 then reconciles M20-M35. Only after M00.S05 strict full audit and M00.S06 roadmap regeneration may post-audit implementation begin.
+- **Current Phase:** M00 — Governance & Repository Baseline
+- **In Progress:** Existing-system audit M01-M19
+- **Completed in Last Run:** M00.S03.T002 — M02 Authentication / RBAC audit, classified PARTIAL with strong existing controls and bounded session/production-verification gaps
+- **Next Immediate Task:** M00.S03.T003 — Audit M03 Master Data
+- **Blockers:** No blocker for repository audit. External credentials/provider choices and local/live environment verification remain deferred to their mapped tasks.
