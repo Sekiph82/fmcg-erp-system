@@ -23,7 +23,7 @@ from app.models.mps import (
 )
 from app.models.mrp import MRPRun, MRPResult, MRPRunStatus
 from app.models.production import ProductionOrder, ProductionOrderStatus
-from app.models.recipe import Recipe
+from app.models.recipe import Recipe, RecipeStatus
 from app.models.master import Product, Warehouse
 from app.schemas.mps import (
     MPSPlanCreate, MPSLineUpdate, GenerateFromMRPRequest,
@@ -163,6 +163,18 @@ async def generate_mps_from_mrp(
         raise ValueError("MPS plan not found")
     if plan.status != MPSStatus.DRAFT:
         raise ValueError("Can only generate lines for DRAFT plans")
+    # A plan already tied to one MRP run must not silently pick up an
+    # unrelated run on a later (re)generation call. MPSPlan carries no
+    # warehouse/company/branch FK to cross-check against MRPRun.warehouse_id
+    # (only a free-text plant_code with no relation to it), so run identity
+    # is the strongest context-lineage check the current schema supports —
+    # see M20.S01.T001 V02 F-V01-002. Checked before the MRP run lookup
+    # since it needs no query.
+    if plan.mrp_run_id is not None and plan.mrp_run_id != req.mrp_run_id:
+        raise ValueError(
+            "Plan is already linked to a different MRP run "
+            f"({plan.mrp_run_id}); cannot attach unrelated run {req.mrp_run_id}"
+        )
 
     mrp_run_result = await db.execute(select(MRPRun).where(MRPRun.id == req.mrp_run_id))
     mrp_run = mrp_run_result.scalar_one_or_none()
@@ -175,7 +187,7 @@ async def generate_mps_from_mrp(
     mrp_q = await db.execute(
         select(MRPResult)
         .where(
-            MRPResult.mrp_run_id == req.mrp_run_id,
+            MRPResult.run_id == req.mrp_run_id,
             MRPResult.net_requirement_qty > 0,
         )
         .order_by(MRPResult.product_id)
@@ -277,6 +289,31 @@ async def approve_mps_plan(
     return plan
 
 
+async def _select_release_recipe(db: AsyncSession, product_id: uuid.UUID) -> Optional[Recipe]:
+    """Deterministic recipe selection for release: the strongest lifecycle
+    contract the current Recipe model supports (status == APPROVED, active,
+    within its effective date window), not just "any active recipe". Ties
+    (more than one currently-effective APPROVED recipe) break on the most
+    recently effective, then most recently created — see M20.S01.T001 V02
+    F-V01-004. This does not invent a parallel recipe lifecycle; it uses the
+    existing status/is_active/valid_from/valid_to fields already on Recipe.
+    """
+    today = date.today()
+    recipe_q = await db.execute(
+        select(Recipe)
+        .where(
+            Recipe.product_id == product_id,
+            Recipe.status == RecipeStatus.APPROVED,
+            Recipe.is_active == True,
+            (Recipe.valid_from == None) | (Recipe.valid_from <= today),
+            (Recipe.valid_to == None) | (Recipe.valid_to >= today),
+        )
+        .order_by(Recipe.valid_from.desc().nulls_last(), Recipe.created_at.desc())
+        .limit(1)
+    )
+    return recipe_q.scalar_one_or_none()
+
+
 async def release_mps_plan(
     db: AsyncSession,
     mps_id: uuid.UUID,
@@ -290,6 +327,12 @@ async def release_mps_plan(
         raise ValueError("MPS plan not found")
     if plan.status != MPSStatus.APPROVED:
         raise ValueError("Plan must be APPROVED before release")
+
+    warehouse = await db.get(Warehouse, target_warehouse_id)
+    if not warehouse:
+        raise ValueError(f"Target warehouse {target_warehouse_id} not found")
+    if not warehouse.is_active:
+        raise ValueError(f"Target warehouse {warehouse.code} is not active")
 
     lines_result = await db.execute(
         select(MPSLine).where(
@@ -316,17 +359,12 @@ async def release_mps_plan(
     created = 0
 
     for line in lines:
-        # Need a recipe — get active recipe for product
-        recipe_q = await db.execute(
-            select(Recipe).where(
-                Recipe.product_id == line.product_id,
-                Recipe.is_active == True,
-            ).limit(1)
-        )
-        recipe = recipe_q.scalar_one_or_none()
+        recipe = await _select_release_recipe(db, line.product_id)
         if not recipe:
-            line.remarks = (line.remarks or "") + " [no active recipe — skipped]"
+            line.remarks = (line.remarks or "") + " [no approved effective recipe — skipped]"
             continue
+
+        product = await db.get(Product, line.product_id)
 
         start_dt = datetime.combine(
             line.planned_start_date or plan.start_date, datetime.min.time()
@@ -340,7 +378,7 @@ async def release_mps_plan(
             product_id=line.product_id,
             recipe_id=recipe.id,
             planned_quantity=line.planned_production_qty,
-            uom="KG",
+            uom=product.uom.value if product and product.uom else "KG",
             status=ProductionOrderStatus.PLANNED,
             target_warehouse_id=target_warehouse_id,
             scheduled_start=start_dt,
@@ -355,13 +393,21 @@ async def release_mps_plan(
         po_seq += 1
         created += 1
 
-    plan.status = MPSStatus.RELEASED
-    plan.released_at = datetime.now(timezone.utc)
+    # A plan is only truthfully RELEASED if release actually produced at
+    # least one production order. Zero orders (e.g. every FEASIBLE line
+    # skipped for lack of an approved recipe) fails closed, preserving
+    # APPROVED so a retry can succeed once the underlying issue is fixed —
+    # see M20.S01.T001 V02 F-V01-006.
+    release_complete = created > 0
+    if release_complete:
+        plan.status = MPSStatus.RELEASED
+        plan.released_at = datetime.now(timezone.utc)
     await db.flush()
     return {
         "released_orders": created,
         "skipped_no_recipe": len(lines) - created,
         "skipped_ineligible": ineligible_count,
+        "release_complete": release_complete,
     }
 
 

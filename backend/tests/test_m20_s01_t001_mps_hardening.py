@@ -22,6 +22,7 @@ from app.core import module_registry
 from app.db import seed
 from app.models.mps import MPSFeasibilityStatus, MPSStatus, MPSChangeType
 from app.models.mrp import MRPRunStatus
+from app.models.recipe import RecipeStatus
 from app.schemas.mps import MPSLineUpdate, GenerateFromMRPRequest
 from app.services import mps_service as svc
 from app.services import mps_whatif_service as whatif_svc
@@ -36,7 +37,7 @@ def _exec_result(*, scalar_one_or_none=None, scalars_all=None, scalar=None):
     return m
 
 
-def _mock_db(*results):
+def _mock_db(*results, get_results=None):
     def _assign_id_on_add(obj):
         # Simulate what a real flush would do for a freshly-added ORM row.
         if getattr(obj, "id", None) is None:
@@ -47,6 +48,8 @@ def _mock_db(*results):
 
     db = AsyncMock()
     db.execute = AsyncMock(side_effect=list(results))
+    if get_results is not None:
+        db.get = AsyncMock(side_effect=list(get_results))
     db.add = MagicMock(side_effect=_assign_id_on_add)
     db.delete = AsyncMock()
     db.flush = AsyncMock()
@@ -123,7 +126,10 @@ async def test_release_only_creates_orders_for_feasible_lines_and_counts_ineligi
         planned_start_date=None, planned_end_date=None,
         remarks=None, production_order_id=None,
     )
-    recipe = SimpleNamespace(id=uuid4(), product_id=product_id, is_active=True)
+    recipe = SimpleNamespace(id=uuid4(), product_id=product_id, status=RecipeStatus.APPROVED,
+                              is_active=True, valid_from=None, valid_to=None)
+    warehouse = SimpleNamespace(id=uuid4(), code="WH-1", is_active=True)
+    product = SimpleNamespace(id=product_id, uom=SimpleNamespace(value="PCS"))
 
     db = _mock_db(
         _exec_result(scalar_one_or_none=plan),          # plan lookup
@@ -131,12 +137,14 @@ async def test_release_only_creates_orders_for_feasible_lines_and_counts_ineligi
         _exec_result(scalar=2),                           # ineligible (non-FEASIBLE) count
         _exec_result(scalar=0),                           # production order sequence base
         _exec_result(scalar_one_or_none=recipe),           # recipe lookup for feasible_line
+        get_results=[warehouse, product],                  # db.get(Warehouse, ...), db.get(Product, ...)
     )
 
     result = await svc.release_mps_plan(db, plan.id, uuid4(), uuid4())
 
     assert result["released_orders"] == 1
     assert result["skipped_ineligible"] == 2
+    assert result["release_complete"] is True
     assert plan.status == MPSStatus.RELEASED
     assert feasible_line.production_order_id is not None
 
@@ -158,7 +166,7 @@ def test_release_eligible_and_ineligible_queries_exclude_already_released_lines(
 # ── F5 — MRP run validation ─────────────────────────────────────────────────────
 
 async def test_generate_from_mrp_rejects_missing_run():
-    plan = SimpleNamespace(id=uuid4(), status=MPSStatus.DRAFT,
+    plan = SimpleNamespace(id=uuid4(), status=MPSStatus.DRAFT, mrp_run_id=None,
                             start_date=date(2026, 1, 1), end_date=date(2026, 1, 10))
     db = _mock_db(
         _exec_result(scalar_one_or_none=plan),   # plan lookup
@@ -171,7 +179,7 @@ async def test_generate_from_mrp_rejects_missing_run():
 
 
 async def test_generate_from_mrp_rejects_non_completed_run():
-    plan = SimpleNamespace(id=uuid4(), status=MPSStatus.DRAFT,
+    plan = SimpleNamespace(id=uuid4(), status=MPSStatus.DRAFT, mrp_run_id=None,
                             start_date=date(2026, 1, 1), end_date=date(2026, 1, 10))
     mrp_run = SimpleNamespace(id=uuid4(), status=MRPRunStatus.RUNNING)
     db = _mock_db(
