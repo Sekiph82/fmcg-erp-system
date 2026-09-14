@@ -8,15 +8,15 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 ## Project Status
 
-- **Current Milestone:** M20 — Master Production Scheduling
-- **Current Sprint:** M20.S01 — MPS Domain Reconciliation
-- **Current Task:** M20.S01.T001 — Reconcile current MPS engine against bounded enterprise scope
-- **Current Task Status:** READY
-- **Next Task/Action:** Execute M20 remaining PARTIAL scope only; do not rebuild capabilities already present.
-- **Required Actor:** BUILDER
-- **Tracking Repository:** Sekiph82/fmcg-erp-system
-- **Tracking Branch:** main
-- **M00 Gate:** COMPLETE
+- Current Milestone: M20 — Master Production Scheduling
+- Current Sprint: M20.S01 — MPS Domain Reconciliation
+- Current Task: M20.S01.T001 — Map existing MPS models/APIs/UI/services to enterprise requirements
+- Current Task Status: IN_PROGRESS
+- Next Task/Action: Execute M20.S01.T001 V03 remediation from `coordination/sessions/M20-S01-T001/CHATGPT_PROMPT_V03.md`, then create and push `CLAUDE_LOG_V03.md` for independent ChatGPT audit.
+- Required Actor: CLAUDE
+- Tracking Repository: Sekiph82/fmcg-erp-system
+- Tracking Branch: main
+- M00 Gate: COMPLETE
 
 ## Status Legend
 
@@ -38,8 +38,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 6. Cross-module changes must preserve RBAC, auditability, migrations, API contracts, frontend/backend consistency and tenant/company boundaries.
 7. M20–M35 are enterprise upgrades layered on M01–M19 foundations.
 8. Graphify is reference tooling only. Do not run refreshes without an explicit project need; no hooks, watchers or competing tracker state.
-9. Every completed implementation task updates this ledger in the same GitHub-tracked change set or immediately following it.
+9. ChatGPT is the sole writer of current tracker lifecycle/progress/closure state. Claude/Codex must not modify `TASKS.md` or `TASKS_HISTORY.md`; ChatGPT updates this ledger after independent audit/acceptance.
 10. Builder logs are evidence claims, not acceptance by themselves.
+11. `main` is the only authorized branch. Builders must not create, restore, push, or work on legacy `hiveai*` branches unless ChatGPT explicitly authorizes a temporary branch.
 
 ---
 
@@ -437,7 +438,6 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 - [x] M14.S02.T002 — Timesheets/expenses
 - [x] M14.S02.T003 — Production labor/operator concepts
 - [P] M14.S02.T004 — Extend skill/qualification enforcement in M26
-
 ---
 
 # M15 — Reporting / Analytics
@@ -539,11 +539,11 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 # M20 — Master Production Scheduling
 
-**Status: READY / PARTIAL existing capability**
+**Status: IN_PROGRESS / PARTIAL existing capability**
 **Depends on:** M08, M09, M15; M00 complete.
 
 ## M20.S01 — MPS Domain Reconciliation
-- [ ] M20.S01.T001 — Map existing MPS models/APIs/UI/services to enterprise requirements
+- [~] M20.S01.T001 — Map existing MPS models/APIs/UI/services to enterprise requirements
 - [ ] M20.S01.T002 — Preserve existing planning-board/capacity/campaign/what-if capabilities
 - [ ] M20.S01.T003 — Identify exact missing state/data invariants
 - [ ] M20.S01.T004 — Define MPS acceptance dataset and regression suite
