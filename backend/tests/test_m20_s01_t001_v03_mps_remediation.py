@@ -1,13 +1,12 @@
 """Behavioral coverage for the frozen M20.S01.T001 V03 findings."""
 from __future__ import annotations
 
-from contextlib import asynccontextmanager
+import asyncio
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
 import pytest
-from fastapi import HTTPException
 
 from app.api.v1.endpoints import mps as mps_api
 from app.models.mps import MPSFeasibilityStatus, MPSStatus
@@ -85,7 +84,6 @@ async def test_mixed_partial_release_remains_approved_and_reports_unresolved_lin
             _result(one=plan),
             _result(many=[line_a, line_b]),
             _result(scalar=0),
-            _result(scalar=0),
             _result(one=_recipe(product_a)),
             _result(one=None),
         ],
@@ -95,7 +93,7 @@ async def test_mixed_partial_release_remains_approved_and_reports_unresolved_lin
     result = await svc.release_mps_plan(db, plan.id, uuid4(), warehouse.id)
 
     assert result == {
-        "released_orders": 1,
+        "released_orders": 0,
         "skipped_no_recipe": 1,
         "skipped_ineligible": 0,
         "unresolved_lines": 1,
@@ -117,7 +115,6 @@ async def test_release_fails_closed_for_missing_or_invalid_authoritative_product
             _result(one=plan),
             _result(many=[line]),
             _result(scalar=0),
-            _result(scalar=0),
             _result(one=_recipe(product_id)),
         ],
         [warehouse, product],
@@ -130,77 +127,130 @@ async def test_release_fails_closed_for_missing_or_invalid_authoritative_product
     assert plan.status == MPSStatus.APPROVED
 
 
-class _TransactionalReleaseDB:
-    """Transaction-bound fake proving the endpoint owns rollback scope.
+@pytest.mark.asyncio
+async def test_release_endpoint_rolls_back_persisted_state_on_late_flush_failure(monkeypatch):
+    """A real PostgreSQL transaction must roll back PO/link/status changes."""
+    from sqlalchemy import func, select, text
 
-    This intentionally does not claim PostgreSQL persistence proof. It models
-    the existing AsyncSession.begin contract and records whether an order
-    would survive the outer transaction after a later-line integrity failure.
-    """
+    from app.core.config import settings
+    from app.db.session import AsyncSessionLocal
+    from app.models.master import Product, ProductCategory, UnitOfMeasure, Warehouse, WarehouseType
+    from app.models.mps import MPSLine, MPSPlan
+    from app.models.production import ProductionOrder
+    from app.models.recipe import Recipe
 
-    def __init__(self, results, get_results, plan, lines):
-        self.execute = AsyncMock(side_effect=results)
-        self.get = AsyncMock(side_effect=get_results)
-        self.flush = AsyncMock()
-        self.pending_orders = []
-        self.committed_orders = []
-        self.plan = plan
-        self.lines = lines
+    if "postgresql" not in str(settings.DATABASE_URL):
+        pytest.skip("V04 real rollback proof requires the PostgreSQL CI service")
 
-        def add(obj):
-            if getattr(obj, "id", None) is None:
-                obj.id = uuid4()
-            self.pending_orders.append(obj)
+    try:
+        async with AsyncSessionLocal() as probe:
+            await probe.execute(text("SELECT 1"))
+    except Exception as exc:
+        pytest.skip(f"PostgreSQL service unavailable for V04 rollback proof: {exc}")
 
-        self.add = MagicMock(side_effect=add)
+    suffix = uuid4().hex[:10]
+    plan_id = warehouse_id = product_id = recipe_id = line_id = None
+    async with AsyncSessionLocal() as db:
+        async with db.begin():
+            warehouse = Warehouse(code=f"V04-{suffix}", name="V04 rollback warehouse", warehouse_type=WarehouseType.FINISHED_GOODS)
+            product = Product(sku=f"V04-{suffix}", name="V04 rollback product", category=ProductCategory.FOOD, uom=UnitOfMeasure.KG)
+            recipe = Recipe(product_id=product.id, version="1", name="V04 rollback recipe", status=RecipeStatus.APPROVED, is_active=True)
+            plan = MPSPlan(plan_no=f"V04-{suffix}", plan_name="V04 rollback plan", start_date=__import__("datetime").date(2026, 1, 1), end_date=__import__("datetime").date(2026, 1, 31), status=MPSStatus.APPROVED)
+            line = MPSLine(line_no=f"V04-{suffix}", mps_id=plan.id, product_id=product.id, period_start=__import__("datetime").date(2026, 1, 1), period_end=__import__("datetime").date(2026, 1, 31), planned_production_qty=100, feasibility_status=MPSFeasibilityStatus.FEASIBLE)
+            db.add_all([warehouse, product, recipe, plan, line])
+            await db.flush()
+            plan_id, warehouse_id, product_id, recipe_id, line_id = plan.id, warehouse.id, product.id, recipe.id, line.id
 
-        @asynccontextmanager
-        async def begin():
-            try:
-                yield self
-            except BaseException:
-                self.pending_orders.clear()
-                for line in self.lines:
-                    line.production_order_id = None
-                self.plan.status = MPSStatus.APPROVED
-                raise
-            else:
-                self.committed_orders.extend(self.pending_orders)
+    original_flush = db.flush
+    flush_calls = 0
 
-        self.begin = MagicMock(side_effect=begin)
+    async def fail_on_final_flush(*args, **kwargs):
+        nonlocal flush_calls
+        flush_calls += 1
+        if flush_calls == 2:
+            raise RuntimeError("V04 injected late flush failure")
+        return await original_flush(*args, **kwargs)
+
+    monkeypatch.setattr(db, "flush", fail_on_final_flush)
+    with pytest.raises(RuntimeError, match="V04 injected"):
+        await mps_api.release_plan(plan_id, warehouse_id, db, SimpleNamespace(id=None))
+
+    async with AsyncSessionLocal() as verify:
+        assert await verify.scalar(select(func.count()).select_from(ProductionOrder).where(ProductionOrder.product_id == product_id)) == 0
+        persisted_line = await verify.get(MPSLine, line_id)
+        persisted_plan = await verify.get(MPSPlan, plan_id)
+        assert persisted_line.production_order_id is None
+        assert persisted_plan.status == MPSStatus.APPROVED
+
+    async with AsyncSessionLocal() as cleanup:
+        async with cleanup.begin():
+            await cleanup.execute(__import__("sqlalchemy").delete(MPSLine).where(MPSLine.id == line_id))
+            await cleanup.execute(__import__("sqlalchemy").delete(MPSPlan).where(MPSPlan.id == plan_id))
+            await cleanup.execute(__import__("sqlalchemy").delete(Recipe).where(Recipe.id == recipe_id))
+            await cleanup.execute(__import__("sqlalchemy").delete(Product).where(Product.id == product_id))
+            await cleanup.execute(__import__("sqlalchemy").delete(Warehouse).where(Warehouse.id == warehouse_id))
 
 
-async def test_release_endpoint_rolls_back_first_flushed_order_when_later_line_fails():
-    plan = _plan()
-    product_a, product_b = uuid4(), uuid4()
-    line_a, line_b = _line(product_a, "MPSL-1"), _line(product_b, "MPSL-2")
-    warehouse = SimpleNamespace(id=uuid4(), code="WH-1", is_active=True)
-    valid_product = SimpleNamespace(id=product_a, uom=SimpleNamespace(value="KG"))
-    db = _TransactionalReleaseDB(
-        [
-            _result(one=plan),
-            _result(many=[line_a, line_b]),
-            _result(scalar=0),
-            _result(scalar=0),
-            _result(one=_recipe(product_a)),
-            _result(one=_recipe(product_b)),
-        ],
-        [warehouse, valid_product, None],
-        plan,
-        [line_a, line_b],
-    )
+@pytest.mark.asyncio
+async def test_concurrent_postgres_mps_releases_allocate_distinct_order_numbers():
+    """Concurrent PostgreSQL releases must not reuse the same PO-MPS number."""
+    from sqlalchemy import delete, func, select, text
 
-    with pytest.raises(HTTPException) as exc_info:
-        await mps_api.release_plan(
-            plan.id,
-            warehouse.id,
-            db,
-            SimpleNamespace(id=uuid4()),
-        )
+    from app.core.config import settings
+    from app.db.session import AsyncSessionLocal
+    from app.models.master import Product, ProductCategory, UnitOfMeasure, Warehouse, WarehouseType
+    from app.models.mps import MPSLine, MPSPlan
+    from app.models.production import ProductionOrder
+    from app.models.recipe import Recipe
 
-    assert exc_info.value.status_code == 400
-    assert db.flush.await_count >= 1
-    assert db.committed_orders == []
-    assert db.pending_orders == []
-    assert line_a.production_order_id is None
-    assert plan.status == MPSStatus.APPROVED
+    if "postgresql" not in str(settings.DATABASE_URL):
+        pytest.skip("V04 concurrency proof requires the PostgreSQL CI service")
+    try:
+        async with AsyncSessionLocal() as probe:
+            await probe.execute(text("SELECT 1"))
+    except Exception as exc:
+        pytest.skip(f"PostgreSQL service unavailable for V04 concurrency proof: {exc}")
+
+    suffix = uuid4().hex[:10]
+    plan_ids, product_ids, line_ids, recipe_ids = [], [], [], []
+    async with AsyncSessionLocal() as db:
+        async with db.begin():
+            warehouse = Warehouse(code=f"V04-C-{suffix}", name="V04 concurrency warehouse", warehouse_type=WarehouseType.FINISHED_GOODS)
+            db.add(warehouse)
+            await db.flush()
+            for index in range(2):
+                product = Product(sku=f"V04-C-{suffix}-{index}", name=f"V04 concurrency product {index}", category=ProductCategory.FOOD, uom=UnitOfMeasure.KG)
+                db.add(product)
+                await db.flush()
+                recipe = Recipe(product_id=product.id, version="1", name=f"V04 concurrency recipe {index}", status=RecipeStatus.APPROVED, is_active=True)
+                plan = MPSPlan(plan_no=f"V04-C-{suffix}-{index}", plan_name=f"V04 concurrency plan {index}", start_date=__import__("datetime").date(2026, 1, 1), end_date=__import__("datetime").date(2026, 1, 31), status=MPSStatus.APPROVED)
+                line = MPSLine(line_no=f"V04-C-{suffix}-{index}", mps_id=plan.id, product_id=product.id, period_start=__import__("datetime").date(2026, 1, 1), period_end=__import__("datetime").date(2026, 1, 31), planned_production_qty=100, feasibility_status=MPSFeasibilityStatus.FEASIBLE)
+                db.add_all([recipe, plan, line])
+                await db.flush()
+                product_ids.append(product.id)
+                recipe_ids.append(recipe.id)
+                plan_ids.append(plan.id)
+                line_ids.append(line.id)
+            warehouse_id = warehouse.id
+
+    async def release(plan_id):
+        async with AsyncSessionLocal() as db:
+            return await mps_api.release_plan(plan_id, warehouse_id, db, SimpleNamespace(id=None))
+
+    results = await asyncio.gather(*(release(plan_id) for plan_id in plan_ids))
+    assert [result["released_orders"] for result in results] == [1, 1]
+
+    async with AsyncSessionLocal() as verify:
+        orders = (await verify.scalars(select(ProductionOrder).where(ProductionOrder.product_id.in_(product_ids)))).all()
+        assert len(orders) == 2
+        assert len({order.order_no for order in orders}) == 2
+        assert all(order.order_no.startswith("PO-MPS-") for order in orders)
+
+    async with AsyncSessionLocal() as cleanup:
+        async with cleanup.begin():
+            await cleanup.execute(delete(ProductionOrder).where(ProductionOrder.product_id.in_(product_ids)))
+            await cleanup.execute(delete(MPSLine).where(MPSLine.id.in_(line_ids)))
+            await cleanup.execute(delete(MPSPlan).where(MPSPlan.id.in_(plan_ids)))
+            await cleanup.execute(delete(Recipe).where(Recipe.id.in_(recipe_ids)))
+            await cleanup.execute(delete(Product).where(Product.id.in_(product_ids)))
+            await cleanup.execute(delete(Warehouse).where(Warehouse.id == warehouse_id))

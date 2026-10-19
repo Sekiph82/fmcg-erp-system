@@ -309,8 +309,8 @@ async def test_release_sets_production_order_uom_from_product():
         _exec_result(scalar_one_or_none=plan),
         _exec_result(scalars_all=[line]),
         _exec_result(scalar=0),
-        _exec_result(scalar=0),
         _exec_result(scalar_one_or_none=recipe),
+        _exec_result(scalar=0),
         get_results=[warehouse, product],
     )
 
@@ -357,8 +357,8 @@ async def test_release_becomes_released_when_at_least_one_order_is_created():
         _exec_result(scalar_one_or_none=plan),
         _exec_result(scalars_all=[line]),
         _exec_result(scalar=0),
-        _exec_result(scalar=0),
         _exec_result(scalar_one_or_none=recipe),
+        _exec_result(scalar=0),
         get_results=[warehouse, product],
     )
 
@@ -384,8 +384,8 @@ async def test_repeated_release_call_is_rejected_and_creates_no_second_order():
         _exec_result(scalar_one_or_none=plan),
         _exec_result(scalars_all=[line]),
         _exec_result(scalar=0),
-        _exec_result(scalar=0),
         _exec_result(scalar_one_or_none=recipe),
+        _exec_result(scalar=0),
         # second call's queries below — only the plan lookup should ever run,
         # proving the guard rejects before touching lines/recipes/orders again
         _exec_result(scalar_one_or_none=plan),

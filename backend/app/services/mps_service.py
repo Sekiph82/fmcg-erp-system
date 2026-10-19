@@ -10,11 +10,12 @@ Responsibilities:
 from __future__ import annotations
 
 import uuid
+import inspect
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal, ROUND_HALF_UP
 from typing import Optional
 
-from sqlalchemy import select, func, and_, update, cast, Integer
+from sqlalchemy import select, func, and_, update, cast, Integer, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.mps import (
@@ -354,11 +355,8 @@ async def release_mps_plan(
     )
     ineligible_count = ineligible_count_result.scalar() or 0
 
-    po_count_q = await db.execute(select(func.count()).select_from(ProductionOrder))
-    po_seq = (po_count_q.scalar() or 0) + 1
-    created = 0
-
     skipped_no_recipe = 0
+    prepared_lines = []
     for line in lines:
         recipe = await _select_release_recipe(db, line.product_id)
         if not recipe:
@@ -388,6 +386,51 @@ async def release_mps_plan(
             line.planned_end_date or plan.end_date, datetime.min.time()
         ).replace(tzinfo=timezone.utc)
 
+        prepared_lines.append((line, recipe, uom_value, start_dt, end_dt))
+
+    # Release is deliberately all-or-none.  A mixed eligible/ineligible set or
+    # a missing recipe is reported without creating partial ProductionOrders;
+    # the plan remains APPROVED and can be repaired and retried safely.
+    release_required_count = len(lines) + ineligible_count
+    unresolved_count = skipped_no_recipe + ineligible_count
+    if unresolved_count:
+        await db.flush()
+        return {
+            "released_orders": 0,
+            "skipped_no_recipe": skipped_no_recipe,
+            "skipped_ineligible": ineligible_count,
+            "unresolved_lines": unresolved_count,
+            "release_required_lines": release_required_count,
+            "release_complete": False,
+        }
+
+    # PostgreSQL transaction-level locking closes the count+1 race between
+    # concurrent MPS releases.  The ProductionOrder unique constraint remains
+    # the final database guard; non-PostgreSQL test doubles use the same
+    # deterministic count query without requiring dialect-specific SQL.
+    bind = None
+    get_bind = getattr(db, "get_bind", None)
+    if get_bind is not None and not inspect.iscoroutinefunction(get_bind):
+        try:
+            bind = get_bind()
+        except (AttributeError, RuntimeError):
+            pass
+    dialect_name = getattr(getattr(bind, "dialect", None), "name", None)
+    if dialect_name == "postgresql":
+        await db.execute(
+            text("SELECT pg_advisory_xact_lock(:lock_key)"),
+            {"lock_key": 2026051601},
+        )
+
+    po_count_q = await db.execute(
+        select(func.count())
+        .select_from(ProductionOrder)
+        .where(ProductionOrder.order_no.like("PO-MPS-%"))
+    )
+    po_seq = (po_count_q.scalar() or 0) + 1
+    created = 0
+    for line, recipe, uom_value, start_dt, end_dt in prepared_lines:
+
         po = ProductionOrder(
             order_no=f"PO-MPS-{po_seq:06d}",
             product_id=line.product_id,
@@ -408,10 +451,6 @@ async def release_mps_plan(
         po_seq += 1
         created += 1
 
-    # The release set is every positive, unreleased line. FEASIBLE lines are
-    # the only lines eligible for PO creation; ineligible lines remain
-    # blockers and are reported separately rather than silently disappearing.
-    release_required_count = len(lines) + ineligible_count
     release_complete = (
         release_required_count > 0
         and created == len(lines)

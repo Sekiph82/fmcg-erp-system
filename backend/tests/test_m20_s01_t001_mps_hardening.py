@@ -114,7 +114,7 @@ async def test_release_rejects_draft_plan():
         await svc.release_mps_plan(db, plan.id, uuid4(), uuid4())
 
 
-async def test_release_only_creates_orders_for_feasible_lines_and_counts_ineligible():
+async def test_release_blocks_all_orders_when_ineligible_lines_exist():
     product_id = uuid4()
     plan = SimpleNamespace(
         id=uuid4(), status=MPSStatus.APPROVED,
@@ -135,18 +135,17 @@ async def test_release_only_creates_orders_for_feasible_lines_and_counts_ineligi
         _exec_result(scalar_one_or_none=plan),          # plan lookup
         _exec_result(scalars_all=[feasible_line]),        # FEASIBLE eligible lines
         _exec_result(scalar=2),                           # ineligible (non-FEASIBLE) count
-        _exec_result(scalar=0),                           # production order sequence base
         _exec_result(scalar_one_or_none=recipe),           # recipe lookup for feasible_line
         get_results=[warehouse, product],                  # db.get(Warehouse, ...), db.get(Product, ...)
     )
 
     result = await svc.release_mps_plan(db, plan.id, uuid4(), uuid4())
 
-    assert result["released_orders"] == 1
+    assert result["released_orders"] == 0
     assert result["skipped_ineligible"] == 2
-    assert result["release_complete"] is True
-    assert plan.status == MPSStatus.RELEASED
-    assert feasible_line.production_order_id is not None
+    assert result["release_complete"] is False
+    assert plan.status == MPSStatus.APPROVED
+    assert feasible_line.production_order_id is None
 
 
 def test_release_query_filters_by_feasible_status_only():
