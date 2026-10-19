@@ -67,6 +67,10 @@ This is architecture-consistent transaction-bound behavior, but it is not persis
 - No `TASKS.md` or `TASKS_HISTORY.md` lifecycle update was performed.
 - The independent ChatGPT audit and tracker update remain external gates.
 
-Final implementation and pushed remote SHA: to be recorded after commit and push.
+Implementation commit SHA: `cd552bffe8056279da67c828566ea9ee2d3a2c65`.
+The implementation commit is the V03 code/test change that must be pushed to
+`main`; this log is committed immediately after it and accompanies the same
+push. The final remote branch SHA is verified by the push command and reported
+in the handoff response.
 
 AWAITING_CHATGPT_AUDIT
