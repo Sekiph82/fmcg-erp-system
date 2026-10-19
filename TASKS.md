@@ -12,7 +12,7 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 - Current Sprint: M20.S01 — MPS Domain Reconciliation
 - Current Task: M20.S01.T001 — Map existing MPS models/APIs/UI/services to enterprise requirements
 - Current Task Status: IN_PROGRESS
-- Next Task/Action: Execute M20.S01.T001 Codex V05 PostgreSQL rollback/concurrency proof and safe PO numbering remediation via `coordination/sessions/M20-S01-T001/CODEX_PROMPT_V05.md`; publish `CODEX_LOG_V05.md` for independent ChatGPT audit. V04 database tests skipped; T001 remains open.
+- Next Task/Action: Execute M20.S01.T001 Codex V06 from `coordination/sessions/M20-S01-T001/CODEX_PROMPT_V06.md`; PostgreSQL CI run 39285256727 backend FAILED (640 passed, 8 failed, 1 skipped), real DB proof remains unaccepted. Publish `CODEX_LOG_V06.md` for independent ChatGPT audit.
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
