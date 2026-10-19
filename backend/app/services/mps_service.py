@@ -10,7 +10,6 @@ Responsibilities:
 from __future__ import annotations
 
 import uuid
-import inspect
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal, ROUND_HALF_UP
 from typing import Optional
@@ -404,30 +403,13 @@ async def release_mps_plan(
             "release_complete": False,
         }
 
-    # PostgreSQL transaction-level locking closes the count+1 race between
-    # concurrent MPS releases.  The ProductionOrder unique constraint remains
-    # the final database guard; non-PostgreSQL test doubles use the same
-    # deterministic count query without requiring dialect-specific SQL.
-    bind = None
-    get_bind = getattr(db, "get_bind", None)
-    if get_bind is not None and not inspect.iscoroutinefunction(get_bind):
-        try:
-            bind = get_bind()
-        except (AttributeError, RuntimeError):
-            pass
-    dialect_name = getattr(getattr(bind, "dialect", None), "name", None)
-    if dialect_name == "postgresql":
-        await db.execute(
-            text("SELECT pg_advisory_xact_lock(:lock_key)"),
-            {"lock_key": 2026051601},
-        )
-
-    po_count_q = await db.execute(
-        select(func.count())
-        .select_from(ProductionOrder)
-        .where(ProductionOrder.order_no.like("PO-MPS-%"))
+    # The migration-backed PostgreSQL sequence is monotonic across concurrent
+    # releases and survives deletion of an older ProductionOrder.  It replaces
+    # the unsafe count+1 allocator without changing unrelated PO numbering.
+    po_seq_result = await db.execute(
+        text("SELECT nextval('mps_po_number_seq')")
     )
-    po_seq = (po_count_q.scalar() or 0) + 1
+    po_seq = int(po_seq_result.scalar())
     created = 0
     for line, recipe, uom_value, start_dt, end_dt in prepared_lines:
 
@@ -448,8 +430,12 @@ async def release_mps_plan(
         await db.flush()
 
         line.production_order_id = po.id
-        po_seq += 1
         created += 1
+        if created < len(prepared_lines):
+            po_seq_result = await db.execute(
+                text("SELECT nextval('mps_po_number_seq')")
+            )
+            po_seq = int(po_seq_result.scalar())
 
     release_complete = (
         release_required_count > 0

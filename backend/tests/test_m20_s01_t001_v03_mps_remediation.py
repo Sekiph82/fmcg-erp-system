@@ -154,10 +154,12 @@ async def test_release_endpoint_rolls_back_persisted_state_on_late_flush_failure
         async with db.begin():
             warehouse = Warehouse(code=f"V04-{suffix}", name="V04 rollback warehouse", warehouse_type=WarehouseType.FINISHED_GOODS)
             product = Product(sku=f"V04-{suffix}", name="V04 rollback product", category=ProductCategory.FOOD, uom=UnitOfMeasure.KG)
+            db.add_all([warehouse, product])
+            await db.flush()
             recipe = Recipe(product_id=product.id, version="1", name="V04 rollback recipe", status=RecipeStatus.APPROVED, is_active=True)
             plan = MPSPlan(plan_no=f"V04-{suffix}", plan_name="V04 rollback plan", start_date=__import__("datetime").date(2026, 1, 1), end_date=__import__("datetime").date(2026, 1, 31), status=MPSStatus.APPROVED)
             line = MPSLine(line_no=f"V04-{suffix}", mps_id=plan.id, product_id=product.id, period_start=__import__("datetime").date(2026, 1, 1), period_end=__import__("datetime").date(2026, 1, 31), planned_production_qty=100, feasibility_status=MPSFeasibilityStatus.FEASIBLE)
-            db.add_all([warehouse, product, recipe, plan, line])
+            db.add_all([recipe, plan, line])
             await db.flush()
             plan_id, warehouse_id, product_id, recipe_id, line_id = plan.id, warehouse.id, product.id, recipe.id, line.id
 
@@ -245,12 +247,44 @@ async def test_concurrent_postgres_mps_releases_allocate_distinct_order_numbers(
         assert len(orders) == 2
         assert len({order.order_no for order in orders}) == 2
         assert all(order.order_no.startswith("PO-MPS-") for order in orders)
+        highest_number = max(int(order.order_no.removeprefix("PO-MPS-")) for order in orders)
+        deleted_order_id = orders[0].id
+
+    async with AsyncSessionLocal() as delete_session:
+        async with delete_session.begin():
+            await delete_session.execute(delete(ProductionOrder).where(ProductionOrder.id == deleted_order_id))
+
+    extra_product_id = extra_recipe_id = extra_plan_id = extra_line_id = None
+    async with AsyncSessionLocal() as db:
+        async with db.begin():
+            extra_product = Product(sku=f"V04-C-{suffix}-retry", name="V04 deletion-gap product", category=ProductCategory.FOOD, uom=UnitOfMeasure.KG)
+            db.add(extra_product)
+            await db.flush()
+            extra_recipe = Recipe(product_id=extra_product.id, version="1", name="V04 deletion-gap recipe", status=RecipeStatus.APPROVED, is_active=True)
+            extra_plan = MPSPlan(plan_no=f"V04-C-{suffix}-retry", plan_name="V04 deletion-gap plan", start_date=__import__("datetime").date(2026, 1, 1), end_date=__import__("datetime").date(2026, 1, 31), status=MPSStatus.APPROVED)
+            extra_line = MPSLine(line_no=f"V04-C-{suffix}-retry", mps_id=extra_plan.id, product_id=extra_product.id, period_start=__import__("datetime").date(2026, 1, 1), period_end=__import__("datetime").date(2026, 1, 31), planned_production_qty=100, feasibility_status=MPSFeasibilityStatus.FEASIBLE)
+            db.add_all([extra_recipe, extra_plan, extra_line])
+            await db.flush()
+            extra_product_id, extra_recipe_id = extra_product.id, extra_recipe.id
+            extra_plan_id, extra_line_id = extra_plan.id, extra_line.id
+
+    result = await release(extra_plan_id)
+    assert result["released_orders"] == 1
+    async with AsyncSessionLocal() as verify:
+        extra_order = await verify.scalar(select(ProductionOrder).where(ProductionOrder.product_id == extra_product_id))
+        assert extra_order is not None
+        assert int(extra_order.order_no.removeprefix("PO-MPS-")) > highest_number
 
     async with AsyncSessionLocal() as cleanup:
         async with cleanup.begin():
             await cleanup.execute(delete(ProductionOrder).where(ProductionOrder.product_id.in_(product_ids)))
+            await cleanup.execute(delete(ProductionOrder).where(ProductionOrder.product_id == extra_product_id))
             await cleanup.execute(delete(MPSLine).where(MPSLine.id.in_(line_ids)))
+            await cleanup.execute(delete(MPSLine).where(MPSLine.id == extra_line_id))
             await cleanup.execute(delete(MPSPlan).where(MPSPlan.id.in_(plan_ids)))
+            await cleanup.execute(delete(MPSPlan).where(MPSPlan.id == extra_plan_id))
             await cleanup.execute(delete(Recipe).where(Recipe.id.in_(recipe_ids)))
+            await cleanup.execute(delete(Recipe).where(Recipe.id == extra_recipe_id))
             await cleanup.execute(delete(Product).where(Product.id.in_(product_ids)))
+            await cleanup.execute(delete(Product).where(Product.id == extra_product_id))
             await cleanup.execute(delete(Warehouse).where(Warehouse.id == warehouse_id))
