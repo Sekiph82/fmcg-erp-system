@@ -24,7 +24,7 @@ from app.models.mps import (
 from app.models.mrp import MRPRun, MRPResult, MRPRunStatus
 from app.models.production import ProductionOrder, ProductionOrderStatus
 from app.models.recipe import Recipe, RecipeStatus
-from app.models.master import Product, Warehouse
+from app.models.master import Product, UnitOfMeasure, Warehouse
 from app.schemas.mps import (
     MPSPlanCreate, MPSLineUpdate, GenerateFromMRPRequest,
     MPSDashboard, MPSPlanSummary,
@@ -358,13 +358,28 @@ async def release_mps_plan(
     po_seq = (po_count_q.scalar() or 0) + 1
     created = 0
 
+    skipped_no_recipe = 0
     for line in lines:
         recipe = await _select_release_recipe(db, line.product_id)
         if not recipe:
             line.remarks = (line.remarks or "") + " [no approved effective recipe — skipped]"
+            skipped_no_recipe += 1
             continue
 
         product = await db.get(Product, line.product_id)
+        if product is None:
+            raise ValueError(
+                f"Product {line.product_id} is missing; cannot release MPS line {line.line_no}"
+            )
+
+        product_uom = product.uom
+        uom_value = getattr(product_uom, "value", product_uom)
+        valid_uoms = {member.value for member in UnitOfMeasure}
+        if not isinstance(uom_value, str) or uom_value not in valid_uoms:
+            raise ValueError(
+                f"Product {line.product_id} has no valid authoritative UOM; "
+                f"cannot release MPS line {line.line_no}"
+            )
 
         start_dt = datetime.combine(
             line.planned_start_date or plan.start_date, datetime.min.time()
@@ -378,7 +393,7 @@ async def release_mps_plan(
             product_id=line.product_id,
             recipe_id=recipe.id,
             planned_quantity=line.planned_production_qty,
-            uom=product.uom.value if product and product.uom else "KG",
+            uom=uom_value,
             status=ProductionOrderStatus.PLANNED,
             target_warehouse_id=target_warehouse_id,
             scheduled_start=start_dt,
@@ -393,20 +408,26 @@ async def release_mps_plan(
         po_seq += 1
         created += 1
 
-    # A plan is only truthfully RELEASED if release actually produced at
-    # least one production order. Zero orders (e.g. every FEASIBLE line
-    # skipped for lack of an approved recipe) fails closed, preserving
-    # APPROVED so a retry can succeed once the underlying issue is fixed —
-    # see M20.S01.T001 V02 F-V01-006.
-    release_complete = created > 0
+    # The release set is every positive, unreleased line. FEASIBLE lines are
+    # the only lines eligible for PO creation; ineligible lines remain
+    # blockers and are reported separately rather than silently disappearing.
+    release_required_count = len(lines) + ineligible_count
+    release_complete = (
+        release_required_count > 0
+        and created == len(lines)
+        and skipped_no_recipe == 0
+        and ineligible_count == 0
+    )
     if release_complete:
         plan.status = MPSStatus.RELEASED
         plan.released_at = datetime.now(timezone.utc)
     await db.flush()
     return {
         "released_orders": created,
-        "skipped_no_recipe": len(lines) - created,
+        "skipped_no_recipe": skipped_no_recipe,
         "skipped_ineligible": ineligible_count,
+        "unresolved_lines": skipped_no_recipe + ineligible_count,
+        "release_required_lines": release_required_count,
         "release_complete": release_complete,
     }
 
