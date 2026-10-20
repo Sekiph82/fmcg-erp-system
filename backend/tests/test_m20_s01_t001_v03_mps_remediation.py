@@ -133,7 +133,7 @@ async def test_release_endpoint_rolls_back_persisted_state_on_late_flush_failure
     from sqlalchemy import func, select, text
 
     from app.core.config import settings
-    from app.db.session import AsyncSessionLocal
+    from app.db.session import AsyncSessionLocal, engine
     from app.models.master import Product, ProductCategory, UnitOfMeasure, Warehouse, WarehouseType
     from app.models.mps import MPSLine, MPSPlan
     from app.models.production import ProductionOrder
@@ -142,6 +142,7 @@ async def test_release_endpoint_rolls_back_persisted_state_on_late_flush_failure
     if "postgresql" not in str(settings.DATABASE_URL):
         pytest.skip("V04 real rollback proof requires the PostgreSQL CI service")
 
+    await engine.dispose()
     async with AsyncSessionLocal() as probe:
         await probe.execute(text("SELECT 1"))
 
@@ -198,7 +199,7 @@ async def test_concurrent_postgres_mps_releases_allocate_distinct_order_numbers(
     from sqlalchemy import delete, func, select, text
 
     from app.core.config import settings
-    from app.db.session import AsyncSessionLocal
+    from app.db.session import AsyncSessionLocal, engine
     from app.models.master import Product, ProductCategory, UnitOfMeasure, Warehouse, WarehouseType
     from app.models.mps import MPSLine, MPSPlan
     from app.models.production import ProductionOrder
@@ -206,6 +207,8 @@ async def test_concurrent_postgres_mps_releases_allocate_distinct_order_numbers(
 
     if "postgresql" not in str(settings.DATABASE_URL):
         pytest.skip("V04 concurrency proof requires the PostgreSQL CI service")
+
+    await engine.dispose()
     async with AsyncSessionLocal() as probe:
         await probe.execute(text("SELECT 1"))
 
