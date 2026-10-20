@@ -177,6 +177,48 @@ export interface MPSDashboard {
   recent_plans: MPSPlanSummary[];
 }
 
+export interface MPSConstraintIssue {
+  reason_code: string;
+  message?: string;
+  material_id?: string;
+  material_code?: string;
+  required_qty?: string;
+  available_qty?: string;
+  shortage_qty?: string;
+  uom?: string;
+  required_date?: string;
+  lead_time_days?: number;
+  priority: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+  provenance?: string;
+}
+
+export interface MPSLineConstraintDiagnostic {
+  line_id: string;
+  run_id: string;
+  source_version: string;
+  diagnostics: {
+    reason_codes: string[];
+    issues: MPSConstraintIssue[];
+    status: MPSFeasibilityStatus;
+    plan_id: string;
+    warehouse_id: string;
+    demand_run_id: string;
+  };
+  computed_at: string | null;
+}
+
+export interface MPSScenarioComparison {
+  mps_id: string;
+  baseline_scenario_id: string;
+  candidate_scenario_id: string;
+  service_level_pct_delta: number;
+  delay_count_delta: number;
+  cost_delta: null;
+  cost_delta_status: string;
+  baseline_version: string;
+  candidate_version: string;
+}
+
 // ── Color / Label maps ────────────────────────────────────────────────────────
 
 export const FEASIBILITY_COLOR: Record<MPSFeasibilityStatus, string> = {
@@ -262,6 +304,13 @@ export const mpsApi = {
     default_batch_qty?: number;
   }) => apiClient.post<{ lines_created: number }>(`${BASE}/plans/${mpsId}/generate-from-mrp`, body).then((r) => r.data),
 
+  projectDemand: (mpsId: string, periodType: "DAILY" | "WEEKLY" | "MONTHLY" = "WEEKLY") =>
+    apiClient.post<{ lines_created: number; demand_products: number; periods: number; warehouse_id: string; source_mrp_run_id: string }>(`${BASE}/plans/${mpsId}/project-demand?period_type=${periodType}`, {}).then((r) => r.data),
+  evaluateMaterialFeasibility: (mpsId: string) =>
+    apiClient.post<{ lines_evaluated: number; feasible_lines: number; material_short_lines: number; infeasible_lines: number; diagnostic_run_id: string | null }>(`${BASE}/plans/${mpsId}/material-feasibility`, {}).then((r) => r.data),
+  getConstraints: (mpsId: string) =>
+    apiClient.get<MPSLineConstraintDiagnostic[]>(`${BASE}/plans/${mpsId}/constraints`).then((r) => r.data),
+
   runCapacity:  (id: string) => apiClient.post<Record<string, unknown>>(`${BASE}/plans/${id}/run-capacity`, {}),
   runCampaigns: (id: string) => apiClient.post<Record<string, unknown>>(`${BASE}/plans/${id}/run-campaigns`, {}),
   runAI:        (id: string) => apiClient.post<Record<string, unknown>>(`${BASE}/plans/${id}/run-ai`, {}),
@@ -287,6 +336,8 @@ export const mpsApi = {
     apiClient.post<MPSWhatIf>(`${BASE}/plans/${mpsId}/whatif`, body).then((r) => r.data),
   listWhatIf: (mpsId: string) => apiClient.get<MPSWhatIf[]>(`${BASE}/plans/${mpsId}/whatif`).then((r) => r.data),
   getWhatIf: (id: string) => apiClient.get<MPSWhatIf>(`${BASE}/whatif/${id}`).then((r) => r.data),
+  compareWhatIf: (mpsId: string, baselineId: string, candidateId: string) =>
+    apiClient.get<MPSScenarioComparison>(`${BASE}/plans/${mpsId}/scenario-comparison?baseline_id=${baselineId}&candidate_id=${candidateId}`).then((r) => r.data),
 
   // AI
   getAIRecs: (mpsId: string) => apiClient.get<MPSAIRec[]>(`${BASE}/plans/${mpsId}/ai-recommendations`).then((r) => r.data),

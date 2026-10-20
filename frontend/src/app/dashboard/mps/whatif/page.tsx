@@ -25,6 +25,9 @@ export default function WhatIfPage() {
   const [description, setDescription] = useState("");
   const [changes, setChanges] = useState<WhatIfChange[]>([]);
   const [viewScenario, setViewScenario] = useState<MPSWhatIf | null>(null);
+  const [baselineId, setBaselineId] = useState("");
+  const [candidateId, setCandidateId] = useState("");
+  const [comparison, setComparison] = useState<{ service_level_pct_delta: number; delay_count_delta: number; cost_delta_status: string } | null>(null);
 
   const { data: plans = [] } = useQuery<MPSPlanSummary[]>({
     queryKey: ["mps-plans"],
@@ -57,6 +60,11 @@ export default function WhatIfPage() {
       setScenarioName("");
       setDescription("");
     },
+  });
+
+  const compareScenarios = useMutation({
+    mutationFn: () => mpsApi.compareWhatIf(selectedPlanId!, baselineId, candidateId),
+    onSuccess: setComparison,
   });
 
   function addChange() {
@@ -228,6 +236,20 @@ export default function WhatIfPage() {
 
           {/* Scenarios list */}
           <div className="space-y-4">
+            <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 space-y-3">
+              <h2 className="text-sm font-semibold text-gray-700">Compare saved snapshots</h2>
+              <div className="flex flex-wrap gap-2">
+                <select aria-label="Baseline scenario" className="border rounded px-2 py-1 text-sm" value={baselineId} onChange={(e) => setBaselineId(e.target.value)}>
+                  <option value="">Baseline</option>{scenarios.map((s) => <option key={s.id} value={s.id}>{s.scenario_name}</option>)}
+                </select>
+                <select aria-label="Candidate scenario" className="border rounded px-2 py-1 text-sm" value={candidateId} onChange={(e) => setCandidateId(e.target.value)}>
+                  <option value="">Candidate</option>{scenarios.map((s) => <option key={s.id} value={s.id}>{s.scenario_name}</option>)}
+                </select>
+                <button disabled={!baselineId || !candidateId || baselineId === candidateId || compareScenarios.isPending} onClick={() => compareScenarios.mutate()} className="rounded bg-indigo-700 px-3 py-1 text-sm text-white disabled:opacity-50">Compare</button>
+              </div>
+              {comparison && <p role="status" className="text-xs text-gray-600">Service level Δ {comparison.service_level_pct_delta.toFixed(1)} pp · Delayed lines Δ {comparison.delay_count_delta} · Cost {comparison.cost_delta_status.replaceAll("_", " ").toLowerCase()}</p>}
+              {compareScenarios.isError && <p className="text-xs text-red-700">{(compareScenarios.error as Error).message}</p>}
+            </div>
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
               <div className="px-5 py-4 border-b border-gray-50">
                 <h2 className="text-sm font-semibold text-gray-700">Scenarios ({scenarios.length})</h2>

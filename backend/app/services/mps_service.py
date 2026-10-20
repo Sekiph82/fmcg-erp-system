@@ -80,6 +80,14 @@ async def create_mps_plan(
     data: MPSPlanCreate,
     user_id: uuid.UUID,
 ) -> MPSPlan:
+    if data.end_date < data.start_date:
+        raise ValueError("MPS plan end date must be on or after start date")
+    if data.planning_horizon_days < 1:
+        raise ValueError("MPS planning horizon must be at least one day")
+    if data.mrp_run_id:
+        source_run = await db.get(MRPRun, data.mrp_run_id)
+        if source_run is None or source_run.status != MRPRunStatus.COMPLETED:
+            raise ValueError("MPS source MRP run must exist and be COMPLETED")
     count_result = await db.execute(select(func.count()).select_from(MPSPlan))
     n = (count_result.scalar() or 0) + 1
     plan = MPSPlan(
@@ -279,20 +287,47 @@ async def approve_mps_plan(
     mps_id: uuid.UUID,
     user_id: uuid.UUID,
 ) -> MPSPlan:
-    result = await db.execute(select(MPSPlan).where(MPSPlan.id == mps_id))
+    from app.models.audit_log import AuditLog
+    from app.models.user import User
+
+    result = await db.execute(select(MPSPlan).where(MPSPlan.id == mps_id).with_for_update())
     plan = result.scalar_one_or_none()
     if not plan:
         raise ValueError("MPS plan not found")
     if plan.status != MPSStatus.DRAFT:
         raise ValueError("Only DRAFT plans can be approved")
+    lines = (await db.execute(select(MPSLine).where(MPSLine.mps_id == mps_id))).scalars().all()
+    release_lines = [line for line in lines if _D(line.planned_production_qty) > 0]
+    if not release_lines:
+        raise ValueError("MPS plan must contain at least one positive production line before approval")
+    blocked = [line.line_no for line in release_lines if line.feasibility_status != MPSFeasibilityStatus.FEASIBLE]
+    if blocked:
+        raise ValueError("Every positive production line must be FEASIBLE before approval; blocked lines: " + ", ".join(blocked[:10]))
+    if not plan.mrp_run_id:
+        raise ValueError("MPS plan must be linked to its source MRP run before approval")
+    source_run = await db.get(MRPRun, plan.mrp_run_id)
+    if source_run is None or source_run.status != MRPRunStatus.COMPLETED or not source_run.warehouse_id:
+        raise ValueError("Approval requires a COMPLETED MRP run with a warehouse scope")
+    actor = await db.get(User, user_id)
+    if actor is None:
+        raise ValueError("Authenticated approver no longer exists")
+    before = {"status": str(getattr(plan.status, "value", plan.status)), "approved_by_id": str(plan.approved_by_id) if plan.approved_by_id else None}
     plan.status = MPSStatus.APPROVED
     plan.approved_by_id = user_id
     plan.approved_at = datetime.now(timezone.utc)
+    db.add(AuditLog(
+        actor_id=user_id, actor_email=actor.email, actor_name=actor.full_name,
+        event_type="MPS_PLAN_APPROVED", module="mps", target_type="mps_plan",
+        target_id=str(plan.id), target_name=plan.plan_no,
+        before_value=before,
+        after_value={"status": "APPROVED", "approved_by_id": str(user_id), "approved_at": plan.approved_at.isoformat()},
+        details={"line_count": len(lines), "release_line_count": len(release_lines), "warehouse_id": str(source_run.warehouse_id)},
+    ))
     await db.flush()
     return plan
 
 
-async def _select_release_recipe(db: AsyncSession, product_id: uuid.UUID) -> Optional[Recipe]:
+async def _select_release_recipe(db: AsyncSession, product_id: uuid.UUID, as_of: date) -> Optional[Recipe]:
     """Deterministic recipe selection for release: the strongest lifecycle
     contract the current Recipe model supports (status == APPROVED, active,
     within its effective date window), not just "any active recipe". Ties
@@ -301,15 +336,14 @@ async def _select_release_recipe(db: AsyncSession, product_id: uuid.UUID) -> Opt
     F-V01-004. This does not invent a parallel recipe lifecycle; it uses the
     existing status/is_active/valid_from/valid_to fields already on Recipe.
     """
-    today = date.today()
     recipe_q = await db.execute(
         select(Recipe)
         .where(
             Recipe.product_id == product_id,
             Recipe.status == RecipeStatus.APPROVED,
             Recipe.is_active == True,
-            (Recipe.valid_from == None) | (Recipe.valid_from <= today),
-            (Recipe.valid_to == None) | (Recipe.valid_to >= today),
+            (Recipe.valid_from == None) | (Recipe.valid_from <= as_of),
+            (Recipe.valid_to == None) | (Recipe.valid_to >= as_of),
         )
         .order_by(Recipe.valid_from.desc().nulls_last(), Recipe.created_at.desc())
         .limit(1)
@@ -324,18 +358,39 @@ async def release_mps_plan(
     target_warehouse_id: uuid.UUID,
 ) -> dict:
     """Release: create ProductionOrders for all FEASIBLE non-released lines."""
-    plan_result = await db.execute(select(MPSPlan).where(MPSPlan.id == mps_id))
+    from app.models.audit_log import AuditLog
+    from app.models.user import User
+
+    plan_result = await db.execute(select(MPSPlan).where(MPSPlan.id == mps_id).with_for_update())
     plan = plan_result.scalar_one_or_none()
     if not plan:
         raise ValueError("MPS plan not found")
+    if plan.status == MPSStatus.RELEASED:
+        released = (await db.execute(select(MPSLine).where(MPSLine.mps_id == mps_id, MPSLine.production_order_id.is_not(None)))).scalars().all()
+        existing_orders = [await db.get(ProductionOrder, line.production_order_id) for line in released]
+        orders = [order for order in existing_orders if order is not None]
+        if any(order.target_warehouse_id != target_warehouse_id for order in orders):
+            raise ValueError("Idempotent release retry must use the original target warehouse")
+        return {"released_orders": len(orders), "release_required_lines": len(released), "release_complete": True, "idempotent_retry": True, "production_order_ids": [str(order.id) for order in orders]}
     if plan.status != MPSStatus.APPROVED:
         raise ValueError("Plan must be APPROVED before release")
+
+    if not plan.mrp_run_id:
+        raise ValueError("MPS plan has no warehouse-scoped source MRP run")
+    source_run = await db.get(MRPRun, plan.mrp_run_id)
+    if source_run is None or source_run.status != MRPRunStatus.COMPLETED or not source_run.warehouse_id:
+        raise ValueError("Release requires a COMPLETED source MRP run with warehouse scope")
+    source_warehouse = await db.get(Warehouse, source_run.warehouse_id)
+    if source_warehouse is None:
+        raise ValueError("Source MRP warehouse no longer exists")
 
     warehouse = await db.get(Warehouse, target_warehouse_id)
     if not warehouse:
         raise ValueError(f"Target warehouse {target_warehouse_id} not found")
     if not warehouse.is_active:
         raise ValueError(f"Target warehouse {warehouse.code} is not active")
+    if warehouse.company_id != source_warehouse.company_id:
+        raise ValueError("Target warehouse must belong to the same company as the source MRP warehouse")
 
     lines_result = await db.execute(
         select(MPSLine).where(
@@ -360,7 +415,8 @@ async def release_mps_plan(
     skipped_no_recipe = 0
     prepared_lines = []
     for line in lines:
-        recipe = await _select_release_recipe(db, line.product_id)
+        required_start = line.planned_start_date or plan.start_date
+        recipe = await _select_release_recipe(db, line.product_id, required_start)
         if not recipe:
             line.remarks = (line.remarks or "") + " [no approved effective recipe — skipped]"
             skipped_no_recipe += 1
@@ -406,6 +462,15 @@ async def release_mps_plan(
             "release_complete": False,
         }
 
+    if not prepared_lines:
+        return {
+            "released_orders": 0, "skipped_no_recipe": skipped_no_recipe,
+            "skipped_ineligible": ineligible_count,
+            "unresolved_lines": skipped_no_recipe + ineligible_count,
+            "release_required_lines": release_required_count,
+            "release_complete": False,
+        }
+
     # The migration-backed PostgreSQL sequence is monotonic across concurrent
     # releases and survives deletion of an older ProductionOrder.  It replaces
     # the unsafe count+1 allocator without changing unrelated PO numbering.
@@ -447,8 +512,19 @@ async def release_mps_plan(
         and ineligible_count == 0
     )
     if release_complete:
+        actor = await db.get(User, user_id)
+        if actor is None:
+            raise ValueError("Authenticated releaser no longer exists")
+        before = {"status": str(getattr(plan.status, "value", plan.status)), "released_at": plan.released_at.isoformat() if plan.released_at else None}
         plan.status = MPSStatus.RELEASED
         plan.released_at = datetime.now(timezone.utc)
+        db.add(AuditLog(
+            actor_id=user_id, actor_email=actor.email, actor_name=actor.full_name,
+            event_type="MPS_PLAN_RELEASED", module="mps", target_type="mps_plan",
+            target_id=str(plan.id), target_name=plan.plan_no, before_value=before,
+            after_value={"status": "RELEASED", "released_at": plan.released_at.isoformat()},
+            details={"production_order_ids": [str(line.production_order_id) for line, *_ in prepared_lines], "target_warehouse_id": str(target_warehouse_id)},
+        ))
     await db.flush()
     return {
         "released_orders": created,
@@ -457,6 +533,7 @@ async def release_mps_plan(
         "unresolved_lines": skipped_no_recipe + ineligible_count,
         "release_required_lines": release_required_count,
         "release_complete": release_complete,
+        "idempotent_retry": False,
     }
 
 

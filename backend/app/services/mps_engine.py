@@ -1,0 +1,215 @@
+"""Deterministic MPS calculations shared by the planning and verification paths.
+
+These helpers deliberately fail closed when the source data cannot establish a
+unit, recipe basis, or capacity calendar.  They never substitute a guessed
+factory rate, shift, changeover, or currency.
+"""
+from __future__ import annotations
+
+from calendar import monthrange
+from datetime import date, timedelta
+from decimal import Decimal, ROUND_CEILING, ROUND_HALF_UP
+from typing import Iterable, Mapping, Sequence
+
+
+class PlanningInputError(ValueError):
+    """Raised when authoritative planning inputs are absent or inconsistent."""
+
+
+def decimal(value: object | None) -> Decimal:
+    if value is None:
+        return Decimal("0")
+    try:
+        result = Decimal(str(value))
+    except Exception as exc:  # pragma: no cover - Decimal supplies details
+        raise PlanningInputError(f"invalid decimal input: {value!r}") from exc
+    if not result.is_finite():
+        raise PlanningInputError("planning quantities must be finite")
+    return result
+
+
+def round_qty(value: Decimal, places: int = 3) -> Decimal:
+    return value.quantize(Decimal(1).scaleb(-places), rounding=ROUND_HALF_UP)
+
+
+def period_buckets(start: date, end: date, period_type: str) -> list[tuple[date, date]]:
+    """Return inclusive, gap-free buckets clipped to the requested horizon."""
+    if end < start:
+        raise PlanningInputError("planning horizon end precedes start")
+    kind = period_type.upper()
+    if kind not in {"DAILY", "WEEKLY", "MONTHLY"}:
+        raise PlanningInputError(f"unsupported period type: {period_type}")
+    buckets: list[tuple[date, date]] = []
+    cursor = start
+    while cursor <= end:
+        if kind == "DAILY":
+            bucket_end = cursor
+        elif kind == "WEEKLY":
+            bucket_end = min(end, cursor + timedelta(days=6 - cursor.weekday()))
+        else:
+            bucket_end = min(end, date(cursor.year, cursor.month, monthrange(cursor.year, cursor.month)[1]))
+        buckets.append((cursor, bucket_end))
+        cursor = bucket_end + timedelta(days=1)
+    return buckets
+
+
+def overlap_days(left_start: date, left_end: date, right_start: date, right_end: date) -> int:
+    start = max(left_start, right_start)
+    end = min(left_end, right_end)
+    return max(0, (end - start).days + 1)
+
+
+def allocate_period_quantity(
+    quantity: object,
+    source_start: date,
+    source_end: date,
+    buckets: Sequence[tuple[date, date]],
+) -> list[Decimal]:
+    """Allocate an interval quantity by overlapping calendar days, conserving total."""
+    qty = decimal(quantity)
+    if qty < 0:
+        raise PlanningInputError("demand quantities cannot be negative")
+    source_days = (source_end - source_start).days + 1
+    if source_days <= 0:
+        raise PlanningInputError("source demand interval is invalid")
+    raw = [qty * Decimal(overlap_days(source_start, source_end, a, b)) / source_days for a, b in buckets]
+    if not raw:
+        return []
+    rounded = [round_qty(x) for x in raw]
+    # Put rounding residue in the last intersecting bucket, keeping the source total exact.
+    indices = [i for i, (a, b) in enumerate(buckets) if overlap_days(source_start, source_end, a, b)]
+    if indices:
+        rounded[indices[-1]] += round_qty(qty) - sum(rounded)
+    return rounded
+
+
+def net_finished_goods_requirement(
+    *, confirmed: object, forecast: object, safety_stock: object,
+    on_hand: object, reserved: object, incoming: object = 0,
+    wip: object = 0, other_planned: object = 0,
+) -> dict[str, Decimal]:
+    """Net stock and dated supply once; confirmed demand consumes forecast first."""
+    confirmed_d = decimal(confirmed)
+    forecast_d = decimal(forecast)
+    safety_d = decimal(safety_stock)
+    on_hand_d = decimal(on_hand)
+    reserved_d = decimal(reserved)
+    incoming_d, wip_d, planned_d = map(decimal, (incoming, wip, other_planned))
+    if min(confirmed_d, forecast_d, safety_d, on_hand_d, reserved_d, incoming_d, wip_d, planned_d) < 0:
+        raise PlanningInputError("demand and supply inputs cannot be negative")
+    available = max(Decimal(0), on_hand_d - reserved_d)
+    net_forecast = max(Decimal(0), forecast_d - confirmed_d)
+    gross = confirmed_d + net_forecast + safety_d
+    total_supply = available + incoming_d + wip_d + planned_d
+    return {
+        "confirmed": round_qty(confirmed_d),
+        "forecast": round_qty(forecast_d),
+        "net_forecast": round_qty(net_forecast),
+        "safety_stock": round_qty(safety_d),
+        "available_on_hand": round_qty(available),
+        "incoming": round_qty(incoming_d),
+        "wip": round_qty(wip_d),
+        "other_planned": round_qty(planned_d),
+        "gross_demand": round_qty(gross),
+        "total_supply": round_qty(total_supply),
+        "net_requirement": round_qty(max(Decimal(0), gross - total_supply)),
+    }
+
+
+def explode_approved_bom(
+    *, output_qty: object, output_uom: str, bom: Mapping[str, object],
+    lines: Iterable[Mapping[str, object]],
+) -> list[dict[str, object]]:
+    """Scale an effective advanced BOM with explicit basis and loss semantics."""
+    qty = decimal(output_qty)
+    base_qty = decimal(bom.get("base_qty"))
+    base_uom = str(bom.get("base_uom") or "").upper()
+    if qty < 0 or base_qty <= 0:
+        raise PlanningInputError("BOM output and base quantity must be valid")
+    if str(bom.get("lifecycle", "")).upper() not in {"APPROVED", "RELEASED"}:
+        raise PlanningInputError("no approved/released BOM is available")
+    if str(bom.get("output_uom", output_uom)).upper() != str(output_uom).upper():
+        raise PlanningInputError("planned output UOM does not match the BOM base UOM")
+    if base_uom and base_uom != str(output_uom).upper():
+        raise PlanningInputError("BOM base UOM conversion is not configured")
+    results = []
+    for line in lines:
+        if bool(line.get("is_optional")):
+            continue
+        basis = str(line.get("basis_type", "")).upper()
+        required = decimal(line.get("required_qty"))
+        if required < 0:
+            raise PlanningInputError("BOM component quantity cannot be negative")
+        if basis == "PER_BATCH":
+            amount = required * qty / base_qty
+        elif basis == "PER_UNIT":
+            amount = required * qty
+        elif basis in {"PER_100KG", "PER_1000L"}:
+            token = "KG" if basis == "PER_100KG" else "L"
+            if str(output_uom).upper() != token:
+                raise PlanningInputError(f"{basis} requires output UOM {token}; conversion is not configured")
+            denominator = Decimal("100") if basis == "PER_100KG" else Decimal("1000")
+            amount = required * qty / denominator
+        elif basis == "FIXED":
+            amount = required
+        else:
+            raise PlanningInputError(f"unsupported BOM basis: {basis or 'missing'}")
+        losses = decimal(line.get("wastage_pct")) + decimal(line.get("process_loss_pct"))
+        if losses < 0 or losses >= 100:
+            raise PlanningInputError("BOM loss percentage must be in [0, 100)")
+        amount = amount * (Decimal(1) + losses / Decimal(100))
+        if not line.get("item_id") or str(line.get("item_type", "MATERIAL")).upper() != "MATERIAL":
+            raise PlanningInputError("only identified material components are supported for MPS material feasibility")
+        results.append({
+            "material_id": line["item_id"],
+            "required_qty": round_qty(amount, 4),
+            "uom": str(line.get("required_uom") or "").upper(),
+            "basis_type": basis,
+            "substitution_policy": str(line.get("substitution_policy") or "NO_SUB"),
+        })
+    return results
+
+
+def capacity_result(required_hours: object, available_hours: object, downtime_hours: object = 0) -> dict[str, Decimal | str]:
+    required = decimal(required_hours)
+    available = decimal(available_hours)
+    downtime = decimal(downtime_hours)
+    if min(required, available, downtime) < 0:
+        raise PlanningInputError("capacity hours cannot be negative")
+    net_available = max(Decimal(0), available - downtime)
+    overload = max(Decimal(0), required - net_available)
+    return {
+        "required_hours": round_qty(required, 3),
+        "available_hours": round_qty(available, 3),
+        "downtime_hours": round_qty(downtime, 3),
+        "net_available_hours": round_qty(net_available, 3),
+        "overload_hours": round_qty(overload, 3),
+        "status": "OVERLOADED" if overload else "FEASIBLE",
+    }
+
+
+def scenario_kpis(
+    *, lines: Sequence[Mapping[str, object]],
+    material_shortages: int | None = None,
+    capacity_overload_hours: object | None = None,
+    changeover_hours: object | None = None,
+    cost_delta: object | None = None,
+    cost_currency: str | None = None,
+) -> dict[str, object]:
+    """Transparent scenario KPIs; unknown monetary basis stays unknown."""
+    total = len(lines)
+    late = sum(1 for line in lines if line.get("late") is True)
+    return {
+        "schema_version": "mps-scenario-kpis.v1",
+        "service_level_pct": round((total - late) * 100 / total, 2) if total else None,
+        "line_count": total,
+        "late_line_count": late,
+        "material_shortage_count": material_shortages,
+        "capacity_overload_hours": str(round_qty(decimal(capacity_overload_hours), 3)) if capacity_overload_hours is not None else None,
+        "capacity_overload_unit": "hours" if capacity_overload_hours is not None else None,
+        "changeover_hours": str(round_qty(decimal(changeover_hours), 3)) if changeover_hours is not None else None,
+        "changeover_unit": "hours" if changeover_hours is not None else None,
+        "estimated_cost_delta": str(round_qty(decimal(cost_delta), 4)) if cost_delta is not None and cost_currency else None,
+        "cost_currency": cost_currency if cost_delta is not None else None,
+        "unknowns": ["cost basis or currency is not configured"] if cost_delta is None or not cost_currency else [],
+    }

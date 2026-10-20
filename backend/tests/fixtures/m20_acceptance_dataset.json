@@ -1,0 +1,76 @@
+{
+  "dataset_id": "m20-kenya-fmcg-acceptance-v1",
+  "classification": "synthetic test fixture; not live factory or tenant data",
+  "scope": {
+    "company": "Nairobi Foods Ltd (synthetic)",
+    "warehouse": "NBO-FG-01 (synthetic)",
+    "horizon": ["2026-11-02", "2026-11-15"],
+    "period_type": "WEEKLY"
+  },
+  "products": [
+    {
+      "sku": "JU-MNG-500",
+      "name": "Mango drink 500 ml",
+      "uom": "PCS",
+      "confirmed_demand": 600,
+      "forecast_demand": 850,
+      "safety_stock": 100,
+      "on_hand": 200,
+      "reserved": 50,
+      "incoming_po": 300,
+      "incoming_due_date": "2026-11-10",
+      "wip": 100,
+      "wip_due_date": "2026-11-09",
+      "other_approved_plan": 80,
+      "planned_qty": 320,
+      "bom": {
+        "lifecycle": "APPROVED",
+        "base_qty": 1000,
+        "base_uom": "PCS",
+        "components": [
+          {"material_code": "SUGAR-01", "basis_type": "PER_BATCH", "required_qty": 50, "uom": "KG", "wastage_pct": 2, "process_loss_pct": 0}
+        ]
+      },
+      "material_stock": {"SUGAR-01": {"on_hand": 12, "reserved": 2, "uom": "KG"}},
+      "work_center": {"code": "FILL-01", "rate": 80, "rate_uom": "PCS/HR", "calendar_hours": 8, "shifts": [{"start": "07:00", "end": "15:00"}], "downtime_hours": 1.5},
+      "campaign": {"family": "BEVERAGE", "sequence": 1, "changeover_minutes": null},
+      "overload_case": {"required_hours": 7.5, "calendar_hours": 8, "downtime_hours": 1.5, "expected_overload_hours": 1.0},
+      "cip": {"state": "NOT_CONFIGURED", "duration_minutes": null}
+    },
+    {
+      "sku": "DET-1L-01",
+      "name": "Dish liquid 1 L",
+      "uom": "PCS",
+      "confirmed_demand": 240,
+      "forecast_demand": 180,
+      "safety_stock": 60,
+      "on_hand": 80,
+      "reserved": 20,
+      "incoming_po": 100,
+      "incoming_due_date": "2026-11-18",
+      "wip": 0,
+      "wip_due_date": null,
+      "other_approved_plan": 0,
+      "planned_qty": 240,
+      "bom": {"lifecycle": "MISSING", "components": []},
+      "material_stock": {},
+      "work_center": {"code": "FILL-02", "rate": null, "rate_uom": null, "calendar_hours": null, "shifts": [], "downtime_hours": null},
+      "campaign": {"family": "HOME_CARE", "sequence": 2, "changeover_minutes": null},
+      "cip": {"state": "NOT_CONFIGURED", "duration_minutes": null}
+    }
+  ],
+  "assertions": [
+    "confirmed demand nets forecast overlap only within each period",
+    "dated receipts after the period do not cover the period shortfall",
+    "reserved inventory is excluded from available on-hand",
+    "approved BOM yield and loss are applied; missing BOM fails closed",
+    "unconfigured capacity or CIP never receives a fabricated default",
+    "every quantity carries an explicit UOM and source"
+  ],
+  "approval_release_contract": {
+    "source_mrp_status": "COMPLETED",
+    "approval_requires": "all positive lines FEASIBLE",
+    "release_requires": "APPROVED plan and same-company active target warehouse",
+    "idempotent_retry": "same target warehouse returns original production orders"
+  }
+}

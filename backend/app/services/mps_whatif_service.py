@@ -12,12 +12,13 @@ Impact metrics:
 from __future__ import annotations
 
 import uuid
+import json
 from copy import deepcopy
 from datetime import date, timedelta
 from decimal import Decimal, ROUND_HALF_UP
 from typing import Any, Dict, List
 
-from sqlalchemy import select, func
+from sqlalchemy import select, func, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.mps import (
@@ -54,7 +55,10 @@ def _apply_change(line_snapshot: dict, change: dict) -> dict:
 
     if ct == MPSChangeType.DELAY:
         # val = number of days to delay
-        delay_days = int(val)
+        delay_value = Decimal(str(val))
+        if not delay_value.is_finite() or delay_value < 0 or delay_value != delay_value.to_integral_value():
+            raise ValueError("DELAY must be a non-negative whole number of days")
+        delay_days = int(delay_value)
         for df in ("planned_start_date", "planned_end_date", "period_start", "period_end"):
             if line_snapshot.get(df):
                 d = date.fromisoformat(str(line_snapshot[df]))
@@ -62,6 +66,8 @@ def _apply_change(line_snapshot: dict, change: dict) -> dict:
 
     elif ct == MPSChangeType.BATCH_SIZE:
         new_batch = Decimal(str(val))
+        if not new_batch.is_finite() or new_batch <= 0:
+            raise ValueError("BATCH_SIZE must be a positive finite quantity")
         old_qty = _D(line_snapshot.get("planned_production_qty", 0))
         if new_batch > 0 and old_qty > 0:
             import math
@@ -71,7 +77,10 @@ def _apply_change(line_snapshot: dict, change: dict) -> dict:
             line_snapshot["num_batches"] = n_batches
 
     elif ct == MPSChangeType.QTY_ADJUST:
-        line_snapshot["planned_production_qty"] = str(_D(val))
+        new_qty = Decimal(str(val))
+        if not new_qty.is_finite() or new_qty <= 0:
+            raise ValueError("QTY_ADJUST must be a positive finite quantity")
+        line_snapshot["planned_production_qty"] = str(new_qty)
 
     elif ct == MPSChangeType.LINE_CHANGE:
         line_snapshot["work_center_id"] = str(val)
@@ -91,14 +100,14 @@ def _compute_impact(
     wcs: Dict[uuid.UUID, WorkCenter],
 ) -> tuple:
     """
-    Returns (service_level_pct, delay_count, cost_delta).
+    Returns service level and delay count. Monetary impact is unknown unless a
+    currency and validated cost basis are available; neither is stored here.
     """
     total = len(original_lines)
     if total == 0:
-        return 100.0, 0, Decimal("0")
+        return 100.0, 0, None
 
     delay_count = 0
-    cost_delta = Decimal("0")
 
     for orig in original_lines:
         line_id = str(orig["id"])
@@ -115,26 +124,10 @@ def _compute_impact(
             if mod_end_d > period_d:
                 delay_count += 1
 
-        # Cost delta: change in production qty × approximate rate
-        orig_qty = _D(orig.get("planned_production_qty", 0))
-        mod_qty = _D(modified.get("planned_production_qty", 0))
-        qty_diff = mod_qty - orig_qty
-
-        # Rate: use work center machine_cost_per_hour / throughput as proxy
-        wc_id = modified.get("work_center_id")
-        rate = Decimal("1000")  # KES/unit proxy
-        if wc_id:
-            try:
-                wc = wcs.get(uuid.UUID(str(wc_id)))
-                if wc and wc.machine_cost_per_hour and wc.capacity:
-                    rate = _D(wc.machine_cost_per_hour) / _D(wc.capacity)
-            except Exception:
-                pass
-        cost_delta += qty_diff * rate
 
     on_time = total - delay_count
     svc_level = round(on_time / total * 100, 2)
-    return svc_level, delay_count, _R(cost_delta)
+    return svc_level, delay_count, None
 
 
 async def create_whatif_scenario(
@@ -143,6 +136,8 @@ async def create_whatif_scenario(
     data: MPSWhatIfCreate,
     user_id: uuid.UUID,
 ) -> MPSWhatIfScenario:
+    if not data.changes:
+        raise ValueError("What-if scenario must include at least one proposed change")
     plan_q = await db.execute(select(MPSPlan).where(MPSPlan.id == mps_id))
     plan = plan_q.scalar_one_or_none()
     if not plan:
@@ -194,6 +189,26 @@ async def create_whatif_scenario(
     changes_json = []
     for change in data.changes:
         lid = str(change.line_id)
+        line = affected_lines[change.line_id]
+        if line.is_locked:
+            raise ValueError("What-if changes cannot target a locked MPS line")
+        if change.change_type == MPSChangeType.LINE_CHANGE:
+            try:
+                target_wc_id = uuid.UUID(str(change.new_value))
+            except (TypeError, ValueError) as exc:
+                raise ValueError("LINE_CHANGE requires a valid work center id") from exc
+            target_wc = wcs.get(target_wc_id)
+            if target_wc is None or str(getattr(target_wc.status, "value", target_wc.status)).lower() != "active":
+                raise ValueError("LINE_CHANGE requires an active work center")
+        if change.change_type == MPSChangeType.DELAY:
+            try:
+                delay = Decimal(str(change.new_value))
+            except Exception as exc:
+                raise ValueError("DELAY must be a non-negative whole number of days") from exc
+            if not delay.is_finite() or delay < 0 or delay != delay.to_integral_value():
+                raise ValueError("DELAY must be a non-negative whole number of days")
+        if change.change_type in (MPSChangeType.BATCH_SIZE, MPSChangeType.QTY_ADJUST) and (not _D(change.new_value).is_finite() or _D(change.new_value) <= 0):
+            raise ValueError(f"{change.change_type.value} quantity must be positive")
         if lid in modified_map:
             modified_map[lid] = _apply_change(modified_map[lid], {
                 "change_type": change.change_type,
@@ -211,11 +226,9 @@ async def create_whatif_scenario(
     summary_parts = []
     if delays > 0:
         summary_parts.append(f"{delays} line(s) will be delayed")
-    if cost_delta != 0:
-        direction = "increase" if cost_delta > 0 else "decrease"
-        summary_parts.append(f"estimated cost will {direction} by KES {abs(float(cost_delta)):,.0f}")
-    if not summary_parts:
-        summary_parts.append("No negative impact detected")
+    summary_parts.append("cost impact unknown: no approved currency and cost basis are configured")
+    if delays == 0:
+        summary_parts.append("no modeled schedule delay detected")
     if any(c.change_type == MPSChangeType.SPLIT for c in data.changes):
         summary_parts.append(
             "SPLIT is approximated as a single-line quantity halving; a full two-line "
@@ -231,13 +244,41 @@ async def create_whatif_scenario(
         changes=changes_json,
         impact_service_level_pct=Decimal(str(svc)),
         impact_delay_count=delays,
-        impact_cost_delta=cost_delta,
+        impact_cost_delta=None,
         impact_summary=impact_summary,
         status=WhatIfStatus.COMPUTED,
         created_by_id=user_id,
     )
     db.add(scenario)
     await db.flush()
+    snapshot_assumptions = {
+        "engine": "mps-whatif.v1",
+        "plan_id": str(mps_id),
+        "changes": changes_json,
+        "line_count": len(original_snaps),
+        "cost_basis": None,
+    }
+    snapshot_results = {
+        "service_level_pct": svc,
+        "delay_count": delays,
+        "cost_delta": None,
+        "cost_delta_status": "UNKNOWN_NO_APPROVED_CURRENCY_BASIS",
+        "material_shortage_count": None,
+        "capacity_overload_hours": None,
+        "capacity_unit": "hours",
+        "changeover_hours": None,
+        "unknowns": ["material and capacity were not resimulated", "changeover basis is not configured", "cost currency/basis is not configured"],
+        "modified_lines": list(modified_map.values()),
+    }
+    await db.execute(text("""
+        INSERT INTO mps_scenario_snapshots
+          (id, scenario_id, snapshot_version, assumptions, results, created_by_id)
+        VALUES (:id, :scenario_id, :version, CAST(:assumptions AS jsonb), CAST(:results AS jsonb), :user_id)
+    """), {
+        "id": uuid.uuid4(), "scenario_id": scenario.id, "version": "mps-whatif.v1",
+        "assumptions": json.dumps(snapshot_assumptions), "results": json.dumps(snapshot_results),
+        "user_id": user_id,
+    })
     return scenario
 
 
@@ -255,3 +296,40 @@ async def get_whatif_scenario(db: AsyncSession, scenario_id: uuid.UUID):
         select(MPSWhatIfScenario).where(MPSWhatIfScenario.id == scenario_id)
     )
     return q.scalar_one_or_none()
+
+
+async def compare_whatif_scenarios(
+    db: AsyncSession, mps_id: uuid.UUID, baseline_id: uuid.UUID, candidate_id: uuid.UUID,
+) -> dict:
+    """Compare immutable saved scenario snapshots without rerunning either case."""
+    rows = (await db.execute(text("""
+        SELECT scenario_id, snapshot_version, assumptions, results, created_at
+        FROM mps_scenario_snapshots
+        WHERE scenario_id IN (:baseline_id, :candidate_id)
+        ORDER BY created_at DESC
+    """), {"baseline_id": baseline_id, "candidate_id": candidate_id})).mappings().all()
+    snapshots = {}
+    for row in rows:
+        snapshots.setdefault(row["scenario_id"], row)
+    if baseline_id not in snapshots or candidate_id not in snapshots:
+        raise ValueError("Both scenarios must have persisted snapshots")
+    baseline, candidate = snapshots[baseline_id], snapshots[candidate_id]
+    if baseline["assumptions"].get("plan_id") != str(mps_id) or candidate["assumptions"].get("plan_id") != str(mps_id):
+        raise ValueError("Both scenarios must belong to the requested MPS plan")
+    bres, cres = baseline["results"], candidate["results"]
+    return {
+        "mps_id": str(mps_id),
+        "baseline_scenario_id": str(baseline_id),
+        "candidate_scenario_id": str(candidate_id),
+        "service_level_pct_delta": round(float(cres["service_level_pct"]) - float(bres["service_level_pct"]), 2),
+        "delay_count_delta": int(cres["delay_count"]) - int(bres["delay_count"]),
+        "cost_delta": None,
+        "cost_delta_status": "UNKNOWN_NO_APPROVED_CURRENCY_BASIS",
+        "material_shortage_count_delta": None,
+        "capacity_overload_hours_delta": None,
+        "capacity_unit": "hours",
+        "changeover_hours_delta": None,
+        "unknowns": ["material and capacity were not resimulated", "changeover basis is not configured", "cost currency/basis is not configured"],
+        "baseline_version": baseline["snapshot_version"],
+        "candidate_version": candidate["snapshot_version"],
+    }
