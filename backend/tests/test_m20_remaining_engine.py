@@ -1,7 +1,9 @@
-from datetime import date
+from datetime import date, datetime, timezone
 from decimal import Decimal
 import json
 from pathlib import Path
+from types import SimpleNamespace
+from uuid import uuid4
 
 import pytest
 
@@ -14,8 +16,8 @@ from app.services.mps_engine import (
     period_buckets,
     scenario_kpis,
 )
-from app.services.mps_whatif_service import _apply_change, _compute_impact
-from app.models.mps import MPSChangeType
+from app.services.mps_whatif_service import _apply_change, _compute_impact, _scenario_capacity_loads
+from app.models.mps import MPSCapacityMode, MPSChangeType
 
 
 def test_weekly_buckets_are_gap_free_and_clip_partial_edges():
@@ -202,3 +204,30 @@ def test_whatif_never_invents_currency_and_rejects_unimplemented_operations():
         _apply_change({}, {"change_type": MPSChangeType.DELAY, "new_value": 1.5})
     with pytest.raises(ValueError, match="positive finite"):
         _apply_change({}, {"change_type": MPSChangeType.BATCH_SIZE, "new_value": "Infinity"})
+
+
+def test_whatif_capacity_simulation_uses_rate_calendar_and_downtime():
+    wc_id, product_id = uuid4(), uuid4()
+    work_center = SimpleNamespace(id=wc_id, capacity=80, capacity_uom="PCS/HR", status="active")
+    product = SimpleNamespace(id=product_id, uom="PCS")
+    day = date(2026, 11, 3)
+    calendar = SimpleNamespace(work_center_id=wc_id, calendar_date=day, available_hours=8, is_holiday=False, is_maintenance=False)
+    downtime = SimpleNamespace(
+        work_center_id=wc_id,
+        start_time=datetime(2026, 11, 3, 7, tzinfo=timezone.utc),
+        end_time=datetime(2026, 11, 3, 8, 30, tzinfo=timezone.utc),
+        duration_min=90,
+    )
+    line = {
+        "product_id": str(product_id), "work_center_id": str(wc_id),
+        "planned_production_qty": "600", "planned_start_date": day.isoformat(),
+        "planned_end_date": day.isoformat(), "period_start": day.isoformat(), "period_end": day.isoformat(),
+    }
+    result = _scenario_capacity_loads(
+        [line], {wc_id: work_center}, {product_id: product}, {(wc_id, day): calendar}, [downtime], MPSCapacityMode.FINITE,
+    )
+    assert result["status"] == "COMPLETE"
+    assert result["overload_hours"] == 1.0
+    gap = _scenario_capacity_loads([line], {wc_id: work_center}, {product_id: product}, {}, [], MPSCapacityMode.FINITE)
+    assert gap["status"] == "PARTIAL_INPUTS"
+    assert gap["overload_hours"] is None

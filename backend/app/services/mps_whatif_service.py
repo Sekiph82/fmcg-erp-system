@@ -14,7 +14,7 @@ from __future__ import annotations
 import uuid
 import json
 from copy import deepcopy
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal, ROUND_HALF_UP
 from typing import Any, Dict, List
 
@@ -22,10 +22,14 @@ from sqlalchemy import select, func, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.mps import (
-    MPSPlan, MPSLine, MPSWhatIfScenario,
+    MPSPlan, MPSLine, MPSWhatIfScenario, MPSCapacityMode,
     WhatIfStatus, MPSChangeType,
 )
+from app.models.master import Product
+from app.models.planning import ResourceCalendar
 from app.models.production_advanced import WorkCenter
+from app.models.production_advanced import DowntimeEvent
+from app.services.mps_engine import capacity_result
 from app.schemas.mps import MPSWhatIfCreate, MPSWhatIfOut
 
 
@@ -37,6 +41,101 @@ def _D(v) -> Decimal:
 
 def _R(v: Decimal, dp: int = 3) -> Decimal:
     return v.quantize(Decimal(10) ** -dp, rounding=ROUND_HALF_UP)
+
+
+def _capacity_rate_per_hour(work_center: WorkCenter, product: Product) -> Decimal | None:
+    if not work_center.capacity or _D(work_center.capacity) <= 0:
+        return None
+    capacity_uom = str(work_center.capacity_uom or "").strip().upper().replace(" ", "")
+    product_uom = str(getattr(product.uom, "value", product.uom) or "").upper()
+    valid = {f"{product_uom}/HR", f"{product_uom}/HOUR"}
+    if product_uom in {"PCS", "EA", "UNIT", "UNITS"}:
+        valid.add("UNITS/HR")
+    return _D(work_center.capacity) if capacity_uom in valid else None
+
+
+def _scenario_capacity_loads(
+    lines: list[dict], wcs: dict[uuid.UUID, WorkCenter], products: dict[uuid.UUID, Product],
+    calendars: dict[tuple[uuid.UUID, date], ResourceCalendar], downtimes: list[DowntimeEvent],
+    capacity_mode: MPSCapacityMode,
+) -> dict:
+    """Pure candidate schedule load using the same calendar and rate inputs as finite MPS capacity."""
+    if capacity_mode == MPSCapacityMode.INFINITE:
+        return {"overload_hours": 0.0, "status": "INFINITE", "unknown_reasons": [], "slot_count": 0}
+    loads: dict[tuple[uuid.UUID, date], Decimal] = {}
+    unknown: set[str] = set()
+    for line in lines:
+        if _D(line.get("planned_production_qty")) <= 0:
+            continue
+        try:
+            wc_id = uuid.UUID(str(line.get("work_center_id")))
+            product_id = uuid.UUID(str(line.get("product_id")))
+            start = date.fromisoformat(str(line.get("planned_start_date") or line["period_start"]))
+            end = date.fromisoformat(str(line.get("planned_end_date") or line["period_end"]))
+        except (KeyError, TypeError, ValueError):
+            unknown.add("LINE_SCHEDULE_OR_SCOPE_MISSING")
+            continue
+        if end < start:
+            unknown.add("LINE_SCHEDULE_INVALID")
+            continue
+        wc, product = wcs.get(wc_id), products.get(product_id)
+        if wc is None or product is None:
+            unknown.add("WORK_CENTER_OR_PRODUCT_MISSING")
+            continue
+        if str(getattr(wc.status, "value", wc.status) or "").lower() != "active":
+            unknown.add("WORK_CENTER_INACTIVE")
+            continue
+        rate = _capacity_rate_per_hour(wc, product)
+        if rate is None:
+            unknown.add("CAPACITY_RATE_OR_UOM_NOT_CONFIGURED")
+            continue
+        days = []
+        cursor = start
+        while cursor <= end:
+            days.append(cursor)
+            cursor += timedelta(days=1)
+        configured = [day for day in days if (wc_id, day) in calendars]
+        if not configured:
+            unknown.add("CAPACITY_CALENDAR_NOT_CONFIGURED")
+            continue
+        if len(configured) != len(days):
+            unknown.add("CAPACITY_CALENDAR_GAP")
+        required = _D(line["planned_production_qty"]) / rate
+        per_day = required / Decimal(len(configured))
+        for day in configured:
+            key = (wc_id, day)
+            loads[key] = loads.get(key, Decimal(0)) + per_day
+
+    overload_total = Decimal(0)
+    for (wc_id, day), required in loads.items():
+        calendar = calendars[(wc_id, day)]
+        available = Decimal(0) if calendar.is_holiday or calendar.is_maintenance else _D(calendar.available_hours)
+        downtime_hours = Decimal(0)
+        unbounded = False
+        start = datetime.combine(day, datetime.min.time(), tzinfo=timezone.utc)
+        end = start + timedelta(days=1)
+        for event in downtimes:
+            if event.work_center_id != wc_id or event.start_time >= end:
+                continue
+            if event.end_time is None and not event.duration_min:
+                if event.start_time.date() <= day:
+                    unbounded = True
+                continue
+            event_end = event.end_time or event.start_time + timedelta(minutes=int(event.duration_min or 0))
+            left, right = max(start, event.start_time), min(end, event_end)
+            if right > left:
+                downtime_hours += Decimal(str((right - left).total_seconds())) / Decimal(3600)
+        if unbounded:
+            unknown.add("OPEN_DOWNTIME_UNBOUNDED")
+            downtime_hours = available
+        overload_total += capacity_result(required, available, min(downtime_hours, available))["overload_hours"]
+    return {
+        "overload_hours": None if unknown else float(_R(overload_total)),
+        "known_overload_hours": float(_R(overload_total)),
+        "status": "COMPLETE" if not unknown else "PARTIAL_INPUTS",
+        "unknown_reasons": sorted(unknown),
+        "slot_count": len(loads),
+    }
 
 
 # Change types not yet executed by the simulator. Presenting these as
@@ -172,6 +271,7 @@ async def create_whatif_scenario(
     def _snap(line: MPSLine) -> dict:
         return {
             "id": str(line.id),
+            "product_id": str(line.product_id),
             "planned_production_qty": str(line.planned_production_qty),
             "planned_start_date": str(line.planned_start_date) if line.planned_start_date else None,
             "planned_end_date": str(line.planned_end_date) if line.planned_end_date else None,
@@ -180,6 +280,7 @@ async def create_whatif_scenario(
             "work_center_id": str(line.work_center_id) if line.work_center_id else None,
             "batch_size_qty": str(line.batch_size_qty) if line.batch_size_qty else None,
             "num_batches": line.num_batches,
+            "required_hours": str(line.required_hours) if line.required_hours is not None else None,
         }
 
     original_snaps = [_snap(l) for l in all_lines]
@@ -222,11 +323,48 @@ async def create_whatif_scenario(
 
     # Compute impact
     svc, delays, cost_delta = _compute_impact(original_snaps, modified_map, wcs)
+    product_ids = {uuid.UUID(s["product_id"]) for s in original_snaps}
+    products = {p.id: p for p in (await db.execute(select(Product).where(Product.id.in_(product_ids)))).scalars().all()} if product_ids else {}
+    scenario_wc_ids = {uuid.UUID(s["work_center_id"]) for s in modified_map.values() if s.get("work_center_id")}
+    scenario_dates = []
+    for snap in modified_map.values():
+        try:
+            scenario_dates.extend((
+                date.fromisoformat(str(snap.get("planned_start_date") or snap["period_start"])),
+                date.fromisoformat(str(snap.get("planned_end_date") or snap["period_end"])),
+            ))
+        except (KeyError, TypeError, ValueError):
+            continue
+    calendar_rows = []
+    downtime_rows = []
+    if scenario_wc_ids and scenario_dates and plan.capacity_mode == MPSCapacityMode.FINITE:
+        first_day, last_day = min(scenario_dates), max(scenario_dates)
+        calendar_rows = (await db.execute(select(ResourceCalendar).where(
+            ResourceCalendar.work_center_id.in_(scenario_wc_ids),
+            ResourceCalendar.calendar_date >= first_day,
+            ResourceCalendar.calendar_date <= last_day,
+        ))).scalars().all()
+        downtime_rows = (await db.execute(select(DowntimeEvent).where(
+            DowntimeEvent.work_center_id.in_(scenario_wc_ids),
+            DowntimeEvent.start_time < datetime.combine(last_day + timedelta(days=1), datetime.min.time(), tzinfo=timezone.utc),
+            (DowntimeEvent.end_time.is_(None)) | (DowntimeEvent.end_time >= datetime.combine(first_day, datetime.min.time(), tzinfo=timezone.utc)),
+        ))).scalars().all()
+    capacity_metrics = _scenario_capacity_loads(
+        list(modified_map.values()), wcs, products,
+        {(row.work_center_id, row.calendar_date): row for row in calendar_rows},
+        downtime_rows, plan.capacity_mode,
+    )
 
     summary_parts = []
     if delays > 0:
         summary_parts.append(f"{delays} line(s) will be delayed")
     summary_parts.append("cost impact unknown: no approved currency and cost basis are configured")
+    if capacity_metrics["status"] == "COMPLETE":
+        summary_parts.append(f"projected capacity overload: {capacity_metrics['overload_hours']:.3f} hours")
+    elif capacity_metrics["status"] == "INFINITE":
+        summary_parts.append("finite capacity overload not applicable in INFINITE mode")
+    else:
+        summary_parts.append("capacity overload incomplete: " + ", ".join(capacity_metrics["unknown_reasons"]))
     if delays == 0:
         summary_parts.append("no modeled schedule delay detected")
     if any(c.change_type == MPSChangeType.SPLIT for c in data.changes):
@@ -264,10 +402,14 @@ async def create_whatif_scenario(
         "cost_delta": None,
         "cost_delta_status": "UNKNOWN_NO_APPROVED_CURRENCY_BASIS",
         "material_shortage_count": None,
-        "capacity_overload_hours": None,
+        "capacity_overload_hours": capacity_metrics["overload_hours"],
+        "capacity_overload_known_hours": capacity_metrics["known_overload_hours"],
+        "capacity_status": capacity_metrics["status"],
+        "capacity_unknown_reasons": capacity_metrics["unknown_reasons"],
+        "capacity_slot_count": capacity_metrics["slot_count"],
         "capacity_unit": "hours",
         "changeover_hours": None,
-        "unknowns": ["material and capacity were not resimulated", "changeover basis is not configured", "cost currency/basis is not configured"],
+        "unknowns": ["material feasibility was not resimulated", "changeover basis is not configured", "cost currency/basis is not configured"],
         "modified_lines": list(modified_map.values()),
     }
     await db.execute(text("""
@@ -326,10 +468,17 @@ async def compare_whatif_scenarios(
         "cost_delta": None,
         "cost_delta_status": "UNKNOWN_NO_APPROVED_CURRENCY_BASIS",
         "material_shortage_count_delta": None,
-        "capacity_overload_hours_delta": None,
+        "capacity_overload_hours_delta": (
+            round(float(cres["capacity_overload_hours"]) - float(bres["capacity_overload_hours"]), 3)
+            if cres.get("capacity_status") in ("COMPLETE", "INFINITE")
+            and bres.get("capacity_status") in ("COMPLETE", "INFINITE")
+            and cres.get("capacity_overload_hours") is not None
+            and bres.get("capacity_overload_hours") is not None else None
+        ),
+        "capacity_status": "COMPLETE" if cres.get("capacity_status") in ("COMPLETE", "INFINITE") and bres.get("capacity_status") in ("COMPLETE", "INFINITE") else "PARTIAL_INPUTS",
         "capacity_unit": "hours",
         "changeover_hours_delta": None,
-        "unknowns": ["material and capacity were not resimulated", "changeover basis is not configured", "cost currency/basis is not configured"],
+        "unknowns": ["material feasibility was not resimulated", "capacity comparison is incomplete when source inputs are missing", "changeover basis is not configured", "cost currency/basis is not configured"],
         "baseline_version": baseline["snapshot_version"],
         "candidate_version": candidate["snapshot_version"],
     }

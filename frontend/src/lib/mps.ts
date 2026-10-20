@@ -215,6 +215,9 @@ export interface MPSScenarioComparison {
   delay_count_delta: number;
   cost_delta: null;
   cost_delta_status: string;
+  capacity_overload_hours_delta: number | null;
+  capacity_status: "COMPLETE" | "PARTIAL_INPUTS";
+  capacity_unit: "hours";
   baseline_version: string;
   candidate_version: string;
 }

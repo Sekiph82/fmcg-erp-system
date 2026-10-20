@@ -27,7 +27,7 @@ export default function WhatIfPage() {
   const [viewScenario, setViewScenario] = useState<MPSWhatIf | null>(null);
   const [baselineId, setBaselineId] = useState("");
   const [candidateId, setCandidateId] = useState("");
-  const [comparison, setComparison] = useState<{ service_level_pct_delta: number; delay_count_delta: number; cost_delta_status: string } | null>(null);
+  const [comparison, setComparison] = useState<{ service_level_pct_delta: number; delay_count_delta: number; cost_delta_status: string; capacity_overload_hours_delta: number | null; capacity_status: "COMPLETE" | "PARTIAL_INPUTS" } | null>(null);
 
   const { data: plans = [] } = useQuery<MPSPlanSummary[]>({
     queryKey: ["mps-plans"],
@@ -247,7 +247,7 @@ export default function WhatIfPage() {
                 </select>
                 <button disabled={!baselineId || !candidateId || baselineId === candidateId || compareScenarios.isPending} onClick={() => compareScenarios.mutate()} className="rounded bg-indigo-700 px-3 py-1 text-sm text-white disabled:opacity-50">Compare</button>
               </div>
-              {comparison && <p role="status" className="text-xs text-gray-600">Service level Δ {comparison.service_level_pct_delta.toFixed(1)} pp · Delayed lines Δ {comparison.delay_count_delta} · Cost {comparison.cost_delta_status.replaceAll("_", " ").toLowerCase()}</p>}
+              {comparison && <p role="status" className="text-xs text-gray-600">Service level Δ {comparison.service_level_pct_delta.toFixed(1)} pp · Delayed lines Δ {comparison.delay_count_delta} · Capacity overload Δ {comparison.capacity_status === "COMPLETE" && comparison.capacity_overload_hours_delta != null ? `${comparison.capacity_overload_hours_delta.toFixed(3)} hours` : "incomplete inputs"} · Cost {comparison.cost_delta_status.replaceAll("_", " ").toLowerCase()}</p>}
               {compareScenarios.isError && <p className="text-xs text-red-700">{(compareScenarios.error as Error).message}</p>}
             </div>
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
