@@ -158,8 +158,10 @@ async def test_release_endpoint_rolls_back_persisted_state_on_late_flush_failure
             await db.flush()
             recipe = Recipe(product_id=product.id, version="1", name="V04 rollback recipe", status=RecipeStatus.APPROVED, is_active=True)
             plan = MPSPlan(plan_no=f"V04-{suffix}", plan_name="V04 rollback plan", start_date=__import__("datetime").date(2026, 1, 1), end_date=__import__("datetime").date(2026, 1, 31), status=MPSStatus.APPROVED)
+            db.add_all([recipe, plan])
+            await db.flush()
             line = MPSLine(line_no=f"V04-{suffix}", mps_id=plan.id, product_id=product.id, period_start=__import__("datetime").date(2026, 1, 1), period_end=__import__("datetime").date(2026, 1, 31), planned_production_qty=100, feasibility_status=MPSFeasibilityStatus.FEASIBLE)
-            db.add_all([recipe, plan, line])
+            db.add(line)
             await db.flush()
             plan_id, warehouse_id, product_id, recipe_id, line_id = plan.id, warehouse.id, product.id, recipe.id, line.id
 
@@ -226,8 +228,10 @@ async def test_concurrent_postgres_mps_releases_allocate_distinct_order_numbers(
                 await db.flush()
                 recipe = Recipe(product_id=product.id, version="1", name=f"V04 concurrency recipe {index}", status=RecipeStatus.APPROVED, is_active=True)
                 plan = MPSPlan(plan_no=f"V04-C-{suffix}-{index}", plan_name=f"V04 concurrency plan {index}", start_date=__import__("datetime").date(2026, 1, 1), end_date=__import__("datetime").date(2026, 1, 31), status=MPSStatus.APPROVED)
+                db.add_all([recipe, plan])
+                await db.flush()
                 line = MPSLine(line_no=f"V04-C-{suffix}-{index}", mps_id=plan.id, product_id=product.id, period_start=__import__("datetime").date(2026, 1, 1), period_end=__import__("datetime").date(2026, 1, 31), planned_production_qty=100, feasibility_status=MPSFeasibilityStatus.FEASIBLE)
-                db.add_all([recipe, plan, line])
+                db.add(line)
                 await db.flush()
                 product_ids.append(product.id)
                 recipe_ids.append(recipe.id)
@@ -262,8 +266,10 @@ async def test_concurrent_postgres_mps_releases_allocate_distinct_order_numbers(
             await db.flush()
             extra_recipe = Recipe(product_id=extra_product.id, version="1", name="V04 deletion-gap recipe", status=RecipeStatus.APPROVED, is_active=True)
             extra_plan = MPSPlan(plan_no=f"V04-C-{suffix}-retry", plan_name="V04 deletion-gap plan", start_date=__import__("datetime").date(2026, 1, 1), end_date=__import__("datetime").date(2026, 1, 31), status=MPSStatus.APPROVED)
+            db.add_all([extra_recipe, extra_plan])
+            await db.flush()
             extra_line = MPSLine(line_no=f"V04-C-{suffix}-retry", mps_id=extra_plan.id, product_id=extra_product.id, period_start=__import__("datetime").date(2026, 1, 1), period_end=__import__("datetime").date(2026, 1, 31), planned_production_qty=100, feasibility_status=MPSFeasibilityStatus.FEASIBLE)
-            db.add_all([extra_recipe, extra_plan, extra_line])
+            db.add(extra_line)
             await db.flush()
             extra_product_id, extra_recipe_id = extra_product.id, extra_recipe.id
             extra_plan_id, extra_line_id = extra_plan.id, extra_line.id
