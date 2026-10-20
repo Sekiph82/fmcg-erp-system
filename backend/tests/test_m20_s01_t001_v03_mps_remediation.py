@@ -142,11 +142,8 @@ async def test_release_endpoint_rolls_back_persisted_state_on_late_flush_failure
     if "postgresql" not in str(settings.DATABASE_URL):
         pytest.skip("V04 real rollback proof requires the PostgreSQL CI service")
 
-    try:
-        async with AsyncSessionLocal() as probe:
-            await probe.execute(text("SELECT 1"))
-    except Exception as exc:
-        pytest.skip(f"PostgreSQL service unavailable for V04 rollback proof: {exc}")
+    async with AsyncSessionLocal() as probe:
+        await probe.execute(text("SELECT 1"))
 
     suffix = uuid4().hex[:10]
     plan_id = warehouse_id = product_id = recipe_id = line_id = None
@@ -209,11 +206,8 @@ async def test_concurrent_postgres_mps_releases_allocate_distinct_order_numbers(
 
     if "postgresql" not in str(settings.DATABASE_URL):
         pytest.skip("V04 concurrency proof requires the PostgreSQL CI service")
-    try:
-        async with AsyncSessionLocal() as probe:
-            await probe.execute(text("SELECT 1"))
-    except Exception as exc:
-        pytest.skip(f"PostgreSQL service unavailable for V04 concurrency proof: {exc}")
+    async with AsyncSessionLocal() as probe:
+        await probe.execute(text("SELECT 1"))
 
     suffix = uuid4().hex[:10]
     plan_ids, product_ids, line_ids, recipe_ids = [], [], [], []
