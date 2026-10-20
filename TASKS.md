@@ -10,9 +10,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 - Current Milestone: M20 — Master Production Scheduling
 - Current Sprint: M20.S01 — MPS Domain Reconciliation
-- Current Task: M20.S01.T001 — Map existing MPS models/APIs/UI/services to enterprise requirements
+- Current Task: M20.S01.T002 — Preserve existing planning-board/capacity/campaign/what-if capabilities
 - Current Task Status: IN_PROGRESS
-- Next Task/Action: Execute M20.S01.T001 Codex V06 from `coordination/sessions/M20-S01-T001/CODEX_PROMPT_V06.md`; PostgreSQL CI run 39285256727 backend FAILED (640 passed, 8 failed, 1 skipped), real DB proof remains unaccepted. Publish `CODEX_LOG_V06.md` for independent ChatGPT audit.
+- Next Task/Action: Execute M20.S01.T002 Codex V01 from `coordination/sessions/M20-S01-T002/CODEX_PROMPT_V01.md`; publish `CODEX_LOG_V01.md` for independent ChatGPT audit. T001 V06 accepted with PostgreSQL 6/6; unrelated CI failures remain open.
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -543,8 +543,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 **Depends on:** M08, M09, M15; M00 complete.
 
 ## M20.S01 — MPS Domain Reconciliation
-- [~] M20.S01.T001 — Map existing MPS models/APIs/UI/services to enterprise requirements
-- [ ] M20.S01.T002 — Preserve existing planning-board/capacity/campaign/what-if capabilities
+- [x] M20.S01.T001 — Map existing MPS models/APIs/UI/services to enterprise requirements
+- [~] M20.S01.T002 — Preserve existing planning-board/capacity/campaign/what-if capabilities
 - [ ] M20.S01.T003 — Identify exact missing state/data invariants
 - [ ] M20.S01.T004 — Define MPS acceptance dataset and regression suite
 
