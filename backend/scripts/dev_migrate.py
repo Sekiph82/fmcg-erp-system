@@ -120,6 +120,44 @@ async def _create_all_tables() -> None:
         await engine.dispose()
 
 
+async def _ensure_mps_po_sequence() -> None:
+    """Keep the development create_all+stamp path aligned with migration 20261019_0010."""
+    engine = create_async_engine(settings.DATABASE_URL)
+    try:
+        async with engine.begin() as conn:
+            await conn.execute(text("CREATE SEQUENCE IF NOT EXISTS mps_po_number_seq"))
+            await conn.execute(
+                text(
+                    """
+                    SELECT setval(
+                        'mps_po_number_seq',
+                        GREATEST(
+                            COALESCE(
+                                (
+                                    SELECT MAX(CAST(SUBSTRING(order_no FROM 8) AS BIGINT))
+                                    FROM production_orders
+                                    WHERE order_no ~ '^PO-MPS-[0-9]+$'
+                                ),
+                                1
+                            ),
+                            1
+                        ),
+                        COALESCE(
+                            (
+                                SELECT MAX(CAST(SUBSTRING(order_no FROM 8) AS BIGINT))
+                                FROM production_orders
+                                WHERE order_no ~ '^PO-MPS-[0-9]+$'
+                            ),
+                            0
+                        ) > 0
+                    )
+                    """
+                )
+            )
+    finally:
+        await engine.dispose()
+
+
 async def _ensure_reconciliation_columns() -> None:
     """
     Apply known schema drift between create_all and the Alembic history.
@@ -169,6 +207,7 @@ def main() -> None:
             "Production MUST use 'alembic upgrade head'."
         )
         asyncio.run(_create_all_tables())
+        asyncio.run(_ensure_mps_po_sequence())
         command.stamp(config, "head")
         logger.info("Dev baseline schema created and stamped to head")
         return
@@ -196,6 +235,7 @@ def main() -> None:
         "Creating any missing tables, reconciling drift columns, and stamping head."
     )
     asyncio.run(_create_all_tables())        # creates missing tables (e.g. access_scopes)
+    asyncio.run(_ensure_mps_po_sequence())
     asyncio.run(_ensure_reconciliation_columns())
     command.stamp(config, "head")
     logger.info("Dev schema reconciled and stamped to Alembic head")
