@@ -10,9 +10,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 - Current Milestone: M20 — Master Production Scheduling
 - Current Sprint: M20.S01 — MPS Domain Reconciliation
-- Current Task: M20.S01.T002 — Preserve existing planning-board/capacity/campaign/what-if capabilities
+- Current Task: M20.S01.T003 — Identify exact missing state/data invariants
 - Current Task Status: IN_PROGRESS
-- Next Task/Action: Execute M20.S01.T002 Codex V01 from `coordination/sessions/M20-S01-T002/CODEX_PROMPT_V01.md`; publish `CODEX_LOG_V01.md` for independent ChatGPT audit. T001 V06 accepted with PostgreSQL 6/6; unrelated CI failures remain open.
+- Next Task/Action: Execute M20.S01.T003 using existing milestone-wide `coordination/milestones/M20/CODEX_M20_MASTER_PROMPT_V02.md`. T002 accepted by `coordination/sessions/M20-S01-T002/CHATGPT_AUDIT_V01.md`; remote CI DEFERRED_CI_QUOTA through 2026-10-30. No GitHub Actions/remote CI until owner authorizes resumption.
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -544,8 +544,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 ## M20.S01 — MPS Domain Reconciliation
 - [x] M20.S01.T001 — Map existing MPS models/APIs/UI/services to enterprise requirements
-- [~] M20.S01.T002 — Preserve existing planning-board/capacity/campaign/what-if capabilities
-- [ ] M20.S01.T003 — Identify exact missing state/data invariants
+- [x] M20.S01.T002 — Preserve existing planning-board/capacity/campaign/what-if capabilities
+- [~] M20.S01.T003 — Identify exact missing state/data invariants
 - [ ] M20.S01.T004 — Define MPS acceptance dataset and regression suite
 
 ## M20.S02 — Demand & Supply Coupling
