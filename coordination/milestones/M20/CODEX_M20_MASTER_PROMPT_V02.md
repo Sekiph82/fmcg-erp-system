@@ -1,0 +1,47 @@
+# M20 MASTER EXECUTION PROMPT V02 — ALL SPRINTS / ALL 20 TASKS
+
+**This is the complete milestone-wide work order, not a single-task prompt.**
+Repository: `Sekiph82/fmcg-erp-system`; ONLY `main`. Canonical `TASKS.md` is read-only for Codex. Owner ChatGPT independently audits and exclusively changes task statuses. Existing M20.S01.T001 accepted; M20.S01.T002 implemented with audit pending. Read live GitHub state at execution time, not the stale status of V01 master prompt.
+
+## Owner's temporary 11-day CI quota restriction
+**October 20–30, 2026 inclusive: no GitHub Actions, no remote CI, no workflow dispatch, no reruns.** Continue local testing. Any remote-only evidence must be marked `DEFERRED_CI_QUOTA` and must NOT be described as PASS. On/after October 31, resume remote CI only with explicit owner permission. Inspect workflow triggers before any push; avoid triggering CI, using safe supported skip markers when applicable. If push cannot safely avoid a run, retain the changes and report `BLOCKED_SAFE_PUSH`. Do not disable workflows or change repository protections merely to avoid quota.
+
+## Execution and governance
+- Inspect repo status, fetch origin/main and reconcile without losing owner dirty files. No new branches, destructive reset/clean/stash, force push, unrelated rewrites, or broad cleanup. Work only within this repo's authorized workspace. If temporary external work is unavoidable, copy necessary results back and remove only verifiably safe project-specific temporary artifacts.
+- Preserve existing FastAPI, SQLAlchemy/Alembic, PostgreSQL, Next.js, ERP/MRP/production integrations. Reuse current capability and migrations; do not rebuild or fabricate master data, tenant isolation, real factory evidence, or live provider acceptance.
+- Codex never edits `TASKS.md`, `TASKS_HISTORY.md`, `CHATGPT_AUDIT_*.md`, `CHATGPT_AUDIT_CRITERIA_*.md`, or historical `.hiveai` tracker. Auditor acceptance, milestone closure and task status are solely ChatGPT's.
+- **Execute the entire M20 milestone sequentially**, not merely one tiny task. Each task gets its own `coordination/sessions/M20-Sxx-Tyyy/CODEX_LOG_V01.md` factual log, source/test evidence, and independent ChatGPT audit gate. At a gate, publish completed implementation/log and return `AWAITING_CHATGPT_AUDIT`; after ChatGPT accepts/updates tracker, automatically resume next M20 task using this SAME master prompt, without requesting another task prompt. Never self-approve or silently skip a gate. If a task requires only analysis, publish an actionable traceability/gap artifact rather than inventing changes.
+- Existing unrelated backend CI failures (eTIMS 2; module registry/router 5) and frontend npm audit vulnerability gate are known. Track accurately, do not weaken tests or claim project-wide green.
+
+## M20.S01 — MPS Domain Reconciliation
+**T001 Map existing MPS models/APIs/UI/services to enterprise requirements:** already independently accepted at V06; do not redo. Preserve PostgreSQL-backed rollback, concurrency, monotonic sequence, and release invariants.
+**T002 Preserve existing planning-board/capacity/campaign/what-if capabilities:** implementation `95176af0`, log `CODEX_LOG_V01.md` already published; await ChatGPT audit and perform only frozen remediation if requested. Protect plan-bound line updates and what-if cross-plan isolation, capacity/campaign regression coverage.
+**T003 Identify exact missing state/data invariants:** systematically inspect MPSPlan/MPSLine, demand/stock/recipe/work-center/campaign/what-if/PO data. Build source-linked invariant matrix: entity, lifecycle, owner/scope, UOM, dates, locks, uniqueness, nullability, transactional boundary, permission, current enforcement, counterexample, severity, recommended minimal fix. Fix only confirmed high-risk MPS violations with deterministic tests; avoid speculative redesign.
+**T004 Define MPS acceptance dataset and regression suite:** construct reproducible synthetic but realistic Kenya FMCG production dataset across SKUs, BOM, forecast/orders, safety stock, warehouses, work centers, calendars, shifts, campaign, overload, recipe/UOM, approvals and release. Include positive/negative/boundary cases, deterministic fixtures, assertion matrix and runnable local suite. No false live-data claims.
+
+## M20.S02 — Demand & Supply Coupling
+**T001 Consolidate demand inputs: sales orders/forecast/safety stock:** trace existing MRP/demand services and reconcile period buckets, confirmed vs forecast, overlaps, safety-stock policy, cancellation and double-count prevention; implement minimal MPS projection/API/tests.
+**T002 Couple MPS demand to available/on-order inventory:** distinguish on-hand, available, reserved, incoming PO, WIP, existing planned supply and lead-time/date; ensure warehouse/company scope, UOM and no double counting; validate shortfalls and delayed receipts.
+**T003 Couple MPS to BOM/material feasibility:** use approved effective recipes/BOM and MRP explosion, yield/waste, batch sizing, stock/UOM, substitute restrictions and material lead times; fail closed on missing/invalid master data; test nested materials if supported.
+**T004 Expose shortage/constraint reasons per planned line:** structured persisted or reproducibly derived reason codes with quantity, material, date, provenance and priority; backend schema/API plus existing frontend presentation; never mask constraints as FEASIBLE.
+
+## M20.S03 — Capacity & Campaign Planning
+**T001 Validate work-center/machine capacity calculations:** reconcile calendars, shifts, machine rates, unit conversions, availability, maintenance/downtime, parallelism, locked lines and finite/infinite modes; tests for boundary and overloaded schedules.
+**T002 Harden campaign grouping/sequencing:** deterministic product/family grouping, setup ordering, minimum run/batch size, locked orders, cross-period boundaries, stable reruns, constraints and auditability; retain existing behavior where correct.
+**T003 Validate changeover/CIP effects where data exists:** inspect authoritative changeover/CIP/allergen/product-family rules and durations; apply to sequencing and net capacity only where real data exists, otherwise explicit NOT_CONFIGURED state; test no invented CIP time.
+**T004 Persist capacity overload diagnostics:** reason, required/available hours, slot/work-center, affected lines, scenario/run provenance and recalculation state; consistent API/UI diagnostics and idempotent recomputation.
+
+## M20.S04 — Approval, Release & Scenarios
+**T001 Harden draft→approve→release semantics:** explicit allowed transitions, approval prerequisites, all-or-none release, idempotent retries, blocked lines, duplicate protection, transactional rollback and immutable released artifacts. Preserve T001 monotonic PO allocation.
+**T002 Enforce permissions/audit trail on approval/release:** use actual authenticated principal, module permissions, company/plant/warehouse boundaries, event trail with before/after/time/actor, rejected unauthorized transitions, and no self-approval bypass if policy requires segregation.
+**T003 Persist what-if scenario assumptions/results:** separate from live MPS, snapshot version/assumptions/change types, scenario ownership and reproducible estimates; reject foreign-plan lines, unsupported changes and invalid state.
+**T004 Compare scenarios using service/cost/capacity KPIs:** transparent calculations, explicit units and sources, shortages, delivery/service, resource overload, changeover, estimated cost and confidence/unknowns; no fictitious monetary precision.
+
+## M20.S05 — MPS Verification
+**T001 Backend MPS regression tests:** cover all S01–S04 API/services, permission, lifecycle, negative paths, idempotency, transaction and synthetic dataset; run locally with precise pass/fail/skip, record deferred PostgreSQL CI when unavailable.
+**T002 Frontend planning-board/capacity/campaign/what-if tests:** TypeScript type-check, build if possible, component/integration/E2E where existing harness supports it; verify API schema, error/empty/loading states, accessibility and user permissions; separate npm audit gate.
+**T003 Cross-module MPS→MRP/production verification:** trace demand, material planning, inventory reservations, BOM, warehouse, production orders, sequence migration, audit events and multi-tenant boundaries; real PostgreSQL proof only if available locally or later owner-authorized CI, otherwise `DEFERRED_CI_QUOTA`.
+**T004 Close M20 with evidence and tracker update:** Codex prepares final milestone evidence index, coverage matrix, known risks, deferred CI and objective exit criteria; **only ChatGPT independently decides milestone closure and updates tracker**. Do not mark M20 DONE if material gates remain unproven.
+
+## Per-task quality / handoff contract
+For each of 20 task IDs: (a) map existing code and requirements; (b) implement narrow coherent changes, migrations/API/UI/tests as required; (c) run local focused and relevant regressions, compile/import, Alembic heads, frontend checks when relevant; (d) log commands, results, diffs, SHAs, exact deferred evidence and open risks; (e) publish to main safely without remote CI; (f) return `AWAITING_CHATGPT_AUDIT`. After ChatGPT's verdict, resume next accepted task **using this master prompt**, or remediate frozen findings without restarting prior accepted work. Never ask owner for routine approvals. Do not treat a small task's completion as completion of the milestone.
