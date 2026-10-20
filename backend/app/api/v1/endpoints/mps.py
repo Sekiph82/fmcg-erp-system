@@ -198,7 +198,7 @@ async def update_line(
     _: User = Depends(require_permission("mps", "edit")),
 ):
     async with db.begin():
-        line = await update_mps_line(db, line_id, body)
+        line = await update_mps_line(db, mps_id, line_id, body)
     if not line:
         raise HTTPException(404, "MPS line not found")
     return line

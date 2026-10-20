@@ -134,10 +134,13 @@ async def get_mps_lines(db: AsyncSession, mps_id: uuid.UUID):
 
 async def update_mps_line(
     db: AsyncSession,
+    mps_id: uuid.UUID,
     line_id: uuid.UUID,
     data: MPSLineUpdate,
 ) -> Optional[MPSLine]:
-    result = await db.execute(select(MPSLine).where(MPSLine.id == line_id))
+    result = await db.execute(
+        select(MPSLine).where(MPSLine.id == line_id, MPSLine.mps_id == mps_id)
+    )
     line = result.scalar_one_or_none()
     if not line:
         return None

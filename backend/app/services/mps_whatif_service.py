@@ -154,9 +154,14 @@ async def create_whatif_scenario(
     # Load affected lines
     line_ids = [c.line_id for c in data.changes]
     lines_q = await db.execute(
-        select(MPSLine).where(MPSLine.id.in_(line_ids))
+        select(MPSLine).where(
+            MPSLine.id.in_(line_ids),
+            MPSLine.mps_id == mps_id,
+        )
     )
     affected_lines = {l.id: l for l in lines_q.scalars().all()}
+    if len(affected_lines) != len(set(line_ids)):
+        raise ValueError("All what-if changes must target lines in this MPS plan")
 
     # Load all plan lines for service level calc
     all_lines_q = await db.execute(
