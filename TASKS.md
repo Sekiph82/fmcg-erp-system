@@ -12,7 +12,7 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 - Current Sprint: M20.S01 — MPS Domain Reconciliation
 - Current Task: M20.S01.T003 — Identify exact missing state/data invariants
 - Current Task Status: IN_PROGRESS
-- Next Task/Action: Continue ONE continuous M20 strict remediation run using `coordination/milestones/M20/CODEX_M20_STRICT_REMEDIATION_MASTER_PROMPT_V01.md` and latest independent `coordination/milestones/M20/CHATGPT_M20_STRICT_AUDIT_V03.md`. Builder reports 75 backend and 11 browser passes at implementation `4c1d5dd8578713e25166eb1e9e46c2ff3722e278`, but M20 remains FAIL / CHANGES_REQUIRED: tenant/warehouse/permission PostgreSQL matrix, durable diagnostic/snapshot replay, cross-module verification, scenario gaps, and asyncpg teardown warning remain. T001/T002 accepted bounded; no per-task stop gates. Remote CI DEFERRED_CI_QUOTA through 2026-10-30; no Actions until owner authorizes resumption.
+- Next Task/Action: M20 STRICT AUDIT V04 reviewed 77 builder-reported backend tests and 11 browser tests, with stronger PostgreSQL tenant/warehouse release, durable diagnostics and scenario snapshot replay source. Continue single uninterrupted M20 remediation for unsupported/approximate scenario operations, remaining boundary cases and independent visual evidence; authoritative minimum-run/CIP/currency configuration is OWNER_DATA_REQUIRED, never fabricate. Audit: https://github.com/Sekiph82/fmcg-erp-system/blob/main/coordination/milestones/M20/CHATGPT_M20_STRICT_AUDIT_V04.md . M20 NOT CLOSED; T001/T002 remain accepted. Remote CI DEFERRED_CI_QUOTA through 2026-10-30, no Actions without owner authorization.
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
