@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { use, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { RequirePermission } from "@/components/PermissionGuard";
 import { useAuth } from "@/context/AuthContext";
@@ -21,10 +21,11 @@ function PayrollRunRedirect({ id }: { id: string }) {
   return null;
 }
 
-export default function Page({ params }: { params: { id: string } }) {
+export default function Page({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
   return (
     <RequirePermission permission="payroll_ke.view">
-      <PayrollRunRedirect id={params.id} />
+      <PayrollRunRedirect id={id} />
     </RequirePermission>
   );
 }
