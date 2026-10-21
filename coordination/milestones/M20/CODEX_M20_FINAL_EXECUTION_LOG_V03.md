@@ -8,6 +8,7 @@ Original scope: all five M20 sprints / 20 tasks. Owner-added acceptance gates: U
 ## Published implementation commit
 
 - Remediation implementation commit: https://github.com/Sekiph82/fmcg-erp-system/commit/cc8a1019092510248db374fd93a34966a1f614d6
+- Historical regression fixture alignment and PostgreSQL release proof: https://github.com/Sekiph82/fmcg-erp-system/commit/bb09ccadd158a5693d78298ffd11dad3aa56eecf
 - Earlier M20 implementation commits: https://github.com/Sekiph82/fmcg-erp-system/commit/0d706241ccd623fdbf7cea7f21feededc8ea3f83 and https://github.com/Sekiph82/fmcg-erp-system/commit/14a96ec1aca124ec65ff913c1cfe2cecb4eba771
 - Previously accepted S01.T001 commits: https://github.com/Sekiph82/fmcg-erp-system/commit/04c359e00eb20187f7033d1aaefca8b446fedc51, https://github.com/Sekiph82/fmcg-erp-system/commit/ea3d82d0f0925713917b85ec82c1b91530bae4a8, https://github.com/Sekiph82/fmcg-erp-system/commit/826891b92e731c14b87c5e574831cd334aeea4e5, https://github.com/Sekiph82/fmcg-erp-system/commit/cd552bffe8056279da67c828566ea9ee2d3a2c65, https://github.com/Sekiph82/fmcg-erp-system/commit/158d2816c8ac65a452a1eb3135f9f34defd30c1b, https://github.com/Sekiph82/fmcg-erp-system/commit/16c4beac69abe1c3200fa925d10a76f1bd043298, https://github.com/Sekiph82/fmcg-erp-system/commit/431130deee504a4d08aa15b5a950a3d126ff0da4, https://github.com/Sekiph82/fmcg-erp-system/commit/5d8e9667e51363ef0816960f6145f3bbe7c2f045, https://github.com/Sekiph82/fmcg-erp-system/commit/fade01ef89ba4a792f2be6fa17f1ddbe3d2e6410, and https://github.com/Sekiph82/fmcg-erp-system/commit/21612da51a3a7169d5031069a03aeb30d32b94df.
 - Previously accepted S01.T002 commit: https://github.com/Sekiph82/fmcg-erp-system/commit/95176af0c1583d275c9d73e0135d34cfa4895c8a.
@@ -32,29 +33,29 @@ The implementation commit is based on the then-current `origin/main`, contains o
 | M20.S03.T002 | **Implemented with open master data.** Campaign sequencing and batch alignment diagnostics are present. Minimum-run policy is explicitly unknown because no authoritative configuration is present. |
 | M20.S03.T003 | **Implemented with open master data.** Configured transition rows inform changeover calculations. Missing transitions and CIP durations stay unknown; no duration is fabricated. |
 | M20.S03.T004 | **Implemented; partial proof.** Run IDs and affected line/work-center/slot diagnostics are produced. Complete committed DB persistence and cross-module scenarios remain unverified. |
-| M20.S04.T001 | **Implemented; proof incomplete.** Approval/release guards, company/warehouse checks, all-or-none release behavior and retry guards exist. Historical release tests expose 15 stale fixture failures; no new successful full PostgreSQL rollback/concurrency release matrix is claimed. |
+| M20.S04.T001 | **Implemented; partial proof.** Approval/release guards, company/warehouse checks, all-or-none release behavior and idempotent retry guards exist. PostgreSQL late-flush rollback and concurrent PO-number allocation tests pass; broader tenant/permission and negative release boundary matrix remains incomplete. |
 | M20.S04.T002 | **Implemented; proof incomplete.** Authenticated actor and warehouse scope checks are present. Maker-checker policy is not configured, so segregation is not claimed; full PostgreSQL permission/audit proof remains open. |
 | M20.S04.T003 | **Implemented; partial proof.** Scenario inputs are isolated in savepoints for material evaluation; snapshots are versioned. Material rollback has a passing PostgreSQL test. Committed snapshot/replay/comparison transaction coverage is incomplete. |
 | M20.S04.T004 | **Partial implementation.** Material resimulation reuses production feasibility logic and is covered by a passing PostgreSQL savepoint test. Capacity and configured changeover metrics are evaluated with explicit partial-input states. CIP duration and currency-backed cost deltas remain unknown; MERGE/SHIFT_ADD are rejected and SPLIT remains approximate. |
-| M20.S05.T001 | **Partial verification.** Current focused engine + PostgreSQL scenario tests: 28 passed. Historical MPS regression suite on this checkout: 57 passed, 15 failed; all 15 are older release mock/PG fixtures that lack the newly required completed warehouse-scoped MRP run or current `_select_release_recipe` date argument. Failures are not called passes and remain to be reconciled. |
+| M20.S05.T001 | **Local regression PASS.** Focused engine + PostgreSQL scenario tests: 28 passed. Historical MPS regression suite after fixture alignment: 72 passed, including actual PostgreSQL late-flush rollback and concurrent release sequence coverage. |
 | M20.S05.T002 | **Frontend checks pass; strict UI gates tested.** Type-check/build pass; lint has zero errors and 67 warnings. Developer Portal E2E: 6 passed. Responsive full-width Playwright: 1 test passed across five viewport sizes and dashboard/integration tabs. React 18 deprecation and Browserslist/middleware warnings remain. |
-| M20.S05.T003 | **Implemented; partial integration proof.** Migration upgrade/downgrade and real PostgreSQL scenario rollback have been run. Full release rollback/concurrency, permission/tenant, MRP→inventory/BOM→production order acceptance suite remains incomplete. |
+| M20.S05.T003 | **Implemented; partial integration proof.** Migration upgrade/downgrade, scenario rollback, release rollback, and concurrent sequence allocation have been run against PostgreSQL. Permission/tenant matrix and full MRP→inventory/BOM→production order acceptance suite remain incomplete. |
 | M20.S05.T004 | **Evidence log published; audit pending.** No tracker or ChatGPT audit file was changed. This is not milestone acceptance. |
 
 ## Strict findings F01–F10 closure
 
 | Finding | Result |
 |---|---|
-| F01 PostgreSQL transaction/scope proof | **PARTIAL / BLOCKED_EVIDENCE.** Migration and scenario savepoint are proven; full release atomicity, rollback, concurrency, idempotency, permissions, tenant and warehouse matrix is not. |
+| F01 PostgreSQL transaction/scope proof | **PARTIAL / BLOCKED_EVIDENCE.** Migration, scenario savepoint, release rollback, concurrent numbering and idempotent retry are proven; full permission, tenant and warehouse matrix is not. |
 | F02 nested BOM/subassembly explosion | **IMPLEMENTED; PARTIAL_EVIDENCE.** Recursive engine and negative tests pass; nested material feasibility through PostgreSQL is not yet proven. |
 | F03 scenario material/changeover/cost resimulation | **PARTIAL.** Material baseline/candidate is database-tested; capacity/configured transition logic is present; CIP and approved-currency cost basis are absent and remain unknown. |
-| F04 DB-backed service/API regressions | **PARTIAL.** A real PostgreSQL scenario no-mutation test passes. Release transaction and diagnostics persistence suite remains incomplete. |
+| F04 DB-backed service/API regressions | **PARTIAL.** Real PostgreSQL scenario no-mutation, release late-flush rollback and concurrent release numbering tests pass. Durable diagnostic/snapshot replay and full API permission coverage remain incomplete. |
 | F05 UI behavioral evidence | **PASS FOR UI-01/UI-02 TEST GATES.** Browser E2E and viewport geometry tests pass; cross-system frontend tests beyond the listed routes remain incomplete. |
 | F06 migration proof | **PASS FOR MIGRATION CHAIN TESTED.** Fresh upgrade, downgrade/re-upgrade, and predecessor upgrade/downgrade ran against local PostgreSQL through revision `20261021_0010`. |
 | F07 minimum-run/CIP/configuration | **OPEN MASTER DATA.** No authoritative minimum-run or CIP policy was present; unknown states are preserved. |
 | F08 milestone closure | **OPEN.** This log is evidence only; strict blockers and independent audit remain. |
 | F09 task traceability | **PARTIAL.** Twenty task rows, F01–F10 mapping, full commit links, source/test/schema URLs and commands are included. Rows do not imply independent task acceptance. |
-| F10 historical MPS regressions on current source | **FAIL / OPEN.** Re-run result is 57 passed, 15 failed; failures listed above are stale release fixtures/expectations and remain unresolved. |
+| F10 historical MPS regressions on current source | **PASS (LOCAL REGRESSION).** Historical MPS suite rerun after fixture alignment: 72 passed. This does not replace independent audit or full cross-module acceptance. |
 
 ## UI-01 — responsive full available content area
 
@@ -71,7 +72,7 @@ Actual E2E command: `E2E_SKIP_WEBSERVER=1 npx playwright test e2e/developer-port
 ## PostgreSQL and local verification
 
 - `docker exec fmcg-erp-system-backend-1 pytest -q tests/test_m20_postgres_scenario_savepoint.py tests/test_m20_remaining_engine.py --tb=short` — **28 passed, 1 deprecation warning**. PostgreSQL scenario uses an approved recipe, compares baseline 2 KG vs candidate 20 KG shortage, and confirms temporary line edits and diagnostic rows are rolled back.
-- `docker exec fmcg-erp-system-backend-1 pytest -q tests/test_m20_remaining_engine.py tests/test_m20_s01_t001_mps_hardening.py tests/test_m20_s01_t001_v02_mps_remediation.py tests/test_m20_s01_t001_v03_mps_remediation.py tests/test_m20_s01_t002_mps_preservation.py --tb=no` — **57 passed, 15 failed**. Failures: `test_release_blocks_all_orders_when_ineligible_lines_exist`; `test_release_rejects_nonexistent_warehouse`; `test_release_rejects_inactive_warehouse`; `test_select_release_recipe_returns_the_queried_recipe`; `test_release_skips_line_when_no_approved_effective_recipe_exists`; `test_release_sets_production_order_uom_from_product`; `test_release_stays_approved_when_every_feasible_line_is_skipped`; `test_release_becomes_released_when_at_least_one_order_is_created`; `test_repeated_release_call_is_rejected_and_creates_no_second_order`; `test_mixed_partial_release_remains_approved_and_reports_unresolved_lines`; three `test_release_fails_closed_for_missing_or_invalid_authoritative_product_uom` cases; `test_release_endpoint_rolls_back_persisted_state_on_late_flush_failure`; and `test_concurrent_postgres_mps_releases_allocate_distinct_order_numbers`. Do not interpret these as acceptance evidence.
+- `docker exec fmcg-erp-system-backend-1 pytest -q tests/test_m20_remaining_engine.py tests/test_m20_s01_t001_mps_hardening.py tests/test_m20_s01_t001_v02_mps_remediation.py tests/test_m20_s01_t001_v03_mps_remediation.py tests/test_m20_s01_t002_mps_preservation.py --tb=short` — **72 passed, 69 existing deprecation warnings (24.86s)** after aligning old fixtures with the completed-MRP source scope, actor validation, and idempotent retry behavior. PostgreSQL late-flush rollback and concurrent sequence tests both ran and passed.
 - Frontend: `npm run type-check` — passed. `npm run lint` — passed with **0 errors, 67 warnings**. `npm run build` — passed, static generation **699/699**; warnings include React 18 support deprecation under Next 16, legacy middleware convention, stale Browserslist data and parent lockfile notice.
 - Migration DBs: `fmcg_erp_m20_acceptance` upgraded predecessor `20261020_0010` to `20261021_0010`, verified both MPS diagnostics/snapshot and Developer Portal tables, downgraded to `20261020_0010` (removing the two new developer-key tables), then re-upgraded. `fmcg_erp_m20_full_migrations` upgraded from empty to `20261021_0010` (657 public tables), downgraded to `20261019_0010` and re-upgraded. These were local PostgreSQL runs; they are not remote CI evidence.
 - `python -m alembic heads` — one head `20261021_0010`.
@@ -108,11 +109,13 @@ Actual E2E command: `E2E_SKIP_WEBSERVER=1 npx playwright test e2e/developer-port
 
 ## Remaining blockers
 
-1. The historical MPS test suite remains red at 57 passed / 15 failed, chiefly because mock/PG release fixtures do not supply the required completed, warehouse-scoped MRP run and one recipe helper does not supply `as_of`. This must be reconciled without weakening scope/release checks.
-2. Full PostgreSQL release atomicity/late rollback/concurrency/idempotency and tenant/permission boundary matrix has not passed; scenario savepoint and migration proof do not replace it.
-3. Nested BOM material feasibility has unit boundary coverage but lacks a real PostgreSQL nested-BOM service test.
-4. Minimum-run/CIP duration and approved-currency cost basis are not configured; related scenario outputs remain explicitly unknown. MERGE/SHIFT_ADD are unsupported and SPLIT remains an approximation.
-5. Remote CI remains deferred through 2026-10-30. No Actions run was started.
-6. Independent ChatGPT audit and any canonical tracker update remain pending. `TASKS.md`, `TASKS_HISTORY.md` and ChatGPT audit files were not modified.
+1. Full PostgreSQL permission/tenant/warehouse boundary matrix and durable diagnostics/snapshot replay coverage remain incomplete.
+2. Nested BOM material feasibility has unit boundary coverage but lacks a real PostgreSQL nested-BOM service test.
+3. Minimum-run/CIP duration and approved-currency cost basis are not configured; related scenario outputs remain explicitly unknown. MERGE/SHIFT_ADD are unsupported and SPLIT remains an approximation.
+4. Remote CI remains deferred through 2026-10-30. No Actions run was started.
+5. Independent ChatGPT audit and any canonical tracker update remain pending. `TASKS.md`, `TASKS_HISTORY.md` and ChatGPT audit files were not modified.
 
 Milestone disposition: **AWAITING_CHATGPT_MILESTONE_AUDIT**. This report does not self-accept M20 or mark any task newly accepted.
+
+
+
