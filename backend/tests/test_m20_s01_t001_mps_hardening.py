@@ -239,12 +239,21 @@ def test_phase_periods_conserves_total_fraction(start, end, period_days):
 
 # ── F7 — honest what-if capability ──────────────────────────────────────────────
 
-@pytest.mark.parametrize("change_type", [MPSChangeType.MERGE, MPSChangeType.SHIFT_ADD])
-def test_whatif_rejects_unsupported_change_types(change_type):
-    with pytest.raises(ValueError, match="not yet simulated"):
+def test_whatif_merge_and_shift_add_require_explicit_scenario_inputs():
+    merged = whatif_svc._apply_change(
+        {"id": "1", "planned_production_qty": "100"},
+        {"change_type": MPSChangeType.MERGE, "new_value": "line-2"},
+    )
+    assert merged["_merge_with_line_id"] == "line-2"
+    shifted = whatif_svc._apply_change(
+        {"id": "1", "planned_production_qty": "100"},
+        {"change_type": MPSChangeType.SHIFT_ADD, "new_value": {"date": "2026-01-01", "hours": "4"}},
+    )
+    assert shifted["_added_shifts"] == [{"date": "2026-01-01", "hours": "4"}]
+    with pytest.raises(ValueError, match="date and hours"):
         whatif_svc._apply_change(
             {"id": "1", "planned_production_qty": "100"},
-            {"change_type": change_type, "new_value": "1"},
+            {"change_type": MPSChangeType.SHIFT_ADD, "new_value": "4"},
         )
 
 

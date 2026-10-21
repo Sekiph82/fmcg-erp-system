@@ -12,7 +12,9 @@ const CHANGE_TYPES: { value: MPSChangeType; label: string; desc: string }[] = [
   { value: "QTY_ADJUST", label: "Adjust Qty",   desc: "Set new planned quantity" },
   { value: "BATCH_SIZE", label: "Batch Size",   desc: "Change batch size (units)" },
   { value: "LINE_CHANGE",label: "Change Line",  desc: "Move to different work center ID" },
-  { value: "SPLIT",      label: "Split Batch",  desc: "Approximate: halves quantity on this line only" },
+  { value: "SPLIT",      label: "Split Batch",  desc: "Split into two exact quantities; total must be conserved" },
+  { value: "MERGE",      label: "Merge Lines",  desc: "Combine two equivalent scheduled lines" },
+  { value: "SHIFT_ADD",  label: "Add Shift",    desc: "Add finite-capacity hours on a scheduled date" },
 ];
 
 export default function WhatIfPage() {
@@ -21,6 +23,9 @@ export default function WhatIfPage() {
   const [selectedLines, setSelectedLines] = useState<Set<string>>(new Set());
   const [changeType, setChangeType] = useState<MPSChangeType>("DELAY");
   const [changeValue, setChangeValue] = useState("");
+  const [changeSecondaryValue, setChangeSecondaryValue] = useState("");
+  const [shiftDate, setShiftDate] = useState("");
+  const [mergeLineId, setMergeLineId] = useState("");
   const [scenarioName, setScenarioName] = useState("");
   const [description, setDescription] = useState("");
   const [changes, setChanges] = useState<WhatIfChange[]>([]);
@@ -67,18 +72,38 @@ export default function WhatIfPage() {
     onSuccess: setComparison,
   });
 
+  function canStageChange() {
+    if (selectedLines.size === 0) return false;
+    if (["SPLIT", "MERGE", "SHIFT_ADD"].includes(changeType) && selectedLines.size !== 1) return false;
+    if (changeType === "SPLIT") return Boolean(changeValue && changeSecondaryValue);
+    if (changeType === "MERGE") return Boolean(mergeLineId);
+    if (changeType === "SHIFT_ADD") return Boolean(shiftDate && changeValue);
+    return Boolean(changeValue);
+  }
+
   function addChange() {
-    if (!changeValue || selectedLines.size === 0) return;
-    const newChanges: WhatIfChange[] = Array.from(selectedLines).map((lid) => ({
+    if (!canStageChange()) return;
+    const selected = Array.from(selectedLines);
+    if (["SPLIT", "MERGE", "SHIFT_ADD"].includes(changeType) && selected.length !== 1) return;
+    const newChanges: WhatIfChange[] = selected.map((lid) => ({
       line_id: lid,
       change_type: changeType,
       new_value: changeType === "DELAY" || changeType === "QTY_ADJUST" || changeType === "BATCH_SIZE"
         ? Number(changeValue)
-        : changeValue,
+        : changeType === "SPLIT"
+          ? { quantities: [changeValue, changeSecondaryValue] }
+          : changeType === "MERGE"
+            ? mergeLineId
+            : changeType === "SHIFT_ADD"
+              ? { date: shiftDate, hours: changeValue }
+              : changeValue,
     }));
     setChanges((prev) => [...prev, ...newChanges]);
     setSelectedLines(new Set());
     setChangeValue("");
+    setChangeSecondaryValue("");
+    setShiftDate("");
+    setMergeLineId("");
   }
 
   function toggleLine(id: string) {
@@ -152,19 +177,41 @@ export default function WhatIfPage() {
                       <option key={ct.value} value={ct.value}>{ct.label} — {ct.desc}</option>
                     ))}
                   </select>
-                  <input
-                    className="border border-gray-200 rounded px-2 py-1.5 text-xs"
-                    placeholder={changeType === "DELAY" ? "Days to delay" : changeType === "LINE_CHANGE" ? "Work center UUID" : "New value"}
-                    value={changeValue}
-                    onChange={(e) => setChangeValue(e.target.value)}
-                  />
+                  {changeType === "MERGE" ? (
+                    <select className="border border-gray-200 rounded px-2 py-1.5 text-xs" value={mergeLineId} onChange={(e) => setMergeLineId(e.target.value)}>
+                      <option value="">Select line to merge into selected line</option>
+                      {lines.filter((line) => !selectedLines.has(line.id)).map((line) => (
+                        <option key={line.id} value={line.id}>{line.line_no} — {line.product_name || line.product_id.slice(0, 12)}</option>
+                      ))}
+                    </select>
+                  ) : changeType === "SPLIT" ? (
+                    <>
+                      <input aria-label="First split quantity" className="border border-gray-200 rounded px-2 py-1.5 text-xs" placeholder="First exact quantity" value={changeValue} onChange={(e) => setChangeValue(e.target.value)} />
+                      <input aria-label="Second split quantity" className="border border-gray-200 rounded px-2 py-1.5 text-xs" placeholder="Second exact quantity" value={changeSecondaryValue} onChange={(e) => setChangeSecondaryValue(e.target.value)} />
+                    </>
+                  ) : changeType === "SHIFT_ADD" ? (
+                    <>
+                      <input aria-label="Shift date" type="date" className="border border-gray-200 rounded px-2 py-1.5 text-xs" value={shiftDate} onChange={(e) => setShiftDate(e.target.value)} />
+                      <input aria-label="Additional shift hours" type="number" min="0.001" max="24" step="0.001" className="border border-gray-200 rounded px-2 py-1.5 text-xs" placeholder="Additional hours" value={changeValue} onChange={(e) => setChangeValue(e.target.value)} />
+                    </>
+                  ) : (
+                    <input
+                      className="border border-gray-200 rounded px-2 py-1.5 text-xs"
+                      placeholder={changeType === "DELAY" ? "Days to delay" : changeType === "LINE_CHANGE" ? "Work center UUID" : "New value"}
+                      value={changeValue}
+                      onChange={(e) => setChangeValue(e.target.value)}
+                    />
+                  )}
                 </div>
+                {["SPLIT", "MERGE", "SHIFT_ADD"].includes(changeType) && (
+                  <p className="text-xs text-gray-500">Choose exactly one target line. {changeType === "MERGE" ? "Both lines must share product, period, dates and work center." : changeType === "SPLIT" ? "The two quantities must sum exactly to the line quantity." : "The date must be inside the line schedule; capacity must be FINITE."}</p>
+                )}
                 <p className="text-xs text-gray-400">
                   {selectedLines.size} line(s) selected below
                 </p>
                 <button
                   onClick={addChange}
-                  disabled={!changeValue || selectedLines.size === 0}
+                  disabled={!canStageChange()}
                   className="w-full py-1.5 text-xs bg-indigo-600 text-white rounded-lg disabled:opacity-40 hover:bg-indigo-700"
                 >
                   Add Change to Scenario
@@ -177,7 +224,7 @@ export default function WhatIfPage() {
                   <p className="text-xs font-medium text-gray-500 mb-1">{changes.length} change(s) staged:</p>
                   {changes.map((c, i) => (
                     <div key={i} className="flex items-center justify-between text-xs bg-blue-50 rounded px-2 py-1">
-                      <span className="text-blue-700">{c.change_type}: {String(c.new_value)}</span>
+                      <span className="text-blue-700">{c.change_type}: {typeof c.new_value === "object" ? JSON.stringify(c.new_value) : String(c.new_value)}</span>
                       <button
                         onClick={() => setChanges((prev) => prev.filter((_, j) => j !== i))}
                         className="text-gray-400 hover:text-red-500"
@@ -332,7 +379,7 @@ export default function WhatIfPage() {
                   <div key={i} className="flex items-center justify-between text-xs bg-gray-50 rounded px-2 py-1.5">
                     <span className="text-gray-500 font-mono">{c.line_id.slice(0, 8)}…</span>
                     <span className="text-indigo-600 font-medium">{c.change_type}</span>
-                    <span className="text-gray-700">{String(c.new_value)}</span>
+                    <span className="text-gray-700">{typeof c.new_value === "object" ? JSON.stringify(c.new_value) : String(c.new_value)}</span>
                   </div>
                 ))}
               </div>

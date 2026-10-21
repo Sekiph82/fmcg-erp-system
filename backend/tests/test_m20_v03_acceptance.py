@@ -20,12 +20,14 @@ from app.models.master import (
     Warehouse, WarehouseType,
 )
 from app.models.mps import (
-    MPSChangeType, MPSFeasibilityStatus, MPSLine, MPSPlan, MPSScenarioSnapshot,
+    MPSCapacityMode, MPSChangeType, MPSFeasibilityStatus, MPSLine, MPSPlan, MPSScenarioSnapshot,
     MPSStatus, MPSWhatIfScenario,
 )
 from app.models.mrp import MRPResult, MRPRun, MRPRunStatus
 from app.models.production import ProductionOrder
 from app.models.recipe import Recipe, RecipeStatus
+from app.models.planning import ResourceCalendar
+from app.models.production_advanced import WorkCenter, WorkCenterType
 from app.models.role import AccessScope, Permission, Role
 from app.models.user import User, user_role
 from app.schemas.mps import GenerateFromMRPRequest, MPSWhatIfCreate, WhatIfChange
@@ -40,6 +42,98 @@ class _RollbackFixture(Exception):
 
 def _suffix() -> str:
     return uuid4().hex[:10]
+
+
+@pytest.mark.asyncio
+async def test_postgres_whatif_merge_exact_split_and_added_shift_resimulate_without_live_mutation():
+    """Persist exact scenario operations and finite-capacity before/after metrics."""
+    if "postgresql" not in str(settings.DATABASE_URL):
+        pytest.skip("M20 scenario operation proof requires PostgreSQL")
+
+    suffix = _suffix()
+    day = date(2026, 11, 3)
+    async with AsyncSessionLocal() as db:
+        async with db.begin():
+            warehouse = Warehouse(
+                code=f"M20-OPS-WH-{suffix}", name="M20 scenario operation warehouse",
+                warehouse_type=WarehouseType.FINISHED_GOODS,
+            )
+            product = Product(
+                sku=f"M20-OPS-P-{suffix}", name="M20 scenario operation product",
+                category=ProductCategory.FOOD, uom=UnitOfMeasure.KG,
+            )
+            user = User(
+                email=f"m20-ops-{suffix}@example.invalid", username=f"m20-ops-{suffix}",
+                full_name="M20 scenario operations", hashed_password="test",
+            )
+            db.add_all([warehouse, product, user])
+            await db.flush()
+            work_center = WorkCenter(
+                work_center_id=f"M20-OPS-WC-{suffix}", name="M20 scenario work center",
+                type=WorkCenterType.LINE, capacity=10, capacity_uom="KG/HR",
+            )
+            db.add(work_center)
+            await db.flush()
+            db.add(ResourceCalendar(
+                work_center_id=work_center.id, calendar_date=day,
+                available_hours=8, is_holiday=False, is_maintenance=False,
+            ))
+            run = MRPRun(
+                run_no=f"M20-OPS-RUN-{suffix}", run_date=day,
+                status=MRPRunStatus.COMPLETED, warehouse_id=warehouse.id,
+            )
+            plan = MPSPlan(
+                plan_no=f"M20-OPS-PLAN-{suffix}", plan_name="M20 scenario operation plan",
+                start_date=day, end_date=day, mrp_run=run, capacity_mode=MPSCapacityMode.FINITE,
+            )
+            db.add(plan)
+            await db.flush()
+            first = MPSLine(
+                line_no=f"M20-OPS-A-{suffix}", mps_id=plan.id, product_id=product.id,
+                period_start=day, period_end=day, planned_start_date=day, planned_end_date=day,
+                planned_production_qty=Decimal("40"), work_center_id=work_center.id,
+            )
+            second = MPSLine(
+                line_no=f"M20-OPS-B-{suffix}", mps_id=plan.id, product_id=product.id,
+                period_start=day, period_end=day, planned_start_date=day, planned_end_date=day,
+                planned_production_qty=Decimal("60"), work_center_id=work_center.id,
+            )
+            db.add_all([first, second])
+            await db.flush()
+            plan_id, first_id, second_id, user_id = plan.id, first.id, second.id, user.id
+
+        merged = await create_whatif_scenario(db, plan_id, MPSWhatIfCreate(
+            scenario_name="merge equivalent schedules",
+            changes=[WhatIfChange(line_id=first_id, change_type=MPSChangeType.MERGE, new_value=str(second_id))],
+        ), user_id)
+        split = await create_whatif_scenario(db, plan_id, MPSWhatIfCreate(
+            scenario_name="exact split",
+            changes=[WhatIfChange(line_id=first_id, change_type=MPSChangeType.SPLIT, new_value={"quantities": ["15.125", "24.875"]})],
+        ), user_id)
+        shifted = await create_whatif_scenario(db, plan_id, MPSWhatIfCreate(
+            scenario_name="add configured finite shift",
+            changes=[WhatIfChange(line_id=first_id, change_type=MPSChangeType.SHIFT_ADD, new_value={"date": day.isoformat(), "hours": "2"})],
+        ), user_id)
+        snapshots = (await db.scalars(select(MPSScenarioSnapshot).where(
+            MPSScenarioSnapshot.scenario_id.in_([merged.id, split.id, shifted.id]),
+        ))).all()
+        by_scenario = {row.scenario_id: row for row in snapshots}
+        assert len(by_scenario) == 3
+        merged_lines = by_scenario[merged.id].results["modified_lines"]
+        assert len(merged_lines) == 1
+        assert Decimal(merged_lines[0]["planned_production_qty"]) == Decimal("100.000")
+        split_lines = by_scenario[split.id].results["modified_lines"]
+        assert [Decimal(line["planned_production_qty"]) for line in split_lines] == [Decimal("15.125"), Decimal("24.875"), Decimal("60.000")]
+        assert sum((Decimal(line["planned_production_qty"]) for line in split_lines), Decimal(0)) == Decimal("100.000")
+        assert by_scenario[merged.id].results["capacity_overload_hours"] == 2.0
+        assert by_scenario[split.id].results["capacity_overload_hours"] == 2.0
+        assert by_scenario[shifted.id].results["capacity_overload_hours"] == 0.0
+        assert by_scenario[shifted.id].assumptions["shift_additions"] == [
+            {"work_center_id": str((await db.get(MPSLine, first_id)).work_center_id), "date": day.isoformat(), "hours": "2"},
+        ]
+        assert await db.scalar(select(func.sum(MPSLine.planned_production_qty)).where(
+            MPSLine.mps_id == plan_id,
+        )) == Decimal("100.000"), "scenario operations must not mutate live plan lines"
 
 
 @pytest.mark.asyncio

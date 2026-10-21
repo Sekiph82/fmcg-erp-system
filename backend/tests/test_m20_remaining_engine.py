@@ -16,7 +16,7 @@ from app.services.mps_engine import (
     period_buckets,
     scenario_kpis,
 )
-from app.services.mps_whatif_service import _apply_change, _compute_impact, _scenario_capacity_loads, _scenario_changeover_hours
+from app.services.mps_whatif_service import _apply_change, _compute_impact, _expand_candidate_lines, _scenario_capacity_loads, _scenario_changeover_hours
 from app.models.mps import MPSCapacityMode, MPSChangeType
 
 
@@ -272,14 +272,32 @@ def test_mps_diagnostics_and_scenario_snapshot_tables_are_registered_for_databas
     assert str(snapshots.c.assumptions.type).upper() == "JSONB"
 
 
-def test_whatif_never_invents_currency_and_rejects_unimplemented_operations():
+def test_whatif_preserves_unknown_currency_and_supports_exact_split_merge_and_shift_inputs():
     original = [{"id": "line-1", "planned_end_date": "2026-01-05", "period_end": "2026-01-05", "planned_production_qty": "10"}]
     modified = {"line-1": {**original[0], "planned_end_date": "2026-01-06"}}
     assert _compute_impact(original, modified, {}) == (0.0, 1, None)
-    with pytest.raises(ValueError, match="not yet simulated"):
-        _apply_change({}, {"change_type": MPSChangeType.MERGE, "new_value": 1})
-    with pytest.raises(ValueError, match="not yet simulated"):
-        _apply_change({}, {"change_type": MPSChangeType.SHIFT_ADD, "new_value": 1})
+    split = _apply_change(
+        {"id": "line-1", "planned_production_qty": "10.000"},
+        {"change_type": MPSChangeType.SPLIT, "new_value": {"quantities": ["3.125", "6.875"]}},
+    )
+    assert split["planned_production_qty"] == "10.000"
+    assert split["_split_quantities"] == ["3.125", "6.875"]
+    assert [line["planned_production_qty"] for line in _expand_candidate_lines([split])] == ["3.125", "6.875"]
+    with pytest.raises(ValueError, match="sum exactly"):
+        _apply_change(
+            {"planned_production_qty": "10.000"},
+            {"change_type": MPSChangeType.SPLIT, "new_value": ["4", "5"]},
+        )
+    merged = _apply_change(
+        {"id": "line-1", "planned_production_qty": "10"},
+        {"change_type": MPSChangeType.MERGE, "new_value": "line-2"},
+    )
+    assert merged["_merge_with_line_id"] == "line-2"
+    shifted = _apply_change(
+        {"id": "line-1", "planned_production_qty": "10"},
+        {"change_type": MPSChangeType.SHIFT_ADD, "new_value": {"date": "2026-01-02", "hours": "4"}},
+    )
+    assert shifted["_added_shifts"] == [{"date": "2026-01-02", "hours": "4"}]
     delayed = _apply_change({"period_start": "2026-01-01"}, {"change_type": MPSChangeType.DELAY, "new_value": 3})
     assert delayed["period_start"] == "2026-01-04"
     adjusted = _apply_change({"planned_production_qty": "10"}, {"change_type": MPSChangeType.QTY_ADJUST, "new_value": "12.5"})
@@ -315,6 +333,13 @@ def test_whatif_capacity_simulation_uses_rate_calendar_and_downtime():
     gap = _scenario_capacity_loads([line], {wc_id: work_center}, {product_id: product}, {}, [], MPSCapacityMode.FINITE)
     assert gap["status"] == "PARTIAL_INPUTS"
     assert gap["overload_hours"] is None
+
+    with_shift = _scenario_capacity_loads(
+        [line], {wc_id: work_center}, {product_id: product}, {(wc_id, day): calendar}, [downtime],
+        MPSCapacityMode.FINITE, {(wc_id, day): Decimal("2")},
+    )
+    assert with_shift["status"] == "COMPLETE"
+    assert with_shift["overload_hours"] == 0.0
 
 
 def test_whatif_changeover_uses_configured_transition_and_reports_missing_transition():

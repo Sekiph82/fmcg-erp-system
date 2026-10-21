@@ -29,6 +29,10 @@ test("Developer Portal 401 offers an explicit sign-in recovery action", async ({
 
   await page.waitForURL(/\/login/);
   await expect(page.locator("body")).not.toContainText("private diagnostic");
+  await page.screenshot({
+    path: "test-results/m20-developer-portal-401-recovery.png", fullPage: true,
+    mask: [page.locator("p").filter({ hasText: /@/ })], maskColor: "#0b1120",
+  });
 });
 
 test("API Keys and GraphQL use the configured backend and the full content width", async ({ page }) => {
@@ -72,6 +76,11 @@ test("API Keys and GraphQL use the configured backend and the full content width
       });
       expect(geometry.documentWidth).toBeLessThanOrEqual(viewport.width + 1);
       expect(geometry.pageWidth).toBeGreaterThanOrEqual(geometry.mainWidth * 0.78);
+      const screenshotPage = pagePath.url.endsWith("/keys") ? "api-keys" : "graphql";
+      await page.screenshot({
+        path: `test-results/m20-developer-portal-${screenshotPage}-${viewport.width}x${viewport.height}.png`,
+        fullPage: true, mask: [page.locator("p").filter({ hasText: /@/ })], maskColor: "#0b1120",
+      });
     }
   }
 

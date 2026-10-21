@@ -36,6 +36,7 @@ test("dashboard and integration tabs fit the required desktop, tablet, and phone
     await page.setViewportSize({ width: viewport.width, height: viewport.height });
     await page.goto("/dashboard");
     await expect(page.getByTestId("dashboard-main")).toBeVisible();
+    await expect(page.getByTestId("dashboard-main")).not.toContainText("Loading…", { timeout: 15_000 });
 
     const dashboardGeometry = await page.evaluate(() => ({
       viewport: window.innerWidth,
@@ -46,7 +47,10 @@ test("dashboard and integration tabs fit the required desktop, tablet, and phone
     expect(dashboardGeometry.document, `dashboard horizontal overflow at ${viewport.name}`).toBeLessThanOrEqual(viewport.width + 1);
     expect(dashboardGeometry.main?.right, `dashboard main exceeds viewport at ${viewport.name}`).toBeLessThanOrEqual(viewport.width + 1);
     expect(dashboardGeometry.content?.width, `dashboard content remains narrow at ${viewport.name}`).toBeGreaterThanOrEqual((dashboardGeometry.main?.width ?? 0) * 0.78);
-    await page.screenshot({ path: `test-results/m20-dashboard-${viewport.name}.png`, fullPage: true });
+    await page.screenshot({
+      path: `test-results/m20-dashboard-${viewport.name}.png`, fullPage: true,
+      mask: [page.locator("p").filter({ hasText: /@/ })], maskColor: "#0b1120",
+    });
 
     await page.goto("/dashboard/integrations");
     await expect(page.getByTestId("dashboard-main")).toBeVisible();
@@ -69,6 +73,9 @@ test("dashboard and integration tabs fit the required desktop, tablet, and phone
       expect(geometry.main?.right, `${tab.label} content exceeds viewport at ${viewport.name}`).toBeLessThanOrEqual(viewport.width + 1);
       expect(geometry.content?.width, `${tab.label} content remains narrow at ${viewport.name}`).toBeGreaterThanOrEqual((geometry.main?.width ?? 0) * 0.78);
     }
-    await page.screenshot({ path: `test-results/m20-integrations-${viewport.name}.png`, fullPage: true });
+    await page.screenshot({
+      path: `test-results/m20-integrations-${viewport.name}.png`, fullPage: true,
+      mask: [page.locator("p").filter({ hasText: /@/ })], maskColor: "#0b1120",
+    });
   }
 });

@@ -62,6 +62,7 @@ def _scenario_capacity_loads(
     lines: list[dict], wcs: dict[uuid.UUID, WorkCenter], products: dict[uuid.UUID, Product],
     calendars: dict[tuple[uuid.UUID, date], ResourceCalendar], downtimes: list[DowntimeEvent],
     capacity_mode: MPSCapacityMode,
+    shift_additions: dict[tuple[uuid.UUID, date], Decimal] | None = None,
 ) -> dict:
     """Pure candidate schedule load using the same calendar and rate inputs as finite MPS capacity."""
     if capacity_mode == MPSCapacityMode.INFINITE:
@@ -111,9 +112,15 @@ def _scenario_capacity_loads(
             loads[key] = loads.get(key, Decimal(0)) + per_day
 
     overload_total = Decimal(0)
+    shift_additions = shift_additions or {}
     for (wc_id, day), required in loads.items():
-        calendar = calendars[(wc_id, day)]
-        available = Decimal(0) if calendar.is_holiday or calendar.is_maintenance else _D(calendar.available_hours)
+        calendar = calendars.get((wc_id, day))
+        if calendar is None:
+            unknown.add("CAPACITY_CALENDAR_NOT_CONFIGURED")
+            available = Decimal(0)
+        else:
+            available = Decimal(0) if calendar.is_holiday or calendar.is_maintenance else _D(calendar.available_hours)
+        available += shift_additions.get((wc_id, day), Decimal(0))
         downtime_hours = Decimal(0)
         unbounded = False
         start = datetime.combine(day, datetime.min.time(), tzinfo=timezone.utc)
@@ -153,6 +160,8 @@ def _scenario_changeover_hours(
     ordered = []
     unknown: set[str] = set()
     for line in lines:
+        if line.get("_merged_into") or ("planned_production_qty" in line and _D(line.get("planned_production_qty")) <= 0):
+            continue
         try:
             wc_id = uuid.UUID(str(line.get("work_center_id")))
             product_id = uuid.UUID(str(line.get("product_id")))
@@ -271,19 +280,10 @@ async def _simulate_scenario_materials(db: AsyncSession, mps_id: uuid.UUID, snap
             "candidate_shortage_count": None, "shortage_count_delta": None,
             "unknown_reasons": [f"material simulation unavailable: {type(exc).__name__}"],
         }
-# Change types not yet executed by the simulator. Presenting these as
-# computed would be dishonest — see M20.S01.T001 F7 — so they are rejected
-# rather than silently no-op'd. Full support belongs to M20.S04/M32.
-_UNSUPPORTED_CHANGE_TYPES = {MPSChangeType.MERGE, MPSChangeType.SHIFT_ADD}
-
-
 def _apply_change(line_snapshot: dict, change: dict) -> dict:
     """Apply one change dict to a line snapshot copy."""
     ct = change["change_type"]
     val = change["new_value"]
-
-    if ct in _UNSUPPORTED_CHANGE_TYPES:
-        raise ValueError(f"What-if change type {ct} is not yet simulated (planned for M20.S04)")
 
     if ct == MPSChangeType.DELAY:
         # val = number of days to delay
@@ -318,10 +318,31 @@ def _apply_change(line_snapshot: dict, change: dict) -> dict:
         line_snapshot["work_center_id"] = str(val)
 
     elif ct == MPSChangeType.SPLIT:
-        line_snapshot["_split"] = True
-        line_snapshot["planned_production_qty"] = str(
-            _R(_D(line_snapshot.get("planned_production_qty", 0)) / 2)
-        )
+        raw_parts = val.get("quantities") if isinstance(val, dict) else val
+        if not isinstance(raw_parts, (list, tuple)) or len(raw_parts) != 2:
+            raise ValueError("SPLIT requires exactly two quantities in new_value.quantities")
+        try:
+            parts = [Decimal(str(part)) for part in raw_parts]
+        except Exception as exc:
+            raise ValueError("SPLIT quantities must be positive finite numbers") from exc
+        if any(not part.is_finite() or part <= 0 or part != _R(part) for part in parts):
+            raise ValueError("SPLIT quantities must be positive finite quantities with at most 3 decimals")
+        original_qty = _D(line_snapshot.get("planned_production_qty", 0))
+        if sum(parts, Decimal(0)) != original_qty:
+            raise ValueError("SPLIT quantities must sum exactly to the original planned quantity")
+        line_snapshot["_split_quantities"] = [str(part) for part in parts]
+
+    elif ct == MPSChangeType.MERGE:
+        line_snapshot["_merge_with_line_id"] = str(val)
+
+    elif ct == MPSChangeType.SHIFT_ADD:
+        # SHIFT_ADD capacity is collected and applied at scenario level. Keep
+        # the explicit assumption with the target line for durable replay.
+        if not isinstance(val, dict):
+            raise ValueError("SHIFT_ADD requires an object with date and hours")
+        line_snapshot.setdefault("_added_shifts", []).append({
+            "date": str(val.get("date", "")), "hours": str(val.get("hours", "")),
+        })
 
     return line_snapshot
 
@@ -362,6 +383,25 @@ def _compute_impact(
     return svc_level, delay_count, None
 
 
+def _expand_candidate_lines(lines: list[dict]) -> list[dict]:
+    """Expand exact split assumptions into separate candidate capacity runs."""
+    expanded: list[dict] = []
+    for line in lines:
+        if line.get("_merged_into") or ("planned_production_qty" in line and _D(line.get("planned_production_qty")) <= 0):
+            continue
+        parts = line.get("_split_quantities")
+        if not parts:
+            expanded.append(line)
+            continue
+        for index, quantity in enumerate(parts, start=1):
+            split_line = deepcopy(line)
+            split_line["id"] = f"{line['id']}:split:{index}"
+            split_line["planned_production_qty"] = quantity
+            split_line["_split_part"] = index
+            expanded.append(split_line)
+    return expanded
+
+
 async def create_whatif_scenario(
     db: AsyncSession,
     mps_id: uuid.UUID,
@@ -378,8 +418,15 @@ async def create_whatif_scenario(
     seq_q = await db.execute(select(func.count()).select_from(MPSWhatIfScenario))
     seq = (seq_q.scalar() or 0) + 1
 
-    # Load affected lines
+    # MERGE carries its second line ID in new_value; include it in the same
+    # scoped lookup and require every referenced line to belong to this plan.
     line_ids = [c.line_id for c in data.changes]
+    for change in data.changes:
+        if change.change_type == MPSChangeType.MERGE:
+            try:
+                line_ids.append(uuid.UUID(str(change.new_value)))
+            except (TypeError, ValueError) as exc:
+                raise ValueError("MERGE requires the second MPS line id as new_value") from exc
     lines_q = await db.execute(
         select(MPSLine).where(
             MPSLine.id.in_(line_ids),
@@ -414,6 +461,10 @@ async def create_whatif_scenario(
             "batch_size_qty": str(line.batch_size_qty) if line.batch_size_qty else None,
             "num_batches": line.num_batches,
             "required_hours": str(line.required_hours) if line.required_hours is not None else None,
+            "confirmed_demand_qty": str(line.confirmed_demand_qty),
+            "forecast_qty": str(line.forecast_qty),
+            "safety_stock_qty": str(line.safety_stock_qty),
+            "net_requirement_qty": str(line.net_requirement_qty),
         }
 
     original_snaps = [_snap(l) for l in all_lines]
@@ -421,11 +472,60 @@ async def create_whatif_scenario(
 
     # Apply changes
     changes_json = []
+    consumed_merge_lines: set[uuid.UUID] = set()
+    shift_additions: dict[tuple[uuid.UUID, date], Decimal] = {}
     for change in data.changes:
         lid = str(change.line_id)
         line = affected_lines[change.line_id]
         if line.is_locked:
             raise ValueError("What-if changes cannot target a locked MPS line")
+        if change.change_type == MPSChangeType.MERGE:
+            try:
+                merge_id = uuid.UUID(str(change.new_value))
+            except (TypeError, ValueError) as exc:
+                raise ValueError("MERGE requires the second MPS line id as new_value") from exc
+            other = affected_lines.get(merge_id)
+            if other is None or merge_id == change.line_id:
+                raise ValueError("MERGE requires two distinct lines in this MPS plan")
+            if other.is_locked:
+                raise ValueError("What-if MERGE cannot target a locked MPS line")
+            if change.line_id in consumed_merge_lines or merge_id in consumed_merge_lines:
+                raise ValueError("A line may participate in only one MERGE operation per scenario")
+            target, source = modified_map[str(change.line_id)], modified_map[str(merge_id)]
+            match_fields = ("product_id", "period_start", "period_end", "planned_start_date", "planned_end_date", "work_center_id")
+            if any(target.get(field) != source.get(field) for field in match_fields):
+                raise ValueError("MERGE requires matching product, period, schedule dates, and work center")
+            target["planned_production_qty"] = str(_R(_D(target["planned_production_qty"]) + _D(source["planned_production_qty"])))
+            for field in ("confirmed_demand_qty", "forecast_qty", "safety_stock_qty", "net_requirement_qty"):
+                target[field] = str(_R(_D(target.get(field)) + _D(source.get(field))))
+            source["planned_production_qty"] = "0"
+            source["_merged_into"] = str(change.line_id)
+            consumed_merge_lines.update((change.line_id, merge_id))
+        elif change.change_type == MPSChangeType.SPLIT:
+            _apply_change(modified_map[lid], {"change_type": change.change_type, "new_value": change.new_value})
+        elif change.change_type == MPSChangeType.SHIFT_ADD:
+            if plan.capacity_mode != MPSCapacityMode.FINITE:
+                raise ValueError("SHIFT_ADD requires a plan in FINITE capacity mode")
+            value = change.new_value
+            if not isinstance(value, dict):
+                raise ValueError("SHIFT_ADD requires an object with date and hours")
+            try:
+                shift_day = date.fromisoformat(str(value["date"]))
+                hours = Decimal(str(value["hours"]))
+            except (KeyError, TypeError, ValueError, ArithmeticError) as exc:
+                raise ValueError("SHIFT_ADD requires an ISO date and positive finite hours") from exc
+            if not hours.is_finite() or hours <= 0 or hours > 24:
+                raise ValueError("SHIFT_ADD hours must be greater than 0 and no more than 24")
+            try:
+                line_start = date.fromisoformat(str(modified_map[lid].get("planned_start_date") or modified_map[lid]["period_start"]))
+                line_end = date.fromisoformat(str(modified_map[lid].get("planned_end_date") or modified_map[lid]["period_end"]))
+                wc_id = uuid.UUID(str(modified_map[lid]["work_center_id"]))
+            except (KeyError, TypeError, ValueError) as exc:
+                raise ValueError("SHIFT_ADD target requires a scheduled line with a work center") from exc
+            if shift_day < line_start or shift_day > line_end:
+                raise ValueError("SHIFT_ADD date must fall within the target line schedule")
+            shift_additions[(wc_id, shift_day)] = shift_additions.get((wc_id, shift_day), Decimal(0)) + hours
+            _apply_change(modified_map[lid], {"change_type": change.change_type, "new_value": value})
         if change.change_type == MPSChangeType.LINE_CHANGE:
             try:
                 target_wc_id = uuid.UUID(str(change.new_value))
@@ -443,7 +543,7 @@ async def create_whatif_scenario(
                 raise ValueError("DELAY must be a non-negative whole number of days")
         if change.change_type in (MPSChangeType.BATCH_SIZE, MPSChangeType.QTY_ADJUST) and (not _D(change.new_value).is_finite() or _D(change.new_value) <= 0):
             raise ValueError(f"{change.change_type.value} quantity must be positive")
-        if lid in modified_map:
+        if lid in modified_map and change.change_type not in (MPSChangeType.MERGE, MPSChangeType.SPLIT, MPSChangeType.SHIFT_ADD):
             modified_map[lid] = _apply_change(modified_map[lid], {
                 "change_type": change.change_type,
                 "new_value": change.new_value,
@@ -451,7 +551,14 @@ async def create_whatif_scenario(
         changes_json.append({
             "line_id": lid,
             "change_type": change.change_type,
-            "new_value": change.new_value,
+            "new_value": (
+                str(change.new_value) if change.change_type == MPSChangeType.MERGE else
+                {"quantities": [str(q) for q in (change.new_value.get("quantities") if isinstance(change.new_value, dict) else change.new_value)]}
+                if change.change_type == MPSChangeType.SPLIT else
+                {"date": str(change.new_value.get("date")), "hours": str(change.new_value.get("hours"))}
+                if change.change_type == MPSChangeType.SHIFT_ADD else
+                change.new_value
+            ),
         })
 
     # Compute impact
@@ -482,10 +589,11 @@ async def create_whatif_scenario(
             DowntimeEvent.start_time < datetime.combine(last_day + timedelta(days=1), datetime.min.time(), tzinfo=timezone.utc),
             (DowntimeEvent.end_time.is_(None)) | (DowntimeEvent.end_time >= datetime.combine(first_day, datetime.min.time(), tzinfo=timezone.utc)),
         ))).scalars().all()
+    candidate_lines = _expand_candidate_lines(list(modified_map.values()))
     capacity_metrics = _scenario_capacity_loads(
-        list(modified_map.values()), wcs, products,
+        candidate_lines, wcs, products,
         {(row.work_center_id, row.calendar_date): row for row in calendar_rows},
-        downtime_rows, plan.capacity_mode,
+        downtime_rows, plan.capacity_mode, shift_additions,
     )
 
     changeover_rows = []
@@ -494,7 +602,7 @@ async def create_whatif_scenario(
             ChangeoverMatrix.work_center_id.in_(scenario_wc_ids),
         ))).scalars().all()
     baseline_changeover = _scenario_changeover_hours(original_snaps, products, changeover_rows)
-    candidate_changeover = _scenario_changeover_hours(list(modified_map.values()), products, changeover_rows)
+    candidate_changeover = _scenario_changeover_hours(candidate_lines, products, changeover_rows)
     material_metrics = await _simulate_scenario_materials(db, mps_id, modified_map)
 
     summary_parts = []
@@ -521,10 +629,12 @@ async def create_whatif_scenario(
     if delays == 0:
         summary_parts.append("no modeled schedule delay detected")
     if any(c.change_type == MPSChangeType.SPLIT for c in data.changes):
-        summary_parts.append(
-            "SPLIT is approximated as a single-line quantity halving; a full two-line "
-            "finite-capacity re-simulation is not performed (planned for M20.S04)"
-        )
+        summary_parts.append("SPLIT uses exact quantity-conserving parts with candidate capacity and changeover re-simulation")
+    if shift_additions:
+        added_hours = sum(shift_additions.values(), Decimal(0))
+        summary_parts.append(f"explicit scenario shifts add {added_hours} capacity hours")
+    if any(c.change_type == MPSChangeType.MERGE for c in data.changes):
+        summary_parts.append("MERGE combines only schedule-equivalent lines and preserves total quantity")
     impact_summary = "; ".join(summary_parts) + f". Projected service level: {svc:.1f}% (estimated)."
 
     scenario = MPSWhatIfScenario(
@@ -548,6 +658,10 @@ async def create_whatif_scenario(
         "changes": changes_json,
         "line_count": len(original_snaps),
         "cost_basis": None,
+        "shift_additions": [
+            {"work_center_id": str(wc_id), "date": day.isoformat(), "hours": str(hours)}
+            for (wc_id, day), hours in sorted(shift_additions.items(), key=lambda item: (str(item[0][0]), item[0][1]))
+        ],
     }
     snapshot_results = {
         "service_level_pct": svc,
@@ -567,13 +681,14 @@ async def create_whatif_scenario(
         "capacity_unknown_reasons": capacity_metrics["unknown_reasons"],
         "capacity_slot_count": capacity_metrics["slot_count"],
         "capacity_unit": "hours",
+        "shift_additions": snapshot_assumptions["shift_additions"],
         "baseline_changeover_hours": baseline_changeover["hours"],
         "baseline_changeover_status": baseline_changeover["status"],
         "changeover_hours": candidate_changeover["hours"] if candidate_changeover["status"] == "COMPLETE" else None,
         "changeover_status": candidate_changeover["status"],
         "changeover_unknown_reasons": candidate_changeover["unknown_reasons"],
         "unknowns": material_metrics["unknown_reasons"] + ["CIP duration source is not configured", "cost currency/basis is not configured"] + candidate_changeover["unknown_reasons"],
-        "modified_lines": list(modified_map.values()),
+        "modified_lines": candidate_lines,
     }
     await db.execute(text("""
         INSERT INTO mps_scenario_snapshots

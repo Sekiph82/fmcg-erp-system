@@ -39,6 +39,10 @@ test.describe("Developer Portal API failures", () => {
     await expect(page.getByText("Authentication", { exact: true })).toBeVisible();
     await expect(page.getByTestId("dashboard-main").getByRole("alert")).toHaveCount(0);
     expect(developerStatuses).toEqual(expect.arrayContaining([200, 200]));
+    await page.screenshot({
+      path: "test-results/m20-developer-portal-overview.png", fullPage: true,
+      mask: [page.locator("p").filter({ hasText: /@/ })], maskColor: "#0b1120",
+    });
   });
 
   test("shows a retryable safe error for HTML 404 responses from both dashboard calls", async ({ page }) => {
@@ -56,6 +60,10 @@ test.describe("Developer Portal API failures", () => {
     await expect(alert).toContainText("Developer Portal resource is unavailable");
     await expect(page.getByRole("button", { name: "Retry" })).toBeVisible();
     await expect(page.locator("body")).not.toContainText("<!doctype html>");
+    await page.screenshot({
+      path: "test-results/m20-developer-portal-safe-error-404.png", fullPage: true,
+      mask: [page.locator("p").filter({ hasText: /@/ })], maskColor: "#0b1120",
+    });
     expect(requested).toEqual(expect.arrayContaining([
       "/api/v1/developer/dashboard",
       "/api/v1/developer/resources",
