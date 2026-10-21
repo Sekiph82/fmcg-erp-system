@@ -51,6 +51,11 @@ async def get_current_user(
     if not user.is_active:
         logger.warning("Auth failed: user_id=%s is inactive", user_id)
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found or inactive")
+    # Authentication and eager role/scope loading starts SQLAlchemy's
+    # autobegin transaction. MPS routes open an explicit transaction for the
+    # authorized operation; close this read-only auth transaction first so
+    # real requests can enter that boundary safely.
+    await db.commit()
     return user
 
 

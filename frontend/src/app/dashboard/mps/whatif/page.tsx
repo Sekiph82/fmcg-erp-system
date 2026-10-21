@@ -119,6 +119,11 @@ export default function WhatIfPage() {
     const positive = inverted ? v < 0 : v > 0;
     return positive ? "text-green-600" : "text-red-600";
   };
+  const finiteMetric = (value: number | string | null | undefined) => {
+    if (value == null || value === "") return null;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  };
 
   return (
     <div className="p-6 space-y-5">
@@ -204,7 +209,7 @@ export default function WhatIfPage() {
                   )}
                 </div>
                 {["SPLIT", "MERGE", "SHIFT_ADD"].includes(changeType) && (
-                  <p className="text-xs text-gray-500">Choose exactly one target line. {changeType === "MERGE" ? "Both lines must share product, period, dates and work center." : changeType === "SPLIT" ? "The two quantities must sum exactly to the line quantity." : "The date must be inside the line schedule; capacity must be FINITE."}</p>
+                  <p className="text-xs text-gray-500">Choose exactly one target line. {changeType === "MERGE" ? "Both lines must share source, product, batch, campaign, feasibility, period, dates and work center." : changeType === "SPLIT" ? "Enter two positive quantities (up to 3 decimals) whose sum exactly equals the line quantity." : "Use a FINITE plan and a date inside the line schedule; added hours are checked against the remaining work-center calendar."}</p>
                 )}
                 <p className="text-xs text-gray-400">
                   {selectedLines.size} line(s) selected below
@@ -320,19 +325,19 @@ export default function WhatIfPage() {
                       )}
                       <div className="flex gap-4 mt-1 text-xs">
                         <span>
-                          SL: <span className={impactColor(s.impact_service_level_pct)}>
-                            {s.impact_service_level_pct?.toFixed(1) ?? "—"}%
+                          SL: <span className={impactColor(finiteMetric(s.impact_service_level_pct))}>
+                            {finiteMetric(s.impact_service_level_pct)?.toFixed(1) ?? "—"}%
                           </span>
                         </span>
                         <span>
-                          Delays: <span className={impactColor(s.impact_delay_count, true)}>
-                            {s.impact_delay_count ?? "—"}
+                          Delays: <span className={impactColor(finiteMetric(s.impact_delay_count), true)}>
+                            {finiteMetric(s.impact_delay_count) ?? "—"}
                           </span>
                         </span>
                         <span>
-                          Cost Δ: <span className={impactColor(s.impact_cost_delta, true)}>
-                            {s.impact_cost_delta != null
-                              ? `KES ${Number(s.impact_cost_delta).toLocaleString()}`
+                          Cost Δ: <span className={impactColor(finiteMetric(s.impact_cost_delta), true)}>
+                            {finiteMetric(s.impact_cost_delta) != null
+                              ? `KES ${finiteMetric(s.impact_cost_delta)!.toLocaleString()}`
                               : "—"}
                           </span>
                         </span>
@@ -357,9 +362,9 @@ export default function WhatIfPage() {
 
             <div className="grid grid-cols-3 gap-3 mb-4">
               {[
-                { label: "Service Level", value: `${viewScenario.impact_service_level_pct?.toFixed(1) ?? "—"}%`, color: "text-blue-700" },
-                { label: "Delayed Lines", value: viewScenario.impact_delay_count ?? "—", color: Number(viewScenario.impact_delay_count) > 0 ? "text-red-600" : "text-green-600" },
-                { label: "Cost Delta", value: viewScenario.impact_cost_delta != null ? `KES ${Number(viewScenario.impact_cost_delta).toLocaleString()}` : "—", color: Number(viewScenario.impact_cost_delta) > 0 ? "text-red-600" : "text-green-600" },
+                { label: "Service Level", value: `${finiteMetric(viewScenario.impact_service_level_pct)?.toFixed(1) ?? "—"}%`, color: "text-blue-700" },
+                { label: "Delayed Lines", value: finiteMetric(viewScenario.impact_delay_count) ?? "—", color: Number(viewScenario.impact_delay_count) > 0 ? "text-red-600" : "text-green-600" },
+                { label: "Cost Delta", value: finiteMetric(viewScenario.impact_cost_delta) != null ? `KES ${finiteMetric(viewScenario.impact_cost_delta)!.toLocaleString()}` : "—", color: Number(viewScenario.impact_cost_delta) > 0 ? "text-red-600" : "text-green-600" },
               ].map((k) => (
                 <div key={k.label} className="bg-gray-50 rounded-lg p-3">
                   <p className="text-xs text-gray-400">{k.label}</p>

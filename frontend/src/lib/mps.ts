@@ -136,9 +136,9 @@ export interface MPSWhatIf {
   mps_id: string;
   description: string | null;
   changes: WhatIfChange[];
-  impact_service_level_pct: number | null;
+  impact_service_level_pct: number | string | null;
   impact_delay_count: number | null;
-  impact_cost_delta: number | null;
+  impact_cost_delta: number | string | null;
   impact_summary: string | null;
   status: WhatIfStatus;
   created_by_id: string | null;

@@ -15,7 +15,7 @@ import uuid
 import json
 import logging
 from copy import deepcopy
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal, ROUND_HALF_UP
 from typing import Any, Dict, List
 
@@ -31,7 +31,6 @@ from app.models.planning import ResourceCalendar
 from app.models.planning import ChangeoverMatrix
 from app.models.production_advanced import WorkCenter
 from app.models.production_advanced import DowntimeEvent
-from app.services.mps_engine import capacity_result
 from app.schemas.mps import MPSWhatIfCreate, MPSWhatIfOut
 
 logger = logging.getLogger(__name__)
@@ -120,7 +119,8 @@ def _scenario_capacity_loads(
             available = Decimal(0)
         else:
             available = Decimal(0) if calendar.is_holiday or calendar.is_maintenance else _D(calendar.available_hours)
-        available += shift_additions.get((wc_id, day), Decimal(0))
+        # Downtime reduces the configured shift capacity first. Added scenario
+        # hours are extra calendar time and must not silently erase downtime.
         downtime_hours = Decimal(0)
         unbounded = False
         start = datetime.combine(day, datetime.min.time(), tzinfo=timezone.utc)
@@ -139,7 +139,9 @@ def _scenario_capacity_loads(
         if unbounded:
             unknown.add("OPEN_DOWNTIME_UNBOUNDED")
             downtime_hours = available
-        overload_total += capacity_result(required, available, min(downtime_hours, available))["overload_hours"]
+        net_available = max(Decimal(0), available - min(downtime_hours, available))
+        net_available += shift_additions.get((wc_id, day), Decimal(0))
+        overload_total += max(Decimal(0), required - net_available)
     return {
         "overload_hours": None if unknown else float(_R(overload_total)),
         "known_overload_hours": float(_R(overload_total)),
@@ -147,6 +149,73 @@ def _scenario_capacity_loads(
         "unknown_reasons": sorted(unknown),
         "slot_count": len(loads),
     }
+
+
+def _validate_shift_additions(
+    additions: dict[tuple[uuid.UUID, date], Decimal],
+    calendars: dict[tuple[uuid.UUID, date], ResourceCalendar],
+) -> tuple[dict[tuple[uuid.UUID, date], Decimal], set[str]]:
+    """Validate aggregate extra hours against a configured 24-hour day.
+
+    ResourceCalendar.available_hours is the work-center's configured shift
+    total. The scenario API has no start/end time for an added shift, so it can
+    only safely allocate the unoccupied remainder of that calendar day. A
+    missing calendar or inconsistent calendar is reported as unknown and its
+    added hours are not credited to capacity.
+    """
+    unknown: set[str] = set()
+    valid: dict[tuple[uuid.UUID, date], Decimal] = {}
+    for key, hours in additions.items():
+        calendar = calendars.get(key)
+        if calendar is None:
+            unknown.add("SHIFT_ADD_CALENDAR_NOT_CONFIGURED")
+            continue
+        configured_hours = _D(calendar.available_hours)
+        if not configured_hours.is_finite() or configured_hours < 0 or configured_hours > Decimal(24):
+            unknown.add("SHIFT_ADD_CALENDAR_HOURS_INVALID")
+            continue
+        windows = []
+        malformed_window = False
+        for index in range(1, 4):
+            raw_start = getattr(calendar, f"shift_{index}_start", None)
+            raw_end = getattr(calendar, f"shift_{index}_end", None)
+            if not raw_start and not raw_end:
+                continue
+            try:
+                start_time = time.fromisoformat(str(raw_start))
+                end_time = time.fromisoformat(str(raw_end))
+            except (TypeError, ValueError):
+                malformed_window = True
+                break
+            start_min = start_time.hour * 60 + start_time.minute
+            end_min = end_time.hour * 60 + end_time.minute
+            if start_min == end_min:
+                malformed_window = True
+                break
+            if end_min > start_min:
+                windows.append((start_min, end_min))
+            else:
+                windows.extend(((start_min, 1440), (0, end_min)))
+        if malformed_window:
+            unknown.add("SHIFT_ADD_CALENDAR_SHIFT_WINDOW_INVALID")
+            continue
+        if not windows:
+            unknown.add("SHIFT_ADD_CALENDAR_SHIFT_WINDOWS_NOT_CONFIGURED")
+            continue
+        ordered_windows = sorted(windows)
+        if any(left[1] > right[0] for left, right in zip(ordered_windows, ordered_windows[1:])):
+            unknown.add("SHIFT_ADD_CALENDAR_SHIFTS_OVERLAP")
+            continue
+        window_hours = Decimal(sum(end - start for start, end in windows)) / Decimal(60)
+        if window_hours != configured_hours:
+            unknown.add("SHIFT_ADD_CALENDAR_HOURS_MISMATCH")
+            continue
+        if calendar.is_holiday or calendar.is_maintenance:
+            raise ValueError("SHIFT_ADD cannot target a holiday or maintenance calendar")
+        if hours > Decimal(24) - configured_hours:
+            raise ValueError("Aggregate SHIFT_ADD hours exceed remaining work-center calendar hours for the day")
+        valid[key] = hours
+    return valid, unknown
 
 
 def _scenario_changeover_hours(
@@ -452,6 +521,7 @@ async def create_whatif_scenario(
         return {
             "id": str(line.id),
             "product_id": str(line.product_id),
+            "mrp_result_id": str(line.mrp_result_id) if line.mrp_result_id else None,
             "planned_production_qty": str(line.planned_production_qty),
             "planned_start_date": str(line.planned_start_date) if line.planned_start_date else None,
             "planned_end_date": str(line.planned_end_date) if line.planned_end_date else None,
@@ -460,6 +530,8 @@ async def create_whatif_scenario(
             "work_center_id": str(line.work_center_id) if line.work_center_id else None,
             "batch_size_qty": str(line.batch_size_qty) if line.batch_size_qty else None,
             "num_batches": line.num_batches,
+            "campaign_id": str(line.campaign_id) if line.campaign_id else None,
+            "feasibility_status": str(getattr(line.feasibility_status, "value", line.feasibility_status)),
             "required_hours": str(line.required_hours) if line.required_hours is not None else None,
             "confirmed_demand_qty": str(line.confirmed_demand_qty),
             "forecast_qty": str(line.forecast_qty),
@@ -472,13 +544,28 @@ async def create_whatif_scenario(
 
     # Apply changes
     changes_json = []
-    consumed_merge_lines: set[uuid.UUID] = set()
+    structural_lines: set[uuid.UUID] = set()
+    non_shift_lines: set[uuid.UUID] = set()
+    shift_lines: set[uuid.UUID] = set()
     shift_additions: dict[tuple[uuid.UUID, date], Decimal] = {}
     for change in data.changes:
         lid = str(change.line_id)
         line = affected_lines[change.line_id]
         if line.is_locked:
             raise ValueError("What-if changes cannot target a locked MPS line")
+        if change.change_type == MPSChangeType.MERGE:
+            if change.line_id in structural_lines or change.line_id in non_shift_lines or change.line_id in shift_lines:
+                raise ValueError("MERGE/SPLIT lines cannot have conflicting scenario changes")
+        elif change.change_type == MPSChangeType.SPLIT:
+            if change.line_id in structural_lines or change.line_id in non_shift_lines or change.line_id in shift_lines:
+                raise ValueError("MERGE/SPLIT lines cannot have conflicting scenario changes")
+        elif change.change_type == MPSChangeType.SHIFT_ADD:
+            if change.line_id in structural_lines:
+                raise ValueError("SHIFT_ADD cannot target a line consumed by MERGE or SPLIT")
+        elif change.line_id in structural_lines:
+            raise ValueError("MERGE/SPLIT lines cannot have conflicting scenario changes")
+        if change.change_type != MPSChangeType.SHIFT_ADD:
+            non_shift_lines.add(change.line_id)
         if change.change_type == MPSChangeType.MERGE:
             try:
                 merge_id = uuid.UUID(str(change.new_value))
@@ -489,20 +576,28 @@ async def create_whatif_scenario(
                 raise ValueError("MERGE requires two distinct lines in this MPS plan")
             if other.is_locked:
                 raise ValueError("What-if MERGE cannot target a locked MPS line")
-            if change.line_id in consumed_merge_lines or merge_id in consumed_merge_lines:
-                raise ValueError("A line may participate in only one MERGE operation per scenario")
+            if merge_id in structural_lines or merge_id in non_shift_lines or merge_id in shift_lines:
+                raise ValueError("MERGE/SPLIT lines cannot have conflicting scenario changes")
             target, source = modified_map[str(change.line_id)], modified_map[str(merge_id)]
-            match_fields = ("product_id", "period_start", "period_end", "planned_start_date", "planned_end_date", "work_center_id")
+            match_fields = (
+                "product_id", "mrp_result_id", "period_start", "period_end",
+                "planned_start_date", "planned_end_date", "work_center_id",
+                "batch_size_qty", "num_batches", "campaign_id", "feasibility_status",
+            )
             if any(target.get(field) != source.get(field) for field in match_fields):
-                raise ValueError("MERGE requires matching product, period, schedule dates, and work center")
-            target["planned_production_qty"] = str(_R(_D(target["planned_production_qty"]) + _D(source["planned_production_qty"])))
+                raise ValueError("MERGE requires matching source allocation, product, batch, campaign, period, schedule, work center, and feasibility")
+            target_qty, source_qty = _D(target["planned_production_qty"]), _D(source["planned_production_qty"])
+            if not target_qty.is_finite() or not source_qty.is_finite() or target_qty <= 0 or source_qty <= 0:
+                raise ValueError("MERGE requires two positive finite planned quantities")
+            target["planned_production_qty"] = str(_R(target_qty + source_qty))
             for field in ("confirmed_demand_qty", "forecast_qty", "safety_stock_qty", "net_requirement_qty"):
                 target[field] = str(_R(_D(target.get(field)) + _D(source.get(field))))
             source["planned_production_qty"] = "0"
             source["_merged_into"] = str(change.line_id)
-            consumed_merge_lines.update((change.line_id, merge_id))
+            structural_lines.update((change.line_id, merge_id))
         elif change.change_type == MPSChangeType.SPLIT:
             _apply_change(modified_map[lid], {"change_type": change.change_type, "new_value": change.new_value})
+            structural_lines.add(change.line_id)
         elif change.change_type == MPSChangeType.SHIFT_ADD:
             if plan.capacity_mode != MPSCapacityMode.FINITE:
                 raise ValueError("SHIFT_ADD requires a plan in FINITE capacity mode")
@@ -525,6 +620,7 @@ async def create_whatif_scenario(
             if shift_day < line_start or shift_day > line_end:
                 raise ValueError("SHIFT_ADD date must fall within the target line schedule")
             shift_additions[(wc_id, shift_day)] = shift_additions.get((wc_id, shift_day), Decimal(0)) + hours
+            shift_lines.add(change.line_id)
             _apply_change(modified_map[lid], {"change_type": change.change_type, "new_value": value})
         if change.change_type == MPSChangeType.LINE_CHANGE:
             try:
@@ -589,12 +685,18 @@ async def create_whatif_scenario(
             DowntimeEvent.start_time < datetime.combine(last_day + timedelta(days=1), datetime.min.time(), tzinfo=timezone.utc),
             (DowntimeEvent.end_time.is_(None)) | (DowntimeEvent.end_time >= datetime.combine(first_day, datetime.min.time(), tzinfo=timezone.utc)),
         ))).scalars().all()
+    calendar_map = {(row.work_center_id, row.calendar_date): row for row in calendar_rows}
+    valid_shift_additions, shift_unknowns = _validate_shift_additions(shift_additions, calendar_map)
     candidate_lines = _expand_candidate_lines(list(modified_map.values()))
     capacity_metrics = _scenario_capacity_loads(
         candidate_lines, wcs, products,
-        {(row.work_center_id, row.calendar_date): row for row in calendar_rows},
-        downtime_rows, plan.capacity_mode, shift_additions,
+        calendar_map,
+        downtime_rows, plan.capacity_mode, valid_shift_additions,
     )
+    if shift_unknowns:
+        capacity_metrics["status"] = "PARTIAL_INPUTS"
+        capacity_metrics["overload_hours"] = None
+        capacity_metrics["unknown_reasons"] = sorted(set(capacity_metrics["unknown_reasons"]) | shift_unknowns)
 
     changeover_rows = []
     if scenario_wc_ids:
@@ -630,9 +732,11 @@ async def create_whatif_scenario(
         summary_parts.append("no modeled schedule delay detected")
     if any(c.change_type == MPSChangeType.SPLIT for c in data.changes):
         summary_parts.append("SPLIT uses exact quantity-conserving parts with candidate capacity and changeover re-simulation")
-    if shift_additions:
-        added_hours = sum(shift_additions.values(), Decimal(0))
+    if valid_shift_additions:
+        added_hours = sum(valid_shift_additions.values(), Decimal(0))
         summary_parts.append(f"explicit scenario shifts add {added_hours} capacity hours")
+    if shift_unknowns:
+        summary_parts.append("scenario shift capacity is incomplete: " + ", ".join(sorted(shift_unknowns)))
     if any(c.change_type == MPSChangeType.MERGE for c in data.changes):
         summary_parts.append("MERGE combines only schedule-equivalent lines and preserves total quantity")
     impact_summary = "; ".join(summary_parts) + f". Projected service level: {svc:.1f}% (estimated)."
@@ -660,7 +764,12 @@ async def create_whatif_scenario(
         "cost_basis": None,
         "shift_additions": [
             {"work_center_id": str(wc_id), "date": day.isoformat(), "hours": str(hours)}
+            for (wc_id, day), hours in sorted(valid_shift_additions.items(), key=lambda item: (str(item[0][0]), item[0][1]))
+        ],
+        "uncredited_shift_additions": [
+            {"work_center_id": str(wc_id), "date": day.isoformat(), "hours": str(hours)}
             for (wc_id, day), hours in sorted(shift_additions.items(), key=lambda item: (str(item[0][0]), item[0][1]))
+            if (wc_id, day) not in valid_shift_additions
         ],
     }
     snapshot_results = {

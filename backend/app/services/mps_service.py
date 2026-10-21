@@ -16,6 +16,7 @@ from typing import Optional
 
 from sqlalchemy import select, func, and_, update, cast, Integer, text, case
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.models.mps import (
     MPSPlan, MPSLine, MPSCampaign, MPSCapacitySlot,
@@ -126,6 +127,7 @@ async def list_mps_plans(db: AsyncSession, limit: int = 50, offset: int = 0):
 async def get_mps_lines(db: AsyncSession, mps_id: uuid.UUID):
     result = await db.execute(
         select(MPSLine)
+        .options(selectinload(MPSLine.product), selectinload(MPSLine.work_center))
         .where(MPSLine.mps_id == mps_id)
         .order_by(MPSLine.priority_score.desc(), MPSLine.period_start)
     )

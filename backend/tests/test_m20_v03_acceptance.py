@@ -1,8 +1,10 @@
 """PostgreSQL integration coverage added from the M20 strict V03 audit."""
 from __future__ import annotations
 
+import asyncio
 from datetime import date, datetime, timezone
 from decimal import Decimal
+from types import SimpleNamespace
 from uuid import uuid4
 
 import pytest
@@ -33,7 +35,11 @@ from app.models.user import User, user_role
 from app.schemas.mps import GenerateFromMRPRequest, MPSWhatIfCreate, WhatIfChange
 from app.services.mps_advanced_service import evaluate_material_feasibility, list_plan_diagnostics
 from app.services.mps_service import approve_mps_plan, generate_mps_from_mrp, release_mps_plan
-from app.services.mps_whatif_service import compare_whatif_scenarios, create_whatif_scenario
+from app.services.mps_whatif_service import (
+    _validate_shift_additions,
+    compare_whatif_scenarios,
+    create_whatif_scenario,
+)
 
 
 class _RollbackFixture(Exception):
@@ -42,6 +48,44 @@ class _RollbackFixture(Exception):
 
 def _suffix() -> str:
     return uuid4().hex[:10]
+
+
+def test_shift_add_uses_calendar_remaining_hours_and_rejects_overlap_evidence():
+    wc_id = uuid4()
+    day = date(2026, 11, 3)
+    key = (wc_id, day)
+    calendar = SimpleNamespace(
+        available_hours=Decimal("8"), is_holiday=False, is_maintenance=False,
+        shift_1_start="08:00", shift_1_end="16:00",
+        shift_2_start=None, shift_2_end=None,
+        shift_3_start=None, shift_3_end=None,
+    )
+    valid, unknown = _validate_shift_additions({key: Decimal("16")}, {key: calendar})
+    assert valid == {key: Decimal("16")}
+    assert not unknown
+    with pytest.raises(ValueError, match="Aggregate SHIFT_ADD hours exceed remaining"):
+        _validate_shift_additions({key: Decimal("16.001")}, {key: calendar})
+
+    overlapping = SimpleNamespace(**{
+        **calendar.__dict__, "shift_2_start": "15:00", "shift_2_end": "20:00",
+    })
+    valid, unknown = _validate_shift_additions({key: Decimal("1")}, {key: overlapping})
+    assert valid == {}
+    assert unknown == {"SHIFT_ADD_CALENDAR_SHIFTS_OVERLAP"}
+
+    valid, unknown = _validate_shift_additions({key: Decimal("1")}, {})
+    assert valid == {}
+    assert unknown == {"SHIFT_ADD_CALENDAR_NOT_CONFIGURED"}
+
+    no_shift_policy = SimpleNamespace(
+        available_hours=Decimal("8"), is_holiday=False, is_maintenance=False,
+        shift_1_start=None, shift_1_end=None,
+        shift_2_start=None, shift_2_end=None,
+        shift_3_start=None, shift_3_end=None,
+    )
+    valid, unknown = _validate_shift_additions({key: Decimal("1")}, {key: no_shift_policy})
+    assert valid == {}
+    assert unknown == {"SHIFT_ADD_CALENDAR_SHIFT_WINDOWS_NOT_CONFIGURED"}
 
 
 @pytest.mark.asyncio
@@ -76,7 +120,8 @@ async def test_postgres_whatif_merge_exact_split_and_added_shift_resimulate_with
             await db.flush()
             db.add(ResourceCalendar(
                 work_center_id=work_center.id, calendar_date=day,
-                available_hours=8, is_holiday=False, is_maintenance=False,
+                available_hours=8, shift_1_start="08:00", shift_1_end="16:00",
+                is_holiday=False, is_maintenance=False,
             ))
             run = MRPRun(
                 run_no=f"M20-OPS-RUN-{suffix}", run_date=day,
@@ -114,11 +159,44 @@ async def test_postgres_whatif_merge_exact_split_and_added_shift_resimulate_with
             scenario_name="add configured finite shift",
             changes=[WhatIfChange(line_id=first_id, change_type=MPSChangeType.SHIFT_ADD, new_value={"date": day.isoformat(), "hours": "2"})],
         ), user_id)
+        maximum_shift = await create_whatif_scenario(db, plan_id, MPSWhatIfCreate(
+            scenario_name="aggregate shifts stay within daily calendar",
+            changes=[
+                WhatIfChange(line_id=first_id, change_type=MPSChangeType.SHIFT_ADD, new_value={"date": day.isoformat(), "hours": "8"}),
+                WhatIfChange(line_id=second_id, change_type=MPSChangeType.SHIFT_ADD, new_value={"date": day.isoformat(), "hours": "8"}),
+            ],
+        ), user_id)
+        with pytest.raises(ValueError, match="Aggregate SHIFT_ADD hours exceed remaining work-center calendar hours"):
+            await create_whatif_scenario(db, plan_id, MPSWhatIfCreate(
+                scenario_name="aggregate shift exceeds physical day",
+                changes=[
+                    WhatIfChange(line_id=first_id, change_type=MPSChangeType.SHIFT_ADD, new_value={"date": day.isoformat(), "hours": "9"}),
+                    WhatIfChange(line_id=second_id, change_type=MPSChangeType.SHIFT_ADD, new_value={"date": day.isoformat(), "hours": "8"}),
+                ],
+            ), user_id)
+        with pytest.raises(ValueError, match="MERGE/SPLIT lines cannot have conflicting scenario changes"):
+            await create_whatif_scenario(db, plan_id, MPSWhatIfCreate(
+                scenario_name="merge split conflict",
+                changes=[
+                    WhatIfChange(line_id=first_id, change_type=MPSChangeType.MERGE, new_value=str(second_id)),
+                    WhatIfChange(line_id=first_id, change_type=MPSChangeType.SPLIT, new_value={"quantities": ["20", "80"]}),
+                ],
+            ), user_id)
+        second_line = await db.get(MPSLine, second_id)
+        second_line.feasibility_status = MPSFeasibilityStatus.FEASIBLE
+        await db.flush()
+        with pytest.raises(ValueError, match="matching source allocation, product, batch, campaign"):
+            await create_whatif_scenario(db, plan_id, MPSWhatIfCreate(
+                scenario_name="incompatible feasibility merge",
+                changes=[WhatIfChange(line_id=first_id, change_type=MPSChangeType.MERGE, new_value=str(second_id))],
+            ), user_id)
+        second_line.feasibility_status = MPSFeasibilityStatus.PENDING
+        await db.flush()
         snapshots = (await db.scalars(select(MPSScenarioSnapshot).where(
-            MPSScenarioSnapshot.scenario_id.in_([merged.id, split.id, shifted.id]),
+            MPSScenarioSnapshot.scenario_id.in_([merged.id, split.id, shifted.id, maximum_shift.id]),
         ))).all()
         by_scenario = {row.scenario_id: row for row in snapshots}
-        assert len(by_scenario) == 3
+        assert len(by_scenario) == 4
         merged_lines = by_scenario[merged.id].results["modified_lines"]
         assert len(merged_lines) == 1
         assert Decimal(merged_lines[0]["planned_production_qty"]) == Decimal("100.000")
@@ -128,6 +206,10 @@ async def test_postgres_whatif_merge_exact_split_and_added_shift_resimulate_with
         assert by_scenario[merged.id].results["capacity_overload_hours"] == 2.0
         assert by_scenario[split.id].results["capacity_overload_hours"] == 2.0
         assert by_scenario[shifted.id].results["capacity_overload_hours"] == 0.0
+        assert by_scenario[maximum_shift.id].results["capacity_overload_hours"] == 0.0
+        assert by_scenario[maximum_shift.id].assumptions["shift_additions"] == [
+            {"work_center_id": str((await db.get(MPSLine, first_id)).work_center_id), "date": day.isoformat(), "hours": "16"},
+        ]
         assert by_scenario[shifted.id].assumptions["shift_additions"] == [
             {"work_center_id": str((await db.get(MPSLine, first_id)).work_center_id), "date": day.isoformat(), "hours": "2"},
         ]
@@ -485,6 +567,24 @@ async def test_postgres_release_http_permission_company_warehouse_and_atomic_rol
                 ))
                 await db.flush()
                 plan_ids.append(rollback_plan.id)
+                concurrent_plan = MPSPlan(
+                    plan_no=f"M20-SCOPE-CONCURRENT-{suffix}", plan_name="M20 scoped concurrent release",
+                    start_date=date(2026, 1, 1), end_date=date(2026, 1, 31),
+                    status=MPSStatus.APPROVED, mrp_run_id=run_ids[0],
+                    approved_by_id=allowed.id,
+                )
+                db.add(concurrent_plan)
+                await db.flush()
+                for line_index in range(2):
+                    db.add(MPSLine(
+                        line_no=f"M20-SCOPE-CONCURRENT-L-{suffix}-{line_index}",
+                        mps_id=concurrent_plan.id, product_id=product_ids[0],
+                        period_start=date(2026, 1, 1), period_end=date(2026, 1, 31),
+                        planned_production_qty=Decimal("3"),
+                        feasibility_status=MPSFeasibilityStatus.FEASIBLE,
+                    ))
+                await db.flush()
+                plan_ids.append(concurrent_plan.id)
                 actor_ids.extend([allowed.id, denied.id])
                 role_id, permission_id = role.id, permission.id
                 own_permission_id = own_permission.id if own_permission_was_created else None
@@ -526,6 +626,19 @@ async def test_postgres_release_http_permission_company_warehouse_and_atomic_rol
                 assert retry.json()["released_orders"] == first["released_orders"]
                 assert retry.json()["release_complete"] is True
 
+                # Two real route requests race for one approved plan. The row
+                # lock must serialize them into one release and one verified
+                # idempotent retry, with no duplicate production orders.
+                concurrent_route = f"/api/v1/mps/plans/{plan_ids[3]}/release"
+                concurrent_results = await asyncio.gather(
+                    client.post(concurrent_route, params={"target_warehouse_id": str(warehouse_ids[0])}),
+                    client.post(concurrent_route, params={"target_warehouse_id": str(warehouse_ids[0])}),
+                )
+                assert [response.status_code for response in concurrent_results] == [200, 200]
+                concurrent_payloads = [response.json() for response in concurrent_results]
+                assert sorted(payload["idempotent_retry"] for payload in concurrent_payloads) == [False, True]
+                assert all(payload["released_orders"] == 2 for payload in concurrent_payloads)
+
                 wrong_target = await client.post(route, params={"target_warehouse_id": str(warehouse_ids[1])})
                 assert wrong_target.status_code == 403
 
@@ -554,13 +667,13 @@ async def test_postgres_release_http_permission_company_warehouse_and_atomic_rol
         async with AsyncSessionLocal() as verify:
             assert await verify.scalar(select(func.count()).select_from(ProductionOrder).where(
                 ProductionOrder.product_id == product_ids[0],
-            )) == 2
+            )) == 4
             assert await verify.scalar(select(func.count()).select_from(ProductionOrder).where(
                 ProductionOrder.product_id == product_ids[1],
             )) == 0
             assert await verify.scalar(select(func.count()).select_from(ProductionOrder).where(
                 ProductionOrder.product_id == product_ids[0],
-            )) == 2, "failed second release must roll back its production order"
+            )) == 4, "failed second release must roll back its production order"
             assert await verify.scalar(select(MPSPlan.status).where(MPSPlan.id == plan_ids[0])) == MPSStatus.RELEASED
             assert await verify.scalar(select(MPSPlan.status).where(MPSPlan.id == plan_ids[1])) == MPSStatus.APPROVED
             assert await verify.scalar(select(MPSPlan.status).where(MPSPlan.id == plan_ids[2])) == MPSStatus.APPROVED
@@ -570,6 +683,13 @@ async def test_postgres_release_http_permission_company_warehouse_and_atomic_rol
                 AuditLog.actor_id == actor_ids[0],
             ))
             assert released_audit == 1
+            concurrent_audit = await verify.scalar(select(func.count()).select_from(AuditLog).where(
+                AuditLog.event_type == "MPS_PLAN_RELEASED",
+                AuditLog.target_id == str(plan_ids[3]),
+                AuditLog.actor_id == actor_ids[0],
+            ))
+            assert concurrent_audit == 1
+            assert await verify.scalar(select(MPSPlan.status).where(MPSPlan.id == plan_ids[3])) == MPSStatus.RELEASED
     finally:
         monkeypatch.setattr(mps_endpoint, "release_mps_plan", release_impl)
         app.dependency_overrides.clear()
