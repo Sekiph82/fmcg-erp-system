@@ -1,0 +1,15 @@
+# M20 INDEPENDENT STRICT ACCEPTANCE CRITERIA V01
+Owner: ChatGPT independent auditor. Scope: M20.S01–S05, all 20 task IDs. Effective for the submitted V03 implementation, not retroactive acceptance of untested changes.
+## Rules
+1. Each task receives PASS, FAIL, or BLOCKED_EVIDENCE. PASS requires inspected source + behavioral tests of the actual integrated path + traceable command/output at exact SHA. Source presence, fixture shape, import, compilation, route count, build, and builder assertions alone never constitute functional PASS.
+2. All critical gates must PASS before M20 DONE. A blocked critical gate is NOT PASS. CI quota (2026-10-20 to 2026-10-30) is separate from local PostgreSQL availability; mark DEFERRED_CI_QUOTA only for remote CI, BLOCKED_DB_PROOF for DB. Never trigger remote CI without owner approval.
+3. P0: tenant/company/warehouse isolation, authorization, draft/approve/release state guards, all-or-none transaction, rollback, concurrent release and sequence/idempotency, cross-plan edits, scenario isolation. Real PostgreSQL integration tests required with both positive and negative cases.
+4. P1: date-safe demand/supply netting, BOM effective-date selection and nested material coverage or documented out-of-scope contract, unit/yield/lead-time, finite capacity with calendar/downtime/locks, campaign sequencing/changeover/CIP when configured, diagnostic persistence, scenario comparisons. Each must have executable boundary and integration evidence.
+5. Schema: migration upgrade and downgrade against actual PostgreSQL; constraints, foreign keys, JSONB, duplicate replay and rollback verified. Alembic heads and py_compile are NOT migration proof.
+6. UI: type-check + production build PLUS component/API-contract/error/permission/empty/loading tests or actual browser E2E. Build alone is NOT functional PASS.
+7. M20.S05 requires cross-module MPS→MRP/inventory/BOM/production release PostgreSQL tests, regression of existing MPS T001/T002, negative tests and evidence of unchanged owner data.
+8. Acceptance fixture must exercise real services/endpoints with seeded DB, not merely check fixture constants. Every task maps to test IDs and full GitHub commit URLs, with honest pass/fail/skip output and scope.
+9. A master prompt must not override acceptance. Codex may work through all tasks continuously but cannot self-approve or modify TASKS.md / audit files.
+10. Audit must distinguish code implementation, test execution, and independent acceptance; no implicit pass from absence of errors. Preserve earlier scoped T001/T002 acceptance only, not M20-wide acceptance.
+## Required output
+Per-task matrix: task ID, requirements, code paths, actual tests, proof level, defects, PASS/FAIL/BLOCKED_EVIDENCE, remediation. Overall M20 PASS iff every mandatory gate PASS and no blocking P0/P1 remains. Otherwise FAIL/CHANGES_REQUIRED.
