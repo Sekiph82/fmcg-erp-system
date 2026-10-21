@@ -131,10 +131,24 @@ def app():
 
 @pytest.fixture(scope="module")
 def client(app):
+    from contextlib import asynccontextmanager
     from fastapi.testclient import TestClient
-    with TestClient(app) as c:
-        yield c
-    app.dependency_overrides.clear()
+
+    original_lifespan = app.router.lifespan_context
+
+    @asynccontextmanager
+    async def test_lifespan(_app):
+        # Route-level tests replace database dependencies and must not run
+        # production startup seeding on TestClient's private event loop.
+        yield
+
+    app.router.lifespan_context = test_lifespan
+    try:
+        with TestClient(app) as c:
+            yield c
+    finally:
+        app.router.lifespan_context = original_lifespan
+        app.dependency_overrides.clear()
 
 
 def _fake_user(*, is_superuser=False, permission_codes=()):
