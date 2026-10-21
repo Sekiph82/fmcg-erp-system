@@ -262,3 +262,47 @@ This delta continues the same V01 master prompt from the V05 audit commit `11a17
 5. UI screenshot/trace review is builder evidence only. V05-F14/F15/F16 are not independent acceptance, and `M20.S05.T004` remains **OPEN** pending ChatGPT audit. `TASKS.md`, `TASKS_HISTORY.md`, and all ChatGPT audit files remain untouched.
 
 Milestone handoff remains **AWAITING_CHATGPT_MILESTONE_AUDIT**. This log does not self-approve M20 or change prior task acceptance.
+
+## Final continuation — auth transaction boundary and verification (2026-10-21)
+
+This continuation starts from published `main` SHA `84de146217309f76090ab6f3fc6351b383f50cdc`, matching `origin/main`. The dirty sibling owner checkout was left untouched. Implementation commit: https://github.com/Sekiph82/fmcg-erp-system/commit/5cfe87a82cc1078d54e52bb4d5af6fb9c0a3de94 .
+
+### Authentication transaction finding and correction
+
+`get_current_user()` previously committed the shared `get_db()` session after loading the authenticated user and eager permission/scope relationships. This could commit pending writes made by an earlier dependency, and it hid SQLAlchemy autobegin state so MPS handlers could enter `db.begin()` only because auth had committed the request session. The behavior was global and could change transaction semantics in unrelated APIs.
+
+The fix removes that commit and gives authentication its own `get_auth_db()` session. The business endpoint retains the request's original `get_db()` session and owns its commit/rollback boundary. The existing `get_db` import through `app.core.deps` remains available to current routers. Authentication token validation, active-user checks, eager role/permission/scope loading and permission enforcement are unchanged.
+
+New PostgreSQL test: https://github.com/Sekiph82/fmcg-erp-system/blob/5cfe87a82cc1078d54e52bb4d5af6fb9c0a3de94/backend/tests/test_m20_auth_transaction_boundary.py . It proves an explicit transaction can run in the actual MPS plans handler; an unrelated warehouses read remains usable; a user without MPS permission receives 403; an invalid token receives 401; and a write staged by an earlier dependency is not committed by authentication when the endpoint fails. Both test users are deleted on the successful test path.
+
+Exact local PostgreSQL commands (current clean source staged in task-owned `/tmp/m20-auth-boundary-84de146` inside the existing backend test container):
+
+```text
+docker exec -e PYTHONPATH=/tmp/m20-auth-boundary-84de146 -w /tmp/m20-auth-boundary-84de146 fmcg-erp-system-backend-1 python -m py_compile app/core/deps.py app/db/session.py tests/test_m20_auth_transaction_boundary.py
+docker exec -e PYTHONPATH=/tmp/m20-auth-boundary-84de146 -w /tmp/m20-auth-boundary-84de146 fmcg-erp-system-backend-1 pytest -q -W always::pytest.PytestUnraisableExceptionWarning tests/test_m20_strict_findings.py tests/test_m20_remaining_engine.py tests/test_m20_postgres_scenario_savepoint.py tests/test_m20_s01_t001_mps_hardening.py tests/test_m20_s01_t001_v02_mps_remediation.py tests/test_m20_s01_t001_v03_mps_remediation.py tests/test_m20_s01_t002_mps_preservation.py tests/test_m20_v03_acceptance.py tests/test_m20_auth_transaction_boundary.py --tb=short
+```
+
+Results: py_compile **exit 0**; complete current M20 regression set **79 passed, 71 warnings in 22.11s**. Warnings are existing SQLAlchemy/Pydantic/passlib/httpx deprecations; no `PytestUnraisableExceptionWarning` or failed assertion occurred. This 79-test result supersedes the earlier 77-test count and includes the newly added auth-boundary regression. This does not expand the seeded tenant/company/warehouse matrix beyond the cases described in the earlier evidence.
+
+### Next.js 16 standalone package and dynamic-route verification
+
+To avoid the owner-linked dependency junction, frontend source was archived from this clean checkout into a unique `%TEMP%` directory and dependencies were installed there with `npm ci --no-audit --no-fund`. The linked `frontend/node_modules` was not modified. npm reported its existing install-script approval gate for `unrs-resolver`; no script approval policy was widened. `npm run build` in the isolated frontend succeeded on Next.js 16.4.2: compile and TypeScript passed and static generation completed **699/699** pages. Turbopack logged a temporary-parent lockfile discovery warning; it did not fail the build.
+
+The standalone package was completed by copying the build's `.next/static/` and `public/` assets into `.next/standalone/`, as required by Next.js standalone deployment. Verification found `server.js`, the packaged Next runtime, package metadata and build manifests. A local trace audit read **764** `.nft.json` manifests and **115,428** traced file entries: **0 missing files, 0 paths outside the isolated project root**. The packaged `node server.js` process started on `127.0.0.1:3187`. A browser smoke pass exercised the 21 updated dynamic routes: all returned HTTP 200 without browser `pageerror`; intended legacy route wrappers redirected to their workspace routes, and the procurement detail remained on its parameterized route. A separate no-cookie pass sent all 21 routes to `/login`. In the rendered-route pass, authentication was a controlled synthetic browser fixture and non-auth API calls were stubbed to HTTP 503; this verifies route wrapper/runtime behavior, not production authorization or backend data.
+
+### Playwright suite status
+
+`npx playwright test --list` in the isolated frontend discovered **596 tests across 27 files**. The first 12-test M20 invocation used `--no-deps` and stopped before test bodies because the required storage-state file had not been created. The corrected invocation enabled the configured auth setup; it attempted 13 tests (setup plus 12 M20 tests), but setup was blocked because the local backend rejected the suite's documented default `admin` / `Admin1234!` credential as invalid. The 12 dependent browser tests did not run in this continuation. No owner credential was changed or read. Earlier successful M20 browser receipts remain recorded above, including the 12-test pass and real scenario UI-to-PostgreSQL round trip; this continuation does not claim a fresh full Playwright pass. The 596-test suite remains **BLOCKED_EVIDENCE: valid local E2E account is unavailable**.
+
+### Current dependency advisory review
+
+Fresh isolated `npm audit --json` reports **9 development-tree affected packages: 7 high and 2 moderate**; `npm audit --omit=dev --audit-level=moderate` reports **0 production vulnerabilities**. Affected development packages are `@next/eslint-plugin-next`, `braces`, `chokidar`, `eslint-config-next`, `fast-glob`, `micromatch`, `postcss-nested`, `postcss-selector-parser`, and `tailwindcss`. npm's suggested `tailwindcss@4.3.3` is a major migration; it requires reviewing Tailwind config, PostCSS integration, plugins and visual/browser coverage before adoption. npm's suggested `eslint-config-next@14.2.35` would downgrade the lint config across the app's Next 16 major and is not a safe automatic fix. Safe options are to wait for a Next-16-compatible patched lint-config chain or update compatible transitive package ranges in a lockfile-only change after `npm explain`/audit verification; treat the independent moderate `postcss-nested` fix as a separately reviewed lockfile update. No forced or major dependency migration was applied.
+
+### Final gates and disposition
+
+- V05-F14/F15/F16 implementation and evidence remain as recorded in the V05 delta; this continuation did not alter scenario calculations or claim a new UI-to-PostgreSQL scenario run.
+- `OWNER_DATA_REQUIRED` remains for minimum-run quantities, CIP durations and approved currency/cost basis. No factory configuration was fabricated.
+- Remote CI remains **DEFERRED_CI_QUOTA** through 2026-10-30 inclusive. The sole workflow is push/pull_request only; the implementation commit includes `[skip ci]`. No workflow was dispatched or rerun.
+- Independent ChatGPT acceptance remains pending. Expanded tenant permutations, the 596-test Playwright run, development-only advisories and owner-provided data remain open. `TASKS.md`, `TASKS_HISTORY.md` and ChatGPT audit files were not modified.
+
+Final handoff: **AWAITING_CHATGPT_MILESTONE_AUDIT**. This evidence report does not self-approve M20.
