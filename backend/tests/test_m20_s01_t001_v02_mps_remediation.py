@@ -22,6 +22,10 @@ from uuid import uuid4
 import pytest
 
 from app.models.mps import MPSFeasibilityStatus, MPSStatus
+from app.models.mrp import MRPRun, MRPRunStatus
+from app.models.master import Warehouse
+from app.models.user import User
+from app.models.production import ProductionOrder
 from app.models.recipe import RecipeStatus
 from app.schemas.mps import GenerateFromMRPRequest
 from app.services import mps_service as svc
@@ -47,7 +51,30 @@ def _mock_db(*results, get_results=None):
     db = AsyncMock()
     db.execute = AsyncMock(side_effect=list(results))
     if get_results is not None:
-        db.get = AsyncMock(side_effect=list(get_results))
+        remaining = list(get_results)
+        source_warehouse = SimpleNamespace(id=uuid4(), code="WH-SOURCE", is_active=True, company_id=None)
+        source_run = SimpleNamespace(id=uuid4(), status=MRPRunStatus.COMPLETED, warehouse_id=source_warehouse.id)
+        actor = SimpleNamespace(id=uuid4(), email="mps-test@example.invalid", full_name="MPS Test")
+        target_warehouse = None
+
+        async def _get(model, object_id):
+            nonlocal target_warehouse
+            if model is MRPRun:
+                return source_run
+            if model is User:
+                return actor
+            if model is Warehouse and object_id == source_warehouse.id:
+                return source_warehouse
+            value = remaining.pop(0) if remaining else None
+            if model is Warehouse and value is not None and not hasattr(value, "company_id"):
+                value.company_id = None
+            if model is Warehouse and value is not None:
+                target_warehouse = value
+            if model is ProductionOrder:
+                return SimpleNamespace(id=object_id, target_warehouse_id=getattr(target_warehouse, "id", None))
+            return value
+
+        db.get = AsyncMock(side_effect=_get)
     db.add = MagicMock(side_effect=_assign_id_on_add)
     db.delete = AsyncMock()
     db.flush = AsyncMock()
@@ -58,7 +85,7 @@ def _plan(**overrides):
     base = dict(
         id=uuid4(), status=MPSStatus.APPROVED, plan_no="MPS-000001",
         start_date=date(2026, 1, 1), end_date=date(2026, 1, 31),
-        mrp_run_id=None, released_at=None,
+        mrp_run_id=uuid4(), released_at=None,
     )
     base.update(overrides)
     return SimpleNamespace(**base)
@@ -264,7 +291,7 @@ async def test_select_release_recipe_returns_the_queried_recipe():
     recipe = _approved_recipe(product_id)
     db = _mock_db(_exec_result(scalar_one_or_none=recipe))
 
-    result = await svc._select_release_recipe(db, product_id)
+    result = await svc._select_release_recipe(db, product_id, date(2026, 1, 1))
     assert result is recipe
 
 
@@ -372,7 +399,7 @@ async def test_release_becomes_released_when_at_least_one_order_is_created():
 
 # ── F-V01-007 — behavioral repeated-release idempotency ────────────────────────
 
-async def test_repeated_release_call_is_rejected_and_creates_no_second_order():
+async def test_repeated_release_call_returns_the_original_order_without_creating_another():
     product_id = uuid4()
     plan = _plan()
     line = _feasible_line(product_id)
@@ -389,19 +416,22 @@ async def test_repeated_release_call_is_rejected_and_creates_no_second_order():
         # second call's queries below — only the plan lookup should ever run,
         # proving the guard rejects before touching lines/recipes/orders again
         _exec_result(scalar_one_or_none=plan),
+        _exec_result(scalars_all=[line]),
         get_results=[warehouse, product],
     )
 
-    first = await svc.release_mps_plan(db, plan.id, uuid4(), uuid4())
+    target_warehouse_id = warehouse.id
+    first = await svc.release_mps_plan(db, plan.id, uuid4(), target_warehouse_id)
     assert first["released_orders"] == 1
     assert plan.status == MPSStatus.RELEASED
+    original_order_id = str(line.production_order_id)
     add_calls_after_first_release = db.add.call_count
 
-    with pytest.raises(ValueError, match="APPROVED"):
-        await svc.release_mps_plan(db, plan.id, uuid4(), uuid4())
+    retry = await svc.release_mps_plan(db, plan.id, uuid4(), target_warehouse_id)
 
+    assert retry["idempotent_retry"] is True
+    assert retry["released_orders"] == 1
+    assert retry["production_order_ids"] == [original_order_id]
     # No new ProductionOrder (or anything else) was added on the second call.
     assert db.add.call_count == add_calls_after_first_release
-    # The second call only issued the plan lookup before rejecting — proven
-    # by the side_effect list being fully consumed with nothing left over.
-    assert db.execute.await_count == 6
+    assert db.execute.await_count == 7

@@ -10,6 +10,9 @@ import pytest
 
 from app.api.v1.endpoints import mps as mps_api
 from app.models.mps import MPSFeasibilityStatus, MPSStatus
+from app.models.mrp import MRPRun, MRPRunStatus
+from app.models.master import Warehouse
+from app.models.user import User
 from app.models.recipe import RecipeStatus
 from app.services import mps_service as svc
 
@@ -31,6 +34,7 @@ def _plan():
         start_date=__import__("datetime").date(2026, 1, 1),
         end_date=__import__("datetime").date(2026, 1, 31),
         released_at=None,
+        mrp_run_id=uuid4(),
     )
 
 
@@ -62,7 +66,24 @@ def _recipe(product_id):
 def _db(results, get_results):
     db = AsyncMock()
     db.execute = AsyncMock(side_effect=results)
-    db.get = AsyncMock(side_effect=get_results)
+    remaining = list(get_results)
+    source_warehouse = SimpleNamespace(id=uuid4(), code="WH-SOURCE", is_active=True, company_id=None)
+    source_run = SimpleNamespace(id=uuid4(), status=MRPRunStatus.COMPLETED, warehouse_id=source_warehouse.id)
+    actor = SimpleNamespace(id=uuid4(), email="mps-test@example.invalid", full_name="MPS Test")
+
+    async def get(model, object_id):
+        if model is MRPRun:
+            return source_run
+        if model is User:
+            return actor
+        if model is Warehouse and object_id == source_warehouse.id:
+            return source_warehouse
+        value = remaining.pop(0) if remaining else None
+        if model is Warehouse and value is not None and not hasattr(value, "company_id"):
+            value.company_id = None
+        return value
+
+    db.get = AsyncMock(side_effect=get)
     db.flush = AsyncMock()
 
     def add(obj):
@@ -138,6 +159,8 @@ async def test_release_endpoint_rolls_back_persisted_state_on_late_flush_failure
     from app.models.mps import MPSLine, MPSPlan
     from app.models.production import ProductionOrder
     from app.models.recipe import Recipe
+    from app.models.mrp import MRPRun, MRPRunStatus
+    from app.models.user import User
 
     if "postgresql" not in str(settings.DATABASE_URL):
         pytest.skip("V04 real rollback proof requires the PostgreSQL CI service")
@@ -147,21 +170,25 @@ async def test_release_endpoint_rolls_back_persisted_state_on_late_flush_failure
         await probe.execute(text("SELECT 1"))
 
     suffix = uuid4().hex[:10]
-    plan_id = warehouse_id = product_id = recipe_id = line_id = None
+    plan_id = warehouse_id = product_id = recipe_id = line_id = run_id = user_id = None
     async with AsyncSessionLocal() as db:
         async with db.begin():
             warehouse = Warehouse(code=f"V04-{suffix}", name="V04 rollback warehouse", warehouse_type=WarehouseType.FINISHED_GOODS)
             product = Product(sku=f"V04-{suffix}", name="V04 rollback product", category=ProductCategory.FOOD, uom=UnitOfMeasure.KG)
             db.add_all([warehouse, product])
             await db.flush()
+            source_run = MRPRun(run_no=f"V04-RUN-{suffix}", run_date=__import__("datetime").date(2026, 1, 1), status=MRPRunStatus.COMPLETED, warehouse_id=warehouse.id)
+            actor = User(email=f"v04-{suffix}@example.invalid", username=f"v04-{suffix}", full_name="V04 Test", hashed_password="test")
             recipe = Recipe(product_id=product.id, version="1", name="V04 rollback recipe", status=RecipeStatus.APPROVED, is_active=True)
-            plan = MPSPlan(plan_no=f"V04-{suffix}", plan_name="V04 rollback plan", start_date=__import__("datetime").date(2026, 1, 1), end_date=__import__("datetime").date(2026, 1, 31), status=MPSStatus.APPROVED)
-            db.add_all([recipe, plan])
+            db.add_all([source_run, actor, recipe])
+            await db.flush()
+            plan = MPSPlan(plan_no=f"V04-{suffix}", plan_name="V04 rollback plan", start_date=__import__("datetime").date(2026, 1, 1), end_date=__import__("datetime").date(2026, 1, 31), status=MPSStatus.APPROVED, mrp_run_id=source_run.id)
+            db.add(plan)
             await db.flush()
             line = MPSLine(line_no=f"V04-{suffix}", mps_id=plan.id, product_id=product.id, period_start=__import__("datetime").date(2026, 1, 1), period_end=__import__("datetime").date(2026, 1, 31), planned_production_qty=100, feasibility_status=MPSFeasibilityStatus.FEASIBLE)
             db.add(line)
             await db.flush()
-            plan_id, warehouse_id, product_id, recipe_id, line_id = plan.id, warehouse.id, product.id, recipe.id, line.id
+            plan_id, warehouse_id, product_id, recipe_id, line_id, run_id, user_id = plan.id, warehouse.id, product.id, recipe.id, line.id, source_run.id, actor.id
 
     original_flush = db.flush
     flush_calls = 0
@@ -175,7 +202,7 @@ async def test_release_endpoint_rolls_back_persisted_state_on_late_flush_failure
 
     monkeypatch.setattr(db, "flush", fail_on_final_flush)
     with pytest.raises(RuntimeError, match="V04 injected"):
-        await mps_api.release_plan(plan_id, warehouse_id, db, SimpleNamespace(id=None))
+        await mps_api.release_plan(plan_id, warehouse_id, db, SimpleNamespace(id=user_id, is_superuser=True))
 
     async with AsyncSessionLocal() as verify:
         assert await verify.scalar(select(func.count()).select_from(ProductionOrder).where(ProductionOrder.product_id == product_id)) == 0
@@ -189,6 +216,8 @@ async def test_release_endpoint_rolls_back_persisted_state_on_late_flush_failure
             await cleanup.execute(__import__("sqlalchemy").delete(MPSLine).where(MPSLine.id == line_id))
             await cleanup.execute(__import__("sqlalchemy").delete(MPSPlan).where(MPSPlan.id == plan_id))
             await cleanup.execute(__import__("sqlalchemy").delete(Recipe).where(Recipe.id == recipe_id))
+            await cleanup.execute(__import__("sqlalchemy").delete(MRPRun).where(MRPRun.id == run_id))
+            await cleanup.execute(__import__("sqlalchemy").delete(User).where(User.id == user_id))
             await cleanup.execute(__import__("sqlalchemy").delete(Product).where(Product.id == product_id))
             await cleanup.execute(__import__("sqlalchemy").delete(Warehouse).where(Warehouse.id == warehouse_id))
 
@@ -204,6 +233,8 @@ async def test_concurrent_postgres_mps_releases_allocate_distinct_order_numbers(
     from app.models.mps import MPSLine, MPSPlan
     from app.models.production import ProductionOrder
     from app.models.recipe import Recipe
+    from app.models.mrp import MRPRun, MRPRunStatus
+    from app.models.user import User
 
     if "postgresql" not in str(settings.DATABASE_URL):
         pytest.skip("V04 concurrency proof requires the PostgreSQL CI service")
@@ -217,14 +248,17 @@ async def test_concurrent_postgres_mps_releases_allocate_distinct_order_numbers(
     async with AsyncSessionLocal() as db:
         async with db.begin():
             warehouse = Warehouse(code=f"V04-C-{suffix}", name="V04 concurrency warehouse", warehouse_type=WarehouseType.FINISHED_GOODS)
-            db.add(warehouse)
+            source_run = MRPRun(run_no=f"V04-C-RUN-{suffix}", run_date=__import__("datetime").date(2026, 1, 1), status=MRPRunStatus.COMPLETED, warehouse_id=None)
+            actor = User(email=f"v04-c-{suffix}@example.invalid", username=f"v04-c-{suffix}", full_name="V04 Test", hashed_password="test")
+            db.add_all([warehouse, source_run, actor])
             await db.flush()
+            source_run.warehouse_id = warehouse.id
             for index in range(2):
                 product = Product(sku=f"V04-C-{suffix}-{index}", name=f"V04 concurrency product {index}", category=ProductCategory.FOOD, uom=UnitOfMeasure.KG)
                 db.add(product)
                 await db.flush()
                 recipe = Recipe(product_id=product.id, version="1", name=f"V04 concurrency recipe {index}", status=RecipeStatus.APPROVED, is_active=True)
-                plan = MPSPlan(plan_no=f"V04-C-{suffix}-{index}", plan_name=f"V04 concurrency plan {index}", start_date=__import__("datetime").date(2026, 1, 1), end_date=__import__("datetime").date(2026, 1, 31), status=MPSStatus.APPROVED)
+                plan = MPSPlan(plan_no=f"V04-C-{suffix}-{index}", plan_name=f"V04 concurrency plan {index}", start_date=__import__("datetime").date(2026, 1, 1), end_date=__import__("datetime").date(2026, 1, 31), status=MPSStatus.APPROVED, mrp_run_id=source_run.id)
                 db.add_all([recipe, plan])
                 await db.flush()
                 line = MPSLine(line_no=f"V04-C-{suffix}-{index}", mps_id=plan.id, product_id=product.id, period_start=__import__("datetime").date(2026, 1, 1), period_end=__import__("datetime").date(2026, 1, 31), planned_production_qty=100, feasibility_status=MPSFeasibilityStatus.FEASIBLE)
@@ -235,10 +269,11 @@ async def test_concurrent_postgres_mps_releases_allocate_distinct_order_numbers(
                 plan_ids.append(plan.id)
                 line_ids.append(line.id)
             warehouse_id = warehouse.id
+            source_run_id, user_id = source_run.id, actor.id
 
     async def release(plan_id):
         async with AsyncSessionLocal() as db:
-            return await mps_api.release_plan(plan_id, warehouse_id, db, SimpleNamespace(id=None))
+            return await mps_api.release_plan(plan_id, warehouse_id, db, SimpleNamespace(id=user_id, is_superuser=True))
 
     results = await asyncio.gather(*(release(plan_id) for plan_id in plan_ids))
     assert [result["released_orders"] for result in results] == [1, 1]
@@ -262,7 +297,7 @@ async def test_concurrent_postgres_mps_releases_allocate_distinct_order_numbers(
             db.add(extra_product)
             await db.flush()
             extra_recipe = Recipe(product_id=extra_product.id, version="1", name="V04 deletion-gap recipe", status=RecipeStatus.APPROVED, is_active=True)
-            extra_plan = MPSPlan(plan_no=f"V04-C-{suffix}-retry", plan_name="V04 deletion-gap plan", start_date=__import__("datetime").date(2026, 1, 1), end_date=__import__("datetime").date(2026, 1, 31), status=MPSStatus.APPROVED)
+            extra_plan = MPSPlan(plan_no=f"V04-C-{suffix}-retry", plan_name="V04 deletion-gap plan", start_date=__import__("datetime").date(2026, 1, 1), end_date=__import__("datetime").date(2026, 1, 31), status=MPSStatus.APPROVED, mrp_run_id=source_run_id)
             db.add_all([extra_recipe, extra_plan])
             await db.flush()
             extra_line = MPSLine(line_no=f"V04-C-{suffix}-retry", mps_id=extra_plan.id, product_id=extra_product.id, period_start=__import__("datetime").date(2026, 1, 1), period_end=__import__("datetime").date(2026, 1, 31), planned_production_qty=100, feasibility_status=MPSFeasibilityStatus.FEASIBLE)
@@ -290,4 +325,6 @@ async def test_concurrent_postgres_mps_releases_allocate_distinct_order_numbers(
             await cleanup.execute(delete(Recipe).where(Recipe.id == extra_recipe_id))
             await cleanup.execute(delete(Product).where(Product.id.in_(product_ids)))
             await cleanup.execute(delete(Product).where(Product.id == extra_product_id))
+            await cleanup.execute(delete(MRPRun).where(MRPRun.id == source_run_id))
+            await cleanup.execute(delete(User).where(User.id == user_id))
             await cleanup.execute(delete(Warehouse).where(Warehouse.id == warehouse_id))

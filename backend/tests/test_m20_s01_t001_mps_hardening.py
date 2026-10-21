@@ -22,6 +22,9 @@ from app.core import module_registry
 from app.db import seed
 from app.models.mps import MPSFeasibilityStatus, MPSStatus, MPSChangeType
 from app.models.mrp import MRPRunStatus
+from app.models.mrp import MRPRun
+from app.models.master import Warehouse
+from app.models.user import User
 from app.models.recipe import RecipeStatus
 from app.schemas.mps import MPSLineUpdate, GenerateFromMRPRequest
 from app.services import mps_service as svc
@@ -49,7 +52,24 @@ def _mock_db(*results, get_results=None):
     db = AsyncMock()
     db.execute = AsyncMock(side_effect=list(results))
     if get_results is not None:
-        db.get = AsyncMock(side_effect=list(get_results))
+        remaining = list(get_results)
+        source_warehouse = SimpleNamespace(id=uuid4(), code="WH-SOURCE", is_active=True, company_id=None)
+        source_run = SimpleNamespace(id=uuid4(), status=MRPRunStatus.COMPLETED, warehouse_id=source_warehouse.id)
+        actor = SimpleNamespace(id=uuid4(), email="mps-test@example.invalid", full_name="MPS Test")
+
+        async def _get(model, object_id):
+            if model is MRPRun:
+                return source_run
+            if model is User:
+                return actor
+            if model is Warehouse and object_id == source_warehouse.id:
+                return source_warehouse
+            value = remaining.pop(0) if remaining else None
+            if model is Warehouse and value is not None and not hasattr(value, "company_id"):
+                value.company_id = None
+            return value
+
+        db.get = AsyncMock(side_effect=_get)
     db.add = MagicMock(side_effect=_assign_id_on_add)
     db.delete = AsyncMock()
     db.flush = AsyncMock()
@@ -119,6 +139,7 @@ async def test_release_blocks_all_orders_when_ineligible_lines_exist():
     plan = SimpleNamespace(
         id=uuid4(), status=MPSStatus.APPROVED,
         plan_no="MPS-000001", start_date=date(2026, 1, 1), end_date=date(2026, 1, 31),
+        mrp_run_id=uuid4(),
     )
     feasible_line = SimpleNamespace(
         id=uuid4(), line_no="MPSL-0000001", product_id=product_id,
