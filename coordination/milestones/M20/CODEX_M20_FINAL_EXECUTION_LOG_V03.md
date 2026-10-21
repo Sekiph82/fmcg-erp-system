@@ -90,6 +90,14 @@ The 11-test browser run above includes six Developer Portal error/success cases 
 - Historical migration wrapper also showed the existing offline `--sql` path stops in `20260516_0060_performance_indexes.py` when its catalog query returns no row; online PostgreSQL migration tests above are the migration evidence.
 - GitHub Actions / remote CI: **not run; `DEFERRED_CI_QUOTA` through 2026-10-30**.
 
+## Failed verification attempts and resolutions
+
+- An early `npm run type-check` exposed a nullable abort-signal mismatch and an Axios response-type mismatch in the Developer Portal client. Both were corrected; the final type-check completed with exit code 0.
+- The first PostgreSQL F12 fixture run failed because the fixture referenced an MRP run identifier before the row was flushed. The fixture now flushes before dependent creation; the final strict PostgreSQL suite passed 75 tests. Its asyncpg teardown warning remains reported above.
+- The first Developer Portal browser assertion expected an inline 401 alert. The shared Axios interceptor instead redirects expired sessions to `/login`; the regression now asserts that behavior. The Logs heading accessible-name assertion was also corrected by hiding its decorative icon. The final combined browser run passed 11 tests.
+- The first production dependency audit reported five production vulnerabilities. Compatible manifest/lockfile updates removed the production findings; the full audit still reports the nine development-tree findings listed above.
+- Final executed commands had no failing assertions. The remaining test-quality issue is the separately disclosed unawaited asyncpg teardown warning; the nine development audit findings and missing database/master-data coverage are also open work rather than test passes.
+
 ## Source, test, migration, and fixture links
 
 - MPS engine: https://github.com/Sekiph82/fmcg-erp-system/blob/4c1d5dd8578713e25166eb1e9e46c2ff3722e278/backend/app/services/mps_engine.py
