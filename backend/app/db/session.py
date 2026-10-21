@@ -37,3 +37,20 @@ async def get_db() -> AsyncSession:
             raise
         finally:
             await session.close()
+
+
+async def get_auth_db() -> AsyncSession:
+    """Provide an isolated session for authentication reads.
+
+    Authentication must not commit or roll back the endpoint's business
+    transaction. A separate session also lets endpoints open an explicit
+    transaction after user and permission data have been loaded.
+    """
+    async with AsyncSessionLocal() as session:
+        try:
+            yield session
+        except Exception:
+            await session.rollback()
+            raise
+        finally:
+            await session.close()

@@ -9,14 +9,14 @@ from app.core.config import settings
 from app.core.security import decode_token
 from app.core import token_blocklist
 from app.core.access_control import forbidden_detail, has_permission
-from app.db.session import get_db
+from app.db.session import get_auth_db, get_db
 
 logger = logging.getLogger(__name__)
 
 
 async def get_current_user(
     request: Request,
-    db: AsyncSession = Depends(get_db),
+    db: AsyncSession = Depends(get_auth_db),
 ):
     from app.models.user import User
     from app.models.role import Role
@@ -51,11 +51,6 @@ async def get_current_user(
     if not user.is_active:
         logger.warning("Auth failed: user_id=%s is inactive", user_id)
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found or inactive")
-    # Authentication and eager role/scope loading starts SQLAlchemy's
-    # autobegin transaction. MPS routes open an explicit transaction for the
-    # authorized operation; close this read-only auth transaction first so
-    # real requests can enter that boundary safely.
-    await db.commit()
     return user
 
 
