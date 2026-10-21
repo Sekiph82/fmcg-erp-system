@@ -1,3 +1,4 @@
+import axios, { AxiosResponse } from "axios";
 import { apiClient } from "@/lib/api";
 
 const BASE = "/api/v1/developer";
@@ -78,29 +79,31 @@ export interface GraphQLSchemaInfo {
 }
 
 async function req<T>(path: string, opts?: RequestInit): Promise<T> {
-  let response: Response;
+  let response: AxiosResponse<string>;
   try {
-    response = await fetch(apiClient.getUri({ url: BASE + path }), {
+    response = await apiClient.request<string>({
+      url: BASE + path,
       method: opts?.method ?? "GET",
-      body: typeof opts?.body === "string" ? opts.body : undefined,
-      credentials: "include",
+      data: typeof opts?.body === "string" ? opts.body : undefined,
       headers: {
         Accept: "application/json",
         ...(typeof opts?.body === "string" ? { "Content-Type": "application/json" } : {}),
       },
-      signal: opts?.signal ?? AbortSignal.timeout(15000),
+      timeout: 15000,
+      signal: opts?.signal ?? undefined,
+      responseType: "text",
     });
   } catch (error) {
-    throw new DevPortalRequestError(safeErrorMessage(), undefined);
+    const status = axios.isAxiosError(error) ? error.response?.status : undefined;
+    throw new DevPortalRequestError(safeErrorMessage(status), status);
   }
   if (response.status === 204) return undefined as T;
-  if (!response.ok) throw new DevPortalRequestError(safeErrorMessage(response.status), response.status);
-  const contentType = response.headers.get("content-type");
+  const contentType = response.headers["content-type"];
   if (typeof contentType !== "string" || !contentType.toLowerCase().includes("application/json")) {
     throw new DevPortalRequestError("The API returned an unexpected response. Check the API service and try again.", response.status);
   }
   try {
-    const data: unknown = await response.json();
+    const data: unknown = JSON.parse(response.data);
     if (typeof data !== "object" || data === null) {
       throw new DevPortalRequestError("The API response could not be read. Try again shortly.", response.status);
     }

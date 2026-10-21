@@ -92,7 +92,7 @@ test.describe("Developer Portal API failures", () => {
     await page.goto("/dashboard/integrations");
     await page.getByTestId("dashboard-main").getByRole("button", { name: "Developer", exact: true }).click();
 
-    await expect(page.getByTestId("dashboard-main").getByRole("alert")).toContainText("session has expired");
+    await page.waitForURL(/\/login/);
     await expect(page.locator("body")).not.toContainText("private diagnostic");
   });
 

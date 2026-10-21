@@ -328,3 +328,7 @@ async def test_concurrent_postgres_mps_releases_allocate_distinct_order_numbers(
             await cleanup.execute(delete(MRPRun).where(MRPRun.id == source_run_id))
             await cleanup.execute(delete(User).where(User.id == user_id))
             await cleanup.execute(delete(Warehouse).where(Warehouse.id == warehouse_id))
+    # This test owns concurrent PostgreSQL sessions. Dispose pooled asyncpg
+    # connections on this pytest-asyncio loop so the shared engine cannot leak
+    # a connection/finalizer into a later test's loop.
+    await engine.dispose()

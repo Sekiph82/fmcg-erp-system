@@ -107,7 +107,7 @@ export default function IntegrationLogsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">📋 Integration Logs</h1>
+          <h1 className="text-2xl font-bold text-gray-900"><span aria-hidden="true">📋 </span>Integration Logs</h1>
           <p className="text-gray-500 text-sm mt-0.5">Audit trail of all external API calls</p>
         </div>
         <button

@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import uuid
 import json
+import logging
 from copy import deepcopy
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal, ROUND_HALF_UP
@@ -32,6 +33,8 @@ from app.models.production_advanced import WorkCenter
 from app.models.production_advanced import DowntimeEvent
 from app.services.mps_engine import capacity_result
 from app.schemas.mps import MPSWhatIfCreate, MPSWhatIfOut
+
+logger = logging.getLogger(__name__)
 
 
 def _D(v) -> Decimal:
@@ -262,6 +265,7 @@ async def _simulate_scenario_materials(db: AsyncSession, mps_id: uuid.UUID, snap
             "candidate_shortage_quantity_by_uom": candidate_result["shortage_quantity_by_uom"],
         }
     except Exception as exc:
+        logger.exception("MPS material scenario simulation failed")
         return {
             "status": "PARTIAL_INPUTS", "baseline_shortage_count": None,
             "candidate_shortage_count": None, "shortage_count_delta": None,

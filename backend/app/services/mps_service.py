@@ -366,9 +366,22 @@ async def release_mps_plan(
     if not plan:
         raise ValueError("MPS plan not found")
     if plan.status == MPSStatus.RELEASED:
-        released = (await db.execute(select(MPSLine).where(MPSLine.mps_id == mps_id, MPSLine.production_order_id.is_not(None)))).scalars().all()
+        # A RELEASED header is not sufficient proof that release output still
+        # exists.  Validate every positive-quantity line before acknowledging
+        # an idempotent retry so deleted orders or partial/dangling releases
+        # cannot be reported as complete.
+        released = (await db.execute(select(MPSLine).where(
+            MPSLine.mps_id == mps_id,
+            MPSLine.planned_production_qty > 0,
+        ))).scalars().all()
+        if not released or any(line.production_order_id is None for line in released):
+            raise ValueError("Released MPS plan has missing production-order links; repair release state before retrying")
         existing_orders = [await db.get(ProductionOrder, line.production_order_id) for line in released]
-        orders = [order for order in existing_orders if order is not None]
+        if any(order is None for order in existing_orders):
+            raise ValueError("Released MPS plan references a missing production order; repair release state before retrying")
+        orders = existing_orders
+        if len(orders) != len(released):
+            raise ValueError("Released MPS plan production orders do not match all required lines")
         if any(order.target_warehouse_id != target_warehouse_id for order in orders):
             raise ValueError("Idempotent release retry must use the original target warehouse")
         return {"released_orders": len(orders), "release_required_lines": len(released), "release_complete": True, "idempotent_retry": True, "production_order_ids": [str(order.id) for order in orders]}

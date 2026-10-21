@@ -21,7 +21,7 @@ export default function GraphQLInfoPage() {
   if (!info) return <div className="p-6 space-y-3" role="alert"><p className="text-sm text-red-700">{error ?? "GraphQL status could not be loaded."}</p><button type="button" onClick={() => void load()} className="rounded border px-3 py-1.5 text-sm">Retry</button></div>;
 
   return (
-    <div className="p-6 space-y-6 max-w-3xl mx-auto">
+    <div className="w-full min-w-0 p-6 space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">GraphQL Layer</h1>
         <p className="text-sm text-gray-500 mt-1">GraphQL endpoint status and planned schema.</p>

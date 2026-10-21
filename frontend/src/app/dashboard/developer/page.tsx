@@ -1,17 +1,19 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { devPortalApi, DevPortalDashboard, DevResources } from "@/lib/api_portal_api";
+import { devPortalApi, DevPortalDashboard, DevPortalRequestError, DevResources } from "@/lib/api_portal_api";
 
 export default function DeveloperPortalPage() {
   const [dash, setDash] = useState<DevPortalDashboard | null>(null);
   const [res, setRes] = useState<DevResources | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [sessionExpired, setSessionExpired] = useState(false);
 
   const load = async () => {
     setLoading(true);
     setError(null);
+    setSessionExpired(false);
     const results = await Promise.allSettled([
       devPortalApi.getDashboard(),
       devPortalApi.getResources(),
@@ -20,7 +22,12 @@ export default function DeveloperPortalPage() {
     if (results[1].status === "fulfilled") setRes(results[1].value);
     const failure = results.find((result) => result.status === "rejected");
     if (failure?.status === "rejected") {
-      setError(failure.reason instanceof Error ? failure.reason.message : "Developer Portal could not be loaded.");
+      const reason = failure.reason;
+      setError(reason instanceof Error ? reason.message : "Developer Portal could not be loaded.");
+      const status = typeof reason === "object" && reason !== null && "status" in reason
+        ? (reason as { status?: unknown }).status
+        : undefined;
+      setSessionExpired(status === 401);
     }
     setLoading(false);
   };
@@ -52,7 +59,10 @@ export default function DeveloperPortalPage() {
           {error && (
             <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
               <span>{error}</span>
-              <button type="button" onClick={() => void load()} className="rounded border border-amber-300 px-3 py-1.5 font-medium hover:bg-amber-100">Retry</button>
+              <div className="flex items-center gap-2">
+                {sessionExpired && <Link href="/login" className="rounded border border-amber-300 px-3 py-1.5 font-medium hover:bg-amber-100">Sign in</Link>}
+                {!sessionExpired && <button type="button" onClick={() => void load()} className="rounded border border-amber-300 px-3 py-1.5 font-medium hover:bg-amber-100">Retry</button>}
+              </div>
             </div>
           )}
           {/* KPI strip */}
