@@ -12,7 +12,7 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 - Current Sprint: M20.S01 — MPS Domain Reconciliation
 - Current Task: M20.S01.T003 — Identify exact missing state/data invariants
 - Current Task Status: IN_PROGRESS
-- Next Task/Action: Execute M20.S01.T003 using existing milestone-wide `coordination/milestones/M20/CODEX_M20_MASTER_PROMPT_V02.md`. T002 accepted by `coordination/sessions/M20-S01-T002/CHATGPT_AUDIT_V01.md`; remote CI DEFERRED_CI_QUOTA through 2026-10-30. No GitHub Actions/remote CI until owner authorizes resumption.
+- Next Task/Action: Continue ONE continuous M20 strict remediation run using `coordination/milestones/M20/CODEX_M20_STRICT_REMEDIATION_MASTER_PROMPT_V01.md` and latest independent `coordination/milestones/M20/CHATGPT_M20_STRICT_AUDIT_V03.md`. Builder reports 75 backend and 11 browser passes at implementation `4c1d5dd8578713e25166eb1e9e46c2ff3722e278`, but M20 remains FAIL / CHANGES_REQUIRED: tenant/warehouse/permission PostgreSQL matrix, durable diagnostic/snapshot replay, cross-module verification, scenario gaps, and asyncpg teardown warning remain. T001/T002 accepted bounded; no per-task stop gates. Remote CI DEFERRED_CI_QUOTA through 2026-10-30; no Actions until owner authorizes resumption.
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
