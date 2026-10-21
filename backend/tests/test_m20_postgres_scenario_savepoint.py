@@ -11,7 +11,7 @@ from app.db.session import AsyncSessionLocal
 from app.models.master import Material, MaterialType, Product, ProductCategory, UnitOfMeasure, Warehouse, WarehouseType
 from app.models.mps import MPSLine, MPSPlan
 from app.models.mrp import MRPRun, MRPRunStatus
-from app.models.recipe import Recipe, RecipeItem, RecipeStatus
+from app.models.bom import AdvancedBOM, AdvancedBOMLine, BOMLifecycle, BasisType
 from app.services.mps_whatif_service import _simulate_scenario_materials
 
 
@@ -45,13 +45,27 @@ async def test_postgres_material_resimulation_uses_real_bom_supply_and_rolls_bac
                     run_no=f"M20-RUN-{suffix}", run_date=date(2026, 1, 1),
                     status=MRPRunStatus.COMPLETED, warehouse_id=warehouse.id,
                 )
-                recipe = Recipe(
-                    product_id=product.id, version="1", name="M20 material scenario recipe",
-                    status=RecipeStatus.APPROVED, is_active=True,
+                root_bom = AdvancedBOM(
+                    bom_code=f"M20-ROOT-{suffix}", bom_name="M20 nested root BOM",
+                    product_id=product.id, base_qty=1, base_uom="KG",
+                    lifecycle=BOMLifecycle.APPROVED, is_default=True,
                 )
-                db.add_all([run, recipe])
+                child_bom = AdvancedBOM(
+                    bom_code=f"M20-CHILD-{suffix}", bom_name="M20 nested subassembly BOM",
+                    base_qty=1, base_uom="KG", lifecycle=BOMLifecycle.APPROVED, is_default=False,
+                )
+                db.add_all([run, root_bom, child_bom])
                 await db.flush()
-                db.add(RecipeItem(recipe_id=recipe.id, material_id=material.id, line_no=1, quantity=2, unit="KG"))
+                db.add_all([
+                    AdvancedBOMLine(
+                        bom_id=root_bom.id, line_no=1, child_bom_id=child_bom.id,
+                        required_qty=2, required_uom="KG", basis_type=BasisType.PER_UNIT,
+                    ),
+                    AdvancedBOMLine(
+                        bom_id=child_bom.id, line_no=1, item_id=material.id,
+                        required_qty=1, required_uom="KG", basis_type=BasisType.PER_UNIT,
+                    ),
+                ])
                 plan = MPSPlan(
                     plan_no=f"M20-PLAN-{suffix}", plan_name="M20 material scenario plan",
                     start_date=date(2026, 1, 1), end_date=date(2026, 1, 31), mrp_run_id=run.id,

@@ -355,12 +355,12 @@ async def evaluate_material_feasibility(db: AsyncSession, mps_id: uuid.UUID) -> 
                 item.child_bom_id for item in lines_for_child if item.child_bom_id is not None
             )
 
-    all_bom_items = list(bom_items) + [
-        item for children in child_boms.values() for item in children["lines"]
-    ]
     material_ids = {item.material_id for item in recipe_items} | {
-        item.item_id for item in all_bom_items
+        item.item_id for item in bom_items
         if _enum_value(item.item_type) == "MATERIAL" and item.item_id
+    } | {
+        item["item_id"] for children in child_boms.values() for item in children["lines"]
+        if _enum_value(item.get("item_type")) == "MATERIAL" and item.get("item_id")
     }
     materials = {m.id: m for m in (await db.execute(select(Material).where(Material.id.in_(material_ids)))).scalars().all()} if material_ids else {}
     stock_rows = (await db.execute(

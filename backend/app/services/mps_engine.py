@@ -143,7 +143,8 @@ def explode_approved_bom(
         output_uom = str(uom or "").upper()
         if qty_d < 0 or base_qty <= 0:
             raise PlanningInputError("BOM output and base quantity must be valid")
-        if str(current_bom.get("lifecycle", "")).upper() not in {"APPROVED", "RELEASED"}:
+        lifecycle = current_bom.get("lifecycle", "")
+        if str(getattr(lifecycle, "value", lifecycle)).upper() not in {"APPROVED", "RELEASED"}:
             raise PlanningInputError("no approved/released BOM is available")
         if as_of is not None:
             start, end = current_bom.get("effective_from"), current_bom.get("effective_to")
@@ -155,7 +156,8 @@ def explode_approved_bom(
         for line in current_lines:
             if bool(line.get("is_optional")):
                 continue
-            basis = str(line.get("basis_type", "")).upper()
+            basis_value = line.get("basis_type", "")
+            basis = str(getattr(basis_value, "value", basis_value)).upper()
             required = decimal(line.get("required_qty"))
             if required < 0:
                 raise PlanningInputError("BOM component quantity cannot be negative")
@@ -187,7 +189,9 @@ def explode_approved_bom(
                     raise PlanningInputError("child BOM output UOM does not match its parent component UOM")
                 results.extend(explode(child_header, child.get("lines", ()), amount, required_uom, (*path, bom_id), depth + 1))
                 continue
-            if not line.get("item_id") or str(line.get("item_type", "MATERIAL")).upper() != "MATERIAL":
+            item_type_value = line.get("item_type", "MATERIAL")
+            item_type = str(getattr(item_type_value, "value", item_type_value)).upper()
+            if not line.get("item_id") or item_type != "MATERIAL":
                 raise PlanningInputError("non-material BOM components require an approved child BOM for MPS material feasibility")
             results.append({
                 "material_id": line["item_id"], "required_qty": round_qty(amount, 4),
