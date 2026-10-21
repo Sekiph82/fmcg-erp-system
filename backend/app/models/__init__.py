@@ -255,8 +255,9 @@ from app.models.mps import (
     MPSPlanningMode, MPSCapacityMode, MPSStatus, MPSFeasibilityStatus,
     MPSAgentType, MPSRecType, MPSRecStatus, WhatIfStatus, MPSChangeType,
     MPSPlan, MPSLine, MPSCampaign, MPSCapacitySlot,
-    MPSWhatIfScenario, MPSAIRecommendation,
+    MPSWhatIfScenario, MPSAIRecommendation, MPSLineDiagnostic, MPSScenarioSnapshot,
 )
+from app.models.api_portal import ApiKey, ApiKeyUsageLog
 
 # ── Machine + Operator Intelligence ──────────────────────────────────────────
 from app.models.machine_operator import (
@@ -757,7 +758,9 @@ __all__ = [
     "MPSPlanningMode", "MPSCapacityMode", "MPSStatus", "MPSFeasibilityStatus",
     "MPSAgentType", "MPSRecType", "MPSRecStatus", "WhatIfStatus", "MPSChangeType",
     "MPSPlan", "MPSLine", "MPSCampaign", "MPSCapacitySlot",
-    "MPSWhatIfScenario", "MPSAIRecommendation",
+    "MPSWhatIfScenario", "MPSAIRecommendation", "MPSLineDiagnostic", "MPSScenarioSnapshot",
+    # Developer Portal
+    "ApiKey", "ApiKeyUsageLog",
     # Machine + Operator Intelligence
     "MachineStatus", "MachineFamily", "SkillLevel", "CertStatus",
     "AssignmentType", "RuntimeActivity", "DowntimeClass", "LaborActivity",

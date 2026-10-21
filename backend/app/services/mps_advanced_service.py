@@ -303,8 +303,64 @@ async def evaluate_material_feasibility(db: AsyncSession, mps_id: uuid.UUID) -> 
     for item in bom_items:
         bom_items_by_id[item.bom_id].append(item)
 
+    # Load the approved child-BOM closure referenced by the selected root BOMs.
+    # The engine enforces date effectivity, lifecycle, UOM, depth and cycles;
+    # this loader deliberately omits absent/unapproved child rows so the
+    # material feasibility result fails closed with a traceable BOM error.
+    child_boms: dict[str, dict] = {}
+    pending_child_ids = {
+        item.child_bom_id for item in bom_items if item.child_bom_id is not None
+    }
+    visited_child_ids: set[uuid.UUID] = set()
+    for _depth in range(16):
+        batch_ids = pending_child_ids - visited_child_ids
+        if not batch_ids:
+            break
+        visited_child_ids.update(batch_ids)
+        child_headers = (await db.execute(
+            select(AdvancedBOM).where(
+                AdvancedBOM.id.in_(batch_ids),
+                AdvancedBOM.lifecycle.in_((BOMLifecycle.APPROVED, BOMLifecycle.RELEASED)),
+            )
+        )).scalars().all()
+        child_lines = (await db.execute(
+            select(AdvancedBOMLine).where(AdvancedBOMLine.bom_id.in_(batch_ids))
+        )).scalars().all()
+        child_lines_by_id: dict[uuid.UUID, list[AdvancedBOMLine]] = defaultdict(list)
+        for child_line in child_lines:
+            child_lines_by_id[child_line.bom_id].append(child_line)
+        pending_child_ids = set()
+        for child_header in child_headers:
+            lines_for_child = child_lines_by_id.get(child_header.id, [])
+            child_boms[str(child_header.id)] = {
+                "bom": {
+                    "id": child_header.id,
+                    "base_qty": child_header.base_qty,
+                    "base_uom": child_header.base_uom,
+                    "lifecycle": child_header.lifecycle,
+                    "effective_from": child_header.effective_from,
+                    "effective_to": child_header.effective_to,
+                },
+                "lines": [{
+                    "item_id": item.item_id, "item_type": item.item_type,
+                    "required_qty": item.required_qty, "required_uom": item.required_uom,
+                    "basis_type": item.basis_type, "wastage_pct": item.wastage_pct,
+                    "process_loss_pct": item.process_loss_pct,
+                    "is_optional": item.is_optional,
+                    "substitution_policy": item.substitution_policy,
+                    "child_bom_id": item.child_bom_id,
+                } for item in lines_for_child],
+            }
+            pending_child_ids.update(
+                item.child_bom_id for item in lines_for_child if item.child_bom_id is not None
+            )
+
+    all_bom_items = list(bom_items) + [
+        item for children in child_boms.values() for item in children["lines"]
+    ]
     material_ids = {item.material_id for item in recipe_items} | {
-        item.item_id for item in bom_items if _enum_value(item.item_type) == "MATERIAL" and item.item_id
+        item.item_id for item in all_bom_items
+        if _enum_value(item.item_type) == "MATERIAL" and item.item_id
     }
     materials = {m.id: m for m in (await db.execute(select(Material).where(Material.id.in_(material_ids)))).scalars().all()} if material_ids else {}
     stock_rows = (await db.execute(
@@ -358,7 +414,10 @@ async def evaluate_material_feasibility(db: AsyncSession, mps_id: uuid.UUID) -> 
                         "process_loss_pct": item.process_loss_pct,
                         "is_optional": item.is_optional,
                         "substitution_policy": item.substitution_policy,
+                        "child_bom_id": item.child_bom_id,
                     } for item in bom_items_by_id[bom.id]],
+                    child_boms=child_boms,
+                    as_of=required_date,
                 )
             except PlanningInputError as exc:
                 issues_by_line[line.id].append({"reason_code": "BOM_DATA_INVALID", "message": str(exc), "priority": "CRITICAL", "bom_id": str(bom.id)})

@@ -13,9 +13,9 @@ import enum
 from sqlalchemy import (
     Column, String, Text, Numeric, Integer, Boolean,
     ForeignKey, Enum as SAEnum, DateTime, Date,
-    UniqueConstraint, Index, JSON,
+    UniqueConstraint, Index, JSON, func,
 )
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
 
 from app.db.base import Base, TimestampMixin
@@ -279,6 +279,43 @@ class MPSWhatIfScenario(Base, TimestampMixin):
     created_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
 
     mps_plan   = relationship("MPSPlan", back_populates="whatif_scenarios")
+    created_by = relationship("User")
+
+
+class MPSLineDiagnostic(Base):
+    """Versioned line constraints persisted by the MPS evaluator."""
+    __tablename__ = "mps_line_diagnostics"
+    __table_args__ = (
+        UniqueConstraint("run_id", "line_id", name="uq_mps_diag_run_line"),
+        Index("ix_mps_diag_plan_run", "mps_id", "run_id"),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    mps_id = Column(UUID(as_uuid=True), ForeignKey("mps_plans.id", ondelete="CASCADE"), nullable=False)
+    line_id = Column(UUID(as_uuid=True), ForeignKey("mps_lines.id", ondelete="CASCADE"), nullable=False)
+    run_id = Column(UUID(as_uuid=True), nullable=False)
+    source_version = Column(String(40), nullable=False)
+    diagnostics = Column(JSONB, nullable=False)
+    computed_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
+
+class MPSScenarioSnapshot(Base):
+    """Immutable what-if assumptions and computed results for audit/replay."""
+    __tablename__ = "mps_scenario_snapshots"
+    __table_args__ = (
+        UniqueConstraint("scenario_id", "snapshot_version", name="uq_mps_scenario_snapshot_version"),
+        Index("ix_mps_scenario_snapshot_created", "scenario_id", "created_at"),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    scenario_id = Column(UUID(as_uuid=True), ForeignKey("mps_whatif_scenarios.id", ondelete="CASCADE"), nullable=False)
+    snapshot_version = Column(String(40), nullable=False)
+    assumptions = Column(JSONB, nullable=False)
+    results = Column(JSONB, nullable=False)
+    created_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
+    scenario = relationship("MPSWhatIfScenario")
     created_by = relationship("User")
 
 

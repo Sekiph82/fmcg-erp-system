@@ -14,7 +14,7 @@ class ApiKey(Base):
     user_id = Column(String(100), nullable=False, index=True)
     key_name = Column(String(200), nullable=False)
     # Store SHA-256 hash of the actual key — never store raw
-    key_prefix = Column(String(10), nullable=False)
+    key_prefix = Column(String(12), nullable=False)
     key_hash = Column(String(256), nullable=False, unique=True)
     scopes = Column(Text, nullable=True)             # comma-separated: read,write,admin
     rate_limit_per_min = Column(Integer, default=60, nullable=False)

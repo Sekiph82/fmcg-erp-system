@@ -119,55 +119,84 @@ def net_finished_goods_requirement(
 def explode_approved_bom(
     *, output_qty: object, output_uom: str, bom: Mapping[str, object],
     lines: Iterable[Mapping[str, object]],
+    child_boms: Mapping[str, Mapping[str, object]] | None = None,
+    as_of: date | None = None,
+    max_depth: int = 16,
 ) -> list[dict[str, object]]:
-    """Scale an effective advanced BOM with explicit basis and loss semantics."""
-    qty = decimal(output_qty)
-    base_qty = decimal(bom.get("base_qty"))
-    base_uom = str(bom.get("base_uom") or "").upper()
-    if qty < 0 or base_qty <= 0:
-        raise PlanningInputError("BOM output and base quantity must be valid")
-    if str(bom.get("lifecycle", "")).upper() not in {"APPROVED", "RELEASED"}:
-        raise PlanningInputError("no approved/released BOM is available")
-    if str(bom.get("output_uom", output_uom)).upper() != str(output_uom).upper():
-        raise PlanningInputError("planned output UOM does not match the BOM base UOM")
-    if base_uom and base_uom != str(output_uom).upper():
-        raise PlanningInputError("BOM base UOM conversion is not configured")
-    results = []
-    for line in lines:
-        if bool(line.get("is_optional")):
-            continue
-        basis = str(line.get("basis_type", "")).upper()
-        required = decimal(line.get("required_qty"))
-        if required < 0:
-            raise PlanningInputError("BOM component quantity cannot be negative")
-        if basis == "PER_BATCH":
-            amount = required * qty / base_qty
-        elif basis == "PER_UNIT":
-            amount = required * qty
-        elif basis in {"PER_100KG", "PER_1000L"}:
-            token = "KG" if basis == "PER_100KG" else "L"
-            if str(output_uom).upper() != token:
-                raise PlanningInputError(f"{basis} requires output UOM {token}; conversion is not configured")
-            denominator = Decimal("100") if basis == "PER_100KG" else Decimal("1000")
-            amount = required * qty / denominator
-        elif basis == "FIXED":
-            amount = required
-        else:
-            raise PlanningInputError(f"unsupported BOM basis: {basis or 'missing'}")
-        losses = decimal(line.get("wastage_pct")) + decimal(line.get("process_loss_pct"))
-        if losses < 0 or losses >= 100:
-            raise PlanningInputError("BOM loss percentage must be in [0, 100)")
-        amount = amount * (Decimal(1) + losses / Decimal(100))
-        if not line.get("item_id") or str(line.get("item_type", "MATERIAL")).upper() != "MATERIAL":
-            raise PlanningInputError("only identified material components are supported for MPS material feasibility")
-        results.append({
-            "material_id": line["item_id"],
-            "required_qty": round_qty(amount, 4),
-            "uom": str(line.get("required_uom") or "").upper(),
-            "basis_type": basis,
-            "substitution_policy": str(line.get("substitution_policy") or "NO_SUB"),
-        })
-    return results
+    """Recursively scale effective approved BOMs into leaf material needs.
+
+    ``child_boms`` is keyed by stringified BOM id and contains a ``bom`` header
+    and its ``lines``. Missing child data, cycles, unsupported components,
+    incompatible units and ineffective sub-BOMs all fail closed.
+    """
+    graph = child_boms or {}
+
+    def explode(current_bom, current_lines, qty, uom, path, depth):
+        if depth > max_depth:
+            raise PlanningInputError(f"BOM nesting exceeds supported depth {max_depth}")
+        bom_id = str(current_bom.get("id") or "<root>")
+        if bom_id in path:
+            raise PlanningInputError("BOM cycle detected: " + " -> ".join((*path, bom_id)))
+        qty_d = decimal(qty)
+        base_qty = decimal(current_bom.get("base_qty"))
+        base_uom = str(current_bom.get("base_uom") or "").upper()
+        output_uom = str(uom or "").upper()
+        if qty_d < 0 or base_qty <= 0:
+            raise PlanningInputError("BOM output and base quantity must be valid")
+        if str(current_bom.get("lifecycle", "")).upper() not in {"APPROVED", "RELEASED"}:
+            raise PlanningInputError("no approved/released BOM is available")
+        if as_of is not None:
+            start, end = current_bom.get("effective_from"), current_bom.get("effective_to")
+            if start is not None and start > as_of or end is not None and end < as_of:
+                raise PlanningInputError("BOM is not effective on the planned date")
+        if base_uom and base_uom != output_uom:
+            raise PlanningInputError("BOM base UOM conversion is not configured")
+        results = []
+        for line in current_lines:
+            if bool(line.get("is_optional")):
+                continue
+            basis = str(line.get("basis_type", "")).upper()
+            required = decimal(line.get("required_qty"))
+            if required < 0:
+                raise PlanningInputError("BOM component quantity cannot be negative")
+            if basis == "PER_BATCH":
+                amount = required * qty_d / base_qty
+            elif basis == "PER_UNIT":
+                amount = required * qty_d
+            elif basis in {"PER_100KG", "PER_1000L"}:
+                token = "KG" if basis == "PER_100KG" else "L"
+                if output_uom != token:
+                    raise PlanningInputError(f"{basis} requires output UOM {token}; conversion is not configured")
+                amount = required * qty_d / (Decimal("100") if basis == "PER_100KG" else Decimal("1000"))
+            elif basis == "FIXED":
+                amount = required
+            else:
+                raise PlanningInputError(f"unsupported BOM basis: {basis or 'missing'}")
+            losses = decimal(line.get("wastage_pct")) + decimal(line.get("process_loss_pct"))
+            if losses < 0 or losses >= 100:
+                raise PlanningInputError("BOM loss percentage must be in [0, 100)")
+            amount *= Decimal(1) + losses / Decimal(100)
+            child_id = line.get("child_bom_id")
+            if child_id:
+                child = graph.get(str(child_id))
+                if child is None:
+                    raise PlanningInputError(f"referenced child BOM {child_id} is missing or unavailable")
+                child_header = child.get("bom", {})
+                required_uom = str(line.get("required_uom") or "").upper()
+                if required_uom and required_uom != str(child_header.get("base_uom") or "").upper():
+                    raise PlanningInputError("child BOM output UOM does not match its parent component UOM")
+                results.extend(explode(child_header, child.get("lines", ()), amount, required_uom, (*path, bom_id), depth + 1))
+                continue
+            if not line.get("item_id") or str(line.get("item_type", "MATERIAL")).upper() != "MATERIAL":
+                raise PlanningInputError("non-material BOM components require an approved child BOM for MPS material feasibility")
+            results.append({
+                "material_id": line["item_id"], "required_qty": round_qty(amount, 4),
+                "uom": str(line.get("required_uom") or "").upper(), "basis_type": basis,
+                "substitution_policy": str(line.get("substitution_policy") or "NO_SUB"),
+            })
+        return results
+
+    return explode(bom, lines, output_qty, output_uom, (), 1)
 
 
 def capacity_result(required_hours: object, available_hours: object, downtime_hours: object = 0) -> dict[str, Decimal | str]:

@@ -181,6 +181,11 @@ def do_run_migrations(connection: Connection) -> None:
             sa.text("SELECT pg_advisory_lock(:lock_key)"),
             {"lock_key": MIGRATION_ADVISORY_LOCK_KEY},
         )
+        # The lock SELECT autobegins a SQLAlchemy transaction. Commit that
+        # transaction so Alembic's transaction block owns and commits the DDL.
+        # The session-level advisory lock survives this commit and is released
+        # explicitly below (and again automatically when the connection closes).
+        connection.commit()
 
     try:
         context.configure(connection=connection, target_metadata=target_metadata)

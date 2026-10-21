@@ -16,7 +16,7 @@ from app.services.mps_engine import (
     period_buckets,
     scenario_kpis,
 )
-from app.services.mps_whatif_service import _apply_change, _compute_impact, _scenario_capacity_loads
+from app.services.mps_whatif_service import _apply_change, _compute_impact, _scenario_capacity_loads, _scenario_changeover_hours
 from app.models.mps import MPSCapacityMode, MPSChangeType
 
 
@@ -89,6 +89,65 @@ def test_approved_bom_scales_batch_loss_and_optional_lines():
         "material_id": "sugar", "required_qty": Decimal("257.5000"),
         "uom": "KG", "basis_type": "PER_BATCH", "substitution_policy": "NO_SUB",
     }]
+
+
+def test_nested_approved_bom_explodes_to_leaf_material_with_each_level_loss():
+    root_id, child_id = "root-bom", "intermediate-bom"
+    rows = explode_approved_bom(
+        output_qty=200, output_uom="KG",
+        bom={"id": root_id, "base_qty": 100, "base_uom": "KG", "lifecycle": "APPROVED"},
+        lines=[{
+            "item_id": "intermediate", "item_type": "PRODUCT", "child_bom_id": child_id,
+            "required_qty": 25, "required_uom": "KG", "basis_type": "PER_BATCH",
+            "wastage_pct": 4, "process_loss_pct": 0,
+        }],
+        child_boms={child_id: {
+            "bom": {"id": child_id, "base_qty": 10, "base_uom": "KG", "lifecycle": "RELEASED"},
+            "lines": [{
+                "item_id": "sugar", "item_type": "MATERIAL", "required_qty": 3,
+                "required_uom": "KG", "basis_type": "PER_BATCH", "wastage_pct": 2,
+            }],
+        }},
+        as_of=date(2026, 1, 1),
+    )
+    assert len(rows) == 1
+    assert rows[0]["material_id"] == "sugar"
+    assert rows[0]["required_qty"] == Decimal("15.9120")
+
+
+@pytest.mark.parametrize("child_boms,as_of,match", [
+    ({}, date(2026, 1, 1), "missing or unavailable"),
+    ({"child": {"bom": {"id": "child", "base_qty": 10, "base_uom": "L", "lifecycle": "APPROVED"}, "lines": []}}, date(2026, 1, 1), "UOM"),
+    ({"child": {"bom": {"id": "child", "base_qty": 10, "base_uom": "KG", "lifecycle": "DRAFT"}, "lines": []}}, date(2026, 1, 1), "approved/released"),
+    ({"child": {"bom": {"id": "child", "base_qty": 10, "base_uom": "KG", "lifecycle": "APPROVED", "effective_from": date(2026, 2, 1)}, "lines": []}}, date(2026, 1, 1), "not effective"),
+])
+def test_nested_bom_fails_closed_for_missing_or_invalid_child(child_boms, as_of, match):
+    with pytest.raises(PlanningInputError, match=match):
+        explode_approved_bom(
+            output_qty=20, output_uom="KG",
+            bom={"id": "root", "base_qty": 10, "base_uom": "KG", "lifecycle": "APPROVED"},
+            lines=[{"child_bom_id": "child", "item_type": "PRODUCT", "required_qty": 1,
+                    "required_uom": "KG", "basis_type": "PER_BATCH"}],
+            child_boms=child_boms, as_of=as_of,
+        )
+
+
+def test_nested_bom_cycle_is_rejected_with_path():
+    with pytest.raises(PlanningInputError, match="cycle detected"):
+        explode_approved_bom(
+            output_qty=10, output_uom="KG",
+            bom={"id": "root", "base_qty": 10, "base_uom": "KG", "lifecycle": "APPROVED"},
+            lines=[{"child_bom_id": "child", "item_type": "PRODUCT", "required_qty": 10,
+                    "required_uom": "KG", "basis_type": "PER_BATCH"}],
+            child_boms={"child": {
+                "bom": {"id": "child", "base_qty": 10, "base_uom": "KG", "lifecycle": "APPROVED"},
+                "lines": [{"child_bom_id": "root", "item_type": "PRODUCT", "required_qty": 10,
+                           "required_uom": "KG", "basis_type": "PER_BATCH"}],
+            }, "root": {
+                "bom": {"id": "root", "base_qty": 10, "base_uom": "KG", "lifecycle": "APPROVED"},
+                "lines": [],
+            }},
+        )
 
 
 @pytest.mark.parametrize("bom,lines", [
@@ -188,6 +247,31 @@ def test_invariant_matrix_has_traceable_rows_for_all_required_contracts():
         assert required - {"entity"} <= row.keys()
 
 
+def test_developer_portal_tables_are_registered_for_database_bootstrap():
+    import app.models  # noqa: F401
+    from app.db.base import Base
+
+    assert "dev_api_keys" in Base.metadata.tables
+    assert "dev_api_key_usage_logs" in Base.metadata.tables
+    usage_log = Base.metadata.tables["dev_api_key_usage_logs"]
+    assert any(fk.target_fullname == "dev_api_keys.key_id" and fk.ondelete == "CASCADE" for fk in usage_log.foreign_keys)
+
+
+def test_mps_diagnostics_and_scenario_snapshot_tables_are_registered_for_database_bootstrap():
+    import app.models  # noqa: F401
+    from app.db.base import Base
+
+    assert "mps_line_diagnostics" in Base.metadata.tables
+    assert "mps_scenario_snapshots" in Base.metadata.tables
+    diagnostics = Base.metadata.tables["mps_line_diagnostics"]
+    snapshots = Base.metadata.tables["mps_scenario_snapshots"]
+    assert any(fk.target_fullname == "mps_plans.id" and fk.ondelete == "CASCADE" for fk in diagnostics.foreign_keys)
+    assert any(fk.target_fullname == "mps_lines.id" and fk.ondelete == "CASCADE" for fk in diagnostics.foreign_keys)
+    assert any(fk.target_fullname == "mps_whatif_scenarios.id" and fk.ondelete == "CASCADE" for fk in snapshots.foreign_keys)
+    assert str(diagnostics.c.diagnostics.type).upper() == "JSONB"
+    assert str(snapshots.c.assumptions.type).upper() == "JSONB"
+
+
 def test_whatif_never_invents_currency_and_rejects_unimplemented_operations():
     original = [{"id": "line-1", "planned_end_date": "2026-01-05", "period_end": "2026-01-05", "planned_production_qty": "10"}]
     modified = {"line-1": {**original[0], "planned_end_date": "2026-01-06"}}
@@ -231,3 +315,23 @@ def test_whatif_capacity_simulation_uses_rate_calendar_and_downtime():
     gap = _scenario_capacity_loads([line], {wc_id: work_center}, {product_id: product}, {}, [], MPSCapacityMode.FINITE)
     assert gap["status"] == "PARTIAL_INPUTS"
     assert gap["overload_hours"] is None
+
+
+def test_whatif_changeover_uses_configured_transition_and_reports_missing_transition():
+    wc_id = uuid4()
+    product_a, product_b = uuid4(), uuid4()
+    products = {
+        product_a: SimpleNamespace(category="FOOD"),
+        product_b: SimpleNamespace(category="BEVERAGE"),
+    }
+    lines = [
+        {"id": "a", "work_center_id": str(wc_id), "product_id": str(product_a), "period_start": "2026-01-01"},
+        {"id": "b", "work_center_id": str(wc_id), "product_id": str(product_b), "period_start": "2026-01-02"},
+    ]
+    configured = SimpleNamespace(work_center_id=wc_id, from_family="FOOD", to_family="BEVERAGE", changeover_minutes=30, is_active=True)
+    result = _scenario_changeover_hours(lines, products, [configured])
+    assert result == {"hours": 0.5, "status": "COMPLETE", "unknown_reasons": [], "transition_count": 1}
+    missing = _scenario_changeover_hours(lines, products, [])
+    assert missing["status"] == "PARTIAL_INPUTS"
+    assert missing["hours"] == 0.0
+    assert missing["unknown_reasons"] == ["CHANGEOVER_NOT_CONFIGURED:FOOD->BEVERAGE"]

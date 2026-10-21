@@ -5,13 +5,20 @@ import { devPortalApi, GraphQLSchemaInfo } from "@/lib/api_portal_api";
 export default function GraphQLInfoPage() {
   const [info, setInfo] = useState<GraphQLSchemaInfo | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    devPortalApi.getGraphQLInfo().then(setInfo).finally(() => setLoading(false));
-  }, []);
+  const load = async () => {
+    setLoading(true);
+    setError(null);
+    try { setInfo(await devPortalApi.getGraphQLInfo()); }
+    catch (reason) { setError(reason instanceof Error ? reason.message : "GraphQL status could not be loaded."); }
+    finally { setLoading(false); }
+  };
+
+  useEffect(() => { void load(); }, []);
 
   if (loading) return <div className="p-6 text-gray-500 text-sm">Loading…</div>;
-  if (!info) return null;
+  if (!info) return <div className="p-6 space-y-3" role="alert"><p className="text-sm text-red-700">{error ?? "GraphQL status could not be loaded."}</p><button type="button" onClick={() => void load()} className="rounded border px-3 py-1.5 text-sm">Retry</button></div>;
 
   return (
     <div className="p-6 space-y-6 max-w-3xl mx-auto">

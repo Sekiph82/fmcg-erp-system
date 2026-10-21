@@ -24,7 +24,11 @@ export default function ApiKeysPage() {
 
   const load = () => {
     setLoading(true);
-    devPortalApi.listKeys(true).then(setKeys).finally(() => setLoading(false));
+    setError(null);
+    devPortalApi.listKeys(true)
+      .then(setKeys)
+      .catch((reason) => setError(reason instanceof Error ? reason.message : "API keys could not be loaded."))
+      .finally(() => setLoading(false));
   };
 
   useEffect(load, []);

@@ -121,7 +121,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
         </header>
 
         {/* Main scrollable content */}
-        <main className="flex-1 overflow-y-auto" data-testid="dashboard-main">
+        <main className="min-w-0 flex-1 overflow-y-auto" data-testid="dashboard-main">
           {showModuleAIBanner && <AIModeBanner />}
           <div className="p-6 lg:p-8">{children}</div>
         </main>

@@ -27,6 +27,7 @@ from app.models.mps import (
 )
 from app.models.master import Product
 from app.models.planning import ResourceCalendar
+from app.models.planning import ChangeoverMatrix
 from app.models.production_advanced import WorkCenter
 from app.models.production_advanced import DowntimeEvent
 from app.services.mps_engine import capacity_result
@@ -138,6 +139,134 @@ def _scenario_capacity_loads(
     }
 
 
+def _scenario_changeover_hours(
+    lines: list[dict], products: dict[uuid.UUID, Product], changeover_rows: list[ChangeoverMatrix],
+) -> dict:
+    """Recalculate family-transition setup time using configured matrix rows."""
+    matrix = {
+        (row.work_center_id, str(row.from_family).upper(), str(row.to_family).upper()): int(row.changeover_minutes)
+        for row in changeover_rows if row.is_active
+    }
+    ordered = []
+    unknown: set[str] = set()
+    for line in lines:
+        try:
+            wc_id = uuid.UUID(str(line.get("work_center_id")))
+            product_id = uuid.UUID(str(line.get("product_id")))
+            start = date.fromisoformat(str(line.get("planned_start_date") or line["period_start"]))
+        except (KeyError, TypeError, ValueError):
+            unknown.add("LINE_SCHEDULE_OR_SCOPE_MISSING")
+            continue
+        product = products.get(product_id)
+        if product is None:
+            unknown.add("PRODUCT_FAMILY_MISSING")
+            continue
+        family = str(getattr(product.category, "value", product.category) or "").upper()
+        if not family:
+            unknown.add("PRODUCT_FAMILY_MISSING")
+            continue
+        ordered.append((wc_id, start, str(line.get("id", "")), family))
+
+    previous: dict[uuid.UUID, str] = {}
+    total_minutes = Decimal(0)
+    transition_count = 0
+    for wc_id, _start, _line_id, family in sorted(ordered):
+        prior = previous.get(wc_id)
+        if prior and prior != family:
+            minutes = matrix.get((wc_id, prior, family))
+            if minutes is None:
+                unknown.add(f"CHANGEOVER_NOT_CONFIGURED:{prior}->{family}")
+            else:
+                total_minutes += Decimal(minutes)
+                transition_count += 1
+        previous[wc_id] = family
+    return {
+        "hours": float(_R(total_minutes / Decimal(60))),
+        "status": "COMPLETE" if not unknown else "PARTIAL_INPUTS",
+        "unknown_reasons": sorted(unknown),
+        "transition_count": transition_count,
+    }
+
+
+class _ScenarioSimulationRollback(Exception):
+    def __init__(self, result: dict):
+        super().__init__("rollback temporary MPS scenario simulation")
+        self.result = result
+
+
+async def _simulate_scenario_materials(db: AsyncSession, mps_id: uuid.UUID, snapshots: dict[str, dict]) -> dict:
+    """Run the production material feasibility service inside a rolled-back savepoint.
+
+    The existing service loads the plan's warehouse, approved/effective BOM or
+    recipe, nested components, warehouse stock, and dated purchase receipts.
+    Temporarily applying a snapshot inside a savepoint gives what-if plans the
+    same calculation without persisting line, diagnostic, or counter changes.
+    """
+    try:
+        async def run_once(snapshot_set: dict[str, dict]) -> dict:
+            try:
+                async with db.begin_nested():
+                    plan = (await db.execute(select(MPSPlan).where(MPSPlan.id == mps_id))).scalar_one()
+                    lines = (await db.execute(select(MPSLine).where(MPSLine.mps_id == mps_id))).scalars().all()
+                    for line in lines:
+                        candidate = snapshot_set.get(str(line.id))
+                        if candidate is None:
+                            continue
+                        line.planned_production_qty = Decimal(str(candidate["planned_production_qty"]))
+                        for key in ("planned_start_date", "planned_end_date"):
+                            if candidate.get(key):
+                                setattr(line, key, date.fromisoformat(str(candidate[key])))
+                    from app.services.mps_advanced_service import evaluate_material_feasibility
+                    result = await evaluate_material_feasibility(db, mps_id)
+                    shortage_quantity_by_uom: dict[str, Decimal] = {}
+                    if result.get("diagnostic_run_id"):
+                        diagnostics = (await db.execute(text(
+                            "SELECT diagnostics FROM mps_line_diagnostics WHERE mps_id = :mps_id AND run_id = :run_id"
+                        ), {"mps_id": mps_id, "run_id": uuid.UUID(result["diagnostic_run_id"])})).scalars().all()
+                        for diagnostic in diagnostics:
+                            for issue in diagnostic.get("issues", []):
+                                if issue.get("reason_code") == "MATERIAL_SHORT":
+                                    uom = str(issue.get("uom") or "").upper()
+                                    shortage_quantity_by_uom[uom] = shortage_quantity_by_uom.get(uom, Decimal(0)) + Decimal(str(issue["shortage_qty"]))
+                    raise _ScenarioSimulationRollback({
+                        **result,
+                        "shortage_quantity_by_uom": {uom: str(value) for uom, value in shortage_quantity_by_uom.items()},
+                    })
+            except _ScenarioSimulationRollback as rollback:
+                return rollback.result
+
+        # Baseline and candidate are independent evaluations against identical
+        # stock/receipt state. Each savepoint rollback discards temporary writes.
+        baseline_lines = (await db.execute(select(MPSLine).where(MPSLine.mps_id == mps_id))).scalars().all()
+        baseline = {
+            str(line.id): {
+                "planned_production_qty": str(line.planned_production_qty),
+                "planned_start_date": line.planned_start_date.isoformat() if line.planned_start_date else None,
+                "planned_end_date": line.planned_end_date.isoformat() if line.planned_end_date else None,
+            } for line in baseline_lines
+        }
+        baseline_result = await run_once(baseline)
+        candidate_result = await run_once(snapshots)
+        if baseline_result is None or candidate_result is None:
+            raise ValueError("MPS material feasibility result was not returned")
+        complete = baseline_result["infeasible_lines"] == 0 and candidate_result["infeasible_lines"] == 0
+        return {
+            "status": "COMPLETE" if complete else "PARTIAL_INPUTS",
+            "baseline_shortage_count": int(baseline_result["material_short_lines"]),
+            "candidate_shortage_count": int(candidate_result["material_short_lines"]),
+            "shortage_count_delta": int(candidate_result["material_short_lines"]) - int(baseline_result["material_short_lines"]) if complete else None,
+            "unknown_reasons": [] if complete else ["one or more lines lack complete approved material feasibility inputs"],
+            "baseline_infeasible_lines": int(baseline_result["infeasible_lines"]),
+            "candidate_infeasible_lines": int(candidate_result["infeasible_lines"]),
+            "baseline_shortage_quantity_by_uom": baseline_result["shortage_quantity_by_uom"],
+            "candidate_shortage_quantity_by_uom": candidate_result["shortage_quantity_by_uom"],
+        }
+    except Exception as exc:
+        return {
+            "status": "PARTIAL_INPUTS", "baseline_shortage_count": None,
+            "candidate_shortage_count": None, "shortage_count_delta": None,
+            "unknown_reasons": [f"material simulation unavailable: {type(exc).__name__}"],
+        }
 # Change types not yet executed by the simulator. Presenting these as
 # computed would be dishonest — see M20.S01.T001 F7 — so they are rejected
 # rather than silently no-op'd. Full support belongs to M20.S04/M32.
@@ -355,6 +484,15 @@ async def create_whatif_scenario(
         downtime_rows, plan.capacity_mode,
     )
 
+    changeover_rows = []
+    if scenario_wc_ids:
+        changeover_rows = (await db.execute(select(ChangeoverMatrix).where(
+            ChangeoverMatrix.work_center_id.in_(scenario_wc_ids),
+        ))).scalars().all()
+    baseline_changeover = _scenario_changeover_hours(original_snaps, products, changeover_rows)
+    candidate_changeover = _scenario_changeover_hours(list(modified_map.values()), products, changeover_rows)
+    material_metrics = await _simulate_scenario_materials(db, mps_id, modified_map)
+
     summary_parts = []
     if delays > 0:
         summary_parts.append(f"{delays} line(s) will be delayed")
@@ -365,6 +503,17 @@ async def create_whatif_scenario(
         summary_parts.append("finite capacity overload not applicable in INFINITE mode")
     else:
         summary_parts.append("capacity overload incomplete: " + ", ".join(capacity_metrics["unknown_reasons"]))
+    if candidate_changeover["status"] == "COMPLETE":
+        summary_parts.append(f"projected configured changeover: {candidate_changeover['hours']:.3f} hours")
+    else:
+        summary_parts.append("changeover resimulation incomplete: " + ", ".join(candidate_changeover["unknown_reasons"]))
+    if material_metrics["status"] == "COMPLETE":
+        summary_parts.append(
+            f"projected material-short line count: {material_metrics['candidate_shortage_count']} "
+            f"(delta {material_metrics['shortage_count_delta']:+d} vs baseline)"
+        )
+    else:
+        summary_parts.append("material resimulation incomplete: " + ", ".join(material_metrics["unknown_reasons"]))
     if delays == 0:
         summary_parts.append("no modeled schedule delay detected")
     if any(c.change_type == MPSChangeType.SPLIT for c in data.changes):
@@ -401,15 +550,25 @@ async def create_whatif_scenario(
         "delay_count": delays,
         "cost_delta": None,
         "cost_delta_status": "UNKNOWN_NO_APPROVED_CURRENCY_BASIS",
-        "material_shortage_count": None,
+        "baseline_material_shortage_count": material_metrics["baseline_shortage_count"],
+        "material_shortage_count": material_metrics["candidate_shortage_count"],
+        "material_shortage_count_delta": material_metrics["shortage_count_delta"],
+        "baseline_material_shortage_quantity_by_uom": material_metrics.get("baseline_shortage_quantity_by_uom"),
+        "material_shortage_quantity_by_uom": material_metrics.get("candidate_shortage_quantity_by_uom"),
+        "material_status": material_metrics["status"],
+        "material_unknown_reasons": material_metrics["unknown_reasons"],
         "capacity_overload_hours": capacity_metrics["overload_hours"],
         "capacity_overload_known_hours": capacity_metrics["known_overload_hours"],
         "capacity_status": capacity_metrics["status"],
         "capacity_unknown_reasons": capacity_metrics["unknown_reasons"],
         "capacity_slot_count": capacity_metrics["slot_count"],
         "capacity_unit": "hours",
-        "changeover_hours": None,
-        "unknowns": ["material feasibility was not resimulated", "changeover basis is not configured", "cost currency/basis is not configured"],
+        "baseline_changeover_hours": baseline_changeover["hours"],
+        "baseline_changeover_status": baseline_changeover["status"],
+        "changeover_hours": candidate_changeover["hours"] if candidate_changeover["status"] == "COMPLETE" else None,
+        "changeover_status": candidate_changeover["status"],
+        "changeover_unknown_reasons": candidate_changeover["unknown_reasons"],
+        "unknowns": material_metrics["unknown_reasons"] + ["CIP duration source is not configured", "cost currency/basis is not configured"] + candidate_changeover["unknown_reasons"],
         "modified_lines": list(modified_map.values()),
     }
     await db.execute(text("""
@@ -467,7 +626,13 @@ async def compare_whatif_scenarios(
         "delay_count_delta": int(cres["delay_count"]) - int(bres["delay_count"]),
         "cost_delta": None,
         "cost_delta_status": "UNKNOWN_NO_APPROVED_CURRENCY_BASIS",
-        "material_shortage_count_delta": None,
+        "material_shortage_count_delta": (
+            int(cres["material_shortage_count"]) - int(bres["material_shortage_count"])
+            if cres.get("material_status") == "COMPLETE"
+            and bres.get("material_status") == "COMPLETE"
+            and cres.get("material_shortage_count") is not None
+            and bres.get("material_shortage_count") is not None else None
+        ),
         "capacity_overload_hours_delta": (
             round(float(cres["capacity_overload_hours"]) - float(bres["capacity_overload_hours"]), 3)
             if cres.get("capacity_status") in ("COMPLETE", "INFINITE")
@@ -477,8 +642,14 @@ async def compare_whatif_scenarios(
         ),
         "capacity_status": "COMPLETE" if cres.get("capacity_status") in ("COMPLETE", "INFINITE") and bres.get("capacity_status") in ("COMPLETE", "INFINITE") else "PARTIAL_INPUTS",
         "capacity_unit": "hours",
-        "changeover_hours_delta": None,
-        "unknowns": ["material feasibility was not resimulated", "capacity comparison is incomplete when source inputs are missing", "changeover basis is not configured", "cost currency/basis is not configured"],
+        "changeover_hours_delta": (
+            round(float(cres["changeover_hours"]) - float(bres["changeover_hours"]), 3)
+            if cres.get("changeover_status") == "COMPLETE"
+            and bres.get("changeover_status") == "COMPLETE"
+            and cres.get("changeover_hours") is not None
+            and bres.get("changeover_hours") is not None else None
+        ),
+        "unknowns": list(cres.get("material_unknown_reasons", [])) + list(bres.get("material_unknown_reasons", [])) + ["capacity comparison is incomplete when source inputs are missing", "CIP duration source is not configured", "cost currency/basis is not configured"] + list(cres.get("changeover_unknown_reasons", [])) + list(bres.get("changeover_unknown_reasons", [])),
         "baseline_version": baseline["snapshot_version"],
         "candidate_version": candidate["snapshot_version"],
     }

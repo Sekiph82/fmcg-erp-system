@@ -145,7 +145,7 @@ function IntegrationsDashboardTab() {
   const productionBlockedCount = capabilities.filter((c) => !c.can_execute_in_production).length;
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
+    <div className="w-full min-w-0 px-4 sm:px-6 lg:px-8 py-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

@@ -43,7 +43,7 @@ export default function DashboardPage() {
     : null;
 
   return (
-    <div className="max-w-2xl mx-auto space-y-5 pb-10">
+    <div className="w-full min-w-0 px-4 sm:px-6 lg:px-8 space-y-5 pb-10">
       {/* ── Header ── */}
       <div className="flex items-center justify-between pt-1">
         <div>

@@ -14,7 +14,7 @@ from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal, ROUND_HALF_UP
 from typing import Optional
 
-from sqlalchemy import select, func, and_, update, cast, Integer, text
+from sqlalchemy import select, func, and_, update, cast, Integer, text, case
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.mps import (
@@ -618,15 +618,9 @@ async def _refresh_plan_counters(db: AsyncSession, mps_id: uuid.UUID) -> None:
     q = await db.execute(
         select(
             func.count().label("total"),
-            func.sum(
-                func.cast(MPSLine.feasibility_status == MPSFeasibilityStatus.OVERLOADED, type_=None)
-            ).label("over"),
-            func.sum(
-                func.cast(MPSLine.feasibility_status == MPSFeasibilityStatus.FEASIBLE, type_=None)
-            ).label("feas"),
-            func.sum(
-                func.cast(MPSLine.is_locked == True, type_=None)
-            ).label("locked"),
+            func.sum(case((MPSLine.feasibility_status == MPSFeasibilityStatus.OVERLOADED, 1), else_=0)).label("over"),
+            func.sum(case((MPSLine.feasibility_status == MPSFeasibilityStatus.FEASIBLE, 1), else_=0)).label("feas"),
+            func.sum(case((MPSLine.is_locked.is_(True), 1), else_=0)).label("locked"),
         ).select_from(MPSLine).where(MPSLine.mps_id == mps_id)
     )
     row = q.first()

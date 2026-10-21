@@ -7,12 +7,25 @@ export default function DeveloperPortalPage() {
   const [dash, setDash] = useState<DevPortalDashboard | null>(null);
   const [res, setRes] = useState<DevResources | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    Promise.all([devPortalApi.getDashboard(), devPortalApi.getResources()])
-      .then(([d, r]) => { setDash(d); setRes(r); })
-      .finally(() => setLoading(false));
-  }, []);
+  const load = async () => {
+    setLoading(true);
+    setError(null);
+    const results = await Promise.allSettled([
+      devPortalApi.getDashboard(),
+      devPortalApi.getResources(),
+    ]);
+    if (results[0].status === "fulfilled") setDash(results[0].value);
+    if (results[1].status === "fulfilled") setRes(results[1].value);
+    const failure = results.find((result) => result.status === "rejected");
+    if (failure?.status === "rejected") {
+      setError(failure.reason instanceof Error ? failure.reason.message : "Developer Portal could not be loaded.");
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => { void load(); }, []);
 
   const links = [
     { href: "/dashboard/developer/keys", label: "API Keys", desc: "Generate and manage API keys" },
@@ -24,7 +37,7 @@ export default function DeveloperPortalPage() {
   ];
 
   return (
-    <div className="p-6 space-y-6 max-w-5xl mx-auto">
+    <div className="w-full min-w-0 p-6 space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Developer Portal</h1>
         <p className="text-sm text-gray-500 mt-1">
@@ -36,6 +49,12 @@ export default function DeveloperPortalPage() {
         <p className="text-gray-500 text-sm">Loading…</p>
       ) : (
         <>
+          {error && (
+            <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+              <span>{error}</span>
+              <button type="button" onClick={() => void load()} className="rounded border border-amber-300 px-3 py-1.5 font-medium hover:bg-amber-100">Retry</button>
+            </div>
+          )}
           {/* KPI strip */}
           {dash && (
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">

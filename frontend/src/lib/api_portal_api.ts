@@ -1,4 +1,24 @@
+import { apiClient } from "@/lib/api";
+
 const BASE = "/api/v1/developer";
+
+/** A user-safe error for Developer Portal requests. Response bodies are never
+ * copied verbatim into the UI because proxies may return HTML or diagnostics. */
+export class DevPortalRequestError extends Error {
+  constructor(message: string, readonly status?: number) {
+    super(message);
+    this.name = "DevPortalRequestError";
+  }
+}
+
+function safeErrorMessage(status?: number): string {
+  if (status === 401) return "Your session has expired. Sign in again to use Developer Portal.";
+  if (status === 403) return "Your account does not have permission to view this Developer Portal resource.";
+  if (status === 404) return "This Developer Portal resource is unavailable. Check the API service and try again.";
+  if (status && status >= 500) return "The API service could not complete this request. Try again shortly.";
+  if (status) return "The Developer Portal request was rejected. Check the request and try again.";
+  return "The API service could not be reached. Check your connection and try again.";
+}
 
 export interface ApiKeyOut {
   key_id: string;
@@ -58,13 +78,37 @@ export interface GraphQLSchemaInfo {
 }
 
 async function req<T>(path: string, opts?: RequestInit): Promise<T> {
-  const res = await fetch(BASE + path, {
-    headers: { "Content-Type": "application/json" },
-    ...opts,
-  });
-  if (!res.ok) throw new Error(await res.text());
-  if (res.status === 204) return undefined as unknown as T;
-  return res.json();
+  let response: Response;
+  try {
+    response = await fetch(apiClient.getUri({ url: BASE + path }), {
+      method: opts?.method ?? "GET",
+      body: typeof opts?.body === "string" ? opts.body : undefined,
+      credentials: "include",
+      headers: {
+        Accept: "application/json",
+        ...(typeof opts?.body === "string" ? { "Content-Type": "application/json" } : {}),
+      },
+      signal: opts?.signal ?? AbortSignal.timeout(15000),
+    });
+  } catch (error) {
+    throw new DevPortalRequestError(safeErrorMessage(), undefined);
+  }
+  if (response.status === 204) return undefined as T;
+  if (!response.ok) throw new DevPortalRequestError(safeErrorMessage(response.status), response.status);
+  const contentType = response.headers.get("content-type");
+  if (typeof contentType !== "string" || !contentType.toLowerCase().includes("application/json")) {
+    throw new DevPortalRequestError("The API returned an unexpected response. Check the API service and try again.", response.status);
+  }
+  try {
+    const data: unknown = await response.json();
+    if (typeof data !== "object" || data === null) {
+      throw new DevPortalRequestError("The API response could not be read. Try again shortly.", response.status);
+    }
+    return data as T;
+  } catch (error) {
+    if (error instanceof DevPortalRequestError) throw error;
+    throw new DevPortalRequestError("The API response could not be read. Try again shortly.", response.status);
+  }
 }
 
 export const devPortalApi = {
