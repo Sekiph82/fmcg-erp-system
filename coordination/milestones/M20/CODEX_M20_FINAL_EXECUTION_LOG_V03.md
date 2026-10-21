@@ -1,113 +1,118 @@
-# M20 Master Production Scheduling — Consolidated Execution Log V03
+# M20 Master Production Scheduling — Consolidated Strict Remediation Log
 
-Date: 2026-10-20
-Repository: Sekiph82/fmcg-erp-system, branch `main`
-Scope: all five M20 sprints and 20 tasks. S01.T001 and S01.T002 were accepted before this execution and were not repeated.
+Date: 2026-10-21  
+Repository: `Sekiph82/fmcg-erp-system`, `main`  
+Master prompt: https://github.com/Sekiph82/fmcg-erp-system/blob/main/coordination/milestones/M20/CODEX_M20_STRICT_REMEDIATION_MASTER_PROMPT_V01.md  
+Original scope: all five M20 sprints / 20 tasks. Owner-added acceptance gates: UI-01 and UI-02. S01.T001 and S01.T002 retain their prior scoped acceptance; they were not reimplemented.
 
-## Publication and implementation commits
+## Published implementation commit
 
-- Consolidated log: https://github.com/Sekiph82/fmcg-erp-system/blob/main/coordination/milestones/M20/CODEX_M20_FINAL_EXECUTION_LOG_V03.md
-- M20 implementation: https://github.com/Sekiph82/fmcg-erp-system/commit/0d706241ccd623fdbf7cea7f21feededc8ea3f83
-- Scenario capacity resimulation follow-up: https://github.com/Sekiph82/fmcg-erp-system/commit/14a96ec1aca124ec65ff913c1cfe2cecb4eba771
+- Remediation implementation commit: https://github.com/Sekiph82/fmcg-erp-system/commit/cc8a1019092510248db374fd93a34966a1f614d6
+- Earlier M20 implementation commits: https://github.com/Sekiph82/fmcg-erp-system/commit/0d706241ccd623fdbf7cea7f21feededc8ea3f83 and https://github.com/Sekiph82/fmcg-erp-system/commit/14a96ec1aca124ec65ff913c1cfe2cecb4eba771
+- Previously accepted S01.T001 commits: https://github.com/Sekiph82/fmcg-erp-system/commit/04c359e00eb20187f7033d1aaefca8b446fedc51, https://github.com/Sekiph82/fmcg-erp-system/commit/ea3d82d0f0925713917b85ec82c1b91530bae4a8, https://github.com/Sekiph82/fmcg-erp-system/commit/826891b92e731c14b87c5e574831cd334aeea4e5, https://github.com/Sekiph82/fmcg-erp-system/commit/cd552bffe8056279da67c828566ea9ee2d3a2c65, https://github.com/Sekiph82/fmcg-erp-system/commit/158d2816c8ac65a452a1eb3135f9f34defd30c1b, https://github.com/Sekiph82/fmcg-erp-system/commit/16c4beac69abe1c3200fa925d10a76f1bd043298, https://github.com/Sekiph82/fmcg-erp-system/commit/431130deee504a4d08aa15b5a950a3d126ff0da4, https://github.com/Sekiph82/fmcg-erp-system/commit/5d8e9667e51363ef0816960f6145f3bbe7c2f045, https://github.com/Sekiph82/fmcg-erp-system/commit/fade01ef89ba4a792f2be6fa17f1ddbe3d2e6410, and https://github.com/Sekiph82/fmcg-erp-system/commit/21612da51a3a7169d5031069a03aeb30d32b94df.
+- Previously accepted S01.T002 commit: https://github.com/Sekiph82/fmcg-erp-system/commit/95176af0c1583d275c9d73e0135d34cfa4895c8a.
 
-Previously accepted S01.T001 implementation history:
+The implementation commit is based on the then-current `origin/main`, contains only scoped product/test changes, and does not change `TASKS.md`, audit files, or workflow files. The sole `main` workflow was inspected; it responds to `push`/`pull_request`. The commit message includes `[skip ci]`, which suppresses those workflow runs. No Actions workflow, dispatch, rerun, or remote CI was triggered. Remote CI evidence is `DEFERRED_CI_QUOTA` through 2026-10-30 inclusive. Owner-local changes remain in the working checkout.
 
-- https://github.com/Sekiph82/fmcg-erp-system/commit/04c359e00eb20187f7033d1aaefca8b446fedc51
-- https://github.com/Sekiph82/fmcg-erp-system/commit/ea3d82d0f0925713917b85ec82c1b91530bae4a8
-- https://github.com/Sekiph82/fmcg-erp-system/commit/826891b92e731c14b87c5e574831cd334aeea4e5
-- https://github.com/Sekiph82/fmcg-erp-system/commit/cd552bffe8056279da67c828566ea9ee2d3a2c65
-- https://github.com/Sekiph82/fmcg-erp-system/commit/158d2816c8ac65a452a1eb3135f9f34defd30c1b
-- https://github.com/Sekiph82/fmcg-erp-system/commit/16c4beac69abe1c3200fa925d10a76f1bd043298
-- https://github.com/Sekiph82/fmcg-erp-system/commit/431130deee504a4d08aa15b5a950a3d126ff0da4
-- https://github.com/Sekiph82/fmcg-erp-system/commit/5d8e9667e51363ef0816960f6145f3bbe7c2f045
+## Twenty-task implementation and evidence matrix
 
-- https://github.com/Sekiph82/fmcg-erp-system/commit/fade01ef89ba4a792f2be6fa17f1ddbe3d2e6410
-- https://github.com/Sekiph82/fmcg-erp-system/commit/21612da51a3a7169d5031069a03aeb30d32b94df
+“Implemented” describes code; “proof” describes executed evidence. These are builder results, not independent acceptance. T001/T002 have only their prior bounded acceptance.
 
-Previously accepted S01.T002 implementation:
-
-- https://github.com/Sekiph82/fmcg-erp-system/commit/95176af0c1583d275c9d73e0135d34cfa4895c8a
-
-Both newly pushed commits include `[skip ci]`. Before pushing, the repository workflow was inspected: its only workflow listens to `push` for `main`/`master` and `pull_request`. GitHub documents `[skip ci]` for push and pull request workflow events at https://docs.github.com/en/actions/how-tos/manage-workflow-runs/skip-workflow-runs. After pushing, `gh run list --commit <SHA>` returned `[]` for each new commit. No Actions run, workflow dispatch, or remote CI was triggered. CI-only evidence is `DEFERRED_CI_QUOTA` through 2026-10-30.
-
-Owner changes were preserved. `TASKS.md`, `TASKS_HISTORY.md`, and ChatGPT audit files were not modified by this execution. The tracker remains ChatGPT-owned; implementation evidence below is not acceptance.
-
-## Twenty-task status matrix
-
-| Task | Implementation and verification status |
+| Task | Implementation, actual evidence, and remaining defect/proof limit |
 |---|---|
-| M20.S01.T001 | **ACCEPTED BEFORE THIS RUN**; not repeated. Historical implementation commits and acceptance evidence are linked above and below. |
-| M20.S01.T002 | **ACCEPTED BEFORE THIS RUN**; not repeated. Preservation regression source is linked below. |
-| M20.S01.T003 | **IMPLEMENTED** — added a source-linked invariant matrix and addressed scope, feasibility, locking, and scenario-cost gaps. Local fixture/invariant tests pass; database-backed invariant proof remains blocked. |
-| M20.S01.T004 | **IMPLEMENTED** — added a synthetic two-SKU Kenya FMCG dataset for dated demand/supply, BOM/material, capacity, campaign/CIP, and release edge cases. Fixture replay tests pass; it is synthetic, not factory evidence. |
-| M20.S02.T001 | **IMPLEMENTED** — calendar-safe daily/weekly/monthly demand buckets, confirmed sales and approved forecast coupling, conserved interval allocation. Focused deterministic tests pass. |
-| M20.S02.T002 | **IMPLEMENTED** — nets warehouse-scoped stock, reservations, dated PO receipts, WIP, and approved planned supply; late receipts do not cover earlier periods. Live database proof is blocked. |
-| M20.S02.T003 | **PARTIAL** — effective approved BOM/recipe explosion, unit/basis checks, wastage/yield handling, and fail-closed missing data are implemented. Nested subassembly explosion is not established and remains open. |
-| M20.S02.T004 | **IMPLEMENTED** — persists structured per-line constraint diagnostics and exposes an API and constraints screen. Migration/API transaction proof is blocked by unavailable PostgreSQL. |
-| M20.S03.T001 | **IMPLEMENTED** — finite capacity uses explicit rate UOM, calendars, holidays/maintenance, and downtime; no default throughput is invented and locked assignments are preserved. Unconfigured source data remains diagnostic/unknown. |
-| M20.S03.T002 | **IMPLEMENTED WITH OPEN MASTER DATA** — deterministic exact-SKU/work-center campaigns, lock preservation, and batch alignment diagnostics; minimum-run policy is explicitly `MINIMUM_RUN_NOT_CONFIGURED`. |
-| M20.S03.T003 | **IMPLEMENTED WITH OPEN MASTER DATA** — configured changeover matrix is applied; absent transitions and CIP duration remain `NOT_CONFIGURED`, with no fabricated duration. |
-| M20.S03.T004 | **IMPLEMENTED** — capacity/campaign run diagnostics include run identifiers and affected line/work-center/slot reasons. Database persistence proof remains blocked. |
-| M20.S04.T001 | **IMPLEMENTED** — approval/release guards, same-company target checks, all-or-none release, and idempotent retry semantics. End-to-end transactional proof is blocked without PostgreSQL. |
-| M20.S04.T002 | **IMPLEMENTED** — authenticated actor audit events and source/target warehouse authorization checks. No configured maker-checker policy was found, so segregation is not claimed. Database-backed audit proof is blocked. |
-| M20.S04.T003 | **IMPLEMENTED** — what-if changes are isolated from live lines; validated changes and versioned assumptions/results are persisted. Snapshot persistence remains unverified against PostgreSQL. |
-| M20.S04.T004 | **PARTIAL** — service/delay comparisons and configured-input capacity overload resimulation are implemented. Material resimulation, changeover delta, and monetary delta remain open/unknown; capacity comparison is incomplete when rate/calendar/downtime inputs are missing. |
-| M20.S05.T001 | **LOCAL REGRESSION PASS** — 18 focused deterministic backend tests pass. Live database/API transaction tests did not run. |
-| M20.S05.T002 | **LOCAL FRONTEND CHECKS PASS** — TypeScript type-check and production build pass. The repository has existing unrelated lint warnings and a stale Browserslist dataset notice; no dedicated UI automation was run. |
-| M20.S05.T003 | **SOURCE INTEGRATION IMPLEMENTED; RUNTIME PROOF BLOCKED** — MPS paths integrate MRP, inventory, procurement, production orders, BOM/recipe, warehouse scope, sequence-backed release, and audit. PostgreSQL-backed migration, rollback, concurrency, and cross-module proof remain blocked. |
-| M20.S05.T004 | **EXECUTION LOG PUBLISHED; AUDIT PENDING** — this evidence report is published for independent ChatGPT milestone audit. No tracker state was changed. |
+| M20.S01.T001 | **Previously accepted, not repeated.** Historical bounded source/tests and commits above. |
+| M20.S01.T002 | **Previously accepted, not repeated.** Historical preservation evidence and commit above. |
+| M20.S01.T003 | **Implemented; partial proof.** Scope/eligibility invariants, explicit unknown inputs, and scenario validation are exercised by focused tests. Full tenant/warehouse/release transaction matrix remains incomplete. |
+| M20.S01.T004 | **Implemented as synthetic fixtures only.** Acceptance and invariant JSON fixtures are linked below; they are not factory data or full integration acceptance. |
+| M20.S02.T001 | **Implemented; local deterministic proof.** Date-safe daily/weekly/monthly buckets and conservation behavior are covered by `test_m20_remaining_engine.py`; integrated MRP→MPS DB path not fully proven. |
+| M20.S02.T002 | **Implemented; partial proof.** Warehouse-scoped stock/reservation/dated-receipt/WIP/planned-supply netting is present. Historical test suite plus current focused tests do not establish all supply cases on PostgreSQL. |
+| M20.S02.T003 | **Implemented; partial proof.** Nested approved BOM/subassembly recursion now checks lifecycle, effective dates, UOM, cycle and depth limits. Engine boundary/negative tests pass. Actual nested-BOM database material-feasibility path remains unverified. |
+| M20.S02.T004 | **Implemented; partial proof.** Structured diagnostics persistence and constraints endpoint/UI exist. PostgreSQL migration is proven below; durable diagnostics/API transaction, duplicate replay, and rollback suite remains incomplete. |
+| M20.S03.T001 | **Implemented; partial proof.** Finite capacity uses explicit rate UOM, calendars, holidays/maintenance and downtime; absent rates remain unknown and locked assignments are preserved. Focused local tests pass; not all real DB boundary cases are proven. |
+| M20.S03.T002 | **Implemented with open master data.** Campaign sequencing and batch alignment diagnostics are present. Minimum-run policy is explicitly unknown because no authoritative configuration is present. |
+| M20.S03.T003 | **Implemented with open master data.** Configured transition rows inform changeover calculations. Missing transitions and CIP durations stay unknown; no duration is fabricated. |
+| M20.S03.T004 | **Implemented; partial proof.** Run IDs and affected line/work-center/slot diagnostics are produced. Complete committed DB persistence and cross-module scenarios remain unverified. |
+| M20.S04.T001 | **Implemented; proof incomplete.** Approval/release guards, company/warehouse checks, all-or-none release behavior and retry guards exist. Historical release tests expose 15 stale fixture failures; no new successful full PostgreSQL rollback/concurrency release matrix is claimed. |
+| M20.S04.T002 | **Implemented; proof incomplete.** Authenticated actor and warehouse scope checks are present. Maker-checker policy is not configured, so segregation is not claimed; full PostgreSQL permission/audit proof remains open. |
+| M20.S04.T003 | **Implemented; partial proof.** Scenario inputs are isolated in savepoints for material evaluation; snapshots are versioned. Material rollback has a passing PostgreSQL test. Committed snapshot/replay/comparison transaction coverage is incomplete. |
+| M20.S04.T004 | **Partial implementation.** Material resimulation reuses production feasibility logic and is covered by a passing PostgreSQL savepoint test. Capacity and configured changeover metrics are evaluated with explicit partial-input states. CIP duration and currency-backed cost deltas remain unknown; MERGE/SHIFT_ADD are rejected and SPLIT remains approximate. |
+| M20.S05.T001 | **Partial verification.** Current focused engine + PostgreSQL scenario tests: 28 passed. Historical MPS regression suite on this checkout: 57 passed, 15 failed; all 15 are older release mock/PG fixtures that lack the newly required completed warehouse-scoped MRP run or current `_select_release_recipe` date argument. Failures are not called passes and remain to be reconciled. |
+| M20.S05.T002 | **Frontend checks pass; strict UI gates tested.** Type-check/build pass; lint has zero errors and 67 warnings. Developer Portal E2E: 6 passed. Responsive full-width Playwright: 1 test passed across five viewport sizes and dashboard/integration tabs. React 18 deprecation and Browserslist/middleware warnings remain. |
+| M20.S05.T003 | **Implemented; partial integration proof.** Migration upgrade/downgrade and real PostgreSQL scenario rollback have been run. Full release rollback/concurrency, permission/tenant, MRP→inventory/BOM→production order acceptance suite remains incomplete. |
+| M20.S05.T004 | **Evidence log published; audit pending.** No tracker or ChatGPT audit file was changed. This is not milestone acceptance. |
 
-## Source, schema, tests, and evidence URLs
+## Strict findings F01–F10 closure
 
-All links below point to the published `main` branch.
+| Finding | Result |
+|---|---|
+| F01 PostgreSQL transaction/scope proof | **PARTIAL / BLOCKED_EVIDENCE.** Migration and scenario savepoint are proven; full release atomicity, rollback, concurrency, idempotency, permissions, tenant and warehouse matrix is not. |
+| F02 nested BOM/subassembly explosion | **IMPLEMENTED; PARTIAL_EVIDENCE.** Recursive engine and negative tests pass; nested material feasibility through PostgreSQL is not yet proven. |
+| F03 scenario material/changeover/cost resimulation | **PARTIAL.** Material baseline/candidate is database-tested; capacity/configured transition logic is present; CIP and approved-currency cost basis are absent and remain unknown. |
+| F04 DB-backed service/API regressions | **PARTIAL.** A real PostgreSQL scenario no-mutation test passes. Release transaction and diagnostics persistence suite remains incomplete. |
+| F05 UI behavioral evidence | **PASS FOR UI-01/UI-02 TEST GATES.** Browser E2E and viewport geometry tests pass; cross-system frontend tests beyond the listed routes remain incomplete. |
+| F06 migration proof | **PASS FOR MIGRATION CHAIN TESTED.** Fresh upgrade, downgrade/re-upgrade, and predecessor upgrade/downgrade ran against local PostgreSQL through revision `20261021_0010`. |
+| F07 minimum-run/CIP/configuration | **OPEN MASTER DATA.** No authoritative minimum-run or CIP policy was present; unknown states are preserved. |
+| F08 milestone closure | **OPEN.** This log is evidence only; strict blockers and independent audit remain. |
+| F09 task traceability | **PARTIAL.** Twenty task rows, F01–F10 mapping, full commit links, source/test/schema URLs and commands are included. Rows do not imply independent task acceptance. |
+| F10 historical MPS regressions on current source | **FAIL / OPEN.** Re-run result is 57 passed, 15 failed; failures listed above are stale release fixtures/expectations and remain unresolved. |
 
-- Master prompt V04: https://github.com/Sekiph82/fmcg-erp-system/blob/main/coordination/milestones/M20/CODEX_M20_MASTER_PROMPT_V04.md
-- Canonical task tracker (read only): https://github.com/Sekiph82/fmcg-erp-system/blob/main/TASKS.md
-- Prior S01.T001 execution evidence: https://github.com/Sekiph82/fmcg-erp-system/blob/main/coordination/sessions/M20-S01-T001/CODEX_LOG_V06.md
-- Prior S01.T001 audit evidence: https://github.com/Sekiph82/fmcg-erp-system/blob/main/coordination/sessions/M20-S01-T001/CHATGPT_AUDIT_V06.md
-- Prior S01.T002 execution evidence: https://github.com/Sekiph82/fmcg-erp-system/blob/main/coordination/sessions/M20-S01-T002/CODEX_LOG_V01.md
-- Prior S01.T002 audit evidence: https://github.com/Sekiph82/fmcg-erp-system/blob/main/coordination/sessions/M20-S01-T002/CHATGPT_AUDIT_V01.md
-- Existing MPS hardening regression: https://github.com/Sekiph82/fmcg-erp-system/blob/main/backend/tests/test_m20_s01_t001_mps_hardening.py
-- Existing S01.T001 V02 regression: https://github.com/Sekiph82/fmcg-erp-system/blob/main/backend/tests/test_m20_s01_t001_v02_mps_remediation.py
-- Existing S01.T001 V03 regression: https://github.com/Sekiph82/fmcg-erp-system/blob/main/backend/tests/test_m20_s01_t001_v03_mps_remediation.py
-- Existing S01.T002 preservation regression: https://github.com/Sekiph82/fmcg-erp-system/blob/main/backend/tests/test_m20_s01_t002_mps_preservation.py
-- M20 deterministic regression tests: https://github.com/Sekiph82/fmcg-erp-system/blob/main/backend/tests/test_m20_remaining_engine.py
-- Synthetic acceptance fixture: https://github.com/Sekiph82/fmcg-erp-system/blob/main/backend/tests/fixtures/m20_acceptance_dataset.json
-- Invariant matrix fixture: https://github.com/Sekiph82/fmcg-erp-system/blob/main/backend/tests/fixtures/m20_invariant_matrix.json
-- MPS planning engine: https://github.com/Sekiph82/fmcg-erp-system/blob/main/backend/app/services/mps_engine.py
+## UI-01 — responsive full available content area
+
+Removed narrow centered wrappers from the dashboard, integration overview/tabs, Webhooks and Developer views while preserving the sidebar and page padding. The browser test checks actual content/main-region geometry, horizontal overflow, headings and usability at 1536×960, 1920×1080, 1366×768, 768×1024 and 390×844. It visits Dashboard and the integration views (Overview, M-Pesa, Sync, Barcode, Logs, Webhooks, Developer) and saves screenshot artifacts under ignored local Playwright output.
+
+Actual command, run against the live local app: `E2E_SKIP_WEBSERVER=1 npx playwright test e2e/m20-responsive-dashboard.spec.ts --project=chromium --no-deps --retries=0` — **1 passed (1.6m)**. The test iterates the viewport/tab combinations inside one Playwright test; no GitHub-hosted screenshots are claimed.
+
+## UI-02 — Developer Portal errors and Next.js outdated popup
+
+Root cause: Developer Portal requests used a separate relative-URL API wrapper that could hit the Next.js origin; error responses, including Next 404 HTML, were parsed as JSON and surfaced as uncaught runtime errors. Requests now use the configured backend API base and credentials, check HTTP status/content type before parsing, apply a bounded timeout, and return concise sanitized errors with retryable UI state. Backend Developer Portal routes and API key schema/migration are registered. Frontend Next.js was upgraded from **14.2.35** to **16.4.2**, removing the reported outdated-version popup in the running local app.
+
+Actual E2E command: `E2E_SKIP_WEBSERVER=1 npx playwright test e2e/developer-portal-errors.spec.ts --project=chromium --no-deps --retries=0` — **6 passed (19.6s)**. Coverage: successful configured backend response, HTML 404, 401, 403, HTML 200/invalid JSON, 500 and retry/recovery states. Local smoke confirmed backend Developer route responses `200, 200`; the browser E2E ran with live frontend/backend. No credentials or raw HTML are exposed in the error state.
+
+## PostgreSQL and local verification
+
+- `docker exec fmcg-erp-system-backend-1 pytest -q tests/test_m20_postgres_scenario_savepoint.py tests/test_m20_remaining_engine.py --tb=short` — **28 passed, 1 deprecation warning**. PostgreSQL scenario uses an approved recipe, compares baseline 2 KG vs candidate 20 KG shortage, and confirms temporary line edits and diagnostic rows are rolled back.
+- `docker exec fmcg-erp-system-backend-1 pytest -q tests/test_m20_remaining_engine.py tests/test_m20_s01_t001_mps_hardening.py tests/test_m20_s01_t001_v02_mps_remediation.py tests/test_m20_s01_t001_v03_mps_remediation.py tests/test_m20_s01_t002_mps_preservation.py --tb=no` — **57 passed, 15 failed**. Failures: `test_release_blocks_all_orders_when_ineligible_lines_exist`; `test_release_rejects_nonexistent_warehouse`; `test_release_rejects_inactive_warehouse`; `test_select_release_recipe_returns_the_queried_recipe`; `test_release_skips_line_when_no_approved_effective_recipe_exists`; `test_release_sets_production_order_uom_from_product`; `test_release_stays_approved_when_every_feasible_line_is_skipped`; `test_release_becomes_released_when_at_least_one_order_is_created`; `test_repeated_release_call_is_rejected_and_creates_no_second_order`; `test_mixed_partial_release_remains_approved_and_reports_unresolved_lines`; three `test_release_fails_closed_for_missing_or_invalid_authoritative_product_uom` cases; `test_release_endpoint_rolls_back_persisted_state_on_late_flush_failure`; and `test_concurrent_postgres_mps_releases_allocate_distinct_order_numbers`. Do not interpret these as acceptance evidence.
+- Frontend: `npm run type-check` — passed. `npm run lint` — passed with **0 errors, 67 warnings**. `npm run build` — passed, static generation **699/699**; warnings include React 18 support deprecation under Next 16, legacy middleware convention, stale Browserslist data and parent lockfile notice.
+- Migration DBs: `fmcg_erp_m20_acceptance` upgraded predecessor `20261020_0010` to `20261021_0010`, verified both MPS diagnostics/snapshot and Developer Portal tables, downgraded to `20261020_0010` (removing the two new developer-key tables), then re-upgraded. `fmcg_erp_m20_full_migrations` upgraded from empty to `20261021_0010` (657 public tables), downgraded to `20261019_0010` and re-upgraded. These were local PostgreSQL runs; they are not remote CI evidence.
+- `python -m alembic heads` — one head `20261021_0010`.
+- Historical migration wrapper also showed the existing offline `--sql` path stops in `20260516_0060_performance_indexes.py` when its catalog query returns no row; online PostgreSQL migration tests above are the migration evidence.
+- GitHub Actions / remote CI: **not run; `DEFERRED_CI_QUOTA` through 2026-10-30**.
+
+## Source, test, migration, and fixture links
+
+- MPS engine: https://github.com/Sekiph82/fmcg-erp-system/blob/main/backend/app/services/mps_engine.py
 - MPS demand/material diagnostics: https://github.com/Sekiph82/fmcg-erp-system/blob/main/backend/app/services/mps_advanced_service.py
-- MPS capacity service: https://github.com/Sekiph82/fmcg-erp-system/blob/main/backend/app/services/mps_capacity_service.py
-- MPS campaign service: https://github.com/Sekiph82/fmcg-erp-system/blob/main/backend/app/services/mps_campaign_service.py
-- MPS plan approval/release service: https://github.com/Sekiph82/fmcg-erp-system/blob/main/backend/app/services/mps_service.py
-- MPS scenario simulation/comparison service: https://github.com/Sekiph82/fmcg-erp-system/blob/main/backend/app/services/mps_whatif_service.py
-- MPS API endpoints: https://github.com/Sekiph82/fmcg-erp-system/blob/main/backend/app/api/v1/endpoints/mps.py
-- Diagnostics/scenario snapshot migration: https://github.com/Sekiph82/fmcg-erp-system/blob/main/backend/alembic/versions/20261020_0010_mps_diagnostics_and_scenario_snapshots.py
-- MPS frontend API/types: https://github.com/Sekiph82/fmcg-erp-system/blob/main/frontend/src/lib/mps.ts
-- MPS dashboard integration: https://github.com/Sekiph82/fmcg-erp-system/blob/main/frontend/src/app/dashboard/mps/page.tsx
-- MPS what-if/scenario comparison screen: https://github.com/Sekiph82/fmcg-erp-system/blob/main/frontend/src/app/dashboard/mps/whatif/page.tsx
-- MPS constraint diagnostics screen: https://github.com/Sekiph82/fmcg-erp-system/blob/main/frontend/src/app/dashboard/mps/constraints/page.tsx
+- MPS capacity: https://github.com/Sekiph82/fmcg-erp-system/blob/main/backend/app/services/mps_capacity_service.py
+- MPS campaigns: https://github.com/Sekiph82/fmcg-erp-system/blob/main/backend/app/services/mps_campaign_service.py
+- MPS plan/release: https://github.com/Sekiph82/fmcg-erp-system/blob/main/backend/app/services/mps_service.py
+- MPS scenario engine: https://github.com/Sekiph82/fmcg-erp-system/blob/main/backend/app/services/mps_whatif_service.py
+- MPS API: https://github.com/Sekiph82/fmcg-erp-system/blob/main/backend/app/api/v1/endpoints/mps.py
+- MPS/diagnostic/snapshot models: https://github.com/Sekiph82/fmcg-erp-system/blob/main/backend/app/models/mps.py
+- Diagnostics and immutable scenario migration: https://github.com/Sekiph82/fmcg-erp-system/blob/main/backend/alembic/versions/20261020_0010_mps_diagnostics_and_scenario_snapshots.py
+- Developer Portal API/models: https://github.com/Sekiph82/fmcg-erp-system/blob/main/backend/app/api/v1/endpoints/api_portal.py and https://github.com/Sekiph82/fmcg-erp-system/blob/main/backend/app/models/api_portal.py
+- Developer Portal API-key migration: https://github.com/Sekiph82/fmcg-erp-system/blob/main/backend/alembic/versions/20261021_0010_developer_portal_api_keys.py
+- Recursive engine + boundary regressions: https://github.com/Sekiph82/fmcg-erp-system/blob/main/backend/tests/test_m20_remaining_engine.py
+- PostgreSQL savepoint proof: https://github.com/Sekiph82/fmcg-erp-system/blob/main/backend/tests/test_m20_postgres_scenario_savepoint.py
+- Synthetic acceptance fixture: https://github.com/Sekiph82/fmcg-erp-system/blob/main/backend/tests/fixtures/m20_acceptance_dataset.json
+- Invariant matrix: https://github.com/Sekiph82/fmcg-erp-system/blob/main/backend/tests/fixtures/m20_invariant_matrix.json
+- MPS frontend types/API: https://github.com/Sekiph82/fmcg-erp-system/blob/main/frontend/src/lib/mps.ts
+- MPS dashboard: https://github.com/Sekiph82/fmcg-erp-system/blob/main/frontend/src/app/dashboard/mps/page.tsx
+- MPS what-if comparison: https://github.com/Sekiph82/fmcg-erp-system/blob/main/frontend/src/app/dashboard/mps/whatif/page.tsx
+- MPS constraints screen: https://github.com/Sekiph82/fmcg-erp-system/blob/main/frontend/src/app/dashboard/mps/constraints/page.tsx
+- Responsive dashboard E2E: https://github.com/Sekiph82/fmcg-erp-system/blob/main/frontend/e2e/m20-responsive-dashboard.spec.ts
+- Developer Portal error/retry E2E: https://github.com/Sekiph82/fmcg-erp-system/blob/main/frontend/e2e/developer-portal-errors.spec.ts
+- Developer Portal API client: https://github.com/Sekiph82/fmcg-erp-system/blob/main/frontend/src/lib/api_portal_api.ts
+- Dashboard shell: https://github.com/Sekiph82/fmcg-erp-system/blob/main/frontend/src/components/DashboardShell.tsx
+- Integration overview and tabs: https://github.com/Sekiph82/fmcg-erp-system/blob/main/frontend/src/app/dashboard/integrations/page.tsx, https://github.com/Sekiph82/fmcg-erp-system/blob/main/frontend/src/app/dashboard/integrations/mpesa/page.tsx, https://github.com/Sekiph82/fmcg-erp-system/blob/main/frontend/src/app/dashboard/integrations/sync/page.tsx, https://github.com/Sekiph82/fmcg-erp-system/blob/main/frontend/src/app/dashboard/integrations/barcode/page.tsx, https://github.com/Sekiph82/fmcg-erp-system/blob/main/frontend/src/app/dashboard/integrations/logs/page.tsx, https://github.com/Sekiph82/fmcg-erp-system/blob/main/frontend/src/app/dashboard/webhooks/page.tsx, and https://github.com/Sekiph82/fmcg-erp-system/blob/main/frontend/src/app/dashboard/developer/page.tsx
+- Frontend dependency versions: https://github.com/Sekiph82/fmcg-erp-system/blob/main/frontend/package.json
 
-## Local verification results
+## Remaining blockers
 
-Executed locally; GitHub Actions/remote CI were not used.
+1. The historical MPS test suite remains red at 57 passed / 15 failed, chiefly because mock/PG release fixtures do not supply the required completed, warehouse-scoped MRP run and one recipe helper does not supply `as_of`. This must be reconciled without weakening scope/release checks.
+2. Full PostgreSQL release atomicity/late rollback/concurrency/idempotency and tenant/permission boundary matrix has not passed; scenario savepoint and migration proof do not replace it.
+3. Nested BOM material feasibility has unit boundary coverage but lacks a real PostgreSQL nested-BOM service test.
+4. Minimum-run/CIP duration and approved-currency cost basis are not configured; related scenario outputs remain explicitly unknown. MERGE/SHIFT_ADD are unsupported and SPLIT remains an approximation.
+5. Remote CI remains deferred through 2026-10-30. No Actions run was started.
+6. Independent ChatGPT audit and any canonical tracker update remain pending. `TASKS.md`, `TASKS_HISTORY.md` and ChatGPT audit files were not modified.
 
-- `python -m py_compile app/services/mps_whatif_service.py tests/test_m20_remaining_engine.py` (from `backend`): **passed**.
-- `python -m pytest tests/test_m20_remaining_engine.py -q` (from `backend`): **18 passed**.
-- `python -c "from app.api.v1.endpoints.mps import router; print('MPS route import OK:', len(router.routes))"` (from `backend`): **passed; 25 routes imported**.
-- `python -m alembic heads` (from `backend`): **passed; one head, `20261020_0010`**.
-- `npm.cmd run type-check` (from `frontend`): **passed**.
-- `npm.cmd run build` (from `frontend`): **passed; optimized build compiled and generated static pages**. Existing repository-wide hook/image lint warnings and stale Browserslist-data notice were emitted.
-- `docker compose ps`: **unavailable**; Docker Desktop Linux engine named pipe was absent.
-- `python -m alembic upgrade head --sql`: **blocked** by pre-existing `20260516_0060_performance_indexes.py`, which executes a catalog query and dereferences `None` in offline SQL mode. This does not prove the M20 migration was applied.
-- `gh run list --commit 0d706241ccd623fdbf7cea7f21feededc8ea3f83 --json databaseId,headSha,event,status,conclusion`: **empty list**.
-- `gh run list --commit 14a96ec1aca124ec65ff913c1cfe2cecb4eba771 --json databaseId,headSha,event,status,conclusion`: **empty list**.
-
-## Remaining blockers and open scope
-
-1. **`BLOCKED_DB_PROOF`** — PostgreSQL is unavailable. Apply the new migration and exercise API diagnostics, scenario persistence, approval/release transactions, rollback, concurrency, and idempotent retries when a local database is available.
-2. **`DEFERRED_CI_QUOTA`** — remote CI evidence is deferred through 2026-10-30. No Actions/remote CI was triggered.
-3. **Open scenario resimulation** — capacity delta is computed only when scenario source inputs are configured; missing inputs return `PARTIAL_INPUTS`. Material availability, changeover/CIP, and approved-currency cost deltas are not resimulated.
-4. **Open production master data** — minimum-run and CIP policies are not configured in the present master data. Nested BOM/subassembly explosion is not established.
-5. **Independent audit and tracker update** — ChatGPT acceptance and any `TASKS.md` update remain pending; this log is evidence, not acceptance.
-
-Milestone status: **AWAITING_CHATGPT_MILESTONE_AUDIT**. No task or milestone is marked accepted here.
+Milestone disposition: **AWAITING_CHATGPT_MILESTONE_AUDIT**. This report does not self-accept M20 or mark any task newly accepted.
