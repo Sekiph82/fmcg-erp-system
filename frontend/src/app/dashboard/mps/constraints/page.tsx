@@ -45,8 +45,34 @@ export default function MPSConstraintsPage() {
     {diagnostics.isError && <p className="text-red-700">Could not load diagnostics: {(diagnostics.error as Error).message}</p>}
     <section className="space-y-3">
       {(diagnostics.data ?? []).map((row: MPSLineConstraintDiagnostic) => <article key={`${row.run_id}-${row.line_id}`} className="rounded border bg-white p-4">
-        <div className="flex flex-wrap justify-between gap-2"><strong>Line {row.line_id}</strong><span className="text-sm">{row.diagnostics.status} · {row.source_version} · {row.computed_at ? new Date(row.computed_at).toLocaleString() : "time unavailable"}</span></div>
-        {row.diagnostics.issues.length ? <ul className="mt-3 list-disc pl-5 text-sm">{row.diagnostics.issues.map((issue, index) => <li key={`${issue.reason_code}-${index}`}><b>{issue.reason_code}</b>{issue.message ? `: ${issue.message}` : ""}{issue.shortage_qty ? ` — shortage ${issue.shortage_qty} ${issue.uom ?? ""}` : ""}</li>)}</ul> : <p className="mt-2 text-sm text-gray-500">No unresolved constraint reasons in this evaluation.</p>}
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div><strong>Line {row.diagnostics.line_no ?? row.line_id}</strong><p className="text-xs text-gray-500">Line ID {row.line_id}</p></div>
+          <span className="text-sm">{row.diagnostics.status} · {row.source_version} · {row.computed_at ? new Date(row.computed_at).toLocaleString() : "time unavailable"}</span>
+        </div>
+        <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
+          <div><dt className="text-gray-500">Required date</dt><dd>{row.diagnostics.required_date ?? "Not recorded"}</dd></div>
+          <div><dt className="text-gray-500">Planned quantity</dt><dd>{row.diagnostics.planned_quantity ?? "Not recorded"}</dd></div>
+        </dl>
+        {row.diagnostics.issues.length ? <ul className="mt-4 space-y-3">
+          {row.diagnostics.issues.map((issue, index) => <li key={`${issue.reason_code}-${index}`} className="rounded border border-amber-200 bg-amber-50/50 p-3 text-sm">
+            <div className="flex flex-wrap items-center gap-2">
+              <b>{issue.reason_code}</b>
+              <span className={`rounded px-2 py-0.5 text-xs font-semibold ${issue.priority === "CRITICAL" ? "bg-red-100 text-red-800" : issue.priority === "HIGH" ? "bg-orange-100 text-orange-800" : "bg-slate-100 text-slate-700"}`}>{issue.priority}</span>
+            </div>
+            {issue.message && <p className="mt-2">{issue.message}</p>}
+            <dl className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              <div><dt className="text-gray-500">Material</dt><dd>{issue.material_code ?? issue.material_id ?? "Not applicable / unavailable"}</dd></div>
+              <div><dt className="text-gray-500">Required by</dt><dd>{issue.required_date ?? row.diagnostics.required_date ?? "Not recorded"}</dd></div>
+              <div><dt className="text-gray-500">Required quantity</dt><dd>{issue.required_qty !== undefined ? `${issue.required_qty} ${issue.uom ?? ""}` : "Not available"}</dd></div>
+              <div><dt className="text-gray-500">Available quantity</dt><dd>{issue.available_qty !== undefined ? `${issue.available_qty} ${issue.uom ?? ""}` : "Not available"}</dd></div>
+              <div><dt className="text-gray-500">Shortage quantity</dt><dd>{issue.shortage_qty !== undefined ? `${issue.shortage_qty} ${issue.uom ?? ""}` : "Not available"}</dd></div>
+              <div><dt className="text-gray-500">Latest order date</dt><dd>{issue.latest_order_date ?? "Not calculated"}</dd></div>
+            </dl>
+            {issue.substitution_policy && <p className="mt-2">Substitution policy: <b>{issue.substitution_policy}</b>{issue.substitute_group_id ? ` · group ${issue.substitute_group_id}` : ""}</p>}
+            {issue.excluded_receipts?.length ? <p className="mt-2">Excluded receipts: {issue.excluded_receipts.map((receipt) => `${receipt.po_no} (${receipt.due_date}: ${receipt.reason})`).join(", ")}</p> : null}
+            <p className="mt-2 text-xs text-gray-600">Source: {issue.provenance}</p>
+          </li>)}
+        </ul> : <p className="mt-3 text-sm text-gray-500">No unresolved constraint reasons in this evaluation.</p>}
       </article>)}
       {planId && !diagnostics.isLoading && diagnostics.data?.length === 0 && <p className="text-sm text-gray-500">No persisted evaluations. Run material feasibility to create diagnostic evidence.</p>}
     </section>

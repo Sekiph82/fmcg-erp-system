@@ -453,6 +453,26 @@ async def project_demand_and_supply(
     }
 
 
+def _constraint_provenance(reason_code: str) -> str:
+    if reason_code.startswith("MATERIAL_"):
+        return "warehouse stock; approved effective BOM/recipe"
+    if reason_code.startswith("APPROVED_BOM") or reason_code == "BOM_DATA_INVALID":
+        return "approved effective BOM and its configured components, yield, and UOM"
+    if reason_code.startswith("APPROVED_RECIPE") or reason_code == "RECIPE_DATA_INVALID":
+        return "approved effective recipe and its configured ingredients"
+    if reason_code == "PRODUCT_MASTER_INVALID":
+        return "product master data"
+    if reason_code == "MPS_QUANTITY_INVALID":
+        return "planned MPS line quantity"
+    return "MPS material-feasibility evaluation"
+
+
+def _constraint_priority(reason_code: str) -> str:
+    # A material shortage is actionable but does not invalidate its BOM/master
+    # data. All other evaluator reasons indicate a blocking data/input defect.
+    return "HIGH" if reason_code == "MATERIAL_SHORT" else "CRITICAL"
+
+
 async def evaluate_material_feasibility(db: AsyncSession, mps_id: uuid.UUID) -> dict:
     """Explode effective approved BOMs, net dated material supply, and persist reasons."""
     plan, run, warehouse = await _scoped_plan(db, mps_id)
@@ -782,6 +802,13 @@ async def evaluate_material_feasibility(db: AsyncSession, mps_id: uuid.UUID) -> 
 
     for line in lines:
         issues = issues_by_line[line.id]
+        required_date = line.planned_start_date or line.period_start
+        for issue in issues:
+            reason_code = str(issue.get("reason_code") or "MPS_CONSTRAINT_UNKNOWN")
+            issue.setdefault("required_date", required_date.isoformat())
+            issue.setdefault("planned_quantity", str(line.planned_production_qty))
+            issue.setdefault("priority", _constraint_priority(reason_code))
+            issue.setdefault("provenance", _constraint_provenance(reason_code))
         if any(i["reason_code"] != "MATERIAL_SHORT" for i in issues):
             line.feasibility_status = MPSFeasibilityStatus.INFEASIBLE
         elif issues:
@@ -795,6 +822,9 @@ async def evaluate_material_feasibility(db: AsyncSession, mps_id: uuid.UUID) -> 
             "plan_id": str(mps_id),
             "warehouse_id": str(warehouse.id),
             "demand_run_id": str(run.id),
+            "line_no": line.line_no,
+            "planned_quantity": str(line.planned_production_qty),
+            "required_date": required_date.isoformat(),
         }))
     diagnostic_run_id = await _write_diagnostics(db, mps_id, diagnostics_to_write)
     from app.services.mps_service import _refresh_plan_counters
@@ -825,9 +855,10 @@ async def _write_diagnostics(db: AsyncSession, mps_id: uuid.UUID, rows: list[tup
 
 async def list_plan_diagnostics(db: AsyncSession, mps_id: uuid.UUID) -> list[dict]:
     rows = (await db.execute(text(
-        "SELECT line_id, run_id, source_version, diagnostics, computed_at "
-        "FROM mps_line_diagnostics WHERE mps_id = :mps_id "
-        "ORDER BY computed_at DESC, line_id"
+        "SELECT d.line_id, d.run_id, d.source_version, d.diagnostics, d.computed_at, "
+        "l.line_no, l.planned_production_qty, COALESCE(l.planned_start_date, l.period_start) AS required_date "
+        "FROM mps_line_diagnostics AS d JOIN mps_lines AS l ON l.id = d.line_id AND l.mps_id = d.mps_id "
+        "WHERE d.mps_id = :mps_id ORDER BY d.computed_at DESC, d.line_id"
     ), {"mps_id": mps_id})).mappings().all()
     result = []
     seen: set[tuple[uuid.UUID, uuid.UUID]] = set()
@@ -836,9 +867,19 @@ async def list_plan_diagnostics(db: AsyncSession, mps_id: uuid.UUID) -> list[dic
         if key in seen:
             continue
         seen.add(key)
+        diagnostic = dict(row["diagnostics"])
+        diagnostic.setdefault("line_no", row["line_no"])
+        diagnostic.setdefault("planned_quantity", str(row["planned_production_qty"]))
+        diagnostic.setdefault("required_date", row["required_date"].isoformat())
+        for issue in diagnostic.get("issues", []):
+            reason_code = str(issue.get("reason_code") or "MPS_CONSTRAINT_UNKNOWN")
+            issue.setdefault("planned_quantity", str(row["planned_production_qty"]))
+            issue.setdefault("required_date", row["required_date"].isoformat())
+            issue.setdefault("priority", _constraint_priority(reason_code))
+            issue.setdefault("provenance", _constraint_provenance(reason_code))
         result.append({
             "line_id": str(row["line_id"]), "run_id": str(row["run_id"]),
-            "source_version": row["source_version"], "diagnostics": row["diagnostics"],
+            "source_version": row["source_version"], "diagnostics": diagnostic,
             "computed_at": row["computed_at"].isoformat() if row["computed_at"] else None,
         })
     return result

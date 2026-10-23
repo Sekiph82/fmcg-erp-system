@@ -45,7 +45,9 @@ from app.models.production_advanced import WorkCenter, WorkCenterType
 from app.models.role import AccessScope, Permission, Role
 from app.models.user import User, user_role
 from app.models.sales import Customer, SalesOrder, SOStatus, SOLine
-from app.schemas.mps import GenerateFromMRPRequest, MPSWhatIfCreate, WhatIfChange
+from app.schemas.mps import (
+    GenerateFromMRPRequest, MPSLineConstraintDiagnosticOut, MPSWhatIfCreate, WhatIfChange,
+)
 from app.services.mps_advanced_service import (
     evaluate_material_feasibility, list_plan_diagnostics, project_demand_and_supply,
 )
@@ -515,6 +517,30 @@ async def test_postgres_kenya_fixture_drives_real_mps_material_feasibility_servi
             assert Decimal(issue["shortage_qty"]) == Decimal("6.3200")
             assert issue["uom"] == material_record["uom"]
             assert diagnostics[0]["line_id"] == str(line_id)
+            details = diagnostics[0]["diagnostics"]
+            assert details["line_no"] == f"M20-FIXTURE-LINE-{suffix}"
+            assert Decimal(details["planned_quantity"]) == Decimal(str(mango["planned_qty"]))
+            assert details["required_date"] == start_day.isoformat()
+            assert issue["required_date"] == start_day.isoformat()
+            assert Decimal(issue["planned_quantity"]) == Decimal(str(mango["planned_qty"]))
+            assert issue["priority"] == "HIGH"
+            assert issue["provenance"] == "warehouse stock; approved effective BOM/recipe"
+            api_diagnostic = MPSLineConstraintDiagnosticOut.model_validate(diagnostics[0])
+            assert api_diagnostic.diagnostics.issues[0].shortage_qty == Decimal("6.3200")
+            assert api_diagnostic.diagnostics.issues[0].material_id == str(material_id)
+            await db.execute(text(
+                "UPDATE mps_line_diagnostics AS diagnostic SET diagnostics = jsonb_set("
+                "diagnostic.diagnostics - 'line_no' - 'planned_quantity' - 'required_date', '{issues}', "
+                "COALESCE((SELECT jsonb_agg(issue.value - 'planned_quantity' - 'required_date' - 'priority' - 'provenance') "
+                "FROM jsonb_array_elements(diagnostic.diagnostics->'issues') AS issue(value)), '[]'::jsonb)) "
+                "WHERE diagnostic.run_id = :run_id AND diagnostic.line_id = :line_id"
+            ), {"run_id": api_diagnostic.run_id, "line_id": line_id})
+            legacy_diagnostic = (await list_plan_diagnostics(db, plan_id))[0]
+            legacy_api_diagnostic = MPSLineConstraintDiagnosticOut.model_validate(legacy_diagnostic)
+            legacy_issue = legacy_api_diagnostic.diagnostics.issues[0]
+            assert legacy_issue.priority == "HIGH"
+            assert legacy_issue.provenance == "warehouse stock; approved effective BOM/recipe"
+            assert legacy_issue.required_date == start_day
     finally:
         await engine.dispose()
         async with AsyncSessionLocal() as cleanup:

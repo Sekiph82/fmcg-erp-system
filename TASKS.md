@@ -10,9 +10,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 - Current Milestone: M20 — Master Production Scheduling
 - Current Sprint: M20.S02 — Demand & Supply Coupling
-- Current Task: M20.S02.T004 — Expose shortage/constraint reasons per planned line
+- Current Task: M20.S03.T001 — Validate work-center/machine capacity calculations
 - Current Task Status: READY
-- Next Task/Action: M20.S02.T004 — Expose shortage/constraint reasons per planned line
+- Next Task/Action: M20.S03.T001 — Validate work-center/machine capacity calculations
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -552,7 +552,7 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 - [x] M20.S02.T001 — Consolidate demand inputs: sales orders/forecast/safety stock
 - [x] M20.S02.T002 — Couple MPS demand to available/on-order inventory
 - [x] M20.S02.T003 — Couple MPS to BOM/material feasibility
-- [ ] M20.S02.T004 — Expose shortage/constraint reasons per planned line
+- [x] M20.S02.T004 — Expose shortage/constraint reasons per planned line
 
 ## M20.S03 — Capacity & Campaign Planning
 - [ ] M20.S03.T001 — Validate work-center/machine capacity calculations

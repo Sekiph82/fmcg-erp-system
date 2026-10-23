@@ -4,8 +4,8 @@ from __future__ import annotations
 import uuid
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Any, Optional, List
-from pydantic import BaseModel, ConfigDict
+from typing import Any, Optional, List, Literal
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.mps import (
     MPSPlanningMode, MPSCapacityMode, MPSStatus, MPSFeasibilityStatus,
@@ -118,6 +118,51 @@ class MPSLineOut(BaseModel):
     product_name: Optional[str] = None
     product_code: Optional[str] = None
     work_center_name: Optional[str] = None
+
+
+class MPSConstraintIssueOut(BaseModel):
+    """One persisted, line-specific MPS constraint reason."""
+    reason_code: str
+    priority: Literal["LOW", "MEDIUM", "HIGH", "CRITICAL"]
+    provenance: str
+    required_date: Optional[date] = None
+    planned_quantity: Optional[Decimal] = None
+    material_id: Optional[str] = None
+    material_code: Optional[str] = None
+    required_qty: Optional[Decimal] = None
+    available_qty: Optional[Decimal] = None
+    shortage_qty: Optional[Decimal] = None
+    uom: Optional[str] = None
+    lead_time_days: Optional[int] = None
+    latest_order_date: Optional[date] = None
+    substitution_policy: Optional[str] = None
+    substitute_group_id: Optional[str] = None
+    excluded_receipts: List[dict[str, str]] = Field(default_factory=list)
+    message: Optional[str] = None
+    bom_id: Optional[str] = None
+    bom_ids: Optional[List[str]] = None
+    recipe_id: Optional[str] = None
+    recipe_ids: Optional[List[str]] = None
+
+
+class MPSLineConstraintDetailsOut(BaseModel):
+    reason_codes: List[str]
+    issues: List[MPSConstraintIssueOut]
+    status: MPSFeasibilityStatus
+    plan_id: uuid.UUID
+    warehouse_id: uuid.UUID
+    demand_run_id: uuid.UUID
+    line_no: Optional[str] = None
+    planned_quantity: Optional[Decimal] = None
+    required_date: Optional[date] = None
+
+
+class MPSLineConstraintDiagnosticOut(BaseModel):
+    line_id: uuid.UUID
+    run_id: uuid.UUID
+    source_version: str
+    diagnostics: MPSLineConstraintDetailsOut
+    computed_at: Optional[datetime] = None
 
 
 # ── Campaign ──────────────────────────────────────────────────────────────────

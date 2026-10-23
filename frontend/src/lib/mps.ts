@@ -207,17 +207,22 @@ export interface MPSDashboard {
 
 export interface MPSConstraintIssue {
   reason_code: string;
+  priority: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+  provenance: string;
   message?: string;
   material_id?: string;
   material_code?: string;
+  planned_quantity?: string;
   required_qty?: string;
   available_qty?: string;
   shortage_qty?: string;
   uom?: string;
   required_date?: string;
   lead_time_days?: number;
-  priority: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
-  provenance?: string;
+  latest_order_date?: string;
+  substitution_policy?: string;
+  substitute_group_id?: string;
+  excluded_receipts?: Array<{ po_no: string; due_date: string; reason: string }>;
 }
 
 export interface MPSLineConstraintDiagnostic {
@@ -231,6 +236,9 @@ export interface MPSLineConstraintDiagnostic {
     plan_id: string;
     warehouse_id: string;
     demand_run_id: string;
+    line_no?: string;
+    planned_quantity?: string;
+    required_date?: string;
   };
   computed_at: string | null;
 }

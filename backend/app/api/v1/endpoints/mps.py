@@ -26,6 +26,7 @@ from app.schemas.mps import (
     MPSWhatIfCreate, MPSWhatIfOut,
     MPSAIRecOut,
     MPSDashboard,
+    MPSLineConstraintDiagnosticOut,
     GenerateFromMRPRequest,
 )
 from app.services.mps_service import (
@@ -104,7 +105,7 @@ async def material_feasibility(
             raise HTTPException(400, str(exc))
 
 
-@router.get("/plans/{mps_id}/constraints", tags=["mps"])
+@router.get("/plans/{mps_id}/constraints", response_model=List[MPSLineConstraintDiagnosticOut], tags=["mps"])
 async def plan_constraints(
     mps_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
