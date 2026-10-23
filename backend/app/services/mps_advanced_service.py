@@ -8,6 +8,7 @@ from datetime import date, timedelta
 from decimal import Decimal
 
 from sqlalchemy import select, func, text
+from sqlalchemy.exc import MultipleResultsFound
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException
 
@@ -19,7 +20,7 @@ from app.models.sales import SalesOrder, SOLine, SOStatus
 from app.models.procurement import PurchaseOrder, POLine, POStatus
 from app.models.production import ProductionOrder, ProductionOrderStatus
 from app.models.recipe import Recipe, RecipeItem, RecipeStatus
-from app.models.bom import AdvancedBOM, AdvancedBOMLine, BOMLifecycle
+from app.models.bom import AdvancedBOM, AdvancedBOMLine, BOMLifecycle, BOMYieldConfig
 from app.services.mps_engine import (
     PlanningInputError, allocate_period_quantity, allocate_weighted_quantity, decimal, explode_approved_bom,
     period_buckets, round_qty,
@@ -37,6 +38,28 @@ _OPEN_PRODUCTION_STATUSES = (
 
 def _enum_value(value: object) -> str:
     return str(getattr(value, "value", value) or "").upper()
+
+
+def _configured_bom_yield_loss(configs: list[BOMYieldConfig]) -> Decimal:
+    """Return total configured input loss; reject unsupported or contradictory yield master data."""
+    total_pct = Decimal(0)
+    categories: set[str] = set()
+    for config in configs:
+        category = _enum_value(config.loss_category)
+        basis = str(config.basis or "").strip().upper()
+        pct = decimal(config.standard_pct)
+        maximum = decimal(config.max_allowable_pct) if config.max_allowable_pct is not None else None
+        if category in categories:
+            raise PlanningInputError(f"duplicate BOM yield-loss configuration for {category}")
+        categories.add(category)
+        if basis != "PCT_OF_INPUT":
+            raise PlanningInputError(f"unsupported BOM yield-loss basis: {basis or 'missing'}")
+        if pct < 0 or pct >= 100 or (maximum is not None and (maximum < 0 or pct > maximum)):
+            raise PlanningInputError(f"invalid BOM yield-loss percentage for {category}")
+        total_pct += pct
+    if total_pct >= 100:
+        raise PlanningInputError("total BOM yield loss must be less than 100 percent")
+    return total_pct
 
 
 def _period_end(start: date, period_type: object) -> date:
@@ -436,7 +459,10 @@ async def evaluate_material_feasibility(db: AsyncSession, mps_id: uuid.UUID) -> 
     if plan.status != MPSStatus.DRAFT:
         raise ValueError("Material feasibility evaluation is only allowed for DRAFT MPS plans")
     lines = (await db.execute(
-        select(MPSLine).where(MPSLine.mps_id == mps_id).order_by(MPSLine.period_start, MPSLine.priority_score.desc(), MPSLine.line_no)
+        select(MPSLine).where(MPSLine.mps_id == mps_id).order_by(
+            func.coalesce(MPSLine.planned_start_date, MPSLine.period_start),
+            MPSLine.priority_score.desc(), MPSLine.line_no,
+        )
     )).scalars().all()
     product_ids = {line.product_id for line in lines}
     products = {p.id: p for p in (await db.execute(select(Product).where(Product.id.in_(product_ids)))).scalars().all()} if product_ids else {}
@@ -518,12 +544,29 @@ async def evaluate_material_feasibility(db: AsyncSession, mps_id: uuid.UUID) -> 
                     "process_loss_pct": item.process_loss_pct,
                     "is_optional": item.is_optional,
                     "substitution_policy": item.substitution_policy,
+                    "substitute_group_id": item.substitute_group_id,
                     "child_bom_id": item.child_bom_id,
                 } for item in lines_for_child],
             }
             pending_child_ids.update(
                 item.child_bom_id for item in lines_for_child if item.child_bom_id is not None
             )
+
+    loaded_bom_ids = bom_ids | {
+        uuid.UUID(bom_id) for bom_id in child_boms
+    }
+    yield_configs_by_bom: dict[uuid.UUID, list[BOMYieldConfig]] = defaultdict(list)
+    if loaded_bom_ids:
+        yield_configs = (await db.execute(
+            select(BOMYieldConfig).where(BOMYieldConfig.bom_id.in_(loaded_bom_ids))
+        )).scalars().all()
+        for config in yield_configs:
+            yield_configs_by_bom[config.bom_id].append(config)
+    for child_id, child in child_boms.items():
+        try:
+            child["bom"]["yield_loss_pct"] = _configured_bom_yield_loss(yield_configs_by_bom.get(uuid.UUID(child_id), []))
+        except PlanningInputError as exc:
+            child["bom"]["yield_config_error"] = str(exc)
 
     material_ids = {item.material_id for item in recipe_items} | {
         item.item_id for item in bom_items
@@ -534,17 +577,32 @@ async def evaluate_material_feasibility(db: AsyncSession, mps_id: uuid.UUID) -> 
     }
     materials = {m.id: m for m in (await db.execute(select(Material).where(Material.id.in_(material_ids)))).scalars().all()} if material_ids else {}
     stock_rows = (await db.execute(
-        select(Stock.material_id, func.sum(Stock.quantity_on_hand), func.sum(Stock.quantity_reserved), func.sum(Stock.quantity_available))
+        select(Stock.material_id, Stock.quantity_on_hand, Stock.quantity_reserved, Stock.quantity_available)
         .where(Stock.warehouse_id == warehouse.id, Stock.stock_type == StockType.MATERIAL,
                Stock.is_blocked.is_(False), Stock.material_id.in_(material_ids))
-        .group_by(Stock.material_id)
     )).all() if material_ids else []
-    material_stock = {mid: max(Decimal(0), decimal(on_hand) - decimal(reserved)) for mid, on_hand, reserved, _ in stock_rows}
+    material_stock: dict[uuid.UUID, Decimal] = defaultdict(Decimal)
+    invalid_stock_materials: set[uuid.UUID] = set()
+    for material_id, on_hand_value, reserved_value, available_value in stock_rows:
+        on_hand, reserved, available = map(decimal, (on_hand_value, reserved_value, available_value))
+        if on_hand < 0 or reserved < 0 or reserved > on_hand or available != on_hand - reserved:
+            invalid_stock_materials.add(material_id)
+            continue
+        material_stock[material_id] += available
     remaining = dict(material_stock)
+
+    warehouse_company_scope = Warehouse.company_id.is_(None) if warehouse.company_id is None else Warehouse.company_id == warehouse.company_id
+    warehouse_scope_rows = (await db.execute(
+        select(Warehouse.branch_id, func.count(Warehouse.id))
+        .where(warehouse_company_scope, Warehouse.is_active.is_(True))
+        .group_by(Warehouse.branch_id)
+    )).all()
+    warehouse_count_by_branch = {branch_id: count for branch_id, count in warehouse_scope_rows}
+    warehouse_count_in_company = sum(warehouse_count_by_branch.values())
 
     company_filter = PurchaseOrder.company_id.is_(None) if warehouse.company_id is None else PurchaseOrder.company_id == warehouse.company_id
     material_po_rows = (await db.execute(
-        select(PurchaseOrder.expected_delivery_date, POLine.material_id,
+        select(PurchaseOrder.po_no, PurchaseOrder.branch_id, PurchaseOrder.expected_delivery_date, POLine.material_id,
                POLine.ordered_quantity - POLine.received_quantity, POLine.unit)
         .join(POLine, POLine.po_id == PurchaseOrder.id)
         .where(PurchaseOrder.status.in_(_OPEN_PO_STATUSES), company_filter,
@@ -552,31 +610,72 @@ async def evaluate_material_feasibility(db: AsyncSession, mps_id: uuid.UUID) -> 
                POLine.ordered_quantity > POLine.received_quantity)
     )).all() if material_ids else []
     material_receipts: dict[uuid.UUID, list[tuple[date, Decimal, str]]] = defaultdict(list)
-    for due, material_id, qty, unit in material_po_rows:
-        material_receipts[material_id].append((due, decimal(qty), _enum_value(unit)))
+    excluded_material_receipts: dict[uuid.UUID, list[dict[str, str]]] = defaultdict(list)
+    for po_no, branch_id, due, material_id, qty_value, unit in material_po_rows:
+        branch_matches = branch_id == warehouse.branch_id
+        scope_is_unambiguous = (
+            warehouse_count_in_company == 1
+            if branch_id is None
+            else branch_matches and warehouse_count_by_branch.get(branch_id, 0) == 1
+        )
+        if not scope_is_unambiguous:
+            excluded_material_receipts[material_id].append({
+                "po_no": po_no, "due_date": due.isoformat(),
+                "reason": "PURCHASE_ORDER_DESTINATION_AMBIGUOUS",
+            })
+            continue
+        if material_id not in materials:
+            continue
+        try:
+            normalized_qty = await convert_uom(
+                db, decimal(qty_value), _enum_value(unit), _enum_value(materials[material_id].uom),
+            )
+        except (HTTPException, MultipleResultsFound):
+            excluded_material_receipts[material_id].append({
+                "po_no": po_no, "due_date": due.isoformat(),
+                "reason": "PURCHASE_ORDER_UOM_UNCONVERTIBLE",
+            })
+            continue
+        material_receipts[material_id].append((due, decimal(normalized_qty), _enum_value(materials[material_id].uom)))
     prior_material_receipts: dict[uuid.UUID, Decimal] = defaultdict(Decimal)
 
     issues_by_line: dict[uuid.UUID, list[dict]] = defaultdict(list)
     diagnostics_to_write: list[tuple[uuid.UUID, dict]] = []
     for line in lines:
         product = products.get(line.product_id)
-        if product is None:
-            issues_by_line[line.id].append({"reason_code": "PRODUCT_MISSING", "priority": "CRITICAL"})
+        if product is None or not product.is_active:
+            issues_by_line[line.id].append({"reason_code": "PRODUCT_MASTER_INVALID", "priority": "CRITICAL"})
             continue
         material_needs: list[dict] = []
         required_date = line.planned_start_date or line.period_start
-        bom = next((candidate for candidate in boms_by_product.get(line.product_id, [])
-                    if (candidate.effective_from is None or candidate.effective_from <= required_date)
-                    and (candidate.effective_to is None or candidate.effective_to >= required_date)), None)
+        if decimal(line.planned_production_qty) < 0:
+            issues_by_line[line.id].append({
+                "reason_code": "MPS_QUANTITY_INVALID", "priority": "CRITICAL",
+                "planned_production_qty": str(line.planned_production_qty),
+            })
+            continue
+        effective_boms = [candidate for candidate in boms_by_product.get(line.product_id, [])
+                          if (candidate.effective_from is None or candidate.effective_from <= required_date)
+                          and (candidate.effective_to is None or candidate.effective_to >= required_date)]
+        if len(effective_boms) > 1:
+            issues_by_line[line.id].append({
+                "reason_code": "APPROVED_BOM_AMBIGUOUS", "priority": "CRITICAL",
+                "bom_ids": [str(candidate.id) for candidate in effective_boms],
+                "required_date": required_date.isoformat(),
+            })
+            continue
+        bom = effective_boms[0] if effective_boms else None
         if bom:
             bom_uom = _enum_value(bom.base_uom)
             try:
-                if bom_uom != _enum_value(product.uom):
-                    raise PlanningInputError("BOM output and finished-product UOM conversion is not configured")
+                output_qty = await convert_uom(
+                    db, decimal(line.planned_production_qty), _enum_value(product.uom), bom_uom,
+                )
+                yield_loss_pct = _configured_bom_yield_loss(yield_configs_by_bom.get(bom.id, []))
                 material_needs = explode_approved_bom(
-                    output_qty=line.planned_production_qty,
+                    output_qty=output_qty,
                     output_uom=bom_uom,
-                    bom={"base_qty": bom.base_qty, "base_uom": bom.base_uom, "output_uom": product.uom, "lifecycle": bom.lifecycle},
+                    bom={"id": bom.id, "base_qty": bom.base_qty, "base_uom": bom.base_uom, "output_uom": product.uom, "lifecycle": bom.lifecycle, "yield_loss_pct": yield_loss_pct},
                     lines=[{
                         "item_id": item.item_id, "item_type": item.item_type,
                         "required_qty": item.required_qty, "required_uom": item.required_uom,
@@ -584,53 +683,80 @@ async def evaluate_material_feasibility(db: AsyncSession, mps_id: uuid.UUID) -> 
                         "process_loss_pct": item.process_loss_pct,
                         "is_optional": item.is_optional,
                         "substitution_policy": item.substitution_policy,
+                        "substitute_group_id": item.substitute_group_id,
                         "child_bom_id": item.child_bom_id,
                     } for item in bom_items_by_id[bom.id]],
                     child_boms=child_boms,
                     as_of=required_date,
                 )
-            except PlanningInputError as exc:
+            except (PlanningInputError, HTTPException, MultipleResultsFound) as exc:
                 issues_by_line[line.id].append({"reason_code": "BOM_DATA_INVALID", "message": str(exc), "priority": "CRITICAL", "bom_id": str(bom.id)})
         else:
-            recipe = next((candidate for candidate in recipes_by_product.get(line.product_id, [])
-                           if (candidate.valid_from is None or candidate.valid_from <= required_date)
-                           and (candidate.valid_to is None or candidate.valid_to >= required_date)), None)
+            effective_recipes = [candidate for candidate in recipes_by_product.get(line.product_id, [])
+                                 if (candidate.valid_from is None or candidate.valid_from <= required_date)
+                                 and (candidate.valid_to is None or candidate.valid_to >= required_date)]
+            if len(effective_recipes) > 1:
+                issues_by_line[line.id].append({
+                    "reason_code": "APPROVED_RECIPE_AMBIGUOUS", "priority": "CRITICAL",
+                    "recipe_ids": [str(candidate.id) for candidate in effective_recipes],
+                    "required_date": required_date.isoformat(),
+                })
+                continue
+            recipe = effective_recipes[0] if effective_recipes else None
             if recipe is None:
                 issues_by_line[line.id].append({"reason_code": "APPROVED_BOM_MISSING", "message": "No effective approved BOM or recipe covers the planned date.", "priority": "CRITICAL"})
                 continue
+            recipe_data_invalid = False
             for item in recipe_items_by_id[recipe.id]:
+                recipe_qty = decimal(item.quantity)
+                loss_percentage = decimal(item.loss_percentage)
+                if recipe_qty < 0 or loss_percentage < 0 or loss_percentage >= 100:
+                    issues_by_line[line.id].append({
+                        "reason_code": "RECIPE_DATA_INVALID", "priority": "CRITICAL",
+                        "recipe_id": str(recipe.id), "recipe_item_id": str(item.id),
+                    })
+                    recipe_data_invalid = True
+                    break
                 material_needs.append({
                     "material_id": item.material_id,
-                    "required_qty": round_qty(decimal(item.quantity) * decimal(line.planned_production_qty) * (Decimal(1) + decimal(item.loss_percentage) / Decimal(100)), 4),
+                    "required_qty": round_qty(recipe_qty * decimal(line.planned_production_qty) * (Decimal(1) + loss_percentage / Decimal(100)), 4),
                     "uom": _enum_value(item.unit),
                     "substitution_policy": "NO_SUB",
                 })
+            if recipe_data_invalid:
+                continue
 
         for need in material_needs:
             material_id = need["material_id"]
             material = materials.get(material_id)
-            if material is None or not material.is_active:
+            if material is None or not material.is_active or material.lead_time_days is None or material.lead_time_days < 0:
                 issues_by_line[line.id].append({"reason_code": "MATERIAL_MASTER_INVALID", "material_id": str(material_id), "priority": "CRITICAL"})
                 continue
             required_uom = str(need.get("uom") or "").upper()
             material_uom = _enum_value(material.uom)
-            if not required_uom or required_uom != material_uom:
-                issues_by_line[line.id].append({"reason_code": "MATERIAL_UOM_MISMATCH", "material_id": str(material_id), "required_uom": required_uom, "material_uom": material_uom, "priority": "CRITICAL"})
+            try:
+                if not required_uom:
+                    raise HTTPException(status_code=422, detail="Material requirement has no UOM")
+                need_qty = round_qty(
+                    decimal(await convert_uom(db, decimal(need["required_qty"]), required_uom, material_uom)),
+                    4,
+                )
+            except (HTTPException, MultipleResultsFound) as exc:
+                message = exc.detail if isinstance(exc, HTTPException) else "Multiple active UOM conversion rows match this material requirement"
+                issues_by_line[line.id].append({"reason_code": "MATERIAL_UOM_MISMATCH", "material_id": str(material_id), "required_uom": required_uom, "material_uom": material_uom, "message": str(message), "priority": "CRITICAL"})
+                continue
+            if material_id in invalid_stock_materials:
+                issues_by_line[line.id].append({
+                    "reason_code": "MATERIAL_STOCK_INVALID", "material_id": str(material_id),
+                    "material_code": material.code, "priority": "CRITICAL",
+                })
                 continue
             due_receipts = Decimal(0)
             for due, qty, unit in material_receipts.get(material_id, []):
                 if due <= required_date:
-                    if unit != material_uom:
-                        issues_by_line[line.id].append({
-                            "reason_code": "INCOMING_MATERIAL_UOM_MISMATCH",
-                            "material_id": str(material_id), "po_uom": unit,
-                            "material_uom": material_uom, "priority": "HIGH",
-                        })
-                        continue
                     due_receipts += qty
             newly_available = max(Decimal(0), due_receipts - prior_material_receipts[material_id])
             prior_material_receipts[material_id] = max(prior_material_receipts[material_id], due_receipts)
-            need_qty = decimal(need["required_qty"])
             available_qty = remaining.get(material_id, Decimal(0)) + newly_available
             shortage = max(Decimal(0), need_qty - available_qty)
             remaining[material_id] = max(Decimal(0), available_qty - need_qty)
@@ -642,9 +768,14 @@ async def evaluate_material_feasibility(db: AsyncSession, mps_id: uuid.UUID) -> 
                     "required_qty": str(need_qty),
                     "available_qty": str(available_qty),
                     "shortage_qty": str(shortage),
-                    "uom": required_uom,
+                    "uom": material_uom,
                     "required_date": line.planned_start_date.isoformat() if line.planned_start_date else line.period_start.isoformat(),
                     "lead_time_days": material.lead_time_days,
+                    "latest_order_date": (required_date - timedelta(days=material.lead_time_days)).isoformat(),
+                    "substitution_policy": _enum_value(need.get("substitution_policy")) or "NO_SUB",
+                    "substitute_group_id": str(need["substitute_group_id"]) if need.get("substitute_group_id") else None,
+                    "excluded_receipts": [receipt for receipt in excluded_material_receipts.get(material_id, [])
+                                          if date.fromisoformat(receipt["due_date"]) <= required_date],
                     "provenance": "warehouse stock; approved effective BOM/recipe",
                     "priority": "HIGH",
                 })

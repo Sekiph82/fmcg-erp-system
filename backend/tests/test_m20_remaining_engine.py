@@ -104,7 +104,40 @@ def test_approved_bom_scales_batch_loss_and_optional_lines():
     assert rows == [{
         "material_id": "sugar", "required_qty": Decimal("257.5000"),
         "uom": "KG", "basis_type": "PER_BATCH", "substitution_policy": "NO_SUB",
+        "substitute_group_id": None,
     }]
+
+
+def test_approved_bom_grosses_up_input_for_configured_percent_of_input_yield_loss():
+    rows = explode_approved_bom(
+        output_qty=100,
+        output_uom="KG",
+        bom={
+            "base_qty": 100, "base_uom": "KG", "lifecycle": "APPROVED",
+            "yield_loss_pct": Decimal("10"),
+        },
+        lines=[{
+            "item_id": "sugar", "item_type": "MATERIAL", "required_qty": 100,
+            "required_uom": "KG", "basis_type": "PER_BATCH",
+        }],
+    )
+    assert rows[0]["required_qty"] == Decimal("111.1111")
+
+
+def test_approved_bom_rejects_unsupported_yield_basis_fail_closed():
+    with pytest.raises(PlanningInputError, match="unsupported BOM yield-loss basis"):
+        explode_approved_bom(
+            output_qty=100,
+            output_uom="KG",
+            bom={
+                "base_qty": 100, "base_uom": "KG", "lifecycle": "APPROVED",
+                "yield_config_error": "unsupported BOM yield-loss basis: PCT_OF_OUTPUT",
+            },
+            lines=[{
+                "item_id": "sugar", "item_type": "MATERIAL", "required_qty": 100,
+                "required_uom": "KG", "basis_type": "PER_BATCH",
+            }],
+        )
 
 
 def test_nested_approved_bom_explodes_to_leaf_material_with_each_level_loss():

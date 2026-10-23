@@ -5,7 +5,7 @@ import asyncio
 import json
 import os
 import re
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
 from types import SimpleNamespace
@@ -18,7 +18,10 @@ from sqlalchemy.orm import selectinload
 
 from app.db.session import AsyncSessionLocal, engine
 from app.models.audit_log import AuditLog
-from app.models.bom import AdvancedBOM, AdvancedBOMLine, BOMLifecycle, BasisType, ItemLinkType
+from app.models.bom import (
+    AdvancedBOM, AdvancedBOMLine, BOMLifecycle, BOMSubstituteGroup, BOMYieldConfig,
+    BasisType, ItemLinkType, LossCategory, SubstitutionPolicy,
+)
 from app.models.company import Branch, Company
 from app.models.inventory import Stock, StockType
 from app.models.master import (
@@ -529,6 +532,339 @@ async def test_postgres_kenya_fixture_drives_real_mps_material_feasibility_servi
                     await cleanup.execute(delete(Product).where(Product.id == product_id))
                 if warehouse_id is not None:
                     await cleanup.execute(delete(Warehouse).where(Warehouse.id == warehouse_id))
+                if company_id is not None:
+                    await cleanup.execute(delete(Company).where(Company.id == company_id))
+
+
+@pytest.mark.asyncio
+async def test_mps_material_feasibility_fails_closed_on_ambiguous_bom_and_scopes_material_supply():
+    """Convert BOM units, keep ambiguous receipts/substitutes out, and reject overlapping approved BOMs."""
+    _require_disposable_m20_postgres()
+    await engine.dispose()
+
+    suffix = _suffix()
+    start_day = date(2026, 10, 1)
+    company_id = warehouse_id = other_warehouse_id = product_id = material_id = alternative_id = None
+    run_id = plan_id = bom_id = duplicate_bom_id = supplier_id = purchase_order_id = None
+    substitute_group_id = conversion_id = duplicate_conversion_id = None
+    line_id = None
+    try:
+        async with AsyncSessionLocal() as db:
+            async with db.begin():
+                company = Company(name=f"M20 material scope {suffix}", short_code=f"M20{suffix}")
+                db.add(company)
+                await db.flush()
+                warehouse = Warehouse(
+                    code=f"M20-MAT-{suffix}", name="M20 material target warehouse",
+                    warehouse_type=WarehouseType.RAW_MATERIAL, company_id=company.id,
+                )
+                other_warehouse = Warehouse(
+                    code=f"M20-MAT-OTHER-{suffix}", name="M20 other company warehouse",
+                    warehouse_type=WarehouseType.RAW_MATERIAL, company_id=company.id,
+                )
+                product = Product(
+                    sku=f"M20-MAT-{suffix}", name="M20 synthetic product",
+                    category=ProductCategory.FOOD, uom=UnitOfMeasure.KG,
+                )
+                material = Material(
+                    code=f"M20-RAW-{suffix}", name="M20 synthetic raw material",
+                    material_type=MaterialType.RAW, uom=UnitOfMeasure.KG, lead_time_days=5,
+                )
+                alternative = Material(
+                    code=f"M20-ALT-{suffix}", name="M20 synthetic substitute",
+                    material_type=MaterialType.RAW, uom=UnitOfMeasure.KG,
+                )
+                supplier = Supplier(code=f"M20-SUP-{suffix}", name="M20 synthetic supplier")
+                db.add_all([warehouse, other_warehouse, product, material, alternative, supplier])
+                await db.flush()
+                run = MRPRun(run_no=f"M20-MAT-RUN-{suffix}", run_date=start_day,
+                             status=MRPRunStatus.COMPLETED, warehouse_id=warehouse.id)
+                db.add(run)
+                await db.flush()
+                plan = MPSPlan(
+                    plan_no=f"M20-MAT-PLAN-{suffix}", plan_name="M20 synthetic material scope",
+                    start_date=start_day, end_date=start_day, mrp_run=run,
+                )
+                db.add(plan)
+                await db.flush()
+                line = MPSLine(
+                    line_no=f"M20-MAT-LINE-{suffix}", mps_id=plan.id, product_id=product.id,
+                    period_start=start_day, period_end=start_day,
+                    planned_start_date=start_day, planned_end_date=start_day,
+                    planned_production_qty=Decimal("2"),
+                )
+                group = BOMSubstituteGroup(
+                    group_code=f"M20-GROUP-{suffix}", group_name="M20 approval-gated substitutes",
+                    policy=SubstitutionPolicy.PLANNER_APPROVAL,
+                )
+                db.add_all([line, group])
+                await db.flush()
+                bom = AdvancedBOM(
+                    bom_code=f"M20-BOM-{suffix}", bom_name="M20 approved synthetic BOM",
+                    product_id=product.id, base_qty=Decimal("1"), base_uom="KG",
+                    lifecycle=BOMLifecycle.APPROVED, is_default=True,
+                    effective_from=start_day, effective_to=start_day,
+                )
+                db.add(bom)
+                await db.flush()
+                bom_line = AdvancedBOMLine(
+                    bom_id=bom.id, line_no=1, item_type=ItemLinkType.MATERIAL,
+                    item_id=material.id, required_qty=Decimal("1000"), required_uom="G",
+                    basis_type=BasisType.PER_BATCH, substitution_policy=SubstitutionPolicy.PLANNER_APPROVAL,
+                    substitute_group_id=group.id,
+                )
+                yield_config = BOMYieldConfig(
+                    bom_id=bom.id, loss_category=LossCategory.PROCESS_LOSS,
+                    basis="PCT_OF_INPUT", standard_pct=Decimal("10"),
+                    max_allowable_pct=Decimal("15"),
+                )
+                stock = Stock(
+                    stock_type=StockType.MATERIAL, warehouse_id=warehouse.id, material_id=material.id,
+                    quantity_on_hand=Decimal("2"), quantity_reserved=Decimal("0.5"),
+                    quantity_available=Decimal("1.5"),
+                )
+                conversion = UomConversion(from_uom="G", to_uom="KG", factor=Decimal("0.001"), is_active=True)
+                po = PurchaseOrder(
+                    po_no=f"M20-PO-{suffix}", supplier_id=supplier.id, company_id=company.id,
+                    branch_id=None, order_date=start_day, expected_delivery_date=start_day,
+                    status=POStatus.ORDERED,
+                )
+                db.add_all([bom_line, yield_config, stock, conversion, po])
+                await db.flush()
+                po_line = POLine(
+                    po_id=po.id, line_no=1, material_id=material.id,
+                    ordered_quantity=Decimal("1000"), received_quantity=Decimal("0"), unit="G",
+                )
+                db.add(po_line)
+                await db.flush()
+                company_id, warehouse_id, other_warehouse_id = company.id, warehouse.id, other_warehouse.id
+                product_id, material_id, alternative_id = product.id, material.id, alternative.id
+                run_id, plan_id, bom_id, supplier_id = run.id, plan.id, bom.id, supplier.id
+                purchase_order_id, substitute_group_id, conversion_id, line_id = po.id, group.id, conversion.id, line.id
+
+            evaluation = await evaluate_material_feasibility(db, plan_id)
+            await db.commit()
+            assert evaluation["infeasible_lines"] == 0
+            assert evaluation["material_short_lines"] == 1
+            diagnostics = await list_plan_diagnostics(db, plan_id)
+            issues = diagnostics[0]["diagnostics"]["issues"]
+            assert [issue["reason_code"] for issue in issues] == ["MATERIAL_SHORT"]
+            shortage = issues[0]
+            assert Decimal(shortage["required_qty"]) == Decimal("2.2222")
+            assert Decimal(shortage["available_qty"]) == Decimal("1.5")
+            assert Decimal(shortage["shortage_qty"]) == Decimal("0.7222")
+            assert shortage["uom"] == "KG"
+            assert shortage["latest_order_date"] == "2026-09-26"
+            assert shortage["substitution_policy"] == "PLANNER_APPROVAL"
+            assert shortage["substitute_group_id"] == str(substitute_group_id)
+            assert shortage["excluded_receipts"] == [{
+                "po_no": f"M20-PO-{suffix}", "due_date": start_day.isoformat(),
+                "reason": "PURCHASE_ORDER_DESTINATION_AMBIGUOUS",
+            }]
+            assert diagnostics[0]["line_id"] == str(line_id)
+            await db.commit()
+
+            async with db.begin():
+                duplicate_conversion = UomConversion(
+                    from_uom="G", to_uom="KG", factor=Decimal("0.001"), is_active=True,
+                )
+                db.add(duplicate_conversion)
+                await db.flush()
+                duplicate_conversion_id = duplicate_conversion.id
+            evaluation = await evaluate_material_feasibility(db, plan_id)
+            await db.commit()
+            assert evaluation["infeasible_lines"] == 1
+            diagnostics = await list_plan_diagnostics(db, plan_id)
+            duplicate_conversion_issue = diagnostics[0]["diagnostics"]["issues"][0]
+            assert duplicate_conversion_issue["reason_code"] == "MATERIAL_UOM_MISMATCH"
+            assert "Multiple active UOM conversion rows" in duplicate_conversion_issue["message"]
+            await db.commit()
+
+            async with db.begin():
+                await db.execute(
+                    UomConversion.__table__.update()
+                    .where(UomConversion.id == duplicate_conversion_id)
+                    .values(is_active=False)
+                )
+                duplicate_bom = AdvancedBOM(
+                    bom_code=f"M20-BOM-DUP-{suffix}", bom_name="Overlapping approved synthetic BOM",
+                    product_id=product_id, base_qty=Decimal("1"), base_uom="KG",
+                    lifecycle=BOMLifecycle.APPROVED, is_default=True,
+                    effective_from=start_day, effective_to=start_day,
+                )
+                db.add(duplicate_bom)
+                await db.flush()
+                duplicate_bom_id = duplicate_bom.id
+            evaluation = await evaluate_material_feasibility(db, plan_id)
+            await db.commit()
+            assert evaluation["infeasible_lines"] == 1
+            await db.refresh(line)
+            assert line.feasibility_status == MPSFeasibilityStatus.INFEASIBLE
+            diagnostics = await list_plan_diagnostics(db, plan_id)
+            issues = diagnostics[0]["diagnostics"]["issues"]
+            assert issues[0]["reason_code"] == "APPROVED_BOM_AMBIGUOUS"
+            assert set(issues[0]["bom_ids"]) == {str(bom_id), str(duplicate_bom_id)}
+    finally:
+        await engine.dispose()
+        async with AsyncSessionLocal() as cleanup:
+            async with cleanup.begin():
+                if plan_id is not None:
+                    await cleanup.execute(delete(MPSPlan).where(MPSPlan.id == plan_id))
+                if duplicate_bom_id is not None:
+                    await cleanup.execute(delete(AdvancedBOM).where(AdvancedBOM.id == duplicate_bom_id))
+                if bom_id is not None:
+                    await cleanup.execute(delete(AdvancedBOM).where(AdvancedBOM.id == bom_id))
+                if purchase_order_id is not None:
+                    await cleanup.execute(delete(POLine).where(POLine.po_id == purchase_order_id))
+                    await cleanup.execute(delete(PurchaseOrder).where(PurchaseOrder.id == purchase_order_id))
+                if substitute_group_id is not None:
+                    await cleanup.execute(delete(BOMSubstituteGroup).where(BOMSubstituteGroup.id == substitute_group_id))
+                if conversion_id is not None:
+                    await cleanup.execute(delete(UomConversion).where(UomConversion.id == conversion_id))
+                if duplicate_conversion_id is not None:
+                    await cleanup.execute(delete(UomConversion).where(UomConversion.id == duplicate_conversion_id))
+                if material_id is not None or alternative_id is not None:
+                    ids = [value for value in (material_id, alternative_id) if value is not None]
+                    await cleanup.execute(delete(Stock).where(Stock.material_id.in_(ids)))
+                    await cleanup.execute(delete(Material).where(Material.id.in_(ids)))
+                if product_id is not None:
+                    await cleanup.execute(delete(Product).where(Product.id == product_id))
+                if run_id is not None:
+                    await cleanup.execute(delete(MRPRun).where(MRPRun.id == run_id))
+                if warehouse_id is not None or other_warehouse_id is not None:
+                    ids = [value for value in (warehouse_id, other_warehouse_id) if value is not None]
+                    await cleanup.execute(delete(Warehouse).where(Warehouse.id.in_(ids)))
+                if supplier_id is not None:
+                    await cleanup.execute(delete(Supplier).where(Supplier.id == supplier_id))
+                if company_id is not None:
+                    await cleanup.execute(delete(Company).where(Company.id == company_id))
+
+
+@pytest.mark.asyncio
+async def test_mps_material_receipts_are_allocated_in_required_date_order_within_period():
+    """A later-dated PO receipt must not cover an earlier line sharing the same period bucket."""
+    _require_disposable_m20_postgres()
+    await engine.dispose()
+
+    suffix = _suffix()
+    first_day = date(2026, 10, 1)
+    company_id = warehouse_id = product_id = material_id = supplier_id = None
+    run_id = plan_id = bom_id = po_id = None
+    early_line_id = late_line_id = None
+    try:
+        async with AsyncSessionLocal() as db:
+            async with db.begin():
+                company = Company(name=f"M20 receipt order {suffix}", short_code=f"M2O{suffix}")
+                db.add(company)
+                await db.flush()
+                warehouse = Warehouse(
+                    code=f"M20-ORDER-{suffix}", name="M20 material-order target",
+                    warehouse_type=WarehouseType.RAW_MATERIAL, company_id=company.id,
+                )
+                product = Product(
+                    sku=f"M20-ORDER-{suffix}", name="M20 date-order product",
+                    category=ProductCategory.FOOD, uom=UnitOfMeasure.KG,
+                )
+                material = Material(
+                    code=f"M20-ORDER-RAW-{suffix}", name="M20 date-order material",
+                    material_type=MaterialType.RAW, uom=UnitOfMeasure.KG,
+                )
+                supplier = Supplier(code=f"M20-ORDER-SUP-{suffix}", name="M20 date-order supplier")
+                db.add_all([warehouse, product, material, supplier])
+                await db.flush()
+                run = MRPRun(
+                    run_no=f"M20-ORDER-RUN-{suffix}", run_date=first_day,
+                    status=MRPRunStatus.COMPLETED, warehouse_id=warehouse.id,
+                )
+                db.add(run)
+                await db.flush()
+                plan = MPSPlan(
+                    plan_no=f"M20-ORDER-PLAN-{suffix}", plan_name="M20 chronological material allocation",
+                    start_date=first_day, end_date=first_day + timedelta(days=9), mrp_run=run,
+                )
+                db.add(plan)
+                await db.flush()
+                early = MPSLine(
+                    line_no=f"M20-EARLY-{suffix}", mps_id=plan.id, product_id=product.id,
+                    period_start=first_day, period_end=first_day + timedelta(days=6),
+                    planned_start_date=first_day + timedelta(days=1),
+                    planned_end_date=first_day + timedelta(days=2),
+                    planned_production_qty=Decimal("3"), priority_score=Decimal("1"),
+                )
+                late = MPSLine(
+                    line_no=f"M20-LATE-{suffix}", mps_id=plan.id, product_id=product.id,
+                    period_start=first_day, period_end=first_day + timedelta(days=6),
+                    planned_start_date=first_day + timedelta(days=6),
+                    planned_end_date=first_day + timedelta(days=7),
+                    planned_production_qty=Decimal("2"), priority_score=Decimal("99"),
+                )
+                db.add_all([early, late])
+                await db.flush()
+                bom = AdvancedBOM(
+                    bom_code=f"M20-ORDER-BOM-{suffix}", bom_name="M20 date-order BOM",
+                    product_id=product.id, base_qty=Decimal("1"), base_uom="KG",
+                    lifecycle=BOMLifecycle.APPROVED, is_default=True,
+                    effective_from=first_day, effective_to=first_day + timedelta(days=9),
+                )
+                db.add(bom)
+                await db.flush()
+                db.add(AdvancedBOMLine(
+                    bom_id=bom.id, line_no=1, item_type=ItemLinkType.MATERIAL,
+                    item_id=material.id, required_qty=Decimal("1"), required_uom="KG",
+                    basis_type=BasisType.PER_UNIT,
+                ))
+                po = PurchaseOrder(
+                    po_no=f"M20-ORDER-PO-{suffix}", supplier_id=supplier.id,
+                    company_id=company.id, order_date=first_day,
+                    expected_delivery_date=first_day + timedelta(days=4), status=POStatus.ORDERED,
+                )
+                db.add(po)
+                await db.flush()
+                db.add(POLine(
+                    po_id=po.id, line_no=1, material_id=material.id,
+                    ordered_quantity=Decimal("5"), received_quantity=Decimal("0"), unit="KG",
+                ))
+                await db.flush()
+                company_id, warehouse_id = company.id, warehouse.id
+                product_id, material_id, supplier_id = product.id, material.id, supplier.id
+                run_id, plan_id, bom_id, po_id = run.id, plan.id, bom.id, po.id
+                early_line_id, late_line_id = early.id, late.id
+
+            evaluation = await evaluate_material_feasibility(db, plan_id)
+            await db.commit()
+            assert evaluation["lines_evaluated"] == 2
+            diagnostics = await list_plan_diagnostics(db, plan_id)
+            by_line = {row["line_id"]: row["diagnostics"] for row in diagnostics}
+            early_issue = by_line[str(early_line_id)]["issues"][0]
+            assert early_issue["reason_code"] == "MATERIAL_SHORT"
+            assert Decimal(early_issue["shortage_qty"]) == Decimal("3.0000")
+            assert by_line[str(late_line_id)]["issues"] == []
+            await db.refresh(early)
+            await db.refresh(late)
+            assert early.feasibility_status == MPSFeasibilityStatus.MATERIAL_SHORT
+            assert late.feasibility_status == MPSFeasibilityStatus.FEASIBLE
+    finally:
+        await engine.dispose()
+        async with AsyncSessionLocal() as cleanup:
+            async with cleanup.begin():
+                if plan_id is not None:
+                    await cleanup.execute(delete(MPSPlan).where(MPSPlan.id == plan_id))
+                if bom_id is not None:
+                    await cleanup.execute(delete(AdvancedBOM).where(AdvancedBOM.id == bom_id))
+                if po_id is not None:
+                    await cleanup.execute(delete(POLine).where(POLine.po_id == po_id))
+                    await cleanup.execute(delete(PurchaseOrder).where(PurchaseOrder.id == po_id))
+                if material_id is not None:
+                    await cleanup.execute(delete(Stock).where(Stock.material_id == material_id))
+                    await cleanup.execute(delete(Material).where(Material.id == material_id))
+                if product_id is not None:
+                    await cleanup.execute(delete(Product).where(Product.id == product_id))
+                if run_id is not None:
+                    await cleanup.execute(delete(MRPRun).where(MRPRun.id == run_id))
+                if warehouse_id is not None:
+                    await cleanup.execute(delete(Warehouse).where(Warehouse.id == warehouse_id))
+                if supplier_id is not None:
+                    await cleanup.execute(delete(Supplier).where(Supplier.id == supplier_id))
                 if company_id is not None:
                     await cleanup.execute(delete(Company).where(Company.id == company_id))
 

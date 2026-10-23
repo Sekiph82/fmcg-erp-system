@@ -178,6 +178,13 @@ def explode_approved_bom(
         output_uom = str(uom or "").upper()
         if qty_d < 0 or base_qty <= 0:
             raise PlanningInputError("BOM output and base quantity must be valid")
+        if current_bom.get("yield_config_error"):
+            raise PlanningInputError(str(current_bom["yield_config_error"]))
+        yield_loss_pct = decimal(current_bom.get("yield_loss_pct", 0))
+        if yield_loss_pct < 0 or yield_loss_pct >= 100:
+            raise PlanningInputError("BOM yield loss must be in [0, 100)")
+        if yield_loss_pct:
+            qty_d /= Decimal(1) - yield_loss_pct / Decimal(100)
         lifecycle = current_bom.get("lifecycle", "")
         if str(getattr(lifecycle, "value", lifecycle)).upper() not in {"APPROVED", "RELEASED"}:
             raise PlanningInputError("no approved/released BOM is available")
@@ -231,7 +238,8 @@ def explode_approved_bom(
             results.append({
                 "material_id": line["item_id"], "required_qty": round_qty(amount, 4),
                 "uom": str(line.get("required_uom") or "").upper(), "basis_type": basis,
-                "substitution_policy": str(line.get("substitution_policy") or "NO_SUB"),
+                "substitution_policy": str(getattr(line.get("substitution_policy"), "value", line.get("substitution_policy")) or "NO_SUB").upper(),
+                "substitute_group_id": line.get("substitute_group_id"),
             })
         return results
 
