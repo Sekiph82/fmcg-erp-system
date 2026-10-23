@@ -343,7 +343,10 @@ async def create_whatif(
 ):
     async with db.begin():
         try:
-            await _check_plan_scope(db, current_user, mps_id, "simulate")
+            # Saving a simulation is allowed only to planners with edit access
+            # to the source plan's warehouse; the module-level simulate
+            # permission is checked separately by the route dependency.
+            await _check_plan_scope(db, current_user, mps_id, "edit")
             scenario = await create_whatif_scenario(db, mps_id, body, current_user.id)
         except ValueError as e:
             raise HTTPException(400, str(e))

@@ -173,6 +173,8 @@ async def update_mps_line(
     plan = plan_result.scalar_one_or_none()
     if plan is None:
         return None
+    if plan.status not in {MPSStatus.DRAFT, MPSStatus.APPROVED}:
+        raise ValueError("Only unreleased DRAFT or APPROVED MPS plans can be edited")
     result = await db.execute(
         select(MPSLine).where(
             MPSLine.id == line_id,
@@ -192,8 +194,6 @@ async def update_mps_line(
         raise ValueError("Only an ON_HOLD MPS line can be explicitly cleared")
     if clear_hold and user_id is None:
         raise ValueError("An authenticated editor is required to clear an MPS line hold")
-    if plan.status not in {MPSStatus.DRAFT, MPSStatus.APPROVED}:
-        raise ValueError("Only DRAFT MPS plans can be edited")
     if not clear_hold and all(getattr(line, key) == value for key, value in updates.items()):
         return line
     reopened_approval = False

@@ -2108,6 +2108,215 @@ async def test_postgres_seeded_mrp_bom_inventory_diagnostics_snapshot_and_releas
 
 
 @pytest.mark.asyncio
+async def test_postgres_whatif_http_permissions_scope_lifecycle_and_comparison():
+    """Exercise scenario API serialization, auth/scope gates, persistence, and rollback."""
+    _require_disposable_m20_postgres()
+
+    from httpx import ASGITransport, AsyncClient
+
+    from app.core.deps import get_current_user, get_db
+    from app.main import app
+
+    await engine.dispose()
+    suffix = _suffix()
+    saved_overrides = app.dependency_overrides.copy()
+    plan_id = foreign_plan_id = user_id = warehouse_id = run_id = product_id = None
+    try:
+        async with AsyncSessionLocal() as db:
+            async with db.begin():
+                warehouse = Warehouse(
+                    code=f"M20-WHATIF-HTTP-WH-{suffix}", name="Synthetic what-if API warehouse",
+                    warehouse_type=WarehouseType.FINISHED_GOODS,
+                )
+                product = Product(
+                    sku=f"M20-WHATIF-HTTP-P-{suffix}", name="Synthetic what-if API product",
+                    category=ProductCategory.FOOD, uom=UnitOfMeasure.KG,
+                )
+                user = User(
+                    email=f"m20-whatif-http-{suffix}@example.invalid",
+                    username=f"m20-whatif-http-{suffix}", full_name="M20 What-If API Actor",
+                    hashed_password="test-only", is_superuser=True,
+                )
+                db.add_all([warehouse, product, user])
+                await db.flush()
+                run = MRPRun(
+                    run_no=f"M20-WHATIF-HTTP-RUN-{suffix}", run_date=date(2026, 10, 1),
+                    status=MRPRunStatus.COMPLETED, warehouse_id=warehouse.id,
+                )
+                db.add(run)
+                await db.flush()
+                plan = MPSPlan(
+                    plan_no=f"M20-WHATIF-HTTP-PLAN-{suffix}", plan_name="Synthetic what-if API plan",
+                    start_date=date(2026, 10, 1), end_date=date(2026, 10, 31), mrp_run_id=run.id,
+                )
+                foreign_plan = MPSPlan(
+                    plan_no=f"M20-WHATIF-HTTP-FOREIGN-{suffix}", plan_name="Synthetic foreign scenario plan",
+                    start_date=date(2026, 10, 1), end_date=date(2026, 10, 31), mrp_run_id=run.id,
+                )
+                db.add_all([plan, foreign_plan])
+                await db.flush()
+                db.add_all([
+                    MPSLine(
+                        line_no=f"M20-WHATIF-HTTP-L-{suffix}", mps_id=plan.id, product_id=product.id,
+                        period_start=date(2026, 10, 1), period_end=date(2026, 10, 31),
+                        planned_production_qty=Decimal("5"),
+                    ),
+                    MPSLine(
+                        line_no=f"M20-WHATIF-HTTP-FL-{suffix}", mps_id=foreign_plan.id, product_id=product.id,
+                        period_start=date(2026, 10, 1), period_end=date(2026, 10, 31),
+                        planned_production_qty=Decimal("5"),
+                    ),
+                ])
+                await db.flush()
+                plan_id, foreign_plan_id = plan.id, foreign_plan.id
+                user_id, warehouse_id, run_id, product_id = user.id, warehouse.id, run.id, product.id
+
+        async def override_db():
+            async with AsyncSessionLocal() as session:
+                yield session
+
+        async with AsyncSessionLocal() as auth_db:
+            principal = await auth_db.get(User, user_id)
+        current_actor = principal
+
+        async def override_user():
+            return current_actor
+
+        async def get_scenario_line_id(target_plan_id):
+            async with AsyncSessionLocal() as db:
+                return await db.scalar(select(MPSLine.id).where(MPSLine.mps_id == target_plan_id))
+
+        app.dependency_overrides[get_db] = override_db
+        app.dependency_overrides[get_current_user] = override_user
+        async with AsyncClient(
+            transport=ASGITransport(app=app, raise_app_exceptions=False),
+            base_url="http://m20-whatif.test",
+        ) as client:
+            route = f"/api/v1/mps/plans/{plan_id}/whatif"
+            line_id = await get_scenario_line_id(plan_id)
+            invalid = await client.post(route, json={
+                "scenario_name": "invalid quantity",
+                "changes": [{"line_id": str(line_id), "change_type": "QTY_ADJUST", "new_value": "abc"}],
+            })
+            assert invalid.status_code == 400, invalid.text
+            async with AsyncSessionLocal() as verify:
+                assert await verify.scalar(select(func.count()).select_from(MPSWhatIfScenario).where(
+                    MPSWhatIfScenario.mps_id == plan_id,
+                )) == 0
+
+            baseline = await client.post(route, json={
+                "scenario_name": "HTTP baseline",
+                "changes": [{"line_id": str(line_id), "change_type": "QTY_ADJUST", "new_value": "5"}],
+            })
+            assert baseline.status_code == 201, baseline.text
+            assert baseline.json()["created_by_id"] == str(user_id)
+            candidate = await client.post(route, json={
+                "scenario_name": "HTTP candidate",
+                "changes": [{"line_id": str(line_id), "change_type": "QTY_ADJUST", "new_value": "10"}],
+            })
+            assert candidate.status_code == 201, candidate.text
+
+            foreign_line_id = await get_scenario_line_id(foreign_plan_id)
+            foreign = await client.post(f"/api/v1/mps/plans/{foreign_plan_id}/whatif", json={
+                "scenario_name": "HTTP foreign scenario",
+                "changes": [{"line_id": str(foreign_line_id), "change_type": "QTY_ADJUST", "new_value": "6"}],
+            })
+            assert foreign.status_code == 201, foreign.text
+
+            listed = await client.get(route)
+            assert listed.status_code == 200, listed.text
+            assert {scenario["id"] for scenario in listed.json()} == {baseline.json()["id"], candidate.json()["id"]}
+            detail = await client.get(f"/api/v1/mps/whatif/{baseline.json()['id']}")
+            assert detail.status_code == 200, detail.text
+            assert detail.json()["scenario_name"] == "HTTP baseline"
+
+            compare_route = f"/api/v1/mps/plans/{plan_id}/scenario-comparison"
+            comparison = await client.get(compare_route, params={
+                "baseline_id": baseline.json()["id"],
+                "candidate_id": candidate.json()["id"],
+            })
+            assert comparison.status_code == 200, comparison.text
+            comparison_payload = comparison.json()
+            assert comparison_payload["service_level_unit"] == "percentage_points"
+            assert comparison_payload["capacity_unit"] == "hours"
+            assert comparison_payload["changeover_unit"] == "hours"
+            assert comparison_payload["cost_delta"] is None
+
+            cross_plan = await client.get(compare_route, params={
+                "baseline_id": baseline.json()["id"],
+                "candidate_id": foreign.json()["id"],
+            })
+            assert cross_plan.status_code == 400, cross_plan.text
+
+            current_actor = SimpleNamespace(
+                is_superuser=False,
+                id=user_id,
+                roles=[SimpleNamespace(is_active=True, permissions=[
+                    SimpleNamespace(code="mps.simulate", is_active=True),
+                    SimpleNamespace(code="mps.edit_own_scope", is_active=True),
+                ])],
+                access_scopes=[SimpleNamespace(
+                    scope_type="warehouse", scope_id=str(warehouse_id), is_active=True, can_edit=True,
+                )],
+            )
+            scoped_create = await client.post(route, json={
+                "scenario_name": "in-scope planner scenario",
+                "changes": [{"line_id": str(line_id), "change_type": "QTY_ADJUST", "new_value": "7"}],
+            })
+            assert scoped_create.status_code == 201, scoped_create.text
+            assert scoped_create.json()["created_by_id"] == str(user_id)
+
+            current_actor = SimpleNamespace(
+                is_superuser=False,
+                id=user_id,
+                roles=[SimpleNamespace(is_active=True, permissions=[
+                    SimpleNamespace(code="mps.simulate", is_active=True),
+                ])],
+                access_scopes=[],
+            )
+            out_of_scope = await client.post(route, json={
+                "scenario_name": "out-of-scope scenario",
+                "changes": [{"line_id": str(line_id), "change_type": "QTY_ADJUST", "new_value": "7"}],
+            })
+            assert out_of_scope.status_code == 403
+            current_actor = SimpleNamespace(
+                is_superuser=False,
+                roles=[SimpleNamespace(is_active=True, permissions=[
+                    SimpleNamespace(code="mps.view", is_active=True),
+                ])],
+                access_scopes=[SimpleNamespace(
+                    scope_type="warehouse", scope_id=str(warehouse_id), is_active=True, can_edit=True,
+                )],
+            )
+            missing_simulate_permission = await client.post(route, json={
+                "scenario_name": "missing simulate permission",
+                "changes": [{"line_id": str(line_id), "change_type": "QTY_ADJUST", "new_value": "7"}],
+            })
+            assert missing_simulate_permission.status_code == 403
+            current_actor = SimpleNamespace(is_superuser=False, roles=[], access_scopes=[])
+            missing_view_permission = await client.get(route)
+            assert missing_view_permission.status_code == 403
+    finally:
+        app.dependency_overrides.clear()
+        app.dependency_overrides.update(saved_overrides)
+        async with AsyncSessionLocal() as cleanup:
+            async with cleanup.begin():
+                if plan_id is not None or foreign_plan_id is not None:
+                    await cleanup.execute(delete(MPSPlan).where(
+                        MPSPlan.id.in_([value for value in (plan_id, foreign_plan_id) if value is not None]),
+                    ))
+                if run_id is not None:
+                    await cleanup.execute(delete(MRPRun).where(MRPRun.id == run_id))
+                if product_id is not None:
+                    await cleanup.execute(delete(Product).where(Product.id == product_id))
+                if warehouse_id is not None:
+                    await cleanup.execute(delete(Warehouse).where(Warehouse.id == warehouse_id))
+                if user_id is not None:
+                    await cleanup.execute(delete(User).where(User.id == user_id))
+        await engine.dispose()
+
+
+@pytest.mark.asyncio
 async def test_postgres_mps_approval_reopen_and_release_integrity():
     """Exercise approval prerequisites, blocked-line repair, release integrity and immutability."""
     _require_disposable_m20_postgres()
@@ -2323,7 +2532,7 @@ async def test_postgres_mps_approval_reopen_and_release_integrity():
                     ProductionOrder.product_id == product.id,
                 )) == 2
 
-                with pytest.raises(ValueError, match="Only DRAFT MPS plans can be edited"):
+                with pytest.raises(ValueError, match="Only unreleased DRAFT or APPROVED MPS plans can be edited"):
                     await update_mps_line(
                         db, plan.id, feasible_line.id, MPSLineUpdate(remarks="must remain immutable"), actor.id,
                     )

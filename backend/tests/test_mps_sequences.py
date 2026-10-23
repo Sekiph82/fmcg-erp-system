@@ -1,6 +1,6 @@
 from types import SimpleNamespace
 
-from app.models.mps import MPSCapacityMode, MPSLine, MPSPlan, MPSStatus
+from app.models.mps import MPSCapacityMode, MPSFeasibilityStatus, MPSLine, MPSPlan, MPSStatus
 from app.models.mrp import MRPRunStatus
 from app.schemas.mps import GenerateFromMRPRequest
 from app.services.mps_service import _next_seq, generate_mps_from_mrp, update_mps_line
@@ -127,7 +127,7 @@ def test_manual_line_update_locks_plan_then_line_in_consistent_order():
     import asyncio
 
     plan = SimpleNamespace(id="plan", status=MPSStatus.DRAFT)
-    line = SimpleNamespace(is_locked=False)
+    line = SimpleNamespace(is_locked=False, feasibility_status=MPSFeasibilityStatus.PENDING, remarks="old")
 
     class _Result:
         def __init__(self, value):
@@ -147,12 +147,13 @@ def test_manual_line_update_locks_plan_then_line_in_consistent_order():
         async def flush(self):
             return None
 
-    class _EmptyUpdate:
+    class _LineUpdate:
         def model_dump(self, *, exclude_unset):
-            return {}
+            return {"remarks": "updated"}
 
     db = _UpdateDatabase()
-    assert asyncio.run(update_mps_line(db, "plan", "line", _EmptyUpdate())) is line
+    assert asyncio.run(update_mps_line(db, "plan", "line", _LineUpdate())) is line
+    assert line.remarks == "updated"
     assert len(db.statements) == 2
     assert all(statement._for_update_arg is not None for statement in db.statements)
     assert "FROM mps_plans" in str(db.statements[0])
@@ -162,7 +163,7 @@ def test_manual_line_update_locks_plan_then_line_in_consistent_order():
 def test_manual_line_update_rejects_non_draft_plan_before_line_lookup():
     import asyncio
 
-    plan = SimpleNamespace(status=MPSStatus.APPROVED)
+    plan = SimpleNamespace(status=MPSStatus.RELEASED)
 
     class _PlanResult:
         def scalar_one_or_none(self):
@@ -180,9 +181,9 @@ def test_manual_line_update_rejects_non_draft_plan_before_line_lookup():
     try:
         asyncio.run(update_mps_line(db, "plan", "line", SimpleNamespace()))
     except ValueError as error:
-        assert "Only DRAFT MPS plans can be edited" in str(error)
+        assert "Only unreleased DRAFT or APPROVED MPS plans can be edited" in str(error)
     else:
-        raise AssertionError("Approved MPS plans must not allow manual line edits")
+        raise AssertionError("Released MPS plans must not allow manual line edits")
     assert len(db.statements) == 1
     assert db.statements[0]._for_update_arg is not None
 

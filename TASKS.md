@@ -9,10 +9,10 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 ## Project Status
 
 - Current Milestone: M20 — Master Production Scheduling
-- Current Sprint: M20.S04 — Approval, Release & Scenarios
-- Current Task: M20.S04.T004 — Compare scenarios using service/cost/capacity KPIs
+- Current Sprint: M20.S05 — MPS Verification
+- Current Task: M20.S05.T001 — Backend MPS regression tests
 - Current Task Status: COMPLETE
-- Next Task/Action: M20.S05.T001 — Backend MPS regression tests
+- Next Task/Action: M20.S05.T002 — Frontend planning-board/capacity/campaign/what-if tests
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -567,7 +567,7 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 - [x] M20.S04.T004 — Compare scenarios using service/cost/capacity KPIs
 
 ## M20.S05 — MPS Verification
-- [ ] M20.S05.T001 — Backend MPS regression tests
+- [x] M20.S05.T001 — Backend MPS regression tests
 - [ ] M20.S05.T002 — Frontend planning-board/capacity/campaign/what-if tests
 - [ ] M20.S05.T003 — Cross-module MPS→MRP/production verification
 - [ ] M20.S05.T004 — Close M20 with evidence and tracker update

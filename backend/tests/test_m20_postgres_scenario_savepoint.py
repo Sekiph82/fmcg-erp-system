@@ -7,7 +7,7 @@ import pytest
 from sqlalchemy import select, text
 
 from app.core.config import settings
-from app.db.session import AsyncSessionLocal
+from app.db.session import AsyncSessionLocal, engine
 from app.models.master import Material, MaterialType, Product, ProductCategory, UnitOfMeasure, Warehouse, WarehouseType
 from app.models.mps import MPSLine, MPSPlan
 from app.models.mrp import MRPRun, MRPRunStatus
@@ -24,6 +24,8 @@ async def test_postgres_material_resimulation_uses_real_bom_supply_and_rolls_bac
     if "postgresql" not in str(settings.DATABASE_URL):
         pytest.skip("MPS material savepoint proof requires PostgreSQL")
 
+    # Prevent asyncpg connections from a prior pytest event loop being reused.
+    await engine.dispose()
     suffix = uuid4().hex[:12]
     async with AsyncSessionLocal() as db:
         try:
