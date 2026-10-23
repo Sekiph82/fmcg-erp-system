@@ -9,6 +9,7 @@ from decimal import Decimal
 
 from sqlalchemy import select, func, text
 from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import HTTPException
 
 from app.models.master import Product, Material, Warehouse
 from app.models.inventory import Stock, StockType
@@ -20,9 +21,10 @@ from app.models.production import ProductionOrder, ProductionOrderStatus
 from app.models.recipe import Recipe, RecipeItem, RecipeStatus
 from app.models.bom import AdvancedBOM, AdvancedBOMLine, BOMLifecycle
 from app.services.mps_engine import (
-    PlanningInputError, allocate_period_quantity, decimal, explode_approved_bom,
-    net_finished_goods_requirement, period_buckets, round_qty,
+    PlanningInputError, allocate_period_quantity, allocate_weighted_quantity, decimal, explode_approved_bom,
+    period_buckets, round_qty,
 )
+from app.services.utilities_service import convert_uom
 
 
 _OPEN_SALES_STATUSES = (SOStatus.CONFIRMED, SOStatus.ALLOCATED, SOStatus.PICKING)
@@ -79,13 +81,20 @@ async def project_demand_and_supply(
     if plan.status != MPSStatus.DRAFT:
         raise ValueError("Demand projection is available only for DRAFT plans")
     buckets = period_buckets(plan.start_date, plan.end_date, period_type)
+    daily_buckets: list[tuple[date, date]] = []
+    cursor = plan.start_date
+    while cursor <= plan.end_date:
+        daily_buckets.append((cursor, cursor))
+        cursor += timedelta(days=1)
 
+    sales_company_scope = SalesOrder.company_id.is_(None) if warehouse.company_id is None else SalesOrder.company_id == warehouse.company_id
     order_rows = (await db.execute(
         select(SalesOrder, SOLine)
         .join(SOLine, SOLine.so_id == SalesOrder.id)
         .where(
             SalesOrder.status.in_(_OPEN_SALES_STATUSES),
             SalesOrder.warehouse_id == warehouse.id,
+            sales_company_scope,
             SalesOrder.requested_delivery_date >= plan.start_date,
             SalesOrder.requested_delivery_date <= plan.end_date,
         )
@@ -123,8 +132,8 @@ async def project_demand_and_supply(
                         "select one forecast run before MPS projection"
                     )
 
-    confirmed: dict[tuple[uuid.UUID, int], Decimal] = defaultdict(Decimal)
-    forecast: dict[tuple[uuid.UUID, int], Decimal] = defaultdict(Decimal)
+    confirmed_by_date: dict[tuple[uuid.UUID, date], Decimal] = defaultdict(Decimal)
+    forecast_by_date: dict[tuple[uuid.UUID, date], Decimal] = defaultdict(Decimal)
     product_ids: set[uuid.UUID] = set()
     for order, line in order_rows:
         product = await db.get(Product, line.product_id)
@@ -135,26 +144,36 @@ async def project_demand_and_supply(
         if order_uom != product_uom:
             raise ValueError(f"Sales order {order.order_no} line {line.line_no} UOM {order_uom} does not match product UOM {product_uom}")
         demand = max(Decimal(0), decimal(line.ordered_quantity) - decimal(line.shipped_quantity))
-        bucket_index = next((i for i, (_, bucket_end) in enumerate(buckets) if order.requested_delivery_date <= bucket_end), None)
-        if bucket_index is not None:
-            confirmed[(line.product_id, bucket_index)] += demand
+        if plan.start_date <= order.requested_delivery_date <= plan.end_date:
+            confirmed_by_date[(line.product_id, order.requested_delivery_date)] += demand
             product_ids.add(line.product_id)
 
     for header, line in forecast_rows:
         product = await db.get(Product, header.product_id)
         if product is None or not product.is_active:
             continue
-        forecast_uom = _enum_value(product.uom)
         amount = line.adjusted_qty if line.adjusted_qty is not None else line.forecast_qty
         source_end = min(header.end_date, _period_end(line.period_date, header.period_type))
         source_start = max(header.start_date, line.period_date)
         if source_end < source_start:
             continue
-        allocated = allocate_period_quantity(amount, source_start, source_end, buckets)
-        for index, value in enumerate(allocated):
-            if value:
-                forecast[(header.product_id, index)] += value
-                product_ids.add(header.product_id)
+        # Preserve the established MPS-period allocation and then spread each
+        # period's quantity over its dates.  Allocating directly to individual
+        # days can move a rounding residual across a period boundary, changing
+        # the period total (for example 42.857 to 42.856) even though the
+        # source forecast quantity is unchanged.
+        allocated_by_period = allocate_period_quantity(amount, source_start, source_end, buckets)
+        for period_index, (bucket_start, bucket_end) in enumerate(buckets):
+            period_qty = allocated_by_period[period_index]
+            if not period_qty:
+                continue
+            daily_start = max(source_start, bucket_start)
+            daily_end = min(source_end, bucket_end)
+            allocated_by_day = allocate_period_quantity(period_qty, daily_start, daily_end, daily_buckets)
+            for day_index, value in enumerate(allocated_by_day):
+                if value:
+                    forecast_by_date[(header.product_id, daily_buckets[day_index][0])] += value
+                    product_ids.add(header.product_id)
 
     # Use the completed MRP run's demand/safety-stock snapshot so products
     # below their configured safety target are planned even without an order
@@ -182,7 +201,11 @@ async def project_demand_and_supply(
         from app.services.mps_service import _refresh_plan_counters
         await _refresh_plan_counters(db, mps_id)
         await db.flush()
-        return {"lines_created": 0, "demand_products": 0, "periods": len(buckets), "warehouse_id": str(warehouse.id)}
+        return {
+            "lines_created": 0, "demand_products": 0, "periods": len(buckets),
+            "warehouse_id": str(warehouse.id), "source_mrp_run_id": str(run.id),
+            "supply_breakdown": [], "excluded_purchase_orders": [],
+        }
 
     products = {p.id: p for p in (await db.execute(select(Product).where(Product.id.in_(product_ids)))).scalars().all()}
     stock_rows = (await db.execute(
@@ -192,51 +215,111 @@ async def project_demand_and_supply(
         .group_by(Stock.product_id)
     )).all()
     stock = {product_id: (decimal(on_hand), decimal(reserved), decimal(available)) for product_id, on_hand, reserved, available in stock_rows}
+    for product_id, (on_hand, reserved, stored_available) in stock.items():
+        product = products[product_id]
+        if on_hand < 0 or reserved < 0 or reserved > on_hand or stored_available != on_hand - reserved:
+            raise ValueError(
+                f"Inventory quantities are inconsistent for product {product.sku} in warehouse {warehouse.code}; "
+                "on-hand, reserved and available must reconcile before MPS projection"
+            )
 
-    company_filter = PurchaseOrder.company_id.is_(None) if warehouse.company_id is None else PurchaseOrder.company_id == warehouse.company_id
+    warehouse_company_scope = Warehouse.company_id.is_(None) if warehouse.company_id is None else Warehouse.company_id == warehouse.company_id
+    warehouse_scope_rows = (await db.execute(
+        select(Warehouse.branch_id, func.count(Warehouse.id))
+        .where(warehouse_company_scope, Warehouse.is_active.is_(True))
+        .group_by(Warehouse.branch_id)
+    )).all()
+    warehouse_count_by_branch = {branch_id: count for branch_id, count in warehouse_scope_rows}
+    warehouse_count_in_company = sum(warehouse_count_by_branch.values())
+
+    purchase_company_scope = PurchaseOrder.company_id.is_(None) if warehouse.company_id is None else PurchaseOrder.company_id == warehouse.company_id
     po_rows = (await db.execute(
-        select(PurchaseOrder.expected_delivery_date, POLine.product_id,
-               POLine.ordered_quantity - POLine.received_quantity)
+        select(PurchaseOrder.po_no, PurchaseOrder.branch_id, PurchaseOrder.expected_delivery_date,
+               POLine.product_id, POLine.ordered_quantity - POLine.received_quantity, POLine.unit)
         .join(POLine, POLine.po_id == PurchaseOrder.id)
-        .where(PurchaseOrder.status.in_(_OPEN_PO_STATUSES), company_filter,
+        .where(PurchaseOrder.status.in_(_OPEN_PO_STATUSES), purchase_company_scope,
                POLine.product_id.in_(product_ids),
                POLine.ordered_quantity > POLine.received_quantity)
     )).all()
-    po_supply: dict[uuid.UUID, list[tuple[date, Decimal]]] = defaultdict(list)
-    for due, product_id, qty in po_rows:
-        po_supply[product_id].append((due, decimal(qty)))
+    po_supply: dict[uuid.UUID, dict[date, Decimal]] = defaultdict(lambda: defaultdict(Decimal))
+    excluded_purchase_orders: list[dict[str, object]] = []
+    for po_no, branch_id, due, product_id, qty, unit in po_rows:
+        branch_matches = branch_id == warehouse.branch_id
+        scope_is_unambiguous = (
+            warehouse_count_in_company == 1
+            if branch_id is None
+            else branch_matches and warehouse_count_by_branch.get(branch_id, 0) == 1
+        )
+        if not scope_is_unambiguous:
+            excluded_purchase_orders.append({
+                "po_no": po_no,
+                "product_id": str(product_id),
+                "expected_delivery_date": due.isoformat(),
+                "open_quantity": str(decimal(qty)),
+                "uom": _enum_value(unit),
+                "reason": "PURCHASE_ORDER_DESTINATION_AMBIGUOUS",
+            })
+            continue
+        if due < plan.start_date or due > plan.end_date:
+            excluded_purchase_orders.append({
+                "po_no": po_no,
+                "product_id": str(product_id),
+                "expected_delivery_date": due.isoformat(),
+                "open_quantity": str(decimal(qty)),
+                "uom": _enum_value(unit),
+                "reason": "PURCHASE_ORDER_OVERDUE" if due < plan.start_date else "PURCHASE_ORDER_AFTER_HORIZON",
+            })
+            continue
+        product = products[product_id]
+        try:
+            normalized_qty = await convert_uom(db, decimal(qty), _enum_value(unit), _enum_value(product.uom))
+        except HTTPException as exc:
+            raise ValueError(
+                f"Purchase order {po_no} UOM {_enum_value(unit)} cannot be converted to product UOM {_enum_value(product.uom)}"
+            ) from exc
+        po_supply[product_id][due] += decimal(normalized_qty)
 
     wip_rows = (await db.execute(
         select(ProductionOrder.scheduled_end, ProductionOrder.product_id,
-               ProductionOrder.planned_quantity, ProductionOrder.actual_quantity)
+               ProductionOrder.planned_quantity, ProductionOrder.actual_quantity,
+               ProductionOrder.uom, ProductionOrder.order_no)
         .where(ProductionOrder.target_warehouse_id == warehouse.id,
                ProductionOrder.status.in_(_OPEN_PRODUCTION_STATUSES),
                ProductionOrder.product_id.in_(product_ids))
     )).all()
-    wip_supply: dict[uuid.UUID, list[tuple[date, Decimal]]] = defaultdict(list)
-    for due, product_id, planned, actual in wip_rows:
-        wip_supply[product_id].append((due.date(), max(Decimal(0), decimal(planned) - decimal(actual))))
+    wip_supply: dict[uuid.UUID, dict[date, Decimal]] = defaultdict(lambda: defaultdict(Decimal))
+    for due, product_id, planned, actual, unit, order_no in wip_rows:
+        open_qty = max(Decimal(0), decimal(planned) - decimal(actual))
+        try:
+            normalized_qty = await convert_uom(db, open_qty, _enum_value(unit), _enum_value(products[product_id].uom))
+        except HTTPException as exc:
+            raise ValueError(
+                f"Production order {order_no} UOM {_enum_value(unit)} cannot be converted to product UOM {_enum_value(products[product_id].uom)}"
+            ) from exc
+        due_date = due.date()
+        if plan.start_date <= due_date <= plan.end_date:
+            wip_supply[product_id][due_date] += decimal(normalized_qty)
 
     other_plans = (await db.execute(
-        select(MPSLine.product_id, MPSLine.planned_end_date, MPSLine.planned_production_qty)
+        select(MPSLine.planned_end_date, MPSLine.product_id, MPSLine.planned_production_qty)
         .join(MPSPlan, MPSPlan.id == MPSLine.mps_id)
+        .join(MRPRun, MRPRun.id == MPSPlan.mrp_run_id)
         .where(MPSLine.mps_id != mps_id, MPSPlan.status == MPSStatus.APPROVED,
-               MPSPlan.plant_code == plan.plant_code if plan.plant_code else MPSPlan.id == uuid.UUID(int=0),
+               MRPRun.warehouse_id == warehouse.id,
                MPSLine.production_order_id.is_(None), MPSLine.product_id.in_(product_ids))
     )).all()
-    other_supply: dict[uuid.UUID, list[tuple[date | None, Decimal]]] = defaultdict(list)
+    other_supply: dict[uuid.UUID, dict[date, Decimal]] = defaultdict(lambda: defaultdict(Decimal))
     for due, product_id, qty in other_plans:
-        other_supply[product_id].append((due, decimal(qty)))
+        if due is not None and plan.start_date <= due <= plan.end_date:
+            other_supply[product_id][due] += decimal(qty)
 
     locked_lines = (await db.execute(
         select(MPSLine).where(MPSLine.mps_id == mps_id, MPSLine.is_locked.is_(True))
     )).scalars().all()
-    locked_supply: dict[tuple[uuid.UUID, int], Decimal] = defaultdict(Decimal)
+    locked_supply: dict[uuid.UUID, dict[date, Decimal]] = defaultdict(lambda: defaultdict(Decimal))
     for line in locked_lines:
-        for index, (_, bucket_end) in enumerate(buckets):
-            if line.period_end <= bucket_end and line.period_end >= buckets[index][0]:
-                locked_supply[(line.product_id, index)] += decimal(line.planned_production_qty)
-                break
+        if plan.start_date <= line.period_end <= plan.end_date:
+            locked_supply[line.product_id][line.period_end] += decimal(line.planned_production_qty)
 
     old_lines = (await db.execute(
         select(MPSLine).where(MPSLine.mps_id == mps_id, MPSLine.is_locked.is_(False))
@@ -246,38 +329,77 @@ async def project_demand_and_supply(
     await db.flush()
 
     created = 0
+    supply_breakdown: list[dict[str, object]] = []
+    bucket_days_map = [
+        [day_start for day_start, _ in daily_buckets if bucket_start <= day_start <= bucket_end]
+        for bucket_start, bucket_end in buckets
+    ]
     for product_id in sorted(product_ids, key=str):
         product = products[product_id]
         on_hand, reserved, stored_available = stock.get(product_id, (Decimal(0), Decimal(0), Decimal(0)))
         available = max(Decimal(0), on_hand - reserved)
         for index, (bucket_start, bucket_end) in enumerate(buckets):
-            confirmed_qty = confirmed[(product_id, index)]
-            forecast_qty = forecast[(product_id, index)]
+            bucket_days = bucket_days_map[index]
+            confirmed_qty = sum((confirmed_by_date[(product_id, day)] for day in bucket_days), Decimal(0))
+            gross_forecast_qty = sum((forecast_by_date[(product_id, day)] for day in bucket_days), Decimal(0))
+            net_forecast_qty = max(Decimal(0), gross_forecast_qty - confirmed_qty)
+            net_forecast_by_date: dict[date, Decimal] = {}
+            if gross_forecast_qty > 0:
+                forecast_days = [day for day in bucket_days if forecast_by_date[(product_id, day)] > 0]
+                allocated_net = allocate_weighted_quantity(
+                    net_forecast_qty,
+                    [forecast_by_date[(product_id, day)] for day in forecast_days],
+                )
+                if allocated_net:
+                    net_forecast_by_date.update(zip(forecast_days, allocated_net))
             mrp_result = mrp_by_product.get(product_id)
             safety_target = (
                 decimal(mrp_result.safety_stock_qty)
                 if run.include_safety_stock and mrp_result is not None else Decimal(0)
             )
-            if confirmed_qty == 0 and forecast_qty == 0 and safety_target == 0:
-                continue
-            incoming = sum((qty for due, qty in po_supply[product_id] if bucket_start <= due <= bucket_end), Decimal(0))
-            wip = sum((qty for due, qty in wip_supply[product_id] if bucket_start <= due <= bucket_end), Decimal(0))
-            planned = sum((qty for due, qty in other_supply[product_id] if due is not None and bucket_start <= due <= bucket_end), Decimal(0))
-            locked = locked_supply[(product_id, index)]
-            totals = net_finished_goods_requirement(
-                confirmed=confirmed_qty, forecast=forecast_qty,
-                safety_stock=safety_target, on_hand=available,
-                reserved=0, incoming=incoming + wip + planned + locked,
-            )
-            # Safety stock is a period-end target, not consumed demand. Carry
-            # it forward by subtracting only confirmed plus non-overlapping
-            # forecast consumption from the projected ending inventory.
-            consumption = totals["confirmed"] + totals["net_forecast"]
-            available = max(
-                Decimal(0),
-                available + incoming + wip + planned + locked + totals["net_requirement"] - consumption,
-            )
-            net_qty = totals["net_requirement"]
+            opening_available = available
+            min_projected = available
+            receipt_totals = {
+                "purchase_order": Decimal(0), "work_in_progress": Decimal(0),
+                "approved_mps": Decimal(0), "locked_mps": Decimal(0),
+            }
+            dated_receipts: list[dict[str, object]] = []
+            for day in bucket_days:
+                day_receipts = {
+                    "purchase_order": po_supply[product_id].get(day, Decimal(0)),
+                    "work_in_progress": wip_supply[product_id].get(day, Decimal(0)),
+                    "approved_mps": other_supply[product_id].get(day, Decimal(0)),
+                    "locked_mps": locked_supply[product_id].get(day, Decimal(0)),
+                }
+                for source, quantity in day_receipts.items():
+                    if quantity:
+                        receipt_totals[source] += quantity
+                        dated_receipts.append({"date": day.isoformat(), "source": source, "quantity": str(round_qty(quantity))})
+                        available += quantity
+                available -= confirmed_by_date[(product_id, day)] + net_forecast_by_date.get(day, Decimal(0))
+                min_projected = min(min_projected, available)
+
+            ending_before_production = available
+            net_qty = max(Decimal(0), -min_projected, safety_target - ending_before_production)
+            available = max(Decimal(0), ending_before_production + net_qty)
+            supply_breakdown.append({
+                "product_id": str(product_id),
+                "period_start": bucket_start.isoformat(),
+                "period_end": bucket_end.isoformat(),
+                "opening_on_hand_qty": str(round_qty(on_hand)) if index == 0 else None,
+                "opening_reserved_qty": str(round_qty(reserved if index == 0 else Decimal(0))),
+                "opening_available_qty": str(round_qty(opening_available)),
+                "confirmed_demand_qty": str(round_qty(confirmed_qty)),
+                "forecast_qty": str(round_qty(net_forecast_qty)),
+                "safety_stock_target_qty": str(round_qty(safety_target)),
+                "incoming_purchase_order_qty": str(round_qty(receipt_totals["purchase_order"])),
+                "work_in_progress_qty": str(round_qty(receipt_totals["work_in_progress"])),
+                "approved_mps_supply_qty": str(round_qty(receipt_totals["approved_mps"])),
+                "locked_mps_supply_qty": str(round_qty(receipt_totals["locked_mps"])),
+                "planned_production_qty": str(round_qty(net_qty)),
+                "projected_ending_available_qty": str(round_qty(available)),
+                "dated_receipts": dated_receipts,
+            })
             if net_qty <= 0:
                 continue
             label = f"{bucket_start.year}-W{bucket_start.isocalendar()[1]:02d}" if period_type.upper() == "WEEKLY" else (f"{bucket_start:%Y-%m}" if period_type.upper() == "MONTHLY" else bucket_start.isoformat())
@@ -286,12 +408,12 @@ async def project_demand_and_supply(
                 mps_id=mps_id, product_id=product_id,
                 mrp_result_id=mrp_result.id if mrp_result else None,
                 period_label=label, period_start=bucket_start, period_end=bucket_end,
-                confirmed_demand_qty=totals["confirmed"], forecast_qty=totals["net_forecast"],
-                safety_stock_qty=totals["safety_stock"], net_requirement_qty=net_qty,
-                planned_production_qty=net_qty, planned_start_date=bucket_start,
+                confirmed_demand_qty=round_qty(confirmed_qty), forecast_qty=round_qty(net_forecast_qty),
+                safety_stock_qty=round_qty(safety_target), net_requirement_qty=round_qty(net_qty),
+                planned_production_qty=round_qty(net_qty), planned_start_date=bucket_start,
                 planned_end_date=bucket_end, feasibility_status=MPSFeasibilityStatus.PENDING,
                 priority_score=Decimal("50"),
-                remarks="Demand projection from approved warehouse-scoped orders and forecasts; supply netted by due date.",
+                remarks="Demand projection from warehouse-scoped orders, forecasts and dated supply; supply netted by due date.",
             )
             db.add(line)
             await db.flush()
@@ -300,7 +422,12 @@ async def project_demand_and_supply(
     await db.flush()
     from app.services.mps_service import _refresh_plan_counters
     await _refresh_plan_counters(db, mps_id)
-    return {"lines_created": created, "demand_products": len(product_ids), "periods": len(buckets), "warehouse_id": str(warehouse.id), "source_mrp_run_id": str(run.id)}
+    return {
+        "lines_created": created, "demand_products": len(product_ids), "periods": len(buckets),
+        "warehouse_id": str(warehouse.id), "source_mrp_run_id": str(run.id),
+        "supply_breakdown": supply_breakdown,
+        "excluded_purchase_orders": excluded_purchase_orders,
+    }
 
 
 async def evaluate_material_feasibility(db: AsyncSession, mps_id: uuid.UUID) -> dict:

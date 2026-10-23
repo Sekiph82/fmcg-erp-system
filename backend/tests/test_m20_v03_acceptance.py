@@ -19,10 +19,10 @@ from sqlalchemy.orm import selectinload
 from app.db.session import AsyncSessionLocal, engine
 from app.models.audit_log import AuditLog
 from app.models.bom import AdvancedBOM, AdvancedBOMLine, BOMLifecycle, BasisType, ItemLinkType
-from app.models.company import Company
+from app.models.company import Branch, Company
 from app.models.inventory import Stock, StockType
 from app.models.master import (
-    Material, MaterialType, Product, ProductCategory, UnitOfMeasure,
+    Material, MaterialType, Product, ProductCategory, Supplier, UnitOfMeasure,
     Warehouse, WarehouseType,
 )
 from app.models.mps import (
@@ -33,8 +33,10 @@ from app.models.mrp import (
     DemandForecast, DemandForecastLine, ForecastModelType, ForecastStatus,
     MRPResult, MRPRun, MRPRunStatus, PeriodType,
 )
-from app.models.production import ProductionOrder
+from app.models.production import ProductionOrder, ProductionOrderStatus
+from app.models.procurement import PurchaseOrder, POLine, POStatus
 from app.models.recipe import Recipe, RecipeStatus
+from app.models.utilities import UomConversion
 from app.models.planning import ResourceCalendar
 from app.models.production_advanced import WorkCenter, WorkCenterType
 from app.models.role import AccessScope, Permission, Role
@@ -733,6 +735,274 @@ async def test_postgres_mps_demand_projection_nets_forecast_and_carries_mrp_safe
                     await cleanup.execute(delete(Product).where(Product.id.in_(product_ids)))
                 if warehouse_id is not None:
                     await cleanup.execute(delete(Warehouse).where(Warehouse.id == warehouse_id))
+                if customer_id is not None:
+                    await cleanup.execute(delete(Customer).where(Customer.id == customer_id))
+                if company_id is not None:
+                    await cleanup.execute(delete(Company).where(Company.id == company_id))
+
+
+@pytest.mark.asyncio
+async def test_postgres_mps_supply_projection_scopes_and_nets_dated_receipts():
+    """Inventory, PO, WIP and approved MPS supply are scoped, dated and reported separately."""
+    _require_disposable_m20_postgres()
+    await engine.dispose()
+    suffix = _suffix()
+    company_id = warehouse_ids = branch_ids = supplier_id = product_id = customer_id = None
+    recipe_id = None
+    run_ids: list = []
+    plan_ids: list = []
+    order_ids: list = []
+    po_ids: list = []
+    production_order_ids: list = []
+    conversion_id = None
+    start = date(2026, 1, 1)
+    end = date(2026, 1, 14)
+    try:
+        async with AsyncSessionLocal() as db:
+            async with db.begin():
+                company = Company(name=f"M20 supply {suffix}", short_code=f"S{suffix}")
+                db.add(company)
+                await db.flush()
+                branch_a = Branch(company_id=company.id, name="Supply branch A", branch_code=f"A{suffix[:6]}")
+                branch_b = Branch(company_id=company.id, name="Supply branch B", branch_code=f"B{suffix[:6]}")
+                supplier = Supplier(code=f"M20-S-{suffix}", name="Synthetic M20 supplier")
+                customer = Customer(code=f"M20-S-C-{suffix}", name="Synthetic M20 customer", company_id=company.id)
+                product = Product(
+                    sku=f"M20-S-FG-{suffix}", name="Dated supply test product",
+                    category=ProductCategory.FOOD, uom=UnitOfMeasure.KG,
+                )
+                db.add_all([branch_a, branch_b, supplier, customer, product])
+                await db.flush()
+                target = Warehouse(
+                    code=f"M20-S-A-{suffix}", name="Target MPS warehouse",
+                    warehouse_type=WarehouseType.FINISHED_GOODS, company_id=company.id,
+                    branch_id=branch_a.id,
+                )
+                other_warehouse = Warehouse(
+                    code=f"M20-S-B-{suffix}", name="Other branch warehouse",
+                    warehouse_type=WarehouseType.FINISHED_GOODS, company_id=company.id,
+                    branch_id=branch_b.id,
+                )
+                db.add_all([target, other_warehouse])
+                await db.flush()
+                source_run = MRPRun(
+                    run_no=f"M20-S-RUN-A-{suffix}", run_date=start, planning_horizon_days=30,
+                    status=MRPRunStatus.COMPLETED, include_forecast=False, include_safety_stock=False,
+                    warehouse_id=target.id,
+                )
+                same_warehouse_run = MRPRun(
+                    run_no=f"M20-S-RUN-PLAN-A-{suffix}", run_date=start, planning_horizon_days=30,
+                    status=MRPRunStatus.COMPLETED, include_forecast=False, include_safety_stock=False,
+                    warehouse_id=target.id,
+                )
+                other_warehouse_run = MRPRun(
+                    run_no=f"M20-S-RUN-B-{suffix}", run_date=start, planning_horizon_days=30,
+                    status=MRPRunStatus.COMPLETED, include_forecast=False, include_safety_stock=False,
+                    warehouse_id=other_warehouse.id,
+                )
+                recipe = Recipe(
+                    product_id=product.id, version=f"M20-{suffix}", name="Synthetic WIP recipe",
+                    status=RecipeStatus.DRAFT,
+                )
+                db.add_all([source_run, same_warehouse_run, other_warehouse_run, recipe])
+                await db.flush()
+                plan = MPSPlan(
+                    plan_no=f"M20-S-PLAN-{suffix}", plan_name="Dated inventory supply projection",
+                    plant_code="SHARED-PLANT-CODE", start_date=start, end_date=end,
+                    mrp_run_id=source_run.id,
+                )
+                approved_same_warehouse_plan = MPSPlan(
+                    plan_no=f"M20-S-APP-A-{suffix}", plan_name="Approved same-warehouse supply",
+                    plant_code="SHARED-PLANT-CODE", start_date=start, end_date=end,
+                    mrp_run_id=same_warehouse_run.id, status=MPSStatus.APPROVED,
+                )
+                approved_other_warehouse_plan = MPSPlan(
+                    plan_no=f"M20-S-APP-B-{suffix}", plan_name="Approved other-warehouse supply",
+                    plant_code="SHARED-PLANT-CODE", start_date=start, end_date=end,
+                    mrp_run_id=other_warehouse_run.id, status=MPSStatus.APPROVED,
+                )
+                db.add_all([plan, approved_same_warehouse_plan, approved_other_warehouse_plan])
+                await db.flush()
+                db.add_all([
+                    MPSLine(
+                        line_no=f"M20-S-L-A-{suffix}", mps_id=approved_same_warehouse_plan.id,
+                        product_id=product.id, period_start=start, period_end=date(2026, 1, 4),
+                        planned_end_date=start, planned_production_qty=Decimal("3"),
+                    ),
+                    MPSLine(
+                        line_no=f"M20-S-L-B-{suffix}", mps_id=approved_other_warehouse_plan.id,
+                        product_id=product.id, period_start=start, period_end=date(2026, 1, 4),
+                        planned_end_date=start, planned_production_qty=Decimal("500"),
+                    ),
+                ])
+                db.add_all([
+                    Stock(
+                        stock_type=StockType.PRODUCT, warehouse_id=target.id, product_id=product.id,
+                        quantity_on_hand=Decimal("10"), quantity_reserved=Decimal("4"),
+                        quantity_available=Decimal("6"),
+                    ),
+                    Stock(
+                        stock_type=StockType.PRODUCT, warehouse_id=other_warehouse.id, product_id=product.id,
+                        quantity_on_hand=Decimal("100"), quantity_reserved=Decimal("0"),
+                        quantity_available=Decimal("100"),
+                    ),
+                ])
+                order = SalesOrder(
+                    order_no=f"M20-S-SO-{suffix}", customer_id=customer.id,
+                    order_date=start, requested_delivery_date=date(2026, 1, 2),
+                    status=SOStatus.CONFIRMED, warehouse_id=target.id, company_id=company.id,
+                )
+                db.add(order)
+                await db.flush()
+                db.add(SOLine(
+                    so_id=order.id, line_no=1, product_id=product.id,
+                    ordered_quantity=Decimal("20"), shipped_quantity=Decimal("0"), unit="KG",
+                ))
+                target_po = PurchaseOrder(
+                    po_no=f"M20-S-PO-A-{suffix}", supplier_id=supplier.id,
+                    company_id=company.id, branch_id=branch_a.id,
+                    order_date=start, expected_delivery_date=date(2026, 1, 4),
+                    status=POStatus.ORDERED,
+                )
+                other_branch_po = PurchaseOrder(
+                    po_no=f"M20-S-PO-B-{suffix}", supplier_id=supplier.id,
+                    company_id=company.id, branch_id=branch_b.id,
+                    order_date=start, expected_delivery_date=start,
+                    status=POStatus.ORDERED,
+                )
+                unassigned_po = PurchaseOrder(
+                    po_no=f"M20-S-PO-GLOBAL-{suffix}", supplier_id=supplier.id,
+                    company_id=company.id, branch_id=None,
+                    order_date=start, expected_delivery_date=start,
+                    status=POStatus.APPROVED,
+                )
+                db.add_all([target_po, other_branch_po, unassigned_po])
+                await db.flush()
+                db.add_all([
+                    POLine(
+                        po_id=target_po.id, line_no=1, product_id=product.id,
+                        ordered_quantity=Decimal("5000"), received_quantity=Decimal("0"), unit="G",
+                    ),
+                    POLine(
+                        po_id=other_branch_po.id, line_no=1, product_id=product.id,
+                        ordered_quantity=Decimal("100"), received_quantity=Decimal("0"), unit="KG",
+                    ),
+                    POLine(
+                        po_id=unassigned_po.id, line_no=1, product_id=product.id,
+                        ordered_quantity=Decimal("200"), received_quantity=Decimal("0"), unit="KG",
+                    ),
+                ])
+                conversion = UomConversion(from_uom="G", to_uom="KG", factor=Decimal("0.001"))
+                work_order = ProductionOrder(
+                    order_no=f"M20-S-WIP-A-{suffix}", product_id=product.id, recipe_id=recipe.id,
+                    planned_quantity=Decimal("5"), actual_quantity=Decimal("3"), uom="KG",
+                    status=ProductionOrderStatus.IN_PROGRESS, target_warehouse_id=target.id,
+                    scheduled_start=datetime(2026, 1, 1, 8), scheduled_end=datetime(2026, 1, 1, 16),
+                )
+                other_warehouse_work = ProductionOrder(
+                    order_no=f"M20-S-WIP-B-{suffix}", product_id=product.id, recipe_id=recipe.id,
+                    planned_quantity=Decimal("100"), actual_quantity=Decimal("0"), uom="KG",
+                    status=ProductionOrderStatus.IN_PROGRESS, target_warehouse_id=other_warehouse.id,
+                    scheduled_start=datetime(2026, 1, 1, 8), scheduled_end=datetime(2026, 1, 1, 16),
+                )
+                db.add_all([conversion, work_order, other_warehouse_work])
+                await db.flush()
+                company_id = company.id
+                branch_ids = [branch_a.id, branch_b.id]
+                warehouse_ids = [target.id, other_warehouse.id]
+                supplier_id, product_id, recipe_id, customer_id = supplier.id, product.id, recipe.id, customer.id
+                conversion_id = conversion.id
+                run_ids = [source_run.id, same_warehouse_run.id, other_warehouse_run.id]
+                plan_ids = [plan.id, approved_same_warehouse_plan.id, approved_other_warehouse_plan.id]
+                order_ids = [order.id]
+                po_ids = [target_po.id, other_branch_po.id, unassigned_po.id]
+                production_order_ids = [work_order.id, other_warehouse_work.id]
+
+            async with db.begin():
+                result = await project_demand_and_supply(db, plan.id, "WEEKLY")
+                assert result["lines_created"] == 1
+                assert len(result["excluded_purchase_orders"]) == 2
+                excluded_reasons = {item["reason"] for item in result["excluded_purchase_orders"]}
+                assert excluded_reasons == {"PURCHASE_ORDER_DESTINATION_AMBIGUOUS"}
+                detail = next(item for item in result["supply_breakdown"] if item["period_start"] == start.isoformat())
+                assert detail["opening_on_hand_qty"] == "10.000"
+                assert detail["opening_reserved_qty"] == "4.000"
+                assert detail["opening_available_qty"] == "6.000"
+                assert detail["incoming_purchase_order_qty"] == "5.000"
+                assert detail["work_in_progress_qty"] == "2.000"
+                assert detail["approved_mps_supply_qty"] == "3.000"
+                assert detail["planned_production_qty"] == "9.000"
+                assert detail["projected_ending_available_qty"] == "5.000"
+                assert detail["dated_receipts"] == [
+                    {"date": "2026-01-01", "source": "work_in_progress", "quantity": "2.000"},
+                    {"date": "2026-01-01", "source": "approved_mps", "quantity": "3.000"},
+                    {"date": "2026-01-04", "source": "purchase_order", "quantity": "5.000"},
+                ]
+                line = (await db.execute(
+                    select(MPSLine).where(MPSLine.mps_id == plan.id)
+                )).scalar_one()
+                assert line.net_requirement_qty == Decimal("9.000")
+
+                invalid_uom_po = PurchaseOrder(
+                    po_no=f"M20-S-PO-UOM-{suffix}", supplier_id=supplier.id,
+                    company_id=company.id, branch_id=branch_a.id,
+                    order_date=start, expected_delivery_date=date(2026, 1, 2),
+                    status=POStatus.ORDERED,
+                )
+                db.add(invalid_uom_po)
+                await db.flush()
+                invalid_uom_line = POLine(
+                    po_id=invalid_uom_po.id, line_no=1, product_id=product.id,
+                    ordered_quantity=Decimal("1"), received_quantity=Decimal("0"), unit="CARTON",
+                )
+                db.add(invalid_uom_line)
+                await db.flush()
+                po_ids.append(invalid_uom_po.id)
+                with pytest.raises(ValueError, match="cannot be converted to product UOM"):
+                    await project_demand_and_supply(db, plan.id, "WEEKLY")
+                assert (await db.scalar(
+                    select(func.count()).select_from(MPSLine).where(MPSLine.mps_id == plan.id)
+                )) == 1
+
+                target_stock = (await db.execute(
+                    select(Stock).where(Stock.warehouse_id == warehouse_ids[0], Stock.product_id == product.id)
+                )).scalar_one()
+                target_stock.quantity_available = Decimal("20")
+                await db.flush()
+                with pytest.raises(ValueError, match="Inventory quantities are inconsistent"):
+                    await project_demand_and_supply(db, plan.id, "WEEKLY")
+                assert (await db.scalar(
+                    select(func.count()).select_from(MPSLine).where(MPSLine.mps_id == plan.id)
+                )) == 1
+
+    finally:
+        await engine.dispose()
+        async with AsyncSessionLocal() as cleanup:
+            async with cleanup.begin():
+                if production_order_ids:
+                    await cleanup.execute(delete(ProductionOrder).where(ProductionOrder.id.in_(production_order_ids)))
+                if po_ids:
+                    await cleanup.execute(delete(PurchaseOrder).where(PurchaseOrder.id.in_(po_ids)))
+                if plan_ids:
+                    await cleanup.execute(delete(MPSPlan).where(MPSPlan.id.in_(plan_ids)))
+                if order_ids:
+                    await cleanup.execute(delete(SalesOrder).where(SalesOrder.id.in_(order_ids)))
+                if run_ids:
+                    await cleanup.execute(delete(MRPRun).where(MRPRun.id.in_(run_ids)))
+                if product_id is not None:
+                    await cleanup.execute(delete(Stock).where(Stock.product_id == product_id))
+                if recipe_id is not None:
+                    await cleanup.execute(delete(Recipe).where(Recipe.id == recipe_id))
+                if product_id is not None:
+                    await cleanup.execute(delete(Product).where(Product.id == product_id))
+                if conversion_id is not None:
+                    await cleanup.execute(delete(UomConversion).where(UomConversion.id == conversion_id))
+                if warehouse_ids:
+                    await cleanup.execute(delete(Warehouse).where(Warehouse.id.in_(warehouse_ids)))
+                if branch_ids:
+                    await cleanup.execute(delete(Branch).where(Branch.id.in_(branch_ids)))
+                if supplier_id is not None:
+                    await cleanup.execute(delete(Supplier).where(Supplier.id == supplier_id))
                 if customer_id is not None:
                     await cleanup.execute(delete(Customer).where(Customer.id == customer_id))
                 if company_id is not None:

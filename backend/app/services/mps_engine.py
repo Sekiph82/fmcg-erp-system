@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from calendar import monthrange
 from datetime import date, timedelta
-from decimal import Decimal, ROUND_CEILING, ROUND_HALF_UP
+from decimal import Decimal, ROUND_CEILING, ROUND_FLOOR, ROUND_HALF_UP
 from typing import Iterable, Mapping, Sequence
 
 
@@ -72,15 +72,50 @@ def allocate_period_quantity(
     source_days = (source_end - source_start).days + 1
     if source_days <= 0:
         raise PlanningInputError("source demand interval is invalid")
-    raw = [qty * Decimal(overlap_days(source_start, source_end, a, b)) / source_days for a, b in buckets]
-    if not raw:
+    weights = [Decimal(overlap_days(source_start, source_end, a, b)) for a, b in buckets]
+    covered_days = sum(weights, Decimal(0))
+    if not buckets:
         return []
-    rounded = [round_qty(x) for x in raw]
-    # Put rounding residue in the last intersecting bucket, keeping the source total exact.
-    indices = [i for i, (a, b) in enumerate(buckets) if overlap_days(source_start, source_end, a, b)]
-    if indices:
-        rounded[indices[-1]] += round_qty(qty) - sum(rounded)
-    return rounded
+    if covered_days <= 0:
+        return [Decimal(0)] * len(buckets)
+    covered_quantity = round_qty(qty * covered_days / source_days)
+    return allocate_weighted_quantity(covered_quantity, weights)
+
+
+def allocate_weighted_quantity(quantity: object, weights: Sequence[object], places: int = 3) -> list[Decimal]:
+    """Allocate a rounded quantity proportionally without negative rounding residues."""
+    qty = decimal(quantity)
+    if qty < 0:
+        raise PlanningInputError("demand quantities cannot be negative")
+    normalized_weights = [decimal(weight) for weight in weights]
+    if any(weight < 0 for weight in normalized_weights):
+        raise PlanningInputError("allocation weights cannot be negative")
+    if not normalized_weights:
+        if round_qty(qty, places) > 0:
+            raise PlanningInputError("a positive quantity requires at least one allocation weight")
+        return []
+    total_weight = sum(normalized_weights, Decimal(0))
+    target = round_qty(qty, places)
+    if total_weight <= 0:
+        if target == 0:
+            return [Decimal(0)] * len(normalized_weights)
+        raise PlanningInputError("a positive quantity requires positive allocation weight")
+
+    scale = Decimal(10) ** places
+    target_units = int(target * scale)
+    raw_units = [Decimal(target_units) * weight / total_weight for weight in normalized_weights]
+    allocated_units = [int(value.to_integral_value(rounding=ROUND_FLOOR)) for value in raw_units]
+    remaining_units = target_units - sum(allocated_units)
+    # Stable largest-remainder distribution; ties favor later buckets, matching
+    # the previous convention of placing rounding residue at the end.
+    order = sorted(
+        range(len(raw_units)),
+        key=lambda index: (raw_units[index] - allocated_units[index], index),
+        reverse=True,
+    )
+    for index in order[:remaining_units]:
+        allocated_units[index] += 1
+    return [Decimal(units) / scale for units in allocated_units]
 
 
 def net_finished_goods_requirement(

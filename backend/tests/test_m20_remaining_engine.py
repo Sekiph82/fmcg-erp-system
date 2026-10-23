@@ -10,6 +10,7 @@ import pytest
 from app.services.mps_engine import (
     PlanningInputError,
     allocate_period_quantity,
+    allocate_weighted_quantity,
     capacity_result,
     explode_approved_bom,
     net_finished_goods_requirement,
@@ -43,6 +44,21 @@ def test_demand_allocation_conserves_quantity_over_partial_periods():
     allocated = allocate_period_quantity(Decimal("101.123"), date(2026, 1, 2), date(2026, 1, 9), buckets)
     assert sum(allocated) == Decimal("101.123")
     assert allocated == [Decimal("37.921"), Decimal("63.202")]
+
+
+def test_small_demand_allocations_conserve_quantity_without_negative_residuals():
+    start = date(2026, 1, 1)
+    daily = period_buckets(start, date(2026, 1, 6), "DAILY")
+    by_period = allocate_period_quantity(Decimal("0.004"), start, date(2026, 1, 6), daily)
+    by_forecast_day = allocate_weighted_quantity(Decimal("0.002"), [Decimal("0.001")] * 6)
+
+    assert all(quantity >= 0 for quantity in by_period)
+    assert sum(by_period) == Decimal("0.004")
+    assert all(quantity >= 0 for quantity in by_forecast_day)
+    assert sum(by_forecast_day) == Decimal("0.002")
+    with pytest.raises(PlanningInputError, match="at least one allocation weight"):
+        allocate_weighted_quantity(Decimal("0.001"), [])
+    assert allocate_weighted_quantity(Decimal("0"), []) == []
 
 
 def test_demand_allocation_rejects_negative_and_invalid_periods():

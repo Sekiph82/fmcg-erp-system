@@ -76,6 +76,34 @@ export interface MPSLine {
   production_order_id: string | null;
 }
 
+export interface MPSDemandSupplyBreakdown {
+  product_id: string;
+  period_start: string;
+  period_end: string;
+  opening_on_hand_qty: string | null;
+  opening_reserved_qty: string;
+  opening_available_qty: string;
+  confirmed_demand_qty: string;
+  forecast_qty: string;
+  safety_stock_target_qty: string;
+  incoming_purchase_order_qty: string;
+  work_in_progress_qty: string;
+  approved_mps_supply_qty: string;
+  locked_mps_supply_qty: string;
+  planned_production_qty: string;
+  projected_ending_available_qty: string;
+  dated_receipts: Array<{ date: string; source: string; quantity: string }>;
+}
+
+export interface MPSExcludedPurchaseOrder {
+  po_no: string;
+  product_id: string;
+  expected_delivery_date: string;
+  open_quantity: string;
+  uom: string;
+  reason: "PURCHASE_ORDER_DESTINATION_AMBIGUOUS" | "PURCHASE_ORDER_OVERDUE" | "PURCHASE_ORDER_AFTER_HORIZON";
+}
+
 export interface MPSCampaign {
   id: string;
   campaign_code: string;
@@ -308,7 +336,15 @@ export const mpsApi = {
   }) => apiClient.post<{ lines_created: number }>(`${BASE}/plans/${mpsId}/generate-from-mrp`, body).then((r) => r.data),
 
   projectDemand: (mpsId: string, periodType: "DAILY" | "WEEKLY" | "MONTHLY" = "WEEKLY") =>
-    apiClient.post<{ lines_created: number; demand_products: number; periods: number; warehouse_id: string; source_mrp_run_id: string }>(`${BASE}/plans/${mpsId}/project-demand?period_type=${periodType}`, {}).then((r) => r.data),
+    apiClient.post<{
+      lines_created: number;
+      demand_products: number;
+      periods: number;
+      warehouse_id: string;
+      source_mrp_run_id: string;
+      supply_breakdown: MPSDemandSupplyBreakdown[];
+      excluded_purchase_orders: MPSExcludedPurchaseOrder[];
+    }>(`${BASE}/plans/${mpsId}/project-demand?period_type=${periodType}`, {}).then((r) => r.data),
   evaluateMaterialFeasibility: (mpsId: string) =>
     apiClient.post<{ lines_evaluated: number; feasible_lines: number; material_short_lines: number; infeasible_lines: number; diagnostic_run_id: string | null }>(`${BASE}/plans/${mpsId}/material-feasibility`, {}).then((r) => r.data),
   getConstraints: (mpsId: string) =>
