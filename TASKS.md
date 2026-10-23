@@ -10,9 +10,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 - Current Milestone: M20 — Master Production Scheduling
 - Current Sprint: M20.S02 — Demand & Supply Coupling
-- Current Task: M20.S02.T002 — Couple MPS demand to available/on-order inventory
-- Current Task Status: COMPLETE
-- Next Task/Action: Explicit next-task selection required
+- Current Task: M20.S02.T003 — Couple MPS to BOM/material feasibility
+- Current Task Status: READY
+- Next Task/Action: M20.S02.T003 — Couple MPS to BOM/material feasibility
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
