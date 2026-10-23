@@ -325,7 +325,7 @@ This update is scoped to the evidence-index and closeout preparation required by
 - `frontend/e2e/m20-scenario-backend-roundtrip.spec.ts`: real browser-to-API scenario persistence test.
 - `evidence/v04/`: 17 responsive/Developer Portal screenshots and four sanitized traces listed in the earlier matrix. Their visual and trace acceptance remains independent-auditor work.
 - `CHATGPT_M20_STRICT_AUDIT_V05.md` and `CHATGPT_M20_STRICT_AUDIT_CRITERIA_V01.md`: current independent verdict and mandatory acceptance rules.
-- Implementation pins: historical V03 work `402f699e1e2e4cd8e04a9106157f012a4f21780c`; V05 remediation `0b5033e28c12f7f2f202102496bb5c51d50723f4`; T002 `f9db28333d97b954ea171993aa7a8777047cd110`; T003 `c4ec24ba24396acfe3fb1a2ff8bc2b303f7a9b96`. T004 test/evidence and tracker completion are in the task closeout commit recorded below.
+- Implementation pins: historical V03 work `402f699e1e2e4cd8e04a9106157f012a4f21780c`; V05 remediation `0b5033e28c12f7f2f202102496bb5c51d50723f4`; T002 `f9db28333d97b954ea171993aa7a8777047cd110`; T003 `c4ec24ba24396acfe3fb1a2ff8bc2b303f7a9b96`; T004 evidence/test/tracker closeout `763cf2935868852d1725d8c51051ee1a734a47a3`.
 
 ### Open risks and objective exit criteria
 
