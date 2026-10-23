@@ -31,6 +31,7 @@ from app.services.auth_refresh_tokens import (
     InvalidRefreshToken,
     issue_auth_token_pair,
     refresh_family_for_token,
+    revoke_all_user_sessions,
     revoke_refresh_family,
     rotate_refresh_token,
 )
@@ -235,6 +236,23 @@ async def logout(
     )
     await db.commit()
     return {"detail": "Logged out successfully"}
+
+
+@router.post(
+    "/logout-all",
+    summary="Revoke all sessions",
+    description="Revokes every refresh session and invalidates all access tokens for the authenticated user.",
+)
+async def logout_all_sessions(
+    response: Response,
+    current_user=Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    revoked_count = await revoke_all_user_sessions(db, current_user.id)
+    await db.commit()
+    clear_auth_cookie(response)
+    clear_refresh_cookie(response)
+    return {"detail": "All sessions revoked successfully", "refresh_tokens_revoked": revoked_count}
 
 
 @router.post(

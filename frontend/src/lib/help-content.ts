@@ -409,12 +409,12 @@ export const helpTopics: Record<string, HelpTopic> = {
   "admin-security": {
     title: "Security Settings",
     purpose:
-      "Manage two-factor authentication and security configuration for your user account. View your login history and active sessions.",
+      "Manage two-factor authentication and security configuration for your user account. Sign out all active sessions when you need to secure every device.",
     mainActions: [
       "Enable or disable two-factor authentication (TOTP)",
       "Generate and store recovery codes",
       "View recent login history and failed attempts",
-      "Terminate other active sessions",
+      "Sign out all active sessions on every device",
     ],
     keyFields: [
       { label: "2FA Status", description: "Whether TOTP two-factor authentication is active" },

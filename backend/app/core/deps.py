@@ -61,6 +61,9 @@ async def get_current_user(
     if not user.is_active:
         logger.warning("Auth failed: user_id=%s is inactive", user_id)
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found or inactive")
+    token_session_version = payload.get("usv", 0)
+    if not isinstance(token_session_version, int) or token_session_version != user.auth_session_version:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Session has been revoked. Please log in again.")
     return user
 
 

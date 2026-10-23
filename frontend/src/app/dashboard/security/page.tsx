@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
 import {
   getSettings, setup2FA, verify2FA, disable2FA, regenerateRecoveryCodes,
-  get2FAReport, getSecurityRiskReport, getAccessAnomalyReport, resendOTP,
+  get2FAReport, getSecurityRiskReport, getAccessAnomalyReport, resendOTP, revokeAllSessions,
   TwoFAMethod, TwoFASettingsRead, TwoFASetupResponse, TwoFAStatusReport,
 } from "@/lib/twoFactor";
 import { Button } from "@/components/ui/Button";
@@ -30,6 +30,8 @@ export default function SecurityPage() {
   const [riskReport, setRiskReport] = useState<unknown>(null);
   const [anomalyReport, setAnomalyReport] = useState<unknown>(null);
   const [resendCooldown, setResendCooldown] = useState(0);
+  const [revokingSessions, setRevokingSessions] = useState(false);
+  const [sessionError, setSessionError] = useState("");
   const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -140,6 +142,21 @@ export default function SecurityPage() {
     }
   }
 
+  async function handleRevokeAllSessions() {
+    if (!window.confirm("Sign out this account on every device, including this one?")) return;
+    setSessionError("");
+    setRevokingSessions(true);
+    try {
+      await revokeAllSessions();
+      window.location.replace("/login");
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { detail?: string } } };
+      setSessionError(e?.response?.data?.detail || "Could not sign out all sessions. Try again.");
+    } finally {
+      setRevokingSessions(false);
+    }
+  }
+
   async function loadReport() {
     try {
       const [r, risk, anomaly] = await Promise.all([
@@ -237,6 +254,23 @@ export default function SecurityPage() {
             </Button>
           </div>
         )}
+      </div>
+
+      <div className="bg-white rounded-2xl border border-red-200 p-6 space-y-3">
+        <div>
+          <h2 className="text-lg font-semibold text-gray-900">Active sessions</h2>
+          <p className="text-sm text-gray-500 mt-1">
+            Sign out this account on every device. You will need to sign in again here.
+          </p>
+        </div>
+        {sessionError && (
+          <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+            {sessionError}
+          </div>
+        )}
+        <Button variant="danger" onClick={handleRevokeAllSessions} loading={revokingSessions}>
+          Sign out all sessions
+        </Button>
       </div>
 
       {/* QR Code display (TOTP) */}

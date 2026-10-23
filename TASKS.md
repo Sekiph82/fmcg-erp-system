@@ -10,9 +10,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 - Current Milestone: M02 — Authentication / RBAC
 - Current Sprint: M02.S03 — Session & Privilege Hardening
-- Current Task: M02.S03.T002 — Implement inactivity/session-expiry policy
+- Current Task: M02.S03.T003 — Prove user-wide issued-session revocation
 - Current Task Status: COMPLETE
-- Next Task/Action: M02.S03.T003 — Prove user-wide issued-session revocation
+- Next Task/Action: M02.S03.T004 — Enforce privileged-role 2FA policy
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -183,7 +183,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
   Evidence: [T001 closeout](coordination/milestones/M02/evidence/v01/t001-local-20261023/CLOSEOUT.md)
 - [x] M02.S03.T002 — Implement inactivity/session-expiry policy
   Evidence: [T002 closeout](coordination/milestones/M02/evidence/v01/t002-local-20261023/CLOSEOUT.md)
-- [ ] M02.S03.T003 — Prove user-wide issued-session revocation
+- [x] M02.S03.T003 — Prove user-wide issued-session revocation
+  Evidence: [T003 closeout](coordination/milestones/M02/evidence/v01/t003-local-20261023/CLOSEOUT.md)
 - [ ] M02.S03.T004 — Enforce privileged-role 2FA policy
 - [ ] M02.S03.T005 — Verify CSRF and tenant/company isolation in production-like runtime
 

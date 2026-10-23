@@ -51,18 +51,31 @@ async def _lock_refresh_family(db: AsyncSession, family_id: uuid.UUID) -> None:
 
 async def issue_auth_token_pair(db: AsyncSession, user_id: uuid.UUID | str) -> AuthTokenPair:
     """Create an access JWT and the first hashed refresh credential in a new family."""
+    user_id = uuid.UUID(str(user_id))
+    user = await db.scalar(
+        select(User)
+        .where(User.id == user_id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    )
+    if user is None or not user.is_active:
+        raise ValueError("Cannot issue an authentication session for a missing or inactive user")
     now = datetime.now(timezone.utc)
     family_id = uuid.uuid4()
     refresh_token = _new_refresh_token()
     db.add(AuthRefreshToken(
         family_id=family_id,
-        user_id=uuid.UUID(str(user_id)),
+        user_id=user.id,
         token_hash=_token_hash(refresh_token),
         expires_at=_expiry(now),
         last_activity_at=now,
     ))
     return AuthTokenPair(
-        access_token=create_access_token(str(user_id), session_id=str(family_id)),
+        access_token=create_access_token(
+            str(user.id),
+            session_id=str(family_id),
+            session_version=user.auth_session_version,
+        ),
         refresh_token=refresh_token,
         family_id=family_id,
     )
@@ -149,11 +162,23 @@ async def _revoke_family(
 
 async def rotate_refresh_token(db: AsyncSession, raw_token: str) -> tuple[AuthTokenPair, User]:
     """Atomically consume one refresh token and issue its sole successor."""
-    family_id = await db.scalar(
-        select(AuthRefreshToken.family_id)
+    identity = (await db.execute(
+        select(AuthRefreshToken.family_id, AuthRefreshToken.user_id)
         .where(AuthRefreshToken.token_hash == _token_hash(raw_token))
+    )).first()
+    if identity is None:
+        raise InvalidRefreshToken
+    family_id, user_id = identity
+
+    # User locking serializes this rotation against user-wide revocation and
+    # session issuance. Every path takes the user lock before any family lock.
+    user = await db.scalar(
+        select(User)
+        .where(User.id == user_id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
     )
-    if family_id is None:
+    if user is None:
         raise InvalidRefreshToken
 
     # Acquire the family lock before any token-row lock. Otherwise a replay
@@ -212,8 +237,7 @@ async def rotate_refresh_token(db: AsyncSession, raw_token: str) -> tuple[AuthTo
         await db.commit()
         raise InvalidRefreshToken
 
-    user = await db.get(User, row.user_id)
-    if user is None or not user.is_active:
+    if not user.is_active:
         await _revoke_family(db, row.family_id, now)
         await db.commit()
         raise InvalidRefreshToken
@@ -251,10 +275,57 @@ async def rotate_refresh_token(db: AsyncSession, raw_token: str) -> tuple[AuthTo
         details={"refresh_token_id": str(row.id), "successor_id": str(next_row.id)},
     )
     return AuthTokenPair(
-        access_token=create_access_token(str(user.id), session_id=str(row.family_id)),
+        access_token=create_access_token(
+            str(user.id),
+            session_id=str(row.family_id),
+            session_version=user.auth_session_version,
+        ),
         refresh_token=successor,
         family_id=row.family_id,
     ), user
+
+
+async def revoke_all_user_sessions(db: AsyncSession, user_id: uuid.UUID) -> int:
+    """Revoke every refresh family and increment the user's access-token version."""
+    user = await db.scalar(
+        select(User)
+        .where(User.id == user_id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    )
+    if user is None:
+        return 0
+
+    # Login and refresh also lock this user row before issuing credentials, so
+    # no concurrent session can slip between discovery and family revocation.
+    family_ids = set((await db.scalars(
+        select(AuthRefreshToken.family_id)
+        .where(AuthRefreshToken.user_id == user_id, AuthRefreshToken.revoked_at.is_(None))
+        .distinct()
+    )).all())
+    for family_id in sorted(family_ids, key=str):
+        await _lock_refresh_family(db, family_id)
+
+    user.auth_session_version += 1
+    revoked_rows = await db.execute(
+        update(AuthRefreshToken)
+        .where(
+            AuthRefreshToken.user_id == user_id,
+            AuthRefreshToken.revoked_at.is_(None),
+        )
+        .values(revoked_at=func.clock_timestamp())
+        .returning(AuthRefreshToken.id)
+    )
+    revoked_count = len(revoked_rows.all())
+    await audit_crud.log_event(
+        db,
+        event_type=AuditEvent.AUTH_SESSIONS_REVOKED,
+        actor_id=user_id,
+        target_type="user",
+        target_id=str(user_id),
+        details={"reason": "user_logout_all", "refresh_tokens_revoked": revoked_count},
+    )
+    return revoked_count
 
 
 async def revoke_refresh_family(

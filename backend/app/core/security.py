@@ -50,6 +50,7 @@ def create_access_token(
     subject: Any,
     expires_delta: timedelta | None = None,
     session_id: str | None = None,
+    session_version: int | None = None,
 ) -> str:
     expire = datetime.now(timezone.utc) + (
         expires_delta or timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -57,6 +58,8 @@ def create_access_token(
     payload = {"sub": str(subject), "exp": expire, "jti": str(uuid.uuid4())}
     if session_id is not None:
         payload["sid"] = str(session_id)
+    if session_version is not None:
+        payload["usv"] = session_version
     return jwt.encode(payload, settings.SECRET_KEY, algorithm=ALGORITHM)
 
 

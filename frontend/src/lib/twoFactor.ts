@@ -44,6 +44,11 @@ export async function getSettings(): Promise<TwoFASettingsRead> {
   return res.data;
 }
 
+export async function revokeAllSessions(): Promise<{ detail: string; refresh_tokens_revoked: number }> {
+  const res = await apiClient.post<{ detail: string; refresh_tokens_revoked: number }>("/api/v1/auth/logout-all");
+  return res.data;
+}
+
 export async function setup2FA(method: TwoFAMethod, phone_number?: string, email?: string): Promise<TwoFASetupResponse> {
   const res = await apiClient.post<TwoFASetupResponse>("/api/v1/auth/2fa/setup", { method, phone_number, email });
   return res.data;

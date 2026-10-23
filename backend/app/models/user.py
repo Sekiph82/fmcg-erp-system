@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import Column, String, Boolean, Table, ForeignKey
+from sqlalchemy import Column, String, Boolean, Integer, Table, ForeignKey, text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -25,6 +25,7 @@ class User(Base, TimestampMixin):
     is_active = Column(Boolean, default=True, nullable=False)
     is_superuser = Column(Boolean, default=False, nullable=False)
     must_change_password = Column(Boolean, default=False, nullable=False)
+    auth_session_version = Column(Integer, default=0, server_default=text("0"), nullable=False)
 
     roles = relationship("Role", secondary=user_role, back_populates="users")
     access_scopes = relationship("AccessScope", back_populates="user", cascade="all, delete-orphan")

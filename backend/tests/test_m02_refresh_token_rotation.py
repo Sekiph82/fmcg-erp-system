@@ -17,7 +17,7 @@ from sqlalchemy.engine import URL
 from app.api.v1.endpoints.auth import router as auth_router
 from app.core.config import settings
 from app.core.deps import get_auth_db, get_current_user, get_db
-from app.core.security import hash_password
+from app.core.security import create_access_token, hash_password
 from app.db.session import AsyncSessionLocal, engine
 from app.models.audit_log import AuditLog, AuditEvent
 from app.models.auth_refresh_token import AuthRefreshToken
@@ -32,7 +32,7 @@ def _is_task_owned_disposable_m02_database(url, expected_name: str | None) -> bo
         url.drivername in {"postgresql", "postgresql+asyncpg"}
         and url.host in {"127.0.0.1", "localhost", "::1"}
         and isinstance(expected_name, str)
-        and re.fullmatch(r"fmcg_m02_t00[12]_[a-f0-9]{20,32}", expected_name) is not None
+        and re.fullmatch(r"fmcg_m02_t00[123]_[a-f0-9]{20,32}", expected_name) is not None
         and url.database == expected_name
     )
 
@@ -44,14 +44,17 @@ def _require_task_owned_disposable_postgres() -> None:
     if not _is_task_owned_disposable_m02_database(engine.url, expected_name):
         pytest.fail(
             "Refusing M02 integration writes: DATABASE_URL must target the exact loopback PostgreSQL database "
-            "named by M02_DISPOSABLE_TEST_DATABASE_NAME (fmcg_m02_t001_ or fmcg_m02_t002_ followed by 20-32 hex chars)."
+            "named by M02_DISPOSABLE_TEST_DATABASE_NAME (fmcg_m02_t001_, t002_, or t003_ followed by 20-32 hex chars)."
         )
 
 
 def test_disposable_database_guard_requires_exact_unique_loopback_target():
     name = "fmcg_m02_t001_0123456789abcdef0123"
+    t003_name = "fmcg_m02_t003_0123456789abcdef0123"
     safe = URL.create("postgresql+asyncpg", username="test", host="127.0.0.1", database=name)
     assert _is_task_owned_disposable_m02_database(safe, name)
+    t003_safe = URL.create("postgresql+asyncpg", username="test", host="127.0.0.1", database=t003_name)
+    assert _is_task_owned_disposable_m02_database(t003_safe, t003_name)
     assert not _is_task_owned_disposable_m02_database(safe, "fmcg_m02_t001_0123456789abcdef0124")
     assert not _is_task_owned_disposable_m02_database(safe, "fmcg_m02_t001_short")
     assert not _is_task_owned_disposable_m02_database(
@@ -622,4 +625,109 @@ async def test_logout_revokes_refresh_family_and_clears_both_cookies(monkeypatch
     finally:
         client_app.dependency_overrides.clear()
         await _delete_user(user.id)
+        await engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_logout_all_revokes_every_session_and_allows_a_new_login():
+    _require_task_owned_disposable_postgres()
+    await engine.dispose()
+    user = await _create_user()
+    other_user = await _create_user()
+    async with AsyncSessionLocal() as db:
+        first = await issue_auth_token_pair(db, user.id)
+        await db.commit()
+    async with AsyncSessionLocal() as db:
+        second = await issue_auth_token_pair(db, user.id)
+        await db.commit()
+    async with AsyncSessionLocal() as db:
+        other_session = await issue_auth_token_pair(db, other_user.id)
+        await db.commit()
+    legacy_access = create_access_token(str(user.id))
+
+    client_app = _app()
+    try:
+        async with AsyncClient(
+            transport=ASGITransport(app=client_app),
+            base_url="http://m02-auth.test",
+            cookies={settings.AUTH_COOKIE_NAME: legacy_access},
+        ) as legacy_client:
+            assert (await legacy_client.get("/protected")).status_code == 200
+
+        async with AsyncClient(
+            transport=ASGITransport(app=client_app),
+            base_url="http://m02-auth.test",
+            cookies={
+                settings.AUTH_COOKIE_NAME: first.access_token,
+                settings.REFRESH_TOKEN_COOKIE_NAME: first.refresh_token,
+            },
+        ) as owner_client:
+            response = await owner_client.post("/api/v1/auth/logout-all")
+        assert response.status_code == 200, response.text
+        assert response.json()["refresh_tokens_revoked"] == 2
+        cleared_cookies = response.headers.get("set-cookie", "").lower()
+        assert settings.AUTH_COOKIE_NAME.lower() in cleared_cookies
+        assert settings.REFRESH_TOKEN_COOKIE_NAME.lower() in cleared_cookies
+
+        for access_token in (first.access_token, second.access_token, legacy_access):
+            async with AsyncClient(
+                transport=ASGITransport(app=client_app),
+                base_url="http://m02-auth.test",
+                cookies={settings.AUTH_COOKIE_NAME: access_token},
+            ) as client:
+                assert (await client.get("/protected")).status_code == 401
+
+        for refresh_token in (first.refresh_token, second.refresh_token):
+            async with AsyncClient(
+                transport=ASGITransport(app=client_app),
+                base_url="http://m02-auth.test",
+                cookies={settings.REFRESH_TOKEN_COOKIE_NAME: refresh_token},
+            ) as client:
+                assert (await client.post("/api/v1/auth/refresh")).status_code == 401
+
+        async with AsyncClient(
+            transport=ASGITransport(app=client_app),
+            base_url="http://m02-auth.test",
+            cookies={settings.AUTH_COOKIE_NAME: other_session.access_token},
+        ) as other_access_client:
+            assert (await other_access_client.get("/protected")).status_code == 200
+        async with AsyncClient(
+            transport=ASGITransport(app=client_app),
+            base_url="http://m02-auth.test",
+            cookies={settings.REFRESH_TOKEN_COOKIE_NAME: other_session.refresh_token},
+        ) as other_refresh_client:
+            assert (await other_refresh_client.post("/api/v1/auth/refresh")).status_code == 200
+
+        async with AsyncSessionLocal() as db:
+            stored_user = await db.get(User, user.id)
+            assert stored_user is not None and stored_user.auth_session_version == 1
+            revoked_rows = (await db.scalars(select(AuthRefreshToken).where(
+                AuthRefreshToken.user_id == user.id,
+            ))).all()
+            assert len(revoked_rows) == 2
+            assert all(row.revoked_at is not None for row in revoked_rows)
+            event = await db.scalar(select(AuditLog.id).where(
+                AuditLog.event_type == AuditEvent.AUTH_SESSIONS_REVOKED,
+                AuditLog.target_id == str(user.id),
+            ))
+            assert event is not None
+            other_rows = (await db.scalars(select(AuthRefreshToken).where(
+                AuthRefreshToken.user_id == other_user.id,
+            ))).all()
+            assert len(other_rows) == 2
+            assert all(row.revoked_at is None for row in other_rows)
+
+        async with AsyncSessionLocal() as db:
+            new_session = await issue_auth_token_pair(db, user.id)
+            await db.commit()
+        async with AsyncClient(
+            transport=ASGITransport(app=client_app),
+            base_url="http://m02-auth.test",
+            cookies={settings.AUTH_COOKIE_NAME: new_session.access_token},
+        ) as new_session_client:
+            assert (await new_session_client.get("/protected")).status_code == 200
+    finally:
+        client_app.dependency_overrides.clear()
+        await _delete_user(user.id)
+        await _delete_user(other_user.id)
         await engine.dispose()
