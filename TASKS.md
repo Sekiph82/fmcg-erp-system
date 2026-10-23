@@ -11,7 +11,7 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 - Current Milestone: M20 — Master Production Scheduling
 - Current Sprint: M20.S02 — Demand & Supply Coupling
 - Current Task: M20.S02.T003 — Couple MPS to BOM/material feasibility
-- Current Task Status: READY
+- Current Task Status: IN_PROGRESS
 - Next Task/Action: M20.S02.T003 — Couple MPS to BOM/material feasibility
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
@@ -551,7 +551,7 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 ## M20.S02 — Demand & Supply Coupling
 - [x] M20.S02.T001 — Consolidate demand inputs: sales orders/forecast/safety stock
 - [x] M20.S02.T002 — Couple MPS demand to available/on-order inventory
-- [ ] M20.S02.T003 — Couple MPS to BOM/material feasibility
+- [~] M20.S02.T003 — Couple MPS to BOM/material feasibility
 - [ ] M20.S02.T004 — Expose shortage/constraint reasons per planned line
 
 ## M20.S03 — Capacity & Campaign Planning
