@@ -60,14 +60,24 @@ export default function MPSConstraintsPage() {
               <span className={`rounded px-2 py-0.5 text-xs font-semibold ${issue.priority === "CRITICAL" ? "bg-red-100 text-red-800" : issue.priority === "HIGH" ? "bg-orange-100 text-orange-800" : "bg-slate-100 text-slate-700"}`}>{issue.priority}</span>
             </div>
             {issue.message && <p className="mt-2">{issue.message}</p>}
-            <dl className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              <div><dt className="text-gray-500">Material</dt><dd>{issue.material_code ?? issue.material_id ?? "Not applicable / unavailable"}</dd></div>
+            {(issue.material_id || issue.material_code || issue.required_qty !== undefined || issue.shortage_qty !== undefined) && <dl className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              <div><dt className="text-gray-500">Material</dt><dd>{issue.material_code ?? issue.material_id ?? "Not identified"}</dd></div>
               <div><dt className="text-gray-500">Required by</dt><dd>{issue.required_date ?? row.diagnostics.required_date ?? "Not recorded"}</dd></div>
               <div><dt className="text-gray-500">Required quantity</dt><dd>{issue.required_qty !== undefined ? `${issue.required_qty} ${issue.uom ?? ""}` : "Not available"}</dd></div>
               <div><dt className="text-gray-500">Available quantity</dt><dd>{issue.available_qty !== undefined ? `${issue.available_qty} ${issue.uom ?? ""}` : "Not available"}</dd></div>
               <div><dt className="text-gray-500">Shortage quantity</dt><dd>{issue.shortage_qty !== undefined ? `${issue.shortage_qty} ${issue.uom ?? ""}` : "Not available"}</dd></div>
               <div><dt className="text-gray-500">Latest order date</dt><dd>{issue.latest_order_date ?? "Not calculated"}</dd></div>
-            </dl>
+            </dl>}
+            {(issue.work_center_id || issue.required_hours !== undefined || issue.overload_hours !== undefined) && <dl className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              <div><dt className="text-gray-500">Work center</dt><dd>{issue.work_center_id ?? "Not identified"}</dd></div>
+              <div><dt className="text-gray-500">Affected date</dt><dd>{issue.date ?? (issue.from_date && issue.to_date ? `${issue.from_date} – ${issue.to_date}` : issue.dates?.join(", ") ?? row.diagnostics.required_date ?? "Not recorded")}</dd></div>
+              <div><dt className="text-gray-500">Required hours</dt><dd>{issue.required_hours ?? "Not available"}</dd></div>
+              <div><dt className="text-gray-500">Available hours</dt><dd>{issue.available_hours ?? "Not available"}</dd></div>
+              <div><dt className="text-gray-500">Downtime hours</dt><dd>{issue.downtime_hours ?? "Not available"}</dd></div>
+              <div><dt className="text-gray-500">Overload hours</dt><dd>{issue.overload_hours ?? "Not available"}</dd></div>
+              {issue.capacity_uom && <div><dt className="text-gray-500">Configured capacity rate unit</dt><dd>{issue.capacity_uom}</dd></div>}
+              {issue.product_uom && <div><dt className="text-gray-500">Product unit</dt><dd>{issue.product_uom}</dd></div>}
+            </dl>}
             {issue.substitution_policy && <p className="mt-2">Substitution policy: <b>{issue.substitution_policy}</b>{issue.substitute_group_id ? ` · group ${issue.substitute_group_id}` : ""}</p>}
             {issue.excluded_receipts?.length ? <p className="mt-2">Excluded receipts: {issue.excluded_receipts.map((receipt) => `${receipt.po_no} (${receipt.due_date}: ${receipt.reason})`).join(", ")}</p> : null}
             <p className="mt-2 text-xs text-gray-600">Source: {issue.provenance}</p>

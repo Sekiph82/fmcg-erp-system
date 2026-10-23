@@ -11,11 +11,15 @@ For each MPS line:
 from __future__ import annotations
 
 import uuid
-from datetime import date, timedelta
-from decimal import Decimal, ROUND_HALF_UP
+import re
+from collections import defaultdict
+from datetime import date, datetime, timedelta, timezone
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from typing import Dict, List, Optional, Tuple
 
+from fastapi import HTTPException
 from sqlalchemy import select, func, delete
+from sqlalchemy.exc import MultipleResultsFound
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.mps import (
@@ -56,6 +60,110 @@ def _throughput_per_hour(wc: WorkCenter) -> Decimal:
     if wc.capacity and float(wc.capacity) > 0:
         return _D(wc.capacity)
     return Decimal(str(_DEFAULT_THROUGHPUT))
+
+
+def _validated_calendar_hours(calendar) -> tuple[Decimal | None, str | None]:
+    """Validate declared daily hours against any configured shift windows."""
+    available = _D(calendar.available_hours)
+    if not available.is_finite() or available < 0 or available > 24:
+        return None, "available_hours must be finite and between 0 and 24"
+
+    shifts = []
+    for number in range(1, 4):
+        start_value = getattr(calendar, f"shift_{number}_start", None)
+        end_value = getattr(calendar, f"shift_{number}_end", None)
+        start_text = str(start_value).strip() if start_value is not None else ""
+        end_text = str(end_value).strip() if end_value is not None else ""
+        if not start_text and not end_text:
+            continue
+        if not start_text or not end_text:
+            return None, f"shift {number} has an incomplete start/end pair"
+        start_match = re.fullmatch(r"([0-2][0-9]):([0-5][0-9])", start_text)
+        end_match = re.fullmatch(r"([0-2][0-9]):([0-5][0-9])", end_text)
+        if not start_match or not end_match:
+            return None, f"shift {number} must use HH:MM times"
+        start_hour, start_minute = map(int, start_match.groups())
+        end_hour, end_minute = map(int, end_match.groups())
+        if start_hour > 23 or end_hour > 23:
+            return None, f"shift {number} time is outside the 00:00-23:59 range"
+        start_minute_of_day = start_hour * 60 + start_minute
+        end_minute_of_day = end_hour * 60 + end_minute
+        if start_minute_of_day == end_minute_of_day:
+            return None, f"shift {number} has an ambiguous zero/full-day duration"
+        end_absolute = end_minute_of_day if end_minute_of_day > start_minute_of_day else end_minute_of_day + 1440
+        segments = [(start_minute_of_day, min(end_absolute, 1440))]
+        if end_absolute > 1440:
+            segments.append((0, end_absolute - 1440))
+        shifts.append((number, segments, end_absolute - start_minute_of_day))
+
+    for index, (left_number, left_segments, _) in enumerate(shifts):
+        for right_number, right_segments, _ in shifts[index + 1:]:
+            if any(max(left_start, right_start) < min(left_end, right_end)
+                   for left_start, left_end in left_segments
+                   for right_start, right_end in right_segments):
+                return None, f"shifts {left_number} and {right_number} overlap"
+    if shifts:
+        scheduled_hours = Decimal(sum(shift[2] for shift in shifts)) / Decimal(60)
+        if abs(available - scheduled_hours) > Decimal("0.01"):
+            return None, "available_hours does not equal the configured shift duration"
+    return available, None
+
+
+def _calendar_shift_windows(calendar, day: date) -> list[tuple[datetime, datetime]]:
+    """Build UTC intervals for shifts that start on the calendar's date."""
+    windows = []
+    for number in range(1, 4):
+        start_value = getattr(calendar, f"shift_{number}_start", None)
+        end_value = getattr(calendar, f"shift_{number}_end", None)
+        if start_value is None or end_value is None:
+            continue
+        start_hour, start_minute = map(int, str(start_value).strip().split(":"))
+        end_hour, end_minute = map(int, str(end_value).strip().split(":"))
+        start = datetime.combine(day, datetime.min.time(), tzinfo=timezone.utc).replace(
+            hour=start_hour, minute=start_minute,
+        )
+        end_day = day + timedelta(days=1) if (end_hour, end_minute) <= (start_hour, start_minute) else day
+        end = datetime.combine(end_day, datetime.min.time(), tzinfo=timezone.utc).replace(
+            hour=end_hour, minute=end_minute,
+        )
+        windows.append((start, end))
+    if windows:
+        return windows
+    day_start = datetime.combine(day, datetime.min.time(), tzinfo=timezone.utc)
+    return [(day_start, day_start + timedelta(days=1))]
+
+
+def _cross_calendar_shift_errors(calendars) -> dict[tuple[uuid.UUID, date], str]:
+    """Reject explicit shifts that overlap in real time across calendar dates."""
+    grouped: dict[uuid.UUID, list[tuple[datetime, datetime, tuple[uuid.UUID, date]]]] = defaultdict(list)
+    for calendar in calendars:
+        if calendar.is_holiday or calendar.is_maintenance:
+            continue
+        key = (calendar.work_center_id, calendar.calendar_date)
+        _, error = _validated_calendar_hours(calendar)
+        if error:
+            continue
+        has_explicit_shift = any(
+            getattr(calendar, f"shift_{number}_{edge}", None) is not None
+            for number in range(1, 4) for edge in ("start", "end")
+        )
+        if not has_explicit_shift:
+            continue
+        grouped[calendar.work_center_id].extend(
+            (left, right, key) for left, right in _calendar_shift_windows(calendar, calendar.calendar_date)
+        )
+
+    errors: dict[tuple[uuid.UUID, date], str] = {}
+    for windows in grouped.values():
+        active: list[tuple[datetime, tuple[uuid.UUID, date]]] = []
+        for start, end, key in sorted(windows, key=lambda item: (item[0], item[1])):
+            active = [(active_end, active_key) for active_end, active_key in active if active_end > start]
+            for _, active_key in active:
+                if active_key != key:
+                    errors[key] = f"configured shift overlaps another calendar shift on {active_key[1].isoformat()}"
+                    errors[active_key] = f"configured shift overlaps another calendar shift on {key[1].isoformat()}"
+            active.append((end, key))
+    return errors
 
 
 # ── Main Scheduler ─────────────────────────────────────────────────────────────
@@ -341,12 +449,12 @@ async def suggest_reschedule(
 
 async def run_capacity_scheduling_validated(db: AsyncSession, mps_id: uuid.UUID) -> dict:
     """Calculate finite capacity only from explicit calendars, rates, and downtime."""
-    from datetime import datetime, timezone
     from app.models.master import Product
     from app.models.planning import ResourceCalendar
-    from app.models.production_advanced import DowntimeEvent, WorkCenterStatus
+    from app.models.production_advanced import DowntimeEvent
     from app.services.mps_advanced_service import _write_diagnostics
     from app.services.mps_engine import capacity_result
+    from app.services.utilities_service import convert_uom
 
     plan = (await db.execute(select(MPSPlan).where(MPSPlan.id == mps_id).with_for_update())).scalar_one_or_none()
     if plan is None:
@@ -355,11 +463,12 @@ async def run_capacity_scheduling_validated(db: AsyncSession, mps_id: uuid.UUID)
         raise ValueError("Capacity scheduling is only allowed for DRAFT MPS plans")
     lines = list((await db.execute(
         select(MPSLine).where(MPSLine.mps_id == mps_id)
-        .order_by(MPSLine.period_start, MPSLine.priority_score.desc(), MPSLine.line_no)
+        .order_by(MPSLine.is_locked.desc(), MPSLine.priority_score.desc(), MPSLine.period_start, MPSLine.line_no)
     )).scalars().all())
     if plan.capacity_mode == MPSCapacityMode.INFINITE:
-        # Infinite mode bypasses load limits; it is not evidence of material or
-        # master-data feasibility and therefore never promotes PENDING lines.
+        # Infinite mode bypasses load limits; it is not evidence of feasibility.
+        await db.execute(delete(MPSCapacitySlot).where(MPSCapacitySlot.mps_id == mps_id))
+        await db.flush()
         return {"mode": "INFINITE", "lines_processed": len(lines), "overloaded_lines": 0, "diagnostic_run_id": None}
 
     wc_ids = {line.work_center_id for line in lines if line.work_center_id}
@@ -372,16 +481,18 @@ async def run_capacity_scheduling_validated(db: AsyncSession, mps_id: uuid.UUID)
 
     start = min(line.planned_start_date or line.period_start for line in lines)
     end = max(line.planned_end_date or line.period_end for line in lines)
+    calendar_start = start - timedelta(days=1)
+    calendar_end = end + timedelta(days=1)
     calendars = (await db.execute(
         select(ResourceCalendar).where(ResourceCalendar.work_center_id.in_(wc_ids),
-                                       ResourceCalendar.calendar_date >= start,
-                                       ResourceCalendar.calendar_date <= end)
+                                       ResourceCalendar.calendar_date >= calendar_start,
+                                       ResourceCalendar.calendar_date <= calendar_end)
     )).scalars().all() if wc_ids else []
     calendar_map = {(item.work_center_id, item.calendar_date): item for item in calendars}
     downtimes = (await db.execute(
         select(DowntimeEvent).where(DowntimeEvent.work_center_id.in_(wc_ids),
-                                    DowntimeEvent.start_time < datetime.combine(end + timedelta(days=1), datetime.min.time(), tzinfo=timezone.utc),
-                                    (DowntimeEvent.end_time.is_(None)) | (DowntimeEvent.end_time >= datetime.combine(start, datetime.min.time(), tzinfo=timezone.utc)))
+                                    DowntimeEvent.start_time < datetime.combine(calendar_end + timedelta(days=2), datetime.min.time(), tzinfo=timezone.utc),
+                                    (DowntimeEvent.end_time.is_(None)) | (DowntimeEvent.end_time >= datetime.combine(calendar_start, datetime.min.time(), tzinfo=timezone.utc)))
     )).scalars().all() if wc_ids else []
 
     def working_days(a: date, b: date) -> list[date]:
@@ -391,81 +502,191 @@ async def run_capacity_scheduling_validated(db: AsyncSession, mps_id: uuid.UUID)
             cursor += timedelta(days=1)
         return result
 
-    def rate_per_hour(wc, product) -> Decimal | None:
-        if not wc.capacity or _D(wc.capacity) <= 0:
+    async def rate_per_hour(wc, product) -> Decimal | None:
+        capacity = _D(wc.capacity)
+        if not capacity.is_finite() or capacity <= 0:
             return None
         cap_uom = str(wc.capacity_uom or "").strip().upper().replace(" ", "")
         product_uom = str(getattr(product.uom, "value", product.uom) or "").upper()
-        compatible = {f"{product_uom}/HR", f"{product_uom}/HOUR", "UNITS/HR" if product_uom in {"PCS", "EA", "UNIT", "UNITS"} else ""}
-        if cap_uom not in compatible:
+        rate_match = re.fullmatch(r"(.+?)/(?:HR|HOUR)", cap_uom)
+        if rate_match is None:
             return None
-        return _D(wc.capacity)
+        source_uom = rate_match.group(1)
+        count_units = {"PCS", "EA", "UNIT", "UNITS"}
+        if source_uom in {"UNITS", "UNIT", "EA"} and product_uom in count_units:
+            return capacity
+        try:
+            converted = _D(await convert_uom(db, capacity, source_uom, product_uom))
+        except (HTTPException, MultipleResultsFound, InvalidOperation):
+            return None
+        return converted if converted.is_finite() and converted > 0 else None
 
-    def day_downtime(wc_id: uuid.UUID, day: date) -> tuple[Decimal, bool]:
-        total = Decimal(0)
+    def day_downtime(wc_id: uuid.UUID, day: date, calendar) -> tuple[Decimal, bool, bool]:
+        intervals: list[tuple[datetime, datetime]] = []
         unbounded = False
-        day_start = datetime.combine(day, datetime.min.time(), tzinfo=timezone.utc)
-        day_end = day_start + timedelta(days=1)
+        invalid = False
+        windows = _calendar_shift_windows(calendar, day)
         for event in downtimes:
-            if event.work_center_id != wc_id or event.start_time >= day_end:
+            if event.work_center_id != wc_id:
+                continue
+            if event.start_time.tzinfo is None or (event.end_time is not None and event.end_time.tzinfo is None):
+                naive_windows = [(left.replace(tzinfo=None), right.replace(tzinfo=None)) for left, right in windows]
+                naive_start = event.start_time.replace(tzinfo=None)
+                naive_end = event.end_time.replace(tzinfo=None) if event.end_time is not None else None
+                invalid = invalid or any(
+                    min(naive_start, naive_end) < right and max(naive_start, naive_end) > left
+                    if naive_end is not None else naive_start < right
+                    for left, right in naive_windows
+                )
+                continue
+            if event.end_time is not None and event.end_time < event.start_time:
+                invalid = invalid or any(
+                    event.end_time < right and event.start_time > left
+                    for left, right in windows
+                )
                 continue
             if event.end_time is None and not event.duration_min:
-                if event.start_time.date() <= day:
+                if any(event.start_time < right for _, right in windows):
                     unbounded = True
                 continue
+            if event.end_time is None and int(event.duration_min or 0) < 0:
+                event_end = event.start_time + timedelta(minutes=int(event.duration_min or 0))
+                invalid = invalid or any(
+                    event_end < right and event.start_time > left
+                    for left, right in windows
+                )
+                continue
             event_end = event.end_time or event.start_time + timedelta(minutes=int(event.duration_min or 0))
-            left, right = max(day_start, event.start_time), min(day_end, event_end)
-            if right > left:
-                total += Decimal(str((right - left).total_seconds())) / Decimal(3600)
-        return total, unbounded
+            for window_start, window_end in windows:
+                left, right = max(window_start, event.start_time), min(window_end, event_end)
+                if right > left:
+                    intervals.append((left, right))
+        intervals.sort(key=lambda interval: interval[0])
+        merged: list[list[datetime]] = []
+        for left, right in intervals:
+            if merged and left <= merged[-1][1]:
+                merged[-1][1] = max(merged[-1][1], right)
+            else:
+                merged.append([left, right])
+        total = sum(
+            (Decimal(str((right - left).total_seconds())) / Decimal(3600) for left, right in merged),
+            Decimal(0),
+        )
+        return total, unbounded, invalid
+
+    calendar_metrics: dict[tuple[uuid.UUID, date], dict] = {}
+    cross_calendar_errors = _cross_calendar_shift_errors(calendars)
+    for calendar in calendars:
+        key = (calendar.work_center_id, calendar.calendar_date)
+        declared_hours, calendar_error = _validated_calendar_hours(calendar)
+        calendar_error = calendar_error or cross_calendar_errors.get(key)
+        if calendar_error:
+            available = Decimal(0)
+            calendar_metrics[key] = {
+                "available": available, "downtime": Decimal(0), "net_available": Decimal(0),
+                "calendar_error": calendar_error, "unbounded": False, "downtime_error": False,
+            }
+            continue
+        available = Decimal(0) if calendar.is_holiday or calendar.is_maintenance else declared_hours
+        downtime, unbounded, downtime_error = day_downtime(
+            calendar.work_center_id, calendar.calendar_date, calendar,
+        )
+        if unbounded or downtime_error:
+            downtime = available
+        else:
+            downtime = min(downtime, available)
+        calendar_metrics[key] = {
+            "available": available, "downtime": downtime,
+            "net_available": max(Decimal(0), available - downtime),
+            "calendar_error": None, "unbounded": unbounded, "downtime_error": downtime_error,
+        }
 
     slot_allocations: dict[tuple[uuid.UUID, date], Decimal] = defaultdict(Decimal)
     line_allocations: dict[uuid.UUID, dict[date, Decimal]] = defaultdict(dict)
     line_issues: dict[uuid.UUID, list[dict]] = defaultdict(list)
     required_by_line: dict[uuid.UUID, Decimal] = {}
 
-    # Locked commitments consume capacity, but their line state and schedule are immutable here.
+    # Locked commitments are allocated first and consume the same aggregate
+    # work-center capacity as concurrent unlocked lines.
     for line in lines:
+        line_start = line.planned_start_date or line.period_start
+        line_end = line.planned_end_date or line.period_end
+        if line_end < line_start:
+            line_issues[line.id].append({
+                "reason_code": "CAPACITY_DATE_RANGE_INVALID", "from_date": line_start.isoformat(),
+                "to_date": line_end.isoformat(), "priority": "CRITICAL",
+            })
+            continue
+        quantity = _D(line.planned_production_qty)
+        if not quantity.is_finite() or quantity < 0:
+            line_issues[line.id].append({
+                "reason_code": "CAPACITY_QUANTITY_INVALID", "planned_quantity": str(line.planned_production_qty),
+                "priority": "CRITICAL",
+            })
+            continue
         if not line.work_center_id or line.work_center_id not in wcs:
             line_issues[line.id].append({"reason_code": "WORK_CENTER_MISSING", "priority": "CRITICAL"})
             continue
         wc = wcs[line.work_center_id]
         product = products.get(line.product_id)
+        if product is None or not product.is_active:
+            line_issues[line.id].append({"reason_code": "PRODUCT_MASTER_INVALID", "product_id": str(line.product_id), "priority": "CRITICAL"})
+            continue
         if str(getattr(wc.status, "value", wc.status) or "").upper() != "ACTIVE":
             line_issues[line.id].append({"reason_code": "WORK_CENTER_INACTIVE", "work_center_id": str(wc.id), "priority": "CRITICAL"})
             continue
-        tph = rate_per_hour(wc, product) if product else None
+        tph = await rate_per_hour(wc, product)
         if tph is None:
-            line_issues[line.id].append({"reason_code": "CAPACITY_RATE_NOT_CONFIGURED", "work_center_id": str(wc.id), "capacity_uom": wc.capacity_uom, "product_uom": str(getattr(product.uom, "value", product.uom)) if product else None, "priority": "CRITICAL"})
+            line_issues[line.id].append({"reason_code": "CAPACITY_RATE_NOT_CONFIGURED", "work_center_id": str(wc.id), "capacity_uom": wc.capacity_uom, "product_uom": str(getattr(product.uom, "value", product.uom)), "priority": "CRITICAL"})
             continue
-        required = _R(_D(line.planned_production_qty) / tph)
+        required = _R(quantity / tph)
         required_by_line[line.id] = required
-        line_days = working_days(line.planned_start_date or line.period_start, line.planned_end_date or line.period_end)
+        line_days = working_days(line_start, line_end)
         configured_days = [day for day in line_days if (wc.id, day) in calendar_map]
         if not configured_days:
-            line_issues[line.id].append({"reason_code": "CAPACITY_CALENDAR_NOT_CONFIGURED", "work_center_id": str(wc.id), "from_date": line_days[0].isoformat(), "to_date": line_days[-1].isoformat(), "priority": "CRITICAL"})
+            line_issues[line.id].append({"reason_code": "CAPACITY_CALENDAR_NOT_CONFIGURED", "work_center_id": str(wc.id), "from_date": line_start.isoformat(), "to_date": line_end.isoformat(), "priority": "CRITICAL"})
             continue
-        per_day = _R(required / Decimal(len(configured_days)))
-        for day in configured_days:
-            slot_allocations[(wc.id, day)] += per_day
-            line_allocations[line.id][day] = per_day
         missing = sorted(set(line_days) - set(configured_days))
         if missing:
             line_issues[line.id].append({"reason_code": "CAPACITY_CALENDAR_GAP", "dates": [d.isoformat() for d in missing], "priority": "HIGH"})
+        valid_capacity_days = []
+        for day in configured_days:
+            metrics = calendar_metrics[(wc.id, day)]
+            if metrics["calendar_error"]:
+                line_issues[line.id].append({
+                    "reason_code": "CAPACITY_CALENDAR_INVALID", "work_center_id": str(wc.id),
+                    "date": day.isoformat(), "message": metrics["calendar_error"], "priority": "CRITICAL",
+                })
+            if metrics["unbounded"]:
+                line_issues[line.id].append({"reason_code": "OPEN_DOWNTIME_UNBOUNDED", "work_center_id": str(wc.id), "date": day.isoformat(), "priority": "CRITICAL"})
+            if metrics["downtime_error"]:
+                line_issues[line.id].append({"reason_code": "DOWNTIME_DATA_INVALID", "work_center_id": str(wc.id), "date": day.isoformat(), "priority": "CRITICAL"})
+            valid_capacity_days.append(day)
+
+        remaining = required
+        for day in valid_capacity_days:
+            metrics = calendar_metrics[(wc.id, day)]
+            capacity_left = max(Decimal(0), metrics["net_available"] - slot_allocations[(wc.id, day)])
+            allocated = min(remaining, capacity_left)
+            if allocated > 0:
+                slot_allocations[(wc.id, day)] += allocated
+                line_allocations[line.id][day] = allocated
+                remaining -= allocated
+            if remaining <= 0:
+                break
+        if remaining > 0:
+            # Keep the full requirement visible as overload instead of silently
+            # dropping hours when all configured dates are at capacity.
+            overflow_day = valid_capacity_days[-1]
+            slot_allocations[(wc.id, overflow_day)] += remaining
+            line_allocations[line.id][overflow_day] = line_allocations[line.id].get(overflow_day, Decimal(0)) + remaining
 
     await db.execute(delete(MPSCapacitySlot).where(MPSCapacitySlot.mps_id == mps_id))
     diagnostics = []
     overloaded_lines: set[uuid.UUID] = set()
     for (wc_id, day), allocated in sorted(slot_allocations.items(), key=lambda item: (str(item[0][0]), item[0][1])):
-        calendar = calendar_map[(wc_id, day)]
-        available = Decimal(0) if calendar.is_holiday or calendar.is_maintenance else _D(calendar.available_hours)
-        downtime, unbounded = day_downtime(wc_id, day)
-        if unbounded:
-            line_issues_for_slot = [line for line in lines if line.work_center_id == wc_id and day in line_allocations[line.id]]
-            for line in line_issues_for_slot:
-                line_issues[line.id].append({"reason_code": "OPEN_DOWNTIME_UNBOUNDED", "work_center_id": str(wc_id), "date": day.isoformat(), "priority": "CRITICAL"})
-            downtime = available
-        metrics = capacity_result(allocated, available, min(downtime, available))
+        day_metrics = calendar_metrics[(wc_id, day)]
+        metrics = capacity_result(allocated, day_metrics["available"], day_metrics["downtime"])
         slot = MPSCapacitySlot(
             mps_id=mps_id, work_center_id=wc_id, slot_date=day,
             available_hours=metrics["available_hours"], allocated_hours=metrics["required_hours"],
@@ -477,20 +698,24 @@ async def run_capacity_scheduling_validated(db: AsyncSession, mps_id: uuid.UUID)
         if metrics["status"] == "OVERLOADED":
             cumulative = Decimal(0)
             prior_overload = Decimal(0)
-            contributors = sorted(
-                (line for line in lines if line.work_center_id == wc_id and day in line_allocations[line.id]),
-                key=lambda line: (-_D(line.priority_score or 0), line.line_no, line.id.hex),
-            )
+            # Keep the same order used when allocating the daily load. If
+            # locked commitments are re-sorted by priority here, an unlocked
+            # line can be falsely shown as feasible after a locked overflow.
+            contributors = [
+                line for line in lines
+                if line.work_center_id == wc_id and day in line_allocations[line.id]
+            ]
             for line in contributors:
                 cumulative += line_allocations[line.id][day]
                 cumulative_overload = max(Decimal(0), cumulative - metrics["net_available_hours"])
                 line_overload = cumulative_overload - prior_overload
                 prior_overload = cumulative_overload
-                if line_overload > 0 and not line.is_locked:
-                    overloaded_lines.add(line.id)
+                if line_overload > 0:
+                    if not line.is_locked:
+                        overloaded_lines.add(line.id)
                     line_issues[line.id].append({
                         "reason_code": "CAPACITY_OVERLOAD", "work_center_id": str(wc_id),
-                        "date": day.isoformat(), "required_hours": str(metrics["required_hours"]),
+                        "date": day.isoformat(), "required_hours": str(line_allocations[line.id][day]),
                         "available_hours": str(metrics["available_hours"]),
                         "downtime_hours": str(metrics["downtime_hours"]),
                         "overload_hours": str(line_overload), "priority": "HIGH",

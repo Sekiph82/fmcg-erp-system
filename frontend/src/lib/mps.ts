@@ -223,6 +223,17 @@ export interface MPSConstraintIssue {
   substitution_policy?: string;
   substitute_group_id?: string;
   excluded_receipts?: Array<{ po_no: string; due_date: string; reason: string }>;
+  work_center_id?: string;
+  capacity_uom?: string;
+  product_uom?: string;
+  date?: string;
+  from_date?: string;
+  to_date?: string;
+  dates?: string[];
+  required_hours?: string;
+  available_hours?: string;
+  downtime_hours?: string;
+  overload_hours?: string;
 }
 
 export interface MPSLineConstraintDiagnostic {

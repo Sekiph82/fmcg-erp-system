@@ -143,6 +143,17 @@ class MPSConstraintIssueOut(BaseModel):
     bom_ids: Optional[List[str]] = None
     recipe_id: Optional[str] = None
     recipe_ids: Optional[List[str]] = None
+    work_center_id: Optional[str] = None
+    capacity_uom: Optional[str] = None
+    product_uom: Optional[str] = None
+    capacity_date: Optional[date] = Field(default=None, alias="date")
+    from_date: Optional[date] = None
+    to_date: Optional[date] = None
+    dates: Optional[List[date]] = None
+    required_hours: Optional[Decimal] = None
+    available_hours: Optional[Decimal] = None
+    downtime_hours: Optional[Decimal] = None
+    overload_hours: Optional[Decimal] = None
 
 
 class MPSLineConstraintDetailsOut(BaseModel):
@@ -150,8 +161,8 @@ class MPSLineConstraintDetailsOut(BaseModel):
     issues: List[MPSConstraintIssueOut]
     status: MPSFeasibilityStatus
     plan_id: uuid.UUID
-    warehouse_id: uuid.UUID
-    demand_run_id: uuid.UUID
+    warehouse_id: Optional[uuid.UUID] = None
+    demand_run_id: Optional[uuid.UUID] = None
     line_no: Optional[str] = None
     planned_quantity: Optional[Decimal] = None
     required_date: Optional[date] = None

@@ -9,6 +9,7 @@ from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
 from types import SimpleNamespace
+import uuid
 from uuid import uuid4
 
 import pytest
@@ -29,7 +30,7 @@ from app.models.master import (
     Warehouse, WarehouseType,
 )
 from app.models.mps import (
-    MPSCapacityMode, MPSChangeType, MPSFeasibilityStatus, MPSLine, MPSPlan, MPSScenarioSnapshot,
+    MPSCapacityMode, MPSCapacitySlot, MPSChangeType, MPSFeasibilityStatus, MPSLine, MPSPlan, MPSScenarioSnapshot,
     MPSStatus, MPSWhatIfScenario,
 )
 from app.models.mrp import (
@@ -41,7 +42,7 @@ from app.models.procurement import PurchaseOrder, POLine, POStatus
 from app.models.recipe import Recipe, RecipeStatus
 from app.models.utilities import UomConversion
 from app.models.planning import ResourceCalendar
-from app.models.production_advanced import WorkCenter, WorkCenterType
+from app.models.production_advanced import DowntimeEvent, WorkCenter, WorkCenterType
 from app.models.role import AccessScope, Permission, Role
 from app.models.user import User, user_role
 from app.models.sales import Customer, SalesOrder, SOStatus, SOLine
@@ -51,6 +52,7 @@ from app.schemas.mps import (
 from app.services.mps_advanced_service import (
     evaluate_material_feasibility, list_plan_diagnostics, project_demand_and_supply,
 )
+from app.services.mps_capacity_service import run_capacity_scheduling_validated
 from app.services.mps_service import _next_seq, approve_mps_plan, generate_mps_from_mrp, release_mps_plan
 from app.services.mps_whatif_service import (
     _next_scenario_no,
@@ -556,6 +558,260 @@ async def test_postgres_kenya_fixture_drives_real_mps_material_feasibility_servi
                     await cleanup.execute(delete(Material).where(Material.id == material_id))
                 if product_id is not None:
                     await cleanup.execute(delete(Product).where(Product.id == product_id))
+                if warehouse_id is not None:
+                    await cleanup.execute(delete(Warehouse).where(Warehouse.id == warehouse_id))
+                if company_id is not None:
+                    await cleanup.execute(delete(Company).where(Company.id == company_id))
+
+
+@pytest.mark.asyncio
+async def test_postgres_mps_capacity_reconciles_rate_shifts_downtime_locks_and_modes():
+    """Finite capacity must use configured units/calendars and preserve locked commitments."""
+    _require_disposable_m20_postgres()
+    await engine.dispose()
+    suffix = _suffix()
+    capacity_day = date(2026, 11, 3)
+    maintenance_day = capacity_day + timedelta(days=1)
+    invalid_shift_day = capacity_day + timedelta(days=2)
+    attribution_day = capacity_day + timedelta(days=3)
+    overnight_day = capacity_day + timedelta(days=4)
+    invalid_downtime_day = capacity_day + timedelta(days=5)
+    company_id = warehouse_id = product_id = run_id = plan_id = work_center_id = conversion_id = None
+    try:
+        async with AsyncSessionLocal() as db:
+            async with db.begin():
+                company = Company(name=f"M20 capacity {suffix}", short_code=f"C{suffix[:8]}")
+                warehouse = Warehouse(
+                    code=f"M20-CAP-WH-{suffix}", name="Synthetic capacity warehouse",
+                    warehouse_type=WarehouseType.FINISHED_GOODS, company_id=company.id,
+                )
+                product = Product(
+                    sku=f"M20-CAP-P-{suffix}", name="Synthetic capacity product",
+                    category=ProductCategory.FOOD, uom=UnitOfMeasure.KG,
+                )
+                work_center = WorkCenter(
+                    work_center_id=f"M20-CAP-WC-{suffix}", name="Synthetic aggregate-rate work center",
+                    type=WorkCenterType.LINE, capacity=Decimal("10000"), capacity_uom="G/HR",
+                )
+                db.add_all([company, warehouse, product, work_center])
+                await db.flush()
+                conversion = UomConversion(from_uom="G", to_uom="KG", factor=Decimal("0.001"), is_active=True)
+                db.add_all([
+                    conversion,
+                    ResourceCalendar(
+                        work_center_id=work_center.id, calendar_date=capacity_day, available_hours=8,
+                        shift_1_start="08:00", shift_1_end="12:00",
+                        shift_2_start="13:00", shift_2_end="17:00",
+                    ),
+                    ResourceCalendar(
+                        work_center_id=work_center.id, calendar_date=maintenance_day, available_hours=8,
+                        shift_1_start="08:00", shift_1_end="16:00", is_maintenance=True,
+                    ),
+                    ResourceCalendar(
+                        work_center_id=work_center.id, calendar_date=invalid_shift_day, available_hours=8,
+                        shift_1_start="08:00", shift_1_end="14:00",
+                        shift_2_start="13:00", shift_2_end="17:00",
+                    ),
+                    ResourceCalendar(
+                        work_center_id=work_center.id, calendar_date=attribution_day, available_hours=10,
+                        shift_1_start="07:00", shift_1_end="17:00",
+                    ),
+                    ResourceCalendar(
+                        work_center_id=work_center.id, calendar_date=overnight_day, available_hours=8,
+                        shift_1_start="22:00", shift_1_end="06:00",
+                    ),
+                    ResourceCalendar(
+                        work_center_id=work_center.id, calendar_date=invalid_downtime_day, available_hours=8,
+                        shift_1_start="08:00", shift_1_end="16:00",
+                    ),
+                    DowntimeEvent(
+                        downtime_id=f"M20-CAP-DT1-{suffix}", work_center_id=work_center.id,
+                        start_time=datetime(2026, 11, 3, 8, tzinfo=timezone.utc),
+                        end_time=datetime(2026, 11, 3, 10, tzinfo=timezone.utc), reason="synthetic downtime window 1",
+                    ),
+                    DowntimeEvent(
+                        downtime_id=f"M20-CAP-DT2-{suffix}", work_center_id=work_center.id,
+                        start_time=datetime(2026, 11, 3, 9, tzinfo=timezone.utc),
+                        end_time=datetime(2026, 11, 3, 11, tzinfo=timezone.utc), reason="synthetic overlapping downtime window",
+                    ),
+                    DowntimeEvent(
+                        downtime_id=f"M20-CAP-DT3-{suffix}", work_center_id=work_center.id,
+                        start_time=datetime.combine(overnight_day + timedelta(days=1), datetime.min.time(), tzinfo=timezone.utc).replace(hour=1),
+                        end_time=datetime.combine(overnight_day + timedelta(days=1), datetime.min.time(), tzinfo=timezone.utc).replace(hour=3),
+                        reason="synthetic downtime inside overnight shift",
+                    ),
+                    DowntimeEvent(
+                        downtime_id=f"M20-CAP-DT4-{suffix}", work_center_id=work_center.id,
+                        start_time=datetime.combine(invalid_downtime_day, datetime.min.time(), tzinfo=timezone.utc).replace(hour=17),
+                        end_time=datetime.combine(invalid_downtime_day, datetime.min.time(), tzinfo=timezone.utc).replace(hour=7),
+                        reason="synthetic reversed downtime envelope crossing the shift",
+                    ),
+                    DowntimeEvent(
+                        downtime_id=f"M20-CAP-DT5-{suffix}", work_center_id=work_center.id,
+                        start_time=datetime.combine(invalid_downtime_day, datetime.min.time(), tzinfo=timezone.utc).replace(hour=17),
+                        duration_min=-600,
+                        reason="synthetic negative-duration downtime envelope crossing the shift",
+                    ),
+                ])
+                await db.flush()
+                run = MRPRun(
+                    run_no=f"M20-CAP-RUN-{suffix}", run_date=capacity_day,
+                    status=MRPRunStatus.COMPLETED, warehouse_id=warehouse.id,
+                )
+                plan = MPSPlan(
+                    plan_no=f"M20-CAP-PLAN-{suffix}", plan_name="Synthetic capacity acceptance plan",
+                    start_date=capacity_day, end_date=invalid_downtime_day, mrp_run=run,
+                    capacity_mode=MPSCapacityMode.FINITE,
+                )
+                db.add(plan)
+                await db.flush()
+                locked = MPSLine(
+                    line_no=f"M20-CAP-LOCKED-{suffix}", mps_id=plan.id, product_id=product.id,
+                    period_start=capacity_day, period_end=capacity_day, planned_start_date=capacity_day,
+                    planned_end_date=capacity_day, planned_production_qty=60, work_center_id=work_center.id,
+                    is_locked=True, feasibility_status=MPSFeasibilityStatus.ON_HOLD, priority_score=100,
+                )
+                concurrent = MPSLine(
+                    line_no=f"M20-CAP-LINE-{suffix}", mps_id=plan.id, product_id=product.id,
+                    period_start=capacity_day, period_end=capacity_day, planned_start_date=capacity_day,
+                    planned_end_date=capacity_day, planned_production_qty=60, work_center_id=work_center.id,
+                    feasibility_status=MPSFeasibilityStatus.PENDING, priority_score=50,
+                )
+                maintenance = MPSLine(
+                    line_no=f"M20-CAP-MAINT-{suffix}", mps_id=plan.id, product_id=product.id,
+                    period_start=maintenance_day, period_end=maintenance_day, planned_start_date=maintenance_day,
+                    planned_end_date=maintenance_day, planned_production_qty=10, work_center_id=work_center.id,
+                    feasibility_status=MPSFeasibilityStatus.PENDING, priority_score=40,
+                )
+                invalid_shift = MPSLine(
+                    line_no=f"M20-CAP-SHIFT-{suffix}", mps_id=plan.id, product_id=product.id,
+                    period_start=invalid_shift_day, period_end=invalid_shift_day, planned_start_date=invalid_shift_day,
+                    planned_end_date=invalid_shift_day, planned_production_qty=10, work_center_id=work_center.id,
+                    feasibility_status=MPSFeasibilityStatus.PENDING,
+                )
+                attribution_locked = MPSLine(
+                    line_no=f"M20-CAP-ATTR-LOCK-{suffix}", mps_id=plan.id, product_id=product.id,
+                    period_start=attribution_day, period_end=attribution_day, planned_start_date=attribution_day,
+                    planned_end_date=attribution_day, planned_production_qty=110, work_center_id=work_center.id,
+                    is_locked=True, feasibility_status=MPSFeasibilityStatus.ON_HOLD, priority_score=10,
+                )
+                attribution_unlocked = MPSLine(
+                    line_no=f"M20-CAP-ATTR-OPEN-{suffix}", mps_id=plan.id, product_id=product.id,
+                    period_start=attribution_day, period_end=attribution_day, planned_start_date=attribution_day,
+                    planned_end_date=attribution_day, planned_production_qty=10, work_center_id=work_center.id,
+                    feasibility_status=MPSFeasibilityStatus.PENDING, priority_score=100,
+                )
+                overnight = MPSLine(
+                    line_no=f"M20-CAP-NIGHT-{suffix}", mps_id=plan.id, product_id=product.id,
+                    period_start=overnight_day, period_end=overnight_day, planned_start_date=overnight_day,
+                    planned_end_date=overnight_day, planned_production_qty=50, work_center_id=work_center.id,
+                    feasibility_status=MPSFeasibilityStatus.PENDING,
+                )
+                invalid_downtime = MPSLine(
+                    line_no=f"M20-CAP-DOWNTIME-{suffix}", mps_id=plan.id, product_id=product.id,
+                    period_start=invalid_downtime_day, period_end=invalid_downtime_day,
+                    planned_start_date=invalid_downtime_day, planned_end_date=invalid_downtime_day,
+                    planned_production_qty=10, work_center_id=work_center.id,
+                    feasibility_status=MPSFeasibilityStatus.PENDING,
+                )
+                bad_date = MPSLine(
+                    line_no=f"M20-CAP-DATE-{suffix}", mps_id=plan.id, product_id=product.id,
+                    period_start=capacity_day, period_end=maintenance_day, planned_start_date=maintenance_day,
+                    planned_end_date=capacity_day, planned_production_qty=10, work_center_id=work_center.id,
+                    feasibility_status=MPSFeasibilityStatus.PENDING,
+                )
+                negative = MPSLine(
+                    line_no=f"M20-CAP-NEG-{suffix}", mps_id=plan.id, product_id=product.id,
+                    period_start=capacity_day, period_end=capacity_day, planned_start_date=capacity_day,
+                    planned_end_date=capacity_day, planned_production_qty=-10, work_center_id=work_center.id,
+                    feasibility_status=MPSFeasibilityStatus.PENDING,
+                )
+                db.add_all([
+                    locked, concurrent, maintenance, invalid_shift, attribution_locked,
+                    attribution_unlocked, overnight, invalid_downtime, bad_date, negative,
+                ])
+                await db.flush()
+                company_id, warehouse_id, product_id = company.id, warehouse.id, product.id
+                run_id, plan_id, work_center_id, conversion_id = run.id, plan.id, work_center.id, conversion.id
+                locked_id, concurrent_id, maintenance_id = locked.id, concurrent.id, maintenance.id
+                invalid_shift_id = invalid_shift.id
+                attribution_locked_id, attribution_unlocked_id = attribution_locked.id, attribution_unlocked.id
+                overnight_id = overnight.id
+                invalid_downtime_id = invalid_downtime.id
+                bad_date_id, negative_id = bad_date.id, negative.id
+
+            result = await run_capacity_scheduling_validated(db, plan_id)
+            assert result["mode"] == "FINITE"
+            assert result["overloaded_lines"] == 5
+            slots = (await db.scalars(select(MPSCapacitySlot).where(MPSCapacitySlot.mps_id == plan_id))).all()
+            slots_by_day = {slot.slot_date: slot for slot in slots}
+            assert set(slots_by_day) == {
+                capacity_day, maintenance_day, invalid_shift_day, attribution_day, overnight_day,
+                invalid_downtime_day,
+            }
+            assert slots_by_day[capacity_day].allocated_hours == Decimal("12.000")
+            assert slots_by_day[capacity_day].available_hours == Decimal("8.000")
+            assert slots_by_day[capacity_day].downtime_hours == Decimal("3.000")
+            assert slots_by_day[capacity_day].overload_hours == Decimal("7.000")
+            assert slots_by_day[maintenance_day].available_hours == Decimal("0.000")
+            assert slots_by_day[maintenance_day].overload_hours == Decimal("1.000")
+            assert slots_by_day[invalid_shift_day].available_hours == Decimal("0.000")
+            assert slots_by_day[invalid_shift_day].overload_hours == Decimal("1.000")
+            assert slots_by_day[attribution_day].allocated_hours == Decimal("12.000")
+            assert slots_by_day[attribution_day].overload_hours == Decimal("2.000")
+            assert slots_by_day[overnight_day].available_hours == Decimal("8.000")
+            assert slots_by_day[overnight_day].downtime_hours == Decimal("2.000")
+            assert slots_by_day[overnight_day].overload_hours == Decimal("0.000")
+            assert slots_by_day[invalid_downtime_day].available_hours == Decimal("8.000")
+            assert slots_by_day[invalid_downtime_day].downtime_hours == Decimal("8.000")
+            assert slots_by_day[invalid_downtime_day].overload_hours == Decimal("1.000")
+            assert (await db.get(MPSLine, locked_id)).feasibility_status == MPSFeasibilityStatus.ON_HOLD
+            assert (await db.get(MPSLine, concurrent_id)).required_hours == Decimal("6.000")
+            assert (await db.get(MPSLine, concurrent_id)).feasibility_status == MPSFeasibilityStatus.OVERLOADED
+            assert (await db.get(MPSLine, maintenance_id)).feasibility_status == MPSFeasibilityStatus.OVERLOADED
+            assert (await db.get(MPSLine, invalid_shift_id)).feasibility_status == MPSFeasibilityStatus.INFEASIBLE
+            assert (await db.get(MPSLine, attribution_locked_id)).feasibility_status == MPSFeasibilityStatus.ON_HOLD
+            assert (await db.get(MPSLine, attribution_unlocked_id)).feasibility_status == MPSFeasibilityStatus.OVERLOADED
+            assert (await db.get(MPSLine, overnight_id)).feasibility_status == MPSFeasibilityStatus.FEASIBLE
+            assert (await db.get(MPSLine, invalid_downtime_id)).feasibility_status == MPSFeasibilityStatus.INFEASIBLE
+            diagnostics = await list_plan_diagnostics(db, plan_id)
+            by_line = {uuid.UUID(row["line_id"]): row for row in diagnostics}
+            locked_api = MPSLineConstraintDiagnosticOut.model_validate(by_line[locked_id])
+            assert locked_api.diagnostics.issues[0].reason_code == "CAPACITY_OVERLOAD"
+            assert locked_api.diagnostics.issues[0].overload_hours == Decimal("1.000")
+            assert locked_api.diagnostics.issues[0].capacity_date == capacity_day
+            assert by_line[concurrent_id]["diagnostics"]["issues"][0]["reason_code"] == "CAPACITY_OVERLOAD"
+            assert by_line[bad_date_id]["diagnostics"]["issues"][0]["reason_code"] == "CAPACITY_DATE_RANGE_INVALID"
+            assert by_line[negative_id]["diagnostics"]["issues"][0]["reason_code"] == "CAPACITY_QUANTITY_INVALID"
+            assert "CAPACITY_CALENDAR_INVALID" in by_line[invalid_shift_id]["diagnostics"]["reason_codes"]
+            assert "DOWNTIME_DATA_INVALID" in by_line[invalid_downtime_id]["diagnostics"]["reason_codes"]
+            assert Decimal(by_line[attribution_locked_id]["diagnostics"]["issues"][0]["overload_hours"]) == Decimal("1")
+            assert Decimal(by_line[attribution_unlocked_id]["diagnostics"]["issues"][0]["overload_hours"]) == Decimal("1")
+            assert Decimal(by_line[attribution_unlocked_id]["diagnostics"]["issues"][0]["required_hours"]) == Decimal("1.000")
+
+            plan = await db.get(MPSPlan, plan_id)
+            plan.capacity_mode = MPSCapacityMode.INFINITE
+            await db.flush()
+            infinite_result = await run_capacity_scheduling_validated(db, plan_id)
+            assert infinite_result["mode"] == "INFINITE"
+            assert (await db.get(MPSLine, locked_id)).feasibility_status == MPSFeasibilityStatus.ON_HOLD
+            assert await db.scalar(select(func.count()).select_from(MPSCapacitySlot).where(MPSCapacitySlot.mps_id == plan_id)) == 0
+    finally:
+        await engine.dispose()
+        async with AsyncSessionLocal() as cleanup:
+            async with cleanup.begin():
+                if plan_id is not None:
+                    await cleanup.execute(delete(MPSPlan).where(MPSPlan.id == plan_id))
+                if work_center_id is not None:
+                    await cleanup.execute(delete(DowntimeEvent).where(DowntimeEvent.work_center_id == work_center_id))
+                    await cleanup.execute(delete(ResourceCalendar).where(ResourceCalendar.work_center_id == work_center_id))
+                    await cleanup.execute(delete(WorkCenter).where(WorkCenter.id == work_center_id))
+                if conversion_id is not None:
+                    await cleanup.execute(delete(UomConversion).where(UomConversion.id == conversion_id))
+                if product_id is not None:
+                    await cleanup.execute(delete(Product).where(Product.id == product_id))
+                if run_id is not None:
+                    await cleanup.execute(delete(MRPRun).where(MRPRun.id == run_id))
                 if warehouse_id is not None:
                     await cleanup.execute(delete(Warehouse).where(Warehouse.id == warehouse_id))
                 if company_id is not None:

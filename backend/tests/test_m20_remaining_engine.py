@@ -1,4 +1,4 @@
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 import json
 from pathlib import Path
@@ -17,8 +17,55 @@ from app.services.mps_engine import (
     period_buckets,
     scenario_kpis,
 )
+from app.services.mps_capacity_service import (
+    _calendar_shift_windows, _cross_calendar_shift_errors, _validated_calendar_hours,
+)
 from app.services.mps_whatif_service import _apply_change, _compute_impact, _expand_candidate_lines, _scenario_capacity_loads, _scenario_changeover_hours
 from app.models.mps import MPSCapacityMode, MPSChangeType
+
+
+def test_capacity_calendar_validates_shift_overlap_totals_and_overnight_windows():
+    day = date(2026, 11, 7)
+    overnight = SimpleNamespace(
+        available_hours=Decimal("8"),
+        shift_1_start="22:00", shift_1_end="06:00",
+        shift_2_start=None, shift_2_end=None,
+        shift_3_start=None, shift_3_end=None,
+    )
+    assert _validated_calendar_hours(overnight) == (Decimal("8"), None)
+    start, end = _calendar_shift_windows(overnight, day)[0]
+    assert start == datetime(2026, 11, 7, 22, tzinfo=timezone.utc)
+    assert end == datetime(2026, 11, 8, 6, tzinfo=timezone.utc)
+
+    overlap = SimpleNamespace(
+        available_hours=Decimal("10"),
+        shift_1_start="08:00", shift_1_end="14:00",
+        shift_2_start="13:00", shift_2_end="17:00",
+        shift_3_start=None, shift_3_end=None,
+    )
+    declared, error = _validated_calendar_hours(overlap)
+    assert declared is None
+    assert error == "shifts 1 and 2 overlap"
+
+    work_center_id = uuid4()
+    day_shift = SimpleNamespace(
+        work_center_id=work_center_id, calendar_date=day, available_hours=Decimal("8"),
+        is_holiday=False, is_maintenance=False,
+        shift_1_start="22:00", shift_1_end="06:00",
+        shift_2_start=None, shift_2_end=None,
+        shift_3_start=None, shift_3_end=None,
+    )
+    next_day_shift = SimpleNamespace(
+        work_center_id=work_center_id, calendar_date=day + timedelta(days=1),
+        available_hours=Decimal("8"), is_holiday=False, is_maintenance=False,
+        shift_1_start="02:00", shift_1_end="10:00",
+        shift_2_start=None, shift_2_end=None,
+        shift_3_start=None, shift_3_end=None,
+    )
+    overlap_errors = _cross_calendar_shift_errors([day_shift, next_day_shift])
+    assert set(overlap_errors) == {
+        (work_center_id, day), (work_center_id, day + timedelta(days=1)),
+    }
 
 
 def test_weekly_buckets_are_gap_free_and_clip_partial_edges():
