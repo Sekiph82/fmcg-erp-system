@@ -2855,6 +2855,11 @@ async def test_postgres_release_http_permission_company_warehouse_and_atomic_rol
             assert await verify.scalar(select(MPSPlan.status).where(MPSPlan.id == plan_ids[0])) == MPSStatus.RELEASED
             assert await verify.scalar(select(MPSPlan.status).where(MPSPlan.id == plan_ids[1])) == MPSStatus.APPROVED
             assert await verify.scalar(select(MPSPlan.status).where(MPSPlan.id == plan_ids[2])) == MPSStatus.APPROVED
+            failed_release_audit = await verify.scalar(select(func.count()).select_from(AuditLog).where(
+                AuditLog.event_type == "MPS_PLAN_RELEASED",
+                AuditLog.target_id == str(plan_ids[2]),
+            ))
+            assert failed_release_audit == 0, "rolled-back release must not retain an audit event"
             released_audit = await verify.scalar(select(func.count()).select_from(AuditLog).where(
                 AuditLog.event_type == "MPS_PLAN_RELEASED",
                 AuditLog.target_id == str(plan_ids[0]),
