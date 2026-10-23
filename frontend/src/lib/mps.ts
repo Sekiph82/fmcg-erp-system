@@ -273,12 +273,23 @@ export interface MPSScenarioComparison {
   baseline_scenario_id: string;
   candidate_scenario_id: string;
   service_level_pct_delta: number;
+  service_level_unit: "percentage_points";
   delay_count_delta: number;
+  delay_count_unit: "lines";
   cost_delta: null;
   cost_delta_status: string;
+  material_status: "COMPLETE" | "PARTIAL_INPUTS";
+  material_shortage_count_delta: number | null;
+  material_shortage_quantity_by_uom_delta: Record<string, string> | null;
   capacity_overload_hours_delta: number | null;
   capacity_status: "COMPLETE" | "PARTIAL_INPUTS";
   capacity_unit: "hours";
+  changeover_hours_delta: number | null;
+  changeover_status: "COMPLETE" | "PARTIAL_INPUTS";
+  changeover_unit: "hours";
+  confidence_status: "COMPLETE_INPUTS" | "PARTIAL_INPUTS";
+  unknowns: string[];
+  metric_sources: Record<string, string>;
   baseline_version: string;
   candidate_version: string;
 }

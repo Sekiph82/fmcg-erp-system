@@ -946,38 +946,96 @@ async def compare_whatif_scenarios(
     if baseline["assumptions"].get("plan_id") != str(mps_id) or candidate["assumptions"].get("plan_id") != str(mps_id):
         raise ValueError("Both scenarios must belong to the requested MPS plan")
     bres, cres = baseline["results"], candidate["results"]
+    material_complete = (
+        cres.get("material_status") == "COMPLETE"
+        and bres.get("material_status") == "COMPLETE"
+        and cres.get("material_shortage_count") is not None
+        and bres.get("material_shortage_count") is not None
+    )
+    material_quantity_delta = None
+    if material_complete:
+        baseline_quantities = bres.get("baseline_material_shortage_quantity_by_uom") or {}
+        candidate_quantities = cres.get("material_shortage_quantity_by_uom") or {}
+        if isinstance(baseline_quantities, dict) and isinstance(candidate_quantities, dict):
+            quantity_delta: dict[str, str] = {}
+            for uom in sorted(set(baseline_quantities) | set(candidate_quantities)):
+                try:
+                    baseline_quantity = Decimal(str(baseline_quantities.get(uom, "0")))
+                    candidate_quantity = Decimal(str(candidate_quantities.get(uom, "0")))
+                except (ArithmeticError, TypeError, ValueError):
+                    material_complete = False
+                    quantity_delta = {}
+                    break
+                if not baseline_quantity.is_finite() or not candidate_quantity.is_finite():
+                    material_complete = False
+                    quantity_delta = {}
+                    break
+                quantity_delta[str(uom)] = format(candidate_quantity - baseline_quantity, "f")
+            if material_complete:
+                material_quantity_delta = quantity_delta
+
+    capacity_complete = (
+        cres.get("capacity_status") in ("COMPLETE", "INFINITE")
+        and bres.get("capacity_status") in ("COMPLETE", "INFINITE")
+        and cres.get("capacity_overload_hours") is not None
+        and bres.get("capacity_overload_hours") is not None
+    )
+    changeover_complete = (
+        cres.get("changeover_status") == "COMPLETE"
+        and bres.get("changeover_status") == "COMPLETE"
+        and cres.get("changeover_hours") is not None
+        and bres.get("changeover_hours") is not None
+    )
+    unknowns = []
+    for values in (
+        cres.get("material_unknown_reasons", []) if not material_complete else [],
+        bres.get("material_unknown_reasons", []) if not material_complete else [],
+        cres.get("capacity_unknown_reasons", []) if not capacity_complete else [],
+        bres.get("capacity_unknown_reasons", []) if not capacity_complete else [],
+        cres.get("changeover_unknown_reasons", []) if not changeover_complete else [],
+        bres.get("changeover_unknown_reasons", []) if not changeover_complete else [],
+    ):
+        unknowns.extend(values or [])
+    unknowns.extend(("CIP duration source is not configured", "cost currency/basis is not configured"))
+    unknowns = list(dict.fromkeys(unknowns))
     return {
         "mps_id": str(mps_id),
         "baseline_scenario_id": str(baseline_id),
         "candidate_scenario_id": str(candidate_id),
         "service_level_pct_delta": round(float(cres["service_level_pct"]) - float(bres["service_level_pct"]), 2),
+        "service_level_unit": "percentage_points",
         "delay_count_delta": int(cres["delay_count"]) - int(bres["delay_count"]),
+        "delay_count_unit": "lines",
         "cost_delta": None,
         "cost_delta_status": "UNKNOWN_NO_APPROVED_CURRENCY_BASIS",
+        "material_status": "COMPLETE" if material_complete else "PARTIAL_INPUTS",
         "material_shortage_count_delta": (
             int(cres["material_shortage_count"]) - int(bres["material_shortage_count"])
-            if cres.get("material_status") == "COMPLETE"
-            and bres.get("material_status") == "COMPLETE"
-            and cres.get("material_shortage_count") is not None
-            and bres.get("material_shortage_count") is not None else None
+            if material_complete else None
         ),
+        "material_shortage_quantity_by_uom_delta": material_quantity_delta,
         "capacity_overload_hours_delta": (
             round(float(cres["capacity_overload_hours"]) - float(bres["capacity_overload_hours"]), 3)
-            if cres.get("capacity_status") in ("COMPLETE", "INFINITE")
-            and bres.get("capacity_status") in ("COMPLETE", "INFINITE")
-            and cres.get("capacity_overload_hours") is not None
-            and bres.get("capacity_overload_hours") is not None else None
+            if capacity_complete else None
         ),
-        "capacity_status": "COMPLETE" if cres.get("capacity_status") in ("COMPLETE", "INFINITE") and bres.get("capacity_status") in ("COMPLETE", "INFINITE") else "PARTIAL_INPUTS",
+        "capacity_status": "COMPLETE" if capacity_complete else "PARTIAL_INPUTS",
         "capacity_unit": "hours",
         "changeover_hours_delta": (
             round(float(cres["changeover_hours"]) - float(bres["changeover_hours"]), 3)
-            if cres.get("changeover_status") == "COMPLETE"
-            and bres.get("changeover_status") == "COMPLETE"
-            and cres.get("changeover_hours") is not None
-            and bres.get("changeover_hours") is not None else None
+            if changeover_complete else None
         ),
-        "unknowns": list(cres.get("material_unknown_reasons", [])) + list(bres.get("material_unknown_reasons", [])) + ["capacity comparison is incomplete when source inputs are missing", "CIP duration source is not configured", "cost currency/basis is not configured"] + list(cres.get("changeover_unknown_reasons", [])) + list(bres.get("changeover_unknown_reasons", [])),
+        "changeover_status": "COMPLETE" if changeover_complete else "PARTIAL_INPUTS",
+        "changeover_unit": "hours",
+        "confidence_status": "PARTIAL_INPUTS" if unknowns else "COMPLETE_INPUTS",
+        "unknowns": unknowns,
+        "metric_sources": {
+            "service_level": "persisted scenario estimate: lines scheduled by period end / all plan lines",
+            "delivery_delay": "persisted scenario estimate: lines ending after their plan period",
+            "material_shortages": "persisted scenario material-feasibility diagnostics; quantities grouped by source UOM",
+            "capacity_overload": "persisted scenario estimate using configured work-center rates, calendars, and downtime",
+            "changeover": "persisted scenario estimate using active configured changeover matrix rows",
+            "cost": "unknown until an approved currency and cost basis are configured",
+        },
         "baseline_version": baseline["snapshot_version"],
         "candidate_version": candidate["snapshot_version"],
     }

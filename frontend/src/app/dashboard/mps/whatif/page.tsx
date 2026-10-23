@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-  mpsApi, MPSPlanSummary, MPSLine, MPSWhatIf,
+  mpsApi, MPSPlanSummary, MPSLine, MPSWhatIf, MPSScenarioComparison,
   WhatIfChange, MPSChangeType,
 } from "@/lib/mps";
 
@@ -32,7 +32,7 @@ export default function WhatIfPage() {
   const [viewScenario, setViewScenario] = useState<MPSWhatIf | null>(null);
   const [baselineId, setBaselineId] = useState("");
   const [candidateId, setCandidateId] = useState("");
-  const [comparison, setComparison] = useState<{ service_level_pct_delta: number; delay_count_delta: number; cost_delta_status: string; capacity_overload_hours_delta: number | null; capacity_status: "COMPLETE" | "PARTIAL_INPUTS" } | null>(null);
+  const [comparison, setComparison] = useState<MPSScenarioComparison | null>(null);
 
   const { data: plans = [] } = useQuery<MPSPlanSummary[]>({
     queryKey: ["mps-plans"],
@@ -299,7 +299,23 @@ export default function WhatIfPage() {
                 </select>
                 <button disabled={!baselineId || !candidateId || baselineId === candidateId || compareScenarios.isPending} onClick={() => compareScenarios.mutate()} className="rounded bg-indigo-700 px-3 py-1 text-sm text-white disabled:opacity-50">Compare</button>
               </div>
-              {comparison && <p role="status" className="text-xs text-gray-600">Service level Δ {comparison.service_level_pct_delta.toFixed(1)} pp · Delayed lines Δ {comparison.delay_count_delta} · Capacity overload Δ {comparison.capacity_status === "COMPLETE" && comparison.capacity_overload_hours_delta != null ? `${comparison.capacity_overload_hours_delta.toFixed(3)} hours` : "incomplete inputs"} · Cost {comparison.cost_delta_status.replaceAll("_", " ").toLowerCase()}</p>}
+              {comparison && <div role="status" aria-live="polite" className="space-y-2 text-xs text-gray-600">
+                <p>Service level Δ {comparison.service_level_pct_delta.toFixed(1)} pp · Delayed lines Δ {comparison.delay_count_delta} lines</p>
+                <p>Material shortages Δ {comparison.material_status === "COMPLETE" && comparison.material_shortage_count_delta != null ? `${comparison.material_shortage_count_delta} lines` : "incomplete inputs"}
+                  {comparison.material_shortage_quantity_by_uom_delta && ` · Quantity Δ ${Object.entries(comparison.material_shortage_quantity_by_uom_delta).map(([uom, quantity]) => `${quantity} ${uom}`).join(", ") || "0 by source UOM"}`}
+                </p>
+                <p>Capacity overload Δ {comparison.capacity_status === "COMPLETE" && comparison.capacity_overload_hours_delta != null ? `${comparison.capacity_overload_hours_delta.toFixed(3)} hours` : "incomplete inputs"}
+                  · Changeover Δ {comparison.changeover_status === "COMPLETE" && comparison.changeover_hours_delta != null ? `${comparison.changeover_hours_delta.toFixed(3)} hours` : "incomplete inputs"}
+                </p>
+                <p>Estimated cost: unknown ({comparison.cost_delta_status.replaceAll("_", " ").toLowerCase()}) · Confidence: {comparison.confidence_status.replaceAll("_", " ").toLowerCase()}</p>
+                {comparison.unknowns.length > 0 && <p>Unknown inputs: {comparison.unknowns.join("; ")}</p>}
+                <details>
+                  <summary className="cursor-pointer">KPI sources</summary>
+                  <ul className="list-disc pl-5">
+                    {Object.entries(comparison.metric_sources).map(([metric, source]) => <li key={metric}>{metric.replaceAll("_", " ")}: {source}</li>)}
+                  </ul>
+                </details>
+              </div>}
               {compareScenarios.isError && <p className="text-xs text-red-700">{(compareScenarios.error as Error).message}</p>}
             </div>
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">

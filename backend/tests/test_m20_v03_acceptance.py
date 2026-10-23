@@ -1993,8 +1993,18 @@ async def test_postgres_seeded_mrp_bom_inventory_diagnostics_snapshot_and_releas
 
                 comparison = await compare_whatif_scenarios(db, plan_id, baseline.id, candidate.id)
                 assert comparison["material_shortage_count_delta"] == 1
+                assert comparison["material_status"] == "COMPLETE"
+                assert comparison["material_shortage_quantity_by_uom_delta"] == {"KG": "4.0000"}
+                assert comparison["service_level_unit"] == "percentage_points"
+                assert comparison["delay_count_unit"] == "lines"
+                assert comparison["capacity_unit"] == "hours"
+                assert comparison["changeover_unit"] == "hours"
                 assert comparison["cost_delta"] is None
                 assert comparison["cost_delta_status"] == "UNKNOWN_NO_APPROVED_CURRENCY_BASIS"
+                assert comparison["confidence_status"] == "PARTIAL_INPUTS"
+                assert "cost currency/basis is not configured" in comparison["unknowns"]
+                assert "CIP duration source is not configured" in comparison["unknowns"]
+                assert comparison["metric_sources"]["material_shortages"].endswith("grouped by source UOM")
                 assert comparison["baseline_version"] == "mps-whatif.v1"
                 assert comparison["candidate_version"] == "mps-whatif.v1"
 
