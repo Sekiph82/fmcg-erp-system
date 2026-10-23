@@ -10,8 +10,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 - Current Milestone: M03 — Master Data
 - Current Sprint: M03.S02 — Governance Upgrade
-- Current Task: M03.S02.T001 — Standardize duplicate detection across masters
-- Current Task Status: COMPLETE
+- Current Task: M03.S02.T002 — Standardize merge/deactivation semantics
+- Current Task Status: BLOCKED
 - Next Task/Action: M03.S02.T002 — Standardize merge/deactivation semantics
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
@@ -205,7 +205,7 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 ## M03.S02 — Governance Upgrade
 - [x] M03.S02.T001 — Standardize duplicate detection across masters
   Evidence: [T001 closeout](coordination/milestones/M03/evidence/v01/t001-local-20261023/CLOSEOUT.md)
-- [ ] M03.S02.T002 — Standardize merge/deactivation semantics
+- [!] M03.S02.T002 — Standardize merge/deactivation semantics
 - [ ] M03.S02.T003 — Standardize version/effective-date governance
 - [ ] M03.S02.T004 — Define master-data stewardship workflow
 - [ ] M03.S02.T005 — Validate referential integrity across master domains
@@ -1098,3 +1098,7 @@ All pre-migration task evidence, including TASK-001…TASK-027, MANUAL, HELP, PU
 # Definition of Done for M20–M35
 
 A milestone is DONE only when its planned scope is implemented or explicitly superseded/deferred with rationale; backend/frontend/schema/API changes are mutually consistent; migrations are safe; RBAC/audit requirements are preserved; required tests/checks pass; no live-provider result is invented; and `TASKS.md` records the final evidence/state.
+
+## Questions for Şekip
+
+- Q-M03-S02-T002-MERGE-RULES | Approve this safe default for duplicate merges and deactivation: a user explicitly chooses the surviving record; the source is retained and marked inactive/merged; existing operational and audit history is not automatically reassigned; inactive records cannot be selected for new transactions; and referenced records are never physically deleted. Reply “yes” to use it or describe the rule you want instead. | TASK: M03.S02.T002
