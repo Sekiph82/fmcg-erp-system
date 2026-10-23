@@ -23,7 +23,7 @@ from sqlalchemy.exc import MultipleResultsFound
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.mps import (
-    MPSPlan, MPSLine, MPSCapacitySlot,
+    MPSPlan, MPSLine, MPSCampaign, MPSCapacitySlot,
     MPSFeasibilityStatus, MPSCapacityMode, MPSStatus,
 )
 from app.models.production_advanced import WorkCenter
@@ -450,7 +450,7 @@ async def suggest_reschedule(
 async def run_capacity_scheduling_validated(db: AsyncSession, mps_id: uuid.UUID) -> dict:
     """Calculate finite capacity only from explicit calendars, rates, and downtime."""
     from app.models.master import Product
-    from app.models.planning import ResourceCalendar
+    from app.models.planning import ChangeoverMatrix, ResourceCalendar
     from app.models.production_advanced import DowntimeEvent
     from app.services.mps_advanced_service import _write_diagnostics
     from app.services.mps_engine import capacity_result
@@ -681,6 +681,203 @@ async def run_capacity_scheduling_validated(db: AsyncSession, mps_id: uuid.UUID)
             slot_allocations[(wc.id, overflow_day)] += remaining
             line_allocations[line.id][overflow_day] = line_allocations[line.id].get(overflow_day, Decimal(0)) + remaining
 
+    # Re-evaluate campaign transitions against the current active matrix. The
+    # campaign's stored changeover total is a grouping-time snapshot, so using
+    # it here could apply stale setup after master data changes. CIP duration
+    # has no authoritative MPS source and is therefore carried as unknown.
+    campaign_rows = (await db.execute(
+        select(MPSCampaign).where(MPSCampaign.mps_id == mps_id)
+    )).scalars().all()
+    members_by_campaign: dict[uuid.UUID, list[MPSLine]] = defaultdict(list)
+    for line in lines:
+        if line.campaign_id:
+            members_by_campaign[line.campaign_id].append(line)
+
+    campaign_work_centers = {
+        campaign.work_center_id for campaign in campaign_rows if campaign.work_center_id
+    }
+    matrix_rows = (await db.execute(
+        select(ChangeoverMatrix).where(
+            ChangeoverMatrix.work_center_id.in_(campaign_work_centers),
+            ChangeoverMatrix.is_active.is_(True),
+        )
+    )).scalars().all() if campaign_work_centers else []
+    matrix_values: dict[tuple[uuid.UUID, str, str], list[int]] = defaultdict(list)
+    for row in matrix_rows:
+        key = (
+            row.work_center_id,
+            str(row.from_family or "").strip().upper(),
+            str(row.to_family or "").strip().upper(),
+        )
+        matrix_values[key].append(row.changeover_minutes)
+
+    campaigns_by_work_center: dict[uuid.UUID, list[tuple[MPSCampaign, list[MPSLine], str]]] = defaultdict(list)
+    invalid_campaign_work_centers: set[uuid.UUID] = set()
+    for campaign in campaign_rows:
+        members = members_by_campaign.get(campaign.id, [])
+        if not members:
+            continue
+        # CIP applicability/duration is not inferable from the available MPS
+        # master data. Keep the missing input visible in this capacity run.
+        for member in members:
+            line_issues[member.id].append({
+                "reason_code": "CIP_NOT_CONFIGURED", "state": "NOT_CONFIGURED",
+                "duration_minutes": None,
+                "provenance": "No authoritative MPS CIP duration source exists; no cleaning time was applied.",
+                "priority": "LOW",
+            })
+
+        member_work_centers = {member.work_center_id for member in members}
+        families = {
+            str(getattr(products[member.product_id].category, "value", products[member.product_id].category) or "")
+            .strip().upper()
+            for member in members if member.product_id in products
+        }
+        if (
+            not campaign.work_center_id
+            or member_work_centers != {campaign.work_center_id}
+            or len(families) != 1
+            or not next(iter(families), "")
+            or campaign.sequence_order <= 0
+            or campaign.campaign_start is None
+            or campaign.campaign_end is None
+            or campaign.campaign_end < campaign.campaign_start
+        ):
+            invalid_campaign_work_centers.update(
+                center_id for center_id in member_work_centers if center_id is not None
+            )
+            if campaign.work_center_id is not None:
+                invalid_campaign_work_centers.add(campaign.work_center_id)
+            issue = {
+                "reason_code": "CHANGEOVER_SEQUENCE_INVALID", "state": "SEQUENCE_NOT_ESTABLISHED",
+                "campaign_id": str(campaign.id),
+                "work_center_ids": sorted(
+                    str(center_id) for center_id in member_work_centers | {campaign.work_center_id}
+                    if center_id is not None
+                ),
+                "provenance": "Campaign work center, family, sequence, or date window is incomplete or inconsistent; setup was not applied.",
+                "priority": "HIGH",
+            }
+            for member in members:
+                line_issues[member.id].append(issue)
+            continue
+        campaigns_by_work_center[campaign.work_center_id].append(
+            (campaign, members, next(iter(families)))
+        )
+
+    for work_center_id, sequenced_campaigns in campaigns_by_work_center.items():
+        if work_center_id in invalid_campaign_work_centers:
+            for _campaign, members, _family in sequenced_campaigns:
+                issue = {
+                    "reason_code": "CHANGEOVER_SEQUENCE_INVALID", "state": "SEQUENCE_NOT_ESTABLISHED",
+                    "work_center_id": str(work_center_id),
+                    "provenance": "Another campaign assigned to this work center has inconsistent member data; transitions were not inferred across it.",
+                    "priority": "HIGH",
+                }
+                for member in members:
+                    line_issues[member.id].append(issue)
+            continue
+        if (
+            work_center_id not in wcs
+            or str(getattr(wcs[work_center_id].status, "value", wcs[work_center_id].status) or "").upper() != "ACTIVE"
+        ):
+            # The line validation above already records WORK_CENTER_INACTIVE
+            # (or WORK_CENTER_MISSING); never add setup load to an unusable WC.
+            continue
+        sequenced_campaigns.sort(key=lambda item: (item[0].sequence_order, item[0].id.hex))
+        sequence_numbers = [item[0].sequence_order for item in sequenced_campaigns]
+        if len(sequence_numbers) != len(set(sequence_numbers)):
+            for campaign, members, _family in sequenced_campaigns:
+                issue = {
+                    "reason_code": "CHANGEOVER_SEQUENCE_INVALID", "state": "SEQUENCE_NOT_ESTABLISHED",
+                    "work_center_id": str(work_center_id),
+                    "provenance": "Campaign sequence numbers are duplicated for this work center; transitions were not guessed.",
+                    "priority": "HIGH",
+                }
+                for member in members:
+                    line_issues[member.id].append(issue)
+            continue
+
+        for (previous, _previous_members, previous_family), (campaign, members, family) in zip(
+            sequenced_campaigns, sequenced_campaigns[1:]
+        ):
+            if previous.campaign_end >= campaign.campaign_start:
+                issue = {
+                    "reason_code": "CHANGEOVER_SEQUENCE_INVALID", "state": "SEQUENCE_NOT_ESTABLISHED",
+                    "work_center_id": str(work_center_id),
+                    "from_campaign_id": str(previous.id), "to_campaign_id": str(campaign.id),
+                    "provenance": "Campaign windows overlap or touch; transition setup was not applied.",
+                    "priority": "HIGH",
+                }
+                for member in members:
+                    line_issues[member.id].append(issue)
+                continue
+
+            matrix_key = (work_center_id, previous_family, family)
+            values = matrix_values.get(matrix_key, [])
+            if not values:
+                for member in members:
+                    line_issues[member.id].append({
+                        "reason_code": "CHANGEOVER_NOT_CONFIGURED", "state": "NOT_CONFIGURED",
+                        "work_center_id": str(work_center_id),
+                        "from_family": previous_family, "to_family": family,
+                        "duration_minutes": None,
+                        "provenance": "No matching active changeover_matrix row exists; no default duration was applied.",
+                        "priority": "LOW",
+                    })
+                continue
+            if len(values) != 1 or values[0] < 0:
+                issue = {
+                    "reason_code": "CHANGEOVER_CONFIGURATION_INVALID", "state": "INVALID_CONFIGURATION",
+                    "work_center_id": str(work_center_id),
+                    "from_family": previous_family, "to_family": family,
+                    "duration_minutes": None,
+                    "provenance": "Matching active changeover rows are negative or ambiguous after family normalization; setup was not applied.",
+                    "priority": "CRITICAL",
+                }
+                for member in members:
+                    line_issues[member.id].append(issue)
+                continue
+
+            duration_minutes = values[0]
+            setup_hours = _R(Decimal(duration_minutes) / Decimal(60))
+            recipient = min(
+                members,
+                key=lambda member: (
+                    member.planned_start_date or member.period_start,
+                    member.line_no,
+                    member.id.hex,
+                ),
+            )
+            setup_day = recipient.planned_start_date or recipient.period_start
+            setup_key = (work_center_id, setup_day)
+            if setup_key not in calendar_map:
+                issue = {
+                    "reason_code": "CHANGEOVER_CAPACITY_CALENDAR_NOT_CONFIGURED",
+                    "state": "NOT_CONFIGURED", "work_center_id": str(work_center_id),
+                    "date": setup_day.isoformat(), "duration_minutes": duration_minutes,
+                    "priority": "CRITICAL",
+                    "provenance": "Configured setup duration could not be placed because its first campaign day has no resource calendar.",
+                }
+                for member in members:
+                    line_issues[member.id].append(issue)
+                continue
+
+            slot_allocations[setup_key] += setup_hours
+            line_allocations[recipient.id][setup_day] = (
+                line_allocations[recipient.id].get(setup_day, Decimal(0)) + setup_hours
+            )
+            for member in members:
+                line_issues[member.id].append({
+                    "reason_code": "CHANGEOVER_CAPACITY_APPLIED", "state": "CONFIGURED",
+                    "work_center_id": str(work_center_id),
+                    "from_family": previous_family, "to_family": family,
+                    "duration_minutes": duration_minutes, "changeover_hours": str(setup_hours),
+                    "capacity_date": setup_day.isoformat(),
+                    "provenance": "Current unique active changeover_matrix row; setup load is allocated once on the successor campaign's first scheduled day.",
+                    "priority": "LOW",
+                })
+
     await db.execute(delete(MPSCapacitySlot).where(MPSCapacitySlot.mps_id == mps_id))
     diagnostics = []
     overloaded_lines: set[uuid.UUID] = set()
@@ -727,12 +924,17 @@ async def run_capacity_scheduling_validated(db: AsyncSession, mps_id: uuid.UUID)
             if line.id in required_by_line:
                 line.required_hours = required_by_line[line.id]
             issue_codes = {issue["reason_code"] for issue in issues}
-            if issue_codes - {"CAPACITY_OVERLOAD"}:
+            informational_unknowns = {"CHANGEOVER_NOT_CONFIGURED", "CIP_NOT_CONFIGURED"}
+            non_blocking = {"CAPACITY_OVERLOAD", "CHANGEOVER_CAPACITY_APPLIED", *informational_unknowns}
+            if issue_codes - non_blocking:
                 line.feasibility_status = MPSFeasibilityStatus.INFEASIBLE
                 line.overload_hours = None
             elif line.id in overloaded_lines:
                 line.feasibility_status = MPSFeasibilityStatus.OVERLOADED
                 line.overload_hours = sum((Decimal(str(i.get("overload_hours", 0))) for i in issues), Decimal(0))
+            elif issue_codes & informational_unknowns:
+                line.feasibility_status = MPSFeasibilityStatus.PENDING
+                line.overload_hours = Decimal(0)
             elif line.feasibility_status not in (MPSFeasibilityStatus.MATERIAL_SHORT, MPSFeasibilityStatus.ON_HOLD):
                 line.feasibility_status = MPSFeasibilityStatus.FEASIBLE
                 line.overload_hours = Decimal(0)

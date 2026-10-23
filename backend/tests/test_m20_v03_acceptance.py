@@ -577,7 +577,9 @@ async def test_postgres_mps_capacity_reconciles_rate_shifts_downtime_locks_and_m
     attribution_day = capacity_day + timedelta(days=3)
     overnight_day = capacity_day + timedelta(days=4)
     invalid_downtime_day = capacity_day + timedelta(days=5)
-    company_id = warehouse_id = product_id = run_id = plan_id = work_center_id = conversion_id = None
+    changeover_day = capacity_day + timedelta(days=6)
+    mismatch_day = capacity_day + timedelta(days=7)
+    company_id = warehouse_id = product_id = run_id = plan_id = work_center_id = second_work_center_id = conversion_id = None
     try:
         async with AsyncSessionLocal() as db:
             async with db.begin():
@@ -594,7 +596,11 @@ async def test_postgres_mps_capacity_reconciles_rate_shifts_downtime_locks_and_m
                     work_center_id=f"M20-CAP-WC-{suffix}", name="Synthetic aggregate-rate work center",
                     type=WorkCenterType.LINE, capacity=Decimal("10000"), capacity_uom="G/HR",
                 )
-                db.add_all([company, warehouse, product, work_center])
+                second_work_center = WorkCenter(
+                    work_center_id=f"M20-CAP-WC2-{suffix}", name="Synthetic mismatched campaign member center",
+                    type=WorkCenterType.LINE, capacity=Decimal("10000"), capacity_uom="G/HR",
+                )
+                db.add_all([company, warehouse, product, work_center, second_work_center])
                 await db.flush()
                 conversion = UomConversion(from_uom="G", to_uom="KG", factor=Decimal("0.001"), is_active=True)
                 db.add_all([
@@ -624,6 +630,18 @@ async def test_postgres_mps_capacity_reconciles_rate_shifts_downtime_locks_and_m
                     ResourceCalendar(
                         work_center_id=work_center.id, calendar_date=invalid_downtime_day, available_hours=8,
                         shift_1_start="08:00", shift_1_end="16:00",
+                    ),
+                    ResourceCalendar(
+                        work_center_id=work_center.id, calendar_date=changeover_day, available_hours=8,
+                        shift_1_start="08:00", shift_1_end="16:00",
+                    ),
+                    ResourceCalendar(
+                        work_center_id=second_work_center.id, calendar_date=mismatch_day, available_hours=8,
+                        shift_1_start="08:00", shift_1_end="16:00",
+                    ),
+                    ChangeoverMatrix(
+                        work_center_id=work_center.id, from_family="FOOD", to_family="FOOD",
+                        changeover_minutes=30, is_active=True,
                     ),
                     DowntimeEvent(
                         downtime_id=f"M20-CAP-DT1-{suffix}", work_center_id=work_center.id,
@@ -661,7 +679,7 @@ async def test_postgres_mps_capacity_reconciles_rate_shifts_downtime_locks_and_m
                 )
                 plan = MPSPlan(
                     plan_no=f"M20-CAP-PLAN-{suffix}", plan_name="Synthetic capacity acceptance plan",
-                    start_date=capacity_day, end_date=invalid_downtime_day, mrp_run=run,
+                    start_date=capacity_day, end_date=mismatch_day, mrp_run=run,
                     capacity_mode=MPSCapacityMode.FINITE,
                 )
                 db.add(plan)
@@ -727,19 +745,53 @@ async def test_postgres_mps_capacity_reconciles_rate_shifts_downtime_locks_and_m
                     planned_end_date=capacity_day, planned_production_qty=-10, work_center_id=work_center.id,
                     feasibility_status=MPSFeasibilityStatus.PENDING,
                 )
+                changeover = MPSLine(
+                    line_no=f"M20-CAP-CHANGEOVER-{suffix}", mps_id=plan.id, product_id=product.id,
+                    period_start=changeover_day, period_end=changeover_day,
+                    planned_start_date=changeover_day, planned_end_date=changeover_day,
+                    planned_production_qty=10, work_center_id=work_center.id,
+                    feasibility_status=MPSFeasibilityStatus.PENDING,
+                )
+                mismatched_member = MPSLine(
+                    line_no=f"M20-CAP-CAMPAIGN-MISMATCH-{suffix}", mps_id=plan.id, product_id=product.id,
+                    period_start=mismatch_day, period_end=mismatch_day,
+                    planned_start_date=mismatch_day, planned_end_date=mismatch_day,
+                    planned_production_qty=10, work_center_id=second_work_center.id,
+                    feasibility_status=MPSFeasibilityStatus.PENDING,
+                )
                 db.add_all([
                     locked, concurrent, maintenance, invalid_shift, attribution_locked,
-                    attribution_unlocked, overnight, invalid_downtime, bad_date, negative,
+                    attribution_unlocked, overnight, invalid_downtime, bad_date, negative, changeover,
+                    mismatched_member,
                 ])
+                await db.flush()
+                overnight_campaign = MPSCampaign(
+                    campaign_code=f"M20-CAP-CAMP1-{suffix}", campaign_name="Synthetic preceding campaign",
+                    mps_id=plan.id, work_center_id=work_center.id,
+                    campaign_start=overnight_day, campaign_end=overnight_day, sequence_order=1,
+                )
+                changeover_campaign = MPSCampaign(
+                    campaign_code=f"M20-CAP-CAMP2-{suffix}", campaign_name="Synthetic successor campaign",
+                    mps_id=plan.id, work_center_id=work_center.id,
+                    campaign_start=changeover_day, campaign_end=changeover_day,
+                    sequence_order=2, total_changeover_hrs=Decimal("9.000"),
+                )
+                db.add_all([overnight_campaign, changeover_campaign])
+                await db.flush()
+                overnight.campaign_id = overnight_campaign.id
+                changeover.campaign_id = changeover_campaign.id
                 await db.flush()
                 company_id, warehouse_id, product_id = company.id, warehouse.id, product.id
                 run_id, plan_id, work_center_id, conversion_id = run.id, plan.id, work_center.id, conversion.id
+                second_work_center_id = second_work_center.id
                 locked_id, concurrent_id, maintenance_id = locked.id, concurrent.id, maintenance.id
                 invalid_shift_id = invalid_shift.id
                 attribution_locked_id, attribution_unlocked_id = attribution_locked.id, attribution_unlocked.id
                 overnight_id = overnight.id
                 invalid_downtime_id = invalid_downtime.id
                 bad_date_id, negative_id = bad_date.id, negative.id
+            changeover_id = changeover.id
+            mismatched_member_id = mismatched_member.id
 
             result = await run_capacity_scheduling_validated(db, plan_id)
             assert result["mode"] == "FINITE"
@@ -748,7 +800,7 @@ async def test_postgres_mps_capacity_reconciles_rate_shifts_downtime_locks_and_m
             slots_by_day = {slot.slot_date: slot for slot in slots}
             assert set(slots_by_day) == {
                 capacity_day, maintenance_day, invalid_shift_day, attribution_day, overnight_day,
-                invalid_downtime_day,
+                invalid_downtime_day, changeover_day, mismatch_day,
             }
             assert slots_by_day[capacity_day].allocated_hours == Decimal("12.000")
             assert slots_by_day[capacity_day].available_hours == Decimal("8.000")
@@ -766,6 +818,8 @@ async def test_postgres_mps_capacity_reconciles_rate_shifts_downtime_locks_and_m
             assert slots_by_day[invalid_downtime_day].available_hours == Decimal("8.000")
             assert slots_by_day[invalid_downtime_day].downtime_hours == Decimal("8.000")
             assert slots_by_day[invalid_downtime_day].overload_hours == Decimal("1.000")
+            assert slots_by_day[changeover_day].allocated_hours == Decimal("1.500")
+            assert slots_by_day[changeover_day].overload_hours == Decimal("0.000")
             assert (await db.get(MPSLine, locked_id)).feasibility_status == MPSFeasibilityStatus.ON_HOLD
             assert (await db.get(MPSLine, concurrent_id)).required_hours == Decimal("6.000")
             assert (await db.get(MPSLine, concurrent_id)).feasibility_status == MPSFeasibilityStatus.OVERLOADED
@@ -773,7 +827,8 @@ async def test_postgres_mps_capacity_reconciles_rate_shifts_downtime_locks_and_m
             assert (await db.get(MPSLine, invalid_shift_id)).feasibility_status == MPSFeasibilityStatus.INFEASIBLE
             assert (await db.get(MPSLine, attribution_locked_id)).feasibility_status == MPSFeasibilityStatus.ON_HOLD
             assert (await db.get(MPSLine, attribution_unlocked_id)).feasibility_status == MPSFeasibilityStatus.OVERLOADED
-            assert (await db.get(MPSLine, overnight_id)).feasibility_status == MPSFeasibilityStatus.FEASIBLE
+            assert (await db.get(MPSLine, overnight_id)).feasibility_status == MPSFeasibilityStatus.PENDING
+            assert (await db.get(MPSLine, changeover_id)).feasibility_status == MPSFeasibilityStatus.PENDING
             assert (await db.get(MPSLine, invalid_downtime_id)).feasibility_status == MPSFeasibilityStatus.INFEASIBLE
             diagnostics = await list_plan_diagnostics(db, plan_id)
             by_line = {uuid.UUID(row["line_id"]): row for row in diagnostics}
@@ -789,6 +844,105 @@ async def test_postgres_mps_capacity_reconciles_rate_shifts_downtime_locks_and_m
             assert Decimal(by_line[attribution_locked_id]["diagnostics"]["issues"][0]["overload_hours"]) == Decimal("1")
             assert Decimal(by_line[attribution_unlocked_id]["diagnostics"]["issues"][0]["overload_hours"]) == Decimal("1")
             assert Decimal(by_line[attribution_unlocked_id]["diagnostics"]["issues"][0]["required_hours"]) == Decimal("1.000")
+            changeover_diagnostic = by_line[changeover_id]["diagnostics"]
+            applied_setup = next(
+                issue for issue in changeover_diagnostic["issues"]
+                if issue["reason_code"] == "CHANGEOVER_CAPACITY_APPLIED"
+            )
+            assert applied_setup["duration_minutes"] == 30
+            assert Decimal(applied_setup["changeover_hours"]) == Decimal("0.500")
+            assert applied_setup["capacity_date"] == changeover_day.isoformat()
+            assert "CIP_NOT_CONFIGURED" in changeover_diagnostic["reason_codes"]
+            assert changeover_campaign.total_changeover_hrs == Decimal("9.000")
+
+            matrix = (await db.scalars(select(ChangeoverMatrix).where(
+                ChangeoverMatrix.work_center_id == work_center.id,
+                ChangeoverMatrix.from_family == "FOOD",
+                ChangeoverMatrix.to_family == "FOOD",
+            ))).one()
+            matrix.is_active = False
+            await db.flush()
+            missing_config_run = await run_capacity_scheduling_validated(db, plan_id)
+            missing_config_slots = (await db.scalars(
+                select(MPSCapacitySlot).where(
+                    MPSCapacitySlot.mps_id == plan_id,
+                    MPSCapacitySlot.work_center_id == work_center.id,
+                    MPSCapacitySlot.slot_date == changeover_day,
+                )
+            )).all()
+            assert len(missing_config_slots) == 1
+            assert missing_config_slots[0].allocated_hours == Decimal("1.000")
+            missing_config_diagnostic = next(
+                row["diagnostics"] for row in await list_plan_diagnostics(db, plan_id)
+                if row["run_id"] == missing_config_run["diagnostic_run_id"]
+                and uuid.UUID(row["line_id"]) == changeover_id
+            )
+            assert "CHANGEOVER_NOT_CONFIGURED" in missing_config_diagnostic["reason_codes"]
+            assert "CHANGEOVER_CAPACITY_APPLIED" not in missing_config_diagnostic["reason_codes"]
+            matrix.is_active = True
+            await db.flush()
+
+            # A malformed middle campaign on another work center must block
+            # the declared center's transition chain instead of being skipped.
+            mismatched_campaign = MPSCampaign(
+                campaign_code=f"M20-CAP-CAMP-MISMATCH-{suffix}", campaign_name="Synthetic mismatched campaign",
+                mps_id=plan_id, work_center_id=work_center.id,
+                campaign_start=mismatch_day - timedelta(days=1),
+                campaign_end=mismatch_day - timedelta(days=1), sequence_order=2,
+            )
+            changeover_campaign.sequence_order = 3
+            db.add(mismatched_campaign)
+            await db.flush()
+            mismatched_member.campaign_id = mismatched_campaign.id
+            await db.flush()
+            mismatch_run = await run_capacity_scheduling_validated(db, plan_id)
+            mismatch_slots = (await db.scalars(
+                select(MPSCapacitySlot).where(
+                    MPSCapacitySlot.mps_id == plan_id,
+                    MPSCapacitySlot.work_center_id == work_center.id,
+                    MPSCapacitySlot.slot_date == changeover_day,
+                )
+            )).all()
+            assert len(mismatch_slots) == 1
+            assert mismatch_slots[0].allocated_hours == Decimal("1.000")
+            latest_mismatch_rows = [
+                row for row in await list_plan_diagnostics(db, plan_id)
+                if row["run_id"] == mismatch_run["diagnostic_run_id"]
+            ]
+            mismatch_diagnostic = next(
+                row["diagnostics"] for row in latest_mismatch_rows
+                if uuid.UUID(row["line_id"]) == changeover_id
+            )
+            assert "CHANGEOVER_CAPACITY_APPLIED" not in mismatch_diagnostic["reason_codes"]
+            assert "CHANGEOVER_SEQUENCE_INVALID" in mismatch_diagnostic["reason_codes"]
+            member_diagnostic = next(
+                row["diagnostics"] for row in latest_mismatch_rows
+                if uuid.UUID(row["line_id"]) == mismatched_member_id
+            )
+            sequence_issue = next(
+                issue for issue in member_diagnostic["issues"]
+                if issue["reason_code"] == "CHANGEOVER_SEQUENCE_INVALID"
+            )
+            assert str(work_center.id) in sequence_issue["work_center_ids"]
+            assert str(second_work_center_id) in sequence_issue["work_center_ids"]
+
+            mismatched_member.campaign_id = None
+            await db.delete(mismatched_campaign)
+            work_center.status = WorkCenterStatus.INACTIVE
+            await db.flush()
+            inactive_run = await run_capacity_scheduling_validated(db, plan_id)
+            assert await db.scalar(select(func.count()).select_from(MPSCapacitySlot).where(
+                MPSCapacitySlot.mps_id == plan_id,
+                MPSCapacitySlot.work_center_id == work_center.id,
+                MPSCapacitySlot.slot_date == changeover_day,
+            )) == 0
+            inactive_diagnostic = next(
+                row["diagnostics"] for row in await list_plan_diagnostics(db, plan_id)
+                if row["run_id"] == inactive_run["diagnostic_run_id"]
+                and uuid.UUID(row["line_id"]) == changeover_id
+            )
+            assert "WORK_CENTER_INACTIVE" in inactive_diagnostic["reason_codes"]
+            assert "CHANGEOVER_CAPACITY_APPLIED" not in inactive_diagnostic["reason_codes"]
 
             plan = await db.get(MPSPlan, plan_id)
             plan.capacity_mode = MPSCapacityMode.INFINITE
@@ -804,9 +958,12 @@ async def test_postgres_mps_capacity_reconciles_rate_shifts_downtime_locks_and_m
                 if plan_id is not None:
                     await cleanup.execute(delete(MPSPlan).where(MPSPlan.id == plan_id))
                 if work_center_id is not None:
-                    await cleanup.execute(delete(DowntimeEvent).where(DowntimeEvent.work_center_id == work_center_id))
-                    await cleanup.execute(delete(ResourceCalendar).where(ResourceCalendar.work_center_id == work_center_id))
-                    await cleanup.execute(delete(WorkCenter).where(WorkCenter.id == work_center_id))
+                    work_center_ids = [work_center_id]
+                    if second_work_center_id is not None:
+                        work_center_ids.append(second_work_center_id)
+                    await cleanup.execute(delete(DowntimeEvent).where(DowntimeEvent.work_center_id.in_(work_center_ids)))
+                    await cleanup.execute(delete(ResourceCalendar).where(ResourceCalendar.work_center_id.in_(work_center_ids)))
+                    await cleanup.execute(delete(WorkCenter).where(WorkCenter.id.in_(work_center_ids)))
                 if conversion_id is not None:
                     await cleanup.execute(delete(UomConversion).where(UomConversion.id == conversion_id))
                 if product_id is not None:
