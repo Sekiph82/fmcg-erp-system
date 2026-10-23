@@ -50,6 +50,7 @@ def _mock_db(*results, get_results=None):
 
     db = AsyncMock()
     db.execute = AsyncMock(side_effect=list(results))
+    db.scalar = AsyncMock(return_value=0)
     if get_results is not None:
         remaining = list(get_results)
         source_warehouse = SimpleNamespace(id=uuid4(), code="WH-SOURCE", is_active=True, company_id=None)
@@ -324,15 +325,21 @@ async def test_release_skips_line_when_no_approved_effective_recipe_exists():
         _exec_result(scalar_one_or_none=plan),
         _exec_result(scalars_all=[line]),
         _exec_result(scalar=0),
-        _exec_result(scalar=0),
         _exec_result(scalar_one_or_none=None),  # no APPROVED/effective recipe found
-        get_results=[warehouse],
+        _exec_result(scalar_one_or_none=plan),
+        _exec_result(scalars_all=[line]),
+        _exec_result(scalar=0),
+        _exec_result(scalar_one_or_none=None),  # same blocked retry
+        get_results=[warehouse, warehouse],
     )
 
     result = await svc.release_mps_plan(db, plan.id, uuid4(), uuid4())
     assert result["released_orders"] == 0
     assert result["skipped_no_recipe"] == 1
     assert "no approved effective recipe" in line.remarks
+    retry = await svc.release_mps_plan(db, plan.id, uuid4(), uuid4())
+    assert retry["released_orders"] == 0
+    assert line.remarks.count("[no approved effective recipe — skipped]") == 1
 
 
 # ── F-V01-005 — UOM derived from product, not hard-coded ───────────────────────

@@ -47,14 +47,16 @@ from app.models.role import AccessScope, Permission, Role
 from app.models.user import User, user_role
 from app.models.sales import Customer, SalesOrder, SOStatus, SOLine
 from app.schemas.mps import (
-    GenerateFromMRPRequest, MPSLineConstraintDiagnosticOut, MPSWhatIfCreate, WhatIfChange,
+    GenerateFromMRPRequest, MPSLineConstraintDiagnosticOut, MPSLineUpdate, MPSWhatIfCreate, WhatIfChange,
 )
 from app.services.mps_advanced_service import (
     evaluate_material_feasibility, list_plan_diagnostics, project_demand_and_supply,
 )
 from app.services.mps_capacity_service import run_capacity_scheduling_validated
 from app.services.mps_campaign_service import run_campaign_grouping_validated, list_campaigns
-from app.services.mps_service import _next_seq, approve_mps_plan, generate_mps_from_mrp, release_mps_plan
+from app.services.mps_service import (
+    _next_seq, approve_mps_plan, generate_mps_from_mrp, release_mps_plan, update_mps_line,
+)
 from app.services.mps_whatif_service import (
     _next_scenario_no,
     _apply_change,
@@ -2089,6 +2091,264 @@ async def test_postgres_seeded_mrp_bom_inventory_diagnostics_snapshot_and_releas
                     await cleanup.execute(delete(Warehouse).where(Warehouse.id == warehouse_id))
                 if company_id is not None:
                     await cleanup.execute(delete(Company).where(Company.id == company_id))
+        await engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_postgres_mps_approval_reopen_and_release_integrity():
+    """Exercise approval prerequisites, blocked-line repair, release integrity and immutability."""
+    _require_disposable_m20_postgres()
+    await engine.dispose()
+
+    suffix = _suffix()
+    company_id = warehouse_id = alternate_warehouse_id = work_center_id = actor_id = None
+    product_id = recipe_id = run_id = plan_id = None
+    try:
+        async with AsyncSessionLocal() as db:
+            async with db.begin():
+                company = Company(name=f"M20 lifecycle {suffix}", short_code=f"ML{suffix}")
+                db.add(company)
+                await db.flush()
+                warehouse = Warehouse(
+                    code=f"M20-LIFE-{suffix}", name="Synthetic lifecycle source",
+                    warehouse_type=WarehouseType.FINISHED_GOODS, company_id=company.id,
+                )
+                alternate_warehouse = Warehouse(
+                    code=f"M20-LIFE-X-{suffix}", name="Synthetic alternate target",
+                    warehouse_type=WarehouseType.FINISHED_GOODS, company_id=company.id,
+                )
+                actor = User(
+                    email=f"m20-lifecycle-{suffix}@example.invalid",
+                    username=f"m20-lifecycle-{suffix}", full_name="M20 Lifecycle Actor",
+                    hashed_password="test",
+                )
+                product = Product(
+                    sku=f"M20-LIFE-P-{suffix}", name="Synthetic lifecycle product",
+                    category=ProductCategory.FOOD, uom=UnitOfMeasure.KG,
+                )
+                work_center = WorkCenter(
+                    work_center_id=f"M20-LIFE-WC-{suffix}", name="Synthetic lifecycle line",
+                    type=WorkCenterType.LINE, capacity=Decimal("100"), capacity_uom="KG/HR",
+                )
+                db.add_all([warehouse, alternate_warehouse, actor, product, work_center])
+                await db.flush()
+                db.add(ResourceCalendar(
+                    work_center_id=work_center.id, calendar_date=date(2026, 10, 1),
+                    available_hours=8, shift_1_start="08:00", shift_1_end="16:00",
+                ))
+                await db.flush()
+                recipe = Recipe(
+                    product_id=product.id, version="1", name="Synthetic approved recipe",
+                    status=RecipeStatus.APPROVED, is_active=True,
+                )
+                run = MRPRun(
+                    run_no=f"M20-LIFE-RUN-{suffix}", run_date=date(2026, 10, 1),
+                    status=MRPRunStatus.COMPLETED, warehouse_id=warehouse.id,
+                )
+                db.add_all([recipe, run])
+                await db.flush()
+                plan = MPSPlan(
+                    plan_no=f"M20-LIFE-PLAN-{suffix}", plan_name="Synthetic lifecycle plan",
+                    start_date=date(2026, 10, 1), end_date=date(2026, 10, 31),
+                    status=MPSStatus.DRAFT, mrp_run_id=run.id,
+                )
+                db.add(plan)
+                await db.flush()
+                company_id, warehouse_id = company.id, warehouse.id
+                alternate_warehouse_id = alternate_warehouse.id
+                work_center_id = work_center.id
+                actor_id, product_id = actor.id, product.id
+                recipe_id, run_id, plan_id = recipe.id, run.id, plan.id
+
+                with pytest.raises(ValueError, match="at least one positive production line"):
+                    await approve_mps_plan(db, plan.id, actor.id)
+                assert plan.status == MPSStatus.DRAFT
+
+                feasible_line = MPSLine(
+                    line_no=f"M20-LIFE-L1-{suffix}", mps_id=plan.id, product_id=product.id,
+                    period_start=date(2026, 10, 1), period_end=date(2026, 10, 15),
+                    planned_start_date=date(2026, 10, 1), planned_end_date=date(2026, 10, 1),
+                    work_center_id=work_center.id, planned_production_qty=Decimal("300"),
+                    feasibility_status=MPSFeasibilityStatus.FEASIBLE,
+                )
+                blocked_line = MPSLine(
+                    line_no=f"M20-LIFE-L2-{suffix}", mps_id=plan.id, product_id=product.id,
+                    period_start=date(2026, 10, 16), period_end=date(2026, 10, 31),
+                    planned_start_date=date(2026, 10, 1), planned_end_date=date(2026, 10, 1),
+                    work_center_id=work_center.id, planned_production_qty=Decimal("1000"),
+                    feasibility_status=MPSFeasibilityStatus.MATERIAL_SHORT,
+                )
+                db.add_all([feasible_line, blocked_line])
+                await db.flush()
+                with pytest.raises(ValueError, match="Every positive production line must be FEASIBLE"):
+                    await approve_mps_plan(db, plan.id, actor.id)
+                assert plan.status == MPSStatus.DRAFT
+                blocked_line.feasibility_status = MPSFeasibilityStatus.FEASIBLE
+                await db.flush()
+                await approve_mps_plan(db, plan.id, actor.id)
+                assert plan.status == MPSStatus.APPROVED
+                assert plan.approved_by_id == actor.id and plan.approved_at is not None
+                assert await update_mps_line(
+                    db, plan.id, uuid4(), MPSLineUpdate(remarks="missing line"), actor.id,
+                ) is None
+                assert plan.status == MPSStatus.APPROVED and plan.approved_by_id == actor.id
+                with pytest.raises(ValueError, match="At least one editable MPS line field"):
+                    await update_mps_line(db, plan.id, feasible_line.id, MPSLineUpdate(), actor.id)
+                assert await update_mps_line(
+                    db, plan.id, feasible_line.id,
+                    MPSLineUpdate(planned_production_qty=feasible_line.planned_production_qty), actor.id,
+                ) is feasible_line
+                assert plan.status == MPSStatus.APPROVED and plan.approved_by_id == actor.id
+
+                # Simulate persisted feasibility drift after approval. Release
+                # must fail closed, and an authenticated edit must revoke that
+                # approval before the draft can be recalculated and reapproved.
+                blocked_line.feasibility_status = MPSFeasibilityStatus.OVERLOADED
+                await db.flush()
+                blocked_release = await release_mps_plan(db, plan.id, actor.id, warehouse.id)
+                assert blocked_release["released_orders"] == 0
+                assert blocked_release["skipped_ineligible"] == 1
+                assert blocked_release["release_complete"] is False
+                assert plan.status == MPSStatus.APPROVED
+                assert await db.scalar(select(func.count()).select_from(ProductionOrder).where(
+                    ProductionOrder.product_id == product.id,
+                )) == 0
+
+                await update_mps_line(
+                    db, plan.id, blocked_line.id,
+                    MPSLineUpdate(
+                        planned_production_qty=Decimal("300"),
+                        remarks="Re-evaluate and obtain approval again",
+                    ), actor.id,
+                )
+                assert plan.status == MPSStatus.DRAFT
+                assert plan.approved_by_id is None and plan.approved_at is None
+                assert blocked_line.is_locked is False
+                reopen_event = await db.scalar(select(func.count()).select_from(AuditLog).where(
+                    AuditLog.event_type == "MPS_PLAN_REOPENED_FOR_EDIT",
+                    AuditLog.target_id == str(plan.id), AuditLog.actor_id == actor.id,
+                ))
+                assert reopen_event == 1
+
+                # Capacity re-evaluation must be able to clear the overload on
+                # the repaired line before approval is restored.
+                capacity = await run_capacity_scheduling_validated(db, plan.id)
+                assert capacity["overloaded_lines"] == 0
+                assert blocked_line.feasibility_status == MPSFeasibilityStatus.FEASIBLE
+                await approve_mps_plan(db, plan.id, actor.id)
+                assert plan.status == MPSStatus.APPROVED
+
+                # ON_HOLD lines are engine-protected. The authenticated
+                # planner must explicitly clear the hold, which invalidates
+                # approval and unlocks the line for feasibility recalculation.
+                feasible_line.feasibility_status = MPSFeasibilityStatus.ON_HOLD
+                feasible_line.is_locked = True
+                await db.flush()
+                with pytest.raises(ValueError, match="explicitly cleared"):
+                    await update_mps_line(
+                        db, plan.id, feasible_line.id,
+                        MPSLineUpdate(remarks="cannot edit a held line directly"), actor.id,
+                    )
+                assert feasible_line.feasibility_status == MPSFeasibilityStatus.ON_HOLD
+                await update_mps_line(
+                    db, plan.id, feasible_line.id, MPSLineUpdate(clear_hold=True), actor.id,
+                )
+                assert plan.status == MPSStatus.DRAFT
+                assert plan.approved_by_id is None and plan.approved_at is None
+                assert feasible_line.feasibility_status == MPSFeasibilityStatus.PENDING
+                assert feasible_line.is_locked is False
+                hold_clear_event = await db.scalar(select(func.count()).select_from(AuditLog).where(
+                    AuditLog.event_type == "MPS_LINE_HOLD_CLEARED",
+                    AuditLog.target_id == str(feasible_line.id), AuditLog.actor_id == actor.id,
+                ))
+                assert hold_clear_event == 1
+                capacity = await run_capacity_scheduling_validated(db, plan.id)
+                assert capacity["overloaded_lines"] == 0
+                assert feasible_line.feasibility_status == MPSFeasibilityStatus.FEASIBLE
+                await approve_mps_plan(db, plan.id, actor.id)
+                assert plan.status == MPSStatus.APPROVED
+                reopen_events = await db.scalar(select(func.count()).select_from(AuditLog).where(
+                    AuditLog.event_type == "MPS_PLAN_REOPENED_FOR_EDIT",
+                    AuditLog.target_id == str(plan.id), AuditLog.actor_id == actor.id,
+                ))
+                assert reopen_events == 2
+
+                # A positive line already linked to an order must block a new
+                # release regardless of target; silently skipping it would
+                # permit a mixed-target or partial release.
+                prelinked_order = ProductionOrder(
+                    order_no=f"PO-M20-PRELINK-{suffix}", product_id=product.id,
+                    recipe_id=recipe.id, planned_quantity=feasible_line.planned_production_qty,
+                    uom="KG", status=ProductionOrderStatus.PLANNED,
+                    target_warehouse_id=alternate_warehouse.id,
+                    scheduled_start=datetime(2026, 10, 1, tzinfo=timezone.utc),
+                    scheduled_end=datetime(2026, 10, 15, tzinfo=timezone.utc), created_by=actor.id,
+                )
+                db.add(prelinked_order)
+                await db.flush()
+                feasible_line.production_order_id = prelinked_order.id
+                await db.flush()
+                with pytest.raises(ValueError, match="already contains production-order links"):
+                    await release_mps_plan(db, plan.id, actor.id, warehouse.id)
+                assert plan.status == MPSStatus.APPROVED and plan.released_at is None
+                assert await db.scalar(select(func.count()).select_from(ProductionOrder).where(
+                    ProductionOrder.product_id == product.id,
+                )) == 1
+
+                feasible_line.production_order_id = None
+                await db.delete(prelinked_order)
+                await db.flush()
+                released = await release_mps_plan(db, plan.id, actor.id, warehouse.id)
+                assert released["release_complete"] is True
+                assert released["released_orders"] == 2
+                assert plan.status == MPSStatus.RELEASED and plan.released_at is not None
+                released_ids = set(released["production_order_ids"])
+                retry = await release_mps_plan(db, plan.id, actor.id, warehouse.id)
+                assert retry["idempotent_retry"] is True
+                assert set(retry["production_order_ids"]) == released_ids
+                assert await db.scalar(select(func.count()).select_from(ProductionOrder).where(
+                    ProductionOrder.product_id == product.id,
+                )) == 2
+
+                with pytest.raises(ValueError, match="Only DRAFT MPS plans can be edited"):
+                    await update_mps_line(
+                        db, plan.id, feasible_line.id, MPSLineUpdate(remarks="must remain immutable"), actor.id,
+                    )
+                with pytest.raises(ValueError, match="DRAFT plans"):
+                    await generate_mps_from_mrp(
+                        db, plan.id, GenerateFromMRPRequest(mrp_run_id=run.id, period_type="MONTHLY"),
+                    )
+                release_events = await db.scalar(select(func.count()).select_from(AuditLog).where(
+                    AuditLog.event_type == "MPS_PLAN_RELEASED",
+                    AuditLog.target_id == str(plan.id), AuditLog.actor_id == actor.id,
+                ))
+                assert release_events == 1
+    finally:
+        async with AsyncSessionLocal() as cleanup:
+            async with cleanup.begin():
+                if plan_id is not None:
+                    await cleanup.execute(delete(ProductionOrder).where(ProductionOrder.product_id == product_id))
+                    if actor_id is not None:
+                        await cleanup.execute(delete(AuditLog).where(AuditLog.actor_id == actor_id))
+                    await cleanup.execute(delete(AuditLog).where(AuditLog.target_id == str(plan_id)))
+                    await cleanup.execute(delete(MPSPlan).where(MPSPlan.id == plan_id))
+                if recipe_id is not None:
+                    await cleanup.execute(delete(Recipe).where(Recipe.id == recipe_id))
+                if run_id is not None:
+                    await cleanup.execute(delete(MRPRun).where(MRPRun.id == run_id))
+                if product_id is not None:
+                    await cleanup.execute(delete(Product).where(Product.id == product_id))
+                if actor_id is not None:
+                    await cleanup.execute(delete(User).where(User.id == actor_id))
+                if alternate_warehouse_id is not None:
+                    await cleanup.execute(delete(Warehouse).where(Warehouse.id == alternate_warehouse_id))
+                if warehouse_id is not None:
+                    await cleanup.execute(delete(Warehouse).where(Warehouse.id == warehouse_id))
+                if company_id is not None:
+                    await cleanup.execute(delete(Company).where(Company.id == company_id))
+                if work_center_id is not None:
+                    await cleanup.execute(delete(ResourceCalendar).where(ResourceCalendar.work_center_id == work_center_id))
+                    await cleanup.execute(delete(WorkCenter).where(WorkCenter.id == work_center_id))
         await engine.dispose()
 
 

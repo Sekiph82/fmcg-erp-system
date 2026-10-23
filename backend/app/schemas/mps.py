@@ -77,13 +77,15 @@ class MPSPlanSummary(BaseModel):
 class MPSLineUpdate(BaseModel):
     """Planner-editable fields only. feasibility_status and is_locked are
     engine-controlled (set by capacity scheduling / regeneration) and must
-    not be forgeable through a generic line PATCH — see M20.S01.T001 F4."""
+    not be forgeable through a generic line PATCH — see M20.S01.T001 F4.
+    Clearing an ON_HOLD line is an explicit, audited planner action."""
     planned_production_qty: Optional[Decimal] = None
     work_center_id: Optional[uuid.UUID] = None
     planned_start_date: Optional[date] = None
     planned_end_date: Optional[date] = None
     priority_score: Optional[Decimal] = None
     remarks: Optional[str] = None
+    clear_hold: bool = False
 
 
 class MPSLineOut(BaseModel):

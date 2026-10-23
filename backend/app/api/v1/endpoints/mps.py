@@ -282,7 +282,7 @@ async def update_line(
     async with db.begin():
         await _check_plan_scope(db, current_user, mps_id, "edit")
         try:
-            line = await update_mps_line(db, mps_id, line_id, body)
+            line = await update_mps_line(db, mps_id, line_id, body, current_user.id)
         except ValueError as exc:
             raise HTTPException(400, str(exc))
     if not line:

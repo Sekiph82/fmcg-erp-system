@@ -66,6 +66,7 @@ def _recipe(product_id):
 def _db(results, get_results):
     db = AsyncMock()
     db.execute = AsyncMock(side_effect=results)
+    db.scalar = AsyncMock(return_value=0)
     remaining = list(get_results)
     source_warehouse = SimpleNamespace(id=uuid4(), code="WH-SOURCE", is_active=True, company_id=None)
     source_run = SimpleNamespace(id=uuid4(), status=MRPRunStatus.COMPLETED, warehouse_id=source_warehouse.id)

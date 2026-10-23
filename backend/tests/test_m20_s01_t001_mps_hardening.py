@@ -51,6 +51,7 @@ def _mock_db(*results, get_results=None):
 
     db = AsyncMock()
     db.execute = AsyncMock(side_effect=list(results))
+    db.scalar = AsyncMock(return_value=0)
     if get_results is not None:
         remaining = list(get_results)
         source_warehouse = SimpleNamespace(id=uuid4(), code="WH-SOURCE", is_active=True, company_id=None)

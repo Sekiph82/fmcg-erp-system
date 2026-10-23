@@ -163,6 +163,7 @@ async def update_mps_line(
     mps_id: uuid.UUID,
     line_id: uuid.UUID,
     data: MPSLineUpdate,
+    user_id: Optional[uuid.UUID] = None,
 ) -> Optional[MPSLine]:
     # Match regeneration/approval lock order so a manual lock or edit cannot
     # race a regeneration that is replacing the plan's unlocked lines.
@@ -172,8 +173,6 @@ async def update_mps_line(
     plan = plan_result.scalar_one_or_none()
     if plan is None:
         return None
-    if plan.status != MPSStatus.DRAFT:
-        raise ValueError("Only DRAFT MPS plans can be edited")
     result = await db.execute(
         select(MPSLine).where(
             MPSLine.id == line_id,
@@ -184,9 +183,105 @@ async def update_mps_line(
     if not line:
         return None
     updates = data.model_dump(exclude_unset=True)
+    clear_hold = bool(updates.pop("clear_hold", False))
+    if not updates and not clear_hold:
+        raise ValueError("At least one editable MPS line field must be provided")
+    if line.feasibility_status == MPSFeasibilityStatus.ON_HOLD and not clear_hold:
+        raise ValueError("ON_HOLD MPS lines must be explicitly cleared before editing")
+    if clear_hold and line.feasibility_status != MPSFeasibilityStatus.ON_HOLD:
+        raise ValueError("Only an ON_HOLD MPS line can be explicitly cleared")
+    if clear_hold and user_id is None:
+        raise ValueError("An authenticated editor is required to clear an MPS line hold")
+    if plan.status not in {MPSStatus.DRAFT, MPSStatus.APPROVED}:
+        raise ValueError("Only DRAFT MPS plans can be edited")
+    if not clear_hold and all(getattr(line, key) == value for key, value in updates.items()):
+        return line
+    reopened_approval = False
+    actor = None
+    if plan.status == MPSStatus.APPROVED:
+        if plan.released_at is not None:
+            raise ValueError("An approved plan with release history cannot be reopened for editing")
+        linked_count = await db.scalar(
+            select(func.count()).select_from(MPSLine).where(
+                MPSLine.mps_id == mps_id,
+                MPSLine.production_order_id.is_not(None),
+            )
+        )
+        if linked_count:
+            raise ValueError("An approved plan with production-order links cannot be reopened for editing")
+        if user_id is None:
+            raise ValueError("An authenticated editor is required to reopen an approved MPS plan")
+
+        from app.models.audit_log import AuditLog
+        from app.models.user import User
+
+        actor = await db.get(User, user_id)
+        if actor is None:
+            raise ValueError("Authenticated editor no longer exists")
+        previous_approval = {
+            "status": MPSStatus.APPROVED.value,
+            "approved_by_id": str(plan.approved_by_id) if plan.approved_by_id else None,
+            "approved_at": plan.approved_at.isoformat() if plan.approved_at else None,
+        }
+        plan.status = MPSStatus.DRAFT
+        plan.approved_by_id = None
+        plan.approved_at = None
+        reopened_approval = True
+        db.add(AuditLog(
+            actor_id=user_id,
+            actor_email=actor.email,
+            actor_name=actor.full_name,
+            event_type="MPS_PLAN_REOPENED_FOR_EDIT",
+            module="mps",
+            target_type="mps_plan",
+            target_id=str(plan.id),
+            target_name=plan.plan_no,
+            before_value=previous_approval,
+            after_value={"status": MPSStatus.DRAFT.value},
+            details={
+                "reason": "A planner edit invalidates the prior approval; reapproval is required before release.",
+                "line_id": str(line_id),
+            },
+        ))
+    if clear_hold:
+        from app.models.audit_log import AuditLog
+        from app.models.user import User
+
+        if actor is None:
+            actor = await db.get(User, user_id)
+        if actor is None:
+            raise ValueError("Authenticated editor no longer exists")
+        db.add(AuditLog(
+            actor_id=user_id,
+            actor_email=actor.email,
+            actor_name=actor.full_name,
+            event_type="MPS_LINE_HOLD_CLEARED",
+            module="mps",
+            target_type="mps_line",
+            target_id=str(line.id),
+            target_name=line.line_no,
+            before_value={
+                "feasibility_status": MPSFeasibilityStatus.ON_HOLD.value,
+                "is_locked": bool(line.is_locked),
+            },
+            after_value={"feasibility_status": MPSFeasibilityStatus.PENDING.value, "is_locked": False},
+            details={
+                "plan_id": str(plan.id),
+                "reason": "Authenticated planner explicitly cleared the hold; feasibility must be recalculated before approval.",
+            },
+        ))
+        line.feasibility_status = MPSFeasibilityStatus.PENDING
+        line.is_locked = False
     for k, v in updates.items():
         setattr(line, k, v)
-    line.is_locked = True  # any manual update locks the line
+    # A post-approval repair must be recalculated before it can be approved
+    # again, so keep that edited line eligible for the engine. Draft edits
+    # retain the existing planner-lock behavior.
+    if not clear_hold:
+        line.is_locked = (
+            line.feasibility_status == MPSFeasibilityStatus.ON_HOLD
+            if reopened_approval else True
+        )
     await db.flush()
     return line
 
@@ -410,6 +505,9 @@ async def release_mps_plan(
         ))).scalars().all()
         if not released or any(line.production_order_id is None for line in released):
             raise ValueError("Released MPS plan has missing production-order links; repair release state before retrying")
+        production_order_ids = [line.production_order_id for line in released]
+        if len(set(production_order_ids)) != len(production_order_ids):
+            raise ValueError("Released MPS plan has duplicate production-order links; repair release state before retrying")
         existing_orders = [await db.get(ProductionOrder, line.production_order_id) for line in released]
         if any(order is None for order in existing_orders):
             raise ValueError("Released MPS plan references a missing production order; repair release state before retrying")
@@ -439,6 +537,18 @@ async def release_mps_plan(
     if warehouse.company_id != source_warehouse.company_id:
         raise ValueError("Target warehouse must belong to the same company as the source MRP warehouse")
 
+    prelinked_count = await db.scalar(
+        select(func.count()).select_from(MPSLine).where(
+            MPSLine.mps_id == mps_id,
+            MPSLine.planned_production_qty > 0,
+            MPSLine.production_order_id.is_not(None),
+        )
+    )
+    if prelinked_count:
+        raise ValueError(
+            "Approved MPS plan already contains production-order links; reconcile release state before creating orders"
+        )
+
     lines_result = await db.execute(
         select(MPSLine).where(
             MPSLine.mps_id == mps_id,
@@ -465,7 +575,9 @@ async def release_mps_plan(
         required_start = line.planned_start_date or plan.start_date
         recipe = await _select_release_recipe(db, line.product_id, required_start)
         if not recipe:
-            line.remarks = (line.remarks or "") + " [no approved effective recipe — skipped]"
+            reason = "[no approved effective recipe — skipped]"
+            if reason not in (line.remarks or ""):
+                line.remarks = (line.remarks or "") + f" {reason}"
             skipped_no_recipe += 1
             continue
 
@@ -581,6 +693,9 @@ async def release_mps_plan(
         "release_required_lines": release_required_count,
         "release_complete": release_complete,
         "idempotent_retry": False,
+        "production_order_ids": [
+            str(line.production_order_id) for line, *_ in prepared_lines if line.production_order_id is not None
+        ],
     }
 
 
