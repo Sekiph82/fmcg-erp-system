@@ -10,9 +10,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 - Current Milestone: M20 — Master Production Scheduling
 - Current Sprint: M20.S05 — MPS Verification
-- Current Task: M20.S05.T003 — Cross-module MPS→MRP/production verification
+- Current Task: M20.S05.T004 — Close M20 with evidence and tracker update
 - Current Task Status: COMPLETE
-- Next Task/Action: M20.S05.T004 — Close M20 with evidence and tracker update
+- Next Task/Action: Await independent M20 milestone audit and owner data for minimum-run quantity, CIP durations, and approved currency/cost policy; M21 is gated on M20 acceptance.
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -570,7 +570,7 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 - [x] M20.S05.T001 — Backend MPS regression tests
 - [x] M20.S05.T002 — Frontend planning-board/capacity/campaign/what-if tests
 - [x] M20.S05.T003 — Cross-module MPS→MRP/production verification
-- [ ] M20.S05.T004 — Close M20 with evidence and tracker update
+- [x] M20.S05.T004 — Close M20 with evidence and tracker update
 
 ---
 

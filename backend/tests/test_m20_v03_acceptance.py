@@ -327,6 +327,29 @@ async def test_postgres_whatif_merge_exact_split_and_added_shift_resimulate_with
                     WhatIfChange(line_id=second_id, change_type=MPSChangeType.SHIFT_ADD, new_value={"date": day.isoformat(), "hours": "8"}),
                 ],
             ), user_id)
+        full_day_calendar = await db.scalar(select(ResourceCalendar).where(
+            ResourceCalendar.work_center_id == work_center.id,
+            ResourceCalendar.calendar_date == day,
+        ))
+        assert full_day_calendar is not None
+        full_day_calendar.available_hours = 24
+        full_day_calendar.shift_1_start, full_day_calendar.shift_1_end = "00:00", "08:00"
+        full_day_calendar.shift_2_start, full_day_calendar.shift_2_end = "08:00", "16:00"
+        full_day_calendar.shift_3_start, full_day_calendar.shift_3_end = "16:00", "00:00"
+        await db.flush()
+        with pytest.raises(ValueError, match="Aggregate SHIFT_ADD hours exceed remaining work-center calendar hours"):
+            await create_whatif_scenario(db, plan_id, MPSWhatIfCreate(
+                scenario_name="aggregate additions rejected after a full-day calendar",
+                changes=[
+                    WhatIfChange(line_id=first_id, change_type=MPSChangeType.SHIFT_ADD, new_value={"date": day.isoformat(), "hours": "1"}),
+                    WhatIfChange(line_id=second_id, change_type=MPSChangeType.SHIFT_ADD, new_value={"date": day.isoformat(), "hours": "1"}),
+                ],
+            ), user_id)
+        full_day_calendar.available_hours = 8
+        full_day_calendar.shift_1_start, full_day_calendar.shift_1_end = "08:00", "16:00"
+        full_day_calendar.shift_2_start = full_day_calendar.shift_2_end = None
+        full_day_calendar.shift_3_start = full_day_calendar.shift_3_end = None
+        await db.flush()
         with pytest.raises(ValueError, match="MERGE/SPLIT lines cannot have conflicting scenario changes"):
             await create_whatif_scenario(db, plan_id, MPSWhatIfCreate(
                 scenario_name="merge split conflict",
@@ -352,6 +375,23 @@ async def test_postgres_whatif_merge_exact_split_and_added_shift_resimulate_with
                 changes=[WhatIfChange(line_id=first_id, change_type=MPSChangeType.MERGE, new_value=str(second_id))],
             ), user_id)
         second_line.feasibility_status = MPSFeasibilityStatus.PENDING
+        source_run = MRPRun(
+            run_no=f"M20-OPS-SOURCE-{suffix}", run_date=day,
+            status=MRPRunStatus.COMPLETED, warehouse_id=warehouse.id,
+        )
+        db.add(source_run)
+        await db.flush()
+        source_result = MRPResult(run_id=source_run.id, product_id=product.id)
+        db.add(source_result)
+        await db.flush()
+        second_line.mrp_result_id = source_result.id
+        await db.flush()
+        with pytest.raises(ValueError, match="matching source allocation, product, batch, campaign"):
+            await create_whatif_scenario(db, plan_id, MPSWhatIfCreate(
+                scenario_name="incompatible MRP source merge",
+                changes=[WhatIfChange(line_id=first_id, change_type=MPSChangeType.MERGE, new_value=str(second_id))],
+            ), user_id)
+        second_line.mrp_result_id = None
         first_line = await db.get(MPSLine, first_id)
         first_line.batch_size_qty = Decimal("10")
         first_line.num_batches = 4
@@ -374,6 +414,23 @@ async def test_postgres_whatif_merge_exact_split_and_added_shift_resimulate_with
             scenario_name="merge compatible batch allocations",
             changes=[WhatIfChange(line_id=first_id, change_type=MPSChangeType.MERGE, new_value=str(second_id))],
         ), user_id)
+        with pytest.raises(ValueError, match="MERGE/SPLIT lines cannot have conflicting scenario changes"):
+            await create_whatif_scenario(db, plan_id, MPSWhatIfCreate(
+                scenario_name="reject chained merge of consumed lines",
+                changes=[
+                    WhatIfChange(line_id=first_id, change_type=MPSChangeType.MERGE, new_value=str(second_id)),
+                    WhatIfChange(line_id=second_id, change_type=MPSChangeType.MERGE, new_value=str(first_id)),
+                ],
+            ), user_id)
+        second_line.is_locked = True
+        await db.flush()
+        with pytest.raises(ValueError, match="What-if MERGE cannot target a locked MPS line"):
+            await create_whatif_scenario(db, plan_id, MPSWhatIfCreate(
+                scenario_name="reject locked merge source",
+                changes=[WhatIfChange(line_id=first_id, change_type=MPSChangeType.MERGE, new_value=str(second_id))],
+            ), user_id)
+        second_line.is_locked = False
+        await db.flush()
         snapshots = (await db.scalars(select(MPSScenarioSnapshot).where(
             MPSScenarioSnapshot.scenario_id.in_([merged.id, split.id, shifted.id, maximum_shift.id, batched_merge.id]),
         ))).all()
