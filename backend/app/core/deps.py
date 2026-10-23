@@ -6,7 +6,7 @@ from sqlalchemy.orm import selectinload
 import uuid
 
 from app.core.config import settings
-from app.core.security import decode_token
+from app.core.security import decode_access_token
 from app.core import token_blocklist
 from app.core.access_control import forbidden_detail, has_permission
 from app.db.session import get_auth_db, get_db
@@ -29,10 +29,26 @@ async def get_current_user(
     if await token_blocklist.is_blocked(token):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token has been revoked. Please log in again.")
 
-    user_id = decode_token(token)
+    payload = decode_access_token(token)
+    user_id = payload.get("sub") if payload else None
     if not user_id:
         logger.warning("Auth failed: invalid or expired token")
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+    session_id = payload.get("sid") if payload else None
+    if session_id is not None:
+        from app.models.auth_refresh_token import AuthRefreshToken
+        from datetime import datetime, timezone
+        try:
+            family_id = uuid.UUID(str(session_id))
+        except (ValueError, TypeError, AttributeError):
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid session")
+        active_family = await db.scalar(select(AuthRefreshToken.id).where(
+            AuthRefreshToken.family_id == family_id,
+            AuthRefreshToken.revoked_at.is_(None),
+            AuthRefreshToken.expires_at > datetime.now(timezone.utc),
+        ).limit(1))
+        if active_family is None:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Session has been revoked or expired")
     try:
         result = await db.execute(
             select(User)

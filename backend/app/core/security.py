@@ -46,17 +46,29 @@ def verify_password(plain: str, hashed: str) -> bool:
     return pwd_context.verify(plain, hashed)
 
 
-def create_access_token(subject: Any, expires_delta: timedelta | None = None) -> str:
+def create_access_token(
+    subject: Any,
+    expires_delta: timedelta | None = None,
+    session_id: str | None = None,
+) -> str:
     expire = datetime.now(timezone.utc) + (
         expires_delta or timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     )
-    return jwt.encode({"sub": str(subject), "exp": expire, "jti": str(uuid.uuid4())}, settings.SECRET_KEY, algorithm=ALGORITHM)
+    payload = {"sub": str(subject), "exp": expire, "jti": str(uuid.uuid4())}
+    if session_id is not None:
+        payload["sid"] = str(session_id)
+    return jwt.encode(payload, settings.SECRET_KEY, algorithm=ALGORITHM)
 
 
-def decode_token(token: str) -> str | None:
+def decode_access_token(token: str) -> dict[str, Any] | None:
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[ALGORITHM])
-        return payload.get("sub")
+        return payload if isinstance(payload, dict) else None
     except jwt.PyJWTError as e:
         logger.debug("Token decode failed: %s", e)
         return None
+
+
+def decode_token(token: str) -> str | None:
+    payload = decode_access_token(token)
+    return payload.get("sub") if payload else None

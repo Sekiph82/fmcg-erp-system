@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "changeme"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 8  # 8 hours
     AUTH_COOKIE_NAME: str = "erp_access_token"
+    REFRESH_TOKEN_COOKIE_NAME: str = "erp_refresh_token"
     AUTH_COOKIE_SECURE: bool = False
     AUTH_COOKIE_SAMESITE: str = "lax"
     AUTH_RETURN_TOKEN_IN_BODY: bool = False
@@ -282,6 +283,13 @@ class Settings(BaseSettings):
                     if password.startswith("CHANGE_ME"):
                         raise ValueError(f"{prefix}_PASSWORD must not use a CHANGE_ME placeholder in production")
         return self
+
+    @field_validator("REFRESH_TOKEN_EXPIRE_DAYS")
+    @classmethod
+    def validate_refresh_token_expiry(cls, value: int) -> int:
+        if value < 1:
+            raise ValueError("REFRESH_TOKEN_EXPIRE_DAYS must be at least 1")
+        return value
 
     @field_validator("BACKEND_CORS_ORIGINS", mode="before")
     @classmethod

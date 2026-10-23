@@ -8,11 +8,11 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 ## Project Status
 
-- Current Milestone: M20 — Master Production Scheduling
-- Current Sprint: M20.S05 — MPS Verification
-- Current Task: M20.S05.T004 — Close M20 with evidence and tracker update
+- Current Milestone: M02 — Authentication / RBAC
+- Current Sprint: M02.S03 — Session & Privilege Hardening
+- Current Task: M02.S03.T001 — Implement/verify refresh-token rotation lifecycle
 - Current Task Status: COMPLETE
-- Next Task/Action: Await independent M20 milestone audit and owner data for minimum-run quantity, CIP durations, and approved currency/cost policy; M21 is gated on M20 acceptance.
+- Next Task/Action: M02.S03.T002 — Implement inactivity/session-expiry policy
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -179,7 +179,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 - [x] M02.S02.T004 — AccessScope foundation
 
 ## M02.S03 — Session & Privilege Hardening
-- [ ] M02.S03.T001 — Implement/verify refresh-token rotation lifecycle
+- [x] M02.S03.T001 — Implement/verify refresh-token rotation lifecycle
+  Evidence: [T001 closeout](coordination/milestones/M02/evidence/v01/t001-local-20261023/CLOSEOUT.md)
 - [ ] M02.S03.T002 — Implement inactivity/session-expiry policy
 - [ ] M02.S03.T003 — Prove user-wide issued-session revocation
 - [ ] M02.S03.T004 — Enforce privileged-role 2FA policy
@@ -541,6 +542,7 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 **Status: IN_PROGRESS / PARTIAL existing capability**
 **Depends on:** M08, M09, M15; M00 complete.
+**Acceptance: OPEN / PARTIAL — see `coordination/milestones/M20/CHATGPT_M20_STRICT_AUDIT_V05.md`; owner data and independent re-audit remain pending.**
 
 ## M20.S01 — MPS Domain Reconciliation
 - [x] M20.S01.T001 — Map existing MPS models/APIs/UI/services to enterprise requirements

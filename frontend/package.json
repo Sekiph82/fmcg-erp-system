@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint .",
     "type-check": "tsc --noEmit",
+    "test:auth-refresh": "node --test tests/unit/api-auth-refresh.test.mjs",
     "manual:screenshots": "node scripts/capture-user-manual-screenshots.mjs",
     "manual:validate-routes": "node scripts/validate-manual-routes.mjs",
     "check:api-parity": "node scripts/check-api-parity.mjs",

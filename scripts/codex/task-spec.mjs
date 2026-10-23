@@ -7,7 +7,7 @@ function promptFor(task) {
     "SPEC: FMCG ERP autonomous implementation handoff",
     `Workspace: ${canonicalRoot}`,
     "",
-    "Use this exact task as the only implementation scope. Treat the root TASKS.md row as the authority. On completion, select the next dependency-ready M20 task using canonical acceptance criteria and dependencies, then write its exact ID/title to TASKS.md; do not choose solely by checkbox order or dashboard selection.",
+    "Use this exact task as the only implementation scope. Treat the root TASKS.md row as the authority. On completion, select the next dependency-ready task using canonical acceptance criteria and dependencies, then write its exact ID/title to TASKS.md; do not choose solely by checkbox order or dashboard selection.",
     "Before editing, read this task's linked acceptance material and the latest applicable audit. If those materials do not define a required business decision, record the precise blocker for the owner instead of inventing a value.",
     "At the task boundary, run `node scripts/codex/task-queue.mjs --apply-answers` and apply only exact Q-ID/task-ID matches once. Preserve owner data and existing local changes. Never inspect `.hiveai`, Codex private databases, or AppData. Do not modify FormuLab or create another Desktop checkout.",
     "Use one implementation executor and one independent read-only reviewer. Report only checks and approvals supported by evidence. Respect owner-data, security, authentication, approval, and publication gates; do not fabricate data or approval.",

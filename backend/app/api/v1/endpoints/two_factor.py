@@ -9,10 +9,11 @@ from sqlalchemy import select, func, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
-from app.core.auth_cookies import set_auth_cookie
+from app.core.auth_cookies import set_auth_cookie, set_refresh_cookie
 from app.core.config import settings
 from app.core.deps import get_current_user
-from app.core.security import create_access_token, verify_password
+from app.core.security import verify_password
+from app.services.auth_refresh_tokens import issue_auth_token_pair
 from app.core import totp as totp_utils
 from app.crud import two_factor as tfa_crud
 from app.crud import audit as audit_crud
@@ -319,12 +320,13 @@ async def login_verify_2fa(
         details={"method": session.method},
         ip_address=_ip(request),
     )
+    token_pair = await issue_auth_token_pair(db, user_id)
     await db.commit()
 
-    access_token = create_access_token(str(user_id))
-    set_auth_cookie(response, access_token)
+    set_auth_cookie(response, token_pair.access_token)
+    set_refresh_cookie(response, token_pair.refresh_token)
     return {
-        "access_token": access_token if settings.AUTH_RETURN_TOKEN_IN_BODY else None,
+        "access_token": token_pair.access_token if settings.AUTH_RETURN_TOKEN_IN_BODY else None,
         "token_type": "bearer",
     }
 
@@ -411,12 +413,13 @@ async def use_recovery_code(
         target_id=str(user_id),
         ip_address=_ip(request),
     )
+    token_pair = await issue_auth_token_pair(db, user_id)
     await db.commit()
 
-    access_token = create_access_token(str(user_id))
-    set_auth_cookie(response, access_token)
+    set_auth_cookie(response, token_pair.access_token)
+    set_refresh_cookie(response, token_pair.refresh_token)
     return {
-        "access_token": access_token if settings.AUTH_RETURN_TOKEN_IN_BODY else None,
+        "access_token": token_pair.access_token if settings.AUTH_RETURN_TOKEN_IN_BODY else None,
         "token_type": "bearer",
     }
 

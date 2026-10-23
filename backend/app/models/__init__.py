@@ -8,6 +8,7 @@ from app.models.ai import (
 )
 from app.models.role import AccessScope, Role, Permission, role_permission
 from app.models.user import User, user_role
+from app.models.auth_refresh_token import AuthRefreshToken
 from app.models.audit_log import AuditLog
 from app.models.two_factor import User2FASettings, TwoFASession, RecoveryCode, TwoFAMethod, TwoFASessionStatus
 from app.models.webhook import (

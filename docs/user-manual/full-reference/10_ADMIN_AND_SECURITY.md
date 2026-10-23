@@ -138,11 +138,16 @@ The ERP uses PyJWT for JSON Web Token generation and validation. Key security be
 | Token signing | HS256 algorithm with `SECRET_KEY` from env |
 | Token expiry | Configured via `ACCESS_TOKEN_EXPIRE_MINUTES` |
 | Expiry check | Token is rejected if `exp` claim is in the past |
-| Refresh token | Separate `REFRESH_TOKEN_EXPIRE_DAYS` config |
+| Refresh token | Opaque HttpOnly cookie; fixed 7-day default session lifetime from `REFRESH_TOKEN_EXPIRE_DAYS`; only a SHA-256 digest is stored |
+| Rotation | Every refresh consumes the presented token and replaces it once; concurrent reuse revokes that session family |
+| Session binding | Access JWTs issued by login/2FA carry a session-family ID; family revocation rejects those access tokens |
+| Logout | Revokes the current refresh-token family and access token, then clears both cookies |
 | Invalid token | Returns HTTP 401 with `WWW-Authenticate: Bearer` header |
 | `python-jose` | Not used — replaced by PyJWT. Do not add `python-jose` back. |
 
 **Security note:** The `SECRET_KEY` must be a long random string (minimum 32 characters). Set it in `.env.production` — never hardcode it or commit it to git. Generate with: `openssl rand -hex 32`
+
+Refresh tokens are issued only after password login completes, including successful 2FA verification. Rotating a token preserves the session's original expiry, so regular use does not extend a session indefinitely. The frontend attempts one refresh after a protected request receives HTTP 401, shares one in-flight refresh across concurrent requests, and sends the user to login when refresh fails. A consumed refresh token must never be reused; reuse revokes its session family.
 
 ---
 
