@@ -71,11 +71,9 @@
 
 ## 2FA Configuration
 
-Admin → Security tab:
-- Enable 2FA requirement per role
-- Supported methods: TOTP (authenticator app), Email OTP, SMS OTP
-- OTP expiry: 5 minutes (configurable)
-- OTP resend: 60 second cooldown
+Privileged access has a mandatory authenticator-app policy. It applies to superuser accounts, users with the `owner` or `admin` role, and users who have an active permission for the Finance module. The user must enroll TOTP during sign-in; the ERP does not issue an authenticated session until enrollment is verified. While an account meets this policy, TOTP cannot be disabled or replaced with email/SMS OTP. The policy is enforced on authenticated requests and refresh-token rotation as well as at sign-in.
+
+Other accounts continue to use the 2FA method configured for them. Recovery codes are shown after enrollment; store them securely. The application does not provide an administrator 2FA-reset endpoint, so a lost authenticator must be handled through the organization's approved account-recovery process.
 
 Production guard: `OTP_DEV_DELIVERY_MODE=true` is blocked in production — ensures real OTP delivery via SMTP/Twilio.
 

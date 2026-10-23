@@ -49,6 +49,7 @@ async def get_current_user(
             .options(selectinload(User.roles).selectinload(Role.permissions))
             .options(selectinload(User.roles).selectinload(Role.access_scopes))
             .options(selectinload(User.access_scopes))
+            .options(selectinload(User.two_fa_settings))
             .where(User.id == uuid.UUID(user_id))
         )
     except Exception:
@@ -64,6 +65,18 @@ async def get_current_user(
     token_session_version = payload.get("usv", 0)
     if not isinstance(token_session_version, int) or token_session_version != user.auth_session_version:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Session has been revoked. Please log in again.")
+    from app.models.two_factor import TwoFAMethod
+    from app.services.auth_2fa_policy import requires_privileged_2fa
+    if await requires_privileged_2fa(db, user.id) and not (
+        user.two_fa_settings
+        and user.two_fa_settings.is_enabled
+        and user.two_fa_settings.method == TwoFAMethod.TOTP
+        and user.two_fa_settings.secret_key
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authenticator-app 2FA enrollment is required. Sign in again to continue setup.",
+        )
     return user
 
 

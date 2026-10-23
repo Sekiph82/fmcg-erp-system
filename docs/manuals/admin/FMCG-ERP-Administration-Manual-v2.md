@@ -208,9 +208,9 @@ Click **+ New User**:
 | Notify admin on lockout | Yes |
 
 ### Two-Factor Authentication (2FA)
-- Enable 2FA system-wide: Security → 2FA → Enable
-- Users enroll via authenticator app (Google Authenticator, Microsoft Authenticator)
-- Admin can reset 2FA for a user if they lose their device
+- Superuser accounts, users with the `owner` or `admin` role, and users with an active Finance-module permission must enroll using an authenticator app during sign-in.
+- The ERP does not create an authenticated session for these users until they verify the authenticator code. TOTP remains mandatory while the account has privileged access; it cannot be disabled or changed to email/SMS OTP.
+- Users should store the recovery codes displayed after enrollment securely. If an authenticator and its recovery codes are lost, use the organization's approved account-recovery process; the application does not provide an administrator 2FA-reset action.
 
 ---
 
@@ -451,7 +451,7 @@ Same fields as Products plus:
 | Document numbering gap | Manual number used | Numbers auto-increment; investigate if gap existed before your change |
 | M-Pesa not receiving | Wrong callback URL | Set callback URL to production URL; not localhost |
 | eTIMS submissions failing | KRA API credentials expired | Renew credentials on KRA eTIMS portal; update in ERP |
-| Two-factor showing for user who lost phone | User unable to enroll | Admin → Users → Reset 2FA → user re-enrolls |
+| Two-factor showing for user who lost phone | Authenticator and recovery codes are unavailable | Use the organization's approved account-recovery process; privileged access still requires verified TOTP enrollment |
 
 ---
 
@@ -459,7 +459,7 @@ Same fields as Products plus:
 
 1. **Never share accounts** — each user must have their own login
 2. **Principle of least privilege** — grant minimum permissions needed
-3. **Enable 2FA** for all admin accounts and finance roles
+3. **Keep mandatory TOTP** enabled for superusers, `owner`/`admin` roles, and users with active Finance-module permissions
 4. **Audit logs weekly** — review security logs for anomalies
 5. **Rotate API keys** — refresh M-Pesa and eTIMS credentials every 6 months
 6. **Password policy enforcement** — minimum 12 chars, quarterly rotation for financial roles

@@ -13,6 +13,7 @@ from httpx import ASGITransport, AsyncClient
 import pyotp
 from sqlalchemy import delete, select, update
 from sqlalchemy.engine import URL
+from sqlalchemy.orm import selectinload
 
 from app.api.v1.endpoints.auth import router as auth_router
 from app.core.config import settings
@@ -22,6 +23,7 @@ from app.db.session import AsyncSessionLocal, engine
 from app.models.audit_log import AuditLog, AuditEvent
 from app.models.auth_refresh_token import AuthRefreshToken
 from app.models.user import User
+from app.models.role import Permission, Role
 from app.models.two_factor import TwoFAMethod, User2FASettings
 from app.services.auth_refresh_tokens import issue_auth_token_pair, touch_refresh_family_activity
 from app.api.v1.endpoints.two_factor import router as two_factor_router
@@ -32,7 +34,7 @@ def _is_task_owned_disposable_m02_database(url, expected_name: str | None) -> bo
         url.drivername in {"postgresql", "postgresql+asyncpg"}
         and url.host in {"127.0.0.1", "localhost", "::1"}
         and isinstance(expected_name, str)
-        and re.fullmatch(r"fmcg_m02_t00[123]_[a-f0-9]{20,32}", expected_name) is not None
+        and re.fullmatch(r"fmcg_m02_t00[1-4]_[a-f0-9]{20,32}", expected_name) is not None
         and url.database == expected_name
     )
 
@@ -44,17 +46,20 @@ def _require_task_owned_disposable_postgres() -> None:
     if not _is_task_owned_disposable_m02_database(engine.url, expected_name):
         pytest.fail(
             "Refusing M02 integration writes: DATABASE_URL must target the exact loopback PostgreSQL database "
-            "named by M02_DISPOSABLE_TEST_DATABASE_NAME (fmcg_m02_t001_, t002_, or t003_ followed by 20-32 hex chars)."
+            "named by M02_DISPOSABLE_TEST_DATABASE_NAME (fmcg_m02_t001_ through t004_ followed by 20-32 hex chars)."
         )
 
 
 def test_disposable_database_guard_requires_exact_unique_loopback_target():
     name = "fmcg_m02_t001_0123456789abcdef0123"
     t003_name = "fmcg_m02_t003_0123456789abcdef0123"
+    t004_name = "fmcg_m02_t004_0123456789abcdef0123"
     safe = URL.create("postgresql+asyncpg", username="test", host="127.0.0.1", database=name)
     assert _is_task_owned_disposable_m02_database(safe, name)
     t003_safe = URL.create("postgresql+asyncpg", username="test", host="127.0.0.1", database=t003_name)
     assert _is_task_owned_disposable_m02_database(t003_safe, t003_name)
+    t004_safe = URL.create("postgresql+asyncpg", username="test", host="127.0.0.1", database=t004_name)
+    assert _is_task_owned_disposable_m02_database(t004_safe, t004_name)
     assert not _is_task_owned_disposable_m02_database(safe, "fmcg_m02_t001_0123456789abcdef0124")
     assert not _is_task_owned_disposable_m02_database(safe, "fmcg_m02_t001_short")
     assert not _is_task_owned_disposable_m02_database(
@@ -113,13 +118,32 @@ async def _create_user() -> User:
         full_name="M02 refresh-token test",
         hashed_password=hash_password("M02-Refresh-Test-Password9!"),
         is_active=True,
-        is_superuser=True,
+        is_superuser=False,
     )
     async with AsyncSessionLocal() as db:
         db.add(user)
         await db.commit()
         await db.refresh(user)
     return user
+
+
+async def _assign_privileged_role(user: User, role_name: str, permission_code: str | None = None) -> None:
+    async with AsyncSessionLocal() as db:
+        stored_user = await db.scalar(
+            select(User).options(selectinload(User.roles)).where(User.id == user.id)
+        )
+        role = Role(name=role_name, is_active=True)
+        if permission_code:
+            module, action = permission_code.split(".", 1)
+            role.permissions.append(Permission(
+                code=permission_code,
+                name=permission_code,
+                module=module,
+                action=action,
+                is_active=True,
+            ))
+        stored_user.roles.append(role)
+        await db.commit()
 
 
 async def _delete_user(user_id) -> None:
@@ -730,4 +754,134 @@ async def test_logout_all_revokes_every_session_and_allows_a_new_login():
         client_app.dependency_overrides.clear()
         await _delete_user(user.id)
         await _delete_user(other_user.id)
+        await engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_privileged_login_requires_totp_enrollment_before_issuing_a_session():
+    _require_task_owned_disposable_postgres()
+    await engine.dispose()
+    user = await _create_user()
+    role_name = "admin"
+    await _assign_privileged_role(user, role_name)
+    client_app = _app()
+    try:
+        async with AsyncClient(
+            transport=ASGITransport(app=client_app),
+            base_url="http://m02-auth.test",
+        ) as client:
+            login = await client.post(
+                "/api/v1/auth/login",
+                data={"username": user.username, "password": "M02-Refresh-Test-Password9!"},
+            )
+            assert login.status_code == 200, login.text
+            assert login.json()["two_fa_setup_required"] is True
+            assert login.json()["two_fa_required"] is False
+            assert settings.AUTH_COOKIE_NAME not in login.cookies
+            enrollment_token = login.json()["session_token"]
+
+            setup = await client.post(
+                "/api/v1/auth/2fa/required-setup",
+                json={"session_token": enrollment_token},
+            )
+            assert setup.status_code == 200, setup.text
+            secret = setup.json()["secret_key"]
+            assert secret
+
+            verify = await client.post(
+                "/api/v1/auth/2fa/required-setup/verify",
+                json={"session_token": enrollment_token, "code": pyotp.TOTP(secret).now()},
+            )
+            assert verify.status_code == 200, verify.text
+            assert verify.json()["is_enabled"] is True
+            assert verify.json()["recovery_codes"]
+            assert settings.AUTH_COOKIE_NAME in client.cookies
+
+            protected = await client.get("/protected")
+            assert protected.status_code == 200, protected.text
+            disabled = await client.post(
+                "/api/v1/auth/2fa/disable",
+                json={"password": "M02-Refresh-Test-Password9!"},
+            )
+            assert disabled.status_code == 403
+            non_totp_setup = await client.post(
+                "/api/v1/auth/2fa/setup",
+                json={"method": "sms", "phone_number": "+254700000000"},
+            )
+            assert non_totp_setup.status_code == 403
+
+        async with AsyncClient(
+            transport=ASGITransport(app=client_app),
+            base_url="http://m02-auth.test",
+        ) as next_login_client:
+            next_login = await next_login_client.post(
+                "/api/v1/auth/login",
+                data={"username": user.username, "password": "M02-Refresh-Test-Password9!"},
+            )
+            assert next_login.status_code == 200, next_login.text
+            assert next_login.json()["two_fa_required"] is True
+            assert next_login.json().get("two_fa_setup_required") is not True
+    finally:
+        client_app.dependency_overrides.clear()
+        await _delete_user(user.id)
+        async with AsyncSessionLocal() as db:
+            await db.execute(delete(Role).where(Role.name == role_name))
+            await db.commit()
+        await engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_finance_permission_requires_2fa_and_invalidates_existing_access():
+    _require_task_owned_disposable_postgres()
+    await engine.dispose()
+    user = await _create_user()
+    role_name = f"finance-{uuid4().hex}"
+    permission_code = f"finance.view_{uuid4().hex}"
+    client_app = _app()
+    try:
+        async with AsyncSessionLocal() as db:
+            pair = await issue_auth_token_pair(db, user.id)
+            await db.commit()
+        await _assign_privileged_role(user, role_name, permission_code)
+        async with AsyncClient(
+            transport=ASGITransport(app=client_app),
+            base_url="http://m02-auth.test",
+            cookies={settings.AUTH_COOKIE_NAME: pair.access_token},
+        ) as existing_session:
+            blocked = await existing_session.get("/protected")
+            assert blocked.status_code == 401
+
+        async with AsyncClient(
+            transport=ASGITransport(app=client_app),
+            base_url="http://m02-auth.test",
+            cookies={settings.REFRESH_TOKEN_COOKIE_NAME: pair.refresh_token},
+        ) as refresh_client:
+            refresh = await refresh_client.post("/api/v1/auth/refresh")
+            assert refresh.status_code == 401, refresh.text
+            assert settings.REFRESH_TOKEN_COOKIE_NAME not in refresh.cookies
+
+        async with AsyncSessionLocal() as db:
+            stored_rows = (await db.scalars(
+                select(AuthRefreshToken).where(AuthRefreshToken.family_id == pair.family_id)
+            )).all()
+            assert len(stored_rows) == 1
+            assert stored_rows[0].revoked_at is not None
+
+        async with AsyncClient(
+            transport=ASGITransport(app=client_app),
+            base_url="http://m02-auth.test",
+        ) as client:
+            login = await client.post(
+                "/api/v1/auth/login",
+                data={"username": user.username, "password": "M02-Refresh-Test-Password9!"},
+            )
+            assert login.status_code == 200, login.text
+            assert login.json()["two_fa_setup_required"] is True
+    finally:
+        client_app.dependency_overrides.clear()
+        await _delete_user(user.id)
+        async with AsyncSessionLocal() as db:
+            await db.execute(delete(Role).where(Role.name == role_name))
+            await db.execute(delete(Permission).where(Permission.code == permission_code))
+            await db.commit()
         await engine.dispose()

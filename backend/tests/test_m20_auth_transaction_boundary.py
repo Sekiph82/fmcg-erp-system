@@ -14,6 +14,7 @@ from app.core.deps import get_current_user, get_db
 from app.core.security import create_access_token
 from app.db.session import AsyncSessionLocal
 from app.models.user import User
+from app.models.role import Permission, Role
 
 
 @pytest.mark.asyncio
@@ -35,7 +36,7 @@ async def test_auth_isolated_from_endpoint_commit_and_explicit_transaction():
             full_name="M20 auth boundary",
             hashed_password="test-only",
             is_active=True,
-            is_superuser=True,
+            is_superuser=False,
         )
         denied_user = User(
             email=denied_email,
@@ -45,6 +46,23 @@ async def test_auth_isolated_from_endpoint_commit_and_explicit_transaction():
             is_active=True,
         )
         setup.add_all([user, denied_user])
+        permissions = []
+        for code, module in (("mps.view", "mps"), ("warehouses.view", "warehouses")):
+            permission = await setup.scalar(select(Permission).where(Permission.code == code))
+            if permission is None:
+                permission = Permission(
+                    code=code,
+                    name=f"View {module.title()}",
+                    module=module,
+                    action="view",
+                    is_active=True,
+                )
+            permissions.append(permission)
+        user.roles.append(Role(
+            name=f"m20-auth-boundary-{suffix}",
+            is_active=True,
+            permissions=permissions,
+        ))
         await setup.commit()
         user_id = user.id
         denied_user_id = denied_user.id

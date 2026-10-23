@@ -139,6 +139,30 @@ def decode_setup_2fa_token(token: str) -> dict | None:
         return None
 
 
+def create_required_2fa_setup_token(user_id: str, session_id: str) -> str:
+    """Short-lived credential limited to enrolling required TOTP for one login."""
+    from datetime import timedelta
+    from app.core.security import create_access_token
+    import json
+    subject = json.dumps({"uid": user_id, "sid": session_id, "type": "2fa_required_setup"})
+    return create_access_token(subject, expires_delta=timedelta(seconds=EMAIL_SMS_TTL_SECONDS))
+
+
+def decode_required_2fa_setup_token(token: str) -> dict | None:
+    from app.core.security import decode_token
+    import json
+    raw = decode_token(token)
+    if not raw:
+        return None
+    try:
+        data = json.loads(raw)
+        if data.get("type") != "2fa_required_setup":
+            return None
+        return data
+    except Exception:
+        return None
+
+
 def create_pending_2fa_token(user_id: str, session_id: str) -> str:
     from datetime import timedelta
     from app.core.security import create_access_token

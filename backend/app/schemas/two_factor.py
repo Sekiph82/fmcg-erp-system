@@ -14,6 +14,15 @@ class TwoFASetupRequest(BaseModel):
     email: Optional[str] = None
 
 
+class RequiredTwoFASetupRequest(BaseModel):
+    session_token: str
+
+
+class RequiredTwoFAVerifyRequest(BaseModel):
+    session_token: str
+    code: str
+
+
 class TwoFASetupResponse(BaseModel):
     method: TwoFAMethod
     secret_key: Optional[str] = None       # TOTP only

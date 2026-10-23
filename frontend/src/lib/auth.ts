@@ -4,6 +4,7 @@ export interface LoginResponse {
   access_token?: string;
   token_type: string;
   two_fa_required?: boolean;
+  two_fa_setup_required?: boolean;
   session_token?: string;
   method?: string;
   must_change_password?: boolean;

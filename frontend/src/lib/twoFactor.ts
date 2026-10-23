@@ -54,6 +54,19 @@ export async function setup2FA(method: TwoFAMethod, phone_number?: string, email
   return res.data;
 }
 
+export async function setupRequired2FA(session_token: string): Promise<TwoFASetupResponse> {
+  const res = await apiClient.post<TwoFASetupResponse>("/api/v1/auth/2fa/required-setup", { session_token });
+  return res.data;
+}
+
+export async function verifyRequired2FASetup(session_token: string, code: string): Promise<TwoFAEnableResponse> {
+  const res = await apiClient.post<TwoFAEnableResponse>("/api/v1/auth/2fa/required-setup/verify", {
+    session_token,
+    code,
+  });
+  return res.data;
+}
+
 export async function verify2FA(code: string, session_token?: string): Promise<TwoFAEnableResponse> {
   const res = await apiClient.post<TwoFAEnableResponse>("/api/v1/auth/2fa/verify", { code, session_token });
   return res.data;

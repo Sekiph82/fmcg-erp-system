@@ -27,6 +27,7 @@ from app.schemas.auth import LoginResponse
 from app.schemas.user import UserRead
 from app.models.audit_log import AuditEvent
 from app.models.two_factor import TwoFAMethod
+from app.services.auth_2fa_policy import requires_privileged_2fa
 from app.services.auth_refresh_tokens import (
     InvalidRefreshToken,
     issue_auth_token_pair,
@@ -52,7 +53,7 @@ def _ip(request: Request) -> str | None:
     summary="Authenticate user",
     description=(
         "Authenticate with username and password. The access and refresh credentials are set as HttpOnly cookies. "
-        "If 2FA is enabled, no credentials are issued until `POST /auth/2fa/login-verify` succeeds. "
+        "Privileged users must enroll TOTP or complete their configured 2FA challenge before credentials are issued. "
         "Subject to IP and username rate limiting; repeated failures trigger a lock-out."
     ),
 )
@@ -114,6 +115,43 @@ async def login(
 
     # ── 2FA check ─────────────────────────────────────────────────────────────
     tfa_settings = await tfa_crud.get_2fa_settings(db, user.id)
+    if await requires_privileged_2fa(db, user.id) and not (
+        tfa_settings
+        and tfa_settings.is_enabled
+        and tfa_settings.method == TwoFAMethod.TOTP
+        and tfa_settings.secret_key
+    ):
+        await tfa_crud.expire_old_sessions(db, user.id)
+        enrollment_settings = await tfa_crud.get_or_create_2fa_settings(
+            db, user.id, TwoFAMethod.TOTP
+        )
+        enrollment_settings.method = TwoFAMethod.TOTP
+        session = await tfa_crud.create_2fa_session(
+            db,
+            user_id=user.id,
+            settings_id=enrollment_settings.id,
+            method=TwoFAMethod.TOTP,
+        )
+        await audit_crud.log_event(
+            db,
+            event_type=AuditEvent.TWO_FA_CHALLENGE_SENT,
+            actor_id=user.id,
+            actor_email=user.email,
+            target_type="user",
+            target_id=str(user.id),
+            target_name=user.email,
+            details={"method": TwoFAMethod.TOTP, "required_enrollment": True},
+            ip_address=ip,
+        )
+        await db.commit()
+        return LoginResponse(
+            two_fa_setup_required=True,
+            session_token=totp_utils.create_required_2fa_setup_token(
+                str(user.id), str(session.id)
+            ),
+            method=TwoFAMethod.TOTP,
+        )
+
     if tfa_settings and tfa_settings.is_enabled:
         await tfa_crud.expire_old_sessions(db, user.id)
 

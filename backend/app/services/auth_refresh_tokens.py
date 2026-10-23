@@ -14,7 +14,9 @@ from app.core.security import create_access_token
 from app.crud import audit as audit_crud
 from app.models.audit_log import AuditEvent
 from app.models.auth_refresh_token import AuthRefreshToken
+from app.models.two_factor import TwoFAMethod, User2FASettings
 from app.models.user import User
+from app.services.auth_2fa_policy import requires_privileged_2fa
 
 
 class InvalidRefreshToken(Exception):
@@ -192,6 +194,34 @@ async def rotate_refresh_token(db: AsyncSession, raw_token: str) -> tuple[AuthTo
     )
     if row is None or row.revoked_at is not None:
         raise InvalidRefreshToken
+
+    if await requires_privileged_2fa(db, user.id):
+        two_fa = await db.scalar(
+            select(User2FASettings).where(User2FASettings.user_id == user.id)
+        )
+        if not (
+            two_fa
+            and two_fa.is_enabled
+            and two_fa.method == TwoFAMethod.TOTP
+            and two_fa.secret_key
+        ):
+            now = await db.scalar(select(func.clock_timestamp()))
+            if now is None:
+                raise RuntimeError("Database clock_timestamp() returned no value")
+            revoked_count = await _revoke_family(db, family_id, now, user.id)
+            await audit_crud.log_event(
+                db,
+                event_type=AuditEvent.AUTH_SESSIONS_REVOKED,
+                actor_id=user.id,
+                target_type="auth_session",
+                target_id=str(family_id),
+                details={
+                    "reason": "privileged_2fa_required",
+                    "refresh_tokens_revoked": revoked_count,
+                },
+            )
+            await db.commit()
+            raise InvalidRefreshToken
 
     # Read database time after SELECT FOR UPDATE returns. A request that waited
     # for another rotation must evaluate expiry against the time it acquired

@@ -45,6 +45,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (username: string, password: string) => {
     const res = await apiLogin(username, password);
+    if (res.two_fa_setup_required && res.session_token) {
+      sessionStorage.setItem("2fa_required_setup_token", res.session_token);
+      router.push("/auth/2fa/enroll");
+      return;
+    }
     if (res.two_fa_required && res.session_token) {
       sessionStorage.setItem("2fa_session_token", res.session_token);
       sessionStorage.setItem("2fa_method", res.method || "totp");

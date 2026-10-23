@@ -14,6 +14,7 @@ from app.core.config import settings
 from app.core.deps import get_current_user
 from app.core.security import verify_password
 from app.services.auth_refresh_tokens import issue_auth_token_pair
+from app.services.auth_2fa_policy import requires_privileged_2fa
 from app.core import totp as totp_utils
 from app.crud import two_factor as tfa_crud
 from app.crud import audit as audit_crud
@@ -30,6 +31,7 @@ from app.schemas.two_factor import (
     StepUpRequest, StepUpResponse,
     TwoFAStatusReport,
     OTPResendRequest, OTPResendResponse,
+    RequiredTwoFASetupRequest, RequiredTwoFAVerifyRequest,
 )
 
 router = APIRouter()
@@ -42,6 +44,113 @@ def _ip(request: Request) -> Optional[str]:
     return forwarded.split(",")[0].strip() if forwarded else (
         request.client.host if request.client else None
     )
+
+
+async def _required_enrollment_context(db: AsyncSession, token: str):
+    payload = totp_utils.decode_required_2fa_setup_token(token)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid or expired required 2FA enrollment token")
+    try:
+        user_id = uuid.UUID(payload["uid"])
+        session_id = uuid.UUID(payload["sid"])
+    except (KeyError, ValueError, TypeError):
+        raise HTTPException(status_code=401, detail="Invalid required 2FA enrollment token")
+    session = await tfa_crud.get_2fa_session(db, session_id)
+    if (
+        not session
+        or session.user_id != user_id
+        or session.status != TwoFASessionStatus.PENDING
+        or session.method != TwoFAMethod.TOTP
+    ):
+        raise HTTPException(status_code=401, detail="Required 2FA enrollment has expired or was already used")
+    if session.expires_at.replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):
+        session.status = TwoFASessionStatus.EXPIRED
+        await db.commit()
+        raise HTTPException(status_code=401, detail="Required 2FA enrollment has expired")
+    user = await db.get(User, user_id)
+    if not user or not user.is_active:
+        raise HTTPException(status_code=401, detail="User is unavailable")
+    if not await requires_privileged_2fa(db, user_id):
+        raise HTTPException(status_code=403, detail="Required 2FA enrollment is no longer applicable")
+    return user, session
+
+
+@router.post("/required-setup", response_model=TwoFASetupResponse)
+async def setup_required_2fa(
+    body: RequiredTwoFASetupRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """Start TOTP enrollment after password login without creating an authenticated session."""
+    user, session = await _required_enrollment_context(db, body.session_token)
+    settings = await tfa_crud.get_or_create_2fa_settings(db, user.id, TwoFAMethod.TOTP)
+    settings.method = TwoFAMethod.TOTP
+    settings.secret_key = totp_utils.generate_totp_secret()
+    settings.is_enabled = False
+    session.settings_id = settings.id
+    await db.commit()
+
+    uri = totp_utils.get_totp_uri(settings.secret_key, user.username)
+    return TwoFASetupResponse(
+        method=TwoFAMethod.TOTP,
+        secret_key=settings.secret_key,
+        qr_code_uri=uri,
+        qr_code_image=totp_utils.generate_qr_base64(uri),
+        session_token=body.session_token,
+    )
+
+
+@router.post("/required-setup/verify", response_model=TwoFAEnableResponse)
+async def verify_required_2fa_setup(
+    body: RequiredTwoFAVerifyRequest,
+    request: Request,
+    response: Response,
+    db: AsyncSession = Depends(get_db),
+):
+    """Enable required TOTP and issue a full session only after a valid code is proved."""
+    user, session = await _required_enrollment_context(db, body.session_token)
+    settings = await tfa_crud.get_2fa_settings(db, user.id)
+    if not settings or settings.method != TwoFAMethod.TOTP or not settings.secret_key:
+        raise HTTPException(status_code=400, detail="Start required TOTP setup first")
+    if int(session.attempt_count) >= MAX_ATTEMPTS:
+        raise HTTPException(status_code=429, detail="Too many failed attempts. Sign in again to restart setup.")
+    if not totp_utils.verify_totp(settings.secret_key, body.code):
+        session = await tfa_crud.mark_session_failed(db, session)
+        await audit_crud.log_event(
+            db,
+            event_type=AuditEvent.TWO_FA_FAILED,
+            actor_id=user.id,
+            actor_email=user.email,
+            target_type="user",
+            target_id=str(user.id),
+            details={"method": TwoFAMethod.TOTP, "required_enrollment": True},
+            ip_address=_ip(request),
+        )
+        await db.commit()
+        raise HTTPException(
+            status_code=401,
+            detail=f"Invalid 2FA code. {MAX_ATTEMPTS - int(session.attempt_count)} attempt(s) remaining.",
+        )
+
+    settings.is_enabled = True
+    await tfa_crud.mark_session_verified(db, session)
+    await tfa_crud.delete_recovery_codes(db, user.id)
+    plain_codes = totp_utils.generate_recovery_codes()
+    await tfa_crud.create_recovery_codes(db, user.id, settings.id, plain_codes)
+    await audit_crud.log_event(
+        db,
+        event_type=AuditEvent.TWO_FA_ENABLED,
+        actor_id=user.id,
+        actor_email=user.email,
+        target_type="user",
+        target_id=str(user.id),
+        details={"method": TwoFAMethod.TOTP, "required_enrollment": True},
+        ip_address=_ip(request),
+    )
+    token_pair = await issue_auth_token_pair(db, user.id)
+    await db.commit()
+    set_auth_cookie(response, token_pair.access_token)
+    set_refresh_cookie(response, token_pair.refresh_token)
+    return TwoFAEnableResponse(is_enabled=True, recovery_codes=plain_codes)
 
 
 # ── GET /auth/2fa/settings ────────────────────────────────────────────────────
@@ -72,6 +181,8 @@ async def setup_2fa(
     db: AsyncSession = Depends(get_db),
 ):
     """Initiate 2FA setup. For TOTP, returns secret + QR. For email/SMS, sends OTP."""
+    if await requires_privileged_2fa(db, current_user.id) and body.method != TwoFAMethod.TOTP:
+        raise HTTPException(status_code=403, detail="Privileged accounts must use authenticator-app TOTP")
     settings = await tfa_crud.get_or_create_2fa_settings(db, current_user.id, body.method)
 
     if body.method == TwoFAMethod.TOTP:
@@ -220,6 +331,8 @@ async def disable_2fa(
 ):
     if not verify_password(body.password, current_user.hashed_password):
         raise HTTPException(status_code=403, detail="Password incorrect")
+    if await requires_privileged_2fa(db, current_user.id):
+        raise HTTPException(status_code=403, detail="2FA is mandatory for administrator and finance access")
 
     settings = await tfa_crud.get_2fa_settings(db, current_user.id)
     if not settings:
