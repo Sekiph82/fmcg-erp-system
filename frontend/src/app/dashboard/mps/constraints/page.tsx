@@ -14,9 +14,11 @@ export default function MPSConstraintsPage() {
     queryKey: ["mps-constraints", planId], queryFn: () => mpsApi.getConstraints(planId), enabled: !!planId,
   });
   const run = useMutation({
-    mutationFn: async (kind: "project" | "materials") => kind === "project"
+    mutationFn: async (kind: "project" | "materials" | "capacity") => kind === "project"
       ? mpsApi.projectDemand(planId)
-      : mpsApi.evaluateMaterialFeasibility(planId),
+      : kind === "materials"
+        ? mpsApi.evaluateMaterialFeasibility(planId)
+        : mpsApi.runCapacity(planId),
     onSuccess: async (result) => {
       setNotice(JSON.stringify(result));
       await queryClient.invalidateQueries({ queryKey: ["mps-constraints", planId] });
@@ -26,8 +28,8 @@ export default function MPSConstraintsPage() {
 
   return <main className="p-6 space-y-5">
     <div className="flex items-center justify-between">
-      <div><h1 className="text-xl font-semibold">Demand and material constraints</h1>
-        <p className="text-sm text-gray-500">Project warehouse scoped demand, check approved BOM supply, and review persisted reasons.</p></div>
+      <div><h1 className="text-xl font-semibold">MPS demand, material, and capacity diagnostics</h1>
+        <p className="text-sm text-gray-500">Run an evaluation and review its persisted reason, capacity slot, scenario, and recalculation provenance.</p></div>
       <Link className="text-sm text-blue-700 underline" href="/dashboard/mps">Back to MPS</Link>
     </div>
     <section className="flex flex-wrap items-center gap-3 rounded border bg-white p-4">
@@ -38,6 +40,7 @@ export default function MPSConstraintsPage() {
       </select>
       <button disabled={!planId || run.isPending} onClick={() => run.mutate("project")} className="rounded bg-blue-700 px-3 py-2 text-sm text-white disabled:opacity-50">Project weekly demand</button>
       <button disabled={!planId || run.isPending} onClick={() => run.mutate("materials")} className="rounded bg-emerald-700 px-3 py-2 text-sm text-white disabled:opacity-50">Evaluate material feasibility</button>
+      <button disabled={!planId || run.isPending} onClick={() => run.mutate("capacity")} className="rounded bg-amber-700 px-3 py-2 text-sm text-white disabled:opacity-50">Run capacity diagnostics</button>
     </section>
     {notice && <pre role="status" className="whitespace-pre-wrap rounded bg-slate-50 p-3 text-xs">{notice}</pre>}
     {plans.isLoading && <p>Loading plans…</p>}
@@ -47,8 +50,9 @@ export default function MPSConstraintsPage() {
       {(diagnostics.data ?? []).map((row: MPSLineConstraintDiagnostic) => <article key={`${row.run_id}-${row.line_id}`} className="rounded border bg-white p-4">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div><strong>Line {row.diagnostics.line_no ?? row.line_id}</strong><p className="text-xs text-gray-500">Line ID {row.line_id}</p></div>
-          <span className="text-sm">{row.diagnostics.status} · {row.source_version} · {row.computed_at ? new Date(row.computed_at).toLocaleString() : "time unavailable"}</span>
+          <span className="text-sm">{row.diagnostics.status} · {row.source_version}{row.diagnostics.recalculation_state ? ` · ${row.diagnostics.recalculation_state}` : ""} · {row.computed_at ? new Date(row.computed_at).toLocaleString() : "time unavailable"}</span>
         </div>
+        {row.diagnostics.evaluation_kind === "CAPACITY" && <p className="mt-2 text-xs text-gray-600">Run {row.run_id} · {row.diagnostics.scenario_provenance === "BASE_PLAN" ? "Base plan" : `Scenario ${row.diagnostics.scenario_id ?? "not recorded"}`} · {row.diagnostics.capacity_mode ?? "mode unavailable"}{row.diagnostics.superseded_by_run_id ? ` · replaced by run ${row.diagnostics.superseded_by_run_id}` : ""}</p>}
         <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
           <div><dt className="text-gray-500">Required date</dt><dd>{row.diagnostics.required_date ?? "Not recorded"}</dd></div>
           <div><dt className="text-gray-500">Planned quantity</dt><dd>{row.diagnostics.planned_quantity ?? "Not recorded"}</dd></div>
@@ -75,6 +79,10 @@ export default function MPSConstraintsPage() {
               <div><dt className="text-gray-500">Available hours</dt><dd>{issue.available_hours ?? "Not available"}</dd></div>
               <div><dt className="text-gray-500">Downtime hours</dt><dd>{issue.downtime_hours ?? "Not available"}</dd></div>
               <div><dt className="text-gray-500">Overload hours</dt><dd>{issue.overload_hours ?? "Not available"}</dd></div>
+              {(issue.capacity_slot_key || issue.capacity_slot_id) && <div><dt className="text-gray-500">Capacity slot</dt><dd>{issue.capacity_slot_key ?? issue.capacity_slot_id}</dd></div>}
+              {issue.slot_required_hours !== undefined && <div><dt className="text-gray-500">Total slot load</dt><dd>{issue.slot_required_hours}</dd></div>}
+              {issue.net_available_hours !== undefined && <div><dt className="text-gray-500">Net available hours</dt><dd>{issue.net_available_hours}</dd></div>}
+              {issue.affected_line_ids?.length ? <div className="sm:col-span-2 lg:col-span-3"><dt className="text-gray-500">Affected lines</dt><dd>{issue.affected_line_ids.join(", ")}</dd></div> : null}
               {issue.capacity_uom && <div><dt className="text-gray-500">Configured capacity rate unit</dt><dd>{issue.capacity_uom}</dd></div>}
               {issue.product_uom && <div><dt className="text-gray-500">Product unit</dt><dd>{issue.product_uom}</dd></div>}
             </dl>}

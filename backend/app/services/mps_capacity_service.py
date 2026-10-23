@@ -18,7 +18,7 @@ from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from typing import Dict, List, Optional, Tuple
 
 from fastapi import HTTPException
-from sqlalchemy import select, func, delete
+from sqlalchemy import select, func, delete, text
 from sqlalchemy.exc import MultipleResultsFound
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -468,16 +468,36 @@ async def run_capacity_scheduling_validated(db: AsyncSession, mps_id: uuid.UUID)
     if plan.capacity_mode == MPSCapacityMode.INFINITE:
         # Infinite mode bypasses load limits; it is not evidence of feasibility.
         await db.execute(delete(MPSCapacitySlot).where(MPSCapacitySlot.mps_id == mps_id))
+        await db.execute(text(
+            "UPDATE mps_line_diagnostics "
+            "SET diagnostics = jsonb_set(diagnostics, '{recalculation_state}', to_jsonb('NOT_APPLICABLE'::text), true) "
+            "WHERE mps_id = :mps_id AND source_version = 'mps-capacity.v1' "
+            "  AND diagnostics->>'recalculation_state' IN ('CURRENT', 'NOT_APPLICABLE')"
+        ), {"mps_id": mps_id})
         await db.flush()
-        return {"mode": "INFINITE", "lines_processed": len(lines), "overloaded_lines": 0, "diagnostic_run_id": None}
+        return {
+            "mode": "INFINITE", "lines_processed": len(lines), "overloaded_lines": 0,
+            "diagnostic_run_id": None, "recalculation_state": "NOT_APPLICABLE",
+            "scenario_id": None,
+        }
 
     wc_ids = {line.work_center_id for line in lines if line.work_center_id}
     wcs = {wc.id: wc for wc in (await db.execute(select(WorkCenter).where(WorkCenter.id.in_(wc_ids)))).scalars().all()} if wc_ids else {}
     products = {p.id: p for p in (await db.execute(select(Product).where(Product.id.in_({l.product_id for l in lines})))).scalars().all()} if lines else {}
     if not lines:
         await db.execute(delete(MPSCapacitySlot).where(MPSCapacitySlot.mps_id == mps_id))
+        await db.execute(text(
+            "UPDATE mps_line_diagnostics "
+            "SET diagnostics = jsonb_set(diagnostics, '{recalculation_state}', to_jsonb('SUPERSEDED'::text), true) "
+            "WHERE mps_id = :mps_id AND source_version = 'mps-capacity.v1' "
+            "  AND diagnostics->>'recalculation_state' IN ('CURRENT', 'NOT_APPLICABLE')"
+        ), {"mps_id": mps_id})
         await db.flush()
-        return {"mode": "FINITE", "lines_processed": 0, "overloaded_lines": 0, "capacity_slots_created": 0, "diagnostic_run_id": None}
+        return {
+            "mode": "FINITE", "lines_processed": 0, "overloaded_lines": 0,
+            "capacity_slots_created": 0, "diagnostic_run_id": None,
+            "recalculation_state": "SUPERSEDED", "scenario_id": None,
+        }
 
     start = min(line.planned_start_date or line.period_start for line in lines)
     end = max(line.planned_end_date or line.period_end for line in lines)
@@ -881,11 +901,14 @@ async def run_capacity_scheduling_validated(db: AsyncSession, mps_id: uuid.UUID)
     await db.execute(delete(MPSCapacitySlot).where(MPSCapacitySlot.mps_id == mps_id))
     diagnostics = []
     overloaded_lines: set[uuid.UUID] = set()
+    slot_ids: dict[tuple[uuid.UUID, date], uuid.UUID] = {}
     for (wc_id, day), allocated in sorted(slot_allocations.items(), key=lambda item: (str(item[0][0]), item[0][1])):
         day_metrics = calendar_metrics[(wc_id, day)]
         metrics = capacity_result(allocated, day_metrics["available"], day_metrics["downtime"])
+        slot_id = uuid.uuid4()
+        slot_ids[(wc_id, day)] = slot_id
         slot = MPSCapacitySlot(
-            mps_id=mps_id, work_center_id=wc_id, slot_date=day,
+            id=slot_id, mps_id=mps_id, work_center_id=wc_id, slot_date=day,
             available_hours=metrics["available_hours"], allocated_hours=metrics["required_hours"],
             downtime_hours=metrics["downtime_hours"], overload_hours=metrics["overload_hours"],
             utilization_pct=_R(allocated / available * 100, 2) if available else Decimal("0"),
@@ -902,21 +925,28 @@ async def run_capacity_scheduling_validated(db: AsyncSession, mps_id: uuid.UUID)
                 line for line in lines
                 if line.work_center_id == wc_id and day in line_allocations[line.id]
             ]
+            affected_line_ids = [str(line.id) for line in contributors]
             for line in contributors:
                 cumulative += line_allocations[line.id][day]
                 cumulative_overload = max(Decimal(0), cumulative - metrics["net_available_hours"])
                 line_overload = cumulative_overload - prior_overload
                 prior_overload = cumulative_overload
-                if line_overload > 0:
-                    if not line.is_locked:
-                        overloaded_lines.add(line.id)
-                    line_issues[line.id].append({
-                        "reason_code": "CAPACITY_OVERLOAD", "work_center_id": str(wc_id),
-                        "date": day.isoformat(), "required_hours": str(line_allocations[line.id][day]),
-                        "available_hours": str(metrics["available_hours"]),
-                        "downtime_hours": str(metrics["downtime_hours"]),
-                        "overload_hours": str(line_overload), "priority": "HIGH",
-                    })
+                if line_overload > 0 and not line.is_locked:
+                    overloaded_lines.add(line.id)
+                line_issues[line.id].append({
+                    "reason_code": "CAPACITY_OVERLOAD", "work_center_id": str(wc_id),
+                    "capacity_slot_id": str(slot_id), "date": day.isoformat(),
+                    "capacity_slot_key": f"{wc_id}:{day.isoformat()}",
+                    "required_hours": str(line_allocations[line.id][day]),
+                    "slot_required_hours": str(metrics["required_hours"]),
+                    "available_hours": str(metrics["available_hours"]),
+                    "net_available_hours": str(metrics["net_available_hours"]),
+                    "downtime_hours": str(metrics["downtime_hours"]),
+                    "overload_hours": str(line_overload),
+                    "affected_line_ids": affected_line_ids,
+                    "scenario_id": None, "scenario_provenance": "BASE_PLAN",
+                    "priority": "HIGH",
+                })
 
     for line in lines:
         issues = line_issues[line.id]
@@ -942,10 +972,17 @@ async def run_capacity_scheduling_validated(db: AsyncSession, mps_id: uuid.UUID)
             "reason_codes": list(dict.fromkeys(i["reason_code"] for i in issues)),
             "issues": issues, "status": str(getattr(line.feasibility_status, "value", line.feasibility_status)),
             "plan_id": str(mps_id), "work_center_id": str(line.work_center_id) if line.work_center_id else None,
-            "locked": bool(line.is_locked),
+            "locked": bool(line.is_locked), "evaluation_kind": "CAPACITY",
+            "capacity_mode": "FINITE", "recalculation_state": "CURRENT",
+            "scenario_id": None, "scenario_provenance": "BASE_PLAN",
+            "capacity_slot_ids": [str(slot_ids[(line.work_center_id, day)])
+                                  for day in line_allocations[line.id]
+                                  if (line.work_center_id, day) in slot_ids],
         }))
 
-    diagnostic_run = await _write_diagnostics(db, mps_id, diagnostics)
+    diagnostic_run = await _write_diagnostics(
+        db, mps_id, diagnostics, source_version="mps-capacity.v1", supersede_current=True,
+    )
     await db.flush()
     from app.services.mps_service import _refresh_plan_counters
     await _refresh_plan_counters(db, mps_id)
@@ -954,4 +991,5 @@ async def run_capacity_scheduling_validated(db: AsyncSession, mps_id: uuid.UUID)
         "overloaded_lines": len(overloaded_lines), "capacity_slots_created": len(slot_allocations),
         "infeasible_lines": sum(1 for line in lines if not line.is_locked and line.feasibility_status == MPSFeasibilityStatus.INFEASIBLE),
         "diagnostic_run_id": str(diagnostic_run),
+        "recalculation_state": "CURRENT", "scenario_id": None,
     }

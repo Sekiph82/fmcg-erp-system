@@ -838,8 +838,24 @@ async def evaluate_material_feasibility(db: AsyncSession, mps_id: uuid.UUID) -> 
     }
 
 
-async def _write_diagnostics(db: AsyncSession, mps_id: uuid.UUID, rows: list[tuple[uuid.UUID, dict]]) -> uuid.UUID:
+async def _write_diagnostics(
+    db: AsyncSession,
+    mps_id: uuid.UUID,
+    rows: list[tuple[uuid.UUID, dict]],
+    *,
+    source_version: str = "mps-diagnostics.v1",
+    supersede_current: bool = False,
+) -> uuid.UUID:
     run_id = uuid.uuid4()
+    if supersede_current:
+        await db.execute(text(
+            "UPDATE mps_line_diagnostics "
+            "SET diagnostics = jsonb_set("
+            "  jsonb_set(diagnostics, '{recalculation_state}', to_jsonb('SUPERSEDED'::text), true), "
+            "  '{superseded_by_run_id}', to_jsonb(CAST(:run_id AS text)), true) "
+            "WHERE mps_id = :mps_id AND source_version = :source_version "
+            "  AND diagnostics->>'recalculation_state' IN ('CURRENT', 'NOT_APPLICABLE')"
+        ), {"mps_id": mps_id, "source_version": source_version, "run_id": str(run_id)})
     for line_id, body in rows:
         body["run_id"] = str(run_id)
         await db.execute(text(
@@ -847,7 +863,7 @@ async def _write_diagnostics(db: AsyncSession, mps_id: uuid.UUID, rows: list[tup
             "VALUES (:id, :mps_id, :line_id, :run_id, :source_version, CAST(:diagnostics AS JSONB))"
         ), {
             "id": uuid.uuid4(), "mps_id": mps_id, "line_id": line_id,
-            "run_id": run_id, "source_version": "mps-diagnostics.v1",
+            "run_id": run_id, "source_version": source_version,
             "diagnostics": json.dumps(body, default=str),
         })
     return run_id

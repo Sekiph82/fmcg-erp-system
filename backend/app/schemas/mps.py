@@ -154,6 +154,13 @@ class MPSConstraintIssueOut(BaseModel):
     available_hours: Optional[Decimal] = None
     downtime_hours: Optional[Decimal] = None
     overload_hours: Optional[Decimal] = None
+    capacity_slot_id: Optional[uuid.UUID] = None
+    capacity_slot_key: Optional[str] = None
+    slot_required_hours: Optional[Decimal] = None
+    net_available_hours: Optional[Decimal] = None
+    affected_line_ids: List[uuid.UUID] = Field(default_factory=list)
+    scenario_id: Optional[uuid.UUID] = None
+    scenario_provenance: Optional[str] = None
 
 
 class MPSLineConstraintDetailsOut(BaseModel):
@@ -166,6 +173,13 @@ class MPSLineConstraintDetailsOut(BaseModel):
     line_no: Optional[str] = None
     planned_quantity: Optional[Decimal] = None
     required_date: Optional[date] = None
+    evaluation_kind: Optional[str] = None
+    capacity_mode: Optional[str] = None
+    recalculation_state: Optional[Literal["CURRENT", "SUPERSEDED", "NOT_APPLICABLE"]] = None
+    superseded_by_run_id: Optional[uuid.UUID] = None
+    scenario_id: Optional[uuid.UUID] = None
+    scenario_provenance: Optional[str] = None
+    capacity_slot_ids: List[uuid.UUID] = Field(default_factory=list)
 
 
 class MPSLineConstraintDiagnosticOut(BaseModel):

@@ -234,6 +234,13 @@ export interface MPSConstraintIssue {
   available_hours?: string;
   downtime_hours?: string;
   overload_hours?: string;
+  capacity_slot_id?: string;
+  capacity_slot_key?: string;
+  slot_required_hours?: string;
+  net_available_hours?: string;
+  affected_line_ids?: string[];
+  scenario_id?: string | null;
+  scenario_provenance?: string;
 }
 
 export interface MPSLineConstraintDiagnostic {
@@ -250,6 +257,13 @@ export interface MPSLineConstraintDiagnostic {
     line_no?: string;
     planned_quantity?: string;
     required_date?: string;
+    evaluation_kind?: string;
+    capacity_mode?: string;
+    recalculation_state?: "CURRENT" | "SUPERSEDED" | "NOT_APPLICABLE";
+    superseded_by_run_id?: string | null;
+    scenario_id?: string | null;
+    scenario_provenance?: string;
+    capacity_slot_ids?: string[];
   };
   computed_at: string | null;
 }
@@ -369,7 +383,10 @@ export const mpsApi = {
   getConstraints: (mpsId: string) =>
     apiClient.get<MPSLineConstraintDiagnostic[]>(`${BASE}/plans/${mpsId}/constraints`).then((r) => r.data),
 
-  runCapacity:  (id: string) => apiClient.post<Record<string, unknown>>(`${BASE}/plans/${id}/run-capacity`, {}),
+  runCapacity:  (id: string) => apiClient.post<{
+    mode: string; lines_processed: number; overloaded_lines: number; capacity_slots_created?: number;
+    diagnostic_run_id: string | null; recalculation_state?: string; scenario_id?: string | null;
+  }>(`${BASE}/plans/${id}/run-capacity`, {}).then((r) => r.data),
   runCampaigns: (id: string) => apiClient.post<Record<string, unknown>>(`${BASE}/plans/${id}/run-campaigns`, {}),
   runAI:        (id: string) => apiClient.post<Record<string, unknown>>(`${BASE}/plans/${id}/run-ai`, {}),
   approvePlan:  (id: string) => apiClient.patch<MPSPlan>(`${BASE}/plans/${id}/approve`, {}).then((r) => r.data),

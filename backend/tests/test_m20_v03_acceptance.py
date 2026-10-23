@@ -832,6 +832,13 @@ async def test_postgres_mps_capacity_reconciles_rate_shifts_downtime_locks_and_m
             assert (await db.get(MPSLine, invalid_downtime_id)).feasibility_status == MPSFeasibilityStatus.INFEASIBLE
             diagnostics = await list_plan_diagnostics(db, plan_id)
             by_line = {uuid.UUID(row["line_id"]): row for row in diagnostics}
+            capacity_rows = [row for row in diagnostics if row["source_version"] == "mps-capacity.v1"]
+            line_count = len((await db.scalars(select(MPSLine).where(MPSLine.mps_id == plan_id))).all())
+            assert len(capacity_rows) == line_count
+            assert {row["run_id"] for row in capacity_rows} == {result["diagnostic_run_id"]}
+            assert all(row["diagnostics"]["evaluation_kind"] == "CAPACITY" for row in capacity_rows)
+            assert all(row["diagnostics"]["recalculation_state"] == "CURRENT" for row in capacity_rows)
+            assert all(row["diagnostics"]["scenario_provenance"] == "BASE_PLAN" for row in capacity_rows)
             locked_api = MPSLineConstraintDiagnosticOut.model_validate(by_line[locked_id])
             assert locked_api.diagnostics.issues[0].reason_code == "CAPACITY_OVERLOAD"
             assert locked_api.diagnostics.issues[0].overload_hours == Decimal("1.000")
@@ -844,6 +851,56 @@ async def test_postgres_mps_capacity_reconciles_rate_shifts_downtime_locks_and_m
             assert Decimal(by_line[attribution_locked_id]["diagnostics"]["issues"][0]["overload_hours"]) == Decimal("1")
             assert Decimal(by_line[attribution_unlocked_id]["diagnostics"]["issues"][0]["overload_hours"]) == Decimal("1")
             assert Decimal(by_line[attribution_unlocked_id]["diagnostics"]["issues"][0]["required_hours"]) == Decimal("1.000")
+            slot_overload = next(
+                issue for issue in by_line[attribution_unlocked_id]["diagnostics"]["issues"]
+                if issue["reason_code"] == "CAPACITY_OVERLOAD"
+            )
+            matching_slot = slots_by_day[attribution_day]
+            assert slot_overload["capacity_slot_id"] == str(matching_slot.id)
+            assert slot_overload["capacity_slot_key"] == f"{work_center_id}:{attribution_day.isoformat()}"
+            assert slot_overload["slot_required_hours"] == str(matching_slot.allocated_hours)
+            assert slot_overload["net_available_hours"] == str(matching_slot.available_hours - matching_slot.downtime_hours)
+            assert str(attribution_locked_id) in slot_overload["affected_line_ids"]
+            assert str(attribution_unlocked_id) in slot_overload["affected_line_ids"]
+            capacity_api = MPSLineConstraintDiagnosticOut.model_validate(by_line[attribution_unlocked_id])
+            capacity_api_issue = next(
+                issue for issue in capacity_api.diagnostics.issues
+                if issue.reason_code == "CAPACITY_OVERLOAD"
+            )
+            assert capacity_api_issue.capacity_slot_id == matching_slot.id
+            assert set(capacity_api_issue.affected_line_ids) >= {attribution_locked_id, attribution_unlocked_id}
+
+            # Re-running the same capacity calculation replaces slot rows,
+            # preserves the previous diagnostic run as superseded history,
+            # and publishes one new current run without duplicate line rows.
+            first_capacity_slot_values = {
+                (slot.work_center_id, slot.slot_date): (
+                    slot.available_hours, slot.allocated_hours, slot.downtime_hours, slot.overload_hours,
+                ) for slot in slots
+            }
+            repeat_result = await run_capacity_scheduling_validated(db, plan_id)
+            assert repeat_result["diagnostic_run_id"] != result["diagnostic_run_id"]
+            repeated_slots = (await db.scalars(select(MPSCapacitySlot).where(MPSCapacitySlot.mps_id == plan_id))).all()
+            assert {
+                (slot.work_center_id, slot.slot_date): (
+                    slot.available_hours, slot.allocated_hours, slot.downtime_hours, slot.overload_hours,
+                ) for slot in repeated_slots
+            } == first_capacity_slot_values
+            repeat_rows = [row for row in await list_plan_diagnostics(db, plan_id) if row["source_version"] == "mps-capacity.v1"]
+            assert len(repeat_rows) == line_count * 2
+            assert all(
+                row["diagnostics"]["recalculation_state"] == (
+                    "CURRENT" if row["run_id"] == repeat_result["diagnostic_run_id"] else "SUPERSEDED"
+                ) for row in repeat_rows
+            )
+            assert all(
+                row["diagnostics"].get("superseded_by_run_id") == repeat_result["diagnostic_run_id"]
+                for row in repeat_rows if row["run_id"] == result["diagnostic_run_id"]
+            )
+            superseded_api = MPSLineConstraintDiagnosticOut.model_validate(
+                next(row for row in repeat_rows if row["run_id"] == result["diagnostic_run_id"])
+            )
+            assert superseded_api.diagnostics.superseded_by_run_id == uuid.UUID(repeat_result["diagnostic_run_id"])
             changeover_diagnostic = by_line[changeover_id]["diagnostics"]
             applied_setup = next(
                 issue for issue in changeover_diagnostic["issues"]
@@ -949,8 +1006,33 @@ async def test_postgres_mps_capacity_reconciles_rate_shifts_downtime_locks_and_m
             await db.flush()
             infinite_result = await run_capacity_scheduling_validated(db, plan_id)
             assert infinite_result["mode"] == "INFINITE"
+            assert infinite_result["recalculation_state"] == "NOT_APPLICABLE"
+            after_infinite = [row for row in await list_plan_diagnostics(db, plan_id) if row["source_version"] == "mps-capacity.v1"]
+            assert all(
+                row["diagnostics"]["recalculation_state"] == (
+                    "NOT_APPLICABLE" if row["run_id"] == inactive_run["diagnostic_run_id"] else "SUPERSEDED"
+                ) for row in after_infinite
+            )
             assert (await db.get(MPSLine, locked_id)).feasibility_status == MPSFeasibilityStatus.ON_HOLD
             assert await db.scalar(select(func.count()).select_from(MPSCapacitySlot).where(MPSCapacitySlot.mps_id == plan_id)) == 0
+            plan.capacity_mode = MPSCapacityMode.FINITE
+            work_center.status = WorkCenterStatus.ACTIVE
+            await db.flush()
+            restored_finite = await run_capacity_scheduling_validated(db, plan_id)
+            after_restored_finite = [
+                row for row in await list_plan_diagnostics(db, plan_id)
+                if row["source_version"] == "mps-capacity.v1"
+            ]
+            assert all(
+                row["diagnostics"]["recalculation_state"] == (
+                    "CURRENT" if row["run_id"] == restored_finite["diagnostic_run_id"] else "SUPERSEDED"
+                ) for row in after_restored_finite
+            )
+            assert all(
+                row["diagnostics"]["superseded_by_run_id"] == restored_finite["diagnostic_run_id"]
+                for row in after_restored_finite if row["run_id"] == inactive_run["diagnostic_run_id"]
+            )
+            assert await db.scalar(select(func.count()).select_from(MPSCapacitySlot).where(MPSCapacitySlot.mps_id == plan_id)) > 0
     finally:
         await engine.dispose()
         async with AsyncSessionLocal() as cleanup:
