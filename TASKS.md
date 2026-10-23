@@ -10,9 +10,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 - Current Milestone: M20 — Master Production Scheduling
 - Current Sprint: M20.S04 — Approval, Release & Scenarios
-- Current Task: M20.S04.T002 — Enforce permissions/audit trail on approval/release
+- Current Task: M20.S04.T003 — Persist what-if scenario assumptions/results
 - Current Task Status: COMPLETE
-- Next Task/Action: M20.S04.T003 — Persist what-if scenario assumptions/results
+- Next Task/Action: M20.S04.T004 — Compare scenarios using service/cost/capacity KPIs
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -563,7 +563,7 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 ## M20.S04 — Approval, Release & Scenarios
 - [x] M20.S04.T001 — Harden draft→approve→release semantics
 - [x] M20.S04.T002 — Enforce permissions/audit trail on approval/release
-- [ ] M20.S04.T003 — Persist what-if scenario assumptions/results
+- [x] M20.S04.T003 — Persist what-if scenario assumptions/results
 - [ ] M20.S04.T004 — Compare scenarios using service/cost/capacity KPIs
 
 ## M20.S05 — MPS Verification

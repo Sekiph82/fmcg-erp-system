@@ -2002,6 +2002,9 @@ async def test_postgres_seeded_mrp_bom_inventory_diagnostics_snapshot_and_releas
                     MPSScenarioSnapshot.scenario_id.in_(scenario_ids),
                 ))).all()
                 assert len(snapshot_rows) == 2
+                assert baseline.created_by_id == user_id
+                assert candidate.created_by_id == user_id
+                assert {row.created_by_id for row in snapshot_rows} == {user_id}
                 snapshots_before = {
                     row.scenario_id: (row.assumptions, row.results) for row in snapshot_rows
                 }

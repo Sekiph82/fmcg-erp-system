@@ -32,9 +32,12 @@ def _line(*, mps_id, product_id=None, locked=False, work_center_id=None, qty="10
         id=uuid4(), mps_id=mps_id, product_id=product_id or uuid4(),
         is_locked=locked, work_center_id=work_center_id,
         planned_production_qty=Decimal(qty), required_hours=None,
+        mrp_result_id=None, batch_size_qty=None, num_batches=None,
         planned_start_date=None, planned_end_date=None,
         period_start=date(2026, 1, 5), period_end=date(2026, 1, 6),
         priority_score=Decimal("50"), feasibility_status=MPSFeasibilityStatus.PENDING,
+        confirmed_demand_qty=Decimal("0"), forecast_qty=Decimal("0"),
+        safety_stock_qty=Decimal("0"), net_requirement_qty=Decimal("0"),
         overload_hours=None, campaign_id=None, remarks=None,
     )
 
@@ -123,6 +126,57 @@ async def test_whatif_rejects_line_from_another_plan():
     ])
 
     with pytest.raises(ValueError, match="target lines in this MPS plan"):
+        await whatif_svc.create_whatif_scenario(db, plan_id, data, uuid4())
+
+    db.add.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_whatif_rejects_changes_to_locked_line_state():
+    plan_id = uuid4()
+    locked_line = _line(mps_id=plan_id, locked=True)
+    data = SimpleNamespace(
+        changes=[SimpleNamespace(line_id=locked_line.id, change_type=MPSChangeType.DELAY, new_value=2)],
+        scenario_name="locked-line",
+        description=None,
+    )
+    db = AsyncMock()
+    db.get_bind = MagicMock(return_value=SimpleNamespace(dialect=SimpleNamespace(name="sqlite")))
+    db.execute = AsyncMock(side_effect=[
+        _result(one=SimpleNamespace(id=plan_id)),
+        _result(many=[]),
+        _result(many=[locked_line]),
+        _result(many=[locked_line]),
+        _result(many=[]),
+    ])
+
+    with pytest.raises(ValueError, match="cannot target a locked MPS line"):
+        await whatif_svc.create_whatif_scenario(db, plan_id, data, uuid4())
+
+    db.add.assert_not_called()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("change_type", [MPSChangeType.BATCH_SIZE, MPSChangeType.QTY_ADJUST])
+async def test_whatif_rejects_non_numeric_quantity_as_validation_error(change_type):
+    plan_id = uuid4()
+    line = _line(mps_id=plan_id)
+    data = SimpleNamespace(
+        changes=[SimpleNamespace(line_id=line.id, change_type=change_type, new_value="abc")],
+        scenario_name="invalid-quantity",
+        description=None,
+    )
+    db = AsyncMock()
+    db.get_bind = MagicMock(return_value=SimpleNamespace(dialect=SimpleNamespace(name="sqlite")))
+    db.execute = AsyncMock(side_effect=[
+        _result(one=SimpleNamespace(id=plan_id)),
+        _result(many=[]),  # scenario number allocation
+        _result(many=[line]),
+        _result(many=[line]),
+        _result(many=[]),  # work centers
+    ])
+
+    with pytest.raises(ValueError, match="quantity must be positive and finite"):
         await whatif_svc.create_whatif_scenario(db, plan_id, data, uuid4())
 
     db.add.assert_not_called()

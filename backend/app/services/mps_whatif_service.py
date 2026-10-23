@@ -732,8 +732,13 @@ async def create_whatif_scenario(
                 raise ValueError("DELAY must be a non-negative whole number of days") from exc
             if not delay.is_finite() or delay < 0 or delay != delay.to_integral_value():
                 raise ValueError("DELAY must be a non-negative whole number of days")
-        if change.change_type in (MPSChangeType.BATCH_SIZE, MPSChangeType.QTY_ADJUST) and (not _D(change.new_value).is_finite() or _D(change.new_value) <= 0):
-            raise ValueError(f"{change.change_type.value} quantity must be positive")
+        if change.change_type in (MPSChangeType.BATCH_SIZE, MPSChangeType.QTY_ADJUST):
+            try:
+                quantity = _D(change.new_value)
+            except (ArithmeticError, TypeError, ValueError) as exc:
+                raise ValueError(f"{change.change_type.value} quantity must be positive and finite") from exc
+            if not quantity.is_finite() or quantity <= 0:
+                raise ValueError(f"{change.change_type.value} quantity must be positive and finite")
         if lid in modified_map and change.change_type not in (MPSChangeType.MERGE, MPSChangeType.SPLIT, MPSChangeType.SHIFT_ADD):
             modified_map[lid] = _apply_change(modified_map[lid], {
                 "change_type": change.change_type,
