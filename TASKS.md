@@ -10,9 +10,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 - Current Milestone: M02 — Authentication / RBAC
 - Current Sprint: M02.S03 — Session & Privilege Hardening
-- Current Task: M02.S03.T004 — Enforce privileged-role 2FA policy
+- Current Task: M02.S03.T005 — Verify CSRF and tenant/company isolation in production-like runtime
 - Current Task Status: COMPLETE
-- Next Task/Action: M02.S03.T005 — Verify CSRF and tenant/company isolation in production-like runtime
+- Next Task/Action: M03.S02.T001 — Standardize duplicate detection across masters
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -187,7 +187,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
   Evidence: [T003 closeout](coordination/milestones/M02/evidence/v01/t003-local-20261023/CLOSEOUT.md)
 - [x] M02.S03.T004 — Enforce privileged-role 2FA policy
   Evidence: [T004 closeout](coordination/milestones/M02/evidence/v01/t004-local-20261023/CLOSEOUT.md)
-- [ ] M02.S03.T005 — Verify CSRF and tenant/company isolation in production-like runtime
+- [x] M02.S03.T005 — Verify CSRF and tenant/company isolation in production-like runtime
+  Evidence: [T005 closeout](coordination/milestones/M02/evidence/v01/t005-local-20261023/CLOSEOUT.md)
 
 ---
 
