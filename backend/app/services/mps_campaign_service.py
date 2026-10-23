@@ -58,10 +58,14 @@ def _campaign_key(product: Product) -> str:
 # ── Main Campaign Runner ───────────────────────────────────────────────────────
 
 async def run_campaign_grouping(db: AsyncSession, mps_id: uuid.UUID) -> dict:
-    plan_q = await db.execute(select(MPSPlan).where(MPSPlan.id == mps_id))
+    plan_q = await db.execute(
+        select(MPSPlan).where(MPSPlan.id == mps_id).with_for_update()
+    )
     plan = plan_q.scalar_one_or_none()
     if not plan:
         raise ValueError("MPS plan not found")
+    if plan.status != MPSStatus.DRAFT:
+        raise ValueError("Campaign grouping is only allowed for DRAFT MPS plans")
 
     # Load lines with product info
     lines_q = await db.execute(

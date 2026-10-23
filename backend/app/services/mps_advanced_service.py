@@ -265,6 +265,8 @@ async def project_demand_and_supply(
 async def evaluate_material_feasibility(db: AsyncSession, mps_id: uuid.UUID) -> dict:
     """Explode effective approved BOMs, net dated material supply, and persist reasons."""
     plan, run, warehouse = await _scoped_plan(db, mps_id)
+    if plan.status != MPSStatus.DRAFT:
+        raise ValueError("Material feasibility evaluation is only allowed for DRAFT MPS plans")
     lines = (await db.execute(
         select(MPSLine).where(MPSLine.mps_id == mps_id).order_by(MPSLine.period_start, MPSLine.priority_score.desc(), MPSLine.line_no)
     )).scalars().all()

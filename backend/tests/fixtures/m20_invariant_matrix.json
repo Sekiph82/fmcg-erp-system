@@ -1,6 +1,6 @@
 {
   "schema_version": "m20-invariant-matrix.v1",
-  "source_revision": "main@20261020-pre-execution",
+  "source_revision": "working-tree-analysis@2026-10-22; baseline main@20261020-pre-execution",
   "classification": "source-linked repository analysis; no live factory data asserted",
   "required_columns": [
     "entity", "lifecycle", "owner_scope", "uom", "dates", "locks",
@@ -20,10 +20,10 @@
       "nullability": "mrp_run_id and created_by_id nullable; unscoped run cannot safely feed coupled projection",
       "transaction": "approval/release endpoint uses one AsyncSession transaction; release must roll back as a unit",
       "permission": "mps.approve/mps.release; warehouse/company scope must also be checked",
-      "current_enforcement": "DRAFT guard, run identity linkage; no approval readiness audit in baseline",
-      "counterexample": "approve a DRAFT with no lines or with MATERIAL_SHORT lines; release a plan with no source warehouse scope",
+      "current_enforcement": "approval locks the plan, requires positive FEASIBLE lines, a completed warehouse-scoped MRP run, and an existing actor, then writes an approval audit event; release locks the plan, rechecks source/target warehouse company scope, performs all-or-none recipe-backed production-order creation, audits completion, and makes same-warehouse retries idempotent",
+      "counterexample": "No current reproduction found for empty/blocked approval, unscoped release, or duplicate retry in the inspected API path; plan company/warehouse scope remains inherited through MRPRun rather than stored directly",
       "severity": "HIGH",
-      "recommended_fix": "require feasible lines, source warehouse scope, row lock, and before/after audit records"
+      "recommended_fix": "retain regression coverage for readiness, source scope, authorization, rollback and retry; keep the inherited warehouse relation explicit in consumers"
     },
     {
       "entity": "MPSLine",
@@ -37,10 +37,10 @@
       "nullability": "MRP link, work center, dates, hours, batch and production order nullable",
       "transaction": "generation deletes/recreates unlocked lines; must lock plan and keep deletes/inserts atomic",
       "permission": "mps.edit/calculates; route must bind both plan and line IDs",
-      "current_enforcement": "planner schema excludes engine fields; T002 fixes plan-bound update; capacity baseline skipped locked loads",
-      "counterexample": "same line ID submitted under another plan; locked line omitted from capacity load; UOM mismatch treated as feasible",
+      "current_enforcement": "planner update binds plan and line IDs and locks both in parent-first order; validated API capacity includes locked lines in loads/slots, preserves their feasibility, and writes per-line diagnostics; advanced material evaluation rejects missing or mismatched UOM/master data; legacy direct capacity service retains older fallback and locked-line behavior",
+      "counterexample": "A direct caller of the legacy scheduler can still encounter its fallback throughput/calendar semantics; the active validated endpoint does not demonstrate the old locked-line omission or UOM-as-feasible cases",
       "severity": "CRITICAL",
-      "recommended_fix": "preserve plan-bound updates and locks; use explicit UOM and persistent per-line reasons; avoid default capacity"
+      "recommended_fix": "keep plan-bound update and lock-order tests; keep validated API as the operational path and retire or constrain legacy direct-service fallback semantics"
     },
     {
       "entity": "DemandForecast/DemandForecastLine",
@@ -54,10 +54,10 @@
       "nullability": "warehouse_id and adjusted_qty nullable",
       "transaction": "demand projection uses one plan transaction",
       "permission": "MPS calculate plus warehouse scope",
-      "current_enforcement": "MRP run aggregates demand; initial MPS generation fractionally spread totals across horizon",
-      "counterexample": "confirmed orders and forecast both count in one bucket; forecast receipts outside run warehouse leak into plan",
+      "current_enforcement": "advanced demand projection buckets by date, filters approved forecasts and open orders to the exact MRP warehouse, subtracts fulfilled quantities, nets confirmed demand with forecast, and keeps source linkage; legacy aggregate MRP generation still lacks the same delivery-date detail",
+      "counterexample": "The legacy aggregate generation path can lose delivery-date detail; the inspected advanced projection filters warehouse scope and nets forecast/confirmed demand rather than reproducing the prior cross-warehouse/double-count cases",
       "severity": "HIGH",
-      "recommended_fix": "bucket by dates, net confirmed against forecast per bucket, require matching warehouse, conserve quantity"
+      "recommended_fix": "retain dated, warehouse-scoped projection regression cases and distinguish the legacy aggregate generation path from advanced projection"
     },
     {
       "entity": "SalesOrder/SOLine",
@@ -72,7 +72,7 @@
       "transaction": "projection reads only; MPS line writes are atomic",
       "permission": "MPS warehouse/company scoped calculate permission",
       "current_enforcement": "MRP demand helper filters order status; plan generator does not retain delivery date detail",
-      "counterexample": "a warehouse-null confirmed order is counted for an unrelated plant; order PCS demand is netted against KG stock",
+      "counterexample": "Only a legacy/direct call without warehouse scope can include warehouse-null order demand or bypass the advanced projection's order/product UOM check; active advanced projection uses the exact source warehouse and rejects mismatched order UOM",
       "severity": "HIGH",
       "recommended_fix": "filter exact warehouse, honor open statuses and shipped quantities, reject unit mismatch"
     },
@@ -88,10 +88,10 @@
       "nullability": "PO product/material alternatives; schedule and actual quantity nullable in source model",
       "transaction": "supply read snapshot plus plan line writes in one transaction",
       "permission": "warehouse/company scope inherited from MRP run",
-      "current_enforcement": "MRP results have aggregate supply fields; MPS generator previously used net requirement without dated components",
-      "counterexample": "late PO treated as available; blocked stock counted; the same on-hand balance deducted in every period",
+      "current_enforcement": "advanced projection reads exact-warehouse stock, dated matching-company open PO receipts and eligible WIP, carries available balance forward, and records source scope; legacy MRP-result generation remains aggregate and does not independently reconstruct dated supply components",
+      "counterexample": "The legacy aggregate path cannot independently show each dated stock/PO/WIP component; the advanced projector filters and dates these supplies, so the earlier late-PO/blocked-stock examples do not describe that path",
       "severity": "CRITICAL",
-      "recommended_fix": "calculate available on-hand once, carry closing stock forward, include only dated matching-scope supply"
+      "recommended_fix": "retain date/scope/conservation tests for advanced projection and avoid presenting aggregate legacy MRP quantities as a dated supply ledger"
     },
     {
       "entity": "AdvancedBOM/Recipe",
@@ -105,10 +105,10 @@
       "nullability": "recipe has no output base quantity; legacy MRP scales item quantity per output unit",
       "transaction": "explosion and diagnostics occur within MPS evaluation transaction",
       "permission": "MPS calculate; quality/planner substitution approval required by policy",
-      "current_enforcement": "MRP uses approved Recipe single-level; advanced BOM carries basis, yield, loss and substitute policy",
-      "counterexample": "missing recipe returns empty requirement list and can pass feasibility; different KG/L bases multiplied directly",
+      "current_enforcement": "advanced material feasibility uses effective approved/released recursive BOM where available or an effective approved Recipe, applies explicit basis/yield/loss and fails closed on missing or incompatible material UOM; release still requires an effective approved Recipe because ProductionOrder.recipe_id is non-null",
+      "counterexample": "A product feasible through BOM-only data can still remain unreleasable because production-order release requires a Recipe; missing effective material definitions are rejected by advanced feasibility rather than treated as zero demand",
       "severity": "CRITICAL",
-      "recommended_fix": "use date-effective approved BOM, apply explicit basis/loss, fail closed on missing UOM/master, do not auto-substitute"
+      "recommended_fix": "preserve fail-closed effective BOM/Recipe and UOM checks; align release readiness with the Recipe requirement or document/resolve BOM-only release semantics without fabricating recipe data"
     },
     {
       "entity": "WorkCenter/ResourceCalendar/DowntimeEvent",
@@ -122,10 +122,10 @@
       "nullability": "capacity/rate UOM, end_time, duration may be null",
       "transaction": "replace slots and update feasibility atomically",
       "permission": "MPS calculate and scoped work center/plant",
-      "current_enforcement": "legacy scheduler defaulted throughput and 8h Mon-Sat, ignored calendars and downtime",
-      "counterexample": "a capacity_uom of KG is treated as units/hour; no calendar still yields FEASIBLE; locked loads omitted",
+      "current_enforcement": "validated capacity API uses active work centers, compatible rate UOM, explicit calendars, downtime and locked-line load, and preserves unknown inputs; legacy direct scheduler still contains fallback throughput/default calendar behavior",
+      "counterexample": "Direct use of the legacy scheduler can still exercise its default rate/calendar assumptions; the active validated endpoint does not use those defaults and does not mark missing calendar/rate evidence FEASIBLE",
       "severity": "CRITICAL",
-      "recommended_fix": "require explicit compatible rate/calendar, include downtime and locked load, report missing source as INFEASIBLE"
+      "recommended_fix": "keep validated capacity as the operational route and constrain or retire legacy defaults; preserve explicit unknown/diagnostic evidence"
     },
     {
       "entity": "MPSCapacitySlot/PlanningBottleneck",
@@ -139,10 +139,10 @@
       "nullability": "downtime/overload numeric default zero",
       "transaction": "delete/rebuild MPS slots in one transaction",
       "permission": "MPS calculate/view",
-      "current_enforcement": "slot persists numeric overload but no structured per-line reason/provenance",
-      "counterexample": "same overload rerun changes assignments or line reason cannot be traced to capacity inputs",
+      "current_enforcement": "validated capacity recomputes plan slots and persists per-line diagnostics with required/available/downtime/overload inputs and source version; legacy slot-only callers may not provide that line-level provenance",
+      "counterexample": "The old slot-only path lacks line-level provenance; the active validated API diagnostic path records it, so the unqualified missing-line-reason counterexample is no longer current for that endpoint",
       "severity": "HIGH",
-      "recommended_fix": "persist versioned diagnostics with reason, required/available hours, line, run and inputs"
+      "recommended_fix": "retain idempotent per-line diagnostic and slot recalculation tests for the validated API path"
     },
     {
       "entity": "MPSCampaign/ChangeoverMatrix",
@@ -156,10 +156,10 @@
       "nullability": "work center and dates nullable",
       "transaction": "rebuild all unlocked campaign assignments atomically",
       "permission": "MPS calculate; view for presentation",
-      "current_enforcement": "legacy prefix grouping and default 60-minute setup did not validate family/configuration",
-      "counterexample": "unrelated SKU prefixes grouped; no CIP record becomes an invented one-hour setup; locked line is detached",
+      "current_enforcement": "the validated API groups exact product IDs, preserves locked assignments, derives family from Product.category, uses only an active exact (work_center_id, from_family, to_family) ChangeoverMatrix row, and records NOT_CONFIGURED diagnostics for absent transitions, CIP duration, and minimum-run quantity; no default time is credited. The legacy direct grouping service still retains prefix grouping/default setup behavior",
+      "counterexample": "Product.category is only a family proxy and ChangeoverMatrix has no effective-date or approval fields. Owner data is required before configuration can be authoritative: (1) product-to-family mapping or confirmation that Product.category is authoritative; (2) effective work-center/from-family/to-family changeover minutes with active/approved source and effectivity; (3) CIP duration with its applicable work-center/transition scope, unit, effectivity, and authoritative source; (4) minimum run quantity and matching product UOM with product/work-center scope and effectivity. The current diagnostic correctly leaves CIP/minimum-run unknown",
       "severity": "HIGH",
-      "recommended_fix": "stable exact-SKU grouping, preserve locks, apply only matching configured changeover, expose NOT_CONFIGURED"
+      "recommended_fix": "retain validated exact-product grouping, lock-preservation, and NOT_CONFIGURED coverage; obtain the listed owner-data contract before crediting changeover, CIP, or minimum-run values; constrain legacy direct grouping semantics"
     },
     {
       "entity": "MPSWhatIfScenario",
@@ -173,10 +173,10 @@
       "nullability": "impact metrics nullable; JSON changes have no schema version in the base table",
       "transaction": "scenario and immutable input/result snapshot created in one transaction",
       "permission": "mps.simulate and warehouse scope; creator recorded",
-      "current_enforcement": "line IDs plan-scoped; MERGE/SHIFT_ADD rejected; baseline cost proxy was hard-coded",
-      "counterexample": "scenario cost shows a precise KES amount without currency basis; scenario result cannot be reproduced after lines change",
+      "current_enforcement": "line IDs are plan-scoped and locked lines are rejected; MERGE requires matching source allocation, product, schedule, work center, batch size, campaign, priority, and feasibility; compatible batch counts are validated and summed; SPLIT requires exactly two positive exact-sum parts aligned to configured batch size; SHIFT_ADD requires FINITE mode and a scheduled work-center date, validates existing calendar shift-window consistency, caps added hours at the remaining 24-hour day, does not infer an added-shift interval, and leaves hours uncredited when same-day downtime overlap cannot be ruled out; versioned assumptions and candidate results are persisted without mutating live lines; unsupported cost basis remains unknown. The real Playwright roundtrip spec selects only finite plans with the hardcoded disposable M20-OPS-PLAN- prefix and requires M20_DISPOSABLE_TEST_DATABASE=1 before login or API access. A fresh task-owned PostgreSQL 16 run passed 1 browser test after Alembic upgrade to 20261022_0011; scenario create returned 201 and the saved SPLIT with 100.0% service level/0 delay remained visible after reload. Screenshot and exact run details are in the M20.S01.T003 evidence log",
+      "counterexample": "The mocked scenario-operations E2E alone proves only request serialization. The separate real browser/API/PostgreSQL test has a fresh task-owned execution recorded in project-control/codex/jobs/M20.S01.T003/evidence/mps-sequence-checks-2026-10-22.md, with migration, synthetic prefixed plan/line, API status receipts, and a post-reload screenshot. The opt-in guard alone does not prove an arbitrary target database is disposable; this run used its own task-created PostgreSQL container. Owner production data was not used. Cost basis and owner-data-dependent outputs remain unknown",
       "severity": "HIGH",
-      "recommended_fix": "persist versioned assumptions/results, explicit KPI units, and unknown monetary values without a rate source"
+      "recommended_fix": "retain regression coverage for aggregate shifts, downtime uncertainty, and batch-conserving structural changes; preserve independent audit of the recorded roundtrip source/log/screenshot and rerun after relevant source or test changes only against a task-owned disposable M20 database; require an owner-approved cost basis (hourly or unit/recipe basis), amount/rate, ISO currency, effective dates, source, and any FX conversion policy before reporting monetary impact"
     },
     {
       "entity": "Approval/Release/AuditLog",
@@ -190,10 +190,10 @@
       "nullability": "actor can be null only where source user is unavailable; authenticated routes have principal",
       "transaction": "all production orders, line links, plan state, and audit event in one transaction",
       "permission": "mps.approve/release plus warehouse/company scope; segregation policy not explicitly configured",
-      "current_enforcement": "approval status guard and PO sequence; audit, readiness and retry behavior incomplete",
-      "counterexample": "approve with blocked lines, unauthorized company release, or retry after release creates duplicate orders",
+      "current_enforcement": "approval/release row-lock plans and write audit events; approval requires positive FEASIBLE lines and a completed scoped run; release checks actual endpoint permissions and same-company warehouse scope, rolls back incomplete release, allocates monotonic PO numbers, and validates idempotent retry; release still requires effective approved Recipe data",
+      "counterexample": "No current reproduction found for blocked-line approval, cross-company release, partial order creation, or duplicate same-target retry in the inspected endpoint path; BOM-only feasibility remains distinct from Recipe-backed release eligibility",
       "severity": "CRITICAL",
-      "recommended_fix": "row-lock, readiness check, scoped actor authorization, before/after audit, return existing result on completed retry"
+      "recommended_fix": "retain readiness/scope/rollback/idempotency tests and resolve documented BOM-only versus Recipe-backed release semantics without weakening authenticated scope"
     }
   ]
 }

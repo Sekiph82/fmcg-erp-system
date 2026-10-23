@@ -43,7 +43,7 @@ def _R(v: Decimal, dp: int = 3) -> Decimal:
 
 
 def _seq(prefix: str, n: int) -> str:
-    return f"{prefix}-{n:06d}"
+    return f"{prefix}{n:07d}" if prefix == "MPSL-" else f"{prefix}{n:06d}"
 
 
 def _phase_periods(start_date: date, end_date: date, period_days: int) -> list:
@@ -67,11 +67,29 @@ def _phase_periods(start_date: date, end_date: date, period_days: int) -> list:
 
 
 async def _next_seq(db: AsyncSession, prefix: str, col) -> str:
-    result = await db.execute(
-        select(func.count()).select_from(MPSPlan if "MPS-" in prefix else MPSLine)
-    )
-    count = (result.scalar() or 0) + 1
-    return _seq(prefix, count)
+    sequence_name = {
+        "MPS-": "mps_plan_no_seq",
+        "MPSL-": "mps_line_no_seq",
+    }.get(prefix)
+    if sequence_name is None:
+        raise ValueError(f"Unsupported MPS sequence prefix: {prefix}")
+
+    if db.get_bind().dialect.name == "postgresql":
+        result = await db.execute(
+            text("SELECT nextval(CAST(:sequence_name AS regclass))"),
+            {"sequence_name": sequence_name},
+        )
+        number = result.scalar_one()
+    else:
+        result = await db.execute(select(col))
+        largest = 0
+        for value in result.scalars().all():
+            if isinstance(value, str) and value.startswith(prefix):
+                suffix = value[len(prefix):]
+                if suffix.isdigit():
+                    largest = max(largest, int(suffix))
+        number = largest + 1
+    return _seq(prefix, number)
 
 
 # ── Plan CRUD ─────────────────────────────────────────────────────────────────
@@ -89,10 +107,8 @@ async def create_mps_plan(
         source_run = await db.get(MRPRun, data.mrp_run_id)
         if source_run is None or source_run.status != MRPRunStatus.COMPLETED:
             raise ValueError("MPS source MRP run must exist and be COMPLETED")
-    count_result = await db.execute(select(func.count()).select_from(MPSPlan))
-    n = (count_result.scalar() or 0) + 1
     plan = MPSPlan(
-        plan_no=f"MPS-{n:06d}",
+        plan_no=await _next_seq(db, "MPS-", MPSPlan.plan_no),
         plan_name=data.plan_name,
         plant_code=data.plant_code,
         planning_horizon_days=data.planning_horizon_days,
@@ -148,8 +164,21 @@ async def update_mps_line(
     line_id: uuid.UUID,
     data: MPSLineUpdate,
 ) -> Optional[MPSLine]:
+    # Match regeneration/approval lock order so a manual lock or edit cannot
+    # race a regeneration that is replacing the plan's unlocked lines.
+    plan_result = await db.execute(
+        select(MPSPlan).where(MPSPlan.id == mps_id).with_for_update()
+    )
+    plan = plan_result.scalar_one_or_none()
+    if plan is None:
+        return None
+    if plan.status != MPSStatus.DRAFT:
+        raise ValueError("Only DRAFT MPS plans can be edited")
     result = await db.execute(
-        select(MPSLine).where(MPSLine.id == line_id, MPSLine.mps_id == mps_id)
+        select(MPSLine).where(
+            MPSLine.id == line_id,
+            MPSLine.mps_id == mps_id,
+        ).with_for_update()
     )
     line = result.scalar_one_or_none()
     if not line:
@@ -170,7 +199,11 @@ async def generate_mps_from_mrp(
     req: GenerateFromMRPRequest,
 ) -> int:
     """Pull MRP results and create MPS lines grouped by period."""
-    plan_result = await db.execute(select(MPSPlan).where(MPSPlan.id == mps_id))
+    # Serialize regeneration with approval/release, which lock the same plan
+    # row before inspecting or changing its lines.
+    plan_result = await db.execute(
+        select(MPSPlan).where(MPSPlan.id == mps_id).with_for_update()
+    )
     plan = plan_result.scalar_one_or_none()
     if not plan:
         raise ValueError("MPS plan not found")
@@ -195,6 +228,9 @@ async def generate_mps_from_mrp(
         raise ValueError("MRP run not found")
     if mrp_run.status != MRPRunStatus.COMPLETED:
         raise ValueError(f"MRP run must be COMPLETED (current status: {mrp_run.status})")
+    # Record the source even for zero-demand runs so the plan cannot later be
+    # rebound to a different MRP run after an empty regeneration.
+    plan.mrp_run_id = req.mrp_run_id
 
     # Load MRP results for this run
     mrp_q = await db.execute(
@@ -207,9 +243,6 @@ async def generate_mps_from_mrp(
     )
     mrp_results = mrp_q.scalars().all()
 
-    if not mrp_results:
-        return 0
-
     # Delete existing non-locked lines
     existing_q = await db.execute(
         select(MPSLine).where(MPSLine.mps_id == mps_id, MPSLine.is_locked == False)
@@ -218,8 +251,9 @@ async def generate_mps_from_mrp(
         await db.delete(old)
     await db.flush()
 
-    line_count_q = await db.execute(select(func.count()).select_from(MPSLine))
-    seq = (line_count_q.scalar() or 0) + 1
+    if not mrp_results:
+        await _refresh_plan_counters(db, mps_id)
+        return 0
 
     period_days = {"DAILY": 1, "WEEKLY": 7, "MONTHLY": 30}.get(req.period_type, 7)
     created = 0
@@ -249,7 +283,7 @@ async def generate_mps_from_mrp(
                 period_label = cursor.isoformat()
 
             line = MPSLine(
-                line_no=f"MPSL-{seq:07d}",
+                line_no=await _next_seq(db, "MPSL-", MPSLine.line_no),
                 mps_id=mps_id,
                 product_id=mrp.product_id,
                 mrp_result_id=mrp.id,
@@ -269,14 +303,12 @@ async def generate_mps_from_mrp(
                 priority_score=_D("50"),
             )
             db.add(line)
-            seq += 1
             created += 1
 
     await db.flush()
 
     # Update plan counters
     await _refresh_plan_counters(db, mps_id)
-    plan.mrp_run_id = req.mrp_run_id
     await db.flush()
 
     return created

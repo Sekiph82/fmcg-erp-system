@@ -65,10 +65,14 @@ async def run_capacity_scheduling(db: AsyncSession, mps_id: uuid.UUID) -> dict:
     Full capacity pass for one MPS plan.
     Returns summary stats.
     """
-    plan_q = await db.execute(select(MPSPlan).where(MPSPlan.id == mps_id))
+    plan_q = await db.execute(
+        select(MPSPlan).where(MPSPlan.id == mps_id).with_for_update()
+    )
     plan = plan_q.scalar_one_or_none()
     if not plan:
         raise ValueError("MPS plan not found")
+    if plan.status != MPSStatus.DRAFT:
+        raise ValueError("Capacity scheduling is only allowed for DRAFT MPS plans")
 
     # Load all non-locked lines
     lines_q = await db.execute(
@@ -347,6 +351,8 @@ async def run_capacity_scheduling_validated(db: AsyncSession, mps_id: uuid.UUID)
     plan = (await db.execute(select(MPSPlan).where(MPSPlan.id == mps_id).with_for_update())).scalar_one_or_none()
     if plan is None:
         raise ValueError("MPS plan not found")
+    if plan.status != MPSStatus.DRAFT:
+        raise ValueError("Capacity scheduling is only allowed for DRAFT MPS plans")
     lines = list((await db.execute(
         select(MPSLine).where(MPSLine.mps_id == mps_id)
         .order_by(MPSLine.period_start, MPSLine.priority_score.desc(), MPSLine.line_no)

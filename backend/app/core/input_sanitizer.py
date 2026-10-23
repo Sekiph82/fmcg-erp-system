@@ -66,10 +66,10 @@ class InputSanitizerMiddleware(BaseHTTPMiddleware):
                         parsed = json.loads(raw)
                         sanitized = _sanitize_value(parsed)
                         sanitized_bytes = json.dumps(sanitized).encode()
-                        # Re-inject sanitized body
-                        async def receive():
-                            return {"type": "http.request", "body": sanitized_bytes, "more_body": False}
-                        request._receive = receive
+                        # BaseHTTPMiddleware caches body() and replays it to the
+                        # downstream app from _body. Replace that cache so nested
+                        # middleware can still handle disconnects normally.
+                        request._body = sanitized_bytes
                 except (json.JSONDecodeError, UnicodeDecodeError):
                     pass  # let FastAPI's validation handle malformed JSON
 

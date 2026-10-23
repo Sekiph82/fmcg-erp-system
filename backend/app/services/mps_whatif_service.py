@@ -14,12 +14,13 @@ from __future__ import annotations
 import uuid
 import json
 import logging
+import re
 from copy import deepcopy
 from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal, ROUND_HALF_UP
 from typing import Any, Dict, List
 
-from sqlalchemy import select, func, text
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.mps import (
@@ -34,6 +35,25 @@ from app.models.production_advanced import DowntimeEvent
 from app.schemas.mps import MPSWhatIfCreate, MPSWhatIfOut
 
 logger = logging.getLogger(__name__)
+
+
+async def _next_scenario_no(db: AsyncSession, mps_id: uuid.UUID) -> str:
+    """Allocate a globally unique scenario suffix without relying on row counts."""
+    if db.get_bind().dialect.name == "postgresql":
+        result = await db.execute(
+            text("SELECT nextval(CAST(:sequence_name AS regclass))"),
+            {"sequence_name": "mps_whatif_scenario_no_seq"},
+        )
+        number = result.scalar_one()
+    else:
+        result = await db.execute(select(MPSWhatIfScenario.scenario_no))
+        largest = 0
+        for value in result.scalars().all():
+            match = re.fullmatch(r"WI-[0-9A-Fa-f]{6}-([0-9]+)", value) if isinstance(value, str) else None
+            if match:
+                largest = max(largest, int(match.group(1)))
+        number = largest + 1
+    return f"WI-{mps_id.hex[:6].upper()}-{number:04d}"
 
 
 def _D(v) -> Decimal:
@@ -154,6 +174,7 @@ def _scenario_capacity_loads(
 def _validate_shift_additions(
     additions: dict[tuple[uuid.UUID, date], Decimal],
     calendars: dict[tuple[uuid.UUID, date], ResourceCalendar],
+    downtimes: list[DowntimeEvent] | None = None,
 ) -> tuple[dict[tuple[uuid.UUID, date], Decimal], set[str]]:
     """Validate aggregate extra hours against a configured 24-hour day.
 
@@ -166,6 +187,25 @@ def _validate_shift_additions(
     unknown: set[str] = set()
     valid: dict[tuple[uuid.UUID, date], Decimal] = {}
     for key, hours in additions.items():
+        wc_id, shift_day = key
+        day_start = datetime.combine(shift_day, datetime.min.time(), tzinfo=timezone.utc)
+        day_end = day_start + timedelta(days=1)
+        has_downtime = False
+        for event in downtimes or []:
+            if event.work_center_id != wc_id or event.start_time >= day_end:
+                continue
+            if event.end_time is None and not event.duration_min:
+                has_downtime = True
+                break
+            event_end = event.end_time or event.start_time + timedelta(minutes=int(event.duration_min or 0))
+            if event_end > day_start:
+                has_downtime = True
+                break
+        if has_downtime:
+            # No added-shift interval is supplied, so overlap with this day's
+            # downtime cannot be ruled out and the hours must remain uncredited.
+            unknown.add("SHIFT_ADD_DOWNTIME_OVERLAP_UNRESOLVED")
+            continue
         calendar = calendars.get(key)
         if calendar is None:
             unknown.add("SHIFT_ADD_CALENDAR_NOT_CONFIGURED")
@@ -349,6 +389,31 @@ async def _simulate_scenario_materials(db: AsyncSession, mps_id: uuid.UUID, snap
             "candidate_shortage_count": None, "shortage_count_delta": None,
             "unknown_reasons": [f"material simulation unavailable: {type(exc).__name__}"],
         }
+def _batch_count_for_quantity(
+    line_snapshot: dict, quantity: Decimal, *, validate_existing: bool = True,
+) -> int | None:
+    """Return a consistent whole batch count, or reject ambiguous batch data."""
+    raw_size = line_snapshot.get("batch_size_qty")
+    raw_count = line_snapshot.get("num_batches")
+    if raw_size is None:
+        if raw_count is not None:
+            raise ValueError("Structural scenario changes require a configured batch size when num_batches is set")
+        return None
+    try:
+        batch_size = Decimal(str(raw_size))
+    except Exception as exc:
+        raise ValueError("Structural scenario changes require a positive finite batch size") from exc
+    if not batch_size.is_finite() or batch_size <= 0:
+        raise ValueError("Structural scenario changes require a positive finite batch size")
+    count = quantity / batch_size
+    if not count.is_finite() or count <= 0 or count != count.to_integral_value():
+        raise ValueError("Structural scenario quantity must be an exact multiple of batch_size_qty")
+    whole_count = int(count)
+    if validate_existing and raw_count is not None and int(raw_count) != whole_count:
+        raise ValueError("Existing num_batches does not match planned quantity and batch_size_qty")
+    return whole_count
+
+
 def _apply_change(line_snapshot: dict, change: dict) -> dict:
     """Apply one change dict to a line snapshot copy."""
     ct = change["change_type"]
@@ -399,6 +464,9 @@ def _apply_change(line_snapshot: dict, change: dict) -> dict:
         original_qty = _D(line_snapshot.get("planned_production_qty", 0))
         if sum(parts, Decimal(0)) != original_qty:
             raise ValueError("SPLIT quantities must sum exactly to the original planned quantity")
+        line_snapshot["_split_batch_counts"] = [
+            _batch_count_for_quantity(line_snapshot, part, validate_existing=False) for part in parts
+        ]
         line_snapshot["_split_quantities"] = [str(part) for part in parts]
 
     elif ct == MPSChangeType.MERGE:
@@ -466,6 +534,12 @@ def _expand_candidate_lines(lines: list[dict]) -> list[dict]:
             split_line = deepcopy(line)
             split_line["id"] = f"{line['id']}:split:{index}"
             split_line["planned_production_qty"] = quantity
+            # The scenario's capacity engine recomputes hours from quantity
+            # and configured rate; do not repeat the source line's stale value.
+            split_line["required_hours"] = None
+            batch_counts = line.get("_split_batch_counts")
+            if batch_counts is not None:
+                split_line["num_batches"] = batch_counts[index - 1]
             split_line["_split_part"] = index
             expanded.append(split_line)
     return expanded
@@ -479,13 +553,16 @@ async def create_whatif_scenario(
 ) -> MPSWhatIfScenario:
     if not data.changes:
         raise ValueError("What-if scenario must include at least one proposed change")
-    plan_q = await db.execute(select(MPSPlan).where(MPSPlan.id == mps_id))
+    # Snapshot scenarios against a stable line set. MPS writers take this
+    # parent lock before mutating plan lines, so the snapshot cannot interleave.
+    plan_q = await db.execute(
+        select(MPSPlan).where(MPSPlan.id == mps_id).with_for_update()
+    )
     plan = plan_q.scalar_one_or_none()
     if not plan:
         raise ValueError("MPS plan not found")
 
-    seq_q = await db.execute(select(func.count()).select_from(MPSWhatIfScenario))
-    seq = (seq_q.scalar() or 0) + 1
+    scenario_no = await _next_scenario_no(db, mps_id)
 
     # MERGE carries its second line ID in new_value; include it in the same
     # scoped lookup and require every referenced line to belong to this plan.
@@ -531,6 +608,7 @@ async def create_whatif_scenario(
             "batch_size_qty": str(line.batch_size_qty) if line.batch_size_qty else None,
             "num_batches": line.num_batches,
             "campaign_id": str(line.campaign_id) if line.campaign_id else None,
+            "priority_score": str(line.priority_score),
             "feasibility_status": str(getattr(line.feasibility_status, "value", line.feasibility_status)),
             "required_hours": str(line.required_hours) if line.required_hours is not None else None,
             "confirmed_demand_qty": str(line.confirmed_demand_qty),
@@ -582,14 +660,31 @@ async def create_whatif_scenario(
             match_fields = (
                 "product_id", "mrp_result_id", "period_start", "period_end",
                 "planned_start_date", "planned_end_date", "work_center_id",
-                "batch_size_qty", "num_batches", "campaign_id", "feasibility_status",
+                "campaign_id", "feasibility_status",
             )
-            if any(target.get(field) != source.get(field) for field in match_fields):
+            numeric_match_fields = ("batch_size_qty", "priority_score")
+            numeric_mismatch = any(
+                (target.get(field) is None) != (source.get(field) is None)
+                or (
+                    target.get(field) is not None
+                    and _D(target[field]) != _D(source[field])
+                )
+                for field in numeric_match_fields
+            )
+            if numeric_mismatch or any(target.get(field) != source.get(field) for field in match_fields):
                 raise ValueError("MERGE requires matching source allocation, product, batch, campaign, period, schedule, work center, and feasibility")
             target_qty, source_qty = _D(target["planned_production_qty"]), _D(source["planned_production_qty"])
             if not target_qty.is_finite() or not source_qty.is_finite() or target_qty <= 0 or source_qty <= 0:
                 raise ValueError("MERGE requires two positive finite planned quantities")
+            target_batches = _batch_count_for_quantity(target, target_qty)
+            source_batches = _batch_count_for_quantity(source, source_qty)
+            if (target_batches is None) != (source_batches is None):
+                raise ValueError("MERGE requires compatible configured batch sizing")
+            if target_batches is not None:
+                target["num_batches"] = target_batches + source_batches
             target["planned_production_qty"] = str(_R(target_qty + source_qty))
+            target["required_hours"] = None
+            source["required_hours"] = None
             for field in ("confirmed_demand_qty", "forecast_qty", "safety_stock_qty", "net_requirement_qty"):
                 target[field] = str(_R(_D(target.get(field)) + _D(source.get(field))))
             source["planned_production_qty"] = "0"
@@ -686,7 +781,7 @@ async def create_whatif_scenario(
             (DowntimeEvent.end_time.is_(None)) | (DowntimeEvent.end_time >= datetime.combine(first_day, datetime.min.time(), tzinfo=timezone.utc)),
         ))).scalars().all()
     calendar_map = {(row.work_center_id, row.calendar_date): row for row in calendar_rows}
-    valid_shift_additions, shift_unknowns = _validate_shift_additions(shift_additions, calendar_map)
+    valid_shift_additions, shift_unknowns = _validate_shift_additions(shift_additions, calendar_map, downtime_rows)
     candidate_lines = _expand_candidate_lines(list(modified_map.values()))
     capacity_metrics = _scenario_capacity_loads(
         candidate_lines, wcs, products,
@@ -742,7 +837,7 @@ async def create_whatif_scenario(
     impact_summary = "; ".join(summary_parts) + f". Projected service level: {svc:.1f}% (estimated)."
 
     scenario = MPSWhatIfScenario(
-        scenario_no=f"WI-{mps_id.hex[:6].upper()}-{seq:04d}",
+        scenario_no=scenario_no,
         scenario_name=data.scenario_name,
         mps_id=mps_id,
         description=data.description,

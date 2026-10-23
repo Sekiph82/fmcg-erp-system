@@ -254,12 +254,17 @@ async def test_generate_from_mrp_allows_regenerating_from_the_same_run():
     db = _mock_db(
         _exec_result(scalar_one_or_none=plan),
         _exec_result(scalar_one_or_none=mrp_run),
-        _exec_result(scalars_all=[]),  # no MRP results -> generate_mps_from_mrp returns 0 early
+        _exec_result(scalars_all=[]),  # no positive MRP requirements
+        _exec_result(scalars_all=[]),  # existing unlocked MPS lines to replace
+        _exec_result(),  # refreshed line counters
+        _exec_result(scalar_one_or_none=plan),  # plan counter update
     )
     req = GenerateFromMRPRequest(mrp_run_id=run_id)
 
     created = await svc.generate_mps_from_mrp(db, plan.id, req)
-    assert created == 0  # reached the "no results" short-circuit, not rejected by the lineage guard
+    assert created == 0
+    assert plan.mrp_run_id == run_id
+    assert db.execute.await_count == 6
 
 
 # ── F-V01-003 — target warehouse validated before any order is created ────────

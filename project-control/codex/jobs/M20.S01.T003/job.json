@@ -1,0 +1,26 @@
+{
+  "id": "M20.S01.T003",
+  "task": "Identify exact missing state/data invariants",
+  "stage": "APPROVE",
+  "round": 1,
+  "reviews": {
+    "rules": "pass",
+    "code": "pass",
+    "tests": "pass"
+  },
+  "updatedAt": "2026-10-23T06:26:42.535Z",
+  "reviewEvidence": {
+    "rules": {
+      "path": "backend/tests/fixtures/m20_invariant_matrix.json",
+      "sha256": "7b80071b4a19128d04d11d39ba6711641060dd530d7580347eae43a8c5c8f31e"
+    },
+    "tests": {
+      "path": "project-control/codex/jobs/M20.S01.T003/evidence/mps-sequence-checks-2026-10-22.md",
+      "sha256": "b587835121cd10ceb3a8771abd5430f367fd5548600db23ebcfbd2a48b36e4fa"
+    },
+    "code": {
+      "path": "project-control/codex/jobs/M20.S01.T003/evidence/mps-sequence-code-review-2026-10-22.md",
+      "sha256": "f85dd322f8477476503e7fb8f6b7c597b4ee311e149b7310579087ff99922800"
+    }
+  }
+}

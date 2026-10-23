@@ -3,8 +3,21 @@ import { mkdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 
 const backend = process.env.M20_BACKEND_URL || "http://localhost:8001";
+const disposableDatabaseName = process.env.M20_DISPOSABLE_TEST_DATABASE_NAME || "";
 
 test("MPS scenario UI persists a real split through the PostgreSQL-backed API", async ({ page }) => {
+  test.skip(
+    process.env.M20_DISPOSABLE_TEST_DATABASE !== "1",
+    "requires explicit opt-in for a task-owned disposable M20 database; this test persists scenario history",
+  );
+  // The runner must start the backend itself with DATABASE_URL and this exact
+  // database-name variable. The browser can verify loopback/name intent but
+  // cannot introspect the database behind an already-running backend process.
+  const backendUrl = new URL(backend);
+  expect(["127.0.0.1", "localhost", "[::1]"], "MPS browser/API integration must use a loopback backend").toContain(backendUrl.hostname);
+  expect(disposableDatabaseName, "set the exact per-run disposable database name for both backend and browser test").toMatch(
+    /^fmcg_m20_[a-z0-9]+_[a-f0-9]{20,32}$/,
+  );
   page.on("response", (response) => {
     if (response.url().includes("/api/v1/mps/")) console.log(`MPS browser API ${response.status()} ${new URL(response.url()).pathname}`);
   });
@@ -34,9 +47,10 @@ test("MPS scenario UI persists a real split through the PostgreSQL-backed API", 
   const plansResponse = await page.request.get(`${backend}/api/v1/mps/plans`);
   expect(plansResponse.ok(), `MPS plans returned ${plansResponse.status()}`).toBeTruthy();
   const plans = await plansResponse.json() as Array<{ id: string; plan_no: string; capacity_mode: string }>;
+  const isolatedPlanPrefix = "M20-OPS-PLAN-";
   let selected: { planId: string; planNo: string; line: { id: string; line_no: string; planned_production_qty: number } } | undefined;
   for (const plan of plans) {
-    if (plan.capacity_mode !== "FINITE") continue;
+    if (plan.capacity_mode !== "FINITE" || !plan.plan_no.startsWith(isolatedPlanPrefix)) continue;
     const response = await page.request.get(`${backend}/api/v1/mps/plans/${plan.id}/lines`);
     if (!response.ok()) continue;
     const lines = await response.json() as Array<{
@@ -48,7 +62,7 @@ test("MPS scenario UI persists a real split through the PostgreSQL-backed API", 
       break;
     }
   }
-  expect(selected, "requires an existing finite-capacity MPS plan with an unlocked positive line").toBeTruthy();
+  expect(selected, `requires a disposable finite-capacity test plan with prefix ${isolatedPlanPrefix} and an unlocked positive line`).toBeTruthy();
   const { planId, line } = selected!;
   const total = Number(line.planned_production_qty);
   const first = Math.round(total * 500) / 1000;

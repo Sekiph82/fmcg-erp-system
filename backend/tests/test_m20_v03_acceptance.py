@@ -2,16 +2,20 @@
 from __future__ import annotations
 
 import asyncio
+import json
+import os
+import re
 from datetime import date, datetime, timezone
 from decimal import Decimal
+from pathlib import Path
 from types import SimpleNamespace
 from uuid import uuid4
 
 import pytest
 from sqlalchemy import delete, func, select, text
+from sqlalchemy.engine import URL
 from sqlalchemy.orm import selectinload
 
-from app.core.config import settings
 from app.db.session import AsyncSessionLocal, engine
 from app.models.audit_log import AuditLog
 from app.models.bom import AdvancedBOM, AdvancedBOMLine, BOMLifecycle, BasisType, ItemLinkType
@@ -34,8 +38,12 @@ from app.models.role import AccessScope, Permission, Role
 from app.models.user import User, user_role
 from app.schemas.mps import GenerateFromMRPRequest, MPSWhatIfCreate, WhatIfChange
 from app.services.mps_advanced_service import evaluate_material_feasibility, list_plan_diagnostics
-from app.services.mps_service import approve_mps_plan, generate_mps_from_mrp, release_mps_plan
+from app.services.mps_service import _next_seq, approve_mps_plan, generate_mps_from_mrp, release_mps_plan
 from app.services.mps_whatif_service import (
+    _next_scenario_no,
+    _apply_change,
+    _batch_count_for_quantity,
+    _expand_candidate_lines,
     _validate_shift_additions,
     compare_whatif_scenarios,
     create_whatif_scenario,
@@ -48,6 +56,81 @@ class _RollbackFixture(Exception):
 
 def _suffix() -> str:
     return uuid4().hex[:10]
+
+
+def _is_task_owned_disposable_m20_database(url, expected_name: str | None) -> bool:
+    return (
+        url.drivername in {"postgresql", "postgresql+asyncpg"}
+        and url.host in {"127.0.0.1", "localhost", "::1"}
+        and isinstance(expected_name, str)
+        and re.fullmatch(r"fmcg_m20_[a-z0-9]+_[a-f0-9]{20,32}", expected_name) is not None
+        and url.database == expected_name
+    )
+
+
+def _require_disposable_m20_postgres() -> None:
+    """Require an exact, per-run database identity before any integration write."""
+    if os.environ.get("M20_DISPOSABLE_TEST_DATABASE") != "1":
+        pytest.skip("Set M20_DISPOSABLE_TEST_DATABASE=1 only for a task-owned disposable PostgreSQL database.")
+    url = engine.url
+    expected_name = os.environ.get("M20_DISPOSABLE_TEST_DATABASE_NAME")
+    if not _is_task_owned_disposable_m20_database(url, expected_name):
+        pytest.fail(
+            "Refusing M20 integration writes: DATABASE_URL must target the exact loopback PostgreSQL database "
+            "named by M20_DISPOSABLE_TEST_DATABASE_NAME (fmcg_m20_<task>_<20-32 hex chars>)."
+        )
+
+
+def test_m20_disposable_database_guard_requires_exact_unique_loopback_target():
+    name = "fmcg_m20_t004_0123456789abcdef0123"
+    safe_url = URL.create("postgresql+asyncpg", username="test", password="hidden", host="127.0.0.1", database=name)
+    assert _is_task_owned_disposable_m20_database(safe_url, name)
+    assert not _is_task_owned_disposable_m20_database(safe_url, "fmcg_m20_t004_0123456789abcdef0124")
+    assert not _is_task_owned_disposable_m20_database(safe_url, "fmcg_m20_t004_short")
+    remote_url = URL.create("postgresql+asyncpg", host="db.example.com", database=name)
+    assert not _is_task_owned_disposable_m20_database(remote_url, name)
+    sqlite_url = URL.create("sqlite+aiosqlite", database=name)
+    assert not _is_task_owned_disposable_m20_database(sqlite_url, name)
+
+
+@pytest.mark.asyncio
+async def test_mps_number_sequences_advance_past_existing_rows_and_are_concurrent_safe():
+    _require_disposable_m20_postgres()
+    await engine.dispose()
+
+    async with AsyncSessionLocal() as db:
+        plan_numbers = (await db.execute(select(MPSPlan.plan_no))).scalars().all()
+        line_numbers = (await db.execute(select(MPSLine.line_no))).scalars().all()
+
+    def largest(values, prefix):
+        suffixes = [value[len(prefix):] for value in values if isinstance(value, str) and value.startswith(prefix)]
+        numbers = [int(suffix) for suffix in suffixes if suffix.isdigit()]
+        return max(numbers, default=0)
+
+    max_plan = largest(plan_numbers, "MPS-")
+    max_line = largest(line_numbers, "MPSL-")
+
+    async def allocate(prefix, column):
+        async with AsyncSessionLocal() as db:
+            async with db.begin():
+                return await _next_seq(db, prefix, column)
+
+    plan_values, line_values = await asyncio.gather(
+        asyncio.gather(*(allocate("MPS-", MPSPlan.plan_no) for _ in range(12))),
+        asyncio.gather(*(allocate("MPSL-", MPSLine.line_no) for _ in range(12))),
+    )
+    assert len(set(plan_values)) == len(plan_values)
+    assert len(set(line_values)) == len(line_values)
+    assert min(int(value.removeprefix("MPS-")) for value in plan_values) > max_plan
+    assert min(int(value.removeprefix("MPSL-")) for value in line_values) > max_line
+
+    async def allocate_scenario():
+        async with AsyncSessionLocal() as db:
+            async with db.begin():
+                return await _next_scenario_no(db, uuid4())
+
+    scenario_values = await asyncio.gather(*(allocate_scenario() for _ in range(12)))
+    assert len(set(scenario_values)) == len(scenario_values)
 
 
 def test_shift_add_uses_calendar_remaining_hours_and_rejects_overlap_evidence():
@@ -87,12 +170,60 @@ def test_shift_add_uses_calendar_remaining_hours_and_rejects_overlap_evidence():
     assert valid == {}
     assert unknown == {"SHIFT_ADD_CALENDAR_SHIFT_WINDOWS_NOT_CONFIGURED"}
 
+    full_day = SimpleNamespace(
+        available_hours=Decimal("24"), is_holiday=False, is_maintenance=False,
+        shift_1_start="00:00", shift_1_end="08:00",
+        shift_2_start="08:00", shift_2_end="16:00",
+        shift_3_start="16:00", shift_3_end="00:00",
+    )
+    with pytest.raises(ValueError, match="Aggregate SHIFT_ADD hours exceed remaining"):
+        _validate_shift_additions({key: Decimal("1")}, {key: full_day})
+
+    downtime = SimpleNamespace(
+        work_center_id=wc_id,
+        start_time=datetime(2026, 11, 3, 9, tzinfo=timezone.utc),
+        end_time=datetime(2026, 11, 3, 10, tzinfo=timezone.utc),
+        duration_min=None,
+    )
+    valid, unknown = _validate_shift_additions({key: Decimal("1")}, {key: calendar}, [downtime])
+    assert valid == {}
+    assert unknown == {"SHIFT_ADD_DOWNTIME_OVERLAP_UNRESOLVED"}
+
+
+def test_structural_scenarios_preserve_configured_batch_counts():
+    line = {
+        "id": "line-1",
+        "planned_production_qty": "40",
+        "batch_size_qty": "10",
+        "num_batches": 4,
+        "required_hours": "4",
+    }
+    assert _batch_count_for_quantity(line, Decimal("40")) == 4
+
+    split = _apply_change(line.copy(), {
+        "change_type": MPSChangeType.SPLIT,
+        "new_value": {"quantities": ["20", "20"]},
+    })
+    candidate = _expand_candidate_lines([split])
+    assert [line["planned_production_qty"] for line in candidate] == ["20", "20"]
+    assert [line["num_batches"] for line in candidate] == [2, 2]
+    assert [line["required_hours"] for line in candidate] == [None, None]
+
+    with pytest.raises(ValueError, match="exact multiple of batch_size_qty"):
+        _apply_change(line.copy(), {
+            "change_type": MPSChangeType.SPLIT,
+            "new_value": {"quantities": ["15", "25"]},
+        })
+
+    with pytest.raises(ValueError, match="does not match planned quantity"):
+        _batch_count_for_quantity({**line, "num_batches": 3}, Decimal("40"))
+
 
 @pytest.mark.asyncio
 async def test_postgres_whatif_merge_exact_split_and_added_shift_resimulate_without_live_mutation():
     """Persist exact scenario operations and finite-capacity before/after metrics."""
-    if "postgresql" not in str(settings.DATABASE_URL):
-        pytest.skip("M20 scenario operation proof requires PostgreSQL")
+    _require_disposable_m20_postgres()
+    await engine.dispose()
 
     suffix = _suffix()
     day = date(2026, 11, 3)
@@ -137,11 +268,15 @@ async def test_postgres_whatif_merge_exact_split_and_added_shift_resimulate_with
                 line_no=f"M20-OPS-A-{suffix}", mps_id=plan.id, product_id=product.id,
                 period_start=day, period_end=day, planned_start_date=day, planned_end_date=day,
                 planned_production_qty=Decimal("40"), work_center_id=work_center.id,
+                mrp_result_id=None, batch_size_qty=None, campaign_id=None,
+                priority_score=Decimal("50"), feasibility_status=MPSFeasibilityStatus.PENDING,
             )
             second = MPSLine(
                 line_no=f"M20-OPS-B-{suffix}", mps_id=plan.id, product_id=product.id,
                 period_start=day, period_end=day, planned_start_date=day, planned_end_date=day,
                 planned_production_qty=Decimal("60"), work_center_id=work_center.id,
+                mrp_result_id=None, batch_size_qty=None, campaign_id=None,
+                priority_score=Decimal("50"), feasibility_status=MPSFeasibilityStatus.PENDING,
             )
             db.add_all([first, second])
             await db.flush()
@@ -183,6 +318,14 @@ async def test_postgres_whatif_merge_exact_split_and_added_shift_resimulate_with
                 ],
             ), user_id)
         second_line = await db.get(MPSLine, second_id)
+        second_line.priority_score = Decimal("49")
+        await db.flush()
+        with pytest.raises(ValueError, match="matching source allocation, product, batch, campaign"):
+            await create_whatif_scenario(db, plan_id, MPSWhatIfCreate(
+                scenario_name="incompatible priority merge",
+                changes=[WhatIfChange(line_id=first_id, change_type=MPSChangeType.MERGE, new_value=str(second_id))],
+            ), user_id)
+        second_line.priority_score = Decimal("50")
         second_line.feasibility_status = MPSFeasibilityStatus.FEASIBLE
         await db.flush()
         with pytest.raises(ValueError, match="matching source allocation, product, batch, campaign"):
@@ -191,12 +334,38 @@ async def test_postgres_whatif_merge_exact_split_and_added_shift_resimulate_with
                 changes=[WhatIfChange(line_id=first_id, change_type=MPSChangeType.MERGE, new_value=str(second_id))],
             ), user_id)
         second_line.feasibility_status = MPSFeasibilityStatus.PENDING
+        first_line = await db.get(MPSLine, first_id)
+        first_line.batch_size_qty = Decimal("10")
+        first_line.num_batches = 4
+        first_line.required_hours = Decimal("4")
+        second_line.batch_size_qty = Decimal("10")
+        second_line.num_batches = 6
+        second_line.required_hours = Decimal("6")
         await db.flush()
+        merge_fields = (
+            "product_id", "mrp_result_id", "period_start", "period_end",
+            "planned_start_date", "planned_end_date", "work_center_id",
+            "batch_size_qty", "campaign_id", "priority_score", "feasibility_status",
+        )
+        mismatched_fields = [
+            field for field in merge_fields
+            if getattr(first_line, field) != getattr(second_line, field)
+        ]
+        assert not mismatched_fields, f"batch merge fixture fields differ: {mismatched_fields}"
+        batched_merge = await create_whatif_scenario(db, plan_id, MPSWhatIfCreate(
+            scenario_name="merge compatible batch allocations",
+            changes=[WhatIfChange(line_id=first_id, change_type=MPSChangeType.MERGE, new_value=str(second_id))],
+        ), user_id)
         snapshots = (await db.scalars(select(MPSScenarioSnapshot).where(
-            MPSScenarioSnapshot.scenario_id.in_([merged.id, split.id, shifted.id, maximum_shift.id]),
+            MPSScenarioSnapshot.scenario_id.in_([merged.id, split.id, shifted.id, maximum_shift.id, batched_merge.id]),
         ))).all()
         by_scenario = {row.scenario_id: row for row in snapshots}
-        assert len(by_scenario) == 4
+        assert len(by_scenario) == 5
+        batched_results = by_scenario[batched_merge.id].results
+        merged_candidate = next(line for line in batched_results["modified_lines"] if line["id"] == str(first_id))
+        assert Decimal(merged_candidate["planned_production_qty"]) == Decimal("100")
+        assert merged_candidate["num_batches"] == 10
+        assert merged_candidate["required_hours"] is None
         merged_lines = by_scenario[merged.id].results["modified_lines"]
         assert len(merged_lines) == 1
         assert Decimal(merged_lines[0]["planned_production_qty"]) == Decimal("100.000")
@@ -219,10 +388,147 @@ async def test_postgres_whatif_merge_exact_split_and_added_shift_resimulate_with
 
 
 @pytest.mark.asyncio
+async def test_postgres_kenya_fixture_drives_real_mps_material_feasibility_service():
+    """Seed the published synthetic acceptance fixture and exercise MPS/BOM/stock services."""
+    _require_disposable_m20_postgres()
+    await engine.dispose()
+
+    fixture = json.loads((Path(__file__).parent / "fixtures" / "m20_acceptance_dataset.json").read_text(encoding="utf-8"))
+    assert fixture["classification"].startswith("synthetic test fixture")
+    mango = fixture["products"][0]
+    suffix = _suffix()
+    start_day = date.fromisoformat(fixture["scope"]["horizon"][0])
+    end_day = date.fromisoformat(fixture["scope"]["horizon"][1])
+    company_id = warehouse_id = product_id = material_id = run_id = plan_id = None
+    bom_id = None
+    try:
+        async with AsyncSessionLocal() as db:
+            async with db.begin():
+                company = Company(name=f"{fixture['scope']['company']} {suffix}", short_code=f"M20{suffix}")
+                db.add(company)
+                await db.flush()
+                warehouse = Warehouse(
+                    code=f"{fixture['scope']['warehouse']}-{suffix}",
+                    name=f"{fixture['scope']['warehouse']} synthetic acceptance warehouse",
+                    warehouse_type=WarehouseType.FINISHED_GOODS, company_id=company.id,
+                )
+                product = Product(
+                    sku=f"{mango['sku']}-{suffix}", name=mango["name"],
+                    category=ProductCategory.FOOD, uom=UnitOfMeasure[mango["uom"]],
+                )
+                material_record = mango["bom"]["components"][0]
+                material = Material(
+                    code=f"{material_record['material_code']}-{suffix}",
+                    name="Synthetic acceptance sugar", material_type=MaterialType.RAW,
+                    uom=UnitOfMeasure[material_record["uom"]],
+                )
+                db.add_all([warehouse, product, material])
+                await db.flush()
+                run = MRPRun(
+                    run_no=f"M20-FIXTURE-RUN-{suffix}", run_date=start_day,
+                    status=MRPRunStatus.COMPLETED, warehouse_id=warehouse.id,
+                )
+                db.add(run)
+                await db.flush()
+                bom = AdvancedBOM(
+                    bom_code=f"M20-FIXTURE-BOM-{suffix}",
+                    bom_name=f"{mango['sku']} synthetic approved BOM",
+                    product_id=product.id,
+                    base_qty=mango["bom"]["base_qty"],
+                    base_uom=mango["bom"]["base_uom"],
+                    lifecycle=BOMLifecycle[mango["bom"]["lifecycle"]],
+                    is_default=True, effective_from=start_day, effective_to=end_day,
+                )
+                db.add(bom)
+                await db.flush()
+                db.add_all([
+                    AdvancedBOMLine(
+                        bom_id=bom.id, line_no=1, item_type=ItemLinkType.MATERIAL,
+                        item_id=material.id, required_qty=material_record["required_qty"],
+                        required_uom=material_record["uom"],
+                        basis_type=BasisType[material_record["basis_type"]],
+                        wastage_pct=material_record["wastage_pct"],
+                        process_loss_pct=material_record["process_loss_pct"],
+                    ),
+                    Stock(
+                        stock_type=StockType.MATERIAL, warehouse_id=warehouse.id,
+                        material_id=material.id,
+                        quantity_on_hand=mango["material_stock"][material_record["material_code"]]["on_hand"],
+                        quantity_reserved=mango["material_stock"][material_record["material_code"]]["reserved"],
+                        quantity_available=(
+                            Decimal(str(mango["material_stock"][material_record["material_code"]]["on_hand"]))
+                            - Decimal(str(mango["material_stock"][material_record["material_code"]]["reserved"]))
+                        ),
+                    ),
+                ])
+                plan = MPSPlan(
+                    plan_no=f"M20-FIXTURE-PLAN-{suffix}",
+                    plan_name=f"{fixture['dataset_id']} {mango['sku']}",
+                    start_date=start_day, end_date=end_day, mrp_run=run,
+                )
+                db.add(plan)
+                await db.flush()
+                line = MPSLine(
+                    line_no=f"M20-FIXTURE-LINE-{suffix}", mps_id=plan.id,
+                    product_id=product.id, period_start=start_day, period_end=end_day,
+                    planned_start_date=start_day, planned_end_date=end_day,
+                    planned_production_qty=mango["planned_qty"],
+                )
+                db.add(line)
+                await db.flush()
+                company_id, warehouse_id = company.id, warehouse.id
+                product_id, material_id, run_id = product.id, material.id, run.id
+                plan_id, bom_id = plan.id, bom.id
+                line_id = line.id
+
+            evaluation = await evaluate_material_feasibility(db, plan_id)
+            assert evaluation["lines_evaluated"] == 1
+            assert evaluation["material_short_lines"] == 1
+            assert evaluation["infeasible_lines"] == 0
+            diagnostics = await list_plan_diagnostics(db, plan_id)
+            assert len(diagnostics) == 1
+            issue = diagnostics[0]["diagnostics"]["issues"][0]
+            expected_required = (
+                Decimal(str(mango["planned_qty"]))
+                * Decimal(str(material_record["required_qty"]))
+                / Decimal(str(mango["bom"]["base_qty"]))
+                * (Decimal("1") + Decimal(str(material_record["wastage_pct"])) / Decimal("100"))
+            ).quantize(Decimal("0.0001"))
+            expected_available = (
+                Decimal(str(mango["material_stock"][material_record["material_code"]]["on_hand"]))
+                - Decimal(str(mango["material_stock"][material_record["material_code"]]["reserved"]))
+            )
+            assert issue["reason_code"] == "MATERIAL_SHORT"
+            assert Decimal(issue["required_qty"]) == expected_required == Decimal("16.3200")
+            assert Decimal(issue["available_qty"]) == expected_available == Decimal("10")
+            assert Decimal(issue["shortage_qty"]) == Decimal("6.3200")
+            assert issue["uom"] == material_record["uom"]
+            assert diagnostics[0]["line_id"] == str(line_id)
+    finally:
+        await engine.dispose()
+        async with AsyncSessionLocal() as cleanup:
+            async with cleanup.begin():
+                if plan_id is not None:
+                    await cleanup.execute(delete(MPSPlan).where(MPSPlan.id == plan_id))
+                if bom_id is not None:
+                    await cleanup.execute(delete(AdvancedBOM).where(AdvancedBOM.id == bom_id))
+                if run_id is not None:
+                    await cleanup.execute(delete(MRPRun).where(MRPRun.id == run_id))
+                if material_id is not None:
+                    await cleanup.execute(delete(Stock).where(Stock.material_id == material_id))
+                    await cleanup.execute(delete(Material).where(Material.id == material_id))
+                if product_id is not None:
+                    await cleanup.execute(delete(Product).where(Product.id == product_id))
+                if warehouse_id is not None:
+                    await cleanup.execute(delete(Warehouse).where(Warehouse.id == warehouse_id))
+                if company_id is not None:
+                    await cleanup.execute(delete(Company).where(Company.id == company_id))
+
+
+@pytest.mark.asyncio
 async def test_postgres_seeded_mrp_bom_inventory_diagnostics_snapshot_and_release_replay():
     """Exercise a committed MRP→MPS→BOM/stock→scenario→production path."""
-    if "postgresql" not in str(settings.DATABASE_URL):
-        pytest.skip("M20 cross-module proof requires PostgreSQL")
+    _require_disposable_m20_postgres()
 
     await engine.dispose()
     suffix = _suffix()
@@ -447,8 +753,7 @@ async def test_postgres_seeded_mrp_bom_inventory_diagnostics_snapshot_and_releas
 @pytest.mark.asyncio
 async def test_postgres_release_http_permission_company_warehouse_and_atomic_rollback(monkeypatch):
     """Exercise the real release route's RBAC/scope and DB transaction boundary."""
-    if "postgresql" not in str(settings.DATABASE_URL):
-        pytest.skip("M20 release route scope proof requires PostgreSQL")
+    _require_disposable_m20_postgres()
 
     from httpx import ASGITransport, AsyncClient
 

@@ -10,9 +10,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 - Current Milestone: M20 — Master Production Scheduling
 - Current Sprint: M20.S01 — MPS Domain Reconciliation
-- Current Task: M20.S01.T003 — Identify exact missing state/data invariants
-- Current Task Status: IN_PROGRESS
-- Next Task/Action: M20 STRICT AUDIT V04 reviewed 77 builder-reported backend tests and 11 browser tests, with stronger PostgreSQL tenant/warehouse release, durable diagnostics and scenario snapshot replay source. Continue single uninterrupted M20 remediation for unsupported/approximate scenario operations, remaining boundary cases and independent visual evidence; authoritative minimum-run/CIP/currency configuration is OWNER_DATA_REQUIRED, never fabricate. Audit: https://github.com/Sekiph82/fmcg-erp-system/blob/main/coordination/milestones/M20/CHATGPT_M20_STRICT_AUDIT_V04.md . M20 NOT CLOSED; T001/T002 remain accepted. Remote CI DEFERRED_CI_QUOTA through 2026-10-30, no Actions without owner authorization.
+- Current Task: M20.S01.T004 — Define MPS acceptance dataset and regression suite
+- Current Task Status: COMPLETE
+- Next Task/Action: M20.S02.T001 — Consolidate demand inputs: sales orders/forecast/safety stock
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -38,7 +38,7 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 6. Cross-module changes must preserve RBAC, auditability, migrations, API contracts, frontend/backend consistency and tenant/company boundaries.
 7. M20–M35 are enterprise upgrades layered on M01–M19 foundations.
 8. Graphify is reference tooling only. Do not run refreshes without an explicit project need; no hooks, watchers or competing tracker state.
-9. ChatGPT is the sole writer of current tracker lifecycle/progress/closure state. Claude/Codex must not modify `TASKS.md` or `TASKS_HISTORY.md`; ChatGPT updates this ledger after independent audit/acceptance.
+9. The owner authorizes the active Codex task runner as the tracker writer for this project. Update `TASKS.md` only for explicit current-task claims, accepted transitions, and matching owner answers; the dashboard and independent reviewer are read-only. Keep `TASKS_HISTORY.md` immutable.
 10. Builder logs are evidence claims, not acceptance by themselves.
 11. `main` is the only authorized branch. Builders must not create, restore, push, or work on legacy `hiveai*` branches unless ChatGPT explicitly authorizes a temporary branch.
 
@@ -545,8 +545,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 ## M20.S01 — MPS Domain Reconciliation
 - [x] M20.S01.T001 — Map existing MPS models/APIs/UI/services to enterprise requirements
 - [x] M20.S01.T002 — Preserve existing planning-board/capacity/campaign/what-if capabilities
-- [~] M20.S01.T003 — Identify exact missing state/data invariants
-- [ ] M20.S01.T004 — Define MPS acceptance dataset and regression suite
+- [x] M20.S01.T003 — Identify exact missing state/data invariants
+- [x] M20.S01.T004 — Define MPS acceptance dataset and regression suite
 
 ## M20.S02 — Demand & Supply Coupling
 - [ ] M20.S02.T001 — Consolidate demand inputs: sales orders/forecast/safety stock
