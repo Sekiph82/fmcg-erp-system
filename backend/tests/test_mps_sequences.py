@@ -41,6 +41,9 @@ class _Database:
         self.statements.append((statement, params))
         return _Result(next(self.values))
 
+    async def flush(self):
+        return None
+
 
 async def _next(db, prefix, column):
     return await _next_seq(db, prefix, column)
@@ -200,11 +203,20 @@ def test_capacity_scheduler_locks_plan_before_reading_lines():
 
 def test_campaign_grouping_locks_plan_before_reading_lines():
     import asyncio
+    from datetime import date
+    from uuid import uuid4
 
-    db = _Database("sqlite", [SimpleNamespace(id="plan", status=MPSStatus.DRAFT), []])
-    assert asyncio.run(run_campaign_grouping(db, "plan")) == {
+    plan = SimpleNamespace(
+        id=uuid4(), status=MPSStatus.DRAFT,
+        start_date=date(2026, 1, 1), end_date=date(2026, 1, 31),
+    )
+    db = _Database("sqlite", [plan, [], []])
+    assert asyncio.run(run_campaign_grouping(db, plan.id)) == {
         "campaigns_created": 0,
         "lines_grouped": 0,
+        "ungrouped_lines": 0,
+        "locked_lines_preserved": 0,
+        "changeover_state": "NOT_CONFIGURED",
     }
     plan_statement = db.statements[0][0]
     assert "FROM mps_plans" in str(plan_statement)

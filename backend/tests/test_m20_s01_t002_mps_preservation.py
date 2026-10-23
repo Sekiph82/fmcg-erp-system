@@ -58,7 +58,7 @@ async def test_update_line_cannot_cross_plan_boundary():
 
 @pytest.mark.asyncio
 async def test_infinite_capacity_marks_only_unlocked_lines_feasible():
-    plan = SimpleNamespace(id=uuid4(), capacity_mode=MPSCapacityMode.INFINITE)
+    plan = SimpleNamespace(id=uuid4(), status=MPSStatus.DRAFT, capacity_mode=MPSCapacityMode.INFINITE)
     unlocked = _line(mps_id=plan.id, locked=False)
     locked = _line(mps_id=plan.id, locked=True)
     db = AsyncMock()
@@ -89,13 +89,19 @@ async def test_capacity_missing_plan_fails_without_mutating_lines():
 
 @pytest.mark.asyncio
 async def test_campaign_grouping_empty_plan_is_idempotent():
-    plan = SimpleNamespace(id=uuid4())
+    plan = SimpleNamespace(
+        id=uuid4(), status=MPSStatus.DRAFT,
+        start_date=date(2026, 1, 1), end_date=date(2026, 1, 31),
+    )
     db = AsyncMock()
-    db.execute = AsyncMock(side_effect=[_result(one=plan), _result(many=[])])
+    db.execute = AsyncMock(side_effect=[_result(one=plan), _result(many=[]), _result(many=[])])
 
     assert await campaign_svc.run_campaign_grouping(db, plan.id) == {
         "campaigns_created": 0,
         "lines_grouped": 0,
+        "ungrouped_lines": 0,
+        "locked_lines_preserved": 0,
+        "changeover_state": "NOT_CONFIGURED",
     }
 
 
@@ -109,6 +115,7 @@ async def test_whatif_rejects_line_from_another_plan():
         description=None,
     )
     db = AsyncMock()
+    db.get_bind = MagicMock(return_value=SimpleNamespace(dialect=SimpleNamespace(name="sqlite")))
     db.execute = AsyncMock(side_effect=[
         _result(one=SimpleNamespace(id=plan_id)),
         _result(scalar=0),

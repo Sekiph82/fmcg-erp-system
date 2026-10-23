@@ -10,9 +10,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 - Current Milestone: M20 — Master Production Scheduling
 - Current Sprint: M20.S03 — Capacity & Campaign Planning
-- Current Task: M20.S03.T001 — Validate work-center/machine capacity calculations
+- Current Task: M20.S03.T002 — Harden campaign grouping/sequencing
 - Current Task Status: COMPLETE
-- Next Task/Action: M20.S03.T002 — Harden campaign grouping/sequencing
+- Next Task/Action: M20.S03.T003 — Validate changeover/CIP effects where data exists
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -556,7 +556,7 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 ## M20.S03 — Capacity & Campaign Planning
 - [x] M20.S03.T001 — Validate work-center/machine capacity calculations
-- [ ] M20.S03.T002 — Harden campaign grouping/sequencing
+- [x] M20.S03.T002 — Harden campaign grouping/sequencing
 - [ ] M20.S03.T003 — Validate changeover/CIP effects where data exists
 - [ ] M20.S03.T004 — Persist capacity overload diagnostics
 

@@ -30,7 +30,7 @@ from app.models.master import (
     Warehouse, WarehouseType,
 )
 from app.models.mps import (
-    MPSCapacityMode, MPSCapacitySlot, MPSChangeType, MPSFeasibilityStatus, MPSLine, MPSPlan, MPSScenarioSnapshot,
+    MPSCampaign, MPSCapacityMode, MPSCapacitySlot, MPSChangeType, MPSFeasibilityStatus, MPSLine, MPSPlan, MPSScenarioSnapshot,
     MPSStatus, MPSWhatIfScenario,
 )
 from app.models.mrp import (
@@ -41,8 +41,8 @@ from app.models.production import ProductionOrder, ProductionOrderStatus
 from app.models.procurement import PurchaseOrder, POLine, POStatus
 from app.models.recipe import Recipe, RecipeStatus
 from app.models.utilities import UomConversion
-from app.models.planning import ResourceCalendar
-from app.models.production_advanced import DowntimeEvent, WorkCenter, WorkCenterType
+from app.models.planning import ChangeoverMatrix, ResourceCalendar
+from app.models.production_advanced import DowntimeEvent, WorkCenter, WorkCenterStatus, WorkCenterType
 from app.models.role import AccessScope, Permission, Role
 from app.models.user import User, user_role
 from app.models.sales import Customer, SalesOrder, SOStatus, SOLine
@@ -53,6 +53,7 @@ from app.services.mps_advanced_service import (
     evaluate_material_feasibility, list_plan_diagnostics, project_demand_and_supply,
 )
 from app.services.mps_capacity_service import run_capacity_scheduling_validated
+from app.services.mps_campaign_service import run_campaign_grouping_validated, list_campaigns
 from app.services.mps_service import _next_seq, approve_mps_plan, generate_mps_from_mrp, release_mps_plan
 from app.services.mps_whatif_service import (
     _next_scenario_no,
@@ -2136,4 +2137,323 @@ async def test_postgres_release_http_permission_company_warehouse_and_atomic_rol
                     await cleanup.execute(delete(Warehouse).where(Warehouse.id.in_(warehouse_ids)))
                 if company_ids:
                     await cleanup.execute(delete(Company).where(Company.id.in_(company_ids)))
+        await engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_campaign_grouping_is_stable_and_fails_closed_on_invalid_scope():
+    """Exercise grouping using test-only synthetic masters in disposable PostgreSQL."""
+    _require_disposable_m20_postgres()
+    await engine.dispose()
+    suffix = _suffix()
+    first_day = date(2026, 11, 1)
+    plan_id = None
+    product_ids: list[uuid.UUID] = []
+    work_center_ids: list[uuid.UUID] = []
+    try:
+        async with AsyncSessionLocal() as db:
+            async with db.begin():
+                products = [
+                    Product(sku=f"M20-CAMP-{letter}-{suffix}", name=f"Synthetic campaign {letter}",
+                            category=category, uom=UnitOfMeasure.KG, is_active=active)
+                    for letter, category, active in (
+                        ("A", ProductCategory.FOOD, True),
+                        ("B", ProductCategory.BEVERAGE, True),
+                        ("C", ProductCategory.HOUSEHOLD, True),
+                        ("D", ProductCategory.FOOD, True),
+                        ("E", ProductCategory.PERSONAL_CARE, True),
+                        ("INACTIVE", ProductCategory.FOOD, False),
+                    )
+                ]
+                db.add_all(products)
+                await db.flush()
+                product_by_letter = dict(zip(("A", "B", "C", "D", "E", "INACTIVE"), products))
+                active_wc = WorkCenter(
+                    work_center_id=f"M20-CAMP-WC-{suffix}", name="Synthetic active campaign center",
+                    type=WorkCenterType.LINE, status=WorkCenterStatus.ACTIVE,
+                )
+                second_active_wc = WorkCenter(
+                    work_center_id=f"M20-CAMP-WC2-{suffix}", name="Synthetic second campaign center",
+                    type=WorkCenterType.LINE, status=WorkCenterStatus.ACTIVE,
+                )
+                unanchored_wc = WorkCenter(
+                    work_center_id=f"M20-CAMP-WC3-{suffix}", name="Synthetic unanchored-lock campaign center",
+                    type=WorkCenterType.LINE, status=WorkCenterStatus.ACTIVE,
+                )
+                ambiguous_wc = WorkCenter(
+                    work_center_id=f"M20-CAMP-WC4-{suffix}", name="Synthetic ambiguous-lock campaign center",
+                    type=WorkCenterType.LINE, status=WorkCenterStatus.ACTIVE,
+                )
+                inactive_wc = WorkCenter(
+                    work_center_id=f"M20-CAMP-WCI-{suffix}", name="Synthetic inactive campaign center",
+                    type=WorkCenterType.LINE, status=WorkCenterStatus.INACTIVE,
+                )
+                db.add_all([active_wc, second_active_wc, unanchored_wc, ambiguous_wc, inactive_wc])
+                await db.flush()
+                plan = MPSPlan(
+                    plan_no=f"M20-OPS-PLAN-CAMP-{suffix}", plan_name="Synthetic campaign grouping plan",
+                    start_date=first_day, end_date=first_day + timedelta(days=20), status=MPSStatus.DRAFT,
+                )
+                db.add(plan)
+                await db.flush()
+                locked_campaign = MPSCampaign(
+                    campaign_code=f"M20-CAMP-LOCK-{suffix}", campaign_name="Synthetic locked campaign",
+                    mps_id=plan.id, work_center_id=active_wc.id, campaign_start=first_day,
+                    campaign_end=first_day, sequence_order=4, sku_count=1,
+                )
+                stale_campaign = MPSCampaign(
+                    campaign_code=f"M20-CAMP-STALE-{suffix}", campaign_name="Synthetic stale campaign",
+                    mps_id=plan.id, work_center_id=active_wc.id, campaign_start=first_day,
+                    campaign_end=first_day, sequence_order=8, sku_count=1,
+                )
+                later_locked_campaign = MPSCampaign(
+                    campaign_code=f"M20-CAMP-LOCK2-{suffix}", campaign_name="Synthetic later locked campaign",
+                    mps_id=plan.id, work_center_id=second_active_wc.id,
+                    campaign_start=first_day + timedelta(days=10), campaign_end=first_day + timedelta(days=10),
+                    sequence_order=5, sku_count=1,
+                )
+                ambiguous_locked_campaign = MPSCampaign(
+                    campaign_code=f"M20-CAMP-LOCK3-{suffix}", campaign_name="Synthetic ambiguous locked campaign",
+                    mps_id=plan.id, work_center_id=ambiguous_wc.id,
+                    campaign_start=first_day + timedelta(days=18), campaign_end=first_day + timedelta(days=18),
+                    sequence_order=6, sku_count=1,
+                )
+                db.add_all([locked_campaign, stale_campaign, later_locked_campaign, ambiguous_locked_campaign])
+                # Synthetic rows prove active transition lookup and date-window gating only.
+                db.add_all([
+                    ChangeoverMatrix(
+                        work_center_id=active_wc.id, from_family="FOOD", to_family="HOUSEHOLD",
+                        changeover_minutes=20, is_active=True,
+                    ),
+                    ChangeoverMatrix(
+                        work_center_id=active_wc.id, from_family="FOOD", to_family="FOOD",
+                        changeover_minutes=15, is_active=True,
+                    ),
+                    ChangeoverMatrix(
+                        work_center_id=active_wc.id, from_family="HOUSEHOLD", to_family="BEVERAGE",
+                        changeover_minutes=30, is_active=True,
+                    ),
+                    ChangeoverMatrix(
+                        work_center_id=active_wc.id, from_family="BEVERAGE", to_family="FOOD",
+                        changeover_minutes=-15, is_active=True,
+                    ),
+                    ChangeoverMatrix(
+                        work_center_id=active_wc.id, from_family="beverage", to_family="food",
+                        changeover_minutes=10, is_active=True,
+                    ),
+                    ChangeoverMatrix(
+                        work_center_id=second_active_wc.id, from_family="PERSONAL_CARE",
+                        to_family="BEVERAGE", changeover_minutes=12, is_active=True,
+                    ),
+                ])
+                await db.flush()
+
+                def make_line(label, product, start, end, **values):
+                    return MPSLine(
+                        line_no=f"M20-CAMP-{label}-{suffix}", mps_id=plan.id, product_id=product.id,
+                        period_start=first_day + timedelta(days=start),
+                        period_end=first_day + timedelta(days=end),
+                        planned_production_qty=values.pop("quantity", Decimal("10")),
+                        required_hours=values.pop("hours", Decimal("1")),
+                        work_center_id=values.pop("work_center_id", active_wc.id),
+                        batch_size_qty=values.pop("batch_size", None),
+                        num_batches=values.pop("num_batches", None),
+                        priority_score=values.pop("priority_score", Decimal("50")), **values,
+                    )
+
+                locked = make_line("LOCKED", product_by_letter["A"], 0, 0,
+                                   campaign_id=locked_campaign.id, is_locked=True,
+                                   feasibility_status=MPSFeasibilityStatus.ON_HOLD)
+                locked2 = make_line("LOCKED2", product_by_letter["B"], 10, 10,
+                                     work_center_id=second_active_wc.id,
+                                     campaign_id=later_locked_campaign.id, is_locked=True,
+                                     feasibility_status=MPSFeasibilityStatus.ON_HOLD)
+                a1 = make_line("A1", product_by_letter["A"], 1, 1, quantity=Decimal("20"),
+                               batch_size=Decimal("10"), num_batches=2)
+                a2 = make_line("A2", product_by_letter["A"], 2, 2, quantity=Decimal("30"),
+                               batch_size=Decimal("10"), num_batches=3)
+                c = make_line("C", product_by_letter["C"], 2, 3, quantity=Decimal("15"),
+                              batch_size=Decimal("10"), num_batches=1)
+                b = make_line("B", product_by_letter["B"], 6, 7)
+                d = make_line("D", product_by_letter["D"], 8, 9)
+                no_wc = make_line("NO-WC", product_by_letter["A"], 8, 8, work_center_id=None)
+                inactive_wc_line = make_line("INACTIVE-WC", product_by_letter["A"], 9, 9,
+                                             work_center_id=inactive_wc.id)
+                inactive_product_line = make_line("INACTIVE-PRODUCT", product_by_letter["INACTIVE"], 10, 10)
+                no_hours = make_line("NO-HOURS", product_by_letter["B"], 11, 11, hours=None)
+                bad_priority = make_line("BAD-PRIORITY", product_by_letter["B"], 12, 12,
+                                         priority_score=Decimal("NaN"))
+                before_locked = make_line("BEFORE-LOCKED", product_by_letter["E"], 5, 6,
+                                          work_center_id=second_active_wc.id)
+                unanchored_locked = make_line(
+                    "UNANCHORED-LOCKED", product_by_letter["A"], 15, 15,
+                    work_center_id=unanchored_wc.id, is_locked=True,
+                    feasibility_status=MPSFeasibilityStatus.ON_HOLD,
+                )
+                unanchored_open = make_line(
+                    "UNANCHORED-OPEN", product_by_letter["A"], 16, 16,
+                    work_center_id=unanchored_wc.id,
+                )
+                ambiguous_locked = make_line(
+                    "AMBIGUOUS-LOCKED", product_by_letter["A"], 18, 18,
+                    work_center_id=inactive_wc.id, campaign_id=ambiguous_locked_campaign.id,
+                    is_locked=True, feasibility_status=MPSFeasibilityStatus.ON_HOLD,
+                )
+                ambiguous_open = make_line(
+                    "AMBIGUOUS-OPEN", product_by_letter["A"], 19, 19,
+                    work_center_id=ambiguous_wc.id,
+                )
+                bad_batch_count = make_line("BAD-BATCH-COUNT", product_by_letter["B"], 13, 13,
+                                            num_batches=0)
+                zero_hours = make_line("ZERO-HOURS", product_by_letter["B"], 14, 14,
+                                       quantity=Decimal("10"), hours=Decimal("0"))
+                db.add_all([
+                    locked, locked2, a1, a2, c, b, d, no_wc, inactive_wc_line,
+                    inactive_product_line, no_hours, bad_priority, before_locked,
+                    unanchored_locked, unanchored_open, ambiguous_locked, ambiguous_open,
+                    bad_batch_count, zero_hours,
+                ])
+                await db.flush()
+                plan_id = plan.id
+                line_ids = {
+                    key: value.id for key, value in {
+                        "locked": locked, "locked2": locked2,
+                        "a1": a1, "a2": a2, "c": c, "b": b, "d": d,
+                        "before_locked": before_locked,
+                        "unanchored_locked": unanchored_locked,
+                        "unanchored_open": unanchored_open,
+                        "ambiguous_locked": ambiguous_locked,
+                        "ambiguous_open": ambiguous_open,
+                        "no_wc": no_wc, "inactive_wc": inactive_wc_line,
+                        "inactive_product": inactive_product_line, "no_hours": no_hours,
+                        "bad_priority": bad_priority, "bad_batch_count": bad_batch_count,
+                        "zero_hours": zero_hours,
+                    }.items()
+                }
+                locked_campaign_id, locked_campaign_2_id = locked_campaign.id, later_locked_campaign.id
+                ambiguous_locked_campaign_id = ambiguous_locked_campaign.id
+                stale_campaign_id = stale_campaign.id
+                product_ids = [product.id for product in products]
+                work_center_ids = [active_wc.id, second_active_wc.id, inactive_wc.id, unanchored_wc.id, ambiguous_wc.id]
+
+            result = await run_campaign_grouping_validated(db, plan_id)
+            assert result["campaigns_created"] == 5
+            assert result["lines_grouped"] == 6
+            assert result["ungrouped_lines"] == 9
+            assert result["locked_lines_preserved"] == 4
+            campaigns = await list_campaigns(db, plan_id)
+            assert len(campaigns) == 8
+            assert any(c.id == locked_campaign_id and c.sequence_order == 4 for c in campaigns)
+            assert any(c.id == locked_campaign_2_id and c.sequence_order == 5 for c in campaigns)
+            assert all(c.id != stale_campaign_id for c in campaigns)
+            locked_ids = {locked_campaign_id, locked_campaign_2_id, ambiguous_locked_campaign_id}
+            unlocked = [c for c in campaigns if c.id not in locked_ids]
+            signature = [
+                (c.work_center_id, c.campaign_code, c.sequence_order, c.campaign_start, c.campaign_end,
+                 c.total_changeover_hrs)
+                for c in unlocked
+            ]
+            by_work_center = {}
+            for campaign in unlocked:
+                by_work_center.setdefault(campaign.work_center_id, []).append(campaign.sequence_order)
+            assert sorted(by_work_center[work_center_ids[0]]) == [5, 6, 7, 8]
+            assert by_work_center[work_center_ids[1]] == [4]
+            assert len({item[1] for item in signature}) == 5
+            lines = (await db.scalars(select(MPSLine).where(MPSLine.id.in_(list(line_ids.values()))))).all()
+            by_id = {line.id: line for line in lines}
+            campaign_by_id = {campaign.id: campaign for campaign in campaigns}
+            assert by_id[line_ids["a1"]].campaign_id == by_id[line_ids["a2"]].campaign_id
+            assert by_id[line_ids["locked"]].campaign_id == locked_campaign_id
+            assert by_id[line_ids["locked2"]].campaign_id == locked_campaign_2_id
+            assert by_id[line_ids["c"]].feasibility_status == MPSFeasibilityStatus.INFEASIBLE
+            assert by_id[line_ids["d"]].feasibility_status == MPSFeasibilityStatus.INFEASIBLE
+            assert by_id[line_ids["before_locked"]].feasibility_status == MPSFeasibilityStatus.PENDING
+            assert campaign_by_id[by_id[line_ids["before_locked"]].campaign_id].sequence_order == 4
+            assert campaign_by_id[by_id[line_ids["before_locked"]].campaign_id].total_changeover_hrs == Decimal("0.200")
+            assert by_id[line_ids["unanchored_locked"]].campaign_id is None
+            assert by_id[line_ids["unanchored_locked"]].feasibility_status == MPSFeasibilityStatus.ON_HOLD
+            assert by_id[line_ids["unanchored_open"]].campaign_id is None
+            assert by_id[line_ids["unanchored_open"]].feasibility_status == MPSFeasibilityStatus.INFEASIBLE
+            assert by_id[line_ids["ambiguous_locked"]].campaign_id == ambiguous_locked_campaign_id
+            assert by_id[line_ids["ambiguous_locked"]].feasibility_status == MPSFeasibilityStatus.ON_HOLD
+            assert by_id[line_ids["ambiguous_open"]].campaign_id is None
+            assert by_id[line_ids["ambiguous_open"]].feasibility_status == MPSFeasibilityStatus.INFEASIBLE
+            assert by_id[line_ids["bad_batch_count"]].feasibility_status == MPSFeasibilityStatus.INFEASIBLE
+            assert by_id[line_ids["zero_hours"]].feasibility_status == MPSFeasibilityStatus.INFEASIBLE
+            assert campaign_by_id[by_id[line_ids["a1"]].campaign_id].total_changeover_hrs == Decimal("0.250")
+            assert campaign_by_id[by_id[line_ids["b"]].campaign_id].total_changeover_hrs == Decimal("0.500")
+            assert campaign_by_id[by_id[line_ids["c"]].campaign_id].total_changeover_hrs == Decimal("0.000")
+            assert campaign_by_id[by_id[line_ids["d"]].campaign_id].total_changeover_hrs == Decimal("0.000")
+            for key in (
+                "no_wc", "inactive_wc", "inactive_product", "no_hours", "bad_priority",
+                "bad_batch_count", "zero_hours",
+            ):
+                assert by_id[line_ids[key]].campaign_id is None
+            assert by_id[line_ids["no_hours"]].feasibility_status == MPSFeasibilityStatus.PENDING
+            assert by_id[line_ids["bad_priority"]].feasibility_status == MPSFeasibilityStatus.INFEASIBLE
+
+            diagnostics = await list_plan_diagnostics(db, plan_id)
+            by_line = {uuid.UUID(row["line_id"]): row["diagnostics"] for row in diagnostics}
+            for key, reason in (
+                ("c", "CAMPAIGN_WINDOWS_OVERLAP"), ("c", "BATCH_SIZE_NOT_ALIGNED"),
+                ("d", "CHANGEOVER_CONFIGURATION_INVALID"),
+                ("before_locked", "CHANGEOVER_TO_LOCKED_CAMPAIGN_CONFIGURED"),
+                ("unanchored_open", "LOCKED_CAMPAIGN_SEQUENCE_INVALID"),
+                ("unanchored_locked", "LOCKED_CAMPAIGN_SEQUENCE_NOT_CONFIGURED"),
+                ("ambiguous_open", "LOCKED_CAMPAIGN_SEQUENCE_INVALID"),
+                ("ambiguous_locked", "LOCKED_CAMPAIGN_WORK_CENTER_AMBIGUOUS"),
+                ("no_wc", "WORK_CENTER_MISSING"), ("inactive_wc", "WORK_CENTER_INACTIVE"),
+                ("inactive_product", "PRODUCT_MASTER_INACTIVE"),
+                ("no_hours", "PRODUCTION_HOURS_NOT_CONFIGURED"),
+                ("bad_priority", "CAMPAIGN_PRIORITY_INVALID"),
+                ("bad_batch_count", "BATCH_COUNT_INVALID"),
+                ("zero_hours", "PRODUCTION_HOURS_INVALID"),
+            ):
+                assert reason in by_line[line_ids[key]]["reason_codes"]
+            assert "CHANGEOVER_NOT_CONFIGURED" not in by_line[line_ids["a1"]]["reason_codes"]
+            for key in ("a1", "a2", "b", "c", "d", "before_locked"):
+                assert "CIP_NOT_CONFIGURED" in by_line[line_ids[key]]["reason_codes"]
+                assert "MINIMUM_RUN_NOT_CONFIGURED" in by_line[line_ids[key]]["reason_codes"]
+
+            rerun = await run_campaign_grouping_validated(db, plan_id)
+            assert rerun["campaigns_created"] == 5
+            rerun_campaigns = [
+                c for c in await list_campaigns(db, plan_id) if c.id not in locked_ids
+            ]
+            assert [(c.work_center_id, c.campaign_code, c.sequence_order, c.campaign_start, c.campaign_end,
+                     c.total_changeover_hrs)
+                    for c in rerun_campaigns] == signature
+
+            for line in lines:
+                line.is_locked = True
+            await db.flush()
+            all_locked_result = await run_campaign_grouping_validated(db, plan_id)
+            assert all_locked_result["campaigns_created"] == 0
+            assert all_locked_result["lines_grouped"] == 0
+            assert all_locked_result["ungrouped_lines"] == 0
+            assert all_locked_result["locked_lines_preserved"] == len(lines)
+            all_locked_diagnostics = await list_plan_diagnostics(db, plan_id)
+            all_locked_by_line = {
+                uuid.UUID(row["line_id"]): row["diagnostics"] for row in all_locked_diagnostics
+                if row["run_id"] == all_locked_result["diagnostic_run_id"]
+            }
+            assert len(all_locked_by_line) == len(lines)
+            assert "LOCKED_CAMPAIGN_SEQUENCE_NOT_CONFIGURED" in all_locked_by_line[
+                line_ids["unanchored_locked"]
+            ]["reason_codes"]
+            assert "LOCKED_CAMPAIGN_WORK_CENTER_AMBIGUOUS" in all_locked_by_line[
+                line_ids["ambiguous_locked"]
+            ]["reason_codes"]
+    finally:
+        async with AsyncSessionLocal() as cleanup:
+            async with cleanup.begin():
+                if plan_id is not None:
+                    await cleanup.execute(delete(MPSPlan).where(MPSPlan.id == plan_id))
+                if work_center_ids:
+                    await cleanup.execute(delete(ChangeoverMatrix).where(
+                        ChangeoverMatrix.work_center_id.in_(work_center_ids),
+                    ))
+                    await cleanup.execute(delete(WorkCenter).where(WorkCenter.id.in_(work_center_ids)))
+                if product_ids:
+                    await cleanup.execute(delete(Product).where(Product.id.in_(product_ids)))
         await engine.dispose()
