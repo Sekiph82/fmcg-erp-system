@@ -92,18 +92,36 @@ async def project_demand_and_supply(
         .order_by(SalesOrder.requested_delivery_date, SalesOrder.order_no, SOLine.line_no)
     )).all()
 
-    forecast_rows = (await db.execute(
-        select(DemandForecast, DemandForecastLine)
-        .join(DemandForecastLine, DemandForecastLine.forecast_id == DemandForecast.id)
-        .where(
-            DemandForecast.status == "APPROVED",
-            DemandForecast.is_approved.is_(True),
-            DemandForecast.warehouse_id == warehouse.id,
-            DemandForecast.start_date <= plan.end_date,
-            DemandForecast.end_date >= plan.start_date,
-        )
-        .order_by(DemandForecastLine.period_date, DemandForecast.id)
-    )).all()
+    forecast_rows = []
+    if run.include_forecast:
+        forecast_rows = (await db.execute(
+            select(DemandForecast, DemandForecastLine)
+            .join(DemandForecastLine, DemandForecastLine.forecast_id == DemandForecast.id)
+            .where(
+                DemandForecast.status == "APPROVED",
+                DemandForecast.is_approved.is_(True),
+                DemandForecast.warehouse_id == warehouse.id,
+                DemandForecast.start_date <= plan.end_date,
+                DemandForecast.end_date >= plan.start_date,
+            )
+            .order_by(DemandForecastLine.period_date, DemandForecast.id)
+        )).all()
+
+    # A product can have multiple approved forecast runs (the model/start key
+    # permits it). Without a selected-model policy, summing overlapping runs
+    # double counts demand, so reject that ambiguous input rather than choose.
+    forecast_headers: dict[uuid.UUID, dict[uuid.UUID, DemandForecast]] = defaultdict(dict)
+    for header, _line in forecast_rows:
+        forecast_headers[header.product_id][header.id] = header
+    for product_id, headers_by_id in forecast_headers.items():
+        headers = sorted(headers_by_id.values(), key=lambda header: (header.start_date, header.end_date, str(header.id)))
+        for index, header in enumerate(headers):
+            for earlier in headers[:index]:
+                if header.start_date <= earlier.end_date and earlier.start_date <= header.end_date:
+                    raise ValueError(
+                        f"Overlapping approved forecasts for product {product_id} in warehouse {warehouse.id}; "
+                        "select one forecast run before MPS projection"
+                    )
 
     confirmed: dict[tuple[uuid.UUID, int], Decimal] = defaultdict(Decimal)
     forecast: dict[tuple[uuid.UUID, int], Decimal] = defaultdict(Decimal)
@@ -138,6 +156,25 @@ async def project_demand_and_supply(
                 forecast[(header.product_id, index)] += value
                 product_ids.add(header.product_id)
 
+    # Use the completed MRP run's demand/safety-stock snapshot so products
+    # below their configured safety target are planned even without an order
+    # or forecast, and policy toggles remain consistent with that source run.
+    mrp_results = (await db.execute(
+        select(MRPResult).where(MRPResult.run_id == run.id)
+    )).scalars().all()
+    mrp_by_product = {row.product_id: row for row in mrp_results}
+    if run.include_safety_stock:
+        active_safety_products = (await db.execute(
+            select(MRPResult.product_id)
+            .join(Product, Product.id == MRPResult.product_id)
+            .where(
+                MRPResult.run_id == run.id,
+                MRPResult.safety_stock_qty > 0,
+                Product.is_active.is_(True),
+            )
+        )).scalars().all()
+        product_ids.update(active_safety_products)
+
     if not product_ids:
         old_lines = (await db.execute(select(MPSLine).where(MPSLine.mps_id == mps_id, MPSLine.is_locked.is_(False)))).scalars().all()
         for old in old_lines:
@@ -148,11 +185,6 @@ async def project_demand_and_supply(
         return {"lines_created": 0, "demand_products": 0, "periods": len(buckets), "warehouse_id": str(warehouse.id)}
 
     products = {p.id: p for p in (await db.execute(select(Product).where(Product.id.in_(product_ids)))).scalars().all()}
-    mps_results = (await db.execute(
-        select(MRPResult).where(MRPResult.run_id == run.id, MRPResult.product_id.in_(product_ids))
-    )).scalars().all()
-    mrp_by_product = {row.product_id: row for row in mps_results}
-
     stock_rows = (await db.execute(
         select(Stock.product_id, func.sum(Stock.quantity_on_hand), func.sum(Stock.quantity_reserved), func.sum(Stock.quantity_available))
         .where(Stock.warehouse_id == warehouse.id, Stock.stock_type == StockType.PRODUCT,
@@ -221,7 +253,12 @@ async def project_demand_and_supply(
         for index, (bucket_start, bucket_end) in enumerate(buckets):
             confirmed_qty = confirmed[(product_id, index)]
             forecast_qty = forecast[(product_id, index)]
-            if confirmed_qty == 0 and forecast_qty == 0:
+            mrp_result = mrp_by_product.get(product_id)
+            safety_target = (
+                decimal(mrp_result.safety_stock_qty)
+                if run.include_safety_stock and mrp_result is not None else Decimal(0)
+            )
+            if confirmed_qty == 0 and forecast_qty == 0 and safety_target == 0:
                 continue
             incoming = sum((qty for due, qty in po_supply[product_id] if bucket_start <= due <= bucket_end), Decimal(0))
             wip = sum((qty for due, qty in wip_supply[product_id] if bucket_start <= due <= bucket_end), Decimal(0))
@@ -229,23 +266,27 @@ async def project_demand_and_supply(
             locked = locked_supply[(product_id, index)]
             totals = net_finished_goods_requirement(
                 confirmed=confirmed_qty, forecast=forecast_qty,
-                safety_stock=product.reorder_point, on_hand=available,
+                safety_stock=safety_target, on_hand=available,
                 reserved=0, incoming=incoming + wip + planned + locked,
             )
-            # Carry projected ending stock to the next period; dated supply is cumulative.
-            gross = totals["confirmed"] + totals["net_forecast"]
-            available = max(Decimal(0), available + incoming + wip + planned + locked + totals["net_requirement"] - gross)
+            # Safety stock is a period-end target, not consumed demand. Carry
+            # it forward by subtracting only confirmed plus non-overlapping
+            # forecast consumption from the projected ending inventory.
+            consumption = totals["confirmed"] + totals["net_forecast"]
+            available = max(
+                Decimal(0),
+                available + incoming + wip + planned + locked + totals["net_requirement"] - consumption,
+            )
             net_qty = totals["net_requirement"]
             if net_qty <= 0:
                 continue
-            run_result = mrp_by_product.get(product_id)
             label = f"{bucket_start.year}-W{bucket_start.isocalendar()[1]:02d}" if period_type.upper() == "WEEKLY" else (f"{bucket_start:%Y-%m}" if period_type.upper() == "MONTHLY" else bucket_start.isoformat())
             line = MPSLine(
                 line_no=f"MPS-{plan.id.hex[:8]}-{created + 1:06d}",
                 mps_id=mps_id, product_id=product_id,
-                mrp_result_id=run_result.id if run_result else None,
+                mrp_result_id=mrp_result.id if mrp_result else None,
                 period_label=label, period_start=bucket_start, period_end=bucket_end,
-                confirmed_demand_qty=totals["confirmed"], forecast_qty=totals["forecast"],
+                confirmed_demand_qty=totals["confirmed"], forecast_qty=totals["net_forecast"],
                 safety_stock_qty=totals["safety_stock"], net_requirement_qty=net_qty,
                 planned_production_qty=net_qty, planned_start_date=bucket_start,
                 planned_end_date=bucket_end, feasibility_status=MPSFeasibilityStatus.PENDING,

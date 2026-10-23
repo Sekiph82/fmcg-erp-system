@@ -29,15 +29,21 @@ from app.models.mps import (
     MPSCapacityMode, MPSChangeType, MPSFeasibilityStatus, MPSLine, MPSPlan, MPSScenarioSnapshot,
     MPSStatus, MPSWhatIfScenario,
 )
-from app.models.mrp import MRPResult, MRPRun, MRPRunStatus
+from app.models.mrp import (
+    DemandForecast, DemandForecastLine, ForecastModelType, ForecastStatus,
+    MRPResult, MRPRun, MRPRunStatus, PeriodType,
+)
 from app.models.production import ProductionOrder
 from app.models.recipe import Recipe, RecipeStatus
 from app.models.planning import ResourceCalendar
 from app.models.production_advanced import WorkCenter, WorkCenterType
 from app.models.role import AccessScope, Permission, Role
 from app.models.user import User, user_role
+from app.models.sales import Customer, SalesOrder, SOStatus, SOLine
 from app.schemas.mps import GenerateFromMRPRequest, MPSWhatIfCreate, WhatIfChange
-from app.services.mps_advanced_service import evaluate_material_feasibility, list_plan_diagnostics
+from app.services.mps_advanced_service import (
+    evaluate_material_feasibility, list_plan_diagnostics, project_demand_and_supply,
+)
 from app.services.mps_service import _next_seq, approve_mps_plan, generate_mps_from_mrp, release_mps_plan
 from app.services.mps_whatif_service import (
     _next_scenario_no,
@@ -521,6 +527,214 @@ async def test_postgres_kenya_fixture_drives_real_mps_material_feasibility_servi
                     await cleanup.execute(delete(Product).where(Product.id == product_id))
                 if warehouse_id is not None:
                     await cleanup.execute(delete(Warehouse).where(Warehouse.id == warehouse_id))
+                if company_id is not None:
+                    await cleanup.execute(delete(Company).where(Company.id == company_id))
+
+
+@pytest.mark.asyncio
+async def test_postgres_mps_demand_projection_nets_forecast_and_carries_mrp_safety_target():
+    """Dated orders, approved forecast and the source-run safety policy net once by bucket."""
+    _require_disposable_m20_postgres()
+    await engine.dispose()
+    suffix = _suffix()
+    company_id = warehouse_id = customer_id = run_id = None
+    product_ids: list = []
+    plan_ids: list = []
+    order_ids: list = []
+    forecast_ids: list = []
+    start = date(2026, 1, 1)
+    end = date(2026, 1, 14)
+    try:
+        async with AsyncSessionLocal() as db:
+            async with db.begin():
+                company = Company(name=f"M20 demand {suffix}", short_code=f"D{suffix}")
+                db.add(company)
+                await db.flush()
+                warehouse = Warehouse(
+                    code=f"M20-D-{suffix}", name="M20 synthetic demand warehouse",
+                    warehouse_type=WarehouseType.FINISHED_GOODS, company_id=company.id,
+                )
+                customer = Customer(code=f"M20-D-{suffix}", name="Synthetic demand customer")
+                confirmed_product = Product(
+                    sku=f"M20-D-SO-{suffix}", name="Demand with order and forecast",
+                    category=ProductCategory.FOOD, uom=UnitOfMeasure.KG, reorder_point=Decimal("999"),
+                )
+                safety_only_product = Product(
+                    sku=f"M20-D-SS-{suffix}", name="Safety target only",
+                    category=ProductCategory.FOOD, uom=UnitOfMeasure.KG, reorder_point=Decimal("0"),
+                )
+                inactive_safety_product = Product(
+                    sku=f"M20-D-INACTIVE-{suffix}", name="Inactive safety target",
+                    category=ProductCategory.FOOD, uom=UnitOfMeasure.KG, reorder_point=Decimal("0"),
+                    is_active=False,
+                )
+                db.add_all([warehouse, customer, confirmed_product, safety_only_product, inactive_safety_product])
+                await db.flush()
+                run = MRPRun(
+                    run_no=f"M20-D-RUN-{suffix}", run_date=start,
+                    planning_horizon_days=30, status=MRPRunStatus.COMPLETED,
+                    include_forecast=True, include_safety_stock=True, warehouse_id=warehouse.id,
+                )
+                db.add(run)
+                await db.flush()
+                db.add_all([
+                    MRPResult(
+                        run_id=run.id, product_id=confirmed_product.id,
+                        safety_stock_qty=Decimal("20"),
+                    ),
+                    MRPResult(
+                        run_id=run.id, product_id=safety_only_product.id,
+                        safety_stock_qty=Decimal("10"),
+                    ),
+                    MRPResult(
+                        run_id=run.id, product_id=inactive_safety_product.id,
+                        safety_stock_qty=Decimal("25"),
+                    ),
+                ])
+                confirmed_order = SalesOrder(
+                    order_no=f"M20-D-SO-{suffix}", customer_id=customer.id,
+                    order_date=start, requested_delivery_date=date(2026, 1, 2),
+                    status=SOStatus.CONFIRMED, warehouse_id=warehouse.id, company_id=company.id,
+                )
+                cancelled_order = SalesOrder(
+                    order_no=f"M20-D-CANCEL-{suffix}", customer_id=customer.id,
+                    order_date=start, requested_delivery_date=date(2026, 1, 2),
+                    status=SOStatus.CANCELLED, warehouse_id=warehouse.id, company_id=company.id,
+                )
+                db.add_all([confirmed_order, cancelled_order])
+                await db.flush()
+                db.add_all([
+                    SOLine(
+                        so_id=confirmed_order.id, line_no=1, product_id=confirmed_product.id,
+                        ordered_quantity=Decimal("80"), shipped_quantity=Decimal("20"), unit="KG",
+                    ),
+                    SOLine(
+                        so_id=cancelled_order.id, line_no=1, product_id=confirmed_product.id,
+                        ordered_quantity=Decimal("500"), shipped_quantity=Decimal("0"), unit="KG",
+                    ),
+                ])
+                approved_forecast = DemandForecast(
+                    product_id=confirmed_product.id, warehouse_id=warehouse.id,
+                    forecast_model=ForecastModelType.MOVING_AVG, period_type=PeriodType.WEEKLY,
+                    start_date=start, end_date=date(2026, 1, 7), status=ForecastStatus.APPROVED,
+                    is_approved=True,
+                )
+                draft_forecast = DemandForecast(
+                    product_id=confirmed_product.id, warehouse_id=warehouse.id,
+                    forecast_model=ForecastModelType.SEASONAL, period_type=PeriodType.WEEKLY,
+                    start_date=start, end_date=date(2026, 1, 7), status=ForecastStatus.DRAFT,
+                    is_approved=False,
+                )
+                db.add_all([approved_forecast, draft_forecast])
+                await db.flush()
+                db.add_all([
+                    DemandForecastLine(forecast_id=approved_forecast.id, period_date=start, forecast_qty=Decimal("100")),
+                    DemandForecastLine(forecast_id=draft_forecast.id, period_date=start, forecast_qty=Decimal("900")),
+                ])
+
+                def plan_for(plan_no: str) -> MPSPlan:
+                    return MPSPlan(
+                        plan_no=plan_no, plan_name="Synthetic demand projection",
+                        start_date=start, end_date=end, mrp_run_id=run.id,
+                    )
+
+                plan = plan_for(f"M20-D-PLAN-{suffix}")
+                no_forecast_plan = plan_for(f"M20-D-NOFC-{suffix}")
+                no_safety_plan = plan_for(f"M20-D-NOSS-{suffix}")
+                overlapping_plan = plan_for(f"M20-D-OVERLAP-{suffix}")
+                db.add_all([plan, no_forecast_plan, no_safety_plan, overlapping_plan])
+                await db.flush()
+                company_id, warehouse_id, customer_id = company.id, warehouse.id, customer.id
+                run_id = run.id
+                product_ids = [confirmed_product.id, safety_only_product.id, inactive_safety_product.id]
+                plan_ids = [plan.id, no_forecast_plan.id, no_safety_plan.id, overlapping_plan.id]
+                order_ids = [confirmed_order.id, cancelled_order.id]
+                forecast_ids = [approved_forecast.id, draft_forecast.id]
+
+            async with db.begin():
+                result = await project_demand_and_supply(db, plan.id, "WEEKLY")
+                assert result["lines_created"] == 3
+                projected = (await db.execute(
+                    select(MPSLine).where(MPSLine.mps_id == plan.id).order_by(MPSLine.period_start, MPSLine.product_id)
+                )).scalars().all()
+                by_product_period = {(line.product_id, line.period_start): line for line in projected}
+                first_a = by_product_period[(confirmed_product.id, date(2026, 1, 1))]
+                second_a = by_product_period[(confirmed_product.id, date(2026, 1, 5))]
+                first_b = by_product_period[(safety_only_product.id, date(2026, 1, 1))]
+                assert first_a.confirmed_demand_qty == Decimal("60.000")
+                assert first_a.forecast_qty == Decimal("0.000")
+                assert first_a.safety_stock_qty == Decimal("20.000")
+                assert first_a.net_requirement_qty == Decimal("80.000")
+                assert second_a.confirmed_demand_qty == Decimal("0.000")
+                assert second_a.forecast_qty == Decimal("42.857")
+                assert second_a.safety_stock_qty == Decimal("20.000")
+                assert second_a.net_requirement_qty == Decimal("42.857")
+                assert first_b.confirmed_demand_qty == Decimal("0.000")
+                assert first_b.forecast_qty == Decimal("0.000")
+                assert first_b.safety_stock_qty == Decimal("10.000")
+                assert first_b.net_requirement_qty == Decimal("10.000")
+                assert inactive_safety_product.id not in by_product_period
+
+                run.include_forecast = False
+                await db.flush()
+                no_forecast = await project_demand_and_supply(db, no_forecast_plan.id, "WEEKLY")
+                assert no_forecast["lines_created"] == 2
+                no_forecast_lines = (await db.execute(
+                    select(MPSLine).where(MPSLine.mps_id == no_forecast_plan.id)
+                )).scalars().all()
+                assert all(line.forecast_qty == Decimal("0.000") for line in no_forecast_lines)
+
+                run.include_safety_stock = False
+                await db.flush()
+                no_safety = await project_demand_and_supply(db, no_safety_plan.id, "WEEKLY")
+                assert no_safety["lines_created"] == 1
+                no_safety_lines = (await db.execute(
+                    select(MPSLine).where(MPSLine.mps_id == no_safety_plan.id)
+                )).scalars().all()
+                assert len(no_safety_lines) == 1
+                assert no_safety_lines[0].product_id == confirmed_product.id
+                assert no_safety_lines[0].safety_stock_qty == Decimal("0.000")
+
+                run.include_forecast = True
+                run.include_safety_stock = True
+                await db.flush()
+                ambiguous_forecast = DemandForecast(
+                    product_id=confirmed_product.id, warehouse_id=warehouse.id,
+                    forecast_model=ForecastModelType.SEASONAL, period_type=PeriodType.WEEKLY,
+                    start_date=date(2026, 1, 4), end_date=date(2026, 1, 10),
+                    status=ForecastStatus.APPROVED, is_approved=True,
+                )
+                db.add(ambiguous_forecast)
+                await db.flush()
+                db.add(DemandForecastLine(
+                    forecast_id=ambiguous_forecast.id, period_date=date(2026, 1, 4), forecast_qty=Decimal("50"),
+                ))
+                await db.flush()
+                with pytest.raises(ValueError, match="Overlapping approved forecasts"):
+                    await project_demand_and_supply(db, overlapping_plan.id, "WEEKLY")
+                assert (await db.scalar(select(func.count()).select_from(MPSLine).where(
+                    MPSLine.mps_id == overlapping_plan.id,
+                ))) == 0
+        forecast_ids.append(ambiguous_forecast.id)
+    finally:
+        await engine.dispose()
+        async with AsyncSessionLocal() as cleanup:
+            async with cleanup.begin():
+                if plan_ids:
+                    await cleanup.execute(delete(MPSPlan).where(MPSPlan.id.in_(plan_ids)))
+                if order_ids:
+                    await cleanup.execute(delete(SalesOrder).where(SalesOrder.id.in_(order_ids)))
+                if forecast_ids:
+                    await cleanup.execute(delete(DemandForecast).where(DemandForecast.id.in_(forecast_ids)))
+                if run_id is not None:
+                    await cleanup.execute(delete(MRPRun).where(MRPRun.id == run_id))
+                if product_ids:
+                    await cleanup.execute(delete(Stock).where(Stock.product_id.in_(product_ids)))
+                    await cleanup.execute(delete(Product).where(Product.id.in_(product_ids)))
+                if warehouse_id is not None:
+                    await cleanup.execute(delete(Warehouse).where(Warehouse.id == warehouse_id))
+                if customer_id is not None:
+                    await cleanup.execute(delete(Customer).where(Customer.id == customer_id))
                 if company_id is not None:
                     await cleanup.execute(delete(Company).where(Company.id == company_id))
 

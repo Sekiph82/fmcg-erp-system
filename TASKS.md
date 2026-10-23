@@ -9,10 +9,10 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 ## Project Status
 
 - Current Milestone: M20 — Master Production Scheduling
-- Current Sprint: M20.S01 — MPS Domain Reconciliation
-- Current Task: M20.S01.T004 — Define MPS acceptance dataset and regression suite
+- Current Sprint: M20.S02 — Demand & Supply Coupling
+- Current Task: M20.S02.T001 — Consolidate demand inputs: sales orders/forecast/safety stock
 - Current Task Status: COMPLETE
-- Next Task/Action: M20.S02.T001 — Consolidate demand inputs: sales orders/forecast/safety stock
+- Next Task/Action: M20.S02.T002 — Couple MPS demand to available/on-order inventory
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -549,7 +549,7 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 - [x] M20.S01.T004 — Define MPS acceptance dataset and regression suite
 
 ## M20.S02 — Demand & Supply Coupling
-- [ ] M20.S02.T001 — Consolidate demand inputs: sales orders/forecast/safety stock
+- [x] M20.S02.T001 — Consolidate demand inputs: sales orders/forecast/safety stock
 - [ ] M20.S02.T002 — Couple MPS demand to available/on-order inventory
 - [ ] M20.S02.T003 — Couple MPS to BOM/material feasibility
 - [ ] M20.S02.T004 — Expose shortage/constraint reasons per planned line
