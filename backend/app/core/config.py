@@ -291,6 +291,13 @@ class Settings(BaseSettings):
             raise ValueError("REFRESH_TOKEN_EXPIRE_DAYS must be at least 1")
         return value
 
+    @field_validator("SESSION_INACTIVITY_TIMEOUT_MINUTES")
+    @classmethod
+    def validate_session_inactivity_timeout(cls, value: int) -> int:
+        if value < 1:
+            raise ValueError("SESSION_INACTIVITY_TIMEOUT_MINUTES must be at least 1")
+        return value
+
     @field_validator("BACKEND_CORS_ORIGINS", mode="before")
     @classmethod
     def parse_cors(cls, v):

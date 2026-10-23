@@ -23,6 +23,7 @@ class AuthRefreshToken(Base):
     expires_at = Column(DateTime(timezone=True), nullable=False)
     consumed_at = Column(DateTime(timezone=True), nullable=True)
     revoked_at = Column(DateTime(timezone=True), nullable=True)
+    last_activity_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
     replaced_by_id = Column(
         UUID(as_uuid=True),
         ForeignKey("auth_refresh_tokens.id", ondelete="SET NULL"),

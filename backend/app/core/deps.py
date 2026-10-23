@@ -36,19 +36,13 @@ async def get_current_user(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
     session_id = payload.get("sid") if payload else None
     if session_id is not None:
-        from app.models.auth_refresh_token import AuthRefreshToken
-        from datetime import datetime, timezone
         try:
             family_id = uuid.UUID(str(session_id))
         except (ValueError, TypeError, AttributeError):
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid session")
-        active_family = await db.scalar(select(AuthRefreshToken.id).where(
-            AuthRefreshToken.family_id == family_id,
-            AuthRefreshToken.revoked_at.is_(None),
-            AuthRefreshToken.expires_at > datetime.now(timezone.utc),
-        ).limit(1))
-        if active_family is None:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Session has been revoked or expired")
+        from app.services.auth_refresh_tokens import touch_refresh_family_activity
+        if not await touch_refresh_family_activity(db, family_id):
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Session has been revoked, inactive, or expired")
     try:
         result = await db.execute(
             select(User)

@@ -4,14 +4,14 @@ from __future__ import annotations
 import asyncio
 import os
 import re
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
 import pytest
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, HTTPException
 from httpx import ASGITransport, AsyncClient
 import pyotp
-from sqlalchemy import delete, select
+from sqlalchemy import delete, select, update
 from sqlalchemy.engine import URL
 
 from app.api.v1.endpoints.auth import router as auth_router
@@ -23,7 +23,7 @@ from app.models.audit_log import AuditLog, AuditEvent
 from app.models.auth_refresh_token import AuthRefreshToken
 from app.models.user import User
 from app.models.two_factor import TwoFAMethod, User2FASettings
-from app.services.auth_refresh_tokens import issue_auth_token_pair
+from app.services.auth_refresh_tokens import issue_auth_token_pair, touch_refresh_family_activity
 from app.api.v1.endpoints.two_factor import router as two_factor_router
 
 
@@ -32,7 +32,7 @@ def _is_task_owned_disposable_m02_database(url, expected_name: str | None) -> bo
         url.drivername in {"postgresql", "postgresql+asyncpg"}
         and url.host in {"127.0.0.1", "localhost", "::1"}
         and isinstance(expected_name, str)
-        and re.fullmatch(r"fmcg_m02_t001_[a-f0-9]{20,32}", expected_name) is not None
+        and re.fullmatch(r"fmcg_m02_t00[12]_[a-f0-9]{20,32}", expected_name) is not None
         and url.database == expected_name
     )
 
@@ -44,7 +44,7 @@ def _require_task_owned_disposable_postgres() -> None:
     if not _is_task_owned_disposable_m02_database(engine.url, expected_name):
         pytest.fail(
             "Refusing M02 integration writes: DATABASE_URL must target the exact loopback PostgreSQL database "
-            "named by M02_DISPOSABLE_TEST_DATABASE_NAME (fmcg_m02_t001_<20-32 hex chars>)."
+            "named by M02_DISPOSABLE_TEST_DATABASE_NAME (fmcg_m02_t001_ or fmcg_m02_t002_ followed by 20-32 hex chars)."
         )
 
 
@@ -67,16 +67,37 @@ async def _override_db():
         yield session
 
 
+async def _override_auth_db():
+    async with AsyncSessionLocal() as session:
+        yield session
+
+
 def _app() -> FastAPI:
     app = FastAPI()
     app.include_router(auth_router, prefix="/api/v1/auth")
     app.include_router(two_factor_router, prefix="/api/v1/auth/2fa")
     app.dependency_overrides[get_db] = _override_db
-    app.dependency_overrides[get_auth_db] = _override_db
+    app.dependency_overrides[get_auth_db] = _override_auth_db
 
     @app.get("/protected")
     async def protected(current_user=Depends(get_current_user)):
         return {"user_id": str(current_user.id)}
+
+    @app.get("/protected-staged-write")
+    async def protected_staged_write(
+        db=Depends(get_db),
+        current_user=Depends(get_current_user),
+    ):
+        staged_email = f"m02-staged-{uuid4().hex}@example.invalid"
+        db.add(User(
+            email=staged_email,
+            username=f"m02-staged-{uuid4().hex}",
+            full_name="Must remain uncommitted",
+            hashed_password="test-only",
+            is_active=True,
+        ))
+        await db.flush()
+        raise HTTPException(status_code=409, detail=staged_email)
 
     return app
 
@@ -101,6 +122,16 @@ async def _create_user() -> User:
 async def _delete_user(user_id) -> None:
     async with AsyncSessionLocal() as db:
         await db.execute(delete(User).where(User.id == user_id))
+        await db.commit()
+
+
+async def _set_family_activity(family_id, timestamp: datetime) -> None:
+    async with AsyncSessionLocal() as db:
+        await db.execute(
+            update(AuthRefreshToken)
+            .where(AuthRefreshToken.family_id == family_id)
+            .values(last_activity_at=timestamp)
+        )
         await db.commit()
 
 
@@ -305,6 +336,247 @@ async def test_concurrent_refresh_replay_revokes_the_winning_successor():
             ))).all()
             assert len(family_rows) == 2
             assert all(row.revoked_at is not None for row in family_rows)
+    finally:
+        client_app.dependency_overrides.clear()
+        await _delete_user(user.id)
+        await engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_replayed_predecessor_serializes_with_successor_rotation():
+    _require_task_owned_disposable_postgres()
+    await engine.dispose()
+    user = await _create_user()
+    async with AsyncSessionLocal() as db:
+        pair = await issue_auth_token_pair(db, user.id)
+        await db.commit()
+
+    client_app = _app()
+    try:
+        async with AsyncClient(
+            transport=ASGITransport(app=client_app),
+            base_url="http://m02-auth.test",
+            cookies={settings.REFRESH_TOKEN_COOKIE_NAME: pair.refresh_token},
+        ) as initial_client:
+            first_rotation = await initial_client.post("/api/v1/auth/refresh")
+        assert first_rotation.status_code == 200, first_rotation.text
+        successor = first_rotation.cookies.get(settings.REFRESH_TOKEN_COOKIE_NAME)
+        assert successor
+
+        async def refresh_with(token: str):
+            async with AsyncClient(
+                transport=ASGITransport(app=client_app),
+                base_url="http://m02-auth.test",
+                cookies={settings.REFRESH_TOKEN_COOKIE_NAME: token},
+            ) as client:
+                return await client.post("/api/v1/auth/refresh")
+
+        replay_response, successor_response = await asyncio.gather(
+            refresh_with(pair.refresh_token),
+            refresh_with(successor),
+        )
+        assert replay_response.status_code == 401, replay_response.text
+        assert successor_response.status_code in {200, 401}, successor_response.text
+
+        async with AsyncSessionLocal() as db:
+            family_rows = (await db.scalars(select(AuthRefreshToken).where(
+                AuthRefreshToken.family_id == pair.family_id,
+            ))).all()
+            assert len(family_rows) in {2, 3}
+            assert all(row.revoked_at is not None for row in family_rows)
+            replay_event = await db.scalar(select(AuditLog.id).where(
+                AuditLog.event_type == AuditEvent.REFRESH_TOKEN_REUSE_DETECTED,
+                AuditLog.target_id == str(pair.family_id),
+            ))
+            assert replay_event is not None
+    finally:
+        client_app.dependency_overrides.clear()
+        await _delete_user(user.id)
+        await engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_authenticated_request_refreshes_session_activity():
+    _require_task_owned_disposable_postgres()
+    await engine.dispose()
+    user = await _create_user()
+    async with AsyncSessionLocal() as db:
+        pair = await issue_auth_token_pair(db, user.id)
+        await db.commit()
+
+    previous_activity = datetime.now(timezone.utc) - timedelta(minutes=60)
+    await _set_family_activity(pair.family_id, previous_activity)
+    client_app = _app()
+    try:
+        async with AsyncClient(
+            transport=ASGITransport(app=client_app),
+            base_url="http://m02-auth.test",
+            cookies={settings.AUTH_COOKIE_NAME: pair.access_token},
+        ) as client:
+            response = await client.get("/protected")
+            assert response.status_code == 200, response.text
+
+        async with AsyncSessionLocal() as db:
+            rows = (await db.scalars(select(AuthRefreshToken).where(
+                AuthRefreshToken.family_id == pair.family_id,
+            ))).all()
+            assert rows
+            assert all(row.last_activity_at > previous_activity for row in rows)
+    finally:
+        client_app.dependency_overrides.clear()
+        await _delete_user(user.id)
+        await engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_activity_touch_waiting_on_newer_commit_never_moves_activity_backward():
+    _require_task_owned_disposable_postgres()
+    await engine.dispose()
+    user = await _create_user()
+    async with AsyncSessionLocal() as db:
+        pair = await issue_auth_token_pair(db, user.id)
+        await db.commit()
+
+    newer_activity = datetime.now(timezone.utc) + timedelta(minutes=2)
+    try:
+        async with AsyncSessionLocal() as lock_db:
+            locked_row = await lock_db.scalar(
+                select(AuthRefreshToken)
+                .where(AuthRefreshToken.family_id == pair.family_id)
+                .with_for_update()
+            )
+            assert locked_row is not None
+            touch_started = asyncio.Event()
+
+            async def delayed_touch() -> bool:
+                async with AsyncSessionLocal() as activity_db:
+                    touch_started.set()
+                    return await touch_refresh_family_activity(activity_db, pair.family_id)
+
+            touch_task = asyncio.create_task(delayed_touch())
+            await touch_started.wait()
+            await asyncio.sleep(0.05)
+            assert not touch_task.done(), "activity update should wait behind the locked family row"
+            locked_row.last_activity_at = newer_activity
+            await lock_db.commit()
+
+        assert await asyncio.wait_for(touch_task, timeout=5)
+
+        async with AsyncSessionLocal() as db:
+            rows = (await db.scalars(select(AuthRefreshToken).where(
+                AuthRefreshToken.family_id == pair.family_id,
+            ))).all()
+            assert rows
+            assert all(row.last_activity_at == newer_activity for row in rows)
+    finally:
+        await _delete_user(user.id)
+        await engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_activity_commit_does_not_commit_endpoint_business_writes():
+    _require_task_owned_disposable_postgres()
+    await engine.dispose()
+    user = await _create_user()
+    async with AsyncSessionLocal() as db:
+        pair = await issue_auth_token_pair(db, user.id)
+        await db.commit()
+
+    client_app = _app()
+    try:
+        async with AsyncClient(
+            transport=ASGITransport(app=client_app),
+            base_url="http://m02-auth.test",
+            cookies={settings.AUTH_COOKIE_NAME: pair.access_token},
+        ) as client:
+            response = await client.get("/protected-staged-write")
+            assert response.status_code == 409
+            staged_email = response.json()["detail"]
+
+        async with AsyncSessionLocal() as db:
+            assert await db.scalar(select(User.id).where(User.email == staged_email)) is None
+            family_rows = (await db.scalars(select(AuthRefreshToken).where(
+                AuthRefreshToken.family_id == pair.family_id,
+            ))).all()
+            assert family_rows and all(row.last_activity_at is not None for row in family_rows)
+    finally:
+        client_app.dependency_overrides.clear()
+        await _delete_user(user.id)
+        await engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_inactive_access_session_is_rejected_revoked_and_audited():
+    _require_task_owned_disposable_postgres()
+    await engine.dispose()
+    user = await _create_user()
+    async with AsyncSessionLocal() as db:
+        pair = await issue_auth_token_pair(db, user.id)
+        await db.commit()
+
+    idle_since = datetime.now(timezone.utc) - timedelta(
+        minutes=settings.SESSION_INACTIVITY_TIMEOUT_MINUTES + 1,
+    )
+    await _set_family_activity(pair.family_id, idle_since)
+    client_app = _app()
+    try:
+        async with AsyncClient(
+            transport=ASGITransport(app=client_app),
+            base_url="http://m02-auth.test",
+            cookies={settings.AUTH_COOKIE_NAME: pair.access_token},
+        ) as client:
+            response = await client.get("/protected")
+            assert response.status_code == 401
+
+        async with AsyncSessionLocal() as db:
+            rows = (await db.scalars(select(AuthRefreshToken).where(
+                AuthRefreshToken.family_id == pair.family_id,
+            ))).all()
+            assert rows and all(row.revoked_at is not None for row in rows)
+            event = await db.scalar(select(AuditLog.id).where(
+                AuditLog.event_type == AuditEvent.AUTH_SESSION_EXPIRED,
+                AuditLog.target_id == str(pair.family_id),
+            ))
+            assert event is not None
+    finally:
+        client_app.dependency_overrides.clear()
+        await _delete_user(user.id)
+        await engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_inactive_refresh_session_is_rejected_and_revoked():
+    _require_task_owned_disposable_postgres()
+    await engine.dispose()
+    user = await _create_user()
+    async with AsyncSessionLocal() as db:
+        pair = await issue_auth_token_pair(db, user.id)
+        await db.commit()
+
+    idle_since = datetime.now(timezone.utc) - timedelta(
+        minutes=settings.SESSION_INACTIVITY_TIMEOUT_MINUTES + 1,
+    )
+    await _set_family_activity(pair.family_id, idle_since)
+    client_app = _app()
+    try:
+        async with AsyncClient(
+            transport=ASGITransport(app=client_app),
+            base_url="http://m02-auth.test",
+            cookies={settings.REFRESH_TOKEN_COOKIE_NAME: pair.refresh_token},
+        ) as client:
+            response = await client.post("/api/v1/auth/refresh")
+            assert response.status_code == 401
+
+        async with AsyncSessionLocal() as db:
+            rows = (await db.scalars(select(AuthRefreshToken).where(
+                AuthRefreshToken.family_id == pair.family_id,
+            ))).all()
+            assert rows and all(row.revoked_at is not None for row in rows)
+            event = await db.scalar(select(AuditLog.id).where(
+                AuditLog.event_type == AuditEvent.AUTH_SESSION_EXPIRED,
+                AuditLog.target_id == str(pair.family_id),
+            ))
+            assert event is not None
     finally:
         client_app.dependency_overrides.clear()
         await _delete_user(user.id)
