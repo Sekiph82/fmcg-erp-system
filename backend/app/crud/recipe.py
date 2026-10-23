@@ -11,6 +11,7 @@ from app.schemas.recipe import (
     RecipeItemCreate, RecipeItemUpdate,
     ProcessParameterCreate, ProcessParameterUpdate,
 )
+from app.services.master_duplicate_detection import ensure_unique_record
 
 
 # ── Recipe ────────────────────────────────────────────────────────────────────
@@ -50,7 +51,9 @@ async def list_recipes(
 async def create_recipe(
     db: AsyncSession, data: RecipeCreate, user_id: uuid.UUID
 ) -> Recipe:
-    obj = Recipe(**data.model_dump(), status=RecipeStatus.DRAFT, created_by=user_id)
+    values = data.model_dump()
+    await ensure_unique_record(db, Recipe, values)
+    obj = Recipe(**values, status=RecipeStatus.DRAFT, created_by=user_id)
     db.add(obj)
     await db.flush()
     await db.refresh(obj)
@@ -60,7 +63,11 @@ async def create_recipe(
 async def update_recipe(
     db: AsyncSession, obj: Recipe, data: RecipeUpdate
 ) -> Recipe:
-    for k, v in data.model_dump(exclude_unset=True).items():
+    changes = data.model_dump(exclude_unset=True)
+    values = {column.name: getattr(obj, column.name) for column in Recipe.__table__.columns}
+    values.update(changes)
+    await ensure_unique_record(db, Recipe, values, exclude_id=obj.id)
+    for k, v in changes.items():
         setattr(obj, k, v)
     await db.flush()
     await db.refresh(obj)
@@ -92,6 +99,9 @@ async def duplicate_recipe(
     new_name: Optional[str],
     user_id: uuid.UUID,
 ) -> Recipe:
+    await ensure_unique_record(
+        db, Recipe, {"product_id": source.product_id, "version": new_version}
+    )
     new_recipe = Recipe(
         product_id=source.product_id,
         version=new_version,

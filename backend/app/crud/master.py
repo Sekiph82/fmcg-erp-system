@@ -10,6 +10,7 @@ from app.schemas.master import (
     SupplierCreate, SupplierUpdate,
     WarehouseCreate, WarehouseUpdate,
 )
+from app.services.master_duplicate_detection import ensure_unique_record
 
 
 # ── Generic helpers ────────────────────────────────────────────────────────────
@@ -38,14 +39,20 @@ async def list_suppliers(db: AsyncSession, skip=0, limit=50) -> List[Supplier]:
     return await _list(db, Supplier, skip, limit)
 
 async def create_supplier(db: AsyncSession, data: SupplierCreate) -> Supplier:
-    obj = Supplier(**data.model_dump())
+    values = data.model_dump()
+    await ensure_unique_record(db, Supplier, values)
+    obj = Supplier(**values)
     db.add(obj)
     await db.flush()
     await db.refresh(obj)
     return obj
 
 async def update_supplier(db: AsyncSession, obj: Supplier, data: SupplierUpdate) -> Supplier:
-    for k, v in data.model_dump(exclude_unset=True).items():
+    changes = data.model_dump(exclude_unset=True)
+    values = {column.name: getattr(obj, column.name) for column in Supplier.__table__.columns}
+    values.update(changes)
+    await ensure_unique_record(db, Supplier, values, exclude_id=obj.id)
+    for k, v in changes.items():
         setattr(obj, k, v)
     await db.flush()
     await db.refresh(obj)
@@ -61,14 +68,20 @@ async def list_products(db: AsyncSession, skip=0, limit=50) -> List[Product]:
     return await _list(db, Product, skip, limit)
 
 async def create_product(db: AsyncSession, data: ProductCreate) -> Product:
-    obj = Product(**data.model_dump())
+    values = data.model_dump()
+    await ensure_unique_record(db, Product, values)
+    obj = Product(**values)
     db.add(obj)
     await db.flush()
     await db.refresh(obj)
     return obj
 
 async def update_product(db: AsyncSession, obj: Product, data: ProductUpdate) -> Product:
-    for k, v in data.model_dump(exclude_unset=True).items():
+    changes = data.model_dump(exclude_unset=True)
+    values = {column.name: getattr(obj, column.name) for column in Product.__table__.columns}
+    values.update(changes)
+    await ensure_unique_record(db, Product, values, exclude_id=obj.id)
+    for k, v in changes.items():
         setattr(obj, k, v)
     await db.flush()
     await db.refresh(obj)
@@ -84,14 +97,20 @@ async def list_materials(db: AsyncSession, skip=0, limit=50) -> List[Material]:
     return await _list(db, Material, skip, limit)
 
 async def create_material(db: AsyncSession, data: MaterialCreate) -> Material:
-    obj = Material(**data.model_dump())
+    values = data.model_dump()
+    await ensure_unique_record(db, Material, values)
+    obj = Material(**values)
     db.add(obj)
     await db.flush()
     await db.refresh(obj)
     return obj
 
 async def update_material(db: AsyncSession, obj: Material, data: MaterialUpdate) -> Material:
-    for k, v in data.model_dump(exclude_unset=True).items():
+    changes = data.model_dump(exclude_unset=True)
+    values = {column.name: getattr(obj, column.name) for column in Material.__table__.columns}
+    values.update(changes)
+    await ensure_unique_record(db, Material, values, exclude_id=obj.id)
+    for k, v in changes.items():
         setattr(obj, k, v)
     await db.flush()
     await db.refresh(obj)
@@ -107,14 +126,20 @@ async def list_warehouses(db: AsyncSession, skip=0, limit=50) -> List[Warehouse]
     return await _list(db, Warehouse, skip, limit)
 
 async def create_warehouse(db: AsyncSession, data: WarehouseCreate) -> Warehouse:
-    obj = Warehouse(**data.model_dump())
+    values = data.model_dump()
+    await ensure_unique_record(db, Warehouse, values)
+    obj = Warehouse(**values)
     db.add(obj)
     await db.flush()
     await db.refresh(obj)
     return obj
 
 async def update_warehouse(db: AsyncSession, obj: Warehouse, data: WarehouseUpdate) -> Warehouse:
-    for k, v in data.model_dump(exclude_unset=True).items():
+    changes = data.model_dump(exclude_unset=True)
+    values = {column.name: getattr(obj, column.name) for column in Warehouse.__table__.columns}
+    values.update(changes)
+    await ensure_unique_record(db, Warehouse, values, exclude_id=obj.id)
+    for k, v in changes.items():
         setattr(obj, k, v)
     await db.flush()
     await db.refresh(obj)

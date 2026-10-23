@@ -90,6 +90,7 @@ class ProductAdapter(BaseImportAdapter):
     module       = "products"
     perm_module  = "products"
     schema_class = ProductCreate
+    model        = Product
     unique_key   = ["sku"]
     field_overrides: dict = {}
     example_row  = {
@@ -97,10 +98,6 @@ class ProductAdapter(BaseImportAdapter):
         "category": "FOOD", "uom": "PCS",
         "units_per_carton": "12", "selling_price": "150.00", "standard_cost": "95.00",
     }
-
-    async def exists_in_db(self, row: dict, db: AsyncSession) -> bool:
-        r = await db.execute(select(Product).where(Product.sku == row.get("sku")))
-        return r.scalar_one_or_none() is not None
 
     async def insert(self, data: dict, db: AsyncSession) -> Any:
         obj = Product(**data)
@@ -113,6 +110,7 @@ class MaterialAdapter(BaseImportAdapter):
     module        = "materials"
     perm_module   = "materials"
     schema_class  = MaterialCreate
+    model         = Material
     unique_key    = ["code"]
     # supplier_id UUID → supplier_code business key
     field_overrides = {"supplier_id": "supplier_code"}
@@ -134,10 +132,6 @@ class MaterialAdapter(BaseImportAdapter):
                 row["supplier_id"] = sup.id
         return row, errors
 
-    async def exists_in_db(self, row: dict, db: AsyncSession) -> bool:
-        r = await db.execute(select(Material).where(Material.code == row.get("code")))
-        return r.scalar_one_or_none() is not None
-
     async def insert(self, data: dict, db: AsyncSession) -> Any:
         obj = Material(**data)
         db.add(obj)
@@ -149,6 +143,7 @@ class SupplierAdapter(BaseImportAdapter):
     module       = "suppliers"
     perm_module  = "procurement"
     schema_class = SupplierCreate
+    model        = Supplier
     unique_key   = ["code"]
     field_overrides: dict = {}
     example_row  = {
@@ -157,10 +152,6 @@ class SupplierAdapter(BaseImportAdapter):
         "phone": "+254700000000", "city": "Nairobi", "country": "Kenya",
         "payment_terms_days": "30", "preferred_payment_method": "MPESA",
     }
-
-    async def exists_in_db(self, row: dict, db: AsyncSession) -> bool:
-        r = await db.execute(select(Supplier).where(Supplier.code == row.get("code")))
-        return r.scalar_one_or_none() is not None
 
     async def insert(self, data: dict, db: AsyncSession) -> Any:
         obj = Supplier(**data)
@@ -173,6 +164,7 @@ class WarehouseAdapter(BaseImportAdapter):
     module       = "warehouses"
     perm_module  = "warehouses"
     schema_class = WarehouseCreate
+    model        = Warehouse
     unique_key   = ["code"]
     field_overrides: dict = {}
     example_row  = {
@@ -180,10 +172,6 @@ class WarehouseAdapter(BaseImportAdapter):
         "warehouse_type": "FINISHED_GOODS",
         "city": "Nairobi", "country": "Kenya", "capacity_sqm": "5000",
     }
-
-    async def exists_in_db(self, row: dict, db: AsyncSession) -> bool:
-        r = await db.execute(select(Warehouse).where(Warehouse.code == row.get("code")))
-        return r.scalar_one_or_none() is not None
 
     async def insert(self, data: dict, db: AsyncSession) -> Any:
         obj = Warehouse(**data)

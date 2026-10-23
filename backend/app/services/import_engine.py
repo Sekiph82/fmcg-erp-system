@@ -26,6 +26,11 @@ from pydantic_core import PydanticUndefinedType
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.import_history import ImportHistory, ImportStatus
+from app.services.master_duplicate_detection import (
+    duplicate_signature,
+    find_duplicate_key,
+    unique_key_groups,
+)
 
 
 # ── Public enums / result types ───────────────────────────────────────────────
@@ -301,6 +306,7 @@ class BaseImportAdapter(ABC):
     perm_module:     str               # permission prefix, e.g. "products"
     schema_class:    type[BaseModel]   # Pydantic Create schema
     unique_key:      list[str]         # fields used for CSV-level dup detection
+    model:           type | None = None # mapped model whose unique constraints govern master duplicates
     field_overrides: dict[str, str]    # {"supplier_id": "supplier_code"}
     example_row:     dict[str, Any]    # example values for template
 
@@ -317,7 +323,23 @@ class BaseImportAdapter(ABC):
 
     async def exists_in_db(self, row: dict, db: AsyncSession) -> bool:
         """Return True if the record already exists (based on unique key)."""
+        if self.model is not None:
+            return await find_duplicate_key(db, self.model, row) is not None
         return False
+
+    def duplicate_key_groups(self) -> list[tuple[str, ...]]:
+        if self.model is not None:
+            return unique_key_groups(self.model)
+        key = getattr(self, "unique_key", [])
+        return [tuple(key)] if key else []
+
+    async def duplicate_fields_in_db(self, row: dict, db: AsyncSession) -> tuple[str, ...] | None:
+        if self.model is not None:
+            return await find_duplicate_key(db, self.model, row)
+        if await self.exists_in_db(row, db):
+            key = getattr(self, "unique_key", [])
+            return tuple(key) if key else ("unknown key",)
+        return None
 
     @abstractmethod
     async def insert(self, data: dict, db: AsyncSession) -> Any:
@@ -373,7 +395,7 @@ class ImportEngine:
 
         errors: list[RowError] = []
         valid_payloads: list[dict] = []
-        seen_keys: set[tuple] = set()
+        seen_keys: set[tuple[tuple[str, ...], tuple[Any, ...]]] = set()
 
         for idx, raw in enumerate(raw_rows, start=2):  # row 1 = header
             row_errors: list[str] = []
@@ -438,21 +460,32 @@ class ImportEngine:
             #    Use the pre-resolve_relations coerced values so that business-key
             #    fields (e.g. product_sku) are still available even after adapters
             #    pop and replace them with UUIDs.
-            uk = getattr(adapter, "unique_key", [])
-            if uk:
-                dup_key = tuple(str(coerced.get(k, payload.get(k))) for k in uk)
-                if dup_key in seen_keys:
-                    errors.append(RowError(row=idx, field=None,
-                                           message=f"Duplicate in CSV: {dict(zip(uk, dup_key))}"))
+            duplicate_in_csv = None
+            row_signatures: list[tuple[tuple[str, ...], tuple[Any, ...]]] = []
+            for fields in adapter.duplicate_key_groups():
+                key_values = {field: payload.get(field, coerced.get(field)) for field in fields}
+                signature = duplicate_signature([fields], key_values)
+                if signature is None:
                     continue
-                seen_keys.add(dup_key)
-
-            # 7. DB-level duplicate detection
-            if await adapter.exists_in_db(payload, db):
+                duplicate_key = (signature[0], signature[1])
+                if duplicate_key in seen_keys:
+                    duplicate_in_csv = dict(zip(fields, signature[1]))
+                    break
+                row_signatures.append(duplicate_key)
+            if duplicate_in_csv is not None:
                 errors.append(RowError(row=idx, field=None,
-                                       message=f"Already exists in database: {dict(zip(uk, [payload.get(k) for k in uk]))}"))
+                                       message=f"Duplicate in CSV: {duplicate_in_csv}"))
                 continue
 
+            # 7. DB-level duplicate detection
+            duplicate_fields = await adapter.duplicate_fields_in_db(payload, db)
+            if duplicate_fields:
+                duplicate_values = {field: payload.get(field) for field in duplicate_fields}
+                errors.append(RowError(row=idx, field=None,
+                                       message=f"Already exists in database: {duplicate_values}"))
+                continue
+
+            seen_keys.update(row_signatures)
             valid_payloads.append(payload)
 
         total     = len(raw_rows)

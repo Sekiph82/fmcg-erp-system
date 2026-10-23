@@ -8,11 +8,11 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 ## Project Status
 
-- Current Milestone: M02 — Authentication / RBAC
-- Current Sprint: M02.S03 — Session & Privilege Hardening
-- Current Task: M02.S03.T005 — Verify CSRF and tenant/company isolation in production-like runtime
+- Current Milestone: M03 — Master Data
+- Current Sprint: M03.S02 — Governance Upgrade
+- Current Task: M03.S02.T001 — Standardize duplicate detection across masters
 - Current Task Status: COMPLETE
-- Next Task/Action: M03.S02.T001 — Standardize duplicate detection across masters
+- Next Task/Action: M03.S02.T002 — Standardize merge/deactivation semantics
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -203,7 +203,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 - [x] M03.S01.T004 — Audit and permission infrastructure
 
 ## M03.S02 — Governance Upgrade
-- [ ] M03.S02.T001 — Standardize duplicate detection across masters
+- [x] M03.S02.T001 — Standardize duplicate detection across masters
+  Evidence: [T001 closeout](coordination/milestones/M03/evidence/v01/t001-local-20261023/CLOSEOUT.md)
 - [ ] M03.S02.T002 — Standardize merge/deactivation semantics
 - [ ] M03.S02.T003 — Standardize version/effective-date governance
 - [ ] M03.S02.T004 — Define master-data stewardship workflow

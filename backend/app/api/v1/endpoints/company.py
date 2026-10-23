@@ -37,6 +37,7 @@ from app.schemas.company import (
     GrantUserAccess, UserAccessRead,
     CompanySummary,
 )
+from app.services.master_duplicate_detection import ensure_unique_record
 
 router = APIRouter()
 
@@ -101,13 +102,9 @@ async def create_company(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_permission("company", "create")),
 ):
-    existing = (await db.execute(
-        select(Company).where(Company.short_code == body.short_code)
-    )).scalar_one_or_none()
-    if existing:
-        raise HTTPException(409, f"Company code '{body.short_code}' already exists")
-
-    company = Company(**body.model_dump(), created_by_id=current_user.id)
+    values = body.model_dump()
+    await ensure_unique_record(db, Company, values)
+    company = Company(**values, created_by_id=current_user.id)
     db.add(company)
     await db.flush()
 
@@ -144,7 +141,11 @@ async def update_company(
 ):
     await _check_company_access(db, current_user, company_id)
     c = await _get_or_404(db, company_id)
-    for k, v in body.model_dump(exclude_none=True).items():
+    changes = body.model_dump(exclude_none=True)
+    values = {column.name: getattr(c, column.name) for column in Company.__table__.columns}
+    values.update(changes)
+    await ensure_unique_record(db, Company, values, exclude_id=c.id)
+    for k, v in changes.items():
         setattr(c, k, v)
     await db.commit()
     await db.refresh(c)
@@ -201,7 +202,10 @@ async def add_branch(
 ):
     await _check_company_access(db, current_user, company_id)
     await _get_or_404(db, company_id)
-    branch = Branch(**body.model_dump(), company_id=company_id)
+    values = body.model_dump()
+    values["company_id"] = company_id
+    await ensure_unique_record(db, Branch, values)
+    branch = Branch(**values)
     db.add(branch)
     await db.commit()
     await db.refresh(branch)
@@ -218,7 +222,11 @@ async def update_branch(
     branch = await db.get(Branch, branch_id)
     if not branch:
         raise HTTPException(404, "Branch not found")
-    for k, v in body.model_dump(exclude_none=True).items():
+    changes = body.model_dump(exclude_none=True)
+    values = {column.name: getattr(branch, column.name) for column in Branch.__table__.columns}
+    values.update(changes)
+    await ensure_unique_record(db, Branch, values, exclude_id=branch.id)
+    for k, v in changes.items():
         setattr(branch, k, v)
     await db.commit()
     await db.refresh(branch)
