@@ -235,6 +235,9 @@ async def approve_plan(
         try:
             await _check_plan_scope(db, current_user, mps_id, "approve")
             plan = await approve_mps_plan(db, mps_id, current_user.id)
+            # Load server-managed timestamps before the response serializer
+            # reads the ORM object after the transaction has ended.
+            await db.refresh(plan)
         except ValueError as e:
             raise HTTPException(400, str(e))
     return plan

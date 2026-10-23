@@ -2375,7 +2375,8 @@ async def test_postgres_release_http_permission_company_warehouse_and_atomic_rol
     plan_ids: list = []
     actor_ids: list = []
     role_id = permission_id = own_permission_id = None
-    permission_created = False
+    permission_created = approval_permission_created = approve_own_permission_created = False
+    approval_permission_id = approve_own_permission_id = None
     saved_overrides = app.dependency_overrides.copy()
     release_impl = mps_endpoint.release_mps_plan
     try:
@@ -2406,11 +2407,27 @@ async def test_postgres_release_http_permission_company_warehouse_and_atomic_rol
                     )
                     db.add(own_permission)
                     await db.flush()
-                role = Role(name=f"M20-release-{suffix}", description="Scoped M20 test permission")
-                role.permissions.extend([permission, own_permission])
+                approval_permission = await db.scalar(select(Permission).where(Permission.code == "mps.approve"))
+                if approval_permission is None:
+                    approval_permission = Permission(code="mps.approve", name="Approve MPS", module="mps", action="approve")
+                    db.add(approval_permission)
+                    await db.flush()
+                    approval_permission_created = True
+                approve_own_permission = await db.scalar(select(Permission).where(Permission.code == "mps.approve_own_scope"))
+                approve_own_permission_was_created = approve_own_permission is None
+                if approve_own_permission is None:
+                    approve_own_permission = Permission(
+                        code="mps.approve_own_scope", name="Approve MPS in own scope",
+                        module="mps", action="approve_own_scope",
+                    )
+                    db.add(approve_own_permission)
+                    await db.flush()
+                    approve_own_permission_created = True
+                role = Role(name=f"M20-release-{suffix}", description="Scoped M20 test permissions")
+                role.permissions.extend([permission, own_permission, approval_permission, approve_own_permission])
                 role.access_scopes.append(AccessScope(
                     scope_type="warehouse", scope_id=str(wh_a.id),
-                    can_view=True, can_release=True,
+                    can_view=True, can_approve=True, can_release=True,
                 ))
                 db.add(role)
                 await db.flush()
@@ -2492,9 +2509,28 @@ async def test_postgres_release_http_permission_company_warehouse_and_atomic_rol
                     ))
                 await db.flush()
                 plan_ids.append(concurrent_plan.id)
+                approval_plan = MPSPlan(
+                    plan_no=f"M20-SCOPE-APPROVE-{suffix}", plan_name="M20 scoped approval",
+                    start_date=date(2026, 1, 1), end_date=date(2026, 1, 31),
+                    status=MPSStatus.DRAFT, mrp_run_id=run_ids[0],
+                )
+                db.add(approval_plan)
+                await db.flush()
+                db.add(MPSLine(
+                    line_no=f"M20-SCOPE-APPROVE-L-{suffix}",
+                    mps_id=approval_plan.id, product_id=product_ids[0],
+                    period_start=date(2026, 1, 1), period_end=date(2026, 1, 31),
+                    planned_production_qty=Decimal("3"),
+                    feasibility_status=MPSFeasibilityStatus.FEASIBLE,
+                ))
+                await db.flush()
+                approval_plan_id = approval_plan.id
+                plan_ids.append(approval_plan.id)
                 actor_ids.extend([allowed.id, denied.id])
                 role_id, permission_id = role.id, permission.id
                 own_permission_id = own_permission.id if own_permission_was_created else None
+                approval_permission_id = approval_permission.id
+                approve_own_permission_id = approve_own_permission.id if approve_own_permission_was_created else None
 
         async def override_db():
             async with AsyncSessionLocal() as session:
@@ -2555,6 +2591,19 @@ async def test_postgres_release_http_permission_company_warehouse_and_atomic_rol
                 )
                 assert wrong_source.status_code == 403
 
+                approve_route = f"/api/v1/mps/plans/{approval_plan_id}/approve"
+                current_actor = denied
+                no_approve_permission = await client.patch(approve_route)
+                assert no_approve_permission.status_code == 403
+
+                current_actor = allowed
+                wrong_approval_scope = await client.patch(f"/api/v1/mps/plans/{plan_ids[1]}/approve")
+                assert wrong_approval_scope.status_code == 403
+
+                approved_response = await client.patch(approve_route)
+                assert approved_response.status_code == 200, approved_response.text
+                assert approved_response.json()["status"] == MPSStatus.APPROVED.value
+
                 current_actor = denied
                 no_permission = await client.post(route, params={"target_warehouse_id": str(warehouse_ids[0])})
                 assert no_permission.status_code == 403
@@ -2590,6 +2639,17 @@ async def test_postgres_release_http_permission_company_warehouse_and_atomic_rol
                 AuditLog.actor_id == actor_ids[0],
             ))
             assert released_audit == 1
+            release_event = await verify.scalar(select(AuditLog).where(
+                AuditLog.event_type == "MPS_PLAN_RELEASED",
+                AuditLog.target_id == str(plan_ids[0]),
+                AuditLog.actor_id == actor_ids[0],
+            ))
+            assert release_event is not None
+            assert release_event.actor_email == f"m20-allowed-{suffix}@example.invalid"
+            assert release_event.created_at is not None
+            assert release_event.before_value["status"] == MPSStatus.APPROVED.value
+            assert release_event.after_value["status"] == MPSStatus.RELEASED.value
+            assert release_event.details["target_warehouse_id"] == str(warehouse_ids[0])
             concurrent_audit = await verify.scalar(select(func.count()).select_from(AuditLog).where(
                 AuditLog.event_type == "MPS_PLAN_RELEASED",
                 AuditLog.target_id == str(plan_ids[3]),
@@ -2597,6 +2657,22 @@ async def test_postgres_release_http_permission_company_warehouse_and_atomic_rol
             ))
             assert concurrent_audit == 1
             assert await verify.scalar(select(MPSPlan.status).where(MPSPlan.id == plan_ids[3])) == MPSStatus.RELEASED
+            approved_plan = await verify.get(MPSPlan, approval_plan_id)
+            assert approved_plan is not None
+            assert approved_plan.status == MPSStatus.APPROVED
+            assert approved_plan.approved_by_id == actor_ids[0]
+            assert approved_plan.approved_at is not None
+            approval_audit = await verify.scalar(select(AuditLog).where(
+                AuditLog.event_type == "MPS_PLAN_APPROVED",
+                AuditLog.target_id == str(approval_plan_id),
+            ))
+            assert approval_audit is not None
+            assert approval_audit.actor_id == actor_ids[0]
+            assert approval_audit.actor_email == f"m20-allowed-{suffix}@example.invalid"
+            assert approval_audit.created_at is not None
+            assert approval_audit.before_value["status"] == MPSStatus.DRAFT.value
+            assert approval_audit.after_value["status"] == MPSStatus.APPROVED.value
+            assert approval_audit.after_value["approved_by_id"] == str(actor_ids[0])
     finally:
         monkeypatch.setattr(mps_endpoint, "release_mps_plan", release_impl)
         app.dependency_overrides.clear()
@@ -2626,10 +2702,22 @@ async def test_postgres_release_http_permission_company_warehouse_and_atomic_rol
                         ))
                         if assigned == 0:
                             await cleanup.delete(permission)
+                if approval_permission_created and approval_permission_id is not None:
+                    permission = await cleanup.get(Permission, approval_permission_id)
+                    if permission is not None and permission.code == "mps.approve":
+                        assigned = await cleanup.scalar(select(func.count()).select_from(role_permission).where(
+                            role_permission.c.permission_id == approval_permission_id,
+                        ))
+                        if assigned == 0:
+                            await cleanup.delete(permission)
                 if own_permission_id is not None:
                     own_permission = await cleanup.get(Permission, own_permission_id)
                     if own_permission is not None:
                         await cleanup.delete(own_permission)
+                if approve_own_permission_id is not None:
+                    approve_own_permission = await cleanup.get(Permission, approve_own_permission_id)
+                    if approve_own_permission is not None:
+                        await cleanup.delete(approve_own_permission)
                 if actor_ids:
                     await cleanup.execute(delete(User).where(User.id.in_(actor_ids)))
                 if warehouse_ids:
