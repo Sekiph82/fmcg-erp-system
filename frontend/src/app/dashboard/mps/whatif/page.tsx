@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/context/AuthContext";
 import {
   mpsApi, MPSPlanSummary, MPSLine, MPSWhatIf, MPSScenarioComparison,
   WhatIfChange, MPSChangeType,
@@ -19,6 +20,7 @@ const CHANGE_TYPES: { value: MPSChangeType; label: string; desc: string }[] = [
 
 export default function WhatIfPage() {
   const qc = useQueryClient();
+  const { hasPermission } = useAuth();
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
   const [selectedLines, setSelectedLines] = useState<Set<string>>(new Set());
   const [changeType, setChangeType] = useState<MPSChangeType>("DELAY");
@@ -34,18 +36,18 @@ export default function WhatIfPage() {
   const [candidateId, setCandidateId] = useState("");
   const [comparison, setComparison] = useState<MPSScenarioComparison | null>(null);
 
-  const { data: plans = [] } = useQuery<MPSPlanSummary[]>({
+  const { data: plans = [], isLoading: plansLoading, error: plansError } = useQuery<MPSPlanSummary[]>({
     queryKey: ["mps-plans"],
     queryFn: () => mpsApi.listPlans(),
   });
 
-  const { data: lines = [] } = useQuery<MPSLine[]>({
+  const { data: lines = [], isLoading: linesLoading, error: linesError } = useQuery<MPSLine[]>({
     queryKey: ["mps-lines", selectedPlanId],
     queryFn: () => mpsApi.listLines(selectedPlanId!),
     enabled: !!selectedPlanId,
   });
 
-  const { data: scenarios = [] } = useQuery<MPSWhatIf[]>({
+  const { data: scenarios = [], isLoading: scenariosLoading, error: scenariosError } = useQuery<MPSWhatIf[]>({
     queryKey: ["mps-whatif", selectedPlanId],
     queryFn: () => mpsApi.listWhatIf(selectedPlanId!),
     enabled: !!selectedPlanId,
@@ -131,10 +133,16 @@ export default function WhatIfPage() {
         <h1 className="text-xl font-semibold text-gray-900">What-If Simulation</h1>
         <a href="/dashboard/mps" className="text-xs text-blue-600 hover:underline">← MPS Dashboard</a>
       </div>
+      {plansLoading && <p role="status" aria-live="polite" className="text-sm text-gray-500">Loading plans…</p>}
+      {plansError && <p role="alert" className="text-sm text-red-700">Could not load MPS plans: {(plansError as Error).message}</p>}
+      {createScenario.error && <p role="alert" className="text-sm text-red-700">Scenario creation failed: {(createScenario.error as Error).message}</p>}
 
       {/* Plan selector */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+        <label htmlFor="whatif-plan" className="sr-only">Select MPS plan</label>
         <select
+          id="whatif-plan"
+          aria-label="Select MPS plan"
           className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm min-w-64"
           value={selectedPlanId || ""}
           onChange={(e) => setSelectedPlanId(e.target.value || null)}
@@ -150,7 +158,7 @@ export default function WhatIfPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
           {/* Builder */}
-          <div className="space-y-4">
+          {hasPermission("mps.simulate") && <div className="space-y-4">
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
               <h2 className="text-sm font-semibold text-gray-700 mb-3">Build Scenario</h2>
               <div className="space-y-3">
@@ -256,7 +264,13 @@ export default function WhatIfPage() {
                 <p className="text-xs font-semibold text-gray-600">Select Lines for Change</p>
               </div>
               <div className="max-h-64 overflow-y-auto divide-y divide-gray-50">
-                {lines.map((l) => (
+                {linesLoading ? (
+                  <p role="status" aria-live="polite" className="p-5 text-center text-sm text-gray-400">Loading lines…</p>
+                ) : linesError ? (
+                  <p role="alert" className="p-5 text-center text-sm text-red-700">Could not load plan lines: {(linesError as Error).message}</p>
+                ) : lines.length === 0 ? (
+                  <p className="p-5 text-center text-sm text-gray-400">No lines available for this plan.</p>
+                ) : lines.map((l) => (
                   <label
                     key={l.id}
                     className="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 cursor-pointer"
@@ -284,7 +298,7 @@ export default function WhatIfPage() {
                 ))}
               </div>
             </div>
-          </div>
+          </div>}
 
           {/* Scenarios list */}
           <div className="space-y-4">
@@ -316,13 +330,17 @@ export default function WhatIfPage() {
                   </ul>
                 </details>
               </div>}
-              {compareScenarios.isError && <p className="text-xs text-red-700">{(compareScenarios.error as Error).message}</p>}
+              {compareScenarios.isError && <p role="alert" className="text-xs text-red-700">{(compareScenarios.error as Error).message}</p>}
             </div>
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
               <div className="px-5 py-4 border-b border-gray-50">
                 <h2 className="text-sm font-semibold text-gray-700">Scenarios ({scenarios.length})</h2>
               </div>
-              {scenarios.length === 0 ? (
+              {scenariosLoading ? (
+                <div role="status" aria-live="polite" className="p-8 text-center text-sm text-gray-400">Loading scenarios…</div>
+              ) : scenariosError ? (
+                <div role="alert" className="p-8 text-center text-sm text-red-700">Could not load scenarios: {(scenariosError as Error).message}</div>
+              ) : scenarios.length === 0 ? (
                 <div className="p-8 text-center text-sm text-gray-400">No scenarios yet</div>
               ) : (
                 <div className="divide-y divide-gray-50">

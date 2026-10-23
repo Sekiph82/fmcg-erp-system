@@ -3,23 +3,25 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { mpsApi, MPSPlanSummary, MPSCampaign, MPSLine } from "@/lib/mps";
+import { useAuth } from "@/context/AuthContext";
 
 export default function CampaignsPage() {
   const qc = useQueryClient();
+  const { hasPermission } = useAuth();
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
 
-  const { data: plans = [] } = useQuery<MPSPlanSummary[]>({
+  const { data: plans = [], isLoading: plansLoading, error: plansError } = useQuery<MPSPlanSummary[]>({
     queryKey: ["mps-plans"],
     queryFn: () => mpsApi.listPlans(),
   });
 
-  const { data: campaigns = [], isLoading } = useQuery<MPSCampaign[]>({
+  const { data: campaigns = [], isLoading, error: campaignsError } = useQuery<MPSCampaign[]>({
     queryKey: ["mps-campaigns", selectedPlanId],
     queryFn: () => mpsApi.getCampaigns(selectedPlanId!),
     enabled: !!selectedPlanId,
   });
 
-  const { data: lines = [] } = useQuery<MPSLine[]>({
+  const { data: lines = [], isLoading: linesLoading, error: linesError } = useQuery<MPSLine[]>({
     queryKey: ["mps-lines", selectedPlanId],
     queryFn: () => mpsApi.listLines(selectedPlanId!),
     enabled: !!selectedPlanId,
@@ -50,10 +52,17 @@ export default function CampaignsPage() {
         <h1 className="text-xl font-semibold text-gray-900">Campaign Planning</h1>
         <a href="/dashboard/mps" className="text-xs text-blue-600 hover:underline">← MPS Dashboard</a>
       </div>
+      {plansLoading && <p role="status" aria-live="polite" className="text-sm text-gray-500">Loading plans…</p>}
+      {plansError && <p role="alert" className="text-sm text-red-700">Could not load MPS plans: {(plansError as Error).message}</p>}
+      {campaignsError && <p role="alert" className="text-sm text-red-700">Could not load campaigns: {(campaignsError as Error).message}</p>}
+      {linesError && <p role="alert" className="text-sm text-red-700">Could not load plan lines: {(linesError as Error).message}</p>}
+      {runCampaigns.error && <p role="alert" className="text-sm text-red-700">Campaign grouping failed: {(runCampaigns.error as Error).message}</p>}
 
       {/* Plan selector + actions */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex flex-wrap items-center gap-3">
+        <label htmlFor="campaign-plan" className="text-sm font-medium text-gray-600">Select Plan:</label>
         <select
+          id="campaign-plan"
           className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm min-w-64"
           value={selectedPlanId || ""}
           onChange={(e) => setSelectedPlanId(e.target.value || null)}
@@ -63,7 +72,7 @@ export default function CampaignsPage() {
             <option key={p.id} value={p.id}>{p.plan_no} — {p.plan_name}</option>
           ))}
         </select>
-        {selectedPlanId && (
+        {selectedPlanId && hasPermission("mps.calculate") && (
           <button
             onClick={() => runCampaigns.mutate()}
             disabled={runCampaigns.isPending}
@@ -74,7 +83,11 @@ export default function CampaignsPage() {
         )}
       </div>
 
-      {selectedPlanId && campaigns.length > 0 && (
+      {selectedPlanId && (isLoading || linesLoading) && (
+        <div role="status" aria-live="polite" className="bg-white rounded-xl border border-gray-100 p-8 text-center text-sm text-gray-400">Loading campaign data…</div>
+      )}
+
+      {selectedPlanId && !isLoading && !campaignsError && campaigns.length > 0 && (
         <>
           {/* Summary */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -182,7 +195,7 @@ export default function CampaignsPage() {
         </>
       )}
 
-      {selectedPlanId && !isLoading && campaigns.length === 0 && (
+      {selectedPlanId && !isLoading && !campaignsError && campaigns.length === 0 && (
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-8 text-center text-sm text-gray-400">
           No campaigns yet. Run campaign grouping to group SKUs automatically.
         </div>

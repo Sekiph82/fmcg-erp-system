@@ -6,6 +6,7 @@ import {
   mpsApi, MPSPlanSummary, MPSLine, MPSPlan,
   STATUS_COLOR, FEASIBILITY_COLOR,
 } from "@/lib/mps";
+import { useAuth } from "@/context/AuthContext";
 
 function Badge({ label, color }: { label: string; color: string }) {
   return <span className={`px-2 py-0.5 rounded text-xs font-medium ${color}`}>{label}</span>;
@@ -13,6 +14,7 @@ function Badge({ label, color }: { label: string; color: string }) {
 
 export default function PlanningBoardPage() {
   const qc = useQueryClient();
+  const { hasPermission } = useAuth();
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
   const [editLine, setEditLine] = useState<MPSLine | null>(null);
   const [genForm, setGenForm] = useState({ mrp_run_id: "", period_type: "WEEKLY" });
@@ -20,12 +22,12 @@ export default function PlanningBoardPage() {
   const [releaseWarehouseId, setReleaseWarehouseId] = useState("");
   const [showReleaseModal, setShowReleaseModal] = useState(false);
 
-  const { data: plans = [] } = useQuery<MPSPlanSummary[]>({
+  const { data: plans = [], isLoading: plansLoading, error: plansError } = useQuery<MPSPlanSummary[]>({
     queryKey: ["mps-plans"],
     queryFn: () => mpsApi.listPlans(),
   });
 
-  const { data: lines = [], isLoading: linesLoading } = useQuery<MPSLine[]>({
+  const { data: lines = [], isLoading: linesLoading, error: linesError } = useQuery<MPSLine[]>({
     queryKey: ["mps-lines", selectedPlanId],
     queryFn: () => mpsApi.listLines(selectedPlanId!),
     enabled: !!selectedPlanId,
@@ -83,6 +85,9 @@ export default function PlanningBoardPage() {
     },
   });
 
+  const actionError = runCapacity.error ?? runCampaigns.error ?? runAI.error ?? approvePlan.error
+    ?? generateFromMrp.error ?? releasePlan.error ?? updateLine.error;
+
   const feasCounts = {
     total: lines.length,
     feasible: lines.filter((l) => l.feasibility_status === "FEASIBLE").length,
@@ -96,12 +101,16 @@ export default function PlanningBoardPage() {
         <h1 className="text-xl font-semibold text-gray-900">Production Planning Board</h1>
         <a href="/dashboard/mps" className="text-sm text-blue-600 hover:underline">← MPS Dashboard</a>
       </div>
+      {plansLoading && <p role="status" aria-live="polite" className="text-sm text-gray-500">Loading plans…</p>}
+      {plansError && <p role="alert" className="text-sm text-red-700">Could not load MPS plans: {(plansError as Error).message}</p>}
+      {actionError && <p role="alert" className="text-sm text-red-700">MPS action failed: {(actionError as Error).message}</p>}
 
       {/* Plan selector */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
         <div className="flex flex-wrap items-center gap-3">
-          <label className="text-sm font-medium text-gray-600">Select Plan:</label>
+          <label htmlFor="planning-board-plan" className="text-sm font-medium text-gray-600">Select Plan:</label>
           <select
+            id="planning-board-plan"
             className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm min-w-64"
             value={selectedPlanId || ""}
             onChange={(e) => setSelectedPlanId(e.target.value || null)}
@@ -116,34 +125,34 @@ export default function PlanningBoardPage() {
 
           {selectedPlanId && (
             <div className="flex flex-wrap gap-2 ml-auto">
-              <button
+              {hasPermission("mps.calculate") && <button
                 onClick={() => setShowGenModal(true)}
                 className="px-3 py-1.5 text-xs font-medium bg-gray-100 hover:bg-gray-200 rounded-lg"
               >
                 Generate from MRP
-              </button>
-              <button
+              </button>}
+              {hasPermission("mps.calculate") && <button
                 onClick={() => runCapacity.mutate()}
                 disabled={runCapacity.isPending}
                 className="px-3 py-1.5 text-xs font-medium bg-orange-100 text-orange-700 hover:bg-orange-200 rounded-lg"
               >
                 {runCapacity.isPending ? "Running…" : "Run Capacity"}
-              </button>
-              <button
+              </button>}
+              {hasPermission("mps.calculate") && <button
                 onClick={() => runCampaigns.mutate()}
                 disabled={runCampaigns.isPending}
                 className="px-3 py-1.5 text-xs font-medium bg-purple-100 text-purple-700 hover:bg-purple-200 rounded-lg"
               >
                 {runCampaigns.isPending ? "Running…" : "Group Campaigns"}
-              </button>
-              <button
+              </button>}
+              {hasPermission("mps.ai") && <button
                 onClick={() => runAI.mutate()}
                 disabled={runAI.isPending}
                 className="px-3 py-1.5 text-xs font-medium bg-indigo-100 text-indigo-700 hover:bg-indigo-200 rounded-lg"
               >
                 {runAI.isPending ? "Analyzing…" : "Run AI"}
-              </button>
-              {selectedPlan?.status === "DRAFT" && (
+              </button>}
+              {hasPermission("mps.approve") && selectedPlan?.status === "DRAFT" && (
                 <button
                   onClick={() => approvePlan.mutate()}
                   className="px-3 py-1.5 text-xs font-medium bg-blue-600 text-white hover:bg-blue-700 rounded-lg"
@@ -151,7 +160,7 @@ export default function PlanningBoardPage() {
                   Approve Plan
                 </button>
               )}
-              {selectedPlan?.status === "APPROVED" && (
+              {hasPermission("mps.release") && selectedPlan?.status === "APPROVED" && (
                 <button
                   onClick={() => setShowReleaseModal(true)}
                   className="px-3 py-1.5 text-xs font-medium bg-green-600 text-white hover:bg-green-700 rounded-lg"
@@ -178,7 +187,9 @@ export default function PlanningBoardPage() {
       {selectedPlanId && (
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
           {linesLoading ? (
-            <div className="p-8 text-center text-gray-400 text-sm">Loading lines…</div>
+            <div role="status" aria-live="polite" className="p-8 text-center text-gray-400 text-sm">Loading lines…</div>
+          ) : linesError ? (
+            <div role="alert" className="p-8 text-center text-red-700 text-sm">Could not load plan lines: {(linesError as Error).message}</div>
           ) : lines.length === 0 ? (
             <div className="p-8 text-center text-gray-400 text-sm">
               No lines yet. Generate from MRP to populate.
@@ -221,14 +232,14 @@ export default function PlanningBoardPage() {
                       <td className="px-3 py-2">
                         <Badge label={l.feasibility_status} color={FEASIBILITY_COLOR[l.feasibility_status]} />
                       </td>
-                      <td className="px-3 py-2">
+                      {hasPermission("mps.edit") && <td className="px-3 py-2">
                         <button
                           onClick={() => setEditLine(l)}
                           className="text-xs text-blue-600 hover:underline"
                         >
                           Edit
                         </button>
-                      </td>
+                      </td>}
                     </tr>
                   ))}
                 </tbody>

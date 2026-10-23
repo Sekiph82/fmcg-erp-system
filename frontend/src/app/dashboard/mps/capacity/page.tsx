@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { mpsApi, MPSPlanSummary, CapacityHeatmap, utilizationColor } from "@/lib/mps";
+import { useAuth } from "@/context/AuthContext";
 
 function UtilBar({ pct }: { pct: number }) {
   const w = Math.min(100, pct);
@@ -21,14 +22,15 @@ function UtilBar({ pct }: { pct: number }) {
 
 export default function CapacityPage() {
   const qc = useQueryClient();
+  const { hasPermission } = useAuth();
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
 
-  const { data: plans = [] } = useQuery<MPSPlanSummary[]>({
+  const { data: plans = [], isLoading: plansLoading, error: plansError } = useQuery<MPSPlanSummary[]>({
     queryKey: ["mps-plans"],
     queryFn: () => mpsApi.listPlans(),
   });
 
-  const { data: heatmap, isLoading } = useQuery<CapacityHeatmap>({
+  const { data: heatmap, isLoading, error: heatmapError } = useQuery<CapacityHeatmap>({
     queryKey: ["mps-heatmap", selectedPlanId],
     queryFn: () => mpsApi.getCapacityHeatmap(selectedPlanId!),
     enabled: !!selectedPlanId,
@@ -49,10 +51,15 @@ export default function CapacityPage() {
         <h1 className="text-xl font-semibold text-gray-900">Capacity Heatmap</h1>
         <a href="/dashboard/mps" className="text-xs text-blue-600 hover:underline">← MPS Dashboard</a>
       </div>
+      {plansLoading && <p role="status" aria-live="polite" className="text-sm text-gray-500">Loading plans…</p>}
+      {plansError && <p role="alert" className="text-sm text-red-700">Could not load MPS plans: {(plansError as Error).message}</p>}
+      {runCapacity.error && <p role="alert" className="text-sm text-red-700">Capacity scheduling failed: {(runCapacity.error as Error).message}</p>}
 
       {/* Plan selector */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex flex-wrap items-center gap-3">
+        <label htmlFor="capacity-plan" className="text-sm font-medium text-gray-600">Select Plan:</label>
         <select
+          id="capacity-plan"
           className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm min-w-64"
           value={selectedPlanId || ""}
           onChange={(e) => setSelectedPlanId(e.target.value || null)}
@@ -62,7 +69,7 @@ export default function CapacityPage() {
             <option key={p.id} value={p.id}>{p.plan_no} — {p.plan_name}</option>
           ))}
         </select>
-        {selectedPlanId && (
+        {selectedPlanId && hasPermission("mps.calculate") && (
           <button
             onClick={() => runCapacity.mutate()}
             disabled={runCapacity.isPending}
@@ -109,7 +116,9 @@ export default function CapacityPage() {
 
           {/* Heatmap Grid */}
           {isLoading ? (
-            <div className="text-center text-gray-400 py-8">Loading heatmap…</div>
+            <div role="status" aria-live="polite" className="text-center text-gray-400 py-8">Loading heatmap…</div>
+          ) : heatmapError ? (
+            <div role="alert" className="bg-white rounded-xl border border-red-200 p-8 text-center text-sm text-red-700">Could not load capacity data: {(heatmapError as Error).message}</div>
           ) : !heatmap || heatmap.rows.length === 0 ? (
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-8 text-center text-sm text-gray-400">
               No capacity data. Run capacity scheduling first.

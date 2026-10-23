@@ -5,6 +5,10 @@ import { dirname, resolve } from "node:path";
 const backend = process.env.M20_BACKEND_URL || "http://localhost:8001";
 const disposableDatabaseName = process.env.M20_DISPOSABLE_TEST_DATABASE_NAME || "";
 
+// This test signs into its own isolated backend. Do not inherit the shared
+// browser project's owner auth state or local storage.
+test.use({ storageState: { cookies: [], origins: [] } });
+
 test("MPS scenario UI persists a real split through the PostgreSQL-backed API", async ({ page }) => {
   test.skip(
     process.env.M20_DISPOSABLE_TEST_DATABASE !== "1",
