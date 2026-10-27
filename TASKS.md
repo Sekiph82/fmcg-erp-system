@@ -11,8 +11,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 - Current Milestone: M03 — Master Data
 - Current Sprint: M03.S02 — Governance Upgrade
 - Current Task: M03.S02.T002 — Standardize merge/deactivation semantics
-- Current Task Status: IN_PROGRESS
-- Next Task/Action: M03.S02.T002 — Standardize merge/deactivation semantics
+- Current Task Status: COMPLETE
+- Next Task/Action: M03.S02.T003 — Standardize version/effective-date governance
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -205,7 +205,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 ## M03.S02 — Governance Upgrade
 - [x] M03.S02.T001 — Standardize duplicate detection across masters
   Evidence: [T001 closeout](coordination/milestones/M03/evidence/v01/t001-local-20261023/CLOSEOUT.md)
-- [~] M03.S02.T002 — Standardize merge/deactivation semantics
+- [x] M03.S02.T002 — Standardize merge/deactivation semantics
+  Evidence: [T002 correction log V02](coordination/sessions/M03.S02.T002/CLAUDE_LOG_V02.md); disposable PostgreSQL migration and 27 focused tests passed; independent read-only review found no remaining T002 defect at `8c8c58e`.
 - [ ] M03.S02.T003 — Standardize version/effective-date governance
 - [ ] M03.S02.T004 — Define master-data stewardship workflow
 - [ ] M03.S02.T005 — Validate referential integrity across master domains
