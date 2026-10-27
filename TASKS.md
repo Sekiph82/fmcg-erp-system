@@ -10,8 +10,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 - Current Milestone: M03 — Master Data
 - Current Sprint: M03.S02 — Governance Upgrade
-- Current Task: M03.S02.T003 — Standardize version/effective-date governance
-- Current Task Status: COMPLETE
+- Current Task: M03.S02.T004 — Define master-data stewardship workflow
+- Current Task Status: BLOCKED
 - Next Task/Action: M03.S02.T004 — Define master-data stewardship workflow
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
@@ -209,7 +209,7 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
   Evidence: [T002 correction log V02](coordination/sessions/M03.S02.T002/CLAUDE_LOG_V02.md); disposable PostgreSQL migration and 27 focused tests passed; independent read-only review found no remaining T002 defect at `8c8c58e`.
 - [x] M03.S02.T003 — Standardize version/effective-date governance
   Evidence: [T003 implementation log V01](coordination/sessions/M03.S02.T003/CODEX_LOG_V01.md); fresh PostgreSQL migration upgrade/downgrade/re-upgrade and 10 focused tests passed; MPS recipe-selection regressions 2/2 passed; independent read-only review findings corrected.
-- [ ] M03.S02.T004 — Define master-data stewardship workflow
+- [!] M03.S02.T004 — Define master-data stewardship workflow
 - [ ] M03.S02.T005 — Validate referential integrity across master domains
 
 ---
@@ -1102,6 +1102,8 @@ All pre-migration task evidence, including TASK-001…TASK-027, MANUAL, HELP, PU
 A milestone is DONE only when its planned scope is implemented or explicitly superseded/deferred with rationale; backend/frontend/schema/API changes are mutually consistent; migrations are safe; RBAC/audit requirements are preserved; required tests/checks pass; no live-provider result is invented; and `TASKS.md` records the final evidence/state.
 
 ## Questions for Şekip
+
+- Q-M03-S02-T004-STEWARD-MODE | Ana veri değişikliklerinde hangisini istiyorsun: ilgili yetkili kişi değişikliği doğrudan yapabilsin (önerim), yoksa değişiklik ayrıca ayrı bir sorumlu onayından mı geçsin? İkinci seçenekte hangi mevcut rol veya görev onaylamalı? | TASK: M03.S02.T004
 
 ## Owner Decisions
 
