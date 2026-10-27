@@ -25,6 +25,7 @@ from app.models.mps import (
 from app.models.mrp import MRPRun, MRPResult, MRPRunStatus
 from app.models.production import ProductionOrder, ProductionOrderStatus
 from app.models.recipe import Recipe, RecipeStatus
+from app.services.recipe_governance import recipe_precedence_ordering, recipe_required_date
 from app.models.master import Product, UnitOfMeasure, Warehouse
 from app.schemas.mps import (
     MPSPlanCreate, MPSLineUpdate, GenerateFromMRPRequest,
@@ -474,7 +475,7 @@ async def _select_release_recipe(db: AsyncSession, product_id: uuid.UUID, as_of:
             (Recipe.valid_from == None) | (Recipe.valid_from <= as_of),
             (Recipe.valid_to == None) | (Recipe.valid_to >= as_of),
         )
-        .order_by(Recipe.valid_from.desc().nulls_last(), Recipe.created_at.desc())
+        .order_by(*recipe_precedence_ordering())
         .limit(1)
     )
     return recipe_q.scalar_one_or_none()
@@ -572,7 +573,7 @@ async def release_mps_plan(
     skipped_no_recipe = 0
     prepared_lines = []
     for line in lines:
-        required_start = line.planned_start_date or plan.start_date
+        required_start = recipe_required_date(line.planned_start_date, line.period_start)
         recipe = await _select_release_recipe(db, line.product_id, required_start)
         if not recipe:
             reason = "[no approved effective recipe — skipped]"

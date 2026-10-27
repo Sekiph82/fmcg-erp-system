@@ -2,7 +2,7 @@ import uuid
 import enum
 from sqlalchemy import (
     Column, String, Text, Numeric, Boolean, Integer,
-    ForeignKey, Enum, Date, UniqueConstraint,
+    ForeignKey, Enum, Date, UniqueConstraint, CheckConstraint,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
@@ -20,6 +20,14 @@ class Recipe(Base, TimestampMixin):
     __tablename__ = "recipes"
     __table_args__ = (
         UniqueConstraint("product_id", "version", name="uq_recipe_product_version"),
+        CheckConstraint(
+            "version ~ '[^[:space:]]'",
+            name="ck_recipes_version_not_blank",
+        ),
+        CheckConstraint(
+            "valid_to IS NULL OR valid_from IS NULL OR valid_to >= valid_from",
+            name="ck_recipes_effective_window",
+        ),
     )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)

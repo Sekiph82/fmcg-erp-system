@@ -12,6 +12,7 @@ from app.schemas.recipe import (
     RecipeItemCreate, RecipeItemUpdate, RecipeItemRead,
     ProcessParameterCreate, ProcessParameterUpdate, ProcessParameterRead,
     RecipeDuplicateRequest,
+    validate_recipe_update_window,
 )
 from app.schemas.master import MasterMergeRequest, MasterMergeResult
 from app.api.v1.endpoints.master_lifecycle import deactivate_master, merge_master
@@ -102,6 +103,12 @@ async def update_recipe(
     if not obj:
         raise HTTPException(status_code=404, detail="Recipe not found")
     _assert_draft(obj)
+    try:
+        validate_recipe_update_window(
+            obj.valid_from, obj.valid_to, data.model_dump(exclude_unset=True)
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     obj = await crud.update_recipe(db, obj, data)
     await db.commit()
     await db.refresh(obj)

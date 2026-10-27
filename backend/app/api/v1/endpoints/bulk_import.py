@@ -81,7 +81,7 @@ from app.schemas.master import (
 )
 from app.schemas.hr import EmployeeCreate
 from app.schemas.quality import QCParameterCreate
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 
 # ── Adapters ──────────────────────────────────────────────────────────────────
 
@@ -314,12 +314,19 @@ class InventoryStockAdapter(BaseImportAdapter):
 # Flat schema for Recipe header import
 class _RecipeImport(BaseModel):
     product_sku: str       # resolved → product_id
-    version:     str
+    version:     str = Field(min_length=1, max_length=20)
     name:        str
     description: Optional[str] = None
     is_active:   bool = True
     valid_from:  Optional[date] = None
     valid_to:    Optional[date] = None
+
+    @field_validator("version")
+    @classmethod
+    def version_must_not_be_blank(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("Recipe version must not be blank.")
+        return value
 
 
 class RecipeAdapter(BaseImportAdapter):

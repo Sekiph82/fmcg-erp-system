@@ -20,6 +20,7 @@ from app.models.sales import SalesOrder, SOLine, SOStatus
 from app.models.procurement import PurchaseOrder, POLine, POStatus
 from app.models.production import ProductionOrder, ProductionOrderStatus
 from app.models.recipe import Recipe, RecipeItem, RecipeStatus
+from app.services.recipe_governance import recipe_required_date, select_effective_approved_recipe
 from app.models.bom import AdvancedBOM, AdvancedBOMLine, BOMLifecycle, BOMYieldConfig
 from app.services.mps_engine import (
     PlanningInputError, allocate_period_quantity, allocate_weighted_quantity, decimal, explode_approved_bom,
@@ -667,7 +668,7 @@ async def evaluate_material_feasibility(db: AsyncSession, mps_id: uuid.UUID) -> 
             issues_by_line[line.id].append({"reason_code": "PRODUCT_MASTER_INVALID", "priority": "CRITICAL"})
             continue
         material_needs: list[dict] = []
-        required_date = line.planned_start_date or line.period_start
+        required_date = recipe_required_date(line.planned_start_date, line.period_start)
         if decimal(line.planned_production_qty) < 0:
             issues_by_line[line.id].append({
                 "reason_code": "MPS_QUANTITY_INVALID", "priority": "CRITICAL",
@@ -712,17 +713,9 @@ async def evaluate_material_feasibility(db: AsyncSession, mps_id: uuid.UUID) -> 
             except (PlanningInputError, HTTPException, MultipleResultsFound) as exc:
                 issues_by_line[line.id].append({"reason_code": "BOM_DATA_INVALID", "message": str(exc), "priority": "CRITICAL", "bom_id": str(bom.id)})
         else:
-            effective_recipes = [candidate for candidate in recipes_by_product.get(line.product_id, [])
-                                 if (candidate.valid_from is None or candidate.valid_from <= required_date)
-                                 and (candidate.valid_to is None or candidate.valid_to >= required_date)]
-            if len(effective_recipes) > 1:
-                issues_by_line[line.id].append({
-                    "reason_code": "APPROVED_RECIPE_AMBIGUOUS", "priority": "CRITICAL",
-                    "recipe_ids": [str(candidate.id) for candidate in effective_recipes],
-                    "required_date": required_date.isoformat(),
-                })
-                continue
-            recipe = effective_recipes[0] if effective_recipes else None
+            recipe = select_effective_approved_recipe(
+                recipes_by_product.get(line.product_id, []), required_date
+            )
             if recipe is None:
                 issues_by_line[line.id].append({"reason_code": "APPROVED_BOM_MISSING", "message": "No effective approved BOM or recipe covers the planned date.", "priority": "CRITICAL"})
                 continue

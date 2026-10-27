@@ -10,6 +10,8 @@ from app.schemas.recipe import (
     RecipeCreate, RecipeUpdate,
     RecipeItemCreate, RecipeItemUpdate,
     ProcessParameterCreate, ProcessParameterUpdate,
+    validate_recipe_effective_window,
+    validate_recipe_update_window,
 )
 from app.services.master_duplicate_detection import ensure_unique_record
 
@@ -55,6 +57,7 @@ async def create_recipe(
     db: AsyncSession, data: RecipeCreate, user_id: uuid.UUID
 ) -> Recipe:
     values = data.model_dump()
+    validate_recipe_effective_window(values.get("valid_from"), values.get("valid_to"))
     await ensure_unique_record(db, Recipe, values)
     obj = Recipe(**values, status=RecipeStatus.DRAFT, created_by=user_id)
     db.add(obj)
@@ -67,6 +70,7 @@ async def update_recipe(
     db: AsyncSession, obj: Recipe, data: RecipeUpdate
 ) -> Recipe:
     changes = data.model_dump(exclude_unset=True)
+    validate_recipe_update_window(obj.valid_from, obj.valid_to, changes)
     values = {column.name: getattr(obj, column.name) for column in Recipe.__table__.columns}
     values.update(changes)
     await ensure_unique_record(db, Recipe, values, exclude_id=obj.id)
@@ -102,6 +106,7 @@ async def duplicate_recipe(
     new_name: Optional[str],
     user_id: uuid.UUID,
 ) -> Recipe:
+    validate_recipe_effective_window(source.valid_from, source.valid_to)
     await ensure_unique_record(
         db, Recipe, {"product_id": source.product_id, "version": new_version}
     )
