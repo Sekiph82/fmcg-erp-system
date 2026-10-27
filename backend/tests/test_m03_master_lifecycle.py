@@ -6,10 +6,15 @@ import re
 from uuid import uuid4
 
 import pytest
+import pytest_asyncio
 from sqlalchemy import delete, select, update
 from sqlalchemy.exc import IntegrityError
+from fastapi import FastAPI
+from starlette.testclient import TestClient
 
+from app.core.exception_handlers import _constraint_name, register_handlers
 from app.db.session import AsyncSessionLocal, engine
+from app.crud.master import list_warehouses
 from app.models.company import Branch, Company
 from app.models.master import (
     Material,
@@ -37,6 +42,12 @@ def _require_task_owned_database() -> None:
         or engine.url.database != expected
     ):
         pytest.fail("Refusing integration writes: DATABASE_URL must match the exact loopback T002 disposable database.")
+
+
+@pytest_asyncio.fixture(autouse=True)
+async def _dispose_async_engine_after_test():
+    yield
+    await engine.dispose()
 
 
 @pytest.mark.asyncio
@@ -130,8 +141,9 @@ async def test_merge_preserves_history_and_inactive_masters_cannot_be_newly_refe
             recipe_id=historical_recipe_id, material_id=source_id, line_no=2,
             quantity=1, unit="KG",
         ))
-        with pytest.raises(IntegrityError, match="Inactive material record"):
+        with pytest.raises(IntegrityError, match="Inactive material record") as exc_info:
             await db.flush()
+        assert _constraint_name(exc_info.value) == "ck_active_master_reference"
         await db.rollback()
 
     async with AsyncSessionLocal() as db:
@@ -154,6 +166,52 @@ async def test_merge_preserves_history_and_inactive_masters_cannot_be_newly_refe
         await db.rollback()
 
 
+@pytest.mark.asyncio
+async def test_default_warehouse_list_hides_inactive_company_and_branch_scopes():
+    _require_task_owned_database()
+    suffix = uuid4().hex[:18]
+    async with AsyncSessionLocal() as db:
+        branch_company = Company(name=f"Warehouse branch scope {suffix}", short_code=f"WB{suffix[:8]}")
+        company_scope = Company(name=f"Warehouse company scope {suffix}", short_code=f"WC{suffix[:8]}")
+        db.add_all([branch_company, company_scope])
+        await db.flush()
+        branch = Branch(company_id=branch_company.id, name="Active branch scope", branch_code=f"WB{suffix[:10]}")
+        db.add(branch)
+        await db.flush()
+        branch_warehouse = Warehouse(
+            code=f"WBA-{suffix}", name="Branch-scoped warehouse", warehouse_type=WarehouseType.RAW_MATERIAL,
+            company_id=branch_company.id, branch_id=branch.id,
+        )
+        company_warehouse = Warehouse(
+            code=f"WCO-{suffix}", name="Company-scoped warehouse", warehouse_type=WarehouseType.FINISHED_GOODS,
+            company_id=company_scope.id,
+        )
+        db.add_all([branch_warehouse, company_warehouse])
+        await db.commit()
+        branch_warehouse_id = branch_warehouse.id
+        company_warehouse_id = company_warehouse.id
+        branch_id = branch.id
+        company_id = company_scope.id
+
+        active_ids = {row.id for row in await list_warehouses(db)}
+        assert branch_warehouse_id in active_ids
+        assert company_warehouse_id in active_ids
+
+        await deactivate_master(db, Branch, "branch", branch_id, None)
+        await db.commit()
+        branch_inactive_ids = {row.id for row in await list_warehouses(db)}
+        assert branch_warehouse_id not in branch_inactive_ids
+        assert company_warehouse_id in branch_inactive_ids
+
+        await deactivate_master(db, Company, "company", company_id, None)
+        await db.commit()
+        company_inactive_ids = {row.id for row in await list_warehouses(db)}
+        assert company_warehouse_id not in company_inactive_ids
+        all_ids = {row.id for row in await list_warehouses(db, include_inactive=True)}
+        assert branch_warehouse_id in all_ids
+        assert company_warehouse_id in all_ids
+
+
 def test_merge_request_requires_an_explicit_survivor_id():
     from pydantic import ValidationError
 
@@ -161,3 +219,39 @@ def test_merge_request_requires_an_explicit_survivor_id():
 
     with pytest.raises(ValidationError):
         MasterMergeRequest.model_validate({})
+
+
+def test_inactive_master_database_violation_is_an_api_conflict():
+    from sqlalchemy.exc import IntegrityError
+
+    class DatabaseConstraintViolation(Exception):
+        constraint_name = "ck_active_master_reference"
+
+    app = FastAPI()
+    register_handlers(app)
+
+    @app.post("/new-record")
+    async def create_record():
+        raise IntegrityError("INSERT", {}, DatabaseConstraintViolation("inactive master"))
+
+    response = TestClient(app).post("/new-record")
+    assert response.status_code == 409
+    assert response.json()["detail"]["code"] == "inactive_master_reference"
+
+
+def test_unrelated_database_integrity_error_remains_internal_error():
+    from sqlalchemy.exc import IntegrityError
+
+    class DatabaseConstraintViolation(Exception):
+        constraint_name = "uq_unrelated_record"
+
+    app = FastAPI()
+    register_handlers(app)
+
+    @app.post("/new-record")
+    async def create_record():
+        raise IntegrityError("INSERT", {}, DatabaseConstraintViolation("duplicate"))
+
+    response = TestClient(app).post("/new-record")
+    assert response.status_code == 500
+    assert response.json()["error"] == "internal_server_error"

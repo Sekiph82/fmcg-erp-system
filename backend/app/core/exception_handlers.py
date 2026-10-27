@@ -13,6 +13,7 @@ from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
+from sqlalchemy.exc import IntegrityError
 
 from app.core.observability import capture_exception
 
@@ -75,6 +76,43 @@ def register_handlers(app: FastAPI) -> None:
                 "path": request.url.path,
             },
         )
+
+    @app.exception_handler(IntegrityError)
+    async def integrity_error_handler(request: Request, exc: IntegrityError):
+        """Expose only the known inactive-master guard as a client conflict."""
+        if _constraint_name(exc) == "ck_active_master_reference":
+            log.info("Rejected a new reference to an inactive master on %s", request.url.path)
+            return JSONResponse(
+                status_code=status.HTTP_409_CONFLICT,
+                content={
+                    "error": "conflict",
+                    "detail": {
+                        "code": "inactive_master_reference",
+                        "message": "Inactive master records cannot be selected for new records.",
+                    },
+                    "path": request.url.path,
+                },
+            )
+        return await unhandled_exception_handler(request, exc)
+
+
+def _constraint_name(exc: BaseException) -> str | None:
+    """Find the database constraint through SQLAlchemy and driver wrappers."""
+    pending: list[BaseException] = [exc]
+    seen: set[int] = set()
+    while pending:
+        current = pending.pop()
+        if id(current) in seen:
+            continue
+        seen.add(id(current))
+        name = getattr(current, "constraint_name", None)
+        if name:
+            return str(name)
+        for attribute in ("orig", "__cause__", "__context__"):
+            nested = getattr(current, attribute, None)
+            if isinstance(nested, BaseException):
+                pending.append(nested)
+    return None
 
 
 def _status_label(code: int) -> str:

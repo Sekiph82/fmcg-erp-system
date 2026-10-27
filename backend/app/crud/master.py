@@ -139,9 +139,17 @@ async def list_warehouses(db: AsyncSession, skip=0, limit=50, include_inactive=F
         )
         .exists()
     )
+    company_has_active_parent = (
+        select(Company.id)
+        .where(
+            Company.id == Warehouse.company_id,
+            Company.is_active.is_(True),
+        )
+        .exists()
+    )
     query = select(Warehouse).where(
         Warehouse.is_active.is_(True),
-        or_(Warehouse.company_id.is_(None), Warehouse.company.has(Company.is_active.is_(True))),
+        or_(Warehouse.company_id.is_(None), company_has_active_parent),
         or_(Warehouse.branch_id.is_(None), branch_has_active_company),
     )
     result = await db.execute(query.offset(skip).limit(limit))
