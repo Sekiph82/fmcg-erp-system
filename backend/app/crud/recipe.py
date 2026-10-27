@@ -5,7 +5,7 @@ from typing import Optional, List
 import uuid
 
 from app.models.recipe import Recipe, RecipeItem, ProcessParameter, RecipeStatus
-from app.models.master import Material
+from app.models.master import Material, Product
 from app.schemas.recipe import (
     RecipeCreate, RecipeUpdate,
     RecipeItemCreate, RecipeItemUpdate,
@@ -37,8 +37,11 @@ async def list_recipes(
     status: Optional[RecipeStatus] = None,
     skip: int = 0,
     limit: int = 50,
+    include_inactive: bool = False,
 ) -> List[Recipe]:
     q = select(Recipe).options(selectinload(Recipe.product))
+    if not include_inactive:
+        q = q.where(Recipe.is_active.is_(True), Recipe.product.has(Product.is_active.is_(True)))
     if product_id:
         q = q.where(Recipe.product_id == product_id)
     if status:

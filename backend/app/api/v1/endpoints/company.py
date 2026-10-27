@@ -37,6 +37,8 @@ from app.schemas.company import (
     GrantUserAccess, UserAccessRead,
     CompanySummary,
 )
+from app.schemas.master import MasterMergeRequest, MasterMergeResult
+from app.api.v1.endpoints.master_lifecycle import deactivate_master, merge_master
 from app.services.master_duplicate_detection import ensure_unique_record
 
 router = APIRouter()
@@ -142,6 +144,8 @@ async def update_company(
     await _check_company_access(db, current_user, company_id)
     c = await _get_or_404(db, company_id)
     changes = body.model_dump(exclude_none=True)
+    if "is_active" in body.model_fields_set:
+        raise HTTPException(422, "Use the governed deactivation action to change company activity.")
     values = {column.name: getattr(c, column.name) for column in Company.__table__.columns}
     values.update(changes)
     await ensure_unique_record(db, Company, values, exclude_id=c.id)
@@ -168,6 +172,10 @@ async def set_default_company(
     if not access and not current_user.is_superuser:
         raise HTTPException(403, "No access to this company")
 
+    c = await _get_or_404(db, company_id)
+    if not c.is_active:
+        raise HTTPException(409, "An inactive company cannot be selected as the default.")
+
     # Clear existing default
     all_access = list((await db.execute(
         select(UserCompanyAccess).where(UserCompanyAccess.user_id == current_user.id)
@@ -176,8 +184,30 @@ async def set_default_company(
         a.is_default = (a.company_id == company_id)
 
     await db.commit()
-    c = await _get_or_404(db, company_id)
     return await _build_company_read(db, c)
+
+
+@router.post("/{company_id}/deactivate", response_model=CompanyRead)
+async def deactivate_company(
+    company_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_permission("company", "delete")),
+):
+    await _check_company_access(db, current_user, company_id)
+    company = await deactivate_master(db, Company, "company", company_id, current_user.id)
+    return await _build_company_read(db, company)
+
+
+@router.post("/{company_id}/merge", response_model=MasterMergeResult)
+async def merge_company(
+    company_id: uuid.UUID,
+    body: MasterMergeRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_permission("company", "delete")),
+):
+    await _check_company_access(db, current_user, company_id)
+    await _check_company_access(db, current_user, body.survivor_id)
+    return await merge_master(db, Company, "company", company_id, body.survivor_id, current_user.id)
 
 
 # ── Branches ──────────────────────────────────────────────────────────────────
@@ -185,11 +215,18 @@ async def set_default_company(
 @router.get("/{company_id}/branches", response_model=List[BranchRead])
 async def list_branches(
     company_id: uuid.UUID,
+    include_inactive: bool = Query(False),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_permission("company", "view")),
 ):
     await _check_company_access(db, current_user, company_id)
-    q = select(Branch).where(Branch.company_id == company_id).order_by(Branch.name)
+    company = await _get_or_404(db, company_id)
+    if not company.is_active and not include_inactive:
+        raise HTTPException(409, "An inactive company cannot be used to select branches.")
+    q = select(Branch).where(Branch.company_id == company_id)
+    if not include_inactive:
+        q = q.where(Branch.is_active.is_(True))
+    q = q.order_by(Branch.name)
     return [BranchRead.model_validate(b) for b in (await db.execute(q)).scalars().all()]
 
 
@@ -231,6 +268,38 @@ async def update_branch(
     await db.commit()
     await db.refresh(branch)
     return BranchRead.model_validate(branch)
+
+
+@router.post("/branches/{branch_id}/deactivate", response_model=BranchRead)
+async def deactivate_branch(
+    branch_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_permission("company", "delete")),
+):
+    branch = await db.get(Branch, branch_id)
+    if not branch:
+        raise HTTPException(404, "Branch not found")
+    await _check_company_access(db, current_user, branch.company_id)
+    result = await deactivate_master(db, Branch, "branch", branch_id, current_user.id)
+    return BranchRead.model_validate(result)
+
+
+@router.post("/branches/{branch_id}/merge", response_model=MasterMergeResult)
+async def merge_branch(
+    branch_id: uuid.UUID,
+    body: MasterMergeRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_permission("company", "delete")),
+):
+    source = await db.get(Branch, branch_id)
+    survivor = await db.get(Branch, body.survivor_id)
+    if not source or not survivor:
+        raise HTTPException(404, "Branch or survivor not found")
+    await _check_company_access(db, current_user, source.company_id)
+    await _check_company_access(db, current_user, survivor.company_id)
+    if source.company_id != survivor.company_id:
+        raise HTTPException(409, detail={"code": "cross_company_merge", "message": "Branches from different companies cannot be merged."})
+    return await merge_master(db, Branch, "branch", branch_id, body.survivor_id, current_user.id)
 
 
 # ── User Access ───────────────────────────────────────────────────────────────

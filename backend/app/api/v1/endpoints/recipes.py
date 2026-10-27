@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List, Optional
 import uuid
@@ -13,6 +13,8 @@ from app.schemas.recipe import (
     ProcessParameterCreate, ProcessParameterUpdate, ProcessParameterRead,
     RecipeDuplicateRequest,
 )
+from app.schemas.master import MasterMergeRequest, MasterMergeResult
+from app.api.v1.endpoints.master_lifecycle import deactivate_master, merge_master
 
 router = APIRouter()
 
@@ -31,12 +33,14 @@ def _assert_draft(recipe) -> None:
 async def list_recipes(
     product_id: Optional[uuid.UUID] = None,
     status: Optional[RecipeStatus] = None,
+    include_inactive: bool = Query(False),
     skip: int = 0,
     limit: int = 50,
     db: AsyncSession = Depends(get_db),
     _=Depends(require_permission("recipe", "view")),
 ):
-    recipes = await crud.list_recipes(db, product_id=product_id, status=status, skip=skip, limit=limit)
+    recipes = await crud.list_recipes(db, product_id=product_id, status=status, skip=skip, limit=limit,
+                                      include_inactive=include_inactive)
     result = []
     for r in recipes:
         read = RecipeRead.model_validate(r)
@@ -92,6 +96,8 @@ async def update_recipe(
     db: AsyncSession = Depends(get_db),
     _=Depends(require_permission("recipe", "edit")),
 ):
+    if "is_active" in data.model_fields_set:
+        raise HTTPException(422, "Use the governed deactivation action to change recipe activity.")
     obj = await crud.get_recipe(db, recipe_id)
     if not obj:
         raise HTTPException(status_code=404, detail="Recipe not found")
@@ -108,16 +114,45 @@ async def update_recipe(
 async def delete_recipe(
     recipe_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    _=Depends(require_permission("recipe", "delete")),
+    current_user=Depends(require_permission("recipe", "delete")),
 ):
     from fastapi import Response
     obj = await crud.get_recipe(db, recipe_id)
     if not obj:
         raise HTTPException(status_code=404, detail="Recipe not found")
     _assert_draft(obj)
-    await db.delete(obj)
-    await db.commit()
+    await deactivate_master(db, crud.Recipe, "recipe", recipe_id, current_user.id)
     return Response(status_code=204)
+
+
+@router.post("/{recipe_id}/deactivate", response_model=RecipeRead)
+async def deactivate_recipe(
+    recipe_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(require_permission("recipe", "delete")),
+):
+    obj = await crud.get_recipe(db, recipe_id)
+    if not obj:
+        raise HTTPException(status_code=404, detail="Recipe not found")
+    _assert_draft(obj)
+    return await deactivate_master(db, crud.Recipe, "recipe", recipe_id, current_user.id)
+
+
+@router.post("/{recipe_id}/merge", response_model=MasterMergeResult)
+async def merge_recipe(
+    recipe_id: uuid.UUID,
+    body: MasterMergeRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(require_permission("recipe", "delete")),
+):
+    source = await crud.get_recipe(db, recipe_id)
+    survivor = await crud.get_recipe(db, body.survivor_id)
+    if not source or not survivor:
+        raise HTTPException(404, "Recipe or survivor not found")
+    _assert_draft(source)
+    if source.product_id != survivor.product_id:
+        raise HTTPException(409, detail={"code": "recipe_product_mismatch", "message": "Recipes for different products cannot be merged."})
+    return await merge_master(db, crud.Recipe, "recipe", recipe_id, body.survivor_id, current_user.id)
 
 
 # ── Approval workflow ─────────────────────────────────────────────────────────
@@ -145,16 +180,17 @@ async def approve_recipe(
 async def obsolete_recipe(
     recipe_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    _=Depends(require_permission("recipe", "obsolete")),
+    current_user=Depends(require_permission("recipe", "obsolete")),
 ):
     obj = await crud.get_recipe(db, recipe_id)
     if not obj:
         raise HTTPException(status_code=404, detail="Recipe not found")
     if obj.status == RecipeStatus.OBSOLETE:
         raise HTTPException(status_code=422, detail="Recipe is already obsolete.")
-    obj = await crud.obsolete_recipe(db, obj)
-    await db.commit()
-    await db.refresh(obj)
+    if not obj.is_active:
+        raise HTTPException(status_code=409, detail="An inactive or merged recipe cannot be changed to obsolete.")
+    obj.status = RecipeStatus.OBSOLETE
+    obj = await deactivate_master(db, crud.Recipe, "recipe", recipe_id, current_user.id)
     return RecipeRead.model_validate(obj)
 
 

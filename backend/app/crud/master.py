@@ -1,9 +1,10 @@
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select, func, or_
 from typing import Optional, List
 import uuid
 
 from app.models.master import Product, Material, Supplier, Warehouse
+from app.models.company import Company, Branch
 from app.schemas.master import (
     ProductCreate, ProductUpdate,
     MaterialCreate, MaterialUpdate,
@@ -20,8 +21,11 @@ async def _get(db, model, id_):
     return result.scalar_one_or_none()
 
 
-async def _list(db, model, skip=0, limit=50):
-    result = await db.execute(select(model).offset(skip).limit(limit))
+async def _list(db, model, skip=0, limit=50, include_inactive=False):
+    query = select(model)
+    if not include_inactive:
+        query = query.where(model.is_active.is_(True))
+    result = await db.execute(query.offset(skip).limit(limit))
     return list(result.scalars().all())
 
 
@@ -35,8 +39,8 @@ async def _count(db, model):
 async def get_supplier(db: AsyncSession, supplier_id: uuid.UUID) -> Optional[Supplier]:
     return await _get(db, Supplier, supplier_id)
 
-async def list_suppliers(db: AsyncSession, skip=0, limit=50) -> List[Supplier]:
-    return await _list(db, Supplier, skip, limit)
+async def list_suppliers(db: AsyncSession, skip=0, limit=50, include_inactive=False) -> List[Supplier]:
+    return await _list(db, Supplier, skip, limit, include_inactive)
 
 async def create_supplier(db: AsyncSession, data: SupplierCreate) -> Supplier:
     values = data.model_dump()
@@ -64,8 +68,8 @@ async def update_supplier(db: AsyncSession, obj: Supplier, data: SupplierUpdate)
 async def get_product(db: AsyncSession, product_id: uuid.UUID) -> Optional[Product]:
     return await _get(db, Product, product_id)
 
-async def list_products(db: AsyncSession, skip=0, limit=50) -> List[Product]:
-    return await _list(db, Product, skip, limit)
+async def list_products(db: AsyncSession, skip=0, limit=50, include_inactive=False) -> List[Product]:
+    return await _list(db, Product, skip, limit, include_inactive)
 
 async def create_product(db: AsyncSession, data: ProductCreate) -> Product:
     values = data.model_dump()
@@ -93,8 +97,8 @@ async def update_product(db: AsyncSession, obj: Product, data: ProductUpdate) ->
 async def get_material(db: AsyncSession, material_id: uuid.UUID) -> Optional[Material]:
     return await _get(db, Material, material_id)
 
-async def list_materials(db: AsyncSession, skip=0, limit=50) -> List[Material]:
-    return await _list(db, Material, skip, limit)
+async def list_materials(db: AsyncSession, skip=0, limit=50, include_inactive=False) -> List[Material]:
+    return await _list(db, Material, skip, limit, include_inactive)
 
 async def create_material(db: AsyncSession, data: MaterialCreate) -> Material:
     values = data.model_dump()
@@ -122,8 +126,26 @@ async def update_material(db: AsyncSession, obj: Material, data: MaterialUpdate)
 async def get_warehouse(db: AsyncSession, warehouse_id: uuid.UUID) -> Optional[Warehouse]:
     return await _get(db, Warehouse, warehouse_id)
 
-async def list_warehouses(db: AsyncSession, skip=0, limit=50) -> List[Warehouse]:
-    return await _list(db, Warehouse, skip, limit)
+async def list_warehouses(db: AsyncSession, skip=0, limit=50, include_inactive=False) -> List[Warehouse]:
+    if include_inactive:
+        return await _list(db, Warehouse, skip, limit, include_inactive)
+    branch_has_active_company = (
+        select(Branch.id)
+        .join(Company, Company.id == Branch.company_id)
+        .where(
+            Branch.id == Warehouse.branch_id,
+            Branch.is_active.is_(True),
+            Company.is_active.is_(True),
+        )
+        .exists()
+    )
+    query = select(Warehouse).where(
+        Warehouse.is_active.is_(True),
+        or_(Warehouse.company_id.is_(None), Warehouse.company.has(Company.is_active.is_(True))),
+        or_(Warehouse.branch_id.is_(None), branch_has_active_company),
+    )
+    result = await db.execute(query.offset(skip).limit(limit))
+    return list(result.scalars().all())
 
 async def create_warehouse(db: AsyncSession, data: WarehouseCreate) -> Warehouse:
     values = data.model_dump()

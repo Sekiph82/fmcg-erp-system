@@ -15,6 +15,18 @@ from app.models.master import (
 )
 
 
+class MasterMergeRequest(BaseModel):
+    survivor_id: uuid.UUID
+
+
+class MasterMergeResult(BaseModel):
+    entity_type: str
+    source_id: uuid.UUID
+    survivor_id: uuid.UUID
+    source_is_active: bool
+    lifecycle_event_id: uuid.UUID
+
+
 # ── Supplier ──────────────────────────────────────────────────────────────────
 
 class SupplierBase(BaseModel):

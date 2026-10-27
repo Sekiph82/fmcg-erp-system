@@ -93,6 +93,8 @@ PERMISSIONS = [
     ("materials",   "view",   "View Materials",        "View raw materials",                       True),
     ("materials",   "create", "Create Materials",      "Add raw materials",                        False),
     ("materials",   "edit",   "Edit Materials",        "Edit material details",                    False),
+    ("materials",   "delete", "Deactivate / Merge Materials", "Deactivate or merge material masters without deleting history", False),
+    ("suppliers",   "delete", "Deactivate / Merge Suppliers", "Deactivate or merge supplier masters without deleting history", False),
 
     # Production
     ("production",  "view",   "View Production",       "View production orders and plans",         True),
@@ -196,6 +198,7 @@ PERMISSIONS = [
     ("warehouses",  "view",   "View Warehouses",       "View warehouse configuration",             True),
     ("warehouses",  "create", "Create Warehouses",     "Add warehouses and zones",                 False),
     ("warehouses",  "edit",   "Edit Warehouses",       "Edit warehouse settings",                  False),
+    ("warehouses",  "delete", "Deactivate / Merge Warehouses", "Deactivate or merge warehouse masters without deleting history", False),
     ("wms",         "view",   "View WMS",              "View WMS operations",                      True),
     ("wms",         "create", "Create WMS",            "Create WMS transactions",                  False),
     ("wms",         "edit",   "Edit WMS",              "Edit WMS records",                         False),

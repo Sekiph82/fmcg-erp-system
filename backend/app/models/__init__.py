@@ -25,6 +25,8 @@ from app.models.fleet import (
     MaintenanceType, IncidentType, IncidentStatus, DriverStatus,
 )
 from app.models.master import Product, Material, Supplier, Warehouse
+from app.models.master_lifecycle import MasterLifecycleEvent
+from app.models.company import Company, Branch, UserCompanyAccess, CompanyUserRole
 from app.models.inventory import Stock, Lot, StockMovement
 from app.models.recipe import Recipe, RecipeItem, ProcessParameter
 from app.models.production import (
