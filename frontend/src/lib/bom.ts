@@ -117,11 +117,15 @@ export interface ConversionProfileOut {
   version_no: string;
   effective_from: string | null;
   effective_to: string | null;
+  source_product_id: string | null;
   source_product_name: string | null;
+  target_product_id: string | null;
   target_product_name: string | null;
   theoretical_conversion_ratio: number;
   standard_fill_volume: number | null;
   fill_volume_uom: string | null;
+  fill_tolerance_pct: number;
+  density_g_per_ml: number | null;
   startup_loss_pct: number;
   shutdown_loss_pct: number;
   packaging_reject_pct: number;
@@ -129,7 +133,68 @@ export interface ConversionProfileOut {
   line_purge_loss_pct: number;
   standard_expected_units: number | null;
   realistic_expected_units: number | null;
+  linked_packaging_bom_id: string | null;
   is_active: boolean;
+  notes: string | null;
+}
+
+export interface ConversionProfileCreate {
+  profile_code?: string | null;
+  profile_name: string;
+  version_no?: string;
+  effective_from?: string | null;
+  effective_to?: string | null;
+  source_product_id?: string | null;
+  source_product_name?: string | null;
+  target_product_id?: string | null;
+  target_product_name?: string | null;
+  theoretical_conversion_ratio?: number;
+  standard_fill_volume?: number | null;
+  fill_volume_uom?: string | null;
+  fill_tolerance_pct?: number;
+  density_g_per_ml?: number | null;
+  startup_loss_pct?: number;
+  shutdown_loss_pct?: number;
+  packaging_reject_pct?: number;
+  residual_bulk_pct?: number;
+  line_purge_loss_pct?: number;
+  standard_expected_units?: number | null;
+  realistic_expected_units?: number | null;
+  linked_packaging_bom_id?: string | null;
+  notes?: string | null;
+}
+
+export interface PackageComponentRequirement {
+  line_no: number;
+  item_id: string | null;
+  item_name: string | null;
+  item_code: string | null;
+  component_type: ComponentType;
+  original_qty: number;
+  scaled_qty: number;
+  adjusted_qty: number;
+  required_uom: string;
+  fixed_consumption: boolean;
+  warning: string | null;
+}
+
+export interface PackageComponentCalcResult {
+  profile_code: string;
+  version_no: string;
+  effective_from: string | null;
+  effective_to: string | null;
+  as_of_date: string;
+  profile_id: string;
+  packaging_bom_id: string;
+  target_product_id: string;
+  target_sku: string;
+  target_product_name: string;
+  requested_qty: number;
+  requested_uom: string;
+  normalized_qty: number;
+  normalized_uom: string;
+  bom_base_qty: number;
+  components: PackageComponentRequirement[];
 }
 
 export interface ConversionCalcResult {
@@ -388,7 +453,7 @@ export const bomApi = {
     apiClient.post<SubstituteOut>("/bom/substitutes", body).then((r) => r.data),
 
   // Conversion profiles
-  createConversion: (body: Partial<ConversionProfileOut>) =>
+  createConversion: (body: ConversionProfileCreate) =>
     apiClient.post<ConversionProfileOut>("/bom/conversion-profiles", body).then((r) => r.data),
   listConversions:  (asOfDate?: string) => apiClient.get<ConversionProfileOut[]>(
     "/bom/conversion-profiles",
@@ -399,5 +464,10 @@ export const bomApi = {
       `/bom/conversion-profiles/${profileId}/calculate`,
       {},
       { params: { source_qty: sourceQty, ...(sourceUom ? { source_uom: sourceUom } : {}), ...(asOfDate ? { as_of_date: asOfDate } : {}) } },
+    ).then((r) => r.data),
+  packageComponents: (profileId: string, targetQty: number, targetUom?: string, asOfDate?: string) =>
+    apiClient.get<PackageComponentCalcResult>(
+      `/bom/conversion-profiles/${profileId}/package-components`,
+      { params: { target_qty: targetQty, ...(targetUom ? { target_uom: targetUom } : {}), ...(asOfDate ? { as_of_date: asOfDate } : {}) } },
     ).then((r) => r.data),
 };

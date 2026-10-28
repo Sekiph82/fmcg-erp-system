@@ -215,27 +215,27 @@ class SubstituteOut(BaseModel):
 # ── Conversion Profile ─────────────────────────────────────────────────────────
 
 class ConversionProfileCreate(BaseModel):
-    profile_code: Optional[str] = None
-    profile_name: str
-    version_no: str = "1.0"
+    profile_code: Optional[str] = Field(default=None, max_length=80)
+    profile_name: str = Field(min_length=1, max_length=255)
+    version_no: str = Field(default="1.0", min_length=1, max_length=20)
     effective_from: Optional[date] = None
     effective_to: Optional[date] = None
     source_product_id: Optional[UUID] = None
-    source_product_name: Optional[str] = None
+    source_product_name: Optional[str] = Field(default=None, max_length=255)
     target_product_id: Optional[UUID] = None
-    target_product_name: Optional[str] = None
-    theoretical_conversion_ratio: Decimal = Decimal("1.0")
-    standard_fill_volume: Optional[Decimal] = None
-    fill_volume_uom: Optional[str] = None
-    fill_tolerance_pct: Decimal = Decimal("1.0")
-    density_g_per_ml: Optional[Decimal] = None
-    startup_loss_pct: Decimal = Decimal("0.5")
-    shutdown_loss_pct: Decimal = Decimal("0.3")
-    packaging_reject_pct: Decimal = Decimal("0.5")
-    residual_bulk_pct: Decimal = Decimal("0.2")
-    line_purge_loss_pct: Decimal = Decimal("0.1")
-    standard_expected_units: Optional[Decimal] = None
-    realistic_expected_units: Optional[Decimal] = None
+    target_product_name: Optional[str] = Field(default=None, max_length=255)
+    theoretical_conversion_ratio: Decimal = Field(default=Decimal("1.0"), gt=0, max_digits=10, decimal_places=6, allow_inf_nan=False)
+    standard_fill_volume: Optional[Decimal] = Field(default=None, gt=0, max_digits=14, decimal_places=4, allow_inf_nan=False)
+    fill_volume_uom: Optional[str] = Field(default=None, max_length=20)
+    fill_tolerance_pct: Decimal = Field(default=Decimal("1.0"), ge=0, max_digits=5, decimal_places=3, allow_inf_nan=False)
+    density_g_per_ml: Optional[Decimal] = Field(default=None, gt=0, max_digits=8, decimal_places=4, allow_inf_nan=False)
+    startup_loss_pct: Decimal = Field(default=Decimal("0.5"), ge=0, le=100, max_digits=6, decimal_places=3, allow_inf_nan=False)
+    shutdown_loss_pct: Decimal = Field(default=Decimal("0.3"), ge=0, le=100, max_digits=6, decimal_places=3, allow_inf_nan=False)
+    packaging_reject_pct: Decimal = Field(default=Decimal("0.5"), ge=0, le=100, max_digits=6, decimal_places=3, allow_inf_nan=False)
+    residual_bulk_pct: Decimal = Field(default=Decimal("0.2"), ge=0, le=100, max_digits=6, decimal_places=3, allow_inf_nan=False)
+    line_purge_loss_pct: Decimal = Field(default=Decimal("0.1"), ge=0, le=100, max_digits=6, decimal_places=3, allow_inf_nan=False)
+    standard_expected_units: Optional[Decimal] = Field(default=None, ge=0, max_digits=14, decimal_places=0, allow_inf_nan=False)
+    realistic_expected_units: Optional[Decimal] = Field(default=None, ge=0, max_digits=14, decimal_places=0, allow_inf_nan=False)
     linked_packaging_bom_id: Optional[UUID] = None
     notes: Optional[str] = None
 
@@ -249,6 +249,24 @@ class ConversionProfileCreate(BaseModel):
             raise ValueError("Profile code and version number must not be blank")
         return normalized
 
+    @field_validator("profile_name")
+    @classmethod
+    def validate_profile_name(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("Profile name must not be blank")
+        return normalized
+
+    @field_validator("fill_volume_uom")
+    @classmethod
+    def validate_fill_volume_uom(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
+        normalized = value.strip().upper()
+        if not normalized:
+            raise ValueError("Fill volume UOM must not be blank when provided")
+        return normalized
+
     @model_validator(mode="after")
     def validate_effective_window(self) -> "ConversionProfileCreate":
         if (
@@ -257,6 +275,8 @@ class ConversionProfileCreate(BaseModel):
             and self.effective_to < self.effective_from
         ):
             raise ValueError("effective_to must be on or after effective_from")
+        if self.standard_fill_volume is not None and self.fill_volume_uom is None:
+            raise ValueError("fill_volume_uom is required when standard_fill_volume is provided")
         return self
 
 class ConversionProfileOut(BaseModel):

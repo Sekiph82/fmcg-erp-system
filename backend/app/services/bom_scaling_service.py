@@ -179,6 +179,13 @@ async def calculate_conversion(
     A linked source product supplies the canonical basis UOM. Without one, the
     caller must provide the UOM and that declared UOM is the profile's basis.
     """
+    source_qty = _D(source_qty)
+    if not source_qty.is_finite() or source_qty <= 0:
+        raise HTTPException(
+            status_code=422,
+            detail="source_qty must be positive and finite",
+        )
+
     r = await db.execute(select(BOMConversionProfile).where(BOMConversionProfile.id == profile_id))
     profile: BOMConversionProfile = r.scalar_one_or_none()
     if not profile:

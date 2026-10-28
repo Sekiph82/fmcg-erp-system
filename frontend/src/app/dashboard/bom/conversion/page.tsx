@@ -2,22 +2,21 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { bomApi, ConversionProfileOut, ConversionCalcResult, fmtKES } from "@/lib/bom";
+import { bomApi, ConversionProfileCreate, ConversionProfileOut, ConversionCalcResult, fmtKES } from "@/lib/bom";
 import { PermissionGuard, RequirePermission } from "@/components/PermissionGuard";
 
-const emptyProfile: Partial<ConversionProfileOut> = {
+const emptyProfile: ConversionProfileCreate = {
   profile_code: "", profile_name: "", version_no: "1.0",
   effective_from: null, effective_to: null,
   theoretical_conversion_ratio: 1,
   startup_loss_pct: 0.5, shutdown_loss_pct: 0.3,
   packaging_reject_pct: 0.5, residual_bulk_pct: 0.2, line_purge_loss_pct: 0.1,
-  is_active: true,
 };
 
 export default function ConversionProfilePage() {
   const qc = useQueryClient();
   const [showCreate, setShowCreate] = useState(false);
-  const [form, setForm] = useState<Partial<ConversionProfileOut>>(emptyProfile);
+  const [form, setForm] = useState<ConversionProfileCreate>(emptyProfile);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [sourceQty, setSourceQty] = useState("");
   const [sourceUom, setSourceUom] = useState("KG");
@@ -179,7 +178,7 @@ export default function ConversionProfilePage() {
             </div>
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
-                <input className="border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder="Profile Code *" value={form.profile_code} onChange={(e) => setForm({ ...form, profile_code: e.target.value })} />
+                <input className="border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder="Profile Code *" value={form.profile_code ?? ""} onChange={(e) => setForm({ ...form, profile_code: e.target.value })} />
                 <input className="border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder="Profile Name *" value={form.profile_name} onChange={(e) => setForm({ ...form, profile_name: e.target.value })} />
               </div>
               <p className="text-xs text-gray-400">Use the same profile code for versions in one family; each code/version pair must be unique.</p>

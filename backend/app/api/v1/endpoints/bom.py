@@ -379,7 +379,10 @@ async def create_conversion_profile(
 
 @router.get("/conversion-profiles", response_model=List[ConversionProfileOut])
 async def list_conversion_profiles(
-    as_of_date: Optional[date] = Query(None, description="Inclusive effective-date filter; defaults to today"),
+    as_of_date: Optional[date] = Query(
+        None,
+        description="Optional inclusive effective-date filter; omitted returns all active profiles",
+    ),
     db: AsyncSession = Depends(get_db),
     _=Depends(require_permission("bom", "view")),
 ):
@@ -389,7 +392,7 @@ async def list_conversion_profiles(
 @router.post("/conversion-profiles/{profile_id}/calculate", response_model=ConversionCalcResult)
 async def calculate_conversion(
     profile_id: UUID,
-    source_qty: Decimal = Query(...),
+    source_qty: Decimal = Query(..., gt=0),
     source_uom: Optional[str] = Query(
         None,
         description="Input UOM; linked source products normalize the quantity to their product UOM.",
