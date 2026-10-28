@@ -7,6 +7,38 @@ import { productsApi, Product } from "@/lib/products";
 import { ImportModal } from "@/components/import/ImportModal";
 import { importApi } from "@/lib/importApi";
 import { PermissionGuard, RequirePermission } from "@/components/PermissionGuard";
+import { auditApi, AuditLog, EVENT_LABELS, eventBadgeColor } from "@/lib/audit";
+
+function ConversionProfileHistory({ profileId }: { profileId: string }) {
+  const { data: events = [], isLoading, isError } = useQuery<AuditLog[]>({
+    queryKey: ["conversion-profile-history", profileId],
+    queryFn: () => auditApi.list({ target_type: "conversion_profile", target_id: profileId, limit: 30 }),
+  });
+
+  return (
+    <section className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+      <h3 className="font-semibold text-gray-800">Profile History</h3>
+      {isLoading ? <p className="text-sm text-gray-400 mt-3">Loading history…</p>
+        : isError ? <p className="text-sm text-red-600 mt-3" role="alert">Could not load profile history.</p>
+        : events.length === 0 ? <p className="text-sm text-gray-400 mt-3">No recorded changes for this profile.</p>
+        : <ul className="mt-3 divide-y divide-gray-100">
+          {events.map((event) => (
+            <li key={event.id} className="py-2 flex items-start justify-between gap-3">
+              <div>
+                <span className={`inline-flex rounded px-2 py-0.5 text-xs ${eventBadgeColor(event.event_type)}`}>
+                  {EVENT_LABELS[event.event_type] ?? event.event_type}
+                </span>
+                <p className="text-xs text-gray-500 mt-1">{event.actor_email ?? "System"}</p>
+              </div>
+              <time className="text-xs text-gray-400 whitespace-nowrap" dateTime={event.created_at}>
+                {new Date(event.created_at).toLocaleString()}
+              </time>
+            </li>
+          ))}
+        </ul>}
+    </section>
+  );
+}
 
 const emptyProfile: ConversionProfileCreate = {
   profile_code: null, profile_name: "", version_no: "1.0",
@@ -237,6 +269,12 @@ export default function ConversionProfilePage() {
               </div>
               {calcResult.notes && <p className="text-xs text-gray-500 border-t pt-2">{calcResult.notes}</p>}
             </div>
+          )}
+
+          {selectedId && (
+            <PermissionGuard permission="audit.view">
+              <ConversionProfileHistory profileId={selectedId} />
+            </PermissionGuard>
           )}
 
           <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 space-y-3">

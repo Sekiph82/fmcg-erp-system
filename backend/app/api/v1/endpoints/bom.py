@@ -2,19 +2,22 @@
 from __future__ import annotations
 import csv
 import io
+import ipaddress
 from datetime import date
 from decimal import Decimal
 from typing import List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app.core.access_control import forbidden_detail, has_permission
 from app.core.deps import require_permission
+from app.crud import audit as audit_crud
 from app.db.session import get_db
+from app.models.audit_log import AuditEvent
 from app.models.bom import (
     AdvancedBOM, AdvancedBOMLine, BOMSubstituteGroup, BOMSubstitute,
     BOMConversionProfile, BOMYieldConfig,
@@ -44,6 +47,17 @@ from app.services import (
 from app.services.bom_explosion_service import BOMExplosionError
 
 router = APIRouter()
+
+
+def _audit_client_ip(request: Request) -> Optional[str]:
+    """Return only a validated socket peer address; forwarded headers are untrusted here."""
+    host = request.client.host if request.client else None
+    if not host:
+        return None
+    try:
+        return ipaddress.ip_address(host).compressed
+    except ValueError:
+        return None
 
 
 def _require_user_permission(user, action: str) -> None:
@@ -371,10 +385,31 @@ async def add_substitute(
 @router.post("/conversion-profiles", response_model=ConversionProfileOut, status_code=201)
 async def create_conversion_profile(
     body: ConversionProfileCreate,
+    request: Request,
     db: AsyncSession = Depends(get_db),
-    _=Depends(require_permission("bom", "create")),
+    current_user=Depends(require_permission("bom", "create")),
 ):
     profile = await svc.create_conversion_profile(db, body)
+    await audit_crud.log_event(
+        db,
+        event_type=AuditEvent.CONVERSION_PROFILE_CREATED,
+        actor_id=current_user.id,
+        actor_email=current_user.email,
+        actor_name=current_user.full_name,
+        module="bom",
+        target_type="conversion_profile",
+        target_id=str(profile.id),
+        target_name=profile.profile_name,
+        after_value={
+            "profile_code": profile.profile_code,
+            "version_no": profile.version_no,
+            "target_product_id": str(profile.target_product_id) if profile.target_product_id else None,
+            "theoretical_conversion_ratio": str(profile.theoretical_conversion_ratio),
+            "effective_from": profile.effective_from.isoformat() if profile.effective_from else None,
+            "effective_to": profile.effective_to.isoformat() if profile.effective_to else None,
+        },
+        ip_address=_audit_client_ip(request),
+    )
     await db.commit()
     await db.refresh(profile)
     return profile

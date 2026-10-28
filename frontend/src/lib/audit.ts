@@ -31,6 +31,7 @@ export const auditApi = {
 };
 
 export const EVENT_LABELS: Record<string, string> = {
+  CONVERSION_PROFILE_CREATED: "Conversion Profile Created",
   LOGIN_SUCCESS: "Login",
   LOGIN_FAILED: "Login Failed",
   LOGOUT: "Logout",
