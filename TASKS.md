@@ -8,11 +8,11 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 ## Project Status
 
-- Current Milestone: M19 — Security / Deployment / Hardening
-- Current Sprint: M19.S02 — Production Readiness
-- Current Task: M19.S02.T006 — Residual repository anomaly/dead-code cleanup
+- Current Milestone: M21 — Advanced BOM / Fluid-to-Unit
+- Current Sprint: M21.S01 — Conversion Model
+- Current Task: M21.S01.T001 — Define bulk-fluid→pack conversion profile model
 - Current Task Status: COMPLETE
-- Next Task/Action: M21.S01.T001 — Define bulk-fluid→pack conversion profile model
+- Next Task/Action: M21.S01.T002 — Support density/UOM conversion rules
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -596,7 +596,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 **Depends on:** M09, M20.
 
 ## M21.S01 — Conversion Model
-- [ ] M21.S01.T001 — Define bulk-fluid→pack conversion profile model
+- [x] M21.S01.T001 — Define bulk-fluid→pack conversion profile model
+  Evidence: [CODEX log](coordination/sessions/M21.S01.T001/CODEX_LOG_V01.md)
 - [ ] M21.S01.T002 — Support density/UOM conversion rules
 - [ ] M21.S01.T003 — Support package component quantities by SKU/size
 - [ ] M21.S01.T004 — Version/effective-date conversion profiles
