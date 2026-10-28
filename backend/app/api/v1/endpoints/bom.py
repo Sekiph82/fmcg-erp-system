@@ -22,6 +22,7 @@ from app.schemas.bom import (
     SubstGroupCreate, SubstGroupOut,
     SubstituteCreate, SubstituteOut,
     ConversionProfileCreate, ConversionProfileOut, ConversionCalcResult,
+    PackageComponentCalcResult,
     YieldConfigCreate, YieldConfigOut,
     ExplosionResult, ScalingRequest, ScalingResult,
     CostingResult, ComplianceSummary, VersionDiff,
@@ -390,5 +391,24 @@ async def calculate_conversion(
 ):
     try:
         return await scale_svc.calculate_conversion(db, profile_id, source_qty, source_uom)
+    except ValueError as e:
+        raise HTTPException(404, str(e))
+
+
+@router.get(
+    "/conversion-profiles/{profile_id}/package-components",
+    response_model=PackageComponentCalcResult,
+)
+async def calculate_package_components(
+    profile_id: UUID,
+    target_qty: Decimal = Query(..., gt=0, description="Requested quantity of the profile target SKU"),
+    target_uom: Optional[str] = Query(None, description="Defaults to the target SKU UOM"),
+    db: AsyncSession = Depends(get_db),
+    _=Depends(require_permission("bom", "view")),
+):
+    try:
+        return await scale_svc.calculate_package_components(
+            db, profile_id, target_qty, target_uom
+        )
     except ValueError as e:
         raise HTTPException(404, str(e))

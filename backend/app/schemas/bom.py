@@ -271,6 +271,34 @@ class ConversionCalcResult(BaseModel):
     notes: str
 
 
+class PackageComponentRequirement(BaseModel):
+    line_no: int
+    item_id: Optional[UUID]
+    item_name: Optional[str]
+    item_code: Optional[str]
+    component_type: ComponentType
+    original_qty: Decimal
+    scaled_qty: Decimal
+    adjusted_qty: Decimal
+    required_uom: str
+    fixed_consumption: bool
+    warning: Optional[str]
+
+
+class PackageComponentCalcResult(BaseModel):
+    profile_id: UUID
+    packaging_bom_id: UUID
+    target_product_id: UUID
+    target_sku: str
+    target_product_name: str
+    requested_qty: Decimal
+    requested_uom: str
+    normalized_qty: Decimal
+    normalized_uom: str
+    bom_base_qty: Decimal
+    components: List[PackageComponentRequirement]
+
+
 # ── Yield Config ───────────────────────────────────────────────────────────────
 
 class YieldConfigCreate(BaseModel):

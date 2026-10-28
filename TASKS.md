@@ -10,9 +10,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 - Current Milestone: M21 — Advanced BOM / Fluid-to-Unit
 - Current Sprint: M21.S01 — Conversion Model
-- Current Task: M21.S01.T002 — Support density/UOM conversion rules
+- Current Task: M21.S01.T003 — Support package component quantities by SKU/size
 - Current Task Status: COMPLETE
-- Next Task/Action: M21.S01.T003 — Support package component quantities by SKU/size
+- Next Task/Action: M21.S01.T004 — Version/effective-date conversion profiles
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -600,7 +600,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
   Evidence: [CODEX log](coordination/sessions/M21.S01.T001/CODEX_LOG_V01.md)
 - [x] M21.S01.T002 — Support density/UOM conversion rules
   Evidence: [CODEX log](coordination/sessions/M21.S01.T002/CODEX_LOG_V01.md); disposable PostgreSQL suite passed 18 tests through migration `20261028_0017`; NaN/±infinity density rejected with HTTP 422 and covered by tests.
-- [ ] M21.S01.T003 — Support package component quantities by SKU/size
+- [x] M21.S01.T003 — Support package component quantities by SKU/size
+  Evidence: [CODEX log](coordination/sessions/M21.S01.T003/CODEX_LOG_V01.md); disposable PostgreSQL suite passed 8 tests through migration `20261028_0017`, including SKU-matched packaging BOM lines and configured CARTON→PCS scaling.
 - [ ] M21.S01.T004 — Version/effective-date conversion profiles
 
 ## M21.S02 — Yield & Loss
