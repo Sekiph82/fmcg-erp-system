@@ -18,13 +18,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models.bom import (
-    AdvancedBOM, AdvancedBOMLine, BOMSubstituteGroup, BOMSubstitute,
-    ComponentType, BasisType,
+    AdvancedBOM, AdvancedBOMLine, BOMSubstituteGroup, BOMSubstitute, BOMSubstitutionRequest,
+    ComponentType, BasisType, SubstitutionPolicy,
 )
 from app.schemas.bom import ExplosionNode, ExplosionResult
+from app.services.bom_substitution_service import required_approver_roles, verify_substitute_master_item
+from app.services.bom_quantity_utils import (
+    decimal_value as _D,
+    scale_bom_line_qty as _scale_qty,
+    adjusted_bom_line_qty as _adjusted_qty,
+    calculate_substitute_qty,
+)
 
 
-_D = lambda v: Decimal(str(v))
 _MAX_DEPTH = 10
 
 
@@ -49,34 +55,6 @@ async def _load_bom_with_lines(db: AsyncSession, bom_id: UUID) -> Optional[Advan
     return r.scalar_one_or_none()
 
 
-def _scale_qty(line: AdvancedBOMLine, base_qty: Decimal, target_qty: Decimal) -> Decimal:
-    """Scale required_qty based on basis_type and scale factor."""
-    if line.fixed_consumption:
-        return _D(line.required_qty)
-    if line.basis_type == BasisType.FIXED:
-        return _D(line.required_qty)
-    if line.basis_type == BasisType.PERCENTAGE:
-        return target_qty * _D(line.required_qty) / _D("100")
-    if line.basis_type == BasisType.PER_BATCH:
-        scale = target_qty / base_qty if base_qty > 0 else _D("1")
-        return _D(line.required_qty) * scale
-    if line.basis_type == BasisType.PER_UNIT:
-        return _D(line.required_qty) * target_qty
-    if line.basis_type == BasisType.PER_100KG:
-        return _D(line.required_qty) * (target_qty / _D("100"))
-    if line.basis_type == BasisType.PER_1000L:
-        return _D(line.required_qty) * (target_qty / _D("1000"))
-    # default: proportional
-    scale = target_qty / base_qty if base_qty > 0 else _D("1")
-    return _D(line.required_qty) * scale
-
-
-def _adjusted_qty(scaled: Decimal, wastage_pct: Decimal, process_loss_pct: Decimal) -> Decimal:
-    """Gross up quantity for waste and process loss."""
-    factor = _D("1") + (wastage_pct + process_loss_pct) / _D("100")
-    return (scaled * factor).quantize(Decimal("0.0001"))
-
-
 async def _explode_node(
     db: AsyncSession,
     bom: AdvancedBOM,
@@ -85,6 +63,8 @@ async def _explode_node(
     level: int,
     flat: Dict[tuple[str, str, str, str, str], dict],
     path: tuple[UUID, ...],
+    substitution_requests: dict[str, BOMSubstitutionRequest],
+    applied_request_ids: set[str],
 ) -> List[ExplosionNode]:
     path_codes = " -> ".join(str(item_id) for item_id in (*path, bom.id))
     if level > _MAX_DEPTH:
@@ -103,6 +83,43 @@ async def _explode_node(
     for line in bom.lines:
         scaled = _scale_qty(line, base_qty, target_qty)
         adj = _adjusted_qty(scaled, _D(line.wastage_pct), _D(line.process_loss_pct))
+        substitution = substitution_requests.get(str(line.id))
+        if substitution is not None and substitution.bom_id != bom.id:
+            raise BOMExplosionError(
+                "Approved substitution request BOM does not directly own the matched BOM line"
+            )
+        if substitution is not None and line.child_bom_id is not None:
+            raise BOMExplosionError("Approved substitutions cannot replace intermediate BOM lines")
+        if substitution is not None and (
+            line.substitute_group_id is None
+            or substitution.substitute.group_id != line.substitute_group_id
+            or not line.substitute_group
+            or not line.substitute_group.is_active
+            or _enum_code(line.substitute_group.policy) != substitution.policy
+            or _enum_code(line.substitution_policy) != substitution.policy
+        ):
+            raise BOMExplosionError("Approved substitution no longer matches the BOM line's active group")
+        verified_substitute = None
+        if substitution is not None:
+            current_substitute_qty = calculate_substitute_qty(
+                line, base_qty, target_qty, substitution.substitute.qty_ratio
+            )
+            if current_substitute_qty != _D(substitution.substitute_qty):
+                raise BOMExplosionError(
+                    "BOM quantities, loss factors, or substitute ratio changed after the request; submit a new request"
+                )
+            request_id = str(substitution.id)
+            if request_id in applied_request_ids:
+                raise BOMExplosionError("A substitution request cannot be reused for repeated nested BOM occurrences")
+            try:
+                verified_substitute = await verify_substitute_master_item(
+                    db,
+                    substitution.substitute,
+                    expected_item_type=line.item_type,
+                    required_uom=line.required_uom,
+                )
+            except ValueError as exc:
+                raise BOMExplosionError(str(exc)) from exc
 
         # substitute options
         subs: List[str] = []
@@ -128,6 +145,15 @@ async def _explode_node(
             allergen_flag=line.allergen_flag,
             critical_component=line.critical_component,
             substitutes=subs,
+            applied_substitute=(
+                verified_substitute.name or substitution.substitute.item_code
+                if substitution is not None else None
+            ),
+            applied_substitute_qty=(
+                _D(substitution.substitute_qty).quantize(Decimal("0.0001"))
+                if substitution is not None else None
+            ),
+            substitution_request_id=str(substitution.id) if substitution is not None else None,
         )
 
         # Recurse if has child BOM (intermediate / multi-level)
@@ -143,17 +169,24 @@ async def _explode_node(
                     f"for line {line.id}"
                 )
             children = await _explode_node(
-                db, child_bom, line.item_name or "?", adj, level + 1, flat, current_path
+                db, child_bom, line.item_name or "?", adj, level + 1, flat, current_path,
+                substitution_requests, applied_request_ids,
             )
             node.children = children
             # Don't add to flat requirements — its children will be added
         else:
             # leaf node — aggregate into flat requirements
-            item_type = _enum_code(line.item_type)
+            source_item = verified_substitute if substitution is not None else line
+            item_type = _enum_code(substitution.substitute.item_type if substitution is not None else line.item_type)
             component_type = _enum_code(line.component_type)
-            item_id = str(line.item_id) if line.item_id is not None else ""
-            item_code = str(line.item_code or "").strip().upper()
-            item_name = str(line.item_name or "").strip()
+            if substitution is not None:
+                item_id = str(source_item.id)
+                item_code = str(source_item.code if item_type == "MATERIAL" else source_item.sku or "").strip().upper()
+                item_name = str(source_item.name or "").strip()
+            else:
+                item_id = str(source_item.item_id) if source_item.item_id is not None else ""
+                item_code = str(source_item.item_code or "").strip().upper()
+                item_name = str(source_item.item_name or "").strip()
             if item_id:
                 identity_kind, identity_value = "ID", item_id
             elif item_code:
@@ -173,8 +206,8 @@ async def _explode_node(
             )
             if key not in flat:
                 flat[key] = {
-                    "item_name": line.item_name or "Unknown",
-                    "item_code": line.item_code,
+                    "item_name": item_name or "Unknown",
+                    "item_code": item_code or None,
                     "item_type": item_type,
                     "component_type": line.component_type.value,
                     "required_uom": line.required_uom,
@@ -183,8 +216,13 @@ async def _explode_node(
                     "allergen_flag": False,
                     "critical_component": False,
                 }
-            flat[key]["total_qty"] += scaled
-            flat[key]["total_adjusted_qty"] += adj
+            if substitution is not None:
+                flat[key]["total_qty"] += _D(substitution.substitute_qty)
+                flat[key]["total_adjusted_qty"] += _D(substitution.substitute_qty)
+                applied_request_ids.add(str(substitution.id))
+            else:
+                flat[key]["total_qty"] += scaled
+                flat[key]["total_adjusted_qty"] += adj
             flat[key]["allergen_flag"] = flat[key]["allergen_flag"] or line.allergen_flag
             flat[key]["critical_component"] = flat[key]["critical_component"] or line.critical_component
 
@@ -193,7 +231,13 @@ async def _explode_node(
     return nodes
 
 
-async def explode_bom(db: AsyncSession, bom_id: UUID, target_qty: Optional[Decimal] = None) -> ExplosionResult:
+async def explode_bom(
+    db: AsyncSession,
+    bom_id: UUID,
+    target_qty: Optional[Decimal] = None,
+    substitution_request_ids: Optional[List[UUID]] = None,
+    context_reference: Optional[str] = None,
+) -> ExplosionResult:
     bom = await _load_bom_with_lines(db, bom_id)
     if not bom:
         raise ValueError("BOM not found")
@@ -205,8 +249,62 @@ async def explode_bom(db: AsyncSession, bom_id: UUID, target_qty: Optional[Decim
     if not target_qty.is_finite() or target_qty <= 0:
         raise BOMExplosionError("BOM explosion target quantity must be positive and finite")
 
+    substitution_requests: dict[str, BOMSubstitutionRequest] = {}
+    if substitution_request_ids:
+        if not context_reference or not context_reference.strip():
+            raise BOMExplosionError("An approved substitution must be applied with its exact production/order context reference")
+        if len(set(substitution_request_ids)) != len(substitution_request_ids):
+            raise BOMExplosionError("A substitution request may only be supplied once")
+        request_result = await db.execute(
+            select(BOMSubstitutionRequest)
+            .where(BOMSubstitutionRequest.id.in_(substitution_request_ids))
+            .options(selectinload(BOMSubstitutionRequest.substitute).selectinload(BOMSubstitute.group))
+            .options(selectinload(BOMSubstitutionRequest.decisions))
+        )
+        requests = list(request_result.scalars().unique().all())
+        if len(requests) != len(substitution_request_ids):
+            raise BOMExplosionError("One or more substitution requests do not exist")
+        for request in requests:
+            if request.status != "APPROVED":
+                raise BOMExplosionError("Only fully approved substitution requests may be applied")
+            if request.bom_id != bom.id:
+                raise BOMExplosionError("Approved substitution request belongs to a different BOM")
+            if _D(request.target_qty) != target_qty:
+                raise BOMExplosionError("Approved substitution request is for a different BOM target quantity")
+            if request.context_reference != context_reference.strip():
+                raise BOMExplosionError("Approved substitution request belongs to a different production/order context")
+            try:
+                required_roles = required_approver_roles(SubstitutionPolicy(request.policy))
+            except ValueError as exc:
+                raise BOMExplosionError("Approved substitution request has an unknown policy") from exc
+            decisions = {decision.approver_role: decision for decision in request.decisions}
+            if not required_roles or any(
+                role not in decisions or decisions[role].decision != "APPROVED"
+                for role in required_roles
+            ):
+                raise BOMExplosionError("Substitution request status does not have its required approval evidence")
+            approvers = [decisions[role] for role in required_roles]
+            identities = [decision.actor_email.casefold() for decision in approvers]
+            if len(set(identities)) != len(identities) or any(
+                decision.actor_id == request.requested_by_id
+                or decision.actor_email.casefold() == request.requester_email.casefold()
+                for decision in approvers
+            ):
+                raise BOMExplosionError("Substitution approval evidence violates independent-review requirements")
+            if not request.substitute.is_active or not request.substitute.group.is_active:
+                raise BOMExplosionError("Approved substitute or substitute group is no longer active")
+            line_id = str(request.bom_line_id)
+            if line_id in substitution_requests:
+                raise BOMExplosionError("Only one substitution request may target a BOM line per explosion")
+            substitution_requests[line_id] = request
+
     flat: Dict[tuple[str, str, str, str, str], dict] = {}
-    nodes = await _explode_node(db, bom, bom.bom_name, target_qty, 1, flat, ())
+    applied_request_ids: set[str] = set()
+    nodes = await _explode_node(
+        db, bom, bom.bom_name, target_qty, 1, flat, (), substitution_requests, applied_request_ids
+    )
+    if applied_request_ids != {str(request.id) for request in substitution_requests.values()}:
+        raise BOMExplosionError("A substitution request does not target a line in this BOM explosion")
 
     def _depth(n: ExplosionNode) -> int:
         if not n.children:

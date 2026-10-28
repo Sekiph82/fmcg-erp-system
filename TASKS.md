@@ -10,9 +10,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 - Current Milestone: M21 — Advanced BOM / Fluid-to-Unit
 - Current Sprint: M21.S03 — Advanced BOM Structures
-- Current Task: M21.S03.T002 — Multi-output/co-product/by-product semantics
+- Current Task: M21.S03.T003 — Alternate/substitute component governance
 - Current Task Status: COMPLETE
-- Next Task/Action: M21.S03.T003 — Alternate/substitute component governance
+- Next Task/Action: M21.S05.T004 — Close M21
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -620,8 +620,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
   Evidence: [CODEX log](coordination/sessions/M21.S03.T001/CODEX_LOG_V01.md); nested BOM recursion now fails closed on missing/incompatible/cyclic/over-depth/invalid-quantity structures, repeated intermediate BOMs aggregate correctly, 40 focused tests passed and the disposable PostgreSQL runner passed 10 tests; independent review found no remaining blocker.
 - [x] M21.S03.T002 — Multi-output/co-product/by-product semantics
   Evidence: [CODEX log](coordination/sessions/M21.S03.T002/CODEX_LOG_V01.md); co-/by-product quantities now appear as separate output lines, with no cost credits; synthetic PostgreSQL integration, focused unit test, frontend type-check, and independent review passed.
-- [ ] M21.S03.T003 — Alternate/substitute component governance
-  Owner decision recorded under Owner Decisions; implementation has not started.
+- [x] M21.S03.T003 — Alternate/substitute component governance
+  Evidence: [CODEX log](coordination/sessions/M21.S03.T003/CODEX_LOG_V01.md); real per-role planner/quality approvals, independent approvers, emergency and shortage rules, direct-BOM binding, master/UOM checks, and quantity/policy freshness enforcement implemented. Python compilation, 13 focused backend tests, frontend type-check, disposable PostgreSQL integration, diff check, and independent review passed.
 - [x] M21.S03.T004 — BOM explosion integrity tests
   Evidence: [CODEX log](coordination/sessions/M21.S03.T004/CODEX_LOG_V01.md); leaf aggregation now preserves item/component identity and UOM, fails closed when a leaf has no identity; focused backend regression 43 passed/1 database-dependent skipped, Python compilation, frontend type-check, diff check and independent review passed.
 

@@ -110,6 +110,48 @@ export interface SubstGroupOut {
   substitutes: SubstituteOut[];
 }
 
+export interface SubstitutionLineOption {
+  id: string;
+  bom_id: string;
+  bom_code: string;
+  bom_name: string;
+  line_no: number;
+  item_name: string | null;
+  item_code: string | null;
+  required_qty: number;
+  required_uom: string;
+}
+
+export interface SubstitutionDecisionOut {
+  id: string;
+  approver_role: "PLANNER" | "QUALITY";
+  decision: "APPROVED" | "REJECTED";
+  actor_id: string | null;
+  actor_email: string;
+  actor_name: string;
+  reason: string;
+  decision_at: string;
+}
+
+export interface SubstitutionRequestOut {
+  id: string;
+  bom_id: string;
+  bom_line_id: string;
+  substitute_id: string;
+  policy: SubstitutionPolicy;
+  target_qty: number;
+  substitute_qty: number;
+  context_reference: string;
+  reason: string;
+  shortage_evidence_reference: string | null;
+  requester_email: string;
+  requester_name: string;
+  status: "PENDING" | "APPROVED" | "REJECTED";
+  created_at: string;
+  decisions: SubstitutionDecisionOut[];
+  substitute: SubstituteOut | null;
+}
+
 export interface ConversionProfileOut {
   id: string;
   profile_code: string;
@@ -233,6 +275,9 @@ export interface ExplosionNode {
   allergen_flag: boolean;
   critical_component: boolean;
   substitutes: string[];
+  applied_substitute?: string | null;
+  applied_substitute_qty?: number | null;
+  substitution_request_id?: string | null;
   children: ExplosionNode[];
 }
 
@@ -432,8 +477,14 @@ export const bomApi = {
   deleteLine: (lineId: string) => apiClient.delete(`/bom/lines/${lineId}`).then((r) => r.data),
 
   // Explosion
-  explode: (id: string, targetQty?: number) =>
-    apiClient.get<ExplosionResult>(`/bom/${id}/explode${targetQty ? `?target_qty=${targetQty}` : ""}`).then((r) => r.data),
+  explode: (id: string, targetQty?: number, substitutionRequestIds: string[] = [], contextReference?: string) => {
+    const params = new URLSearchParams();
+    if (targetQty) params.set("target_qty", String(targetQty));
+    substitutionRequestIds.forEach((requestId) => params.append("substitution_request_ids", requestId));
+    if (contextReference) params.set("substitution_context_reference", contextReference);
+    const query = params.toString();
+    return apiClient.get<ExplosionResult>(`/bom/${id}/explode${query ? `?${query}` : ""}`).then((r) => r.data);
+  },
 
   // Scaling
   scale: (id: string, targetQty: number) =>
@@ -464,6 +515,14 @@ export const bomApi = {
   listGroups:   () => apiClient.get<SubstGroupOut[]>("/bom/substitute-groups").then((r) => r.data),
   addSubstitute:(body: Partial<SubstituteOut & { group_id: string }>) =>
     apiClient.post<SubstituteOut>("/bom/substitutes", body).then((r) => r.data),
+  substitutionLines: (groupId: string) => apiClient.get<SubstitutionLineOption[]>(`/bom/substitute-groups/${groupId}/lines`).then((r) => r.data),
+  substitutionRequests: () => apiClient.get<SubstitutionRequestOut[]>("/bom/substitution-requests").then((r) => r.data),
+  createSubstitutionRequest: (body: {
+    bom_id: string; bom_line_id: string; substitute_id: string; target_qty: number;
+    context_reference: string; reason: string; shortage_evidence_reference?: string;
+  }) => apiClient.post<SubstitutionRequestOut>("/bom/substitution-requests", body).then((r) => r.data),
+  decideSubstitution: (id: string, role: "planner" | "quality", body: { decision: "APPROVED" | "REJECTED"; reason: string }) =>
+    apiClient.post<SubstitutionRequestOut>(`/bom/substitution-requests/${id}/${role}-decision`, body).then((r) => r.data),
 
   // Conversion profiles
   createConversion: (body: ConversionProfileCreate) =>

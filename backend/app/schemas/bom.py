@@ -214,6 +214,83 @@ class SubstituteOut(BaseModel):
     is_active: bool
 
 
+class SubstitutionRequestCreate(BaseModel):
+    bom_id: UUID
+    bom_line_id: UUID
+    substitute_id: UUID
+    target_qty: Decimal = Field(gt=0, allow_inf_nan=False)
+    context_reference: str = Field(min_length=1, max_length=120)
+    reason: str = Field(min_length=5, max_length=2000)
+    shortage_evidence_reference: Optional[str] = Field(default=None, max_length=255)
+
+    @field_validator("context_reference", "reason", "shortage_evidence_reference")
+    @classmethod
+    def strip_required_text(cls, value):
+        if value is None:
+            return value
+        value = value.strip()
+        if not value:
+            raise ValueError("must not be blank")
+        return value
+
+
+class SubstitutionLineOption(BaseModel):
+    id: UUID
+    bom_id: UUID
+    bom_code: str
+    bom_name: str
+    line_no: int
+    item_name: Optional[str]
+    item_code: Optional[str]
+    required_qty: Decimal
+    required_uom: str
+
+
+class SubstitutionDecisionCreate(BaseModel):
+    decision: str = Field(pattern="^(APPROVED|REJECTED)$")
+    reason: str = Field(min_length=5, max_length=2000)
+
+    @field_validator("reason")
+    @classmethod
+    def strip_reason(cls, value):
+        value = value.strip()
+        if not value:
+            raise ValueError("must not be blank")
+        return value
+
+
+class SubstitutionDecisionOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: UUID
+    approver_role: str
+    decision: str
+    actor_id: Optional[UUID]
+    actor_email: str
+    actor_name: str
+    reason: str
+    decision_at: datetime
+
+
+class SubstitutionRequestOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: UUID
+    bom_id: UUID
+    bom_line_id: UUID
+    substitute_id: UUID
+    policy: str
+    target_qty: Decimal
+    substitute_qty: Decimal
+    context_reference: str
+    reason: str
+    shortage_evidence_reference: Optional[str]
+    requester_email: str
+    requester_name: str
+    status: str
+    created_at: datetime
+    decisions: List[SubstitutionDecisionOut] = []
+    substitute: Optional[SubstituteOut] = None
+
+
 # ── Conversion Profile ─────────────────────────────────────────────────────────
 
 class ConversionProfileCreate(BaseModel):
@@ -406,6 +483,9 @@ class ExplosionNode(BaseModel):
     allergen_flag: bool
     critical_component: bool
     substitutes: List[str]      # item names of available substitutes
+    applied_substitute: Optional[str] = None
+    applied_substitute_qty: Optional[Decimal] = None
+    substitution_request_id: Optional[str] = None
     children: List["ExplosionNode"] = []
 
 ExplosionNode.model_rebuild()

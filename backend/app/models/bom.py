@@ -15,7 +15,7 @@ Models:
 """
 import uuid
 import enum
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import (
     Column, String, Text, Numeric, Boolean, Integer, Float,
     ForeignKey, Enum as SAEnum, DateTime, Date, UniqueConstraint,
@@ -285,6 +285,59 @@ class BOMSubstitute(Base, TimestampMixin):
     is_active       = Column(Boolean, nullable=False, default=True)
 
     group = relationship("BOMSubstituteGroup", back_populates="substitutes")
+
+
+class BOMSubstitutionRequest(Base, TimestampMixin):
+    """A batch-specific request to replace one BOM material, held until approved."""
+    __tablename__ = "bom_substitution_requests"
+    __table_args__ = (
+        CheckConstraint("target_qty > 0", name="ck_bom_substitution_request_target_qty_positive"),
+        CheckConstraint("substitute_qty > 0", name="ck_bom_substitution_request_substitute_qty_positive"),
+        CheckConstraint("status IN ('PENDING', 'APPROVED', 'REJECTED')", name="ck_bom_substitution_request_status"),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    bom_id = Column(UUID(as_uuid=True), ForeignKey("advanced_boms.id", ondelete="RESTRICT"), nullable=False, index=True)
+    bom_line_id = Column(UUID(as_uuid=True), ForeignKey("advanced_bom_lines.id", ondelete="RESTRICT"), nullable=False, index=True)
+    substitute_id = Column(UUID(as_uuid=True), ForeignKey("bom_substitutes.id", ondelete="RESTRICT"), nullable=False, index=True)
+    policy = Column(String(30), nullable=False)
+    target_qty = Column(Numeric(14, 4), nullable=False)
+    substitute_qty = Column(Numeric(14, 4), nullable=False)
+    context_reference = Column(String(120), nullable=False)
+    reason = Column(Text, nullable=False)
+    shortage_evidence_reference = Column(String(255), nullable=True)
+    requested_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    requester_email = Column(String(255), nullable=False)
+    requester_name = Column(String(255), nullable=False)
+    status = Column(String(20), nullable=False, default="PENDING", server_default="PENDING", index=True)
+
+    bom_line = relationship("AdvancedBOMLine")
+    substitute = relationship("BOMSubstitute")
+    requested_by = relationship("User", foreign_keys=[requested_by_id])
+    decisions = relationship("BOMSubstitutionDecision", back_populates="request", cascade="all, delete-orphan", order_by="BOMSubstitutionDecision.decision_at")
+
+
+class BOMSubstitutionDecision(Base):
+    """Append-only planner/quality sign-off for a substitution request."""
+    __tablename__ = "bom_substitution_decisions"
+    __table_args__ = (
+        UniqueConstraint("request_id", "approver_role", name="uq_bom_substitution_decision_role"),
+        CheckConstraint("approver_role IN ('PLANNER', 'QUALITY')", name="ck_bom_substitution_decision_role"),
+        CheckConstraint("decision IN ('APPROVED', 'REJECTED')", name="ck_bom_substitution_decision_value"),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    request_id = Column(UUID(as_uuid=True), ForeignKey("bom_substitution_requests.id", ondelete="CASCADE"), nullable=False, index=True)
+    approver_role = Column(String(20), nullable=False)
+    decision = Column(String(20), nullable=False)
+    actor_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    actor_email = Column(String(255), nullable=False)
+    actor_name = Column(String(255), nullable=False)
+    reason = Column(Text, nullable=False)
+    decision_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+
+    request = relationship("BOMSubstitutionRequest", back_populates="decisions")
+    actor = relationship("User", foreign_keys=[actor_id])
 
 
 # ── 5. BOMConversionProfile ───────────────────────────────────────────────────

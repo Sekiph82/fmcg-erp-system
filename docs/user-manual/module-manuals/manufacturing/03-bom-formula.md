@@ -132,7 +132,18 @@ The BOM detail page provides tabs for formula editing, costing, compliance, and 
 ![New Substitute Group modal](../../../screenshots/captured/module-ui/manufacturing/bom/new-substitute-group-modal.png)
 *New Substitute Group modal — group code and primary material fields.*
 
-Manages approved material substitutions. When a BOM item's primary material is unavailable, an approved substitute with the same `alternative_group` can be used.
+Manages substitute groups and batch-specific substitution requests. Adding a substitute only registers a candidate; it does not authorize its use. A request records the BOM line, exact BOM target quantity, substitute quantity, production/order reference, reason, and the policy that was in force when submitted. Requests stay unavailable to BOM explosion until the required approvals are complete. An approved request can only be applied to the same target quantity and exact production/order reference it names.
+
+### Approval and emergency rule
+
+- `NO_SUB`: substitution requests are not allowed.
+- `PLANNER_APPROVAL`: a user with `bom.approve` must approve.
+- `QA_APPROVAL`: a user with `quality.approve` must approve.
+- `BOTH_REQUIRED`: both permissions must be exercised by two different users.
+- `SHORTAGE_ONLY`: the request must include a traceable shortage-evidence reference and a planner (`bom.approve`) approval.
+- `EMERGENCY_ONLY`: use only when the primary material cannot meet the required quantity/date and routine procurement cannot meet the schedule. The requester must provide a detailed emergency reason and a traceable shortage-evidence reference. Separate users with `bom.approve` and `quality.approve` must approve. Rejection ends the request; a new request is needed after any change.
+
+The emergency rule is a process gate, not an automatic stock calculation: approvers must verify that the primary material cannot meet the scheduled quantity/date and that routine procurement cannot meet the schedule. Shortage evidence is referenced and reviewed by the approvers; the system does not independently verify the external stock/shortage record. The production/order context is also a trace reference supplied by the requester, not a foreign key to a verified order. Each request is tied to its directly owning BOM, line and target quantity. The substitute quantity is calculated server-side from the BOM line basis, loss factors and substitute ratio; the requester cannot choose a different quantity. Approval decisions and reasons are recorded in the audit log. A pending, rejected, missing-decision, differently sized, differently referenced, policy-mismatched, repeated-occurrence, inactive, or wrong-UOM request cannot be applied to an explosion. Substitute materials/products must resolve to an active master item with the same item type and UOM as the BOM line; implicit UOM conversion is rejected. Line policy and group policy must match exactly.
 
 ---
 

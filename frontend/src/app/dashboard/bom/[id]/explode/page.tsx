@@ -33,6 +33,11 @@ function TreeNode({ node, depth = 0 }: { node: ExplosionNode; depth?: number }) 
         {node.critical_component && <span className="text-xs bg-orange-100 text-orange-700 px-1 rounded">Critical</span>}
         {node.wastage_pct > 0 && <span className="text-xs text-orange-500">W:{node.wastage_pct}%</span>}
       </div>
+      {node.applied_substitute && (
+        <p className="ml-8 text-xs text-amber-700">
+          Approved alternate: {node.applied_substitute} · {node.applied_substitute_qty?.toFixed(4)} {node.required_uom} · request {node.substitution_request_id}
+        </p>
+      )}
       {expanded && hasChildren && node.children.map((child) => (
         <TreeNode key={child.line_id} node={child} depth={depth + 1} />
       ))}
@@ -44,11 +49,15 @@ export default function ExplodePage() {
   const { id } = useParams<{ id: string }>();
   const [targetQty, setTargetQty] = useState("");
   const [submitted, setSubmitted] = useState<number | undefined>(undefined);
+  const [substitutionRequestInput, setSubstitutionRequestInput] = useState("");
+  const [substitutionContextInput, setSubstitutionContextInput] = useState("");
+  const [submittedSubstitutionRequests, setSubmittedSubstitutionRequests] = useState<string[]>([]);
+  const [submittedSubstitutionContext, setSubmittedSubstitutionContext] = useState("");
   const [view, setView] = useState<"tree" | "flat">("tree");
 
-  const { data, isLoading, refetch } = useQuery<ExplosionResult>({
-    queryKey: ["bom-explode", id, submitted],
-    queryFn: () => bomApi.explode(id, submitted),
+  const { data, isLoading } = useQuery<ExplosionResult>({
+    queryKey: ["bom-explode", id, submitted, submittedSubstitutionRequests, submittedSubstitutionContext],
+    queryFn: () => bomApi.explode(id, submitted, submittedSubstitutionRequests, submittedSubstitutionContext),
     enabled: true,
   });
 
@@ -68,8 +77,14 @@ export default function ExplodePage() {
           value={targetQty}
           onChange={(e) => setTargetQty(e.target.value)}
         />
+        <input className="w-72 border border-gray-200 rounded-lg px-3 py-1.5 text-sm" placeholder="Approved request IDs (comma separated)" value={substitutionRequestInput} onChange={(e) => setSubstitutionRequestInput(e.target.value)} />
+        <input className="w-56 border border-gray-200 rounded-lg px-3 py-1.5 text-sm" placeholder="Exact order/context reference" value={substitutionContextInput} onChange={(e) => setSubstitutionContextInput(e.target.value)} />
         <button
-          onClick={() => { setSubmitted(targetQty ? Number(targetQty) : undefined); refetch(); }}
+          onClick={() => {
+            setSubmitted(targetQty ? Number(targetQty) : undefined);
+            setSubmittedSubstitutionRequests(substitutionRequestInput.split(",").map((value) => value.trim()).filter(Boolean));
+            setSubmittedSubstitutionContext(substitutionContextInput.trim());
+          }}
           className="px-4 py-1.5 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
         >
           Explode

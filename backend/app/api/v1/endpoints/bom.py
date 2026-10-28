@@ -28,6 +28,7 @@ from app.schemas.bom import (
     BOMLineCreate, BOMLineUpdate, BOMLineOut,
     SubstGroupCreate, SubstGroupOut,
     SubstituteCreate, SubstituteOut,
+    SubstitutionRequestCreate, SubstitutionRequestOut, SubstitutionDecisionCreate, SubstitutionLineOption,
     ConversionProfileCreate, ConversionProfileOut, ConversionCalcResult,
     PackageComponentCalcResult,
     YieldConfigCreate, YieldConfigOut,
@@ -45,6 +46,7 @@ from app.services import (
     bom_ai_service as ai_svc,
 )
 from app.services.bom_explosion_service import BOMExplosionError
+from app.services import bom_substitution_service as substitution_svc
 
 router = APIRouter()
 
@@ -232,11 +234,15 @@ async def delete_line(line_id: UUID, db: AsyncSession = Depends(get_db), _=Depen
 async def explode_bom(
     bom_id: UUID,
     target_qty: Optional[Decimal] = None,
+    substitution_request_ids: Optional[List[UUID]] = Query(default=None),
+    substitution_context_reference: Optional[str] = Query(default=None, max_length=120),
     db: AsyncSession = Depends(get_db),
     _=Depends(require_permission("bom", "view")),
 ):
     try:
-        return await explode_svc.explode_bom(db, bom_id, target_qty)
+        return await explode_svc.explode_bom(
+            db, bom_id, target_qty, substitution_request_ids, substitution_context_reference
+        )
     except BOMExplosionError as e:
         raise HTTPException(422, str(e))
     except ValueError as e:
@@ -378,6 +384,66 @@ async def add_substitute(
     await db.commit()
     await db.refresh(sub)
     return sub
+
+
+@router.post("/substitution-requests", response_model=SubstitutionRequestOut, status_code=201)
+async def create_substitution_request(
+    body: SubstitutionRequestCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(require_permission("bom", "edit")),
+):
+    request = await substitution_svc.create_request(db, body, current_user)
+    await db.commit()
+    return request
+
+
+@router.get("/substitute-groups/{group_id}/lines", response_model=List[SubstitutionLineOption])
+async def list_substitution_group_lines(
+    group_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(require_permission("bom", "view")),
+):
+    return await substitution_svc.list_group_lines(db, group_id)
+
+
+@router.get("/substitution-requests", response_model=List[SubstitutionRequestOut])
+async def list_substitution_requests(
+    status: Optional[str] = Query(default=None, pattern="^(PENDING|APPROVED|REJECTED)$"),
+    limit: int = Query(default=100, ge=1, le=500),
+    db: AsyncSession = Depends(get_db),
+    _=Depends(require_permission("bom", "view")),
+):
+    return await substitution_svc.list_requests(db, status=status, limit=limit)
+
+
+@router.post("/substitution-requests/{request_id}/planner-decision", response_model=SubstitutionRequestOut)
+async def decide_substitution_as_planner(
+    request_id: UUID,
+    body: SubstitutionDecisionCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(require_permission("bom", "approve")),
+):
+    request = await substitution_svc.decide_request(
+        db, request_id, approver_role="PLANNER", decision=body.decision,
+        reason=body.reason, actor=current_user,
+    )
+    await db.commit()
+    return request
+
+
+@router.post("/substitution-requests/{request_id}/quality-decision", response_model=SubstitutionRequestOut)
+async def decide_substitution_as_quality(
+    request_id: UUID,
+    body: SubstitutionDecisionCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(require_permission("quality", "approve")),
+):
+    request = await substitution_svc.decide_request(
+        db, request_id, approver_role="QUALITY", decision=body.decision,
+        reason=body.reason, actor=current_user,
+    )
+    await db.commit()
+    return request
 
 
 # ── Conversion Profiles ───────────────────────────────────────────────────────

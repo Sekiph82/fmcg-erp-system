@@ -224,7 +224,7 @@ from app.models.bom import (
     SubstitutionPolicy, ItemLinkType, LossCategory,
     BOMAgentType, BOMRecStatus,
     AdvancedBOM, AdvancedBOMLine,
-    BOMSubstituteGroup, BOMSubstitute,
+    BOMSubstituteGroup, BOMSubstitute, BOMSubstitutionRequest, BOMSubstitutionDecision,
     BOMConversionProfile, BOMYieldConfig, BOMAIRec,
 )
 
@@ -750,7 +750,7 @@ __all__ = [
     "SubstitutionPolicy", "ItemLinkType", "LossCategory",
     "BOMAgentType", "BOMRecStatus",
     "AdvancedBOM", "AdvancedBOMLine",
-    "BOMSubstituteGroup", "BOMSubstitute",
+    "BOMSubstituteGroup", "BOMSubstitute", "BOMSubstitutionRequest", "BOMSubstitutionDecision",
     "BOMConversionProfile", "BOMYieldConfig", "BOMAIRec",
     # Advanced Planning
     "ScenarioStatus", "ScenarioMode", "OpQueueStatus", "CapacitySlotType",
