@@ -8,10 +8,10 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 ## Project Status
 
-- Current Milestone: M03 — Master Data
-- Current Sprint: M03.S02 — Governance Upgrade
-- Current Task: M03.S02.T005 — Validate referential integrity across master domains
-- Current Task Status: COMPLETE
+- Current Milestone: M01 — Platform / Infrastructure
+- Current Sprint: M01.S03 — Runtime Reliability
+- Current Task: M01.S03.T004 — Establish operational backup/restore rehearsal evidence
+- Current Task Status: IN_PROGRESS
 - Next Task/Action: M01.S03.T004 — Establish operational backup/restore rehearsal evidence
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
@@ -158,7 +158,7 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 - [P] M01.S03.T001 — Prove always-running background/event dispatch ownership
 - [P] M01.S03.T002 — Validate migration ownership on live-like database
 - [D] M01.S03.T003 — Execute LOCAL-STAGING-001 when deployment environment is available
-- [ ] M01.S03.T004 — Establish operational backup/restore rehearsal evidence
+- [~] M01.S03.T004 — Establish operational backup/restore rehearsal evidence
 
 ---
 
