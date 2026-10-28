@@ -10,9 +10,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 - Current Milestone: M21 — Advanced BOM / Fluid-to-Unit
 - Current Sprint: M21.S02 — Yield & Loss
-- Current Task: M21.S02.T001 — Model expected process yield
+- Current Task: M21.S02.T002 — Model filling/packaging loss and spillage
 - Current Task Status: COMPLETE
-- Next Task/Action: M21.S02.T002 — Model filling/packaging loss and spillage
+- Next Task/Action: M21.S02.T003 — Separate standard vs actual yield/loss
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -608,7 +608,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 ## M21.S02 — Yield & Loss
 - [x] M21.S02.T001 — Model expected process yield
   Evidence: [CODEX log](coordination/sessions/M21.S02.T001/CODEX_LOG_V01.md); expected output/input percentage is optional and nullable; migration `20261028_0019` passed in the disposable PostgreSQL run; 6 focused tests, frontend type-check, Python compilation, and independent review passed. No default yield was fabricated.
-- [ ] M21.S02.T002 — Model filling/packaging loss and spillage
+- [x] M21.S02.T002 — Model filling/packaging loss and spillage
+  Evidence: [CODEX log](coordination/sessions/M21.S02.T002/CODEX_LOG_V01.md); separate filling, packaging-reject, and spillage categories persist through migration `20261028_0020`; 8 disposable PostgreSQL tests and 7 focused unit tests passed; frontend type-check and independent review passed.
 - [ ] M21.S02.T003 — Separate standard vs actual yield/loss
 - [ ] M21.S02.T004 — Feed variances into costing/reporting
 

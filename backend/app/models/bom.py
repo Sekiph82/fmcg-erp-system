@@ -84,6 +84,7 @@ class LossCategory(str, enum.Enum):
     SHUTDOWN        = "SHUTDOWN"
     FILLING         = "FILLING"
     PACKAGING_REJECT= "PACKAGING_REJECT"
+    SPILLAGE        = "SPILLAGE"
     QC_REJECTION    = "QC_REJECTION"
     LINE_PURGE      = "LINE_PURGE"
 
@@ -349,6 +350,16 @@ class BOMConversionProfile(Base, TimestampMixin):
 
 class BOMYieldConfig(Base, TimestampMixin):
     __tablename__ = "bom_yield_configs"
+    __table_args__ = (
+        CheckConstraint(
+            "standard_pct <> 'NaN'::numeric AND standard_pct >= 0",
+            name="ck_bom_yield_config_standard_pct_nonnegative",
+        ),
+        CheckConstraint(
+            "max_allowable_pct IS NULL OR (max_allowable_pct <> 'NaN'::numeric AND max_allowable_pct >= 0)",
+            name="ck_bom_yield_config_max_allowable_pct_nonnegative",
+        ),
+    )
 
     id              = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     bom_id          = Column(UUID(as_uuid=True), ForeignKey("advanced_boms.id", ondelete="CASCADE"), nullable=False)

@@ -16,7 +16,7 @@ type Tab = typeof TABS[number];
 
 const COMPONENT_TYPES: ComponentType[] = ["RAW", "INTERMEDIATE", "PACKAGING", "SERVICE", "CO_PRODUCT", "BY_PRODUCT", "UTILITY", "REWORK"];
 const BASIS_TYPES: BasisType[] = ["PER_BATCH", "PER_UNIT", "PER_100KG", "PER_1000L", "PERCENTAGE", "FIXED"];
-const LOSS_CATEGORIES: LossCategory[] = ["PROCESS_LOSS", "EVAPORATION", "TRANSFER", "STARTUP", "SHUTDOWN", "FILLING", "PACKAGING_REJECT", "QC_REJECTION", "LINE_PURGE"];
+const LOSS_CATEGORIES: LossCategory[] = ["PROCESS_LOSS", "EVAPORATION", "TRANSFER", "STARTUP", "SHUTDOWN", "FILLING", "PACKAGING_REJECT", "SPILLAGE", "QC_REJECTION", "LINE_PURGE"];
 
 const emptyLine: Partial<BOMLineOut> = {
   component_type: "RAW", item_type: "MATERIAL", required_qty: 1, required_uom: "KG",
@@ -35,7 +35,7 @@ export default function BOMDetailPage() {
   const [lineForm, setLineForm] = useState<Partial<BOMLineOut>>(emptyLine);
   const [showAddYield, setShowAddYield] = useState(false);
   const [yieldForm, setYieldForm] = useState<Partial<YieldConfigOut>>({
-    loss_category: "PROCESS_LOSS", standard_pct: 1, cost_impact_flag: true,
+    loss_category: "PROCESS_LOSS", cost_impact_flag: true,
   });
   const [showClone, setShowClone] = useState(false);
   const [cloneVersion, setCloneVersion] = useState("");
@@ -101,7 +101,7 @@ export default function BOMDetailPage() {
 
   const addYield = useMutation({
     mutationFn: () => bomApi.addYield(id, yieldForm),
-    onSuccess: () => { invalidate(); setShowAddYield(false); setYieldForm({ loss_category: "PROCESS_LOSS", standard_pct: 1, cost_impact_flag: true }); },
+    onSuccess: () => { invalidate(); setShowAddYield(false); setYieldForm({ loss_category: "PROCESS_LOSS", cost_impact_flag: true }); },
   });
 
   const actionAI = useMutation({
@@ -509,13 +509,14 @@ export default function BOMDetailPage() {
               <button onClick={() => setShowAddYield(false)} className="text-gray-400 hover:text-gray-600 text-xl">×</button>
             </div>
             <div className="space-y-3">
+              <p className="text-xs text-gray-500">Filling, packaging reject, and spillage losses are configured as separate percentages. No loss rate is prefilled.</p>
               <select className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" value={yieldForm.loss_category} onChange={(e) => setYieldForm({ ...yieldForm, loss_category: e.target.value as LossCategory })}>
                 {LOSS_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Standard %</label>
-                  <input type="number" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" value={yieldForm.standard_pct} onChange={(e) => setYieldForm({ ...yieldForm, standard_pct: Number(e.target.value) })} />
+                  <label className="text-xs text-gray-500 mb-1 block">Standard loss %</label>
+                  <input type="number" min="0" step="0.001" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder="Enter configured rate" value={yieldForm.standard_pct ?? ""} onChange={(e) => setYieldForm({ ...yieldForm, standard_pct: e.target.value === "" ? undefined : Number(e.target.value) })} />
                 </div>
                 <div>
                   <label className="text-xs text-gray-500 mb-1 block">Max Allowable %</label>
@@ -529,7 +530,7 @@ export default function BOMDetailPage() {
               </label>
             </div>
             <div className="flex gap-3 mt-4">
-              <button onClick={() => addYield.mutate()} disabled={addYield.isPending} className="flex-1 bg-indigo-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-40">
+              <button onClick={() => addYield.mutate()} disabled={addYield.isPending || yieldForm.standard_pct == null || !Number.isFinite(yieldForm.standard_pct) || yieldForm.standard_pct < 0} className="flex-1 bg-indigo-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-40">
                 {addYield.isPending ? "Adding…" : "Add Config"}
               </button>
               <button onClick={() => setShowAddYield(false)} className="px-4 py-2 border rounded-lg text-sm text-gray-600 hover:bg-gray-50">Cancel</button>

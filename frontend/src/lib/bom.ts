@@ -8,7 +8,7 @@ export type ComponentType = "RAW" | "INTERMEDIATE" | "PACKAGING" | "SERVICE" | "
 export type BasisType = "PER_BATCH" | "PER_UNIT" | "PER_100KG" | "PER_1000L" | "PERCENTAGE" | "FIXED";
 export type SubstitutionPolicy = "NO_SUB" | "PLANNER_APPROVAL" | "QA_APPROVAL" | "BOTH_REQUIRED" | "SHORTAGE_ONLY" | "EMERGENCY_ONLY";
 export type ItemLinkType = "PRODUCT" | "MATERIAL";
-export type LossCategory = "PROCESS_LOSS" | "EVAPORATION" | "TRANSFER" | "STARTUP" | "SHUTDOWN" | "FILLING" | "PACKAGING_REJECT" | "QC_REJECTION" | "LINE_PURGE";
+export type LossCategory = "PROCESS_LOSS" | "EVAPORATION" | "TRANSFER" | "STARTUP" | "SHUTDOWN" | "FILLING" | "PACKAGING_REJECT" | "SPILLAGE" | "QC_REJECTION" | "LINE_PURGE";
 export type BOMAgentType = "FORMULA_ANALYZER" | "PACKAGING_OPTIMIZER" | "COMPLIANCE_CHECKER";
 export type BOMRecStatus = "PENDING" | "ACCEPTED" | "REJECTED";
 

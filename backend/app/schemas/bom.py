@@ -345,8 +345,8 @@ class YieldConfigCreate(BaseModel):
     loss_category: LossCategory
     description: Optional[str] = None
     basis: str = "PCT_OF_INPUT"
-    standard_pct: Decimal = Decimal("0")
-    max_allowable_pct: Optional[Decimal] = None
+    standard_pct: Decimal = Field(ge=0, allow_inf_nan=False)
+    max_allowable_pct: Optional[Decimal] = Field(default=None, ge=0, allow_inf_nan=False)
     cost_impact_flag: bool = True
     notes: Optional[str] = None
 
