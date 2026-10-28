@@ -28,6 +28,14 @@ _D = lambda v: Decimal(str(v))
 _MAX_DEPTH = 10
 
 
+class BOMExplosionError(ValueError):
+    """Raised when a nested BOM cannot be exploded without losing requirements."""
+
+
+def _uom_code(value) -> str:
+    return str(getattr(value, "value", value) or "").strip().upper()
+
+
 async def _load_bom_with_lines(db: AsyncSession, bom_id: UUID) -> Optional[AdvancedBOM]:
     r = await db.execute(
         select(AdvancedBOM)
@@ -76,14 +84,21 @@ async def _explode_node(
     target_qty: Decimal,
     level: int,
     flat: Dict[str, dict],
-    visited: set,
+    path: tuple[UUID, ...],
 ) -> List[ExplosionNode]:
-    if level > _MAX_DEPTH or bom.id in visited:
-        return []
-    visited.add(bom.id)
+    path_codes = " -> ".join(str(item_id) for item_id in (*path, bom.id))
+    if level > _MAX_DEPTH:
+        raise BOMExplosionError(f"BOM nesting exceeds maximum depth {_MAX_DEPTH}: {path_codes}")
+    if bom.id in path:
+        raise BOMExplosionError(f"BOM cycle detected: {path_codes}")
+    current_path = (*path, bom.id)
+    base_qty = _D(bom.base_qty)
+    if not base_qty.is_finite() or base_qty <= 0:
+        raise BOMExplosionError(
+            f"BOM {bom.bom_code} must have a positive finite base quantity"
+        )
 
     nodes: List[ExplosionNode] = []
-    base_qty = _D(bom.base_qty)
 
     for line in bom.lines:
         scaled = _scale_qty(line, base_qty, target_qty)
@@ -118,9 +133,19 @@ async def _explode_node(
         # Recurse if has child BOM (intermediate / multi-level)
         if line.child_bom_id:
             child_bom = await _load_bom_with_lines(db, line.child_bom_id)
-            if child_bom:
-                children = await _explode_node(db, child_bom, line.item_name or "?", adj, level + 1, flat, visited)
-                node.children = children
+            if child_bom is None:
+                raise BOMExplosionError(
+                    f"Child BOM {line.child_bom_id} referenced by line {line.id} is missing or unavailable"
+                )
+            if _uom_code(line.required_uom) != _uom_code(child_bom.base_uom):
+                raise BOMExplosionError(
+                    f"Child BOM UOM {child_bom.base_uom} does not match line UOM {line.required_uom} "
+                    f"for line {line.id}"
+                )
+            children = await _explode_node(
+                db, child_bom, line.item_name or "?", adj, level + 1, flat, current_path
+            )
+            node.children = children
             # Don't add to flat requirements — its children will be added
         else:
             # leaf node — aggregate into flat requirements
@@ -153,10 +178,13 @@ async def explode_bom(db: AsyncSession, bom_id: UUID, target_qty: Optional[Decim
 
     if target_qty is None:
         target_qty = _D(bom.base_qty)
+    else:
+        target_qty = _D(target_qty)
+    if not target_qty.is_finite() or target_qty <= 0:
+        raise BOMExplosionError("BOM explosion target quantity must be positive and finite")
 
     flat: Dict[str, dict] = {}
-    visited: set = set()
-    nodes = await _explode_node(db, bom, bom.bom_name, target_qty, 1, flat, visited)
+    nodes = await _explode_node(db, bom, bom.bom_name, target_qty, 1, flat, ())
 
     def _depth(n: ExplosionNode) -> int:
         if not n.children:

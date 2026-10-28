@@ -38,6 +38,7 @@ from app.services import (
     bom_compliance_service as comp_svc,
     bom_ai_service as ai_svc,
 )
+from app.services.bom_explosion_service import BOMExplosionError
 
 router = APIRouter()
 
@@ -219,6 +220,8 @@ async def explode_bom(
 ):
     try:
         return await explode_svc.explode_bom(db, bom_id, target_qty)
+    except BOMExplosionError as e:
+        raise HTTPException(422, str(e))
     except ValueError as e:
         raise HTTPException(404, str(e))
 
