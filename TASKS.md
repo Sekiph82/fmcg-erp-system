@@ -9,10 +9,10 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 ## Project Status
 
 - Current Milestone: M21 — Advanced BOM / Fluid-to-Unit
-- Current Sprint: M21.S01 — Conversion Model
-- Current Task: M21.S01.T004 — Version/effective-date conversion profiles
+- Current Sprint: M21.S02 — Yield & Loss
+- Current Task: M21.S02.T001 — Model expected process yield
 - Current Task Status: COMPLETE
-- Next Task/Action: M21.S02.T001 — Model expected process yield
+- Next Task/Action: M21.S02.T002 — Model filling/packaging loss and spillage
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -606,7 +606,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
   Evidence: [CODEX log](coordination/sessions/M21.S01.T004/CODEX_LOG_V01.md); migration `20261028_0018` passed on a disposable PostgreSQL 16 database; 10 database tests and 31 focused unit tests passed; frontend type-check and Python compilation passed; independent review found no blocker.
 
 ## M21.S02 — Yield & Loss
-- [ ] M21.S02.T001 — Model expected process yield
+- [x] M21.S02.T001 — Model expected process yield
+  Evidence: [CODEX log](coordination/sessions/M21.S02.T001/CODEX_LOG_V01.md); expected output/input percentage is optional and nullable; migration `20261028_0019` passed in the disposable PostgreSQL run; 6 focused tests, frontend type-check, Python compilation, and independent review passed. No default yield was fabricated.
 - [ ] M21.S02.T002 — Model filling/packaging loss and spillage
 - [ ] M21.S02.T003 — Separate standard vs actual yield/loss
 - [ ] M21.S02.T004 — Feed variances into costing/reporting
@@ -1115,7 +1116,12 @@ A milestone is DONE only when its planned scope is implemented or explicitly sup
 ## Questions for Şekip
 
 
+
 ## Owner Decisions
+
+- Q-M21-S02-T001-YIELD-BASIS | TASK: M21.S02.T001 | ANSWER: B — expected process yield is a percentage of BOM input quantity.
+
+- Q-M21-S02-T001-YIELD-BASIS | TASK: M21.S02.T001 | ANSWER: B — expected process yield is a percentage of BOM input quantity.
 
 - Q-M19-S02-T006-SCOPE | TASK: M19.S02.T006 | ANSWER: T006 kapsamı yalnızca hiçbir yerde kullanılmadığı kanıtlanan kodun temizlenmesidir; sayfa yönlendirmeleri ve performans uyarıları kapsam dışıdır.
 

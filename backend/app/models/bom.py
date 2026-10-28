@@ -104,6 +104,10 @@ class AdvancedBOM(Base, TimestampMixin):
     __tablename__ = "advanced_boms"
     __table_args__ = (
         UniqueConstraint("bom_code", name="uq_advanced_bom_code"),
+        CheckConstraint(
+            "expected_process_yield_pct IS NULL OR expected_process_yield_pct >= 0",
+            name="ck_advanced_bom_expected_process_yield_nonnegative",
+        ),
     )
 
     id            = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -118,6 +122,8 @@ class AdvancedBOM(Base, TimestampMixin):
     # base qty — what qty this BOM is defined for
     base_qty      = Column(Numeric(14, 4), nullable=False, default=1000)
     base_uom      = Column(String(20), nullable=False, default="KG")
+    # Expected good output as a percentage of this BOM's input base quantity.
+    expected_process_yield_pct = Column(Numeric(8, 4), nullable=True)
 
     # version control
     version_no    = Column(String(20), nullable=False, default="1.0")

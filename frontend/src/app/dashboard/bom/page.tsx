@@ -17,7 +17,7 @@ function BOMListTab() {
   const [showCreate, setShowCreate] = useState(false);
   const [filterType, setFilterType] = useState<string>("");
   const [filterLifecycle, setFilterLifecycle] = useState<string>("");
-  const [form, setForm] = useState({ bom_name: "", bom_type: "FORMULA" as BOMType, base_qty: "1000", base_uom: "KG", version_no: "1.0" });
+  const [form, setForm] = useState({ bom_name: "", bom_type: "FORMULA" as BOMType, base_qty: "1000", base_uom: "KG", expected_process_yield_pct: "", version_no: "1.0" });
 
   const { data: dashboard } = useQuery<BOMDashboard>({
     queryKey: ["bom-dashboard"],
@@ -30,12 +30,12 @@ function BOMListTab() {
   });
 
   const create = useMutation({
-    mutationFn: () => bomApi.create({ ...form, base_qty: Number(form.base_qty) } as any),
+    mutationFn: () => bomApi.create({ ...form, base_qty: Number(form.base_qty), expected_process_yield_pct: form.expected_process_yield_pct === "" ? null : Number(form.expected_process_yield_pct) } as any),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["boms"] });
       qc.invalidateQueries({ queryKey: ["bom-dashboard"] });
       setShowCreate(false);
-      setForm({ bom_name: "", bom_type: "FORMULA", base_qty: "1000", base_uom: "KG", version_no: "1.0" });
+      setForm({ bom_name: "", bom_type: "FORMULA", base_qty: "1000", base_uom: "KG", expected_process_yield_pct: "", version_no: "1.0" });
     },
   });
 
@@ -197,6 +197,19 @@ function BOMListTab() {
                 >
                   {["KG", "L", "UNIT", "MT", "G", "ML"].map((u) => <option key={u} value={u}>{u}</option>)}
                 </select>
+              </div>
+              <div>
+                <label className="text-xs text-gray-500 mb-1 block">Expected process yield (% of BOM input)</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.0001"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                  placeholder="Leave blank if not configured"
+                  value={form.expected_process_yield_pct}
+                  onChange={(e) => setForm({ ...form, expected_process_yield_pct: e.target.value })}
+                />
+                <p className="text-xs text-gray-400 mt-1">Stores the planned good-output/input percentage; it does not prefill a value.</p>
               </div>
               <input
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"

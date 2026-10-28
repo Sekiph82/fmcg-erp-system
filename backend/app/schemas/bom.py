@@ -5,7 +5,7 @@ from decimal import Decimal
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.models.bom import (
     BOMType, BOMLifecycle, ComponentType, BasisType,
@@ -22,6 +22,7 @@ class BOMCreate(BaseModel):
     product_id: Optional[UUID] = None
     base_qty: Decimal = Decimal("1000")
     base_uom: str = "KG"
+    expected_process_yield_pct: Optional[Decimal] = Field(default=None, ge=0, allow_inf_nan=False)
     version_no: str = "1.0"
     effective_from: Optional[date] = None
     effective_to: Optional[date] = None
@@ -32,6 +33,7 @@ class BOMUpdate(BaseModel):
     bom_type: Optional[BOMType] = None
     base_qty: Optional[Decimal] = None
     base_uom: Optional[str] = None
+    expected_process_yield_pct: Optional[Decimal] = Field(default=None, ge=0, allow_inf_nan=False)
     effective_from: Optional[date] = None
     effective_to: Optional[date] = None
     linked_routing_id: Optional[UUID] = None
@@ -48,6 +50,7 @@ class BOMSummary(BaseModel):
     product_name: Optional[str]
     base_qty: Decimal
     base_uom: str
+    expected_process_yield_pct: Optional[Decimal]
     version_no: str
     lifecycle: BOMLifecycle
     is_default: bool

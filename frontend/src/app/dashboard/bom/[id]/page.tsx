@@ -202,6 +202,7 @@ export default function BOMDetailPage() {
               <dt className="text-gray-400">Code</dt><dd className="font-mono text-gray-700">{bom.bom_code}</dd>
               <dt className="text-gray-400">Product</dt><dd>{bom.product_name || "—"}</dd>
               <dt className="text-gray-400">Base Qty</dt><dd>{Number(bom.base_qty).toLocaleString()} {bom.base_uom}</dd>
+              <dt className="text-gray-400">Expected Process Yield</dt><dd>{bom.expected_process_yield_pct == null ? "—" : `${Number(bom.expected_process_yield_pct).toLocaleString()}% of input`}</dd>
               <dt className="text-gray-400">Version</dt><dd>v{bom.version_no} (rev {bom.revision_no})</dd>
               <dt className="text-gray-400">Effective From</dt><dd>{bom.effective_from ? new Date(bom.effective_from).toLocaleDateString() : "—"}</dd>
               <dt className="text-gray-400">Effective To</dt><dd>{bom.effective_to ? new Date(bom.effective_to).toLocaleDateString() : "—"}</dd>

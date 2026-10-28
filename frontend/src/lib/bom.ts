@@ -23,6 +23,7 @@ export interface BOMSummary {
   product_name: string | null;
   base_qty: number;
   base_uom: string;
+  expected_process_yield_pct: number | null;
   version_no: string;
   lifecycle: BOMLifecycle;
   is_default: boolean;
