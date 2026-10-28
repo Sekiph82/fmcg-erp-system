@@ -34,8 +34,6 @@ ALLOWED_DOC_TYPES = {
 
 ALLOWED_IMPORT_TYPES = {
     "text/csv",
-    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    "application/vnd.ms-excel",
     "text/plain",
 }
 
@@ -95,19 +93,20 @@ async def validate_upload(
             detail=f"File too large. Maximum size: {max_bytes // (1024 * 1024)} MB.",
         )
 
-    # MIME type check (declared)
+    # MIME type check (declared). Missing types must fail closed; otherwise a
+    # client can bypass the import allowlist simply by omitting Content-Type.
     declared = file.content_type or ""
-    if declared and declared not in allowed_types:
+    if declared not in allowed_types:
         log.warning("Upload rejected: declared MIME %s not in allowlist", declared)
         raise HTTPException(
             status_code=415,
-            detail=f"File type '{declared}' is not allowed.",
+            detail=f"File type '{declared or 'missing'}' is not allowed.",
         )
 
     # Magic byte verification
     if content:
         detected = _detect_mime_from_magic(content[:8])
-        if detected and detected not in allowed_types:
+        if detected and (detected not in allowed_types or detected != declared):
             log.warning(
                 "Upload rejected: magic-byte MIME %s mismatch with declared %s",
                 detected, declared,
@@ -116,5 +115,12 @@ async def validate_upload(
                 status_code=415,
                 detail="File content does not match the declared file type.",
             )
+        if declared in {"text/csv", "text/plain"}:
+            if b"\x00" in content:
+                raise HTTPException(status_code=415, detail="Text imports must not contain binary data.")
+            try:
+                content.decode("utf-8-sig")
+            except UnicodeDecodeError as exc:
+                raise HTTPException(status_code=415, detail="Text imports must use UTF-8 encoding.") from exc
 
     return content

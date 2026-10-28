@@ -1,6 +1,7 @@
 """Hardening regression tests for auth, config, AI, and module metadata."""
 from __future__ import annotations
 
+import secrets
 import uuid
 from types import SimpleNamespace
 
@@ -188,7 +189,7 @@ def test_production_config_rejects_security_landmines():
     base = {
         "_env_file": None,
         "ENVIRONMENT": "production",
-        "SECRET_KEY": "production-secret-key",
+        "SECRET_KEY": secrets.token_urlsafe(32),
         "PASSWORD_REQUIRE_SPECIAL": True,
         "SEED_DEMO_DATA": False,
         "SEED_INITIAL_ADMIN": True,
@@ -204,6 +205,15 @@ def test_production_config_rejects_security_landmines():
 
     with pytest.raises(ValueError, match="SECRET_KEY"):
         Settings(**{**base, "SECRET_KEY": "changeme"})
+    with pytest.raises(ValueError, match="32 UTF-8 bytes"):
+        Settings(**{**base, "SECRET_KEY": "production-short-key"})
+    for weak_key in (
+        "production-secret-key-0123456789abcdef",
+        "a" * 64,
+        "0123456789abcdef" * 4,
+    ):
+        with pytest.raises(ValueError, match="SECRET_KEY"):
+            Settings(**{**base, "SECRET_KEY": weak_key})
     with pytest.raises(ValueError, match="PASSWORD_REQUIRE_SPECIAL"):
         Settings(**{**base, "PASSWORD_REQUIRE_SPECIAL": False})
     with pytest.raises(ValueError, match="SEED_DEMO_DATA"):
@@ -217,7 +227,7 @@ def test_production_config_rejects_security_landmines():
 _PROD_BASE = {
     "_env_file": None,
     "ENVIRONMENT": "production",
-    "SECRET_KEY": "production-secret-key",
+    "SECRET_KEY": secrets.token_urlsafe(32),
     "PASSWORD_REQUIRE_SPECIAL": True,
     "SEED_DEMO_DATA": False,
     "SEED_INITIAL_ADMIN": True,

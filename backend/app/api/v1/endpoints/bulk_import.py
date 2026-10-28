@@ -24,6 +24,7 @@ from fastapi.responses import Response, StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.file_validator import ALLOWED_IMPORT_TYPES, MAX_BYTES_IMPORT, validate_upload
 from app.core.deps import get_current_user, get_db
 from app.models.import_history import ImportHistory
 from app.models.user import User
@@ -3842,7 +3843,11 @@ async def validate_import(
     adapter = _get_adapter(module)
     await _assert_perm(_PERM_MODULE[module], "import", current_user, db)
 
-    content = await file.read()
+    content = await validate_upload(
+        file,
+        allowed_types=ALLOWED_IMPORT_TYPES,
+        max_bytes=MAX_BYTES_IMPORT,
+    )
     result = await import_engine.run(
         content=content,
         adapter=adapter,
@@ -3878,7 +3883,11 @@ async def run_import(
     if mode == ImportMode.VALIDATE_ONLY:
         raise HTTPException(status_code=400, detail="Use /validate for validate_only mode")
 
-    content = await file.read()
+    content = await validate_upload(
+        file,
+        allowed_types=ALLOWED_IMPORT_TYPES,
+        max_bytes=MAX_BYTES_IMPORT,
+    )
     result = await import_engine.run(
         content=content,
         adapter=adapter,

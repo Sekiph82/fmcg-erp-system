@@ -235,6 +235,26 @@ class Settings(BaseSettings):
         if self.ENVIRONMENT == "production":
             if self.SECRET_KEY in {"changeme", "change-this-to-a-random-secret-key"} or self.SECRET_KEY.startswith("CHANGE_ME"):
                 raise ValueError("SECRET_KEY must be changed from the default value in production")
+            if len(self.SECRET_KEY.encode("utf-8")) < 32:
+                raise ValueError("SECRET_KEY must contain at least 32 UTF-8 bytes for HS256 in production")
+            normalized_key = self.SECRET_KEY.strip().lower()
+            known_weak_markers = (
+                "changeme",
+                "change-this",
+                "secret",
+                "password",
+                "example",
+                "placeholder",
+                "development",
+                "production",
+                "test",
+            )
+            if any(marker in normalized_key for marker in known_weak_markers):
+                raise ValueError("SECRET_KEY must not contain placeholder or example text in production")
+            for period in range(1, min(len(self.SECRET_KEY), 16) + 1):
+                repeated = self.SECRET_KEY[:period] * (len(self.SECRET_KEY) // period)
+                if len(self.SECRET_KEY) % period == 0 and self.SECRET_KEY == repeated:
+                    raise ValueError("SECRET_KEY must not be a repeated pattern in production")
             if not self.PASSWORD_REQUIRE_SPECIAL:
                 raise ValueError("PASSWORD_REQUIRE_SPECIAL must be True in production")
             if self.SEED_DEMO_DATA:
