@@ -11,8 +11,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 - Current Milestone: M03 — Master Data
 - Current Sprint: M03.S02 — Governance Upgrade
 - Current Task: M03.S02.T004 — Define master-data stewardship workflow
-- Current Task Status: BLOCKED
-- Next Task/Action: M03.S02.T004 — Define master-data stewardship workflow
+- Current Task Status: COMPLETE
+- Next Task/Action: M03.S02.T005 — Validate referential integrity across master domains
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -209,7 +209,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
   Evidence: [T002 correction log V02](coordination/sessions/M03.S02.T002/CLAUDE_LOG_V02.md); disposable PostgreSQL migration and 27 focused tests passed; independent read-only review found no remaining T002 defect at `8c8c58e`.
 - [x] M03.S02.T003 — Standardize version/effective-date governance
   Evidence: [T003 implementation log V01](coordination/sessions/M03.S02.T003/CODEX_LOG_V01.md); fresh PostgreSQL migration upgrade/downgrade/re-upgrade and 10 focused tests passed; MPS recipe-selection regressions 2/2 passed; independent read-only review findings corrected.
-- [!] M03.S02.T004 — Define master-data stewardship workflow
+- [x] M03.S02.T004 — Define master-data stewardship workflow
+  Evidence: [T004 implementation log V01](coordination/sessions/M03.S02.T004/CODEX_LOG_V01.md); 38 focused tests passed (4 database-gated skips), disposable PostgreSQL migration and atomic audit/rollback test passed, frontend type-check and targeted ESLint passed, and final independent read-only review reported no remaining blocker. Implementation commit: `c317a03bd1f3fd933f0eb3a4e34952f71d0620f3`.
 - [ ] M03.S02.T005 — Validate referential integrity across master domains
 
 ---
@@ -1103,8 +1104,7 @@ A milestone is DONE only when its planned scope is implemented or explicitly sup
 
 ## Questions for Şekip
 
-- Q-M03-S02-T004-STEWARD-MODE | Ana veri değişikliklerinde hangisini istiyorsun: ilgili yetkili kişi değişikliği doğrudan yapabilsin (önerim), yoksa değişiklik ayrıca ayrı bir sorumlu onayından mı geçsin? İkinci seçenekte hangi mevcut rol veya görev onaylamalı? | TASK: M03.S02.T004
-
 ## Owner Decisions
 
+- Q-M03-S02-T004-STEWARD-MODE | TASK: M03.S02.T004 | ANSWER: Uygun yetkiye sahip kullanıcı ana veri değişikliklerini doğrudan yapabilir; değişiklikler denetim kaydına alınmalıdır. Ayrı onay zorunlu değildir.
 - Q-M03-S02-T002-MERGE-RULES | TASK: M03.S02.T002 | ANSWER: Evet. Önerilen güvenli birleştirme ve pasifleştirme kuralını kabul ediyorum.
