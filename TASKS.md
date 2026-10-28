@@ -10,9 +10,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 - Current Milestone: M03 — Master Data
 - Current Sprint: M03.S02 — Governance Upgrade
-- Current Task: M03.S02.T004 — Define master-data stewardship workflow
+- Current Task: M03.S02.T005 — Validate referential integrity across master domains
 - Current Task Status: COMPLETE
-- Next Task/Action: M03.S02.T005 — Validate referential integrity across master domains
+- Next Task/Action: M01.S03.T004 — Establish operational backup/restore rehearsal evidence
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -211,7 +211,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
   Evidence: [T003 implementation log V01](coordination/sessions/M03.S02.T003/CODEX_LOG_V01.md); fresh PostgreSQL migration upgrade/downgrade/re-upgrade and 10 focused tests passed; MPS recipe-selection regressions 2/2 passed; independent read-only review findings corrected.
 - [x] M03.S02.T004 — Define master-data stewardship workflow
   Evidence: [T004 implementation log V01](coordination/sessions/M03.S02.T004/CODEX_LOG_V01.md); 38 focused tests passed (4 database-gated skips), disposable PostgreSQL migration and atomic audit/rollback test passed, frontend type-check and targeted ESLint passed, and final independent read-only review reported no remaining blocker. Implementation commit: `c317a03bd1f3fd933f0eb3a4e34952f71d0620f3`.
-- [ ] M03.S02.T005 — Validate referential integrity across master domains
+- [x] M03.S02.T005 — Validate referential integrity across master domains
+  Evidence: [T005 implementation log V01](coordination/sessions/M03.S02.T005/CODEX_LOG_V01.md); disposable PostgreSQL 18.6 migration upgrade and focused integration tests passed (2/2); Python compile, single Alembic head, and diff checks passed; independent read-only review found no remaining blocker. Implementation commit: `bd959937cdc953e44a9c8c8cae0c5cb9526004e3`.
 
 ---
 
