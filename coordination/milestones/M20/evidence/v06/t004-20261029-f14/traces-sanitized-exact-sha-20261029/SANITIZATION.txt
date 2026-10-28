@@ -1,0 +1,6 @@
+source_commit=93f28d9f74b1c2b1f102c29114e9e38b088a2b1b
+source=two mocked Playwright UI runs; synthetic fixture only
+redactions=credential-like JSON fields, named credential header values, synthetic session values, bearer values, cookie headers, email addresses
+scan=passed; no email, bearer credential, synthetic session marker, or nonempty sensitive JSON value remains
+ui-trace-01.zip sha256=0c7f8dc6ddf358470e9947aa1f539599c39be1b07f0b9d2f1e969ce0e32ae18e
+ui-trace-02.zip sha256=f9941c97bf77ddf81bf2f11d39c11e1f55a0078e1e8789d201fa63b19ac1988e

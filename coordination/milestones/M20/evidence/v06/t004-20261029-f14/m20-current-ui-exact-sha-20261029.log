@@ -1,0 +1,17 @@
+commit=93f28d9f74b1c2b1f102c29114e9e38b088a2b1b
+base_url=http://127.0.0.1:3117
+api=intercepted synthetic responses; no backend or database
+specs=e2e/m20-mobile-layout.mocked.spec.ts e2e/m20-developer-portal.mocked.spec.ts
+output=C:\Users\sekip\Desktop\fmcg-erp-system\coordination\milestones\M20\evidence\v06\t004-20261029-f14\playwright-current-ui-exact-sha-20261029
+trace=on (synthetic fixture only)
+
+Running 2 tests using 1 worker
+
+(node:4712) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:4712) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 1 [chromium] › e2e\m20-developer-portal.mocked.spec.ts:5:5 › synthetic Developer Portal states remain readable and errors stay safe (15.2s)
+  ok 2 [chromium] › e2e\m20-mobile-layout.mocked.spec.ts:5:5 › synthetic ERP dashboard and integration navigation stay readable on a phone (3.3s)
+
+  2 passed (20.1s)
