@@ -159,6 +159,7 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 - [P] M01.S03.T002 — Validate migration ownership on live-like database
 - [D] M01.S03.T003 — Execute LOCAL-STAGING-001 when deployment environment is available
 - [!] M01.S03.T004 — Establish operational backup/restore rehearsal evidence
+  Evidence: [T004 execution log V01](coordination/sessions/M01.S03.T004/CODEX_LOG_V01.md); task remains blocked pending owner acceptance of local-only evidence or authorized staging criteria.
 
 ---
 
