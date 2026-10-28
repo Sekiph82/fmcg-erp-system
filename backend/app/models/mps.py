@@ -13,7 +13,7 @@ import enum
 from sqlalchemy import (
     Column, String, Text, Numeric, Integer, Boolean,
     ForeignKey, Enum as SAEnum, DateTime, Date,
-    UniqueConstraint, Index, JSON, func,
+    UniqueConstraint, Index, JSON, func, CheckConstraint,
 )
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
@@ -259,6 +259,12 @@ class MPSWhatIfScenario(Base, TimestampMixin):
     and the system computes the impact before committing anything.
     """
     __tablename__ = "mps_whatif_scenarios"
+    __table_args__ = (
+        CheckConstraint(
+            "impact_cost_currency IS NULL OR (length(impact_cost_currency) = 3 AND impact_cost_currency = upper(impact_cost_currency))",
+            name="ck_mps_whatif_cost_currency_iso3",
+        ),
+    )
 
     id            = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     scenario_no   = Column(String(50), nullable=False, unique=True, index=True)
@@ -273,6 +279,7 @@ class MPSWhatIfScenario(Base, TimestampMixin):
     impact_service_level_pct = Column(Numeric(6, 2), nullable=True)
     impact_delay_count       = Column(Integer, nullable=True)
     impact_cost_delta        = Column(Numeric(16, 4), nullable=True)
+    impact_cost_currency     = Column(String(3), nullable=True)
     impact_summary           = Column(Text, nullable=True)
     status                   = Column(SAEnum(WhatIfStatus), nullable=False, default=WhatIfStatus.DRAFT)
 

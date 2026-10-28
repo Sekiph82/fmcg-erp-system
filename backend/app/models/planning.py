@@ -17,7 +17,7 @@ import uuid
 import enum
 from datetime import datetime
 from sqlalchemy import (
-    Column, String, Text, Numeric, Boolean, Integer, Float,
+    Column, String, Text, Numeric, Boolean, Integer, Float, CheckConstraint,
     ForeignKey, Enum as SAEnum, DateTime, Date, UniqueConstraint, JSON,
 )
 from sqlalchemy.dialects.postgresql import UUID
@@ -228,6 +228,7 @@ class ChangeoverMatrix(Base, TimestampMixin):
     __tablename__ = "changeover_matrix"
     __table_args__ = (
         UniqueConstraint("work_center_id", "from_family", "to_family", name="uq_changeover_wc_families"),
+        CheckConstraint("cip_minutes IS NULL OR cip_minutes >= 0", name="ck_changeover_cip_minutes_nonnegative"),
     )
 
     id             = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -235,6 +236,8 @@ class ChangeoverMatrix(Base, TimestampMixin):
     from_family    = Column(String(50), nullable=False)   # product family/group code
     to_family      = Column(String(50), nullable=False)
     changeover_minutes = Column(Integer, nullable=False, default=0)
+    # Optional sanitation time for this exact work-center/family transition.
+    cip_minutes    = Column(Integer, nullable=True)
     notes          = Column(String(255), nullable=True)
     is_active      = Column(Boolean, nullable=False, default=True)
 

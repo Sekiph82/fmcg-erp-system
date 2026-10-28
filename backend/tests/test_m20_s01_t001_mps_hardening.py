@@ -145,6 +145,7 @@ async def test_release_blocks_all_orders_when_ineligible_lines_exist():
     feasible_line = SimpleNamespace(
         id=uuid4(), line_no="MPSL-0000001", product_id=product_id,
         planned_production_qty=Decimal("100"),
+        period_start=date(2026, 1, 1), period_end=date(2026, 1, 31),
         planned_start_date=None, planned_end_date=None,
         remarks=None, production_order_id=None,
     )
@@ -248,10 +249,14 @@ def test_whatif_merge_and_shift_add_require_explicit_scenario_inputs():
     assert merged["_merge_with_line_id"] == "line-2"
     shifted = whatif_svc._apply_change(
         {"id": "1", "planned_production_qty": "100"},
-        {"change_type": MPSChangeType.SHIFT_ADD, "new_value": {"date": "2026-01-01", "hours": "4"}},
+        {"change_type": MPSChangeType.SHIFT_ADD, "new_value": {
+            "date": "2026-01-01", "start_time": "12:00", "end_time": "16:00", "hours": "4",
+        }},
     )
-    assert shifted["_added_shifts"] == [{"date": "2026-01-01", "hours": "4"}]
-    with pytest.raises(ValueError, match="date and hours"):
+    assert shifted["_added_shifts"] == [{
+        "date": "2026-01-01", "start_time": "12:00", "end_time": "16:00", "hours": "4",
+    }]
+    with pytest.raises(ValueError, match="date, start_time, end_time, and hours"):
         whatif_svc._apply_change(
             {"id": "1", "planned_production_qty": "100"},
             {"change_type": MPSChangeType.SHIFT_ADD, "new_value": "4"},

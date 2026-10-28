@@ -1,0 +1,6 @@
+command: npm run type-check
+
+> fmcg-erp-frontend@0.1.0 type-check
+> tsc --noEmit
+
+exit: 0

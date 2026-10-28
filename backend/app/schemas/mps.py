@@ -265,6 +265,7 @@ class MPSWhatIfOut(BaseModel):
     impact_service_level_pct: Optional[Decimal]
     impact_delay_count: Optional[int]
     impact_cost_delta: Optional[Decimal]
+    impact_cost_currency: Optional[str]
     impact_summary: Optional[str]
     status: WhatIfStatus
     created_by_id: Optional[uuid.UUID]

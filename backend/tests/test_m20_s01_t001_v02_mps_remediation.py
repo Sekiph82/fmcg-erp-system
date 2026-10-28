@@ -96,6 +96,7 @@ def _feasible_line(product_id, **overrides):
     base = dict(
         id=uuid4(), line_no="MPSL-0000001", product_id=product_id,
         planned_production_qty=Decimal("100"),
+        period_start=date(2026, 1, 1), period_end=date(2026, 1, 31),
         planned_start_date=None, planned_end_date=None,
         remarks=None, production_order_id=None,
     )

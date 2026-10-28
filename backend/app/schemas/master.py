@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
 from decimal import Decimal
 from datetime import date, datetime
@@ -94,7 +94,9 @@ class ProductBase(BaseModel):
     weight_kg: Optional[Decimal] = None
     shelf_life_days: Optional[int] = None
     reorder_point: Decimal = Decimal("0")
+    minimum_run_qty: Optional[Decimal] = Field(default=None, gt=0)
     standard_cost: Optional[Decimal] = None
+    standard_cost_currency: Optional[str] = Field(default=None, pattern=r"^[A-Z]{3}$")
     selling_price: Optional[Decimal] = None
     is_active: bool = True
 
@@ -113,7 +115,9 @@ class ProductUpdate(BaseModel):
     weight_kg: Optional[Decimal] = None
     shelf_life_days: Optional[int] = None
     reorder_point: Optional[Decimal] = None
+    minimum_run_qty: Optional[Decimal] = Field(default=None, gt=0)
     standard_cost: Optional[Decimal] = None
+    standard_cost_currency: Optional[str] = Field(default=None, pattern=r"^[A-Z]{3}$")
     selling_price: Optional[Decimal] = None
     is_active: Optional[bool] = None
 

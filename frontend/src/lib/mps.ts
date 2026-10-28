@@ -167,6 +167,7 @@ export interface MPSWhatIf {
   impact_service_level_pct: number | string | null;
   impact_delay_count: number | null;
   impact_cost_delta: number | string | null;
+  impact_cost_currency: string | null;
   impact_summary: string | null;
   status: WhatIfStatus;
   created_by_id: string | null;
@@ -276,7 +277,8 @@ export interface MPSScenarioComparison {
   service_level_unit: "percentage_points";
   delay_count_delta: number;
   delay_count_unit: "lines";
-  cost_delta: null;
+  cost_delta: number | null;
+  cost_currency: string | null;
   cost_delta_status: string;
   material_status: "COMPLETE" | "PARTIAL_INPUTS";
   material_shortage_count_delta: number | null;
@@ -287,6 +289,9 @@ export interface MPSScenarioComparison {
   changeover_hours_delta: number | null;
   changeover_status: "COMPLETE" | "PARTIAL_INPUTS";
   changeover_unit: "hours";
+  cip_hours_delta: number | null;
+  cip_status: "COMPLETE" | "PARTIAL_INPUTS";
+  cip_unit: "hours";
   confidence_status: "COMPLETE_INPUTS" | "PARTIAL_INPUTS";
   unknowns: string[];
   metric_sources: Record<string, string>;

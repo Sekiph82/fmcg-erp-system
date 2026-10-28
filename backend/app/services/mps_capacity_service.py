@@ -723,6 +723,7 @@ async def run_capacity_scheduling_validated(db: AsyncSession, mps_id: uuid.UUID)
         )
     )).scalars().all() if campaign_work_centers else []
     matrix_values: dict[tuple[uuid.UUID, str, str], list[int]] = defaultdict(list)
+    cip_values: dict[tuple[uuid.UUID, str, str], list[int | None]] = defaultdict(list)
     for row in matrix_rows:
         key = (
             row.work_center_id,
@@ -730,6 +731,7 @@ async def run_capacity_scheduling_validated(db: AsyncSession, mps_id: uuid.UUID)
             str(row.to_family or "").strip().upper(),
         )
         matrix_values[key].append(row.changeover_minutes)
+        cip_values[key].append(row.cip_minutes)
 
     campaigns_by_work_center: dict[uuid.UUID, list[tuple[MPSCampaign, list[MPSLine], str]]] = defaultdict(list)
     invalid_campaign_work_centers: set[uuid.UUID] = set()
@@ -737,16 +739,6 @@ async def run_capacity_scheduling_validated(db: AsyncSession, mps_id: uuid.UUID)
         members = members_by_campaign.get(campaign.id, [])
         if not members:
             continue
-        # CIP applicability/duration is not inferable from the available MPS
-        # master data. Keep the missing input visible in this capacity run.
-        for member in members:
-            line_issues[member.id].append({
-                "reason_code": "CIP_NOT_CONFIGURED", "state": "NOT_CONFIGURED",
-                "duration_minutes": None,
-                "provenance": "No authoritative MPS CIP duration source exists; no cleaning time was applied.",
-                "priority": "LOW",
-            })
-
         member_work_centers = {member.work_center_id for member in members}
         families = {
             str(getattr(products[member.product_id].category, "value", products[member.product_id].category) or "")
@@ -845,6 +837,14 @@ async def run_capacity_scheduling_validated(db: AsyncSession, mps_id: uuid.UUID)
                         "provenance": "No matching active changeover_matrix row exists; no default duration was applied.",
                         "priority": "LOW",
                     })
+                    line_issues[member.id].append({
+                        "reason_code": "CIP_NOT_CONFIGURED", "state": "NOT_CONFIGURED",
+                        "work_center_id": str(work_center_id),
+                        "from_family": previous_family, "to_family": family,
+                        "duration_minutes": None,
+                        "provenance": "No matching transition row contains a configured CIP duration; no default was applied.",
+                        "priority": "LOW",
+                    })
                 continue
             if len(values) != 1 or values[0] < 0:
                 issue = {
@@ -855,8 +855,17 @@ async def run_capacity_scheduling_validated(db: AsyncSession, mps_id: uuid.UUID)
                     "provenance": "Matching active changeover rows are negative or ambiguous after family normalization; setup was not applied.",
                     "priority": "CRITICAL",
                 }
+                cip_issue = {
+                    "reason_code": "CIP_CONFIGURATION_INVALID", "state": "INVALID_CONFIGURATION",
+                    "work_center_id": str(work_center_id),
+                    "from_family": previous_family, "to_family": family,
+                    "duration_minutes": None,
+                    "provenance": "The matching transition configuration is ambiguous or invalid; no CIP duration was applied.",
+                    "priority": "CRITICAL",
+                }
                 for member in members:
                     line_issues[member.id].append(issue)
+                    line_issues[member.id].append(cip_issue)
                 continue
 
             duration_minutes = values[0]
@@ -895,6 +904,59 @@ async def run_capacity_scheduling_validated(db: AsyncSession, mps_id: uuid.UUID)
                     "duration_minutes": duration_minutes, "changeover_hours": str(setup_hours),
                     "capacity_date": setup_day.isoformat(),
                     "provenance": "Current unique active changeover_matrix row; setup load is allocated once on the successor campaign's first scheduled day.",
+                    "priority": "LOW",
+                })
+
+            configured_cip = cip_values.get(matrix_key, [])
+            if len(configured_cip) != 1 or any(value is not None and value < 0 for value in configured_cip):
+                for member in members:
+                    line_issues[member.id].append({
+                        "reason_code": "CIP_CONFIGURATION_INVALID", "state": "INVALID_CONFIGURATION",
+                        "work_center_id": str(work_center_id),
+                        "from_family": previous_family, "to_family": family,
+                        "duration_minutes": None,
+                        "provenance": "The matching CIP configuration is negative or ambiguous; no sanitation duration was applied.",
+                        "priority": "CRITICAL",
+                    })
+                continue
+            if configured_cip[0] is None:
+                for member in members:
+                    line_issues[member.id].append({
+                        "reason_code": "CIP_NOT_CONFIGURED", "state": "NOT_CONFIGURED",
+                        "work_center_id": str(work_center_id),
+                        "from_family": previous_family, "to_family": family,
+                        "duration_minutes": None,
+                        "provenance": "No CIP duration is configured on the matching work-center and family transition.",
+                        "priority": "LOW",
+                    })
+                continue
+
+            cip_duration_minutes = configured_cip[0]
+            cip_hours = _R(Decimal(cip_duration_minutes) / Decimal(60))
+            if setup_key not in calendar_map:
+                for member in members:
+                    line_issues[member.id].append({
+                        "reason_code": "CIP_CAPACITY_CALENDAR_NOT_CONFIGURED", "state": "NOT_CONFIGURED",
+                        "work_center_id": str(work_center_id),
+                        "from_family": previous_family, "to_family": family,
+                        "duration_minutes": cip_duration_minutes,
+                        "capacity_date": setup_day.isoformat(),
+                        "provenance": "Configured CIP duration could not be placed because the successor campaign has no resource calendar.",
+                        "priority": "CRITICAL",
+                    })
+                continue
+            slot_allocations[setup_key] += cip_hours
+            line_allocations[recipient.id][setup_day] = (
+                line_allocations[recipient.id].get(setup_day, Decimal(0)) + cip_hours
+            )
+            for member in members:
+                line_issues[member.id].append({
+                    "reason_code": "CIP_CAPACITY_APPLIED", "state": "CONFIGURED",
+                    "work_center_id": str(work_center_id),
+                    "from_family": previous_family, "to_family": family,
+                    "duration_minutes": cip_duration_minutes,
+                    "cip_hours": str(cip_hours), "capacity_date": setup_day.isoformat(),
+                    "provenance": "Configured CIP load comes from the unique active work-center/family transition and is allocated once to the successor campaign's first day.",
                     "priority": "LOW",
                 })
 
@@ -955,7 +1017,7 @@ async def run_capacity_scheduling_validated(db: AsyncSession, mps_id: uuid.UUID)
                 line.required_hours = required_by_line[line.id]
             issue_codes = {issue["reason_code"] for issue in issues}
             informational_unknowns = {"CHANGEOVER_NOT_CONFIGURED", "CIP_NOT_CONFIGURED"}
-            non_blocking = {"CAPACITY_OVERLOAD", "CHANGEOVER_CAPACITY_APPLIED", *informational_unknowns}
+            non_blocking = {"CAPACITY_OVERLOAD", "CHANGEOVER_CAPACITY_APPLIED", "CIP_CAPACITY_APPLIED", *informational_unknowns}
             if issue_codes - non_blocking:
                 line.feasibility_status = MPSFeasibilityStatus.INFEASIBLE
                 line.overload_hours = None

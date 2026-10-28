@@ -48,8 +48,8 @@ test("what-if builder serializes merge, exact split, and added shift inputs", as
   await page.getByRole("combobox").nth(1).selectOption("MERGE");
   await page.locator("label").filter({ hasText: "LINE-1 · 2026-11-03" }).locator("input[type=checkbox]").check();
   await page.getByRole("combobox").nth(2).selectOption(lineTwo);
-  await page.getByRole("button", { name: "Add Change to Scenario" }).click();
   await page.getByPlaceholder("Scenario name *").fill("Merge test");
+  await page.getByRole("button", { name: "Add Change to Scenario" }).click();
   await page.getByRole("button", { name: "Compute Impact" }).click();
   await expect.poll(() => submitted.length).toBe(1);
   expect(submitted[0].changes).toEqual([{ line_id: lineOne, change_type: "MERGE", new_value: lineTwo }]);
@@ -58,8 +58,8 @@ test("what-if builder serializes merge, exact split, and added shift inputs", as
   await page.locator("label").filter({ hasText: "LINE-1 · 2026-11-03" }).locator("input[type=checkbox]").check();
   await page.getByLabel("First split quantity").fill("15.125");
   await page.getByLabel("Second split quantity").fill("24.875");
-  await page.getByRole("button", { name: "Add Change to Scenario" }).click();
   await page.getByPlaceholder("Scenario name *").fill("Split test");
+  await page.getByRole("button", { name: "Add Change to Scenario" }).click();
   await page.getByRole("button", { name: "Compute Impact" }).click();
   await expect.poll(() => submitted.length).toBe(2);
   expect(submitted[1].changes).toEqual([{ line_id: lineOne, change_type: "SPLIT", new_value: { quantities: ["15.125", "24.875"] } }]);
@@ -67,10 +67,11 @@ test("what-if builder serializes merge, exact split, and added shift inputs", as
   await page.getByRole("combobox").nth(1).selectOption("SHIFT_ADD");
   await page.locator("label").filter({ hasText: "LINE-1 · 2026-11-03" }).locator("input[type=checkbox]").check();
   await page.getByLabel("Shift date").fill("2026-11-03");
-  await page.getByLabel("Additional shift hours").fill("2");
-  await page.getByRole("button", { name: "Add Change to Scenario" }).click();
+  await page.getByLabel("Additional shift start time").fill("16:00");
+  await page.getByLabel("Additional shift end time").fill("18:00");
   await page.getByPlaceholder("Scenario name *").fill("Shift test");
+  await page.getByRole("button", { name: "Add Change to Scenario" }).click();
   await page.getByRole("button", { name: "Compute Impact" }).click();
   await expect.poll(() => submitted.length).toBe(3);
-  expect(submitted[2].changes).toEqual([{ line_id: lineOne, change_type: "SHIFT_ADD", new_value: { date: "2026-11-03", hours: "2" } }]);
+  expect(submitted[2].changes).toEqual([{ line_id: lineOne, change_type: "SHIFT_ADD", new_value: { date: "2026-11-03", start_time: "16:00", end_time: "18:00", hours: "2" } }]);
 });

@@ -556,7 +556,7 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 **Status: IN_PROGRESS / PARTIAL existing capability**
 **Depends on:** M08, M09, M15; M00 complete.
-**Acceptance: OPEN / PARTIAL — see `coordination/milestones/M20/CHATGPT_M20_STRICT_AUDIT_V05.md`; owner data and independent re-audit remain pending.**
+**Acceptance: OPEN / PARTIAL — see `coordination/milestones/M20/CHATGPT_M20_STRICT_AUDIT_V05.md`; the owner authorized explicitly synthetic virtual-factory assumptions for demo/integration acceptance, and those fixtures are implemented. Independent re-audit and the remaining technical/evidence gates are still pending.**
 
 ## M20.S01 — MPS Domain Reconciliation
 - [x] M20.S01.T001 — Map existing MPS models/APIs/UI/services to enterprise requirements
@@ -1130,11 +1130,10 @@ A milestone is DONE only when its planned scope is implemented or explicitly sup
 
 ## Questions for Şekip
 
-- Q-M21-S05-T004-M20-DATA | M20 V05 requires owner-approved minimum production quantities and units by product, CIP durations by equipment/work-center/changeover, and the approved costing currency/FX rule. Please provide these values or identify their authoritative project source, and identify who will complete the independent M20 V05 re-audit after its code findings are resolved. M21 cannot close while its M20 dependency remains OPEN. | TASK: M21.S05.T004
-
 
 ## Owner Decisions
 
+- Q-M21-S05-T004-M20-DATA | TASK: M21.S05.T004 | ANSWER: Use realistic, explicitly synthetic virtual-factory assumptions for M20 demo and integration acceptance because no physical factory or employees exist; Codex may create the virtual products, equipment, shifts, CIP, minimum-run, cost and test users. Never present these assumptions as live operating data. The existing independent read-only reviewer plus ChatGPT's strict acceptance review will assess the resulting evidence; no external factory auditor or owner data source is required.
 - Q-M21-S03-T002-COSTING-BASIS | TASK: M21.S03.T002 | ANSWER: A) Maliyet toplamlarını değiştirme; co-product ve by-product miktarlarını çıktı olarak izle.
 - Q-M21-S03-T003-APPROVAL-GOVERNANCE | TASK: M21.S03.T003 | ANSWER: Gerçek planlamacı/kalite onay akışı kur; EMERGENCY_ONLY için de kural belirle
 

@@ -4,14 +4,46 @@
   "scope": {
     "company": "Nairobi Foods Ltd (synthetic)",
     "warehouse": "NBO-FG-01 (synthetic)",
+    "base_currency": "KES",
     "horizon": ["2026-11-02", "2026-11-15"],
     "period_type": "WEEKLY"
+  },
+  "virtual_assumptions": {
+    "source": "OWNER_AUTHORIZED_SYNTHETIC_DEMO_ASSUMPTIONS",
+    "not_operational_data": true,
+    "minimum_run_policy": "per product, in the product's base UOM; nullable means unknown",
+    "costing_policy": "product standard costs are in the synthetic company's KES base currency; no FX conversion is assumed",
+    "synthetic_users": ["planner.demo", "quality.demo", "mps.admin.demo"],
+    "staffing_assumption": {
+      "not_operational_data": true,
+      "operators_per_filling_machine": 2,
+      "shift": {"name": "FILL-01 synthetic day shift", "start": "07:00", "end": "15:00"},
+      "capacity_basis": "FILL-01 rated throughput assumes two assigned operators; this MPS capacity path remains work-center-hour based and does not calculate individual attendance or qualification availability",
+      "employees": [
+        {"employee_code": "VIRT-OP-001", "name": "Virtual Filling Operator 001", "role": "Filling Operator"},
+        {"employee_code": "VIRT-OP-002", "name": "Virtual Filling Operator 002", "role": "Filling Operator"}
+      ]
+    },
+    "changeover_rules": [
+      {
+        "work_center": "FILL-01",
+        "from_family": "BEVERAGE",
+        "to_family": "HOUSEHOLD",
+        "changeover_minutes": 45,
+        "cip_minutes": 60,
+        "rationale": "synthetic hygiene wash between beverage and household-care campaigns"
+      }
+    ]
   },
   "products": [
     {
       "sku": "JU-MNG-500",
       "name": "Mango drink 500 ml",
+      "category": "BEVERAGE",
       "uom": "PCS",
+      "minimum_run_qty": 250,
+      "standard_cost": 42.5,
+      "standard_cost_currency": "KES",
       "confirmed_demand": 600,
       "forecast_demand": 850,
       "safety_stock": 100,
@@ -40,7 +72,11 @@
     {
       "sku": "DET-1L-01",
       "name": "Dish liquid 1 L",
+      "category": "HOUSEHOLD",
       "uom": "PCS",
+      "minimum_run_qty": 180,
+      "standard_cost": 68,
+      "standard_cost_currency": "KES",
       "confirmed_demand": 240,
       "forecast_demand": 180,
       "safety_stock": 60,
@@ -54,9 +90,9 @@
       "planned_qty": 240,
       "bom": {"lifecycle": "MISSING", "components": []},
       "material_stock": {},
-      "work_center": {"code": "FILL-02", "rate": null, "rate_uom": null, "calendar_hours": null, "shifts": [], "downtime_hours": null},
-      "campaign": {"family": "HOME_CARE", "sequence": 2, "changeover_minutes": null},
-      "cip": {"state": "NOT_CONFIGURED", "duration_minutes": null}
+      "work_center": {"code": "FILL-01", "rate": 60, "rate_uom": "PCS/HR", "calendar_hours": 8, "shifts": [{"start": "07:00", "end": "15:00"}], "downtime_hours": 0.5},
+      "campaign": {"family": "HOUSEHOLD", "sequence": 2, "changeover_minutes": null},
+      "cip": {"state": "CONFIGURED", "duration_minutes": 60, "transition": "BEVERAGE->HOUSEHOLD"}
     }
   ],
   "assertions": [

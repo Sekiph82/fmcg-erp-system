@@ -1,6 +1,7 @@
 import uuid
 from sqlalchemy import (
     Column, String, Text, Numeric, Boolean, Integer, ForeignKey, Enum, Date,
+    CheckConstraint,
     DateTime,
 )
 from sqlalchemy.dialects.postgresql import UUID
@@ -99,6 +100,16 @@ class Supplier(Base, TimestampMixin):
 
 class Product(Base, TimestampMixin):
     __tablename__ = "products"
+    __table_args__ = (
+        CheckConstraint(
+            "minimum_run_qty IS NULL OR minimum_run_qty > 0",
+            name="ck_products_minimum_run_qty_positive",
+        ),
+        CheckConstraint(
+            "standard_cost_currency IS NULL OR (length(standard_cost_currency) = 3 AND standard_cost_currency = upper(standard_cost_currency))",
+            name="ck_products_standard_cost_currency_iso3",
+        ),
+    )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     sku = Column(String(100), unique=True, nullable=False, index=True)
@@ -111,7 +122,11 @@ class Product(Base, TimestampMixin):
     weight_kg = Column(Numeric(10, 3), nullable=True)
     shelf_life_days = Column(Integer, nullable=True)
     reorder_point = Column(Numeric(12, 3), default=0, nullable=False)
+    # Optional production batch floor, expressed in the product's UOM.
+    minimum_run_qty = Column(Numeric(12, 3), nullable=True)
     standard_cost = Column(Numeric(14, 4), nullable=True)
+    # Currency is explicit so MPS never treats an unlabelled cost as company-base currency.
+    standard_cost_currency = Column(String(3), nullable=True)
     selling_price = Column(Numeric(14, 4), nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
 

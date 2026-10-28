@@ -43,6 +43,8 @@ def _line(product_id, line_no):
         id=uuid4(),
         line_no=line_no,
         product_id=product_id,
+        period_start=__import__("datetime").date(2026, 1, 1),
+        period_end=__import__("datetime").date(2026, 1, 31),
         planned_production_qty=100,
         planned_start_date=None,
         planned_end_date=None,

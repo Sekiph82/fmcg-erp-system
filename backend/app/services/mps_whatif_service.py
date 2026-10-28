@@ -7,7 +7,7 @@ and computes the impact WITHOUT touching the live MPS plan.
 Impact metrics:
 - impact_service_level_pct: % lines that remain on-time after changes
 - impact_delay_count: number of lines pushed beyond period_end
-- impact_cost_delta: estimated change in production cost (hours × rate)
+- impact_cost_delta: estimated output standard-cost change, only with explicit matching currency
 """
 from __future__ import annotations
 
@@ -27,7 +27,9 @@ from app.models.mps import (
     MPSPlan, MPSLine, MPSWhatIfScenario, MPSCapacityMode,
     WhatIfStatus, MPSChangeType,
 )
-from app.models.master import Product
+from app.models.master import Product, Warehouse
+from app.models.company import Company
+from app.models.mrp import MRPRun
 from app.models.planning import ResourceCalendar
 from app.models.planning import ChangeoverMatrix
 from app.models.production_advanced import WorkCenter
@@ -66,6 +68,52 @@ def _R(v: Decimal, dp: int = 3) -> Decimal:
     return v.quantize(Decimal(10) ** -dp, rounding=ROUND_HALF_UP)
 
 
+def _scenario_standard_cost_total(
+    lines: list[dict], products: dict[uuid.UUID, Product], base_currency: str | None,
+) -> tuple[Decimal | None, set[str]]:
+    """Value outputs only when each product cost explicitly matches company base currency."""
+    total = Decimal(0)
+    unknown: set[str] = set()
+    for line in lines:
+        if line.get("_merged_into"):
+            continue
+        try:
+            quantity = Decimal(str(line.get("planned_production_qty")))
+            product_id = uuid.UUID(str(line.get("product_id")))
+        except (ArithmeticError, TypeError, ValueError):
+            unknown.add("LINE_COST_SCOPE_OR_QUANTITY_INVALID")
+            continue
+        if not quantity.is_finite() or quantity < 0:
+            unknown.add("LINE_COST_SCOPE_OR_QUANTITY_INVALID")
+            continue
+        if quantity == 0:
+            continue
+        product = products.get(product_id)
+        if product is None:
+            unknown.add("PRODUCT_STANDARD_COST_MISSING")
+            continue
+        if product.standard_cost is None:
+            unknown.add(f"PRODUCT_STANDARD_COST_MISSING:{product.sku}")
+            continue
+        product_currency = str(getattr(product, "standard_cost_currency", None) or "").strip().upper()
+        if not product_currency:
+            unknown.add(f"PRODUCT_STANDARD_COST_CURRENCY_MISSING:{product.sku}")
+            continue
+        if not base_currency or product_currency != base_currency:
+            unknown.add(f"PRODUCT_STANDARD_COST_CURRENCY_MISMATCH:{product.sku}")
+            continue
+        try:
+            unit_cost = Decimal(str(product.standard_cost))
+        except (ArithmeticError, TypeError, ValueError):
+            unknown.add(f"PRODUCT_STANDARD_COST_INVALID:{product.sku}")
+            continue
+        if not unit_cost.is_finite() or unit_cost < 0:
+            unknown.add(f"PRODUCT_STANDARD_COST_INVALID:{product.sku}")
+            continue
+        total += quantity * unit_cost
+    return (None if unknown else total), unknown
+
+
 def _capacity_rate_per_hour(work_center: WorkCenter, product: Product) -> Decimal | None:
     if not work_center.capacity or _D(work_center.capacity) <= 0:
         return None
@@ -82,6 +130,7 @@ def _scenario_capacity_loads(
     calendars: dict[tuple[uuid.UUID, date], ResourceCalendar], downtimes: list[DowntimeEvent],
     capacity_mode: MPSCapacityMode,
     shift_additions: dict[tuple[uuid.UUID, date], Decimal] | None = None,
+    transition_loads: dict[tuple[uuid.UUID, date], Decimal] | None = None,
 ) -> dict:
     """Pure candidate schedule load using the same calendar and rate inputs as finite MPS capacity."""
     if capacity_mode == MPSCapacityMode.INFINITE:
@@ -130,6 +179,16 @@ def _scenario_capacity_loads(
             key = (wc_id, day)
             loads[key] = loads.get(key, Decimal(0)) + per_day
 
+    transition_loads = transition_loads or {}
+    for key, hours in transition_loads.items():
+        if key not in calendars:
+            unknown.add("CHANGEOVER_CIP_CAPACITY_CALENDAR_NOT_CONFIGURED")
+            continue
+        if not hours.is_finite() or hours < 0:
+            unknown.add("CHANGEOVER_CIP_CAPACITY_LOAD_INVALID")
+            continue
+        loads[key] = loads.get(key, Decimal(0)) + hours
+
     overload_total = Decimal(0)
     shift_additions = shift_additions or {}
     for (wc_id, day), required in loads.items():
@@ -172,21 +231,23 @@ def _scenario_capacity_loads(
 
 
 def _validate_shift_additions(
-    additions: dict[tuple[uuid.UUID, date], Decimal],
+    additions: list[dict],
     calendars: dict[tuple[uuid.UUID, date], ResourceCalendar],
     downtimes: list[DowntimeEvent] | None = None,
 ) -> tuple[dict[tuple[uuid.UUID, date], Decimal], set[str]]:
-    """Validate aggregate extra hours against a configured 24-hour day.
+    """Validate added shift intervals against configured daily calendars.
 
-    ResourceCalendar.available_hours is the work-center's configured shift
-    total. The scenario API has no start/end time for an added shift, so it can
-    only safely allocate the unoccupied remainder of that calendar day. A
-    missing calendar or inconsistent calendar is reported as unknown and its
-    added hours are not credited to capacity.
+    Added capacity is credited only when each addition identifies a concrete,
+    non-overlapping interval. A missing or inconsistent calendar, or any
+    downtime on the date, leaves the addition uncredited and reports UNKNOWN.
     """
     unknown: set[str] = set()
     valid: dict[tuple[uuid.UUID, date], Decimal] = {}
-    for key, hours in additions.items():
+    grouped: dict[tuple[uuid.UUID, date], list[dict]] = {}
+    for addition in additions:
+        grouped.setdefault((addition["work_center_id"], addition["date"]), []).append(addition)
+
+    for key, day_additions in grouped.items():
         wc_id, shift_day = key
         day_start = datetime.combine(shift_day, datetime.min.time(), tzinfo=timezone.utc)
         day_end = day_start + timedelta(days=1)
@@ -202,8 +263,9 @@ def _validate_shift_additions(
                 has_downtime = True
                 break
         if has_downtime:
-            # No added-shift interval is supplied, so overlap with this day's
-            # downtime cannot be ruled out and the hours must remain uncredited.
+            # The shift calendar stores local wall-clock intervals, while
+            # downtime timestamps are UTC and the work center has no timezone
+            # setting. Without a timezone mapping, overlap cannot be proven.
             unknown.add("SHIFT_ADD_DOWNTIME_OVERLAP_UNRESOLVED")
             continue
         calendar = calendars.get(key)
@@ -252,22 +314,60 @@ def _validate_shift_additions(
             continue
         if calendar.is_holiday or calendar.is_maintenance:
             raise ValueError("SHIFT_ADD cannot target a holiday or maintenance calendar")
+        hours = sum((item["hours"] for item in day_additions), Decimal(0))
         if hours > Decimal(24) - configured_hours:
             raise ValueError("Aggregate SHIFT_ADD hours exceed remaining work-center calendar hours for the day")
+        added_windows: list[tuple[int, int]] = []
+        for addition in day_additions:
+            start_minute = addition["start_minute"]
+            end_minute = addition["end_minute"]
+            interval_hours = Decimal(end_minute - start_minute) / Decimal(60)
+            if not 0 <= start_minute < end_minute <= 24 * 60 or addition["hours"] != interval_hours:
+                raise ValueError("SHIFT_ADD hours must exactly match a valid same-day interval")
+            if any(start_minute < window_end and end_minute > window_start for window_start, window_end in ordered_windows):
+                raise ValueError("SHIFT_ADD interval overlaps a configured work-center shift")
+            if any(start_minute < window_end and end_minute > window_start for window_start, window_end in added_windows):
+                raise ValueError("SHIFT_ADD intervals overlap for the same work center and date")
+            added_windows.append((start_minute, end_minute))
         valid[key] = hours
     return valid, unknown
+
+
+def _parse_shift_addition_interval(value: dict) -> tuple[int, int, Decimal]:
+    """Return minute-of-day bounds and duration for an explicit added shift."""
+    try:
+        start = time.fromisoformat(str(value["start_time"]))
+        end = time.fromisoformat(str(value["end_time"]))
+        supplied_hours = Decimal(str(value["hours"]))
+    except (KeyError, TypeError, ValueError, ArithmeticError) as exc:
+        raise ValueError("SHIFT_ADD requires date, start_time, end_time, and hours") from exc
+    if start.second or start.microsecond or end.second or end.microsecond:
+        raise ValueError("SHIFT_ADD times must use whole minutes")
+    start_minute = start.hour * 60 + start.minute
+    end_minute = end.hour * 60 + end.minute
+    if end_minute == 0 and start_minute > 0:
+        end_minute = 24 * 60
+    if end_minute <= start_minute:
+        raise ValueError("SHIFT_ADD end_time must be after start_time within the selected date")
+    duration = Decimal(end_minute - start_minute) / Decimal(60)
+    if not supplied_hours.is_finite() or supplied_hours != duration:
+        raise ValueError("SHIFT_ADD hours must exactly match the explicit start_time/end_time interval")
+    return start_minute, end_minute, duration
 
 
 def _scenario_changeover_hours(
     lines: list[dict], products: dict[uuid.UUID, Product], changeover_rows: list[ChangeoverMatrix],
 ) -> dict:
-    """Recalculate family-transition setup time using configured matrix rows."""
-    matrix = {
-        (row.work_center_id, str(row.from_family).upper(), str(row.to_family).upper()): int(row.changeover_minutes)
-        for row in changeover_rows if row.is_active
-    }
-    ordered = []
-    unknown: set[str] = set()
+    """Recalculate configured setup and CIP loads at the successor's scheduled slot."""
+    matrix_values: dict[tuple[uuid.UUID, str, str], list[ChangeoverMatrix]] = {}
+    for row in changeover_rows:
+        if not row.is_active:
+            continue
+        key = (row.work_center_id, str(row.from_family or "").strip().upper(), str(row.to_family or "").strip().upper())
+        matrix_values.setdefault(key, []).append(row)
+    ordered: dict[tuple[uuid.UUID, date], dict] = {}
+    changeover_unknown: set[str] = set()
+    cip_unknown: set[str] = set()
     for line in lines:
         if line.get("_merged_into") or ("planned_production_qty" in line and _D(line.get("planned_production_qty")) <= 0):
             continue
@@ -275,37 +375,92 @@ def _scenario_changeover_hours(
             wc_id = uuid.UUID(str(line.get("work_center_id")))
             product_id = uuid.UUID(str(line.get("product_id")))
             start = date.fromisoformat(str(line.get("planned_start_date") or line["period_start"]))
+            end = date.fromisoformat(str(line.get("planned_end_date") or line["period_end"]))
         except (KeyError, TypeError, ValueError):
-            unknown.add("LINE_SCHEDULE_OR_SCOPE_MISSING")
+            changeover_unknown.add("LINE_SCHEDULE_OR_SCOPE_MISSING")
+            cip_unknown.add("LINE_SCHEDULE_OR_SCOPE_MISSING")
+            continue
+        if end < start:
+            changeover_unknown.add("LINE_SCHEDULE_INVALID")
+            cip_unknown.add("LINE_SCHEDULE_INVALID")
             continue
         product = products.get(product_id)
         if product is None:
-            unknown.add("PRODUCT_FAMILY_MISSING")
+            changeover_unknown.add("PRODUCT_FAMILY_MISSING")
+            cip_unknown.add("PRODUCT_FAMILY_MISSING")
             continue
         family = str(getattr(product.category, "value", product.category) or "").upper()
         if not family:
-            unknown.add("PRODUCT_FAMILY_MISSING")
+            changeover_unknown.add("PRODUCT_FAMILY_MISSING")
+            cip_unknown.add("PRODUCT_FAMILY_MISSING")
             continue
-        ordered.append((wc_id, start, str(line.get("id", "")), family))
+        group = ordered.setdefault((wc_id, start), {"end": end, "families": set(), "line_ids": set()})
+        group["end"] = max(group["end"], end)
+        group["families"].add(family)
+        group["line_ids"].add(str(line.get("id", "")))
 
-    previous: dict[uuid.UUID, str] = {}
-    total_minutes = Decimal(0)
+    previous: dict[uuid.UUID, tuple[date, str] | None] = {}
+    total_changeover_minutes = Decimal(0)
+    total_cip_minutes = Decimal(0)
+    capacity_loads: dict[tuple[uuid.UUID, date], Decimal] = {}
     transition_count = 0
-    for wc_id, _start, _line_id, family in sorted(ordered):
+    for (wc_id, start), group in sorted(ordered.items(), key=lambda item: (str(item[0][0]), item[0][1])):
+        families = group["families"]
+        if len(families) != 1:
+            changeover_unknown.add(f"CAMPAIGN_SEQUENCE_NOT_CONFIGURED:{start.isoformat()}")
+            cip_unknown.add(f"CAMPAIGN_SEQUENCE_NOT_CONFIGURED:{start.isoformat()}")
+            previous[wc_id] = None
+            continue
+        family = next(iter(families))
         prior = previous.get(wc_id)
-        if prior and prior != family:
-            minutes = matrix.get((wc_id, prior, family))
-            if minutes is None:
-                unknown.add(f"CHANGEOVER_NOT_CONFIGURED:{prior}->{family}")
+        if prior and prior[0] >= start:
+            changeover_unknown.add(f"CAMPAIGN_WINDOWS_OVERLAP:{prior[0].isoformat()}:{start.isoformat()}")
+            cip_unknown.add(f"CAMPAIGN_WINDOWS_OVERLAP:{prior[0].isoformat()}:{start.isoformat()}")
+        elif prior and prior[1] != family:
+            key = (wc_id, prior[1], family)
+            matches = matrix_values.get(key, [])
+            if not matches:
+                changeover_unknown.add(f"CHANGEOVER_NOT_CONFIGURED:{prior[1]}->{family}")
+                cip_unknown.add(f"CIP_NOT_CONFIGURED:{prior[1]}->{family}")
+            elif len(matches) != 1:
+                changeover_unknown.add(f"CHANGEOVER_CONFIGURATION_AMBIGUOUS:{prior[1]}->{family}")
+                cip_unknown.add(f"CIP_CONFIGURATION_AMBIGUOUS:{prior[1]}->{family}")
             else:
-                total_minutes += Decimal(minutes)
-                transition_count += 1
-        previous[wc_id] = family
+                row = matches[0]
+                try:
+                    changeover_minutes = Decimal(str(row.changeover_minutes))
+                except (ArithmeticError, TypeError, ValueError):
+                    changeover_minutes = Decimal("NaN")
+                if not changeover_minutes.is_finite() or changeover_minutes < 0:
+                    changeover_unknown.add(f"CHANGEOVER_CONFIGURATION_INVALID:{prior[1]}->{family}")
+                else:
+                    total_changeover_minutes += changeover_minutes
+                    capacity_key = (wc_id, start)
+                    capacity_loads[capacity_key] = capacity_loads.get(capacity_key, Decimal(0)) + changeover_minutes / Decimal(60)
+                    transition_count += 1
+                if row.cip_minutes is None:
+                    cip_unknown.add(f"CIP_NOT_CONFIGURED:{prior[1]}->{family}")
+                else:
+                    try:
+                        cip_minutes = Decimal(str(row.cip_minutes))
+                    except (ArithmeticError, TypeError, ValueError):
+                        cip_minutes = Decimal("NaN")
+                    if not cip_minutes.is_finite() or cip_minutes < 0:
+                        cip_unknown.add(f"CIP_CONFIGURATION_INVALID:{prior[1]}->{family}")
+                    else:
+                        total_cip_minutes += cip_minutes
+                        capacity_key = (wc_id, start)
+                        capacity_loads[capacity_key] = capacity_loads.get(capacity_key, Decimal(0)) + cip_minutes / Decimal(60)
+        previous[wc_id] = (group["end"], family)
     return {
-        "hours": float(_R(total_minutes / Decimal(60))),
-        "status": "COMPLETE" if not unknown else "PARTIAL_INPUTS",
-        "unknown_reasons": sorted(unknown),
+        "hours": float(_R(total_changeover_minutes / Decimal(60))),
+        "status": "COMPLETE" if not changeover_unknown else "PARTIAL_INPUTS",
+        "unknown_reasons": sorted(changeover_unknown | cip_unknown),
         "transition_count": transition_count,
+        "cip_hours": float(_R(total_cip_minutes / Decimal(60))),
+        "cip_status": "COMPLETE" if not cip_unknown else "PARTIAL_INPUTS",
+        "cip_unknown_reasons": sorted(cip_unknown),
+        "capacity_loads": capacity_loads,
     }
 
 
@@ -476,9 +631,12 @@ def _apply_change(line_snapshot: dict, change: dict) -> dict:
         # SHIFT_ADD capacity is collected and applied at scenario level. Keep
         # the explicit assumption with the target line for durable replay.
         if not isinstance(val, dict):
-            raise ValueError("SHIFT_ADD requires an object with date and hours")
+            raise ValueError("SHIFT_ADD requires an object with date, start_time, end_time, and hours")
         line_snapshot.setdefault("_added_shifts", []).append({
-            "date": str(val.get("date", "")), "hours": str(val.get("hours", "")),
+            "date": str(val.get("date", "")),
+            "start_time": str(val.get("start_time", "")),
+            "end_time": str(val.get("end_time", "")),
+            "hours": str(val.get("hours", "")),
         })
 
     return line_snapshot
@@ -625,7 +783,7 @@ async def create_whatif_scenario(
     structural_lines: set[uuid.UUID] = set()
     non_shift_lines: set[uuid.UUID] = set()
     shift_lines: set[uuid.UUID] = set()
-    shift_additions: dict[tuple[uuid.UUID, date], Decimal] = {}
+    shift_additions: list[dict] = []
     for change in data.changes:
         lid = str(change.line_id)
         line = affected_lines[change.line_id]
@@ -698,14 +856,14 @@ async def create_whatif_scenario(
                 raise ValueError("SHIFT_ADD requires a plan in FINITE capacity mode")
             value = change.new_value
             if not isinstance(value, dict):
-                raise ValueError("SHIFT_ADD requires an object with date and hours")
+                raise ValueError("SHIFT_ADD requires an object with date, start_time, end_time, and hours")
             try:
                 shift_day = date.fromisoformat(str(value["date"]))
-                hours = Decimal(str(value["hours"]))
+                start_minute, end_minute, hours = _parse_shift_addition_interval(value)
             except (KeyError, TypeError, ValueError, ArithmeticError) as exc:
-                raise ValueError("SHIFT_ADD requires an ISO date and positive finite hours") from exc
-            if not hours.is_finite() or hours <= 0 or hours > 24:
-                raise ValueError("SHIFT_ADD hours must be greater than 0 and no more than 24")
+                raise ValueError("SHIFT_ADD requires an ISO date and a valid positive time interval") from exc
+            if hours <= 0 or hours > 24:
+                raise ValueError("SHIFT_ADD interval must be greater than 0 and no more than 24 hours")
             try:
                 line_start = date.fromisoformat(str(modified_map[lid].get("planned_start_date") or modified_map[lid]["period_start"]))
                 line_end = date.fromisoformat(str(modified_map[lid].get("planned_end_date") or modified_map[lid]["period_end"]))
@@ -714,7 +872,11 @@ async def create_whatif_scenario(
                 raise ValueError("SHIFT_ADD target requires a scheduled line with a work center") from exc
             if shift_day < line_start or shift_day > line_end:
                 raise ValueError("SHIFT_ADD date must fall within the target line schedule")
-            shift_additions[(wc_id, shift_day)] = shift_additions.get((wc_id, shift_day), Decimal(0)) + hours
+            shift_additions.append({
+                "work_center_id": wc_id, "date": shift_day, "start_minute": start_minute,
+                "end_minute": end_minute, "start_time": str(value["start_time"]),
+                "end_time": str(value["end_time"]), "hours": hours,
+            })
             shift_lines.add(change.line_id)
             _apply_change(modified_map[lid], {"change_type": change.change_type, "new_value": value})
         if change.change_type == MPSChangeType.LINE_CHANGE:
@@ -751,7 +913,12 @@ async def create_whatif_scenario(
                 str(change.new_value) if change.change_type == MPSChangeType.MERGE else
                 {"quantities": [str(q) for q in (change.new_value.get("quantities") if isinstance(change.new_value, dict) else change.new_value)]}
                 if change.change_type == MPSChangeType.SPLIT else
-                {"date": str(change.new_value.get("date")), "hours": str(change.new_value.get("hours"))}
+                {
+                    "date": str(change.new_value.get("date")),
+                    "start_time": str(change.new_value.get("start_time")),
+                    "end_time": str(change.new_value.get("end_time")),
+                    "hours": str(change.new_value.get("hours")),
+                }
                 if change.change_type == MPSChangeType.SHIFT_ADD else
                 change.new_value
             ),
@@ -761,6 +928,17 @@ async def create_whatif_scenario(
     svc, delays, cost_delta = _compute_impact(original_snaps, modified_map, wcs)
     product_ids = {uuid.UUID(s["product_id"]) for s in original_snaps}
     products = {p.id: p for p in (await db.execute(select(Product).where(Product.id.in_(product_ids)))).scalars().all()} if product_ids else {}
+    base_currency = None
+    if plan.mrp_run_id:
+        currency_q = await db.execute(
+            select(Company.base_currency)
+            .join(Warehouse, Warehouse.company_id == Company.id)
+            .join(MRPRun, MRPRun.warehouse_id == Warehouse.id)
+            .where(MRPRun.id == plan.mrp_run_id)
+        )
+        raw_currency = currency_q.scalar_one_or_none()
+        if isinstance(raw_currency, str) and re.fullmatch(r"[A-Za-z]{3}", raw_currency.strip()):
+            base_currency = raw_currency.strip().upper()
     scenario_wc_ids = {uuid.UUID(s["work_center_id"]) for s in modified_map.values() if s.get("work_center_id")}
     scenario_dates = []
     for snap in modified_map.values():
@@ -788,16 +966,15 @@ async def create_whatif_scenario(
     calendar_map = {(row.work_center_id, row.calendar_date): row for row in calendar_rows}
     valid_shift_additions, shift_unknowns = _validate_shift_additions(shift_additions, calendar_map, downtime_rows)
     candidate_lines = _expand_candidate_lines(list(modified_map.values()))
-    capacity_metrics = _scenario_capacity_loads(
-        candidate_lines, wcs, products,
-        calendar_map,
-        downtime_rows, plan.capacity_mode, valid_shift_additions,
-    )
-    if shift_unknowns:
-        capacity_metrics["status"] = "PARTIAL_INPUTS"
-        capacity_metrics["overload_hours"] = None
-        capacity_metrics["unknown_reasons"] = sorted(set(capacity_metrics["unknown_reasons"]) | shift_unknowns)
-
+    baseline_cost_total, baseline_cost_unknowns = _scenario_standard_cost_total(original_snaps, products, base_currency)
+    candidate_cost_total, candidate_cost_unknowns = _scenario_standard_cost_total(candidate_lines, products, base_currency)
+    cost_unknowns = baseline_cost_unknowns | candidate_cost_unknowns
+    if not base_currency:
+        cost_unknowns.add("COMPANY_BASE_CURRENCY_NOT_CONFIGURED")
+    scenario_cost_delta = None
+    if not cost_unknowns and baseline_cost_total is not None and candidate_cost_total is not None:
+        scenario_cost_delta = _R(candidate_cost_total - baseline_cost_total, 4)
+    cost_currency = base_currency if scenario_cost_delta is not None else None
     changeover_rows = []
     if scenario_wc_ids:
         changeover_rows = (await db.execute(select(ChangeoverMatrix).where(
@@ -805,12 +982,30 @@ async def create_whatif_scenario(
         ))).scalars().all()
     baseline_changeover = _scenario_changeover_hours(original_snaps, products, changeover_rows)
     candidate_changeover = _scenario_changeover_hours(candidate_lines, products, changeover_rows)
+    capacity_metrics = _scenario_capacity_loads(
+        candidate_lines, wcs, products,
+        calendar_map,
+        downtime_rows, plan.capacity_mode, valid_shift_additions,
+        candidate_changeover["capacity_loads"],
+    )
+    transition_unknowns = set(candidate_changeover["unknown_reasons"])
+    if transition_unknowns and plan.capacity_mode == MPSCapacityMode.FINITE:
+        capacity_metrics["status"] = "PARTIAL_INPUTS"
+        capacity_metrics["overload_hours"] = None
+        capacity_metrics["unknown_reasons"] = sorted(set(capacity_metrics["unknown_reasons"]) | transition_unknowns)
+    if shift_unknowns:
+        capacity_metrics["status"] = "PARTIAL_INPUTS"
+        capacity_metrics["overload_hours"] = None
+        capacity_metrics["unknown_reasons"] = sorted(set(capacity_metrics["unknown_reasons"]) | shift_unknowns)
     material_metrics = await _simulate_scenario_materials(db, mps_id, modified_map)
 
     summary_parts = []
     if delays > 0:
         summary_parts.append(f"{delays} line(s) will be delayed")
-    summary_parts.append("cost impact unknown: no approved currency and cost basis are configured")
+    if scenario_cost_delta is None:
+        summary_parts.append("cost impact unknown: " + ", ".join(sorted(cost_unknowns)))
+    else:
+        summary_parts.append(f"estimated standard-cost change: {cost_currency} {scenario_cost_delta}")
     if capacity_metrics["status"] == "COMPLETE":
         summary_parts.append(f"projected capacity overload: {capacity_metrics['overload_hours']:.3f} hours")
     elif capacity_metrics["status"] == "INFINITE":
@@ -849,7 +1044,8 @@ async def create_whatif_scenario(
         changes=changes_json,
         impact_service_level_pct=Decimal(str(svc)),
         impact_delay_count=delays,
-        impact_cost_delta=None,
+        impact_cost_delta=scenario_cost_delta,
+        impact_cost_currency=cost_currency if scenario_cost_delta is not None else None,
         impact_summary=impact_summary,
         status=WhatIfStatus.COMPUTED,
         created_by_id=user_id,
@@ -861,22 +1057,40 @@ async def create_whatif_scenario(
         "plan_id": str(mps_id),
         "changes": changes_json,
         "line_count": len(original_snaps),
-        "cost_basis": None,
+        "cost_basis": (
+            {
+                "method": "product.standard_cost x planned output quantity",
+                "currency": cost_currency,
+                "currency_source": "MRP warehouse company.base_currency",
+                "cost_source": "Product.standard_cost in product base UOM",
+                "product_cost_currency_source": "Product.standard_cost_currency, required to equal company base_currency",
+                "fx_policy": "same-currency base-currency values only; no FX conversion",
+            }
+            if scenario_cost_delta is not None else None
+        ),
         "shift_additions": [
-            {"work_center_id": str(wc_id), "date": day.isoformat(), "hours": str(hours)}
-            for (wc_id, day), hours in sorted(valid_shift_additions.items(), key=lambda item: (str(item[0][0]), item[0][1]))
+            {
+                "work_center_id": str(item["work_center_id"]), "date": item["date"].isoformat(),
+                "start_time": item["start_time"], "end_time": item["end_time"], "hours": str(item["hours"]),
+            }
+            for item in sorted(shift_additions, key=lambda item: (str(item["work_center_id"]), item["date"], item["start_minute"]))
+            if (item["work_center_id"], item["date"]) in valid_shift_additions
         ],
         "uncredited_shift_additions": [
-            {"work_center_id": str(wc_id), "date": day.isoformat(), "hours": str(hours)}
-            for (wc_id, day), hours in sorted(shift_additions.items(), key=lambda item: (str(item[0][0]), item[0][1]))
-            if (wc_id, day) not in valid_shift_additions
+            {
+                "work_center_id": str(item["work_center_id"]), "date": item["date"].isoformat(),
+                "start_time": item["start_time"], "end_time": item["end_time"], "hours": str(item["hours"]),
+            }
+            for item in sorted(shift_additions, key=lambda item: (str(item["work_center_id"]), item["date"], item["start_minute"]))
+            if (item["work_center_id"], item["date"]) not in valid_shift_additions
         ],
     }
     snapshot_results = {
         "service_level_pct": svc,
         "delay_count": delays,
-        "cost_delta": None,
-        "cost_delta_status": "UNKNOWN_NO_APPROVED_CURRENCY_BASIS",
+        "cost_delta": str(scenario_cost_delta) if scenario_cost_delta is not None else None,
+        "cost_currency": cost_currency,
+        "cost_delta_status": "COMPLETE" if scenario_cost_delta is not None else "UNKNOWN_COST_OR_CURRENCY_BASIS",
         "baseline_material_shortage_count": material_metrics["baseline_shortage_count"],
         "material_shortage_count": material_metrics["candidate_shortage_count"],
         "material_shortage_count_delta": material_metrics["shortage_count_delta"],
@@ -896,7 +1110,16 @@ async def create_whatif_scenario(
         "changeover_hours": candidate_changeover["hours"] if candidate_changeover["status"] == "COMPLETE" else None,
         "changeover_status": candidate_changeover["status"],
         "changeover_unknown_reasons": candidate_changeover["unknown_reasons"],
-        "unknowns": material_metrics["unknown_reasons"] + ["CIP duration source is not configured", "cost currency/basis is not configured"] + candidate_changeover["unknown_reasons"],
+        "baseline_cip_hours": baseline_changeover["cip_hours"] if baseline_changeover["cip_status"] == "COMPLETE" else None,
+        "baseline_cip_status": baseline_changeover["cip_status"],
+        "cip_hours": candidate_changeover["cip_hours"] if candidate_changeover["cip_status"] == "COMPLETE" else None,
+        "cip_status": candidate_changeover["cip_status"],
+        "cip_unknown_reasons": candidate_changeover["cip_unknown_reasons"],
+        "unknowns": list(dict.fromkeys(
+            material_metrics["unknown_reasons"]
+            + candidate_changeover["unknown_reasons"]
+            + sorted(cost_unknowns)
+        )),
         "modified_lines": candidate_lines,
     }
     await db.execute(text("""
@@ -986,6 +1209,34 @@ async def compare_whatif_scenarios(
         and cres.get("changeover_hours") is not None
         and bres.get("changeover_hours") is not None
     )
+    cip_complete = (
+        cres.get("cip_status") == "COMPLETE"
+        and bres.get("cip_status") == "COMPLETE"
+        and cres.get("cip_hours") is not None
+        and bres.get("cip_hours") is not None
+    )
+    cost_complete = (
+        bres.get("cost_delta_status") == "COMPLETE"
+        and cres.get("cost_delta_status") == "COMPLETE"
+        and bres.get("cost_delta") is not None
+        and cres.get("cost_delta") is not None
+        and bres.get("cost_currency") == cres.get("cost_currency")
+        and bool(bres.get("cost_currency"))
+    )
+    cost_currency = bres.get("cost_currency") if cost_complete else None
+    cost_delta = None
+    if cost_complete:
+        try:
+            baseline_cost_delta = Decimal(str(bres["cost_delta"]))
+            candidate_cost_delta = Decimal(str(cres["cost_delta"]))
+            if baseline_cost_delta.is_finite() and candidate_cost_delta.is_finite():
+                cost_delta = float(_R(candidate_cost_delta - baseline_cost_delta, 4))
+            else:
+                cost_complete = False
+                cost_currency = None
+        except (ArithmeticError, TypeError, ValueError):
+            cost_complete = False
+            cost_currency = None
     unknowns = []
     for values in (
         cres.get("material_unknown_reasons", []) if not material_complete else [],
@@ -994,9 +1245,14 @@ async def compare_whatif_scenarios(
         bres.get("capacity_unknown_reasons", []) if not capacity_complete else [],
         cres.get("changeover_unknown_reasons", []) if not changeover_complete else [],
         bres.get("changeover_unknown_reasons", []) if not changeover_complete else [],
+        cres.get("cip_unknown_reasons", []) if not cip_complete else [],
+        bres.get("cip_unknown_reasons", []) if not cip_complete else [],
+        bres.get("unknowns", []),
+        cres.get("unknowns", []),
     ):
         unknowns.extend(values or [])
-    unknowns.extend(("CIP duration source is not configured", "cost currency/basis is not configured"))
+    if not cost_complete:
+        unknowns.append("COST_BASIS_OR_COMPANY_CURRENCY_NOT_CONFIGURED")
     unknowns = list(dict.fromkeys(unknowns))
     return {
         "mps_id": str(mps_id),
@@ -1006,8 +1262,9 @@ async def compare_whatif_scenarios(
         "service_level_unit": "percentage_points",
         "delay_count_delta": int(cres["delay_count"]) - int(bres["delay_count"]),
         "delay_count_unit": "lines",
-        "cost_delta": None,
-        "cost_delta_status": "UNKNOWN_NO_APPROVED_CURRENCY_BASIS",
+        "cost_delta": cost_delta,
+        "cost_currency": cost_currency,
+        "cost_delta_status": "COMPLETE" if cost_complete else "UNKNOWN_COST_OR_CURRENCY_BASIS",
         "material_status": "COMPLETE" if material_complete else "PARTIAL_INPUTS",
         "material_shortage_count_delta": (
             int(cres["material_shortage_count"]) - int(bres["material_shortage_count"])
@@ -1026,6 +1283,12 @@ async def compare_whatif_scenarios(
         ),
         "changeover_status": "COMPLETE" if changeover_complete else "PARTIAL_INPUTS",
         "changeover_unit": "hours",
+        "cip_hours_delta": (
+            round(float(cres["cip_hours"]) - float(bres["cip_hours"]), 3)
+            if cip_complete else None
+        ),
+        "cip_status": "COMPLETE" if cip_complete else "PARTIAL_INPUTS",
+        "cip_unit": "hours",
         "confidence_status": "PARTIAL_INPUTS" if unknowns else "COMPLETE_INPUTS",
         "unknowns": unknowns,
         "metric_sources": {
@@ -1034,7 +1297,11 @@ async def compare_whatif_scenarios(
             "material_shortages": "persisted scenario material-feasibility diagnostics; quantities grouped by source UOM",
             "capacity_overload": "persisted scenario estimate using configured work-center rates, calendars, and downtime",
             "changeover": "persisted scenario estimate using active configured changeover matrix rows",
-            "cost": "unknown until an approved currency and cost basis are configured",
+            "cip": "persisted scenario estimate using active configured work-center/family transition CIP durations",
+            "cost": (
+                f"candidate minus baseline estimated standard cost in {cost_currency}"
+                if cost_complete else "unknown until product standard costs and company base currency are configured"
+            ),
         },
         "baseline_version": baseline["snapshot_version"],
         "candidate_version": candidate["snapshot_version"],

@@ -324,8 +324,10 @@ def test_fixture_delayed_receipt_and_missing_master_data_remain_blocking():
     )
     assert net["net_requirement"] == Decimal("240.000")
     assert detergent["bom"]["lifecycle"] == "MISSING"
-    assert detergent["work_center"]["calendar_hours"] is None
-    assert detergent["cip"]["state"] == "NOT_CONFIGURED"
+    assert detergent["work_center"]["calendar_hours"] == 8
+    assert detergent["campaign"]["family"] == "HOUSEHOLD"
+    assert detergent["cip"]["state"] == "CONFIGURED"
+    assert detergent["standard_cost_currency"] == fixture["scope"]["base_currency"]
     assert date.fromisoformat(detergent["incoming_due_date"]) > date.fromisoformat(fixture["scope"]["horizon"][1])
     assert detergent["planned_qty"] == 240
 
@@ -391,9 +393,13 @@ def test_whatif_preserves_unknown_currency_and_supports_exact_split_merge_and_sh
     assert merged["_merge_with_line_id"] == "line-2"
     shifted = _apply_change(
         {"id": "line-1", "planned_production_qty": "10"},
-        {"change_type": MPSChangeType.SHIFT_ADD, "new_value": {"date": "2026-01-02", "hours": "4"}},
+        {"change_type": MPSChangeType.SHIFT_ADD, "new_value": {
+            "date": "2026-01-02", "start_time": "16:00", "end_time": "20:00", "hours": "4",
+        }},
     )
-    assert shifted["_added_shifts"] == [{"date": "2026-01-02", "hours": "4"}]
+    assert shifted["_added_shifts"] == [{
+        "date": "2026-01-02", "start_time": "16:00", "end_time": "20:00", "hours": "4",
+    }]
     delayed = _apply_change({"period_start": "2026-01-01"}, {"change_type": MPSChangeType.DELAY, "new_value": 3})
     assert delayed["period_start"] == "2026-01-04"
     adjusted = _apply_change({"planned_production_qty": "10"}, {"change_type": MPSChangeType.QTY_ADJUST, "new_value": "12.5"})
@@ -446,13 +452,23 @@ def test_whatif_changeover_uses_configured_transition_and_reports_missing_transi
         product_b: SimpleNamespace(category="BEVERAGE"),
     }
     lines = [
-        {"id": "a", "work_center_id": str(wc_id), "product_id": str(product_a), "period_start": "2026-01-01"},
-        {"id": "b", "work_center_id": str(wc_id), "product_id": str(product_b), "period_start": "2026-01-02"},
+        {"id": "a", "work_center_id": str(wc_id), "product_id": str(product_a),
+         "period_start": "2026-01-01", "period_end": "2026-01-01"},
+        {"id": "b", "work_center_id": str(wc_id), "product_id": str(product_b),
+         "period_start": "2026-01-02", "period_end": "2026-01-02"},
     ]
-    configured = SimpleNamespace(work_center_id=wc_id, from_family="FOOD", to_family="BEVERAGE", changeover_minutes=30, is_active=True)
+    configured = SimpleNamespace(
+        work_center_id=wc_id, from_family="FOOD", to_family="BEVERAGE",
+        changeover_minutes=30, cip_minutes=None, is_active=True,
+    )
     result = _scenario_changeover_hours(lines, products, [configured])
-    assert result == {"hours": 0.5, "status": "COMPLETE", "unknown_reasons": [], "transition_count": 1}
+    assert result["hours"] == 0.5
+    assert result["status"] == "COMPLETE"
+    assert result["transition_count"] == 1
+    assert result["cip_status"] == "PARTIAL_INPUTS"
+    assert result["cip_unknown_reasons"] == ["CIP_NOT_CONFIGURED:FOOD->BEVERAGE"]
     missing = _scenario_changeover_hours(lines, products, [])
     assert missing["status"] == "PARTIAL_INPUTS"
     assert missing["hours"] == 0.0
-    assert missing["unknown_reasons"] == ["CHANGEOVER_NOT_CONFIGURED:FOOD->BEVERAGE"]
+    assert "CHANGEOVER_NOT_CONFIGURED:FOOD->BEVERAGE" in missing["unknown_reasons"]
+    assert "CIP_NOT_CONFIGURED:FOOD->BEVERAGE" in missing["unknown_reasons"]

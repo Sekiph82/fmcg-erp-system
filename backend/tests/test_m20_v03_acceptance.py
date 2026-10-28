@@ -5,7 +5,7 @@ import asyncio
 import json
 import os
 import re
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
 from types import SimpleNamespace
@@ -24,7 +24,9 @@ from app.models.bom import (
     BasisType, ItemLinkType, LossCategory, SubstitutionPolicy,
 )
 from app.models.company import Branch, Company
+from app.models.hr import Employee, EmployeeShiftAssignment, ShiftTemplate
 from app.models.inventory import Stock, StockType
+from app.models.machine_operator import Machine, MachineFamily, OperatorProfile
 from app.models.master import (
     Material, MaterialType, Product, ProductCategory, Supplier, UnitOfMeasure,
     Warehouse, WarehouseType,
@@ -62,6 +64,8 @@ from app.services.mps_whatif_service import (
     _apply_change,
     _batch_count_for_quantity,
     _expand_candidate_lines,
+    _scenario_changeover_hours,
+    _scenario_standard_cost_total,
     _validate_shift_additions,
     compare_whatif_scenarios,
     create_whatif_scenario,
@@ -111,6 +115,51 @@ def test_m20_disposable_database_guard_requires_exact_unique_loopback_target():
     assert not _is_task_owned_disposable_m20_database(sqlite_url, name)
 
 
+def test_virtual_cost_currency_and_ambiguous_campaign_sequence_remain_unknown():
+    product_id = uuid4()
+    product = SimpleNamespace(
+        id=product_id, sku="SYN-001", category="BEVERAGE",
+        standard_cost=Decimal("12.50"), standard_cost_currency="KES",
+    )
+    lines = [{
+        "id": str(uuid4()), "product_id": str(product_id), "work_center_id": str(uuid4()),
+        "planned_production_qty": "4", "planned_start_date": "2026-11-03", "planned_end_date": "2026-11-03",
+    }]
+    total, unknown = _scenario_standard_cost_total(lines, {product_id: product}, "KES")
+    assert total == Decimal("50.00") and not unknown
+    product.standard_cost_currency = None
+    total, unknown = _scenario_standard_cost_total(lines, {product_id: product}, "KES")
+    assert total is None and "PRODUCT_STANDARD_COST_CURRENCY_MISSING:SYN-001" in unknown
+    product.standard_cost_currency = "USD"
+    total, unknown = _scenario_standard_cost_total(lines, {product_id: product}, "KES")
+    assert total is None and "PRODUCT_STANDARD_COST_CURRENCY_MISMATCH:SYN-001" in unknown
+
+    work_center_id = uuid4()
+    household_id = uuid4()
+    first, second = dict(lines[0]), dict(lines[0])
+    first["work_center_id"] = second["work_center_id"] = str(work_center_id)
+    second["id"], second["product_id"] = str(uuid4()), str(household_id)
+    products = {
+        product_id: product,
+        household_id: SimpleNamespace(id=household_id, sku="SYN-002", category="HOUSEHOLD"),
+    }
+    transition = SimpleNamespace(
+        work_center_id=work_center_id, from_family="BEVERAGE", to_family="HOUSEHOLD",
+        changeover_minutes=45, cip_minutes=60, is_active=True,
+    )
+    same_day = _scenario_changeover_hours([first, second], products, [transition])
+    assert same_day["status"] == "PARTIAL_INPUTS"
+    assert "CAMPAIGN_SEQUENCE_NOT_CONFIGURED:2026-11-03" in same_day["unknown_reasons"]
+    assert not same_day["capacity_loads"]
+
+    first["planned_end_date"] = "2026-11-04"
+    second["planned_start_date"] = second["planned_end_date"] = "2026-11-04"
+    overlapping = _scenario_changeover_hours([first, second], products, [transition])
+    assert overlapping["status"] == "PARTIAL_INPUTS"
+    assert any(reason.startswith("CAMPAIGN_WINDOWS_OVERLAP:") for reason in overlapping["unknown_reasons"])
+    assert not overlapping["capacity_loads"]
+
+
 @pytest.mark.asyncio
 async def test_mps_number_sequences_advance_past_existing_rows_and_are_concurrent_safe():
     _require_disposable_m20_postgres()
@@ -151,7 +200,7 @@ async def test_mps_number_sequences_advance_past_existing_rows_and_are_concurren
     assert len(set(scenario_values)) == len(scenario_values)
 
 
-def test_shift_add_uses_calendar_remaining_hours_and_rejects_overlap_evidence():
+def test_shift_add_requires_realistic_non_overlapping_calendar_intervals():
     wc_id = uuid4()
     day = date(2026, 11, 3)
     key = (wc_id, day)
@@ -161,20 +210,41 @@ def test_shift_add_uses_calendar_remaining_hours_and_rejects_overlap_evidence():
         shift_2_start=None, shift_2_end=None,
         shift_3_start=None, shift_3_end=None,
     )
-    valid, unknown = _validate_shift_additions({key: Decimal("16")}, {key: calendar})
+    def added(start_time: str, end_time: str, hours: str) -> dict:
+        start_hour, start_minute = (int(part) for part in start_time.split(":"))
+        end_hour, end_minute = (int(part) for part in end_time.split(":"))
+        return {
+            "work_center_id": wc_id, "date": day,
+            "start_time": start_time, "end_time": end_time,
+            "start_minute": start_hour * 60 + start_minute,
+            "end_minute": (24 * 60 if end_time == "00:00" else end_hour * 60 + end_minute),
+            "hours": Decimal(hours),
+        }
+
+    valid, unknown = _validate_shift_additions(
+        [added("00:00", "08:00", "8"), added("16:00", "00:00", "8")], {key: calendar},
+    )
     assert valid == {key: Decimal("16")}
     assert not unknown
     with pytest.raises(ValueError, match="Aggregate SHIFT_ADD hours exceed remaining"):
-        _validate_shift_additions({key: Decimal("16.001")}, {key: calendar})
+        _validate_shift_additions(
+            [added("00:00", "08:00", "8"), added("16:00", "00:00", "8.001")], {key: calendar},
+        )
+    with pytest.raises(ValueError, match="overlaps a configured work-center shift"):
+        _validate_shift_additions([added("15:00", "20:00", "5")], {key: calendar})
+    with pytest.raises(ValueError, match="intervals overlap"):
+        _validate_shift_additions(
+            [added("16:00", "20:00", "4"), added("19:00", "23:00", "4")], {key: calendar},
+        )
 
     overlapping = SimpleNamespace(**{
         **calendar.__dict__, "shift_2_start": "15:00", "shift_2_end": "20:00",
     })
-    valid, unknown = _validate_shift_additions({key: Decimal("1")}, {key: overlapping})
+    valid, unknown = _validate_shift_additions([added("00:00", "01:00", "1")], {key: overlapping})
     assert valid == {}
     assert unknown == {"SHIFT_ADD_CALENDAR_SHIFTS_OVERLAP"}
 
-    valid, unknown = _validate_shift_additions({key: Decimal("1")}, {})
+    valid, unknown = _validate_shift_additions([added("00:00", "01:00", "1")], {})
     assert valid == {}
     assert unknown == {"SHIFT_ADD_CALENDAR_NOT_CONFIGURED"}
 
@@ -184,7 +254,7 @@ def test_shift_add_uses_calendar_remaining_hours_and_rejects_overlap_evidence():
         shift_2_start=None, shift_2_end=None,
         shift_3_start=None, shift_3_end=None,
     )
-    valid, unknown = _validate_shift_additions({key: Decimal("1")}, {key: no_shift_policy})
+    valid, unknown = _validate_shift_additions([added("00:00", "01:00", "1")], {key: no_shift_policy})
     assert valid == {}
     assert unknown == {"SHIFT_ADD_CALENDAR_SHIFT_WINDOWS_NOT_CONFIGURED"}
 
@@ -195,7 +265,7 @@ def test_shift_add_uses_calendar_remaining_hours_and_rejects_overlap_evidence():
         shift_3_start="16:00", shift_3_end="00:00",
     )
     with pytest.raises(ValueError, match="Aggregate SHIFT_ADD hours exceed remaining"):
-        _validate_shift_additions({key: Decimal("1")}, {key: full_day})
+        _validate_shift_additions([added("16:00", "17:00", "1")], {key: full_day})
 
     downtime = SimpleNamespace(
         work_center_id=wc_id,
@@ -203,7 +273,7 @@ def test_shift_add_uses_calendar_remaining_hours_and_rejects_overlap_evidence():
         end_time=datetime(2026, 11, 3, 10, tzinfo=timezone.utc),
         duration_min=None,
     )
-    valid, unknown = _validate_shift_additions({key: Decimal("1")}, {key: calendar}, [downtime])
+    valid, unknown = _validate_shift_additions([added("16:00", "17:00", "1")], {key: calendar}, [downtime])
     assert valid == {}
     assert unknown == {"SHIFT_ADD_DOWNTIME_OVERLAP_UNRESOLVED"}
 
@@ -310,21 +380,31 @@ async def test_postgres_whatif_merge_exact_split_and_added_shift_resimulate_with
         ), user_id)
         shifted = await create_whatif_scenario(db, plan_id, MPSWhatIfCreate(
             scenario_name="add configured finite shift",
-            changes=[WhatIfChange(line_id=first_id, change_type=MPSChangeType.SHIFT_ADD, new_value={"date": day.isoformat(), "hours": "2"})],
+            changes=[WhatIfChange(line_id=first_id, change_type=MPSChangeType.SHIFT_ADD, new_value={
+                "date": day.isoformat(), "start_time": "16:00", "end_time": "18:00", "hours": "2",
+            })],
         ), user_id)
         maximum_shift = await create_whatif_scenario(db, plan_id, MPSWhatIfCreate(
             scenario_name="aggregate shifts stay within daily calendar",
             changes=[
-                WhatIfChange(line_id=first_id, change_type=MPSChangeType.SHIFT_ADD, new_value={"date": day.isoformat(), "hours": "8"}),
-                WhatIfChange(line_id=second_id, change_type=MPSChangeType.SHIFT_ADD, new_value={"date": day.isoformat(), "hours": "8"}),
+                WhatIfChange(line_id=first_id, change_type=MPSChangeType.SHIFT_ADD, new_value={
+                    "date": day.isoformat(), "start_time": "16:00", "end_time": "20:00", "hours": "4",
+                }),
+                WhatIfChange(line_id=second_id, change_type=MPSChangeType.SHIFT_ADD, new_value={
+                    "date": day.isoformat(), "start_time": "20:00", "end_time": "00:00", "hours": "4",
+                }),
             ],
         ), user_id)
         with pytest.raises(ValueError, match="Aggregate SHIFT_ADD hours exceed remaining work-center calendar hours"):
             await create_whatif_scenario(db, plan_id, MPSWhatIfCreate(
                 scenario_name="aggregate shift exceeds physical day",
                 changes=[
-                    WhatIfChange(line_id=first_id, change_type=MPSChangeType.SHIFT_ADD, new_value={"date": day.isoformat(), "hours": "9"}),
-                    WhatIfChange(line_id=second_id, change_type=MPSChangeType.SHIFT_ADD, new_value={"date": day.isoformat(), "hours": "8"}),
+                    WhatIfChange(line_id=first_id, change_type=MPSChangeType.SHIFT_ADD, new_value={
+                        "date": day.isoformat(), "start_time": "16:00", "end_time": "00:00", "hours": "8",
+                    }),
+                    WhatIfChange(line_id=second_id, change_type=MPSChangeType.SHIFT_ADD, new_value={
+                        "date": day.isoformat(), "start_time": "00:00", "end_time": "09:00", "hours": "9",
+                    }),
                 ],
             ), user_id)
         full_day_calendar = await db.scalar(select(ResourceCalendar).where(
@@ -341,8 +421,12 @@ async def test_postgres_whatif_merge_exact_split_and_added_shift_resimulate_with
             await create_whatif_scenario(db, plan_id, MPSWhatIfCreate(
                 scenario_name="aggregate additions rejected after a full-day calendar",
                 changes=[
-                    WhatIfChange(line_id=first_id, change_type=MPSChangeType.SHIFT_ADD, new_value={"date": day.isoformat(), "hours": "1"}),
-                    WhatIfChange(line_id=second_id, change_type=MPSChangeType.SHIFT_ADD, new_value={"date": day.isoformat(), "hours": "1"}),
+                    WhatIfChange(line_id=first_id, change_type=MPSChangeType.SHIFT_ADD, new_value={
+                        "date": day.isoformat(), "start_time": "00:00", "end_time": "01:00", "hours": "1",
+                    }),
+                    WhatIfChange(line_id=second_id, change_type=MPSChangeType.SHIFT_ADD, new_value={
+                        "date": day.isoformat(), "start_time": "01:00", "end_time": "02:00", "hours": "1",
+                    }),
                 ],
             ), user_id)
         full_day_calendar.available_hours = 8
@@ -452,10 +536,20 @@ async def test_postgres_whatif_merge_exact_split_and_added_shift_resimulate_with
         assert by_scenario[shifted.id].results["capacity_overload_hours"] == 0.0
         assert by_scenario[maximum_shift.id].results["capacity_overload_hours"] == 0.0
         assert by_scenario[maximum_shift.id].assumptions["shift_additions"] == [
-            {"work_center_id": str((await db.get(MPSLine, first_id)).work_center_id), "date": day.isoformat(), "hours": "16"},
+            {
+                "work_center_id": str((await db.get(MPSLine, first_id)).work_center_id),
+                "date": day.isoformat(), "start_time": "16:00", "end_time": "20:00", "hours": "4",
+            },
+            {
+                "work_center_id": str((await db.get(MPSLine, second_id)).work_center_id),
+                "date": day.isoformat(), "start_time": "20:00", "end_time": "00:00", "hours": "4",
+            },
         ]
         assert by_scenario[shifted.id].assumptions["shift_additions"] == [
-            {"work_center_id": str((await db.get(MPSLine, first_id)).work_center_id), "date": day.isoformat(), "hours": "2"},
+            {
+                "work_center_id": str((await db.get(MPSLine, first_id)).work_center_id),
+                "date": day.isoformat(), "start_time": "16:00", "end_time": "18:00", "hours": "2",
+            },
         ]
         assert await db.scalar(select(func.sum(MPSLine.planned_production_qty)).where(
             MPSLine.mps_id == plan_id,
@@ -470,6 +564,13 @@ async def test_postgres_kenya_fixture_drives_real_mps_material_feasibility_servi
 
     fixture = json.loads((Path(__file__).parent / "fixtures" / "m20_acceptance_dataset.json").read_text(encoding="utf-8"))
     assert fixture["classification"].startswith("synthetic test fixture")
+    assert fixture["virtual_assumptions"]["source"] == "OWNER_AUTHORIZED_SYNTHETIC_DEMO_ASSUMPTIONS"
+    assert fixture["virtual_assumptions"]["not_operational_data"] is True
+    assert all("minimum_run_qty" in product and "standard_cost_currency" in product for product in fixture["products"])
+    assert fixture["virtual_assumptions"]["changeover_rules"][0]["cip_minutes"] > 0
+    staffing = fixture["virtual_assumptions"]["staffing_assumption"]
+    assert staffing["not_operational_data"] is True
+    assert staffing["operators_per_filling_machine"] == len(staffing["employees"]) == 2
     mango = fixture["products"][0]
     suffix = _suffix()
     start_day = date.fromisoformat(fixture["scope"]["horizon"][0])
@@ -489,7 +590,9 @@ async def test_postgres_kenya_fixture_drives_real_mps_material_feasibility_servi
                 )
                 product = Product(
                     sku=f"{mango['sku']}-{suffix}", name=mango["name"],
-                    category=ProductCategory.FOOD, uom=UnitOfMeasure[mango["uom"]],
+                    category=ProductCategory[mango["category"]], uom=UnitOfMeasure[mango["uom"]],
+                    minimum_run_qty=mango["minimum_run_qty"], standard_cost=mango["standard_cost"],
+                    standard_cost_currency=mango["standard_cost_currency"],
                 )
                 material_record = mango["bom"]["components"][0]
                 material = Material(
@@ -886,7 +989,7 @@ async def test_postgres_mps_capacity_reconciles_rate_shifts_downtime_locks_and_m
             assert (await db.get(MPSLine, invalid_shift_id)).feasibility_status == MPSFeasibilityStatus.INFEASIBLE
             assert (await db.get(MPSLine, attribution_locked_id)).feasibility_status == MPSFeasibilityStatus.ON_HOLD
             assert (await db.get(MPSLine, attribution_unlocked_id)).feasibility_status == MPSFeasibilityStatus.OVERLOADED
-            assert (await db.get(MPSLine, overnight_id)).feasibility_status == MPSFeasibilityStatus.PENDING
+            assert (await db.get(MPSLine, overnight_id)).feasibility_status == MPSFeasibilityStatus.FEASIBLE
             assert (await db.get(MPSLine, changeover_id)).feasibility_status == MPSFeasibilityStatus.PENDING
             assert (await db.get(MPSLine, invalid_downtime_id)).feasibility_status == MPSFeasibilityStatus.INFEASIBLE
             diagnostics = await list_plan_diagnostics(db, plan_id)
@@ -1485,7 +1588,6 @@ async def test_postgres_mps_demand_projection_nets_forecast_and_carries_mrp_safe
                 inactive_safety_product = Product(
                     sku=f"M20-D-INACTIVE-{suffix}", name="Inactive safety target",
                     category=ProductCategory.FOOD, uom=UnitOfMeasure.KG, reorder_point=Decimal("0"),
-                    is_active=False,
                 )
                 db.add_all([warehouse, customer, confirmed_product, safety_only_product, inactive_safety_product])
                 await db.flush()
@@ -1510,6 +1612,9 @@ async def test_postgres_mps_demand_projection_nets_forecast_and_carries_mrp_safe
                         safety_stock_qty=Decimal("25"),
                     ),
                 ])
+                await db.flush()
+                inactive_safety_product.is_active = False
+                await db.flush()
                 confirmed_order = SalesOrder(
                     order_no=f"M20-D-SO-{suffix}", customer_id=customer.id,
                     order_date=start, requested_delivery_date=date(2026, 1, 2),
@@ -2057,10 +2162,10 @@ async def test_postgres_seeded_mrp_bom_inventory_diagnostics_snapshot_and_releas
                 assert comparison["capacity_unit"] == "hours"
                 assert comparison["changeover_unit"] == "hours"
                 assert comparison["cost_delta"] is None
-                assert comparison["cost_delta_status"] == "UNKNOWN_NO_APPROVED_CURRENCY_BASIS"
+                assert comparison["cost_delta_status"] == "UNKNOWN_COST_OR_CURRENCY_BASIS"
                 assert comparison["confidence_status"] == "PARTIAL_INPUTS"
-                assert "cost currency/basis is not configured" in comparison["unknowns"]
-                assert "CIP duration source is not configured" in comparison["unknowns"]
+                assert "COST_BASIS_OR_COMPANY_CURRENCY_NOT_CONFIGURED" in comparison["unknowns"]
+                assert not any(reason.startswith("CIP_") for reason in comparison["unknowns"])
                 assert comparison["metric_sources"]["material_shortages"].endswith("grouped by source UOM")
                 assert comparison["baseline_version"] == "mps-whatif.v1"
                 assert comparison["candidate_version"] == "mps-whatif.v1"
@@ -2165,6 +2270,273 @@ async def test_postgres_seeded_mrp_bom_inventory_diagnostics_snapshot_and_releas
 
 
 @pytest.mark.asyncio
+async def test_postgres_virtual_factory_minimum_run_cip_capacity_and_kes_costing():
+    """Exercise owner-authorized synthetic assumptions through real MPS services."""
+    _require_disposable_m20_postgres()
+    await engine.dispose()
+    suffix = _suffix()
+    day_one = date(2026, 11, 3)
+    day_two = date(2026, 11, 4)
+    company_id = warehouse_id = run_id = plan_id = work_center_id = None
+    product_ids: list[uuid.UUID] = []
+    user_id = None
+    employee_ids: list[uuid.UUID] = []
+    operator_profile_ids: list[uuid.UUID] = []
+    shift_template_id = machine_id = None
+    fixture = json.loads((Path(__file__).parent / "fixtures" / "m20_acceptance_dataset.json").read_text(encoding="utf-8"))
+    staffing = fixture["virtual_assumptions"]["staffing_assumption"]
+    try:
+        async with AsyncSessionLocal() as db:
+            async with db.begin():
+                company = Company(
+                    name=f"Synthetic Nairobi Foods {suffix}", short_code=f"SYN{suffix[:8]}",
+                    country="Kenya", base_currency="KES",
+                )
+                db.add(company)
+                await db.flush()
+                warehouse = Warehouse(
+                    code=f"NBO-DEMO-{suffix}", name="Synthetic finished goods warehouse",
+                    warehouse_type=WarehouseType.FINISHED_GOODS, company_id=company.id,
+                )
+                beverage = Product(
+                    sku=f"JU-MNG-500-{suffix}", name="Synthetic mango drink 500 ml",
+                    category=ProductCategory.BEVERAGE, uom=UnitOfMeasure.PCS,
+                    minimum_run_qty=250, standard_cost=Decimal("42.5000"), standard_cost_currency="KES",
+                )
+                detergent = Product(
+                    sku=f"DET-1L-{suffix}", name="Synthetic dish liquid 1 L",
+                    category=ProductCategory.HOUSEHOLD, uom=UnitOfMeasure.PCS,
+                    minimum_run_qty=180, standard_cost=Decimal("68.0000"), standard_cost_currency="KES",
+                )
+                center = WorkCenter(
+                    work_center_id=f"FILL-DEMO-{suffix}", name="Synthetic shared filling line",
+                    type=WorkCenterType.LINE, capacity=60, capacity_uom="PCS/HR",
+                    status=WorkCenterStatus.ACTIVE,
+                )
+                user = User(
+                    email=f"planner-{suffix}@example.invalid", username=f"planner-{suffix}",
+                    full_name="Synthetic Planner", hashed_password="synthetic-test-only",
+                )
+                db.add_all([warehouse, beverage, detergent, center, user])
+                await db.flush()
+                machine = Machine(
+                    machine_code=f"M20-FILLER-{suffix}", machine_name="Synthetic filling machine",
+                    machine_family=MachineFamily.FILLING, work_center_id=center.id,
+                    rated_capacity_per_hour=60, capacity_uom="PCS/HR",
+                    labor_requirement_standard=staffing["operators_per_filling_machine"],
+                    notes="Owner-authorized synthetic fixture only; not an installed machine.",
+                )
+                shift_template = ShiftTemplate(
+                    name=f"FILL-01 synthetic day {suffix}",
+                    start_time=time(7, 0), end_time=time(15, 0),
+                    department="Production", company_id=company.id,
+                    notes="Synthetic acceptance shift only; not a live roster.",
+                )
+                synthetic_employees = [
+                    Employee(
+                        employee_code=f"{entry['employee_code']}-{suffix}",
+                        full_name=entry["name"], department="Production", role=entry["role"],
+                        hire_date=date(2025, 1, 1), company_id=company.id,
+                    )
+                    for entry in staffing["employees"]
+                ]
+                db.add_all([machine, shift_template, *synthetic_employees])
+                await db.flush()
+                synthetic_operators = [
+                    OperatorProfile(
+                        operator_code=f"{employee.employee_code}-PROFILE",
+                        employee_id=employee.id, full_name=employee.full_name,
+                        department="Production", primary_work_center_id=center.id,
+                        primary_machine_id=machine.id,
+                        notes="Synthetic acceptance operator only; no real employee identity.",
+                    )
+                    for employee in synthetic_employees
+                ]
+                db.add_all(synthetic_operators)
+                db.add_all([
+                    EmployeeShiftAssignment(
+                        employee_id=employee.id, company_id=company.id,
+                        shift_template_id=shift_template.id,
+                        effective_from=day_one, effective_to=day_two,
+                        notes="Synthetic M20 acceptance roster only; not an operating schedule.",
+                    )
+                    for employee in synthetic_employees
+                ])
+                await db.flush()
+                run = MRPRun(
+                    run_no=f"M20-VIRTUAL-RUN-{suffix}", run_date=day_one,
+                    status=MRPRunStatus.COMPLETED, warehouse_id=warehouse.id,
+                )
+                db.add(run)
+                await db.flush()
+                plan = MPSPlan(
+                    plan_no=f"M20-VIRTUAL-PLAN-{suffix}",
+                    plan_name="Owner-authorized synthetic FMCG acceptance plan",
+                    start_date=day_one, end_date=day_two, capacity_mode=MPSCapacityMode.FINITE,
+                    mrp_run_id=run.id,
+                )
+                db.add(plan)
+                await db.flush()
+                first = MPSLine(
+                    line_no=f"M20-VIRTUAL-BEV-{suffix}", mps_id=plan.id, product_id=beverage.id,
+                    period_start=day_one, period_end=day_one, planned_start_date=day_one,
+                    planned_end_date=day_one, planned_production_qty=300,
+                    required_hours=Decimal("5"), work_center_id=center.id,
+                )
+                second = MPSLine(
+                    line_no=f"M20-VIRTUAL-HOUSE-{suffix}", mps_id=plan.id, product_id=detergent.id,
+                    period_start=day_two, period_end=day_two, planned_start_date=day_two,
+                    planned_end_date=day_two, planned_production_qty=120,
+                    required_hours=Decimal("2"), work_center_id=center.id,
+                )
+                db.add_all([
+                    first, second,
+                    ResourceCalendar(
+                        work_center_id=center.id, calendar_date=day_one, available_hours=8,
+                        shift_1_start="07:00", shift_1_end="15:00",
+                    ),
+                    ResourceCalendar(
+                        work_center_id=center.id, calendar_date=day_two, available_hours=8,
+                        shift_1_start="07:00", shift_1_end="15:00",
+                    ),
+                    ChangeoverMatrix(
+                        work_center_id=center.id, from_family="BEVERAGE", to_family="HOUSEHOLD",
+                        changeover_minutes=45, cip_minutes=60,
+                        notes="Synthetic demo assumption only; not factory operating data.",
+                    ),
+                ])
+                await db.flush()
+                company_id, warehouse_id, run_id = company.id, warehouse.id, run.id
+                plan_id, work_center_id = plan.id, center.id
+                product_ids = [beverage.id, detergent.id]
+                user_id = user.id
+                employee_ids = [employee.id for employee in synthetic_employees]
+                operator_profile_ids = [operator.id for operator in synthetic_operators]
+                shift_template_id, machine_id = shift_template.id, machine.id
+                first_id, second_id = first.id, second.id
+
+            campaign = await run_campaign_grouping_validated(db, plan_id)
+            assert campaign["campaigns_created"] == 2
+            assert machine.labor_requirement_standard == Decimal(str(staffing["operators_per_filling_machine"]))
+            assert await db.scalar(select(func.count()).select_from(OperatorProfile).where(
+                OperatorProfile.id.in_(operator_profile_ids),
+                OperatorProfile.primary_work_center_id == work_center_id,
+            )) == staffing["operators_per_filling_machine"]
+            assert await db.scalar(select(func.count()).select_from(EmployeeShiftAssignment).where(
+                EmployeeShiftAssignment.employee_id.in_(employee_ids),
+                EmployeeShiftAssignment.shift_template_id == shift_template_id,
+            )) == staffing["operators_per_filling_machine"]
+            campaign_rows = await list_campaigns(db, plan_id)
+            assert sorted(row.total_changeover_hrs for row in campaign_rows) == [Decimal("0.000"), Decimal("0.750")]
+            diagnostics = await list_plan_diagnostics(db, plan_id)
+            by_line = {uuid.UUID(row["line_id"]): row["diagnostics"] for row in diagnostics}
+            assert "MINIMUM_RUN_CONFIGURED" in by_line[first_id]["reason_codes"]
+            assert "MINIMUM_RUN_NOT_MET" in by_line[second_id]["reason_codes"]
+            assert "CIP_CONFIGURED" in by_line[second_id]["reason_codes"]
+            assert "CIP_NOT_CONFIGURED" in by_line[first_id]["reason_codes"]
+
+            await run_capacity_scheduling_validated(db, plan_id)
+            slots = (await db.scalars(select(MPSCapacitySlot).where(
+                MPSCapacitySlot.mps_id == plan_id,
+                MPSCapacitySlot.work_center_id == work_center_id,
+                MPSCapacitySlot.slot_date == day_two,
+            ))).all()
+            assert len(slots) == 1
+            assert slots[0].allocated_hours == Decimal("3.750"), "2 production hours + 45-minute setup + 60-minute CIP"
+            capacity_rows = await list_plan_diagnostics(db, plan_id)
+            capacity_diagnostic = next(
+                row["diagnostics"] for row in capacity_rows
+                if row["source_version"] == "mps-capacity.v1" and uuid.UUID(row["line_id"]) == second_id
+            )
+            applied_cip = next(issue for issue in capacity_diagnostic["issues"] if issue["reason_code"] == "CIP_CAPACITY_APPLIED")
+            assert applied_cip["duration_minutes"] == 60
+            assert applied_cip["capacity_date"] == day_two.isoformat()
+
+            baseline = await create_whatif_scenario(db, plan_id, MPSWhatIfCreate(
+                scenario_name=f"synthetic KES baseline {suffix}",
+                changes=[WhatIfChange(line_id=first_id, change_type=MPSChangeType.QTY_ADJUST, new_value="300")],
+            ), user_id)
+            candidate = await create_whatif_scenario(db, plan_id, MPSWhatIfCreate(
+                scenario_name=f"synthetic KES candidate {suffix}",
+                changes=[WhatIfChange(line_id=first_id, change_type=MPSChangeType.QTY_ADJUST, new_value="400")],
+            ), user_id)
+            assert baseline.impact_cost_delta == Decimal("0.0000")
+            assert baseline.impact_cost_currency == "KES"
+            assert candidate.impact_cost_delta == Decimal("4250.0000")
+            assert candidate.impact_cost_currency == "KES"
+            comparison = await compare_whatif_scenarios(db, plan_id, baseline.id, candidate.id)
+            assert comparison["cost_delta"] == 4250.0
+            assert comparison["cost_currency"] == "KES"
+            assert comparison["cost_delta_status"] == "COMPLETE"
+            assert comparison["changeover_unit"] == "hours"
+            assert comparison["cip_status"] == "COMPLETE"
+            assert comparison["cip_hours_delta"] == 0.0
+            assert comparison["confidence_status"] == "PARTIAL_INPUTS", "missing BOM remains explicitly unknown"
+
+            snapshot = await db.scalar(select(MPSScenarioSnapshot).where(
+                MPSScenarioSnapshot.scenario_id == candidate.id,
+            ))
+            assert snapshot is not None
+            assert snapshot.assumptions["cost_basis"]["currency"] == "KES"
+            assert snapshot.assumptions["cost_basis"]["fx_policy"] == "same-currency base-currency values only; no FX conversion"
+            assert snapshot.results["cip_hours"] == 1.0
+            assert snapshot.results["cost_delta_status"] == "COMPLETE"
+
+            from sqlalchemy.exc import IntegrityError
+            with pytest.raises(IntegrityError):
+                async with db.begin_nested():
+                    db.add(Product(
+                        sku=f"INVALID-MIN-{suffix}", name="Invalid synthetic product",
+                        category=ProductCategory.BEVERAGE, uom=UnitOfMeasure.PCS, minimum_run_qty=0,
+                    ))
+                    await db.flush()
+            with pytest.raises(IntegrityError):
+                async with db.begin_nested():
+                    db.add(Product(
+                        sku=f"INVALID-CURRENCY-{suffix}", name="Invalid synthetic product",
+                        category=ProductCategory.BEVERAGE, uom=UnitOfMeasure.PCS,
+                        standard_cost=Decimal("10"), standard_cost_currency="kes",
+                    ))
+                    await db.flush()
+            with pytest.raises(IntegrityError):
+                async with db.begin_nested():
+                    db.add(ChangeoverMatrix(
+                        work_center_id=work_center_id, from_family="INVALID", to_family="NEGATIVE",
+                        changeover_minutes=0, cip_minutes=-1,
+                    ))
+                    await db.flush()
+    finally:
+        async with AsyncSessionLocal() as cleanup:
+            async with cleanup.begin():
+                if plan_id is not None:
+                    await cleanup.execute(delete(MPSPlan).where(MPSPlan.id == plan_id))
+                if operator_profile_ids:
+                    await cleanup.execute(delete(OperatorProfile).where(OperatorProfile.id.in_(operator_profile_ids)))
+                if machine_id is not None:
+                    await cleanup.execute(delete(Machine).where(Machine.id == machine_id))
+                if employee_ids:
+                    await cleanup.execute(delete(EmployeeShiftAssignment).where(EmployeeShiftAssignment.employee_id.in_(employee_ids)))
+                    await cleanup.execute(delete(Employee).where(Employee.id.in_(employee_ids)))
+                if shift_template_id is not None:
+                    await cleanup.execute(delete(ShiftTemplate).where(ShiftTemplate.id == shift_template_id))
+                if work_center_id is not None:
+                    await cleanup.execute(delete(ChangeoverMatrix).where(ChangeoverMatrix.work_center_id == work_center_id))
+                    await cleanup.execute(delete(ResourceCalendar).where(ResourceCalendar.work_center_id == work_center_id))
+                    await cleanup.execute(delete(WorkCenter).where(WorkCenter.id == work_center_id))
+                if product_ids:
+                    await cleanup.execute(delete(Product).where(Product.id.in_(product_ids)))
+                if run_id is not None:
+                    await cleanup.execute(delete(MRPRun).where(MRPRun.id == run_id))
+                if warehouse_id is not None:
+                    await cleanup.execute(delete(Warehouse).where(Warehouse.id == warehouse_id))
+                if company_id is not None:
+                    await cleanup.execute(delete(Company).where(Company.id == company_id))
+                if user_id is not None:
+                    await cleanup.execute(delete(User).where(User.id == user_id))
+        await engine.dispose()
+
+
+@pytest.mark.asyncio
 async def test_postgres_whatif_http_permissions_scope_lifecycle_and_comparison():
     """Exercise scenario API serialization, auth/scope gates, persistence, and rollback."""
     _require_disposable_m20_postgres()
@@ -2177,17 +2549,21 @@ async def test_postgres_whatif_http_permissions_scope_lifecycle_and_comparison()
     await engine.dispose()
     suffix = _suffix()
     saved_overrides = app.dependency_overrides.copy()
-    plan_id = foreign_plan_id = user_id = warehouse_id = run_id = product_id = None
+    plan_id = foreign_plan_id = user_id = warehouse_id = run_id = product_id = company_id = None
     try:
         async with AsyncSessionLocal() as db:
             async with db.begin():
+                company = Company(name=f"Synthetic what-if company {suffix}", short_code=f"WIF{suffix[:8]}", base_currency="KES")
+                db.add(company)
+                await db.flush()
                 warehouse = Warehouse(
                     code=f"M20-WHATIF-HTTP-WH-{suffix}", name="Synthetic what-if API warehouse",
-                    warehouse_type=WarehouseType.FINISHED_GOODS,
+                    warehouse_type=WarehouseType.FINISHED_GOODS, company_id=company.id,
                 )
                 product = Product(
                     sku=f"M20-WHATIF-HTTP-P-{suffix}", name="Synthetic what-if API product",
                     category=ProductCategory.FOOD, uom=UnitOfMeasure.KG,
+                    standard_cost=Decimal("2.5000"), standard_cost_currency="KES",
                 )
                 user = User(
                     email=f"m20-whatif-http-{suffix}@example.invalid",
@@ -2226,7 +2602,7 @@ async def test_postgres_whatif_http_permissions_scope_lifecycle_and_comparison()
                 ])
                 await db.flush()
                 plan_id, foreign_plan_id = plan.id, foreign_plan.id
-                user_id, warehouse_id, run_id, product_id = user.id, warehouse.id, run.id, product.id
+                user_id, warehouse_id, run_id, product_id, company_id = user.id, warehouse.id, run.id, product.id, company.id
 
         async def override_db():
             async with AsyncSessionLocal() as session:
@@ -2267,11 +2643,13 @@ async def test_postgres_whatif_http_permissions_scope_lifecycle_and_comparison()
             })
             assert baseline.status_code == 201, baseline.text
             assert baseline.json()["created_by_id"] == str(user_id)
+            assert baseline.json()["impact_cost_currency"] == "KES"
             candidate = await client.post(route, json={
                 "scenario_name": "HTTP candidate",
                 "changes": [{"line_id": str(line_id), "change_type": "QTY_ADJUST", "new_value": "10"}],
             })
             assert candidate.status_code == 201, candidate.text
+            assert candidate.json()["impact_cost_currency"] == "KES"
 
             foreign_line_id = await get_scenario_line_id(foreign_plan_id)
             foreign = await client.post(f"/api/v1/mps/plans/{foreign_plan_id}/whatif", json={
@@ -2286,6 +2664,8 @@ async def test_postgres_whatif_http_permissions_scope_lifecycle_and_comparison()
             detail = await client.get(f"/api/v1/mps/whatif/{baseline.json()['id']}")
             assert detail.status_code == 200, detail.text
             assert detail.json()["scenario_name"] == "HTTP baseline"
+            assert detail.json()["impact_cost_currency"] == "KES"
+            assert all(item["impact_cost_currency"] == "KES" for item in listed.json())
 
             compare_route = f"/api/v1/mps/plans/{plan_id}/scenario-comparison"
             comparison = await client.get(compare_route, params={
@@ -2297,7 +2677,8 @@ async def test_postgres_whatif_http_permissions_scope_lifecycle_and_comparison()
             assert comparison_payload["service_level_unit"] == "percentage_points"
             assert comparison_payload["capacity_unit"] == "hours"
             assert comparison_payload["changeover_unit"] == "hours"
-            assert comparison_payload["cost_delta"] is None
+            assert comparison_payload["cost_delta"] == 12.5
+            assert comparison_payload["cost_currency"] == "KES"
 
             cross_plan = await client.get(compare_route, params={
                 "baseline_id": baseline.json()["id"],
@@ -2368,6 +2749,8 @@ async def test_postgres_whatif_http_permissions_scope_lifecycle_and_comparison()
                     await cleanup.execute(delete(Product).where(Product.id == product_id))
                 if warehouse_id is not None:
                     await cleanup.execute(delete(Warehouse).where(Warehouse.id == warehouse_id))
+                if company_id is not None:
+                    await cleanup.execute(delete(Company).where(Company.id == company_id))
                 if user_id is not None:
                     await cleanup.execute(delete(User).where(User.id == user_id))
         await engine.dispose()
@@ -3033,7 +3416,7 @@ async def test_campaign_grouping_is_stable_and_fails_closed_on_invalid_scope():
                         ("C", ProductCategory.HOUSEHOLD, True),
                         ("D", ProductCategory.FOOD, True),
                         ("E", ProductCategory.PERSONAL_CARE, True),
-                        ("INACTIVE", ProductCategory.FOOD, False),
+                        ("INACTIVE", ProductCategory.FOOD, True),
                     )
                 ]
                 db.add_all(products)
@@ -3185,6 +3568,8 @@ async def test_campaign_grouping_is_stable_and_fails_closed_on_invalid_scope():
                     bad_batch_count, zero_hours,
                 ])
                 await db.flush()
+                product_by_letter["INACTIVE"].is_active = False
+                await db.flush()
                 plan_id = plan.id
                 line_ids = {
                     key: value.id for key, value in {
@@ -3282,9 +3667,11 @@ async def test_campaign_grouping_is_stable_and_fails_closed_on_invalid_scope():
             ):
                 assert reason in by_line[line_ids[key]]["reason_codes"]
             assert "CHANGEOVER_NOT_CONFIGURED" not in by_line[line_ids["a1"]]["reason_codes"]
-            for key in ("a1", "a2", "b", "c", "d", "before_locked"):
+            for key in ("a1", "a2", "b", "c", "before_locked"):
                 assert "CIP_NOT_CONFIGURED" in by_line[line_ids[key]]["reason_codes"]
                 assert "MINIMUM_RUN_NOT_CONFIGURED" in by_line[line_ids[key]]["reason_codes"]
+            assert "CIP_CONFIGURATION_INVALID" in by_line[line_ids["d"]]["reason_codes"]
+            assert "MINIMUM_RUN_NOT_CONFIGURED" in by_line[line_ids["d"]]["reason_codes"]
 
             rerun = await run_campaign_grouping_validated(db, plan_id)
             assert rerun["campaigns_created"] == 5

@@ -276,9 +276,11 @@ async def run_campaign_grouping_validated(db: AsyncSession, mps_id: uuid.UUID) -
         )
     )).scalars().all() if wc_ids else []
     changeover_values: dict[tuple[uuid.UUID, str, str], list[int]] = defaultdict(list)
+    cip_values: dict[tuple[uuid.UUID, str, str], list[int | None]] = defaultdict(list)
     for row in changeovers:
         key = (row.work_center_id, row.from_family.strip().upper(), row.to_family.strip().upper())
         changeover_values[key].append(row.changeover_minutes)
+        cip_values[key].append(row.cip_minutes)
     changeover_map = {
         key: values[0] for key, values in changeover_values.items()
         if len(values) == 1 and values[0] >= 0 and key[1] and key[2]
@@ -537,6 +539,8 @@ async def run_campaign_grouping_validated(db: AsyncSession, mps_id: uuid.UUID) -
         prior_is_locked = previous_campaign_is_locked.get(wc_id, False) if wc_id else False
         campaign_start = min(line.period_start for line in items)
         campaign_end = max(line.period_end for line in items)
+        cip_minutes = None
+        cip_state = "NOT_CONFIGURED"
         windows_sequenced = bool(
             had_previous_campaign and wc_id and prior_end is not None and prior_end < campaign_start
         )
@@ -545,11 +549,20 @@ async def run_campaign_grouping_validated(db: AsyncSession, mps_id: uuid.UUID) -
             matrix_minutes = changeover_map.get(transition_key)
             if transition_key in invalid_changeovers:
                 changeover_state = "INVALID_CONFIGURATION"
+                cip_state = "INVALID_CONFIGURATION"
                 transition_not_configured += 1
             elif matrix_minutes is not None:
                 changeover_minutes = int(matrix_minutes)
                 changeover_state = "CONFIGURED"
                 configured_transition_count += 1
+                configured_cip = cip_values.get(transition_key, [])
+                if len(configured_cip) != 1 or any(value is not None and value < 0 for value in configured_cip):
+                    cip_state = "INVALID_CONFIGURATION"
+                elif configured_cip[0] is None:
+                    cip_state = "NOT_CONFIGURED"
+                else:
+                    cip_minutes = configured_cip[0]
+                    cip_state = "CONFIGURED"
             else:
                 transition_not_configured += 1
         elif had_previous_campaign:
@@ -575,7 +588,7 @@ async def run_campaign_grouping_validated(db: AsyncSession, mps_id: uuid.UUID) -
             sequence_order=sequence_order,
             sku_count=1,
             notes=(f"Exact SKU grouping. Changeover state={changeover_state}; family source=product category; "
-                   "CIP duration=NOT_CONFIGURED because no authoritative MPS CIP source exists."),
+                   f"CIP state={cip_state}; CIP minutes={cip_minutes if cip_minutes is not None else 'unknown'}."),
         )
         db.add(campaign)
         await db.flush()
@@ -637,18 +650,76 @@ async def run_campaign_grouping_validated(db: AsyncSession, mps_id: uuid.UUID) -
                         "priority": "LOW",
                     })
         for line in items:
-            issues_by_line[line.id].append({
-                "reason_code": "CIP_NOT_CONFIGURED", "state": "NOT_CONFIGURED",
-                "duration_minutes": None,
-                "provenance": "No authoritative MPS CIP duration source is configured.",
-                "priority": "LOW",
-            })
-            issues_by_line[line.id].append({
-                "reason_code": "MINIMUM_RUN_NOT_CONFIGURED", "state": "NOT_CONFIGURED",
-                "minimum_run_qty": None,
-                "provenance": "No authoritative minimum production run quantity is configured on product or work center master data.",
-                "priority": "LOW",
-            })
+            if cip_state == "CONFIGURED":
+                issues_by_line[line.id].append({
+                    "reason_code": "CIP_CONFIGURED", "state": "CONFIGURED",
+                    "work_center_id": str(wc_id), "from_family": previous, "to_family": family,
+                    "duration_minutes": cip_minutes,
+                    "provenance": "Duration comes from the unique active changeover_matrix row for this work center and family transition.",
+                    "priority": "LOW",
+                })
+            elif cip_state == "INVALID_CONFIGURATION":
+                issues_by_line[line.id].append({
+                    "reason_code": "CIP_CONFIGURATION_INVALID", "state": "INVALID_CONFIGURATION",
+                    "work_center_id": str(wc_id), "from_family": previous, "to_family": family,
+                    "duration_minutes": None,
+                    "provenance": "The matching CIP configuration is negative or ambiguous; no sanitation duration was applied.",
+                    "priority": "CRITICAL",
+                })
+                invalid_lines.add(line.id)
+            else:
+                issues_by_line[line.id].append({
+                    "reason_code": "CIP_NOT_CONFIGURED", "state": "NOT_CONFIGURED",
+                    "work_center_id": str(wc_id), "from_family": previous, "to_family": family,
+                    "duration_minutes": None,
+                    "provenance": "No configured CIP duration exists for this campaign transition; no default was applied.",
+                    "priority": "LOW",
+                })
+
+            product = products.get(line.product_id)
+            minimum_run_qty = getattr(product, "minimum_run_qty", None) if product else None
+            product_uom_value = getattr(product, "uom", "") if product else ""
+            product_uom = str(getattr(product_uom_value, "value", product_uom_value) or "").upper()
+            if minimum_run_qty is None:
+                issues_by_line[line.id].append({
+                    "reason_code": "MINIMUM_RUN_NOT_CONFIGURED", "state": "NOT_CONFIGURED",
+                    "minimum_run_qty": None, "uom": product_uom,
+                    "provenance": "No product minimum run is configured; no default was applied.",
+                    "priority": "LOW",
+                })
+            else:
+                try:
+                    minimum_run = decimal(minimum_run_qty)
+                    planned_qty = decimal(line.planned_production_qty)
+                except PlanningInputError:
+                    minimum_run = Decimal("NaN")
+                    planned_qty = Decimal("NaN")
+                if (
+                    not minimum_run.is_finite() or minimum_run <= 0
+                    or not planned_qty.is_finite() or planned_qty < 0
+                ):
+                    issues_by_line[line.id].append({
+                        "reason_code": "MINIMUM_RUN_CONFIGURATION_INVALID", "state": "INVALID_CONFIGURATION",
+                        "minimum_run_qty": str(minimum_run) if minimum_run.is_finite() else None,
+                        "planned_qty": str(planned_qty) if planned_qty.is_finite() else None, "uom": product_uom,
+                        "priority": "CRITICAL",
+                    })
+                    invalid_lines.add(line.id)
+                elif planned_qty < minimum_run:
+                    issues_by_line[line.id].append({
+                        "reason_code": "MINIMUM_RUN_NOT_MET", "state": "INFEASIBLE",
+                        "minimum_run_qty": str(minimum_run), "planned_qty": str(planned_qty), "uom": product_uom,
+                        "provenance": "Configured minimum run is compared in the product's base UOM.",
+                        "priority": "HIGH",
+                    })
+                    invalid_lines.add(line.id)
+                else:
+                    issues_by_line[line.id].append({
+                        "reason_code": "MINIMUM_RUN_CONFIGURED", "state": "CONFIGURED",
+                        "minimum_run_qty": str(minimum_run), "planned_qty": str(planned_qty), "uom": product_uom,
+                        "provenance": "Configured minimum run is compared in the product's base UOM.",
+                        "priority": "LOW",
+                    })
 
     diagnostics = []
     for line in lines:

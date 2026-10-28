@@ -15,7 +15,7 @@ const CHANGE_TYPES: { value: MPSChangeType; label: string; desc: string }[] = [
   { value: "LINE_CHANGE",label: "Change Line",  desc: "Move to different work center ID" },
   { value: "SPLIT",      label: "Split Batch",  desc: "Split into two exact quantities; total must be conserved" },
   { value: "MERGE",      label: "Merge Lines",  desc: "Combine two equivalent scheduled lines" },
-  { value: "SHIFT_ADD",  label: "Add Shift",    desc: "Add finite-capacity hours on a scheduled date" },
+  { value: "SHIFT_ADD",  label: "Add Shift",    desc: "Add a specific non-overlapping shift interval" },
 ];
 
 export default function WhatIfPage() {
@@ -27,6 +27,8 @@ export default function WhatIfPage() {
   const [changeValue, setChangeValue] = useState("");
   const [changeSecondaryValue, setChangeSecondaryValue] = useState("");
   const [shiftDate, setShiftDate] = useState("");
+  const [shiftStartTime, setShiftStartTime] = useState("");
+  const [shiftEndTime, setShiftEndTime] = useState("");
   const [mergeLineId, setMergeLineId] = useState("");
   const [scenarioName, setScenarioName] = useState("");
   const [description, setDescription] = useState("");
@@ -35,6 +37,18 @@ export default function WhatIfPage() {
   const [baselineId, setBaselineId] = useState("");
   const [candidateId, setCandidateId] = useState("");
   const [comparison, setComparison] = useState<MPSScenarioComparison | null>(null);
+
+  function shiftDurationHours(): number | null {
+    if (!shiftStartTime || !shiftEndTime) return null;
+    const minuteOfDay = (value: string) => {
+      const [hours, minutes] = value.split(":").map(Number);
+      return hours * 60 + minutes;
+    };
+    const start = minuteOfDay(shiftStartTime);
+    const rawEnd = minuteOfDay(shiftEndTime);
+    const end = rawEnd === 0 && start > 0 ? 24 * 60 : rawEnd;
+    return end > start ? (end - start) / 60 : null;
+  }
 
   const { data: plans = [], isLoading: plansLoading, error: plansError } = useQuery<MPSPlanSummary[]>({
     queryKey: ["mps-plans"],
@@ -79,7 +93,7 @@ export default function WhatIfPage() {
     if (["SPLIT", "MERGE", "SHIFT_ADD"].includes(changeType) && selectedLines.size !== 1) return false;
     if (changeType === "SPLIT") return Boolean(changeValue && changeSecondaryValue);
     if (changeType === "MERGE") return Boolean(mergeLineId);
-    if (changeType === "SHIFT_ADD") return Boolean(shiftDate && changeValue);
+    if (changeType === "SHIFT_ADD") return Boolean(shiftDate && shiftDurationHours() != null);
     return Boolean(changeValue);
   }
 
@@ -97,7 +111,7 @@ export default function WhatIfPage() {
           : changeType === "MERGE"
             ? mergeLineId
             : changeType === "SHIFT_ADD"
-              ? { date: shiftDate, hours: changeValue }
+              ? { date: shiftDate, start_time: shiftStartTime, end_time: shiftEndTime, hours: String(shiftDurationHours()) }
               : changeValue,
     }));
     setChanges((prev) => [...prev, ...newChanges]);
@@ -105,6 +119,8 @@ export default function WhatIfPage() {
     setChangeValue("");
     setChangeSecondaryValue("");
     setShiftDate("");
+    setShiftStartTime("");
+    setShiftEndTime("");
     setMergeLineId("");
   }
 
@@ -205,7 +221,9 @@ export default function WhatIfPage() {
                   ) : changeType === "SHIFT_ADD" ? (
                     <>
                       <input aria-label="Shift date" type="date" className="border border-gray-200 rounded px-2 py-1.5 text-xs" value={shiftDate} onChange={(e) => setShiftDate(e.target.value)} />
-                      <input aria-label="Additional shift hours" type="number" min="0.001" max="24" step="0.001" className="border border-gray-200 rounded px-2 py-1.5 text-xs" placeholder="Additional hours" value={changeValue} onChange={(e) => setChangeValue(e.target.value)} />
+                      <input aria-label="Additional shift start time" type="time" className="border border-gray-200 rounded px-2 py-1.5 text-xs" value={shiftStartTime} onChange={(e) => setShiftStartTime(e.target.value)} />
+                      <input aria-label="Additional shift end time" type="time" className="border border-gray-200 rounded px-2 py-1.5 text-xs" value={shiftEndTime} onChange={(e) => setShiftEndTime(e.target.value)} />
+                      <span className="col-span-2 text-xs text-gray-500">Added time: {shiftDurationHours() == null ? "choose a valid interval" : `${shiftDurationHours()} hours`}</span>
                     </>
                   ) : (
                     <input
@@ -217,7 +235,7 @@ export default function WhatIfPage() {
                   )}
                 </div>
                 {["SPLIT", "MERGE", "SHIFT_ADD"].includes(changeType) && (
-                  <p className="text-xs text-gray-500">Choose exactly one target line. {changeType === "MERGE" ? "Both lines must share source, product, batch, campaign, feasibility, period, dates and work center." : changeType === "SPLIT" ? "Enter two positive quantities (up to 3 decimals) whose sum exactly equals the line quantity." : "Use a FINITE plan and a date inside the line schedule; added hours are checked against the remaining work-center calendar."}</p>
+                  <p className="text-xs text-gray-500">Choose exactly one target line. {changeType === "MERGE" ? "Both lines must share source, product, batch, campaign, feasibility, period, dates and work center." : changeType === "SPLIT" ? "Enter two positive quantities (up to 3 decimals) whose sum exactly equals the line quantity." : "Use a FINITE plan and a date inside the line schedule. The added start/end interval must not overlap configured shifts or another addition."}</p>
                 )}
                 <p className="text-xs text-gray-400">
                   {selectedLines.size} line(s) selected below
@@ -320,8 +338,11 @@ export default function WhatIfPage() {
                 </p>
                 <p>Capacity overload Δ {comparison.capacity_status === "COMPLETE" && comparison.capacity_overload_hours_delta != null ? `${comparison.capacity_overload_hours_delta.toFixed(3)} hours` : "incomplete inputs"}
                   · Changeover Δ {comparison.changeover_status === "COMPLETE" && comparison.changeover_hours_delta != null ? `${comparison.changeover_hours_delta.toFixed(3)} hours` : "incomplete inputs"}
+                  · CIP Δ {comparison.cip_status === "COMPLETE" && comparison.cip_hours_delta != null ? `${comparison.cip_hours_delta.toFixed(3)} hours` : "incomplete inputs"}
                 </p>
-                <p>Estimated cost: unknown ({comparison.cost_delta_status.replaceAll("_", " ").toLowerCase()}) · Confidence: {comparison.confidence_status.replaceAll("_", " ").toLowerCase()}</p>
+                <p>Estimated cost Δ {comparison.cost_delta_status === "COMPLETE" && comparison.cost_delta != null && comparison.cost_currency
+                  ? `${comparison.cost_currency} ${comparison.cost_delta.toFixed(4)}`
+                  : `unknown (${comparison.cost_delta_status.replaceAll("_", " ").toLowerCase()})`} · Confidence: {comparison.confidence_status.replaceAll("_", " ").toLowerCase()}</p>
                 {comparison.unknowns.length > 0 && <p>Unknown inputs: {comparison.unknowns.join("; ")}</p>}
                 <details>
                   <summary className="cursor-pointer">KPI sources</summary>
@@ -371,7 +392,7 @@ export default function WhatIfPage() {
                         <span>
                           Cost Δ: <span className={impactColor(finiteMetric(s.impact_cost_delta), true)}>
                             {finiteMetric(s.impact_cost_delta) != null
-                              ? `KES ${finiteMetric(s.impact_cost_delta)!.toLocaleString()}`
+                              ? `${s.impact_cost_currency ? `${s.impact_cost_currency} ` : ""}${finiteMetric(s.impact_cost_delta)!.toLocaleString()}`
                               : "—"}
                           </span>
                         </span>
@@ -398,7 +419,7 @@ export default function WhatIfPage() {
               {[
                 { label: "Service Level", value: `${finiteMetric(viewScenario.impact_service_level_pct)?.toFixed(1) ?? "—"}%`, color: "text-blue-700" },
                 { label: "Delayed Lines", value: finiteMetric(viewScenario.impact_delay_count) ?? "—", color: Number(viewScenario.impact_delay_count) > 0 ? "text-red-600" : "text-green-600" },
-                { label: "Cost Delta", value: finiteMetric(viewScenario.impact_cost_delta) != null ? `KES ${finiteMetric(viewScenario.impact_cost_delta)!.toLocaleString()}` : "—", color: Number(viewScenario.impact_cost_delta) > 0 ? "text-red-600" : "text-green-600" },
+                { label: "Cost Delta", value: finiteMetric(viewScenario.impact_cost_delta) != null ? `${viewScenario.impact_cost_currency ? `${viewScenario.impact_cost_currency} ` : ""}${finiteMetric(viewScenario.impact_cost_delta)!.toLocaleString()}` : "—", color: Number(viewScenario.impact_cost_delta) > 0 ? "text-red-600" : "text-green-600" },
               ].map((k) => (
                 <div key={k.label} className="bg-gray-50 rounded-lg p-3">
                   <p className="text-xs text-gray-400">{k.label}</p>
