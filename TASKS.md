@@ -9,9 +9,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 ## Project Status
 
 - Current Milestone: M21 — Advanced BOM / Fluid-to-Unit
-- Current Sprint: M21.S03 — Advanced BOM Structures
-- Current Task: M21.S03.T003 — Alternate/substitute component governance
-- Current Task Status: COMPLETE
+- Current Sprint: M21.S05 — Verification
+- Current Task: M21.S05.T004 — Close M21
+- Current Task Status: BLOCKED
 - Next Task/Action: M21.S05.T004 — Close M21
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
@@ -592,7 +592,7 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 # M21 — Advanced BOM / Fluid-to-Unit
 
-**Status: PLANNED / PARTIAL foundation**
+**Status: IMPLEMENTATION TASKS COMPLETE / MILESTONE CLOSURE GATED BY M20**
 **Depends on:** M09, M20.
 
 ## M21.S01 — Conversion Model
@@ -642,7 +642,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
   Evidence: [CODEX log](coordination/sessions/M21.S05.T002/CODEX_LOG_V01.md); disposable PostgreSQL integration passed after migration to head, proving completed MRP result → linked MPS quantity → approved BOM with 10% process loss and G-to-KG conversion → 0.1556 KG material-short diagnostic; container cleanup and independent read-only review passed.
 - [x] M21.S05.T003 — Costing integration tests
   Evidence: [CODEX log](coordination/sessions/M21.S05.T003/CODEX_LOG_V01.md); fresh task-owned PostgreSQL integration passed through real compute/finalize/report queries, exposed 10 KES yield-loss cost variance separately from unchanged 0 total cost, and passed cleanup and independent read-only review.
-- [ ] M21.S05.T004 — Close M21
+- [!] M21.S05.T004 — Close M21
+  Blocked: M20 V05 acceptance is OPEN / CHANGES_REQUIRED, so this milestone dependency is not satisfied. See [closure assessment](coordination/sessions/M21.S05.T004/CODEX_LOG_V01.md) and Q-M21-S05-T004-M20-DATA.
 
 ---
 
@@ -1128,6 +1129,8 @@ All pre-migration task evidence, including TASK-001…TASK-027, MANUAL, HELP, PU
 A milestone is DONE only when its planned scope is implemented or explicitly superseded/deferred with rationale; backend/frontend/schema/API changes are mutually consistent; migrations are safe; RBAC/audit requirements are preserved; required tests/checks pass; no live-provider result is invented; and `TASKS.md` records the final evidence/state.
 
 ## Questions for Şekip
+
+- Q-M21-S05-T004-M20-DATA | M20 V05 requires owner-approved minimum production quantities and units by product, CIP durations by equipment/work-center/changeover, and the approved costing currency/FX rule. Please provide these values or identify their authoritative project source, and identify who will complete the independent M20 V05 re-audit after its code findings are resolved. M21 cannot close while its M20 dependency remains OPEN. | TASK: M21.S05.T004
 
 
 ## Owner Decisions
