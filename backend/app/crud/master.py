@@ -2,6 +2,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, or_
 from typing import Optional, List
 import uuid
+from fastapi import HTTPException
 
 from app.models.master import Product, Material, Supplier, Warehouse
 from app.models.company import Company, Branch
@@ -157,6 +158,7 @@ async def list_warehouses(db: AsyncSession, skip=0, limit=50, include_inactive=F
 
 async def create_warehouse(db: AsyncSession, data: WarehouseCreate) -> Warehouse:
     values = data.model_dump()
+    await _validate_warehouse_scope(db, values.get("company_id"), values.get("branch_id"))
     await ensure_unique_record(db, Warehouse, values)
     obj = Warehouse(**values)
     db.add(obj)
@@ -168,12 +170,38 @@ async def update_warehouse(db: AsyncSession, obj: Warehouse, data: WarehouseUpda
     changes = data.model_dump(exclude_unset=True)
     values = {column.name: getattr(obj, column.name) for column in Warehouse.__table__.columns}
     values.update(changes)
+    await _validate_warehouse_scope(db, values.get("company_id"), values.get("branch_id"))
     await ensure_unique_record(db, Warehouse, values, exclude_id=obj.id)
     for k, v in changes.items():
         setattr(obj, k, v)
     await db.flush()
     await db.refresh(obj)
     return obj
+
+
+async def _validate_warehouse_scope(db: AsyncSession, company_id, branch_id) -> None:
+    """Reject a warehouse whose explicit company conflicts with its branch's owner."""
+    if company_id is None or branch_id is None:
+        return
+    branch_company_id = await db.scalar(
+        select(Branch.company_id).where(Branch.id == branch_id)
+    )
+    if branch_company_id is None:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "warehouse_branch_not_found",
+                "message": "The selected branch does not exist.",
+            },
+        )
+    if branch_company_id != company_id:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "warehouse_branch_company_mismatch",
+                "message": "The selected branch does not belong to the selected company.",
+            },
+        )
 
 
 # ── Delete helpers ─────────────────────────────────────────────────────────────

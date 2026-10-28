@@ -79,8 +79,9 @@ def register_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(IntegrityError)
     async def integrity_error_handler(request: Request, exc: IntegrityError):
-        """Expose only the known inactive-master guard as a client conflict."""
-        if _constraint_name(exc) == "ck_active_master_reference":
+        """Expose known master-reference conflicts without leaking database details."""
+        constraint = _constraint_name(exc)
+        if constraint == "ck_active_master_reference":
             log.info("Rejected a new reference to an inactive master on %s", request.url.path)
             return JSONResponse(
                 status_code=status.HTTP_409_CONFLICT,
@@ -89,6 +90,19 @@ def register_handlers(app: FastAPI) -> None:
                     "detail": {
                         "code": "inactive_master_reference",
                         "message": "Inactive master records cannot be selected for new records.",
+                    },
+                    "path": request.url.path,
+                },
+            )
+        if constraint == "fk_warehouses_branch_company":
+            log.info("Rejected a warehouse/branch company mismatch on %s", request.url.path)
+            return JSONResponse(
+                status_code=status.HTTP_409_CONFLICT,
+                content={
+                    "error": "conflict",
+                    "detail": {
+                        "code": "warehouse_branch_company_mismatch",
+                        "message": "The selected branch does not belong to the selected company.",
                     },
                     "path": request.url.path,
                 },

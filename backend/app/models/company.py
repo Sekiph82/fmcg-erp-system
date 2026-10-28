@@ -45,7 +45,11 @@ class Company(Base, TimestampMixin):
 class Branch(Base, TimestampMixin):
     """Physical branch / plant / office of a company."""
     __tablename__ = "branches"
-    __table_args__ = (UniqueConstraint("company_id", "branch_code", name="uq_branch_code"),)
+    __table_args__ = (
+        UniqueConstraint("company_id", "branch_code", name="uq_branch_code"),
+        # Referenced by Warehouse's composite branch/company foreign key.
+        UniqueConstraint("id", "company_id", name="uq_branches_id_company_id"),
+    )
 
     id           = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     company_id   = Column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="CASCADE"), nullable=False, index=True)

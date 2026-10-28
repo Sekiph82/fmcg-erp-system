@@ -1,5 +1,8 @@
 import uuid
-from sqlalchemy import Column, String, Text, Numeric, Boolean, Integer, ForeignKey, Enum, Date, DateTime
+from sqlalchemy import (
+    Column, String, Text, Numeric, Boolean, Integer, ForeignKey, Enum, Date,
+    DateTime,
+)
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 import enum
@@ -139,6 +142,9 @@ class Material(Base, TimestampMixin):
 
 class Warehouse(Base, TimestampMixin):
     __tablename__ = "warehouses"
+    # The branch/company pair guard is installed by migration 20261028_0017.
+    # SQLAlchemy's ondelete validator rejects PostgreSQL's column-specific SET
+    # NULL form, so migration 20261028_0017 owns this exact FK definition.
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     code = Column(String(50), unique=True, nullable=False, index=True)
