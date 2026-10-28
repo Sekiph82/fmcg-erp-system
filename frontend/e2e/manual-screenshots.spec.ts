@@ -50,7 +50,9 @@ const OUTPUT_DIR = path.join(
   REPO_ROOT,
   "docs/user-manual/screenshots/captured"
 );
-const AUTH_STATE = path.join(__dirname, "../playwright/.auth/state.json");
+const AUTH_STATE = process.env.E2E_STORAGE_STATE_PATH
+  ? path.resolve(process.env.E2E_STORAGE_STATE_PATH)
+  : path.join(__dirname, "../playwright/.auth/state.json");
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 

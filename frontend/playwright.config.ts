@@ -3,7 +3,9 @@ import path from "path";
 
 const baseURL = (process.env.E2E_BASE_URL || "http://localhost:3000").replace(/\/$/, "");
 const apiURL = process.env.NEXT_PUBLIC_API_URL || process.env.E2E_API_URL || "http://localhost:8000";
-const authFile = path.join(__dirname, "playwright/.auth/state.json");
+const authFile = process.env.E2E_STORAGE_STATE_PATH
+  ? path.resolve(process.env.E2E_STORAGE_STATE_PATH)
+  : path.join(__dirname, "playwright/.auth/state.json");
 
 export default defineConfig({
   testDir: "./e2e",

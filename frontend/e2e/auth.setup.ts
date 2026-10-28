@@ -1,7 +1,9 @@
 import { test as setup, expect } from "playwright/test";
 import path from "path";
 
-const authFile = path.join(__dirname, "../playwright/.auth/state.json");
+const authFile = process.env.E2E_STORAGE_STATE_PATH
+  ? path.resolve(process.env.E2E_STORAGE_STATE_PATH)
+  : path.join(__dirname, "../playwright/.auth/state.json");
 
 // All routes used in smoke tests — visited here to trigger Next.js dev-server
 // compilation before any test runs, preventing ERR_EMPTY_RESPONSE under load.
