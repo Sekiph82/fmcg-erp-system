@@ -11,8 +11,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 - Current Milestone: M01 — Platform / Infrastructure
 - Current Sprint: M01.S03 — Runtime Reliability
 - Current Task: M01.S03.T004 — Establish operational backup/restore rehearsal evidence
-- Current Task Status: IN_PROGRESS
-- Next Task/Action: M01.S03.T004 — Establish operational backup/restore rehearsal evidence
+- Current Task Status: COMPLETE
+- Next Task/Action: M19.S02.T002 — Tenant/company isolation verification
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -158,8 +158,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 - [P] M01.S03.T001 — Prove always-running background/event dispatch ownership
 - [P] M01.S03.T002 — Validate migration ownership on live-like database
 - [D] M01.S03.T003 — Execute LOCAL-STAGING-001 when deployment environment is available
-- [~] M01.S03.T004 — Establish operational backup/restore rehearsal evidence
-  Evidence: [T004 execution log V01](coordination/sessions/M01.S03.T004/CODEX_LOG_V01.md); task remains blocked pending owner acceptance of local-only evidence or authorized staging criteria.
+- [x] M01.S03.T004 — Establish operational backup/restore rehearsal evidence
+  Evidence: [T004 disposable rehearsal log V02](coordination/sessions/M01.S03.T004/CODEX_LOG_V02.md); full Alembic schema migrated to 20261028_0017, custom PostgreSQL dump restored to a separate empty DB, migration state and synthetic row/content hashes matched, and exact task container cleanup was verified. Local-only scope was accepted by owner response. Independent read-only review found no blocker; production RPO/RTO/storage policy is not claimed.
 
 ---
 
