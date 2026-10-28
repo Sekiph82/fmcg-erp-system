@@ -10,9 +10,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 - Current Milestone: M21 — Advanced BOM / Fluid-to-Unit
 - Current Sprint: M21.S05 — Verification
-- Current Task: M21.S05.T002 — MPS/MRP integration tests
+- Current Task: M21.S05.T003 — Costing integration tests
 - Current Task Status: COMPLETE
-- Next Task/Action: M21.S05.T003 — Costing integration tests
+- Next Task/Action: M21.S03.T002 — Multi-output/co-product/by-product semantics
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -640,7 +640,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
   Evidence: [CODEX log](coordination/sessions/M21.S05.T001/CODEX_LOG_V01.md); 62 focused unit tests passed, six disposable PostgreSQL migration/integration suites passed (17, 7, 6, 8, 10, 10), and 27 supplemental API/yield-cost tests passed; task container cleanup and independent review verified.
 - [x] M21.S05.T002 — MPS/MRP integration tests
   Evidence: [CODEX log](coordination/sessions/M21.S05.T002/CODEX_LOG_V01.md); disposable PostgreSQL integration passed after migration to head, proving completed MRP result → linked MPS quantity → approved BOM with 10% process loss and G-to-KG conversion → 0.1556 KG material-short diagnostic; container cleanup and independent read-only review passed.
-- [ ] M21.S05.T003 — Costing integration tests
+- [x] M21.S05.T003 — Costing integration tests
+  Evidence: [CODEX log](coordination/sessions/M21.S05.T003/CODEX_LOG_V01.md); fresh task-owned PostgreSQL integration passed through real compute/finalize/report queries, exposed 10 KES yield-loss cost variance separately from unchanged 0 total cost, and passed cleanup and independent read-only review.
 - [ ] M21.S05.T004 — Close M21
 
 ---
