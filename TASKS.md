@@ -10,9 +10,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 - Current Milestone: M21 — Advanced BOM / Fluid-to-Unit
 - Current Sprint: M21.S05 — Verification
-- Current Task: M21.S05.T001 — Unit/conversion/yield tests
+- Current Task: M21.S05.T002 — MPS/MRP integration tests
 - Current Task Status: COMPLETE
-- Next Task/Action: M21.S05.T002 — MPS/MRP integration tests
+- Next Task/Action: M21.S05.T003 — Costing integration tests
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -618,10 +618,10 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 ## M21.S03 — Advanced BOM Structures
 - [x] M21.S03.T001 — Nested/intermediate BOM support verification
   Evidence: [CODEX log](coordination/sessions/M21.S03.T001/CODEX_LOG_V01.md); nested BOM recursion now fails closed on missing/incompatible/cyclic/over-depth/invalid-quantity structures, repeated intermediate BOMs aggregate correctly, 40 focused tests passed and the disposable PostgreSQL runner passed 10 tests; independent review found no remaining blocker.
-- [!] M21.S03.T002 — Multi-output/co-product/by-product semantics
-  Blocked: co-product/by-product ortak üretim maliyetinin ana ve eş-ürünlere nasıl dağıtılacağına dair onaylı iş kuralı yok. Maliyet toplamı/dağıtım kuralı uydurulmayacak; Q-M21-S03-T002-COSTING-BASIS kararı bekleniyor.
-- [!] M21.S03.T003 — Alternate/substitute component governance
-  Blocked: PLANNER_APPROVAL/QA_APPROVAL/BOTH_REQUIRED için gerçek onay yetkisi ve kayıt akışı; SHORTAGE_ONLY/EMERGENCY_ONLY kullanım koşulları tanımlı değil. Onay davranışı uydurulmayacak; Q-M21-S03-T003-APPROVAL-GOVERNANCE kararı bekleniyor.
+- [ ] M21.S03.T002 — Multi-output/co-product/by-product semantics
+  Owner decision recorded under Owner Decisions; no cost allocation is authorized.
+- [ ] M21.S03.T003 — Alternate/substitute component governance
+  Owner decision recorded under Owner Decisions; implementation has not started.
 - [x] M21.S03.T004 — BOM explosion integrity tests
   Evidence: [CODEX log](coordination/sessions/M21.S03.T004/CODEX_LOG_V01.md); leaf aggregation now preserves item/component identity and UOM, fails closed when a leaf has no identity; focused backend regression 43 passed/1 database-dependent skipped, Python compilation, frontend type-check, diff check and independent review passed.
 
@@ -638,7 +638,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 ## M21.S05 — Verification
 - [x] M21.S05.T001 — Unit/conversion/yield tests
   Evidence: [CODEX log](coordination/sessions/M21.S05.T001/CODEX_LOG_V01.md); 62 focused unit tests passed, six disposable PostgreSQL migration/integration suites passed (17, 7, 6, 8, 10, 10), and 27 supplemental API/yield-cost tests passed; task container cleanup and independent review verified.
-- [ ] M21.S05.T002 — MPS/MRP integration tests
+- [x] M21.S05.T002 — MPS/MRP integration tests
+  Evidence: [CODEX log](coordination/sessions/M21.S05.T002/CODEX_LOG_V01.md); disposable PostgreSQL integration passed after migration to head, proving completed MRP result → linked MPS quantity → approved BOM with 10% process loss and G-to-KG conversion → 0.1556 KG material-short diagnostic; container cleanup and independent read-only review passed.
 - [ ] M21.S05.T003 — Costing integration tests
 - [ ] M21.S05.T004 — Close M21
 
@@ -1126,11 +1127,12 @@ All pre-migration task evidence, including TASK-001…TASK-027, MANUAL, HELP, PU
 A milestone is DONE only when its planned scope is implemented or explicitly superseded/deferred with rationale; backend/frontend/schema/API changes are mutually consistent; migrations are safe; RBAC/audit requirements are preserved; required tests/checks pass; no live-provider result is invented; and `TASKS.md` records the final evidence/state.
 
 ## Questions for Şekip
-- Q-M21-S03-T002-COSTING-BASIS | Co-product/by-product ortak üretim maliyeti nasıl ele alınsın? A) Toplam maliyeti değiştirmeden miktarları ayrı çıktı olarak izle (şimdilik en güvenlisi); B) Maliyeti verim katkısına göre dağıt, by-product için standart maliyet kredisi uygula; C) Başka bir kural belirt. | TASK: M21.S03.T002
-- Q-M21-S03-T003-APPROVAL-GOVERNANCE | Alternatifler ne zaman üretim planında kullanılabilir? A) PLANNER_APPROVAL planlamacı onayı, QA_APPROVAL kalite onayı, BOTH_REQUIRED iki ayrı onay; SHORTAGE_ONLY yalnız ölçülen malzeme açığında, EMERGENCY_ONLY tanımlı acil durum onayında kullanılsın (acil durum tanımı ve yetkisi de belirtilmeli). B) Bu görevi yalnızca veri doğrulamasıyla sınırla; alternatifleri otomatik uygulama/onaylı sayma. C) Başka kural belirt. | TASK: M21.S03.T003
 
 
 ## Owner Decisions
+
+- Q-M21-S03-T002-COSTING-BASIS | TASK: M21.S03.T002 | ANSWER: A) Maliyet toplamlarını değiştirme; co-product ve by-product miktarlarını çıktı olarak izle.
+- Q-M21-S03-T003-APPROVAL-GOVERNANCE | TASK: M21.S03.T003 | ANSWER: Gerçek planlamacı/kalite onay akışı kur; EMERGENCY_ONLY için de kural belirle
 
 - Q-M21-S02-T003-YIELD-SOURCE | TASK: M21.S02.T003 | ANSWER: B — recipe-item loss percentages are the standard source.
 - Q-M21-S02-T001-YIELD-BASIS | TASK: M21.S02.T001 | ANSWER: B — expected process yield is a percentage of BOM input quantity.
