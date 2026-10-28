@@ -2916,6 +2916,7 @@ async def test_postgres_mps_scoped_plan_list_create_and_cross_plan_line_edit_iso
     suffix = _suffix()
     company_ids: list[uuid.UUID] = []
     warehouse_ids: list[uuid.UUID] = []
+    branch_ids: list[uuid.UUID] = []
     run_ids: list[uuid.UUID] = []
     plan_ids: list[uuid.UUID] = []
     line_ids: list[uuid.UUID] = []
@@ -2933,13 +2934,29 @@ async def test_postgres_mps_scoped_plan_list_create_and_cross_plan_line_edit_iso
                 )
                 db.add_all([company_a, company_b])
                 await db.flush()
+                branch_a = Branch(
+                    company_id=company_a.id, name="Synthetic scoped branch A1",
+                    branch_code=f"A1{suffix[:6]}", branch_type="FACTORY",
+                )
+                branch_a2 = Branch(
+                    company_id=company_a.id, name="Synthetic sibling branch A2",
+                    branch_code=f"A2{suffix[:6]}", branch_type="FACTORY",
+                )
+                db.add_all([branch_a, branch_a2])
+                await db.flush()
                 warehouse_a = Warehouse(
                     code=f"M20-SCOPE-A-{suffix}", name="Synthetic scoped warehouse A",
                     warehouse_type=WarehouseType.FINISHED_GOODS, company_id=company_a.id,
+                    branch_id=branch_a.id,
                 )
                 warehouse_b = Warehouse(
                     code=f"M20-SCOPE-B-{suffix}", name="Synthetic out-of-scope warehouse B",
                     warehouse_type=WarehouseType.FINISHED_GOODS, company_id=company_b.id,
+                )
+                warehouse_a2 = Warehouse(
+                    code=f"M20-SCOPE-A2-{suffix}", name="Synthetic sibling-branch warehouse A2",
+                    warehouse_type=WarehouseType.FINISHED_GOODS, company_id=company_a.id,
+                    branch_id=branch_a2.id,
                 )
                 product = Product(
                     sku=f"M20-SCOPE-P-{suffix}", name="Synthetic scoped MPS product",
@@ -2949,7 +2966,7 @@ async def test_postgres_mps_scoped_plan_list_create_and_cross_plan_line_edit_iso
                     email=f"m20-scope-{suffix}@example.invalid", username=f"m20-scope-{suffix}",
                     full_name="M20 Scoped Planner", hashed_password="test-only", is_superuser=False,
                 )
-                db.add_all([warehouse_a, warehouse_b, product, user])
+                db.add_all([warehouse_a, warehouse_b, warehouse_a2, product, user])
                 await db.flush()
                 run_a = MRPRun(
                     run_no=f"M20-SCOPE-RUN-A-{suffix}", run_date=date(2026, 11, 3),
@@ -2959,7 +2976,11 @@ async def test_postgres_mps_scoped_plan_list_create_and_cross_plan_line_edit_iso
                     run_no=f"M20-SCOPE-RUN-B-{suffix}", run_date=date(2026, 11, 3),
                     status=MRPRunStatus.COMPLETED, warehouse_id=warehouse_b.id,
                 )
-                db.add_all([run_a, run_b])
+                run_a2 = MRPRun(
+                    run_no=f"M20-SCOPE-RUN-A2-{suffix}", run_date=date(2026, 11, 3),
+                    status=MRPRunStatus.COMPLETED, warehouse_id=warehouse_a2.id,
+                )
+                db.add_all([run_a, run_b, run_a2])
                 await db.flush()
                 plan_a = MPSPlan(
                     plan_no=f"M20-SCOPE-PLAN-A-{suffix}", plan_name="Scoped plan A",
@@ -2969,7 +2990,11 @@ async def test_postgres_mps_scoped_plan_list_create_and_cross_plan_line_edit_iso
                     plan_no=f"M20-SCOPE-PLAN-B-{suffix}", plan_name="Foreign plan B",
                     start_date=date(2026, 11, 3), end_date=date(2026, 11, 30), mrp_run_id=run_b.id,
                 )
-                db.add_all([plan_a, plan_b])
+                plan_a2 = MPSPlan(
+                    plan_no=f"M20-SCOPE-PLAN-A2-{suffix}", plan_name="Sibling branch plan A2",
+                    start_date=date(2026, 11, 3), end_date=date(2026, 11, 30), mrp_run_id=run_a2.id,
+                )
+                db.add_all([plan_a, plan_b, plan_a2])
                 await db.flush()
                 line_a = MPSLine(
                     line_no=f"M20-SCOPE-LINE-A-{suffix}", mps_id=plan_a.id, product_id=product.id,
@@ -2981,13 +3006,19 @@ async def test_postgres_mps_scoped_plan_list_create_and_cross_plan_line_edit_iso
                     period_start=date(2026, 11, 3), period_end=date(2026, 11, 9),
                     planned_production_qty=Decimal("20"),
                 )
-                db.add_all([line_a, line_b])
+                line_a2 = MPSLine(
+                    line_no=f"M20-SCOPE-LINE-A2-{suffix}", mps_id=plan_a2.id, product_id=product.id,
+                    period_start=date(2026, 11, 3), period_end=date(2026, 11, 9),
+                    planned_production_qty=Decimal("15"),
+                )
+                db.add_all([line_a, line_b, line_a2])
                 await db.flush()
                 company_ids[:] = [company_a.id, company_b.id]
-                warehouse_ids[:] = [warehouse_a.id, warehouse_b.id]
-                run_ids[:] = [run_a.id, run_b.id]
-                plan_ids[:] = [plan_a.id, plan_b.id]
-                line_ids[:] = [line_a.id, line_b.id]
+                branch_ids[:] = [branch_a.id, branch_a2.id]
+                warehouse_ids[:] = [warehouse_a.id, warehouse_b.id, warehouse_a2.id]
+                run_ids[:] = [run_a.id, run_b.id, run_a2.id]
+                plan_ids[:] = [plan_a.id, plan_b.id, plan_a2.id]
+                line_ids[:] = [line_a.id, line_b.id, line_a2.id]
                 product_id, user_id = product.id, user.id
 
         async def override_db():
@@ -3022,6 +3053,7 @@ async def test_postgres_mps_scoped_plan_list_create_and_cross_plan_line_edit_iso
             visible_plan_ids = {item["id"] for item in listed.json()}
             assert str(plan_ids[0]) in visible_plan_ids
             assert str(plan_ids[1]) not in visible_plan_ids
+            assert str(plan_ids[2]) not in visible_plan_ids
 
             in_scope_create = await client.post("/api/v1/mps/plans", json={
                 "plan_name": "Scoped plan created in warehouse A",
@@ -3037,16 +3069,30 @@ async def test_postgres_mps_scoped_plan_list_create_and_cross_plan_line_edit_iso
                 "mrp_run_id": str(run_ids[1]),
             })
             assert out_of_scope_create.status_code == 403, out_of_scope_create.text
+            sibling_branch_create = await client.post("/api/v1/mps/plans", json={
+                "plan_name": "Rejected sibling branch plan",
+                "start_date": "2026-11-03", "end_date": "2026-11-30",
+                "mrp_run_id": str(run_ids[2]),
+            })
+            assert sibling_branch_create.status_code == 403, sibling_branch_create.text
 
             cross_plan_edit = await client.patch(
                 f"/api/v1/mps/plans/{plan_ids[0]}/lines/{line_ids[1]}",
                 json={"planned_production_qty": "999"},
             )
             assert cross_plan_edit.status_code == 404, cross_plan_edit.text
+            sibling_branch_edit = await client.patch(
+                f"/api/v1/mps/plans/{plan_ids[0]}/lines/{line_ids[2]}",
+                json={"planned_production_qty": "999"},
+            )
+            assert sibling_branch_edit.status_code == 404, sibling_branch_edit.text
             async with AsyncSessionLocal() as verify:
                 unchanged = await verify.get(MPSLine, line_ids[1])
                 assert unchanged is not None
                 assert unchanged.planned_production_qty == Decimal("20")
+                sibling_unchanged = await verify.get(MPSLine, line_ids[2])
+                assert sibling_unchanged is not None
+                assert sibling_unchanged.planned_production_qty == Decimal("15")
                 assert await verify.get(MPSPlan, created_plan_ids[0]) is not None
 
             current_actor = SimpleNamespace(
@@ -3067,6 +3113,7 @@ async def test_postgres_mps_scoped_plan_list_create_and_cross_plan_line_edit_iso
             company_visible_plan_ids = {item["id"] for item in company_scoped_list.json()}
             assert str(plan_ids[0]) in company_visible_plan_ids
             assert str(created_plan_ids[0]) in company_visible_plan_ids
+            assert str(plan_ids[2]) in company_visible_plan_ids
             assert str(plan_ids[1]) not in company_visible_plan_ids
 
             company_scoped_detail = await client.get(f"/api/v1/mps/plans/{plan_ids[0]}")
@@ -3085,6 +3132,64 @@ async def test_postgres_mps_scoped_plan_list_create_and_cross_plan_line_edit_iso
             created_plan_ids.append(uuid.UUID(company_scoped_create.json()["id"]))
             company_created_detail = await client.get(f"/api/v1/mps/plans/{created_plan_ids[-1]}")
             assert company_created_detail.status_code == 200, company_created_detail.text
+
+            current_actor = SimpleNamespace(
+                is_superuser=False,
+                id=user_id,
+                roles=[SimpleNamespace(is_active=True, permissions=[
+                    SimpleNamespace(code="mps.view_own_branch", is_active=True),
+                    SimpleNamespace(code="mps.create_own_branch", is_active=True),
+                    SimpleNamespace(code="mps.edit_own_branch", is_active=True),
+                ])],
+                access_scopes=[SimpleNamespace(
+                    scope_type="branch", scope_id=str(branch_ids[0]), is_active=True,
+                    can_view=True, can_create=True, can_edit=True,
+                )],
+            )
+            branch_scoped_list = await client.get("/api/v1/mps/plans")
+            assert branch_scoped_list.status_code == 200, branch_scoped_list.text
+            branch_visible_plan_ids = {item["id"] for item in branch_scoped_list.json()}
+            assert str(plan_ids[0]) in branch_visible_plan_ids
+            assert str(plan_ids[1]) not in branch_visible_plan_ids
+            assert str(plan_ids[2]) not in branch_visible_plan_ids
+
+            branch_scoped_detail = await client.get(f"/api/v1/mps/plans/{plan_ids[0]}")
+            assert branch_scoped_detail.status_code == 200, branch_scoped_detail.text
+            branch_scoped_lines = await client.get(f"/api/v1/mps/plans/{plan_ids[0]}/lines")
+            assert branch_scoped_lines.status_code == 200, branch_scoped_lines.text
+            sibling_branch_detail = await client.get(f"/api/v1/mps/plans/{plan_ids[2]}")
+            assert sibling_branch_detail.status_code == 403, sibling_branch_detail.text
+            sibling_branch_lines = await client.get(f"/api/v1/mps/plans/{plan_ids[2]}/lines")
+            assert sibling_branch_lines.status_code == 403, sibling_branch_lines.text
+            branch_scoped_edit = await client.patch(
+                f"/api/v1/mps/plans/{plan_ids[0]}/lines/{line_ids[0]}",
+                json={"planned_production_qty": "11"},
+            )
+            assert branch_scoped_edit.status_code == 200, branch_scoped_edit.text
+            sibling_branch_edit = await client.patch(
+                f"/api/v1/mps/plans/{plan_ids[2]}/lines/{line_ids[2]}",
+                json={"planned_production_qty": "999"},
+            )
+            assert sibling_branch_edit.status_code == 403, sibling_branch_edit.text
+            branch_scoped_create = await client.post("/api/v1/mps/plans", json={
+                "plan_name": "Branch-scoped plan created in branch A1",
+                "start_date": "2026-11-03", "end_date": "2026-11-30",
+                "mrp_run_id": str(run_ids[0]),
+            })
+            assert branch_scoped_create.status_code == 201, branch_scoped_create.text
+            created_plan_ids.append(uuid.UUID(branch_scoped_create.json()["id"]))
+            sibling_branch_source = await client.post("/api/v1/mps/plans", json={
+                "plan_name": "Rejected branch A2 source",
+                "start_date": "2026-11-03", "end_date": "2026-11-30",
+                "mrp_run_id": str(run_ids[2]),
+            })
+            assert sibling_branch_source.status_code == 403, sibling_branch_source.text
+            foreign_company_source = await client.post("/api/v1/mps/plans", json={
+                "plan_name": "Rejected company B source",
+                "start_date": "2026-11-03", "end_date": "2026-11-30",
+                "mrp_run_id": str(run_ids[1]),
+            })
+            assert foreign_company_source.status_code == 403, foreign_company_source.text
 
     finally:
         app.dependency_overrides.clear()
