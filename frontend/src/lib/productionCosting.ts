@@ -32,6 +32,11 @@ export interface OrderCostBreakdown {
 
   material_row_count:      number | null;
   labor_row_count:         number | null;
+  /** Informational recipe-standard yield-loss exposure; excluded from total_cost. */
+  yield_loss_cost_variance: number | null;
+  yield_loss_standard_record_count: number;
+  yield_loss_priced_record_count: number;
+  yield_loss_unpriced_record_count: number;
 }
 
 export interface CostReportRow {
@@ -52,6 +57,11 @@ export interface CostReportRow {
   labor_pct:               number;
   machine_pct:             number;
   energy_pct:              number;
+  /** Informational exposure; excluded from finalized/booked cost columns. */
+  yield_loss_cost_variance: number | null;
+  yield_loss_standard_record_count: number;
+  yield_loss_priced_record_count: number;
+  yield_loss_unpriced_record_count: number;
 }
 
 export interface CostTrendPoint {
@@ -126,6 +136,11 @@ export interface VarianceDetailRow {
   machine_variance:      number;
   total_variance:        number;
   variance_pct:          number | null;
+  /** Informational exposure; excluded from total_variance. */
+  yield_loss_cost_variance: number | null;
+  yield_loss_standard_record_count: number;
+  yield_loss_priced_record_count: number;
+  yield_loss_unpriced_record_count: number;
 }
 
 export interface WorkCenterUtilRow {

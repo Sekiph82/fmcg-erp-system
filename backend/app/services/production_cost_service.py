@@ -27,7 +27,7 @@ from app.models.production import (
     ProductionOrder, MaterialConsumption, FinishedGoodsReceipt,
     ProductionOrderStatus,
 )
-from app.models.production_advanced import WorkOrder, LaborLog
+from app.models.production_advanced import WorkOrder, LaborLog, WasteRecord
 from app.models.master import Material, Product
 from app.models.utility_management import UtilityTransaction
 
@@ -41,6 +41,48 @@ def _dec(v) -> Decimal:
 def _now() -> datetime:
     return datetime.now(tz=timezone.utc)
 
+
+def _yield_loss_variance_summary(rows) -> dict:
+    """Price recipe-standard loss variance only when row quantity and cost UOMs match."""
+    standard_count = 0
+    priced_count = 0
+    unpriced_count = 0
+    variance_cost = Decimal("0")
+
+    for expected_qty, loss_qty, standard_loss_pct, waste_uom, standard_cost, material_uom in rows:
+        if standard_loss_pct is None:
+            continue
+        standard_count += 1
+        expected = _dec(expected_qty)
+        actual_loss = _dec(loss_qty)
+        standard_pct = _dec(standard_loss_pct)
+        material_cost = _dec(standard_cost) if standard_cost is not None else None
+        waste_unit = str(getattr(waste_uom, "value", waste_uom) or "").strip().upper()
+        cost_unit = str(getattr(material_uom, "value", material_uom) or "").strip().upper()
+        if (
+            not expected.is_finite()
+            or not actual_loss.is_finite()
+            or not standard_pct.is_finite()
+            or expected < 0
+            or standard_pct < 0
+            or material_cost is None
+            or not material_cost.is_finite()
+            or material_cost < 0
+            or waste_unit != cost_unit
+        ):
+            unpriced_count += 1
+            continue
+        standard_loss_qty = expected * standard_pct / Decimal("100")
+        variance_cost += (actual_loss - standard_loss_qty) * material_cost
+        priced_count += 1
+
+    complete = standard_count > 0 and unpriced_count == 0
+    return {
+        "yield_loss_cost_variance": float(variance_cost) if complete else None,
+        "yield_loss_standard_record_count": standard_count,
+        "yield_loss_priced_record_count": priced_count,
+        "yield_loss_unpriced_record_count": unpriced_count,
+    }
 
 # ── Core: compute cost for a single order ────────────────────────────────────
 
@@ -136,6 +178,23 @@ async def compute_order_cost(
         )
         total_energy_cost = _dec(energy_q.scalar())
 
+    # Informational yield-loss exposure is separate from booked production cost.
+    yield_loss_q = await db.execute(
+        select(
+            WasteRecord.expected_qty,
+            WasteRecord.loss_qty,
+            WasteRecord.standard_loss_pct,
+            WasteRecord.uom,
+            Material.standard_cost,
+            Material.uom.label("material_uom"),
+        )
+        .outerjoin(Material, WasteRecord.material_id == Material.id)
+        .where(
+            WasteRecord.production_order_id == order.id,
+            WasteRecord.standard_loss_pct.isnot(None),
+        )
+    )
+    yield_loss_summary = _yield_loss_variance_summary(yield_loss_q.all())
     # 5. Totals
     # ─────────────────────────────────────────────────────────────────────────
     total_cost = (
@@ -169,6 +228,7 @@ async def compute_order_cost(
         "cost_variance_pct":      float(cost_variance_pct)      if cost_variance_pct      is not None else None,
         "material_row_count":     len(mat_rows),
         "labor_row_count":        len(labor_rows),
+        **yield_loss_summary,
     }
 
 
@@ -252,8 +312,35 @@ async def get_cost_report(
     )
     rows = q.all()
 
+    yield_q = await db.execute(
+        select(
+            ProductionOrder.product_id,
+            WasteRecord.expected_qty,
+            WasteRecord.loss_qty,
+            WasteRecord.standard_loss_pct,
+            WasteRecord.uom,
+            Material.standard_cost,
+            Material.uom.label("material_uom"),
+        )
+        .join(ProductionOrder, WasteRecord.production_order_id == ProductionOrder.id)
+        .outerjoin(Material, WasteRecord.material_id == Material.id)
+        .where(and_(*filters), WasteRecord.standard_loss_pct.isnot(None))
+    )
+    yield_rows_by_product = {}
+    for row in yield_q.all():
+        yield_rows_by_product.setdefault(row.product_id, []).append(
+            (
+                row.expected_qty,
+                row.loss_qty,
+                row.standard_loss_pct,
+                row.uom,
+                row.standard_cost,
+                row.material_uom,
+            )
+        )
     result = []
     for r in rows:
+        yield_loss_summary = _yield_loss_variance_summary(yield_rows_by_product.get(r.product_id, []))
         total = float(r.total_cost or 0)
         mat   = float(r.total_material_cost or 0)
         lab   = float(r.total_labor_cost    or 0)
@@ -277,6 +364,7 @@ async def get_cost_report(
             "labor_pct":             round(lab  / total * 100, 2) if total else 0,
             "machine_pct":           round(mach / total * 100, 2) if total else 0,
             "energy_pct":            round(eng  / total * 100, 2) if total else 0,
+            **yield_loss_summary,
         })
     return result
 
@@ -548,6 +636,7 @@ async def get_variance_detail(
             "machine_variance":     float(mach_var),
             "total_variance":       float(total_var),
             "variance_pct":         var_pct,
+            **{key: value for key, value in cost.items() if key.startswith("yield_loss_")},
         })
     return rows
 

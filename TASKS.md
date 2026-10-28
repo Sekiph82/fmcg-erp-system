@@ -10,9 +10,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 - Current Milestone: M21 — Advanced BOM / Fluid-to-Unit
 - Current Sprint: M21.S02 — Yield & Loss
-- Current Task: M21.S02.T003 — Separate standard vs actual yield/loss
+- Current Task: M21.S02.T004 — Feed variances into costing/reporting
 - Current Task Status: COMPLETE
-- Next Task/Action: M21.S02.T004 — Feed variances into costing/reporting
+- Next Task/Action: Select next dependency-ready task using task-queue --spec
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -612,7 +612,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
   Evidence: [CODEX log](coordination/sessions/M21.S02.T002/CODEX_LOG_V01.md); separate filling, packaging-reject, and spillage categories persist through migration `20261028_0020`; 8 disposable PostgreSQL tests and 7 focused unit tests passed; frontend type-check and independent review passed.
 - [x] M21.S02.T003 — Separate standard vs actual yield/loss
   Evidence: [CODEX log](coordination/sessions/M21.S02.T003/CODEX_LOG_V01.md); recipe-item standards are snapshotted by material/UOM, variance is exposed in API/UI, migration 20261028_0021 passed in disposable PostgreSQL, 9 focused Python tests and frontend type-check passed, and independent review found no blocker.
-- [ ] M21.S02.T004 — Feed variances into costing/reporting
+- [x] M21.S02.T004 — Feed variances into costing/reporting
+  Evidence: [CODEX log](coordination/sessions/M21.S02.T004/CODEX_LOG_V01.md); order and product yield-loss cost exposure is reported separately from finalized cost and total variance, 8 focused Python tests, frontend type-check, Python compilation, and independent review passed.
 
 ## M21.S03 — Advanced BOM Structures
 - [ ] M21.S03.T001 — Nested/intermediate BOM support verification

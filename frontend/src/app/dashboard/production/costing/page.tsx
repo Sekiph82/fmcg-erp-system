@@ -258,6 +258,9 @@ export default function ProductionCostingPage() {
             {report.length} product{report.length !== 1 ? "s" : ""}
           </span>
         </div>
+        <p className="px-4 py-2 text-xs text-slate-400 border-b border-slate-700/50">
+          Yield-loss exposure is informational and excluded from finalized total cost. An amount appears only when every standard-bearing record has a matching material cost and UOM.
+        </p>
         {reportLoading ? (
           <div className="p-6 text-center text-slate-400 text-sm">Loading…</div>
         ) : report.length === 0 ? (
@@ -270,7 +273,7 @@ export default function ProductionCostingPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-slate-800/60">
-                  {["SKU", "Product", "Orders", "Total Qty", "Material", "Labor", "Machine", "Energy", "Total Cost", "Cost/Unit", "vs Standard", "Mat%"].map(h => (
+                  {["SKU", "Product", "Orders", "Total Qty", "Material", "Labor", "Machine", "Energy", "Total Cost", "Cost/Unit", "vs Standard", "Yield Loss Exposure", "Mat%"].map(h => (
                     <th key={h} className="px-3 py-2 text-left text-xs text-slate-400 font-medium whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -291,6 +294,9 @@ export default function ProductionCostingPage() {
                       <td className="px-3 py-2 font-semibold text-white">{fmtKES(row.total_cost)}</td>
                       <td className="px-3 py-2 text-slate-300">{fmtKES(row.avg_cost_per_unit)}</td>
                       <td className={`px-3 py-2 font-medium ${v.color}`}>{v.text}</td>
+                      <td className="px-3 py-2 text-slate-300" title={`${row.yield_loss_priced_record_count} priced of ${row.yield_loss_standard_record_count} standard-bearing records; ${row.yield_loss_unpriced_record_count} unpriced`}>
+                        {fmtKES(row.yield_loss_cost_variance)}
+                      </td>
                       <td className={`px-3 py-2 text-xs ${row.material_pct > 70 ? "text-amber-400" : "text-slate-400"}`}>
                         {row.material_pct.toFixed(1)}%
                       </td>

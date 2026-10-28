@@ -106,6 +106,9 @@ export default function VariancePage() {
             <div className="px-5 py-3 border-b font-semibold text-gray-800">
               Order-Level Variance ({varRows.length} orders)
             </div>
+            <p className="px-5 py-2 text-xs text-gray-500 border-b">
+              Yield-loss exposure is informational and excluded from total variance. An amount appears only when every standard-bearing record has a matching material cost and UOM.
+            </p>
             {varLoading ? (
               <p className="px-5 py-8 text-center text-gray-400">Loading…</p>
             ) : (
@@ -123,6 +126,7 @@ export default function VariancePage() {
                     <th className="px-4 py-2 text-right">Labor Var</th>
                     <th className="px-4 py-2 text-right">Total Var</th>
                     <th className="px-4 py-2 text-right">Var %</th>
+                    <th className="px-4 py-2 text-right">Yield Loss Exposure</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
@@ -145,10 +149,13 @@ export default function VariancePage() {
                       <td className={`px-4 py-2 text-right text-xs font-medium ${(r.variance_pct ?? 0) > 5 ? "text-red-600" : (r.variance_pct ?? 0) < -5 ? "text-emerald-600" : "text-gray-500"}`}>
                         {r.variance_pct != null ? `${r.variance_pct > 0 ? "+" : ""}${r.variance_pct.toFixed(1)}%` : "—"}
                       </td>
+                      <td className="px-4 py-2 text-right text-gray-600" title={`${r.yield_loss_priced_record_count} priced of ${r.yield_loss_standard_record_count} standard-bearing records; ${r.yield_loss_unpriced_record_count} unpriced`}>
+                        {fmtKES(r.yield_loss_cost_variance)}
+                      </td>
                     </tr>
                   ))}
                   {varRows.length === 0 && (
-                    <tr><td colSpan={11} className="px-5 py-8 text-center text-gray-400">No variance data for selected period</td></tr>
+                    <tr><td colSpan={12} className="px-5 py-8 text-center text-gray-400">No variance data for selected period</td></tr>
                   )}
                 </tbody>
               </table>

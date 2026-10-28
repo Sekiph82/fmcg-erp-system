@@ -31,6 +31,11 @@ class OrderCostBreakdown(BaseModel):
     # live-computed extras (not stored)
     material_row_count:      Optional[int]   = None
     labor_row_count:         Optional[int]   = None
+    # Informational recipe-standard yield-loss exposure; excluded from total_cost.
+    yield_loss_cost_variance: Optional[float] = None
+    yield_loss_standard_record_count: int = 0
+    yield_loss_priced_record_count: int = 0
+    yield_loss_unpriced_record_count: int = 0
 
 
 class CostReportRow(BaseModel):
@@ -52,6 +57,11 @@ class CostReportRow(BaseModel):
     labor_pct:               float
     machine_pct:             float
     energy_pct:              float
+    # Informational exposure; excluded from finalized/booked cost columns.
+    yield_loss_cost_variance: Optional[float] = None
+    yield_loss_standard_record_count: int = 0
+    yield_loss_priced_record_count: int = 0
+    yield_loss_unpriced_record_count: int = 0
 
 
 class CostTrendPoint(BaseModel):
@@ -128,6 +138,11 @@ class VarianceDetailRow(BaseModel):
     # Total
     total_variance:        float
     variance_pct:          Optional[float]  = None
+    # Informational exposure; excluded from total_variance.
+    yield_loss_cost_variance: Optional[float] = None
+    yield_loss_standard_record_count: int = 0
+    yield_loss_priced_record_count: int = 0
+    yield_loss_unpriced_record_count: int = 0
 
 
 class WorkCenterUtilRow(BaseModel):

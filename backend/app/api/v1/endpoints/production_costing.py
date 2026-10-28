@@ -129,6 +129,10 @@ async def get_order_cost(
         ),
         material_row_count    = cost["material_row_count"],
         labor_row_count       = cost["labor_row_count"],
+        yield_loss_cost_variance = cost["yield_loss_cost_variance"],
+        yield_loss_standard_record_count = cost["yield_loss_standard_record_count"],
+        yield_loss_priced_record_count = cost["yield_loss_priced_record_count"],
+        yield_loss_unpriced_record_count = cost["yield_loss_unpriced_record_count"],
     )
 
 
@@ -144,6 +148,7 @@ async def finalize_order_cost(
     order = await svc.finalize_order_cost(db, order)
     await db.commit()
     await db.refresh(order)
+    live_extras = await svc.compute_order_cost(db, order)
 
     product_name = order.product.name if order.product else None
     product_sku  = order.product.sku  if order.product else None
@@ -168,6 +173,10 @@ async def finalize_order_cost(
             order.costing_finalized_at.isoformat()
             if order.costing_finalized_at else None
         ),
+        yield_loss_cost_variance = live_extras["yield_loss_cost_variance"],
+        yield_loss_standard_record_count = live_extras["yield_loss_standard_record_count"],
+        yield_loss_priced_record_count = live_extras["yield_loss_priced_record_count"],
+        yield_loss_unpriced_record_count = live_extras["yield_loss_unpriced_record_count"],
     )
 
 
