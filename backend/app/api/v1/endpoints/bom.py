@@ -1,5 +1,6 @@
 """Advanced BOM / Formula / Packaging BOM — REST endpoints."""
 from __future__ import annotations
+from datetime import date
 from decimal import Decimal
 from typing import List, Optional
 from uuid import UUID
@@ -374,8 +375,12 @@ async def create_conversion_profile(
 
 
 @router.get("/conversion-profiles", response_model=List[ConversionProfileOut])
-async def list_conversion_profiles(db: AsyncSession = Depends(get_db), _=Depends(require_permission("bom", "view"))):
-    return await svc.list_conversion_profiles(db)
+async def list_conversion_profiles(
+    as_of_date: Optional[date] = Query(None, description="Inclusive effective-date filter; defaults to today"),
+    db: AsyncSession = Depends(get_db),
+    _=Depends(require_permission("bom", "view")),
+):
+    return await svc.list_conversion_profiles(db, as_of_date)
 
 
 @router.post("/conversion-profiles/{profile_id}/calculate", response_model=ConversionCalcResult)
@@ -386,11 +391,14 @@ async def calculate_conversion(
         None,
         description="Input UOM; linked source products normalize the quantity to their product UOM.",
     ),
+    as_of_date: Optional[date] = Query(None, description="Defaults to today; effective bounds are inclusive"),
     db: AsyncSession = Depends(get_db),
     _=Depends(require_permission("bom", "view")),
 ):
     try:
-        return await scale_svc.calculate_conversion(db, profile_id, source_qty, source_uom)
+        return await scale_svc.calculate_conversion(
+            db, profile_id, source_qty, source_uom, as_of_date
+        )
     except ValueError as e:
         raise HTTPException(404, str(e))
 
@@ -403,12 +411,13 @@ async def calculate_package_components(
     profile_id: UUID,
     target_qty: Decimal = Query(..., gt=0, description="Requested quantity of the profile target SKU"),
     target_uom: Optional[str] = Query(None, description="Defaults to the target SKU UOM"),
+    as_of_date: Optional[date] = Query(None, description="Defaults to today; effective bounds are inclusive"),
     db: AsyncSession = Depends(get_db),
     _=Depends(require_permission("bom", "view")),
 ):
     try:
         return await scale_svc.calculate_package_components(
-            db, profile_id, target_qty, target_uom
+            db, profile_id, target_qty, target_uom, as_of_date
         )
     except ValueError as e:
         raise HTTPException(404, str(e))

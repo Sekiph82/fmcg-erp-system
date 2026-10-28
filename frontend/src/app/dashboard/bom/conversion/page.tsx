@@ -6,7 +6,8 @@ import { bomApi, ConversionProfileOut, ConversionCalcResult, fmtKES } from "@/li
 import { PermissionGuard, RequirePermission } from "@/components/PermissionGuard";
 
 const emptyProfile: Partial<ConversionProfileOut> = {
-  profile_code: "", profile_name: "",
+  profile_code: "", profile_name: "", version_no: "1.0",
+  effective_from: null, effective_to: null,
   theoretical_conversion_ratio: 1,
   startup_loss_pct: 0.5, shutdown_loss_pct: 0.3,
   packaging_reject_pct: 0.5, residual_bulk_pct: 0.2, line_purge_loss_pct: 0.1,
@@ -20,6 +21,7 @@ export default function ConversionProfilePage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [sourceQty, setSourceQty] = useState("");
   const [sourceUom, setSourceUom] = useState("KG");
+  const [asOfDate, setAsOfDate] = useState("");
   const [calcResult, setCalcResult] = useState<ConversionCalcResult | null>(null);
   const [calculating, setCalculating] = useState(false);
 
@@ -41,7 +43,7 @@ export default function ConversionProfilePage() {
     if (!selectedId || !sourceQty) return;
     setCalculating(true);
     try {
-      const res = await bomApi.calcConversion(selectedId, Number(sourceQty), sourceUom);
+      const res = await bomApi.calcConversion(selectedId, Number(sourceQty), sourceUom, asOfDate || undefined);
       setCalcResult(res);
     } finally {
       setCalculating(false);
@@ -81,7 +83,10 @@ export default function ConversionProfilePage() {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="font-medium text-gray-800">{p.profile_name}</p>
-                  <p className="text-xs text-gray-400 font-mono mt-0.5">{p.profile_code}</p>
+                  <p className="text-xs text-gray-400 font-mono mt-0.5">{p.profile_code} · v{p.version_no}</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Effective {p.effective_from || "from any date"} – {p.effective_to || "open-ended"}
+                  </p>
                 </div>
                 <span className={`text-xs px-2 py-0.5 rounded-full ${p.is_active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
                   {p.is_active ? "Active" : "Inactive"}
@@ -111,6 +116,7 @@ export default function ConversionProfilePage() {
             ) : (
               <div className="space-y-3">
                 <p className="text-sm text-gray-600">Profile: <span className="font-medium">{selected?.profile_name}</span></p>
+                <p className="text-xs text-gray-500">Version {selected?.version_no} · {selected?.effective_from || "no start date"} to {selected?.effective_to || "open-ended"}</p>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="text-xs text-gray-500 mb-1 block">Source Quantity</label>
@@ -123,6 +129,11 @@ export default function ConversionProfilePage() {
                     </select>
                   </div>
                 </div>
+                <div>
+                  <label className="text-xs text-gray-500 mb-1 block">Calculate as of date (optional)</label>
+                  <input type="date" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" value={asOfDate} onChange={(e) => setAsOfDate(e.target.value)} />
+                  <p className="text-xs text-gray-400 mt-1">Leave blank to use today. Effective start and end dates include their boundary day.</p>
+                </div>
                 <button onClick={doCalc} disabled={!sourceQty || calculating} className="w-full py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-40">
                   {calculating ? "Calculating…" : "Calculate"}
                 </button>
@@ -133,6 +144,7 @@ export default function ConversionProfilePage() {
           {calcResult && (
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 space-y-3">
               <h3 className="font-semibold text-gray-800">Results</h3>
+              <p className="text-xs text-gray-500">Profile {calcResult.profile_code} · v{calcResult.version_no} · calculated for {calcResult.as_of_date}</p>
               <div className="grid grid-cols-2 gap-3">
                 {[
                   { label: "Theoretical Units", value: calcResult.theoretical_units.toLocaleString(), highlight: false },
@@ -170,6 +182,24 @@ export default function ConversionProfilePage() {
                 <input className="border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder="Profile Code *" value={form.profile_code} onChange={(e) => setForm({ ...form, profile_code: e.target.value })} />
                 <input className="border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder="Profile Name *" value={form.profile_name} onChange={(e) => setForm({ ...form, profile_name: e.target.value })} />
               </div>
+              <p className="text-xs text-gray-400">Use the same profile code for versions in one family; each code/version pair must be unique.</p>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="text-xs text-gray-500 mb-1 block">Version</label>
+                  <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder="1.0" value={form.version_no ?? "1.0"} onChange={(e) => setForm({ ...form, version_no: e.target.value })} />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500 mb-1 block">Effective from</label>
+                  <input type="date" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" value={form.effective_from ?? ""} onChange={(e) => setForm({ ...form, effective_from: e.target.value || null })} />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500 mb-1 block">Effective to</label>
+                  <input type="date" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" value={form.effective_to ?? ""} onChange={(e) => setForm({ ...form, effective_to: e.target.value || null })} />
+                </div>
+              </div>
+              {form.effective_from && form.effective_to && form.effective_to < form.effective_from && (
+                <p className="text-xs text-red-600" role="alert">Effective to must be on or after effective from.</p>
+              )}
               <div>
                 <label className="text-xs text-gray-500 mb-1 block">Theoretical Conversion Ratio (source → units)</label>
                 <input type="number" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" value={form.theoretical_conversion_ratio} onChange={(e) => setForm({ ...form, theoretical_conversion_ratio: Number(e.target.value) })} />
@@ -199,9 +229,10 @@ export default function ConversionProfilePage() {
                   <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" placeholder="L" value={form.fill_volume_uom ?? ""} onChange={(e) => setForm({ ...form, fill_volume_uom: e.target.value })} />
                 </div>
               </div>
+              {create.isError && <p className="text-xs text-red-600" role="alert">Could not create this profile version. Check that the profile code and version are unique.</p>}
             </div>
             <div className="flex gap-3 mt-4">
-              <button onClick={() => create.mutate()} disabled={!form.profile_code || !form.profile_name || create.isPending} className="flex-1 bg-indigo-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-40">
+              <button onClick={() => create.mutate()} disabled={!form.profile_code?.trim() || !form.profile_name?.trim() || !form.version_no?.trim() || Boolean(form.effective_from && form.effective_to && form.effective_to < form.effective_from) || create.isPending} className="flex-1 bg-indigo-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-40">
                 {create.isPending ? "Creating…" : "Create Profile"}
               </button>
               <button onClick={() => setShowCreate(false)} className="px-4 py-2 border rounded-lg text-sm text-gray-600 hover:bg-gray-50">Cancel</button>

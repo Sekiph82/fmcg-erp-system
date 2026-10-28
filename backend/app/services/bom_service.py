@@ -2,12 +2,13 @@
 from __future__ import annotations
 import random
 import string
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from decimal import Decimal
 from typing import List, Optional
 from uuid import UUID
 
-from sqlalchemy import select, func
+from fastapi import HTTPException
+from sqlalchemy import select, func, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -291,15 +292,36 @@ async def add_substitute(db: AsyncSession, req) -> BOMSubstitute:
 # ── Conversion Profiles ───────────────────────────────────────────────────────
 
 async def create_conversion_profile(db: AsyncSession, req) -> BOMConversionProfile:
-    profile = BOMConversionProfile(profile_code=_conv_code(), **req.model_dump())
+    values = req.model_dump()
+    profile_code = values.pop("profile_code", None) or _conv_code()
+    duplicate = await db.execute(
+        select(BOMConversionProfile.id).where(
+            BOMConversionProfile.profile_code == profile_code,
+            BOMConversionProfile.version_no == values["version_no"],
+        )
+    )
+    if duplicate.scalar_one_or_none() is not None:
+        raise HTTPException(
+            status_code=409,
+            detail="That conversion profile code and version already exist",
+        )
+    profile = BOMConversionProfile(profile_code=profile_code, **values)
     db.add(profile)
     await db.flush()
     await db.refresh(profile)
     return profile
 
 
-async def list_conversion_profiles(db: AsyncSession) -> List[BOMConversionProfile]:
-    r = await db.execute(select(BOMConversionProfile).where(BOMConversionProfile.is_active == True))
+async def list_conversion_profiles(
+    db: AsyncSession, as_of_date: Optional[date] = None
+) -> List[BOMConversionProfile]:
+    query = select(BOMConversionProfile).where(BOMConversionProfile.is_active == True)
+    if as_of_date is not None:
+        query = query.where(
+            or_(BOMConversionProfile.effective_from.is_(None), BOMConversionProfile.effective_from <= as_of_date),
+            or_(BOMConversionProfile.effective_to.is_(None), BOMConversionProfile.effective_to >= as_of_date),
+        )
+    r = await db.execute(query.order_by(BOMConversionProfile.profile_code, BOMConversionProfile.version_no))
     return r.scalars().all()
 
 

@@ -113,6 +113,9 @@ export interface ConversionProfileOut {
   id: string;
   profile_code: string;
   profile_name: string;
+  version_no: string;
+  effective_from: string | null;
+  effective_to: string | null;
   source_product_name: string | null;
   target_product_name: string | null;
   theoretical_conversion_ratio: number;
@@ -129,6 +132,11 @@ export interface ConversionProfileOut {
 }
 
 export interface ConversionCalcResult {
+  profile_code: string;
+  version_no: string;
+  effective_from: string | null;
+  effective_to: string | null;
+  as_of_date: string;
   source_qty: number;
   source_uom: string;
   theoretical_units: number;
@@ -380,10 +388,14 @@ export const bomApi = {
   // Conversion profiles
   createConversion: (body: Partial<ConversionProfileOut>) =>
     apiClient.post<ConversionProfileOut>("/bom/conversion-profiles", body).then((r) => r.data),
-  listConversions:  () => apiClient.get<ConversionProfileOut[]>("/bom/conversion-profiles").then((r) => r.data),
-  calcConversion:   (profileId: string, sourceQty: number, sourceUom?: string) =>
+  listConversions:  (asOfDate?: string) => apiClient.get<ConversionProfileOut[]>(
+    "/bom/conversion-profiles",
+    { params: asOfDate ? { as_of_date: asOfDate } : undefined },
+  ).then((r) => r.data),
+  calcConversion:   (profileId: string, sourceQty: number, sourceUom?: string, asOfDate?: string) =>
     apiClient.post<ConversionCalcResult>(
-      `/bom/conversion-profiles/${profileId}/calculate?source_qty=${sourceQty}${sourceUom ? `&source_uom=${sourceUom}` : ""}`,
-      {}
+      `/bom/conversion-profiles/${profileId}/calculate`,
+      {},
+      { params: { source_qty: sourceQty, ...(sourceUom ? { source_uom: sourceUom } : {}), ...(asOfDate ? { as_of_date: asOfDate } : {}) } },
     ).then((r) => r.data),
 };

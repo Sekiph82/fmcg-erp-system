@@ -29,6 +29,11 @@ class _FakeDatabase:
 def _profile(*, source_product_id=None, density=None, ratio="1"):
     return SimpleNamespace(
         id=uuid4(),
+        profile_code="TEST-T002",
+        version_no="1.0",
+        effective_from=None,
+        effective_to=None,
+        is_active=True,
         source_product_id=source_product_id,
         density_g_per_ml=Decimal(density) if density is not None else None,
         theoretical_conversion_ratio=Decimal(ratio),

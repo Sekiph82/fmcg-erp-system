@@ -55,6 +55,11 @@ async def test_package_requirements_are_scaled_for_exact_target_sku_and_filter_n
     bom_id = uuid4()
     profile = SimpleNamespace(
         id=profile_id,
+        profile_code="TEST-T003",
+        version_no="1.0",
+        effective_from=None,
+        effective_to=None,
+        is_active=True,
         target_product_id=product_id,
         linked_packaging_bom_id=bom_id,
     )
@@ -114,6 +119,11 @@ async def test_package_requirements_reject_a_bom_for_another_sku():
     product_id = uuid4()
     profile = SimpleNamespace(
         id=profile_id,
+        profile_code="TEST-T003-MISMATCH",
+        version_no="1.0",
+        effective_from=None,
+        effective_to=None,
+        is_active=True,
         target_product_id=product_id,
         linked_packaging_bom_id=uuid4(),
     )

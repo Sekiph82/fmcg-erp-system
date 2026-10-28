@@ -5,7 +5,7 @@ from decimal import Decimal
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
 from app.models.bom import (
     BOMType, BOMLifecycle, ComponentType, BasisType,
@@ -212,7 +212,11 @@ class SubstituteOut(BaseModel):
 # ── Conversion Profile ─────────────────────────────────────────────────────────
 
 class ConversionProfileCreate(BaseModel):
+    profile_code: Optional[str] = None
     profile_name: str
+    version_no: str = "1.0"
+    effective_from: Optional[date] = None
+    effective_to: Optional[date] = None
     source_product_id: Optional[UUID] = None
     source_product_name: Optional[str] = None
     target_product_id: Optional[UUID] = None
@@ -232,11 +236,34 @@ class ConversionProfileCreate(BaseModel):
     linked_packaging_bom_id: Optional[UUID] = None
     notes: Optional[str] = None
 
+    @field_validator("profile_code", "version_no")
+    @classmethod
+    def validate_version_identifiers(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("Profile code and version number must not be blank")
+        return normalized
+
+    @model_validator(mode="after")
+    def validate_effective_window(self) -> "ConversionProfileCreate":
+        if (
+            self.effective_from is not None
+            and self.effective_to is not None
+            and self.effective_to < self.effective_from
+        ):
+            raise ValueError("effective_to must be on or after effective_from")
+        return self
+
 class ConversionProfileOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: UUID
     profile_code: str
     profile_name: str
+    version_no: str
+    effective_from: Optional[date]
+    effective_to: Optional[date]
     source_product_id: Optional[UUID]
     source_product_name: Optional[str]
     target_product_id: Optional[UUID]
@@ -258,6 +285,11 @@ class ConversionProfileOut(BaseModel):
     notes: Optional[str]
 
 class ConversionCalcResult(BaseModel):
+    profile_code: str
+    version_no: str
+    effective_from: Optional[date]
+    effective_to: Optional[date]
+    as_of_date: date
     source_qty: Decimal
     source_uom: str
     theoretical_units: Decimal
@@ -286,6 +318,11 @@ class PackageComponentRequirement(BaseModel):
 
 
 class PackageComponentCalcResult(BaseModel):
+    profile_code: str
+    version_no: str
+    effective_from: Optional[date]
+    effective_to: Optional[date]
+    as_of_date: date
     profile_id: UUID
     packaging_bom_id: UUID
     target_product_id: UUID

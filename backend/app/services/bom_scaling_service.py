@@ -1,5 +1,6 @@
 """Batch scaling + bulk-to-pack conversion services."""
 from __future__ import annotations
+from datetime import date
 from decimal import Decimal
 from typing import List, Optional
 from uuid import UUID
@@ -28,6 +29,25 @@ _VOLUME_UOM_TO_ML = {"ML": Decimal("1"), "L": Decimal("1000")}
 
 def _uom_code(value: object) -> str:
     return str(getattr(value, "value", value)).strip().upper()
+
+
+def _profile_effective_date(profile: BOMConversionProfile, as_of_date: Optional[date]) -> date:
+    as_of = as_of_date or date.today()
+    if not getattr(profile, "is_active", True):
+        raise HTTPException(status_code=422, detail="Conversion profile is inactive")
+    effective_from = getattr(profile, "effective_from", None)
+    effective_to = getattr(profile, "effective_to", None)
+    if effective_from is not None and effective_from > as_of:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Conversion profile is not effective until {effective_from}",
+        )
+    if effective_to is not None and effective_to < as_of:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Conversion profile expired on {effective_to}",
+        )
+    return as_of
 
 
 def _convert_standard_bulk_uom(
@@ -147,7 +167,13 @@ async def scale_bom(db: AsyncSession, bom_id: UUID, target_qty: Decimal, target_
     )
 
 
-async def calculate_conversion(db: AsyncSession, profile_id: UUID, source_qty: Decimal, source_uom: Optional[str] = None) -> ConversionCalcResult:
+async def calculate_conversion(
+    db: AsyncSession,
+    profile_id: UUID,
+    source_qty: Decimal,
+    source_uom: Optional[str] = None,
+    as_of_date: Optional[date] = None,
+) -> ConversionCalcResult:
     """Calculate yield after normalizing input UOM to the profile's source basis.
 
     A linked source product supplies the canonical basis UOM. Without one, the
@@ -157,6 +183,7 @@ async def calculate_conversion(db: AsyncSession, profile_id: UUID, source_qty: D
     profile: BOMConversionProfile = r.scalar_one_or_none()
     if not profile:
         raise ValueError("Conversion profile not found")
+    effective_date = _profile_effective_date(profile, as_of_date)
 
     profile_source_uom = None
     if profile.source_product_id is not None:
@@ -213,6 +240,11 @@ async def calculate_conversion(db: AsyncSession, profile_id: UUID, source_qty: D
     ]
 
     return ConversionCalcResult(
+        profile_code=profile.profile_code,
+        version_no=profile.version_no,
+        effective_from=profile.effective_from,
+        effective_to=profile.effective_to,
+        as_of_date=effective_date,
         source_qty=source_qty,
         source_uom=input_uom,
         theoretical_units=theoretical.quantize(Decimal("0.01")),
@@ -232,6 +264,7 @@ async def calculate_package_components(
     profile_id: UUID,
     target_qty: Decimal,
     target_uom: Optional[str] = None,
+    as_of_date: Optional[date] = None,
 ) -> PackageComponentCalcResult:
     """Scale the packaging BOM linked to the profile's exact target SKU.
 
@@ -251,6 +284,7 @@ async def calculate_package_components(
     profile: BOMConversionProfile = profile_result.scalar_one_or_none()
     if not profile:
         raise ValueError("Conversion profile not found")
+    effective_date = _profile_effective_date(profile, as_of_date)
     if profile.target_product_id is None:
         raise HTTPException(
             status_code=422,
@@ -322,6 +356,11 @@ async def calculate_package_components(
         ))
 
     return PackageComponentCalcResult(
+        profile_code=profile.profile_code,
+        version_no=profile.version_no,
+        effective_from=profile.effective_from,
+        effective_to=profile.effective_to,
+        as_of_date=effective_date,
         profile_id=profile.id,
         packaging_bom_id=bom.id,
         target_product_id=product.id,

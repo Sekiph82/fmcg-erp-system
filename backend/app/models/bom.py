@@ -18,7 +18,8 @@ import enum
 from datetime import datetime
 from sqlalchemy import (
     Column, String, Text, Numeric, Boolean, Integer, Float,
-    ForeignKey, Enum as SAEnum, DateTime, Date, UniqueConstraint, JSON,
+    ForeignKey, Enum as SAEnum, DateTime, Date, UniqueConstraint,
+    CheckConstraint, JSON,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
@@ -283,10 +284,27 @@ class BOMSubstitute(Base, TimestampMixin):
 
 class BOMConversionProfile(Base, TimestampMixin):
     __tablename__ = "bom_conversion_profiles"
+    __table_args__ = (
+        UniqueConstraint(
+            "profile_code", "version_no",
+            name="uq_bom_conversion_profile_code_version",
+        ),
+        CheckConstraint(
+            "version_no ~ '[^[:space:]]'",
+            name="ck_bom_conversion_profile_version_not_blank",
+        ),
+        CheckConstraint(
+            "effective_to IS NULL OR effective_from IS NULL OR effective_to >= effective_from",
+            name="ck_bom_conversion_profile_effective_window",
+        ),
+    )
 
     id                   = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    profile_code         = Column(String(80), nullable=False, unique=True, index=True)
+    profile_code         = Column(String(80), nullable=False, index=True)
     profile_name         = Column(String(255), nullable=False)
+    version_no           = Column(String(20), nullable=False, default="1.0", server_default="1.0")
+    effective_from       = Column(Date, nullable=True)
+    effective_to         = Column(Date, nullable=True)
 
     # source / target
     source_product_id    = Column(UUID(as_uuid=True), ForeignKey("products.id", ondelete="RESTRICT"), nullable=True)

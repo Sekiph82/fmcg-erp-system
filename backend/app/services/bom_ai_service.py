@@ -25,7 +25,7 @@ from decimal import Decimal
 from typing import List
 from uuid import UUID
 
-from sqlalchemy import select, delete
+from sqlalchemy import select, delete, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.bom import (
@@ -125,10 +125,13 @@ async def run_packaging_optimizer(db: AsyncSession, bom_id: UUID) -> List[BOMAIR
     if not bom:
         return recs
 
+    today = date.today()
     profiles_r = await db.execute(
         select(BOMConversionProfile).where(
             BOMConversionProfile.linked_packaging_bom_id == bom_id,
             BOMConversionProfile.is_active == True,
+            or_(BOMConversionProfile.effective_from.is_(None), BOMConversionProfile.effective_from <= today),
+            or_(BOMConversionProfile.effective_to.is_(None), BOMConversionProfile.effective_to >= today),
         )
     )
     profiles = profiles_r.scalars().all()
