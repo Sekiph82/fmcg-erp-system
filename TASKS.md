@@ -10,9 +10,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 - Current Milestone: M19 — Security / Deployment / Hardening
 - Current Sprint: M19.S02 — Production Readiness
-- Current Task: M19.S02.T002 — Tenant/company isolation verification
+- Current Task: M19.S02.T003 — Session-lifecycle remediation from M02
 - Current Task Status: COMPLETE
-- Next Task/Action: M19.S02.T003 — Session-lifecycle remediation from M02
+- Next Task/Action: M19.S02.T001 — Production-like penetration/security verification
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -542,7 +542,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 - [ ] M19.S02.T001 — Production-like penetration/security verification
 - [x] M19.S02.T002 — Tenant/company isolation verification
   Evidence: [CODEX log](coordination/sessions/M19.S02.T002/CODEX_LOG_V01.md)
-- [ ] M19.S02.T003 — Session-lifecycle remediation from M02
+- [x] M19.S02.T003 — Session-lifecycle remediation from M02
+  Evidence: [CODEX log](coordination/sessions/M19.S02.T003/CODEX_LOG_V01.md)
 - [!] M19.S02.T004 — Production provider-secret deployment verification
 - [D] M19.S02.T005 — Staging/live DB migration rehearsal pending environment
 - [ ] M19.S02.T006 — Residual repository anomaly/dead-code cleanup
