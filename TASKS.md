@@ -10,9 +10,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 - Current Milestone: M21 — Advanced BOM / Fluid-to-Unit
 - Current Sprint: M21.S04 — UI/API/Import
-- Current Task: M21.S04.T001 — Advanced BOM/conversion API contracts
+- Current Task: M21.S04.T002 — Conversion-profile UI
 - Current Task Status: COMPLETE
-- Next Task/Action: M21.S04.T002 — Conversion-profile UI
+- Next Task/Action: M21.S04.T003 — CSV import/export support
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -628,7 +628,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 ## M21.S04 — UI/API/Import
 - [x] M21.S04.T001 — Advanced BOM/conversion API contracts
   Evidence: [CODEX log](coordination/sessions/M21.S04.T001/CODEX_LOG_V01.md); backend/frontend conversion-profile request/response and package-components contracts aligned, positive finite source quantity enforced, DB-precision validation, 50 backend tests passed/2 disposable-DB tests skipped, frontend type-check, OpenAPI generation and independent review passed.
-- [ ] M21.S04.T002 — Conversion-profile UI
+- [x] M21.S04.T002 — Conversion-profile UI
+  Evidence: [CODEX log](coordination/sessions/M21.S04.T002/CODEX_LOG_V01.md); conversion profile product/BOM selectors, bounded form validation, and explicit target-SKU packaging calculation added; frontend type-check and diff check passed; independent review found and the UI fixed stale result display on input changes.
 - [ ] M21.S04.T003 — CSV import/export support
 - [ ] M21.S04.T004 — Permissions/audit/history
 
