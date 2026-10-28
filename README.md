@@ -107,7 +107,7 @@ Important local settings:
 - `SEED_DEMO_DATA=false` by default.
 - `INITIAL_ADMIN_PASSWORD` is required before the first admin user can be created.
 - `AUTH_RETURN_TOKEN_IN_BODY=false` because auth uses HttpOnly cookies.
-- `AUTO_CREATE_TABLES=false`; schema changes should go through Alembic migrations.
+- Schema changes should go through Alembic migrations.
 
 ## Production
 

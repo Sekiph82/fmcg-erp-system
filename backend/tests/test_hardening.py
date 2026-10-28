@@ -224,6 +224,10 @@ def test_production_config_rejects_security_landmines():
         Settings(**{**base, "AUTH_COOKIE_SECURE": False})
 
 
+def test_auto_create_tables_setting_is_removed():
+    assert "AUTO_CREATE_TABLES" not in Settings.model_fields
+
+
 _PROD_BASE = {
     "_env_file": None,
     "ENVIRONMENT": "production",

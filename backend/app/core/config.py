@@ -12,7 +12,6 @@ class Settings(BaseSettings):
     VERSION: str = "0.1.0"
     API_V1_STR: str = "/api/v1"
     ENVIRONMENT: str = "development"  # set to "production" in prod
-    AUTO_CREATE_TABLES: bool = False
     RUN_MIGRATIONS_ON_STARTUP: bool = False
 
     # Security

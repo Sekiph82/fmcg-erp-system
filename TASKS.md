@@ -10,9 +10,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 - Current Milestone: M19 — Security / Deployment / Hardening
 - Current Sprint: M19.S02 — Production Readiness
-- Current Task: M19.S02.T001 — Production-like penetration/security verification
+- Current Task: M19.S02.T006 — Residual repository anomaly/dead-code cleanup
 - Current Task Status: COMPLETE
-- Next Task/Action: M19.S02.T006 — Residual repository anomaly/dead-code cleanup
+- Next Task/Action: M21.S01.T001 — Define bulk-fluid→pack conversion profile model
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -547,7 +547,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
   Evidence: [CODEX log](coordination/sessions/M19.S02.T003/CODEX_LOG_V01.md)
 - [!] M19.S02.T004 — Production provider-secret deployment verification
 - [D] M19.S02.T005 — Staging/live DB migration rehearsal pending environment
-- [ ] M19.S02.T006 — Residual repository anomaly/dead-code cleanup
+- [x] M19.S02.T006 — Residual repository anomaly/dead-code cleanup
+  Evidence: [CODEX log](coordination/sessions/M19.S02.T006/CODEX_LOG_V01.md)
 
 ---
 
@@ -1109,7 +1110,10 @@ A milestone is DONE only when its planned scope is implemented or explicitly sup
 
 ## Questions for Şekip
 
+
 ## Owner Decisions
+
+- Q-M19-S02-T006-SCOPE | TASK: M19.S02.T006 | ANSWER: T006 kapsamı yalnızca hiçbir yerde kullanılmadığı kanıtlanan kodun temizlenmesidir; sayfa yönlendirmeleri ve performans uyarıları kapsam dışıdır.
 
 - Q-M01-S03-T004-OPS-ACCEPTANCE | TASK: M01.S03.T004 | ANSWER: Şekip Docker Desktop'ı açtı; bu, yerel sentetik ve tek kullanımlık PostgreSQL provası seçeneğinin kabulü olarak uygulandı.
 - Q-M03-S02-T004-STEWARD-MODE | TASK: M03.S02.T004 | ANSWER: Uygun yetkiye sahip kullanıcı ana veri değişikliklerini doğrudan yapabilir; değişiklikler denetim kaydına alınmalıdır. Ayrı onay zorunlu değildir.
