@@ -8,10 +8,10 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 ## Project Status
 
-- Current Milestone: M01 — Platform / Infrastructure
-- Current Sprint: M01.S03 — Runtime Reliability
-- Current Task: M01.S03.T004 — Establish operational backup/restore rehearsal evidence
-- Current Task Status: COMPLETE
+- Current Milestone: M19 — Security / Deployment / Hardening
+- Current Sprint: M19.S02 — Production Readiness
+- Current Task: M19.S02.T002 — Tenant/company isolation verification
+- Current Task Status: IN_PROGRESS
 - Next Task/Action: M19.S02.T002 — Tenant/company isolation verification
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
@@ -540,7 +540,7 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 ## M19.S02 — Production Readiness
 - [ ] M19.S02.T001 — Production-like penetration/security verification
-- [ ] M19.S02.T002 — Tenant/company isolation verification
+- [~] M19.S02.T002 — Tenant/company isolation verification
 - [ ] M19.S02.T003 — Session-lifecycle remediation from M02
 - [!] M19.S02.T004 — Production provider-secret deployment verification
 - [D] M19.S02.T005 — Staging/live DB migration rehearsal pending environment
