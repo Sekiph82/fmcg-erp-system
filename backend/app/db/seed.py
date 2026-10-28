@@ -123,6 +123,8 @@ PERMISSIONS = [
     ("bom", "cost", "Cost BOM", "Run BOM costing and formula cost reports", False),
     ("bom", "ai", "Run BOM AI", "Run or action BOM AI recommendations", False),
     ("bom", "export", "Export BOM", "Export BOM/formula reports", False),
+    ("bom", "import", "Import Conversion Profiles", "Bulk-import conversion profiles with CSV validation", False),
+    ("bom", "import_template", "Download Conversion Profile Template", "Download the conversion profile CSV template", False),
     ("recipe", "view", "View Recipes", "View recipe headers, ingredients, and process parameters", True),
     ("recipe", "create", "Create Recipes", "Create recipe records and duplicates", False),
     ("recipe", "edit", "Edit Recipes", "Edit draft recipes, items, and process parameters", False),
@@ -608,7 +610,7 @@ PERMISSIONS.extend(SCOPE_AWARE_PERMISSIONS)
 _IMPORT_MODULES = [
     "inventory", "products", "materials", "production", "procurement",
     "sales", "finance", "logistics", "quality", "maintenance",
-    "warehouses", "wms", "hr", "tax", "users", "marketing",
+    "warehouses", "wms", "hr", "tax", "users", "marketing", "bom",
 ]
 
 # Full import grant: run + download template for every module.
@@ -652,6 +654,7 @@ ROLE_DEFINITIONS = {
             "npd.view", "npd.create", "npd.edit", "npd.approve", "npd.advance", "npd.pilot", "npd.export",
             "bom.view", "bom.create", "bom.edit", "bom.delete", "bom.approve", "bom.release",
             "bom.archive", "bom.cost", "bom.ai", "bom.export",
+            *_import("bom"),
             "recipe.view", "recipe.create", "recipe.edit", "recipe.delete", "recipe.approve",
             "recipe.obsolete", "recipe.export",
             # Admin manages IoT registry and configuration
@@ -1023,6 +1026,7 @@ ROLE_DEFINITIONS = {
             "production.view_all", "mrp.view_all", "bom.view_all", "recipe.view_all",
             "npd.view", "npd.create", "npd.edit", "npd.approve", "npd.advance", "npd.pilot", "npd.export",
             "bom.view", "bom.create", "bom.edit", "bom.approve", "bom.release", "bom.cost", "bom.export",
+            *_import("bom"),
             "recipe.view", "recipe.create", "recipe.edit", "recipe.approve", "recipe.obsolete", "recipe.export",
             "planning.view_all", "planning.create_own_scope", "planning.edit_own_scope",
             "planning.calculate_own_scope", "planning.approve_own_scope",

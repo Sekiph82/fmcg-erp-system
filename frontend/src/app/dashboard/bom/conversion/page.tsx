@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { bomApi, BOMSummary, ConversionProfileCreate, ConversionProfileOut, ConversionCalcResult, PackageComponentCalcResult } from "@/lib/bom";
 import { productsApi, Product } from "@/lib/products";
+import { ImportModal } from "@/components/import/ImportModal";
+import { importApi } from "@/lib/importApi";
 import { PermissionGuard, RequirePermission } from "@/components/PermissionGuard";
 
 const emptyProfile: ConversionProfileCreate = {
@@ -27,6 +29,8 @@ export default function ConversionProfilePage() {
   const [packageQty, setPackageQty] = useState("");
   const [packageUom, setPackageUom] = useState("");
   const [packageResult, setPackageResult] = useState<PackageComponentCalcResult | null>(null);
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
 
   const { data: profiles = [] } = useQuery<ConversionProfileOut[]>({
     queryKey: ["bom-conversions"],
@@ -70,6 +74,18 @@ export default function ConversionProfilePage() {
     }
   };
 
+  const exportProfiles = async () => {
+    setExporting(true);
+    setExportError(null);
+    try {
+      await importApi.downloadConversionProfiles();
+    } catch {
+      setExportError("Could not export conversion profiles. Check your export permission and try again.");
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const selected = profiles.find((p) => p.id === selectedId);
   const selectedTarget = products.find((product) => product.id === selected?.target_product_id);
   const formTargetPackagingBoms = packagingBoms.filter((bom) => bom.product_id === form.target_product_id);
@@ -103,12 +119,25 @@ export default function ConversionProfilePage() {
           <a href="/dashboard/bom" className="text-sm text-gray-400 hover:text-gray-600">← BOMs</a>
           <h1 className="text-xl font-bold text-gray-900">Bulk-to-Pack Conversion Profiles</h1>
         </div>
-        <PermissionGuard permission="bom.create">
-          <button onClick={() => { create.reset(); setShowCreate(true); }} className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700">
-            + New Profile
-          </button>
-        </PermissionGuard>
+        <div className="flex items-center gap-2">
+          <PermissionGuard permission="bom.import">
+            <PermissionGuard permission="bom.import_template">
+              <ImportModal module="conversion_profiles" onSuccess={() => qc.invalidateQueries({ queryKey: ["bom-conversions"] })} />
+            </PermissionGuard>
+          </PermissionGuard>
+          <PermissionGuard permission="bom.export">
+            <button type="button" onClick={exportProfiles} disabled={exporting} className="px-3 py-2 border border-gray-200 text-gray-600 text-sm rounded-lg hover:bg-gray-50 disabled:opacity-40">
+              {exporting ? "Exporting…" : "Export CSV"}
+            </button>
+          </PermissionGuard>
+          <PermissionGuard permission="bom.create">
+            <button onClick={() => { create.reset(); setShowCreate(true); }} className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700">
+              + New Profile
+            </button>
+          </PermissionGuard>
+        </div>
       </div>
+      {exportError && <p className="text-sm text-red-600" role="alert">{exportError}</p>}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Profile List */}

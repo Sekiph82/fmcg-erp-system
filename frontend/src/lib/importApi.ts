@@ -151,6 +151,14 @@ export const importApi = {
     );
   },
 
+  /** Download the active conversion profiles as a CSV import-compatible file. */
+  downloadConversionProfiles(): Promise<void> {
+    return _downloadBlob(
+      "/api/v1/bom/conversion-profiles/export",
+      "conversion_profiles.csv",
+    );
+  },
+
   /** Get module manifest (fields, permissions, unique keys). */
   async getModules(): Promise<ImportModuleInfo[]> {
     const r = await apiClient.get<ImportModuleInfo[]>("/api/v1/bulk-import/modules");
@@ -171,6 +179,7 @@ export const MODULE_LABELS: Record<string, string> = {
   recipe_items:               "Recipe BOM Items",
   recipe_steps:               "Recipe Process Steps",
   qc_parameters:              "QC Parameters",
+  conversion_profiles:        "Conversion Profiles",
   // Utility Management — Master data
   utility_asset_categories:   "Utility Asset Categories",
   utility_assets:             "Utility Assets",

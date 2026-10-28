@@ -1,11 +1,14 @@
 """Advanced BOM / Formula / Packaging BOM — REST endpoints."""
 from __future__ import annotations
+import csv
+import io
 from datetime import date
 from decimal import Decimal
 from typing import List, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -387,6 +390,39 @@ async def list_conversion_profiles(
     _=Depends(require_permission("bom", "view")),
 ):
     return await svc.list_conversion_profiles(db, as_of_date)
+
+
+@router.get("/conversion-profiles/export")
+async def export_conversion_profiles(
+    as_of_date: Optional[date] = Query(
+        None,
+        description="Optional inclusive effective-date filter; omitted exports all active profiles",
+    ),
+    db: AsyncSession = Depends(get_db),
+    _=Depends(require_permission("bom", "export")),
+):
+    profiles = await svc.list_conversion_profiles(db, as_of_date)
+    fieldnames = list(ConversionProfileCreate.model_fields)
+    output = io.StringIO(newline="")
+    writer = csv.DictWriter(output, fieldnames=fieldnames, extrasaction="ignore")
+    writer.writeheader()
+    for profile in profiles:
+        writer.writerow({
+            name: _safe_csv_cell(value.isoformat() if hasattr(value, "isoformat") else value)
+            for name in fieldnames
+            if (value := getattr(profile, name, None)) is not None
+        })
+    return Response(
+        content=("\ufeff" + output.getvalue()).encode("utf-8"),
+        media_type="text/csv",
+        headers={"Content-Disposition": 'attachment; filename="conversion_profiles.csv"'},
+    )
+
+
+def _safe_csv_cell(value):
+    if isinstance(value, str) and value.lstrip(" \t\r\n").startswith(("=", "+", "-", "@")):
+        return f"'{value}"
+    return value
 
 
 @router.post("/conversion-profiles/{profile_id}/calculate", response_model=ConversionCalcResult)

@@ -152,6 +152,8 @@ Side-by-side comparison of two BOM versions for the same product. Used during re
 
 Manages unit of measure conversions specific to this BOM's product line (e.g. converting bulk KG quantities to packaged unit equivalents).
 
+Conversion profiles can be imported from CSV with the standard template → validate → import flow. The template lists the profile fields; product and linked packaging BOM references use their UUIDs. A blank profile code is generated automatically. Imports create new profile versions; an existing profile-code/version pair is reported as a duplicate and is not overwritten. Export CSV downloads the active profiles available in the list; text that could be interpreted as a spreadsheet formula is escaped in the export.
+
 ---
 
 ## BOM vs Recipe

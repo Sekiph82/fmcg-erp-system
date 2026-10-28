@@ -41,6 +41,7 @@ from app.services.import_engine import (
 # ── Model / schema imports ────────────────────────────────────────────────────
 
 from app.models.master import Product, Material, Supplier, Warehouse
+from app.models.bom import AdvancedBOM, BOMConversionProfile, BOMType
 from app.services.master_stewardship import apply_supplier_qualification_actor
 from app.models.hr import Employee
 from app.models.inventory import Stock, StockMovement, MovementType, StockType
@@ -83,6 +84,8 @@ from app.schemas.master import (
 )
 from app.schemas.hr import EmployeeCreate
 from app.schemas.quality import QCParameterCreate
+from app.schemas.bom import ConversionProfileCreate
+from app.services import bom_service as _bom_service
 from pydantic import BaseModel, Field, field_validator
 
 # ── Adapters ──────────────────────────────────────────────────────────────────
@@ -3715,6 +3718,83 @@ class UtilityAlarmRuleAdapter(BaseImportAdapter):
         return obj
 
 
+# ── Conversion profile adapter ───────────────────────────────────────────────
+
+class ConversionProfileAdapter(BaseImportAdapter):
+    """Create versioned conversion profiles from exported or template CSV rows."""
+
+    module = "conversion_profiles"
+    perm_module = "bom"
+    schema_class = ConversionProfileCreate
+    model = BOMConversionProfile
+    unique_key = ["profile_code", "version_no"]
+    field_overrides: dict = {}
+    example_row = {
+        "profile_code": "EXAMPLE-CONVERSION",
+        "profile_name": "Example conversion profile",
+        "version_no": "1.0",
+        "effective_from": "",
+        "effective_to": "",
+        "source_product_id": "",
+        "source_product_name": "",
+        "target_product_id": "",
+        "target_product_name": "",
+        "theoretical_conversion_ratio": "1.000000",
+        "standard_fill_volume": "",
+        "fill_volume_uom": "",
+        "fill_tolerance_pct": "1.000",
+        "density_g_per_ml": "",
+        "startup_loss_pct": "0.500",
+        "shutdown_loss_pct": "0.300",
+        "packaging_reject_pct": "0.500",
+        "residual_bulk_pct": "0.200",
+        "line_purge_loss_pct": "0.100",
+        "standard_expected_units": "",
+        "realistic_expected_units": "",
+        "linked_packaging_bom_id": "",
+        "notes": "",
+    }
+
+    async def resolve_relations(self, row: dict, db: AsyncSession) -> tuple[dict, list[str]]:
+        errors: list[str] = []
+        for field, name_field in (
+            ("source_product_id", "source_product_name"),
+            ("target_product_id", "target_product_name"),
+        ):
+            product_id = row.get(field)
+            if product_id is None:
+                continue
+            result = await db.execute(select(Product).where(Product.id == product_id))
+            product = result.scalar_one_or_none()
+            if product is None:
+                errors.append(f"{field}: product '{product_id}' was not found")
+            else:
+                row[name_field] = product.name
+
+        packaging_bom_id = row.get("linked_packaging_bom_id")
+        if packaging_bom_id is not None:
+            target_product_id = row.get("target_product_id")
+            if target_product_id is None:
+                errors.append("linked_packaging_bom_id: a target_product_id is required")
+            else:
+                result = await db.execute(
+                    select(AdvancedBOM).where(AdvancedBOM.id == packaging_bom_id)
+                )
+                packaging_bom = result.scalar_one_or_none()
+                if packaging_bom is None:
+                    errors.append(f"linked_packaging_bom_id: BOM '{packaging_bom_id}' was not found")
+                elif packaging_bom.bom_type != BOMType.PACKAGING:
+                    errors.append("linked_packaging_bom_id: linked BOM must have PACKAGING type")
+                elif packaging_bom.product_id != target_product_id:
+                    errors.append("linked_packaging_bom_id: linked BOM must belong to target_product_id")
+
+        return row, errors
+
+    async def insert(self, data: dict, db: AsyncSession) -> Any:
+        profile = ConversionProfileCreate(**data)
+        return await _bom_service.create_conversion_profile(db, profile)
+
+
 # ── Adapter registry ──────────────────────────────────────────────────────────
 
 ADAPTERS: dict[str, BaseImportAdapter] = {
@@ -3728,6 +3808,7 @@ ADAPTERS: dict[str, BaseImportAdapter] = {
     "recipe_items":          RecipeItemAdapter(),
     "recipe_steps":          RecipeStepAdapter(),
     "qc_parameters":         QCParameterAdapter(),
+    "conversion_profiles":   ConversionProfileAdapter(),
     # Utility Management — Master data
     "utility_asset_categories":     UtilityAssetCategoryAdapter(),
     "utility_assets":               UtilityAssetAdapter(),
