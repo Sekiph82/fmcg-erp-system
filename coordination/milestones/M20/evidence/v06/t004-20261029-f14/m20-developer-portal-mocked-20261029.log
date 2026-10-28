@@ -1,0 +1,7 @@
+Final command: E2E_SKIP_WEBSERVER=1 E2E_BASE_URL=http://127.0.0.1:3103 npx playwright test e2e/m20-developer-portal.mocked.spec.ts --project=chromium --no-deps --retries=0
+Server: isolated Next.js development server at 127.0.0.1:3103 with NEXT_DIST_DIR=.next-m20-portal-recheck; stopped after the run.
+Final result: 1 passed (17.2s), exit code 0.
+Coverage: current Developer Portal mobile/desktop, API-key empty state, explicit GraphQL STUB, refresh-token 401 followed by protected-request 401 and login redirect, safe 404 with a raw-error sentinel excluded from UI.
+Data: every /api/v1 response and cookie are synthetic/local; non-loopback E2E_BASE_URL is rejected before cookie creation; no backend or application database was contacted.
+Screenshots: m20-developer-portal-mobile.png; m20-developer-portal-desktop.png; m20-developer-keys-empty-mobile.png; m20-developer-graphql-mobile.png; m20-developer-401-mobile.png; m20-developer-404-safe-mobile.png.
+Correction: the earlier 7.9s run left `/auth/refresh` at the mock's default 200, so it did not prove refresh failure. The final test explicitly returns 401 from `/auth/refresh`, asserts that response, and then observes the shared client's redirect to `/login`.
