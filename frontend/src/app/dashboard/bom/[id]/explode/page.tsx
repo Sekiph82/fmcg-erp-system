@@ -112,7 +112,7 @@ export default function ExplodePage() {
                       <td className="px-4 py-2 font-medium">{req.item_name}</td>
                       <td className="px-4 py-2 font-mono text-xs text-gray-400">{req.item_code || "—"}</td>
                       <td className="px-4 py-2">
-                        <span className="text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">{req.component_type}</span>
+                        <span className="text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">{req.item_type} · {req.component_type}</span>
                       </td>
                       <td className="px-4 py-2 text-right font-mono text-xs">{req.total_qty.toFixed(4)}</td>
                       <td className="px-4 py-2 text-right font-mono text-xs font-medium">{req.total_adjusted_qty.toFixed(4)}</td>

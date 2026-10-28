@@ -182,6 +182,7 @@ export interface ExplosionResult {
   flat_requirements: {
     item_name: string;
     item_code: string | null;
+    item_type: ItemLinkType;
     component_type: string;
     required_uom: string;
     total_qty: number;

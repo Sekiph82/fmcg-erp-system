@@ -32,7 +32,7 @@ class BOMExplosionError(ValueError):
     """Raised when a nested BOM cannot be exploded without losing requirements."""
 
 
-def _uom_code(value) -> str:
+def _enum_code(value) -> str:
     return str(getattr(value, "value", value) or "").strip().upper()
 
 
@@ -83,7 +83,7 @@ async def _explode_node(
     parent_item_name: str,
     target_qty: Decimal,
     level: int,
-    flat: Dict[str, dict],
+    flat: Dict[tuple[str, str, str, str, str], dict],
     path: tuple[UUID, ...],
 ) -> List[ExplosionNode]:
     path_codes = " -> ".join(str(item_id) for item_id in (*path, bom.id))
@@ -137,7 +137,7 @@ async def _explode_node(
                 raise BOMExplosionError(
                     f"Child BOM {line.child_bom_id} referenced by line {line.id} is missing or unavailable"
                 )
-            if _uom_code(line.required_uom) != _uom_code(child_bom.base_uom):
+            if _enum_code(line.required_uom) != _enum_code(child_bom.base_uom):
                 raise BOMExplosionError(
                     f"Child BOM UOM {child_bom.base_uom} does not match line UOM {line.required_uom} "
                     f"for line {line.id}"
@@ -149,11 +149,33 @@ async def _explode_node(
             # Don't add to flat requirements — its children will be added
         else:
             # leaf node — aggregate into flat requirements
-            key = f"{line.item_id or line.item_name}_{line.required_uom}"
+            item_type = _enum_code(line.item_type)
+            component_type = _enum_code(line.component_type)
+            item_id = str(line.item_id) if line.item_id is not None else ""
+            item_code = str(line.item_code or "").strip().upper()
+            item_name = str(line.item_name or "").strip()
+            if item_id:
+                identity_kind, identity_value = "ID", item_id
+            elif item_code:
+                identity_kind, identity_value = "CODE", item_code
+            elif item_name:
+                identity_kind, identity_value = "NAME", " ".join(item_name.casefold().split())
+            else:
+                raise BOMExplosionError(
+                    f"Leaf BOM line {line.id} has no item ID, code, or name"
+                )
+            key = (
+                item_type,
+                component_type,
+                identity_kind,
+                identity_value,
+                _enum_code(line.required_uom),
+            )
             if key not in flat:
                 flat[key] = {
                     "item_name": line.item_name or "Unknown",
                     "item_code": line.item_code,
+                    "item_type": item_type,
                     "component_type": line.component_type.value,
                     "required_uom": line.required_uom,
                     "total_qty": Decimal("0"),
@@ -183,7 +205,7 @@ async def explode_bom(db: AsyncSession, bom_id: UUID, target_qty: Optional[Decim
     if not target_qty.is_finite() or target_qty <= 0:
         raise BOMExplosionError("BOM explosion target quantity must be positive and finite")
 
-    flat: Dict[str, dict] = {}
+    flat: Dict[tuple[str, str, str, str, str], dict] = {}
     nodes = await _explode_node(db, bom, bom.bom_name, target_qty, 1, flat, ())
 
     def _depth(n: ExplosionNode) -> int:

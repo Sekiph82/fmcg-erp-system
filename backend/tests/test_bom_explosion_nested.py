@@ -6,12 +6,16 @@ import pytest
 from fastapi import HTTPException
 
 from app.api.v1.endpoints import bom as bom_routes
-from app.models.bom import BasisType, ComponentType
+from app.models.bom import BasisType, ComponentType, ItemLinkType
 from app.services import bom_explosion_service as explosion
 
 
+_AUTO_ITEM_ID = object()
+
+
 def _line(*, item_name, required_qty, required_uom="KG", child_bom_id=None,
-          wastage_pct=0, process_loss_pct=0):
+          wastage_pct=0, process_loss_pct=0, item_id=_AUTO_ITEM_ID, item_code=None,
+          item_type=ItemLinkType.MATERIAL, component_type=ComponentType.RAW):
     return SimpleNamespace(
         id=uuid4(),
         child_bom_id=child_bom_id,
@@ -23,9 +27,10 @@ def _line(*, item_name, required_qty, required_uom="KG", child_bom_id=None,
         process_loss_pct=Decimal(str(process_loss_pct)),
         substitute_group=None,
         item_name=item_name,
-        item_code=item_name.upper(),
-        component_type=ComponentType.RAW,
-        item_id=uuid4(),
+        item_code=item_code if item_code is not None else item_name.upper(),
+        item_type=item_type,
+        component_type=component_type,
+        item_id=uuid4() if item_id is _AUTO_ITEM_ID else item_id,
         consumption_stage=None,
         allergen_flag=False,
         critical_component=False,
@@ -89,6 +94,49 @@ async def test_repeated_intermediate_bom_branches_are_both_aggregated(monkeypatc
     assert result.flat_requirements[0]["total_qty"] == 6.0
     assert len(result.nodes[0].children) == 1
     assert len(result.nodes[1].children) == 1
+
+
+@pytest.mark.asyncio
+async def test_flat_requirements_keep_same_uuid_in_distinct_item_namespaces_separate(monkeypatch):
+    shared_id = uuid4()
+    root = _bom("Finished", lines=[
+        _line(item_name="Material", required_qty=2, item_id=shared_id, item_code="MAT-1"),
+        _line(item_name="Product", required_qty=3, item_id=shared_id, item_code="FG-1", item_type=ItemLinkType.PRODUCT),
+        _line(item_name="Packaging", required_qty=4, item_id=shared_id, item_code="MAT-1", component_type=ComponentType.PACKAGING),
+    ])
+    monkeypatch.setattr(explosion, "_load_bom_with_lines", lambda _db, _bom_id: _async_result(root))
+
+    result = await explosion.explode_bom(None, root.id)
+
+    assert len(result.flat_requirements) == 3
+    assert {row["item_type"] for row in result.flat_requirements} == {"MATERIAL", "PRODUCT"}
+    assert {row["component_type"] for row in result.flat_requirements} == {"RAW", "PACKAGING"}
+    assert {row["total_qty"] for row in result.flat_requirements} == {2.0, 3.0, 4.0}
+
+
+@pytest.mark.asyncio
+async def test_flat_requirements_use_item_code_when_master_id_is_missing(monkeypatch):
+    root = _bom("Finished", lines=[
+        _line(item_name="Cocoa", required_qty=2, item_id=None, item_code="MAT-01"),
+        _line(item_name="Cocoa", required_qty=3, item_id=None, item_code="MAT-02"),
+    ])
+    monkeypatch.setattr(explosion, "_load_bom_with_lines", lambda _db, _bom_id: _async_result(root))
+
+    result = await explosion.explode_bom(None, root.id)
+
+    assert len(result.flat_requirements) == 2
+    assert {row["item_code"] for row in result.flat_requirements} == {"MAT-01", "MAT-02"}
+
+
+@pytest.mark.asyncio
+async def test_leaf_without_any_item_identity_fails_closed(monkeypatch):
+    root = _bom("Finished", lines=[
+        _line(item_name="", required_qty=2, item_id=None, item_code=""),
+    ])
+    monkeypatch.setattr(explosion, "_load_bom_with_lines", lambda _db, _bom_id: _async_result(root))
+
+    with pytest.raises(explosion.BOMExplosionError, match="has no item ID, code, or name"):
+        await explosion.explode_bom(None, root.id)
 
 
 @pytest.mark.asyncio
