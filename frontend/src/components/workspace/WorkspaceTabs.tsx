@@ -14,9 +14,10 @@ export interface WorkspaceTab {
 interface WorkspaceTabsProps {
   tabs: WorkspaceTab[];
   defaultTab?: string;
+  wrapOnMobile?: boolean;
 }
 
-export function WorkspaceTabs({ tabs, defaultTab }: WorkspaceTabsProps) {
+export function WorkspaceTabs({ tabs, defaultTab, wrapOnMobile = false }: WorkspaceTabsProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -68,9 +69,15 @@ export function WorkspaceTabs({ tabs, defaultTab }: WorkspaceTabsProps) {
       {/* Tab bar — neon liquid glass */}
       <div
         ref={tabBarRef}
-        className="relative flex items-center border-b border-cyan-500/20 bg-[rgba(15,23,42,0.65)] backdrop-blur-xl overflow-x-auto scrollbar-hide"
+        className={[
+          "relative flex items-center border-b border-cyan-500/20 bg-[rgba(15,23,42,0.65)] backdrop-blur-xl scrollbar-hide",
+          wrapOnMobile ? "overflow-x-visible lg:overflow-x-auto" : "overflow-x-auto",
+        ].join(" ")}
       >
-        <div className="flex items-center gap-0 min-w-0 flex-1">
+        <div className={[
+          "flex items-center gap-0 min-w-0 flex-1",
+          wrapOnMobile ? "flex-wrap lg:flex-nowrap" : "",
+        ].join(" ")}>
           {visibleTabs.map((tab) => {
             const active = tab.key === (activeTab?.key ?? "");
             return (

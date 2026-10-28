@@ -3109,6 +3109,56 @@ async def test_postgres_mps_scoped_plan_list_create_and_cross_plan_line_edit_iso
 
 
 @pytest.mark.asyncio
+async def test_postgres_marketplace_categories_endpoint_seeds_and_returns_category_counts():
+    """Exercise the live integration endpoint against a task-owned PostgreSQL database."""
+    _require_disposable_m20_postgres()
+
+    from httpx import ASGITransport, AsyncClient
+
+    from app.core.deps import get_current_user, get_db
+    from app.main import app
+    from app.models.integrations import ConnectorRegistry
+
+    await engine.dispose()
+    async with AsyncSessionLocal() as db:
+        async with db.begin():
+            await db.execute(delete(ConnectorRegistry))
+    saved_overrides = app.dependency_overrides.copy()
+    try:
+        async def override_db():
+            async with AsyncSessionLocal() as session:
+                yield session
+
+        async def override_user():
+            return SimpleNamespace(is_superuser=True)
+
+        app.dependency_overrides[get_db] = override_db
+        app.dependency_overrides[get_current_user] = override_user
+        async with AsyncClient(
+            transport=ASGITransport(app=app, raise_app_exceptions=False),
+            base_url="http://m20-marketplace.test",
+        ) as client:
+            responses = await asyncio.gather(*(
+                client.get("/api/v1/integrations/marketplace/categories")
+                for _ in range(10)
+            ))
+        assert all(response.status_code == 200 for response in responses), [
+            (response.status_code, response.text) for response in responses
+        ]
+        categories = responses[0].json()
+        assert all(response.json() == categories for response in responses)
+        assert categories
+        assert all(row["category"] and row["total"] > 0 for row in categories)
+        async with AsyncSessionLocal() as db:
+            seeded_count = await db.scalar(select(func.count()).select_from(ConnectorRegistry))
+            assert sum(row["total"] for row in categories) == seeded_count
+    finally:
+        app.dependency_overrides.clear()
+        app.dependency_overrides.update(saved_overrides)
+        await engine.dispose()
+
+
+@pytest.mark.asyncio
 async def test_postgres_mps_approval_reopen_and_release_integrity():
     """Exercise approval prerequisites, blocked-line repair, release integrity and immutability."""
     _require_disposable_m20_postgres()

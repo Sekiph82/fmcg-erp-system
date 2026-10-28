@@ -270,6 +270,7 @@ export default function IntegrationsDashboardPage() {
       title="Integrations"
       description="M-Pesa, sync, marketplace, barcode, webhooks, developer tools"
       permission="integrations.view"
+      wrapTabsOnMobile
       tabs={tabs}
       defaultTab="overview"
     />

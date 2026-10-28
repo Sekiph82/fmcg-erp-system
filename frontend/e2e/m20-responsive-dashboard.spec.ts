@@ -37,6 +37,19 @@ test("dashboard and integration tabs fit the required desktop, tablet, and phone
     await page.goto("/dashboard");
     await expect(page.getByTestId("dashboard-main")).toBeVisible();
     await expect(page.getByTestId("dashboard-main")).not.toContainText("Loading…", { timeout: 15_000 });
+    if (viewport.width <= 390) {
+      const kpiCards = page.getByTestId("dashboard-main").locator(".glow-card");
+      expect(await kpiCards.count(), "dashboard renders its KPI cards").toBeGreaterThanOrEqual(8);
+      for (let index = 0; index < 8; index += 1) {
+        const card = kpiCards.nth(index);
+        const textFits = await card.locator("p").first().evaluate((label) => (
+          label.scrollWidth <= label.clientWidth
+        ));
+        expect(textFits, "phone KPI labels remain fully readable").toBeTruthy();
+      }
+      const firstKpiWidth = await kpiCards.first().evaluate((card) => card.getBoundingClientRect().width);
+      expect(firstKpiWidth, "phone KPI cards use the available width").toBeGreaterThan(300);
+    }
 
     const dashboardGeometry = await page.evaluate(() => ({
       viewport: window.innerWidth,
@@ -55,8 +68,28 @@ test("dashboard and integration tabs fit the required desktop, tablet, and phone
     await page.goto("/dashboard/integrations");
     await expect(page.getByTestId("dashboard-main")).toBeVisible();
     for (const tab of INTEGRATION_TABS) {
-      await page.getByTestId("dashboard-main").getByRole("button", { name: tab.label, exact: true }).click();
+      const tabButton = page.getByTestId("dashboard-main").getByRole("button", { name: tab.label, exact: true });
+      const marketplaceCategories = tab.label === "Marketplace"
+        ? page.waitForResponse((response) => (
+          response.url().includes("/api/v1/integrations/marketplace/categories")
+          && response.request().method() === "GET"
+        ))
+        : null;
+      await tabButton.click();
+      if (marketplaceCategories) {
+        const response = await marketplaceCategories;
+        expect(response.status(), "Marketplace categories endpoint succeeds").toBe(200);
+      }
       await expect(page.getByTestId("dashboard-main").getByRole("heading", { name: tab.heading }).first()).toBeVisible();
+      if (viewport.width <= 768) {
+        const bounds = await tabButton.evaluate((element) => {
+          const rect = element.getBoundingClientRect();
+          return { left: rect.left, right: rect.right, clientWidth: element.clientWidth, scrollWidth: element.scrollWidth };
+        });
+        expect(bounds.left, "tab starts inside the viewport").toBeGreaterThanOrEqual(0);
+        expect(bounds.right, "tab ends inside the viewport").toBeLessThanOrEqual(viewport.width + 1);
+        expect(bounds.scrollWidth, "tab label is not clipped").toBeLessThanOrEqual(bounds.clientWidth + 1);
+      }
       const geometry = await page.evaluate((expectedHeading) => ({
         viewport: window.innerWidth,
         document: document.documentElement.scrollWidth,

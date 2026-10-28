@@ -9,7 +9,7 @@ import json
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status, Request
-from sqlalchemy import select
+from sqlalchemy import Integer, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import get_db, get_current_user, require_permission
@@ -792,30 +792,46 @@ _CONNECTOR_SEED = [
 
 
 async def _ensure_seed(db: AsyncSession):
-    """Seed connector registry if empty."""
+    """Seed the connector registry once, without failing concurrent first requests."""
     count_r = await db.execute(select(ConnectorRegistry))
     existing = {r.connector_code for r in count_r.scalars().all()}
     if existing:
         return
-    from datetime import datetime
-    for c in _CONNECTOR_SEED:
-        entry = ConnectorRegistry(
-            connector_code=c["code"],
-            name=c["name"],
-            category=c["category"],
-            icon_emoji=c.get("icon"),
-            auth_type=c.get("auth"),
-            status=ConnectorStatus(c.get("status", "coming_soon")),
-            config_guide=c.get("guide"),
-            current_version=c.get("version", "1.0.0"),
-            module_key=c.get("module_key", c["code"]),
-            dependency_codes=json.dumps(c.get("dependencies", [])),
-            required_permissions=json.dumps(c.get("permissions", ["integrations.view"])),
-            supports_tenant_config=c.get("supports_tenant_config", True),
-            is_core=c.get("is_core", False),
-            created_at=datetime.utcnow(),
-        )
-        db.add(entry)
+    from datetime import datetime, timezone
+    from sqlalchemy.dialects.postgresql import insert as postgres_insert
+    from sqlalchemy.dialects.sqlite import insert as sqlite_insert
+
+    seed_rows = [
+        {
+            "connector_code": c["code"],
+            "name": c["name"],
+            "category": c["category"],
+            "icon_emoji": c.get("icon"),
+            "auth_type": c.get("auth"),
+            "status": ConnectorStatus(c.get("status", "coming_soon")),
+            "config_guide": c.get("guide"),
+            "current_version": c.get("version", "1.0.0"),
+            "module_key": c.get("module_key", c["code"]),
+            "dependency_codes": json.dumps(c.get("dependencies", [])),
+            "required_permissions": json.dumps(c.get("permissions", ["integrations.view"])),
+            "supports_tenant_config": c.get("supports_tenant_config", True),
+            "is_core": c.get("is_core", False),
+            "created_at": datetime.now(timezone.utc).replace(tzinfo=None),
+        }
+        for c in _CONNECTOR_SEED
+    ]
+    dialect = db.get_bind().dialect.name
+    if dialect == "postgresql":
+        insert_seed = postgres_insert
+    elif dialect == "sqlite":
+        insert_seed = sqlite_insert
+    else:
+        raise RuntimeError(f"Unsupported database dialect for connector seed: {dialect}")
+
+    statement = insert_seed(ConnectorRegistry).values(seed_rows).on_conflict_do_nothing(
+        index_elements=[ConnectorRegistry.connector_code]
+    )
+    await db.execute(statement)
     await db.commit()
 
 

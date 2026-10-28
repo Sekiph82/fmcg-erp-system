@@ -1,0 +1,37 @@
+task=M20.S05.T004 marketplace categories concurrency regression after timestamp fix
+database=fmcg_m20_t004_bc949858903a4e6c9da7b55ab0ab5aa6
+container=codex-m20-t004-market-bc94985890
+host=127.0.0.1 port=60015
+auth=local trust; no database password used
+test=10 concurrent GET requests against an initially empty synthetic registry
+.                                                                        [100%]
+============================== warnings summary ===============================
+tests/test_m20_v03_acceptance.py::test_postgres_marketplace_categories_endpoint_seeds_and_returns_category_counts
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\venv\Lib\site-packages\pydantic\_internal\_fields.py:160: UserWarning: Field "model_params" has conflict with protected namespace "model_".
+
+  You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+    warnings.warn(
+
+tests/test_m20_v03_acceptance.py: 65 warnings
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\venv\Lib\site-packages\pydantic\_internal\_config.py:284: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.7/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+tests/test_m20_v03_acceptance.py::test_postgres_marketplace_categories_endpoint_seeds_and_returns_category_counts
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\venv\Lib\site-packages\pydantic\_internal\_fields.py:160: UserWarning: Field "model_no" has conflict with protected namespace "model_".
+
+  You may be able to resolve this warning by setting `model_config['protected_namespaces'] = ()`.
+    warnings.warn(
+
+tests/test_m20_v03_acceptance.py::test_postgres_marketplace_categories_endpoint_seeds_and_returns_category_counts
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\api\v1\endpoints\allergen.py:133: DeprecationWarning: `regex` has been deprecated, please use `pattern` instead
+    entity_type: str = Query("material", regex="^(material|product)$"),
+
+tests/test_m20_v03_acceptance.py::test_postgres_marketplace_categories_endpoint_seeds_and_returns_category_counts
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\api\v1\endpoints\allergen.py:402: DeprecationWarning: `regex` has been deprecated, please use `pattern` instead
+    review_type: str = Query(..., regex="^(label|qc)$"),
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+1 passed, 69 warnings in 26.57s
+RESULT=PASS
+codex-m20-t004-market-bc94985890
+DISPOSABLE_CONTAINER_CLEANUP=verified

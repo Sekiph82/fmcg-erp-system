@@ -1,0 +1,7 @@
+Command: E2E_SKIP_WEBSERVER=1 E2E_BASE_URL=http://127.0.0.1:3101 npx playwright test e2e/m20-mobile-layout.mocked.spec.ts --project=chromium --no-deps --retries=0
+Server: isolated Next.js 16.4.2 dev server at 127.0.0.1:3101, NEXT_DIST_DIR=.next-m20-isolated; stopped after the run.
+Result: 1 passed (12.1s), exit code 0.
+Data: synthetic planner, synthetic dashboard values, and locally mocked /api/v1 responses; no backend or application database was contacted.
+Safety: the test rejects any E2E_BASE_URL whose hostname is not localhost, 127.0.0.1, or ::1 before adding its synthetic cookie.
+Evidence screenshots: m20-dashboard-mobile-synthetic.png; m20-integrations-mobile-synthetic.png.
+The earlier run against Playwright's reused port-3000 server failed because it served stale two-column output; the isolated fresh-source run validates the current one-column mobile layout and tab visibility.
