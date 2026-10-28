@@ -11,7 +11,7 @@ from decimal import Decimal, ROUND_HALF_UP
 from typing import Optional
 from uuid import UUID
 
-from sqlalchemy import func, select
+from sqlalchemy import case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.inventory import Stock, StockType, Lot
@@ -231,12 +231,18 @@ async def _build_incoming_material_po_map(
 async def _build_incoming_prod_map(
     db: AsyncSession,
     horizon_date: date,
+    warehouse_id: Optional[UUID],
 ) -> dict[UUID, Decimal]:
-    """Open production orders target qty per product due within horizon."""
+    """Remaining open production quantity due by horizon in the requested warehouse."""
+    actual_quantity = func.coalesce(ProductionOrder.actual_quantity, Decimal("0"))
+    remaining_quantity = case(
+        (ProductionOrder.planned_quantity > actual_quantity, ProductionOrder.planned_quantity - actual_quantity),
+        else_=Decimal("0"),
+    )
     q = (
         select(
             ProductionOrder.product_id,
-            func.sum(ProductionOrder.target_quantity).label("qty"),
+            func.sum(remaining_quantity).label("qty"),
         )
         .where(
             ProductionOrder.status.in_([
@@ -244,9 +250,14 @@ async def _build_incoming_prod_map(
                 ProductionOrderStatus.RELEASED,
                 ProductionOrderStatus.IN_PROGRESS,
             ]),
+            ProductionOrder.scheduled_end < datetime.combine(
+                horizon_date + timedelta(days=1), datetime.min.time(), tzinfo=timezone.utc,
+            ),
         )
         .group_by(ProductionOrder.product_id)
     )
+    if warehouse_id is not None:
+        q = q.where(ProductionOrder.target_warehouse_id == warehouse_id)
     rows = (await db.execute(q)).all()
     return {r.product_id: _D(r.qty) for r in rows}
 
@@ -461,7 +472,7 @@ async def _do_mrp(db: AsyncSession, run: MRPRun) -> None:
     material_stock = await _build_material_stock_map(db, run.warehouse_id)
     incoming_po    = await _build_incoming_po_map(db, horizon_date, run.warehouse_id)
     incoming_mat_po = await _build_incoming_material_po_map(db, horizon_date)
-    incoming_prod  = await _build_incoming_prod_map(db, horizon_date)
+    incoming_prod  = await _build_incoming_prod_map(db, horizon_date, run.warehouse_id)
 
     # ── 3. Get all active products ────────────────────────────────────────────
     products_raw = (await db.execute(

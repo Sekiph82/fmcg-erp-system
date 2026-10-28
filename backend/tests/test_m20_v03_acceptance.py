@@ -60,6 +60,7 @@ from app.services.mps_campaign_service import run_campaign_grouping_validated, l
 from app.services.mps_service import (
     _next_seq, approve_mps_plan, generate_mps_from_mrp, release_mps_plan, update_mps_line,
 )
+from app.services.mrp_service import create_mrp_run, execute_mrp_run
 from app.services.mps_whatif_service import (
     _next_scenario_no,
     _apply_change,
@@ -2112,14 +2113,15 @@ async def test_postgres_mps_supply_projection_scopes_and_nets_dated_receipts():
 
 @pytest.mark.asyncio
 async def test_postgres_seeded_mrp_bom_inventory_diagnostics_snapshot_and_release_replay():
-    """Exercise a committed MRP→MPS→BOM/stock→scenario→production path."""
+    """Exercise synthetic confirmed demand through MRP→MPS→BOM/stock→scenario→production."""
     _require_disposable_m20_postgres()
 
     await engine.dispose()
     suffix = _suffix()
-    company_id = warehouse_id = product_id = material_id = run_id = plan_id = user_id = None
+    company_id = warehouse_id = foreign_warehouse_id = product_id = material_id = run_id = plan_id = user_id = customer_id = so_id = None
     recipe_id = bom_id = None
     scenario_ids: list = []
+    deactivated_product_ids: list[uuid.UUID] = []
     try:
         async with AsyncSessionLocal() as db:
             async with db.begin():
@@ -2127,6 +2129,10 @@ async def test_postgres_seeded_mrp_bom_inventory_diagnostics_snapshot_and_releas
                 await db.flush()
                 warehouse = Warehouse(
                     code=f"M20-V3-WH-{suffix}", name="M20 V03 acceptance warehouse",
+                    warehouse_type=WarehouseType.FINISHED_GOODS, company_id=company.id,
+                )
+                foreign_warehouse = Warehouse(
+                    code=f"M20-V3-WH-X-{suffix}", name="M20 V03 other-warehouse supply",
                     warehouse_type=WarehouseType.FINISHED_GOODS, company_id=company.id,
                 )
                 product = Product(
@@ -2141,35 +2147,83 @@ async def test_postgres_seeded_mrp_bom_inventory_diagnostics_snapshot_and_releas
                     email=f"m20-v3-{suffix}@example.invalid", username=f"m20-v3-{suffix}",
                     full_name="M20 V03 acceptance", hashed_password="test",
                 )
-                db.add_all([warehouse, product, material, user])
+                db.add_all([warehouse, foreign_warehouse, product, material, user])
                 await db.flush()
-                run = MRPRun(
-                    run_no=f"M20-V3-RUN-{suffix}", run_date=date(2026, 1, 1),
-                    status=MRPRunStatus.COMPLETED, warehouse_id=warehouse.id,
-                )
+                seeded_products = (await db.scalars(select(Product).where(
+                    Product.id != product.id, Product.is_active.is_(True),
+                ))).all()
+                for seeded_product in seeded_products:
+                    seeded_product.is_active = False
+                    deactivated_product_ids.append(seeded_product.id)
+                scenario_day = date.today()
+                delivery_day = scenario_day + timedelta(days=15)
+                plan_end = scenario_day + timedelta(days=29)
                 recipe = Recipe(
                     product_id=product.id, version="1", name="M20 V03 release recipe",
-                    status=RecipeStatus.APPROVED, is_active=True,
+                    status=RecipeStatus.APPROVED, is_active=True, valid_from=scenario_day,
                 )
                 bom = AdvancedBOM(
                     bom_code=f"M20-V3-BOM-{suffix}", bom_name="M20 V03 effective BOM",
                     product_id=product.id, base_qty=1, base_uom="KG",
                     lifecycle=BOMLifecycle.APPROVED, is_default=True,
-                    effective_from=date(2026, 1, 1), effective_to=date(2026, 12, 31),
+                    effective_from=scenario_day, effective_to=plan_end,
                 )
-                db.add_all([run, recipe, bom])
+                customer = Customer(code=f"M20-V3-C-{suffix}", name="Synthetic acceptance customer")
+                db.add_all([recipe, bom, customer])
                 await db.flush()
-                result = MRPResult(
-                    run_id=run.id, product_id=product.id,
-                    so_demand_qty=Decimal("5"), forecast_demand_qty=Decimal("0"),
-                    safety_stock_qty=Decimal("0"), gross_demand_qty=Decimal("5"),
-                    stock_on_hand_qty=Decimal("0"), incoming_po_qty=Decimal("0"),
-                    incoming_prod_qty=Decimal("0"), total_supply_qty=Decimal("0"),
-                    net_requirement_qty=Decimal("5"), shortage_flag=True,
-                    suggested_production_qty=Decimal("5"),
+                other_warehouse_supply = ProductionOrder(
+                    order_no=f"M20-V3-OTHER-WH-PO-{suffix}", product_id=product.id,
+                    recipe_id=recipe.id, planned_quantity=Decimal("100"),
+                    status=ProductionOrderStatus.PLANNED, target_warehouse_id=foreign_warehouse.id,
+                    scheduled_start=datetime.combine(delivery_day, datetime.min.time(), tzinfo=timezone.utc),
+                    scheduled_end=datetime.combine(delivery_day, datetime.min.time(), tzinfo=timezone.utc) + timedelta(hours=1),
                 )
+                partial_in_scope_supply = ProductionOrder(
+                    order_no=f"M20-V3-PARTIAL-PO-{suffix}", product_id=product.id,
+                    recipe_id=recipe.id, planned_quantity=Decimal("1.000"), actual_quantity=Decimal("0.250"),
+                    status=ProductionOrderStatus.IN_PROGRESS, target_warehouse_id=warehouse.id,
+                    scheduled_start=datetime.combine(delivery_day, datetime.min.time(), tzinfo=timezone.utc),
+                    scheduled_end=datetime.combine(delivery_day, datetime.min.time(), tzinfo=timezone.utc) + timedelta(hours=2),
+                )
+                beyond_horizon_supply = ProductionOrder(
+                    order_no=f"M20-V3-LATE-PO-{suffix}", product_id=product.id,
+                    recipe_id=recipe.id, planned_quantity=Decimal("100"),
+                    status=ProductionOrderStatus.PLANNED, target_warehouse_id=warehouse.id,
+                    scheduled_start=datetime.combine(scenario_day + timedelta(days=30), datetime.min.time(), tzinfo=timezone.utc),
+                    scheduled_end=datetime.combine(scenario_day + timedelta(days=30), datetime.min.time(), tzinfo=timezone.utc) + timedelta(hours=1),
+                )
+                db.add_all([other_warehouse_supply, partial_in_scope_supply, beyond_horizon_supply])
+                await db.flush()
+                sales_order = SalesOrder(
+                    order_no=f"M20-V3-SO-{suffix}", customer_id=customer.id,
+                    order_date=scenario_day, requested_delivery_date=delivery_day,
+                    status=SOStatus.CONFIRMED, warehouse_id=warehouse.id, company_id=company.id,
+                    created_by_id=user.id, confirmed_by_id=user.id,
+                )
+                db.add(sales_order)
+                await db.flush()
+                db.add(SOLine(
+                    so_id=sales_order.id, line_no=1, product_id=product.id,
+                    ordered_quantity=Decimal("5"), unit="KG", unit_price=Decimal("10"),
+                ))
+                await db.flush()
+                run = await create_mrp_run(
+                    db, planning_horizon_days=29, frozen_horizon_days=0,
+                    include_forecast=False, include_safety_stock=True,
+                    warehouse_id=warehouse.id, triggered_by_id=user.id,
+                    notes="Synthetic M20 integration demand; not an operating order.",
+                )
+                run = await execute_mrp_run(db, run.id)
+                assert run.status == MRPRunStatus.COMPLETED
+                result = await db.scalar(select(MRPResult).where(
+                    MRPResult.run_id == run.id, MRPResult.product_id == product.id,
+                ))
+                assert result is not None
+                assert result.so_demand_qty == Decimal("5.000")
+                assert result.incoming_prod_qty == Decimal("0.750")
+                assert result.net_requirement_qty == Decimal("4.250")
+                assert result.suggested_production_qty == Decimal("4.250")
                 db.add_all([
-                    result,
                     AdvancedBOMLine(
                         bom_id=bom.id, line_no=1, item_type=ItemLinkType.MATERIAL,
                         item_id=material.id, required_qty=1, required_uom="KG",
@@ -2184,15 +2238,17 @@ async def test_postgres_seeded_mrp_bom_inventory_diagnostics_snapshot_and_releas
                 await db.flush()
                 plan = MPSPlan(
                     plan_no=f"M20-V3-PLAN-{suffix}", plan_name="M20 V03 end-to-end plan",
-                    start_date=date(2026, 1, 1), end_date=date(2026, 1, 30),
+                    start_date=scenario_day, end_date=plan_end,
                     mrp_run_id=run.id,
                 )
                 db.add(plan)
                 await db.flush()
                 company_id, warehouse_id = company.id, warehouse.id
+                foreign_warehouse_id = foreign_warehouse.id
                 product_id, material_id = product.id, material.id
                 run_id, plan_id, user_id = run.id, plan.id, user.id
                 recipe_id, bom_id = recipe.id, bom.id
+                customer_id, so_id = customer.id, sales_order.id
 
         async with AsyncSessionLocal() as db:
             async with db.begin():
@@ -2202,7 +2258,7 @@ async def test_postgres_seeded_mrp_bom_inventory_diagnostics_snapshot_and_releas
                 assert created == 1
                 line = await db.scalar(select(MPSLine).where(MPSLine.mps_id == plan_id))
                 assert line is not None and line.mrp_result_id is not None
-                assert line.planned_production_qty == Decimal("5.000")
+                assert line.planned_production_qty == Decimal("4.250")
                 line_id = line.id
 
                 first_eval = await evaluate_material_feasibility(db, plan_id)
@@ -2230,7 +2286,7 @@ async def test_postgres_seeded_mrp_bom_inventory_diagnostics_snapshot_and_releas
                 scenario_ids = [baseline.id, candidate.id]
                 assert await db.scalar(select(MPSLine.planned_production_qty).where(
                     MPSLine.id == line_id,
-                )) == Decimal("5.000"), "what-if must not mutate the live MPS line"
+                )) == Decimal("4.250"), "what-if must not mutate the live MPS line"
 
                 comparison = await compare_whatif_scenarios(db, plan_id, baseline.id, candidate.id)
                 assert comparison["material_shortage_count_delta"] == 1
@@ -2296,11 +2352,12 @@ async def test_postgres_seeded_mrp_bom_inventory_diagnostics_snapshot_and_releas
             replayed = await compare_whatif_scenarios(verify, plan_id, *scenario_ids)
             assert replayed == comparison
             line = await verify.scalar(select(MPSLine).where(MPSLine.mps_id == plan_id))
-            assert line is not None and line.planned_production_qty == Decimal("5.000")
-            order = await verify.scalar(select(ProductionOrder).where(ProductionOrder.product_id == product_id))
+            assert line is not None and line.planned_production_qty == Decimal("4.250")
+            assert line.production_order_id is not None
+            order = await verify.get(ProductionOrder, line.production_order_id)
             assert order is not None and order.recipe_id == recipe_id
             assert order.target_warehouse_id == warehouse_id
-            assert order.planned_quantity == Decimal("5.000")
+            assert order.planned_quantity == Decimal("4.250")
             assert await verify.scalar(text(
                 "SELECT COUNT(*) FROM mps_line_diagnostics WHERE mps_id = :plan_id"
             ), {"plan_id": plan_id}) == 2
@@ -2334,17 +2391,27 @@ async def test_postgres_seeded_mrp_bom_inventory_diagnostics_snapshot_and_releas
                 if run_id is not None:
                     await cleanup.execute(delete(MRPResult).where(MRPResult.run_id == run_id))
                     await cleanup.execute(delete(MRPRun).where(MRPRun.id == run_id))
+                if so_id is not None:
+                    await cleanup.execute(delete(SalesOrder).where(SalesOrder.id == so_id))
                 if material_id is not None:
                     await cleanup.execute(delete(Stock).where(Stock.material_id == material_id))
                     await cleanup.execute(delete(Material).where(Material.id == material_id))
                 if product_id is not None:
                     await cleanup.execute(delete(Product).where(Product.id == product_id))
+                for seeded_product_id in deactivated_product_ids:
+                    seeded_product = await cleanup.get(Product, seeded_product_id)
+                    if seeded_product is not None:
+                        seeded_product.is_active = True
                 if user_id is not None:
                     await cleanup.execute(delete(User).where(User.id == user_id))
                 if warehouse_id is not None:
                     await cleanup.execute(delete(Warehouse).where(Warehouse.id == warehouse_id))
+                if foreign_warehouse_id is not None:
+                    await cleanup.execute(delete(Warehouse).where(Warehouse.id == foreign_warehouse_id))
                 if company_id is not None:
                     await cleanup.execute(delete(Company).where(Company.id == company_id))
+                if customer_id is not None:
+                    await cleanup.execute(delete(Customer).where(Customer.id == customer_id))
         await engine.dispose()
 
 
@@ -2830,6 +2897,212 @@ async def test_postgres_whatif_http_permissions_scope_lifecycle_and_comparison()
                     await cleanup.execute(delete(Warehouse).where(Warehouse.id == warehouse_id))
                 if company_id is not None:
                     await cleanup.execute(delete(Company).where(Company.id == company_id))
+                if user_id is not None:
+                    await cleanup.execute(delete(User).where(User.id == user_id))
+        await engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_postgres_mps_scoped_plan_list_create_and_cross_plan_line_edit_isolation():
+    """Scoped MPS users see and create only within warehouse/company scope; foreign line edits are rejected."""
+    _require_disposable_m20_postgres()
+
+    from httpx import ASGITransport, AsyncClient
+
+    from app.core.deps import get_current_user, get_db
+    from app.main import app
+
+    await engine.dispose()
+    suffix = _suffix()
+    company_ids: list[uuid.UUID] = []
+    warehouse_ids: list[uuid.UUID] = []
+    run_ids: list[uuid.UUID] = []
+    plan_ids: list[uuid.UUID] = []
+    line_ids: list[uuid.UUID] = []
+    created_plan_ids: list[uuid.UUID] = []
+    product_id = user_id = None
+    saved_overrides = app.dependency_overrides.copy()
+    try:
+        async with AsyncSessionLocal() as db:
+            async with db.begin():
+                company_a = Company(
+                    name=f"M20 scoped company A {suffix}", short_code=f"MSA{suffix[:7]}", base_currency="KES",
+                )
+                company_b = Company(
+                    name=f"M20 scoped company B {suffix}", short_code=f"MSB{suffix[:7]}", base_currency="KES",
+                )
+                db.add_all([company_a, company_b])
+                await db.flush()
+                warehouse_a = Warehouse(
+                    code=f"M20-SCOPE-A-{suffix}", name="Synthetic scoped warehouse A",
+                    warehouse_type=WarehouseType.FINISHED_GOODS, company_id=company_a.id,
+                )
+                warehouse_b = Warehouse(
+                    code=f"M20-SCOPE-B-{suffix}", name="Synthetic out-of-scope warehouse B",
+                    warehouse_type=WarehouseType.FINISHED_GOODS, company_id=company_b.id,
+                )
+                product = Product(
+                    sku=f"M20-SCOPE-P-{suffix}", name="Synthetic scoped MPS product",
+                    category=ProductCategory.FOOD, uom=UnitOfMeasure.KG,
+                )
+                user = User(
+                    email=f"m20-scope-{suffix}@example.invalid", username=f"m20-scope-{suffix}",
+                    full_name="M20 Scoped Planner", hashed_password="test-only", is_superuser=False,
+                )
+                db.add_all([warehouse_a, warehouse_b, product, user])
+                await db.flush()
+                run_a = MRPRun(
+                    run_no=f"M20-SCOPE-RUN-A-{suffix}", run_date=date(2026, 11, 3),
+                    status=MRPRunStatus.COMPLETED, warehouse_id=warehouse_a.id,
+                )
+                run_b = MRPRun(
+                    run_no=f"M20-SCOPE-RUN-B-{suffix}", run_date=date(2026, 11, 3),
+                    status=MRPRunStatus.COMPLETED, warehouse_id=warehouse_b.id,
+                )
+                db.add_all([run_a, run_b])
+                await db.flush()
+                plan_a = MPSPlan(
+                    plan_no=f"M20-SCOPE-PLAN-A-{suffix}", plan_name="Scoped plan A",
+                    start_date=date(2026, 11, 3), end_date=date(2026, 11, 30), mrp_run_id=run_a.id,
+                )
+                plan_b = MPSPlan(
+                    plan_no=f"M20-SCOPE-PLAN-B-{suffix}", plan_name="Foreign plan B",
+                    start_date=date(2026, 11, 3), end_date=date(2026, 11, 30), mrp_run_id=run_b.id,
+                )
+                db.add_all([plan_a, plan_b])
+                await db.flush()
+                line_a = MPSLine(
+                    line_no=f"M20-SCOPE-LINE-A-{suffix}", mps_id=plan_a.id, product_id=product.id,
+                    period_start=date(2026, 11, 3), period_end=date(2026, 11, 9),
+                    planned_production_qty=Decimal("10"),
+                )
+                line_b = MPSLine(
+                    line_no=f"M20-SCOPE-LINE-B-{suffix}", mps_id=plan_b.id, product_id=product.id,
+                    period_start=date(2026, 11, 3), period_end=date(2026, 11, 9),
+                    planned_production_qty=Decimal("20"),
+                )
+                db.add_all([line_a, line_b])
+                await db.flush()
+                company_ids[:] = [company_a.id, company_b.id]
+                warehouse_ids[:] = [warehouse_a.id, warehouse_b.id]
+                run_ids[:] = [run_a.id, run_b.id]
+                plan_ids[:] = [plan_a.id, plan_b.id]
+                line_ids[:] = [line_a.id, line_b.id]
+                product_id, user_id = product.id, user.id
+
+        async def override_db():
+            async with AsyncSessionLocal() as session:
+                yield session
+
+        current_actor = SimpleNamespace(
+            is_superuser=False,
+            id=user_id,
+            roles=[SimpleNamespace(is_active=True, permissions=[
+                SimpleNamespace(code="mps.view_own_scope", is_active=True),
+                SimpleNamespace(code="mps.create_own_scope", is_active=True),
+                SimpleNamespace(code="mps.edit_own_scope", is_active=True),
+            ])],
+            access_scopes=[SimpleNamespace(
+                scope_type="warehouse", scope_id=str(warehouse_ids[0]), is_active=True,
+                can_view=True, can_create=True, can_edit=True,
+            )],
+        )
+
+        async def override_user():
+            return current_actor
+
+        app.dependency_overrides[get_db] = override_db
+        app.dependency_overrides[get_current_user] = override_user
+        async with AsyncClient(
+            transport=ASGITransport(app=app, raise_app_exceptions=False),
+            base_url="http://m20-scoped-plan.test",
+        ) as client:
+            listed = await client.get("/api/v1/mps/plans")
+            assert listed.status_code == 200, listed.text
+            visible_plan_ids = {item["id"] for item in listed.json()}
+            assert str(plan_ids[0]) in visible_plan_ids
+            assert str(plan_ids[1]) not in visible_plan_ids
+
+            in_scope_create = await client.post("/api/v1/mps/plans", json={
+                "plan_name": "Scoped plan created in warehouse A",
+                "start_date": "2026-11-03", "end_date": "2026-11-30",
+                "mrp_run_id": str(run_ids[0]),
+            })
+            assert in_scope_create.status_code == 201, in_scope_create.text
+            created_plan_ids.append(uuid.UUID(in_scope_create.json()["id"]))
+
+            out_of_scope_create = await client.post("/api/v1/mps/plans", json={
+                "plan_name": "Rejected foreign warehouse plan",
+                "start_date": "2026-11-03", "end_date": "2026-11-30",
+                "mrp_run_id": str(run_ids[1]),
+            })
+            assert out_of_scope_create.status_code == 403, out_of_scope_create.text
+
+            cross_plan_edit = await client.patch(
+                f"/api/v1/mps/plans/{plan_ids[0]}/lines/{line_ids[1]}",
+                json={"planned_production_qty": "999"},
+            )
+            assert cross_plan_edit.status_code == 404, cross_plan_edit.text
+            async with AsyncSessionLocal() as verify:
+                unchanged = await verify.get(MPSLine, line_ids[1])
+                assert unchanged is not None
+                assert unchanged.planned_production_qty == Decimal("20")
+                assert await verify.get(MPSPlan, created_plan_ids[0]) is not None
+
+            current_actor = SimpleNamespace(
+                is_superuser=False,
+                id=user_id,
+                roles=[SimpleNamespace(is_active=True, permissions=[
+                    SimpleNamespace(code="mps.view_own_company", is_active=True),
+                    SimpleNamespace(code="mps.create_own_company", is_active=True),
+                    SimpleNamespace(code="mps.edit_own_company", is_active=True),
+                ])],
+                access_scopes=[SimpleNamespace(
+                    scope_type="company", scope_id=str(company_ids[0]), is_active=True,
+                    can_view=True, can_create=True, can_edit=True,
+                )],
+            )
+            company_scoped_list = await client.get("/api/v1/mps/plans")
+            assert company_scoped_list.status_code == 200, company_scoped_list.text
+            company_visible_plan_ids = {item["id"] for item in company_scoped_list.json()}
+            assert str(plan_ids[0]) in company_visible_plan_ids
+            assert str(created_plan_ids[0]) in company_visible_plan_ids
+            assert str(plan_ids[1]) not in company_visible_plan_ids
+
+            company_scoped_detail = await client.get(f"/api/v1/mps/plans/{plan_ids[0]}")
+            assert company_scoped_detail.status_code == 200, company_scoped_detail.text
+            company_scoped_lines = await client.get(f"/api/v1/mps/plans/{plan_ids[0]}/lines")
+            assert company_scoped_lines.status_code == 200, company_scoped_lines.text
+            company_foreign_detail = await client.get(f"/api/v1/mps/plans/{plan_ids[1]}")
+            assert company_foreign_detail.status_code == 403, company_foreign_detail.text
+
+            company_scoped_create = await client.post("/api/v1/mps/plans", json={
+                "plan_name": "Company-scoped plan created in company A",
+                "start_date": "2026-11-03", "end_date": "2026-11-30",
+                "mrp_run_id": str(run_ids[0]),
+            })
+            assert company_scoped_create.status_code == 201, company_scoped_create.text
+            created_plan_ids.append(uuid.UUID(company_scoped_create.json()["id"]))
+            company_created_detail = await client.get(f"/api/v1/mps/plans/{created_plan_ids[-1]}")
+            assert company_created_detail.status_code == 200, company_created_detail.text
+
+    finally:
+        app.dependency_overrides.clear()
+        app.dependency_overrides.update(saved_overrides)
+        async with AsyncSessionLocal() as cleanup:
+            async with cleanup.begin():
+                cleanup_plan_ids = [*plan_ids, *created_plan_ids]
+                if cleanup_plan_ids:
+                    await cleanup.execute(delete(MPSLine).where(MPSLine.mps_id.in_(cleanup_plan_ids)))
+                    await cleanup.execute(delete(MPSPlan).where(MPSPlan.id.in_(cleanup_plan_ids)))
+                if run_ids:
+                    await cleanup.execute(delete(MRPRun).where(MRPRun.id.in_(run_ids)))
+                if product_id is not None:
+                    await cleanup.execute(delete(Product).where(Product.id == product_id))
+                if warehouse_ids:
+                    await cleanup.execute(delete(Warehouse).where(Warehouse.id.in_(warehouse_ids)))
+                if company_ids:
+                    await cleanup.execute(delete(Company).where(Company.id.in_(company_ids)))
                 if user_id is not None:
                     await cleanup.execute(delete(User).where(User.id == user_id))
         await engine.dispose()

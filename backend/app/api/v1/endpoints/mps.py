@@ -11,8 +11,8 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import get_db, require_permission
-from app.core.access_control import can_modify_scope, can_view_scope
+from app.core.deps import get_db, get_current_user, require_permission
+from app.core.access_control import can_modify_scope, can_view_scope, has_permission
 from app.models.user import User
 from app.models.mrp import MRPRun
 from app.models.master import Warehouse
@@ -59,6 +59,75 @@ from app.services.mps_advanced_service import (
 router = APIRouter()
 
 
+_MPS_SCOPE_SUFFIXES = {
+    "view": ("own_scope", "own_company", "own_branch", "own_warehouse"),
+    "create": ("own_scope", "own_company", "own_branch", "own_warehouse"),
+    "edit": ("own_scope", "own_company", "own_branch", "own_warehouse"),
+}
+
+
+def _require_mps_scope_action_permission(user: User, action: str) -> bool:
+    """Return whether the caller has global access; allow scoped roles for filtering/checks below."""
+    if has_permission(user, f"mps.{action}") or has_permission(user, f"mps.{action}_all"):
+        return True
+    if any(has_permission(user, f"mps.{action}_{suffix}") for suffix in _MPS_SCOPE_SUFFIXES[action]):
+        return False
+    raise HTTPException(403, f"Permission 'mps.{action}' or a scoped MPS permission is required")
+
+
+async def require_mps_view_permission(current_user: User = Depends(get_current_user)) -> User:
+    _require_mps_scope_action_permission(current_user, "view")
+    return current_user
+
+
+async def require_mps_edit_permission(current_user: User = Depends(get_current_user)) -> User:
+    _require_mps_scope_action_permission(current_user, "edit")
+    return current_user
+
+
+def _warehouse_in_user_scope(user: User, warehouse: Warehouse, action: str, *, view: bool = False) -> bool:
+    def allowed(scope_type: str, scope_id: uuid.UUID) -> bool:
+        if view:
+            return can_view_scope(user, "mps", scope_type, scope_id)
+        return can_modify_scope(user, "mps", action, scope_type, scope_id)
+
+    if allowed("warehouse", warehouse.id):
+        return True
+    if warehouse.company_id:
+        if allowed("company", warehouse.company_id):
+            return True
+    if warehouse.branch_id:
+        if allowed("branch", warehouse.branch_id):
+            return True
+    return False
+
+
+async def _check_source_run_scope(db: AsyncSession, user: User, mrp_run_id: uuid.UUID | None) -> None:
+    """Scoped plan creators may only bind a plan to an MRP run in their scope."""
+    if has_permission(user, "mps.create") or has_permission(user, "mps.create_all"):
+        return
+    if mrp_run_id is None:
+        raise HTTPException(400, "A scoped MPS creator must select a warehouse-scoped MRP run")
+    run = await db.get(MRPRun, mrp_run_id)
+    if run is None:
+        return  # Let the service return its canonical invalid-source response.
+    if run.warehouse_id is None:
+        raise HTTPException(400, "A scoped MPS creator cannot use an MRP run without a warehouse")
+    warehouse = await db.get(Warehouse, run.warehouse_id)
+    if warehouse is None:
+        raise HTTPException(400, "The MRP run warehouse is unavailable")
+    if not _warehouse_in_user_scope(user, warehouse, "create"):
+        raise HTTPException(403, "Access denied for the MPS source warehouse scope")
+
+
+async def _visible_mps_warehouse_ids(db: AsyncSession, user: User) -> list[uuid.UUID] | None:
+    """Return warehouse IDs visible to a scoped planner; None denotes explicit global view."""
+    if _require_mps_scope_action_permission(user, "view"):
+        return None
+    warehouses = (await db.execute(select(Warehouse))).scalars().all()
+    return [warehouse.id for warehouse in warehouses if _warehouse_in_user_scope(user, warehouse, "view", view=True)]
+
+
 async def _check_plan_scope(db: AsyncSession, user: User, mps_id: uuid.UUID, action: str, *, view: bool = False) -> None:
     """Apply warehouse-scope authorization to an MPS plan's source run."""
     plan = (await db.execute(select(MPSPlan).where(MPSPlan.id == mps_id))).scalar_one_or_none()
@@ -70,8 +139,7 @@ async def _check_plan_scope(db: AsyncSession, user: User, mps_id: uuid.UUID, act
     warehouse = await db.get(Warehouse, run.warehouse_id)
     if warehouse is None:
         raise HTTPException(400, "MPS plan source warehouse is unavailable")
-    allowed = (can_view_scope(user, "mps", "warehouse", warehouse.id) if view
-               else can_modify_scope(user, "mps", action, "warehouse", warehouse.id))
+    allowed = _warehouse_in_user_scope(user, warehouse, action, view=view)
     if not allowed:
         raise HTTPException(403, "Access denied for the MPS plan warehouse scope")
 
@@ -109,7 +177,7 @@ async def material_feasibility(
 async def plan_constraints(
     mps_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("mps", "view")),
+    current_user: User = Depends(require_mps_view_permission),
 ):
     async with db.begin():
         await _check_plan_scope(db, current_user, mps_id, "view", view=True)
@@ -132,9 +200,11 @@ async def mps_dashboard(
 async def create_plan(
     body: MPSPlanCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("mps", "create")),
+    current_user: User = Depends(get_current_user),
 ):
+    _require_mps_scope_action_permission(current_user, "create")
     async with db.begin():
+        await _check_source_run_scope(db, current_user, body.mrp_run_id)
         plan = await create_mps_plan(db, body, current_user.id)
     return plan
 
@@ -144,17 +214,19 @@ async def list_plans(
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(require_permission("mps", "view")),
+    current_user: User = Depends(get_current_user),
 ):
+    _require_mps_scope_action_permission(current_user, "view")
     async with db.begin():
-        return await list_mps_plans(db, limit, offset)
+        warehouse_ids = await _visible_mps_warehouse_ids(db, current_user)
+        return await list_mps_plans(db, limit, offset, warehouse_ids=warehouse_ids)
 
 
 @router.get("/plans/{mps_id}", response_model=MPSPlanOut, tags=["mps"])
 async def get_plan(
     mps_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("mps", "view")),
+    current_user: User = Depends(require_mps_view_permission),
 ):
     async with db.begin():
         await _check_plan_scope(db, current_user, mps_id, "view", view=True)
@@ -267,7 +339,7 @@ async def release_plan(
 async def list_lines(
     mps_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("mps", "view")),
+    current_user: User = Depends(require_mps_view_permission),
 ):
     async with db.begin():
         await _check_plan_scope(db, current_user, mps_id, "view", view=True)
@@ -280,7 +352,7 @@ async def update_line(
     line_id: uuid.UUID,
     body: MPSLineUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("mps", "edit")),
+    current_user: User = Depends(require_mps_edit_permission),
 ):
     async with db.begin():
         await _check_plan_scope(db, current_user, mps_id, "edit")
@@ -299,7 +371,7 @@ async def update_line(
 async def capacity_heatmap(
     mps_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("mps", "view")),
+    current_user: User = Depends(require_mps_view_permission),
 ):
     async with db.begin():
         await _check_plan_scope(db, current_user, mps_id, "view", view=True)
@@ -325,7 +397,7 @@ async def reschedule_suggestion(
 async def get_campaigns(
     mps_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("mps", "view")),
+    current_user: User = Depends(require_mps_view_permission),
 ):
     async with db.begin():
         await _check_plan_scope(db, current_user, mps_id, "view", view=True)
@@ -359,7 +431,7 @@ async def scenario_comparison(
     baseline_id: uuid.UUID = Query(...),
     candidate_id: uuid.UUID = Query(...),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("mps", "view")),
+    current_user: User = Depends(require_mps_view_permission),
 ):
     async with db.begin():
         await _check_plan_scope(db, current_user, mps_id, "view", view=True)
@@ -373,7 +445,7 @@ async def scenario_comparison(
 async def list_whatif(
     mps_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("mps", "view")),
+    current_user: User = Depends(require_mps_view_permission),
 ):
     async with db.begin():
         await _check_plan_scope(db, current_user, mps_id, "view", view=True)
@@ -384,7 +456,7 @@ async def list_whatif(
 async def get_whatif(
     scenario_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("mps", "view")),
+    current_user: User = Depends(require_mps_view_permission),
 ):
     async with db.begin():
         s = await get_whatif_scenario(db, scenario_id)
@@ -401,7 +473,7 @@ async def get_whatif(
 async def get_ai_recs(
     mps_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_permission("mps", "view")),
+    current_user: User = Depends(require_mps_view_permission),
 ):
     async with db.begin():
         await _check_plan_scope(db, current_user, mps_id, "view", view=True)

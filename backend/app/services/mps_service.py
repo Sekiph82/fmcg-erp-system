@@ -131,9 +131,22 @@ async def get_mps_plan(db: AsyncSession, mps_id: uuid.UUID) -> Optional[MPSPlan]
     return result.scalar_one_or_none()
 
 
-async def list_mps_plans(db: AsyncSession, limit: int = 50, offset: int = 0):
+async def list_mps_plans(
+    db: AsyncSession,
+    limit: int = 50,
+    offset: int = 0,
+    *,
+    warehouse_ids: list[uuid.UUID] | None = None,
+):
+    query = select(MPSPlan)
+    if warehouse_ids is not None:
+        if not warehouse_ids:
+            return []
+        query = query.join(MRPRun, MPSPlan.mrp_run_id == MRPRun.id).where(
+            MRPRun.warehouse_id.in_(warehouse_ids)
+        )
     result = await db.execute(
-        select(MPSPlan)
+        query
         .order_by(MPSPlan.created_at.desc())
         .limit(limit)
         .offset(offset)
