@@ -381,7 +381,10 @@ async def list_conversion_profiles(db: AsyncSession = Depends(get_db), _=Depends
 async def calculate_conversion(
     profile_id: UUID,
     source_qty: Decimal = Query(...),
-    source_uom: Optional[str] = None,
+    source_uom: Optional[str] = Query(
+        None,
+        description="Input UOM; linked source products normalize the quantity to their product UOM.",
+    ),
     db: AsyncSession = Depends(get_db),
     _=Depends(require_permission("bom", "view")),
 ):
