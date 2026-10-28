@@ -1,0 +1,18 @@
+command: python -m alembic upgrade head
+exit: 0
+command: python -m alembic downgrade 20261028_0024
+exit: 0
+command: python -m alembic upgrade head with a preserved synthetic malformed legacy currency
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade 20261028_0024 -> 20261029_0025, require alphabetic ISO currency codes for MPS costs
+WARNI [alembic.runtime.migration] Preserved existing rows with malformed products.standard_cost_currency; strict currency check remains NOT VALID
+exit: 0
+command: python -m alembic downgrade 20261028_0024
+exit: 0
+command: python -m alembic upgrade head
+exit: 0
+command: python -m alembic curren
+20261029_0025 (head)
+exit: 0
+legacy-row proof: malformed synthetic 1$A value survived upgrade untouched under a NOT VALID constraint; what-if costing returned null/PRODUCT_STANDARD_COST_CURRENCY_INVALID; new malformed insert was rejected; after synthetic normalization, both constraints validated; downgrade/re-upgrade returned to 20261029_0025 (head).

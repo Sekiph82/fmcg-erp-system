@@ -1,0 +1,2 @@
+M20 API database identity: configured_host=127.0.0.1 database=fmcg_m20_t004_73c1a892f4b74d06b0faec89 server=172.17.0.2/32:5432 database_role=m20_task credentials=REDACTED
+M20 fixture seeded: database=fmcg_m20_t004_73c1a892f4b74d06b0faec89 principal=m20-planner-73c1a892f4b7 superuser=false permissions=mps.view,mps.simulate,mps.edit_own_warehouse warehouse_scopes=1 warehouse_scope_id=bd5b91a4-f67a-45b8-8c85-ea8a8a701e63 plan=M20-OPS-PLAN-5b9b1d47f2e9 line=M20-LINE-5b9b1d47f2e9 password=REDACTED

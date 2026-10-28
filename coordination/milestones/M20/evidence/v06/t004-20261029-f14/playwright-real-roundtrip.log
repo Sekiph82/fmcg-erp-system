@@ -1,0 +1,22 @@
+
+Running 1 test using 1 worker
+
+(node:22544) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:22544) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+M20 API endpoint under test: http://localhost:8101 (runner listener 127.0.0.1:8101)
+M20 synthetic principal: m20-planner-73c1a892f4b7
+M20 principal authorization: is_superuser=false permissions=mps.view,mps.simulate,mps.edit_own_warehouse warehouse_scope=bd5b91a4-f67a-45b8-8c85-ea8a8a701e63
+MPS browser API 200 /api/v1/mps/plans
+MPS browser API 200 /api/v1/mps/plans/0337b4b6-58b1-4175-a9f1-705843d2502a/whatif
+MPS browser API 200 /api/v1/mps/plans/0337b4b6-58b1-4175-a9f1-705843d2502a/lines
+MPS browser API 201 /api/v1/mps/plans/0337b4b6-58b1-4175-a9f1-705843d2502a/whatif
+M20 persisted scenario id: 7995a81d-b901-4597-b8f3-e2f343ea1de2
+MPS browser API 200 /api/v1/mps/plans/0337b4b6-58b1-4175-a9f1-705843d2502a/whatif
+MPS browser API 200 /api/v1/mps/plans
+MPS browser API 200 /api/v1/mps/plans/0337b4b6-58b1-4175-a9f1-705843d2502a/whatif
+MPS browser API 200 /api/v1/mps/plans/0337b4b6-58b1-4175-a9f1-705843d2502a/lines
+  ok 1 [chromium] › e2e\m20-scenario-backend-roundtrip.spec.ts:16:5 › MPS scenario UI persists a real split through the PostgreSQL-backed API (12.7s)
+
+  1 passed (14.7s)

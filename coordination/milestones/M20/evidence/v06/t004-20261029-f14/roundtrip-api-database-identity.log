@@ -1,0 +1,3 @@
+API launcher: python scripts/m20_disposable_browser_roundtrip.py serve
+M20 API database identity: configured_host=127.0.0.1 database=fmcg_m20_t004_73c1a892f4b74d06b0faec89 server=172.17.0.2/32:5432 database_role=m20_task credentials=REDACTED
+M20 API listener: browser_endpoint=http://localhost:8101 bound_host=127.0.0.1 port=8101

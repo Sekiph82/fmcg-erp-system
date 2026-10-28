@@ -261,6 +261,10 @@ class MPSWhatIfScenario(Base, TimestampMixin):
     __tablename__ = "mps_whatif_scenarios"
     __table_args__ = (
         CheckConstraint(
+            "impact_cost_currency IS NULL OR (length(impact_cost_currency) = 3 AND impact_cost_currency = upper(impact_cost_currency))",
+            name="ck_mps_whatif_cost_currency_iso3",
+        ).ddl_if(dialect=("sqlite", "mysql")),
+        CheckConstraint(
             "impact_cost_currency IS NULL OR impact_cost_currency ~ '^[A-Z]{3}$'",
             name="ck_mps_whatif_cost_currency_iso3",
         ).ddl_if(dialect="postgresql"),

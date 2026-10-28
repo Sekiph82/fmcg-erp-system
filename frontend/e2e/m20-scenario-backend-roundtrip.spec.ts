@@ -2,8 +2,12 @@ import { expect, test } from "playwright/test";
 import { mkdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 
-const backend = process.env.M20_BACKEND_URL || "http://localhost:8001";
+const backend = process.env.M20_BACKEND_URL || "";
+const apiPort = process.env.M20_API_PORT || "";
 const disposableDatabaseName = process.env.M20_DISPOSABLE_TEST_DATABASE_NAME || "";
+const testUsername = process.env.M20_TEST_USERNAME || "";
+const testPassword = process.env.E2E_PASSWORD || "";
+const expectedWarehouseId = process.env.M20_TEST_WAREHOUSE_ID || "";
 
 // This test signs into its own isolated backend. Do not inherit the shared
 // browser project's owner auth state or local storage.
@@ -14,24 +18,48 @@ test("MPS scenario UI persists a real split through the PostgreSQL-backed API", 
     process.env.M20_DISPOSABLE_TEST_DATABASE !== "1",
     "requires explicit opt-in for a task-owned disposable M20 database; this test persists scenario history",
   );
-  // The runner must start the backend itself with DATABASE_URL and this exact
-  // database-name variable. The browser can verify loopback/name intent but
-  // cannot introspect the database behind an already-running backend process.
+  // The disposable runner validates the connected database before starting
+  // Uvicorn on this exact loopback port; the browser asserts the same endpoint.
+  expect(backend, "set the explicit loopback URL of the runner-launched API").not.toBe("");
+  expect(apiPort, "set the runner's explicit API listener port").toMatch(/^\d{4,5}$/);
   const backendUrl = new URL(backend);
-  expect(["127.0.0.1", "localhost", "[::1]"], "MPS browser/API integration must use a loopback backend").toContain(backendUrl.hostname);
+  expect(backendUrl.hostname, "E2E endpoint must use the same localhost cookie host as the UI").toBe("localhost");
+  expect(backendUrl.port, "E2E endpoint port must be the API runner's verified listener port").toBe(apiPort);
+  expect(backendUrl.username).toBe("");
+  expect(backendUrl.password).toBe("");
+  console.log(`M20 API endpoint under test: http://localhost:${apiPort} (runner listener 127.0.0.1:${apiPort})`);
   expect(disposableDatabaseName, "set the exact per-run disposable database name for both backend and browser test").toMatch(
     /^fmcg_m20_[a-z0-9]+_[a-f0-9]{20,32}$/,
   );
+  expect(testUsername, "use an explicitly provisioned synthetic least-privilege MPS planner").toMatch(/^m20-planner-[a-f0-9]{10,}$/);
+  expect(testPassword, "supply the disposable planner password through E2E_PASSWORD; never use a built-in fallback").not.toBe("");
+  console.log(`M20 synthetic principal: ${testUsername}`);
   page.on("response", (response) => {
     if (response.url().includes("/api/v1/mps/")) console.log(`MPS browser API ${response.status()} ${new URL(response.url()).pathname}`);
   });
   const login = await page.request.post(`${backend}/api/v1/auth/login`, {
-    form: { username: "admin", password: process.env.E2E_PASSWORD || "Admin1234!" },
+    form: { username: testUsername, password: testPassword },
   });
-  expect(login.ok(), `admin login returned ${login.status()}`).toBeTruthy();
+  expect(login.ok(), `synthetic planner login returned ${login.status()}`).toBeTruthy();
   const authCookies = await page.context().cookies(backend);
   const authCookie = authCookies.find((cookie) => cookie.name === "erp_access_token" && cookie.httpOnly && cookie.value.length > 0);
   expect(authCookie, "backend login must establish the real HttpOnly auth cookie").toBeTruthy();
+  const profileResponse = await page.request.get(`${backend}/api/v1/auth/me`);
+  expect(profileResponse.ok(), `synthetic planner profile returned ${profileResponse.status()}`).toBeTruthy();
+  const profile = await profileResponse.json() as {
+    username: string; is_superuser: boolean; permission_codes: string[];
+    scopes: Array<{ scope_type: string; scope_id: string; is_active: boolean; can_view: boolean; can_edit: boolean }>;
+  };
+  expect(profile.username).toBe(testUsername);
+  expect(profile.is_superuser).toBe(false);
+  expect([...profile.permission_codes].sort()).toEqual(["mps.edit_own_warehouse", "mps.simulate", "mps.view"]);
+  expect(expectedWarehouseId).toMatch(/^[0-9a-f-]{36}$/i);
+  expect(profile.scopes).toHaveLength(1);
+  expect(profile.scopes[0]).toMatchObject({
+    scope_type: "warehouse", scope_id: expectedWarehouseId,
+    is_active: true, can_view: true, can_edit: true,
+  });
+  console.log(`M20 principal authorization: is_superuser=false permissions=mps.view,mps.simulate,mps.edit_own_warehouse warehouse_scope=${expectedWarehouseId}`);
   // The browser UI is served on another localhost port. Explicitly install
   // the real backend-issued host cookie for that origin before navigating.
   await page.context().clearCookies({ name: "erp_access_token" });
@@ -97,6 +125,7 @@ test("MPS scenario UI persists a real split through the PostgreSQL-backed API", 
   const response = await post;
   expect(response.status()).toBe(201);
   const body = await response.json() as { id: string; changes: Array<{ change_type: string; new_value: { quantities: string[] } }> };
+  console.log(`M20 persisted scenario id: ${body.id}`);
   expect(body.changes).toEqual([{ line_id: line.id, change_type: "SPLIT", new_value: { quantities: [first.toFixed(3), second.toFixed(3)] } }]);
   const savedScenario = page.locator("div.cursor-pointer").filter({ hasText: scenarioName });
   await expect(savedScenario).toBeVisible();

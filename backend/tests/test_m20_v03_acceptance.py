@@ -134,6 +134,12 @@ def test_virtual_cost_currency_and_ambiguous_campaign_sequence_remain_unknown():
     product.standard_cost_currency = "USD"
     total, unknown = _scenario_standard_cost_total(lines, {product_id: product}, "KES")
     assert total is None and "PRODUCT_STANDARD_COST_CURRENCY_MISMATCH:SYN-001" in unknown
+    product.standard_cost_currency = "1$A"
+    total, unknown = _scenario_standard_cost_total(lines, {product_id: product}, "KES")
+    assert total is None and "PRODUCT_STANDARD_COST_CURRENCY_INVALID:SYN-001" in unknown
+    product.standard_cost_currency = "KES"
+    total, unknown = _scenario_standard_cost_total(lines, {product_id: product}, "kEs")
+    assert total is None and "COMPANY_BASE_CURRENCY_INVALID" in unknown
 
     work_center_id = uuid4()
     household_id = uuid4()
@@ -282,7 +288,7 @@ def test_shift_add_requires_realistic_non_overlapping_calendar_intervals():
         SimpleNamespace(
             work_center_id=wc_id,
             start_time=datetime(2026, 11, 2, 23, 30, tzinfo=timezone.utc),
-            end_time=datetime(2026, 11, 3, 0, 30, tzinfo=timezone.utc),
+            end_time=datetime(2026, 11, 2, 23, 59, tzinfo=timezone.utc),
             duration_min=None,
         ),
         SimpleNamespace(
@@ -554,21 +560,37 @@ async def test_postgres_whatif_merge_exact_split_and_added_shift_resimulate_with
         db.add(DowntimeEvent(
             downtime_id=f"M20-OPS-DT-BOUNDARY-{suffix}", work_center_id=work_center.id,
             start_time=datetime(2026, 11, 2, 23, 30, tzinfo=timezone.utc),
-            end_time=datetime(2026, 11, 3, 0, 30, tzinfo=timezone.utc),
-            reason="synthetic downtime crossing the local-shift UTC date boundary",
+            end_time=datetime(2026, 11, 2, 23, 59, tzinfo=timezone.utc),
+            reason="synthetic prior-UTC-day downtime near a local-shift date boundary",
         ))
         await db.flush()
-        boundary_shift = await create_whatif_scenario(db, plan_id, MPSWhatIfCreate(
-            scenario_name="adjacent UTC date downtime remains uncredited",
+        boundary_before_shift = await create_whatif_scenario(db, plan_id, MPSWhatIfCreate(
+            scenario_name="prior UTC date downtime remains uncredited",
+            changes=[WhatIfChange(line_id=first_id, change_type=MPSChangeType.SHIFT_ADD, new_value={
+                "date": day.isoformat(), "start_time": "16:00", "end_time": "17:00", "hours": "1",
+            })],
+        ), user_id)
+        db.add(DowntimeEvent(
+            downtime_id=f"M20-OPS-DT-BOUNDARY-AFTER-{suffix}", work_center_id=work_center.id,
+            start_time=datetime(2026, 11, 4, 0, 30, tzinfo=timezone.utc),
+            end_time=datetime(2026, 11, 4, 1, 30, tzinfo=timezone.utc),
+            reason="synthetic next-UTC-day downtime near a local-shift date boundary",
+        ))
+        await db.flush()
+        boundary_after_shift = await create_whatif_scenario(db, plan_id, MPSWhatIfCreate(
+            scenario_name="next UTC date downtime remains uncredited",
             changes=[WhatIfChange(line_id=first_id, change_type=MPSChangeType.SHIFT_ADD, new_value={
                 "date": day.isoformat(), "start_time": "16:00", "end_time": "17:00", "hours": "1",
             })],
         ), user_id)
         snapshots = (await db.scalars(select(MPSScenarioSnapshot).where(
-            MPSScenarioSnapshot.scenario_id.in_([merged.id, split.id, shifted.id, boundary_shift.id, maximum_shift.id, batched_merge.id]),
+            MPSScenarioSnapshot.scenario_id.in_([
+                merged.id, split.id, shifted.id, boundary_before_shift.id,
+                boundary_after_shift.id, maximum_shift.id, batched_merge.id,
+            ]),
         ))).all()
         by_scenario = {row.scenario_id: row for row in snapshots}
-        assert len(by_scenario) == 6
+        assert len(by_scenario) == 7
         batched_results = by_scenario[batched_merge.id].results
         merged_candidate = next(line for line in batched_results["modified_lines"] if line["id"] == str(first_id))
         assert Decimal(merged_candidate["planned_production_qty"]) == Decimal("100")
@@ -583,13 +605,14 @@ async def test_postgres_whatif_merge_exact_split_and_added_shift_resimulate_with
         assert by_scenario[merged.id].results["capacity_overload_hours"] == 2.0
         assert by_scenario[split.id].results["capacity_overload_hours"] == 2.0
         assert by_scenario[shifted.id].results["capacity_overload_hours"] == 0.0
-        assert by_scenario[boundary_shift.id].results["capacity_overload_hours"] is None
-        assert by_scenario[boundary_shift.id].results["capacity_status"] == "PARTIAL_INPUTS"
-        assert "SHIFT_ADD_DOWNTIME_OVERLAP_UNRESOLVED" in by_scenario[boundary_shift.id].results["capacity_unknown_reasons"]
-        assert by_scenario[boundary_shift.id].assumptions["uncredited_shift_additions"] == [{
-            "work_center_id": str((await db.get(MPSLine, first_id)).work_center_id),
-            "date": day.isoformat(), "start_time": "16:00", "end_time": "17:00", "hours": "1",
-        }]
+        for boundary_scenario in (boundary_before_shift, boundary_after_shift):
+            assert by_scenario[boundary_scenario.id].results["capacity_overload_hours"] is None
+            assert by_scenario[boundary_scenario.id].results["capacity_status"] == "PARTIAL_INPUTS"
+            assert "SHIFT_ADD_DOWNTIME_OVERLAP_UNRESOLVED" in by_scenario[boundary_scenario.id].results["capacity_unknown_reasons"]
+            assert by_scenario[boundary_scenario.id].assumptions["uncredited_shift_additions"] == [{
+                "work_center_id": str((await db.get(MPSLine, first_id)).work_center_id),
+                "date": day.isoformat(), "start_time": "16:00", "end_time": "17:00", "hours": "1",
+            }]
         assert by_scenario[maximum_shift.id].results["capacity_overload_hours"] == 0.0
         assert by_scenario[maximum_shift.id].assumptions["shift_additions"] == [
             {

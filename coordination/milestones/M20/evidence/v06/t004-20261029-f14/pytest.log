@@ -1,4 +1,4 @@
-command: python -m pytest -q -W always::pytest.PytestUnraisableExceptionWarning tests/test_m20_strict_findings.py tests/test_m20_remaining_engine.py tests/test_m20_postgres_scenario_savepoint.py tests/test_m20_s01_t001_mps_hardening.py tests/test_m20_s01_t001_v02_mps_remediation.py tests/test_m20_s01_t001_v03_mps_remediation.py tests/test_m20_s01_t002_mps_preservation.py tests/test_m20_v03_acceptance.py tests/test_m20_auth_transaction_boundary.py --tb=shor
+python -m pytest -q -W always::pytest.PytestUnraisableExceptionWarning tests/test_m20_strict_findings.py tests/test_m20_remaining_engine.py tests/test_m20_postgres_scenario_savepoint.py tests/test_m20_s01_t001_mps_hardening.py tests/test_m20_s01_t001_v02_mps_remediation.py tests/test_m20_s01_t001_v03_mps_remediation.py tests/test_m20_s01_t002_mps_preservation.py tests/test_m20_v03_acceptance.py tests/test_m20_auth_transaction_boundary.py --tb=shor
 ........................................................................ [ 72%]
 ............................                                             [100%]
 ============================== warnings summary ===============================
@@ -40,5 +40,5 @@ tests/test_m20_auth_transaction_boundary.py::test_auth_isolated_from_endpoint_co
     warnings.warn(message, DeprecationWarning)
 
 -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
-100 passed, 73 warnings in 50.39s
+100 passed, 73 warnings in 54.39s
 exit: 0

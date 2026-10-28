@@ -95,9 +95,15 @@ def _scenario_standard_cost_total(
         if product.standard_cost is None:
             unknown.add(f"PRODUCT_STANDARD_COST_MISSING:{product.sku}")
             continue
-        product_currency = str(getattr(product, "standard_cost_currency", None) or "").strip().upper()
+        product_currency = str(getattr(product, "standard_cost_currency", None) or "").strip()
         if not product_currency:
             unknown.add(f"PRODUCT_STANDARD_COST_CURRENCY_MISSING:{product.sku}")
+            continue
+        if not re.fullmatch(r"[A-Z]{3}", product_currency):
+            unknown.add(f"PRODUCT_STANDARD_COST_CURRENCY_INVALID:{product.sku}")
+            continue
+        if not isinstance(base_currency, str) or not re.fullmatch(r"[A-Z]{3}", base_currency):
+            unknown.add("COMPANY_BASE_CURRENCY_INVALID")
             continue
         if not base_currency or product_currency != base_currency:
             unknown.add(f"PRODUCT_STANDARD_COST_CURRENCY_MISMATCH:{product.sku}")
@@ -940,8 +946,8 @@ async def create_whatif_scenario(
             .where(MRPRun.id == plan.mrp_run_id)
         )
         raw_currency = currency_q.scalar_one_or_none()
-        if isinstance(raw_currency, str) and re.fullmatch(r"[A-Za-z]{3}", raw_currency.strip()):
-            base_currency = raw_currency.strip().upper()
+        if isinstance(raw_currency, str) and re.fullmatch(r"[A-Z]{3}", raw_currency.strip()):
+            base_currency = raw_currency.strip()
     scenario_wc_ids = {uuid.UUID(s["work_center_id"]) for s in modified_map.values() if s.get("work_center_id")}
     scenario_dates = []
     for snap in modified_map.values():
