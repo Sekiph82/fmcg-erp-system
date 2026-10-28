@@ -1,4 +1,4 @@
-"""BOM cost roll-up engine — raw materials, intermediates, packaging, by-products."""
+"""BOM cost roll-up engine with separately tracked co-product/by-product outputs."""
 from __future__ import annotations
 from datetime import datetime, timezone
 from decimal import Decimal
@@ -9,7 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.bom import AdvancedBOM, AdvancedBOMLine, ComponentType
-from app.schemas.bom import CostingLine, CostingResult
+from app.schemas.bom import CostingLine, CostingResult, SecondaryOutput
 
 
 _D = lambda v: Decimal(str(v))
@@ -51,18 +51,34 @@ async def compute_bom_cost(db: AsyncSession, bom_id: UUID) -> CostingResult:
     intermediate_cost = _D("0")
     packaging_cost = _D("0")
     utility_cost = _D("0")
-    by_product_credit = _D("0")
-
+    co_product_outputs: list[SecondaryOutput] = []
+    by_product_outputs: list[SecondaryOutput] = []
     costing_lines: List[CostingLine] = []
 
     for line in lines:
+        component_type = line.component_type
+        if component_type in (ComponentType.CO_PRODUCT, ComponentType.BY_PRODUCT):
+            output = SecondaryOutput(
+                line_no=line.line_no,
+                item_id=str(line.item_id) if line.item_id else None,
+                item_type=line.item_type.value,
+                item_code=line.item_code,
+                item_name=line.item_name,
+                component_type=component_type.value,
+                quantity=_D(line.required_qty).quantize(Decimal("0.0001")),
+                uom=line.required_uom,
+            )
+            if component_type == ComponentType.CO_PRODUCT:
+                co_product_outputs.append(output)
+            else:
+                by_product_outputs.append(output)
+            continue
+
         uc = await _resolve_unit_cost(db, line)
         # effective qty including waste
         loss_factor = _D("1") + (_D(line.wastage_pct) + _D(line.process_loss_pct)) / _D("100")
         effective_qty = _D(line.required_qty) * loss_factor
         extended = (effective_qty * uc).quantize(Decimal("0.0001"))
-
-        is_credit = line.component_type in (ComponentType.BY_PRODUCT, ComponentType.CO_PRODUCT)
 
         costing_lines.append(CostingLine(
             line_no=line.line_no,
@@ -72,21 +88,19 @@ async def compute_bom_cost(db: AsyncSession, bom_id: UUID) -> CostingResult:
             uom=line.required_uom,
             unit_cost=uc,
             extended_cost=extended,
-            is_by_product_credit=is_credit,
+            is_by_product_credit=False,
         ))
 
-        if is_credit:
-            by_product_credit += extended
-        elif line.component_type == ComponentType.RAW:
+        if component_type == ComponentType.RAW:
             raw_cost += extended
-        elif line.component_type == ComponentType.INTERMEDIATE:
+        elif component_type == ComponentType.INTERMEDIATE:
             intermediate_cost += extended
-        elif line.component_type == ComponentType.PACKAGING:
+        elif component_type == ComponentType.PACKAGING:
             packaging_cost += extended
-        elif line.component_type == ComponentType.UTILITY:
+        elif component_type == ComponentType.UTILITY:
             utility_cost += extended
 
-    total_cost = raw_cost + intermediate_cost + packaging_cost + utility_cost - by_product_credit
+    total_cost = raw_cost + intermediate_cost + packaging_cost + utility_cost
     base_qty = _D(bom.base_qty) if _D(bom.base_qty) > 0 else _D("1")
     cost_per_uom = (total_cost / base_qty).quantize(Decimal("0.0001"))
 
@@ -95,7 +109,8 @@ async def compute_bom_cost(db: AsyncSession, bom_id: UUID) -> CostingResult:
     bom.standard_cost_per_uom = cost_per_uom
     bom.total_raw_cost = raw_cost.quantize(Decimal("0.0001"))
     bom.total_packaging_cost = packaging_cost.quantize(Decimal("0.0001"))
-    bom.by_product_credit = by_product_credit.quantize(Decimal("0.0001"))
+    # Keep the legacy database field for compatibility, but never credit outputs against cost.
+    bom.by_product_credit = _D("0.0000")
     bom.costing_updated_at = datetime.now(timezone.utc)
     await db.flush()
 
@@ -109,10 +124,12 @@ async def compute_bom_cost(db: AsyncSession, bom_id: UUID) -> CostingResult:
         intermediate_cost=intermediate_cost.quantize(Decimal("0.0001")),
         packaging_cost=packaging_cost.quantize(Decimal("0.0001")),
         utility_cost=utility_cost.quantize(Decimal("0.0001")),
-        by_product_credit=by_product_credit.quantize(Decimal("0.0001")),
+        by_product_credit=_D("0.0000"),
         total_batch_cost=total_cost.quantize(Decimal("0.0001")),
         cost_per_uom=cost_per_uom,
         lines=costing_lines,
+        co_product_outputs=co_product_outputs,
+        by_product_outputs=by_product_outputs,
     )
 
 

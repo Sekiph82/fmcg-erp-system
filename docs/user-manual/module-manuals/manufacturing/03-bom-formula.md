@@ -27,7 +27,11 @@ The BOM module is separate from the Recipes module. Recipes focus on process par
 | `MULTILEVEL` | Complex multi-level assemblies |
 | `PHANTOM` | Virtual grouping — not physically produced; explodes to its children |
 | `REWORK` | Re-processing of off-spec product |
-| `COPRODUCT` | By-products produced alongside the main product |
+| `COPRODUCT` | One process with a main product and separately identified co-product/by-product outputs |
+
+### Co-Product and By-Product Outputs
+
+BOM lines marked `CO_PRODUCT` or `BY_PRODUCT` are reported as separate expected output quantities in the BOM costing view, using each line's declared quantity and unit for the BOM base batch. These quantities remain separate by output type and unit. They are not treated as material consumption, cost credits, or cost allocations; BOM cost totals are calculated from cost-bearing components and remain unchanged by secondary outputs.
 
 ---
 

@@ -42,11 +42,12 @@ export default function CostingPage() {
       </div>
 
       {/* Summary KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {[
           { label: "Total Batch Cost", value: fmtKES(data.total_batch_cost), color: "text-gray-900" },
           { label: "Cost per UOM", value: fmtKES(data.cost_per_uom), color: "text-indigo-700" },
-          { label: "By-Product Credit", value: fmtKES(data.by_product_credit), color: "text-green-700" },
+          { label: "Co-Product Lines", value: String(data.co_product_outputs.length), color: "text-blue-700" },
+          { label: "By-Product Lines", value: String(data.by_product_outputs.length), color: "text-amber-700" },
           { label: "Batch Size", value: `${data.base_qty.toLocaleString()} ${data.base_uom}`, color: "text-gray-600" },
         ].map((k) => (
           <div key={k.label} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
@@ -64,23 +65,15 @@ export default function CostingPage() {
           <CostBar label="Intermediates" value={data.intermediate_cost} total={gross} color="bg-purple-500" />
           <CostBar label="Packaging" value={data.packaging_cost} total={gross} color="bg-teal-500" />
           <CostBar label="Utilities" value={data.utility_cost} total={gross} color="bg-orange-500" />
-          {data.by_product_credit > 0 && (
-            <div className="pt-2 border-t border-gray-100">
-              <div className="flex justify-between text-sm">
-                <span className="text-green-700">By-Product Credits</span>
-                <span className="font-medium text-green-700">- {fmtKES(data.by_product_credit)}</span>
-              </div>
-            </div>
-          )}
           <div className="pt-2 border-t border-gray-200 flex justify-between text-sm font-semibold">
-            <span>Net Batch Cost</span>
+            <span>Total Batch Cost</span>
             <span>{fmtKES(data.total_batch_cost)}</span>
           </div>
         </div>
 
         {/* Line Details */}
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-          <h3 className="font-semibold text-gray-800 mb-3">Line-Level Cost</h3>
+          <h3 className="font-semibold text-gray-800 mb-3">Cost-Bearing BOM Lines</h3>
           <div className="overflow-y-auto max-h-72">
             <table className="w-full text-xs">
               <thead className="sticky top-0 bg-white">
@@ -92,14 +85,14 @@ export default function CostingPage() {
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {data.lines.map((line) => (
-                  <tr key={line.line_no} className={line.is_by_product_credit ? "text-green-700" : ""}>
+                  <tr key={line.line_no}>
                     <td className="py-1 pr-3 text-gray-400">{line.line_no}</td>
                     <td className="py-1 pr-3 font-medium">{line.item_name || "—"}</td>
                     <td className="py-1 pr-3 text-gray-400">{line.component_type}</td>
                     <td className="py-1 pr-3 text-right font-mono">{line.qty.toFixed(3)} {line.uom}</td>
                     <td className="py-1 pr-3 text-right">{line.unit_cost ? fmtKES(line.unit_cost) : "—"}</td>
                     <td className="py-1 text-right font-semibold">
-                      {line.is_by_product_credit ? "- " : ""}{fmtKES(line.extended_cost)}
+                      {fmtKES(line.extended_cost)}
                     </td>
                   </tr>
                 ))}
@@ -108,6 +101,41 @@ export default function CostingPage() {
           </div>
         </div>
       </div>
+
+      {(data.co_product_outputs.length > 0 || data.by_product_outputs.length > 0) && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {[
+            { title: "Co-Product Outputs", outputs: data.co_product_outputs, color: "text-blue-700" },
+            { title: "By-Product Outputs", outputs: data.by_product_outputs, color: "text-amber-700" },
+          ].map(({ title, outputs, color }) => (
+            <section key={title} className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+              <h3 className={`font-semibold mb-3 ${color}`}>{title}</h3>
+              <div className="overflow-y-auto max-h-72">
+                <table className="w-full text-xs">
+                  <thead className="sticky top-0 bg-white">
+                    <tr className="text-gray-400">
+                      {["#", "Item", "Master Type", "Expected Output"].map((heading) => (
+                        <th key={heading} className="text-left pb-2 pr-3">{heading}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {outputs.map((output) => (
+                      <tr key={output.line_no}>
+                        <td className="py-1 pr-3 text-gray-400">{output.line_no}</td>
+                        <td className="py-1 pr-3 font-medium">{output.item_name || output.item_code || output.item_id || "—"}</td>
+                        <td className="py-1 pr-3 text-gray-400">{output.item_type}</td>
+                        <td className="py-1 text-right font-mono">{output.quantity.toFixed(4)} {output.uom}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p className="text-xs text-gray-500 mt-3">Tracked separately; these outputs do not reduce BOM cost totals.</p>
+            </section>
+          ))}
+        </div>
+      )}
     </div>
     </RequirePermission>
   );

@@ -72,7 +72,9 @@ class BOMOut(BOMSummary):
     standard_cost_per_uom: Optional[Decimal]
     total_raw_cost: Optional[Decimal]
     total_packaging_cost: Optional[Decimal]
-    by_product_credit: Optional[Decimal]
+    by_product_credit: Optional[Decimal] = Field(
+        description="Legacy compatibility field. New costing runs store zero; co/by-product outputs do not reduce cost."
+    )
     costing_updated_at: Optional[datetime]
     allergen_flags: Optional[Dict[str, bool]]
     nutrition_per_100g: Optional[Dict[str, float]]
@@ -459,6 +461,16 @@ class CostingLine(BaseModel):
     extended_cost: Decimal
     is_by_product_credit: bool
 
+class SecondaryOutput(BaseModel):
+    line_no: int
+    item_id: Optional[str]
+    item_type: str
+    item_code: Optional[str]
+    item_name: Optional[str]
+    component_type: str
+    quantity: Decimal
+    uom: str
+
 class CostingResult(BaseModel):
     bom_id: str
     bom_code: str
@@ -469,10 +481,14 @@ class CostingResult(BaseModel):
     intermediate_cost: Decimal
     packaging_cost: Decimal
     utility_cost: Decimal
-    by_product_credit: Decimal
+    by_product_credit: Decimal = Field(
+        description="Deprecated compatibility field; always zero because secondary outputs are not cost credits."
+    )
     total_batch_cost: Decimal
     cost_per_uom: Decimal
     lines: List[CostingLine]
+    co_product_outputs: List[SecondaryOutput] = Field(default_factory=list)
+    by_product_outputs: List[SecondaryOutput] = Field(default_factory=list)
 
 
 # ── Compliance Summary ────────────────────────────────────────────────────────

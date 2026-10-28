@@ -153,7 +153,7 @@ class AdvancedBOM(Base, TimestampMixin):
     standard_cost_per_uom  = Column(Numeric(16, 4), nullable=True)
     total_raw_cost         = Column(Numeric(16, 4), nullable=True)
     total_packaging_cost   = Column(Numeric(16, 4), nullable=True)
-    by_product_credit      = Column(Numeric(16, 4), nullable=True)
+    by_product_credit      = Column(Numeric(16, 4), nullable=True)  # Legacy field; secondary outputs no longer credit costs.
     costing_updated_at     = Column(DateTime(timezone=True), nullable=True)
 
     # allergen flags (computed roll-up)

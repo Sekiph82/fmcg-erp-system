@@ -291,6 +291,17 @@ export interface CostingLine {
   is_by_product_credit: boolean;
 }
 
+export interface SecondaryOutput {
+  line_no: number;
+  item_id: string | null;
+  item_type: string;
+  item_code: string | null;
+  item_name: string | null;
+  component_type: "CO_PRODUCT" | "BY_PRODUCT";
+  quantity: number;
+  uom: string;
+}
+
 export interface CostingResult {
   bom_id: string;
   bom_code: string;
@@ -305,6 +316,8 @@ export interface CostingResult {
   total_batch_cost: number;
   cost_per_uom: number;
   lines: CostingLine[];
+  co_product_outputs: SecondaryOutput[];
+  by_product_outputs: SecondaryOutput[];
 }
 
 export interface ComplianceSummary {
