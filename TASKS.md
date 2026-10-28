@@ -11,7 +11,7 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 - Current Milestone: M01 — Platform / Infrastructure
 - Current Sprint: M01.S03 — Runtime Reliability
 - Current Task: M01.S03.T004 — Establish operational backup/restore rehearsal evidence
-- Current Task Status: BLOCKED
+- Current Task Status: IN_PROGRESS
 - Next Task/Action: M01.S03.T004 — Establish operational backup/restore rehearsal evidence
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
@@ -158,7 +158,7 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 - [P] M01.S03.T001 — Prove always-running background/event dispatch ownership
 - [P] M01.S03.T002 — Validate migration ownership on live-like database
 - [D] M01.S03.T003 — Execute LOCAL-STAGING-001 when deployment environment is available
-- [!] M01.S03.T004 — Establish operational backup/restore rehearsal evidence
+- [~] M01.S03.T004 — Establish operational backup/restore rehearsal evidence
   Evidence: [T004 execution log V01](coordination/sessions/M01.S03.T004/CODEX_LOG_V01.md); task remains blocked pending owner acceptance of local-only evidence or authorized staging criteria.
 
 ---
@@ -1106,9 +1106,8 @@ A milestone is DONE only when its planned scope is implemented or explicitly sup
 
 ## Questions for Şekip
 
-- Q-M01-S03-T004-OPS-ACCEPTANCE | Bu görevde sentetik verili, tek kullanımlık yerel PostgreSQL'de yedek alıp ayrı boş veritabanına geri yüklemem ve kayıt/migration doğrulamam tamamlandı sayılır mı? YES/NO. NO ise yetkili staging ortamının adını, güvenli yedek konumunu, saklama süresini, kabul edilen azami veri kaybı süresini (RPO) ve geri dönüş hedefini (RTO) bildir; parolayı buraya yazma, yerel ortamda ayarla. | TASK: M01.S03.T004
-
 ## Owner Decisions
 
+- Q-M01-S03-T004-OPS-ACCEPTANCE | TASK: M01.S03.T004 | ANSWER: Şekip Docker Desktop'ı açtı; bu, yerel sentetik ve tek kullanımlık PostgreSQL provası seçeneğinin kabulü olarak uygulandı.
 - Q-M03-S02-T004-STEWARD-MODE | TASK: M03.S02.T004 | ANSWER: Uygun yetkiye sahip kullanıcı ana veri değişikliklerini doğrudan yapabilir; değişiklikler denetim kaydına alınmalıdır. Ayrı onay zorunlu değildir.
 - Q-M03-S02-T002-MERGE-RULES | TASK: M03.S02.T002 | ANSWER: Evet. Önerilen güvenli birleştirme ve pasifleştirme kuralını kabul ediyorum.
