@@ -666,7 +666,7 @@ async def seed_inventory_data(db: AsyncSession) -> None:
         if not mat:
             continue
         await _get_or_create_trace_event(
-            db, f"SEED-TRACE-GRN-{mat_code}", TraceEventType.RECEIPT,
+            db, f"SEED-TRACE-GRN-{mat_code}", TraceEventType.receipt,
             event_datetime=_grn_dt,
             source_document_type="PURCHASE_ORDER",
             notes=f"GRN receipt of {mat.name} from supplier — opening stock",
@@ -681,7 +681,7 @@ async def seed_inventory_data(db: AsyncSession) -> None:
     for po in completed_orders:
         # consumption (material issued to production)
         await _get_or_create_trace_event(
-            db, f"SEED-TRACE-ISSUE-{po.order_no}", TraceEventType.CONSUMPTION,
+            db, f"SEED-TRACE-ISSUE-{po.order_no}", TraceEventType.consumption,
             event_datetime=_now_utc - timedelta(days=50),
             production_order_id=po.id,
             source_document_type="PRODUCTION_ORDER",
@@ -689,7 +689,7 @@ async def seed_inventory_data(db: AsyncSession) -> None:
         )
         # transformation (production receipt — finished goods)
         await _get_or_create_trace_event(
-            db, f"SEED-TRACE-PROD-{po.order_no}", TraceEventType.TRANSFORMATION,
+            db, f"SEED-TRACE-PROD-{po.order_no}", TraceEventType.transformation,
             event_datetime=_now_utc - timedelta(days=45),
             production_order_id=po.id,
             source_document_type="PRODUCTION_ORDER",
