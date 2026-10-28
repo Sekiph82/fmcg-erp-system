@@ -845,6 +845,11 @@ def _enrich_qc(obj: AdvQCInspection) -> dict:
 
 def _enrich_waste(obj: WasteRecord) -> dict:
     d = WasteRecordRead.model_validate(obj).model_dump()
+    d["loss_variance_pct"] = (
+        obj.loss_pct - obj.standard_loss_pct
+        if obj.loss_pct is not None and obj.standard_loss_pct is not None
+        else None
+    )
     if obj.production_order:
         d["order_no"] = obj.production_order.order_no
     return d

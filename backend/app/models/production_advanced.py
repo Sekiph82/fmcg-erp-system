@@ -364,7 +364,8 @@ class WasteRecord(Base, TimestampMixin):
     expected_qty        = Column(Numeric(14, 4), nullable=False)
     actual_qty          = Column(Numeric(14, 4), nullable=False)
     loss_qty            = Column(Numeric(14, 4), nullable=False, default=0)   # expected - actual
-    loss_pct            = Column(Numeric(6, 3), nullable=True)                # loss / expected * 100
+    loss_pct            = Column(Numeric(6, 3), nullable=True)                # actual loss / expected * 100
+    standard_loss_pct   = Column(Numeric(6, 3), nullable=True)                # recipe standard snapshot; null when unmatched
     uom                 = Column(String(20), nullable=True, default="KG")
     reason              = Column(String(500), nullable=True)
     is_anomaly          = Column(Boolean, nullable=False, default=False)       # auto-flagged

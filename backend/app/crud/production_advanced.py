@@ -11,6 +11,10 @@ from sqlalchemy import select, and_, or_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.models.production import ProductionOrder
+from app.models.recipe import RecipeItem
+from app.models.master import Material
+
 from app.models.production_advanced import (
     WorkCenter, Routing, RoutingStep, WorkOrder,
     Shift, ProductionSchedule, TimeTracking, DowntimeEvent,
@@ -429,9 +433,44 @@ async def list_waste_records(
 async def get_waste_record(db: AsyncSession, pk: UUID) -> Optional[WasteRecord]:
     return await _get(db, WasteRecord, pk)
 
+def _weighted_recipe_loss_pct(rows) -> Optional[Decimal]:
+    pairs = [(Decimal(quantity), Decimal(loss_pct)) for quantity, loss_pct in rows]
+    if not pairs or any(not qty.is_finite() or not pct.is_finite() or qty < 0 or pct < 0 for qty, pct in pairs):
+        return None
+    total_qty = sum((qty for qty, _ in pairs), Decimal("0"))
+    if total_qty <= 0:
+        return None
+    weighted_loss = sum((qty * pct for qty, pct in pairs), Decimal("0"))
+    return (weighted_loss / total_qty).quantize(Decimal("0.001"))
+
+
+async def _recipe_standard_loss_pct(db: AsyncSession, obj: WasteRecord) -> Optional[Decimal]:
+    material_id = obj.material_id
+    if material_id is None and obj.material_code:
+        material = await db.execute(select(Material.id).where(Material.code == obj.material_code.strip()))
+        material_id = material.scalar_one_or_none()
+        if material_id is not None:
+            obj.material_id = material_id
+            obj.material_code = obj.material_code.strip()
+    if material_id is None or not obj.uom or not obj.production_order_id:
+        return None
+    order = await db.get(ProductionOrder, obj.production_order_id)
+    if order is None or order.recipe_id is None:
+        return None
+    rows = await db.execute(
+        select(RecipeItem.quantity, RecipeItem.loss_percentage).where(
+            RecipeItem.recipe_id == order.recipe_id,
+            RecipeItem.material_id == material_id,
+            func.upper(func.trim(RecipeItem.unit)) == obj.uom.strip().upper(),
+        )
+    )
+    return _weighted_recipe_loss_pct(rows.all())
+
+
 async def create_waste_record(db: AsyncSession, data: WasteRecordCreate) -> WasteRecord:
     d = data.model_dump()
     obj = WasteRecord(**d)
+    obj.standard_loss_pct = await _recipe_standard_loss_pct(db, obj)
     if obj.expected_qty and obj.expected_qty > 0:
         obj.loss_pct = round(obj.loss_qty / obj.expected_qty * 100, 3)
         obj.is_anomaly = obj.loss_pct > ANOMALY_LOSS_THRESHOLD

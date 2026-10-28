@@ -394,6 +394,8 @@ class WasteRecordRead(BaseModel):
     actual_qty:          Decimal
     loss_qty:            Decimal
     loss_pct:            Optional[Decimal]
+    standard_loss_pct:   Optional[Decimal]
+    loss_variance_pct:   Optional[Decimal] = None  # actual loss minus recipe standard, in percentage points
     uom:                 Optional[str]
     reason:              Optional[str]
     is_anomaly:          bool

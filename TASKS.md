@@ -10,9 +10,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 - Current Milestone: M21 — Advanced BOM / Fluid-to-Unit
 - Current Sprint: M21.S02 — Yield & Loss
-- Current Task: M21.S02.T002 — Model filling/packaging loss and spillage
+- Current Task: M21.S02.T003 — Separate standard vs actual yield/loss
 - Current Task Status: COMPLETE
-- Next Task/Action: M21.S02.T003 — Separate standard vs actual yield/loss
+- Next Task/Action: M21.S02.T004 — Feed variances into costing/reporting
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -610,7 +610,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
   Evidence: [CODEX log](coordination/sessions/M21.S02.T001/CODEX_LOG_V01.md); expected output/input percentage is optional and nullable; migration `20261028_0019` passed in the disposable PostgreSQL run; 6 focused tests, frontend type-check, Python compilation, and independent review passed. No default yield was fabricated.
 - [x] M21.S02.T002 — Model filling/packaging loss and spillage
   Evidence: [CODEX log](coordination/sessions/M21.S02.T002/CODEX_LOG_V01.md); separate filling, packaging-reject, and spillage categories persist through migration `20261028_0020`; 8 disposable PostgreSQL tests and 7 focused unit tests passed; frontend type-check and independent review passed.
-- [ ] M21.S02.T003 — Separate standard vs actual yield/loss
+- [x] M21.S02.T003 — Separate standard vs actual yield/loss
+  Evidence: [CODEX log](coordination/sessions/M21.S02.T003/CODEX_LOG_V01.md); recipe-item standards are snapshotted by material/UOM, variance is exposed in API/UI, migration 20261028_0021 passed in disposable PostgreSQL, 9 focused Python tests and frontend type-check passed, and independent review found no blocker.
 - [ ] M21.S02.T004 — Feed variances into costing/reporting
 
 ## M21.S03 — Advanced BOM Structures
@@ -1120,6 +1121,7 @@ A milestone is DONE only when its planned scope is implemented or explicitly sup
 
 ## Owner Decisions
 
+- Q-M21-S02-T003-YIELD-SOURCE | TASK: M21.S02.T003 | ANSWER: B — recipe-item loss percentages are the standard source.
 - Q-M21-S02-T001-YIELD-BASIS | TASK: M21.S02.T001 | ANSWER: B — expected process yield is a percentage of BOM input quantity.
 
 - Q-M21-S02-T001-YIELD-BASIS | TASK: M21.S02.T001 | ANSWER: B — expected process yield is a percentage of BOM input quantity.

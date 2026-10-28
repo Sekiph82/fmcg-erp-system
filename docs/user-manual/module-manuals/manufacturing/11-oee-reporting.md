@@ -108,9 +108,9 @@ Waste is categorised at the work order level. Common waste categories:
 
 ### Yield vs. Recipe Standard
 
-Each work order has a **standard yield** from the recipe's `loss_percentage` settings. The Waste & Yield tab compares:
-- Actual yield vs. standard yield
-- Yield variance (favourable if actual > standard; adverse if actual < standard)
+Each material waste record snapshots the matching production-order recipe item loss percentage as its **standard loss**. Matching uses the same material and unit; repeated lines for that material and unit use a quantity-weighted loss percentage. Values are not combined across different units. If no recipe item matches, the standard and variance remain unavailable. Existing waste records are not backfilled.
+- Actual loss percentage vs. recipe standard loss percentage for the same material and unit
+- Loss variance = actual loss percentage minus recipe standard loss percentage, in percentage points; positive is adverse and negative is favourable
 
 ---
 
@@ -195,7 +195,7 @@ Downtime feeds directly into OEE Availability calculations — `availability_pct
 - `good_qty`, `total_qty`, `yield_pct` per work order
 - Waste categories: STARTUP, SHUTDOWN, QUALITY_REJECT, OVERFLOW
 
-Yield variance shown against the BOM standard loss percentage.
+Waste loss variance is actual loss percentage minus the snapshotted recipe-item standard loss percentage, shown in percentage points.
 
 ### Idempotency
 

@@ -75,7 +75,8 @@ export interface WasteRecord {
   id: string; waste_id: string; production_order_id: string; order_no?: string;
   material_code?: string; waste_type: string; waste_category: string;
   expected_qty: number; actual_qty: number; loss_qty: number;
-  loss_pct?: number; uom?: string; reason?: string; is_anomaly: boolean;
+  loss_pct?: number; standard_loss_pct?: number | null; loss_variance_pct?: number | null;
+  uom?: string; reason?: string; is_anomaly: boolean;
 }
 
 export interface BatchLot {
