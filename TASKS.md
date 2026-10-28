@@ -11,7 +11,7 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 - Current Milestone: M01 — Platform / Infrastructure
 - Current Sprint: M01.S03 — Runtime Reliability
 - Current Task: M01.S03.T004 — Establish operational backup/restore rehearsal evidence
-- Current Task Status: IN_PROGRESS
+- Current Task Status: BLOCKED
 - Next Task/Action: M01.S03.T004 — Establish operational backup/restore rehearsal evidence
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
@@ -158,7 +158,7 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 - [P] M01.S03.T001 — Prove always-running background/event dispatch ownership
 - [P] M01.S03.T002 — Validate migration ownership on live-like database
 - [D] M01.S03.T003 — Execute LOCAL-STAGING-001 when deployment environment is available
-- [~] M01.S03.T004 — Establish operational backup/restore rehearsal evidence
+- [!] M01.S03.T004 — Establish operational backup/restore rehearsal evidence
 
 ---
 
@@ -1104,6 +1104,8 @@ All pre-migration task evidence, including TASK-001…TASK-027, MANUAL, HELP, PU
 A milestone is DONE only when its planned scope is implemented or explicitly superseded/deferred with rationale; backend/frontend/schema/API changes are mutually consistent; migrations are safe; RBAC/audit requirements are preserved; required tests/checks pass; no live-provider result is invented; and `TASKS.md` records the final evidence/state.
 
 ## Questions for Şekip
+
+- Q-M01-S03-T004-OPS-ACCEPTANCE | Bu görevde sentetik verili, tek kullanımlık yerel PostgreSQL'de yedek alıp ayrı boş veritabanına geri yüklemem ve kayıt/migration doğrulamam tamamlandı sayılır mı? YES/NO. NO ise yetkili staging ortamının adını, güvenli yedek konumunu, saklama süresini, kabul edilen azami veri kaybı süresini (RPO) ve geri dönüş hedefini (RTO) bildir; parolayı buraya yazma, yerel ortamda ayarla. | TASK: M01.S03.T004
 
 ## Owner Decisions
 
