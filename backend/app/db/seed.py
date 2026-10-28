@@ -94,6 +94,9 @@ PERMISSIONS = [
     ("materials",   "create", "Create Materials",      "Add raw materials",                        False),
     ("materials",   "edit",   "Edit Materials",        "Edit material details",                    False),
     ("materials",   "delete", "Deactivate / Merge Materials", "Deactivate or merge material masters without deleting history", False),
+    ("suppliers",   "view",   "View Suppliers",        "View supplier master records",               True),
+    ("suppliers",   "create", "Create Suppliers",      "Add new supplier master records",            False),
+    ("suppliers",   "edit",   "Edit Suppliers",        "Edit supplier master details",               False),
     ("suppliers",   "delete", "Deactivate / Merge Suppliers", "Deactivate or merge supplier masters without deleting history", False),
 
     # Production
@@ -671,7 +674,7 @@ ROLE_DEFINITIONS = {
         "permissions": [
             # Operational visibility
             "production.view", "production.approve",
-            "procurement.view", "procurement.approve",
+            "procurement.view", "suppliers.view", "procurement.approve",
             "inventory.view",
             "logistics.view",
             "quality.view", "quality.approve",
@@ -715,7 +718,7 @@ ROLE_DEFINITIONS = {
             "planning.calculate_own_scope", "planning.approve_own_scope",
             "mps.view", "mps.create", "mps.edit", "mps.approve", "mps.release",
             "mps.calculate", "mps.simulate", "mps.ai",
-            "procurement.view", "procurement.create", "procurement.edit", "procurement.approve",
+            "procurement.view", "suppliers.view", "procurement.create", "procurement.edit", "procurement.approve",
             "inventory.view", "inventory.create", "inventory.edit", "inventory.delete",
             "stock_movement.edit", "stock_movement.delete",
             "products.delete",
@@ -757,7 +760,7 @@ ROLE_DEFINITIONS = {
             "mpesa.initiate_payment", "mpesa.view_transactions", "mpesa.retry_transaction",
             "mpesa.cancel_payment", "mpesa.reconcile_payment", "mpesa.view_payment_logs",
             "tax.view", "tax.edit",
-            "procurement.view", "procurement.approve",
+            "procurement.view", "suppliers.view", "procurement.approve",
             "sales.view",
             "inventory.view",
             "hr.view", "hr.approve",
@@ -785,7 +788,7 @@ ROLE_DEFINITIONS = {
             "ai.view", "ai.create", "ai.edit", "ai.approve", "ai.export", "ai.configure",
             "company.view",
             # Read-only visibility across all operational modules
-            "production.view", "procurement.view", "inventory.view",
+            "production.view", "procurement.view", "suppliers.view", "inventory.view",
             "planning.view_all",
             "logistics.view", "quality.view", "maintenance.view",
             "warehouses.view", "wms.view", "materials.view", "products.view",
@@ -853,7 +856,7 @@ ROLE_DEFINITIONS = {
         "permissions": [
             # Read access to every module (needed to validate imports)
             "inventory.view", "products.view", "materials.view",
-            "production.view", "planning.view_all", "procurement.view", "sales.view",
+            "production.view", "planning.view_all", "procurement.view", "suppliers.view", "sales.view",
             "finance.view", "logistics.view", "quality.view",
             "maintenance.view", "warehouses.view", "wms.view",
             "hr.view", "tax.view", "users.view",
@@ -900,6 +903,7 @@ ROLE_DEFINITIONS = {
         "description": "Procurement and supplier payments",
         "permissions": [
             "procurement.view", "procurement.create", "procurement.edit",
+            "suppliers.view", "suppliers.create", "suppliers.edit",
             "materials.view",
             "inventory.view",
             "mpesa.view_transactions",
@@ -946,7 +950,7 @@ ROLE_DEFINITIONS = {
         "description": "Logistics, shipments, and customs documentation",
         "permissions": [
             "logistics.view", "logistics.create", "logistics.edit",
-            "procurement.view", "inventory.view",
+            "procurement.view", "suppliers.view", "inventory.view",
             "documents.view", "documents.create", "knowledge_base.view", "esign.sign",
             # Import: own module only
             *_import("logistics"),
@@ -981,7 +985,7 @@ ROLE_DEFINITIONS = {
             "company.view", "company.edit", "company.export", "company.manage",
             "inventory.view_all", "production.view_all", "quality.view_all",
             "planning.view_all", "mps.view",
-            "sales.view_all", "finance.view_own_scope", "procurement.view_all",
+            "sales.view_all", "finance.view_own_scope", "procurement.view_all", "suppliers.view",
             "hr.view_own_scope", "maintenance.view_all", "utilities.view_all",
         ],
     },
@@ -1048,7 +1052,7 @@ ROLE_DEFINITIONS = {
     "procurement_manager": {
         "description": "Procurement manager with supplier visibility and scoped purchasing control",
         "permissions": [
-            "procurement.view_all", "procurement.create_own_scope",
+            "procurement.view_all", "suppliers.view", "procurement.create_own_scope",
             "procurement.edit_own_scope", "procurement.approve_own_scope",
             "procurement.receive_own_scope", "procurement.post_own_scope",
             "procurement.cancel_own_scope", "procurement.export_own_scope",

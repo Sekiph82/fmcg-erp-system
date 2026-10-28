@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { ModuleWorkspace } from "@/components/workspace";
+import { PermissionGuard } from "@/components/PermissionGuard";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { suppliersApi, SupplierCreate } from "@/lib/suppliers";
@@ -48,7 +49,9 @@ function SuppliersListTab() {
         </div>
         <div className="flex items-center gap-2">
           <ImportModal module="suppliers" onSuccess={() => qc.invalidateQueries({ queryKey: ["suppliers"] })} />
-          <Button onClick={() => setOpen(true)}>+ Add Supplier</Button>
+          <PermissionGuard permission="suppliers.create">
+            <Button onClick={() => setOpen(true)}>+ Add Supplier</Button>
+          </PermissionGuard>
         </div>
       </div>
 
@@ -71,12 +74,14 @@ function SuppliersListTab() {
             {
               header: "",
               accessor: (r) => (
-                <button
-                  onClick={() => setDeletingId(r.id)}
-                  className="text-xs text-red-500 hover:text-red-700 hover:underline"
-                >
-                  Delete
-                </button>
+                <PermissionGuard permission="suppliers.delete">
+                  <button
+                    onClick={() => setDeletingId(r.id)}
+                    className="text-xs text-red-500 hover:text-red-700 hover:underline"
+                  >
+                    Delete
+                  </button>
+                </PermissionGuard>
               ),
             },
           ]}
@@ -133,13 +138,13 @@ function SuppliersListTab() {
 
 export default function SuppliersPage() {
   const tabs = [
-    { key: "suppliers", label: "Suppliers", permission: "procurement.view", content: <SuppliersListTab /> },
+    { key: "suppliers", label: "Suppliers", permission: "suppliers.view", content: <SuppliersListTab /> },
   ];
   return (
     <ModuleWorkspace
       title="Suppliers"
       description="Supplier master, contacts, performance, approved vendors"
-      permission="procurement.view"
+      permission="suppliers.view"
       tabs={tabs}
       defaultTab="suppliers"
     />

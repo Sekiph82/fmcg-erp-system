@@ -72,8 +72,6 @@ class SupplierUpdate(BaseModel):
     risk_level: Optional[SupplierRiskLevel] = None
     approved_from: Optional[date] = None
     approved_until: Optional[date] = None
-    approved_by_id: Optional[uuid.UUID] = None
-    approved_at: Optional[datetime] = None
 
 
 class SupplierRead(SupplierBase):

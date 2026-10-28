@@ -9,6 +9,7 @@ from app.core.deps import get_current_user, require_permission
 from app.crud import master as crud
 from app.schemas.master import ProductCreate, ProductUpdate, ProductRead, MasterMergeRequest, MasterMergeResult
 from app.api.v1.endpoints.master_lifecycle import deactivate_master, merge_master
+from app.services.master_stewardship import record_master_data_change, snapshot_master_data
 from fastapi import Response
 
 logger = logging.getLogger(__name__)
@@ -24,8 +25,9 @@ async def list_products(skip: int = 0, limit: int = 50, include_inactive: bool =
 
 @router.post("/", response_model=ProductRead, status_code=201)
 async def create_product(data: ProductCreate, db: AsyncSession = Depends(get_db),
-                         _=Depends(get_current_user)):
+                         current_user=Depends(require_permission("products", "create"))):
     obj = await crud.create_product(db, data)
+    await record_master_data_change(db, record=obj, actor=current_user, action="CREATE", permission="products.create")
     await db.commit()
     return obj
 
@@ -41,13 +43,15 @@ async def get_product(product_id: uuid.UUID, db: AsyncSession = Depends(get_db),
 
 @router.patch("/{product_id}", response_model=ProductRead)
 async def update_product(product_id: uuid.UUID, data: ProductUpdate,
-                         db: AsyncSession = Depends(get_db), _=Depends(get_current_user)):
+                         db: AsyncSession = Depends(get_db), current_user=Depends(require_permission("products", "edit"))):
     if "is_active" in data.model_fields_set:
         raise HTTPException(422, "Use the governed deactivation action to change product activity.")
     obj = await crud.get_product(db, product_id)
     if not obj:
         raise HTTPException(status_code=404, detail="Product not found")
+    before = snapshot_master_data(obj)
     obj = await crud.update_product(db, obj, data)
+    await record_master_data_change(db, record=obj, actor=current_user, action="UPDATE", permission="products.edit", before=before)
     await db.commit()
     return obj
 

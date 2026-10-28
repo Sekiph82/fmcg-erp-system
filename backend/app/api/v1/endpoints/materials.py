@@ -8,6 +8,7 @@ from app.core.deps import get_current_user, require_permission
 from app.crud import master as crud
 from app.schemas.master import MaterialCreate, MaterialUpdate, MaterialRead, MasterMergeRequest, MasterMergeResult
 from app.api.v1.endpoints.master_lifecycle import deactivate_master, merge_master
+from app.services.master_stewardship import record_master_data_change, snapshot_master_data
 from fastapi import Response
 
 router = APIRouter()
@@ -21,8 +22,9 @@ async def list_materials(skip: int = 0, limit: int = 50, include_inactive: bool 
 
 @router.post("/", response_model=MaterialRead, status_code=201)
 async def create_material(data: MaterialCreate, db: AsyncSession = Depends(get_db),
-                          _=Depends(get_current_user)):
+                          current_user=Depends(require_permission("materials", "create"))):
     obj = await crud.create_material(db, data)
+    await record_master_data_change(db, record=obj, actor=current_user, action="CREATE", permission="materials.create")
     await db.commit()
     return obj
 
@@ -38,13 +40,15 @@ async def get_material(material_id: uuid.UUID, db: AsyncSession = Depends(get_db
 
 @router.patch("/{material_id}", response_model=MaterialRead)
 async def update_material(material_id: uuid.UUID, data: MaterialUpdate,
-                          db: AsyncSession = Depends(get_db), _=Depends(get_current_user)):
+                          db: AsyncSession = Depends(get_db), current_user=Depends(require_permission("materials", "edit"))):
     if "is_active" in data.model_fields_set:
         raise HTTPException(422, "Use the governed deactivation action to change material activity.")
     obj = await crud.get_material(db, material_id)
     if not obj:
         raise HTTPException(status_code=404, detail="Material not found")
+    before = snapshot_master_data(obj)
     obj = await crud.update_material(db, obj, data)
+    await record_master_data_change(db, record=obj, actor=current_user, action="UPDATE", permission="materials.edit", before=before)
     await db.commit()
     return obj
 

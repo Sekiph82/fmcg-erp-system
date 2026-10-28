@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { ModuleWorkspace } from "@/components/workspace";
+import { PermissionGuard } from "@/components/PermissionGuard";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { productsApi, Product, ProductCreate, ProductCategory, UnitOfMeasure } from "@/lib/products";
@@ -143,7 +144,9 @@ function ProductsListTab() {
         </div>
         <div className="flex items-center gap-2">
           <ImportModal module="products" onSuccess={() => qc.invalidateQueries({ queryKey: ["products"] })} />
-          <Button onClick={() => setOpen(true)}>+ Add Product</Button>
+          <PermissionGuard permission="products.create">
+            <Button onClick={() => setOpen(true)}>+ Add Product</Button>
+          </PermissionGuard>
         </div>
       </div>
 
@@ -170,18 +173,22 @@ function ProductsListTab() {
               header: "",
               accessor: (r) => (
                 <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => openEdit(r)}
-                    className="text-xs text-indigo-600 hover:text-indigo-800 hover:underline"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => setDeletingId(r.id)}
-                    className="text-xs text-red-500 hover:text-red-700 hover:underline"
-                  >
-                    Delete
-                  </button>
+                  <PermissionGuard permission="products.edit">
+                    <button
+                      onClick={() => openEdit(r)}
+                      className="text-xs text-indigo-600 hover:text-indigo-800 hover:underline"
+                    >
+                      Edit
+                    </button>
+                  </PermissionGuard>
+                  <PermissionGuard permission="products.delete">
+                    <button
+                      onClick={() => setDeletingId(r.id)}
+                      className="text-xs text-red-500 hover:text-red-700 hover:underline"
+                    >
+                      Delete
+                    </button>
+                  </PermissionGuard>
                 </div>
               ),
             },
@@ -342,16 +349,6 @@ function ProductsListTab() {
             <Input label="Shelf Life (days)" type="number"
               value={editForm.shelf_life_days ?? ""}
               onChange={(e) => setEdit("shelf_life_days", parseInt(e.target.value) || undefined)} />
-          </div>
-          <div className="flex items-center gap-2">
-            <input
-              id="edit-is-active"
-              type="checkbox"
-              checked={editForm.is_active ?? true}
-              onChange={(e) => setEdit("is_active", e.target.checked)}
-              className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-            />
-            <label htmlFor="edit-is-active" className="text-sm text-gray-700">Active product</label>
           </div>
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" type="button" onClick={() => setEditingProduct(null)}>Cancel</Button>

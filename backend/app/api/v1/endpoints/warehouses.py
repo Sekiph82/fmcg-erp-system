@@ -8,6 +8,7 @@ from app.core.deps import get_current_user, require_permission
 from app.crud import master as crud
 from app.schemas.master import WarehouseCreate, WarehouseUpdate, WarehouseRead, MasterMergeRequest, MasterMergeResult
 from app.api.v1.endpoints.master_lifecycle import deactivate_master, merge_master
+from app.services.master_stewardship import record_master_data_change, snapshot_master_data
 from fastapi import Response
 
 router = APIRouter()
@@ -21,8 +22,9 @@ async def list_warehouses(skip: int = 0, limit: int = 50, include_inactive: bool
 
 @router.post("/", response_model=WarehouseRead, status_code=201)
 async def create_warehouse(data: WarehouseCreate, db: AsyncSession = Depends(get_db),
-                           _=Depends(get_current_user)):
+                           current_user=Depends(require_permission("warehouses", "create"))):
     obj = await crud.create_warehouse(db, data)
+    await record_master_data_change(db, record=obj, actor=current_user, action="CREATE", permission="warehouses.create")
     await db.commit()
     return obj
 
@@ -38,13 +40,15 @@ async def get_warehouse(warehouse_id: uuid.UUID, db: AsyncSession = Depends(get_
 
 @router.patch("/{warehouse_id}", response_model=WarehouseRead)
 async def update_warehouse(warehouse_id: uuid.UUID, data: WarehouseUpdate,
-                           db: AsyncSession = Depends(get_db), _=Depends(get_current_user)):
+                           db: AsyncSession = Depends(get_db), current_user=Depends(require_permission("warehouses", "edit"))):
     if "is_active" in data.model_fields_set:
         raise HTTPException(422, "Use the governed deactivation action to change warehouse activity.")
     obj = await crud.get_warehouse(db, warehouse_id)
     if not obj:
         raise HTTPException(status_code=404, detail="Warehouse not found")
+    before = snapshot_master_data(obj)
     obj = await crud.update_warehouse(db, obj, data)
+    await record_master_data_change(db, record=obj, actor=current_user, action="UPDATE", permission="warehouses.edit", before=before)
     await db.commit()
     return obj
 

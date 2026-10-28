@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { ModuleWorkspace } from "@/components/workspace";
+import { PermissionGuard } from "@/components/PermissionGuard";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { warehousesApi, WarehouseCreate, WarehouseType } from "@/lib/warehouses";
@@ -80,7 +81,9 @@ function WarehousesListTab() {
         </div>
         <div className="flex items-center gap-2">
           <ImportModal module="warehouses" onSuccess={() => qc.invalidateQueries({ queryKey: ["warehouses"] })} />
-          <Button onClick={() => setOpen(true)}>+ Add Warehouse</Button>
+          <PermissionGuard permission="warehouses.create">
+            <Button onClick={() => setOpen(true)}>+ Add Warehouse</Button>
+          </PermissionGuard>
         </div>
       </div>
 

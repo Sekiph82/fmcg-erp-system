@@ -40,6 +40,7 @@ from app.schemas.company import (
 from app.schemas.master import MasterMergeRequest, MasterMergeResult
 from app.api.v1.endpoints.master_lifecycle import deactivate_master, merge_master
 from app.services.master_duplicate_detection import ensure_unique_record
+from app.services.master_stewardship import record_master_data_change, snapshot_master_data
 
 router = APIRouter()
 
@@ -118,6 +119,13 @@ async def create_company(
         is_default=True,
         granted_by_id=current_user.id,
     ))
+    await record_master_data_change(
+        db,
+        record=company,
+        actor=current_user,
+        action="CREATE",
+        permission="company.create",
+    )
     await db.commit()
     await db.refresh(company)
     return await _build_company_read(db, company)
@@ -146,11 +154,20 @@ async def update_company(
     changes = body.model_dump(exclude_none=True)
     if "is_active" in body.model_fields_set:
         raise HTTPException(422, "Use the governed deactivation action to change company activity.")
+    before = snapshot_master_data(c)
     values = {column.name: getattr(c, column.name) for column in Company.__table__.columns}
     values.update(changes)
     await ensure_unique_record(db, Company, values, exclude_id=c.id)
     for k, v in changes.items():
         setattr(c, k, v)
+    await record_master_data_change(
+        db,
+        record=c,
+        actor=current_user,
+        action="UPDATE",
+        permission="company.edit",
+        before=before,
+    )
     await db.commit()
     await db.refresh(c)
     return await _build_company_read(db, c)
@@ -244,6 +261,14 @@ async def add_branch(
     await ensure_unique_record(db, Branch, values)
     branch = Branch(**values)
     db.add(branch)
+    await db.flush()
+    await record_master_data_change(
+        db,
+        record=branch,
+        actor=current_user,
+        action="CREATE",
+        permission="company.edit",
+    )
     await db.commit()
     await db.refresh(branch)
     return BranchRead.model_validate(branch)
@@ -254,17 +279,27 @@ async def update_branch(
     branch_id: uuid.UUID,
     body: BranchCreate,
     db: AsyncSession = Depends(get_db),
-    _=Depends(require_permission("company", "edit")),
+    current_user: User = Depends(require_permission("company", "edit")),
 ):
     branch = await db.get(Branch, branch_id)
     if not branch:
         raise HTTPException(404, "Branch not found")
+    await _check_company_access(db, current_user, branch.company_id)
     changes = body.model_dump(exclude_none=True)
+    before = snapshot_master_data(branch)
     values = {column.name: getattr(branch, column.name) for column in Branch.__table__.columns}
     values.update(changes)
     await ensure_unique_record(db, Branch, values, exclude_id=branch.id)
     for k, v in changes.items():
         setattr(branch, k, v)
+    await record_master_data_change(
+        db,
+        record=branch,
+        actor=current_user,
+        action="UPDATE",
+        permission="company.edit",
+        before=before,
+    )
     await db.commit()
     await db.refresh(branch)
     return BranchRead.model_validate(branch)

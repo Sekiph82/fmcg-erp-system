@@ -40,6 +40,7 @@ from app.services.import_engine import (
 # ── Model / schema imports ────────────────────────────────────────────────────
 
 from app.models.master import Product, Material, Supplier, Warehouse
+from app.services.master_stewardship import apply_supplier_qualification_actor
 from app.models.hr import Employee
 from app.models.inventory import Stock, StockMovement, MovementType, StockType
 from app.models.recipe import Recipe
@@ -89,6 +90,7 @@ from pydantic import BaseModel, Field, field_validator
 class ProductAdapter(BaseImportAdapter):
     module       = "products"
     perm_module  = "products"
+    stewardship_permission = "products.import"
     schema_class = ProductCreate
     model        = Product
     unique_key   = ["sku"]
@@ -109,6 +111,7 @@ class ProductAdapter(BaseImportAdapter):
 class MaterialAdapter(BaseImportAdapter):
     module        = "materials"
     perm_module   = "materials"
+    stewardship_permission = "materials.import"
     schema_class  = MaterialCreate
     model         = Material
     unique_key    = ["code"]
@@ -142,6 +145,7 @@ class MaterialAdapter(BaseImportAdapter):
 class SupplierAdapter(BaseImportAdapter):
     module       = "suppliers"
     perm_module  = "procurement"
+    stewardship_permission = "procurement.import"
     schema_class = SupplierCreate
     model        = Supplier
     unique_key   = ["code"]
@@ -153,6 +157,10 @@ class SupplierAdapter(BaseImportAdapter):
         "payment_terms_days": "30", "preferred_payment_method": "MPESA",
     }
 
+    async def prepare_stewardship_record(self, record: Any, actor: Any) -> Any:
+        apply_supplier_qualification_actor(record, actor)
+        return record
+
     async def insert(self, data: dict, db: AsyncSession) -> Any:
         obj = Supplier(**data)
         db.add(obj)
@@ -163,6 +171,7 @@ class SupplierAdapter(BaseImportAdapter):
 class WarehouseAdapter(BaseImportAdapter):
     module       = "warehouses"
     perm_module  = "warehouses"
+    stewardship_permission = "warehouses.import"
     schema_class = WarehouseCreate
     model        = Warehouse
     unique_key   = ["code"]
@@ -3879,6 +3888,7 @@ async def run_import(
         username=current_user.username,
         user_roles=[r.name for r in getattr(current_user, "roles", [])],
         file_name=file.filename or "upload.csv",
+        actor=current_user,
     )
     await db.commit()
     return result.to_response()

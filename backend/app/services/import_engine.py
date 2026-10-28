@@ -309,6 +309,7 @@ class BaseImportAdapter(ABC):
     model:           type | None = None # mapped model whose unique constraints govern master duplicates
     field_overrides: dict[str, str]    # {"supplier_id": "supplier_code"}
     example_row:     dict[str, Any]    # example values for template
+    stewardship_permission: str | None = None
 
     # ── Override in subclasses ────────────────────────────────────────────────
 
@@ -320,6 +321,10 @@ class BaseImportAdapter(ABC):
         Return (updated_row, list_of_error_strings).
         """
         return row, []
+
+    async def prepare_stewardship_record(self, record: Any, actor: Any) -> Any:
+        """Apply actor-owned lineage fields before the row is audited and committed."""
+        return record
 
     async def exists_in_db(self, row: dict, db: AsyncSession) -> bool:
         """Return True if the record already exists (based on unique key)."""
@@ -375,6 +380,7 @@ class ImportEngine:
         username:   str,
         user_roles: list[str],
         file_name:  str = "upload.csv",
+        actor:      Any = None,
     ) -> ImportResult:
         headers, raw_rows = parse_csv_rows(content)
 
@@ -504,8 +510,22 @@ class ImportEngine:
         # 9. Write to DB
         imported = False
         if mode != ImportMode.VALIDATE_ONLY and valid_payloads:
+            stewardship_permission = getattr(adapter, "stewardship_permission", None)
+            if stewardship_permission and actor is None:
+                raise ValueError("Authenticated actor required for master-data import audit")
             for payload in valid_payloads:
-                await adapter.insert(payload, db)
+                record = await adapter.insert(payload, db)
+                if stewardship_permission:
+                    from app.services.master_stewardship import record_master_data_change
+
+                    record = await adapter.prepare_stewardship_record(record, actor)
+                    await record_master_data_change(
+                        db,
+                        record=record,
+                        actor=actor,
+                        action="CREATE",
+                        permission=stewardship_permission,
+                    )
             await db.flush()
             imported = True
 

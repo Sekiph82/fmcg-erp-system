@@ -7,6 +7,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { materialsApi, Material, MaterialCreate, MaterialType, UnitOfMeasure } from "@/lib/materials";
 import { ImportModal } from "@/components/import/ImportModal";
 import { RequirePermission } from "@/components/PermissionGuard";
+import { PermissionGuard } from "@/components/PermissionGuard";
 import { Badge } from "@/components/ui/Badge";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
@@ -180,12 +181,14 @@ function MaterialsContent() {
             module="materials"
             onSuccess={() => qc.invalidateQueries({ queryKey: ["materials"] })}
           />
-          <button
-            onClick={() => { setShowForm(true); setEditing(null); }}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700"
-          >
-            + New Material
-          </button>
+          <PermissionGuard permission="materials.create">
+            <button
+              onClick={() => { setShowForm(true); setEditing(null); }}
+              className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700"
+            >
+              + New Material
+            </button>
+          </PermissionGuard>
         </div>
       </div>
 
@@ -300,18 +303,22 @@ function MaterialsContent() {
                   </td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex justify-end gap-3">
-                      <button
-                        onClick={() => { setEditing(m); setShowForm(false); }}
-                        className="text-xs text-indigo-600 hover:underline"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => setDeletingId(m.id)}
-                        className="text-xs text-red-500 hover:text-red-700 hover:underline"
-                      >
-                        Delete
-                      </button>
+                      <PermissionGuard permission="materials.edit">
+                        <button
+                          onClick={() => { setEditing(m); setShowForm(false); }}
+                          className="text-xs text-indigo-600 hover:underline"
+                        >
+                          Edit
+                        </button>
+                      </PermissionGuard>
+                      <PermissionGuard permission="materials.delete">
+                        <button
+                          onClick={() => setDeletingId(m.id)}
+                          className="text-xs text-red-500 hover:text-red-700 hover:underline"
+                        >
+                          Delete
+                        </button>
+                      </PermissionGuard>
                     </div>
                   </td>
                 </tr>

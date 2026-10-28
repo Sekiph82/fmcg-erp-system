@@ -56,6 +56,10 @@ class AuditRetentionPolicy(Base):
 
 # ── Event type constants ───────────────────────────────────────────────────────
 class AuditEvent:
+    # Master-data stewardship
+    MASTER_DATA_CREATED = "MASTER_DATA_CREATED"
+    MASTER_DATA_UPDATED = "MASTER_DATA_UPDATED"
+
     # Auth
     LOGIN_SUCCESS = "LOGIN_SUCCESS"
     LOGIN_FAILED = "LOGIN_FAILED"
