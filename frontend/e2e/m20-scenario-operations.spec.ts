@@ -1,10 +1,22 @@
 import { expect, test } from "playwright/test";
 
+test.use({ storageState: { cookies: [], origins: [] } });
+
 const planId = "11111111-1111-4111-8111-111111111111";
 const lineOne = "22222222-2222-4222-8222-222222222222";
 const lineTwo = "33333333-3333-4333-8333-333333333333";
 
-test("what-if builder serializes merge, exact split, and added shift inputs", async ({ page }) => {
+async function openWhatIfBuilder(page: import("playwright/test").Page) {
+  await page.route("**/api/v1/auth/me", async (route) => route.fulfill({ json: {
+    id: "synthetic-mps-scenario-user", email: "mps-scenario@example.invalid", username: "mps-scenario",
+    full_name: "Synthetic MPS Scenario Tester", is_active: true, is_superuser: true,
+    must_change_password: false, roles: [], permission_codes: ["mps:view", "mps:edit"], modules: ["mps"],
+    scopes: [], feature_flags: {},
+  } }));
+  await page.context().addCookies([{
+    name: "erp_access_token", value: "synthetic-mps-scenario-ui-token",
+    url: process.env.E2E_BASE_URL || "http://localhost:3000", httpOnly: true, sameSite: "Lax",
+  }]);
   const submitted: Array<{ changes: Array<{ line_id: string; change_type: string; new_value: unknown }> }> = [];
   await page.route("**/api/v1/mps/**", async (route) => {
     const request = route.request();
@@ -37,14 +49,13 @@ test("what-if builder serializes merge, exact split, and added shift inputs", as
     await route.fulfill({ status: 200, json: [] });
   });
 
-  await page.goto("/login");
-  await page.getByTestId("login-username").fill("admin");
-  await page.getByTestId("login-password").fill(process.env.E2E_PASSWORD || "Admin1234!");
-  await page.getByTestId("login-submit").click();
-  await page.waitForURL(/\/dashboard/, { timeout: 20_000 });
   await page.goto("/dashboard/mps/whatif");
   await page.getByRole("combobox").first().selectOption(planId);
+  return submitted;
+}
 
+test("what-if builder serializes merge inputs", async ({ page }) => {
+  const submitted = await openWhatIfBuilder(page);
   await page.getByRole("combobox").nth(1).selectOption("MERGE");
   await page.locator("label").filter({ hasText: "LINE-1 · 2026-11-03" }).locator("input[type=checkbox]").check();
   await page.getByRole("combobox").nth(2).selectOption(lineTwo);
@@ -53,7 +64,10 @@ test("what-if builder serializes merge, exact split, and added shift inputs", as
   await page.getByRole("button", { name: "Compute Impact" }).click();
   await expect.poll(() => submitted.length).toBe(1);
   expect(submitted[0].changes).toEqual([{ line_id: lineOne, change_type: "MERGE", new_value: lineTwo }]);
+});
 
+test("what-if builder serializes exact split quantities", async ({ page }) => {
+  const submitted = await openWhatIfBuilder(page);
   await page.getByRole("combobox").nth(1).selectOption("SPLIT");
   await page.locator("label").filter({ hasText: "LINE-1 · 2026-11-03" }).locator("input[type=checkbox]").check();
   await page.getByLabel("First split quantity").fill("15.125");
@@ -61,9 +75,12 @@ test("what-if builder serializes merge, exact split, and added shift inputs", as
   await page.getByPlaceholder("Scenario name *").fill("Split test");
   await page.getByRole("button", { name: "Add Change to Scenario" }).click();
   await page.getByRole("button", { name: "Compute Impact" }).click();
-  await expect.poll(() => submitted.length).toBe(2);
-  expect(submitted[1].changes).toEqual([{ line_id: lineOne, change_type: "SPLIT", new_value: { quantities: ["15.125", "24.875"] } }]);
+  await expect.poll(() => submitted.length).toBe(1);
+  expect(submitted[0].changes).toEqual([{ line_id: lineOne, change_type: "SPLIT", new_value: { quantities: ["15.125", "24.875"] } }]);
+});
 
+test("what-if builder serializes a concrete non-overlapping shift interval", async ({ page }) => {
+  const submitted = await openWhatIfBuilder(page);
   await page.getByRole("combobox").nth(1).selectOption("SHIFT_ADD");
   await page.locator("label").filter({ hasText: "LINE-1 · 2026-11-03" }).locator("input[type=checkbox]").check();
   await page.getByLabel("Shift date").fill("2026-11-03");
@@ -72,6 +89,6 @@ test("what-if builder serializes merge, exact split, and added shift inputs", as
   await page.getByPlaceholder("Scenario name *").fill("Shift test");
   await page.getByRole("button", { name: "Add Change to Scenario" }).click();
   await page.getByRole("button", { name: "Compute Impact" }).click();
-  await expect.poll(() => submitted.length).toBe(3);
-  expect(submitted[2].changes).toEqual([{ line_id: lineOne, change_type: "SHIFT_ADD", new_value: { date: "2026-11-03", start_time: "16:00", end_time: "18:00", hours: "2" } }]);
+  await expect.poll(() => submitted.length).toBe(1);
+  expect(submitted[0].changes).toEqual([{ line_id: lineOne, change_type: "SHIFT_ADD", new_value: { date: "2026-11-03", start_time: "16:00", end_time: "18:00", hours: "2" } }]);
 });

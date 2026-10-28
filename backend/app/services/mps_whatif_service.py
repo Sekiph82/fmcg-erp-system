@@ -249,8 +249,11 @@ def _validate_shift_additions(
 
     for key, day_additions in grouped.items():
         wc_id, shift_day = key
-        day_start = datetime.combine(shift_day, datetime.min.time(), tzinfo=timezone.utc)
-        day_end = day_start + timedelta(days=1)
+        # ResourceCalendar uses local wall-clock dates, but the work center has
+        # no timezone. A one-day UTC margin on both sides conservatively covers
+        # any civil timezone offset; adjacent-date downtime must remain UNKNOWN.
+        day_start = datetime.combine(shift_day, datetime.min.time(), tzinfo=timezone.utc) - timedelta(days=1)
+        day_end = datetime.combine(shift_day + timedelta(days=2), datetime.min.time(), tzinfo=timezone.utc)
         has_downtime = False
         for event in downtimes or []:
             if event.work_center_id != wc_id or event.start_time >= day_end:
@@ -960,8 +963,8 @@ async def create_whatif_scenario(
         ))).scalars().all()
         downtime_rows = (await db.execute(select(DowntimeEvent).where(
             DowntimeEvent.work_center_id.in_(scenario_wc_ids),
-            DowntimeEvent.start_time < datetime.combine(last_day + timedelta(days=1), datetime.min.time(), tzinfo=timezone.utc),
-            (DowntimeEvent.end_time.is_(None)) | (DowntimeEvent.end_time >= datetime.combine(first_day, datetime.min.time(), tzinfo=timezone.utc)),
+            DowntimeEvent.start_time < datetime.combine(last_day + timedelta(days=2), datetime.min.time(), tzinfo=timezone.utc),
+            (DowntimeEvent.end_time.is_(None)) | (DowntimeEvent.end_time >= datetime.combine(first_day - timedelta(days=1), datetime.min.time(), tzinfo=timezone.utc)),
         ))).scalars().all()
     calendar_map = {(row.work_center_id, row.calendar_date): row for row in calendar_rows}
     valid_shift_additions, shift_unknowns = _validate_shift_additions(shift_additions, calendar_map, downtime_rows)

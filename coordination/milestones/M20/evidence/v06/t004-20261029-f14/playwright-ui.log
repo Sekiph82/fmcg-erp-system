@@ -1,0 +1,14 @@
+command: npx playwright test e2e/m20-scenario-operations.spec.ts --project=chromium --no-deps --retries=0 --workers=1
+
+Running 3 tests using 1 worker
+
+(node:34372) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:34372) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 1 [chromium] › e2e\m20-scenario-operations.spec.ts:57:5 › what-if builder serializes merge inputs (3.4s)
+  ok 2 [chromium] › e2e\m20-scenario-operations.spec.ts:69:5 › what-if builder serializes exact split quantities (3.0s)
+  ok 3 [chromium] › e2e\m20-scenario-operations.spec.ts:82:5 › what-if builder serializes a concrete non-overlapping shift interval (3.2s)
+
+  3 passed (11.3s)
+exit: 0

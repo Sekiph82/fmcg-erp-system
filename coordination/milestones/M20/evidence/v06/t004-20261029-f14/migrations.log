@@ -99,15 +99,16 @@ INFO  [alembic.runtime.migration] Running upgrade 20261028_0020 -> 20261028_0021
 INFO  [alembic.runtime.migration] Running upgrade 20261028_0021 -> 20261028_0022, add batch-specific BOM substitution approvals
 INFO  [alembic.runtime.migration] Running upgrade 20261028_0022 -> 20261028_0023, add MPS minimum-run and CIP transition inputs
 INFO  [alembic.runtime.migration] Running upgrade 20261028_0023 -> 20261028_0024, persist scenario cost currency for truthful API and UI labels
-command: python -m alembic downgrade 20261028_0023
+INFO  [alembic.runtime.migration] Running upgrade 20261028_0024 -> 20261029_0025, require alphabetic ISO currency codes for MPS costs
+command: python -m alembic downgrade 20261028_0024
 INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
 INFO  [alembic.runtime.migration] Will assume transactional DDL.
-INFO  [alembic.runtime.migration] Running downgrade 20261028_0024 -> 20261028_0023, persist scenario cost currency for truthful API and UI labels
+INFO  [alembic.runtime.migration] Running downgrade 20261029_0025 -> 20261028_0024, require alphabetic ISO currency codes for MPS costs
 command: python -m alembic upgrade head
 INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
 INFO  [alembic.runtime.migration] Will assume transactional DDL.
-INFO  [alembic.runtime.migration] Running upgrade 20261028_0023 -> 20261028_0024, persist scenario cost currency for truthful API and UI labels
+INFO  [alembic.runtime.migration] Running upgrade 20261028_0024 -> 20261029_0025, require alphabetic ISO currency codes for MPS costs
 command: python -m alembic current
 INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
 INFO  [alembic.runtime.migration] Will assume transactional DDL.
-20261028_0024 (head)
+20261029_0025 (head)

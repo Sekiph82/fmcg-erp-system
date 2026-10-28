@@ -106,9 +106,9 @@ class Product(Base, TimestampMixin):
             name="ck_products_minimum_run_qty_positive",
         ),
         CheckConstraint(
-            "standard_cost_currency IS NULL OR (length(standard_cost_currency) = 3 AND standard_cost_currency = upper(standard_cost_currency))",
+            "standard_cost_currency IS NULL OR standard_cost_currency ~ '^[A-Z]{3}$'",
             name="ck_products_standard_cost_currency_iso3",
-        ),
+        ).ddl_if(dialect="postgresql"),
     )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)

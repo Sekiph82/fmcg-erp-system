@@ -15,6 +15,7 @@ from uuid import uuid4
 import pytest
 from sqlalchemy import delete, func, select, text
 from sqlalchemy.engine import URL
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 
 from app.db.session import AsyncSessionLocal, engine
@@ -277,6 +278,25 @@ def test_shift_add_requires_realistic_non_overlapping_calendar_intervals():
     assert valid == {}
     assert unknown == {"SHIFT_ADD_DOWNTIME_OVERLAP_UNRESOLVED"}
 
+    adjacent_utc_day_downtime = [
+        SimpleNamespace(
+            work_center_id=wc_id,
+            start_time=datetime(2026, 11, 2, 23, 30, tzinfo=timezone.utc),
+            end_time=datetime(2026, 11, 3, 0, 30, tzinfo=timezone.utc),
+            duration_min=None,
+        ),
+        SimpleNamespace(
+            work_center_id=wc_id,
+            start_time=datetime(2026, 11, 4, 0, 30, tzinfo=timezone.utc),
+            end_time=datetime(2026, 11, 4, 1, 30, tzinfo=timezone.utc),
+            duration_min=None,
+        ),
+    ]
+    for adjacent_downtime in adjacent_utc_day_downtime:
+        valid, unknown = _validate_shift_additions([added("16:00", "17:00", "1")], {key: calendar}, [adjacent_downtime])
+        assert valid == {}
+        assert unknown == {"SHIFT_ADD_DOWNTIME_OVERLAP_UNRESOLVED"}
+
 
 def test_structural_scenarios_preserve_configured_batch_counts():
     line = {
@@ -324,6 +344,7 @@ async def test_postgres_whatif_merge_exact_split_and_added_shift_resimulate_with
             product = Product(
                 sku=f"M20-OPS-P-{suffix}", name="M20 scenario operation product",
                 category=ProductCategory.FOOD, uom=UnitOfMeasure.KG,
+                standard_cost=Decimal("42.5000"), standard_cost_currency="KES",
             )
             user = User(
                 email=f"m20-ops-{suffix}@example.invalid", username=f"m20-ops-{suffix}",
@@ -370,6 +391,13 @@ async def test_postgres_whatif_merge_exact_split_and_added_shift_resimulate_with
             await db.flush()
             plan_id, first_id, second_id, user_id = plan.id, first.id, second.id, user.id
 
+            with pytest.raises(IntegrityError):
+                async with db.begin_nested():
+                    product.standard_cost_currency = "1$A"
+                    await db.flush()
+            product.standard_cost_currency = "KES"
+            await db.flush()
+
         merged = await create_whatif_scenario(db, plan_id, MPSWhatIfCreate(
             scenario_name="merge equivalent schedules",
             changes=[WhatIfChange(line_id=first_id, change_type=MPSChangeType.MERGE, new_value=str(second_id))],
@@ -384,6 +412,14 @@ async def test_postgres_whatif_merge_exact_split_and_added_shift_resimulate_with
                 "date": day.isoformat(), "start_time": "16:00", "end_time": "18:00", "hours": "2",
             })],
         ), user_id)
+        shifted.impact_cost_currency = "KES"
+        await db.flush()
+        with pytest.raises(IntegrityError):
+            async with db.begin_nested():
+                shifted.impact_cost_currency = "1$A"
+                await db.flush()
+        shifted.impact_cost_currency = "KES"
+        await db.flush()
         maximum_shift = await create_whatif_scenario(db, plan_id, MPSWhatIfCreate(
             scenario_name="aggregate shifts stay within daily calendar",
             changes=[
@@ -515,11 +551,24 @@ async def test_postgres_whatif_merge_exact_split_and_added_shift_resimulate_with
             ), user_id)
         second_line.is_locked = False
         await db.flush()
+        db.add(DowntimeEvent(
+            downtime_id=f"M20-OPS-DT-BOUNDARY-{suffix}", work_center_id=work_center.id,
+            start_time=datetime(2026, 11, 2, 23, 30, tzinfo=timezone.utc),
+            end_time=datetime(2026, 11, 3, 0, 30, tzinfo=timezone.utc),
+            reason="synthetic downtime crossing the local-shift UTC date boundary",
+        ))
+        await db.flush()
+        boundary_shift = await create_whatif_scenario(db, plan_id, MPSWhatIfCreate(
+            scenario_name="adjacent UTC date downtime remains uncredited",
+            changes=[WhatIfChange(line_id=first_id, change_type=MPSChangeType.SHIFT_ADD, new_value={
+                "date": day.isoformat(), "start_time": "16:00", "end_time": "17:00", "hours": "1",
+            })],
+        ), user_id)
         snapshots = (await db.scalars(select(MPSScenarioSnapshot).where(
-            MPSScenarioSnapshot.scenario_id.in_([merged.id, split.id, shifted.id, maximum_shift.id, batched_merge.id]),
+            MPSScenarioSnapshot.scenario_id.in_([merged.id, split.id, shifted.id, boundary_shift.id, maximum_shift.id, batched_merge.id]),
         ))).all()
         by_scenario = {row.scenario_id: row for row in snapshots}
-        assert len(by_scenario) == 5
+        assert len(by_scenario) == 6
         batched_results = by_scenario[batched_merge.id].results
         merged_candidate = next(line for line in batched_results["modified_lines"] if line["id"] == str(first_id))
         assert Decimal(merged_candidate["planned_production_qty"]) == Decimal("100")
@@ -534,6 +583,13 @@ async def test_postgres_whatif_merge_exact_split_and_added_shift_resimulate_with
         assert by_scenario[merged.id].results["capacity_overload_hours"] == 2.0
         assert by_scenario[split.id].results["capacity_overload_hours"] == 2.0
         assert by_scenario[shifted.id].results["capacity_overload_hours"] == 0.0
+        assert by_scenario[boundary_shift.id].results["capacity_overload_hours"] is None
+        assert by_scenario[boundary_shift.id].results["capacity_status"] == "PARTIAL_INPUTS"
+        assert "SHIFT_ADD_DOWNTIME_OVERLAP_UNRESOLVED" in by_scenario[boundary_shift.id].results["capacity_unknown_reasons"]
+        assert by_scenario[boundary_shift.id].assumptions["uncredited_shift_additions"] == [{
+            "work_center_id": str((await db.get(MPSLine, first_id)).work_center_id),
+            "date": day.isoformat(), "start_time": "16:00", "end_time": "17:00", "hours": "1",
+        }]
         assert by_scenario[maximum_shift.id].results["capacity_overload_hours"] == 0.0
         assert by_scenario[maximum_shift.id].assumptions["shift_additions"] == [
             {
