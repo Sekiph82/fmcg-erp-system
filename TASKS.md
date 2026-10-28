@@ -9,10 +9,10 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 ## Project Status
 
 - Current Milestone: M21 — Advanced BOM / Fluid-to-Unit
-- Current Sprint: M21.S04 — UI/API/Import
-- Current Task: M21.S04.T004 — Permissions/audit/history
+- Current Sprint: M21.S05 — Verification
+- Current Task: M21.S05.T001 — Unit/conversion/yield tests
 - Current Task Status: COMPLETE
-- Next Task/Action: M21.S05.T001 — Unit/conversion/yield tests
+- Next Task/Action: M21.S05.T002 — MPS/MRP integration tests
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -636,7 +636,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
   Evidence: [CODEX log](coordination/sessions/M21.S04.T004/CODEX_LOG_V01.md); conversion-profile creation writes an actor-attributed audit event transactionally, selected-profile history uses the existing audit endpoint and `audit.view` permission, and audit IP comes from a validated socket peer; frontend type-check, Python compilation, diff check, and independent review passed.
 
 ## M21.S05 — Verification
-- [ ] M21.S05.T001 — Unit/conversion/yield tests
+- [x] M21.S05.T001 — Unit/conversion/yield tests
+  Evidence: [CODEX log](coordination/sessions/M21.S05.T001/CODEX_LOG_V01.md); 62 focused unit tests passed, six disposable PostgreSQL migration/integration suites passed (17, 7, 6, 8, 10, 10), and 27 supplemental API/yield-cost tests passed; task container cleanup and independent review verified.
 - [ ] M21.S05.T002 — MPS/MRP integration tests
 - [ ] M21.S05.T003 — Costing integration tests
 - [ ] M21.S05.T004 — Close M21
