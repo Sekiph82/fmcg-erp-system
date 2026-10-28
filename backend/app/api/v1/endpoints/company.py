@@ -456,17 +456,19 @@ async def company_summary(
     )).scalar() or 0
 
     warehouse_count = (await db.execute(
-        select(func.count(Warehouse.id))
+        select(func.count(Warehouse.id)).where(Warehouse.company_id == company_id)
     )).scalar() or 0
 
     open_po_count = (await db.execute(
         select(func.count(PurchaseOrder.id)).where(
-            PurchaseOrder.status.in_([POStatus.PENDING, POStatus.APPROVED, POStatus.PARTIAL])
+            PurchaseOrder.company_id == company_id,
+            PurchaseOrder.status.in_([POStatus.APPROVED, POStatus.ORDERED, POStatus.PARTIALLY_RECEIVED])
         )
     )).scalar() or 0
 
     open_so_count = (await db.execute(
         select(func.count(SalesOrder.id)).where(
+            SalesOrder.company_id == company_id,
             SalesOrder.status.in_([SOStatus.CONFIRMED, SOStatus.ALLOCATED, SOStatus.PICKING])
         )
     )).scalar() or 0
