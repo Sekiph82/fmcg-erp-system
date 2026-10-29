@@ -42,9 +42,25 @@ LIFECYCLE_FLOW = {
     "COMPLETED":   "CLOSED",
 }
 
+ORDER_EDITABLE_FIELDS = frozenset({
+    "product_id", "bom_id", "routing_id", "product_name", "bom_code",
+    "planned_qty", "uom", "batch_no", "source_type", "source_document_id",
+    "priority", "planned_start", "planned_end", "plant_id", "section_id",
+    "line_id", "preferred_machine_id", "remarks",
+})
 
-async def _load_order(db: AsyncSession, order_id: uuid.UUID) -> ProdExecOrder:
-    result = await db.execute(
+WORK_ORDER_EDITABLE_FIELDS = frozenset({
+    "operation_code", "step_sequence", "step_name", "work_center_id",
+    "section_id", "line_id", "machine_id", "assigned_operator_id",
+    "planned_qty", "setup_time_planned", "run_time_planned",
+    "cleanup_time_planned", "dependency_work_order_id", "qc_required_flag", "notes",
+})
+
+
+async def _load_order(
+    db: AsyncSession, order_id: uuid.UUID, *, for_update: bool = False
+) -> ProdExecOrder:
+    statement = (
         select(ProdExecOrder)
         .where(ProdExecOrder.id == order_id)
         .options(
@@ -54,6 +70,9 @@ async def _load_order(db: AsyncSession, order_id: uuid.UUID) -> ProdExecOrder:
             selectinload(ProdExecOrder.ai_recs),
         )
     )
+    if for_update:
+        statement = statement.with_for_update().execution_options(populate_existing=True)
+    result = await db.execute(statement)
     order = result.scalar_one_or_none()
     if not order:
         raise ValueError(f"Production order {order_id} not found")
@@ -190,7 +209,10 @@ async def get_order(db: AsyncSession, order_id: uuid.UUID) -> ProdExecOrder:
 
 
 async def update_order(db: AsyncSession, order_id: uuid.UUID, data: dict) -> ProdExecOrder:
-    order = await _load_order(db, order_id)
+    forbidden = set(data) - ORDER_EDITABLE_FIELDS
+    if forbidden:
+        raise ValueError(f"Fields cannot be edited directly: {', '.join(sorted(forbidden))}")
+    order = await _load_order(db, order_id, for_update=True)
     if order.status not in {"DRAFT", "PLANNED"}:
         raise ValueError("Only DRAFT or PLANNED orders can be edited")
     for k, v in data.items():
@@ -202,7 +224,7 @@ async def update_order(db: AsyncSession, order_id: uuid.UUID, data: dict) -> Pro
 # ── Lifecycle ──────────────────────────────────────────────────────────────────
 
 async def advance_order(db: AsyncSession, order_id: uuid.UUID) -> ProdExecOrder:
-    order = await _load_order(db, order_id)
+    order = await _load_order(db, order_id, for_update=True)
     next_status = LIFECYCLE_FLOW.get(order.status)
     if not next_status:
         raise ValueError(f"Cannot advance order in status {order.status}")
@@ -217,7 +239,7 @@ async def advance_order(db: AsyncSession, order_id: uuid.UUID) -> ProdExecOrder:
 
 
 async def release_order(db: AsyncSession, order_id: uuid.UUID) -> ProdExecOrder:
-    order = await _load_order(db, order_id)
+    order = await _load_order(db, order_id, for_update=True)
     if order.status not in {"DRAFT", "PLANNED"}:
         raise ValueError("Order must be DRAFT or PLANNED to release")
     order.status = "RELEASED"
@@ -226,7 +248,7 @@ async def release_order(db: AsyncSession, order_id: uuid.UUID) -> ProdExecOrder:
 
 
 async def start_order(db: AsyncSession, order_id: uuid.UUID) -> ProdExecOrder:
-    order = await _load_order(db, order_id)
+    order = await _load_order(db, order_id, for_update=True)
     if order.status != "RELEASED":
         raise ValueError("Order must be RELEASED to start")
     order.status = "IN_PROGRESS"
@@ -236,7 +258,7 @@ async def start_order(db: AsyncSession, order_id: uuid.UUID) -> ProdExecOrder:
 
 
 async def pause_order(db: AsyncSession, order_id: uuid.UUID) -> ProdExecOrder:
-    order = await _load_order(db, order_id)
+    order = await _load_order(db, order_id, for_update=True)
     if order.status != "IN_PROGRESS":
         raise ValueError("Order must be IN_PROGRESS to pause")
     order.status = "PAUSED"
@@ -251,7 +273,7 @@ async def complete_order(
     scrap_qty: Decimal = Decimal("0"),
     remarks: Optional[str] = None,
 ) -> ProdExecOrder:
-    order = await _load_order(db, order_id)
+    order = await _load_order(db, order_id, for_update=True)
     if order.status not in {"IN_PROGRESS", "PAUSED"}:
         raise ValueError("Order must be IN_PROGRESS or PAUSED to complete")
     order.completed_qty = completed_qty
@@ -266,7 +288,7 @@ async def complete_order(
 
 
 async def close_order(db: AsyncSession, order_id: uuid.UUID) -> ProdExecOrder:
-    order = await _load_order(db, order_id)
+    order = await _load_order(db, order_id, for_update=True)
     if order.status != "COMPLETED":
         raise ValueError("Order must be COMPLETED to close")
     order.status = "CLOSED"
@@ -275,9 +297,9 @@ async def close_order(db: AsyncSession, order_id: uuid.UUID) -> ProdExecOrder:
 
 
 async def cancel_order(db: AsyncSession, order_id: uuid.UUID) -> ProdExecOrder:
-    order = await _load_order(db, order_id)
-    if order.status == "CLOSED":
-        raise ValueError("Closed orders cannot be cancelled")
+    order = await _load_order(db, order_id, for_update=True)
+    if order.status not in {"DRAFT", "PLANNED", "RELEASED", "IN_PROGRESS", "PAUSED"}:
+        raise ValueError(f"Orders in status {order.status} cannot be cancelled")
     order.status = "CANCELLED"
     await db.commit()
     return await _load_order(db, order_id)
@@ -321,9 +343,11 @@ async def split_order(
     reason: Optional[str],
     user_id: uuid.UUID,
 ) -> List[ProdExecOrder]:
-    order = await _load_order(db, order_id)
+    order = await _load_order(db, order_id, for_update=True)
     if order.status not in {"DRAFT", "PLANNED", "RELEASED"}:
         raise ValueError("Only DRAFT/PLANNED/RELEASED orders can be split")
+    if len(split_qtys) < 2 or any(qty <= 0 for qty in split_qtys):
+        raise ValueError("A split requires at least two positive quantities")
 
     total = sum(float(q) for q in split_qtys)
     if abs(total - float(order.planned_qty)) > 0.001:
@@ -385,9 +409,11 @@ async def merge_orders(
     reason: Optional[str],
     user_id: uuid.UUID,
 ) -> ProdExecOrder:
+    if len(order_ids) < 2 or len(set(order_ids)) != len(order_ids):
+        raise ValueError("At least two distinct production orders are required to merge")
     orders = []
-    for oid in order_ids:
-        o = await _load_order(db, oid)
+    for oid in sorted(order_ids, key=str):
+        o = await _load_order(db, oid, for_update=True)
         if o.status not in {"DRAFT", "PLANNED", "RELEASED"}:
             raise ValueError(f"Order {o.order_no} cannot be merged (status={o.status})")
         orders.append(o)
@@ -564,6 +590,21 @@ async def add_work_order(
     order_id: uuid.UUID,
     data: dict,
 ) -> ExecWorkOrder:
+    parent = await _load_order(db, order_id, for_update=True)
+    if parent.status not in {"DRAFT", "PLANNED"}:
+        raise ValueError(f"Work orders cannot be added after production starts (status={parent.status})")
+    dependency_id = data.get("dependency_work_order_id")
+    if dependency_id is not None:
+        dependency_result = await db.execute(
+            select(ExecWorkOrder).where(ExecWorkOrder.id == dependency_id)
+        )
+        dependency = dependency_result.scalar_one_or_none()
+        if (
+            dependency is None
+            or dependency.production_order_id != order_id
+            or dependency.step_sequence >= data.get("step_sequence", 0)
+        ):
+            raise ValueError("Work-order dependency must be an earlier step on the same production order")
     wo = ExecWorkOrder(production_order_id=order_id, **data, status="PENDING")
     db.add(wo)
     await db.commit()
@@ -572,12 +613,41 @@ async def add_work_order(
 
 
 async def start_work_order(db: AsyncSession, wo_id: uuid.UUID) -> ExecWorkOrder:
-    result = await db.execute(select(ExecWorkOrder).where(ExecWorkOrder.id == wo_id))
+    parent_id_result = await db.execute(
+        select(ExecWorkOrder.production_order_id).where(ExecWorkOrder.id == wo_id)
+    )
+    parent_id = parent_id_result.scalar_one_or_none()
+    if parent_id is None:
+        raise ValueError("Work order not found")
+    parent = await _load_order(db, parent_id, for_update=True)
+    result = await db.execute(
+        select(ExecWorkOrder)
+        .where(ExecWorkOrder.id == wo_id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    )
     wo = result.scalar_one_or_none()
     if not wo:
         raise ValueError("Work order not found")
+    if wo.production_order_id != parent.id:
+        raise ValueError("Work order changed production order during transition")
+    if parent.status != "IN_PROGRESS":
+        raise ValueError("Production order must be IN_PROGRESS to start a work order")
     if wo.status not in {"READY", "PENDING"}:
         raise ValueError(f"Cannot start work order in status {wo.status}")
+    if wo.dependency_work_order_id:
+        predecessor_result = await db.execute(
+            select(ExecWorkOrder)
+            .where(ExecWorkOrder.id == wo.dependency_work_order_id)
+            .execution_options(populate_existing=True)
+        )
+        predecessor = predecessor_result.scalar_one_or_none()
+        if (
+            predecessor is None
+            or predecessor.production_order_id != wo.production_order_id
+            or predecessor.status != "COMPLETED"
+        ):
+            raise ValueError("Preceding work order must be completed before this step can start")
     wo.status = "IN_PROGRESS"
     wo.started_at = _now()
     await db.commit()
@@ -599,10 +669,28 @@ async def complete_work_order(
     qc_passed: Optional[bool],
     notes: Optional[str],
 ) -> ExecWorkOrder:
-    result = await db.execute(select(ExecWorkOrder).where(ExecWorkOrder.id == wo_id))
+    parent_id_result = await db.execute(
+        select(ExecWorkOrder.production_order_id).where(ExecWorkOrder.id == wo_id)
+    )
+    parent_id = parent_id_result.scalar_one_or_none()
+    if parent_id is None:
+        raise ValueError("Work order not found")
+    parent = await _load_order(db, parent_id, for_update=True)
+    result = await db.execute(
+        select(ExecWorkOrder)
+        .where(ExecWorkOrder.id == wo_id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    )
     wo = result.scalar_one_or_none()
     if not wo:
         raise ValueError("Work order not found")
+    if wo.status != "IN_PROGRESS":
+        raise ValueError(f"Work order must be IN_PROGRESS to complete (status={wo.status})")
+    if wo.production_order_id != parent.id:
+        raise ValueError("Work order changed production order during transition")
+    if parent.status != "IN_PROGRESS":
+        raise ValueError("Production order must be IN_PROGRESS to complete a work order")
     wo.status = "COMPLETED"
     wo.completed_qty = completed_qty
     wo.scrap_qty = scrap_qty
@@ -632,10 +720,57 @@ async def complete_work_order(
 
 
 async def update_work_order(db: AsyncSession, wo_id: uuid.UUID, data: dict) -> ExecWorkOrder:
-    result = await db.execute(select(ExecWorkOrder).where(ExecWorkOrder.id == wo_id))
+    forbidden = set(data) - WORK_ORDER_EDITABLE_FIELDS
+    if forbidden:
+        raise ValueError(f"Fields cannot be edited directly: {', '.join(sorted(forbidden))}")
+    parent_id_result = await db.execute(
+        select(ExecWorkOrder.production_order_id).where(ExecWorkOrder.id == wo_id)
+    )
+    parent_id = parent_id_result.scalar_one_or_none()
+    if parent_id is None:
+        raise ValueError("Work order not found")
+    parent = await _load_order(db, parent_id, for_update=True)
+    result = await db.execute(
+        select(ExecWorkOrder)
+        .where(ExecWorkOrder.id == wo_id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    )
     wo = result.scalar_one_or_none()
     if not wo:
         raise ValueError("Work order not found")
+    if wo.production_order_id != parent.id:
+        raise ValueError("Work order changed production order during update")
+    if parent.status not in {"DRAFT", "PLANNED"}:
+        raise ValueError(f"Work orders cannot be edited after production starts (status={parent.status})")
+    if wo.status not in {"PENDING", "READY"}:
+        raise ValueError(f"Work order in status {wo.status} cannot be edited")
+    if "dependency_work_order_id" in data and data["dependency_work_order_id"] is not None:
+        dependency_result = await db.execute(
+            select(ExecWorkOrder).where(ExecWorkOrder.id == data["dependency_work_order_id"])
+        )
+        dependency = dependency_result.scalar_one_or_none()
+        effective_sequence = data.get("step_sequence", wo.step_sequence)
+        if (
+            dependency is None
+            or dependency.production_order_id != wo.production_order_id
+            or dependency.id == wo.id
+            or dependency.step_sequence >= effective_sequence
+        ):
+            raise ValueError("Work-order dependency must be an earlier step on the same production order")
+        graph_result = await db.execute(
+            select(ExecWorkOrder.id, ExecWorkOrder.dependency_work_order_id).where(
+                ExecWorkOrder.production_order_id == wo.production_order_id
+            )
+        )
+        dependencies = {work_order_id: predecessor_id for work_order_id, predecessor_id in graph_result}
+        seen = set()
+        cursor = dependency.id
+        while cursor is not None:
+            if cursor == wo.id or cursor in seen:
+                raise ValueError("Work-order dependencies cannot contain a cycle")
+            seen.add(cursor)
+            cursor = dependencies.get(cursor)
     for k, v in data.items():
         setattr(wo, k, v)
     await db.commit()

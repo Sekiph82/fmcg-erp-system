@@ -51,6 +51,19 @@ async def _require_warehouse(db: AsyncSession, warehouse_id: uuid.UUID) -> Wareh
     return wh
 
 
+async def _lock_order_for_transition(db: AsyncSession, order_id: uuid.UUID) -> ProductionOrder:
+    result = await db.execute(
+        select(ProductionOrder)
+        .where(ProductionOrder.id == order_id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    )
+    order = result.scalar_one_or_none()
+    if order is None:
+        raise HTTPException(status_code=404, detail="Production order not found")
+    return order
+
+
 async def _get_material_stock(
     db: AsyncSession,
     warehouse_id: uuid.UUID,
@@ -257,6 +270,7 @@ def _compute_oee(order: ProductionOrder) -> OEEMetrics:
 # ── Lifecycle operations ──────────────────────────────────────────────────────
 
 async def release_order(db: AsyncSession, order: ProductionOrder) -> ProductionOrder:
+    order = await _lock_order_for_transition(db, order.id)
     if order.status != ProductionOrderStatus.PLANNED:
         raise HTTPException(422, detail=f"Order is {order.status.value}. Only PLANNED orders can be released.")
 
@@ -275,6 +289,7 @@ async def release_order(db: AsyncSession, order: ProductionOrder) -> ProductionO
 async def start_order(
     db: AsyncSession, order: ProductionOrder, actual_start: Optional[datetime] = None
 ) -> ProductionOrder:
+    order = await _lock_order_for_transition(db, order.id)
     if order.status != ProductionOrderStatus.RELEASED:
         raise HTTPException(422, detail=f"Order is {order.status.value}. Only RELEASED orders can be started.")
 
@@ -288,6 +303,7 @@ async def start_order(
 async def pause_order(
     db: AsyncSession, order: ProductionOrder, req: DowntimeLogCreate
 ) -> DowntimeLog:
+    order = await _lock_order_for_transition(db, order.id)
     if order.status != ProductionOrderStatus.IN_PROGRESS:
         raise HTTPException(422, detail="Order must be IN_PROGRESS to record downtime.")
 
@@ -311,6 +327,7 @@ async def pause_order(
 async def resume_order(
     db: AsyncSession, order: ProductionOrder, req: DowntimeLogClose
 ) -> DowntimeLog:
+    order = await _lock_order_for_transition(db, order.id)
     if order.status != ProductionOrderStatus.IN_PROGRESS:
         raise HTTPException(422, detail="Order must be IN_PROGRESS.")
 
@@ -448,8 +465,24 @@ async def complete_order(
 
 
 async def cancel_order(db: AsyncSession, order: ProductionOrder) -> ProductionOrder:
-    if order.status in (ProductionOrderStatus.COMPLETED,):
-        raise HTTPException(422, detail="Completed orders cannot be cancelled.")
+    order = await _lock_order_for_transition(db, order.id)
+    if order.status not in {
+        ProductionOrderStatus.PLANNED,
+        ProductionOrderStatus.RELEASED,
+        ProductionOrderStatus.IN_PROGRESS,
+    }:
+        raise HTTPException(422, detail=f"Orders in {order.status.value} status cannot be cancelled.")
+    active_downtime = (
+        await crud.get_active_downtime(db, order.id)
+        if order.status == ProductionOrderStatus.IN_PROGRESS
+        else None
+    )
+    if active_downtime:
+        end_time = _now()
+        active_downtime.end_time = end_time
+        active_downtime.duration_minutes = max(
+            0, int((end_time - active_downtime.start_time).total_seconds() / 60)
+        )
     order.status = ProductionOrderStatus.CANCELLED
     await db.flush()
     await db.refresh(order)
