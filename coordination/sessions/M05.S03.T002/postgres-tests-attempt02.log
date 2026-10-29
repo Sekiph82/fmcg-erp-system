@@ -1,0 +1,63 @@
+.F.F...                                                                  [100%]
+================================== FAILURES ===================================
+_____ test_grn_post_commits_stock_and_po_effects_once_and_rejects_repeat ______
+tests\test_m05_s03_t002_transaction_integrity_db.py:267: in test_grn_post_commits_stock_and_po_effects_once_and_rejects_repeat
+    assert (await db.get(Stock, stock.id)).quantity_on_hand == Decimal("4.000")
+                                ^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\attributes.py:566: in __get__
+    return self.impl.get(state, dict_)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\attributes.py:1086: in get
+    value = self._fire_loader_callables(state, key, passive)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\attributes.py:1116: in _fire_loader_callables
+    return state._load_expired(state, passive)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\state.py:803: in _load_expired
+    self.manager.expired_attribute_loader(self, toload, passive)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\loading.py:1670: in load_scalar_attributes
+    result = load_on_ident(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\loading.py:509: in load_on_ident
+    return load_on_pk_identity(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\loading.py:694: in load_on_pk_identity
+    session.execute(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\session.py:2365: in execute
+    return self._execute_internal(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\session.py:2251: in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\context.py:306: in orm_execute_statement
+    result = conn.execute(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\engine\base.py:1415: in execute
+    return meth(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\sql\elements.py:523: in _execute_on_connection
+    return connection._execute_clauseelement(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\engine\base.py:1637: in _execute_clauseelement
+    ret = self._execute_context(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\engine\base.py:1842: in _execute_context
+    return self._exec_single_context(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\engine\base.py:1982: in _exec_single_context
+    self._handle_dbapi_exception(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\engine\base.py:2354: in _handle_dbapi_exception
+    raise exc_info[1].with_traceback(exc_info[2])
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\engine\base.py:1963: in _exec_single_context
+    self.dialect.do_execute(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\engine\default.py:943: in do_execute
+    cursor.execute(statement, parameters)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:580: in execute
+    self._adapt_connection.await_(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py:123: in await_only
+    raise exc.MissingGreenlet(
+E   sqlalchemy.exc.MissingGreenlet: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+_ test_shipment_dispatch_commits_stock_and_sales_effects_once_and_rejects_repeat _
+tests\test_m05_s03_t002_transaction_integrity_db.py:367: in test_shipment_dispatch_commits_stock_and_sales_effects_once_and_rejects_repeat
+    assert "shipment is dispatched" in str(repeated.value.detail).lower()
+E   assert 'shipment is dispatched' in "shipment is shipmentstatus.dispatched; requires: ['pending', 'picking', 'packed']"
+E    +  where "shipment is shipmentstatus.dispatched; requires: ['pending', 'picking', 'packed']" = <built-in method lower of str object at 0x000001E13EC1A7B0>()
+E    +    where <built-in method lower of str object at 0x000001E13EC1A7B0> = "Shipment is ShipmentStatus.DISPATCHED; requires: ['PENDING', 'PICKING', 'PACKED']".lower
+E    +      where "Shipment is ShipmentStatus.DISPATCHED; requires: ['PENDING', 'PICKING', 'PACKED']" = str("Shipment is ShipmentStatus.DISPATCHED; requires: ['PENDING', 'PICKING', 'PACKED']")
+E    +        where "Shipment is ShipmentStatus.DISPATCHED; requires: ['PENDING', 'PICKING', 'PACKED']" = HTTPException(status_code=422, detail="Shipment is ShipmentStatus.DISPATCHED; requires: ['PENDING', 'PICKING', 'PACKED']").detail
+E    +          where HTTPException(status_code=422, detail="Shipment is ShipmentStatus.DISPATCHED; requires: ['PENDING', 'PICKING', 'PACKED']") = <ExceptionInfo HTTPException(status_code=422, detail="Shipment is ShipmentStatus.DISPATCHED; requires: ['PENDING', 'PICKING', 'PACKED']") tblen=3>.value
+=========================== short test summary info ===========================
+FAILED tests/test_m05_s03_t002_transaction_integrity_db.py::test_grn_post_commits_stock_and_po_effects_once_and_rejects_repeat
+FAILED tests/test_m05_s03_t002_transaction_integrity_db.py::test_shipment_dispatch_commits_stock_and_sales_effects_once_and_rejects_repeat
+2 failed, 5 passed in 6.75s

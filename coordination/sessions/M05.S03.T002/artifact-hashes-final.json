@@ -1,0 +1,38 @@
+[
+  {
+    "Path": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system\\coordination\\sessions\\M05.S03.T002\\CHATGPT_AUDIT_CRITERIA_V01.md",
+    "Hash": "FA77298E4D07149E9BF513108D4EEE1F922FB2131B3422E3823E55E770D2F262"
+  },
+  {
+    "Path": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system\\coordination\\sessions\\M05.S03.T002\\CHATGPT_PROMPT_V01.md",
+    "Hash": "3A6E8E9A3D0DC15E1732356E5EFE874E1EBEAA4CFC1978EA86E49B23C144FD1E"
+  },
+  {
+    "Path": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system\\backend\\tests\\test_m05_s03_t002_transaction_integrity_db.py",
+    "Hash": "32C5873E41E73CF31C238B5DDAB4523EFA4070EB1B990A197A566A37819F75D3"
+  },
+  {
+    "Path": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system\\coordination\\sessions\\M05.S03.T002\\alembic-upgrade-final.log",
+    "Hash": "A4270EE6682BF51FF94BA6C1170765C149FAC15DC5C3F8E3087D9BB9164AD7BB"
+  },
+  {
+    "Path": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system\\coordination\\sessions\\M05.S03.T002\\alembic-heads-final.log",
+    "Hash": "D9DEA74AD93C0A44C82ACD32E600ADF17D6D6AA6F1536D504D815610487C6EB1"
+  },
+  {
+    "Path": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system\\coordination\\sessions\\M05.S03.T002\\alembic-current-final.log",
+    "Hash": "7CC12ECAE0054A36A1F2F120E0AD8CB867E93F69ECCEAED4FC14F933DC4F3621"
+  },
+  {
+    "Path": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system\\coordination\\sessions\\M05.S03.T002\\postgres-tests-final.log",
+    "Hash": "6CA50E6B17523CEDC9C5733BC791A2263A7425C15EEBC5EEC06D13E2461DDE8D"
+  },
+  {
+    "Path": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system\\coordination\\sessions\\M05.S03.T002\\related-regressions.log",
+    "Hash": "029C2B3FA1F0FAF05165B1005FE30A94198317F941960BABF9B527400FD0217C"
+  },
+  {
+    "Path": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system\\coordination\\sessions\\M05.S03.T002\\container-final-cleanup.json",
+    "Hash": "031E0CF3DE5DBBC9F1EECF48A2F08B16B7D49564107E1393750EDC62EA4A5EE0"
+  }
+]

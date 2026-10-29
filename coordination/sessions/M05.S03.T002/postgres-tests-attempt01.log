@@ -1,0 +1,82 @@
+.F...F.                                                                  [100%]
+================================== FAILURES ===================================
+_____ test_grn_post_commits_stock_and_po_effects_once_and_rejects_repeat ______
+tests\test_m05_s03_t002_transaction_integrity_db.py:259: in test_grn_post_commits_stock_and_po_effects_once_and_rejects_repeat
+    assert await db.scalar(select(func.count(StockMovement.id)).where(StockMovement.reference_number == movement.reference_number)) == 1
+                                                                                                        ^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\attributes.py:566: in __get__
+    return self.impl.get(state, dict_)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\attributes.py:1086: in get
+    value = self._fire_loader_callables(state, key, passive)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\attributes.py:1116: in _fire_loader_callables
+    return state._load_expired(state, passive)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\state.py:803: in _load_expired
+    self.manager.expired_attribute_loader(self, toload, passive)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\loading.py:1670: in load_scalar_attributes
+    result = load_on_ident(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\loading.py:509: in load_on_ident
+    return load_on_pk_identity(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\loading.py:694: in load_on_pk_identity
+    session.execute(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\session.py:2365: in execute
+    return self._execute_internal(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\session.py:2241: in _execute_internal
+    conn = self._connection_for_bind(bind)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\session.py:2110: in _connection_for_bind
+    return trans._connection_for_bind(engine, execution_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<string>:2: in _connection_for_bind
+    ???
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\state_changes.py:139: in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\orm\session.py:1189: in _connection_for_bind
+    conn = bind.connect()
+           ^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\engine\base.py:3273: in connect
+    return self._connection_cls(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\engine\base.py:145: in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\engine\base.py:3297: in raw_connection
+    return self.pool.connect()
+           ^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\pool\base.py:449: in connect
+    return _ConnectionFairy._checkout(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\pool\base.py:1363: in _checkout
+    with util.safe_reraise():
+         ^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\util\langhelpers.py:224: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\pool\base.py:1301: in _checkout
+    result = pool._dialect._do_ping_w_event(
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\engine\default.py:720: in _do_ping_w_event
+    return self.do_ping(dbapi_connection)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:1163: in do_ping
+    dbapi_connection.ping()
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:813: in ping
+    self._handle_exception(error)
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:794: in _handle_exception
+    raise error
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\dialects\postgresql\asyncpg.py:811: in ping
+    _ = self.await_(self._async_ping())
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+..\..\..\AppData\Local\Programs\Python\Python312\Lib\site-packages\sqlalchemy\util\_concurrency_py3k.py:123: in await_only
+    raise exc.MissingGreenlet(
+E   sqlalchemy.exc.MissingGreenlet: greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)
+_ test_production_late_failure_rolls_back_consumption_output_and_order_completion _
+tests\test_m05_s03_t002_transaction_integrity_db.py:399: in test_production_late_failure_rolls_back_consumption_output_and_order_completion
+    assert (await verify.get(ProductionOrder, ids[1])).quantity_on_hand == Decimal("10.000")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   AttributeError: 'NoneType' object has no attribute 'quantity_on_hand'
+=========================== short test summary info ===========================
+FAILED tests/test_m05_s03_t002_transaction_integrity_db.py::test_grn_post_commits_stock_and_po_effects_once_and_rejects_repeat
+FAILED tests/test_m05_s03_t002_transaction_integrity_db.py::test_production_late_failure_rolls_back_consumption_output_and_order_completion
+2 failed, 5 passed in 7.05s
