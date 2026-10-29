@@ -84,21 +84,33 @@ export default function DeveloperPortalPage() {
             </div>
           )}
 
-          {/* Scopes & rate limit info */}
-          {dash && (
-            <div className="bg-white border rounded-lg p-4 shadow-sm flex flex-wrap gap-6">
-              <div>
-                <p className="text-xs text-gray-500 mb-1">Available Scopes</p>
-                <div className="flex gap-2">
-                  {dash.available_scopes.map((s) => (
-                    <span key={s} className="bg-blue-100 text-blue-700 text-xs font-medium rounded-full px-3 py-1">{s}</span>
-                  ))}
+          {/* Scopes & rate limit policy */}
+          {dash && res && (
+            <div className="bg-white border rounded-lg p-4 shadow-sm space-y-4">
+              <div className="flex flex-wrap gap-6">
+                <div>
+                  <p className="text-xs text-gray-500 mb-1">Available Scope Policies</p>
+                  <div className="flex gap-2">
+                    {dash.available_scopes.map((scope) => (
+                      <span key={scope} className="bg-blue-100 text-blue-700 text-xs font-medium rounded-full px-3 py-1">{scope}</span>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 mb-1">Per-key Rate Policy</p>
+                  <span className="text-sm font-semibold text-gray-700">
+                    {dash.default_rate_limit} req/min default · {res.rate_limits.minimum}–{res.rate_limits.maximum} allowed
+                  </span>
                 </div>
               </div>
-              <div>
-                <p className="text-xs text-gray-500 mb-1">Default Rate Limit</p>
-                <span className="text-sm font-semibold text-gray-700">{dash.default_rate_limit} req/min</span>
-              </div>
+              <ul className="space-y-1 text-xs text-gray-600">
+                {Object.entries(res.api_key_scopes).map(([scope, description]) => (
+                  <li key={scope}><span className="font-semibold">{scope}:</span> {description}</li>
+                ))}
+              </ul>
+              <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded p-2">
+                These are stored credential policies. API-key request authentication is not enabled, so scopes and rate limits are not currently enforced.
+              </p>
             </div>
           )}
 

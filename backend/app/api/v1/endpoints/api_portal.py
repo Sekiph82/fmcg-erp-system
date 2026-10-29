@@ -16,11 +16,17 @@ from sqlalchemy import select, func, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 
+from app.core.config import settings
 from app.core.deps import get_current_user, get_db, require_permission
 from app.models.api_portal import ApiClientApplication, ApiKey, ApiKeyUsageLog, ApiOAuthClientSecret
 from app.models.user import User
 
 router = APIRouter()
+
+API_KEY_SCOPE_ORDER = ("read", "write", "admin")
+API_KEY_DEFAULT_RATE_LIMIT_PER_MIN = 60
+API_KEY_MIN_RATE_LIMIT_PER_MIN = 1
+API_KEY_MAX_RATE_LIMIT_PER_MIN = 1000
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -57,6 +63,22 @@ def _serialize_legacy_utc(value: Optional[datetime]) -> Optional[str]:
     return normalized.isoformat()
 
 
+def _canonicalize_scopes(value: str) -> str:
+    parts = [item.strip().lower() for item in value.split(",")]
+    if not parts or any(not item for item in parts):
+        raise ValueError("Scopes must be a comma-separated list of read, write, or admin.")
+    if len(parts) != len(set(parts)):
+        raise ValueError("Scopes must not contain duplicates.")
+    unknown = sorted(set(parts) - set(API_KEY_SCOPE_ORDER))
+    if unknown:
+        raise ValueError(f"Unsupported API key scope: {', '.join(unknown)}.")
+    if "admin" in parts:
+        if len(parts) != 1:
+            raise ValueError("The admin API key scope must be used alone.")
+        return "admin"
+    return ",".join(scope for scope in API_KEY_SCOPE_ORDER if scope in parts)
+
+
 async def _owned_active_application(
     db: AsyncSession, application_id: uuid.UUID, owner_id: uuid.UUID
 ) -> ApiClientApplication:
@@ -79,8 +101,12 @@ async def _owned_active_application(
 class ApiKeyCreate(BaseModel):
     application_id: uuid.UUID
     key_name: str = Field(min_length=1, max_length=200)
-    scopes: Optional[str] = "read"
-    rate_limit_per_min: int = 60
+    scopes: Optional[str] = Field(default="read", max_length=32)
+    rate_limit_per_min: int = Field(
+        default=API_KEY_DEFAULT_RATE_LIMIT_PER_MIN,
+        ge=API_KEY_MIN_RATE_LIMIT_PER_MIN,
+        le=API_KEY_MAX_RATE_LIMIT_PER_MIN,
+    )
     description: Optional[str] = None
     expires_at: Optional[datetime] = None
 
@@ -92,9 +118,25 @@ class ApiKeyCreate(BaseModel):
             raise ValueError("Key name must not be blank")
         return value
 
+    @field_validator("scopes")
+    @classmethod
+    def validate_scopes(cls, value: Optional[str]) -> str:
+        return "read" if value is None else _canonicalize_scopes(value)
+
 
 class ApiKeyRotate(BaseModel):
     expires_at: Optional[datetime] = None
+    scopes: Optional[str] = None
+    rate_limit_per_min: Optional[int] = Field(
+        default=None,
+        ge=API_KEY_MIN_RATE_LIMIT_PER_MIN,
+        le=API_KEY_MAX_RATE_LIMIT_PER_MIN,
+    )
+
+    @field_validator("scopes")
+    @classmethod
+    def validate_scopes(cls, value: Optional[str]) -> Optional[str]:
+        return _canonicalize_scopes(value) if value is not None else None
 
 
 class ApiOAuthClientSecretCreate(BaseModel):
@@ -334,6 +376,8 @@ async def create_api_key(
 ):
     """Issue an application-owned API key. The raw value is returned once and never persisted."""
     await _owned_active_application(db, payload.application_id, current_user.id)
+    if "admin" in (payload.scopes or "read").split(",") and not getattr(current_user, "is_superuser", False):
+        raise HTTPException(status_code=403, detail="The admin API-key scope can only be issued by a superuser.")
     raw, prefix, key_hash = _generate_api_key()
 
     key = ApiKey(
@@ -342,7 +386,7 @@ async def create_api_key(
         key_name=payload.key_name,
         key_prefix=prefix,
         key_hash=key_hash,
-        scopes=payload.scopes,
+        scopes=payload.scopes or "read",
         rate_limit_per_min=payload.rate_limit_per_min,
         description=payload.description,
         expires_at=_validated_expiry(payload.expires_at, legacy_timestamp=True),
@@ -437,6 +481,23 @@ async def rotate_api_key(
         if "expires_at" in payload.model_fields_set
         else _validated_expiry(previous.expires_at, legacy_timestamp=True)
     )
+    if "scopes" in payload.model_fields_set and payload.scopes is None:
+        raise HTTPException(status_code=422, detail="Scopes cannot be null when changed.")
+    scopes = payload.scopes if "scopes" in payload.model_fields_set else (previous.scopes or "read")
+    try:
+        scopes = _canonicalize_scopes(scopes)
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail="This legacy API key has unsupported scopes; choose new scopes when rotating.") from exc
+    if "admin" in scopes.split(",") and not getattr(current_user, "is_superuser", False):
+        raise HTTPException(status_code=403, detail="The admin API-key scope can only be issued by a superuser.")
+    if "rate_limit_per_min" in payload.model_fields_set and payload.rate_limit_per_min is None:
+        raise HTTPException(status_code=422, detail="Rate limit cannot be null when changed.")
+    rate_limit = payload.rate_limit_per_min if "rate_limit_per_min" in payload.model_fields_set else previous.rate_limit_per_min
+    if not API_KEY_MIN_RATE_LIMIT_PER_MIN <= rate_limit <= API_KEY_MAX_RATE_LIMIT_PER_MIN:
+        raise HTTPException(
+            status_code=409,
+            detail=f"This legacy API key's rate limit is outside the current {API_KEY_MIN_RATE_LIMIT_PER_MIN}-{API_KEY_MAX_RATE_LIMIT_PER_MIN} range; choose a new rate when rotating.",
+        )
     raw, prefix, key_hash = _generate_api_key()
     replacement = ApiKey(
         user_id=previous.user_id,
@@ -444,8 +505,8 @@ async def rotate_api_key(
         key_name=previous.key_name,
         key_prefix=prefix,
         key_hash=key_hash,
-        scopes=previous.scopes,
-        rate_limit_per_min=previous.rate_limit_per_min,
+        scopes=scopes,
+        rate_limit_per_min=rate_limit,
         description=previous.description,
         expires_at=expiry,
     )
@@ -691,8 +752,8 @@ async def developer_dashboard(
         "total_api_calls": total_calls,
         "success_calls": success_calls,
         "error_calls": error_calls,
-        "available_scopes": ["read", "write", "admin"],
-        "default_rate_limit": 60,
+        "available_scopes": list(API_KEY_SCOPE_ORDER),
+        "default_rate_limit": API_KEY_DEFAULT_RATE_LIMIT_PER_MIN,
     }
 
 
@@ -741,14 +802,22 @@ async def developer_resources(_=Depends(get_current_user)):
             "Set {{base_url}} to your deployment URL."
         ),
         "authentication": {
-            "method": "Bearer token (JWT)",
-            "header": "Authorization: Bearer <token>",
-            "obtain_token": "POST /api/v1/auth/login",
-            "api_key_note": "API key auth middleware integration planned — set X-API-Key header.",
+            "method": "HttpOnly session cookie (JWT)",
+            "header": f"Cookie: {settings.AUTH_COOKIE_NAME}=<session>",
+            "obtain_token": "Sign in through the ERP login flow; the browser receives the HttpOnly session cookie.",
+            "api_key_note": "API-key request authentication is not enabled; the developer portal currently manages credential metadata only.",
         },
         "rate_limits": {
-            "default": "60 req/min per key",
-            "burst": "100 req/min short burst",
+            "default": f"{API_KEY_DEFAULT_RATE_LIMIT_PER_MIN} requests per minute per key",
+            "minimum": API_KEY_MIN_RATE_LIMIT_PER_MIN,
+            "maximum": API_KEY_MAX_RATE_LIMIT_PER_MIN,
+            "window": "60 seconds",
+            "enforcement": "Stored configuration only; not enforced until API-key request authentication is enabled.",
+        },
+        "api_key_scopes": {
+            "read": "Future key-authenticated GET/HEAD read ceiling; not currently enforced.",
+            "write": "Future key-authenticated read plus POST/PUT/PATCH/DELETE ceiling; not currently enforced.",
+            "admin": "Future full-access ceiling, issued by a superuser and used alone; not currently enforced.",
         },
         "sdk_note": "JavaScript and Python SDKs planned. Currently use native HTTP or the OpenAPI spec.",
         "webhooks": {

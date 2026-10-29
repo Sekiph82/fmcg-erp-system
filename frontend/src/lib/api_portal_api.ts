@@ -94,9 +94,16 @@ export interface DevResources {
   redoc_ui: string;
   postman_collection_note: string;
   authentication: Record<string, string>;
-  rate_limits: Record<string, string>;
+  rate_limits: {
+    default: string;
+    minimum: number;
+    maximum: number;
+    window: string;
+    enforcement: string;
+  };
   sdk_note: string;
   webhooks: Record<string, string>;
+  api_key_scopes: Record<string, string>;
 }
 
 export interface GraphQLSchemaInfo {
@@ -166,7 +173,7 @@ export const devPortalApi = {
     expires_at?: string;
   }) => req<ApiKeyCreated>("/keys", { method: "POST", body: JSON.stringify(body) }),
 
-  rotateKey: (keyId: string, body: { expires_at?: string | null } = {}) =>
+  rotateKey: (keyId: string, body: { expires_at?: string | null; scopes?: string; rate_limit_per_min?: number } = {}) =>
     req<ApiKeyCreated>(`/keys/${encodeURIComponent(keyId)}/rotate`, { method: "POST", body: JSON.stringify(body) }),
 
   listKeys: (includeInactive = false) =>

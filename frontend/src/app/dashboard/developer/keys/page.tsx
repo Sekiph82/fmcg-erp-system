@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { devPortalApi, ApiKeyOut, ApiKeyCreated, ApiClientApplication } from "@/lib/api_portal_api";
 
-const SCOPE_OPTS = ["read", "write", "admin", "read,write", "read,write,admin"];
+const SCOPE_OPTS = ["read", "write", "read,write", "admin"];
 
 interface NewKeyForm {
   application_id: string;
@@ -20,6 +20,9 @@ export default function ApiKeysPage() {
   const [form, setForm] = useState<NewKeyForm>({ application_id: "", key_name: "", scopes: "read", rate_limit_per_min: 60, description: "" });
   const [creating, setCreating] = useState(false);
   const [newKey, setNewKey] = useState<ApiKeyCreated | null>(null);
+  const [rotateTarget, setRotateTarget] = useState<ApiKeyOut | null>(null);
+  const [rotationScopes, setRotationScopes] = useState("read");
+  const [rotationRate, setRotationRate] = useState(60);
   const [revoking, setRevoking] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -73,13 +76,25 @@ export default function ApiKeysPage() {
     }
   };
 
-  const rotate = async (key: ApiKeyOut) => {
+  const openRotation = (key: ApiKeyOut) => {
+    setRotateTarget(key);
+    setRotationScopes(key.scopes || "read");
+    setRotationRate(key.rate_limit_per_min);
+    setError(null);
+  };
+
+  const rotate = async () => {
+    if (!rotateTarget) return;
     if (!confirm("Rotate this API key now? The current key will stop working immediately and cannot be restored.")) return;
-    setRevoking(key.key_id);
+    setRevoking(rotateTarget.key_id);
     setError(null);
     try {
-      const result = await devPortalApi.rotateKey(key.key_id);
+      const result = await devPortalApi.rotateKey(rotateTarget.key_id, {
+        scopes: rotationScopes,
+        rate_limit_per_min: rotationRate,
+      });
       setNewKey(result);
+      setRotateTarget(null);
       load();
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "API key could not be rotated.");
@@ -122,6 +137,9 @@ export default function ApiKeysPage() {
       <p className="rounded border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">
         API keys are managed here, but API requests still use the ERP sign-in session. OAuth token issuance and API-key authentication are not enabled by this registry.
       </p>
+      <p className="rounded border border-gray-200 bg-gray-50 p-3 text-sm text-gray-700">
+        Scope policy: read-only, read/write, or admin-only. Admin credentials require a superuser. Per-key limits default to 60 requests per minute and can be set from 1 to 1,000; these values are stored as policy metadata and are not enforced until API-key authentication is enabled.
+      </p>
 
       {/* Newly created key banner */}
       {newKey && (
@@ -139,6 +157,55 @@ export default function ApiKeysPage() {
             </button>
           </div>
           <button onClick={() => setNewKey(null)} className="text-xs text-gray-500 underline">Dismiss</button>
+        </div>
+      )}
+
+      {rotateTarget && (
+        <div className="bg-white border border-blue-200 rounded-lg p-4 shadow-sm space-y-3">
+          <h2 className="text-sm font-semibold text-gray-700">Rotate {rotateTarget.key_name} and set policy</h2>
+          <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded p-2">
+            Rotation immediately revokes the current key. Copy the replacement once it is shown. Policy values are stored but are not enforced by API-key authentication yet.
+          </p>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <label className="text-xs text-gray-500">
+              Scope policy
+              <select
+                value={rotationScopes}
+                onChange={(event) => setRotationScopes(event.target.value)}
+                className="mt-1 w-full border border-gray-300 rounded px-3 py-1.5 text-sm text-gray-800"
+              >
+                {SCOPE_OPTS.map((scope) => <option key={scope} value={scope}>{scope}</option>)}
+              </select>
+              <span className="mt-1 block">Admin scope can only be issued by a superuser.</span>
+            </label>
+            <label className="text-xs text-gray-500">
+              Rate limit (1–1,000 req/min)
+              <input
+                type="number"
+                min={1}
+                max={1000}
+                value={rotationRate}
+                onChange={(event) => setRotationRate(Number(event.target.value))}
+                className="mt-1 w-full border border-gray-300 rounded px-3 py-1.5 text-sm text-gray-800"
+              />
+            </label>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={rotate}
+              disabled={revoking === rotateTarget.key_id || !Number.isInteger(rotationRate) || rotationRate < 1 || rotationRate > 1000}
+              className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded disabled:opacity-50"
+            >
+              {revoking === rotateTarget.key_id ? "Rotating…" : "Rotate key"}
+            </button>
+            <button
+              onClick={() => setRotateTarget(null)}
+              disabled={revoking === rotateTarget.key_id}
+              className="border border-gray-300 text-sm text-gray-600 px-4 py-2 rounded hover:bg-gray-50 disabled:opacity-50"
+            >
+              Cancel
+            </button>
+          </div>
         </div>
       )}
 
@@ -181,7 +248,7 @@ export default function ApiKeysPage() {
               </select>
             </div>
             <div>
-              <label className="text-xs text-gray-500 block mb-1">Rate Limit (req/min)</label>
+              <label className="text-xs text-gray-500 block mb-1">Rate Limit (1–1,000 req/min; default 60)</label>
               <input
                 type="number"
                 min={1}
@@ -277,8 +344,8 @@ export default function ApiKeysPage() {
                       {k.is_active && (
                         <div className="flex gap-3">
                           {(!k.expires_at || new Date(k.expires_at).getTime() > Date.now()) && (
-                            <button onClick={() => rotate(k)} disabled={revoking === k.key_id} className="text-blue-600 hover:text-blue-800 text-xs disabled:opacity-50">
-                              {revoking === k.key_id ? "Working…" : "Rotate"}
+                            <button onClick={() => openRotation(k)} disabled={revoking === k.key_id} className="text-blue-600 hover:text-blue-800 text-xs disabled:opacity-50">
+                              Set policy & rotate
                             </button>
                           )}
                           <button onClick={() => revoke(k.key_id)} disabled={revoking === k.key_id} className="text-red-600 hover:text-red-800 text-xs disabled:opacity-50">
