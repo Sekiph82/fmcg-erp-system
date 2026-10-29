@@ -1,0 +1,38 @@
+Verified source SHA: 996f999939d02f75cdaf44163a81b465b6157f79
+[WebServer] (node:27088) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:48372) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] ⚠ Warning: Next.js ignored package-lock.json in C:\Users\sekip because it is outside the current Git repository (C:\Users\sekip\Desktop\fmcg-erp-system).
+[WebServer]  To use this directory, set `turbopack.root` in your Next.js config.
+[WebServer]
+[WebServer] ⚠ React 18 support is deprecated in Next.js 16 and will be removed in Next.js 17. Please upgrade to React 19. Learn more: https://nextjs.org/docs/messages/react-version
+[WebServer] ⚠ The "middleware" file convention is deprecated. Please use "proxy" instead.
+[WebServer]
+[WebServer]   To migrate automatically, run:
+[WebServer]   npx @next/codemod@canary middleware-to-proxy .
+[WebServer]
+[WebServer]   Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+
+Running 1 test using 1 worker
+
+(node:25880) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:25880) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+M20 API endpoint under test: http://localhost:18241 (runner listener 127.0.0.1:18241)
+M20 synthetic principal: m20-planner-a47e312c9b15
+M20 principal authorization: is_superuser=false permissions=mps.view,mps.simulate,mps.edit_own_warehouse warehouse_scope=ce82c3fb-1772-4dc5-9fd6-6e3a87bc6cb9
+MPS browser API 200 /api/v1/mps/plans
+MPS browser API 200 /api/v1/mps/plans/9b8c4145-168c-4e43-a3cd-57a196a62a96/lines
+MPS browser API 200 /api/v1/mps/plans/9b8c4145-168c-4e43-a3cd-57a196a62a96/whatif
+MPS browser API 201 /api/v1/mps/plans/9b8c4145-168c-4e43-a3cd-57a196a62a96/whatif
+M20 persisted scenario id: 3cf0ef35-6726-4921-9484-ba130cdd1ae5
+MPS browser API 200 /api/v1/mps/plans/9b8c4145-168c-4e43-a3cd-57a196a62a96/whatif
+MPS browser API 200 /api/v1/mps/plans
+MPS browser API 200 /api/v1/mps/plans/9b8c4145-168c-4e43-a3cd-57a196a62a96/whatif
+MPS browser API 200 /api/v1/mps/plans/9b8c4145-168c-4e43-a3cd-57a196a62a96/lines
+  ok 1 [chromium] › e2e\m20-scenario-backend-roundtrip.spec.ts:16:5 › MPS scenario UI persists a real split through the PostgreSQL-backed API (10.1s)
+
+  1 passed (16.5s)
+M20 PostgreSQL persistence proof: database=fmcg_m20_t004_e839fb6f81e14ba09886b297 scenario_id=3cf0ef35-6726-4921-9484-ba130cdd1ae5 principal=m20-planner-a47e312c9b15 plan=M20-OPS-PLAN-62066825364b name=M20-real-backend-1793235414826 service_level=100.00 delay_count=0
