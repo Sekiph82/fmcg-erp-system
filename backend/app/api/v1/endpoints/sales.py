@@ -608,6 +608,7 @@ async def record_payment(
         reference=body.reference,
         notes=body.notes,
         user_id=current_user.id,
+        method=body.method,
     )
     await db.commit()
     await db.refresh(payment)

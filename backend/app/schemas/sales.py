@@ -369,6 +369,7 @@ class InvoiceDetailRead(InvoiceRead):
 class PaymentCreate(BaseModel):
     payment_date: date
     amount: Decimal
+    method: str = "cash"
     reference: Optional[str] = None
     notes: Optional[str] = None
 
@@ -379,6 +380,7 @@ class PaymentRead(BaseModel):
     invoice_id: uuid.UUID
     payment_date: date
     amount: Decimal
+    method: str = "cash"
     reference: Optional[str]
     notes: Optional[str]
     created_at: datetime

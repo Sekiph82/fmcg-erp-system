@@ -32,6 +32,14 @@ from app.models.sales import (
     SOStatus, ShipmentStatus, InvoiceStatus,
 )
 from app.models.inventory import Stock, StockMovement, MovementType, StockType
+from app.models.finance import (
+    AccountingPostingRule,
+    AccountType,
+    ChartOfAccount,
+    JournalEntry,
+    JournalLine,
+    JournalStatus,
+)
 
 
 # ── Guards ────────────────────────────────────────────────────────────────────
@@ -57,6 +65,223 @@ async def _lock_sales_order_for_update(db: AsyncSession, so: SalesOrder) -> Sale
     if locked_so is None:
         raise HTTPException(404, "Sales order not found")
     return locked_so
+
+
+async def _active_posting_rule(
+    db: AsyncSession, source_event: str
+) -> AccountingPostingRule:
+    result = await db.execute(
+        select(AccountingPostingRule)
+        .where(
+            AccountingPostingRule.source_module == "sales",
+            AccountingPostingRule.source_event == source_event,
+            AccountingPostingRule.is_active.is_(True),
+        )
+        .order_by(AccountingPostingRule.priority, AccountingPostingRule.created_at, AccountingPostingRule.id)
+        .limit(1)
+    )
+    rule = result.scalar_one_or_none()
+    if rule is None:
+        raise HTTPException(
+            422,
+            f"No active accounting posting rule is configured for sales/{source_event}",
+        )
+    return rule
+
+
+async def _require_sales_account_types(
+    db: AsyncSession, expected: list[tuple[Optional[uuid.UUID], AccountType, str]]
+) -> None:
+    required = [(account_id, account_type, label) for account_id, account_type, label in expected if account_id]
+    ids = {account_id for account_id, _, _ in required}
+    accounts = {
+        account.id: account
+        for account in (await db.execute(select(ChartOfAccount).where(ChartOfAccount.id.in_(ids)))).scalars().all()
+    } if ids else {}
+    for account_id, account_type, label in required:
+        account = accounts.get(account_id)
+        if account is None or account.account_type != account_type:
+            raise HTTPException(422, f"Configured {label} account must exist and have type {account_type.value}")
+
+
+async def _post_sales_journal(
+    db: AsyncSession,
+    *,
+    source_event: str,
+    source_id: uuid.UUID,
+    source_ref: str,
+    entry_date: date,
+    description: str,
+    amount: Decimal,
+    currency: str,
+    debit_lines: list[tuple[uuid.UUID, Decimal, str]],
+    credit_lines: list[tuple[uuid.UUID, Decimal, str]],
+    user_id: uuid.UUID,
+) -> JournalEntry:
+    """Post one configured, balanced sales journal in the source transaction."""
+    from app.services.finance_service import (
+        assert_journal_lines_postable,
+        assert_posting_period_open,
+        get_or_create_operational_posting_event,
+        mark_journal_posted,
+        mark_operational_posting_posted,
+        validate_journal_lines_balance,
+    )
+    from app.models.finance import OperationalPostingStatus
+
+    event, batch, _ = await get_or_create_operational_posting_event(
+        db,
+        source_module="sales",
+        source_event=source_event,
+        source_id=source_id,
+        event_date=entry_date,
+        source_ref=source_ref,
+        amount=amount,
+        currency=currency,
+        created_by_id=user_id,
+    )
+    if event.status == OperationalPostingStatus.POSTED and event.journal_entry_id:
+        existing = await db.get(JournalEntry, event.journal_entry_id)
+        if existing is not None:
+            return existing
+    if event.status != OperationalPostingStatus.PENDING:
+        raise HTTPException(409, f"Sales posting event {source_event}/{source_id} already exists but is not posted")
+
+    lines_data = [
+        {"account_id": account_id, "description": line_description, "debit": debit, "credit": Decimal("0"), "currency": currency}
+        for account_id, debit, line_description in debit_lines if debit > 0
+    ] + [
+        {"account_id": account_id, "description": line_description, "debit": Decimal("0"), "credit": credit, "currency": currency}
+        for account_id, credit, line_description in credit_lines if credit > 0
+    ]
+    validate_journal_lines_balance(lines_data)
+    await assert_journal_lines_postable(db, lines_data)
+    await assert_posting_period_open(db, entry_date)
+
+    entry = JournalEntry(
+        entry_no=f"AUTO-SLS-{source_id.hex}",
+        entry_date=entry_date,
+        description=description[:255],
+        source_module="sales",
+        source_event=source_event,
+        source_id=source_id,
+        source_ref=source_ref[:100],
+        status=JournalStatus.DRAFT,
+        is_posted=False,
+        posting_batch_id=batch.id,
+        created_by_id=user_id,
+    )
+    entry.lines = [JournalLine(**line_data) for line_data in lines_data]
+    db.add(entry)
+    await db.flush()
+    await mark_journal_posted(db, entry, user_id)
+    await mark_operational_posting_posted(
+        db, event, batch, journal_entry_id=entry.id, posted_by_id=user_id
+    )
+    return entry
+
+
+async def _post_invoice_to_gl(db: AsyncSession, invoice: Invoice, user_id: uuid.UUID) -> JournalEntry:
+    rule = await _active_posting_rule(db, "SALES_INVOICE_ISSUED")
+    if not rule.debit_account_id or not rule.credit_account_id:
+        raise HTTPException(422, "Invoice posting rule must configure the receivables debit and revenue credit accounts")
+    if invoice.subtotal < 0 or invoice.tax_amount < 0 or invoice.total_amount <= 0:
+        raise HTTPException(422, "Invoice totals must be positive and non-negative by component before posting")
+    if invoice.total_amount != invoice.subtotal + invoice.tax_amount:
+        raise HTTPException(422, "Invoice total does not equal subtotal plus tax; refusing to post")
+    if invoice.tax_amount > 0 and not rule.tax_account_id:
+        raise HTTPException(422, "Invoice posting rule must configure a tax liability account when invoice tax is non-zero")
+    if invoice.tax_amount == 0 and rule.tax_account_id is None:
+        tax_lines: list[tuple[uuid.UUID, Decimal, str]] = []
+    else:
+        tax_lines = [(rule.tax_account_id, invoice.tax_amount, f"Tax on invoice {invoice.invoice_no}")]
+    await _require_sales_account_types(
+        db,
+        [
+            (rule.debit_account_id, AccountType.ASSET, "receivables debit"),
+            (rule.credit_account_id, AccountType.REVENUE, "revenue credit"),
+            (rule.tax_account_id if invoice.tax_amount > 0 else None, AccountType.LIABILITY, "tax liability"),
+        ],
+    )
+    return await _post_sales_journal(
+        db,
+        source_event="SALES_INVOICE_ISSUED",
+        source_id=invoice.id,
+        source_ref=invoice.invoice_no,
+        entry_date=invoice.invoice_date,
+        description=f"Sales invoice {invoice.invoice_no}",
+        amount=invoice.total_amount,
+        currency=invoice.currency,
+        debit_lines=[(rule.debit_account_id, invoice.total_amount, f"Receivable for invoice {invoice.invoice_no}")],
+        credit_lines=[
+            (rule.credit_account_id, invoice.subtotal, f"Revenue for invoice {invoice.invoice_no}"),
+            *tax_lines,
+        ],
+        user_id=user_id,
+    )
+
+
+async def _post_customer_payment_to_gl(
+    db: AsyncSession, payment: Payment, invoice: Invoice, user_id: uuid.UUID
+) -> JournalEntry:
+    from app.models.finance import OperationalPostingEvent, OperationalPostingStatus
+
+    method = (payment.method or "cash").strip().lower()
+    if method not in {"cash", "bank", "mpesa"}:
+        raise HTTPException(422, "Customer payment method must be cash, bank, or mpesa")
+    source_event = f"CUSTOMER_PAYMENT_RECEIVED_{method.upper()}"
+    rule = await _active_posting_rule(db, source_event)
+    if not rule.clearing_account_id or not rule.credit_account_id:
+        raise HTTPException(422, "Payment posting rule must configure a clearing debit and receivables credit account")
+    invoice_event = (await db.execute(
+        select(OperationalPostingEvent).where(
+            OperationalPostingEvent.source_module == "sales",
+            OperationalPostingEvent.source_event == "SALES_INVOICE_ISSUED",
+            OperationalPostingEvent.source_id == str(invoice.id),
+        )
+    )).scalar_one_or_none()
+    if (
+        invoice_event is None
+        or invoice_event.status != OperationalPostingStatus.POSTED
+        or invoice_event.journal_entry_id is None
+    ):
+        raise HTTPException(409, "Invoice has no posted receivables journal to settle")
+    invoice_journal = (await db.execute(
+        select(JournalEntry)
+        .options(selectinload(JournalEntry.lines))
+        .where(JournalEntry.id == invoice_event.journal_entry_id)
+    )).scalar_one_or_none()
+    invoice_receivables_accounts = {
+        line.account_id for line in (invoice_journal.lines if invoice_journal else []) if line.debit > 0
+    }
+    if (
+        invoice_journal is None
+        or not invoice_journal.is_posted
+        or invoice_journal.status != JournalStatus.POSTED
+        or len(invoice_receivables_accounts) != 1
+        or rule.credit_account_id not in invoice_receivables_accounts
+    ):
+        raise HTTPException(422, "Payment posting rule must credit the same receivables account debited by the invoice")
+    await _require_sales_account_types(
+        db,
+        [
+            (rule.clearing_account_id, AccountType.ASSET, "payment clearing debit"),
+            (rule.credit_account_id, AccountType.ASSET, "receivables credit"),
+        ],
+    )
+    return await _post_sales_journal(
+        db,
+        source_event=source_event,
+        source_id=payment.id,
+        source_ref=payment.reference or str(payment.id),
+        entry_date=payment.payment_date,
+        description=f"Customer payment for invoice {invoice.invoice_no}",
+        amount=payment.amount,
+        currency=invoice.currency,
+        debit_lines=[(rule.clearing_account_id, payment.amount, f"{method.upper()} receipt {payment.reference or payment.id}")],
+        credit_lines=[(rule.credit_account_id, payment.amount, f"Receivable settlement for invoice {invoice.invoice_no}")],
+        user_id=user_id,
+    )
 
 
 # ── SO Lifecycle ──────────────────────────────────────────────────────────────
@@ -422,9 +647,11 @@ async def invoice_from_shipment(
         discount_pct = so_line.discount_pct if so_line else Decimal("0")
         tax_rate = so_line.tax_rate if so_line else Decimal("0")
         net_price = unit_price * (1 - discount_pct)
-        line_total = (sl.quantity * net_price * (1 + tax_rate)).quantize(Decimal("0.01"))
-        subtotal += sl.quantity * net_price
-        tax_total += sl.quantity * net_price * tax_rate
+        line_subtotal = (sl.quantity * net_price).quantize(Decimal("0.01"))
+        line_tax = (line_subtotal * tax_rate).quantize(Decimal("0.01"))
+        line_total = line_subtotal + line_tax
+        subtotal += line_subtotal
+        tax_total += line_tax
 
         lines_data.append(InvoiceLine(
             product_id=sl.product_id,
@@ -438,7 +665,9 @@ async def invoice_from_shipment(
             line_total=line_total,
         ))
 
-    total_amount = (subtotal + tax_total).quantize(Decimal("0.01"))
+    subtotal = subtotal.quantize(Decimal("0.01"))
+    tax_total = tax_total.quantize(Decimal("0.01"))
+    total_amount = subtotal + tax_total
 
     invoice = Invoice(
         invoice_no=invoice_no,
@@ -449,8 +678,8 @@ async def invoice_from_shipment(
         due_date=due_date,
         status=InvoiceStatus.ISSUED,
         currency=so.currency,
-        subtotal=subtotal.quantize(Decimal("0.01")),
-        tax_amount=tax_total.quantize(Decimal("0.01")),
+        subtotal=subtotal,
+        tax_amount=tax_total,
         total_amount=total_amount,
         paid_amount=Decimal("0"),
         notes=notes,
@@ -462,6 +691,8 @@ async def invoice_from_shipment(
     for il in lines_data:
         il.invoice_id = invoice.id
         db.add(il)
+
+    await _post_invoice_to_gl(db, invoice, user_id)
 
     # Mark SO as INVOICED if fully shipped
     so_result2 = await db.execute(select(SalesOrder).where(SalesOrder.id == so.id).with_for_update())
@@ -482,22 +713,43 @@ async def record_payment(
     reference: Optional[str],
     notes: Optional[str],
     user_id: uuid.UUID,
+    method: str = "cash",
 ) -> Payment:
+    locked_result = await db.execute(
+        select(Invoice)
+        .where(Invoice.id == invoice.id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    )
+    invoice = locked_result.scalar_one_or_none()
+    if invoice is None:
+        raise HTTPException(404, "Invoice not found")
     if invoice.status == InvoiceStatus.PAID:
         raise HTTPException(422, "Invoice already fully paid")
     if invoice.status == InvoiceStatus.CANCELLED:
         raise HTTPException(422, "Invoice is cancelled")
+    if amount <= 0:
+        raise HTTPException(422, "Customer payment amount must be greater than zero")
+    outstanding_before_payment = invoice.total_amount - invoice.paid_amount
+    if amount > outstanding_before_payment:
+        raise HTTPException(422, "Customer payment cannot exceed the invoice outstanding balance")
+    normalized_method = (method or "cash").strip().lower()
+    if normalized_method not in {"cash", "bank", "mpesa"}:
+        raise HTTPException(422, "Customer payment method must be cash, bank, or mpesa")
 
     payment = Payment(
         invoice_id=invoice.id,
         payment_date=payment_date,
         amount=amount,
+        method=normalized_method,
         reference=reference,
         notes=notes,
         created_by_id=user_id,
     )
     db.add(payment)
     await db.flush()
+
+    await _post_customer_payment_to_gl(db, payment, invoice, user_id)
 
     invoice.paid_amount += amount
     outstanding = invoice.total_amount - invoice.paid_amount

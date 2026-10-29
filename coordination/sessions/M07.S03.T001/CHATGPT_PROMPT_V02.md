@@ -1,0 +1,9 @@
+# M07.S03.T001 — Configured order-to-cash posting closure
+
+Implement and verify only `M07.S03.T001 — Verify order-to-cash accounting closure` from root `TASKS.md`, under `CHATGPT_AUDIT_CRITERIA_V02.md`.
+
+Use the existing active `AccountingPostingRule` mappings and operational posting event/batch/journal services. Implement automatic, balanced, auditable GL posting for invoice issue and cash/bank/mpesa customer receipts. Do not add default accounts or fabricated production mappings. Require the configured event-specific mappings and fail the whole source transaction when they are missing or invalid. Preserve transactionality, source links, posted states, period/account validation, and prevent overpayment. Route both customer payment APIs through the same posting path.
+
+Extend the guarded PostgreSQL integration test with synthetic chart accounts and mapping rules; prove invoice tax/subtotal/total journal lines, partial and final payment journals for all supported methods, exact account IDs and receivables consistency, event/batch lineage, both API paths, fractional-cent rounding consistency, and rollback-safe rejection when a method mapping is absent/mismatched or when payment exceeds outstanding. Use only a fresh loopback task database with an empty password and the strict M07.S03.T001 name/opt-in guard. Then run applicable GAP-001 and GAP-002 regressions, compile Python, and run `git diff --check`. Do not run GitHub Actions.
+
+Use one independent read-only source/evidence reviewer. Remove the exact task-owned PostgreSQL container and verify it is absent. Keep completion claims limited to the configured code path and synthetic evidence; do not claim live accounts, tax policy, payment provider settlement, or factory acceptance. Publish only after reviewing fetched origin/main and preserving owner files; use `[skip ci]`.

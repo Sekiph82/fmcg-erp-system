@@ -56,6 +56,7 @@ from app.schemas.finance import (
 )
 from app.crud import finance as crud
 from app.services import finance_service as svc
+from app.services import sales_service as sales_svc
 
 router = APIRouter()
 
@@ -1555,24 +1556,16 @@ async def create_customer_payment(
     if not inv:
         raise HTTPException(404, "Invoice not found")
 
-    payment = Payment(
-        invoice_id=invoice_id,
-        payment_date=body.payment_date,
+    payment = await sales_svc.record_payment(
+        db,
+        inv,
         amount=body.amount,
-        method=body.method,
+        payment_date=body.payment_date,
         reference=body.reference,
         notes=body.notes,
-        created_by_id=current_user.id,
+        user_id=current_user.id,
+        method=body.method,
     )
-    db.add(payment)
-
-    # Update invoice paid_amount and status
-    inv.paid_amount = (inv.paid_amount or 0) + body.amount
-    if inv.paid_amount >= inv.total_amount:
-        inv.status = InvoiceStatus.PAID
-    else:
-        inv.status = InvoiceStatus.PARTIALLY_PAID
-
     await db.commit()
     await db.refresh(payment)
 
