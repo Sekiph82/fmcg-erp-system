@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Body, Depends, Header, HTTPException, Query, Request, status
+from fastapi import APIRouter, Body, Depends, Header, HTTPException, Query, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
@@ -149,10 +149,14 @@ async def get_event(event_id: UUID, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/events/publish", response_model=EventLogOut, status_code=201)
-async def publish_event(data: PublishEventRequest, db: AsyncSession = Depends(get_db)):
+async def publish_event(
+    data: PublishEventRequest,
+    response: Response,
+    db: AsyncSession = Depends(get_db),
+):
     """Publish an event manually (or from internal module calls)."""
     try:
-        return await svc.publish_event(
+        result = await svc.publish_event(
             db,
             data.event_code,
             data.payload,
@@ -160,11 +164,22 @@ async def publish_event(data: PublishEventRequest, db: AsyncSession = Depends(ge
             reference_id=data.reference_id,
             actor_id=data.actor_id,
             partition_key=data.partition_key,
+            idempotency_key=data.idempotency_key,
+            correlation_id=data.correlation_id,
+            causation_id=data.causation_id,
         )
     except svc.EventPayloadValidationError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     except svc.EventSchemaGovernanceError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except svc.EventIdempotencyConflictError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except svc.EventIdentifierValidationError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    if getattr(result, "_idempotency_replayed", False):
+        response.status_code = status.HTTP_200_OK
+        response.headers["Idempotency-Replayed"] = "true"
+    return result
 
 
 @router.post("/events/replay")
@@ -315,14 +330,22 @@ async def receive_inbound_webhook(
         payload = {"raw_body": body.decode(errors="replace")[:5000]}
 
     # Log as event
-    await svc.publish_event(
-        db,
-        event_code=f"inbound.{endpoint.handler_module or endpoint_path}",
-        payload=payload,
-        reference_type="inbound_endpoint",
-        reference_id=endpoint_path,
-        module="inbound",
-    )
+    try:
+        await svc.publish_event(
+            db,
+            event_code=f"inbound.{endpoint.handler_module or endpoint_path}",
+            payload=payload,
+            reference_type="inbound_endpoint",
+            reference_id=endpoint_path,
+            module="inbound",
+            idempotency_key=request.headers.get("Idempotency-Key"),
+            correlation_id=request.headers.get("X-Correlation-ID"),
+            causation_id=request.headers.get("X-Causation-ID"),
+        )
+    except svc.EventIdempotencyConflictError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except svc.EventIdentifierValidationError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
     # Update receive counter
     endpoint.receive_count = (endpoint.receive_count or 0) + 1

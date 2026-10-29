@@ -2,7 +2,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 from uuid import UUID
-from pydantic import BaseModel, HttpUrl
+from pydantic import BaseModel, Field, HttpUrl, field_validator
 
 from app.models.webhook import AuthType, DeliveryStatus, HttpMethod
 
@@ -83,6 +83,8 @@ class DomainEventEnvelope(BaseModel):
     schema_version: int = 1
     occurred_at: datetime
     actor_id: Optional[str] = None
+    correlation_id: Optional[str] = None
+    causation_id: Optional[str] = None
     reference: DomainEventReference
     data: Dict[str, Any]
 
@@ -91,9 +93,22 @@ class PublishEventRequest(BaseModel):
     event_code: str
     reference_type: Optional[str] = None
     reference_id: Optional[str] = None
-    payload: Dict[str, Any] = {}
+    payload: Dict[str, Any] = Field(default_factory=dict)
     actor_id: Optional[str] = None
     partition_key: Optional[str] = None
+    idempotency_key: Optional[str] = Field(default=None, max_length=255)
+    correlation_id: Optional[str] = Field(default=None, max_length=200)
+    causation_id: Optional[str] = Field(default=None, max_length=200)
+
+    @field_validator("idempotency_key", "correlation_id", "causation_id")
+    @classmethod
+    def normalize_optional_event_identifier(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("Event identifiers must not be blank.")
+        return normalized
 
 
 class ReplayRequest(BaseModel):

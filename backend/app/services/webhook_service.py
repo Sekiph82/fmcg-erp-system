@@ -14,6 +14,7 @@ import httpx
 from jsonschema import Draft202012Validator
 from jsonschema.exceptions import SchemaError
 from sqlalchemy import and_, desc, func, or_, select
+from sqlalchemy.dialects.postgresql import insert as postgresql_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.webhook import (
@@ -39,6 +40,14 @@ class EventPayloadValidationError(ValueError):
     """Business data does not conform to its registered event schema."""
 
 
+class EventIdempotencyConflictError(ValueError):
+    """An idempotency key was reused for a different event request."""
+
+
+class EventIdentifierValidationError(ValueError):
+    """An event tracing or idempotency identifier is invalid."""
+
+
 def _build_event_envelope(
     *,
     event_id: UUID,
@@ -50,6 +59,8 @@ def _build_event_envelope(
     reference_type: Optional[str] = None,
     reference_id: Optional[str] = None,
     actor_id: Optional[str] = None,
+    correlation_id: Optional[str] = None,
+    causation_id: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Build the canonical event contract without modifying caller-owned data."""
     return DomainEventEnvelope(
@@ -59,6 +70,8 @@ def _build_event_envelope(
         schema_version=schema_version,
         occurred_at=occurred_at,
         actor_id=actor_id,
+        correlation_id=correlation_id,
+        causation_id=causation_id,
         reference=DomainEventReference(type=reference_type, id=reference_id),
         data=payload,
     ).model_dump(mode="json")
@@ -78,6 +91,8 @@ def _canonical_event_payload(event_log: EventLog) -> Dict[str, Any]:
     ):
         versioned_payload = dict(payload)
         versioned_payload.setdefault("schema_version", 1)
+        versioned_payload.setdefault("correlation_id", None)
+        versioned_payload.setdefault("causation_id", None)
         return versioned_payload
 
     legacy_metadata = payload.get("_event") if isinstance(payload.get("_event"), dict) else {}
@@ -154,6 +169,43 @@ def _validate_event_data(schema: Optional[Dict[str, Any]], data: Dict[str, Any])
         raise EventPayloadValidationError(
             f"Event payload does not match its declared schema at '{path}' ({keyword})."
         )
+
+
+def _normalize_event_identifier(value: Optional[str], *, name: str, max_length: int) -> Optional[str]:
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise EventIdentifierValidationError(f"{name} must be a string.")
+    normalized = value.strip()
+    if not normalized:
+        raise EventIdentifierValidationError(f"{name} must not be blank.")
+    if len(normalized) > max_length:
+        raise EventIdentifierValidationError(f"{name} exceeds the {max_length}-character limit.")
+    return normalized
+
+
+def _event_idempotency_fingerprint(
+    *, event_code: str, payload: Dict[str, Any], reference_type: Optional[str],
+    reference_id: Optional[str], actor_id: Optional[str], partition_key: Optional[str],
+    correlation_id: Optional[str], causation_id: Optional[str], module: Optional[str],
+) -> str:
+    request = {
+        "event_code": event_code,
+        "payload": payload,
+        "reference_type": reference_type,
+        "reference_id": reference_id,
+        "actor_id": actor_id,
+        "partition_key": partition_key,
+        "correlation_id": correlation_id,
+        "causation_id": causation_id,
+        "module": module,
+    }
+    canonical = json.dumps(request, ensure_ascii=True, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def _same_idempotent_request(event_log: EventLog, fingerprint: str) -> bool:
+    return event_log.idempotency_fingerprint == fingerprint
 
 
 # ── Seeded event definitions ──────────────────────────────────────────────────
@@ -312,8 +364,42 @@ async def publish_event(
     actor_id: Optional[str] = None,
     partition_key: Optional[str] = None,
     module: Optional[str] = None,
+    idempotency_key: Optional[str] = None,
+    correlation_id: Optional[str] = None,
+    causation_id: Optional[str] = None,
 ) -> EventLog:
     """Publish an event. Creates EventLog and queues DeliveryAttempts for matching subscriptions."""
+    idempotency_key = _normalize_event_identifier(idempotency_key, name="idempotency_key", max_length=255)
+    correlation_id = _normalize_event_identifier(correlation_id, name="correlation_id", max_length=200)
+    causation_id = _normalize_event_identifier(causation_id, name="causation_id", max_length=200)
+    fingerprint = None
+    if idempotency_key is not None:
+        fingerprint = _event_idempotency_fingerprint(
+            event_code=event_code,
+            payload=payload,
+            reference_type=reference_type,
+            reference_id=reference_id,
+            actor_id=actor_id,
+            partition_key=partition_key,
+            correlation_id=correlation_id,
+            causation_id=causation_id,
+            module=module,
+        )
+        existing_result = await db.execute(
+            select(EventLog).where(
+                EventLog.event_code == event_code,
+                EventLog.idempotency_key == idempotency_key,
+            )
+        )
+        existing = existing_result.scalar_one_or_none()
+        if existing is not None:
+            if not _same_idempotent_request(existing, fingerprint):
+                raise EventIdempotencyConflictError(
+                    "This idempotency key was already used for a different event request."
+                )
+            existing._idempotency_replayed = True
+            return existing
+
     # Resolve event def
     def_result = await db.execute(
         select(EventDefinition).where(EventDefinition.event_code == event_code)
@@ -336,6 +422,8 @@ async def publish_event(
         reference_type=reference_type,
         reference_id=reference_id,
         actor_id=actor_id,
+        correlation_id=correlation_id,
+        causation_id=causation_id,
     )
 
     event_log = EventLog(
@@ -349,9 +437,50 @@ async def publish_event(
         actor_id=actor_id,
         partition_key=partition_key or reference_id,
         created_at=occurred_at,
+        idempotency_key=idempotency_key,
+        idempotency_fingerprint=fingerprint,
     )
-    db.add(event_log)
-    await db.flush()
+    if idempotency_key is not None:
+        insert_result = await db.execute(
+            postgresql_insert(EventLog)
+            .values(
+                id=event_log.id,
+                event_def_id=event_log.event_def_id,
+                event_code=event_log.event_code,
+                module=event_log.module,
+                reference_type=event_log.reference_type,
+                reference_id=event_log.reference_id,
+                payload=event_log.payload,
+                actor_id=event_log.actor_id,
+                partition_key=event_log.partition_key,
+                created_at=event_log.created_at,
+                idempotency_key=event_log.idempotency_key,
+                idempotency_fingerprint=event_log.idempotency_fingerprint,
+            )
+            .on_conflict_do_nothing(index_elements=[EventLog.event_code, EventLog.idempotency_key])
+            .returning(EventLog)
+        )
+        inserted_event = insert_result.scalar_one_or_none()
+        if inserted_event is None:
+            duplicate_result = await db.execute(
+                select(EventLog).where(
+                    EventLog.event_code == event_code,
+                    EventLog.idempotency_key == idempotency_key,
+                )
+            )
+            duplicate = duplicate_result.scalar_one_or_none()
+            if duplicate is None:
+                raise RuntimeError("The idempotency conflict row was not visible after insert arbitration.")
+            if not _same_idempotent_request(duplicate, fingerprint):
+                raise EventIdempotencyConflictError(
+                    "This idempotency key was already used for a different event request."
+                )
+            duplicate._idempotency_replayed = True
+            return duplicate
+        event_log = inserted_event
+    else:
+        db.add(event_log)
+        await db.flush()
 
     # Queue delivery attempts for matching active subscriptions
     subs_result = await db.execute(

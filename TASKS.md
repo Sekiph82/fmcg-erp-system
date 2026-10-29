@@ -10,9 +10,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 - Current Milestone: M31 — API / Event Architecture
 - Current Sprint: M31.S01 — Partner API Governance
-- Current Task: M31.S02.T002 — Event versioning/schema governance
+- Current Task: M31.S02.T003 — Idempotency/correlation/causation IDs
 - Current Task Status: COMPLETE
-- Next Task/Action: M31.S02.T003 — Idempotency/correlation/causation IDs
+- Next Task/Action: M31.S02.T004 — Transactional event creation/outbox strategy
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -983,7 +983,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
   Evidence: Canonical versionless envelope, legacy normalization/filter-template compatibility, and contract docs implemented. Focused pytest 5 passed; py_compile and git diff --check passed; independent read-only review has no blockers.
 - [x] M31.S02.T002 — Event versioning/schema governance
   Evidence: Versioned canonical event envelopes, validated Draft 2020-12 schemas, immutable version snapshots, admin-governed schema changes and API history implemented. Unit tests 17 passed/3 DB-gated skips; disposable PostgreSQL fresh and legacy upgrade/API tests 4 passed; backend compile, Alembic single head, frontend tsc/ESLint and diff checks passed; independent review no blockers.
-- [ ] M31.S02.T003 — Idempotency/correlation/causation IDs
+- [x] M31.S02.T003 — Idempotency/correlation/causation IDs
+  Evidence: Implemented event-type-scoped idempotency keys with request fingerprints and atomic PostgreSQL conflict handling; correlation/causation IDs propagate in canonical envelopes and inbound headers. Focused T001/T002/T003 tests: 21 passed; T003 disposable loopback PostgreSQL/API/concurrency suite: 3 passed; py_compile, Alembic single head 20261030_0002, diff check, and independent read-only review passed. See coordination/sessions/M31.S02.T003/CODEX_LOG_V01.md.
 - [ ] M31.S02.T004 — Transactional event creation/outbox strategy
 
 ## M31.S03 — Delivery Engine

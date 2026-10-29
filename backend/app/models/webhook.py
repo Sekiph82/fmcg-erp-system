@@ -83,6 +83,14 @@ class EventDefinitionVersion(Base):
 class EventLog(Base, TimestampMixin):
     """Immutable log of every published event."""
     __tablename__ = "webhook_event_logs"
+    __table_args__ = (
+        UniqueConstraint("event_code", "idempotency_key", name="uq_webhook_event_idempotency"),
+        CheckConstraint(
+            "(idempotency_key IS NULL AND idempotency_fingerprint IS NULL) OR "
+            "(idempotency_key IS NOT NULL AND idempotency_fingerprint IS NOT NULL)",
+            name="ck_webhook_event_idempotency_pair",
+        ),
+    )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     event_def_id = Column(UUID(as_uuid=True), ForeignKey("webhook_event_definitions.id", ondelete="SET NULL"), nullable=True, index=True)
@@ -94,6 +102,8 @@ class EventLog(Base, TimestampMixin):
     actor_id = Column(String(100), nullable=True)                   # user who triggered
     partition_key = Column(String(100), nullable=True, index=True)  # for ordering guarantees
     sequence_no = Column(Integer, nullable=True)
+    idempotency_key = Column(String(255), nullable=True)
+    idempotency_fingerprint = Column(String(64), nullable=True)
 
     definition = relationship("EventDefinition", back_populates="logs")
     deliveries = relationship("DeliveryAttempt", back_populates="event_log", cascade="all, delete-orphan")

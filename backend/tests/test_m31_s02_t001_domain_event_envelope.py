@@ -40,6 +40,8 @@ def test_envelope_has_canonical_metadata_and_keeps_business_data_opaque():
         "schema_version": 1,
         "occurred_at": "2026-10-30T08:15:00Z",
         "actor_id": "user-2",
+        "correlation_id": None,
+        "causation_id": None,
         "reference": {"type": "invoice", "id": "INV-17"},
         "data": source_data,
     }
