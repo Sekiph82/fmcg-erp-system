@@ -331,7 +331,7 @@ async def receive_inbound_webhook(
 
     # Log as event
     try:
-        await svc.publish_event(
+        await svc.stage_event(
             db,
             event_code=f"inbound.{endpoint.handler_module or endpoint_path}",
             payload=payload,

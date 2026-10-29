@@ -354,7 +354,7 @@ async def list_event_definition_versions(
 
 # ── Event publishing ──────────────────────────────────────────────────────────
 
-async def publish_event(
+async def stage_event(
     db: AsyncSession,
     event_code: str,
     payload: Dict[str, Any],
@@ -368,7 +368,7 @@ async def publish_event(
     correlation_id: Optional[str] = None,
     causation_id: Optional[str] = None,
 ) -> EventLog:
-    """Publish an event. Creates EventLog and queues DeliveryAttempts for matching subscriptions."""
+    """Stage event and pending deliveries in the caller's transaction without committing."""
     idempotency_key = _normalize_event_identifier(idempotency_key, name="idempotency_key", max_length=255)
     correlation_id = _normalize_event_identifier(correlation_id, name="correlation_id", max_length=200)
     causation_id = _normalize_event_identifier(causation_id, name="causation_id", max_length=200)
@@ -503,6 +503,40 @@ async def publish_event(
         )
         db.add(attempt)
 
+    await db.flush()
+    return event_log
+
+
+async def publish_event(
+    db: AsyncSession,
+    event_code: str,
+    payload: Dict[str, Any],
+    *,
+    reference_type: Optional[str] = None,
+    reference_id: Optional[str] = None,
+    actor_id: Optional[str] = None,
+    partition_key: Optional[str] = None,
+    module: Optional[str] = None,
+    idempotency_key: Optional[str] = None,
+    correlation_id: Optional[str] = None,
+    causation_id: Optional[str] = None,
+) -> EventLog:
+    """Publish a standalone event, committing its event and outbox rows together."""
+    event_log = await stage_event(
+        db,
+        event_code,
+        payload,
+        reference_type=reference_type,
+        reference_id=reference_id,
+        actor_id=actor_id,
+        partition_key=partition_key,
+        module=module,
+        idempotency_key=idempotency_key,
+        correlation_id=correlation_id,
+        causation_id=causation_id,
+    )
+    if getattr(event_log, "_idempotency_replayed", False):
+        return event_log
     await db.commit()
     await db.refresh(event_log)
     return event_log
