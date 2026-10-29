@@ -1,0 +1,56 @@
+
+[1A[2K[WebServer] (node:11056) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[1A[2K[WebServer] (node:53392) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+[1A[2K[WebServer] ⚠ Warning: Next.js ignored package-lock.json in C:\Users\sekip because it is outside the current Git repository (C:\Users\sekip\Desktop\fmcg-erp-system).
+[WebServer]  To use this directory, set `turbopack.root` in your Next.js config.
+[WebServer] 
+
+[1A[2K[WebServer] ⚠ React 18 support is deprecated in Next.js 16 and will be removed in Next.js 17. Please upgrade to React 19. Learn more: https://nextjs.org/docs/messages/react-version
+
+[1A[2K[WebServer] ⚠ The "middleware" file convention is deprecated. Please use "proxy" instead.
+[WebServer] 
+[WebServer]   To migrate automatically, run:
+[WebServer]   npx @next/codemod@canary middleware-to-proxy .
+[WebServer] 
+[WebServer]   Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+
+Running 15 tests using 1 worker
+
+
+[1A[2K(node:52180) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+
+[1A[2K(node:52180) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+[1A[2K[1/15] [chromium] › e2e\m20-mps-views.spec.ts:48:7 › MPS planning views › planning board announces loading and renders the plan's line
+[1A[2K[2/15] [chromium] › e2e\m20-mps-views.spec.ts:69:7 › MPS planning views › planning board shows an empty state when a plan has no lines
+[1A[2K[3/15] [chromium] › e2e\m20-mps-views.spec.ts:85:7 › MPS planning views › planning board reports denied access to plan lines
+
+[1A[2K[WebServer] [browser] [QueryCache] AxiosError: Request failed with status code 403 (src/app/providers.tsx:14:17)
+[1A[2K[4/15] [chromium] › e2e\m20-mps-views.spec.ts:97:7 › MPS planning views › capacity heatmap renders utilization
+[1A[2K[5/15] [chromium] › e2e\m20-mps-views.spec.ts:123:7 › MPS planning views › capacity page reports denied access to heatmap data
+
+[1A[2K[WebServer] [browser] [QueryCache] AxiosError: Request failed with status code 403 (src/app/providers.tsx:14:17)
+[1A[2K[6/15] [chromium] › e2e\m20-mps-views.spec.ts:135:7 › MPS planning views › campaign page renders campaign details
+[1A[2K[7/15] [chromium] › e2e\m20-mps-views.spec.ts:162:7 › MPS planning views › campaign page presents an empty state
+[1A[2K[8/15] [chromium] › e2e\m20-mps-views.spec.ts:175:7 › MPS planning views › campaign page reports denied access
+
+[1A[2K[WebServer] [browser] [QueryCache] AxiosError: Request failed with status code 403 (src/app/providers.tsx:14:17)
+[1A[2K[9/15] [chromium] › e2e\m20-mps-views.spec.ts:188:7 › MPS planning views › what-if page presents an empty state for scenarios
+[1A[2K[10/15] [chromium] › e2e\m20-mps-views.spec.ts:210:7 › MPS planning views › what-if page reports denied access to scenarios
+
+[1A[2K[WebServer] [browser] [QueryCache] AxiosError: Request failed with status code 403 (src/app/providers.tsx:14:17)
+[1A[2K[11/15] [chromium] › e2e\m20-mps-views.spec.ts:223:7 › MPS planning views › view-only users do not see MPS mutation controls
+[1A[2K[12/15] [chromium] › e2e\m20-mps-views.spec.ts:267:7 › MPS planning views › what-if comparison errors are announced to assistive technology
+
+[1A[2K[WebServer] [browser] [MutationCache] AxiosError: Request failed with status code 403 (src/app/providers.tsx:19:17)
+[1A[2K[13/15] [chromium] › e2e\m20-scenario-operations.spec.ts:57:5 › what-if builder serializes merge inputs
+[1A[2K[14/15] [chromium] › e2e\m20-scenario-operations.spec.ts:69:5 › what-if builder serializes exact split quantities
+[1A[2K[15/15] [chromium] › e2e\m20-scenario-operations.spec.ts:82:5 › what-if builder serializes a concrete non-overlapping shift interval
+[1A[2K  15 passed (35.4s)
