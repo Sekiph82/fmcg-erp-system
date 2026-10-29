@@ -13,6 +13,7 @@ from sqlalchemy import text
 from app.api.v1.router import api_router
 from app.core.config import settings
 from app.core.csrf import CSRFOriginMiddleware
+from app.core.document_upload_limit import DocumentUploadBodyLimitMiddleware
 from app.core.exception_handlers import register_handlers
 from app.core.input_sanitizer import InputSanitizerMiddleware
 from app.core.observability import (
@@ -110,6 +111,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.add_middleware(CSRFOriginMiddleware, allowed_origins=settings.BACKEND_CORS_ORIGINS)
+app.add_middleware(DocumentUploadBodyLimitMiddleware)
 
 
 _NO_TIMEOUT_PATHS = {"/live", "/ready", "/health", "/metrics"}

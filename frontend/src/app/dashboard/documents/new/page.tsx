@@ -54,13 +54,10 @@ function NewDocumentContent() {
     description: "",
     version: "1",
     revision_note: "",
-    status: "DRAFT",
     effective_date: "",
     expiry_date: "",
     related_entity_type: entityTypeParam,
     related_entity_id: entityIdParam,
-    file_url: "",
-    file_name: "",
   });
 
   // Pre-fill form from parent document when superseding
@@ -100,7 +97,6 @@ function NewDocumentContent() {
     const payload: Record<string, unknown> = {
       title: form.title,
       category: form.category,
-      status: form.status,
       version: Number(form.version) || 1,
     };
     if (form.description) payload.description = form.description;
@@ -109,8 +105,6 @@ function NewDocumentContent() {
     if (form.expiry_date) payload.expiry_date = form.expiry_date;
     if (form.related_entity_type) payload.related_entity_type = form.related_entity_type;
     if (form.related_entity_id) payload.related_entity_id = form.related_entity_id;
-    if (form.file_url) payload.file_url = form.file_url;
-    if (form.file_name) payload.file_name = form.file_name;
     mutation.mutate(payload);
   };
 
@@ -143,12 +137,6 @@ function NewDocumentContent() {
             <label className="block text-xs text-gray-500 mb-1">Category *</label>
             <select className="w-full border rounded px-3 py-2 text-sm" {...f("category")}>
               {CATEGORIES.map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs text-gray-500 mb-1">Status</label>
-            <select className="w-full border rounded px-3 py-2 text-sm" {...f("status")}>
-              {["DRAFT", "APPROVED", "OBSOLETE", "ARCHIVED"].map((s) => <option key={s}>{s}</option>)}
             </select>
           </div>
           <div>
@@ -200,21 +188,11 @@ function NewDocumentContent() {
           )}
         </div>
 
-        {/* File placeholder */}
+        {/* Binary files are attached from the saved document's detail page. */}
         <div className="border-t pt-4">
-          <p className="text-xs font-semibold text-gray-600 mb-3 uppercase tracking-wide">File Attachment (placeholder)</p>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">File Name</label>
-              <input className="w-full border rounded px-3 py-2 text-sm" placeholder="e.g. receipt_jan2026.pdf" {...f("file_name")} />
-            </div>
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">File URL / Storage Key</label>
-              <input className="w-full border rounded px-3 py-2 text-sm font-mono" placeholder="s3://bucket/path or https://..." {...f("file_url")} />
-            </div>
-          </div>
-          <p className="text-xs text-gray-400 mt-2">
-            File upload is storage-agnostic. Paste an S3 key, GCS URI, or signed URL. Upload engine is plugged in separately.
+          <p className="text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide">File Attachment</p>
+          <p className="text-sm text-gray-500">
+            Save the document first. You can attach a file from its detail page; it will remain unavailable until a malware scan succeeds.
           </p>
         </div>
 

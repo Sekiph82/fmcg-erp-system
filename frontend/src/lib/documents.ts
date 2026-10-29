@@ -101,9 +101,12 @@ export interface DocumentRead extends DocumentShort {
   expiry_date: string | null;
   owner_user_id: string | null;
   approved_by_id: string | null;
-  file_url: string | null;
   file_size_bytes: number | null;
   mime_type: string | null;
+  file_checksum_sha256: string | null;
+  file_scan_status: string;
+  file_locked: boolean;
+  file_storage_ready: boolean;
   updated_at: string;
 }
 
@@ -153,6 +156,20 @@ export const docsApi = {
 
   create: (data: Record<string, unknown>) =>
     apiClient.post<DocumentRead>(`${base}/`, data).then((r) => r.data),
+
+  uploadFile: (id: string, file: File) => {
+    const body = new FormData();
+    body.append("file", file);
+    return apiClient.post<DocumentRead>(`${base}/${id}/file`, body, {
+      headers: { "Content-Type": "multipart/form-data" },
+    }).then((r) => r.data);
+  },
+
+  scanFile: (id: string) =>
+    apiClient.post<DocumentRead>(`${base}/${id}/scan`).then((r) => r.data),
+
+  downloadFile: (id: string) =>
+    apiClient.get<Blob>(`${base}/${id}/file`, { responseType: "blob" }).then((r) => r.data),
 
   update: (id: string, data: Record<string, unknown>) =>
     apiClient.patch<DocumentRead>(`${base}/${id}`, data).then((r) => r.data),

@@ -42,8 +42,6 @@ function EditPanel({ doc, onClose }: { doc: DocumentRead; onClose: () => void })
     revision_note: doc.revision_note ?? "",
     related_entity_type: doc.related_entity_type ?? "",
     related_entity_id: doc.related_entity_id ?? "",
-    file_url: doc.file_url ?? "",
-    file_name: doc.file_name ?? "",
     effective_date: doc.effective_date ?? "",
     expiry_date: doc.expiry_date ?? "",
   });
@@ -68,8 +66,6 @@ function EditPanel({ doc, onClose }: { doc: DocumentRead; onClose: () => void })
     if (form.revision_note) out.revision_note = form.revision_note;
     if (form.related_entity_type) out.related_entity_type = form.related_entity_type;
     if (form.related_entity_id) out.related_entity_id = form.related_entity_id;
-    if (form.file_url) out.file_url = form.file_url;
-    if (form.file_name) out.file_name = form.file_name;
     if (form.effective_date) out.effective_date = form.effective_date;
     if (form.expiry_date) out.expiry_date = form.expiry_date;
     return out;
@@ -99,14 +95,6 @@ function EditPanel({ doc, onClose }: { doc: DocumentRead; onClose: () => void })
           <label className="text-xs text-gray-500">Expiry Date</label>
           <input type="date" className="w-full border rounded px-3 py-2 text-sm mt-1" {...f("expiry_date")} />
         </div>
-        <div>
-          <label className="text-xs text-gray-500">File Name</label>
-          <input className="w-full border rounded px-3 py-2 text-sm mt-1" {...f("file_name")} />
-        </div>
-        <div>
-          <label className="text-xs text-gray-500">File URL / Key</label>
-          <input className="w-full border rounded px-3 py-2 text-sm mt-1 font-mono" {...f("file_url")} />
-        </div>
       </div>
       <div className="flex gap-3">
         <button
@@ -127,6 +115,7 @@ function DocumentDetailContent({ id }: { id: string }) {
   const qc = useQueryClient();
   const [editing, setEditing] = useState(false);
   const [showVersions, setShowVersions] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const { data: doc, isLoading } = useQuery({
     queryKey: ["document", id],
@@ -152,6 +141,33 @@ function DocumentDetailContent({ id }: { id: string }) {
   const archiveMutation = useMutation({
     mutationFn: () => docsApi.archive(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["document", id] }),
+  });
+
+  const uploadMutation = useMutation({
+    mutationFn: (file: File) => docsApi.uploadFile(id, file),
+    onSuccess: () => {
+      setSelectedFile(null);
+      qc.invalidateQueries({ queryKey: ["document", id] });
+    },
+  });
+
+  const scanMutation = useMutation({
+    mutationFn: () => docsApi.scanFile(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["document", id] }),
+  });
+
+  const downloadMutation = useMutation({
+    mutationFn: () => docsApi.downloadFile(id),
+    onSuccess: (blob) => {
+      const url = window.URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = doc?.file_name ?? "document";
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.setTimeout(() => window.URL.revokeObjectURL(url), 1_000);
+    },
   });
 
   if (isLoading) return <p className="text-sm text-gray-400 p-6">Loading...</p>;
@@ -186,7 +202,7 @@ function DocumentDetailContent({ id }: { id: string }) {
               </button>
               <button
                 onClick={() => approveMutation.mutate()}
-                disabled={approveMutation.isPending}
+                disabled={approveMutation.isPending || (doc.file_storage_ready && doc.file_scan_status !== "CLEAN")}
                 className="px-3 py-1.5 bg-green-600 text-white rounded text-sm hover:bg-green-700 disabled:opacity-50"
               >
                 Approve
@@ -259,20 +275,64 @@ function DocumentDetailContent({ id }: { id: string }) {
         {/* File */}
         <div className="bg-white border rounded-lg p-4 space-y-3">
           <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">File Attachment</h3>
-          {doc.file_name || doc.file_url ? (
+          {doc.file_name ? (
             <>
               {doc.file_name && <Row label="File Name" value={doc.file_name} />}
               {doc.mime_type && <Row label="MIME Type" value={doc.mime_type} />}
               {doc.file_size_bytes && <Row label="Size" value={`${(doc.file_size_bytes / 1024).toFixed(1)} KB`} />}
-              {doc.file_url && (
-                <div>
-                  <p className="text-xs text-gray-500 mb-1">Storage Key / URL</p>
-                  <p className="text-xs font-mono text-gray-700 break-all bg-gray-50 p-2 rounded">{doc.file_url}</p>
+              <Row label="Malware Scan" value={doc.file_scan_status} />
+              {doc.file_storage_ready && doc.file_scan_status === "CLEAN" && (
+                <button
+                  onClick={() => downloadMutation.mutate()}
+                  disabled={downloadMutation.isPending}
+                  className="px-3 py-1.5 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700 disabled:opacity-50"
+                >
+                  {downloadMutation.isPending ? "Preparing..." : "Download file"}
+                </button>
+              )}
+              {doc.file_storage_ready && doc.file_scan_status !== "CLEAN" && (
+                <div className="space-y-2">
+                  <p className="text-xs text-amber-700">File access and approval stay blocked until a malware scan succeeds.</p>
+                  {doc.status === "DRAFT" && doc.is_latest && (
+                    <button
+                      onClick={() => scanMutation.mutate()}
+                      disabled={scanMutation.isPending}
+                      className="px-3 py-1.5 border rounded text-sm hover:bg-gray-50 disabled:opacity-50"
+                    >
+                      {scanMutation.isPending ? "Scanning..." : "Run malware scan"}
+                    </button>
+                  )}
                 </div>
+              )}
+              {!doc.file_storage_ready && (
+                <p className="text-xs text-amber-700">This record has legacy file metadata but no stored binary. Create a new version to attach a real file.</p>
               )}
             </>
           ) : (
-            <p className="text-sm text-gray-400">No file attached</p>
+            <div className="space-y-3">
+              <p className="text-sm text-gray-400">No file attached</p>
+              {doc.status === "DRAFT" && doc.is_latest && !doc.file_locked && (
+                <>
+                  <input
+                    type="file"
+                    accept=".pdf,.png,.jpg,.jpeg,.txt,.csv,.docx,.xlsx"
+                    onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)}
+                    className="block w-full text-sm text-gray-600"
+                  />
+                  <p className="text-xs text-gray-400">Allowed: PDF, PNG, JPEG, TXT, CSV, DOCX, XLSX. The file remains unavailable until a configured malware scanner reports CLEAN.</p>
+                  <button
+                    onClick={() => selectedFile && uploadMutation.mutate(selectedFile)}
+                    disabled={!selectedFile || uploadMutation.isPending}
+                    className="px-3 py-1.5 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700 disabled:opacity-50"
+                  >
+                    {uploadMutation.isPending ? "Uploading..." : "Upload file"}
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+          {(uploadMutation.isError || scanMutation.isError || downloadMutation.isError) && (
+            <p className="text-xs text-red-600">The file action failed. Check the document permission, file type, size limit, and scanner configuration.</p>
           )}
         </div>
 

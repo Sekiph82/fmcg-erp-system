@@ -3,9 +3,11 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from typing import List, Optional, Dict
+import logging
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from sqlalchemy import select, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -19,8 +21,10 @@ from app.schemas.documents import (
     DocumentRead, DocumentShort, DocumentVersionHistory,
 )
 from app.services.document_access_service import ensure_document_action_allowed
+from app.services.document_storage_service import get_document_storage, scan_document
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 # ── List ──────────────────────────────────────────────────────────────────────
@@ -112,6 +116,158 @@ async def create_document(
     return doc
 
 
+@router.post("/{doc_id}/file", response_model=DocumentRead, status_code=201,
+             dependencies=[Depends(require_permission("documents", "edit"))])
+async def upload_document_file(
+    doc_id: uuid.UUID,
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    doc = await db.get(Document, doc_id)
+    if not doc:
+        raise HTTPException(404, "Document not found")
+    ensure_document_action_allowed(current_user, doc, "edit")
+    if doc.status != DocumentStatus.DRAFT or not doc.is_latest:
+        raise HTTPException(409, "Files can only be attached to the latest draft document version")
+    if doc.storage_key or doc.file_name or doc.file_size_bytes:
+        raise HTTPException(409, "Document files are immutable; create a new document version to replace a file")
+
+    storage = get_document_storage()
+    stored = await storage.store_upload(file)
+    try:
+        scan_result = await scan_document(storage.path_for(stored.storage_key))
+        # The file is stored/scanned before taking the row lock. Re-read and
+        # validate under a lock so concurrent approval or uploads cannot attach
+        # a file to an approved version or replace another uploaded binary.
+        locked_doc = (await db.execute(
+            select(Document)
+            .where(Document.id == doc_id)
+            .with_for_update()
+            .execution_options(populate_existing=True)
+        )).scalar_one_or_none()
+        if not locked_doc:
+            raise HTTPException(404, "Document not found")
+        ensure_document_action_allowed(current_user, locked_doc, "edit")
+        if locked_doc.status != DocumentStatus.DRAFT or not locked_doc.is_latest:
+            raise HTTPException(409, "Files can only be attached to the latest draft document version")
+        if locked_doc.storage_key or locked_doc.file_name or locked_doc.file_size_bytes:
+            raise HTTPException(409, "Document files are immutable; create a new document version to replace a file")
+
+        locked_doc.file_url = None
+        locked_doc.file_name = stored.file_name
+        locked_doc.file_size_bytes = stored.file_size_bytes
+        locked_doc.mime_type = stored.mime_type
+        locked_doc.storage_provider = "local"
+        locked_doc.storage_key = stored.storage_key
+        locked_doc.file_checksum_sha256 = stored.sha256
+        locked_doc.file_scan_status = scan_result.status
+        locked_doc.file_scan_result = scan_result.result
+        locked_doc.updated_by_id = current_user.id
+        await db.commit()
+    except Exception:
+        await db.rollback()
+        # A failed commit can have an ambiguous outcome if the connection was
+        # lost. Remove the blob only after confirming no row points to it.
+        try:
+            persisted_key = (await db.execute(
+                select(Document.storage_key).where(Document.id == doc_id)
+            )).scalar_one_or_none()
+            if persisted_key != stored.storage_key:
+                storage.delete(stored.storage_key)
+        except Exception as cleanup_error:
+            logger.warning(
+                "Could not confirm document upload cleanup for document %s; preserving storage object %s: %s",
+                doc_id,
+                stored.storage_key,
+                cleanup_error,
+            )
+        raise
+    await db.refresh(locked_doc)
+    return locked_doc
+
+
+@router.post("/{doc_id}/scan", response_model=DocumentRead,
+             dependencies=[Depends(require_permission("documents", "edit"))])
+async def scan_document_file(
+    doc_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    doc = (await db.execute(
+        select(Document)
+        .where(Document.id == doc_id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    )).scalar_one_or_none()
+    if not doc:
+        raise HTTPException(404, "Document not found")
+    ensure_document_action_allowed(current_user, doc, "edit")
+    if not doc.storage_key or doc.storage_provider != "local":
+        raise HTTPException(409, "Document has no locally stored file to scan")
+    storage = get_document_storage()
+    path = storage.path_for(doc.storage_key)
+    if not path.is_file():
+        raise HTTPException(404, "Stored document file not found")
+    storage_key = doc.storage_key
+    doc.file_scan_status = "SCANNING"
+    doc.file_scan_result = "Malware scan is in progress; download and approval remain blocked."
+    doc.updated_by_id = current_user.id
+    await db.commit()
+
+    try:
+        result = await scan_document(path)
+    except Exception:
+        logger.exception("Document malware scan failed for document %s", doc_id)
+        result_status = "SCAN_ERROR"
+        result_detail = "The malware scan failed; the file remains quarantined."
+    else:
+        result_status = result.status
+        result_detail = result.result
+
+    locked_doc = (await db.execute(
+        select(Document)
+        .where(Document.id == doc_id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    )).scalar_one_or_none()
+    if not locked_doc:
+        raise HTTPException(404, "Document not found")
+    if locked_doc.storage_key != storage_key:
+        raise HTTPException(409, "The document file changed during scanning; scan the current file again")
+    locked_doc.file_scan_status = result_status
+    locked_doc.file_scan_result = result_detail
+    locked_doc.updated_by_id = current_user.id
+    await db.commit()
+    await db.refresh(locked_doc)
+    return locked_doc
+
+
+@router.get("/{doc_id}/file", dependencies=[Depends(require_permission("documents", "view"))])
+async def download_document_file(
+    doc_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    doc = await db.get(Document, doc_id)
+    if not doc:
+        raise HTTPException(404, "Document not found")
+    ensure_document_action_allowed(current_user, doc, "view")
+    if not doc.storage_key or doc.storage_provider != "local":
+        raise HTTPException(404, "Stored document file not found")
+    if doc.file_scan_status != "CLEAN":
+        raise HTTPException(423, "The document is quarantined until a malware scan reports CLEAN")
+    path = get_document_storage().path_for(doc.storage_key)
+    if not path.is_file():
+        raise HTTPException(404, "Stored document file not found")
+    return FileResponse(
+        path,
+        media_type=doc.mime_type or "application/octet-stream",
+        filename=doc.file_name or "document",
+        headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"},
+    )
+
+
 # ── Get single ────────────────────────────────────────────────────────────────
 
 @router.get("/{doc_id}", response_model=DocumentRead,
@@ -157,12 +313,19 @@ async def approve_document(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    doc = await db.get(Document, doc_id)
+    doc = (await db.execute(
+        select(Document)
+        .where(Document.id == doc_id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    )).scalar_one_or_none()
     if not doc:
         raise HTTPException(404, "Document not found")
     ensure_document_action_allowed(current_user, doc, "approve")
     if doc.status != DocumentStatus.DRAFT:
         raise HTTPException(400, f"Document is already {doc.status.value}")
+    if doc.storage_key and doc.file_scan_status != "CLEAN":
+        raise HTTPException(409, "A document with an unscanned or infected file cannot be approved")
     doc.status = DocumentStatus.APPROVED
     doc.approved_by_id = current_user.id
     doc.approved_at = datetime.now(timezone.utc)

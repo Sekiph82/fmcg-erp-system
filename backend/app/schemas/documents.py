@@ -4,7 +4,7 @@ from datetime import date, datetime
 from typing import Any, List, Optional
 import uuid
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from app.models.documents import DocumentCategory, DocumentStatus
 
@@ -20,7 +20,6 @@ class DocumentBase(BaseModel):
     document_type: Optional[str] = None
     version: int = 1
     revision_note: Optional[str] = None
-    status: DocumentStatus = DocumentStatus.DRAFT
     effective_date: Optional[date] = None
     expiry_date: Optional[date] = None
     owner_user_id: Optional[uuid.UUID] = None
@@ -38,21 +37,13 @@ class DocumentBase(BaseModel):
     next_review_owner_id: Optional[uuid.UUID] = None
     related_entity_type: Optional[str] = None
     related_entity_id: Optional[str] = None
-    file_url: Optional[str] = None
-    file_name: Optional[str] = None
-    file_size_bytes: Optional[int] = None
-    mime_type: Optional[str] = None
-    storage_provider: Optional[str] = None
-    storage_key: Optional[str] = None
-    file_checksum_sha256: Optional[str] = None
-    file_scan_status: str = "NOT_SCANNED"
-    file_scan_result: Optional[str] = None
-    file_locked: bool = False
 
 
 # ── Create / Update ───────────────────────────────────────────────────────────
 
 class DocumentCreate(DocumentBase):
+    model_config = ConfigDict(extra="forbid")
+
     # Optionally supersede an existing document (creates new version)
     previous_version_id: Optional[uuid.UUID] = None
 
@@ -82,16 +73,8 @@ class DocumentUpdate(BaseModel):
     next_review_owner_id: Optional[uuid.UUID] = None
     related_entity_type: Optional[str] = None
     related_entity_id: Optional[str] = None
-    file_url: Optional[str] = None
-    file_name: Optional[str] = None
-    file_size_bytes: Optional[int] = None
-    mime_type: Optional[str] = None
-    storage_provider: Optional[str] = None
-    storage_key: Optional[str] = None
-    file_checksum_sha256: Optional[str] = None
-    file_scan_status: Optional[str] = None
-    file_scan_result: Optional[str] = None
-    file_locked: Optional[bool] = None
+
+    model_config = ConfigDict(extra="forbid")
 
 
 class DocumentApprove(BaseModel):
@@ -112,6 +95,7 @@ class DocumentOwnerShort(BaseModel):
 class DocumentRead(DocumentBase):
     id: uuid.UUID
     version: int
+    status: DocumentStatus
     is_latest: bool
     previous_version_id: Optional[uuid.UUID]
     approved_by_id: Optional[uuid.UUID]
@@ -122,6 +106,13 @@ class DocumentRead(DocumentBase):
     archived_at: Optional[datetime] = None
     locked_at: Optional[datetime] = None
     locked_by_id: Optional[uuid.UUID] = None
+    file_name: Optional[str] = None
+    file_size_bytes: Optional[int] = None
+    mime_type: Optional[str] = None
+    file_checksum_sha256: Optional[str] = None
+    file_scan_status: str
+    file_locked: bool
+    file_storage_ready: bool = False
     created_at: Any
     updated_at: Any
 
@@ -141,7 +132,7 @@ class DocumentShort(BaseModel):
     confidentiality_level: Optional[str] = None
     related_entity_type: Optional[str]
     related_entity_id: Optional[str]
-    file_name: Optional[str]
+    file_name: Optional[str] = None
     created_at: Any
 
     model_config = {"from_attributes": True}

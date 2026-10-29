@@ -52,8 +52,9 @@ class Document(Base, TimestampMixin):
     related_entity_id) – a soft polymorphic FK pattern that avoids hard FK
     constraints across modules.
 
-    Storage is abstracted: file_url holds whatever the upload layer provides
-    (S3 key, local path, external URL). No upload engine is embedded here.
+    Binary storage uses a configured provider and opaque storage key. Public
+    responses expose neither local paths nor storage keys; the API service
+    enforces upload, scan, and authorized-download lifecycle rules.
     """
     __tablename__ = "documents"
 
@@ -157,6 +158,10 @@ class Document(Base, TimestampMixin):
     locked_by = relationship("User", foreign_keys=[locked_by_id])
     previous_version = relationship("Document", remote_side="Document.id", foreign_keys=[previous_version_id])
     tags = relationship("DocumentTag", back_populates="document", cascade="all, delete-orphan")
+
+    @property
+    def file_storage_ready(self) -> bool:
+        return self.storage_provider == "local" and bool(self.storage_key)
 
 
 class DocumentTag(Base, TimestampMixin):

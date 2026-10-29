@@ -278,7 +278,7 @@ From `CODEX_PROGRESS.md`:
 
 1. **Live DB migration not run.** Migration `20260515_0030` was not applied to the live dev database because Docker was unavailable in the GAP-012 session. Must be run before this module is testable end-to-end.
 
-2. **File storage is metadata-oriented only.** The `Document` model stores `file_url`, `storage_key`, `file_checksum_sha256`, `file_scan_status`, etc., but no upload engine is implemented. The system records metadata as provided; actual binary upload/download (S3, GCS, local) requires a future storage-pipeline task.
+2. **Storage is local and deliberately fail-closed.** The M01.S02.T005 upload pipeline stores approved file types under generated opaque keys in the configured local storage directory (the Compose backend uses the persistent `documents_data` volume at `/var/lib/fmcg-erp/documents`). Uploads are size-limited (25 MiB by default, with a pre-multipart request-body cap), written atomically, and recorded with their SHA-256 checksum. Client-supplied storage keys, scan state, and file URLs are not accepted or returned. Concurrent upload/approval transitions serialize on the document row; a file is never attached to a document version that became approved while scanning. Optional ClamAV INSTREAM scanning may set `CLEAN` or `INFECTED`; an active rescan marks the record `SCANNING`, while absent, unavailable, or invalid scanner responses remain quarantined as `NOT_SCANNED`/`SCAN_ERROR`. Attached files cannot be downloaded or their document approved until a scan confirms `CLEAN`. This v1 adapter is single-host local storage; operators must back up the volume and database together. No cloud storage credentials, malware scanner service, HA replication, or recovery guarantee is configured by default.
 
 3. **E-sign `signature_data` is freeform.** The model accepts any string as signature data. Cryptographic verification, visual signature rendering, and qualified electronic signature (QES) standards are not implemented. This is an intentional v1 governance baseline, not a production-ready PKI implementation.
 
@@ -312,4 +312,4 @@ From `CODEX_PROGRESS.md`:
 | 7 focused pytest tests passing | Complete (5 pre-existing + 2 new permission contract tests 2026-06-04) |
 | Migration offline SQL generation passed | Complete |
 | Live DB migration applied | **Pending** — Docker unavailable in GAP-012 session |
-| File upload pipeline | **Not implemented** — metadata-only |
+| File upload/storage pipeline | Complete — local persistent adapter, checksum, bounded/type-checked uploads, optional fail-closed ClamAV scan, authenticated download, and scan-gated approval; PostgreSQL disposable-database route test and frontend type-check recorded in the task evidence log |

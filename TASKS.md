@@ -8,11 +8,11 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 ## Project Status
 
-- Current Milestone: M08 — Production Management
-- Current Sprint: M08.S03 — Baseline Integrity
-- Current Task: M08.S03.T003 — Verify production/QC/finance closure
+- Current Milestone: M01 — Platform / Infrastructure
+- Current Sprint: M01.S02 — Shared Enterprise Platform Services
+- Current Task: M01.S02.T005 — Complete production document binary storage/upload pipeline
 - Current Task Status: COMPLETE
-- Next Task/Action: M21.S05.T004 — Close M21
+- Next Task/Action: M01.S02.T005 completed; run task queue spec to select the next dependency-ready task
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -152,7 +152,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 - [x] M01.S02.T002 — Centralized configuration/environment handling
 - [x] M01.S02.T003 — Shared approval/workflow/custom-field/activity infrastructure
 - [x] M01.S02.T004 — Import/export/report/help infrastructure
-- [P] M01.S02.T005 — Complete production document binary storage/upload pipeline
+- [x] M01.S02.T005 — Complete production document binary storage/upload pipeline
+  Evidence: [CODEX_LOG_V01.md](coordination/sessions/M01.S02.T005/CODEX_LOG_V01.md). Added persistent local file storage, bounded/type-checked upload, SHA-256, fail-closed optional malware scanning, scan-gated download/approval, race-safe lifecycle transitions, and frontend upload/download flow. Focused PostgreSQL disposable-database route test passed 16/16; unit tests 18/18; frontend type-check and both Compose configuration checks passed. See [GAP-012 document audit](docs/planning/GAP-012_DOCUMENT_KNOWLEDGE_AUDIT.md) and [implementation notes](docs/planning/GAP-012_DOCUMENT_KNOWLEDGE_IMPLEMENTATION_NOTES.md).
 
 ## M01.S03 — Runtime Reliability
 - [x] M01.S03.T001 — Prove always-running background/event dispatch ownership

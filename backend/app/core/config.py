@@ -68,6 +68,15 @@ class Settings(BaseSettings):
     DATABASE_POOL_TIMEOUT_SECONDS: int = 30
     DATABASE_POOL_PRE_PING: bool = True
 
+    # Document binaries use a persistent local volume by default. Downloads
+    # remain quarantined until a configured malware scanner reports CLEAN.
+    DOCUMENT_STORAGE_PROVIDER: str = "local"
+    DOCUMENT_STORAGE_PATH: str = "data/documents"
+    DOCUMENT_MAX_UPLOAD_BYTES: int = 26_214_400  # 25 MiB
+    DOCUMENT_CLAMAV_HOST: str = ""
+    DOCUMENT_CLAMAV_PORT: int = 3310
+    DOCUMENT_CLAMAV_TIMEOUT_SECONDS: int = 20
+
     # CORS
     BACKEND_CORS_ORIGINS: List[str] = [
         "http://localhost:3000",
