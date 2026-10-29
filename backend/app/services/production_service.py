@@ -325,7 +325,9 @@ def _compute_oee(order: ProductionOrder) -> OEEMetrics:
 
 # ── Lifecycle operations ──────────────────────────────────────────────────────
 
-async def release_order(db: AsyncSession, order: ProductionOrder) -> ProductionOrder:
+async def release_order(
+    db: AsyncSession, order: ProductionOrder, user_id: Optional[uuid.UUID] = None
+) -> ProductionOrder:
     order = await _lock_order_for_transition(db, order.id)
     if order.status != ProductionOrderStatus.PLANNED:
         raise HTTPException(422, detail=f"Order is {order.status.value}. Only PLANNED orders can be released.")
@@ -346,7 +348,7 @@ async def release_order(db: AsyncSession, order: ProductionOrder) -> ProductionO
     await lock_quality_gate_scope(db, PRODUCTION_GATE_TARGET_MODULE, PRODUCTION_RELEASE_GATE_TRIGGER_EVENT)
     try:
         await ensure_production_quality_gates_pass(
-            db, order, PRODUCTION_RELEASE_GATE_TRIGGER_EVENT, date.today()
+            db, order, PRODUCTION_RELEASE_GATE_TRIGGER_EVENT, date.today(), actor_id=user_id
         )
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
@@ -445,7 +447,7 @@ async def complete_order(
     await lock_quality_gate_scope(db, PRODUCTION_GATE_TARGET_MODULE, PRODUCTION_IN_PROCESS_GATE_TRIGGER_EVENT)
     try:
         await ensure_production_quality_gates_pass(
-            db, order, PRODUCTION_IN_PROCESS_GATE_TRIGGER_EVENT, date.today()
+            db, order, PRODUCTION_IN_PROCESS_GATE_TRIGGER_EVENT, date.today(), actor_id=user_id
         )
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc

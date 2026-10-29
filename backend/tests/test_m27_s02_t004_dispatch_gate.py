@@ -12,6 +12,19 @@ from app.models.sales import ShipmentStatus
 from app.services import qms_service, sales_service
 
 
+@pytest.fixture(autouse=True)
+def _stub_audit_persistence_for_service_contract_tests(monkeypatch):
+    async def record(**kwargs):
+        return SimpleNamespace(**kwargs)
+
+    monkeypatch.setattr(qms_service, "_record_quality_gate_audit_event", record)
+
+    async def no_waiver(*_args, **_kwargs):
+        return None
+
+    monkeypatch.setattr(qms_service, "get_active_quality_gate_waiver_id", no_waiver)
+
+
 class _Result:
     def __init__(self, value=None):
         self.value = value
@@ -40,9 +53,9 @@ async def _return(value):
 @pytest.mark.asyncio
 async def test_dispatch_gate_requires_passed_finished_goods_template_for_each_lot(monkeypatch):
     template_id = uuid4()
-    gate = SimpleNamespace(is_mandatory=True, required_templates=[SimpleNamespace(id=template_id)])
-    line = SimpleNamespace(lot_id=uuid4(), product_id=uuid4())
-    shipment = SimpleNamespace(shipment_no="SYN-DISPATCH-1", warehouse_id=uuid4(), lines=[line])
+    gate = SimpleNamespace(id=uuid4(), is_mandatory=True, required_templates=[SimpleNamespace(id=template_id)])
+    line = SimpleNamespace(id=uuid4(), lot_id=uuid4(), product_id=uuid4())
+    shipment = SimpleNamespace(id=uuid4(), shipment_no="SYN-DISPATCH-1", warehouse_id=uuid4(), lines=[line])
     db = _ResultDB([None])
     monkeypatch.setattr(qms_service, "list_dispatch_quality_gates", lambda *_: _return(gate))
 
@@ -60,8 +73,8 @@ async def test_dispatch_gate_requires_passed_finished_goods_template_for_each_lo
 
 @pytest.mark.asyncio
 async def test_dispatch_gate_rejects_untraceable_shipment_lines(monkeypatch):
-    gate = SimpleNamespace(is_mandatory=True, required_templates=[SimpleNamespace(id=uuid4())])
-    shipment = SimpleNamespace(shipment_no="SYN-DISPATCH-2", lines=[SimpleNamespace(lot_id=None)])
+    gate = SimpleNamespace(id=uuid4(), is_mandatory=True, required_templates=[SimpleNamespace(id=uuid4())])
+    shipment = SimpleNamespace(id=uuid4(), shipment_no="SYN-DISPATCH-2", lines=[SimpleNamespace(id=uuid4(), lot_id=None)])
     db = _ResultDB()
     monkeypatch.setattr(qms_service, "list_dispatch_quality_gates", lambda *_: _return(gate))
 
@@ -73,10 +86,10 @@ async def test_dispatch_gate_rejects_untraceable_shipment_lines(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_dispatch_gate_blocks_other_unresolved_mandatory_inspection(monkeypatch):
-    gate = SimpleNamespace(is_mandatory=True, required_templates=[SimpleNamespace(id=uuid4())])
+    gate = SimpleNamespace(id=uuid4(), is_mandatory=True, required_templates=[SimpleNamespace(id=uuid4())])
     shipment = SimpleNamespace(
-        shipment_no="SYN-DISPATCH-3", warehouse_id=uuid4(),
-        lines=[SimpleNamespace(lot_id=uuid4(), product_id=uuid4())],
+        id=uuid4(), shipment_no="SYN-DISPATCH-3", warehouse_id=uuid4(),
+        lines=[SimpleNamespace(id=uuid4(), lot_id=uuid4(), product_id=uuid4())],
     )
     db = _ResultDB([None, uuid4(), uuid4()])
     monkeypatch.setattr(qms_service, "list_dispatch_quality_gates", lambda *_: _return(gate))
@@ -90,7 +103,7 @@ async def test_dispatch_gate_blocks_other_unresolved_mandatory_inspection(monkey
 
 @pytest.mark.asyncio
 async def test_dispatch_gate_is_inactive_without_mandatory_configuration(monkeypatch):
-    shipment = SimpleNamespace(shipment_no="SYN-DISPATCH-4", lines=[SimpleNamespace(lot_id=None)])
+    shipment = SimpleNamespace(id=uuid4(), shipment_no="SYN-DISPATCH-4", lines=[SimpleNamespace(id=uuid4(), lot_id=None)])
     db = _ResultDB()
     monkeypatch.setattr(qms_service, "list_dispatch_quality_gates", lambda *_: _return(
         SimpleNamespace(is_mandatory=False, required_templates=[])
@@ -121,7 +134,7 @@ async def test_dispatch_service_blocks_before_stock_or_ledger_side_effects(monke
     async def lock_scope(_db, module, trigger):
         events.append(("lock", module, trigger))
 
-    async def block(_db, current_shipment, as_of_date):
+    async def block(_db, current_shipment, as_of_date, actor_id=None):
         events.append(("gate", current_shipment, as_of_date))
         raise ValueError("required finished-goods QC template is pending")
 

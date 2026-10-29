@@ -47,7 +47,7 @@ from app.models.quality import (
     QMSAIAgentType, QMSAIRecStatus,
     HazardAnalysis, CriticalControlPoint, CCPMonitoringLog,
     CorrectiveAction, CorrectiveActionStep,
-    QCDeviation, LotQualityStatus, QualityGateDefinition,
+    QCDeviation, LotQualityStatus, QualityGateDefinition, QualityGateWaiver, QualityGateAuditEvent,
     AllergenValidationRecord, QMSAIRecommendation,
 )
 
@@ -660,7 +660,7 @@ __all__ = [
     "QCTemplate", "QCTemplateParameter",
     "HazardAnalysis", "CriticalControlPoint", "CCPMonitoringLog",
     "CorrectiveAction", "CorrectiveActionStep",
-    "QCDeviation", "LotQualityStatus", "QualityGateDefinition",
+    "QCDeviation", "LotQualityStatus", "QualityGateDefinition", "QualityGateWaiver", "QualityGateAuditEvent",
     "AllergenValidationRecord", "QMSAIRecommendation",
     # Distribution
     "Distributor", "DistributorPricingTier",

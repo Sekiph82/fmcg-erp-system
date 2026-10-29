@@ -17,6 +17,19 @@ from app.services import qms_service, quality_service
 from app.services import procurement_service
 
 
+@pytest.fixture(autouse=True)
+def _stub_audit_persistence_for_service_contract_tests(monkeypatch):
+    async def record(**kwargs):
+        return SimpleNamespace(**kwargs)
+
+    monkeypatch.setattr(qms_service, "_record_quality_gate_audit_event", record)
+
+    async def no_waiver(*_args, **_kwargs):
+        return None
+
+    monkeypatch.setattr(qms_service, "get_active_quality_gate_waiver_id", no_waiver)
+
+
 class _ScalarResult:
     def __init__(self, value=None, values=None):
         self.value = value
@@ -53,7 +66,7 @@ class _ResultDB:
 
 def _gate(template_id=None, name="Incoming checks", mandatory=True):
     template = SimpleNamespace(id=template_id or uuid4(), name=name)
-    return SimpleNamespace(is_mandatory=mandatory, required_templates=[template]), template
+    return SimpleNamespace(id=uuid4(), is_mandatory=mandatory, required_templates=[template]), template
 
 
 @pytest.mark.asyncio

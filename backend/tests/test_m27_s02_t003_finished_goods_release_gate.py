@@ -13,6 +13,19 @@ from app.models.quality import QCDecision, QCInspection, QCStatus, QCType, Param
 from app.services import qms_service, quality_service
 
 
+@pytest.fixture(autouse=True)
+def _stub_audit_persistence_for_service_contract_tests(monkeypatch):
+    async def record(**kwargs):
+        return SimpleNamespace(**kwargs)
+
+    monkeypatch.setattr(qms_service, "_record_quality_gate_audit_event", record)
+
+    async def no_waiver(*_args, **_kwargs):
+        return None
+
+    monkeypatch.setattr(qms_service, "get_active_quality_gate_waiver_id", no_waiver)
+
+
 class _ScalarResult:
     def __init__(self, value=None, values=None):
         self.value = value
@@ -51,7 +64,7 @@ async def _return(value):
 @pytest.mark.asyncio
 async def test_finished_goods_gate_requires_passed_inspection_for_each_linked_template(monkeypatch):
     template = SimpleNamespace(id=uuid4(), name="Synthetic FG release test")
-    gate = SimpleNamespace(is_mandatory=True, required_templates=[template])
+    gate = SimpleNamespace(id=uuid4(), is_mandatory=True, required_templates=[template])
     inspection = SimpleNamespace(
         id=uuid4(), production_order_id=uuid4(), lot_id=uuid4(), lot_number="FG-LOT-1",
     )
@@ -71,8 +84,8 @@ async def test_finished_goods_gate_requires_passed_inspection_for_each_linked_te
 
 @pytest.mark.asyncio
 async def test_finished_goods_release_also_blocks_other_unresolved_mandatory_inspection(monkeypatch):
-    gate = SimpleNamespace(is_mandatory=True, required_templates=[])
-    inspection = SimpleNamespace(production_order_id=uuid4(), lot_id=uuid4(), lot_number="FG-LOT-2")
+    gate = SimpleNamespace(id=uuid4(), is_mandatory=True, required_templates=[])
+    inspection = SimpleNamespace(id=uuid4(), production_order_id=uuid4(), lot_id=uuid4(), lot_number="FG-LOT-2")
     db = _ResultDB([_ScalarResult(uuid4())])
     monkeypatch.setattr(qms_service, "list_finished_goods_quality_gates", lambda *_: _return(gate))
 
@@ -94,7 +107,7 @@ async def test_finished_goods_gate_blocks_release_before_inventory_unblock(monke
     async def lock(*_args):
         return None
 
-    async def block(*_args):
+    async def block(*_args, **_kwargs):
         raise ValueError("missing required finished-goods template")
 
     monkeypatch.setattr(qms_service, "lock_quality_gate_scope", lock)

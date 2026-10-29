@@ -365,7 +365,7 @@ async def post_grn(
 
     await lock_quality_gate_scope(db, RECEIVING_GATE_TARGET_MODULE, RECEIVING_GATE_TRIGGER_EVENT)
     try:
-        await ensure_receiving_quality_gates_pass(db, grn)
+        await ensure_receiving_quality_gates_pass(db, grn, actor_id=user_id)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 

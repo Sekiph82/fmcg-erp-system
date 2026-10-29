@@ -16,6 +16,19 @@ from app.schemas.quality import QCInspectionCreate
 from app.services import production_service, qms_service, quality_service
 
 
+@pytest.fixture(autouse=True)
+def _stub_audit_persistence_for_service_contract_tests(monkeypatch):
+    async def record(**kwargs):
+        return SimpleNamespace(**kwargs)
+
+    monkeypatch.setattr(qms_service, "_record_quality_gate_audit_event", record)
+
+    async def no_waiver(*_args, **_kwargs):
+        return None
+
+    monkeypatch.setattr(qms_service, "get_active_quality_gate_waiver_id", no_waiver)
+
+
 class _ScalarResult:
     def __init__(self, value=None, values=None):
         self.value = value
@@ -70,7 +83,7 @@ async def test_production_release_gate_blocks_before_status_change(monkeypatch):
     async def lock(_db, module, event):
         events.append(("lock", module, event))
 
-    async def check(_db, got_order, event, as_of_date):
+    async def check(_db, got_order, event, as_of_date, actor_id=None):
         events.append(("check", got_order, event, as_of_date))
         raise ValueError("missing in-process QC")
 
@@ -96,7 +109,7 @@ async def test_production_completion_gate_blocks_before_inventory_side_effects(m
     async def lock(_db, module, event):
         events.append(("lock", module, event))
 
-    async def check(_db, got_order, event, as_of_date):
+    async def check(_db, got_order, event, as_of_date, actor_id=None):
         events.append(("check", got_order, event, as_of_date))
         raise ValueError("missing in-process QC")
 
@@ -122,7 +135,7 @@ async def test_production_completion_gate_blocks_before_inventory_side_effects(m
 @pytest.mark.asyncio
 async def test_production_gate_requires_accepted_passed_mandatory_inspection(monkeypatch):
     template = SimpleNamespace(id=uuid4(), name="Release checks")
-    gate = SimpleNamespace(is_mandatory=True, required_templates=[template])
+    gate = SimpleNamespace(id=uuid4(), is_mandatory=True, required_templates=[template])
     order = SimpleNamespace(id=uuid4(), order_no="PO-3")
     db = _ResultDB([_ScalarResult()])
     monkeypatch.setattr(qms_service, "list_production_quality_gates", lambda *_: _return(gate))
@@ -158,7 +171,7 @@ async def test_production_gate_is_backward_compatible_when_none_is_configured(mo
 @pytest.mark.asyncio
 async def test_in_process_gate_only_counts_inspections_created_after_production_start(monkeypatch):
     template = SimpleNamespace(id=uuid4(), name="In-process checks")
-    gate = SimpleNamespace(is_mandatory=True, required_templates=[template])
+    gate = SimpleNamespace(id=uuid4(), is_mandatory=True, required_templates=[template])
     started = datetime(2026, 10, 29, 10, tzinfo=timezone.utc)
     order = SimpleNamespace(id=uuid4(), order_no="PO-3A", actual_start=started)
     db = _ResultDB([_ScalarResult()])
@@ -174,7 +187,7 @@ async def test_in_process_gate_only_counts_inspections_created_after_production_
 
 @pytest.mark.asyncio
 async def test_in_process_gate_inspection_derives_order_identity_and_flags(monkeypatch):
-    gate, template = SimpleNamespace(is_mandatory=True), SimpleNamespace(id=uuid4())
+    gate, template = SimpleNamespace(id=uuid4(), is_mandatory=True), SimpleNamespace(id=uuid4())
     gate.required_templates = [template]
     product_id, warehouse_id, order_id = uuid4(), uuid4(), uuid4()
     order = SimpleNamespace(
@@ -210,7 +223,7 @@ async def test_in_process_gate_inspection_derives_order_identity_and_flags(monke
 @pytest.mark.asyncio
 async def test_in_process_template_cannot_be_inspected_before_order_starts(monkeypatch):
     template = SimpleNamespace(id=uuid4())
-    process_gate = SimpleNamespace(is_mandatory=True, required_templates=[template])
+    process_gate = SimpleNamespace(id=uuid4(), is_mandatory=True, required_templates=[template])
     order = SimpleNamespace(
         id=uuid4(), product_id=uuid4(), target_warehouse_id=uuid4(), batch_no="B-6",
         status=ProductionOrderStatus.PLANNED, actual_start=None,

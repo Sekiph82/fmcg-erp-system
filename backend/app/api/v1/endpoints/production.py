@@ -309,7 +309,7 @@ async def release_order(
     if not order:
         raise HTTPException(404, detail="Order not found")
     _require_order_action(current_user, order, "release")
-    order = await svc.release_order(db, order)
+    order = await svc.release_order(db, order, current_user.id)
     await db.commit()
     order = await crud.get_order(db, order_id)
     return _enrich_order(order)

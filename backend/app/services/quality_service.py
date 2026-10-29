@@ -231,6 +231,8 @@ async def release_qc_quarantine(
     if insp.decision != QCDecision.ACCEPT or insp.status != QCStatus.PASSED:
         raise HTTPException(422, "Only an accepted and passed inspection can release quarantined stock")
 
+    gate_evaluated = False
+    gate_evaluation_id = uuid.uuid4()
     if insp.qc_type == QCType.FINISHED_GOODS:
         from app.services.qms_service import (
             FINISHED_GOODS_GATE_TARGET_MODULE,
@@ -243,14 +245,20 @@ async def release_qc_quarantine(
             db, FINISHED_GOODS_GATE_TARGET_MODULE, FINISHED_GOODS_RELEASE_GATE_TRIGGER_EVENT
         )
         try:
-            await ensure_finished_goods_quality_gates_pass(db, insp, date.today())
+            await ensure_finished_goods_quality_gates_pass(
+                db, insp, date.today(), actor_id=user_id, evaluation_id=gate_evaluation_id
+            )
         except ValueError as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
+        gate_evaluated = True
 
     from app.services.qms_service import release_lot
 
     try:
-        await release_lot(db, insp.lot_id, user_id, f"{insp.inspection_no}. {notes or ''}".strip())
+        await release_lot(
+            db, insp.lot_id, user_id, f"{insp.inspection_no}. {notes or ''}".strip(),
+            gate_evaluated=gate_evaluated, evaluation_id=gate_evaluation_id,
+        )
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 

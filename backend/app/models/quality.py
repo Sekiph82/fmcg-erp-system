@@ -631,6 +631,47 @@ class QualityGateWaiver(Base, TimestampMixin):
     revoked_by = relationship("User", foreign_keys=[revoked_by_id])
 
 
+class QualityGateAuditEvent(Base):
+    """Immutable snapshot of one enforced quality-gate evaluation."""
+    __tablename__ = "quality_gate_audit_events"
+    __table_args__ = (
+        CheckConstraint(
+            "result IN ('PASS', 'BLOCKED', 'WAIVED', 'NO_GATE')",
+            name="ck_quality_gate_audit_events_result",
+        ),
+        CheckConstraint(
+            "scope_type IN ('GRN_LINE', 'PRODUCTION_ORDER', 'LOT', 'SHIPMENT_LINE', 'QC_INSPECTION', 'SHIPMENT')",
+            name="ck_quality_gate_audit_events_scope_type",
+        ),
+        CheckConstraint("gate_version >= 0", name="ck_quality_gate_audit_events_gate_version"),
+        Index("ix_quality_gate_audit_events_scope_time", "scope_type", "scope_id", "evaluated_at"),
+        Index("ix_quality_gate_audit_events_business_time", "business_type", "business_id", "evaluated_at"),
+        Index("ix_quality_gate_audit_events_gate_time", "gate_code", "gate_version", "evaluated_at"),
+        Index("ix_quality_gate_audit_events_evaluation_id", "evaluation_id"),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    evaluation_id = Column(UUID(as_uuid=True), nullable=False)
+    target_module = Column(String(50), nullable=False)
+    trigger_event = Column(String(50), nullable=False)
+    gate_definition_id = Column(UUID(as_uuid=True), nullable=True)
+    gate_code = Column(String(50), nullable=False)
+    gate_version = Column(Integer, nullable=False, default=0, server_default="0")
+    scope_type = Column(String(24), nullable=False)
+    scope_id = Column(UUID(as_uuid=True), nullable=False)
+    business_type = Column(String(50), nullable=False)
+    business_id = Column(UUID(as_uuid=True), nullable=False)
+    required_template_id = Column(UUID(as_uuid=True), nullable=True)
+    required_template_name = Column(String(200), nullable=True)
+    inspection_id = Column(UUID(as_uuid=True), nullable=True)
+    waiver_id = Column(UUID(as_uuid=True), nullable=True)
+    result = Column(String(16), nullable=False)
+    evaluated_by_id = Column(UUID(as_uuid=True), nullable=True)
+    reason = Column(Text, nullable=True)
+    policy_snapshot = Column(JSON, nullable=True)
+    evaluated_at = Column(DateTime(timezone=True), nullable=False, server_default=text("now()"), index=True)
+
+
 quality_gate_required_templates = Table(
     "quality_gate_required_templates",
     Base.metadata,

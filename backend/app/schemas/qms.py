@@ -704,6 +704,30 @@ class QualityGateDefinitionRead(QualityGateDefinitionFields):
     required_templates: List[QCTemplateRead] = Field(default_factory=list)
 
 
+class QualityGateAuditEventRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: uuid.UUID
+    evaluation_id: uuid.UUID
+    target_module: str
+    trigger_event: str
+    gate_definition_id: Optional[uuid.UUID] = None
+    gate_code: str
+    gate_version: int
+    scope_type: str
+    scope_id: uuid.UUID
+    business_type: str
+    business_id: uuid.UUID
+    required_template_id: Optional[uuid.UUID] = None
+    required_template_name: Optional[str] = None
+    inspection_id: Optional[uuid.UUID] = None
+    waiver_id: Optional[uuid.UUID] = None
+    result: str
+    evaluated_by_id: Optional[uuid.UUID] = None
+    reason: Optional[str] = None
+    policy_snapshot: Optional[dict] = None
+    evaluated_at: datetime
+
+
 # ── Quality Audit Checklist ────────────────────────────────────────────────────
 
 class AuditChecklistBase(BaseModel):

@@ -12,12 +12,14 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.db.session import AsyncSessionLocal
 from app.models.quality import (
     QCInspection, QCStatus, QCDecision, QCType, QCTemplate, QCTemplateParameter,
     HazardAnalysis, CriticalControlPoint, CCPMonitoringLog,
     CorrectiveAction, CorrectiveActionStatus, CorrectiveActionStep,
     QCDeviation, DeviationStatus, RiskLevel,
-    LotQualityStatus, ReleaseStatus, AllergenValidationRecord, QualityGateDefinition, QualityGateSeverity, QualityGateWaiver, QCTemplate,
+    LotQualityStatus, ReleaseStatus, AllergenValidationRecord, QualityGateDefinition, QualityGateSeverity,
+    QualityGateWaiver, QualityGateAuditEvent, QCTemplate,
     quality_gate_required_templates,
     QMSAIRecommendation, QMSAIAgentType, QMSAIRecStatus,
     SamplingMethod, ParameterType,
@@ -35,6 +37,89 @@ FINISHED_GOODS_GATE_TARGET_MODULE = "inventory"
 FINISHED_GOODS_RELEASE_GATE_TRIGGER_EVENT = "ON_FINISHED_GOODS_RELEASE"
 DISPATCH_GATE_TARGET_MODULE = "sales"
 DISPATCH_GATE_TRIGGER_EVENT = "ON_DISPATCH"
+
+
+async def _record_quality_gate_audit_event(
+    *,
+    evaluation_id: uuid.UUID,
+    target_module: str,
+    trigger_event: str,
+    scope_type: str,
+    scope_id: uuid.UUID,
+    business_type: str,
+    business_id: uuid.UUID,
+    result: str,
+    gate: Optional[QualityGateDefinition] = None,
+    template: Optional[QCTemplate] = None,
+    inspection_id: Optional[uuid.UUID] = None,
+    waiver_id: Optional[uuid.UUID] = None,
+    actor_id: Optional[uuid.UUID] = None,
+    reason: Optional[str] = None,
+) -> QualityGateAuditEvent:
+    """Commit the decision history independently so blocked business transactions remain auditable."""
+    event = QualityGateAuditEvent(
+        evaluation_id=evaluation_id,
+        target_module=target_module,
+        trigger_event=trigger_event,
+        gate_definition_id=gate.id if gate else None,
+        gate_code=gate.code if gate else "NO_ACTIVE_GATE",
+        gate_version=gate.version if gate else 0,
+        scope_type=scope_type,
+        scope_id=scope_id,
+        business_type=business_type,
+        business_id=business_id,
+        required_template_id=template.id if template else None,
+        required_template_name=template.name if template else None,
+        inspection_id=inspection_id,
+        waiver_id=waiver_id,
+        result=result,
+        evaluated_by_id=actor_id,
+        reason=reason,
+        policy_snapshot=(
+            {
+                "severity": gate.severity,
+                "is_mandatory": gate.is_mandatory,
+                "waiver_allowed": gate.waiver_allowed,
+                "waiver_reason_required": gate.waiver_reason_required,
+                "waiver_approval_required": gate.waiver_approval_required,
+                "effective_from": gate.effective_from.isoformat(),
+                "effective_to": gate.effective_to.isoformat() if gate.effective_to else None,
+            }
+            if gate else {"mandatory_gate_configured": False}
+        ),
+    )
+    async with AsyncSessionLocal() as audit_db:
+        audit_db.add(event)
+        await audit_db.commit()
+    return event
+
+
+async def list_quality_gate_audit_events(
+    db: AsyncSession,
+    *,
+    scope_type: Optional[str] = None,
+    scope_id: Optional[uuid.UUID] = None,
+    business_type: Optional[str] = None,
+    business_id: Optional[uuid.UUID] = None,
+    gate_definition_id: Optional[uuid.UUID] = None,
+    result: Optional[str] = None,
+    limit: int = 100,
+) -> list[QualityGateAuditEvent]:
+    query = select(QualityGateAuditEvent)
+    for column, value in (
+        (QualityGateAuditEvent.scope_type, scope_type),
+        (QualityGateAuditEvent.scope_id, scope_id),
+        (QualityGateAuditEvent.business_type, business_type),
+        (QualityGateAuditEvent.business_id, business_id),
+        (QualityGateAuditEvent.gate_definition_id, gate_definition_id),
+        (QualityGateAuditEvent.result, result),
+    ):
+        if value is not None:
+            query = query.where(column == value)
+    records = await db.execute(
+        query.order_by(QualityGateAuditEvent.evaluated_at.desc(), QualityGateAuditEvent.id.desc()).limit(limit)
+    )
+    return list(records.scalars())
 
 
 # ── Sequence Helpers ──────────────────────────────────────────────────────────
@@ -126,11 +211,20 @@ async def has_active_quality_gate_waiver(
     db: AsyncSession, gate_definition_id: uuid.UUID, scope_type: str, scope_id: uuid.UUID,
     *, as_of: Optional[datetime] = None,
 ) -> bool:
+    return await get_active_quality_gate_waiver_id(
+        db, gate_definition_id, scope_type, scope_id, as_of=as_of
+    ) is not None
+
+
+async def get_active_quality_gate_waiver_id(
+    db: AsyncSession, gate_definition_id: uuid.UUID, scope_type: str, scope_id: uuid.UUID,
+    *, as_of: Optional[datetime] = None,
+) -> Optional[uuid.UUID]:
     # An approval remains effective for its fixed term even if its linked
     # deviation is later resolved. Only expiry or the separately serialized
     # revocation changes the gate decision during that term.
     if gate_definition_id is None or scope_id is None:
-        return False
+        return None
     now = as_of or datetime.now(timezone.utc)
     result = await db.execute(
         select(QualityGateWaiver.id)
@@ -143,7 +237,7 @@ async def has_active_quality_gate_waiver(
             QualityGateWaiver.revoked_at.is_(None),
         ).limit(1)
     )
-    return result.scalar_one_or_none() is not None
+    return result.scalar_one_or_none()
 
 
 def _expected_waiver_scope(gate: QualityGateDefinition) -> Optional[str]:
@@ -365,10 +459,21 @@ async def list_dispatch_quality_gates(
     )
 
 
-async def ensure_receiving_quality_gates_pass(db: AsyncSession, grn) -> None:
+async def ensure_receiving_quality_gates_pass(
+    db: AsyncSession, grn, actor_id: Optional[uuid.UUID] = None
+) -> None:
     """Require every configured mandatory incoming template to pass per accepted GRN line."""
     gates = [gate for gate in await list_receiving_quality_gates(db, grn.received_date) if gate.is_mandatory]
+    evaluation_id = uuid.uuid4()
     if not gates:
+        for line in grn.lines:
+            if line.accepted_quantity > 0 and (line.material_id or line.product_id):
+                await _record_quality_gate_audit_event(
+                    evaluation_id=evaluation_id, target_module=RECEIVING_GATE_TARGET_MODULE,
+                    trigger_event=RECEIVING_GATE_TRIGGER_EVENT, scope_type="GRN_LINE", scope_id=line.id,
+                    business_type="GOODS_RECEIPT", business_id=grn.id, result="NO_GATE", actor_id=actor_id,
+                    reason="No active mandatory receiving quality gate applied.",
+                )
         return
 
     for line in grn.lines:
@@ -392,30 +497,75 @@ async def ensure_receiving_quality_gates_pass(db: AsyncSession, grn) -> None:
                         QCInspection.release_required.is_(True),
                     ).limit(1)
                 )
-                if result.scalar_one_or_none() is None and not await has_active_quality_gate_waiver(
-                    db, getattr(gate, "id", None), "GRN_LINE", line.id
-                ):
-                    raise ValueError(
-                        f"GRN {grn.grn_no} cannot be posted: required receiving QC template "
-                        f"'{template.name}' for line {line.id} has no accepted, passed inspection."
+                inspection_id = result.scalar_one_or_none()
+                if inspection_id is not None:
+                    await _record_quality_gate_audit_event(
+                        evaluation_id=evaluation_id, target_module=RECEIVING_GATE_TARGET_MODULE,
+                        trigger_event=RECEIVING_GATE_TRIGGER_EVENT, scope_type="GRN_LINE", scope_id=line.id,
+                        business_type="GOODS_RECEIPT", business_id=grn.id, gate=gate, template=template,
+                        inspection_id=inspection_id, result="PASS", actor_id=actor_id,
+                        reason="Required incoming inspection was accepted and passed.",
                     )
+                    continue
+                waiver_id = await get_active_quality_gate_waiver_id(db, gate.id, "GRN_LINE", line.id)
+                if waiver_id is not None:
+                    await _record_quality_gate_audit_event(
+                        evaluation_id=evaluation_id, target_module=RECEIVING_GATE_TARGET_MODULE,
+                        trigger_event=RECEIVING_GATE_TRIGGER_EVENT, scope_type="GRN_LINE", scope_id=line.id,
+                        business_type="GOODS_RECEIPT", business_id=grn.id, gate=gate, template=template,
+                        waiver_id=waiver_id, result="WAIVED", actor_id=actor_id,
+                        reason="Required incoming inspection was covered by an active approved waiver.",
+                    )
+                    continue
+                await _record_quality_gate_audit_event(
+                    evaluation_id=evaluation_id, target_module=RECEIVING_GATE_TARGET_MODULE,
+                    trigger_event=RECEIVING_GATE_TRIGGER_EVENT, scope_type="GRN_LINE", scope_id=line.id,
+                    business_type="GOODS_RECEIPT", business_id=grn.id, gate=gate, template=template,
+                    result="BLOCKED", actor_id=actor_id,
+                    reason="Required incoming inspection has no accepted, passed result or active waiver.",
+                )
+                raise ValueError(
+                    f"GRN {grn.grn_no} cannot be posted: required receiving QC template "
+                    f"'{template.name}' for line {line.id} has no accepted, passed inspection."
+                )
 
 
 async def ensure_production_quality_gates_pass(
-    db: AsyncSession, order, trigger_event: str, as_of_date: date
+    db: AsyncSession, order, trigger_event: str, as_of_date: date,
+    actor_id: Optional[uuid.UUID] = None,
 ) -> None:
     """Require configured mandatory in-process QC before production release/completion."""
     gates = [
         gate for gate in await list_production_quality_gates(db, trigger_event, as_of_date)
         if gate.is_mandatory
     ]
+    evaluation_id = uuid.uuid4()
+    if not gates:
+        await _record_quality_gate_audit_event(
+            evaluation_id=evaluation_id, target_module=PRODUCTION_GATE_TARGET_MODULE,
+            trigger_event=trigger_event, scope_type="PRODUCTION_ORDER", scope_id=order.id,
+            business_type="PRODUCTION_ORDER", business_id=order.id, result="NO_GATE", actor_id=actor_id,
+            reason="No active mandatory production quality gate applied.",
+        )
+        return
     process_started_at = getattr(order, "actual_start", None)
-    if trigger_event == PRODUCTION_IN_PROCESS_GATE_TRIGGER_EVENT and gates and process_started_at is None:
+    if trigger_event == PRODUCTION_IN_PROCESS_GATE_TRIGGER_EVENT and process_started_at is None:
+        for gate in gates:
+            for template in gate.required_templates:
+                await _record_quality_gate_audit_event(
+                    evaluation_id=evaluation_id, target_module=PRODUCTION_GATE_TARGET_MODULE,
+                    trigger_event=trigger_event, scope_type="PRODUCTION_ORDER", scope_id=order.id,
+                    business_type="PRODUCTION_ORDER", business_id=order.id, gate=gate, template=template,
+                    result="BLOCKED", actor_id=actor_id,
+                    reason="In-process QC cannot be evaluated before production has a recorded start.",
+                )
         raise ValueError(
             f"Production order {order.order_no} cannot continue: in-process QC requires a recorded production start."
         )
     for gate in gates:
+        found_template = False
         for template in gate.required_templates:
+            found_template = True
             query = select(QCInspection.id).where(
                     QCInspection.production_order_id == order.id,
                     QCInspection.template_id == template.id,
@@ -429,27 +579,87 @@ async def ensure_production_quality_gates_pass(
             if trigger_event == PRODUCTION_IN_PROCESS_GATE_TRIGGER_EVENT:
                 query = query.where(QCInspection.created_at >= process_started_at)
             result = await db.execute(query.limit(1))
-            if result.scalar_one_or_none() is None and not await has_active_quality_gate_waiver(
-                db, getattr(gate, "id", None), "PRODUCTION_ORDER", order.id
-            ):
-                raise ValueError(
-                    f"Production order {order.order_no} cannot continue: required in-process QC template "
-                    f"'{template.name}' for {trigger_event} has no accepted, passed inspection."
+            inspection_id = result.scalar_one_or_none()
+            if inspection_id is not None:
+                await _record_quality_gate_audit_event(
+                    evaluation_id=evaluation_id, target_module=PRODUCTION_GATE_TARGET_MODULE,
+                    trigger_event=trigger_event, scope_type="PRODUCTION_ORDER", scope_id=order.id,
+                    business_type="PRODUCTION_ORDER", business_id=order.id, gate=gate, template=template,
+                    inspection_id=inspection_id, result="PASS", actor_id=actor_id,
+                    reason="Required in-process inspection was accepted and passed.",
                 )
+                continue
+            waiver_id = await get_active_quality_gate_waiver_id(
+                db, gate.id, "PRODUCTION_ORDER", order.id
+            )
+            if waiver_id is not None:
+                await _record_quality_gate_audit_event(
+                    evaluation_id=evaluation_id, target_module=PRODUCTION_GATE_TARGET_MODULE,
+                    trigger_event=trigger_event, scope_type="PRODUCTION_ORDER", scope_id=order.id,
+                    business_type="PRODUCTION_ORDER", business_id=order.id, gate=gate, template=template,
+                    waiver_id=waiver_id, result="WAIVED", actor_id=actor_id,
+                    reason="Required in-process inspection was covered by an active approved waiver.",
+                )
+                continue
+            await _record_quality_gate_audit_event(
+                evaluation_id=evaluation_id, target_module=PRODUCTION_GATE_TARGET_MODULE,
+                trigger_event=trigger_event, scope_type="PRODUCTION_ORDER", scope_id=order.id,
+                business_type="PRODUCTION_ORDER", business_id=order.id, gate=gate, template=template,
+                result="BLOCKED", actor_id=actor_id,
+                reason="Required in-process inspection has no accepted, passed result or active waiver.",
+            )
+            raise ValueError(
+                f"Production order {order.order_no} cannot continue: required in-process QC template "
+                f"'{template.name}' for {trigger_event} has no accepted, passed inspection."
+            )
+        if not found_template:
+            await _record_quality_gate_audit_event(
+                evaluation_id=evaluation_id, target_module=PRODUCTION_GATE_TARGET_MODULE,
+                trigger_event=trigger_event, scope_type="PRODUCTION_ORDER", scope_id=order.id,
+                business_type="PRODUCTION_ORDER", business_id=order.id, gate=gate, result="PASS",
+                actor_id=actor_id, reason="Mandatory production gate has no required QC templates.",
+            )
 
 
 async def ensure_finished_goods_quality_gates_pass(
-    db: AsyncSession, inspection: QCInspection, as_of_date: date
+    db: AsyncSession, inspection: QCInspection, as_of_date: date,
+    actor_id: Optional[uuid.UUID] = None, evaluation_id: Optional[uuid.UUID] = None,
 ) -> None:
-    """Require every configured finished-goods template and mandatory lot inspection to pass."""
+    """Require finished-goods gates and persist each result outside the business transaction."""
     gates = [gate for gate in await list_finished_goods_quality_gates(db, as_of_date) if gate.is_mandatory]
+    evaluation_id = evaluation_id or uuid.uuid4()
     if not gates:
+        if inspection.lot_id is not None:
+            await _record_quality_gate_audit_event(
+                evaluation_id=evaluation_id, target_module=FINISHED_GOODS_GATE_TARGET_MODULE,
+                trigger_event=FINISHED_GOODS_RELEASE_GATE_TRIGGER_EVENT, scope_type="LOT",
+                scope_id=inspection.lot_id, business_type="QC_INSPECTION", business_id=inspection.id,
+                result="NO_GATE", actor_id=actor_id,
+                reason="No active mandatory finished-goods quality gate applied.",
+            )
+        else:
+            await _record_quality_gate_audit_event(
+                evaluation_id=evaluation_id, target_module=FINISHED_GOODS_GATE_TARGET_MODULE,
+                trigger_event=FINISHED_GOODS_RELEASE_GATE_TRIGGER_EVENT, scope_type="QC_INSPECTION",
+                scope_id=inspection.id, business_type="QC_INSPECTION", business_id=inspection.id,
+                result="NO_GATE", actor_id=actor_id,
+                reason="No active mandatory finished-goods quality gate applied.",
+            )
         return
     if inspection.production_order_id is None or inspection.lot_id is None:
-        raise ValueError("Finished-goods release requires production-order and lot traceability when a gate is active.")
+        await _record_quality_gate_audit_event(
+            evaluation_id=evaluation_id, target_module=FINISHED_GOODS_GATE_TARGET_MODULE,
+            trigger_event=FINISHED_GOODS_RELEASE_GATE_TRIGGER_EVENT, scope_type="QC_INSPECTION",
+            scope_id=inspection.id, business_type="QC_INSPECTION", business_id=inspection.id,
+            result="BLOCKED", actor_id=actor_id,
+            reason="Finished-goods release lacks production-order or lot traceability.",
+        )
+        raise ValueError("Finished-goods release requires production-order traceability and a linked lot when a gate is active.")
 
     for gate in gates:
+        found_template = False
         for template in gate.required_templates:
+            found_template = True
             result = await db.execute(
                 select(QCInspection.id).where(
                     QCInspection.production_order_id == inspection.production_order_id,
@@ -463,13 +673,45 @@ async def ensure_finished_goods_quality_gates_pass(
                     QCInspection.release_required.is_(True),
                 ).limit(1).with_for_update()
             )
-            if result.scalar_one_or_none() is None and not await has_active_quality_gate_waiver(
-                db, getattr(gate, "id", None), "LOT", inspection.lot_id
-            ):
-                raise ValueError(
-                    f"Finished-goods lot {inspection.lot_number or inspection.lot_id} cannot be released: "
-                    f"required QC template '{template.name}' has no accepted, passed inspection."
+            passing_inspection_id = result.scalar_one_or_none()
+            if passing_inspection_id is not None:
+                await _record_quality_gate_audit_event(
+                    evaluation_id=evaluation_id, target_module=FINISHED_GOODS_GATE_TARGET_MODULE,
+                    trigger_event=FINISHED_GOODS_RELEASE_GATE_TRIGGER_EVENT, scope_type="LOT",
+                    scope_id=inspection.lot_id, business_type="QC_INSPECTION", business_id=inspection.id,
+                    gate=gate, template=template, inspection_id=passing_inspection_id, result="PASS",
+                    actor_id=actor_id, reason="Required finished-goods inspection was accepted and passed.",
                 )
+                continue
+            waiver_id = await get_active_quality_gate_waiver_id(db, gate.id, "LOT", inspection.lot_id)
+            if waiver_id is not None:
+                await _record_quality_gate_audit_event(
+                    evaluation_id=evaluation_id, target_module=FINISHED_GOODS_GATE_TARGET_MODULE,
+                    trigger_event=FINISHED_GOODS_RELEASE_GATE_TRIGGER_EVENT, scope_type="LOT",
+                    scope_id=inspection.lot_id, business_type="QC_INSPECTION", business_id=inspection.id,
+                    gate=gate, template=template, waiver_id=waiver_id, result="WAIVED", actor_id=actor_id,
+                    reason="Required finished-goods inspection was covered by an active approved waiver.",
+                )
+                continue
+            await _record_quality_gate_audit_event(
+                evaluation_id=evaluation_id, target_module=FINISHED_GOODS_GATE_TARGET_MODULE,
+                trigger_event=FINISHED_GOODS_RELEASE_GATE_TRIGGER_EVENT, scope_type="LOT",
+                scope_id=inspection.lot_id, business_type="QC_INSPECTION", business_id=inspection.id,
+                gate=gate, template=template, result="BLOCKED", actor_id=actor_id,
+                reason="Required finished-goods inspection has no accepted, passed result or active waiver.",
+            )
+            raise ValueError(
+                f"Finished-goods lot {inspection.lot_number or inspection.lot_id} cannot be released: "
+                f"required QC template '{template.name}' has no accepted, passed inspection."
+            )
+        if not found_template:
+            await _record_quality_gate_audit_event(
+                evaluation_id=evaluation_id, target_module=FINISHED_GOODS_GATE_TARGET_MODULE,
+                trigger_event=FINISHED_GOODS_RELEASE_GATE_TRIGGER_EVENT, scope_type="LOT",
+                scope_id=inspection.lot_id, business_type="QC_INSPECTION", business_id=inspection.id,
+                gate=gate, result="PASS", actor_id=actor_id,
+                reason="Mandatory finished-goods gate has no required QC templates.",
+            )
 
     unresolved = await db.execute(
         select(QCInspection.id).where(
@@ -485,6 +727,13 @@ async def ensure_finished_goods_quality_gates_pass(
         ).limit(1).with_for_update()
     )
     if unresolved.scalar_one_or_none() is not None:
+        await _record_quality_gate_audit_event(
+            evaluation_id=evaluation_id, target_module=FINISHED_GOODS_GATE_TARGET_MODULE,
+            trigger_event=FINISHED_GOODS_RELEASE_GATE_TRIGGER_EVENT, scope_type="LOT",
+            scope_id=inspection.lot_id, business_type="QC_INSPECTION", business_id=inspection.id,
+            result="BLOCKED", actor_id=actor_id,
+            reason="Another mandatory finished-goods inspection remains unresolved.",
+        )
         raise ValueError(
             f"Finished-goods lot {inspection.lot_number or inspection.lot_id} cannot be released: "
             "another mandatory finished-goods inspection is still unresolved."
@@ -492,24 +741,62 @@ async def ensure_finished_goods_quality_gates_pass(
 
 
 async def ensure_dispatch_quality_gates_pass(
-    db: AsyncSession, shipment, as_of_date: date
+    db: AsyncSession, shipment, as_of_date: date, actor_id: Optional[uuid.UUID] = None
 ) -> None:
     """Reject held lots and require configured mandatory dispatch QC for every shipped lot."""
     gates = [gate for gate in await list_dispatch_quality_gates(db, as_of_date) if gate.is_mandatory]
     lines = list(getattr(shipment, "lines", []) or [])
-    if not gates and not lines:
-        return
+    evaluation_id = uuid.uuid4()
     if not lines:
-        raise ValueError("A shipment cannot be dispatched without shipment lines.")
+        await _record_quality_gate_audit_event(
+            evaluation_id=evaluation_id, target_module=DISPATCH_GATE_TARGET_MODULE,
+            trigger_event=DISPATCH_GATE_TRIGGER_EVENT, scope_type="SHIPMENT",
+            scope_id=shipment.id, business_type="SHIPMENT", business_id=shipment.id,
+            result="BLOCKED" if gates else "NO_GATE", actor_id=actor_id,
+            reason="Shipment has no lines to dispatch." if gates else "No active mandatory dispatch quality gate applied.",
+        )
+        if gates:
+            raise ValueError("A shipment cannot be dispatched without shipment lines.")
+        return
 
     if not gates:
         for line in lines:
-            if line.lot_id is not None:
+            if line.lot_id is None:
+                await _record_quality_gate_audit_event(
+                    evaluation_id=evaluation_id, target_module=DISPATCH_GATE_TARGET_MODULE,
+                    trigger_event=DISPATCH_GATE_TRIGGER_EVENT, scope_type="SHIPMENT_LINE",
+                    scope_id=line.id, business_type="SHIPMENT", business_id=shipment.id,
+                    result="NO_GATE", actor_id=actor_id,
+                    reason="No active mandatory dispatch gate applied to this lotless legacy line.",
+                )
+                continue
+            try:
                 await _ensure_lot_dispatch_eligible(db, shipment, line.lot_id)
+            except ValueError as exc:
+                await _record_quality_gate_audit_event(
+                    evaluation_id=evaluation_id, target_module=DISPATCH_GATE_TARGET_MODULE,
+                    trigger_event=DISPATCH_GATE_TRIGGER_EVENT, scope_type="SHIPMENT_LINE",
+                    scope_id=line.id, business_type="SHIPMENT", business_id=shipment.id,
+                    result="BLOCKED", actor_id=actor_id, reason=str(exc),
+                )
+                raise
+            await _record_quality_gate_audit_event(
+                evaluation_id=evaluation_id, target_module=DISPATCH_GATE_TARGET_MODULE,
+                trigger_event=DISPATCH_GATE_TRIGGER_EVENT, scope_type="SHIPMENT_LINE",
+                scope_id=line.id, business_type="SHIPMENT", business_id=shipment.id,
+                result="NO_GATE", actor_id=actor_id,
+                reason="No active mandatory dispatch quality gate applied; lot eligibility passed.",
+            )
         return
 
     for line in lines:
         if line.lot_id is None:
+            await _record_quality_gate_audit_event(
+                evaluation_id=evaluation_id, target_module=DISPATCH_GATE_TARGET_MODULE,
+                trigger_event=DISPATCH_GATE_TRIGGER_EVENT, scope_type="SHIPMENT_LINE",
+                scope_id=line.id, business_type="SHIPMENT", business_id=shipment.id,
+                result="BLOCKED", actor_id=actor_id, reason="Shipment line has no lot for required dispatch QC.",
+            )
             raise ValueError(
                 f"Shipment {shipment.shipment_no} cannot be dispatched: a required lot is missing from a shipment line."
             )
@@ -534,13 +821,39 @@ async def ensure_dispatch_quality_gates_pass(
                         QCInspection.release_required.is_(True),
                     ).limit(1).with_for_update()
                 )
-                if result.scalar_one_or_none() is None and not await has_active_quality_gate_waiver(
-                    db, getattr(gate, "id", None), "SHIPMENT_LINE", getattr(line, "id", None)
-                ):
-                    raise ValueError(
-                        f"Shipment {shipment.shipment_no} cannot be dispatched: lot {line.lot_id} lacks an accepted, "
-                        f"passed finished-goods QC inspection for required template {template.id}."
+                inspection_id = result.scalar_one_or_none()
+                if inspection_id is not None:
+                    await _record_quality_gate_audit_event(
+                        evaluation_id=evaluation_id, target_module=DISPATCH_GATE_TARGET_MODULE,
+                        trigger_event=DISPATCH_GATE_TRIGGER_EVENT, scope_type="SHIPMENT_LINE",
+                        scope_id=line.id, business_type="SHIPMENT", business_id=shipment.id,
+                        gate=gate, template=template, inspection_id=inspection_id, result="PASS",
+                        actor_id=actor_id, reason="Required dispatch finished-goods inspection passed.",
                     )
+                    continue
+                waiver_id = await get_active_quality_gate_waiver_id(
+                    db, gate.id, "SHIPMENT_LINE", line.id
+                )
+                if waiver_id is not None:
+                    await _record_quality_gate_audit_event(
+                        evaluation_id=evaluation_id, target_module=DISPATCH_GATE_TARGET_MODULE,
+                        trigger_event=DISPATCH_GATE_TRIGGER_EVENT, scope_type="SHIPMENT_LINE",
+                        scope_id=line.id, business_type="SHIPMENT", business_id=shipment.id,
+                        gate=gate, template=template, waiver_id=waiver_id, result="WAIVED",
+                        actor_id=actor_id, reason="Required dispatch inspection was covered by an approved waiver.",
+                    )
+                    continue
+                await _record_quality_gate_audit_event(
+                    evaluation_id=evaluation_id, target_module=DISPATCH_GATE_TARGET_MODULE,
+                    trigger_event=DISPATCH_GATE_TRIGGER_EVENT, scope_type="SHIPMENT_LINE",
+                    scope_id=line.id, business_type="SHIPMENT", business_id=shipment.id,
+                    gate=gate, template=template, result="BLOCKED", actor_id=actor_id,
+                    reason="Required dispatch inspection has no accepted, passed result or active waiver.",
+                )
+                raise ValueError(
+                    f"Shipment {shipment.shipment_no} cannot be dispatched: lot {line.lot_id} lacks an accepted, "
+                    f"passed finished-goods QC inspection for required template {template.id}."
+                )
 
         unresolved = await db.execute(
             select(QCInspection.id).where(
@@ -557,11 +870,27 @@ async def ensure_dispatch_quality_gates_pass(
             ).limit(1).with_for_update()
         )
         if unresolved.scalar_one_or_none() is not None:
+            await _record_quality_gate_audit_event(
+                evaluation_id=evaluation_id, target_module=DISPATCH_GATE_TARGET_MODULE,
+                trigger_event=DISPATCH_GATE_TRIGGER_EVENT, scope_type="SHIPMENT_LINE",
+                scope_id=line.id, business_type="SHIPMENT", business_id=shipment.id,
+                result="BLOCKED", actor_id=actor_id,
+                reason="Lot has an unresolved mandatory finished-goods inspection.",
+            )
             raise ValueError(
                 f"Shipment {shipment.shipment_no} cannot be dispatched: lot {line.lot_id} has an unresolved "
                 "mandatory finished-goods inspection."
             )
-        await _ensure_lot_dispatch_eligible(db, shipment, line.lot_id)
+        try:
+            await _ensure_lot_dispatch_eligible(db, shipment, line.lot_id)
+        except ValueError as exc:
+            await _record_quality_gate_audit_event(
+                evaluation_id=evaluation_id, target_module=DISPATCH_GATE_TARGET_MODULE,
+                trigger_event=DISPATCH_GATE_TRIGGER_EVENT, scope_type="SHIPMENT_LINE",
+                scope_id=line.id, business_type="SHIPMENT", business_id=shipment.id,
+                result="BLOCKED", actor_id=actor_id, reason=str(exc),
+            )
+            raise
 
 
 async def _lock_lot_quality_inspections(db: AsyncSession, lot_ids: list[uuid.UUID]) -> list[QCInspection]:
@@ -1093,7 +1422,9 @@ async def hold_lot(db: AsyncSession, lot_id: uuid.UUID, hold_reason: str,
 
 
 async def release_lot(db: AsyncSession, lot_id: uuid.UUID,
-                      released_by_id: uuid.UUID, notes: Optional[str] = None) -> LotQualityStatus:
+                      released_by_id: uuid.UUID, notes: Optional[str] = None,
+                      *, gate_evaluated: bool = False,
+                      evaluation_id: Optional[uuid.UUID] = None) -> LotQualityStatus:
     await lock_quality_gate_scope(
         db, FINISHED_GOODS_GATE_TARGET_MODULE, FINISHED_GOODS_RELEASE_GATE_TRIGGER_EVENT
     )
@@ -1106,7 +1437,8 @@ async def release_lot(db: AsyncSession, lot_id: uuid.UUID,
     active_gates = [
         gate for gate in await list_finished_goods_quality_gates(db, date.today()) if gate.is_mandatory
     ]
-    if active_gates:
+    evaluation_id = evaluation_id or uuid.uuid4()
+    if active_gates and not gate_evaluated:
         accepted_fg_inspections = [
             inspection for inspection in inspections
             if inspection.qc_type == QCType.FINISHED_GOODS
@@ -1116,19 +1448,33 @@ async def release_lot(db: AsyncSession, lot_id: uuid.UUID,
             and inspection.release_required
         ]
         if not accepted_fg_inspections:
+            for gate in active_gates:
+                await _record_quality_gate_audit_event(
+                    evaluation_id=evaluation_id, target_module=FINISHED_GOODS_GATE_TARGET_MODULE,
+                    trigger_event=FINISHED_GOODS_RELEASE_GATE_TRIGGER_EVENT, scope_type="LOT",
+                    scope_id=lot_id, business_type="LOT", business_id=lot_id, gate=gate,
+                    result="BLOCKED", actor_id=released_by_id,
+                    reason="Lot has no accepted, passed mandatory finished-goods inspection.",
+                )
             raise ValueError(
                 "Finished-goods lot cannot be released until its mandatory QC inspections pass the active release gates."
             )
         checked_orders: set[uuid.UUID] = set()
         for inspection in accepted_fg_inspections:
-            if inspection.production_order_id is None:
-                raise ValueError(
-                    "Finished-goods lot cannot be released through an active quality gate without production-order traceability."
-                )
-            if inspection.production_order_id in checked_orders:
+            if inspection.production_order_id is not None and inspection.production_order_id in checked_orders:
                 continue
-            await ensure_finished_goods_quality_gates_pass(db, inspection, date.today())
-            checked_orders.add(inspection.production_order_id)
+            await ensure_finished_goods_quality_gates_pass(
+                db, inspection, date.today(), actor_id=released_by_id, evaluation_id=evaluation_id
+            )
+            if inspection.production_order_id is not None:
+                checked_orders.add(inspection.production_order_id)
+    elif not active_gates and not gate_evaluated:
+        await _record_quality_gate_audit_event(
+            evaluation_id=evaluation_id, target_module=FINISHED_GOODS_GATE_TARGET_MODULE,
+            trigger_event=FINISHED_GOODS_RELEASE_GATE_TRIGGER_EVENT, scope_type="LOT",
+            scope_id=lot_id, business_type="LOT", business_id=lot_id, result="NO_GATE",
+            actor_id=released_by_id, reason="No active mandatory finished-goods quality gate applied to lot release.",
+        )
 
     unresolved = await db.execute(
         select(QCInspection.id).where(
@@ -1142,6 +1488,13 @@ async def release_lot(db: AsyncSession, lot_id: uuid.UUID,
         ).limit(1)
     )
     if unresolved.scalar_one_or_none() is not None:
+        await _record_quality_gate_audit_event(
+            evaluation_id=evaluation_id, target_module=FINISHED_GOODS_GATE_TARGET_MODULE,
+            trigger_event=FINISHED_GOODS_RELEASE_GATE_TRIGGER_EVENT, scope_type="LOT",
+            scope_id=lot_id, business_type="LOT", business_id=lot_id,
+            result="BLOCKED", actor_id=released_by_id,
+            reason="A mandatory lot inspection requiring progression or release remains unresolved.",
+        )
         raise ValueError("Lot cannot be released while a mandatory quality inspection is unresolved.")
 
     await _set_lot_stock_blocked(

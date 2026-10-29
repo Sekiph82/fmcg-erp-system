@@ -10,6 +10,14 @@ from app.models.quality import QCDecision, QCStatus
 from app.services import qms_service, quality_service
 
 
+@pytest.fixture(autouse=True)
+def _stub_audit_persistence_for_service_contract_tests(monkeypatch):
+    async def record(**kwargs):
+        return SimpleNamespace(**kwargs)
+
+    monkeypatch.setattr(qms_service, "_record_quality_gate_audit_event", record)
+
+
 @pytest.mark.asyncio
 async def test_mandatory_failed_inspection_holds_lot_even_when_request_disables_quarantine(monkeypatch):
     inspection = SimpleNamespace(
@@ -161,6 +169,7 @@ async def test_manual_release_cannot_bypass_active_finished_goods_gate(monkeypat
 async def test_active_finished_goods_gate_rejects_untraceable_accepted_inspection(monkeypatch):
     lot_id = uuid4()
     inspection = SimpleNamespace(
+        id=uuid4(), lot_id=lot_id,
         qc_type=qms_service.QCType.FINISHED_GOODS, status=QCStatus.PASSED,
         decision=QCDecision.ACCEPT, is_mandatory=True, release_required=True,
         production_order_id=None,

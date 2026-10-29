@@ -27,6 +27,7 @@ from app.models.quality import (
     QualityAuditChecklist, AuditStandard, AuditType, AuditResult,
     SupplierFoodSafetyApproval, SupplierFoodSafetyStatus,
     InstrumentCalibration, AQLSamplingPlan, CertificateOfAnalysis, QualityGateWaiver,
+    QualityGateAuditEvent,
 )
 from app.schemas.qms import (
     QCTemplateCreate, QCTemplateUpdate, QCTemplateRead,
@@ -41,6 +42,7 @@ from app.schemas.qms import (
     QMSDashboard, QCGateCheck,
     QualityGateDefinitionCreate, QualityGateDefinitionUpdate, QualityGateDefinitionRead,
     QualityGateWaiverRequest, QualityGateWaiverDecision, QualityGateWaiverRevoke, QualityGateWaiverRead,
+    QualityGateAuditEventRead,
 )
 from app.services import qms_service as svc
 from app.crud import quality as qc_crud
@@ -154,6 +156,14 @@ async def _waiver_warehouse_ids(db: AsyncSession, scope_type: str, scope_id: uui
             .join(ShipmentLine, ShipmentLine.shipment_id == Shipment.id)
             .where(ShipmentLine.id == scope_id)
         )
+        warehouse_id = result.scalar_one_or_none()
+        return [warehouse_id] if warehouse_id else []
+    if scope_type == "SHIPMENT":
+        result = await db.execute(select(Shipment.warehouse_id).where(Shipment.id == scope_id))
+        warehouse_id = result.scalar_one_or_none()
+        return [warehouse_id] if warehouse_id else []
+    if scope_type == "QC_INSPECTION":
+        result = await db.execute(select(QCInspection.warehouse_id).where(QCInspection.id == scope_id))
         warehouse_id = result.scalar_one_or_none()
         return [warehouse_id] if warehouse_id else []
     return []
@@ -354,6 +364,32 @@ async def list_quality_gate_waivers(
         if await _user_can_view_waiver_scope(db, current_user, item.scope_type, item.scope_id):
             visible.append(QualityGateWaiverRead.model_validate(item))
     return visible
+
+
+@router.get("/gate-audit-history", response_model=List[QualityGateAuditEventRead])
+async def list_quality_gate_audit_history(
+    scope_type: Optional[str] = Query(default=None, pattern="^(GRN_LINE|PRODUCTION_ORDER|LOT|SHIPMENT_LINE|QC_INSPECTION|SHIPMENT)$"),
+    scope_id: Optional[uuid.UUID] = None,
+    business_type: Optional[str] = None,
+    business_id: Optional[uuid.UUID] = None,
+    gate_definition_id: Optional[uuid.UUID] = None,
+    result: Optional[str] = Query(default=None, pattern="^(PASS|BLOCKED|WAIVED|NO_GATE)$"),
+    limit: int = Query(default=100, ge=1, le=500),
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    events = await svc.list_quality_gate_audit_events(
+        db, scope_type=scope_type, scope_id=scope_id, business_type=business_type,
+        business_id=business_id, gate_definition_id=gate_definition_id, result=result, limit=limit,
+    )
+    if has_any_permission(current_user, ("quality.view_all", "quality.gate_configure")):
+        visible = events
+    else:
+        visible = [
+            event for event in events
+            if await _user_can_view_waiver_scope(db, current_user, event.scope_type, event.scope_id)
+        ]
+    return [QualityGateAuditEventRead.model_validate(event) for event in visible]
 
 
 @router.post("/gate-waivers", response_model=QualityGateWaiverRead, status_code=201)
