@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import os
 import re
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from decimal import Decimal
 from types import SimpleNamespace
 from uuid import uuid4
@@ -13,6 +13,7 @@ from pydantic import ValidationError
 from sqlalchemy import text
 
 from app.db.session import AsyncSessionLocal, engine
+from app.models.finance import ExchangeRate, RateSource
 from app.models.landed_cost import (
     LandedCostAllocationLine,
     LandedCostType,
@@ -62,6 +63,9 @@ def test_variance_is_actual_minus_estimate_and_respects_exchange_rate():
         estimated_amount_fc=Decimal("12.50"),
         currency_code="USD",
         exchange_rate=Decimal("130.000000"),
+        exchange_rate_id=None,
+        exchange_rate_date=None,
+        exchange_rate_source=None,
         amount_base=Decimal("1625"),
         actual_record=SimpleNamespace(
             id=uuid4(),
@@ -111,15 +115,23 @@ async def test_estimate_backfill_actual_recording_and_posted_amount_preservation
             full_name="Synthetic finance user",
             hashed_password="not-a-real-login",
         ))
+        rate_date = date(2024, 1, 2)
+        db.add(ExchangeRate(
+            currency="USD",
+            rate_date=rate_date,
+            rate_to_kes=Decimal("130"),
+            source=RateSource.MANUAL,
+            created_by_id=user_id,
+        ))
         await db.flush()
 
         draft = await service.create_header(db, LandedCostHeaderCreate(
             currency_code="USD",
+            bill_date=rate_date,
             cost_lines=[LandedCostLineCreate(
                 cost_type=LandedCostType.FREIGHT_SEA,
                 amount_fc=Decimal("10.00"),
                 estimated_amount_fc=Decimal("10.00"),
-                exchange_rate=Decimal("130"),
             )],
         ))
         draft_line = draft.cost_lines[0]
@@ -188,11 +200,11 @@ async def test_estimate_backfill_actual_recording_and_posted_amount_preservation
 
         posted = await service.create_header(db, LandedCostHeaderCreate(
             currency_code="USD",
+            bill_date=rate_date,
             cost_lines=[LandedCostLineCreate(
                 cost_type=LandedCostType.CUSTOMS_DUTY,
                 amount_fc=Decimal("8.00"),
                 estimated_amount_fc=Decimal("8.00"),
-                exchange_rate=Decimal("130"),
             )],
         ))
         posted_line = posted.cost_lines[0]

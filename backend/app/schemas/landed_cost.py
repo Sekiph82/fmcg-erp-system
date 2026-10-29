@@ -1,6 +1,7 @@
 from __future__ import annotations
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+import re
 from typing import List, Optional, Literal
 from uuid import UUID
 
@@ -18,13 +19,14 @@ AllocationMethodInput = Literal[
 # ── Cost Line ─────────────────────────────────────────────────────────────────
 
 class LandedCostLineCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     cost_type: LandedCostType
     description: Optional[str] = None
     vendor_name: Optional[str] = None
     amount_fc: Decimal = Decimal("0")
     estimated_amount_fc: Optional[Decimal] = None
-    currency_code: str = "USD"
-    exchange_rate: Decimal = Decimal("1")
+    currency_code: str = "KES"
     allocation_method: Optional[AllocationMethodInput] = None
     is_included_in_valuation: bool = True
     account_code: Optional[str] = None
@@ -40,6 +42,15 @@ class LandedCostLineCreate(BaseModel):
     def validate_estimate_range(cls, value: Optional[Decimal]) -> Optional[Decimal]:
         return _validate_cost_amount(value) if value is not None else value
 
+    @field_validator("currency_code")
+    @classmethod
+    def normalize_currency_code(cls, value: str) -> str:
+        normalized = value.strip().upper()
+        if not re.fullmatch(r"[A-Z]{3}", normalized):
+            raise ValueError("Currency must be a three-letter ISO code")
+        return normalized
+
+
 
 class LandedCostLineOut(LandedCostLineCreate):
     model_config = ConfigDict(from_attributes=True)
@@ -50,6 +61,10 @@ class LandedCostLineOut(LandedCostLineCreate):
     id: UUID
     header_id: UUID
     amount_base: Decimal
+    exchange_rate: Decimal
+    exchange_rate_id: Optional[UUID] = None
+    exchange_rate_date: Optional[date] = None
+    exchange_rate_source: Optional[str] = None
     actual_record: Optional["LandedCostLineActualOut"] = None
 
     @computed_field
@@ -179,18 +194,28 @@ class LCInventoryAdjustmentOut(BaseModel):
 # ── Header ────────────────────────────────────────────────────────────────────
 
 class LandedCostHeaderCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     reference_type: str = "MANUAL"
     shipment_id: Optional[UUID] = None
     po_id: Optional[UUID] = None
     vendor_name: Optional[str] = None
     bill_no: Optional[str] = None
     bill_date: Optional[date] = None
-    currency_code: str = "USD"
-    exchange_rate: Decimal = Decimal("1")
+    currency_code: str = "KES"
     allocation_method: AllocationMethodInput = "BY_VALUE"
     notes: Optional[str] = None
     cost_lines: List[LandedCostLineCreate] = []
     grn_links: List[LandedCostGRNLinkCreate] = []
+
+    @field_validator("currency_code")
+    @classmethod
+    def normalize_currency_code(cls, value: str) -> str:
+        normalized = value.strip().upper()
+        if not re.fullmatch(r"[A-Z]{3}", normalized):
+            raise ValueError("Currency must be a three-letter ISO code")
+        return normalized
+
 
 
 class LandedCostHeaderUpdate(BaseModel):
@@ -198,9 +223,18 @@ class LandedCostHeaderUpdate(BaseModel):
     bill_no: Optional[str] = None
     bill_date: Optional[date] = None
     currency_code: Optional[str] = None
-    exchange_rate: Optional[Decimal] = None
     allocation_method: Optional[AllocationMethodInput] = None
     notes: Optional[str] = None
+
+    @field_validator("currency_code")
+    @classmethod
+    def normalize_currency_code(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return value
+        normalized = value.strip().upper()
+        if not re.fullmatch(r"[A-Z]{3}", normalized):
+            raise ValueError("Currency must be a three-letter ISO code")
+        return normalized
 
 
 class LandedCostSummary(BaseModel):
@@ -213,6 +247,9 @@ class LandedCostSummary(BaseModel):
     bill_date: Optional[date] = None
     currency_code: str
     exchange_rate: Decimal
+    exchange_rate_id: Optional[UUID] = None
+    exchange_rate_date: Optional[date] = None
+    exchange_rate_source: Optional[str] = None
     total_lc_amount_fc: Decimal
     total_lc_amount_base: Decimal
     allocation_method: str

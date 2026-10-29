@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 from datetime import date, datetime
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from typing import Optional, List
 import uuid
+import re
 
-from pydantic import BaseModel, ConfigDict, model_validator
+from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
 from app.models.finance import (
     AccountType, CashAccountType, TxDirection, FinTxStatus,
@@ -1016,6 +1017,27 @@ class ExchangeRateCreate(BaseModel):
     rate_to_kes: Decimal
     source: RateSource = RateSource.MANUAL
     notes: Optional[str] = None
+
+    @field_validator("currency")
+    @classmethod
+    def normalize_currency(cls, value: str) -> str:
+        normalized = value.strip().upper()
+        if not re.fullmatch(r"[A-Z]{3}", normalized):
+            raise ValueError("Currency must be a three-letter ISO code")
+        return normalized
+
+    @field_validator("rate_to_kes")
+    @classmethod
+    def validate_rate(cls, value: Decimal) -> Decimal:
+        if not value.is_finite() or value <= 0:
+            raise ValueError("Exchange rate must be finite and positive")
+        try:
+            stored_value = value.quantize(Decimal("0.000001"))
+        except InvalidOperation as exc:
+            raise ValueError("Exchange rate must fit NUMERIC(18,6)") from exc
+        if stored_value <= 0 or abs(stored_value) >= Decimal("1000000000000"):
+            raise ValueError("Exchange rate must fit NUMERIC(18,6) and remain positive at six decimals")
+        return value
 
 
 class ExchangeRateRead(BaseModel):

@@ -106,7 +106,7 @@ export default function LandedCostDetailPage() {
       {/* Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: "Currency",     value: `${doc.currency_code} @ ${doc.exchange_rate}` },
+          { label: "Currency / FX", value: `${doc.currency_code} @ ${doc.exchange_rate} · ${doc.exchange_rate_source ?? "legacy source unknown"} · ${doc.exchange_rate_date ?? "legacy date unknown"}` },
           { label: "Method",       value: ALLOC_METHOD_LABEL[doc.allocation_method] ?? doc.allocation_method },
           { label: "Total (FC)",   value: fmtCurrency(doc.total_lc_amount_fc, doc.currency_code) },
           { label: "Total (Base)", value: fmtCurrency(doc.total_lc_amount_base) },
@@ -122,6 +122,7 @@ export default function LandedCostDetailPage() {
       <div className="bg-white border rounded-xl overflow-hidden">
         <div className="px-5 py-3 border-b bg-gray-50">
           <h2 className="text-sm font-semibold text-gray-700">Cost Components ({costLines.length})</h2>
+          <p className="mt-1 text-xs text-gray-500">Header totals are translated into the document currency; each line keeps its own currency and saved Finance rate snapshot.</p>
         </div>
         <table className="w-full text-sm">
           <thead className="bg-gray-50 text-xs text-gray-500 uppercase">
@@ -145,7 +146,11 @@ export default function LandedCostDetailPage() {
                 <td className="px-4 py-2 font-medium">{cl.variance_base == null ? "—" : fmtCurrency(cl.variance_base)}</td>
                 <td className="px-4 py-2 text-gray-600 text-xs">{cl.actual_record?.source_reference ?? "—"}</td>
                 <td className="px-4 py-2 text-gray-500 text-xs">{cl.currency_code}</td>
-                <td className="px-4 py-2 text-gray-500 text-xs">{Number(cl.exchange_rate ?? 1).toFixed(4)}</td>
+                <td className="px-4 py-2 text-gray-500 text-xs">
+                  <div>{Number(cl.exchange_rate ?? 1).toFixed(6)}</div>
+                  <div>{cl.exchange_rate_date ?? "Legacy date unknown"}</div>
+                  <div>{cl.exchange_rate_source ?? "Legacy source unknown"}</div>
+                </td>
                 <td className="px-4 py-2 font-medium">{fmtCurrency(cl.amount_base)}</td>
                 <td className="px-4 py-2">
                   <span className={`text-xs px-2 py-0.5 rounded-full ${cl.is_included_in_valuation ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>

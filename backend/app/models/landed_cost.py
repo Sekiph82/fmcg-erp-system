@@ -9,7 +9,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
 from app.db.base import Base, TimestampMixin
-from app.models.finance import OperationalPostingStatus
+from app.models.finance import ExchangeRate, OperationalPostingStatus
 
 
 # ── Enums ─────────────────────────────────────────────────────────────────────
@@ -80,8 +80,20 @@ class LandedCostHeader(Base, TimestampMixin):
     vendor_name   = Column(String(200), nullable=True)
     bill_no       = Column(String(100), nullable=True)
     bill_date     = Column(Date, nullable=True)
-    currency_code = Column(String(10), nullable=False, default="USD")
+    currency_code = Column(String(10), nullable=False, default="KES")
     exchange_rate = Column(Numeric(14, 6), nullable=False, default=1)
+    exchange_rate_id = Column(
+        UUID(as_uuid=True), ForeignKey("exchange_rates.id", name="fk_lc_headers_exchange_rate_id_exchange_rates", ondelete="SET NULL"), nullable=True,
+        comment="Added by Alembic revision 20261029_0040; exact finance rate row used for this snapshot",
+    )
+    exchange_rate_date = Column(
+        Date, nullable=True,
+        comment="Added by Alembic revision 20261029_0040; effective rate date, null for legacy unknowns",
+    )
+    exchange_rate_source = Column(
+        String(20), nullable=True,
+        comment="Added by Alembic revision 20261029_0040; source copied with the rate snapshot",
+    )
     total_lc_amount_fc   = Column(Numeric(14, 4), nullable=False, default=0)
     total_lc_amount_base = Column(Numeric(14, 4), nullable=False, default=0)
     allocation_method    = Column(String(30), nullable=False, default="BY_VALUE")  # LCAllocationMethod
@@ -94,6 +106,7 @@ class LandedCostHeader(Base, TimestampMixin):
     grn_links       = relationship("LandedCostGRNLink", back_populates="header", cascade="all, delete-orphan")
     allocation_lines= relationship("LandedCostAllocationLine", back_populates="header", cascade="all, delete-orphan")
     ai_recs         = relationship("LCAIRecommendation", back_populates="header", cascade="all, delete-orphan")
+    exchange_rate_record = relationship("ExchangeRate", foreign_keys=[exchange_rate_id])
 
 
 class LandedCostLine(Base, TimestampMixin):
@@ -107,8 +120,20 @@ class LandedCostLine(Base, TimestampMixin):
     vendor_name   = Column(String(200), nullable=True)
     amount_fc     = Column(Numeric(14, 4), nullable=False, default=0)
     estimated_amount_fc = Column(Numeric(14, 4), nullable=True)
-    currency_code = Column(String(10), nullable=False, default="USD")
+    currency_code = Column(String(10), nullable=False, default="KES")
     exchange_rate = Column(Numeric(14, 6), nullable=False, default=1)
+    exchange_rate_id = Column(
+        UUID(as_uuid=True), ForeignKey("exchange_rates.id", name="fk_lc_lines_exchange_rate_id_exchange_rates", ondelete="SET NULL"), nullable=True,
+        comment="Added by Alembic revision 20261029_0040; exact finance rate row used for this snapshot",
+    )
+    exchange_rate_date = Column(
+        Date, nullable=True,
+        comment="Added by Alembic revision 20261029_0040; effective rate date, null for legacy unknowns",
+    )
+    exchange_rate_source = Column(
+        String(20), nullable=True,
+        comment="Added by Alembic revision 20261029_0040; source copied with the rate snapshot",
+    )
     amount_base   = Column(Numeric(14, 4), nullable=False, default=0)
     allocation_method = Column(String(30), nullable=True)  # override per line; NULL = use header default
     is_included_in_valuation = Column(Boolean, nullable=False, default=True)
@@ -122,6 +147,7 @@ class LandedCostLine(Base, TimestampMixin):
         uselist=False,
         cascade="all, delete-orphan",
     )
+    exchange_rate_record = relationship("ExchangeRate", foreign_keys=[exchange_rate_id])
 
 
 class LandedCostLineActual(Base):

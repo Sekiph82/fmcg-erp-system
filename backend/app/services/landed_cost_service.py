@@ -20,6 +20,7 @@ from app.models.finance import (
     AccountType,
     AccountingPeriod,
     ChartOfAccount,
+    ExchangeRate,
     JournalEntry,
     JournalLine,
     JournalStatus,
@@ -59,12 +60,45 @@ async def _next_lc_no(db: AsyncSession) -> str:
     return f"LC-{n:06d}"
 
 
+async def _resolve_rate_snapshot(
+    db: AsyncSession,
+    currency: str,
+    as_of_date: Optional[date],
+) -> tuple[Decimal, Optional[UUID], Optional[date], str]:
+    """Resolve a dated Finance rate and return its immutable document snapshot."""
+    code = currency.strip().upper()
+    effective_date = as_of_date or date.today()
+    if code == "KES":
+        return Decimal("1"), None, effective_date, "BASE_CURRENCY"
+    query = select(ExchangeRate).where(
+        ExchangeRate.currency == code,
+        ExchangeRate.rate_date <= effective_date,
+    )
+    rate_row = (await db.execute(query.order_by(ExchangeRate.rate_date.desc()).limit(1))).scalar_one_or_none()
+    if rate_row is None:
+        raise ValueError(f"No Finance exchange rate exists for {code} on or before {effective_date}")
+    rate = _D(rate_row.rate_to_kes)
+    if not rate.is_finite() or rate <= 0:
+        raise ValueError(f"Finance exchange rate for {code} on {rate_row.rate_date} must be positive")
+    source = rate_row.source.value if hasattr(rate_row.source, "value") else str(rate_row.source)
+    return rate, rate_row.id, rate_row.rate_date, source
+
+
+def _header_totals(lines: list[LandedCostLine], header_rate: Decimal) -> tuple[Decimal, Decimal]:
+    if not header_rate.is_finite() or header_rate <= 0:
+        raise ValueError("Document currency exchange rate must be positive")
+    total_base = sum((_D(line.amount_base) for line in lines), Decimal("0"))
+    total_fc = total_base / header_rate
+    return _R(total_fc), _R(total_base)
+
+
 # ── CRUD ──────────────────────────────────────────────────────────────────────
 
 async def create_header(db: AsyncSession, payload: LandedCostHeaderCreate) -> LandedCostHeader:
     lc_no = await _next_lc_no(db)
-    total_fc = sum(_D(l.estimated_amount_fc if l.estimated_amount_fc is not None else l.amount_fc) for l in payload.cost_lines)
-    total_base = sum(_D(l.estimated_amount_fc if l.estimated_amount_fc is not None else l.amount_fc) * _D(l.exchange_rate) for l in payload.cost_lines)
+    header_rate, header_rate_id, header_rate_date, header_rate_source = await _resolve_rate_snapshot(
+        db, payload.currency_code, payload.bill_date,
+    )
 
     hdr = LandedCostHeader(
         lc_no=lc_no,
@@ -75,9 +109,12 @@ async def create_header(db: AsyncSession, payload: LandedCostHeaderCreate) -> La
         bill_no=payload.bill_no,
         bill_date=payload.bill_date,
         currency_code=payload.currency_code,
-        exchange_rate=payload.exchange_rate,
-        total_lc_amount_fc=_R(total_fc),
-        total_lc_amount_base=_R(total_base),
+        exchange_rate=header_rate,
+        exchange_rate_id=header_rate_id,
+        exchange_rate_date=header_rate_date,
+        exchange_rate_source=header_rate_source,
+        total_lc_amount_fc=Decimal("0"),
+        total_lc_amount_base=Decimal("0"),
         allocation_method=payload.allocation_method,
         notes=payload.notes,
         status="DRAFT",
@@ -85,8 +122,12 @@ async def create_header(db: AsyncSession, payload: LandedCostHeaderCreate) -> La
     db.add(hdr)
     await db.flush()
 
+    created_lines = []
     for cl in payload.cost_lines:
         estimate = cl.estimated_amount_fc if cl.estimated_amount_fc is not None else cl.amount_fc
+        line_rate, line_rate_id, line_rate_date, line_rate_source = await _resolve_rate_snapshot(
+            db, cl.currency_code, payload.bill_date,
+        )
         line = LandedCostLine(
             header_id=hdr.id,
             cost_type=cl.cost_type,
@@ -95,14 +136,22 @@ async def create_header(db: AsyncSession, payload: LandedCostHeaderCreate) -> La
             amount_fc=_R(estimate),
             estimated_amount_fc=_R(estimate),
             currency_code=cl.currency_code,
-            exchange_rate=_R(cl.exchange_rate, 6),
-            amount_base=_R(_D(estimate) * _D(cl.exchange_rate)),
+            exchange_rate=line_rate,
+            exchange_rate_id=line_rate_id,
+            exchange_rate_date=line_rate_date,
+            exchange_rate_source=line_rate_source,
+            amount_base=_R(_D(estimate) * line_rate),
             allocation_method=cl.allocation_method,
             is_included_in_valuation=cl.is_included_in_valuation,
             account_code=cl.account_code,
             remarks=cl.remarks,
         )
         db.add(line)
+        created_lines.append(line)
+
+    total_fc, total_base = _header_totals(created_lines, header_rate)
+    hdr.total_lc_amount_fc = total_fc
+    hdr.total_lc_amount_base = total_base
 
     for gl in payload.grn_links:
         link = LandedCostGRNLink(
@@ -158,6 +207,28 @@ async def update_header(db: AsyncSession, header_id: UUID, payload: LandedCostHe
     data = payload.model_dump(exclude_none=True)
     for k, v in data.items():
         setattr(hdr, k, v)
+    rate_context_changed = "currency_code" in data or "bill_date" in data
+    lines = (await db.execute(
+        select(LandedCostLine).where(LandedCostLine.header_id == header_id).with_for_update()
+    )).scalars().all()
+    if rate_context_changed:
+        header_rate, header_rate_id, header_rate_date, header_rate_source = await _resolve_rate_snapshot(
+            db, hdr.currency_code, hdr.bill_date,
+        )
+        hdr.exchange_rate = header_rate
+        hdr.exchange_rate_id = header_rate_id
+        hdr.exchange_rate_date = header_rate_date
+        hdr.exchange_rate_source = header_rate_source
+        for line in lines:
+            line_rate, line_rate_id, line_rate_date, line_rate_source = await _resolve_rate_snapshot(
+                db, line.currency_code, hdr.bill_date,
+            )
+            line.exchange_rate = line_rate
+            line.exchange_rate_id = line_rate_id
+            line.exchange_rate_date = line_rate_date
+            line.exchange_rate_source = line_rate_source
+            line.amount_base = _R(_D(line.amount_fc) * line_rate)
+        hdr.total_lc_amount_fc, hdr.total_lc_amount_base = _header_totals(lines, header_rate)
     await db.commit()
     return await get_header(db, header_id)
 
@@ -173,6 +244,9 @@ async def add_cost_line(db: AsyncSession, header_id: UUID, payload: LandedCostLi
         raise ValueError(f"Cannot add a cost line in status {hdr.status}")
 
     estimate = payload.estimated_amount_fc if payload.estimated_amount_fc is not None else payload.amount_fc
+    line_rate, line_rate_id, line_rate_date, line_rate_source = await _resolve_rate_snapshot(
+        db, payload.currency_code, hdr.bill_date,
+    )
     line = LandedCostLine(
         header_id=header_id,
         cost_type=payload.cost_type.value,
@@ -181,8 +255,11 @@ async def add_cost_line(db: AsyncSession, header_id: UUID, payload: LandedCostLi
         amount_fc=_R(estimate),
         estimated_amount_fc=_R(estimate),
         currency_code=payload.currency_code,
-        exchange_rate=_R(payload.exchange_rate, 6),
-        amount_base=_R(_D(estimate) * _D(payload.exchange_rate)),
+        exchange_rate=line_rate,
+        exchange_rate_id=line_rate_id,
+        exchange_rate_date=line_rate_date,
+        exchange_rate_source=line_rate_source,
+        amount_base=_R(_D(estimate) * line_rate),
         allocation_method=payload.allocation_method,
         is_included_in_valuation=payload.is_included_in_valuation,
         account_code=payload.account_code,
@@ -190,15 +267,8 @@ async def add_cost_line(db: AsyncSession, header_id: UUID, payload: LandedCostLi
     )
     db.add(line)
     await db.flush()
-    totals = await db.execute(
-        select(
-            func.coalesce(func.sum(LandedCostLine.amount_fc), 0),
-            func.coalesce(func.sum(LandedCostLine.amount_base), 0),
-        ).where(LandedCostLine.header_id == header_id)
-    )
-    total_fc, total_base = totals.one()
-    hdr.total_lc_amount_fc = _R(total_fc)
-    hdr.total_lc_amount_base = _R(total_base)
+    lines = (await db.execute(select(LandedCostLine).where(LandedCostLine.header_id == header_id))).scalars().all()
+    hdr.total_lc_amount_fc, hdr.total_lc_amount_base = _header_totals(lines, _D(hdr.exchange_rate))
     await db.commit()
     return await get_header(db, header_id)
 
@@ -261,13 +331,12 @@ async def record_actual_cost(
             header.status = "DRAFT"
 
         await db.flush()
-        totals = await db.execute(
-            select(
-                func.coalesce(func.sum(LandedCostLine.amount_fc), 0),
-                func.coalesce(func.sum(LandedCostLine.amount_base), 0),
-            ).where(LandedCostLine.header_id == header_id)
+        lines = (await db.execute(
+            select(LandedCostLine).where(LandedCostLine.header_id == header_id)
+        )).scalars().all()
+        header.total_lc_amount_fc, header.total_lc_amount_base = _header_totals(
+            lines, _D(header.exchange_rate),
         )
-        header.total_lc_amount_fc, header.total_lc_amount_base = map(_R, totals.one())
 
     await db.commit()
     return await get_header(db, header_id)

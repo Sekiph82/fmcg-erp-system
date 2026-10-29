@@ -18,7 +18,6 @@ interface CostLineForm {
   vendor_name: string;
   amount_fc: string;
   currency_code: string;
-  exchange_rate: string;
   is_included_in_valuation: boolean;
   account_code: string;
 }
@@ -28,8 +27,7 @@ const defaultLine = (): CostLineForm => ({
   description: "",
   vendor_name: "",
   amount_fc: "",
-  currency_code: "USD",
-  exchange_rate: "1",
+  currency_code: "KES",
   is_included_in_valuation: true,
   account_code: "",
 });
@@ -42,8 +40,7 @@ export default function NewLandedCostPage() {
     vendor_name: "",
     bill_no: "",
     bill_date: "",
-    currency_code: "USD",
-    exchange_rate: "1",
+    currency_code: "KES",
     allocation_method: "BY_VALUE" as LCAllocationMethod,
     notes: "",
   });
@@ -75,12 +72,12 @@ export default function NewLandedCostPage() {
     setError("");
     mutation.mutate({
       ...form,
-      exchange_rate: parseFloat(form.exchange_rate) || 1,
+      currency_code: form.currency_code.trim().toUpperCase(),
       cost_lines: lines.map((l) => ({
         ...l,
+        currency_code: l.currency_code.trim().toUpperCase(),
         amount_fc: parseFloat(l.amount_fc) || 0,
         estimated_amount_fc: parseFloat(l.amount_fc) || 0,
-        exchange_rate: parseFloat(l.exchange_rate) || 1,
       })),
       grn_links: [],
     });
@@ -122,15 +119,10 @@ export default function NewLandedCostPage() {
               value={form.bill_date} onChange={(e) => setForm({ ...form, bill_date: e.target.value })} />
           </div>
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Currency</label>
+            <label className="block text-xs text-gray-500 mb-1">Document total currency</label>
             <input className="border rounded-lg px-3 py-2 text-sm w-full uppercase"
               value={form.currency_code} maxLength={10}
               onChange={(e) => setForm({ ...form, currency_code: e.target.value.toUpperCase() })} />
-          </div>
-          <div>
-            <label className="block text-xs text-gray-500 mb-1">Exchange Rate (to Base)</label>
-            <input type="number" step="any" className="border rounded-lg px-3 py-2 text-sm w-full"
-              value={form.exchange_rate} onChange={(e) => setForm({ ...form, exchange_rate: e.target.value })} />
           </div>
           <div>
             <label className="block text-xs text-gray-500 mb-1">Allocation Method</label>
@@ -177,16 +169,10 @@ export default function NewLandedCostPage() {
                   onChange={(e) => updateLine(i, "amount_fc", e.target.value)} />
               </div>
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Currency</label>
+                <label className="block text-xs text-gray-500 mb-1">Line currency</label>
                 <input className="border rounded px-2 py-1.5 text-sm w-full bg-white uppercase" maxLength={10}
                   value={line.currency_code}
                   onChange={(e) => updateLine(i, "currency_code", e.target.value.toUpperCase())} />
-              </div>
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">Exchange Rate</label>
-                <input type="number" step="any" className="border rounded px-2 py-1.5 text-sm w-full bg-white"
-                  value={line.exchange_rate}
-                  onChange={(e) => updateLine(i, "exchange_rate", e.target.value)} />
               </div>
               <div>
                 <label className="block text-xs text-gray-500 mb-1">Vendor / Agent</label>
@@ -237,6 +223,9 @@ export default function NewLandedCostPage() {
           Cancel
         </button>
       </div>
+      <p className="text-xs text-gray-500">
+        Rates are taken from Finance Exchange Rates using the bill date (or today if no bill date is entered). Each saved line keeps the applied rate and source date; add a dated Finance rate first if none exists.
+      </p>
     </form>
   );
 }

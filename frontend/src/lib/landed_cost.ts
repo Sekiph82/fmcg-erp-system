@@ -32,6 +32,9 @@ export interface LandedCostLine {
   variance_base: number | null;
   currency_code: string;
   exchange_rate: number;
+  exchange_rate_id: string | null;
+  exchange_rate_date: string | null;
+  exchange_rate_source: string | null;
   amount_base: number;
   allocation_method: LCAllocationMethod | null;
   is_included_in_valuation: boolean;
@@ -90,6 +93,9 @@ export interface LandedCostSummary {
   bill_date: string | null;
   currency_code: string;
   exchange_rate: number;
+  exchange_rate_id: string | null;
+  exchange_rate_date: string | null;
+  exchange_rate_source: string | null;
   total_lc_amount_fc: number;
   total_lc_amount_base: number;
   allocation_method: LCAllocationMethod;

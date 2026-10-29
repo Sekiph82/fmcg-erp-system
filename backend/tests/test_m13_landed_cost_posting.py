@@ -294,7 +294,6 @@ async def _create_allocated_landed_cost(
             bill_no=f"SYN-LC-{context['suffix'][:10].upper()}",
             bill_date=context["bill_date"],
             currency_code="KES",
-            exchange_rate=Decimal("1"),
             allocation_method="BY_VALUE",
             notes="Synthetic landed-cost posting rehearsal; not live finance data.",
         ))
@@ -303,7 +302,6 @@ async def _create_allocated_landed_cost(
             description="Synthetic inbound freight",
             amount_fc=cost_amount,
             currency_code="KES",
-            exchange_rate=Decimal("1"),
             allocation_method="BY_VALUE",
             is_included_in_valuation=True,
         ))
@@ -313,7 +311,6 @@ async def _create_allocated_landed_cost(
                 description="Synthetic non-capitalizable insurance",
                 amount_fc=Decimal("20.0000"),
                 currency_code="KES",
-                exchange_rate=Decimal("1"),
                 allocation_method="BY_VALUE",
                 is_included_in_valuation=False,
                 account_code=context["expense_account_code"],
@@ -324,7 +321,6 @@ async def _create_allocated_landed_cost(
                 description="Synthetic negative credit requiring a reversal flow",
                 amount_fc=negative_cost_amount,
                 currency_code="KES",
-                exchange_rate=Decimal("1"),
                 allocation_method="BY_VALUE",
                 is_included_in_valuation=True,
             ))
