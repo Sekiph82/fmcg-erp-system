@@ -6,7 +6,7 @@ Handles: document creation, GRN linking, allocation engine,
 from __future__ import annotations
 
 import re
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 from decimal import Decimal, ROUND_HALF_UP
 from typing import List, Optional, Any
 from uuid import UUID
@@ -15,12 +15,23 @@ from sqlalchemy import select, func, and_, extract
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.models.company import Company
+from app.models.finance import (
+    AccountType,
+    AccountingPeriod,
+    ChartOfAccount,
+    JournalEntry,
+    JournalLine,
+    JournalStatus,
+    OperationalPostingStatus,
+)
+from app.models.inventory import CostLayer
 from app.models.landed_cost import (
     LandedCostHeader, LandedCostLine, LandedCostGRNLink,
     LandedCostAllocationLine, LCInventoryAdjustment, LCAIRecommendation,
     LCAllocationMethod,
 )
-from app.models.procurement import GoodsReceipt, GRNLine
+from app.models.procurement import GoodsReceipt, GRNLine, GRNStatus, POLine
 from app.models.master import Material
 from app.schemas.landed_cost import (
     LandedCostHeaderCreate, LandedCostHeaderUpdate,
@@ -113,6 +124,7 @@ async def get_header(db: AsyncSession, header_id: UUID) -> Optional[LandedCostHe
             selectinload(LandedCostHeader.allocation_lines),
             selectinload(LandedCostHeader.ai_recs),
         )
+        .execution_options(populate_existing=True)
         .where(LandedCostHeader.id == header_id)
     )
     return result.scalar_one_or_none()
@@ -133,9 +145,14 @@ async def list_headers(
 
 
 async def update_header(db: AsyncSession, header_id: UUID, payload: LandedCostHeaderUpdate) -> Optional[LandedCostHeader]:
-    hdr = await get_header(db, header_id)
+    hdr_q = await db.execute(
+        select(LandedCostHeader).where(LandedCostHeader.id == header_id).with_for_update()
+    )
+    hdr = hdr_q.scalar_one_or_none()
     if not hdr:
         return None
+    if hdr.status != "DRAFT":
+        raise ValueError(f"Cannot update a landed cost document in status {hdr.status}")
     data = payload.model_dump(exclude_none=True)
     for k, v in data.items():
         setattr(hdr, k, v)
@@ -144,6 +161,15 @@ async def update_header(db: AsyncSession, header_id: UUID, payload: LandedCostHe
 
 
 async def add_cost_line(db: AsyncSession, header_id: UUID, payload: LandedCostLineCreate) -> LandedCostHeader:
+    hdr_q = await db.execute(
+        select(LandedCostHeader).where(LandedCostHeader.id == header_id).with_for_update()
+    )
+    hdr = hdr_q.scalar_one_or_none()
+    if not hdr:
+        raise ValueError("Landed cost document not found")
+    if hdr.status != "DRAFT":
+        raise ValueError(f"Cannot add a cost line in status {hdr.status}")
+
     line = LandedCostLine(
         header_id=header_id,
         cost_type=payload.cost_type,
@@ -159,18 +185,29 @@ async def add_cost_line(db: AsyncSession, header_id: UUID, payload: LandedCostLi
         remarks=payload.remarks,
     )
     db.add(line)
-    # recalculate header totals
-    hdr_q = await db.execute(select(LandedCostHeader).where(LandedCostHeader.id == header_id))
-    hdr = hdr_q.scalar_one()
-    lines_q = await db.execute(select(LandedCostLine).where(LandedCostLine.header_id == header_id))
-    existing = list(lines_q.scalars().all())
-    total_base = sum(_D(l.amount_base) for l in existing) + _R(_D(payload.amount_fc) * _D(payload.exchange_rate))
-    hdr.total_lc_amount_base = total_base
+    await db.flush()
+    totals = await db.execute(
+        select(
+            func.coalesce(func.sum(LandedCostLine.amount_fc), 0),
+            func.coalesce(func.sum(LandedCostLine.amount_base), 0),
+        ).where(LandedCostLine.header_id == header_id)
+    )
+    total_fc, total_base = totals.one()
+    hdr.total_lc_amount_fc = _R(total_fc)
+    hdr.total_lc_amount_base = _R(total_base)
     await db.commit()
     return await get_header(db, header_id)
 
 
 async def add_grn_link(db: AsyncSession, header_id: UUID, payload: LandedCostGRNLinkCreate) -> LandedCostHeader:
+    hdr_q = await db.execute(
+        select(LandedCostHeader).where(LandedCostHeader.id == header_id).with_for_update()
+    )
+    hdr = hdr_q.scalar_one_or_none()
+    if not hdr:
+        raise ValueError("Landed cost document not found")
+    if hdr.status != "DRAFT":
+        raise ValueError(f"Cannot add a GRN link in status {hdr.status}")
     link = LandedCostGRNLink(
         header_id=header_id,
         grn_id=payload.grn_id,
@@ -189,11 +226,21 @@ async def run_allocation(db: AsyncSession, header_id: UUID) -> LandedCostHeader:
     Allocate each cost line across GRN lines using the configured method.
     Clears previous allocation lines before re-running.
     """
-    hdr = await get_header(db, header_id)
-    if not hdr:
+    hdr_q = await db.execute(
+        select(LandedCostHeader).where(LandedCostHeader.id == header_id).with_for_update()
+    )
+    locked_hdr = hdr_q.scalar_one_or_none()
+    if not locked_hdr:
         raise ValueError("Landed cost document not found")
-    if hdr.status not in ("DRAFT", "VALIDATED"):
-        raise ValueError(f"Cannot allocate in status {hdr.status}")
+    if locked_hdr.status not in ("DRAFT", "VALIDATED"):
+        raise ValueError(f"Cannot allocate in status {locked_hdr.status}")
+    hdr = await get_header(db, header_id)
+    if not hdr.cost_lines:
+        raise ValueError("Landed cost must contain at least one cost line before allocation")
+    if any(_D(line.amount_fc) < 0 or _D(line.amount_base) < 0 for line in hdr.cost_lines):
+        raise ValueError(
+            "Negative landed-cost lines require a separately configured credit or reversal flow and cannot be allocated"
+        )
 
     # Clear existing allocation lines
     await db.execute(
@@ -202,36 +249,48 @@ async def run_allocation(db: AsyncSession, header_id: UUID) -> LandedCostHeader:
         )
     )
 
-    # Collect GRN lines for all linked GRNs
+    # Allocation is based only on posted receipts and quantities accepted into stock.
     grn_ids = [gl.grn_id for gl in hdr.grn_links]
     if not grn_ids:
-        await db.commit()
-        return await get_header(db, header_id)
+        raise ValueError("Landed cost must be linked to at least one goods receipt before allocation")
 
     grn_lines_q = await db.execute(
-        select(GRNLine).where(GRNLine.grn_id.in_(grn_ids))
+        select(GRNLine)
+        .join(GoodsReceipt, GoodsReceipt.id == GRNLine.grn_id)
+        .options(
+            selectinload(GRNLine.material),
+            selectinload(GRNLine.po_line).selectinload(POLine.po),
+        )
+        .where(
+            GRNLine.grn_id.in_(grn_ids),
+            GoodsReceipt.status == GRNStatus.POSTED,
+            GRNLine.accepted_quantity > 0,
+        )
     )
     grn_lines: List[GRNLine] = list(grn_lines_q.scalars().all())
+    if not grn_lines:
+        raise ValueError("Linked goods receipts must be posted and contain accepted quantities")
 
     # Build allocation basis per GRN line for each cost line
-    cost_lines = [cl for cl in hdr.cost_lines if cl.is_included_in_valuation]
+    cost_lines = list(hdr.cost_lines)
 
     for cl in cost_lines:
         method = cl.allocation_method or hdr.allocation_method
         basis_map = _compute_basis(method, grn_lines)
         total_basis = sum(basis_map.values())
         if total_basis == Decimal("0"):
-            # fallback to equal split
-            total_basis = Decimal(len(grn_lines))
-            basis_map = {gl.id: Decimal("1") for gl in grn_lines}
+            raise ValueError(f"Cannot allocate landed-cost line {cl.id}: the configured {method} basis is unavailable")
 
         total_allocated = Decimal("0")
         alloc_rows = []
         for gl in grn_lines:
             basis = basis_map.get(gl.id, Decimal("0"))
+            if basis <= 0:
+                continue
             share = basis / total_basis if total_basis else Decimal("0")
             allocated = _R(_D(cl.amount_base) * share)
-            per_unit = _R(allocated / _D(gl.received_qty), 6) if _D(gl.received_qty) > 0 else None
+            accepted_qty = _D(gl.accepted_quantity)
+            per_unit = _R(allocated / accepted_qty, 6) if accepted_qty > 0 else None
             total_allocated += allocated
             alloc_rows.append(LandedCostAllocationLine(
                 header_id=header_id,
@@ -239,10 +298,10 @@ async def run_allocation(db: AsyncSession, header_id: UUID) -> LandedCostHeader:
                 grn_id=gl.grn_id,
                 grn_line_id=gl.id,
                 material_id=gl.material_id,
-                material_name=gl.material_name,
-                lot_no=getattr(gl, "lot_no", None),
-                received_qty=gl.received_qty,
-                purchase_value=_D(gl.unit_cost) * _D(gl.received_qty) if gl.unit_cost else None,
+                material_name=gl.material.name if gl.material else None,
+                lot_no=gl.lot_number,
+                received_qty=accepted_qty,
+                purchase_value=_base_unit_cost(gl) * accepted_qty,
                 allocation_basis=basis,
                 allocation_share=_R(share * 100, 4),
                 allocated_amount=allocated,
@@ -250,10 +309,19 @@ async def run_allocation(db: AsyncSession, header_id: UUID) -> LandedCostHeader:
                 is_posted=False,
             ))
 
-        # Rounding correction on last row
+        # Reconcile currency rounding without assigning charges to zero-basis rows.
         if alloc_rows:
             diff = _R(_D(cl.amount_base)) - total_allocated
-            alloc_rows[-1].allocated_amount = _R(alloc_rows[-1].allocated_amount + diff)
+            correction_row = max(alloc_rows, key=lambda row: _D(row.allocated_amount))
+            correction_row.allocated_amount = _R(correction_row.allocated_amount + diff)
+            correction_qty = _D(correction_row.received_qty)
+            correction_row.per_unit_lc_cost = _R(
+                correction_row.allocated_amount / correction_qty,
+                6,
+            ) if correction_qty > 0 else None
+            # Monetary precision can round a small share to zero. Such rows have
+            # no accounting value and cannot produce a balanced posting event.
+            alloc_rows = [row for row in alloc_rows if _D(row.allocated_amount) > 0]
 
         for row in alloc_rows:
             db.add(row)
@@ -270,62 +338,302 @@ def _compute_basis(method: str, grn_lines: List[GRNLine]) -> dict:
     basis = {}
     for gl in grn_lines:
         if method == LCAllocationMethod.BY_QUANTITY:
-            basis[gl.id] = _D(gl.received_qty)
+            basis[gl.id] = _D(gl.accepted_quantity)
         elif method == LCAllocationMethod.BY_WEIGHT:
-            basis[gl.id] = _D(getattr(gl, "gross_weight", None))
+            if not gl.material or not gl.material.weight_kg:
+                raise ValueError(f"GRN line {gl.id} has no material weight for BY_WEIGHT allocation")
+            basis[gl.id] = _D(gl.accepted_quantity) * _D(gl.material.weight_kg)
         elif method == LCAllocationMethod.BY_VOLUME:
-            basis[gl.id] = _D(getattr(gl, "volume", None))
+            raise ValueError("BY_VOLUME landed-cost allocation is unavailable because GRN lines do not store volume")
         elif method == LCAllocationMethod.BY_VALUE:
-            val = _D(gl.unit_cost) * _D(gl.received_qty) if gl.unit_cost else Decimal("0")
-            basis[gl.id] = val
-        else:  # EQUAL_SPLIT / CUSTOM
+            basis[gl.id] = _base_unit_cost(gl) * _D(gl.accepted_quantity)
+        elif method == LCAllocationMethod.EQUAL_SPLIT:
             basis[gl.id] = Decimal("1")
+        else:
+            raise ValueError(f"Unsupported landed-cost allocation method: {method}")
     return basis
+
+
+def _base_unit_cost(grn_line: GRNLine) -> Decimal:
+    po_line = grn_line.po_line
+    purchase_order = po_line.po if po_line else None
+    if not po_line or not purchase_order:
+        return Decimal("0")
+    return _D(po_line.unit_price) * _D(purchase_order.exchange_rate)
 
 
 # ── Post ──────────────────────────────────────────────────────────────────────
 
-async def post_landed_cost(db: AsyncSession, header_id: UUID, posted_by: str = "system") -> LandedCostHeader:
+async def post_landed_cost(
+    db: AsyncSession,
+    header_id: UUID,
+    posted_by: str = "system",
+    posted_by_id: Optional[UUID] = None,
+) -> LandedCostHeader:
     """
-    Post: create inventory adjustment records for all allocation lines,
-    update average costs, mark document as POSTED.
+    Post landed-cost allocations to their source FIFO layers and the GL.
+
+    All changes are committed together. Missing source, account, valuation,
+    company, or open-period configuration fails closed before the document is
+    marked posted.
     """
-    hdr = await get_header(db, header_id)
-    if not hdr:
-        raise ValueError("Document not found")
-    if hdr.status != "VALIDATED":
-        raise ValueError(f"Can only post VALIDATED documents (current: {hdr.status})")
+    from app.services.finance_service import (
+        assert_journal_lines_postable,
+        find_inventory_account_mapping,
+        get_or_create_operational_posting_event,
+        mark_journal_posted,
+        mark_operational_posting_posted,
+    )
 
-    for al in hdr.allocation_lines:
-        if al.is_posted:
-            continue
-        # Create inventory adjustment
-        adj = LCInventoryAdjustment(
-            header_id=header_id,
-            grn_line_id=al.grn_line_id,
-            material_id=al.material_id,
-            lot_no=al.lot_no,
-            adjustment_amount=al.allocated_amount,
-            per_unit_amount=al.per_unit_lc_cost,
-            posted_at=datetime.utcnow(),
-        )
-        db.add(adj)
-        await db.flush()
-        al.is_posted = True
-        al.inventory_adj_id = adj.id
+    try:
+        if not posted_by_id:
+            raise ValueError("An authenticated finance posting actor is required")
+        hdr = (await db.execute(
+            select(LandedCostHeader)
+            .options(
+                selectinload(LandedCostHeader.cost_lines),
+                selectinload(LandedCostHeader.grn_links),
+                selectinload(LandedCostHeader.allocation_lines),
+            )
+            .where(LandedCostHeader.id == header_id)
+            .with_for_update()
+        )).scalar_one_or_none()
+        if not hdr:
+            raise ValueError("Document not found")
+        if hdr.status != "VALIDATED":
+            raise ValueError(f"Can only post VALIDATED documents (current: {hdr.status})")
+        if not hdr.bill_date:
+            raise ValueError("A bill date is required for period-aware landed-cost posting")
+        if not hdr.allocation_lines:
+            raise ValueError("Landed cost must be allocated to GRN lines before posting")
 
-    # Mark header as POSTED
-    hdr_row_q = await db.execute(select(LandedCostHeader).where(LandedCostHeader.id == header_id))
-    hdr_row = hdr_row_q.scalar_one()
-    hdr_row.status = "POSTED"
-    hdr_row.posted_at = datetime.utcnow()
-    hdr_row.posted_by = posted_by
-    await db.commit()
-    return await get_header(db, header_id)
+        period = (await db.execute(
+            select(AccountingPeriod)
+            .where(
+                AccountingPeriod.period_start <= hdr.bill_date,
+                AccountingPeriod.period_end >= hdr.bill_date,
+            )
+            .with_for_update()
+        )).scalar_one_or_none()
+        if not period:
+            raise ValueError(f"No accounting period exists for landed-cost bill date {hdr.bill_date.isoformat()}")
+        if period.status.value in {"CLOSED", "LOCKED"}:
+            raise ValueError(f"Accounting period {period.period_ym} is {period.status.value}")
+
+        cost_lines = {line.id: line for line in hdr.cost_lines}
+        for allocation in sorted(hdr.allocation_lines, key=lambda line: str(line.id)):
+            if allocation.is_posted:
+                if (
+                    allocation.accounting_status == OperationalPostingStatus.POSTED
+                    and allocation.journal_entry_id
+                    and allocation.posting_batch_id
+                    and allocation.inventory_adj_id
+                ):
+                    continue
+                raise ValueError(f"Allocation {allocation.id} has an incomplete prior posting; manual reconciliation is required")
+
+            amount = _R(allocation.allocated_amount)
+            received_qty = _D(allocation.received_qty)
+            if amount <= 0 or received_qty <= 0 or not allocation.material_id:
+                raise ValueError(f"Allocation {allocation.id} is missing a positive amount, quantity, or material")
+            cost_line = cost_lines.get(allocation.lc_line_id)
+            if not cost_line:
+                raise ValueError(f"Allocation {allocation.id} does not resolve to a landed-cost line")
+            if not allocation.grn_line_id:
+                raise ValueError(f"Allocation {allocation.id} has no source GRN line")
+
+            grn_line = await db.get(GRNLine, allocation.grn_line_id)
+            if not grn_line or grn_line.grn_id != allocation.grn_id or not grn_line.stock_movement_id:
+                raise ValueError(f"Allocation {allocation.id} has no matching source GRN stock movement")
+            receipt = await db.get(GoodsReceipt, grn_line.grn_id)
+            if not receipt or not receipt.company_id:
+                raise ValueError(f"Source GRN line {grn_line.id} has no company for base-currency accounting")
+            company = await db.get(Company, receipt.company_id)
+            if not company or not company.base_currency:
+                raise ValueError(f"Source GRN line {grn_line.id} has no configured company base currency")
+
+            mapping = await find_inventory_account_mapping(
+                db,
+                stock_type="MATERIAL",
+                material_id=allocation.material_id,
+            )
+            if (
+                not mapping
+                or not mapping.landed_cost_clearing_account_id
+            ):
+                raise ValueError(f"Material {allocation.material_id} needs an active landed-cost clearing account mapping")
+
+            layer = None
+            inventory_delta = Decimal("0")
+            consumed_cost = Decimal("0")
+            old_unit_cost = Decimal("0")
+            new_unit_cost = Decimal("0")
+            new_total_value = Decimal("0")
+            on_hand = Decimal("0")
+            per_unit_cost = Decimal("0")
+            expense_account = None
+            if cost_line.is_included_in_valuation:
+                if not mapping.inventory_account_id or not mapping.valuation_method:
+                    raise ValueError(f"Material {allocation.material_id} needs an inventory account and valuation method mapping")
+                if mapping.valuation_method.strip().upper() != "FIFO":
+                    raise ValueError(f"Landed-cost capitalization currently requires FIFO valuation; found {mapping.valuation_method}")
+
+                layer = (await db.execute(
+                    select(CostLayer)
+                    .where(CostLayer.movement_id == grn_line.stock_movement_id)
+                    .with_for_update()
+                )).scalar_one_or_none()
+                if not layer or layer.material_id != allocation.material_id:
+                    raise ValueError(f"Source GRN line {grn_line.id} has no matching FIFO cost layer")
+                if _D(layer.qty_received) != received_qty:
+                    raise ValueError(f"Source FIFO layer quantity does not match allocation {allocation.id}")
+
+                on_hand = _D(layer.qty_remaining)
+                old_unit_cost = _D(layer.unit_cost).quantize(Decimal("0.000001"))
+                old_total_value = _D(layer.total_value).quantize(Decimal("0.0001"))
+                if on_hand < 0 or on_hand > received_qty:
+                    raise ValueError(f"Source FIFO layer {layer.id} has an invalid remaining quantity")
+                expected_value = _R(on_hand * old_unit_cost)
+                if expected_value != old_total_value:
+                    raise ValueError(f"Source FIFO layer {layer.id} has inconsistent quantity and value")
+
+                per_unit_cost = _R(amount / received_qty, 6)
+                new_unit_cost = (old_unit_cost + per_unit_cost).quantize(Decimal("0.000001"))
+                new_total_value = _R(on_hand * new_unit_cost)
+                inventory_delta = new_total_value - old_total_value
+                consumed_cost = amount - inventory_delta
+                if inventory_delta < 0 or consumed_cost < 0:
+                    raise ValueError(f"Allocation {allocation.id} cannot be represented safely at configured precision")
+                if consumed_cost and not mapping.cogs_account_id:
+                    raise ValueError(f"Material {allocation.material_id} needs a COGS account for consumed receipt quantity")
+            else:
+                if not cost_line.account_code:
+                    raise ValueError(f"Non-capitalizable landed-cost line {cost_line.id} needs an explicit expense account code")
+                expense_account = (await db.execute(
+                    select(ChartOfAccount).where(ChartOfAccount.code == cost_line.account_code)
+                )).scalar_one_or_none()
+                if not expense_account or expense_account.account_type != AccountType.EXPENSE:
+                    raise ValueError(f"Landed-cost expense account {cost_line.account_code} must resolve to a configured expense account")
+
+            event, batch, created = await get_or_create_operational_posting_event(
+                db,
+                source_module="landed_cost",
+                source_event="LANDED_COST_POST",
+                source_id=header_id,
+                source_line_id=allocation.id,
+                source_ref=hdr.lc_no,
+                stock_movement_id=grn_line.stock_movement_id,
+                event_date=hdr.bill_date,
+                amount=amount,
+                currency=company.base_currency,
+                created_by_id=posted_by_id,
+                require_period=True,
+            )
+            if not created:
+                raise ValueError(f"A prior landed-cost posting event exists for allocation {allocation.id}; manual reconciliation is required")
+
+            entry_no = f"LCPOST-{str(allocation.id).replace('-', '')}"
+            entry = JournalEntry(
+                entry_no=entry_no,
+                entry_date=hdr.bill_date,
+                description=f"Landed cost allocation {hdr.lc_no}",
+                source_module="landed_cost",
+                source_event="LANDED_COST_POST",
+                source_id=allocation.id,
+                source_ref=hdr.lc_no,
+                company_id=receipt.company_id,
+                status=JournalStatus.DRAFT,
+                posting_batch_id=batch.id,
+                created_by_id=posted_by_id,
+            )
+            if cost_line.is_included_in_valuation:
+                if inventory_delta:
+                    entry.lines.append(JournalLine(
+                        account_id=mapping.inventory_account_id,
+                        description=f"Inventory landed-cost adjustment {allocation.id}",
+                        debit=inventory_delta,
+                        credit=Decimal("0"),
+                        currency=company.base_currency,
+                    ))
+                if consumed_cost:
+                    entry.lines.append(JournalLine(
+                        account_id=mapping.cogs_account_id,
+                        description=f"Consumed landed-cost allocation {allocation.id}",
+                        debit=consumed_cost,
+                        credit=Decimal("0"),
+                        currency=company.base_currency,
+                    ))
+            else:
+                entry.lines.append(JournalLine(
+                    account_id=expense_account.id,
+                    description=f"Landed-cost expense allocation {allocation.id}",
+                    debit=amount,
+                    credit=Decimal("0"),
+                    currency=company.base_currency,
+                ))
+            entry.lines.append(JournalLine(
+                account_id=mapping.landed_cost_clearing_account_id,
+                description=f"Landed-cost clearing {allocation.id}",
+                debit=Decimal("0"),
+                credit=amount,
+                currency=company.base_currency,
+            ))
+            db.add(entry)
+            await db.flush()
+            await assert_journal_lines_postable(db, entry.lines)
+            await mark_journal_posted(db, entry, posted_by_id, require_period=True)
+            await mark_operational_posting_posted(
+                db,
+                event,
+                batch,
+                journal_entry_id=entry.id,
+                posted_by_id=posted_by_id,
+            )
+
+            if layer:
+                layer.unit_cost = new_unit_cost
+                layer.total_value = new_total_value
+                adjustment = LCInventoryAdjustment(
+                    header_id=header_id,
+                    grn_line_id=allocation.grn_line_id,
+                    material_id=allocation.material_id,
+                    lot_no=allocation.lot_no,
+                    adjustment_amount=amount,
+                    per_unit_amount=per_unit_cost,
+                    qty_on_hand=on_hand,
+                    old_avg_cost=old_unit_cost,
+                    new_avg_cost=new_unit_cost,
+                    journal_ref=entry.entry_no,
+                    posting_batch_id=batch.id,
+                    journal_entry_id=entry.id,
+                    accounting_status=OperationalPostingStatus.POSTED,
+                    posted_at=datetime.now(timezone.utc).replace(tzinfo=None),
+                )
+                db.add(adjustment)
+                await db.flush()
+                allocation.inventory_adj_id = adjustment.id
+            allocation.is_posted = True
+            allocation.posting_batch_id = batch.id
+            allocation.journal_entry_id = entry.id
+            allocation.accounting_status = OperationalPostingStatus.POSTED
+            allocation.posting_error = None
+            if event.status != OperationalPostingStatus.POSTED:
+                raise ValueError(f"Posting event for allocation {allocation.id} did not reach POSTED")
+
+        hdr.status = "POSTED"
+        hdr.posted_at = datetime.now(timezone.utc).replace(tzinfo=None)
+        hdr.posted_by = posted_by
+        await db.commit()
+        return await get_header(db, header_id)
+    except Exception:
+        await db.rollback()
+        raise
 
 
 async def cancel_landed_cost(db: AsyncSession, header_id: UUID) -> LandedCostHeader:
-    hdr_q = await db.execute(select(LandedCostHeader).where(LandedCostHeader.id == header_id))
+    hdr_q = await db.execute(
+        select(LandedCostHeader).where(LandedCostHeader.id == header_id).with_for_update()
+    )
     hdr = hdr_q.scalar_one_or_none()
     if not hdr:
         raise ValueError("Document not found")

@@ -271,18 +271,48 @@ async def find_inventory_account_mapping(
 ) -> Optional[InventoryAccountMapping]:
     filters = [InventoryAccountMapping.is_active.is_(True)]
     scope_filters = []
+    scope_compatibility = []
     if product_id:
         scope_filters.append(InventoryAccountMapping.product_id == product_id)
+        scope_compatibility.append(or_(
+            InventoryAccountMapping.product_id.is_(None),
+            InventoryAccountMapping.product_id == product_id,
+        ))
+    else:
+        scope_compatibility.append(InventoryAccountMapping.product_id.is_(None))
     if material_id:
         scope_filters.append(InventoryAccountMapping.material_id == material_id)
+        scope_compatibility.append(or_(
+            InventoryAccountMapping.material_id.is_(None),
+            InventoryAccountMapping.material_id == material_id,
+        ))
+    else:
+        scope_compatibility.append(InventoryAccountMapping.material_id.is_(None))
     if category_key:
         scope_filters.append(InventoryAccountMapping.category_key == category_key)
+        scope_compatibility.append(or_(
+            InventoryAccountMapping.category_key.is_(None),
+            InventoryAccountMapping.category_key == category_key,
+        ))
+    else:
+        scope_compatibility.append(InventoryAccountMapping.category_key.is_(None))
     if stock_type:
         scope_filters.append(InventoryAccountMapping.stock_type == stock_type)
+        scope_compatibility.append(or_(
+            InventoryAccountMapping.stock_type.is_(None),
+            InventoryAccountMapping.stock_type == stock_type,
+        ))
+    else:
+        scope_compatibility.append(InventoryAccountMapping.stock_type.is_(None))
     if not scope_filters:
         return None
 
-    result = await db.execute(select(InventoryAccountMapping).where(and_(*filters), or_(*scope_filters)))
+    result = await db.execute(
+        select(InventoryAccountMapping).where(
+            and_(*filters, *scope_compatibility),
+            or_(*scope_filters),
+        )
+    )
     mappings = list(result.scalars().all())
     if not mappings:
         return None

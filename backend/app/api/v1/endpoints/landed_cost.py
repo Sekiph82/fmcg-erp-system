@@ -5,6 +5,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.deps import require_permission
 from app.db.session import get_db
 from app.schemas.landed_cost import (
     LandedCostHeaderCreate, LandedCostHeaderUpdate,
@@ -51,7 +52,10 @@ async def get_one(header_id: UUID, db: AsyncSession = Depends(get_db)):
 
 @router.patch("/{header_id}", response_model=LandedCostOut)
 async def update(header_id: UUID, payload: LandedCostHeaderUpdate, db: AsyncSession = Depends(get_db)):
-    hdr = await svc.update_header(db, header_id, payload)
+    try:
+        hdr = await svc.update_header(db, header_id, payload)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
     if not hdr:
         raise HTTPException(404, "Landed cost document not found")
     return hdr
@@ -65,7 +69,10 @@ async def add_cost_line(
     payload: LandedCostLineCreate,
     db: AsyncSession = Depends(get_db),
 ):
-    return await svc.add_cost_line(db, header_id, payload)
+    try:
+        return await svc.add_cost_line(db, header_id, payload)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
 
 
 # ── GRN Links ─────────────────────────────────────────────────────────────────
@@ -76,7 +83,10 @@ async def add_grn_link(
     payload: LandedCostGRNLinkCreate,
     db: AsyncSession = Depends(get_db),
 ):
-    return await svc.add_grn_link(db, header_id, payload)
+    try:
+        return await svc.add_grn_link(db, header_id, payload)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
 
 
 # ── Allocation ────────────────────────────────────────────────────────────────
@@ -92,9 +102,18 @@ async def allocate(header_id: UUID, db: AsyncSession = Depends(get_db)):
 # ── Post / Cancel ─────────────────────────────────────────────────────────────
 
 @router.post("/{header_id}/post", response_model=LandedCostOut)
-async def post(header_id: UUID, db: AsyncSession = Depends(get_db)):
+async def post(
+    header_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(require_permission("finance", "post")),
+):
     try:
-        return await svc.post_landed_cost(db, header_id)
+        return await svc.post_landed_cost(
+            db,
+            header_id,
+            posted_by=str(current_user.id),
+            posted_by_id=current_user.id,
+        )
     except ValueError as e:
         raise HTTPException(400, str(e))
 
