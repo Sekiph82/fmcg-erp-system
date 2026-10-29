@@ -8,11 +8,11 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 ## Project Status
 
-- Current Milestone: M07 — Sales / Distributor Operations
-- Current Sprint: M07.S03 — Live Commercial Verification
-- Current Task: M07.S03.T001 — Verify order-to-cash accounting closure
+- Current Milestone: M08 — Production Management
+- Current Sprint: M08.S03 — Baseline Integrity
+- Current Task: M08.S03.T001 — Harden state-transition invariants
 - Current Task Status: COMPLETE
-- Next Task/Action: M08.S03.T001 — Harden state-transition invariants
+- Next Task/Action: M08.S03.T002 — Verify production/inventory transaction atomicity
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -335,8 +335,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 - [x] M08.S02.T005 — Production reporting/manual coverage
 
 ## M08.S03 — Baseline Integrity
-- [ ] M08.S03.T001 — Harden state-transition invariants
-- [P] M08.S03.T002 — Verify production/inventory transaction atomicity
+- [x] M08.S03.T001 — Harden state-transition invariants
+- [ ] M08.S03.T002 — Verify production/inventory transaction atomicity
 - [P] M08.S03.T003 — Verify production/QC/finance closure
 
 ---
