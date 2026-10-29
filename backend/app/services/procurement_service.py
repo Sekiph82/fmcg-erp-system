@@ -323,13 +323,14 @@ async def post_grn(
     grn: GoodsReceipt,
     user_id: uuid.UUID,
 ) -> GoodsReceipt:
-    if grn.status == GRNStatus.POSTED:
-        raise HTTPException(status_code=422, detail="GRN already posted")
-
+    # Serialize receipt posting by the owning PO before locking the GRN. This
+    # also orders different partial receipts against the same PO consistently.
     po_result = await db.execute(
         select(PurchaseOrder)
         .options(selectinload(PurchaseOrder.lines))
         .where(PurchaseOrder.id == grn.po_id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
     )
     po = po_result.scalar_one_or_none()
     if not po:
@@ -337,13 +338,20 @@ async def post_grn(
 
     _assert_po_status(po, POStatus.ORDERED, POStatus.PARTIALLY_RECEIVED)
 
-    # Reload GRN lines with relationships
+    # Refresh and lock the source receipt before checking its transition. The
+    # endpoint may have loaded a stale draft object before another post commits.
     grn_result = await db.execute(
         select(GoodsReceipt)
         .options(selectinload(GoodsReceipt.lines))
         .where(GoodsReceipt.id == grn.id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
     )
-    grn = grn_result.scalar_one()
+    grn = grn_result.scalar_one_or_none()
+    if not grn:
+        raise HTTPException(status_code=404, detail="GRN not found")
+    if grn.status == GRNStatus.POSTED:
+        raise HTTPException(status_code=422, detail="GRN already posted")
 
     for line in grn.lines:
         if line.accepted_quantity <= 0:
@@ -410,7 +418,10 @@ async def post_grn(
         filters.append(Stock.lot_id == lot_id if lot_id else Stock.lot_id.is_(None))
 
         stock_result = await db.execute(
-            select(Stock).where(and_(*filters)).with_for_update()
+            select(Stock)
+            .where(and_(*filters))
+            .with_for_update()
+            .execution_options(populate_existing=True)
         )
         stock = stock_result.scalar_one_or_none()
         if stock:
@@ -431,7 +442,10 @@ async def post_grn(
         # Update PO line received_quantity
         if line.po_line_id:
             po_line_result = await db.execute(
-                select(POLine).where(POLine.id == line.po_line_id).with_for_update()
+                select(POLine)
+                .where(POLine.id == line.po_line_id)
+                .with_for_update()
+                .execution_options(populate_existing=True)
             )
             po_line = po_line_result.scalar_one_or_none()
             if po_line:
@@ -443,7 +457,9 @@ async def post_grn(
     # Reload PO lines to determine new PO status
     await db.flush()
     po_lines_result = await db.execute(
-        select(POLine).where(POLine.po_id == po.id)
+        select(POLine)
+        .where(POLine.po_id == po.id)
+        .execution_options(populate_existing=True)
     )
     po_lines = list(po_lines_result.scalars().all())
     fully_received = all(

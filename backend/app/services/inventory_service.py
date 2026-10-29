@@ -105,7 +105,10 @@ async def _get_stock_for_update(
         filters.append(Stock.lot_id.is_(None))
 
     result = await db.execute(
-        select(Stock).where(and_(*filters)).with_for_update()
+        select(Stock)
+        .where(and_(*filters))
+        .with_for_update()
+        .execution_options(populate_existing=True)
     )
     return result.scalar_one_or_none()
 

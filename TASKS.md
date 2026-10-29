@@ -11,8 +11,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 - Current Milestone: M05 — Warehouse Management
 - Current Sprint: M05.S03 — Baseline Integrity
 - Current Task: M05.S03.T003 — Validate negative-stock/concurrency safeguards
-- Current Task Status: IN_PROGRESS
-- Next Task/Action: M05.S03.T003 — Validate negative-stock/concurrency safeguards
+- Current Task Status: COMPLETE
+- Next Task/Action: M06.S03.T001 — Verify three-way-match transaction chain
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -258,7 +258,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
   Evidence: [M05.S03.T001 verification log](coordination/sessions/M05.S03.T001/CODEX_LOG_V01.md); fresh PostgreSQL 16.6 migration to head 20261029_0025; 9 task-specific integrity tests passed; a combined run with related sales access/delegation tests reported 18 passed, including real lock-wait, competing allocation, stale stock/line refresh, cancellation release, partial dispatch, and no duplicate stock movement. Independent read-only review found no remaining findings; exact task container/tmpfs cleanup verified. No production acceptance claimed.
 - [x] M05.S03.T002 — Validate transaction integrity across production/procurement/sales
   Evidence: [M05.S03.T002 verification log](coordination/sessions/M05.S03.T002/CODEX_LOG_V01.md); fresh PostgreSQL 16.6 at single migration head 20261029_0025; 7 task-specific transaction tests and 23 related procurement/production/sales regressions passed. Late-failure rollback, repeated-post guards, cross-module stock/source links, actor attribution, and unchanged finance journal/batch counts verified with synthetic data. Independent read-only review found no remaining material findings; exact disposable-container cleanup verified. No production acceptance claimed.
-- [~] M05.S03.T003 — Validate negative-stock/concurrency safeguards
+- [x] M05.S03.T003 — Validate negative-stock/concurrency safeguards
+  Evidence: [M05.S03.T003 verification log](coordination/sessions/M05.S03.T003/CODEX_LOG_V01.md); fresh PostgreSQL 16.6 at single migration head 20261029_0025; 5 focused negative-stock/concurrency tests and 23 related procurement/production/sales regressions passed. Real PostgreSQL lock waits verified that duplicate GRN posts and duplicate production completions are serialized; limited shared material could not be over-consumed. Independent read-only review found no remaining material issues; exact disposable-container cleanup verified. No production acceptance claimed.
 
 ---
 
@@ -280,7 +281,7 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 - [x] M06.S02.T005 — Invoice matching/landed-cost surfaces
 
 ## M06.S03 — Baseline Verification
-- [P] M06.S03.T001 — Verify three-way-match transaction chain
+- [ ] M06.S03.T001 — Verify three-way-match transaction chain
 - [P] M06.S03.T002 — Verify landed-cost accounting integration
 - [P] M06.S03.T003 — Verify supplier performance data completeness
 

@@ -1,0 +1,8 @@
+.......................                                                  [100%]
+============================== warnings summary ===============================
+tests/test_gap010_crm_sales_commercial_access.py::test_gap010_quote_convert_requires_status_permission_and_scope
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\tests\test_gap010_crm_sales_commercial_access.py:193: StarletteDeprecationWarning: 'HTTP_422_UNPROCESSABLE_ENTITY' is deprecated. Use 'HTTP_422_UNPROCESSABLE_CONTENT' instead.
+    ensure_commercial_action_allowed(sales_manager, draft_quote, "convert")
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+23 passed, 1 warning in 4.77s

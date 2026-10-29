@@ -66,7 +66,12 @@ async def _get_material_stock(
         filters.append(Stock.lot_id == lot_id)
     else:
         filters.append(Stock.lot_id.is_(None))
-    result = await db.execute(select(Stock).where(and_(*filters)).with_for_update())
+    result = await db.execute(
+        select(Stock)
+        .where(and_(*filters))
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    )
     return result.scalar_one_or_none()
 
 
@@ -166,7 +171,12 @@ async def _receipt_finished_goods(
     else:
         filters.append(Stock.lot_id.is_(None))
 
-    r2 = await db.execute(select(Stock).where(and_(*filters)).with_for_update())
+    r2 = await db.execute(
+        select(Stock)
+        .where(and_(*filters))
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    )
     existing = r2.scalar_one_or_none()
 
     movement = StockMovement(
@@ -324,6 +334,16 @@ async def complete_order(
     req: CompleteOrderRequest,
     user_id: uuid.UUID,
 ) -> ProductionOrder:
+    order_result = await db.execute(
+        select(ProductionOrder)
+        .where(ProductionOrder.id == order.id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    )
+    order = order_result.scalar_one_or_none()
+    if order is None:
+        raise HTTPException(404, detail="Production order not found")
+
     if order.status != ProductionOrderStatus.IN_PROGRESS:
         raise HTTPException(422, detail=f"Order is {order.status.value}. Must be IN_PROGRESS to complete.")
 

@@ -1,0 +1,10 @@
+{
+  "container": "codex-m05-s03-t003-attempt-9917aed755e54909a790",
+  "id": "cbae84cce595d07bc4a8eac1802324d392080ce26ccc928f265085d7816b7ef4",
+  "task": "M05.S03.T003",
+  "disposable": "true",
+  "restart": "no",
+  "mounts": 0,
+  "tmpfs": "rw,size=512m",
+  "result": "removed-before-final-run"
+}

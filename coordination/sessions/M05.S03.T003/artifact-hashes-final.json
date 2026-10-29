@@ -1,0 +1,50 @@
+[
+  {
+    "Path": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system\\coordination\\sessions\\M05.S03.T003\\CHATGPT_AUDIT_CRITERIA_V01.md",
+    "Hash": "9420F783DAC201616185858416674888123D01C2598C3D5B2B49A5BB842D76DC"
+  },
+  {
+    "Path": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system\\coordination\\sessions\\M05.S03.T003\\CHATGPT_PROMPT_V01.md",
+    "Hash": "2EC5F6A42C92EEF4DCEC585BA8C5D5A025C005EF1BA088C51A224C8948F8A48A"
+  },
+  {
+    "Path": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system\\backend\\tests\\test_m05_s03_t003_stock_concurrency_db.py",
+    "Hash": "010BBF8AC7753795E23DF63FE42966D2FDC22EEAED3884F8D5E18F1361940732"
+  },
+  {
+    "Path": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system\\backend\\app\\services\\inventory_service.py",
+    "Hash": "B0C35E22FF6411FD408FE8DBD90CBD5052CC5AC816EA11D7FD7954663D9F4DAB"
+  },
+  {
+    "Path": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system\\backend\\app\\services\\procurement_service.py",
+    "Hash": "37EB151D013009D013AA89550B11D6C69E09E3E7267A98715FB11E28E9E932EB"
+  },
+  {
+    "Path": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system\\backend\\app\\services\\production_service.py",
+    "Hash": "8C5E9C05286E3032629FC4995AE09333582A6840CECFC0D64133AA73709E36DD"
+  },
+  {
+    "Path": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system\\coordination\\sessions\\M05.S03.T003\\alembic-upgrade-final.log",
+    "Hash": "A4270EE6682BF51FF94BA6C1170765C149FAC15DC5C3F8E3087D9BB9164AD7BB"
+  },
+  {
+    "Path": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system\\coordination\\sessions\\M05.S03.T003\\alembic-heads-final.log",
+    "Hash": "D9DEA74AD93C0A44C82ACD32E600ADF17D6D6AA6F1536D504D815610487C6EB1"
+  },
+  {
+    "Path": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system\\coordination\\sessions\\M05.S03.T003\\alembic-current-final.log",
+    "Hash": "7CC12ECAE0054A36A1F2F120E0AD8CB867E93F69ECCEAED4FC14F933DC4F3621"
+  },
+  {
+    "Path": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system\\coordination\\sessions\\M05.S03.T003\\postgres-tests-final.log",
+    "Hash": "D5A1E86A8AD66AD06507A99B1D6AA2F8F779D2CF5F0B546085F409EC175CAD69"
+  },
+  {
+    "Path": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system\\coordination\\sessions\\M05.S03.T003\\related-regressions-final.log",
+    "Hash": "91C04982982A3BA17828D3BB5E031F1CAEFA56555CCC5CECE687DD8019E85A8C"
+  },
+  {
+    "Path": "C:\\Users\\sekip\\Desktop\\fmcg-erp-system\\coordination\\sessions\\M05.S03.T003\\container-final-cleanup.json",
+    "Hash": "6815C0786D3EA72D33B322A8EAA2CEB575312206EDC392C6436F49186BFC956A"
+  }
+]

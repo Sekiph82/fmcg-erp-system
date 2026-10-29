@@ -1,0 +1,8 @@
+.....                                                                    [100%]
+============================== warnings summary ===============================
+tests/test_m05_s03_t003_stock_concurrency_db.py::test_inventory_issue_rejects_quantity_above_available_without_mutation
+  C:\Users\sekip\Desktop\fmcg-erp-system\backend\app\services\inventory_service.py:212: StarletteDeprecationWarning: 'HTTP_422_UNPROCESSABLE_ENTITY' is deprecated. Use 'HTTP_422_UNPROCESSABLE_CONTENT' instead.
+    raise InsufficientStockError(available, req.quantity, product.name, warehouse.name)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+5 passed, 1 warning in 9.70s
