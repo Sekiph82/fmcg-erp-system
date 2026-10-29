@@ -4,27 +4,39 @@ import hashlib
 import hmac
 import json
 import time
+from copy import deepcopy
 from base64 import b64encode
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 from uuid import UUID, uuid4
 
 import httpx
+from jsonschema import Draft202012Validator
+from jsonschema.exceptions import SchemaError
 from sqlalchemy import and_, desc, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.webhook import (
-    AuthType, DeliveryAttempt, DeliveryStatus, EventDefinition,
+    AuthType, DeliveryAttempt, DeliveryStatus, EventDefinition, EventDefinitionVersion,
     EventLog, HttpMethod, InboundEndpoint, Subscription,
 )
 from app.schemas.webhook import (
-    DomainEventEnvelope, DomainEventReference, EventDefinitionCreate, InboundEndpointCreate,
+    DomainEventEnvelope, DomainEventReference, EventDefinitionCreate, EventDefinitionUpdate, InboundEndpointCreate,
     PublishEventRequest, ReplayRequest, SubscriptionCreate, SubscriptionUpdate,
 )
 
 MAX_RESPONSE_BODY = 2000       # truncate stored response body
 BACKOFF_BASE = 60              # base seconds for exponential backoff
 MAX_PAYLOAD_BYTES = 1_048_576  # 1 MB
+EVENT_JSON_SCHEMA_DRAFT = "https://json-schema.org/draft/2020-12/schema"
+
+
+class EventSchemaGovernanceError(ValueError):
+    """An event schema is invalid or its change lacks governance metadata."""
+
+
+class EventPayloadValidationError(ValueError):
+    """Business data does not conform to its registered event schema."""
 
 
 def _build_event_envelope(
@@ -34,6 +46,7 @@ def _build_event_envelope(
     module: str,
     occurred_at: datetime,
     payload: Dict[str, Any],
+    schema_version: int = 1,
     reference_type: Optional[str] = None,
     reference_id: Optional[str] = None,
     actor_id: Optional[str] = None,
@@ -43,6 +56,7 @@ def _build_event_envelope(
         id=event_id,
         type=event_code,
         module=module,
+        schema_version=schema_version,
         occurred_at=occurred_at,
         actor_id=actor_id,
         reference=DomainEventReference(type=reference_type, id=reference_id),
@@ -62,7 +76,9 @@ def _canonical_event_payload(event_log: EventLog) -> Dict[str, Any]:
         and isinstance(payload.get("reference"), dict)
         and isinstance(payload.get("data"), dict)
     ):
-        return payload
+        versioned_payload = dict(payload)
+        versioned_payload.setdefault("schema_version", 1)
+        return versioned_payload
 
     legacy_metadata = payload.get("_event") if isinstance(payload.get("_event"), dict) else {}
     occurred_at = event_log.created_at or legacy_metadata.get("published_at") or datetime.now(timezone.utc)
@@ -78,12 +94,66 @@ def _canonical_event_payload(event_log: EventLog) -> Dict[str, Any]:
         event_id=event_log.id,
         event_code=event_log.event_code,
         module=event_log.module,
+        schema_version=1,
         occurred_at=occurred_at,
         payload=data,
         reference_type=event_log.reference_type or legacy_metadata.get("reference_type"),
         reference_id=event_log.reference_id or legacy_metadata.get("reference_id"),
         actor_id=event_log.actor_id or legacy_metadata.get("actor_id"),
     )
+
+
+def _normalize_event_schema(schema: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    """Validate and canonicalize the supported JSON Schema draft without remote refs."""
+    if schema is None:
+        return None
+    if not isinstance(schema, dict):
+        raise EventSchemaGovernanceError("Event payload schema must be a JSON object.")
+    normalized = deepcopy(schema)
+    declared_draft = normalized.get("$schema")
+    if declared_draft not in (None, EVENT_JSON_SCHEMA_DRAFT):
+        raise EventSchemaGovernanceError("Event schemas must use JSON Schema Draft 2020-12.")
+    normalized["$schema"] = EVENT_JSON_SCHEMA_DRAFT
+    if normalized.get("type") != "object":
+        raise EventSchemaGovernanceError("Event payload schemas must declare type 'object'.")
+
+    def reject_remote_refs(value: Any) -> None:
+        if isinstance(value, dict):
+            for key in ("$ref", "$dynamicRef", "$recursiveRef"):
+                reference = value.get(key)
+                if isinstance(reference, str) and not reference.startswith("#"):
+                    raise EventSchemaGovernanceError(
+                        "Event schemas may use local references only; remote references are disabled."
+                    )
+            for child in value.values():
+                reject_remote_refs(child)
+        elif isinstance(value, list):
+            for child in value:
+                reject_remote_refs(child)
+
+    reject_remote_refs(normalized)
+    try:
+        Draft202012Validator.check_schema(normalized)
+    except SchemaError as exc:
+        path = ".".join(str(part) for part in exc.absolute_path) or "$"
+        raise EventSchemaGovernanceError(f"Invalid JSON Schema near '{path}'.") from exc
+    return normalized
+
+
+def _validate_event_data(schema: Optional[Dict[str, Any]], data: Dict[str, Any]) -> None:
+    normalized = _normalize_event_schema(schema)
+    if normalized is None:
+        return
+    errors = sorted(
+        Draft202012Validator(normalized).iter_errors(data),
+        key=lambda error: tuple(str(part) for part in error.absolute_path),
+    )
+    if errors:
+        path = ".".join(str(part) for part in errors[0].absolute_path) or "$"
+        keyword = errors[0].validator or "schema"
+        raise EventPayloadValidationError(
+            f"Event payload does not match its declared schema at '{path}' ({keyword})."
+        )
 
 
 # ── Seeded event definitions ──────────────────────────────────────────────────
@@ -108,13 +178,24 @@ STANDARD_EVENTS = [
 
 
 async def seed_event_definitions(db: AsyncSession) -> None:
+    created: List[EventDefinition] = []
     for code, name, module in STANDARD_EVENTS:
         existing = await db.execute(
             select(EventDefinition).where(EventDefinition.event_code == code)
         )
         if existing.scalar_one_or_none():
             continue
-        db.add(EventDefinition(event_code=code, event_name=name, module=module))
+        definition = EventDefinition(event_code=code, event_name=name, module=module)
+        db.add(definition)
+        created.append(definition)
+    await db.flush()
+    for definition in created:
+        db.add(EventDefinitionVersion(
+            event_def_id=definition.id,
+            schema_version=definition.schema_version,
+            payload_schema=definition.payload_schema,
+            change_summary="Initial seeded event definition; payload schema not declared",
+        ))
     await db.commit()
 
 
@@ -136,12 +217,87 @@ async def list_event_definitions(
     return list(result.scalars().all())
 
 
-async def create_event_definition(db: AsyncSession, data: EventDefinitionCreate) -> EventDefinition:
-    obj = EventDefinition(**data.model_dump())
+async def create_event_definition(
+    db: AsyncSession,
+    data: EventDefinitionCreate,
+    *,
+    actor_id: Optional[str] = None,
+) -> EventDefinition:
+    values = data.model_dump()
+    values["payload_schema"] = _normalize_event_schema(values.get("payload_schema"))
+    obj = EventDefinition(**values, schema_version=1)
     db.add(obj)
+    await db.flush()
+    db.add(EventDefinitionVersion(
+        event_def_id=obj.id,
+        schema_version=obj.schema_version,
+        payload_schema=obj.payload_schema,
+        change_summary="Initial event definition and schema snapshot",
+        created_by=actor_id,
+    ))
     await db.commit()
     await db.refresh(obj)
     return obj
+
+
+async def update_event_definition(
+    db: AsyncSession,
+    definition_id: UUID,
+    data: EventDefinitionUpdate,
+    *,
+    actor_id: Optional[str] = None,
+) -> Optional[EventDefinition]:
+    result = await db.execute(
+        select(EventDefinition)
+        .where(EventDefinition.id == definition_id)
+        .with_for_update()
+    )
+    definition = result.scalar_one_or_none()
+    if definition is None:
+        return None
+
+    changes = data.model_dump(exclude_unset=True)
+    change_summary = changes.pop("schema_change_summary", None)
+    schema_was_supplied = "payload_schema" in changes
+    if schema_was_supplied:
+        normalized_schema = _normalize_event_schema(changes["payload_schema"])
+        if normalized_schema != definition.payload_schema:
+            if not change_summary or not change_summary.strip():
+                raise EventSchemaGovernanceError(
+                    "A non-empty schema_change_summary is required when changing an event schema."
+                )
+            definition.schema_version += 1
+            definition.payload_schema = normalized_schema
+            db.add(EventDefinitionVersion(
+                event_def_id=definition.id,
+                schema_version=definition.schema_version,
+                payload_schema=normalized_schema,
+                change_summary=change_summary.strip(),
+                created_by=actor_id,
+            ))
+        changes.pop("payload_schema")
+
+    for field in ("event_name", "module", "description", "active_flag"):
+        if field in changes and changes[field] is not None:
+            setattr(definition, field, changes[field])
+    await db.commit()
+    await db.refresh(definition)
+    return definition
+
+
+async def list_event_definition_versions(
+    db: AsyncSession,
+    definition_id: UUID,
+) -> Optional[List[EventDefinitionVersion]]:
+    definition = await db.get(EventDefinition, definition_id)
+    if definition is None:
+        return None
+    result = await db.execute(
+        select(EventDefinitionVersion)
+        .where(EventDefinitionVersion.event_def_id == definition_id)
+        .order_by(EventDefinitionVersion.schema_version)
+    )
+    return list(result.scalars().all())
 
 
 # ── Event publishing ──────────────────────────────────────────────────────────
@@ -164,6 +320,9 @@ async def publish_event(
     )
     event_def = def_result.scalar_one_or_none()
     resolved_module = module or (event_def.module if event_def else "unknown")
+    if event_def:
+        _validate_event_data(event_def.payload_schema, payload)
+    resolved_schema_version = event_def.schema_version if event_def else 1
 
     event_id = uuid4()
     occurred_at = datetime.now(timezone.utc)
@@ -173,6 +332,7 @@ async def publish_event(
         module=resolved_module,
         occurred_at=occurred_at,
         payload=payload,
+        schema_version=resolved_schema_version,
         reference_type=reference_type,
         reference_id=reference_id,
         actor_id=actor_id,

@@ -12,7 +12,7 @@ from app.models.auth_refresh_token import AuthRefreshToken
 from app.models.audit_log import AuditLog
 from app.models.two_factor import User2FASettings, TwoFASession, RecoveryCode, TwoFAMethod, TwoFASessionStatus
 from app.models.webhook import (
-    EventDefinition, EventLog, Subscription, DeliveryAttempt, InboundEndpoint,
+    EventDefinition, EventDefinitionVersion, EventLog, Subscription, DeliveryAttempt, InboundEndpoint,
     AuthType, DeliveryStatus, HttpMethod,
 )
 from app.models.cycle_count import (

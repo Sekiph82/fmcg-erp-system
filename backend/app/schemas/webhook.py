@@ -18,6 +18,15 @@ class EventDefinitionCreate(BaseModel):
     active_flag: bool = True
 
 
+class EventDefinitionUpdate(BaseModel):
+    event_name: Optional[str] = None
+    module: Optional[str] = None
+    description: Optional[str] = None
+    payload_schema: Optional[Dict[str, Any]] = None
+    active_flag: Optional[bool] = None
+    schema_change_summary: Optional[str] = None
+
+
 class EventDefinitionOut(BaseModel):
     id: UUID
     event_code: str
@@ -25,7 +34,20 @@ class EventDefinitionOut(BaseModel):
     module: str
     description: Optional[str] = None
     payload_schema: Optional[Dict[str, Any]] = None
+    schema_version: int = 1
     active_flag: bool
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class EventDefinitionVersionOut(BaseModel):
+    id: UUID
+    event_def_id: UUID
+    schema_version: int
+    payload_schema: Optional[Dict[str, Any]] = None
+    change_summary: Optional[str] = None
+    created_by: Optional[str] = None
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -54,10 +76,11 @@ class DomainEventReference(BaseModel):
 
 
 class DomainEventEnvelope(BaseModel):
-    """Stable, versionless event shape used by the webhook event engine."""
+    """Versioned event shape used by the webhook event engine."""
     id: UUID
     type: str
     module: str
+    schema_version: int = 1
     occurred_at: datetime
     actor_id: Optional[str] = None
     reference: DomainEventReference

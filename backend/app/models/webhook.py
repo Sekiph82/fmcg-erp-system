@@ -2,7 +2,7 @@ from __future__ import annotations
 import uuid
 from enum import Enum as PyEnum
 from sqlalchemy import (
-    Column, String, Boolean, Integer, DateTime, Text, ForeignKey, Enum,
+    Column, String, Boolean, Integer, DateTime, Text, ForeignKey, Enum, UniqueConstraint, CheckConstraint, func,
 )
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
@@ -33,6 +33,12 @@ class DeliveryStatus(str, PyEnum):
 class EventDefinition(Base, TimestampMixin):
     """Catalog of all event types in the system."""
     __tablename__ = "webhook_event_definitions"
+    __table_args__ = (
+        CheckConstraint(
+            "schema_version >= 1",
+            name="ck_webhook_event_definition_schema_version_positive",
+        ),
+    )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     event_code = Column(String(100), unique=True, nullable=False, index=True)
@@ -40,9 +46,38 @@ class EventDefinition(Base, TimestampMixin):
     module = Column(String(100), nullable=False, index=True)
     description = Column(Text, nullable=True)
     payload_schema = Column(JSONB, nullable=True)        # JSON Schema for docs
+    schema_version = Column(Integer, nullable=False, default=1, server_default="1")
     active_flag = Column(Boolean, default=True, nullable=False)
 
     logs = relationship("EventLog", back_populates="definition")
+    schema_versions = relationship(
+        "EventDefinitionVersion", back_populates="definition", passive_deletes="all",
+        order_by="EventDefinitionVersion.schema_version",
+    )
+
+
+class EventDefinitionVersion(Base):
+    """Immutable schema snapshot for a governed event-definition version."""
+    __tablename__ = "webhook_event_definition_versions"
+    __table_args__ = (
+        CheckConstraint("schema_version >= 1", name="ck_webhook_event_def_version_positive"),
+        UniqueConstraint("event_def_id", "schema_version", name="uq_webhook_event_def_version"),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    event_def_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("webhook_event_definitions.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    schema_version = Column(Integer, nullable=False)
+    payload_schema = Column(JSONB, nullable=True)
+    change_summary = Column(Text, nullable=True)
+    created_by = Column(String(100), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    definition = relationship("EventDefinition", back_populates="schema_versions")
 
 
 class EventLog(Base, TimestampMixin):

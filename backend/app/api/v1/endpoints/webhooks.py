@@ -10,7 +10,8 @@ from app.db.session import get_db
 from app.core.deps import get_current_user, get_current_active_superuser
 from app.models.webhook import DeliveryStatus
 from app.schemas.webhook import (
-    DeliveryAttemptOut, EventDefinitionCreate, EventDefinitionOut,
+    DeliveryAttemptOut, EventDefinitionCreate, EventDefinitionOut, EventDefinitionUpdate,
+    EventDefinitionVersionOut,
     EventLogOut, InboundEndpointCreate, InboundEndpointOut,
     PublishEventRequest, ReplayRequest, RetryRequest,
     SubscriptionCreate, SubscriptionOut, SubscriptionUpdate,
@@ -19,6 +20,21 @@ from app.schemas.webhook import (
 import app.services.webhook_service as svc
 
 router = APIRouter()
+
+
+def _event_log_response(event_log):
+    """Normalize historical payloads for the stable public event response."""
+    return EventLogOut(
+        id=event_log.id,
+        event_code=event_log.event_code,
+        module=event_log.module,
+        reference_type=event_log.reference_type,
+        reference_id=event_log.reference_id,
+        payload=svc._canonical_event_payload(event_log),
+        actor_id=event_log.actor_id,
+        partition_key=event_log.partition_key,
+        created_at=event_log.created_at,
+    )
 
 
 # ── Dashboard ─────────────────────────────────────────────────────────────────
@@ -45,9 +61,44 @@ async def list_event_definitions(
 async def create_event_definition(
     data: EventDefinitionCreate,
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_active_superuser),
+    current_user=Depends(get_current_active_superuser),
 ):
-    return await svc.create_event_definition(db, data)
+    try:
+        return await svc.create_event_definition(db, data, actor_id=str(current_user.id))
+    except svc.EventSchemaGovernanceError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.put("/event-definitions/{definition_id}", response_model=EventDefinitionOut)
+async def update_event_definition(
+    definition_id: UUID,
+    data: EventDefinitionUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_active_superuser),
+):
+    try:
+        definition = await svc.update_event_definition(
+            db, definition_id, data, actor_id=str(current_user.id)
+        )
+    except svc.EventSchemaGovernanceError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    if not definition:
+        raise HTTPException(status_code=404, detail="Event definition not found")
+    return definition
+
+
+@router.get(
+    "/event-definitions/{definition_id}/versions",
+    response_model=List[EventDefinitionVersionOut],
+)
+async def list_event_definition_versions(
+    definition_id: UUID,
+    db: AsyncSession = Depends(get_db),
+):
+    versions = await svc.list_event_definition_versions(db, definition_id)
+    if versions is None:
+        raise HTTPException(status_code=404, detail="Event definition not found")
+    return versions
 
 
 @router.post("/event-definitions/seed", status_code=200)
@@ -83,7 +134,7 @@ async def list_events(
     if reference_id:
         q = q.where(EventLog.reference_id == reference_id)
     result = await db.execute(q.offset(skip).limit(limit))
-    return list(result.scalars().all())
+    return [_event_log_response(event) for event in result.scalars().all()]
 
 
 @router.get("/events/{event_id}", response_model=EventLogOut)
@@ -94,21 +145,26 @@ async def get_event(event_id: UUID, db: AsyncSession = Depends(get_db)):
     obj = result.scalar_one_or_none()
     if not obj:
         raise HTTPException(404, "Event not found")
-    return obj
+    return _event_log_response(obj)
 
 
 @router.post("/events/publish", response_model=EventLogOut, status_code=201)
 async def publish_event(data: PublishEventRequest, db: AsyncSession = Depends(get_db)):
     """Publish an event manually (or from internal module calls)."""
-    return await svc.publish_event(
-        db,
-        data.event_code,
-        data.payload,
-        reference_type=data.reference_type,
-        reference_id=data.reference_id,
-        actor_id=data.actor_id,
-        partition_key=data.partition_key,
-    )
+    try:
+        return await svc.publish_event(
+            db,
+            data.event_code,
+            data.payload,
+            reference_type=data.reference_type,
+            reference_id=data.reference_id,
+            actor_id=data.actor_id,
+            partition_key=data.partition_key,
+        )
+    except svc.EventPayloadValidationError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except svc.EventSchemaGovernanceError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
 
 
 @router.post("/events/replay")

@@ -10,7 +10,19 @@ export interface EventDefinition {
   event_name: string;
   module: string;
   description?: string;
+  schema_version: number;
+  payload_schema?: Record<string, unknown> | null;
   active_flag: boolean;
+  created_at: string;
+}
+
+export interface EventDefinitionVersion {
+  id: string;
+  event_def_id: string;
+  schema_version: number;
+  payload_schema?: Record<string, unknown> | null;
+  change_summary?: string | null;
+  created_by?: string | null;
   created_at: string;
 }
 
@@ -116,6 +128,23 @@ export async function getDashboard(): Promise<WebhookDashboard> {
 
 export async function listEventDefinitions(module?: string): Promise<EventDefinition[]> {
   const res = await apiClient.get<EventDefinition[]>(`${BASE}/event-definitions`, { params: { module } });
+  return res.data;
+}
+
+export async function updateEventDefinition(id: string, data: {
+  event_name?: string;
+  module?: string;
+  description?: string | null;
+  payload_schema?: Record<string, unknown> | null;
+  schema_change_summary?: string;
+  active_flag?: boolean;
+}): Promise<EventDefinition> {
+  const res = await apiClient.put<EventDefinition>(`${BASE}/event-definitions/${id}`, data);
+  return res.data;
+}
+
+export async function listEventDefinitionVersions(id: string): Promise<EventDefinitionVersion[]> {
+  const res = await apiClient.get<EventDefinitionVersion[]>(`${BASE}/event-definitions/${id}/versions`);
   return res.data;
 }
 
