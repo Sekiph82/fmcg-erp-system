@@ -10,9 +10,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 - Current Milestone: M25 — Cross-Border / Landed Cost
 - Current Sprint: M25.S03 � Accounting & Valuation
-- Current Task: M25.S03.T003 — Reconciliation and audit trail
+- Current Task: M25.S03.T004 — Close M25
 - Current Task Status: COMPLETE
-- Next Task/Action: M25.S03.T004 — Close M25
+- Next Task/Action: M31.S01.T001 — API client/application registry
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -757,7 +757,7 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 # M25 — Cross-Border / Landed Cost
 
-**Status: PLANNED / PARTIAL foundation**
+**Status: DONE — defined synthetic cross-border and landed-cost software scope complete; live customs/KRA, legal, provider, and production acceptance remain outside scope.**
 **Depends on:** M06, M13, M18.
 
 ## M25.S01 — Cross-Border Shipment Lifecycle
@@ -787,7 +787,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
   Evidence: Implemented separate idempotent landed-cost actual variance posting with FIFO remaining-stock/consumed-cost split, configured accrual clearing and expense entries, immutable original journal, finance permission, guarded 20261029_0041 migration, and UI state/action. Fresh task-owned disposable PostgreSQL migration to 0041 head and 8 integration tests passed; related regressions 11 passed/17 skipped; frontend type-check/targeted ESLint, Python compileall/Ruff, diff-check, and independent read-only review passed. Synthetic data only; no AP/tax or invoice authenticity claim. Evidence: coordination/sessions/M25.S03.T002/CODEX_LOG_V01.md.
 - [x] M25.S03.T003 — Reconciliation and audit trail
   Evidence: Added finance.view-protected read-only reconciliation API and landed-cost audit timeline/UI covering source GRN identity, allocation totals, event/batch/journal linkage and balances, inventory adjustments, saved-rate actual variances, exceptions, pending states, and actor/timestamp evidence. Disposable PostgreSQL migration to 20261029_0041: 8 passed; frontend type-check/targeted ESLint, backend py_compile, git diff --check passed; independent read-only review found no blockers. Synthetic data only. Evidence: coordination/sessions/M25.S03.T003/CODEX_LOG_V01.md.
-- [ ] M25.S03.T004 — Close M25
+- [x] M25.S03.T004 — Close M25
+  Evidence: [M25 closure log](coordination/sessions/M25.S03.T004/CODEX_LOG_V01.md); all 12 M25 task logs are present and the defined synthetic software scope has bounded integration, migration, API/UI, regression, audit, and independent-review evidence. No live customs/KRA, legal title, physical delivery, supplier-invoice/AP/tax/payment, live-provider, real-factory, or production acceptance is claimed. Next dependency-ready task selected: M31.S01.T001 based on completed M01/M02 baselines and M17.S01 foundations; M17 live-provider gates remain open.
 
 ---
 
