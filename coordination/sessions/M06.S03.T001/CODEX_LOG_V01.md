@@ -59,4 +59,4 @@ No schema/migration, frontend, AP/GL, GRNI, payment, accounting tolerance, live-
 
 - The tests use synthetic records only. No factory, employee, real supplier/customer data, owner database, application/staging/production database, credential, external provider, or GitHub Actions was used.
 - Existing endpoint authentication/approval surfaces and AP/GRNI/GL posting were not validated or changed by this transaction-chain task; no production or live financial acceptance is claimed.
-- Implementation commit SHA and pushed remote verification are recorded after publication in the completion metadata update.
+- Implementation commit: `10d2e037f8bcf939daa9a5185e275c1d9c608864` (`Verify procurement three-way match chain [skip ci]`). It was pushed to `origin/main`; after push, `HEAD` and fetched `origin/main` both resolved to that SHA with zero ahead/behind commits. This log's SHA update is published as a separate metadata-only `[skip ci]` commit.
