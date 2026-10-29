@@ -12,6 +12,7 @@ from app.models.two_factor import (
     User2FASettings, TwoFASession, RecoveryCode,
     TwoFAMethod, TwoFASessionStatus,
 )
+from app.models.user import User
 from app.core.totp import (
     hash_recovery_code, verify_recovery_code, otp_expires_at,
 )
@@ -35,6 +36,12 @@ async def get_or_create_2fa_settings(
     *,
     for_update: bool = False,
 ) -> User2FASettings:
+    if for_update:
+        # A settings row may not exist yet, so SELECT ... FOR UPDATE on that
+        # table cannot serialize two first-time enrollment requests. Lock the
+        # existing parent user row first; concurrent setup attempts for this
+        # user then observe the row created by the first transaction.
+        await db.execute(select(User.id).where(User.id == user_id).with_for_update())
     query = select(User2FASettings).where(User2FASettings.user_id == user_id)
     if for_update:
         query = query.with_for_update()

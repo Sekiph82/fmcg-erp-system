@@ -11,7 +11,7 @@ import pytest
 from fastapi import Depends, FastAPI, HTTPException
 from httpx import ASGITransport, AsyncClient
 import pyotp
-from sqlalchemy import delete, select, update
+from sqlalchemy import delete, select, text, update
 from sqlalchemy.engine import URL
 from sqlalchemy.orm import selectinload
 
@@ -780,26 +780,67 @@ async def test_privileged_login_requires_totp_enrollment_before_issuing_a_sessio
             assert settings.AUTH_COOKIE_NAME not in login.cookies
             enrollment_token = login.json()["session_token"]
 
-            setup = await client.post(
-                "/api/v1/auth/2fa/required-setup",
-                json={"session_token": enrollment_token},
-            )
-            assert setup.status_code == 200, setup.text
-            secret = setup.json()["secret_key"]
-            assert secret
-
-            setup_retries = await asyncio.gather(
-                *(
-                    client.post(
-                        "/api/v1/auth/2fa/required-setup",
-                        json={"session_token": enrollment_token},
+            # Hold the existing parent user row so both first-time setup
+            # requests reach and wait on the same row lock while no settings
+            # row exists. Releasing it forces the absent-row creation race
+            # rather than merely testing retries after sequential creation.
+            setup_lock = AsyncSessionLocal()
+            setup_tasks = []
+            lock_wait_error = None
+            try:
+                await setup_lock.begin()
+                await setup_lock.execute(select(User.id).where(User.id == user.id).with_for_update())
+                setup_tasks = [
+                    asyncio.create_task(
+                        client.post(
+                            "/api/v1/auth/2fa/required-setup",
+                            json={"session_token": enrollment_token},
+                        )
                     )
                     for _ in range(2)
+                ]
+                try:
+                    deadline = asyncio.get_running_loop().time() + 10
+                    while True:
+                        async with AsyncSessionLocal() as db:
+                            waiting = await db.scalar(
+                                text(
+                                    "SELECT count(*) FROM pg_stat_activity "
+                                    "WHERE datname = current_database() "
+                                    "AND wait_event_type = 'Lock' AND pid <> pg_backend_pid()"
+                                )
+                            )
+                        if int(waiting or 0) >= 2:
+                            break
+                        if asyncio.get_running_loop().time() >= deadline:
+                            raise AssertionError("Both first-time setup requests did not reach the parent-row lock.")
+                        await asyncio.sleep(0.05)
+                except Exception as exc:
+                    lock_wait_error = exc
+            finally:
+                try:
+                    if setup_lock.in_transaction():
+                        await setup_lock.rollback()
+                finally:
+                    await setup_lock.close()
+            try:
+                setup_retries = await asyncio.wait_for(
+                    asyncio.gather(*setup_tasks, return_exceptions=True), timeout=10
                 )
-            )
+            except asyncio.TimeoutError as exc:
+                for task in setup_tasks:
+                    task.cancel()
+                await asyncio.gather(*setup_tasks, return_exceptions=True)
+                raise AssertionError("Concurrent first-time setup requests did not finish after lock release.") from exc
+            if lock_wait_error is not None:
+                raise lock_wait_error
             for setup_retry in setup_retries:
+                if isinstance(setup_retry, BaseException):
+                    raise setup_retry
                 assert setup_retry.status_code == 200, setup_retry.text
-                assert setup_retry.json()["secret_key"] == secret
+            secret = setup_retries[0].json()["secret_key"]
+            assert secret
+            assert all(retry.json()["secret_key"] == secret for retry in setup_retries)
 
             verify = await client.post(
                 "/api/v1/auth/2fa/required-setup/verify",
