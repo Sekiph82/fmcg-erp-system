@@ -32,6 +32,7 @@ from app.schemas.inventory import (
     ValuationSummary,
     AgingRow,
 )
+from app.services.inventory_locking import lot_identity, lock_inventory_identity, stock_identity
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
@@ -72,6 +73,9 @@ async def _get_or_create_lot(
     lot_number: str,
     expiry_date: Optional[date] = None,
 ) -> Lot:
+    await lock_inventory_identity(
+        db, lot_identity(product_id=product_id, lot_number=lot_number)
+    )
     result = await db.execute(
         select(Lot).where(Lot.product_id == product_id, Lot.lot_number == lot_number)
     )
@@ -94,6 +98,12 @@ async def _get_stock_for_update(
     lot_id: Optional[uuid.UUID],
 ) -> Optional[Stock]:
     """Fetch the stock row with a row-level lock to prevent concurrent writes."""
+    await lock_inventory_identity(db, stock_identity(
+        stock_type=StockType.PRODUCT,
+        warehouse_id=warehouse_id,
+        product_id=product_id,
+        lot_id=lot_id,
+    ))
     filters = [
         Stock.warehouse_id == warehouse_id,
         Stock.product_id == product_id,
@@ -259,13 +269,36 @@ async def stock_transfer(
             raise HTTPException(status_code=404, detail=f"Lot '{req.lot_number}' not found for this product")
         lot_id = lot.id
 
-    # Lock source stock first, then destination (consistent ordering prevents deadlocks)
-    src_stock = await _get_stock_for_update(db, req.from_warehouse_id, req.product_id, lot_id)
+    # Acquire both logical keys in stable order before locking existing rows.
+    identities = sorted((
+        stock_identity(
+            stock_type=StockType.PRODUCT,
+            warehouse_id=req.from_warehouse_id,
+            product_id=req.product_id,
+            lot_id=lot_id,
+        ),
+        stock_identity(
+            stock_type=StockType.PRODUCT,
+            warehouse_id=req.to_warehouse_id,
+            product_id=req.product_id,
+            lot_id=lot_id,
+        ),
+    ))
+    for identity in identities:
+        await lock_inventory_identity(db, identity)
+
+    # Row locks are acquired in the same stable warehouse order to avoid inversions.
+    if str(req.from_warehouse_id) <= str(req.to_warehouse_id):
+        first_stock = await _get_stock_for_update(db, req.from_warehouse_id, req.product_id, lot_id)
+        second_stock = await _get_stock_for_update(db, req.to_warehouse_id, req.product_id, lot_id)
+        src_stock, dst_stock = first_stock, second_stock
+    else:
+        second_stock = await _get_stock_for_update(db, req.to_warehouse_id, req.product_id, lot_id)
+        first_stock = await _get_stock_for_update(db, req.from_warehouse_id, req.product_id, lot_id)
+        src_stock, dst_stock = first_stock, second_stock
     src_available = src_stock.quantity_available if src_stock else Decimal("0")
     if src_available < req.quantity:
         raise InsufficientStockError(src_available, req.quantity, product.name, from_wh.name)
-
-    dst_stock = await _get_stock_for_update(db, req.to_warehouse_id, req.product_id, lot_id)
 
     movement = StockMovement(
         reference_number=req.reference,

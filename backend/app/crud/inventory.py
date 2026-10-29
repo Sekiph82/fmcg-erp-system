@@ -1,3 +1,4 @@
+from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
 from typing import Optional, List
@@ -5,6 +6,7 @@ import uuid
 
 from app.models.inventory import Stock, Lot, StockMovement, StockType
 from app.schemas.inventory import LotCreate, LotUpdate, StockMovementCreate
+from app.services.inventory_locking import lot_identity, lock_inventory_identity, stock_identity
 
 
 # ── Lot ────────────────────────────────────────────────────────────────────────
@@ -20,7 +22,19 @@ async def list_lots(db: AsyncSession, skip=0, limit=50) -> List[Lot]:
 
 
 async def create_lot(db: AsyncSession, data: LotCreate) -> Lot:
-    obj = Lot(**data.model_dump())
+    values = data.model_dump()
+    await lock_inventory_identity(db, lot_identity(
+        lot_number=values["lot_number"],
+        product_id=values.get("product_id"),
+        material_id=values.get("material_id"),
+    ))
+    filters = [Lot.lot_number == values["lot_number"]]
+    filters.append(Lot.product_id == values["product_id"] if values.get("product_id") else Lot.product_id.is_(None))
+    filters.append(Lot.material_id == values["material_id"] if values.get("material_id") else Lot.material_id.is_(None))
+    existing = (await db.execute(select(Lot).where(and_(*filters)))).scalar_one_or_none()
+    if existing:
+        raise HTTPException(status_code=409, detail="Lot number already exists for this product or material")
+    obj = Lot(**values)
     db.add(obj)
     await db.flush()
     await db.refresh(obj)
@@ -65,6 +79,13 @@ async def _apply_stock_delta(
     async def _upsert(warehouse_id, delta):
         if not warehouse_id:
             return
+        await lock_inventory_identity(db, stock_identity(
+            stock_type=movement.stock_type,
+            warehouse_id=warehouse_id,
+            product_id=movement.product_id,
+            material_id=movement.material_id,
+            lot_id=movement.lot_id,
+        ))
         filters = [
             Stock.warehouse_id == warehouse_id,
             Stock.stock_type == movement.stock_type,
@@ -75,8 +96,10 @@ async def _apply_stock_delta(
             filters.append(Stock.material_id == movement.material_id)
         if movement.lot_id:
             filters.append(Stock.lot_id == movement.lot_id)
+        else:
+            filters.append(Stock.lot_id.is_(None))
 
-        result = await db.execute(select(Stock).where(and_(*filters)))
+        result = await db.execute(select(Stock).where(and_(*filters)).with_for_update())
         stock = result.scalar_one_or_none()
 
         if stock:
@@ -101,6 +124,16 @@ async def _apply_stock_delta(
     elif movement.movement_type in (MovementType.ISSUE, MovementType.WRITE_OFF):
         await _upsert(movement.source_warehouse_id, -movement.quantity)
     elif movement.movement_type == MovementType.TRANSFER:
+        for warehouse_id in sorted(
+            {movement.source_warehouse_id, movement.destination_warehouse_id} - {None}, key=str
+        ):
+            await lock_inventory_identity(db, stock_identity(
+                stock_type=movement.stock_type,
+                warehouse_id=warehouse_id,
+                product_id=movement.product_id,
+                material_id=movement.material_id,
+                lot_id=movement.lot_id,
+            ))
         await _upsert(movement.source_warehouse_id, -movement.quantity)
         await _upsert(movement.destination_warehouse_id, movement.quantity)
     elif movement.movement_type == MovementType.ADJUSTMENT:

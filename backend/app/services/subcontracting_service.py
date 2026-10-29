@@ -32,6 +32,7 @@ from app.schemas.subcontracting import (
     SCDashboard, SCIssueCreate, SCOrderCreate, SCReceiptCreate,
     SubcontractorLocationCreate, SubcontractorStockRow,
 )
+from app.services.inventory_locking import lock_inventory_identity, stock_identity
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -278,12 +279,18 @@ async def _adjust_stock(
     delta: Decimal,
 ) -> None:
     """Upsert stock record for material+warehouse, adjusting by delta."""
+    await lock_inventory_identity(db, stock_identity(
+        stock_type=StockType.MATERIAL,
+        warehouse_id=warehouse_id,
+        material_id=material_id,
+        lot_id=lot_id,
+    ))
     q = select(Stock).where(
         Stock.warehouse_id == warehouse_id,
         Stock.material_id == material_id,
         Stock.stock_type == StockType.MATERIAL,
         Stock.lot_id == lot_id,
-    )
+    ).with_for_update()
     stock = (await db.execute(q)).scalar_one_or_none()
 
     if stock:

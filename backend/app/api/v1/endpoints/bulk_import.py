@@ -277,6 +277,7 @@ class InventoryStockAdapter(BaseImportAdapter):
 
     async def insert(self, data: dict, db: AsyncSession) -> Any:
         from sqlalchemy import and_
+        from app.services.inventory_locking import lock_inventory_identity, stock_identity
 
         product_id   = data["product_id"]
         warehouse_id = data["warehouse_id"]
@@ -284,12 +285,19 @@ class InventoryStockAdapter(BaseImportAdapter):
         unit_cost    = data.get("unit_cost")
 
         # Upsert stock balance
+        await lock_inventory_identity(db, stock_identity(
+            stock_type=StockType.PRODUCT,
+            warehouse_id=warehouse_id,
+            product_id=product_id,
+            lot_id=None,
+        ))
         r = await db.execute(
             select(Stock).where(
                 and_(Stock.product_id == product_id,
+                     Stock.stock_type == StockType.PRODUCT,
                      Stock.warehouse_id == warehouse_id,
                      Stock.lot_id.is_(None))
-            )
+            ).with_for_update()
         )
         stock = r.scalar_one_or_none()
         if stock:

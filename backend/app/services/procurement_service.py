@@ -33,6 +33,7 @@ from app.models.procurement import (
 from app.models.inventory import Stock, Lot, StockMovement, MovementType, StockType
 from app.models.master import Material, Warehouse
 from app.schemas.procurement import ProcurementAccessHint
+from app.services.inventory_locking import lot_identity, lock_inventory_identity, stock_identity
 
 
 PROCUREMENT_SCOPE_FIELDS = ("company_id", "branch_id", "cost_center_id", "department")
@@ -367,6 +368,11 @@ async def post_grn(
         # Create or reuse lot
         lot_id: Optional[uuid.UUID] = None
         if line.lot_number:
+            await lock_inventory_identity(db, lot_identity(
+                lot_number=line.lot_number,
+                product_id=line.product_id,
+                material_id=line.material_id,
+            ))
             lot_result = await db.execute(
                 select(Lot).where(
                     and_(
@@ -416,6 +422,14 @@ async def post_grn(
         else:
             filters.append(Stock.product_id == line.product_id)
         filters.append(Stock.lot_id == lot_id if lot_id else Stock.lot_id.is_(None))
+
+        await lock_inventory_identity(db, stock_identity(
+            stock_type=stock_type,
+            warehouse_id=grn.warehouse_id,
+            product_id=line.product_id,
+            material_id=line.material_id,
+            lot_id=lot_id,
+        ))
 
         stock_result = await db.execute(
             select(Stock)

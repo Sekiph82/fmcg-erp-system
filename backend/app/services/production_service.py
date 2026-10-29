@@ -35,6 +35,7 @@ from app.schemas.production import (
     MaterialConsumptionRead, FinishedGoodsReceiptRead, DowntimeLogRead,
 )
 from app.crud import production as crud
+from app.services.inventory_locking import lot_identity, lock_inventory_identity, stock_identity
 
 
 # ── Internal helpers ──────────────────────────────────────────────────────────
@@ -149,6 +150,9 @@ async def _receipt_finished_goods(
 ) -> tuple[StockMovement, Optional[uuid.UUID]]:
     lot_id: Optional[uuid.UUID] = None
     if lot_number:
+        await lock_inventory_identity(
+            db, lot_identity(product_id=order.product_id, lot_number=lot_number)
+        )
         # Find or create lot
         r = await db.execute(
             select(Lot).where(Lot.product_id == order.product_id, Lot.lot_number == lot_number)
@@ -183,6 +187,13 @@ async def _receipt_finished_goods(
         filters.append(Stock.lot_id == lot_id)
     else:
         filters.append(Stock.lot_id.is_(None))
+
+    await lock_inventory_identity(db, stock_identity(
+        stock_type=StockType.PRODUCT,
+        warehouse_id=warehouse_id,
+        product_id=order.product_id,
+        lot_id=lot_id,
+    ))
 
     r2 = await db.execute(
         select(Stock)
@@ -382,6 +393,7 @@ async def complete_order(
         ri_result = await db.execute(
             select(RecipeItem)
             .where(RecipeItem.recipe_id == order.recipe_id)
+            .order_by(RecipeItem.material_id, RecipeItem.id)
             .options(selectinload(RecipeItem.material))
         )
         items: List[RecipeItem] = list(ri_result.scalars().all())
