@@ -1,0 +1,5 @@
+commit=8c93975fee1c4b21
+database=fmcg_m02_t004_20261029f527e92aa55ab host=127.0.0.1 auth=trust
+command=python -m pytest -q tests/test_m02_refresh_token_rotation.py::test_privileged_login_requires_totp_enrollment_before_issuing_a_session
+.                                                                        [100%]
+1 passed in 9.08s
