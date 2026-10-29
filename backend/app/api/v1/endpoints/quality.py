@@ -321,7 +321,18 @@ async def release_quarantine(
             qms_svc.FINISHED_GOODS_GATE_TARGET_MODULE,
             qms_svc.FINISHED_GOODS_RELEASE_GATE_TRIGGER_EVENT,
         )
-    insp = await crud.get_inspection(db, inspection_id, for_update=True)
+    if getattr(insp, "lot_id", None) is not None:
+        locked_result = await db.execute(
+            select(QCInspection)
+            .where(QCInspection.lot_id == insp.lot_id)
+            .order_by(QCInspection.id)
+            .with_for_update()
+            .execution_options(populate_existing=True)
+        )
+        locked_inspections = list(locked_result.scalars().all())
+        insp = next((row for row in locked_inspections if row.id == inspection_id), None)
+    else:
+        insp = await crud.get_inspection(db, inspection_id, for_update=True)
     if not insp:
         raise HTTPException(404, "Inspection not found")
     _require_inspection_action(current_user, insp, "release")

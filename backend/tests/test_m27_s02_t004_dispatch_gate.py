@@ -19,6 +19,9 @@ class _Result:
     def scalar_one_or_none(self):
         return self.value
 
+    def scalars(self):
+        return SimpleNamespace(all=lambda: [] if self.value is None else [self.value])
+
 
 class _ResultDB:
     def __init__(self, values=()):
@@ -46,7 +49,7 @@ async def test_dispatch_gate_requires_passed_finished_goods_template_for_each_lo
     with pytest.raises(ValueError, match="required template"):
         await qms_service.ensure_dispatch_quality_gates_pass(db, shipment, date.today())
 
-    sql = str(db.statements[0])
+    sql = "\n".join(str(statement) for statement in db.statements)
     for predicate in (
         "qc_inspections.lot_id", "qc_inspections.product_id", "qc_inspections.warehouse_id",
         "qc_inspections.template_id", "qc_inspections.status", "qc_inspections.decision",
@@ -75,13 +78,13 @@ async def test_dispatch_gate_blocks_other_unresolved_mandatory_inspection(monkey
         shipment_no="SYN-DISPATCH-3", warehouse_id=uuid4(),
         lines=[SimpleNamespace(lot_id=uuid4(), product_id=uuid4())],
     )
-    db = _ResultDB([uuid4(), uuid4()])
+    db = _ResultDB([None, uuid4(), uuid4()])
     monkeypatch.setattr(qms_service, "list_dispatch_quality_gates", lambda *_: _return(gate))
 
     with pytest.raises(ValueError, match="unresolved mandatory"):
         await qms_service.ensure_dispatch_quality_gates_pass(db, shipment, date.today())
 
-    assert len(db.statements) == 2
+    assert len(db.statements) == 3
     assert all("FOR UPDATE" in str(statement).upper() for statement in db.statements)
 
 

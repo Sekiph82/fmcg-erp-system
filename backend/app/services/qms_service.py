@@ -22,7 +22,7 @@ from app.models.quality import (
     QMSAIRecommendation, QMSAIAgentType, QMSAIRecStatus,
     SamplingMethod, ParameterType,
 )
-from app.models.inventory import Lot
+from app.models.inventory import Lot, Stock, StockMovement, MovementType, StockType
 
 
 RECEIVING_GATE_TRIGGER_EVENT = "ON_RECEIPT"
@@ -295,22 +295,33 @@ async def ensure_finished_goods_quality_gates_pass(
 async def ensure_dispatch_quality_gates_pass(
     db: AsyncSession, shipment, as_of_date: date
 ) -> None:
-    """Require every configured mandatory dispatch template to pass for every shipped lot."""
+    """Reject held lots and require configured mandatory dispatch QC for every shipped lot."""
     gates = [gate for gate in await list_dispatch_quality_gates(db, as_of_date) if gate.is_mandatory]
-    if not gates:
-        return
     lines = list(getattr(shipment, "lines", []) or [])
+    if not gates and not lines:
+        return
     if not lines:
-        raise ValueError("A shipment cannot be dispatched through an active quality gate without shipment lines.")
+        raise ValueError("A shipment cannot be dispatched without shipment lines.")
 
-    template_ids = list(dict.fromkeys(
-        template.id for gate in gates for template in gate.required_templates
-    ))
+    if not gates:
+        for line in lines:
+            if line.lot_id is not None:
+                await _ensure_lot_dispatch_eligible(db, shipment, line.lot_id)
+        return
+
     for line in lines:
         if line.lot_id is None:
             raise ValueError(
                 f"Shipment {shipment.shipment_no} cannot be dispatched: a required lot is missing from a shipment line."
             )
+    await _lock_lot_quality_inspections(
+        db, list(dict.fromkeys(line.lot_id for line in lines if line.lot_id is not None))
+    )
+
+    template_ids = list(dict.fromkeys(
+        template.id for gate in gates for template in gate.required_templates
+    ))
+    for line in lines:
         for template_id in template_ids:
             result = await db.execute(
                 select(QCInspection.id).where(
@@ -351,6 +362,44 @@ async def ensure_dispatch_quality_gates_pass(
                 f"Shipment {shipment.shipment_no} cannot be dispatched: lot {line.lot_id} has an unresolved "
                 "mandatory finished-goods inspection."
             )
+        await _ensure_lot_dispatch_eligible(db, shipment, line.lot_id)
+
+
+async def _lock_lot_quality_inspections(db: AsyncSession, lot_ids: list[uuid.UUID]) -> list[QCInspection]:
+    if not lot_ids:
+        return []
+    result = await db.execute(
+        select(QCInspection)
+        .where(QCInspection.lot_id.in_(lot_ids))
+        .order_by(QCInspection.id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    )
+    return list(result.scalars().all())
+
+
+async def _ensure_lot_dispatch_eligible(db: AsyncSession, shipment, lot_id: uuid.UUID) -> None:
+    """Lock and verify lot disposition after any required QC inspection locks."""
+    lot_result = await db.execute(select(Lot).where(Lot.id == lot_id).with_for_update())
+    lot = lot_result.scalar_one_or_none()
+    if lot is None:
+        raise ValueError(f"Shipment {shipment.shipment_no} cannot be dispatched: lot {lot_id} does not exist.")
+    status_result = await db.execute(
+        select(LotQualityStatus).where(LotQualityStatus.lot_id == lot_id).with_for_update()
+    )
+    lot_status = status_result.scalar_one_or_none()
+    if lot.is_quarantine or (
+        lot_status is not None
+        and (
+            lot_status.hold_flag
+            or lot_status.quarantine_flag
+            or lot_status.release_status != ReleaseStatus.RELEASED
+            or not lot_status.shipment_eligible
+        )
+    ):
+        raise ValueError(
+            f"Shipment {shipment.shipment_no} cannot be dispatched: lot {lot_id} is held, quarantined, or unreleased."
+        )
 
 
 async def prepare_receiving_gate_test_result(db: AsyncSession, inspection: QCInspection, data: dict) -> dict:
@@ -822,8 +871,18 @@ async def get_or_create_lot_quality_status(db: AsyncSession, lot_id: uuid.UUID) 
 
 
 async def hold_lot(db: AsyncSession, lot_id: uuid.UUID, hold_reason: str,
-                   quarantine: bool = False, quarantine_location: Optional[str] = None) -> LotQualityStatus:
+                   quarantine: bool = False, quarantine_location: Optional[str] = None,
+                   held_by_id: Optional[uuid.UUID] = None) -> LotQualityStatus:
+    lot_result = await db.execute(select(Lot).where(Lot.id == lot_id).with_for_update())
+    if lot_result.scalar_one_or_none() is None:
+        raise ValueError("Lot does not exist.")
     lqs = await get_or_create_lot_quality_status(db, lot_id)
+    quarantine = quarantine or lqs.quarantine_flag
+    quarantine_location = quarantine_location or lqs.quarantine_location
+    await _set_lot_stock_blocked(
+        db, lot_id, blocked=True, reason=hold_reason, quarantine=quarantine,
+        released_by_id=held_by_id,
+    )
     lqs.hold_flag = True
     lqs.hold_reason = hold_reason
     lqs.release_status = ReleaseStatus.QUARANTINED if quarantine else ReleaseStatus.ON_HOLD
@@ -836,7 +895,60 @@ async def hold_lot(db: AsyncSession, lot_id: uuid.UUID, hold_reason: str,
 
 async def release_lot(db: AsyncSession, lot_id: uuid.UUID,
                       released_by_id: uuid.UUID, notes: Optional[str] = None) -> LotQualityStatus:
+    await lock_quality_gate_scope(
+        db, FINISHED_GOODS_GATE_TARGET_MODULE, FINISHED_GOODS_RELEASE_GATE_TRIGGER_EVENT
+    )
+    inspections = await _lock_lot_quality_inspections(db, [lot_id])
+    lot_result = await db.execute(select(Lot).where(Lot.id == lot_id).with_for_update())
+    lot = lot_result.scalar_one_or_none()
+    if lot is None:
+        raise ValueError("Lot does not exist.")
     lqs = await get_or_create_lot_quality_status(db, lot_id)
+    active_gates = [
+        gate for gate in await list_finished_goods_quality_gates(db, date.today()) if gate.is_mandatory
+    ]
+    if active_gates:
+        accepted_fg_inspections = [
+            inspection for inspection in inspections
+            if inspection.qc_type == QCType.FINISHED_GOODS
+            and inspection.status == QCStatus.PASSED
+            and inspection.decision == QCDecision.ACCEPT
+            and inspection.is_mandatory
+            and inspection.release_required
+        ]
+        if not accepted_fg_inspections:
+            raise ValueError(
+                "Finished-goods lot cannot be released until its mandatory QC inspections pass the active release gates."
+            )
+        checked_orders: set[uuid.UUID] = set()
+        for inspection in accepted_fg_inspections:
+            if inspection.production_order_id is None:
+                raise ValueError(
+                    "Finished-goods lot cannot be released through an active quality gate without production-order traceability."
+                )
+            if inspection.production_order_id in checked_orders:
+                continue
+            await ensure_finished_goods_quality_gates_pass(db, inspection, date.today())
+            checked_orders.add(inspection.production_order_id)
+
+    unresolved = await db.execute(
+        select(QCInspection.id).where(
+            QCInspection.lot_id == lot_id,
+            QCInspection.is_mandatory.is_(True),
+            or_(QCInspection.blocks_progression.is_(True), QCInspection.release_required.is_(True)),
+            or_(
+                QCInspection.status != QCStatus.PASSED,
+                QCInspection.decision.is_distinct_from(QCDecision.ACCEPT),
+            ),
+        ).limit(1)
+    )
+    if unresolved.scalar_one_or_none() is not None:
+        raise ValueError("Lot cannot be released while a mandatory quality inspection is unresolved.")
+
+    await _set_lot_stock_blocked(
+        db, lot_id, blocked=False, reason=notes or "Quality release", released_by_id=released_by_id
+    )
+    lot.is_quarantine = False
     lqs.hold_flag = False
     lqs.quarantine_flag = False
     lqs.release_status = ReleaseStatus.RELEASED
@@ -849,7 +961,7 @@ async def release_lot(db: AsyncSession, lot_id: uuid.UUID,
 
 
 async def update_lot_qc_status_from_inspection(db: AsyncSession, inspection: QCInspection) -> None:
-    """Sync lot quality status based on a completed inspection decision."""
+    """Record QC outcome; only the explicit lot-release workflow clears a hold."""
     if not inspection.lot_id:
         return
     lqs = await get_or_create_lot_quality_status(db, inspection.lot_id)
@@ -857,11 +969,12 @@ async def update_lot_qc_status_from_inspection(db: AsyncSession, inspection: QCI
 
     if inspection.decision == QCDecision.ACCEPT:
         lqs.qc_status = "PASSED"
-        lqs.hold_flag = False
-        lqs.quarantine_flag = False
-        lqs.release_status = ReleaseStatus.RELEASED
-        lqs.fefo_eligible = True
-        lqs.shipment_eligible = True
+        if not lqs.hold_flag and not lqs.quarantine_flag and lqs.release_status in (
+            ReleaseStatus.UNRELEASED, ReleaseStatus.RELEASED,
+        ):
+            lqs.release_status = ReleaseStatus.RELEASED
+            lqs.fefo_eligible = True
+            lqs.shipment_eligible = True
 
     elif inspection.decision == QCDecision.REJECT:
         lqs.qc_status = "FAILED"
@@ -873,8 +986,9 @@ async def update_lot_qc_status_from_inspection(db: AsyncSession, inspection: QCI
 
     elif inspection.decision == QCDecision.CONDITIONAL_RELEASE:
         lqs.qc_status = "CONDITIONAL"
-        lqs.hold_flag = False
-        lqs.release_status = ReleaseStatus.ON_HOLD
+        lqs.hold_flag = True
+        if not lqs.quarantine_flag:
+            lqs.release_status = ReleaseStatus.ON_HOLD
         lqs.fefo_eligible = False
         lqs.shipment_eligible = False
 
@@ -884,6 +998,52 @@ async def update_lot_qc_status_from_inspection(db: AsyncSession, inspection: QCI
         lqs.release_status = ReleaseStatus.REWORK
         lqs.fefo_eligible = False
         lqs.shipment_eligible = False
+
+
+async def _set_lot_stock_blocked(
+    db: AsyncSession,
+    lot_id: uuid.UUID,
+    *,
+    blocked: bool,
+    reason: str,
+    quarantine: bool = False,
+    released_by_id: Optional[uuid.UUID] = None,
+) -> int:
+    """Apply lot disposition to physical stock while preserving reservations."""
+    result = await db.execute(
+        select(Stock).where(Stock.lot_id == lot_id).order_by(Stock.id).with_for_update()
+    )
+    rows = list(result.scalars().all())
+    changed = [row for row in rows if row.is_blocked != blocked]
+    for stock in changed:
+        stock.is_blocked = blocked
+        stock.quantity_available = (
+            Decimal("0") if blocked else max(stock.quantity_on_hand - stock.quantity_reserved, Decimal("0"))
+        )
+
+    if changed:
+        now = datetime.now(timezone.utc)
+        for stock in changed:
+            db.add(StockMovement(
+                reference_number=f"QMS-{('HOLD' if blocked else 'REL')}-{now.strftime('%Y%m%d%H%M%S%f')}-{str(stock.id)[:8]}",
+                movement_type=MovementType.ADJUSTMENT,
+                stock_type=stock.stock_type,
+                movement_date=now.date(),
+                material_id=stock.material_id,
+                product_id=stock.product_id,
+                lot_id=lot_id,
+                source_warehouse_id=stock.warehouse_id if blocked else None,
+                destination_warehouse_id=None if blocked else stock.warehouse_id,
+                quantity=Decimal("0"),
+                notes=f"QMS {'QUARANTINE' if quarantine and blocked else 'HOLD' if blocked else 'RELEASE'}: {reason}",
+                created_by_id=released_by_id,
+            ))
+    lot_result = await db.execute(select(Lot).where(Lot.id == lot_id).with_for_update())
+    lot = lot_result.scalar_one_or_none()
+    if lot is not None and (blocked or lot.is_quarantine):
+        lot.is_quarantine = blocked and quarantine
+    await db.flush()
+    return len(changed)
 
 
 # ── HACCP / CCP ───────────────────────────────────────────────────────────────

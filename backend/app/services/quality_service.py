@@ -166,8 +166,11 @@ async def make_decision(
         insp.status = QCStatus.FAILED
         insp.rework_candidate = True
 
-    # Apply quarantine if requested (REJECT or CONDITIONAL with block)
-    if apply_quarantine and insp.lot_id and insp.warehouse_id:
+    must_hold_lot = (
+        decision != QCDecision.ACCEPT
+        and insp.lot_id is not None
+    )
+    if must_hold_lot:
         await _quarantine_lot_stock(
             db,
             lot_id=insp.lot_id,
@@ -176,8 +179,13 @@ async def make_decision(
             product_id=insp.product_id,
             reason=f"QC {decision.value}: {insp.inspection_no}",
             user_id=decided_by_id,
+            quarantine=decision in (QCDecision.REJECT, QCDecision.REWORK),
         )
         insp.quarantine_applied = True
+    if getattr(insp, "lot_id", None):
+        from app.services.qms_service import update_lot_qc_status_from_inspection
+
+        await update_lot_qc_status_from_inspection(db, insp)
 
     await db.flush()
     return insp
@@ -186,51 +194,29 @@ async def make_decision(
 async def _quarantine_lot_stock(
     db: AsyncSession,
     lot_id: uuid.UUID,
-    warehouse_id: uuid.UUID,
+    warehouse_id: Optional[uuid.UUID],
     material_id: Optional[uuid.UUID],
     product_id: Optional[uuid.UUID],
     reason: str,
     user_id: uuid.UUID,
+    quarantine: bool = True,
 ) -> int:
-    """Direct quarantine without going through the schema layer."""
-    filters = [
-        Stock.warehouse_id == warehouse_id,
-        Stock.lot_id == lot_id,
-    ]
+    """Apply a quality hold to the lot and all of its stock rows."""
+    filters = [Stock.lot_id == lot_id]
+    if warehouse_id is not None:
+        filters.append(Stock.warehouse_id == warehouse_id)
     if material_id:
         filters.append(Stock.material_id == material_id)
     elif product_id:
         filters.append(Stock.product_id == product_id)
+    from app.services.qms_service import hold_lot
 
-    result = await db.execute(select(Stock).where(and_(*filters)).with_for_update())
-    rows = list(result.scalars().all())
-    if not rows:
+    await hold_lot(db, lot_id, reason, quarantine=quarantine, held_by_id=user_id)
+    result = await db.execute(select(Stock.id).where(and_(*filters)))
+    stock_ids = list(result.scalars().all())
+    if not stock_ids:
         return 0
-
-    for s in rows:
-        if not s.is_blocked:
-            s.is_blocked = True
-            s.quantity_reserved = s.quantity_on_hand
-            s.quantity_available = Decimal("0")
-
-    now = datetime.now(timezone.utc)
-    stock_type = StockType.MATERIAL if material_id else StockType.PRODUCT
-    mv = StockMovement(
-        reference_number=f"QC-QUAR-{now.strftime('%Y%m%d%H%M%S')}",
-        movement_type=MovementType.ADJUSTMENT,
-        stock_type=stock_type,
-        movement_date=now.date(),
-        material_id=material_id,
-        product_id=product_id,
-        lot_id=lot_id,
-        source_warehouse_id=warehouse_id,
-        quantity=Decimal("0"),
-        notes=f"QC QUARANTINE: {reason}",
-        created_by_id=user_id,
-    )
-    db.add(mv)
-    await db.flush()
-    return len(rows)
+    return len(stock_ids)
 
 
 async def release_qc_quarantine(
@@ -261,36 +247,13 @@ async def release_qc_quarantine(
         except ValueError as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
 
-    filters = [
-        Stock.warehouse_id == insp.warehouse_id,
-        Stock.lot_id == insp.lot_id,
-        Stock.is_blocked == True,  # noqa: E712
-    ]
-    result = await db.execute(select(Stock).where(and_(*filters)).with_for_update())
-    rows = list(result.scalars().all())
-    if not rows:
-        raise HTTPException(422, "Quarantined stock no longer exists for this inspection")
-    for s in rows:
-        s.is_blocked = False
-        s.quantity_reserved = Decimal("0")
-        s.quantity_available = s.quantity_on_hand
+    from app.services.qms_service import release_lot
 
-    now = datetime.now(timezone.utc)
-    stock_type = StockType.MATERIAL if insp.material_id else StockType.PRODUCT
-    mv = StockMovement(
-        reference_number=f"QC-REL-{now.strftime('%Y%m%d%H%M%S')}",
-        movement_type=MovementType.ADJUSTMENT,
-        stock_type=stock_type,
-        movement_date=now.date(),
-        material_id=insp.material_id,
-        product_id=insp.product_id,
-        lot_id=insp.lot_id,
-        destination_warehouse_id=insp.warehouse_id,
-        quantity=Decimal("0"),
-        notes=f"QC RELEASE: {insp.inspection_no}. {notes or ''}".strip(),
-        created_by_id=user_id,
-    )
-    db.add(mv)
+    try:
+        await release_lot(db, insp.lot_id, user_id, f"{insp.inspection_no}. {notes or ''}".strip())
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
     if insp.qc_type == QCType.FINISHED_GOODS and insp.production_order_id:
         inspections_result = await db.execute(
             select(QCInspection)

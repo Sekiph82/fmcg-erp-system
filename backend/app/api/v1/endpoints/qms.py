@@ -714,7 +714,10 @@ async def release_lot(
     current_user=Depends(get_current_user),
 ):
     await _require_lot_hold_release_access(db, current_user, body.lot_id, "release")
-    lqs = await svc.release_lot(db, body.lot_id, current_user.id, body.release_notes)
+    try:
+        lqs = await svc.release_lot(db, body.lot_id, current_user.id, body.release_notes)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     await db.commit()
     r = await db.execute(select(LotQualityStatus).where(LotQualityStatus.lot_id == body.lot_id))
     return LotQualityStatusRead.model_validate(r.scalar_one())
@@ -728,7 +731,8 @@ async def hold_lot(
 ):
     await _require_lot_hold_release_access(db, current_user, body.lot_id, "hold")
     lqs = await svc.hold_lot(
-        db, body.lot_id, body.hold_reason, body.quarantine, body.quarantine_location
+        db, body.lot_id, body.hold_reason, body.quarantine, body.quarantine_location,
+        held_by_id=current_user.id,
     )
     await db.commit()
     r = await db.execute(select(LotQualityStatus).where(LotQualityStatus.lot_id == body.lot_id))

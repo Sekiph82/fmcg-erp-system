@@ -9,10 +9,10 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 ## Project Status
 
 - Current Milestone: M27 — Quality Gates
-- Current Sprint: M27.S02 — Transaction Enforcement
-- Current Task: M27.S02.T004 — Dispatch gate
+- Current Sprint: M27.S03 — Exceptions
+- Current Task: M27.S03.T001 — Hold/quarantine enforcement
 - Current Task Status: COMPLETE
-- Next Task/Action: M27.S03.T001 — Hold/quarantine enforcement
+- Next Task/Action: M27.S03.T002 — Deviation/waiver approval
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -831,7 +831,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
   Evidence: [CODEX implementation log](coordination/sessions/M27.S02.T004/CODEX_LOG_V01.md); active mandatory sales/ON_DISPATCH quality gates require lot traceability, all linked FG QC templates accepted/passed, and no unresolved mandatory FG inspections before any stock, movement, shipment, or sales-order mutation. Fresh disposable PostgreSQL 16 migration through 20261029_0031 and dispatch DB integration test passed; 54 focused/regression tests passed, 7 DB-only cases skipped; independent read-only review found no material issue.
 
 ## M27.S03 — Exceptions
-- [ ] M27.S03.T001 — Hold/quarantine enforcement
+- [x] M27.S03.T001 — Hold/quarantine enforcement
+  Evidence: [CODEX implementation log](coordination/sessions/M27.S03.T001/CODEX_LOG_V01.md); lot holds now block physical stock across warehouses while preserving reservations, release rechecks mandatory QC/active FG gates, and dispatch rejects held or unreleased lots even without dispatch-gate configuration. Fresh disposable PostgreSQL 16 migration through 20261029_0031 and T001 DB integration passed; dispatch DB regression passed; 36 focused tests passed, 7 DB-only cases skipped; independent read-only review findings were fixed and cleared.
 - [ ] M27.S03.T002 — Deviation/waiver approval
 - [ ] M27.S03.T003 — NCR/CAPA escalation linkage
 - [ ] M27.S03.T004 — Gate audit history
