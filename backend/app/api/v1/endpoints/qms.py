@@ -160,6 +160,9 @@ async def create_quality_gate_definition(
     try:
         definition = await svc.create_quality_gate_definition(db, body.model_dump())
         await db.commit()
+    except ValueError as exc:
+        await db.rollback()
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     except IntegrityError as exc:
         await db.rollback()
         if _is_gate_code_conflict(exc):
@@ -177,13 +180,15 @@ async def update_quality_gate_definition(
     current_user=Depends(get_current_user),
 ):
     _require_quality_gate_definition_permission(current_user, "edit")
-    definition = await svc.get_quality_gate_definition(db, definition_id)
+    definition = await svc.get_quality_gate_definition(db, definition_id, for_update=True)
     if definition is None:
         raise HTTPException(status_code=404, detail="Quality gate definition not found.")
-    for field_name, value in body.model_dump(exclude_unset=True).items():
-        setattr(definition, field_name, value)
     try:
+        await svc.update_quality_gate_definition(db, definition, body.model_dump(exclude_unset=True))
         await db.commit()
+    except ValueError as exc:
+        await db.rollback()
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     except IntegrityError as exc:
         await db.rollback()
         if _is_gate_code_conflict(exc):
@@ -238,10 +243,16 @@ async def update_template(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    t = await svc.get_template(db, template_id)
+    t = await svc.get_template(db, template_id, for_update=True)
     if not t:
         raise HTTPException(404, "Template not found")
-    for k, v in body.model_dump(exclude_unset=True).items():
+    changes = body.model_dump(exclude_unset=True)
+    try:
+        await svc.ensure_qc_template_change_preserves_active_gates(db, t, changes)
+    except ValueError as exc:
+        await db.rollback()
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    for k, v in changes.items():
         setattr(t, k, v)
     await db.commit()
     t = await svc.get_template(db, template_id)
@@ -255,9 +266,14 @@ async def delete_template(
     current_user=Depends(get_current_user),
 ):
     from fastapi import Response
-    t = await svc.get_template(db, template_id)
+    t = await svc.get_template(db, template_id, for_update=True)
     if not t:
         raise HTTPException(404, "Template not found")
+    try:
+        await svc.ensure_qc_template_can_be_deleted(db, template_id)
+    except ValueError as exc:
+        await db.rollback()
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
     await db.delete(t)
     await db.commit()
     return Response(status_code=204)

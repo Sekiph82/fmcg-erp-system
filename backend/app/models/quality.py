@@ -2,7 +2,7 @@ import uuid
 import enum
 from sqlalchemy import (
     Column, String, Text, Numeric, Integer, Boolean,
-    ForeignKey, Enum, Date, DateTime, JSON, UniqueConstraint, CheckConstraint,
+    ForeignKey, Enum, Date, DateTime, JSON, UniqueConstraint, CheckConstraint, Table, Index,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
@@ -530,6 +530,34 @@ class QualityGateDefinition(Base, TimestampMixin):
     target_module = Column(String(50), nullable=False, index=True)
     description = Column(Text, nullable=True)
     is_active = Column(Boolean, nullable=False, default=True, server_default="true")
+    required_templates = relationship(
+        "QCTemplate",
+        secondary="quality_gate_required_templates",
+        order_by="QCTemplate.name",
+    )
+
+    @property
+    def required_template_ids(self) -> list[uuid.UUID]:
+        return [template.id for template in self.required_templates]
+
+
+quality_gate_required_templates = Table(
+    "quality_gate_required_templates",
+    Base.metadata,
+    Column(
+        "gate_definition_id",
+        UUID(as_uuid=True),
+        ForeignKey("quality_gate_definitions.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
+    Column(
+        "qc_template_id",
+        UUID(as_uuid=True),
+        ForeignKey("qc_templates.id", ondelete="RESTRICT"),
+        primary_key=True,
+    ),
+    Index("ix_quality_gate_required_templates_qc_template_id", "qc_template_id"),
+)
 
 
 # ── Allergen Validation ───────────────────────────────────────────────────────

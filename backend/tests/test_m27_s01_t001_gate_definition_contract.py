@@ -10,7 +10,9 @@ from sqlalchemy.exc import IntegrityError
 
 from app.api.v1.endpoints import qms
 from app.api.v1.endpoints.qms import _require_quality_gate_definition_permission
-from app.schemas.qms import QualityGateDefinitionCreate, QualityGateDefinitionUpdate
+from app.models.quality import ParameterType
+from app.schemas.qms import QCTemplateUpdate, QualityGateDefinitionCreate, QualityGateDefinitionUpdate
+from app.services.qms_service import _qc_parameter_has_specification
 
 
 def _user(*permission_codes):
@@ -29,6 +31,7 @@ def test_definition_schema_normalizes_identifiers_without_fixing_gate_vocabulary
         trigger_event=" on_receipt ",
         target_module=" PROCUREMENT ",
         description="  configurable reference  ",
+        required_template_ids=[uuid4()],
     )
 
     assert definition.code == "INCOMING_RELEASE"
@@ -54,6 +57,7 @@ def test_definition_schema_rejects_blank_or_unsafe_identifiers(field_name, value
         "gate_type": "QC",
         "trigger_event": "ON_RECEIPT",
         "target_module": "procurement",
+        "required_template_ids": [uuid4()],
     }
     values[field_name] = value
 
@@ -67,6 +71,26 @@ def test_definition_patch_requires_a_change_and_rejects_null_for_required_fields
     with pytest.raises(ValidationError):
         QualityGateDefinitionUpdate(name=None)
     assert QualityGateDefinitionUpdate(is_active=False).is_active is False
+
+
+def test_active_definition_requires_at_least_one_required_qc_template():
+    with pytest.raises(ValidationError):
+        QualityGateDefinitionCreate(
+            code="QC_GATE",
+            name="QC gate",
+            gate_type="QC",
+            trigger_event="ON_RECEIPT",
+            target_module="procurement",
+        )
+    disabled = QualityGateDefinitionCreate(
+        code="QC_GATE",
+        name="QC gate",
+        gate_type="QC",
+        trigger_event="ON_RECEIPT",
+        target_module="procurement",
+        is_active=False,
+    )
+    assert disabled.required_template_ids == []
 
 
 def test_definition_reads_require_global_quality_read_permission():
@@ -84,6 +108,34 @@ def test_definition_writes_require_quality_gate_configuration_permission():
     _require_quality_gate_definition_permission(_user("quality.gate_configure"), "edit")
 
 
+@pytest.mark.parametrize(
+    "parameter_type,target,minimum,maximum,expected",
+    [
+        (ParameterType.NUMERIC, None, None, None, False),
+        (ParameterType.NUMERIC, "5", 1, 10, True),
+        (ParameterType.NUMERIC, "11", 1, 10, False),
+        (ParameterType.NUMERIC, None, 1, 10, True),
+        (ParameterType.NUMERIC, "NaN", None, None, False),
+        (ParameterType.TEXT, "  pass  ", None, None, True),
+        (ParameterType.TEXT, None, None, None, False),
+        (ParameterType.BOOLEAN, "true", None, None, True),
+        (ParameterType.BOOLEAN, "yes", None, None, False),
+        (ParameterType.PASS_FAIL, "PASS", None, None, True),
+        (ParameterType.PASS_FAIL, "FAIL", None, None, False),
+    ],
+)
+def test_gate_specification_requires_type_appropriate_acceptance_criteria(
+    parameter_type, target, minimum, maximum, expected
+):
+    parameter = SimpleNamespace(
+        parameter_type=parameter_type,
+        target_value=target,
+        min_value=minimum,
+        max_value=maximum,
+    )
+    assert _qc_parameter_has_specification(parameter) is expected
+
+
 @pytest.mark.asyncio
 async def test_create_route_denies_writer_without_gate_configuration_permission(monkeypatch):
     called = False
@@ -95,7 +147,7 @@ async def test_create_route_denies_writer_without_gate_configuration_permission(
     monkeypatch.setattr(qms.svc, "create_quality_gate_definition", create_should_not_run)
     body = QualityGateDefinitionCreate(
         code="QC_GATE", name="QC gate", gate_type="QC",
-        trigger_event="ON_RECEIPT", target_module="procurement",
+        trigger_event="ON_RECEIPT", target_module="procurement", required_template_ids=[uuid4()],
     )
 
     with pytest.raises(HTTPException) as exc:
@@ -127,7 +179,7 @@ async def test_create_route_returns_conflict_for_duplicate_gate_code(monkeypatch
     monkeypatch.setattr(qms.svc, "create_quality_gate_definition", create_definition)
     body = QualityGateDefinitionCreate(
         code="QC_GATE", name="QC gate", gate_type="QC",
-        trigger_event="ON_RECEIPT", target_module="procurement",
+        trigger_event="ON_RECEIPT", target_module="procurement", required_template_ids=[uuid4()],
     )
     db = _IntegrityFailingDB()
 
@@ -136,3 +188,69 @@ async def test_create_route_returns_conflict_for_duplicate_gate_code(monkeypatch
 
     assert exc.value.status_code == 409
     assert db.rollback_called is True
+
+
+class _TemplateMutationDB:
+    def __init__(self):
+        self.rollback_called = False
+        self.commit_called = False
+        self.delete_called = False
+
+    async def rollback(self):
+        self.rollback_called = True
+
+    async def commit(self):
+        self.commit_called = True
+
+    async def delete(self, _template):
+        self.delete_called = True
+
+
+@pytest.mark.asyncio
+async def test_template_patch_rejects_weakening_a_test_used_by_active_gate(monkeypatch):
+    template = SimpleNamespace(id=uuid4(), is_active=True, is_mandatory=True,
+                               blocks_progression=True, release_required=True, parameters=[])
+
+    async def get_template(_db, _template_id, *, for_update=False):
+        assert for_update is True
+        return template
+
+    async def reject_change(_db, _template, changes):
+        assert changes == {"is_active": False}
+        raise ValueError("active gate conflict")
+
+    monkeypatch.setattr(qms.svc, "get_template", get_template)
+    monkeypatch.setattr(qms.svc, "ensure_qc_template_change_preserves_active_gates", reject_change)
+    db = _TemplateMutationDB()
+
+    with pytest.raises(HTTPException) as exc:
+        await qms.update_template(uuid4(), QCTemplateUpdate(is_active=False), db, _user())
+
+    assert exc.value.status_code == 409
+    assert db.rollback_called is True
+    assert db.commit_called is False
+    assert template.is_active is True
+
+
+@pytest.mark.asyncio
+async def test_template_delete_rejects_a_template_still_linked_to_a_gate(monkeypatch):
+    template = SimpleNamespace(id=uuid4())
+
+    async def get_template(_db, _template_id, *, for_update=False):
+        assert for_update is True
+        return template
+
+    async def reject_delete(_db, _template_id):
+        raise ValueError("linked template conflict")
+
+    monkeypatch.setattr(qms.svc, "get_template", get_template)
+    monkeypatch.setattr(qms.svc, "ensure_qc_template_can_be_deleted", reject_delete)
+    db = _TemplateMutationDB()
+
+    with pytest.raises(HTTPException) as exc:
+        await qms.delete_template(uuid4(), db, _user())
+
+    assert exc.value.status_code == 409
+    assert db.rollback_called is True
+    assert db.delete_called is False
+    assert db.commit_called is False

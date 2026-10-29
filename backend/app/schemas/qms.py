@@ -478,6 +478,7 @@ class QualityGateDefinitionFields(BaseModel):
     target_module: str = Field(min_length=1, max_length=50)
     description: Optional[str] = None
     is_active: bool = True
+    required_template_ids: List[uuid.UUID] = Field(default_factory=list)
 
     @field_validator("code", "gate_type", "trigger_event")
     @classmethod
@@ -513,7 +514,13 @@ class QualityGateDefinitionFields(BaseModel):
 
 
 class QualityGateDefinitionCreate(QualityGateDefinitionFields):
-    pass
+    @model_validator(mode="after")
+    def active_gate_requires_tests(self):
+        if self.is_active and not self.required_template_ids:
+            raise ValueError("An active quality gate must link at least one required QC test template.")
+        if len(self.required_template_ids) != len(set(self.required_template_ids)):
+            raise ValueError("Required QC test template IDs must be unique.")
+        return self
 
 
 class QualityGateDefinitionUpdate(BaseModel):
@@ -525,13 +532,14 @@ class QualityGateDefinitionUpdate(BaseModel):
     target_module: Optional[str] = Field(default=None, min_length=1, max_length=50)
     description: Optional[str] = None
     is_active: Optional[bool] = None
+    required_template_ids: Optional[List[uuid.UUID]] = None
 
     @model_validator(mode="before")
     @classmethod
     def reject_null_required_updates(cls, values):
         if not isinstance(values, dict) or not values:
             raise ValueError("At least one quality gate field is required.")
-        for field_name in ("code", "name", "gate_type", "trigger_event", "target_module", "is_active"):
+        for field_name in ("code", "name", "gate_type", "trigger_event", "target_module", "is_active", "required_template_ids"):
             if field_name in values and values[field_name] is None:
                 raise ValueError(f"{field_name} cannot be null.")
         return values
@@ -580,6 +588,7 @@ class QualityGateDefinitionRead(QualityGateDefinitionFields):
     id: uuid.UUID
     created_at: datetime
     updated_at: datetime
+    required_templates: List[QCTemplateRead] = Field(default_factory=list)
 
 
 # ── Quality Audit Checklist ────────────────────────────────────────────────────

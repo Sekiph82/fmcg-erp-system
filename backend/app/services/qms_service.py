@@ -4,11 +4,12 @@ from __future__ import annotations
 import random
 import uuid
 from datetime import date, datetime, timezone
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from typing import List, Optional
 
 from sqlalchemy import func, select, and_, or_
 from sqlalchemy.dialects.postgresql import insert as pg_insert
+from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.quality import (
@@ -16,7 +17,8 @@ from app.models.quality import (
     HazardAnalysis, CriticalControlPoint, CCPMonitoringLog,
     CorrectiveAction, CorrectiveActionStatus, CorrectiveActionStep,
     QCDeviation, DeviationStatus, RiskLevel,
-    LotQualityStatus, ReleaseStatus, AllergenValidationRecord, QualityGateDefinition,
+    LotQualityStatus, ReleaseStatus, AllergenValidationRecord, QualityGateDefinition, QCTemplate,
+    quality_gate_required_templates,
     QMSAIRecommendation, QMSAIAgentType, QMSAIRecStatus,
     SamplingMethod,
 )
@@ -45,13 +47,18 @@ async def create_template(db: AsyncSession, data: dict) -> QCTemplate:
     return tmpl
 
 
-async def get_template(db: AsyncSession, template_id: uuid.UUID) -> Optional[QCTemplate]:
-    r = await db.execute(select(QCTemplate).where(QCTemplate.id == template_id))
+async def get_template(
+    db: AsyncSession, template_id: uuid.UUID, *, for_update: bool = False
+) -> Optional[QCTemplate]:
+    query = select(QCTemplate).options(selectinload(QCTemplate.parameters)).where(QCTemplate.id == template_id)
+    if for_update:
+        query = query.with_for_update()
+    r = await db.execute(query)
     return r.scalar_one_or_none()
 
 
 async def list_templates(db: AsyncSession, qc_type=None, active_only=True) -> List[QCTemplate]:
-    q = select(QCTemplate)
+    q = select(QCTemplate).options(selectinload(QCTemplate.parameters))
     if active_only:
         q = q.where(QCTemplate.is_active == True)
     if qc_type:
@@ -66,7 +73,9 @@ async def list_quality_gate_definitions(
     trigger_event: Optional[str] = None,
     target_module: Optional[str] = None,
 ) -> List[QualityGateDefinition]:
-    query = select(QualityGateDefinition)
+    query = select(QualityGateDefinition).options(
+        selectinload(QualityGateDefinition.required_templates).selectinload(QCTemplate.parameters)
+    )
     if active_only:
         query = query.where(QualityGateDefinition.is_active.is_(True))
     if trigger_event:
@@ -81,20 +90,180 @@ async def list_quality_gate_definitions(
 
 
 async def get_quality_gate_definition(
-    db: AsyncSession, definition_id: uuid.UUID
+    db: AsyncSession, definition_id: uuid.UUID, *, for_update: bool = False
 ) -> Optional[QualityGateDefinition]:
-    result = await db.execute(
-        select(QualityGateDefinition).where(QualityGateDefinition.id == definition_id)
+    query = (
+        select(QualityGateDefinition)
+        .options(selectinload(QualityGateDefinition.required_templates).selectinload(QCTemplate.parameters))
+        .where(QualityGateDefinition.id == definition_id)
     )
+    if for_update:
+        query = query.with_for_update()
+    result = await db.execute(query)
     return result.scalar_one_or_none()
+
+
+async def _get_valid_required_qc_templates(db: AsyncSession, template_ids: list[uuid.UUID]) -> list[QCTemplate]:
+    if len(template_ids) != len(set(template_ids)):
+        raise ValueError("Required QC test template IDs must be unique.")
+    if not template_ids:
+        return []
+    result = await db.execute(
+        select(QCTemplate)
+        .options(selectinload(QCTemplate.parameters))
+        .where(QCTemplate.id.in_(template_ids))
+        .order_by(QCTemplate.id)
+        .with_for_update()
+    )
+    templates = list(result.scalars())
+    by_id = {template.id: template for template in templates}
+    if len(by_id) != len(template_ids):
+        raise ValueError("One or more required QC test templates do not exist.")
+    ordered = [by_id[template_id] for template_id in template_ids]
+    if any(not template.is_active for template in ordered):
+        raise ValueError("Required QC test templates must be active.")
+    if any(
+        not template.is_mandatory
+        or not template.blocks_progression
+        or not template.release_required
+        or not template.parameters
+        or any(not _qc_parameter_has_specification(parameter) for parameter in template.parameters)
+        for template in ordered
+    ):
+        raise ValueError(
+            "Each required QC test must block progression, require release, and define at least one specification parameter."
+        )
+    return ordered
+
+
+def _qc_parameter_has_specification(parameter) -> bool:
+    parameter_type = getattr(parameter.parameter_type, "value", parameter.parameter_type)
+    target = (parameter.target_value or "").strip()
+    minimum, maximum = parameter.min_value, parameter.max_value
+
+    if parameter_type == "NUMERIC":
+        try:
+            target_number = Decimal(target) if target else None
+            minimum_number = Decimal(str(minimum)) if minimum is not None else None
+            maximum_number = Decimal(str(maximum)) if maximum is not None else None
+        except (InvalidOperation, ValueError):
+            return False
+        values = [value for value in (target_number, minimum_number, maximum_number) if value is not None]
+        if not values or any(not value.is_finite() for value in values):
+            return False
+        if minimum_number is not None and maximum_number is not None and minimum_number > maximum_number:
+            return False
+        if target_number is not None and minimum_number is not None and target_number < minimum_number:
+            return False
+        if target_number is not None and maximum_number is not None and target_number > maximum_number:
+            return False
+        return True
+
+    if parameter_type == "TEXT":
+        return bool(target) and minimum is None and maximum is None
+    if parameter_type == "BOOLEAN":
+        return target.lower() in {"true", "false"} and minimum is None and maximum is None
+    if parameter_type == "PASS_FAIL":
+        return target.upper() == "PASS" and minimum is None and maximum is None
+    return False
+
+
+async def ensure_qc_template_change_preserves_active_gates(
+    db: AsyncSession, template: QCTemplate, changes: dict
+) -> None:
+    gate_result = await db.execute(
+        select(QualityGateDefinition.id)
+        .join(
+            quality_gate_required_templates,
+            quality_gate_required_templates.c.gate_definition_id == QualityGateDefinition.id,
+        )
+        .where(
+            quality_gate_required_templates.c.qc_template_id == template.id,
+            QualityGateDefinition.is_active.is_(True),
+        )
+        .limit(1)
+    )
+    if gate_result.scalar_one_or_none() is None:
+        return
+
+    merged = {
+        "is_active": template.is_active,
+        "is_mandatory": template.is_mandatory,
+        "blocks_progression": template.blocks_progression,
+        "release_required": template.release_required,
+    }
+    merged.update(changes)
+    has_parameters = bool(template.parameters) and all(
+        _qc_parameter_has_specification(parameter) for parameter in template.parameters
+    )
+    if not all(merged.values()) or not has_parameters:
+        raise ValueError(
+            "This QC template is required by an active quality gate; deactivate the gate before weakening or removing its test specification."
+        )
+
+
+async def ensure_qc_template_can_be_deleted(db: AsyncSession, template_id: uuid.UUID) -> None:
+    if await qc_template_has_gate_reference(db, template_id):
+        raise ValueError(
+            "This QC template is linked to a quality gate; remove the gate link before deleting the template."
+        )
+
+
+async def qc_template_has_gate_reference(db: AsyncSession, template_id: uuid.UUID) -> bool:
+    result = await db.execute(
+        select(QualityGateDefinition.id)
+        .join(
+            quality_gate_required_templates,
+            quality_gate_required_templates.c.gate_definition_id == QualityGateDefinition.id,
+        )
+        .where(quality_gate_required_templates.c.qc_template_id == template_id)
+        .limit(1)
+    )
+    return result.scalar_one_or_none() is not None
 
 
 async def create_quality_gate_definition(
     db: AsyncSession, data: dict
 ) -> QualityGateDefinition:
+    template_ids = data.pop("required_template_ids", [])
+    templates = await _get_valid_required_qc_templates(db, template_ids)
+    if data.get("is_active", True) and not templates:
+        raise ValueError("An active quality gate must link at least one required QC test template.")
     definition = QualityGateDefinition(**data)
+    definition.required_templates = templates
     db.add(definition)
     await db.flush()
+    return definition
+
+
+async def update_quality_gate_definition(
+    db: AsyncSession, definition: QualityGateDefinition, changes: dict
+) -> QualityGateDefinition:
+    template_ids = changes.pop("required_template_ids", None)
+    for field_name, value in changes.items():
+        setattr(definition, field_name, value)
+
+    if template_ids is not None:
+        definition.required_templates = await _get_valid_required_qc_templates(db, template_ids)
+    elif definition.is_active:
+        # Activation must re-read and lock existing links too. Otherwise a
+        # concurrent QC-template patch could weaken a template while this
+        # inactive gate is being activated.
+        template_ids = [template.id for template in definition.required_templates]
+        definition.required_templates = await _get_valid_required_qc_templates(db, template_ids)
+
+    if definition.is_active and not definition.required_templates:
+        raise ValueError("An active quality gate must link at least one required QC test template.")
+    if definition.is_active and any(
+        not template.is_active
+        or not template.is_mandatory
+        or not template.blocks_progression
+        or not template.release_required
+        or not template.parameters
+        or any(not _qc_parameter_has_specification(parameter) for parameter in template.parameters)
+        for template in definition.required_templates
+    ):
+        raise ValueError("Active quality gates can link only active, required, blocking QC templates with specification parameters.")
     return definition
 
 
