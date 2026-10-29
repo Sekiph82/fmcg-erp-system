@@ -20,6 +20,7 @@ from app.models.master import (
     Material, MaterialType, Product, ProductCategory, UnitOfMeasure,
     Warehouse, WarehouseType,
 )
+from app.models.quality import QCInspection, QCStatus, QCType
 from app.models.production import (
     FinishedGoodsReceipt, MaterialConsumption, ProductionOrder, ProductionOrderStatus,
 )
@@ -164,6 +165,18 @@ async def test_production_completion_commits_inventory_ledger_and_order_once():
         assert raw_stock.quantity_on_hand == Decimal("8.000")
         assert raw_stock.quantity_available == Decimal("8.000")
         assert fg_stock.quantity_on_hand == Decimal("4.000")
+        assert fg_stock.quantity_available == Decimal("0")
+        assert fg_stock.is_blocked is True
+        inspection = (await db.execute(select(QCInspection).where(
+            QCInspection.production_order_id == ids[0],
+            QCInspection.qc_type == QCType.FINISHED_GOODS,
+        ))).scalar_one()
+        assert inspection.status == QCStatus.PENDING
+        assert inspection.is_mandatory is True
+        assert inspection.quarantine_applied is True
+        assert inspection.lot_id == next(
+            row for row in movements if row.movement_type == MovementType.RECEIPT
+        ).lot_id
         assert len(consumption) == 1 and consumption[0].actual_quantity == Decimal("2.0000")
         assert len(receipt) == 1 and receipt[0].quantity == Decimal("4.000")
         assert len(movements) == 2
@@ -269,8 +282,7 @@ async def test_concurrent_completion_creates_one_consumption_and_one_finished_re
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("lot_managed", [True, False])
-async def test_production_receipt_and_stock_entry_serialize_shared_missing_lot_and_stock(monkeypatch, lot_managed):
+async def test_production_receipt_and_stock_entry_serialize_shared_lot_and_stock(monkeypatch):
     _require_task_database()
     suffix = uuid4().hex[:16]
     async with AsyncSessionLocal() as seed:
@@ -279,9 +291,7 @@ async def test_production_receipt_and_stock_entry_serialize_shared_missing_lot_a
         order_no = order.order_no
         product_id, raw_stock_id = product.id, raw_stock.id
         warehouse_id = finished_wh.id
-        lot_number = order.batch_no if lot_managed else None
-        if not lot_managed:
-            order.batch_no = None
+        lot_number = order.batch_no
         await seed.commit()
 
     first_has_lock = asyncio.Event()
@@ -289,16 +299,7 @@ async def test_production_receipt_and_stock_entry_serialize_shared_missing_lot_a
     second_is_waiting = asyncio.Event()
     second_acquired = asyncio.Event()
     second_pid: dict[str, int] = {}
-    identity = (
-        lot_identity(product_id=product_id, lot_number=lot_number)
-        if lot_managed
-        else stock_identity(
-            stock_type=StockType.PRODUCT,
-            warehouse_id=warehouse_id,
-            product_id=product_id,
-            lot_id=None,
-        )
-    )
+    identity = lot_identity(product_id=product_id, lot_number=lot_number)
     acquire_lock = production_service.lock_inventory_identity
 
     async def coordinated_lock(db, key):
@@ -386,7 +387,7 @@ async def test_production_receipt_and_stock_entry_serialize_shared_missing_lot_a
             Stock.product_id == product_id,
             Stock.lot_id == (lot_rows[0].id if lot_rows else None),
         ))).scalars().all()
-        assert len(lot_rows) == (1 if lot_managed else 0)
+        assert len(lot_rows) == 1
         assert len(fg_stock_rows) == 1
         assert fg_stock_rows[0].quantity_on_hand == Decimal("9.000")
         assert (await verify.get(Stock, raw_stock_id)).quantity_on_hand == Decimal("8.000")

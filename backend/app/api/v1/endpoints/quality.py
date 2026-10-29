@@ -328,7 +328,6 @@ async def create_inspection_for_order(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    _require_inspection_action(current_user, QCInspection(warehouse_id=warehouse_id), "create")
     insp = await svc.create_qc_for_order(
         db, production_order_id=production_order_id,
         product_id=product_id, warehouse_id=warehouse_id,
@@ -336,6 +335,7 @@ async def create_inspection_for_order(
         inspection_no=inspection_no, inspector_id=current_user.id,
         qc_type=qc_type,
     )
+    _require_inspection_action(current_user, insp, "create")
     await db.commit()
     insp = await crud.get_inspection(db, insp.id)
     return _build_detail(insp)

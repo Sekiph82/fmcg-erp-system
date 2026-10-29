@@ -25,6 +25,11 @@ from app.models.quality import (
     QCType, QCStatus, QCDecision, ParameterType,
 )
 from app.models.inventory import Stock, Lot, StockMovement, MovementType, StockType
+from app.models.production import (
+    FinishedGoodsReceipt,
+    ProductionOrder,
+    ProductionOrderStatus,
+)
 from app.schemas.quality import COAReport, COATestLine
 
 
@@ -65,14 +70,18 @@ def auto_evaluate_result(tr: QCTestResult) -> bool:
         return tr.is_passed if tr.is_passed is not None else False
 
 
-def _compute_inspection_outcome(insp: QCInspection) -> tuple[bool, bool]:
+def _compute_inspection_outcome(
+    insp: QCInspection,
+    test_results: Optional[list[QCTestResult]] = None,
+) -> tuple[bool, bool]:
     """Returns (all_passed, any_critical_fail)."""
-    if not insp.test_results:
+    results = test_results if test_results is not None else (insp.test_results or [])
+    if not results:
         return True, False
-    all_passed = all(tr.is_passed for tr in insp.test_results)
+    all_passed = all(tr.is_passed for tr in results)
     any_critical_fail = any(
         tr.is_critical and not tr.is_passed
-        for tr in insp.test_results
+        for tr in results
         if tr.is_passed is not None
     )
     return all_passed, any_critical_fail
@@ -90,6 +99,24 @@ async def make_decision(
     apply_quarantine: bool,
 ) -> QCInspection:
     _assert_status(insp, QCStatus.PENDING, QCStatus.IN_PROGRESS)
+
+    if decision == QCDecision.ACCEPT:
+        test_results = None
+        if isinstance(insp, QCInspection):
+            result_rows = await db.execute(
+                select(QCTestResult).where(QCTestResult.inspection_id == insp.id)
+            )
+            test_results = list(result_rows.scalars().all())
+        all_passed, _ = _compute_inspection_outcome(insp, test_results)
+        has_no_required_results = (
+            getattr(insp, "is_mandatory", False)
+            and not (test_results if test_results is not None else insp.test_results)
+        )
+        if has_no_required_results or not all_passed:
+            raise HTTPException(
+                status_code=422,
+                detail="Inspection cannot be accepted while any test result has failed or is incomplete.",
+            )
 
     insp.decision = decision
     insp.decided_by_id = decided_by_id
@@ -132,12 +159,11 @@ async def _quarantine_lot_stock(
     product_id: Optional[uuid.UUID],
     reason: str,
     user_id: uuid.UUID,
-) -> None:
+) -> int:
     """Direct quarantine without going through the schema layer."""
     filters = [
         Stock.warehouse_id == warehouse_id,
         Stock.lot_id == lot_id,
-        Stock.is_blocked == False,  # noqa: E712
     ]
     if material_id:
         filters.append(Stock.material_id == material_id)
@@ -147,12 +173,13 @@ async def _quarantine_lot_stock(
     result = await db.execute(select(Stock).where(and_(*filters)).with_for_update())
     rows = list(result.scalars().all())
     if not rows:
-        return  # No unblocked stock to quarantine — not an error
+        return 0
 
     for s in rows:
-        s.is_blocked = True
-        s.quantity_reserved = s.quantity_on_hand
-        s.quantity_available = Decimal("0")
+        if not s.is_blocked:
+            s.is_blocked = True
+            s.quantity_reserved = s.quantity_on_hand
+            s.quantity_available = Decimal("0")
 
     now = datetime.now(timezone.utc)
     stock_type = StockType.MATERIAL if material_id else StockType.PRODUCT
@@ -171,6 +198,7 @@ async def _quarantine_lot_stock(
     )
     db.add(mv)
     await db.flush()
+    return len(rows)
 
 
 async def release_qc_quarantine(
@@ -182,6 +210,8 @@ async def release_qc_quarantine(
     """Release quarantine on a previously quarantined inspection lot."""
     if not insp.quarantine_applied or not insp.lot_id or not insp.warehouse_id:
         raise HTTPException(422, "No quarantine to release on this inspection")
+    if insp.decision != QCDecision.ACCEPT or insp.status != QCStatus.PASSED:
+        raise HTTPException(422, "Only an accepted and passed inspection can release quarantined stock")
 
     filters = [
         Stock.warehouse_id == insp.warehouse_id,
@@ -190,6 +220,8 @@ async def release_qc_quarantine(
     ]
     result = await db.execute(select(Stock).where(and_(*filters)).with_for_update())
     rows = list(result.scalars().all())
+    if not rows:
+        raise HTTPException(422, "Quarantined stock no longer exists for this inspection")
     for s in rows:
         s.is_blocked = False
         s.quantity_reserved = Decimal("0")
@@ -212,6 +244,7 @@ async def release_qc_quarantine(
     )
     db.add(mv)
     insp.quarantine_applied = False
+    insp.hold_flag = False
     await db.flush()
 
 
@@ -321,20 +354,104 @@ async def create_qc_for_order(
     inspector_id: uuid.UUID,
     qc_type: QCType = QCType.IN_PROCESS,
 ) -> QCInspection:
+    order_result = await db.execute(
+        select(ProductionOrder).where(ProductionOrder.id == production_order_id)
+    )
+    order = order_result.scalar_one_or_none()
+    if order is None:
+        raise HTTPException(404, "Production order not found")
+    if product_id is not None and product_id != order.product_id:
+        raise HTTPException(422, "Product does not match the production order")
+    if batch_no is not None and batch_no != order.batch_no:
+        raise HTTPException(422, "Batch does not match the production order")
+
+    lot_id = None
+    if qc_type == QCType.FINISHED_GOODS:
+        if order.status != ProductionOrderStatus.COMPLETED:
+            raise HTTPException(422, "Finished-goods QC requires a completed production order")
+
+        receipt_query = select(FinishedGoodsReceipt).where(
+            FinishedGoodsReceipt.production_order_id == order.id,
+        )
+        if lot_number is not None:
+            receipt_query = receipt_query.where(FinishedGoodsReceipt.lot_number == lot_number)
+        receipts = list((await db.execute(receipt_query.order_by(FinishedGoodsReceipt.id))).scalars().all())
+        if not receipts:
+            raise HTTPException(422, "No finished-goods receipt matches this production order and lot")
+
+        receipt_lots: list[tuple[FinishedGoodsReceipt, uuid.UUID]] = []
+        for receipt in receipts:
+            if product_id is not None and product_id != receipt.product_id:
+                raise HTTPException(422, "Product does not match the finished-goods receipt")
+            if warehouse_id is not None and warehouse_id != receipt.warehouse_id:
+                raise HTTPException(422, "Warehouse does not match the finished-goods receipt")
+            movement = (
+                await db.get(StockMovement, receipt.stock_movement_id)
+                if receipt.stock_movement_id
+                else None
+            )
+            if movement is not None and movement.lot_id is not None:
+                receipt_lots.append((receipt, movement.lot_id))
+
+        distinct_lots = {linked_lot_id for _, linked_lot_id in receipt_lots}
+        if len(distinct_lots) != 1:
+            raise HTTPException(422, "Finished-goods receipt does not identify one traceable lot")
+
+        receipt, lot_id = receipt_lots[0]
+        product_id = receipt.product_id
+        warehouse_id = receipt.warehouse_id
+        lot_number = receipt.lot_number
+        batch_no = receipt.batch_no
+        if lot_id is None:
+            raise HTTPException(422, "Finished-goods QC requires a traceable finished-goods lot")
+        active_result = await db.execute(
+            select(QCInspection.id).where(
+                QCInspection.production_order_id == order.id,
+                QCInspection.qc_type == QCType.FINISHED_GOODS,
+                QCInspection.lot_id == lot_id,
+                QCInspection.status.in_([QCStatus.PENDING, QCStatus.IN_PROGRESS]),
+            )
+        )
+        if active_result.scalar_one_or_none() is not None:
+            raise HTTPException(409, "An active finished-goods inspection already exists for this lot")
+    else:
+        product_id = order.product_id
+        batch_no = order.batch_no
+        warehouse_id = warehouse_id or order.target_warehouse_id
+
     insp = QCInspection(
         inspection_no=inspection_no,
         qc_type=qc_type,
         status=QCStatus.PENDING,
         production_order_id=production_order_id,
+        lot_id=lot_id,
         product_id=product_id,
         warehouse_id=warehouse_id,
         lot_number=lot_number,
         batch_no=batch_no,
         inspection_date=date.today(),
         inspector_id=inspector_id,
+        is_mandatory=qc_type == QCType.FINISHED_GOODS,
+        blocks_progression=qc_type == QCType.FINISHED_GOODS,
+        release_required=qc_type == QCType.FINISHED_GOODS,
+        hold_flag=qc_type == QCType.FINISHED_GOODS,
     )
     db.add(insp)
     await db.flush()
+    if qc_type == QCType.FINISHED_GOODS:
+        quarantined_rows = await _quarantine_lot_stock(
+            db,
+            lot_id=lot_id,
+            warehouse_id=warehouse_id,
+            material_id=None,
+            product_id=product_id,
+            reason=f"Pending finished-goods QC: {inspection_no}",
+            user_id=inspector_id,
+        )
+        if not quarantined_rows:
+            raise HTTPException(422, "Finished-goods lot has no stock to place on quality hold")
+        insp.quarantine_applied = True
+        await db.flush()
     return insp
 
 

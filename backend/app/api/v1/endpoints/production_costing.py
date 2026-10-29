@@ -24,7 +24,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.db.session import get_db
-from app.core.deps import get_current_user
+from app.core.deps import require_permission
 from app.models.production import ProductionOrder, ProductionOrderStatus
 from app.models.master import Product
 from app.schemas.production_costing import (
@@ -58,7 +58,7 @@ async def get_cost_kpis(
     date_from: Optional[date] = Query(None),
     date_to:   Optional[date] = Query(None),
     db: AsyncSession = Depends(get_db),
-    _user = Depends(get_current_user),
+    _user = Depends(require_permission("finance", "view")),
 ):
     return await svc.get_cost_kpis(db, date_from=date_from, date_to=date_to)
 
@@ -71,7 +71,7 @@ async def get_cost_report(
     date_to:    Optional[date]      = Query(None),
     product_id: Optional[uuid.UUID] = Query(None),
     db: AsyncSession = Depends(get_db),
-    _user = Depends(get_current_user),
+    _user = Depends(require_permission("finance", "view")),
 ):
     return await svc.get_cost_report(
         db, date_from=date_from, date_to=date_to, product_id=product_id,
@@ -86,7 +86,7 @@ async def get_cost_trend(
     date_to:    Optional[date]      = Query(None),
     product_id: Optional[uuid.UUID] = Query(None),
     db: AsyncSession = Depends(get_db),
-    _user = Depends(get_current_user),
+    _user = Depends(require_permission("finance", "view")),
 ):
     return await svc.get_cost_trend(
         db, date_from=date_from, date_to=date_to, product_id=product_id,
@@ -99,7 +99,7 @@ async def get_cost_trend(
 async def get_order_cost(
     order_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    _user = Depends(get_current_user),
+    _user = Depends(require_permission("finance", "view")),
 ):
     order = await _get_order_or_404(db, order_id)
     cost  = await svc.compute_order_cost(db, order)
@@ -142,7 +142,7 @@ async def get_order_cost(
 async def finalize_order_cost(
     order_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    _user = Depends(get_current_user),
+    _user = Depends(require_permission("finance", "create")),
 ):
     order = await _get_order_or_404(db, order_id)
     order = await svc.finalize_order_cost(db, order)
@@ -185,7 +185,7 @@ async def finalize_order_cost(
 @router.get("/wip", response_model=List[WIPRow])
 async def get_wip_report(
     db: AsyncSession = Depends(get_db),
-    _user=Depends(get_current_user),
+    _user=Depends(require_permission("finance", "view")),
 ):
     rows = await svc.get_wip_report(db)
     return [WIPRow(**r) for r in rows]
@@ -198,7 +198,7 @@ async def get_variance_detail(
     date_from: Optional[date] = None,
     date_to: Optional[date] = None,
     db: AsyncSession = Depends(get_db),
-    _user=Depends(get_current_user),
+    _user=Depends(require_permission("finance", "view")),
 ):
     rows = await svc.get_variance_detail(db, date_from, date_to)
     return [VarianceDetailRow(**r) for r in rows]
@@ -211,7 +211,7 @@ async def get_work_center_utilization(
     date_from: date = Query(...),
     date_to: date = Query(...),
     db: AsyncSession = Depends(get_db),
-    _user=Depends(get_current_user),
+    _user=Depends(require_permission("finance", "view")),
 ):
     rows = await svc.get_work_center_utilization(db, date_from, date_to)
     return [WorkCenterUtilRow(**r) for r in rows]

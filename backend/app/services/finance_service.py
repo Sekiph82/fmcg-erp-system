@@ -14,6 +14,7 @@ from decimal import Decimal
 from typing import Any, List, Optional, Sequence, Tuple
 import uuid
 
+from fastapi import HTTPException
 from sqlalchemy import select, and_, func, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -27,7 +28,7 @@ from app.models.finance import (
     JournalStatus, AccountingPostingBatch, PostingBatchStatus,
     InventoryAccountMapping, OperationalPostingEvent, OperationalPostingStatus,
 )
-from app.models.production import ProductionOrder, MaterialConsumption
+from app.models.production import ProductionOrder, ProductionOrderStatus, MaterialConsumption
 from app.models.sales import Invoice, SalesOrder, InvoiceStatus
 from sqlalchemy import extract
 from app.models.finance import Budget as BudgetModel
@@ -446,7 +447,8 @@ async def rollup_production_order_costs(
 ) -> List[ProductionCostEntry]:
     """
     Derive RAW_MATERIAL and PACKAGING cost entries from MaterialConsumption
-    records on a production order. Existing entries for the PO are replaced.
+    records on a completed production order. Existing auto-derived entries are
+    replaced while manually entered cost entries are preserved.
     """
     # Load production order with consumptions and material.standard_cost
     po_result = await db.execute(
@@ -456,10 +458,17 @@ async def rollup_production_order_costs(
             selectinload(ProductionOrder.product),
         )
         .where(ProductionOrder.id == production_order_id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
     )
     po = po_result.scalar_one_or_none()
     if not po:
         return []
+    if po.status != ProductionOrderStatus.COMPLETED:
+        raise HTTPException(
+            status_code=422,
+            detail="Production cost rollup is only allowed for COMPLETED production orders.",
+        )
 
     period_ym = (po.actual_start or po.scheduled_start).strftime("%Y-%m")
 
@@ -468,6 +477,7 @@ async def rollup_production_order_costs(
         select(ProductionCostEntry).where(
             ProductionCostEntry.production_order_id == production_order_id,
             ProductionCostEntry.cost_type.in_([CostType.RAW_MATERIAL, CostType.PACKAGING]),
+            ProductionCostEntry.notes.like("Auto from consumption %"),
         )
     )
     for old in existing_result.scalars().all():

@@ -10,9 +10,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 - Current Milestone: M08 — Production Management
 - Current Sprint: M08.S03 — Baseline Integrity
-- Current Task: M08.S03.T002 — Verify production/inventory transaction atomicity
+- Current Task: M08.S03.T003 — Verify production/QC/finance closure
 - Current Task Status: COMPLETE
-- Next Task/Action: M08.S03.T003 — Verify production/QC/finance closure
+- Next Task/Action: M21.S05.T004 — Close M21
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -337,7 +337,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 ## M08.S03 — Baseline Integrity
 - [x] M08.S03.T001 — Harden state-transition invariants
 - [x] M08.S03.T002 — Verify production/inventory transaction atomicity
-- [ ] M08.S03.T003 — Verify production/QC/finance closure
+- [x] M08.S03.T003 — Verify production/QC/finance closure
+  Evidence: [CODEX implementation log](coordination/sessions/M08.S03.T003/CODEX_LOG_V01.md); production completion now preserves explicit source-lot genealogy, creates and quarantines traceable finished-goods QC, blocks unsafe QC acceptance/release, and costing rollup is protected against incomplete orders and concurrent duplicate rollups with finance RBAC. Disposable PostgreSQL 16 at Alembic head 20261029_0025: 26 T003 tests and 5 T002 production/inventory regressions passed; focused local regressions 27 passed/7 disposable-DB gated skips, Python compilation and diff checks passed, and task container cleanup was verified. No live factory acceptance, GL posting, or central inventory valuation policy is claimed. Independent read-only findings were addressed; this log is implementer evidence, not an independent audit verdict.
 
 ---
 

@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional, List
 from decimal import Decimal
 from datetime import datetime
@@ -200,6 +200,7 @@ class CompleteOrderRequest(BaseModel):
     fg_lot_number: Optional[str] = None
     fg_expiry_date: Optional[str] = None
     source_warehouse_id: Optional[uuid.UUID] = None
+    material_lot_ids: dict[uuid.UUID, uuid.UUID] = Field(default_factory=dict)
     consume_materials: bool = True
     notes: Optional[str] = None
 

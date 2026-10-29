@@ -29,6 +29,15 @@ from app.models.production import (
 from app.models.recipe import Recipe, RecipeItem
 from app.models.inventory import Stock, StockMovement, MovementType, StockType, Lot
 from app.models.master import Material, Warehouse
+from app.models.traceability import (
+    GenealogyRelType,
+    LotGenealogyLink,
+    TraceEvent,
+    TraceEventLine,
+    TraceEventType,
+    TraceItemStage,
+)
+from app.models.quality import QCType
 from app.schemas.production import (
     CompleteOrderRequest, DowntimeLogCreate, DowntimeLogClose,
     OEEMetrics, ProductionReportRow, DowntimeSummaryRow, ProductionSummary,
@@ -36,6 +45,7 @@ from app.schemas.production import (
 )
 from app.crud import production as crud
 from app.services.inventory_locking import lot_identity, lock_inventory_identity, stock_identity
+from app.services import quality_service
 
 
 # ── Internal helpers ──────────────────────────────────────────────────────────
@@ -75,6 +85,7 @@ async def _get_material_stock(
         Stock.warehouse_id == warehouse_id,
         Stock.material_id == material_id,
         Stock.stock_type == StockType.MATERIAL,
+        Stock.is_blocked == False,  # noqa: E712
     ]
     if lot_id:
         filters.append(Stock.lot_id == lot_id)
@@ -87,6 +98,40 @@ async def _get_material_stock(
         .execution_options(populate_existing=True)
     )
     return result.scalar_one_or_none()
+
+
+async def _resolve_material_lot_id(
+    db: AsyncSession,
+    warehouse_id: uuid.UUID,
+    material_id: uuid.UUID,
+    requested_lot_id: Optional[uuid.UUID],
+) -> Optional[uuid.UUID]:
+    if requested_lot_id is not None:
+        return requested_lot_id
+
+    result = await db.execute(
+        select(Stock.lot_id)
+        .where(
+            Stock.warehouse_id == warehouse_id,
+            Stock.material_id == material_id,
+            Stock.stock_type == StockType.MATERIAL,
+            Stock.is_blocked == False,  # noqa: E712
+            Stock.quantity_available > 0,
+        )
+        .group_by(Stock.lot_id)
+        .order_by(Stock.lot_id)
+    )
+    candidates = list(result.scalars().all())
+    if len(candidates) > 1:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "error": "SOURCE_LOT_SELECTION_REQUIRED",
+                "message": f"Select one source lot for material {material_id}; automatic FIFO/FEFO selection is not configured.",
+                "material_id": str(material_id),
+            },
+        )
+    return candidates[0] if candidates else None
 
 
 async def _issue_material(
@@ -378,6 +423,10 @@ async def complete_order(
     if req.actual_quantity <= 0:
         raise HTTPException(422, detail="actual_quantity must be positive.")
 
+    finished_lot_number = (req.fg_lot_number or order.batch_no or "").strip()
+    if not finished_lot_number:
+        raise HTTPException(422, detail="A finished-goods lot number or production batch number is required.")
+
     # Close any open downtime
     active_dt = await crud.get_active_downtime(db, order.id)
     if active_dt:
@@ -388,6 +437,7 @@ async def complete_order(
     source_wh_id = req.source_warehouse_id or order.source_warehouse_id
 
     # ── Material consumption ──────────────────────────────────────────────────
+    genealogy_inputs: list[tuple[uuid.UUID, uuid.UUID, Decimal, str]] = []
     if req.consume_materials and source_wh_id:
         # Load recipe items
         ri_result = await db.execute(
@@ -397,6 +447,13 @@ async def complete_order(
             .options(selectinload(RecipeItem.material))
         )
         items: List[RecipeItem] = list(ri_result.scalars().all())
+        recipe_material_ids = {item.material_id for item in items if not item.is_optional}
+        unexpected_lot_ids = set(req.material_lot_ids) - recipe_material_ids
+        if unexpected_lot_ids:
+            raise HTTPException(
+                status_code=422,
+                detail="Source lot selections may only reference required materials on this recipe.",
+            )
 
         if items and float(order.planned_quantity) > 0:
             scale = float(req.actual_quantity) / float(order.planned_quantity)
@@ -413,6 +470,12 @@ async def complete_order(
             loss_factor = 1 + float(item.loss_percentage or 0) / 100
             std_qty = Decimal(str(round(float(item.quantity) * scale, 4)))
             actual_qty_with_loss = Decimal(str(round(float(std_qty) * loss_factor, 4)))
+            source_lot_id = await _resolve_material_lot_id(
+                db,
+                warehouse_id=source_wh_id,
+                material_id=material.id,
+                requested_lot_id=req.material_lot_ids.get(material.id),
+            )
 
             movement = await _issue_material(
                 db=db,
@@ -420,7 +483,7 @@ async def complete_order(
                 material=material,
                 warehouse_id=source_wh_id,
                 quantity=actual_qty_with_loss,
-                lot_id=None,
+                lot_id=source_lot_id,
                 reference=order.order_no,
                 notes=f"Auto-consumption for {order.order_no}",
                 user_id=user_id,
@@ -429,7 +492,7 @@ async def complete_order(
             consumption = MaterialConsumption(
                 production_order_id=order.id,
                 material_id=material.id,
-                lot_id=None,
+                lot_id=source_lot_id,
                 standard_quantity=std_qty,
                 actual_quantity=actual_qty_with_loss,
                 variance_quantity=actual_qty_with_loss - std_qty,
@@ -438,6 +501,8 @@ async def complete_order(
                 stock_movement_id=movement.id,
             )
             db.add(consumption)
+            if source_lot_id is not None:
+                genealogy_inputs.append((material.id, source_lot_id, actual_qty_with_loss, item.unit))
 
     # ── Finished goods receipt ────────────────────────────────────────────────
     movement, lot_id = await _receipt_finished_goods(
@@ -445,7 +510,7 @@ async def complete_order(
         order=order,
         quantity=req.actual_quantity,
         warehouse_id=order.target_warehouse_id,
-        lot_number=req.fg_lot_number or order.batch_no,
+        lot_number=finished_lot_number,
         batch_no=order.batch_no,
         fg_expiry_date=req.fg_expiry_date,
         user_id=user_id,
@@ -456,13 +521,55 @@ async def complete_order(
         product_id=order.product_id,
         quantity=req.actual_quantity,
         uom=order.uom,
-        lot_number=req.fg_lot_number or order.batch_no,
+        lot_number=finished_lot_number,
         batch_no=order.batch_no,
         warehouse_id=order.target_warehouse_id,
         stock_movement_id=movement.id,
         notes=req.notes,
     )
     db.add(fg_receipt)
+
+    if lot_id is not None and genealogy_inputs:
+        trace_event = TraceEvent(
+            trace_event_type=TraceEventType.transformation,
+            event_datetime=_now(),
+            reference_number=order.order_no,
+            source_document_type="production_order",
+            source_document_id=order.id,
+            production_order_id=order.id,
+            warehouse_id=order.target_warehouse_id,
+            performed_by_id=user_id,
+            notes="Production transformation from explicitly issued material lots to finished-goods lot.",
+        )
+        db.add(trace_event)
+        await db.flush()
+        for material_id, source_lot_id, linked_quantity, source_uom in genealogy_inputs:
+            db.add(TraceEventLine(
+                event_id=trace_event.id,
+                product_id=order.product_id,
+                material_id=material_id,
+                source_lot_id=source_lot_id,
+                child_lot_id=lot_id,
+                quantity=linked_quantity,
+                uom=source_uom,
+                source_stage=TraceItemStage.raw_stock,
+                dest_stage=TraceItemStage.finished_good,
+                movement_reason="production consumption",
+                notes=f"Production order {order.order_no}",
+            ))
+            db.add(LotGenealogyLink(
+                parent_lot_id=source_lot_id,
+                child_lot_id=lot_id,
+                relationship_type=GenealogyRelType.intermediate_from,
+                source_document_type="production_order",
+                source_document_id=order.id,
+                production_order_id=order.id,
+                quantity_linked=linked_quantity,
+                uom=source_uom,
+                parent_stage=TraceItemStage.raw_stock,
+                child_stage=TraceItemStage.finished_good,
+                notes=f"Produced by {order.order_no}",
+            ))
 
     # ── Finalise order ────────────────────────────────────────────────────────
     order.actual_quantity = req.actual_quantity
@@ -472,6 +579,17 @@ async def complete_order(
         order.notes = req.notes
 
     await db.flush()
+    await quality_service.create_qc_for_order(
+        db,
+        production_order_id=order.id,
+        product_id=order.product_id,
+        warehouse_id=order.target_warehouse_id,
+        lot_number=finished_lot_number,
+        batch_no=order.batch_no,
+        inspection_no=f"FG-QC-{order.id.hex}",
+        inspector_id=user_id,
+        qc_type=QCType.FINISHED_GOODS,
+    )
     await db.refresh(order)
     return order
 
