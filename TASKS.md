@@ -8,11 +8,11 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 ## Project Status
 
-- Current Milestone: M10 — Quality
-- Current Sprint: M10.S02 — QMS Baseline
-- Current Task: M10.S02.T004 — Harden hold/release transaction enforcement
-- Current Task Status: COMPLETE
-- Next Task/Action: Select the next dependency-ready task after M10.S02.T004 completion
+- Current Milestone: M27 — Quality Gates
+- Current Sprint: M27.S01 — Gate Definition Engine
+- Current Task: M27.S01.T001 — Configurable gate types/triggers
+- Current Task Status: IN_PROGRESS
+- Next Task/Action: M27.S01.T001 — Configurable gate types/triggers
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -811,7 +811,7 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 **Depends on:** M10; integrates with M06/M22/M23/M24/M33.
 
 ## M27.S01 — Gate Definition Engine
-- [ ] M27.S01.T001 — Configurable gate types/triggers
+- [~] M27.S01.T001 — Configurable gate types/triggers
 - [ ] M27.S01.T002 — Required tests/specification linkage
 - [ ] M27.S01.T003 — Gate severity/mandatory/waiver rules
 - [ ] M27.S01.T004 — Version/effective-date governance
