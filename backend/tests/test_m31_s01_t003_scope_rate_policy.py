@@ -1,8 +1,9 @@
-"""M31.S01.T003 policy checks; gated to an owned disposable PostgreSQL database."""
+"""M31.S01.T003/T004 checks; gated to an owned disposable PostgreSQL database."""
 from __future__ import annotations
 
 import os
 import re
+from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 from uuid import UUID, uuid4
 
@@ -15,7 +16,8 @@ from app.core.config import settings
 from app.core.deps import get_current_user, get_db
 from app.db.session import AsyncSessionLocal, engine
 from app.main import app
-from app.models.api_portal import ApiClientApplication, ApiKey
+from app.models.api_portal import ApiClientApplication, ApiKey, ApiKeyUsageLog, ApiOAuthClientSecret
+from app.models.audit_log import AuditLog
 from app.models.user import User
 
 
@@ -50,7 +52,14 @@ def test_database_guard_rejects_wrong_task_or_non_loopback_database():
 def _actor(user: User, *, permissions: tuple[str, ...] = (), is_superuser: bool = False):
     role_permissions = [SimpleNamespace(is_active=True, code=code) for code in permissions]
     roles = [SimpleNamespace(is_active=True, permissions=role_permissions)] if role_permissions else []
-    return SimpleNamespace(id=user.id, is_superuser=is_superuser, roles=roles, access_scopes=[])
+    return SimpleNamespace(
+        id=user.id,
+        email=user.email,
+        full_name=user.full_name,
+        is_superuser=is_superuser,
+        roles=roles,
+        access_scopes=[],
+    )
 
 
 async def _new_user(email: str) -> User:
@@ -72,8 +81,14 @@ async def _new_user(email: str) -> User:
 
 async def _delete_users(*user_ids) -> None:
     async with AsyncSessionLocal() as db:
+        await db.execute(delete(AuditLog).where(AuditLog.actor_id.in_(user_ids)))
         key_ids = select(ApiKey.key_id).where(ApiKey.user_id.in_([str(user_id) for user_id in user_ids]))
+        await db.execute(delete(ApiKeyUsageLog).where(ApiKeyUsageLog.key_id.in_(key_ids)))
         await db.execute(delete(ApiKey).where(ApiKey.key_id.in_(key_ids)))
+        application_ids = select(ApiClientApplication.client_id).where(
+            ApiClientApplication.owner_user_id.in_(user_ids)
+        )
+        await db.execute(delete(ApiOAuthClientSecret).where(ApiOAuthClientSecret.application_id.in_(application_ids)))
         await db.execute(delete(ApiClientApplication).where(ApiClientApplication.owner_user_id.in_(user_ids)))
         await db.execute(delete(User).where(User.id.in_(user_ids)))
         await db.commit()

@@ -7,18 +7,20 @@ from __future__ import annotations
 import hashlib
 import secrets
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import List, Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, ConfigDict, Field, field_validator
-from sqlalchemy import select, func, desc
+from sqlalchemy import select, func, desc, case
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 
 from app.core.config import settings
 from app.core.deps import get_current_user, get_db, require_permission
+from app.crud import audit as audit_crud
 from app.models.api_portal import ApiClientApplication, ApiKey, ApiKeyUsageLog, ApiOAuthClientSecret
+from app.models.audit_log import AuditLog
 from app.models.user import User
 
 router = APIRouter()
@@ -27,6 +29,17 @@ API_KEY_SCOPE_ORDER = ("read", "write", "admin")
 API_KEY_DEFAULT_RATE_LIMIT_PER_MIN = 60
 API_KEY_MIN_RATE_LIMIT_PER_MIN = 1
 API_KEY_MAX_RATE_LIMIT_PER_MIN = 1000
+PARTNER_AUDIT_MODULE = "developer_portal"
+PARTNER_AUDIT_EVENT_TYPES = (
+    "PARTNER_APPLICATION_CREATED",
+    "PARTNER_APPLICATION_UPDATED",
+    "PARTNER_API_KEY_CREATED",
+    "PARTNER_API_KEY_ROTATED",
+    "PARTNER_API_KEY_REVOKED",
+    "PARTNER_OAUTH_SECRET_CREATED",
+    "PARTNER_OAUTH_SECRET_ROTATED",
+    "PARTNER_OAUTH_SECRET_REVOKED",
+)
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -77,6 +90,31 @@ def _canonicalize_scopes(value: str) -> str:
             raise ValueError("The admin API key scope must be used alone.")
         return "admin"
     return ",".join(scope for scope in API_KEY_SCOPE_ORDER if scope in parts)
+
+
+async def _log_partner_event(
+    db: AsyncSession,
+    actor: User,
+    *,
+    event_type: str,
+    target_type: str,
+    target_id: uuid.UUID,
+    target_name: Optional[str],
+    details: dict,
+) -> None:
+    """Append partner credential metadata to the shared audit log, never raw credentials."""
+    await audit_crud.log_event(
+        db,
+        event_type=event_type,
+        actor_id=actor.id,
+        actor_email=actor.email,
+        actor_name=actor.full_name,
+        module=PARTNER_AUDIT_MODULE,
+        target_type=target_type,
+        target_id=str(target_id),
+        target_name=target_name,
+        details=details,
+    )
 
 
 async def _owned_active_application(
@@ -294,6 +332,19 @@ async def create_client_application(
     )
     db.add(application)
     try:
+        await db.flush()
+        await _log_partner_event(
+            db,
+            current_user,
+            event_type="PARTNER_APPLICATION_CREATED",
+            target_type="api_client_application",
+            target_id=application.client_id,
+            target_name=application.name,
+            details={
+                "application_id": str(application.client_id),
+                "environment": application.environment,
+            },
+        )
         await db.commit()
     except IntegrityError as exc:
         await db.rollback()
@@ -332,8 +383,15 @@ async def update_client_application(
     application = result.scalar_one_or_none()
     if application is None:
         raise HTTPException(status_code=404, detail="API client application not found.")
+    before = {
+        "name": application.name,
+        "environment": application.environment,
+        "is_active": application.is_active,
+    }
     for field, value in changes.items():
         setattr(application, field, value)
+    deactivated_keys = 0
+    deactivated_secrets = 0
     if changes.get("is_active") is False:
         # Disabling an application is a credential kill switch. Re-enabling it
         # does not silently restore credentials that were revoked here.
@@ -342,6 +400,7 @@ async def update_client_application(
         )
         for key in keys_result.scalars().all():
             key.is_active = False
+            deactivated_keys += 1
         secrets_result = await db.execute(
             select(ApiOAuthClientSecret).where(
                 ApiOAuthClientSecret.application_id == application.client_id,
@@ -350,7 +409,28 @@ async def update_client_application(
         )
         for credential in secrets_result.scalars().all():
             credential.is_active = False
+            deactivated_secrets += 1
     try:
+        await _log_partner_event(
+            db,
+            current_user,
+            event_type="PARTNER_APPLICATION_UPDATED",
+            target_type="api_client_application",
+            target_id=application.client_id,
+            target_name=application.name,
+            details={
+                "application_id": str(application.client_id),
+                "changed_fields": sorted(changes),
+                "before": before,
+                "after": {
+                    "name": application.name,
+                    "environment": application.environment,
+                    "is_active": application.is_active,
+                },
+                "deactivated_keys": deactivated_keys,
+                "deactivated_oauth_secrets": deactivated_secrets,
+            },
+        )
         await db.commit()
     except IntegrityError as exc:
         await db.rollback()
@@ -392,6 +472,21 @@ async def create_api_key(
         expires_at=_validated_expiry(payload.expires_at, legacy_timestamp=True),
     )
     db.add(key)
+    await db.flush()
+    await _log_partner_event(
+        db,
+        current_user,
+        event_type="PARTNER_API_KEY_CREATED",
+        target_type="api_key",
+        target_id=key.key_id,
+        target_name=key.key_name,
+        details={
+            "application_id": str(key.application_id),
+            "scopes": key.scopes,
+            "rate_limit_per_min": key.rate_limit_per_min,
+            "key_prefix": key.key_prefix,
+        },
+    )
     await db.commit()
     await db.refresh(key)
 
@@ -442,6 +537,20 @@ async def revoke_api_key(
     if not key:
         raise HTTPException(status_code=404, detail="API key not found")
     key.is_active = False
+    await _log_partner_event(
+        db,
+        current_user,
+        event_type="PARTNER_API_KEY_REVOKED",
+        target_type="api_key",
+        target_id=key.key_id,
+        target_name=key.key_name,
+        details={
+            "application_id": str(key.application_id) if key.application_id else None,
+            "scopes": key.scopes or "read",
+            "rate_limit_per_min": key.rate_limit_per_min,
+            "key_prefix": key.key_prefix,
+        },
+    )
     await db.commit()
 
 
@@ -512,6 +621,22 @@ async def rotate_api_key(
     )
     previous.is_active = False
     db.add(replacement)
+    await db.flush()
+    await _log_partner_event(
+        db,
+        current_user,
+        event_type="PARTNER_API_KEY_ROTATED",
+        target_type="api_key",
+        target_id=replacement.key_id,
+        target_name=replacement.key_name,
+        details={
+            "application_id": str(replacement.application_id) if replacement.application_id else None,
+            "replaces_key_id": str(previous.key_id),
+            "scopes": replacement.scopes,
+            "rate_limit_per_min": replacement.rate_limit_per_min,
+            "key_prefix": replacement.key_prefix,
+        },
+    )
     await db.commit()
     await db.refresh(replacement)
     return {
@@ -571,6 +696,20 @@ async def create_oauth_client_secret(
         expires_at=_validated_expiry(payload.expires_at),
     )
     db.add(credential)
+    await db.flush()
+    await _log_partner_event(
+        db,
+        current_user,
+        event_type="PARTNER_OAUTH_SECRET_CREATED",
+        target_type="oauth_client_secret",
+        target_id=credential.secret_id,
+        target_name=credential.secret_name,
+        details={
+            "application_id": str(application_id),
+            "secret_prefix": credential.secret_prefix,
+            "oauth_token_issuance_enabled": False,
+        },
+    )
     await db.commit()
     await db.refresh(credential)
     return {
@@ -616,6 +755,21 @@ async def rotate_oauth_client_secret(
     )
     previous.is_active = False
     db.add(replacement)
+    await db.flush()
+    await _log_partner_event(
+        db,
+        current_user,
+        event_type="PARTNER_OAUTH_SECRET_ROTATED",
+        target_type="oauth_client_secret",
+        target_id=replacement.secret_id,
+        target_name=replacement.secret_name,
+        details={
+            "application_id": str(application_id),
+            "replaces_secret_id": str(previous.secret_id),
+            "secret_prefix": replacement.secret_prefix,
+            "oauth_token_issuance_enabled": False,
+        },
+    )
     await db.commit()
     await db.refresh(replacement)
     return {
@@ -652,6 +806,19 @@ async def revoke_oauth_client_secret(
     if credential is None:
         raise HTTPException(status_code=404, detail="OAuth client secret not found.")
     credential.is_active = False
+    await _log_partner_event(
+        db,
+        current_user,
+        event_type="PARTNER_OAUTH_SECRET_REVOKED",
+        target_type="oauth_client_secret",
+        target_id=credential.secret_id,
+        target_name=credential.secret_name,
+        details={
+            "application_id": str(application_id),
+            "secret_prefix": credential.secret_prefix,
+            "oauth_token_issuance_enabled": False,
+        },
+    )
     await db.commit()
 
 
@@ -663,7 +830,7 @@ async def revoke_oauth_client_secret(
 )
 async def key_usage(
     key_id: uuid.UUID,
-    limit: int = Query(default=100, le=500),
+    limit: int = Query(default=100, ge=1, le=500),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -680,7 +847,10 @@ async def key_usage(
 
     logs_r = await db.execute(
         select(ApiKeyUsageLog)
-        .where(ApiKeyUsageLog.key_id == key_id)
+        .where(
+            ApiKeyUsageLog.key_id == key_id,
+            ApiKeyUsageLog.created_at <= datetime.now(timezone.utc).replace(tzinfo=None),
+        )
         .order_by(desc(ApiKeyUsageLog.created_at))
         .limit(limit)
     )
@@ -696,6 +866,119 @@ async def key_usage(
         }
         for lg in logs
     ]
+
+
+@router.get(
+    "/audit",
+    dependencies=[Depends(require_permission("integrations", "view"))],
+)
+async def partner_audit(
+    limit: int = Query(default=50, ge=1, le=200),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """List partner credential and application changes made by the current actor."""
+    result = await db.execute(
+        select(AuditLog)
+        .where(
+            AuditLog.actor_id == current_user.id,
+            AuditLog.module == PARTNER_AUDIT_MODULE,
+            AuditLog.event_type.in_(PARTNER_AUDIT_EVENT_TYPES),
+        )
+        .order_by(desc(AuditLog.created_at), desc(AuditLog.id))
+        .limit(limit)
+    )
+    return [
+        {
+            "id": str(event.id),
+            "event_type": event.event_type,
+            "target_type": event.target_type,
+            "target_id": event.target_id,
+            "target_name": event.target_name,
+            "details": event.details or {},
+            "created_at": event.created_at.isoformat() if event.created_at else "",
+        }
+        for event in result.scalars().all()
+    ]
+
+
+@router.get(
+    "/usage/analytics",
+    dependencies=[Depends(require_permission("integrations", "view"))],
+)
+async def partner_usage_analytics(
+    days: int = Query(default=30, ge=1, le=90),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Summarize stored usage rows for owned keys without exposing client IP addresses."""
+    window_end = datetime.now(timezone.utc).replace(tzinfo=None)
+    cutoff = window_end - timedelta(days=days)
+    success_count = func.sum(
+        case((ApiKeyUsageLog.status_code.between(200, 399), 1), else_=0)
+    )
+    error_count = func.sum(case((ApiKeyUsageLog.status_code >= 400, 1), else_=0))
+    metrics_result = await db.execute(
+        select(
+            func.count(ApiKeyUsageLog.log_id),
+            success_count,
+            error_count,
+            func.avg(ApiKeyUsageLog.response_ms),
+        )
+        .select_from(ApiKeyUsageLog)
+        .join(ApiKey, ApiKey.key_id == ApiKeyUsageLog.key_id)
+        .where(
+            ApiKey.user_id == str(current_user.id),
+            ApiKeyUsageLog.created_at >= cutoff,
+            ApiKeyUsageLog.created_at <= window_end,
+        )
+    )
+    total, successes, errors, average_response_ms = metrics_result.one()
+    day = func.date(ApiKeyUsageLog.created_at)
+    daily_result = await db.execute(
+        select(
+            day.label("date"),
+            func.count(ApiKeyUsageLog.log_id).label("total_calls"),
+            func.sum(case((ApiKeyUsageLog.status_code.between(200, 399), 1), else_=0)).label("success_calls"),
+            func.sum(case((ApiKeyUsageLog.status_code >= 400, 1), else_=0)).label("error_calls"),
+        )
+        .select_from(ApiKeyUsageLog)
+        .join(ApiKey, ApiKey.key_id == ApiKeyUsageLog.key_id)
+        .where(
+            ApiKey.user_id == str(current_user.id),
+            ApiKeyUsageLog.created_at >= cutoff,
+            ApiKeyUsageLog.created_at <= window_end,
+        )
+        .group_by(day)
+        .order_by(day)
+    )
+    daily_usage = [
+        {
+            "date": row.date.isoformat() if hasattr(row.date, "isoformat") else str(row.date),
+            "total_calls": row.total_calls,
+            "success_calls": row.success_calls or 0,
+            "error_calls": row.error_calls or 0,
+            "unclassified_calls": row.total_calls - (row.success_calls or 0) - (row.error_calls or 0),
+        }
+        for row in daily_result
+    ]
+    total_calls = total or 0
+    success_calls = successes or 0
+    error_calls = errors or 0
+    return {
+        "days": days,
+        "total_calls": total_calls,
+        "success_calls": success_calls,
+        "error_calls": error_calls,
+        "unclassified_calls": total_calls - success_calls - error_calls,
+        "average_response_ms": float(average_response_ms) if average_response_ms is not None else None,
+        "daily_usage": daily_usage,
+        "collection_enabled": False,
+        "collection_note": (
+            "Counts summarize stored usage-log rows only. Automatic request capture is disabled "
+            "while API-key request authentication is not enabled."
+        ),
+    }
 
 
 # ── Developer Dashboard ───────────────────────────────────────────────────────
@@ -818,6 +1101,19 @@ async def developer_resources(_=Depends(get_current_user)):
             "read": "Future key-authenticated GET/HEAD read ceiling; not currently enforced.",
             "write": "Future key-authenticated read plus POST/PUT/PATCH/DELETE ceiling; not currently enforced.",
             "admin": "Future full-access ceiling, issued by a superuser and used alone; not currently enforced.",
+        },
+        "partner_audit": {
+            "endpoint": "/api/v1/developer/audit",
+            "visibility": "Credential and application changes performed by the authenticated account; raw secrets are never included.",
+            "maximum_limit": 200,
+        },
+        "partner_usage_analytics": {
+            "endpoint": "/api/v1/developer/usage/analytics",
+            "default_days": 30,
+            "minimum_days": 1,
+            "maximum_days": 90,
+            "collection_enabled": False,
+            "collection_note": "Stored usage rows only; automatic request capture is disabled until API-key request authentication is enabled.",
         },
         "sdk_note": "JavaScript and Python SDKs planned. Currently use native HTTP or the OpenAPI spec.",
         "webhooks": {

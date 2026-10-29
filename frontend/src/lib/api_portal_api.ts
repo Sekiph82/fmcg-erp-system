@@ -79,6 +79,34 @@ export interface DevPortalDashboard {
   default_rate_limit: number;
 }
 
+export interface PartnerAuditEvent {
+  id: string;
+  event_type: string;
+  target_type: string | null;
+  target_id: string | null;
+  target_name: string | null;
+  details: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface PartnerUsageAnalytics {
+  days: number;
+  total_calls: number;
+  success_calls: number;
+  error_calls: number;
+  unclassified_calls: number;
+  average_response_ms: number | null;
+  daily_usage: Array<{
+    date: string;
+    total_calls: number;
+    success_calls: number;
+    error_calls: number;
+    unclassified_calls: number;
+  }>;
+  collection_enabled: boolean;
+  collection_note: string;
+}
+
 export interface UsageLog {
   log_id: string;
   endpoint: string | null;
@@ -104,6 +132,19 @@ export interface DevResources {
   sdk_note: string;
   webhooks: Record<string, string>;
   api_key_scopes: Record<string, string>;
+  partner_audit: {
+    endpoint: string;
+    visibility: string;
+    maximum_limit: number;
+  };
+  partner_usage_analytics: {
+    endpoint: string;
+    default_days: number;
+    minimum_days: number;
+    maximum_days: number;
+    collection_enabled: boolean;
+    collection_note: string;
+  };
 }
 
 export interface GraphQLSchemaInfo {
@@ -196,6 +237,10 @@ export const devPortalApi = {
   keyUsage: (keyId: string) => req<UsageLog[]>(`/keys/${keyId}/usage`),
 
   getDashboard: () => req<DevPortalDashboard>("/dashboard"),
+
+  getPartnerAudit: (limit = 20) => req<PartnerAuditEvent[]>(`/audit?limit=${limit}`),
+
+  getUsageAnalytics: (days = 30) => req<PartnerUsageAnalytics>(`/usage/analytics?days=${days}`),
 
   getGraphQLInfo: () => req<GraphQLSchemaInfo>("/graphql/schema"),
 

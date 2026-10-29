@@ -10,9 +10,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 - Current Milestone: M31 — API / Event Architecture
 - Current Sprint: M31.S01 — Partner API Governance
-- Current Task: M31.S01.T003 — Scope/rate-limit policy
+- Current Task: M31.S01.T004 — Partner audit/usage analytics
 - Current Task Status: COMPLETE
-- Next Task/Action: M31.S01.T004 — Partner audit/usage analytics
+- Next Task/Action: M31.S02.T001 — Canonical domain event envelope
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -975,7 +975,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
   Evidence: M31.S01.T002 credential lifecycle implemented; disposable PostgreSQL 2 passed, migration/downgrade/adoption checks passed; backend compile, frontend type-check, targeted ESLint, diff check passed; independent read-only review no blockers. Synthetic software scope only; no API-key auth or OAuth token protocol.
 - [x] M31.S01.T003 — Scope/rate-limit policy
   Evidence: Scope/rate policy implemented in backend and developer UI; disposable PostgreSQL tests 2 passed on 20261029_0043 (synthetic data, loopback only); backend syntax, frontend TypeScript, targeted ESLint and diff checks passed; independent read-only review no blockers. Values remain metadata until API-key authentication is enabled.
-- [ ] M31.S01.T004 — Partner audit/usage analytics
+- [x] M31.S01.T004 — Partner audit/usage analytics
+  Evidence: Partner lifecycle auditing and owner-scoped usage analytics implemented; T004 disposable PostgreSQL 2 passed (secret-free lifecycle audit, permissions/ownership, synthetic usage summaries, future-date exclusion, IP redaction); T003 scope/rate regression 2 passed; backend compile, frontend TypeScript, targeted ESLint, diff check passed; independent read-only review no blockers. Automatic API-key usage capture remains disabled until API-key authentication exists.
 
 ## M31.S02 — Event Contract
 - [ ] M31.S02.T001 — Canonical domain event envelope
