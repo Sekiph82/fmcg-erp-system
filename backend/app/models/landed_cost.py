@@ -153,7 +153,7 @@ class LandedCostAllocationLine(Base, TimestampMixin):
     lot_no        = Column(String(100), nullable=True)
     received_qty  = Column(Numeric(14, 3), nullable=True)
     received_weight = Column(Numeric(14, 3), nullable=True)
-    received_volume = Column(Numeric(14, 3), nullable=True)
+    received_volume = Column(Numeric(14, 6), nullable=True)
     purchase_value  = Column(Numeric(14, 4), nullable=True)
     allocation_basis= Column(Numeric(14, 6), nullable=True)  # the basis value used (qty/weight/value)
     allocation_share= Column(Numeric(7, 4), nullable=True)   # % share

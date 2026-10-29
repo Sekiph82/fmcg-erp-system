@@ -259,6 +259,7 @@ async def run_allocation(db: AsyncSession, header_id: UUID) -> LandedCostHeader:
         .join(GoodsReceipt, GoodsReceipt.id == GRNLine.grn_id)
         .options(
             selectinload(GRNLine.material),
+            selectinload(GRNLine.product),
             selectinload(GRNLine.po_line).selectinload(POLine.po),
         )
         .where(
@@ -266,6 +267,7 @@ async def run_allocation(db: AsyncSession, header_id: UUID) -> LandedCostHeader:
             GoodsReceipt.status == GRNStatus.POSTED,
             GRNLine.accepted_quantity > 0,
         )
+        .order_by(GRNLine.id)
     )
     grn_lines: List[GRNLine] = list(grn_lines_q.scalars().all())
     if not grn_lines:
@@ -277,30 +279,27 @@ async def run_allocation(db: AsyncSession, header_id: UUID) -> LandedCostHeader:
     for cl in cost_lines:
         method = cl.allocation_method or hdr.allocation_method
         basis_map = _compute_basis(method, grn_lines)
-        total_basis = sum(basis_map.values())
-        if total_basis == Decimal("0"):
-            raise ValueError(f"Cannot allocate landed-cost line {cl.id}: the configured {method} basis is unavailable")
-
-        total_allocated = Decimal("0")
+        allocation_amounts = _allocate_amounts(_D(cl.amount_base), basis_map, method)
         alloc_rows = []
         for gl in grn_lines:
             basis = basis_map.get(gl.id, Decimal("0"))
-            if basis <= 0:
+            allocated = allocation_amounts.get(gl.id, Decimal("0"))
+            if allocated <= 0:
                 continue
-            share = basis / total_basis if total_basis else Decimal("0")
-            allocated = _R(_D(cl.amount_base) * share)
+            share = allocated / _D(cl.amount_base) if _D(cl.amount_base) > 0 else Decimal("0")
             accepted_qty = _D(gl.accepted_quantity)
             per_unit = _R(allocated / accepted_qty, 6) if accepted_qty > 0 else None
-            total_allocated += allocated
             alloc_rows.append(LandedCostAllocationLine(
                 header_id=header_id,
                 lc_line_id=cl.id,
                 grn_id=gl.grn_id,
                 grn_line_id=gl.id,
                 material_id=gl.material_id,
-                material_name=gl.material.name if gl.material else None,
+                material_name=(gl.material.name if gl.material else gl.product.name if gl.product else None),
                 lot_no=gl.lot_number,
                 received_qty=accepted_qty,
+                received_weight=(basis if method == LCAllocationMethod.BY_WEIGHT else None),
+                received_volume=(basis if method == LCAllocationMethod.BY_VOLUME else None),
                 purchase_value=_base_unit_cost(gl) * accepted_qty,
                 allocation_basis=basis,
                 allocation_share=_R(share * 100, 4),
@@ -308,20 +307,6 @@ async def run_allocation(db: AsyncSession, header_id: UUID) -> LandedCostHeader:
                 per_unit_lc_cost=per_unit,
                 is_posted=False,
             ))
-
-        # Reconcile currency rounding without assigning charges to zero-basis rows.
-        if alloc_rows:
-            diff = _R(_D(cl.amount_base)) - total_allocated
-            correction_row = max(alloc_rows, key=lambda row: _D(row.allocated_amount))
-            correction_row.allocated_amount = _R(correction_row.allocated_amount + diff)
-            correction_qty = _D(correction_row.received_qty)
-            correction_row.per_unit_lc_cost = _R(
-                correction_row.allocated_amount / correction_qty,
-                6,
-            ) if correction_qty > 0 else None
-            # Monetary precision can round a small share to zero. Such rows have
-            # no accounting value and cannot produce a balanced posting event.
-            alloc_rows = [row for row in alloc_rows if _D(row.allocated_amount) > 0]
 
         for row in alloc_rows:
             db.add(row)
@@ -338,20 +323,58 @@ def _compute_basis(method: str, grn_lines: List[GRNLine]) -> dict:
     basis = {}
     for gl in grn_lines:
         if method == LCAllocationMethod.BY_QUANTITY:
-            basis[gl.id] = _D(gl.accepted_quantity)
+            value = _D(gl.accepted_quantity)
         elif method == LCAllocationMethod.BY_WEIGHT:
-            if not gl.material or not gl.material.weight_kg:
-                raise ValueError(f"GRN line {gl.id} has no material weight for BY_WEIGHT allocation")
-            basis[gl.id] = _D(gl.accepted_quantity) * _D(gl.material.weight_kg)
+            item = gl.material or gl.product
+            weight = _D(item.weight_kg) if item and item.weight_kg is not None else Decimal("0")
+            if weight <= 0:
+                raise ValueError(f"GRN line {gl.id} has no positive item weight in kg for BY_WEIGHT allocation")
+            value = _D(gl.accepted_quantity) * weight
         elif method == LCAllocationMethod.BY_VOLUME:
-            raise ValueError("BY_VOLUME landed-cost allocation is unavailable because GRN lines do not store volume")
+            volume = _D(gl.accepted_volume_m3)
+            if volume <= 0:
+                raise ValueError(
+                    f"GRN line {gl.id} has no accepted volume in m³ for BY_VOLUME allocation"
+                )
+            value = volume
         elif method == LCAllocationMethod.BY_VALUE:
-            basis[gl.id] = _base_unit_cost(gl) * _D(gl.accepted_quantity)
+            value = _base_unit_cost(gl) * _D(gl.accepted_quantity)
+            if value <= 0:
+                raise ValueError(
+                    f"GRN line {gl.id} has no positive PO-backed base purchase value for BY_VALUE allocation"
+                )
         elif method == LCAllocationMethod.EQUAL_SPLIT:
-            basis[gl.id] = Decimal("1")
+            value = Decimal("1")
         else:
             raise ValueError(f"Unsupported landed-cost allocation method: {method}")
+        if value < 0:
+            raise ValueError(f"GRN line {gl.id} has a negative {method} allocation basis")
+        basis[gl.id] = value
     return basis
+
+
+def _allocate_amounts(amount: Decimal, basis_map: dict, method: str) -> dict:
+    """Return four-decimal allocations that reconcile exactly to the source amount."""
+    amount = _R(amount)
+    if any(_D(value) < 0 for value in basis_map.values()):
+        raise ValueError(f"Cannot allocate landed-cost line: the configured {method} basis contains a negative value")
+    positive_basis = {key: _D(value) for key, value in basis_map.items() if _D(value) > 0}
+    total_basis = sum(positive_basis.values(), Decimal("0"))
+    if total_basis <= 0:
+        raise ValueError(f"Cannot allocate landed-cost line: the configured {method} basis is unavailable")
+    if amount < 0:
+        raise ValueError("Negative landed-cost amounts cannot be allocated")
+
+    allocated = {
+        key: _R(amount * basis / total_basis)
+        for key, basis in positive_basis.items()
+    }
+    rounding_difference = amount - sum(allocated.values(), Decimal("0"))
+    correction_key = max(positive_basis, key=lambda key: (allocated[key], str(key)))
+    allocated[correction_key] = _R(allocated[correction_key] + rounding_difference)
+    if allocated[correction_key] < 0:
+        raise ValueError("Landed-cost rounding correction would create a negative allocation")
+    return allocated
 
 
 def _base_unit_cost(grn_line: GRNLine) -> Decimal:

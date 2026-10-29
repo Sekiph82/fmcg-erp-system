@@ -156,9 +156,12 @@ Record each charge as its own draft cost line and choose one supported type:
 The API validates new cost lines against this catalogue; arbitrary category text is rejected. Previously saved custom labels remain readable. Line amounts and currency fields are captured on the line. Allocation and posting remain separate actions.
 
 Allocation methods:
-- **By Value** — proportional to line value
-- **By Quantity** — proportional to quantity
-- **By Weight** — proportional to material weight
-- **Manual** — user specifies amounts per line
+- **By Value** — proportional to each accepted line's PO-backed base-currency purchase value
+- **By Quantity** — proportional to accepted quantity
+- **By Weight** — proportional to accepted quantity multiplied by the item's recorded weight in kilograms
+- **By Volume** — proportional to the accepted receipt volume recorded on each goods-receipt line (m³)
+- **Equal Split** — the same share for each eligible receipt line
+
+The allocation engine fails closed when a selected basis is missing, zero, or invalid on a participating line. In particular, volume is captured as an accepted-volume measurement on the goods receipt; it is not inferred from weight or material quantity. Existing receipts without this measurement cannot use volume allocation; do not backfill an estimate. Monetary rounding is reconciled to the landed-cost line total. Custom/manual allocation is not available in the current service.
 
 After posting landed costs, the material's average cost in inventory is updated to include the allocated import costs.

@@ -4,7 +4,7 @@ from decimal import Decimal
 from typing import Optional, List
 import uuid
 
-from pydantic import BaseModel, computed_field, ConfigDict
+from pydantic import BaseModel, computed_field, ConfigDict, Field, model_validator
 
 from app.models.procurement import (
     PRStatus, POStatus, GRNStatus, ImportShipmentStatus, POPaymentStatus,
@@ -226,11 +226,20 @@ class GRNLineCreate(BaseModel):
     product_id: Optional[uuid.UUID] = None
     received_quantity: Decimal
     accepted_quantity: Decimal
+    accepted_volume_m3: Optional[Decimal] = Field(
+        default=None, gt=0, max_digits=14, decimal_places=6, allow_inf_nan=False
+    )
     rejected_quantity: Decimal = Decimal("0")
     unit: str = "KG"
     lot_number: Optional[str] = None
     expiry_date: Optional[date] = None
     notes: Optional[str] = None
+
+    @model_validator(mode="after")
+    def validate_accepted_volume(self):
+        if self.accepted_volume_m3 is not None and self.accepted_quantity <= 0:
+            raise ValueError("Accepted volume can only be recorded for a line with accepted quantity")
+        return self
 
 
 class GRNCreate(ProcurementScopeFields):
@@ -252,6 +261,7 @@ class GRNLineRead(BaseModel):
     product_name: Optional[str] = None
     received_quantity: Decimal
     accepted_quantity: Decimal
+    accepted_volume_m3: Optional[Decimal] = None
     rejected_quantity: Decimal
     unit: str
     lot_number: Optional[str]

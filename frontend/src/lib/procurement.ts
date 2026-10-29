@@ -143,6 +143,7 @@ export interface GRNLine {
   product_name?: string;
   received_quantity: number;
   accepted_quantity: number;
+  accepted_volume_m3?: number;
   rejected_quantity: number;
   unit: string;
   lot_number?: string;

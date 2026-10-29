@@ -8,7 +8,8 @@ import {
 } from "@/lib/landed_cost";
 
 const COST_TYPES = Object.keys(COST_TYPE_LABEL) as LandedCostType[];
-const ALLOC_METHODS = Object.keys(ALLOC_METHOD_LABEL) as LCAllocationMethod[];
+const ALLOC_METHODS = (Object.keys(ALLOC_METHOD_LABEL) as LCAllocationMethod[])
+  .filter((method) => method !== "CUSTOM");
 const REF_TYPES: LCReferenceType[] = ["MANUAL", "GRN", "SHIPMENT", "PO"];
 
 interface CostLineForm {

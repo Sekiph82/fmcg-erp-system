@@ -183,7 +183,7 @@ export default function LandedCostDetailPage() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-xs text-gray-500 uppercase">
               <tr>
-                {["Material", "Lot", "Qty", "PO Value", "Share %", "Allocated Amount", "Per Unit LC", "Posted"].map((h) => (
+                {["Material", "Lot", "Qty", "Basis Used", "PO Value", "Share %", "Allocated Amount", "Per Unit LC", "Posted"].map((h) => (
                   <th key={h} className="px-4 py-2 text-left font-medium">{h}</th>
                 ))}
               </tr>
@@ -194,6 +194,7 @@ export default function LandedCostDetailPage() {
                   <td className="px-4 py-2 text-xs">{al.material_name ?? "—"}</td>
                   <td className="px-4 py-2 font-mono text-xs">{al.lot_no ?? "—"}</td>
                   <td className="px-4 py-2 text-gray-600">{al.received_qty ?? "—"}</td>
+                  <td className="px-4 py-2 text-gray-600">{al.allocation_basis != null ? Number(al.allocation_basis).toFixed(6) : "—"}</td>
                   <td className="px-4 py-2">{al.purchase_value != null ? fmtCurrency(al.purchase_value) : "—"}</td>
                   <td className="px-4 py-2 text-gray-600">{al.allocation_share != null ? `${al.allocation_share}%` : "—"}</td>
                   <td className="px-4 py-2 font-semibold text-green-700">{fmtCurrency(al.allocated_amount)}</td>

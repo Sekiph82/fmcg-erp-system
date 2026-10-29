@@ -10,9 +10,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 - Current Milestone: M25 — Cross-Border / Landed Cost
 - Current Sprint: M25.S01 — Cross-Border Shipment Lifecycle
-- Current Task: M25.S02.T001 — Freight/insurance/customs/port/local charges
+- Current Task: M25.S02.T002 — Allocation methods by value/weight/volume/quantity
 - Current Task Status: COMPLETE
-- Next Task/Action: M25.S02.T002 — Allocation methods by value/weight/volume/quantity
+- Next Task/Action: M25.S02.T003 — Estimated vs actual landed cost
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -773,7 +773,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 ## M25.S02 — Landed Cost Components
 - [x] M25.S02.T001 — Freight/insurance/customs/port/local charges
   Evidence: Canonical LandedCostType enforced for new line inputs; 16 category/compatibility tests passed; targeted compileall and diff check passed; independent read-only review passed. Historical custom labels remain readable. Synthetic/software records only; no real freight/customs invoices or accounting posting claim.
-- [ ] M25.S02.T002 — Allocation methods by value/weight/volume/quantity
+- [x] M25.S02.T002 — Allocation methods by value/weight/volume/quantity
+  Evidence: Allocation bases VALUE/QUANTITY/WEIGHT/VOLUME plus equal split; accepted volume input and guarded migration 20261029_0038; disposable PostgreSQL migration rehearsal and 19 tests passed; frontend type-check and targeted ESLint passed; compileall and independent read-only review passed. Synthetic data only; no financial posting claim. Evidence: coordination/sessions/M25.S02.T002/CODEX_LOG_V01.md
 - [ ] M25.S02.T003 — Estimated vs actual landed cost
 - [ ] M25.S02.T004 — Currency/exchange-rate handling
 

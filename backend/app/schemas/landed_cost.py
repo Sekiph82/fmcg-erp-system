@@ -1,13 +1,18 @@
 from __future__ import annotations
 from datetime import date, datetime
 from decimal import Decimal
-from typing import List, Optional
+from typing import List, Optional, Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.finance import OperationalPostingStatus
 from app.models.landed_cost import LandedCostType
+
+
+AllocationMethodInput = Literal[
+    "BY_QUANTITY", "BY_WEIGHT", "BY_VOLUME", "BY_VALUE", "EQUAL_SPLIT"
+]
 
 
 # ── Cost Line ─────────────────────────────────────────────────────────────────
@@ -19,7 +24,7 @@ class LandedCostLineCreate(BaseModel):
     amount_fc: Decimal = Decimal("0")
     currency_code: str = "USD"
     exchange_rate: Decimal = Decimal("1")
-    allocation_method: Optional[str] = None
+    allocation_method: Optional[AllocationMethodInput] = None
     is_included_in_valuation: bool = True
     account_code: Optional[str] = None
     remarks: Optional[str] = None
@@ -30,6 +35,7 @@ class LandedCostLineOut(LandedCostLineCreate):
     # Historical documents may contain custom cost labels entered before the
     # supported input catalogue was enforced; keep those readable on output.
     cost_type: str
+    allocation_method: Optional[str] = None
     id: UUID
     header_id: UUID
     amount_base: Decimal
@@ -67,7 +73,10 @@ class LandedCostAllocationLineOut(BaseModel):
     material_name: Optional[str] = None
     lot_no: Optional[str] = None
     received_qty: Optional[Decimal] = None
+    received_weight: Optional[Decimal] = None
+    received_volume: Optional[Decimal] = None
     purchase_value: Optional[Decimal] = None
+    allocation_basis: Optional[Decimal] = None
     allocation_share: Optional[Decimal] = None
     allocated_amount: Decimal
     per_unit_lc_cost: Optional[Decimal] = None
@@ -108,7 +117,7 @@ class LandedCostHeaderCreate(BaseModel):
     bill_date: Optional[date] = None
     currency_code: str = "USD"
     exchange_rate: Decimal = Decimal("1")
-    allocation_method: str = "BY_VALUE"
+    allocation_method: AllocationMethodInput = "BY_VALUE"
     notes: Optional[str] = None
     cost_lines: List[LandedCostLineCreate] = []
     grn_links: List[LandedCostGRNLinkCreate] = []
@@ -120,7 +129,7 @@ class LandedCostHeaderUpdate(BaseModel):
     bill_date: Optional[date] = None
     currency_code: Optional[str] = None
     exchange_rate: Optional[Decimal] = None
-    allocation_method: Optional[str] = None
+    allocation_method: Optional[AllocationMethodInput] = None
     notes: Optional[str] = None
 
 

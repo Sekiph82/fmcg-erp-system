@@ -3,7 +3,7 @@ import enum
 from datetime import date
 from sqlalchemy import (
     Column, String, Text, Numeric, Integer, Boolean,
-    ForeignKey, Enum, Date, DateTime, UniqueConstraint, Index,
+    ForeignKey, Enum, Date, DateTime, UniqueConstraint, Index, CheckConstraint,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
@@ -199,6 +199,10 @@ class GoodsReceipt(Base, TimestampMixin):
 class GRNLine(Base, TimestampMixin):
     __tablename__ = "grn_lines"
     __table_args__ = (
+        CheckConstraint(
+            "accepted_volume_m3 IS NULL OR accepted_volume_m3 > 0",
+            name="ck_grn_lines_accepted_volume_positive",
+        ),
         Index("ix_grn_lines_posting_batch_id", "posting_batch_id"),
         Index("ix_grn_lines_journal_entry_id", "journal_entry_id"),
         Index("ix_grn_lines_accounting_status", "accounting_status"),
@@ -211,6 +215,7 @@ class GRNLine(Base, TimestampMixin):
     product_id = Column(UUID(as_uuid=True), ForeignKey("products.id", ondelete="RESTRICT"), nullable=True)
     received_quantity = Column(Numeric(14, 3), nullable=False)
     accepted_quantity = Column(Numeric(14, 3), nullable=False)
+    accepted_volume_m3 = Column(Numeric(14, 6), nullable=True)
     rejected_quantity = Column(Numeric(14, 3), nullable=False, default=0)
     unit = Column(String(20), nullable=False, default="KG")
     lot_number = Column(String(100), nullable=True)

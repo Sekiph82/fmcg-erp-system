@@ -29,6 +29,7 @@ type GRNLineForm = {
   unit: string;
   received_quantity: string;
   accepted_quantity: string;
+  accepted_volume_m3: string;
   rejected_quantity: string;
   lot_number: string;
   expiry_date: string;
@@ -121,6 +122,9 @@ export default function PODetailPage() {
         material_id: l.material_id || undefined,
         received_quantity: parseFloat(l.received_quantity) || 0,
         accepted_quantity: parseFloat(l.accepted_quantity) || 0,
+        accepted_volume_m3: l.accepted_volume_m3.trim()
+          ? parseFloat(l.accepted_volume_m3)
+          : undefined,
         rejected_quantity: parseFloat(l.rejected_quantity) || 0,
         unit: l.unit,
         lot_number: l.lot_number || undefined,
@@ -211,6 +215,7 @@ export default function PODetailPage() {
       unit: l.unit,
       received_quantity: String(l.pending_quantity),
       accepted_quantity: String(l.pending_quantity),
+      accepted_volume_m3: "",
       rejected_quantity: "0",
       lot_number: "",
       expiry_date: "",
@@ -461,13 +466,15 @@ export default function PODetailPage() {
               {grnLines.map((l, i) => (
                 <div key={i} className="rounded-lg border border-gray-200 p-3 space-y-2">
                   <p className="text-xs font-medium text-gray-600">{l.material_name} — Ordered: {l.ordered_quantity} {l.unit}</p>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                     <Input label="Received Qty" type="number" step="0.001" value={l.received_quantity}
                       onChange={(e) => setGrnLines((ls) => ls.map((r, idx) => idx === i ? { ...r, received_quantity: e.target.value, accepted_quantity: e.target.value } : r))} />
                     <Input label="Accepted Qty" type="number" step="0.001" value={l.accepted_quantity}
                       onChange={(e) => setGrnLines((ls) => ls.map((r, idx) => idx === i ? { ...r, accepted_quantity: e.target.value } : r))} />
                     <Input label="Rejected Qty" type="number" step="0.001" value={l.rejected_quantity}
                       onChange={(e) => setGrnLines((ls) => ls.map((r, idx) => idx === i ? { ...r, rejected_quantity: e.target.value } : r))} />
+                    <Input label="Accepted Volume (m³)" type="number" min="0" step="any" value={l.accepted_volume_m3}
+                      onChange={(e) => setGrnLines((ls) => ls.map((r, idx) => idx === i ? { ...r, accepted_volume_m3: e.target.value } : r))} />
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <Input label="Lot Number" value={l.lot_number}

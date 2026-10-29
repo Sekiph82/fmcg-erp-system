@@ -58,7 +58,10 @@ export interface LandedCostAllocationLine {
   material_name: string | null;
   lot_no: string | null;
   received_qty: number | null;
+  received_weight: number | null;
+  received_volume: number | null;
   purchase_value: number | null;
+  allocation_basis: number | null;
   allocation_share: number | null;
   allocated_amount: number;
   per_unit_lc_cost: number | null;
