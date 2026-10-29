@@ -286,6 +286,39 @@ class LandedCostOut(LandedCostSummary):
     allocation_lines: List[LandedCostAllocationLineOut] = []
 
 
+class LandedCostReconciliationCheck(BaseModel):
+    check_id: str
+    status: Literal["PASS", "FAIL", "PENDING", "NOT_APPLICABLE"]
+    detail: str
+    allocation_line_id: Optional[UUID] = None
+    event_id: Optional[UUID] = None
+    journal_entry_id: Optional[UUID] = None
+    posting_batch_id: Optional[UUID] = None
+
+
+class LandedCostAuditEntry(BaseModel):
+    entry_id: str
+    entry_type: str
+    occurred_at: datetime
+    status: str
+    description: str
+    source_reference: Optional[str] = None
+    amount_base: Optional[Decimal] = None
+    currency: Optional[str] = None
+    actor_id: Optional[UUID] = None
+    event_id: Optional[UUID] = None
+    journal_entry_id: Optional[UUID] = None
+    posting_batch_id: Optional[UUID] = None
+
+
+class LandedCostReconciliationOut(BaseModel):
+    header_id: UUID
+    generated_at: datetime
+    status: Literal["RECONCILED", "EXCEPTIONS", "PENDING"]
+    checks: List[LandedCostReconciliationCheck] = Field(default_factory=list)
+    audit_entries: List[LandedCostAuditEntry] = Field(default_factory=list)
+
+
 # ── AI Recommendation ─────────────────────────────────────────────────────────
 
 class LCAIRecOut(BaseModel):

@@ -131,6 +131,39 @@ export interface LandedCostOut extends LandedCostSummary {
   allocation_lines: LandedCostAllocationLine[];
 }
 
+export interface LandedCostReconciliationCheck {
+  check_id: string;
+  status: "PASS" | "FAIL" | "PENDING" | "NOT_APPLICABLE";
+  detail: string;
+  allocation_line_id: string | null;
+  event_id: string | null;
+  journal_entry_id: string | null;
+  posting_batch_id: string | null;
+}
+
+export interface LandedCostAuditEntry {
+  entry_id: string;
+  entry_type: string;
+  occurred_at: string;
+  status: string;
+  description: string;
+  source_reference: string | null;
+  amount_base: number | null;
+  currency: string | null;
+  actor_id: string | null;
+  event_id: string | null;
+  journal_entry_id: string | null;
+  posting_batch_id: string | null;
+}
+
+export interface LandedCostReconciliation {
+  header_id: string;
+  generated_at: string;
+  status: "RECONCILED" | "EXCEPTIONS" | "PENDING";
+  checks: LandedCostReconciliationCheck[];
+  audit_entries: LandedCostAuditEntry[];
+}
+
 export interface LCAIRec {
   id: string;
   header_id: string | null;
@@ -244,6 +277,7 @@ export const lcApi = {
   },
   create: (body: Record<string, unknown>) => apiClient.post<LandedCostOut>(BASE, body).then((r) => r.data),
   get: (id: string) => apiClient.get<LandedCostOut>(`${BASE}/${id}`).then((r) => r.data),
+  reconcile: (id: string) => apiClient.get<LandedCostReconciliation>(`${BASE}/${id}/reconciliation`).then((r) => r.data),
   update: (id: string, body: Record<string, unknown>) => apiClient.patch<LandedCostOut>(`${BASE}/${id}`, body).then((r) => r.data),
 
   // Cost lines

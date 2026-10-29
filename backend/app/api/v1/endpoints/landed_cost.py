@@ -11,6 +11,7 @@ from app.schemas.landed_cost import (
     LandedCostHeaderCreate, LandedCostHeaderUpdate,
     LandedCostLineCreate, LandedCostLineActualCreate, LandedCostGRNLinkCreate,
     LandedCostOut, LandedCostSummary,
+    LandedCostReconciliationOut,
     LCAIRecOut, LCDashboard,
 )
 from app.services import landed_cost_service as svc
@@ -48,6 +49,18 @@ async def get_one(header_id: UUID, db: AsyncSession = Depends(get_db)):
     if not hdr:
         raise HTTPException(404, "Landed cost document not found")
     return hdr
+
+
+@router.get(
+    "/{header_id}/reconciliation",
+    response_model=LandedCostReconciliationOut,
+    dependencies=[Depends(require_permission("finance", "view"))],
+)
+async def reconcile_one(header_id: UUID, db: AsyncSession = Depends(get_db)):
+    report = await svc.reconcile_landed_cost(db, header_id)
+    if not report:
+        raise HTTPException(404, "Landed cost document not found")
+    return report
 
 
 @router.patch("/{header_id}", response_model=LandedCostOut)

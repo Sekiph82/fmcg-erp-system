@@ -10,9 +10,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 - Current Milestone: M25 — Cross-Border / Landed Cost
 - Current Sprint: M25.S03 � Accounting & Valuation
-- Current Task: M25.S03.T002 — Variance/accrual posting
+- Current Task: M25.S03.T003 — Reconciliation and audit trail
 - Current Task Status: COMPLETE
-- Next Task/Action: M25.S03.T003 — Reconciliation and audit trail
+- Next Task/Action: M25.S03.T004 — Close M25
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -785,7 +785,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
   Evidence: Implemented atomic GRN stock and inventory valuation posting with configured FIFO, WEIGHTED_AVG, or STANDARD cost; added finance permission, safe legacy handling, balanced posting links, and four-decimal reconciliation. Disposable PostgreSQL: M25 16 passed; related M05/M06 suites 7+5+5 passed; 7 helper tests passed, 11 M13 DB cases skipped behind their separate database gate; frontend type-check/targeted ESLint and Python compile passed; independent final review found no blockers. Evidence: coordination/sessions/M25.S03.T001/CODEX_LOG_V01.md.
 - [x] M25.S03.T002 — Variance/accrual posting
   Evidence: Implemented separate idempotent landed-cost actual variance posting with FIFO remaining-stock/consumed-cost split, configured accrual clearing and expense entries, immutable original journal, finance permission, guarded 20261029_0041 migration, and UI state/action. Fresh task-owned disposable PostgreSQL migration to 0041 head and 8 integration tests passed; related regressions 11 passed/17 skipped; frontend type-check/targeted ESLint, Python compileall/Ruff, diff-check, and independent read-only review passed. Synthetic data only; no AP/tax or invoice authenticity claim. Evidence: coordination/sessions/M25.S03.T002/CODEX_LOG_V01.md.
-- [ ] M25.S03.T003 — Reconciliation and audit trail
+- [x] M25.S03.T003 — Reconciliation and audit trail
+  Evidence: Added finance.view-protected read-only reconciliation API and landed-cost audit timeline/UI covering source GRN identity, allocation totals, event/batch/journal linkage and balances, inventory adjustments, saved-rate actual variances, exceptions, pending states, and actor/timestamp evidence. Disposable PostgreSQL migration to 20261029_0041: 8 passed; frontend type-check/targeted ESLint, backend py_compile, git diff --check passed; independent read-only review found no blockers. Synthetic data only. Evidence: coordination/sessions/M25.S03.T003/CODEX_LOG_V01.md.
 - [ ] M25.S03.T004 — Close M25
 
 ---

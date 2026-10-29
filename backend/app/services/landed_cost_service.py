@@ -17,25 +17,29 @@ from sqlalchemy.orm import selectinload
 from app.models.company import Company
 from app.models.finance import (
     AccountType,
+    AccountingPostingBatch,
     AccountingPeriod,
     ChartOfAccount,
     ExchangeRate,
     JournalEntry,
     JournalLine,
     JournalStatus,
+    OperationalPostingEvent,
     OperationalPostingStatus,
 )
 from app.models.inventory import CostLayer
 from app.models.landed_cost import (
     LandedCostHeader, LandedCostLine, LandedCostGRNLink,
     LandedCostLineActual,
-    LandedCostAllocationLine, LCInventoryAdjustment, LCAIRecommendation,
+    LandedCostActualVariancePosting, LandedCostAllocationLine,
+    LCInventoryAdjustment, LCAIRecommendation,
     LCAllocationMethod,
 )
 from app.models.procurement import GoodsReceipt, GRNLine, GRNStatus, POLine
 from app.schemas.landed_cost import (
     LandedCostHeaderCreate, LandedCostHeaderUpdate,
     LandedCostLineCreate, LandedCostLineActualCreate, LandedCostGRNLinkCreate,
+    LandedCostAuditEntry, LandedCostReconciliationCheck, LandedCostReconciliationOut,
 )
 
 
@@ -180,6 +184,470 @@ async def get_header(db: AsyncSession, header_id: UUID) -> Optional[LandedCostHe
         .where(LandedCostHeader.id == header_id)
     )
     return result.scalar_one_or_none()
+
+
+def _allocate_reconciliation_variance(allocations: list[Any], variance_total: Decimal) -> dict[UUID, Decimal]:
+    """Mirror posting's rounded proportional shares and final-row remainder."""
+    if not allocations:
+        return {}
+    original_base = _R(sum((_D(row.allocated_amount) for row in allocations), Decimal("0.0000")))
+    if original_base <= 0:
+        return {}
+    posted_so_far = Decimal("0.0000")
+    shares: dict[UUID, Decimal] = {}
+    for index, allocation in enumerate(allocations):
+        if index == len(allocations) - 1:
+            amount = _R(variance_total - posted_so_far)
+        else:
+            amount = _R(variance_total * _R(allocation.allocated_amount) / original_base)
+            posted_so_far += amount
+        shares[allocation.id] = amount
+    return shares
+
+
+async def reconcile_landed_cost(db: AsyncSession, header_id: UUID) -> Optional[LandedCostReconciliationOut]:
+    """Return a read-only accounting reconciliation and source audit trail."""
+    header = await get_header(db, header_id)
+    if not header:
+        return None
+
+    allocations = list(header.allocation_lines or [])
+    actual_ids = {
+        line.actual_record.id
+        for line in header.cost_lines or []
+        if line.actual_record is not None
+    }
+    variance_rows = (await db.execute(
+        select(LandedCostActualVariancePosting)
+        .where(LandedCostActualVariancePosting.actual_id.in_(actual_ids))
+        .order_by(LandedCostActualVariancePosting.created_at, LandedCostActualVariancePosting.id)
+    )).scalars().all() if actual_ids else []
+    variance_by_allocation: dict[UUID, list[LandedCostActualVariancePosting]] = {}
+    for row in variance_rows:
+        variance_by_allocation.setdefault(row.allocation_line_id, []).append(row)
+
+    events = (await db.execute(
+        select(OperationalPostingEvent)
+        .where(
+            OperationalPostingEvent.source_module == "landed_cost",
+            OperationalPostingEvent.source_id == str(header.id),
+            OperationalPostingEvent.source_event.in_(("LANDED_COST_POST", "LANDED_COST_ACTUAL_VARIANCE_POST")),
+        )
+        .order_by(OperationalPostingEvent.created_at, OperationalPostingEvent.id)
+    )).scalars().all()
+    events_by_key: dict[tuple[str, str], list[OperationalPostingEvent]] = {}
+    for event in events:
+        events_by_key.setdefault((event.source_event, event.source_line_id or ""), []).append(event)
+
+    grn_line_ids = {row.grn_line_id for row in allocations if row.grn_line_id is not None}
+    grn_lines = (await db.execute(
+        select(GRNLine).where(GRNLine.id.in_(grn_line_ids))
+    )).scalars().all() if grn_line_ids else []
+    grn_line_by_id = {row.id: row for row in grn_lines}
+
+    adjustment_ids = {
+        row.inventory_adj_id for row in allocations if row.inventory_adj_id is not None
+    }
+    adjustments = (await db.execute(
+        select(LCInventoryAdjustment).where(
+            LCInventoryAdjustment.id.in_(adjustment_ids),
+            LCInventoryAdjustment.header_id == header.id,
+        )
+    )).scalars().all() if adjustment_ids else []
+    adjustment_by_id = {row.id: row for row in adjustments}
+
+    batch_ids = {event.posting_batch_id for event in events if event.posting_batch_id is not None}
+    batch_ids.update(row.posting_batch_id for row in allocations if row.posting_batch_id is not None)
+    batch_ids.update(row.posting_batch_id for row in variance_rows if row.posting_batch_id is not None)
+    batches = (await db.execute(
+        select(AccountingPostingBatch).where(AccountingPostingBatch.id.in_(batch_ids))
+    )).scalars().all() if batch_ids else []
+    batch_by_id = {row.id: row for row in batches}
+
+    journal_ids = {event.journal_entry_id for event in events if event.journal_entry_id is not None}
+    journal_ids.update(row.journal_entry_id for row in allocations if row.journal_entry_id is not None)
+    journal_ids.update(row.journal_entry_id for row in variance_rows if row.journal_entry_id is not None)
+    journal_ids.update(row.journal_entry_id for row in adjustments if row.journal_entry_id is not None)
+    journals = (await db.execute(
+        select(JournalEntry).where(JournalEntry.id.in_(journal_ids))
+    )).scalars().all() if journal_ids else []
+    journal_by_id = {row.id: row for row in journals}
+    journal_lines = (await db.execute(
+        select(JournalLine).where(JournalLine.entry_id.in_(journal_ids))
+    )).scalars().all() if journal_ids else []
+    lines_by_journal: dict[UUID, list[JournalLine]] = {}
+    for line in journal_lines:
+        lines_by_journal.setdefault(line.entry_id, []).append(line)
+
+    checks: list[LandedCostReconciliationCheck] = []
+
+    def add_check(
+        check_id: str,
+        status: str,
+        detail: str,
+        *,
+        allocation_id: UUID | None = None,
+        event_id: UUID | None = None,
+        journal_id: UUID | None = None,
+        batch_id: UUID | None = None,
+    ) -> None:
+        checks.append(LandedCostReconciliationCheck(
+            check_id=check_id,
+            status=status,
+            detail=detail,
+            allocation_line_id=allocation_id,
+            event_id=event_id,
+            journal_entry_id=journal_id,
+            posting_batch_id=batch_id,
+        ))
+
+    add_check(
+        f"header:{header.id}:posting-state",
+        "PASS" if header.status == "POSTED" else "PENDING",
+        "Document posting is complete; allocation-level evidence is checked below." if header.status == "POSTED"
+        else f"Document is {header.status}; posting reconciliation is not complete.",
+    )
+    if header.status == "POSTED":
+        expected_base_total = _R(sum(
+            (_D(row.amount_base) for row in header.cost_lines or []), Decimal("0.0000")
+        ))
+        total_matches = expected_base_total == _R(header.total_lc_amount_base)
+        add_check(
+            f"header:{header.id}:cost-total", "PASS" if total_matches else "FAIL",
+            "Header base total matches its saved cost-line totals." if total_matches
+            else "Header base total does not match its saved cost-line totals.",
+        )
+
+    def posting_validity(
+        *, event: OperationalPostingEvent | None, batch_id: UUID | None,
+        journal_id: UUID | None, expected_amount: Decimal,
+        expected_event: str, allocation_id: UUID,
+        expected_stock_movement_id: UUID | None,
+    ) -> tuple[bool, str]:
+        if event is None:
+            return False, "Posting event is missing."
+        if event.source_line_id != str(allocation_id) or event.source_event != expected_event:
+            return False, "Posting event source does not match this allocation."
+        if event.status != OperationalPostingStatus.POSTED:
+            return False, "Posting event is not POSTED."
+        if event.amount is None or _R(event.amount) != _R(expected_amount):
+            return False, "Posting event amount does not match the source allocation."
+        if event.stock_movement_id != expected_stock_movement_id:
+            return False, "Posting event does not match the source GRN stock movement."
+        if not batch_id or event.posting_batch_id != batch_id:
+            return False, "Posting event and source record do not share a posting batch."
+        batch = batch_by_id.get(batch_id)
+        if (
+            not batch
+            or batch.status.value != "POSTED"
+            or batch.source_module != "landed_cost"
+            or batch.source_event != expected_event
+            or batch.source_id != str(allocation_id)
+            or batch.journal_entry_id != journal_id
+        ):
+            return False, "Posting batch is missing or does not match the source and journal."
+        if not journal_id or event.journal_entry_id != journal_id:
+            return False, "Posting event and source record do not share a journal."
+        journal = journal_by_id.get(journal_id)
+        if (
+            not journal
+            or journal.status != JournalStatus.POSTED
+            or not journal.is_posted
+            or journal.posting_batch_id != batch_id
+            or journal.source_module != "landed_cost"
+            or journal.source_event != expected_event
+            or str(journal.source_id) != str(allocation_id)
+        ):
+            return False, "Journal is missing or does not match the source and batch."
+        journal_detail = lines_by_journal.get(journal_id, [])
+        debit = sum((_D(line.debit) for line in journal_detail), Decimal("0.0000"))
+        credit = sum((_D(line.credit) for line in journal_detail), Decimal("0.0000"))
+        if not journal_detail or debit != credit or any(
+            _D(line.debit) < 0 or _D(line.credit) < 0 or (_D(line.debit) and _D(line.credit))
+            for line in journal_detail
+        ):
+            return False, "Journal lines are missing or do not balance."
+        if debit != abs(_R(expected_amount)):
+            return False, "Balanced journal total does not match the source amount."
+        return True, "Source, event, batch, and posted balanced journal agree."
+
+    cost_lines = {row.id: row for row in header.cost_lines or []}
+    linked_grn_ids = {row.grn_id for row in header.grn_links or []}
+    expected_event_keys: set[tuple[str, str]] = set()
+    for allocation in allocations:
+        source_key = str(allocation.id)
+        cost_line = cost_lines.get(allocation.lc_line_id)
+        source_grn_line = grn_line_by_id.get(allocation.grn_line_id)
+        source_ok = bool(
+            cost_line
+            and allocation.grn_id in linked_grn_ids
+            and source_grn_line
+            and source_grn_line.grn_id == allocation.grn_id
+            and source_grn_line.material_id == allocation.material_id
+            and source_grn_line.stock_movement_id is not None
+            and _D(source_grn_line.accepted_quantity) == _D(allocation.received_qty)
+        )
+        add_check(
+            f"allocation:{allocation.id}:source", "PASS" if source_ok else "FAIL",
+            "Allocation resolves to a cost line and a linked GRN line." if source_ok
+            else "Allocation does not resolve to this document's cost line and linked GRN source.",
+            allocation_id=allocation.id,
+        )
+        if not allocation.is_posted:
+            add_check(
+                f"allocation:{allocation.id}:initial-posting", "PENDING",
+                "Allocation has not been posted yet.", allocation_id=allocation.id,
+            )
+        else:
+            key = ("LANDED_COST_POST", source_key)
+            expected_event_keys.add(key)
+            matches = events_by_key.get(key, [])
+            event = matches[0] if len(matches) == 1 else None
+            valid, detail = posting_validity(
+                event=event,
+                batch_id=allocation.posting_batch_id,
+                journal_id=allocation.journal_entry_id,
+                expected_amount=_D(allocation.allocated_amount),
+                expected_event="LANDED_COST_POST",
+                allocation_id=allocation.id,
+                expected_stock_movement_id=source_grn_line.stock_movement_id if source_grn_line else None,
+            )
+            if len(matches) != 1:
+                valid, detail = False, f"Expected one initial posting event; found {len(matches)}."
+            valid = valid and allocation.accounting_status == OperationalPostingStatus.POSTED
+            if allocation.accounting_status != OperationalPostingStatus.POSTED:
+                detail = "Allocation accounting status is not POSTED."
+            add_check(
+                f"allocation:{allocation.id}:initial-posting", "PASS" if valid else "FAIL", detail,
+                allocation_id=allocation.id,
+                event_id=event.id if event else None,
+                journal_id=allocation.journal_entry_id,
+                batch_id=allocation.posting_batch_id,
+            )
+
+            adjustment = adjustment_by_id.get(allocation.inventory_adj_id)
+            if cost_line and cost_line.is_included_in_valuation:
+                adjustment_ok = bool(
+                    adjustment
+                    and adjustment.header_id == header.id
+                    and adjustment.grn_line_id == allocation.grn_line_id
+                    and adjustment.accounting_status == OperationalPostingStatus.POSTED
+                    and adjustment.posting_batch_id == allocation.posting_batch_id
+                    and adjustment.journal_entry_id == allocation.journal_entry_id
+                    and _R(adjustment.adjustment_amount) == _R(allocation.allocated_amount)
+                )
+                add_check(
+                    f"allocation:{allocation.id}:inventory-valuation",
+                    "PASS" if adjustment_ok else "FAIL",
+                    "Inventory adjustment matches the posted allocation." if adjustment_ok
+                    else "Capitalized allocation is missing its matching posted inventory adjustment.",
+                    allocation_id=allocation.id,
+                    event_id=event.id if event else None,
+                    journal_id=allocation.journal_entry_id,
+                    batch_id=allocation.posting_batch_id,
+                )
+            else:
+                unexpected_adjustment = bool(allocation.inventory_adj_id or adjustment_by_id.get(allocation.inventory_adj_id))
+                add_check(
+                    f"allocation:{allocation.id}:inventory-valuation",
+                    "FAIL" if unexpected_adjustment else "NOT_APPLICABLE",
+                    "Non-capitalized allocation unexpectedly links an inventory adjustment." if unexpected_adjustment
+                    else "Cost line is not capitalized into inventory.", allocation_id=allocation.id,
+                )
+
+        for variance in variance_by_allocation.get(allocation.id, []):
+            key = ("LANDED_COST_ACTUAL_VARIANCE_POST", source_key)
+            expected_event_keys.add(key)
+            matches = events_by_key.get(key, [])
+            event = matches[0] if len(matches) == 1 else None
+            valid, detail = posting_validity(
+                event=event,
+                batch_id=variance.posting_batch_id,
+                journal_id=variance.journal_entry_id,
+                expected_amount=_D(variance.variance_amount_base),
+                expected_event="LANDED_COST_ACTUAL_VARIANCE_POST",
+                allocation_id=allocation.id,
+                expected_stock_movement_id=source_grn_line.stock_movement_id if source_grn_line else None,
+            )
+            if len(matches) != 1:
+                valid, detail = False, f"Expected one actual-variance event; found {len(matches)}."
+            valid = valid and variance.accounting_status == OperationalPostingStatus.POSTED
+            if variance.accounting_status != OperationalPostingStatus.POSTED:
+                detail = "Actual-variance posting record is not POSTED."
+            add_check(
+                f"allocation:{allocation.id}:actual-variance:{variance.id}",
+                "PASS" if valid else "FAIL", detail,
+                allocation_id=allocation.id,
+                event_id=event.id if event else None,
+                journal_id=variance.journal_entry_id,
+                batch_id=variance.posting_batch_id,
+            )
+
+    for line in header.cost_lines or []:
+        line_allocations = [row for row in allocations if row.lc_line_id == line.id]
+        allocated_total = _R(sum((_D(row.allocated_amount) for row in line_allocations), Decimal("0.0000")))
+        if header.status == "POSTED":
+            line_total_ok = allocated_total == _R(line.amount_base)
+            add_check(
+                f"cost-line:{line.id}:allocation-total", "PASS" if line_total_ok else "FAIL",
+                "Allocated amount matches the immutable posted cost line." if line_total_ok
+                else "Allocation total does not match the posted cost line amount.",
+            )
+        else:
+            add_check(
+                f"cost-line:{line.id}:allocation-total", "PENDING",
+                "Allocation total will be reconciled after the document is posted.",
+            )
+        actual = line.actual_record
+        if not actual:
+            continue
+        postings = [row for row in variance_rows if row.actual_id == actual.id]
+        actual_base_from_snapshot = _R(_D(actual.amount_fc) * _D(line.exchange_rate))
+        variance_from_snapshot = _R(
+            actual_base_from_snapshot - sum(
+                (_D(row.allocated_amount) for row in line_allocations if row.is_posted),
+                Decimal("0.0000"),
+            )
+        )
+        if actual.variance_status == "PENDING":
+            source_matches = (
+                _R(_D(actual.actual_amount_base)) == actual_base_from_snapshot
+                and _R(_D(actual.variance_amount_base)) == variance_from_snapshot
+            )
+            add_check(
+                f"actual:{actual.id}:variance", "PENDING" if source_matches else "FAIL",
+                "Actual-cost variance awaits finance posting." if source_matches
+                else "Actual or variance amount does not match its saved line rate and posted allocation.",
+            )
+        elif actual.variance_status == "NOT_REQUIRED":
+            okay = _R(_D(actual.variance_amount_base)) == Decimal("0.0000") and not postings
+            add_check(
+                f"actual:{actual.id}:variance", "PASS" if okay else "FAIL",
+                "Recorded actual has no variance to post." if okay
+                else "No-variance status conflicts with its amount or posting records.",
+            )
+        elif actual.variance_status == "RECORDED":
+            add_check(
+                f"actual:{actual.id}:variance", "PENDING",
+                "Actual is recorded before estimate posting; no separate variance journal is expected yet.",
+            )
+        elif actual.variance_status == "POSTED":
+            line_allocations = sorted(
+                [row for row in allocations if row.lc_line_id == line.id and row.is_posted],
+                key=lambda row: str(row.id),
+            )
+            original_base = _R(sum(
+                (_D(row.allocated_amount) for row in line_allocations), Decimal("0.0000")
+            ))
+            variance_total = _R(actual_base_from_snapshot - original_base)
+            expected_variance_by_allocation = {
+                allocation_id: amount
+                for allocation_id, amount in _allocate_reconciliation_variance(line_allocations, variance_total).items()
+                if amount
+            }
+            posted_allocation_ids = {row.allocation_line_id for row in postings}
+            expected_allocation_ids = set(expected_variance_by_allocation)
+            okay = (
+                bool(line_allocations)
+                and variance_total != 0
+                and posted_allocation_ids == expected_allocation_ids
+                and all(row.accounting_status == OperationalPostingStatus.POSTED for row in postings)
+                and all(
+                    _R(row.variance_amount_base) == expected_variance_by_allocation.get(row.allocation_line_id)
+                    for row in postings
+                )
+                and _R(_D(actual.actual_amount_base)) == actual_base_from_snapshot
+                and _R(_D(actual.variance_amount_base)) == variance_total
+                and _R(sum((_D(row.variance_amount_base) for row in postings), Decimal("0.0000")))
+                == _R(_D(actual.variance_amount_base))
+            )
+            for allocation_id in expected_allocation_ids:
+                expected_event_keys.add(("LANDED_COST_ACTUAL_VARIANCE_POST", str(allocation_id)))
+            add_check(
+                f"actual:{actual.id}:variance", "PASS" if okay else "FAIL",
+                "Actual variance is fully linked across its posted allocations." if okay
+                else "Actual variance is missing or mismatches one or more allocation postings.",
+            )
+        elif actual.variance_status != "POSTED":
+            add_check(
+                f"actual:{actual.id}:variance", "FAIL",
+                "Actual-cost record has an unrecognized reconciliation status.",
+            )
+
+    for key, matching in events_by_key.items():
+        if key not in expected_event_keys:
+            add_check(
+                f"event:{matching[0].id}:orphan", "FAIL",
+                "Landed-cost posting event does not resolve to an expected allocation posting.",
+                event_id=matching[0].id,
+                journal_id=matching[0].journal_entry_id,
+                batch_id=matching[0].posting_batch_id,
+            )
+        elif len(matching) > 1:
+            add_check(
+                f"event:{matching[0].id}:duplicate", "FAIL",
+                f"Multiple events use the same posting type and allocation source ({len(matching)}).",
+                allocation_id=UUID(key[1]),
+                event_id=matching[0].id,
+            )
+
+    audit_entries: list[LandedCostAuditEntry] = []
+    for line in header.cost_lines or []:
+        actual = line.actual_record
+        if actual:
+            audit_entries.append(LandedCostAuditEntry(
+                entry_id=f"actual:{actual.id}", entry_type="ACTUAL_RECORDED",
+                occurred_at=actual.recorded_at, status=actual.variance_status or "RECORDED",
+                description="Actual landed cost recorded using the saved line exchange-rate snapshot.",
+                source_reference=actual.source_reference,
+                amount_base=_D(actual.actual_amount_base), currency=line.currency_code,
+                actor_id=actual.recorded_by_id,
+            ))
+    for event in events:
+        audit_entries.append(LandedCostAuditEntry(
+            entry_id=f"event:{event.id}", entry_type=event.source_event,
+            occurred_at=event.created_at, status=event.status.value,
+            description=event.error_message or f"Operational posting event dated {event.event_date.isoformat()}.",
+            source_reference=event.source_line_id,
+            amount_base=_D(event.amount) if event.amount is not None else None,
+            currency=event.currency, actor_id=event.created_by_id, event_id=event.id,
+            journal_entry_id=event.journal_entry_id, posting_batch_id=event.posting_batch_id,
+        ))
+    for batch in batches:
+        event = next((row for row in events if row.posting_batch_id == batch.id), None)
+        audit_entries.append(LandedCostAuditEntry(
+            entry_id=f"batch:{batch.id}", entry_type="POSTING_BATCH",
+            occurred_at=batch.posted_at or batch.created_at,
+            status=batch.status.value,
+            description=batch.error_message or f"{batch.source_event} posting batch for source {batch.source_id}.",
+            source_reference=batch.source_ref,
+            actor_id=batch.posted_by_id,
+            event_id=event.id if event else None,
+            journal_entry_id=batch.journal_entry_id,
+            posting_batch_id=batch.id,
+        ))
+    for journal in journals:
+        audit_entries.append(LandedCostAuditEntry(
+            entry_id=f"journal:{journal.id}", entry_type="JOURNAL",
+            occurred_at=journal.posted_at or journal.created_at,
+            status=journal.status.value, description=journal.description,
+            source_reference=journal.entry_no,
+            amount_base=sum((_D(row.debit) for row in lines_by_journal.get(journal.id, [])), Decimal("0.0000")),
+            currency=next((row.currency for row in lines_by_journal.get(journal.id, [])), None),
+            actor_id=journal.posted_by_id or journal.created_by_id,
+            journal_entry_id=journal.id, posting_batch_id=journal.posting_batch_id,
+        ))
+    audit_entries.sort(key=lambda row: (row.occurred_at, row.entry_id))
+
+    statuses = {row.status for row in checks}
+    overall = "EXCEPTIONS" if "FAIL" in statuses else "PENDING" if "PENDING" in statuses else "RECONCILED"
+    return LandedCostReconciliationOut(
+        header_id=header.id,
+        generated_at=datetime.now(timezone.utc),
+        status=overall,
+        checks=checks,
+        audit_entries=audit_entries,
+    )
 
 
 async def list_headers(

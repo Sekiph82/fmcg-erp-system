@@ -20,31 +20,42 @@ export default function LandedCostDetailPage() {
     queryFn: () => lcApi.get(id),
     enabled: !!id,
   });
+  const reconciliation = useQuery({
+    queryKey: ["lc-reconciliation", id],
+    queryFn: () => lcApi.reconcile(id),
+    enabled: !!id && hasPermission("finance.view"),
+  });
+  const refreshDocument = async () => {
+    await Promise.all([
+      qc.invalidateQueries({ queryKey: ["lc-doc", id] }),
+      qc.invalidateQueries({ queryKey: ["lc-reconciliation", id] }),
+    ]);
+  };
 
   const allocate = useMutation({
     mutationFn: () => lcApi.allocate(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["lc-doc", id] }),
+    onSuccess: refreshDocument,
   });
 
   const post = useMutation({
     mutationFn: () => lcApi.post(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["lc-doc", id] }),
+    onSuccess: refreshDocument,
   });
 
   const recordActual = useMutation({
     mutationFn: (input: { lineId: string; amount: number; reference: string }) =>
       lcApi.recordActual(id, input.lineId, { amount_fc: input.amount, source_reference: input.reference }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["lc-doc", id] }),
+    onSuccess: refreshDocument,
   });
 
   const postActualVariance = useMutation({
     mutationFn: (lineId: string) => lcApi.postActualVariance(id, lineId),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["lc-doc", id] }),
+    onSuccess: refreshDocument,
   });
 
   const cancel = useMutation({
     mutationFn: () => lcApi.cancel(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["lc-doc", id] }),
+    onSuccess: refreshDocument,
   });
 
   const runAI = useMutation({
@@ -122,6 +133,75 @@ export default function LandedCostDetailPage() {
           </div>
         ))}
       </div>
+
+      {hasPermission("finance.view") && (
+        <section className="rounded-xl border bg-white p-5 space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h2 className="text-sm font-semibold text-gray-800">Accounting reconciliation &amp; audit trail</h2>
+              <p className="mt-1 text-xs text-gray-500">Read-only checks against source allocations, posting events, batches, inventory adjustments, and journal entries.</p>
+            </div>
+            <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
+              reconciliation.data?.status === "RECONCILED" ? "bg-green-100 text-green-700"
+                : reconciliation.data?.status === "EXCEPTIONS" ? "bg-red-100 text-red-700"
+                  : "bg-amber-100 text-amber-800"
+            }`}>
+              {reconciliation.isLoading ? "Checking…" : reconciliation.data?.status ?? "Unavailable"}
+            </span>
+          </div>
+          {reconciliation.error instanceof Error && (
+            <p role="alert" className="text-sm text-red-600">Could not load reconciliation: {reconciliation.error.message}</p>
+          )}
+          {reconciliation.data && (
+            <>
+              <div className="space-y-2">
+                {reconciliation.data.checks.length === 0 ? (
+                  <p className="text-sm text-gray-500">No allocation or variance checks are available yet.</p>
+                ) : reconciliation.data.checks.map((check) => (
+                  <div key={check.check_id} className="flex flex-col gap-1 border-b pb-2 last:border-0 md:flex-row md:items-start md:justify-between">
+                    <div>
+                      <p className="text-xs font-medium text-gray-800">{check.check_id}</p>
+                      <p className="text-xs text-gray-500">{check.detail}</p>
+                    </div>
+                    <span className={`w-fit rounded px-2 py-0.5 text-[11px] font-semibold ${
+                      check.status === "PASS" ? "bg-green-100 text-green-700"
+                        : check.status === "FAIL" ? "bg-red-100 text-red-700"
+                          : check.status === "PENDING" ? "bg-amber-100 text-amber-800"
+                            : "bg-gray-100 text-gray-600"
+                    }`}>{check.status}</span>
+                  </div>
+                ))}
+              </div>
+              <div>
+                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Recorded activity</h3>
+                {reconciliation.data.audit_entries.length === 0 ? (
+                  <p className="text-sm text-gray-500">No posting activity has been recorded.</p>
+                ) : (
+                  <ol className="space-y-2">
+                    {reconciliation.data.audit_entries.map((entry) => (
+                      <li key={entry.entry_id} className="border-l-2 border-blue-200 pl-3">
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                          <span className="text-xs font-semibold text-gray-800">{entry.entry_type}</span>
+                          <span className="text-[11px] text-gray-500">{new Date(entry.occurred_at).toLocaleString()}</span>
+                          <span className="text-[11px] text-gray-600">{entry.status}</span>
+                          {entry.source_reference && <span className="font-mono text-[11px] text-gray-500">{entry.source_reference}</span>}
+                          {entry.amount_base != null && <span className="text-[11px] text-gray-600">{fmtCurrency(entry.amount_base, entry.currency ?? undefined)}</span>}
+                        </div>
+                        <p className="text-xs text-gray-500">{entry.description}</p>
+                        {entry.actor_id && <p className="text-[10px] text-gray-400">Recorded by {entry.actor_id}</p>}
+                        <p className="break-all font-mono text-[10px] text-gray-400">
+                          {[entry.event_id && `event ${entry.event_id}`, entry.posting_batch_id && `batch ${entry.posting_batch_id}`, entry.journal_entry_id && `journal ${entry.journal_entry_id}`].filter(Boolean).join(" · ")}
+                        </p>
+                      </li>
+                    ))}
+                  </ol>
+                )}
+              </div>
+              <p className="text-[11px] text-gray-400">Generated {new Date(reconciliation.data.generated_at).toLocaleString()}. This report reads current records and does not alter them.</p>
+            </>
+          )}
+        </section>
+      )}
 
       {/* Cost Lines */}
       <div className="bg-white border rounded-xl overflow-hidden">
