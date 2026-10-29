@@ -14,7 +14,7 @@ from app.core.deps import get_db, get_current_user, require_permission
 from app.models.user import User
 from app.models.logistics import (
     InternationalShipment, ShipmentContainer, ShipmentPOLink, ShipmentOwnershipEvent,
-    CustomsDocument, CustomsClearance, ArrivalNotification,
+    CustomsDocument, CustomsClearance, CustomsClearanceMilestone, ArrivalNotification,
     LocalLogisticsCost,
     IntlShipmentStatus, InventoryOwnerStatus, ContainerStatus, ClearanceStatus,
 )
@@ -28,6 +28,7 @@ from app.schemas.logistics import (
     ShipmentOwnershipUpdate, ShipmentOwnershipEventRead,
     CustomsDocCreate, CustomsDocUpdate, CustomsDocRead,
     ClearanceCreate, ClearanceUpdate, ClearanceRead,
+    ClearanceMilestoneCreate, ClearanceMilestoneRead,
     ArrivalCreate, ArrivalUpdate, ArrivalRead,
     LocalCostCreate, LocalCostUpdate, LocalCostRead, LocalCostSummary,
     ShipmentDashboardRow,
@@ -39,13 +40,28 @@ SHIPMENT_STATUS_TRANSITIONS: dict[IntlShipmentStatus, set[IntlShipmentStatus]] =
     IntlShipmentStatus.DRAFT: {IntlShipmentStatus.BOOKING_CONFIRMED, IntlShipmentStatus.CANCELLED},
     IntlShipmentStatus.BOOKING_CONFIRMED: {IntlShipmentStatus.CARGO_LOADED, IntlShipmentStatus.CANCELLED},
     IntlShipmentStatus.CARGO_LOADED: {IntlShipmentStatus.IN_TRANSIT},
-    IntlShipmentStatus.IN_TRANSIT: {IntlShipmentStatus.ARRIVED_PORT, IntlShipmentStatus.CUSTOMS_HOLD},
-    IntlShipmentStatus.ARRIVED_PORT: {IntlShipmentStatus.CUSTOMS_HOLD, IntlShipmentStatus.CUSTOMS_CLEARED},
-    IntlShipmentStatus.CUSTOMS_HOLD: {IntlShipmentStatus.CUSTOMS_CLEARED},
+    IntlShipmentStatus.IN_TRANSIT: {IntlShipmentStatus.ARRIVED_PORT},
+    IntlShipmentStatus.ARRIVED_PORT: set(),
+    IntlShipmentStatus.CUSTOMS_HOLD: set(),
     IntlShipmentStatus.CUSTOMS_CLEARED: {IntlShipmentStatus.OUT_FOR_DELIVERY},
     IntlShipmentStatus.OUT_FOR_DELIVERY: {IntlShipmentStatus.DELIVERED},
     IntlShipmentStatus.DELIVERED: set(),
     IntlShipmentStatus.CANCELLED: set(),
+}
+
+CLEARANCE_STATUS_TRANSITIONS: dict[ClearanceStatus, set[ClearanceStatus]] = {
+    ClearanceStatus.PENDING: {ClearanceStatus.DOCS_SUBMITTED, ClearanceStatus.HELD},
+    ClearanceStatus.DOCS_SUBMITTED: {ClearanceStatus.UNDER_REVIEW, ClearanceStatus.HELD},
+    ClearanceStatus.UNDER_REVIEW: {
+        ClearanceStatus.EXAM_REQUESTED, ClearanceStatus.DUTY_ASSESSED, ClearanceStatus.HELD,
+    },
+    ClearanceStatus.EXAM_REQUESTED: {
+        ClearanceStatus.UNDER_REVIEW, ClearanceStatus.DUTY_ASSESSED, ClearanceStatus.HELD,
+    },
+    ClearanceStatus.DUTY_ASSESSED: {ClearanceStatus.DUTY_PAID, ClearanceStatus.HELD},
+    ClearanceStatus.DUTY_PAID: {ClearanceStatus.CLEARED, ClearanceStatus.HELD},
+    ClearanceStatus.HELD: {ClearanceStatus.UNDER_REVIEW},
+    ClearanceStatus.CLEARED: set(),
 }
 
 
@@ -275,6 +291,8 @@ async def update_shipment(
     changes = body.model_dump(exclude_none=True)
     requested_status = changes.get("status")
     if requested_status is not None and requested_status != ship.status:
+        if requested_status in {IntlShipmentStatus.CUSTOMS_HOLD, IntlShipmentStatus.CUSTOMS_CLEARED}:
+            raise HTTPException(status_code=409, detail="Customs shipment status must be recorded through a clearance milestone")
         allowed = SHIPMENT_STATUS_TRANSITIONS.get(ship.status, set())
         if requested_status not in allowed:
             raise HTTPException(
@@ -501,7 +519,7 @@ async def update_customs_doc(
 async def get_clearance(
     shipment_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    _: User = Depends(require_permission("logistics", "view")),
 ):
     cl = await crud.get_clearance(db, shipment_id)
     if not cl:
@@ -513,7 +531,7 @@ async def get_clearance(
 async def create_clearance(
     body: ClearanceCreate,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    _: User = Depends(require_permission("logistics", "create")),
 ):
     data = body.model_dump()
     data["shipment_id"] = uuid.UUID(data["shipment_id"])
@@ -527,18 +545,122 @@ async def update_clearance(
     clearance_id: uuid.UUID,
     body: ClearanceUpdate,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    _: User = Depends(require_permission("logistics", "edit")),
 ):
-    from sqlalchemy import select as sa_select
-    result = await db.execute(
-        sa_select(CustomsClearance).where(CustomsClearance.id == clearance_id)
-    )
-    cl = result.scalar_one_or_none()
+    cl = await crud.get_clearance_for_update(db, clearance_id)
     if not cl:
         raise HTTPException(status_code=404, detail="Clearance not found")
     cl = await crud.update_clearance(db, cl, body.model_dump(exclude_none=True))
     await db.commit()
     return _cl_read(cl)
+
+
+def _clearance_milestone_read(event: CustomsClearanceMilestone) -> ClearanceMilestoneRead:
+    actor_name = None
+    if event.changed_by is not None:
+        actor_name = getattr(event.changed_by, "full_name", None)
+        if not actor_name:
+            actor_name = " ".join(
+                part for part in (
+                    getattr(event.changed_by, "first_name", None),
+                    getattr(event.changed_by, "last_name", None),
+                ) if part
+            ) or getattr(event.changed_by, "username", None)
+    return ClearanceMilestoneRead(
+        id=str(event.id),
+        clearance_id=str(event.clearance_id),
+        previous_status=event.previous_status,
+        new_status=event.new_status,
+        source_reference=event.source_reference,
+        notes=event.notes,
+        effective_at=event.effective_at,
+        changed_by_id=str(event.changed_by_id),
+        changed_by_name=actor_name,
+        created_at=event.created_at,
+    )
+
+
+@router.get(
+    "/shipments/{shipment_id}/clearance/milestones",
+    response_model=List[ClearanceMilestoneRead],
+)
+async def list_clearance_milestones(
+    shipment_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(require_permission("logistics", "view")),
+):
+    clearance = await crud.get_clearance(db, shipment_id)
+    if clearance is None:
+        raise HTTPException(status_code=404, detail="Clearance record not found")
+    milestones = await crud.list_clearance_milestones(db, clearance.id)
+    return [_clearance_milestone_read(event) for event in milestones]
+
+
+@router.post(
+    "/shipments/{shipment_id}/clearance/milestones",
+    response_model=ClearanceMilestoneRead,
+    status_code=status.HTTP_201_CREATED,
+)
+async def record_clearance_milestone(
+    shipment_id: uuid.UUID,
+    body: ClearanceMilestoneCreate,
+    db: AsyncSession = Depends(get_db),
+    actor: User = Depends(require_permission("logistics", "edit")),
+):
+    clearance = await crud.get_clearance(db, shipment_id)
+    if clearance is None:
+        raise HTTPException(status_code=404, detail="Clearance record not found")
+    clearance = await crud.get_clearance_for_update(db, clearance.id)
+    shipment = await crud.get_shipment_for_update(db, shipment_id)
+    if shipment is None:
+        raise HTTPException(status_code=404, detail="Shipment not found")
+    if shipment.status not in {IntlShipmentStatus.ARRIVED_PORT, IntlShipmentStatus.CUSTOMS_HOLD}:
+        raise HTTPException(status_code=409, detail="Customs milestones can be recorded only after port arrival and before warehouse delivery")
+
+    previous = clearance.status
+    if body.new_status not in CLEARANCE_STATUS_TRANSITIONS.get(previous, set()):
+        raise HTTPException(
+            status_code=409,
+            detail=f"Clearance status cannot move from {previous.value} to {body.new_status.value}",
+        )
+    if body.new_status == ClearanceStatus.HELD and not (body.notes and body.notes.strip()):
+        raise HTTPException(status_code=422, detail="A hold reason is required when recording HELD")
+    source_reference = body.source_reference.strip()
+    if not source_reference:
+        raise HTTPException(status_code=422, detail="A supporting customs or shipment reference is required")
+
+    occurred_at = datetime.now(timezone.utc)
+    event = CustomsClearanceMilestone(
+        clearance_id=clearance.id,
+        previous_status=previous.value,
+        new_status=body.new_status.value,
+        source_reference=source_reference,
+        notes=body.notes.strip() if body.notes and body.notes.strip() else None,
+        effective_at=occurred_at,
+        changed_by_id=actor.id,
+    )
+    clearance.status = body.new_status
+    if body.new_status == ClearanceStatus.DOCS_SUBMITTED:
+        clearance.submission_date = occurred_at.date()
+    elif body.new_status == ClearanceStatus.EXAM_REQUESTED:
+        clearance.examination_date = occurred_at.date()
+    elif body.new_status == ClearanceStatus.CLEARED:
+        clearance.clearance_date = occurred_at.date()
+        arrival = await crud.get_arrival(db, shipment_id)
+        if arrival is not None:
+            arrival.customs_clearance_date = occurred_at.date()
+        shipment.status = IntlShipmentStatus.CUSTOMS_CLEARED
+    elif body.new_status == ClearanceStatus.HELD:
+        shipment.status = IntlShipmentStatus.CUSTOMS_HOLD
+
+    db.add(event)
+    await db.flush()
+    event_id = event.id
+    await db.commit()
+    event = await crud.get_clearance_milestone(db, event_id)
+    if event is None:
+        raise HTTPException(status_code=500, detail="Recorded customs milestone could not be reloaded")
+    return _clearance_milestone_read(event)
 
 
 # ── Arrival Notifications ──────────────────────────────────────────────────────

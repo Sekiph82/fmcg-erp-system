@@ -94,7 +94,7 @@ from app.models.maintenance import (
 from app.models.logistics import (
     InternationalShipment, ShipmentContainer, ShipmentPOLink,
     InventoryOwnerStatus, ShipmentOwnershipEvent,
-    CustomsDocument, CustomsClearance, ArrivalNotification,
+      CustomsDocument, CustomsClearance, CustomsClearanceMilestone, ArrivalNotification,
 )
 from app.models.tax_regulatory import (
     CountryTaxConfig, TaxCategory, TaxRule,

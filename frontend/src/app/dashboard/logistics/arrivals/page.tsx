@@ -1,13 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-  logisticsApi, IntlShipment, ArrivalNotification, CustomsClearance, ClearanceStatus,
+  logisticsApi, IntlShipment, ArrivalNotification, CustomsClearance, ClearanceStatus, ClearanceMilestone,
   LocalCostRecord, LocalCostType, LocalPaymentMethod, LocalCostStatus,
 } from "@/lib/logistics";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { useAuth } from "@/context/AuthContext";
 
 const clearanceBadge = (s?: ClearanceStatus) => {
   if (!s) return "gray";
@@ -17,12 +18,22 @@ const clearanceBadge = (s?: ClearanceStatus) => {
   return "blue";
 };
 
-const CLEARANCE_STATUSES: ClearanceStatus[] = [
-  "PENDING", "DOCS_SUBMITTED", "UNDER_REVIEW", "EXAM_REQUESTED",
-  "DUTY_ASSESSED", "DUTY_PAID", "CLEARED", "HELD",
-];
+const NEXT_CLEARANCE_STATUSES: Record<ClearanceStatus, ClearanceStatus[]> = {
+  PENDING: ["DOCS_SUBMITTED", "HELD"],
+  DOCS_SUBMITTED: ["UNDER_REVIEW", "HELD"],
+  UNDER_REVIEW: ["EXAM_REQUESTED", "DUTY_ASSESSED", "HELD"],
+  EXAM_REQUESTED: ["UNDER_REVIEW", "DUTY_ASSESSED", "HELD"],
+  DUTY_ASSESSED: ["DUTY_PAID", "HELD"],
+  DUTY_PAID: ["CLEARED", "HELD"],
+  CLEARED: [],
+  HELD: ["UNDER_REVIEW"],
+};
 
 export default function ArrivalsPage() {
+  const { hasPermission } = useAuth();
+  const canViewClearance = hasPermission("logistics.view");
+  const canCreateClearance = hasPermission("logistics.create");
+  const canEditClearance = hasPermission("logistics.edit");
   const qc = useQueryClient();
   const [selectedId, setSelectedId] = useState<string>("");
   const [tab, setTab] = useState<"arrival" | "clearance" | "local_costs">("arrival");
@@ -51,6 +62,12 @@ export default function ArrivalsPage() {
     enabled: !!selectedId && tab === "clearance",
   });
 
+  const { data: clearanceMilestones = [], isLoading: milestonesLoading } = useQuery({
+    queryKey: ["logistics-clearance-milestones", selectedId],
+    queryFn: () => logisticsApi.listClearanceMilestones(selectedId),
+    enabled: !!selectedId && tab === "clearance" && !!clearance,
+  });
+
   const updateArrival = useMutation({
     mutationFn: (data: object) => logisticsApi.updateArrival(selectedId, data),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["logistics-arrival"] }); qc.invalidateQueries({ queryKey: ["logistics-dashboard"] }); },
@@ -64,6 +81,19 @@ export default function ArrivalsPage() {
   const updateClearance = useMutation({
     mutationFn: ({ id, data }: { id: string; data: object }) => logisticsApi.updateClearance(id, data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["logistics-clearance"] }),
+  });
+
+  const recordClearanceMilestone = useMutation({
+    mutationFn: (data: object) => logisticsApi.recordClearanceMilestone(selectedId, data),
+    onSuccess: async () => {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["logistics-clearance", selectedId] }),
+        qc.invalidateQueries({ queryKey: ["logistics-clearance-milestones", selectedId] }),
+        qc.invalidateQueries({ queryKey: ["logistics-arrival", selectedId] }),
+        qc.invalidateQueries({ queryKey: ["logistics-shipments"] }),
+        qc.invalidateQueries({ queryKey: ["logistics-dashboard"] }),
+      ]);
+    },
   });
 
   const { data: localCostSummary, isLoading: lcLoading } = useQuery({
@@ -133,8 +163,8 @@ export default function ArrivalsPage() {
 
       {/* Shipment selector */}
       <div className="flex items-center gap-3">
-        <label className="text-sm font-medium text-gray-600">Shipment:</label>
-        <select className="border rounded px-3 py-2 text-sm min-w-72" value={selectedId} onChange={(e) => setSelectedId(e.target.value)}>
+        <label htmlFor="arrival-shipment-selector" className="text-sm font-medium text-gray-600">Shipment:</label>
+        <select id="arrival-shipment-selector" className="border rounded px-3 py-2 text-sm min-w-72" value={selectedId} onChange={(e) => setSelectedId(e.target.value)}>
           <option value="">Select shipment to manage…</option>
           {shipments.map((s) => <option key={s.id} value={s.id}>{s.shipment_no} — {s.vessel_name || s.carrier} — ETA: {s.eta || "?"}</option>)}
         </select>
@@ -198,13 +228,23 @@ export default function ArrivalsPage() {
             <div className="bg-white rounded-lg border">
               <div className="px-5 py-3 border-b flex items-center justify-between">
                 <h2 className="font-semibold text-gray-800">KRA Customs Clearance — {selectedShipment?.shipment_no}</h2>
-                {!clearance && <Button onClick={() => setShowNewClearance(true)}>Open Clearance</Button>}
+                {!clearance && canCreateClearance && <Button onClick={() => setShowNewClearance(true)}>Open Clearance</Button>}
                 {clearance && <Badge label={clearance.status} variant={clearanceBadge(clearance.status)} />}
               </div>
-              {clLoading ? <p className="px-5 py-8 text-center text-gray-400">Loading…</p> : clearance ? (
-                <ClearanceForm clearance={clearance} onSave={(d) => updateClearance.mutate({ id: clearance.id, data: d })} loading={updateClearance.isPending} />
+              {!canViewClearance ? <p className="px-5 py-8 text-center text-gray-500">You need logistics.view permission to see customs clearance.</p> : clLoading ? <p className="px-5 py-8 text-center text-gray-400">Loading…</p> : clearance ? (
+                <ClearanceForm
+                  clearance={clearance}
+                  milestones={clearanceMilestones}
+                  milestonesLoading={milestonesLoading}
+                  canEdit={canEditClearance}
+                  onSave={(d) => updateClearance.mutate({ id: clearance.id, data: d })}
+                  onRecordMilestone={(d) => recordClearanceMilestone.mutateAsync(d)}
+                  loading={updateClearance.isPending}
+                  milestoneSaving={recordClearanceMilestone.isPending}
+                  milestoneError={recordClearanceMilestone.error instanceof Error ? recordClearanceMilestone.error.message : ""}
+                />
               ) : (
-                <p className="px-5 py-8 text-center text-gray-400">No clearance record — click &quot;Open Clearance&quot; to start</p>
+                <p className="px-5 py-8 text-center text-gray-400">{canCreateClearance ? "No clearance record — click \"Open Clearance\" to start" : "No clearance record. You need logistics.create permission to open one."}</p>
               )}
             </div>
           )}
@@ -232,6 +272,8 @@ export default function ArrivalsPage() {
 }
 
 function ArrivalForm({ arrival, onSave, loading }: { arrival: ArrivalNotification; onSave: (d: object) => void; loading: boolean }) {
+  const { hasPermission } = useAuth();
+  const canEdit = hasPermission("logistics.edit");
   const [form, setForm] = useState({
     eta_revised: arrival.eta_revised ?? "",
     ata: arrival.ata ?? "",
@@ -272,7 +314,7 @@ function ArrivalForm({ arrival, onSave, loading }: { arrival: ArrivalNotificatio
         {events.map(({ key, label }) => (
           <div key={key}>
             <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
-            <input type="date" className="w-full border rounded px-3 py-2 text-sm" value={(form as Record<string, string>)[key]} onChange={(e) => set(key, e.target.value)} />
+            <input type="date" className="w-full border rounded px-3 py-2 text-sm" value={(form as Record<string, string>)[key]} disabled={!canEdit || key === "customs_clearance_date"} onChange={(e) => set(key, e.target.value)} />
           </div>
         ))}
         <div>
@@ -284,23 +326,32 @@ function ArrivalForm({ arrival, onSave, loading }: { arrival: ArrivalNotificatio
         <label className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
         <textarea className="w-full border rounded px-3 py-2 text-sm" rows={2} value={form.notes} onChange={(e) => set("notes", e.target.value)} />
       </div>
-      <div className="flex justify-end">
+      {canEdit && <div className="flex justify-end">
         <Button loading={loading} onClick={() => onSave(
-          Object.fromEntries(Object.entries(form).map(([k, v]) => [k, v || undefined]))
+          Object.fromEntries(Object.entries(form).filter(([k]) => k !== "customs_clearance_date").map(([k, v]) => [k, v || undefined]))
         )}>Save Arrival</Button>
-      </div>
+      </div>}
     </div>
   );
 }
 
-function ClearanceForm({ clearance, onSave, loading }: { clearance: CustomsClearance; onSave: (d: object) => void; loading: boolean }) {
+function ClearanceForm({
+  clearance, milestones, milestonesLoading, canEdit, onSave, onRecordMilestone,
+  loading, milestoneSaving, milestoneError,
+}: {
+  clearance: CustomsClearance;
+  milestones: ClearanceMilestone[];
+  milestonesLoading: boolean;
+  canEdit: boolean;
+  onSave: (d: object) => void;
+  onRecordMilestone: (d: object) => Promise<unknown>;
+  loading: boolean;
+  milestoneSaving: boolean;
+  milestoneError: string;
+}) {
   const [form, setForm] = useState({
     entry_no: clearance.entry_no ?? "",
     agent_name: clearance.agent_name ?? "",
-    submission_date: clearance.submission_date ?? "",
-    examination_date: clearance.examination_date ?? "",
-    clearance_date: clearance.clearance_date ?? "",
-    status: clearance.status,
     cif_value_usd: clearance.cif_value_usd?.toString() ?? "",
     import_duty: clearance.import_duty?.toString() ?? "",
     vat: clearance.vat?.toString() ?? "",
@@ -311,6 +362,12 @@ function ClearanceForm({ clearance, onSave, loading }: { clearance: CustomsClear
     kra_pin: clearance.kra_pin ?? "",
     notes: clearance.notes ?? "",
   });
+  const [nextStatus, setNextStatus] = useState<ClearanceStatus | "">(NEXT_CLEARANCE_STATUSES[clearance.status][0] ?? "");
+  const [sourceReference, setSourceReference] = useState("");
+  const [milestoneNotes, setMilestoneNotes] = useState("");
+  useEffect(() => {
+    setNextStatus(NEXT_CLEARANCE_STATUSES[clearance.status][0] ?? "");
+  }, [clearance.status]);
   const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
   const numFields = ["cif_value_usd", "import_duty", "vat", "idf_fee", "railway_development_levy", "other_charges", "total_taxes_kes"];
@@ -319,36 +376,81 @@ function ClearanceForm({ clearance, onSave, loading }: { clearance: CustomsClear
 
   return (
     <div className="p-5 space-y-4">
+      <section aria-labelledby="clearance-timeline-heading" className="rounded-lg border bg-slate-50 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 id="clearance-timeline-heading" className="font-semibold text-gray-800">Clearance milestone history</h3>
+            <p className="text-xs text-gray-500">Manual evidence references are recorded with the operator and system time; no customs authority integration is implied.</p>
+          </div>
+          <Badge label={clearance.status.replace(/_/g, " ")} variant={clearanceBadge(clearance.status)} />
+        </div>
+        {milestonesLoading ? <p className="mt-3 text-sm text-gray-500">Loading milestone history…</p> : milestones.length === 0 ? (
+          <p className="mt-3 text-sm text-gray-500">No milestone history is available. Current recorded status: <strong>{clearance.status.replace(/_/g, " ")}</strong>. Existing status may predate history capture.</p>
+        ) : (
+          <ol className="mt-3 divide-y rounded border bg-white">
+            {milestones.map((event) => (
+              <li key={event.id} className="grid gap-1 p-3 text-sm md:grid-cols-[1fr_1fr_2fr]">
+                <span><strong>{event.previous_status.replace(/_/g, " ")}</strong> → <strong>{event.new_status.replace(/_/g, " ")}</strong></span>
+                <span className="text-gray-600">{new Date(event.effective_at).toLocaleString()} · {event.changed_by_name || event.changed_by_id}</span>
+                <span className="text-gray-600">Ref: <span className="font-mono">{event.source_reference}</span>{event.notes ? ` · ${event.notes}` : ""}</span>
+              </li>
+            ))}
+          </ol>
+        )}
+        {canEdit && NEXT_CLEARANCE_STATUSES[clearance.status].length > 0 && (
+          <div className="mt-4 grid gap-3 border-t pt-4 md:grid-cols-4">
+            <div>
+              <label htmlFor="clearance-next-status" className="mb-1 block text-xs font-medium text-gray-600">Next milestone</label>
+              <select id="clearance-next-status" className="w-full rounded border px-3 py-2 text-sm" value={nextStatus} onChange={(event) => setNextStatus(event.target.value as ClearanceStatus | "")}>
+                {NEXT_CLEARANCE_STATUSES[clearance.status].map((candidate) => <option key={candidate} value={candidate}>{candidate.replace(/_/g, " ")}</option>)}
+              </select>
+            </div>
+            <div>
+              <label htmlFor="clearance-source-reference" className="mb-1 block text-xs font-medium text-gray-600">Supporting reference</label>
+              <input id="clearance-source-reference" className="w-full rounded border px-3 py-2 text-sm font-mono" value={sourceReference} maxLength={200} onChange={(event) => setSourceReference(event.target.value)} placeholder="e.g. entered filing / receipt ref" required />
+            </div>
+            <div>
+              <label htmlFor="clearance-milestone-notes" className="mb-1 block text-xs font-medium text-gray-600">Notes{nextStatus === "HELD" ? " (hold reason required)" : " (optional)"}</label>
+              <input id="clearance-milestone-notes" className="w-full rounded border px-3 py-2 text-sm" value={milestoneNotes} maxLength={2000} onChange={(event) => setMilestoneNotes(event.target.value)} />
+            </div>
+            <div className="flex items-end">
+              <Button loading={milestoneSaving} disabled={!nextStatus || !sourceReference.trim() || (nextStatus === "HELD" && !milestoneNotes.trim())} onClick={async () => {
+                if (!nextStatus || !sourceReference.trim()) return;
+                try {
+                  await onRecordMilestone({ new_status: nextStatus, source_reference: sourceReference, notes: milestoneNotes || undefined });
+                  setSourceReference("");
+                  setMilestoneNotes("");
+                } catch {
+                  // Keep the reference and notes visible for retry after the inline error is shown.
+                }
+              }}>Record milestone</Button>
+            </div>
+          </div>
+        )}
+        {!canEdit && <p className="mt-3 text-xs text-gray-500">View-only access: logistics.edit permission is required to record milestones.</p>}
+        {milestoneError && <p role="alert" className="mt-3 rounded border border-red-200 bg-red-50 p-2 text-sm text-red-700">{milestoneError}</p>}
+      </section>
       <div className="grid grid-cols-3 gap-3">
         <div>
           <label className="block text-xs font-medium text-gray-600 mb-1">IDF / Entry No</label>
-          <input className="w-full border rounded px-3 py-2 text-sm font-mono" value={form.entry_no} onChange={(e) => set("entry_no", e.target.value)} />
+          <input className="w-full border rounded px-3 py-2 text-sm font-mono" value={form.entry_no} disabled={!canEdit} onChange={(e) => set("entry_no", e.target.value)} />
         </div>
         <div>
           <label className="block text-xs font-medium text-gray-600 mb-1">Clearing Agent</label>
-          <input className="w-full border rounded px-3 py-2 text-sm" value={form.agent_name} onChange={(e) => set("agent_name", e.target.value)} />
+          <input className="w-full border rounded px-3 py-2 text-sm" value={form.agent_name} disabled={!canEdit} onChange={(e) => set("agent_name", e.target.value)} />
         </div>
         <div>
           <label className="block text-xs font-medium text-gray-600 mb-1">KRA PIN</label>
-          <input className="w-full border rounded px-3 py-2 text-sm font-mono" value={form.kra_pin} onChange={(e) => set("kra_pin", e.target.value)} />
+          <input className="w-full border rounded px-3 py-2 text-sm font-mono" value={form.kra_pin} disabled={!canEdit} onChange={(e) => set("kra_pin", e.target.value)} />
         </div>
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Submission Date</label>
-          <input type="date" className="w-full border rounded px-3 py-2 text-sm" value={form.submission_date} onChange={(e) => set("submission_date", e.target.value)} />
+        <div className="rounded border bg-gray-50 p-2 text-sm">
+          <span className="block text-xs text-gray-500">Submitted</span>{clearance.submission_date || "Not recorded"}
         </div>
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Examination Date</label>
-          <input type="date" className="w-full border rounded px-3 py-2 text-sm" value={form.examination_date} onChange={(e) => set("examination_date", e.target.value)} />
+        <div className="rounded border bg-gray-50 p-2 text-sm">
+          <span className="block text-xs text-gray-500">Examination requested</span>{clearance.examination_date || "Not recorded"}
         </div>
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Clearance Date</label>
-          <input type="date" className="w-full border rounded px-3 py-2 text-sm" value={form.clearance_date} onChange={(e) => set("clearance_date", e.target.value)} />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Status</label>
-          <select className="w-full border rounded px-3 py-2 text-sm" value={form.status} onChange={(e) => set("status", e.target.value)}>
-            {CLEARANCE_STATUSES.map((s) => <option key={s} value={s}>{s.replace(/_/g, " ")}</option>)}
-          </select>
+        <div className="rounded border bg-gray-50 p-2 text-sm">
+          <span className="block text-xs text-gray-500">Clearance recorded</span>{clearance.clearance_date || "Not recorded"}
         </div>
       </div>
 
@@ -365,12 +467,12 @@ function ClearanceForm({ clearance, onSave, loading }: { clearance: CustomsClear
           ].map(({ key, label }) => (
             <div key={key}>
               <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
-              <input type="number" className="w-full border rounded px-3 py-2 text-sm" value={(form as Record<string,string>)[key]} onChange={(e) => set(key, e.target.value)} />
+              <input type="number" className="w-full border rounded px-3 py-2 text-sm" value={(form as Record<string,string>)[key]} disabled={!canEdit} onChange={(e) => set(key, e.target.value)} />
             </div>
           ))}
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Total Taxes (KES)</label>
-            <input type="number" className="w-full border rounded px-3 py-2 text-sm font-semibold" value={form.total_taxes_kes || autoTotal.toFixed(2)} onChange={(e) => set("total_taxes_kes", e.target.value)} />
+            <input type="number" className="w-full border rounded px-3 py-2 text-sm font-semibold" value={form.total_taxes_kes || autoTotal.toFixed(2)} disabled={!canEdit} onChange={(e) => set("total_taxes_kes", e.target.value)} />
             <p className="text-xs text-gray-400 mt-0.5">Auto: {autoTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
           </div>
         </div>
@@ -378,15 +480,14 @@ function ClearanceForm({ clearance, onSave, loading }: { clearance: CustomsClear
 
       <div>
         <label className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
-        <textarea className="w-full border rounded px-3 py-2 text-sm" rows={2} value={form.notes} onChange={(e) => set("notes", e.target.value)} />
+        <textarea className="w-full border rounded px-3 py-2 text-sm" rows={2} value={form.notes} disabled={!canEdit} onChange={(e) => set("notes", e.target.value)} />
       </div>
-      <div className="flex justify-end">
+      {canEdit && <div className="flex justify-end">
         <Button loading={loading} onClick={() => onSave({
           ...form,
           ...Object.fromEntries(numFields.map((k) => [k, (form as Record<string,string>)[k] ? parseFloat((form as Record<string,string>)[k]) : undefined])),
-          ...Object.fromEntries(["submission_date", "examination_date", "clearance_date"].map((k) => [k, (form as Record<string,string>)[k] || undefined])),
         })}>Save Clearance</Button>
-      </div>
+      </div>}
     </div>
   );
 }

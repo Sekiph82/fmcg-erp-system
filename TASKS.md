@@ -10,9 +10,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 - Current Milestone: M25 — Cross-Border / Landed Cost
 - Current Sprint: M25.S01 — Cross-Border Shipment Lifecycle
-- Current Task: M25.S01.T002 — In-transit inventory ownership/status
+- Current Task: M25.S01.T003 — Customs/clearance milestone model
 - Current Task Status: COMPLETE
-- Next Task/Action: M25.S01.T003 — Customs/clearance milestone model
+- Next Task/Action: M25.S01.T004 — Kenya receipt closure
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -765,7 +765,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
   Evidence: `coordination/sessions/M25.S01.T001/CODEX_LOG_V01.md`; disposable PostgreSQL V03 and mocked frontend checks passed, with earlier corrected failures and scope limits recorded.
 - [x] M25.S01.T002 — In-transit inventory ownership/status
   Evidence: `coordination/sessions/M25.S01.T002/CODEX_LOG_V01.md`; migration 0035, task-owned disposable PostgreSQL V04 (1 passed), mocked frontend V04 (2 passed), targeted type-check/ESLint, and independent read-only review. Incoterm is not used to infer title; real legal ownership is not claimed.
-- [ ] M25.S01.T003 — Customs/clearance milestone model
+- [x] M25.S01.T003 — Customs/clearance milestone model
+  Evidence: `coordination/sessions/M25.S01.T003/CODEX_LOG_V01.md`; migration 0036, synthetic disposable PostgreSQL V03 (1 passed), mocked Playwright V02 (2 passed), targeted type-check/ESLint/compile checks, and independent read-only review. No KRA integration or verified legal/customs claims.
 - [ ] M25.S01.T004 — Kenya receipt closure
 
 ## M25.S02 — Landed Cost Components

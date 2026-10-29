@@ -133,6 +133,19 @@ export interface CustomsClearance {
   created_at: string;
 }
 
+export interface ClearanceMilestone {
+  id: string;
+  clearance_id: string;
+  previous_status: ClearanceStatus;
+  new_status: ClearanceStatus;
+  source_reference: string;
+  notes?: string;
+  effective_at: string;
+  changed_by_id: string;
+  changed_by_name?: string;
+  created_at: string;
+}
+
 export interface ArrivalNotification {
   id: string;
   shipment_id: string;
@@ -277,6 +290,14 @@ export const logisticsApi = {
   },
   async updateClearance(id: string, data: object): Promise<CustomsClearance> {
     const res = await apiClient.patch<CustomsClearance>(`/api/v1/logistics/clearance/${id}`, data);
+    return res.data;
+  },
+  async listClearanceMilestones(shipmentId: string): Promise<ClearanceMilestone[]> {
+    const res = await apiClient.get<ClearanceMilestone[]>(`/api/v1/logistics/shipments/${shipmentId}/clearance/milestones`);
+    return res.data;
+  },
+  async recordClearanceMilestone(shipmentId: string, data: object): Promise<ClearanceMilestone> {
+    const res = await apiClient.post<ClearanceMilestone>(`/api/v1/logistics/shipments/${shipmentId}/clearance/milestones`, data);
     return res.data;
   },
 

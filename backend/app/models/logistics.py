@@ -271,6 +271,48 @@ class CustomsClearance(Base, TimestampMixin):
     notes = Column(Text, nullable=True)
 
     shipment = relationship("InternationalShipment", back_populates="clearance")
+    milestones = relationship(
+        "CustomsClearanceMilestone",
+        back_populates="clearance",
+        order_by="CustomsClearanceMilestone.effective_at",
+        passive_deletes=True,
+    )
+
+
+class CustomsClearanceMilestone(Base, TimestampMixin):
+    """Append-only, evidence-referenced status transition for a customs clearance."""
+    __tablename__ = "customs_clearance_milestones"
+    __table_args__ = (
+        CheckConstraint(
+            "previous_status IN ('PENDING', 'DOCS_SUBMITTED', 'UNDER_REVIEW', 'EXAM_REQUESTED', 'DUTY_ASSESSED', 'DUTY_PAID', 'CLEARED', 'HELD')",
+            name="ck_customs_clearance_milestones_previous_status",
+        ),
+        CheckConstraint(
+            "new_status IN ('DOCS_SUBMITTED', 'UNDER_REVIEW', 'EXAM_REQUESTED', 'DUTY_ASSESSED', 'DUTY_PAID', 'CLEARED', 'HELD')",
+            name="ck_customs_clearance_milestones_new_status",
+        ),
+        CheckConstraint(
+            "length(trim(source_reference)) > 0",
+            name="ck_customs_clearance_milestones_source_reference",
+        ),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    clearance_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("customs_clearances.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    previous_status = Column(String(24), nullable=False)
+    new_status = Column(String(24), nullable=False)
+    source_reference = Column(String(200), nullable=False)
+    notes = Column(Text, nullable=True)
+    effective_at = Column(DateTime(timezone=True), nullable=False)
+    changed_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
+
+    clearance = relationship("CustomsClearance", back_populates="milestones")
+    changed_by = relationship("User")
 
 
 # ── Arrival Notification ───────────────────────────────────────────────────────

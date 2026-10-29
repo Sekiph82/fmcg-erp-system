@@ -229,21 +229,20 @@ class CustomsDocRead(BaseModel):
 # ── Customs Clearance ──────────────────────────────────────────────────────────
 
 class ClearanceCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     shipment_id: str
     entry_no: Optional[str] = None
     agent_name: Optional[str] = None
-    submission_date: Optional[date] = None
     kra_pin: Optional[str] = None
     notes: Optional[str] = None
 
 
 class ClearanceUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     entry_no: Optional[str] = None
     agent_name: Optional[str] = None
-    submission_date: Optional[date] = None
-    examination_date: Optional[date] = None
-    clearance_date: Optional[date] = None
-    status: Optional[ClearanceStatus] = None
     cif_value_usd: Optional[float] = None
     import_duty: Optional[float] = None
     vat: Optional[float] = None
@@ -253,6 +252,29 @@ class ClearanceUpdate(BaseModel):
     total_taxes_kes: Optional[float] = None
     kra_pin: Optional[str] = None
     notes: Optional[str] = None
+
+
+class ClearanceMilestoneCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    new_status: ClearanceStatus
+    source_reference: str = Field(min_length=1, max_length=200)
+    notes: Optional[str] = Field(default=None, max_length=2000)
+
+
+class ClearanceMilestoneRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    clearance_id: str
+    previous_status: ClearanceStatus
+    new_status: ClearanceStatus
+    source_reference: str
+    notes: Optional[str]
+    effective_at: datetime
+    changed_by_id: str
+    changed_by_name: Optional[str] = None
+    created_at: datetime
 
 
 class ClearanceRead(BaseModel):
@@ -288,10 +310,11 @@ class ArrivalCreate(BaseModel):
 
 
 class ArrivalUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     eta_revised: Optional[date] = None
     ata: Optional[date] = None
     port_discharge_date: Optional[date] = None
-    customs_clearance_date: Optional[date] = None
     delivery_date: Optional[date] = None
     grn_id: Optional[str] = None
     eta_alert_sent: Optional[bool] = None

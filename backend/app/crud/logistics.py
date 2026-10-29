@@ -8,7 +8,7 @@ from sqlalchemy.orm import selectinload
 
 from app.models.logistics import (
     InternationalShipment, ShipmentContainer, ShipmentPOLink, ShipmentOwnershipEvent,
-    CustomsDocument, CustomsClearance, ArrivalNotification,
+    CustomsDocument, CustomsClearance, CustomsClearanceMilestone, ArrivalNotification,
     LocalLogisticsCost, LocalCostStatus,
     IntlShipmentStatus, ContainerStatus,
 )
@@ -256,6 +256,41 @@ async def get_customs_doc(db: AsyncSession, doc_id: uuid.UUID) -> Optional[Custo
 async def get_clearance(db: AsyncSession, shipment_id: uuid.UUID) -> Optional[CustomsClearance]:
     result = await db.execute(
         select(CustomsClearance).where(CustomsClearance.shipment_id == shipment_id)
+    )
+    return result.scalar_one_or_none()
+
+
+async def get_clearance_for_update(db: AsyncSession, clearance_id: uuid.UUID) -> Optional[CustomsClearance]:
+    result = await db.execute(
+        select(CustomsClearance)
+        .where(CustomsClearance.id == clearance_id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    )
+    return result.scalar_one_or_none()
+
+
+async def list_clearance_milestones(
+    db: AsyncSession,
+    clearance_id: uuid.UUID,
+) -> List[CustomsClearanceMilestone]:
+    result = await db.execute(
+        select(CustomsClearanceMilestone)
+        .options(selectinload(CustomsClearanceMilestone.changed_by))
+        .where(CustomsClearanceMilestone.clearance_id == clearance_id)
+        .order_by(CustomsClearanceMilestone.effective_at, CustomsClearanceMilestone.created_at)
+    )
+    return list(result.scalars().all())
+
+
+async def get_clearance_milestone(
+    db: AsyncSession,
+    milestone_id: uuid.UUID,
+) -> Optional[CustomsClearanceMilestone]:
+    result = await db.execute(
+        select(CustomsClearanceMilestone)
+        .options(selectinload(CustomsClearanceMilestone.changed_by))
+        .where(CustomsClearanceMilestone.id == milestone_id)
     )
     return result.scalar_one_or_none()
 
