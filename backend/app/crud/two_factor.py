@@ -29,9 +29,17 @@ async def get_2fa_settings(db: AsyncSession, user_id: uuid.UUID) -> Optional[Use
 
 
 async def get_or_create_2fa_settings(
-    db: AsyncSession, user_id: uuid.UUID, method: TwoFAMethod = TwoFAMethod.TOTP
+    db: AsyncSession,
+    user_id: uuid.UUID,
+    method: TwoFAMethod = TwoFAMethod.TOTP,
+    *,
+    for_update: bool = False,
 ) -> User2FASettings:
-    settings = await get_2fa_settings(db, user_id)
+    query = select(User2FASettings).where(User2FASettings.user_id == user_id)
+    if for_update:
+        query = query.with_for_update()
+    result = await db.execute(query)
+    settings = result.scalar_one_or_none()
     if not settings:
         settings = User2FASettings(user_id=user_id, method=method)
         db.add(settings)

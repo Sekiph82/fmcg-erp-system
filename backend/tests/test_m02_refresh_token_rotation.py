@@ -788,6 +788,19 @@ async def test_privileged_login_requires_totp_enrollment_before_issuing_a_sessio
             secret = setup.json()["secret_key"]
             assert secret
 
+            setup_retries = await asyncio.gather(
+                *(
+                    client.post(
+                        "/api/v1/auth/2fa/required-setup",
+                        json={"session_token": enrollment_token},
+                    )
+                    for _ in range(2)
+                )
+            )
+            for setup_retry in setup_retries:
+                assert setup_retry.status_code == 200, setup_retry.text
+                assert setup_retry.json()["secret_key"] == secret
+
             verify = await client.post(
                 "/api/v1/auth/2fa/required-setup/verify",
                 json={"session_token": enrollment_token, "code": pyotp.TOTP(secret).now()},
@@ -796,6 +809,17 @@ async def test_privileged_login_requires_totp_enrollment_before_issuing_a_sessio
             assert verify.json()["is_enabled"] is True
             assert verify.json()["recovery_codes"]
             assert settings.AUTH_COOKIE_NAME in client.cookies
+
+            stale_setup = await client.post(
+                "/api/v1/auth/2fa/required-setup",
+                json={"session_token": enrollment_token},
+            )
+            assert stale_setup.status_code == 401
+            async with AsyncSessionLocal() as db:
+                saved_settings = await db.scalar(
+                    select(User2FASettings).where(User2FASettings.user_id == user.id)
+                )
+                assert saved_settings and saved_settings.is_enabled is True
 
             protected = await client.get("/protected")
             assert protected.status_code == 200, protected.text

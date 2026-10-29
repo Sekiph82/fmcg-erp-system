@@ -82,9 +82,21 @@ async def setup_required_2fa(
 ):
     """Start TOTP enrollment after password login without creating an authenticated session."""
     user, session = await _required_enrollment_context(db, body.session_token)
-    settings = await tfa_crud.get_or_create_2fa_settings(db, user.id, TwoFAMethod.TOTP)
+    settings = await tfa_crud.get_or_create_2fa_settings(
+        db, user.id, TwoFAMethod.TOTP, for_update=True
+    )
+    # The session was initially checked before acquiring the settings-row lock.
+    # Refresh it now so a setup retry that waited behind a successful verify
+    # cannot reset an already-enabled authenticator.
+    await db.refresh(session)
+    if session.status != TwoFASessionStatus.PENDING or settings.is_enabled:
+        raise HTTPException(status_code=401, detail="Required 2FA enrollment has expired or was already used")
     settings.method = TwoFAMethod.TOTP
-    settings.secret_key = totp_utils.generate_totp_secret()
+    # React Strict Mode and transient client retries can request setup more than
+    # once for the same pending login. Keep the authenticator key stable for
+    # that session so a retry cannot invalidate the key already displayed.
+    if not settings.secret_key:
+        settings.secret_key = totp_utils.generate_totp_secret()
     settings.is_enabled = False
     session.settings_id = settings.id
     await db.commit()
