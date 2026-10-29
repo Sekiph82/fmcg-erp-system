@@ -9,7 +9,9 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.access_control import can_modify_scope, has_any_permission
 from app.core.deps import get_current_user, get_db
+from app.models.inventory import Stock
 from app.models.quality import (
     QCType, QCStatus, QCDecision, QCInspection, QCTestResult,
     QCTemplate, QCTemplateParameter,
@@ -39,6 +41,46 @@ from app.crud import quality as qc_crud
 from app.services import quality_service as qc_svc
 
 router = APIRouter()
+
+
+async def _require_lot_hold_release_access(db: AsyncSession, user, lot_id: uuid.UUID, action: str) -> None:
+    """Require quality permission over every warehouse sharing the lot status.
+
+    LotQualityStatus is one record per lot, even when stock is spread across
+    several warehouses. Scoped users therefore need the matching action in
+    every affected warehouse; an unstocked lot can only be changed by a user
+    with a broad quality permission.
+    """
+    if action == "hold":
+        global_permissions = ("quality.edit", "quality.edit_all")
+        scoped_actions = ("edit",)
+    elif action == "release":
+        global_permissions = ("quality.approve", "quality.approve_all", "quality.release_all")
+        scoped_actions = ("release", "approve")
+    else:
+        raise ValueError(f"Unsupported lot quality action: {action}")
+
+    if has_any_permission(user, global_permissions):
+        return
+
+    result = await db.execute(
+        select(Stock.warehouse_id).where(Stock.lot_id == lot_id).distinct()
+    )
+    warehouse_ids = list(result.scalars())
+    if not warehouse_ids or any(
+        not any(
+            can_modify_scope(user, "quality", scoped_action, "warehouse", warehouse_id)
+            for scoped_action in scoped_actions
+        )
+        for warehouse_id in warehouse_ids
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "error": "forbidden",
+                "detail": f"A quality {action} permission covering every warehouse holding this lot is required.",
+            },
+        )
 
 
 # ── Dashboard ─────────────────────────────────────────────────────────────────
@@ -563,6 +605,7 @@ async def release_lot(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
+    await _require_lot_hold_release_access(db, current_user, body.lot_id, "release")
     lqs = await svc.release_lot(db, body.lot_id, current_user.id, body.release_notes)
     await db.commit()
     r = await db.execute(select(LotQualityStatus).where(LotQualityStatus.lot_id == body.lot_id))
@@ -575,6 +618,7 @@ async def hold_lot(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
+    await _require_lot_hold_release_access(db, current_user, body.lot_id, "hold")
     lqs = await svc.hold_lot(
         db, body.lot_id, body.hold_reason, body.quarantine, body.quarantine_location
     )

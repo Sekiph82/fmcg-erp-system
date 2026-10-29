@@ -8,6 +8,7 @@ from decimal import Decimal
 from typing import List, Optional
 
 from sqlalchemy import func, select, and_, or_
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.quality import (
@@ -114,13 +115,20 @@ async def check_qc_gate(db: AsyncSession, lot_id: uuid.UUID, stage: Optional[str
 
 
 async def get_or_create_lot_quality_status(db: AsyncSession, lot_id: uuid.UUID) -> LotQualityStatus:
-    r = await db.execute(select(LotQualityStatus).where(LotQualityStatus.lot_id == lot_id))
-    lqs = r.scalar_one_or_none()
-    if not lqs:
-        lqs = LotQualityStatus(lot_id=lot_id)
-        db.add(lqs)
-        await db.flush()
-    return lqs
+    # The unique lot_id constraint arbitrates concurrent first writers. A
+    # PostgreSQL upsert avoids a select-then-insert race, then FOR UPDATE keeps
+    # every hold/release/QC status mutation serialized until the caller commits.
+    await db.execute(
+        pg_insert(LotQualityStatus)
+        .values(lot_id=lot_id)
+        .on_conflict_do_nothing(index_elements=[LotQualityStatus.lot_id])
+    )
+    result = await db.execute(
+        select(LotQualityStatus)
+        .where(LotQualityStatus.lot_id == lot_id)
+        .with_for_update()
+    )
+    return result.scalar_one()
 
 
 async def hold_lot(db: AsyncSession, lot_id: uuid.UUID, hold_reason: str,

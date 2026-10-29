@@ -8,11 +8,11 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 ## Project Status
 
-- Current Milestone: M09 — Recipes / BOM
-- Current Sprint: M09.S02 — BOM Foundation
-- Current Task: M09.S02.T004 — Standardize effective-date/version governance
+- Current Milestone: M10 — Quality
+- Current Sprint: M10.S02 — QMS Baseline
+- Current Task: M10.S02.T004 — Harden hold/release transaction enforcement
 - Current Task Status: COMPLETE
-- Next Task/Action: M10.S02.T004 — Harden hold/release transaction enforcement
+- Next Task/Action: Select the next dependency-ready task after M10.S02.T004 completion
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -377,8 +377,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 - [x] M10.S02.T001 — HACCP/PDCA/audit scheduling foundations
 - [x] M10.S02.T002 — Allergen/compliance features
 - [x] M10.S02.T003 — Complaint/recall domain
-- [ ] M10.S02.T004 — Harden hold/release transaction enforcement
-  Previously marked partial; the exact remaining acceptance scope is to be reconciled from the task row, quality hold/release service paths, and latest applicable audit before implementation.
+- [x] M10.S02.T004 — Harden hold/release transaction enforcement
+  Evidence: [CODEX implementation log](coordination/sessions/M10.S02.T004/CODEX_LOG_V01.md); hold/release creation and mutation serialize on a locked unique per-lot status row; existing broad and warehouse-scoped quality permissions are enforced across all warehouses holding the lot. Five permission tests and two disposable PostgreSQL concurrency/rollback tests passed; independent read-only review found no actionable issue.
 
 ---
 
