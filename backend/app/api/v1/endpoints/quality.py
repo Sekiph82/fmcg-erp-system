@@ -315,6 +315,16 @@ async def release_quarantine(
     if not insp:
         raise HTTPException(404, "Inspection not found")
     _require_inspection_action(current_user, insp, "release")
+    if insp.qc_type == QCType.FINISHED_GOODS:
+        await qms_svc.lock_quality_gate_scope(
+            db,
+            qms_svc.FINISHED_GOODS_GATE_TARGET_MODULE,
+            qms_svc.FINISHED_GOODS_RELEASE_GATE_TRIGGER_EVENT,
+        )
+    insp = await crud.get_inspection(db, inspection_id, for_update=True)
+    if not insp:
+        raise HTTPException(404, "Inspection not found")
+    _require_inspection_action(current_user, insp, "release")
     await svc.release_qc_quarantine(db, insp, current_user.id, notes)
     await db.commit()
     insp = await crud.get_inspection(db, inspection_id)

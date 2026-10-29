@@ -118,6 +118,11 @@ async def make_decision(
                         getattr(insp, "qc_type", None) == QCType.IN_PROCESS
                         and getattr(insp, "production_order_id", None) is not None
                     )
+                    or (
+                        getattr(insp, "qc_type", None) == QCType.FINISHED_GOODS
+                        and getattr(insp, "production_order_id", None) is not None
+                        and getattr(insp, "lot_id", None) is not None
+                    )
             )
                 and getattr(insp, "is_mandatory", False)
                 and getattr(insp, "template_id", None) is not None
@@ -240,6 +245,22 @@ async def release_qc_quarantine(
     if insp.decision != QCDecision.ACCEPT or insp.status != QCStatus.PASSED:
         raise HTTPException(422, "Only an accepted and passed inspection can release quarantined stock")
 
+    if insp.qc_type == QCType.FINISHED_GOODS:
+        from app.services.qms_service import (
+            FINISHED_GOODS_GATE_TARGET_MODULE,
+            FINISHED_GOODS_RELEASE_GATE_TRIGGER_EVENT,
+            ensure_finished_goods_quality_gates_pass,
+            lock_quality_gate_scope,
+        )
+
+        await lock_quality_gate_scope(
+            db, FINISHED_GOODS_GATE_TARGET_MODULE, FINISHED_GOODS_RELEASE_GATE_TRIGGER_EVENT
+        )
+        try:
+            await ensure_finished_goods_quality_gates_pass(db, insp, date.today())
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+
     filters = [
         Stock.warehouse_id == insp.warehouse_id,
         Stock.lot_id == insp.lot_id,
@@ -270,8 +291,22 @@ async def release_qc_quarantine(
         created_by_id=user_id,
     )
     db.add(mv)
-    insp.quarantine_applied = False
-    insp.hold_flag = False
+    if insp.qc_type == QCType.FINISHED_GOODS and insp.production_order_id:
+        inspections_result = await db.execute(
+            select(QCInspection)
+            .where(
+                QCInspection.production_order_id == insp.production_order_id,
+                QCInspection.lot_id == insp.lot_id,
+                QCInspection.qc_type == QCType.FINISHED_GOODS,
+            )
+            .with_for_update()
+        )
+        for lot_inspection in inspections_result.scalars().all():
+            lot_inspection.quarantine_applied = False
+            lot_inspection.hold_flag = False
+    else:
+        insp.quarantine_applied = False
+        insp.hold_flag = False
     await db.flush()
 
 
@@ -394,6 +429,7 @@ async def create_qc_for_order(
         raise HTTPException(422, "Batch does not match the production order")
 
     lot_id = None
+    finished_goods_template_ids: list[Optional[uuid.UUID]] = [template_id]
     if qc_type == QCType.FINISHED_GOODS:
         if order.status != ProductionOrderStatus.COMPLETED:
             raise HTTPException(422, "Finished-goods QC requires a completed production order")
@@ -432,16 +468,41 @@ async def create_qc_for_order(
         batch_no = receipt.batch_no
         if lot_id is None:
             raise HTTPException(422, "Finished-goods QC requires a traceable finished-goods lot")
-        active_result = await db.execute(
-            select(QCInspection.id).where(
+        from app.services.qms_service import (
+            FINISHED_GOODS_GATE_TARGET_MODULE,
+            FINISHED_GOODS_RELEASE_GATE_TRIGGER_EVENT,
+            list_finished_goods_quality_gates,
+            lock_quality_gate_scope,
+        )
+
+        await lock_quality_gate_scope(
+            db, FINISHED_GOODS_GATE_TARGET_MODULE, FINISHED_GOODS_RELEASE_GATE_TRIGGER_EVENT
+        )
+        gates = await list_finished_goods_quality_gates(db, date.today())
+        required_template_ids = list(dict.fromkeys(
+            required.id
+            for gate in gates if gate.is_mandatory
+            for required in gate.required_templates
+        ))
+        if template_id is None and required_template_ids:
+            finished_goods_template_ids = required_template_ids
+        elif template_id is None:
+            finished_goods_template_ids = [None]
+
+        for required_template_id in finished_goods_template_ids:
+            active_query = select(QCInspection.id).where(
                 QCInspection.production_order_id == order.id,
                 QCInspection.qc_type == QCType.FINISHED_GOODS,
                 QCInspection.lot_id == lot_id,
                 QCInspection.status.in_([QCStatus.PENDING, QCStatus.IN_PROGRESS]),
             )
-        )
-        if active_result.scalar_one_or_none() is not None:
-            raise HTTPException(409, "An active finished-goods inspection already exists for this lot")
+            if required_template_id is None:
+                active_query = active_query.where(QCInspection.template_id.is_(None))
+            else:
+                active_query = active_query.where(QCInspection.template_id == required_template_id)
+            active_result = await db.execute(active_query.limit(1))
+            if active_result.scalar_one_or_none() is not None:
+                raise HTTPException(409, "An active finished-goods inspection already exists for this lot and template")
     else:
         product_id = order.product_id
         batch_no = order.batch_no
@@ -493,25 +554,32 @@ async def create_qc_for_order(
                 template_id in release_template_ids or template_id in in_process_template_ids
             )
 
-    insp = QCInspection(
-        inspection_no=inspection_no,
-        qc_type=qc_type,
-        template_id=template_id,
-        status=QCStatus.PENDING,
-        production_order_id=production_order_id,
-        lot_id=lot_id,
-        product_id=product_id,
-        warehouse_id=warehouse_id,
-        lot_number=lot_number,
-        batch_no=batch_no,
-        inspection_date=date.today(),
-        inspector_id=inspector_id,
-        is_mandatory=qc_type == QCType.FINISHED_GOODS or is_mandatory_production_gate,
-        blocks_progression=qc_type == QCType.FINISHED_GOODS or is_mandatory_production_gate,
-        release_required=qc_type == QCType.FINISHED_GOODS or is_mandatory_production_gate,
-        hold_flag=qc_type == QCType.FINISHED_GOODS or is_mandatory_production_gate,
-    )
-    db.add(insp)
+    templates_to_create = finished_goods_template_ids if qc_type == QCType.FINISHED_GOODS else [template_id]
+    inspections: list[QCInspection] = []
+    for index, selected_template_id in enumerate(templates_to_create, start=1):
+        current_inspection_no = inspection_no
+        if len(templates_to_create) > 1:
+            current_inspection_no = f"{inspection_no[:44]}-{index:04d}"
+        insp = QCInspection(
+            inspection_no=current_inspection_no,
+            qc_type=qc_type,
+            template_id=selected_template_id,
+            status=QCStatus.PENDING,
+            production_order_id=production_order_id,
+            lot_id=lot_id,
+            product_id=product_id,
+            warehouse_id=warehouse_id,
+            lot_number=lot_number,
+            batch_no=batch_no,
+            inspection_date=date.today(),
+            inspector_id=inspector_id,
+            is_mandatory=qc_type == QCType.FINISHED_GOODS or is_mandatory_production_gate,
+            blocks_progression=qc_type == QCType.FINISHED_GOODS or is_mandatory_production_gate,
+            release_required=qc_type == QCType.FINISHED_GOODS or is_mandatory_production_gate,
+            hold_flag=qc_type == QCType.FINISHED_GOODS or is_mandatory_production_gate,
+        )
+        db.add(insp)
+        inspections.append(insp)
     await db.flush()
     if qc_type == QCType.FINISHED_GOODS:
         quarantined_rows = await _quarantine_lot_stock(
@@ -525,9 +593,10 @@ async def create_qc_for_order(
         )
         if not quarantined_rows:
             raise HTTPException(422, "Finished-goods lot has no stock to place on quality hold")
-        insp.quarantine_applied = True
+        for insp in inspections:
+            insp.quarantine_applied = True
         await db.flush()
-    return insp
+    return inspections[0]
 
 
 # ── Stats ─────────────────────────────────────────────────────────────────────
