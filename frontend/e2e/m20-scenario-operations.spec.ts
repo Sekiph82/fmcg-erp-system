@@ -7,7 +7,7 @@ const lineOne = "22222222-2222-4222-8222-222222222222";
 const lineTwo = "33333333-3333-4333-8333-333333333333";
 
 async function openWhatIfBuilder(page: import("playwright/test").Page) {
-  await page.route("**/api/v1/auth/me", async (route) => route.fulfill({ json: {
+  await page.route("**/api/v1/auth/me**", async (route) => route.fulfill({ json: {
     id: "synthetic-mps-scenario-user", email: "mps-scenario@example.invalid", username: "mps-scenario",
     full_name: "Synthetic MPS Scenario Tester", is_active: true, is_superuser: true,
     must_change_password: false, roles: [], permission_codes: ["mps:view", "mps:edit"], modules: ["mps"],

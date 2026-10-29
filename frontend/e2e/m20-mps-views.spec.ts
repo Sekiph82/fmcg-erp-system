@@ -20,7 +20,7 @@ async function signIn(page: Page, options: {
   scopes?: Array<Record<string, unknown>>;
 } = {}) {
   const { isSuperuser = true, permissionCodes = [], scopes = [] } = options;
-  await page.route("**/api/v1/auth/me", async (route) => fulfillJson(route, {
+  await page.route("**/api/v1/auth/me**", async (route) => fulfillJson(route, {
     id: "test-user", email: "mps-view-test@example.invalid", username: "mps-view-test",
     full_name: "Synthetic MPS View Tester", is_active: true, is_superuser: isSuperuser,
     must_change_password: false, roles: [], permission_codes: permissionCodes, modules: ["mps"],

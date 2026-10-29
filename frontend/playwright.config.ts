@@ -2,6 +2,7 @@ import { defineConfig, devices } from "playwright/test";
 import path from "path";
 
 const baseURL = (process.env.E2E_BASE_URL || "http://localhost:3000").replace(/\/$/, "");
+const webServerPort = new URL(baseURL).port || "3000";
 const apiURL = process.env.NEXT_PUBLIC_API_URL || process.env.E2E_API_URL || "http://localhost:8000";
 const authFile = process.env.E2E_STORAGE_STATE_PATH
   ? path.resolve(process.env.E2E_STORAGE_STATE_PATH)
@@ -29,7 +30,7 @@ export default defineConfig({
   webServer: process.env.E2E_SKIP_WEBSERVER
     ? undefined
     : {
-        command: "npm run dev",
+        command: `npm run dev -- --port ${webServerPort}`,
         url: baseURL,
         reuseExistingServer: true,
         timeout: 120_000,
