@@ -10,9 +10,9 @@ from sqlalchemy.exc import IntegrityError
 
 from app.api.v1.endpoints import qms
 from app.api.v1.endpoints.qms import _require_quality_gate_definition_permission
-from app.models.quality import ParameterType
+from app.models.quality import ParameterType, QualityGateSeverity
 from app.schemas.qms import QCTemplateUpdate, QualityGateDefinitionCreate, QualityGateDefinitionUpdate
-from app.services.qms_service import _qc_parameter_has_specification
+from app.services.qms_service import _qc_parameter_has_specification, update_quality_gate_definition
 
 
 def _user(*permission_codes):
@@ -91,6 +91,88 @@ def test_active_definition_requires_at_least_one_required_qc_template():
         is_active=False,
     )
     assert disabled.required_template_ids == []
+
+
+def test_gate_policy_defaults_are_conservative_and_configurable():
+    definition = QualityGateDefinitionCreate(
+        code="QC_GATE",
+        name="QC gate",
+        gate_type="QC",
+        trigger_event="ON_RECEIPT",
+        target_module="procurement",
+        required_template_ids=[uuid4()],
+    )
+
+    assert definition.severity == QualityGateSeverity.MEDIUM
+    assert definition.is_mandatory is True
+    assert definition.waiver_allowed is False
+    assert definition.waiver_reason_required is True
+    assert definition.waiver_approval_required is True
+
+    allowed_noncritical_waiver = QualityGateDefinitionCreate(
+        code="OPTIONAL_REVIEW",
+        name="Optional review",
+        gate_type="QC",
+        trigger_event="ON_RECEIPT",
+        target_module="procurement",
+        severity=QualityGateSeverity.HIGH,
+        waiver_allowed=True,
+        required_template_ids=[uuid4()],
+    )
+    assert allowed_noncritical_waiver.waiver_allowed is True
+
+
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"severity": QualityGateSeverity.CRITICAL, "is_mandatory": False},
+        {"severity": QualityGateSeverity.CRITICAL, "waiver_allowed": True},
+        {"waiver_allowed": True, "waiver_reason_required": False},
+        {"waiver_allowed": True, "waiver_approval_required": False},
+    ],
+)
+def test_gate_policy_rejects_unsafe_severity_and_waiver_combinations(changes):
+    with pytest.raises(ValidationError):
+        QualityGateDefinitionCreate(
+            code="QC_GATE",
+            name="QC gate",
+            gate_type="QC",
+            trigger_event="ON_RECEIPT",
+            target_module="procurement",
+            required_template_ids=[uuid4()],
+            **changes,
+        )
+
+
+@pytest.mark.parametrize(
+    "changes",
+    [
+        {"severity": QualityGateSeverity.CRITICAL, "is_mandatory": False},
+        {"severity": QualityGateSeverity.CRITICAL, "waiver_allowed": True},
+        {"waiver_allowed": True, "waiver_approval_required": False},
+    ],
+)
+def test_gate_policy_patch_rejects_explicitly_unsafe_combinations(changes):
+    with pytest.raises(ValidationError):
+        QualityGateDefinitionUpdate(**changes)
+
+
+@pytest.mark.asyncio
+async def test_gate_policy_patch_checks_combined_persisted_rule_values():
+    definition = SimpleNamespace(
+        severity="HIGH",
+        is_mandatory=True,
+        waiver_allowed=False,
+        waiver_reason_required=False,
+        waiver_approval_required=True,
+        is_active=False,
+        required_templates=[],
+    )
+
+    with pytest.raises(ValueError, match="must require a reason"):
+        await update_quality_gate_definition(object(), definition, {"waiver_allowed": True})
+
+    assert definition.waiver_allowed is True
 
 
 def test_definition_reads_require_global_quality_read_permission():

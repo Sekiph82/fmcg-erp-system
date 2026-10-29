@@ -11,6 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 from app.models.quality import (
     QCType, QCStatus, QCDecision, ParameterType,
+    QualityGateSeverity,
     SamplingMethod, HazardType, RiskLevel,
     DeviationStatus, CorrectiveActionStatus, ReleaseStatus,
     QMSAIAgentType, QMSAIRecStatus,
@@ -19,6 +20,17 @@ from app.models.quality import (
 
 
 # ── QC Template ───────────────────────────────────────────────────────────────
+
+def _validate_gate_policy_fields(severity, is_mandatory, waiver_allowed, reason_required, approval_required):
+    severity = getattr(severity, "value", severity)
+    if severity == QualityGateSeverity.CRITICAL.value and is_mandatory is False:
+        raise ValueError("Critical quality gates must remain mandatory.")
+    if severity == QualityGateSeverity.CRITICAL.value and waiver_allowed is True:
+        raise ValueError("Critical quality gates cannot be waived.")
+    if waiver_allowed is True and reason_required is False:
+        raise ValueError("An allowed waiver must require a reason.")
+    if waiver_allowed is True and approval_required is False:
+        raise ValueError("An allowed waiver must require quality approval.")
 
 class QCTemplateParameterBase(BaseModel):
     parameter_id: Optional[uuid.UUID] = None
@@ -478,6 +490,11 @@ class QualityGateDefinitionFields(BaseModel):
     target_module: str = Field(min_length=1, max_length=50)
     description: Optional[str] = None
     is_active: bool = True
+    severity: QualityGateSeverity = QualityGateSeverity.MEDIUM
+    is_mandatory: bool = True
+    waiver_allowed: bool = False
+    waiver_reason_required: bool = True
+    waiver_approval_required: bool = True
     required_template_ids: List[uuid.UUID] = Field(default_factory=list)
 
     @field_validator("code", "gate_type", "trigger_event")
@@ -516,6 +533,10 @@ class QualityGateDefinitionFields(BaseModel):
 class QualityGateDefinitionCreate(QualityGateDefinitionFields):
     @model_validator(mode="after")
     def active_gate_requires_tests(self):
+        _validate_gate_policy_fields(
+            self.severity, self.is_mandatory, self.waiver_allowed,
+            self.waiver_reason_required, self.waiver_approval_required,
+        )
         if self.is_active and not self.required_template_ids:
             raise ValueError("An active quality gate must link at least one required QC test template.")
         if len(self.required_template_ids) != len(set(self.required_template_ids)):
@@ -532,7 +553,20 @@ class QualityGateDefinitionUpdate(BaseModel):
     target_module: Optional[str] = Field(default=None, min_length=1, max_length=50)
     description: Optional[str] = None
     is_active: Optional[bool] = None
+    severity: Optional[QualityGateSeverity] = None
+    is_mandatory: Optional[bool] = None
+    waiver_allowed: Optional[bool] = None
+    waiver_reason_required: Optional[bool] = None
+    waiver_approval_required: Optional[bool] = None
     required_template_ids: Optional[List[uuid.UUID]] = None
+
+    @model_validator(mode="after")
+    def validate_explicit_policy_changes(self):
+        _validate_gate_policy_fields(
+            self.severity, self.is_mandatory, self.waiver_allowed,
+            self.waiver_reason_required, self.waiver_approval_required,
+        )
+        return self
 
     @model_validator(mode="before")
     @classmethod

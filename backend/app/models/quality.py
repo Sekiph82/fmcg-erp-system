@@ -42,6 +42,13 @@ class ParameterType(str, enum.Enum):
     PASS_FAIL = "PASS_FAIL"
 
 
+class QualityGateSeverity(str, enum.Enum):
+    LOW = "LOW"
+    MEDIUM = "MEDIUM"
+    HIGH = "HIGH"
+    CRITICAL = "CRITICAL"
+
+
 # ── QMS Extension Enums ───────────────────────────────────────────────────────
 
 class SamplingMethod(str, enum.Enum):
@@ -520,6 +527,18 @@ class QualityGateDefinition(Base, TimestampMixin):
         CheckConstraint("length(trim(gate_type)) > 0", name="ck_quality_gate_definitions_type_not_blank"),
         CheckConstraint("length(trim(trigger_event)) > 0", name="ck_quality_gate_definitions_trigger_not_blank"),
         CheckConstraint("length(trim(target_module)) > 0", name="ck_quality_gate_definitions_module_not_blank"),
+        CheckConstraint(
+            "severity IN ('LOW', 'MEDIUM', 'HIGH', 'CRITICAL')",
+            name="ck_quality_gate_definitions_severity",
+        ),
+        CheckConstraint(
+            "severity != 'CRITICAL' OR (is_mandatory AND NOT waiver_allowed)",
+            name="ck_quality_gate_definitions_critical_policy",
+        ),
+        CheckConstraint(
+            "NOT waiver_allowed OR (waiver_reason_required AND waiver_approval_required)",
+            name="ck_quality_gate_definitions_waiver_safeguards",
+        ),
     )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -530,6 +549,11 @@ class QualityGateDefinition(Base, TimestampMixin):
     target_module = Column(String(50), nullable=False, index=True)
     description = Column(Text, nullable=True)
     is_active = Column(Boolean, nullable=False, default=True, server_default="true")
+    severity = Column(String(16), nullable=False, default=QualityGateSeverity.MEDIUM.value, server_default="MEDIUM")
+    is_mandatory = Column(Boolean, nullable=False, default=True, server_default="true")
+    waiver_allowed = Column(Boolean, nullable=False, default=False, server_default="false")
+    waiver_reason_required = Column(Boolean, nullable=False, default=True, server_default="true")
+    waiver_approval_required = Column(Boolean, nullable=False, default=True, server_default="true")
     required_templates = relationship(
         "QCTemplate",
         secondary="quality_gate_required_templates",

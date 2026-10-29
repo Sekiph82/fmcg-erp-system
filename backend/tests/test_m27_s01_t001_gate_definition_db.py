@@ -110,6 +110,11 @@ async def test_gate_definition_can_be_configured_and_filtered_by_trigger_and_mod
         assert read_model.required_template_ids == [template_id]
         assert len(read_model.required_templates) == 1
         assert read_model.required_templates[0].parameters[0].parameter_name == f"Specification {suffix}"
+        assert read_model.severity.value == "MEDIUM"
+        assert read_model.is_mandatory is True
+        assert read_model.waiver_allowed is False
+        assert read_model.waiver_reason_required is True
+        assert read_model.waiver_approval_required is True
 
 
 @pytest.mark.asyncio
@@ -274,3 +279,32 @@ async def test_concurrent_gate_activation_serializes_against_template_weakening(
         template = await get_template(db, template_id)
         assert definition.is_active is True
         assert template.is_active is True
+
+
+@pytest.mark.asyncio
+async def test_database_rejects_critical_or_waiver_policy_without_safeguards():
+    suffix = uuid4().hex[:12].upper()
+    invalid_policies = [
+        {"severity": "CRITICAL", "is_mandatory": False},
+        {"severity": "CRITICAL", "waiver_allowed": True},
+        {"waiver_allowed": True, "waiver_approval_required": False},
+        {"waiver_allowed": True, "waiver_reason_required": False},
+        {"severity": "UNKNOWN"},
+    ]
+
+    async with AsyncSessionLocal() as db:
+        await _assert_task_database(db)
+        for index, policy in enumerate(invalid_policies):
+            db.add(
+                QualityGateDefinition(
+                    code=f"INVALID_POLICY_{suffix}_{index}",
+                    name="Synthetic invalid policy",
+                    gate_type="QC",
+                    trigger_event="ON_RECEIPT",
+                    target_module="procurement",
+                    **policy,
+                )
+            )
+            with pytest.raises(IntegrityError):
+                await db.flush()
+            await db.rollback()

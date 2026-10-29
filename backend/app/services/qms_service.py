@@ -17,7 +17,7 @@ from app.models.quality import (
     HazardAnalysis, CriticalControlPoint, CCPMonitoringLog,
     CorrectiveAction, CorrectiveActionStatus, CorrectiveActionStep,
     QCDeviation, DeviationStatus, RiskLevel,
-    LotQualityStatus, ReleaseStatus, AllergenValidationRecord, QualityGateDefinition, QCTemplate,
+    LotQualityStatus, ReleaseStatus, AllergenValidationRecord, QualityGateDefinition, QualityGateSeverity, QCTemplate,
     quality_gate_required_templates,
     QMSAIRecommendation, QMSAIAgentType, QMSAIRecStatus,
     SamplingMethod,
@@ -227,6 +227,13 @@ async def create_quality_gate_definition(
 ) -> QualityGateDefinition:
     template_ids = data.pop("required_template_ids", [])
     templates = await _get_valid_required_qc_templates(db, template_ids)
+    _validate_quality_gate_policy(
+        data.get("severity", QualityGateSeverity.MEDIUM.value),
+        data.get("is_mandatory", True),
+        data.get("waiver_allowed", False),
+        data.get("waiver_reason_required", True),
+        data.get("waiver_approval_required", True),
+    )
     if data.get("is_active", True) and not templates:
         raise ValueError("An active quality gate must link at least one required QC test template.")
     definition = QualityGateDefinition(**data)
@@ -242,6 +249,14 @@ async def update_quality_gate_definition(
     template_ids = changes.pop("required_template_ids", None)
     for field_name, value in changes.items():
         setattr(definition, field_name, value)
+
+    _validate_quality_gate_policy(
+        definition.severity,
+        definition.is_mandatory,
+        definition.waiver_allowed,
+        definition.waiver_reason_required,
+        definition.waiver_approval_required,
+    )
 
     if template_ids is not None:
         definition.required_templates = await _get_valid_required_qc_templates(db, template_ids)
@@ -265,6 +280,21 @@ async def update_quality_gate_definition(
     ):
         raise ValueError("Active quality gates can link only active, required, blocking QC templates with specification parameters.")
     return definition
+
+
+def _validate_quality_gate_policy(severity, is_mandatory, waiver_allowed, reason_required, approval_required) -> None:
+    severity = getattr(severity, "value", severity)
+    allowed = {item.value for item in QualityGateSeverity}
+    if severity not in allowed:
+        raise ValueError("Quality gate severity must be LOW, MEDIUM, HIGH, or CRITICAL.")
+    if severity == QualityGateSeverity.CRITICAL.value and not is_mandatory:
+        raise ValueError("Critical quality gates must remain mandatory.")
+    if severity == QualityGateSeverity.CRITICAL.value and waiver_allowed:
+        raise ValueError("Critical quality gates cannot be waived.")
+    if waiver_allowed and not reason_required:
+        raise ValueError("An allowed waiver must require a reason.")
+    if waiver_allowed and not approval_required:
+        raise ValueError("An allowed waiver must require quality approval.")
 
 
 # ── Sampling ──────────────────────────────────────────────────────────────────

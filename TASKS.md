@@ -11,8 +11,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 - Current Milestone: M27 — Quality Gates
 - Current Sprint: M27.S01 — Gate Definition Engine
 - Current Task: M27.S01.T003 — Gate severity/mandatory/waiver rules
-- Current Task Status: IN_PROGRESS
-- Next Task/Action: M27.S01.T003 — Gate severity/mandatory/waiver rules
+- Current Task Status: COMPLETE
+- Next Task/Action: M27.S01.T004 — Version/effective-date governance
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -815,7 +815,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
   Evidence: [CODEX implementation log](coordination/sessions/M27.S01.T001/CODEX_LOG_V01.md); configurable quality gate type/trigger catalog, API, migration, and dedicated permission are implemented. Focused contract/database checks passed 12/12 on disposable PostgreSQL; independent read-only review found no remaining issue.
 - [x] M27.S01.T002 — Required tests/specification linkage
   Evidence: [CODEX implementation log](coordination/sessions/M27.S01.T002/CODEX_LOG_V01.md); linked required QC templates and type-appropriate specifications, protected active-gate integrity across template edits/deletes and concurrent activation, migration applied on disposable PostgreSQL, 29 contract/regression tests and 5 disposable PostgreSQL tests passed; independent read-only review found no remaining issue.
-- [~] M27.S01.T003 — Gate severity/mandatory/waiver rules
+- [x] M27.S01.T003 — Gate severity/mandatory/waiver rules
+  Evidence: [CODEX implementation log](coordination/sessions/M27.S01.T003/CODEX_LOG_V01.md); added configurable severity/mandatory/waiver rules with critical-gate and waiver safeguards, DB-enforced migration, 38 contract/regression tests and 6 disposable PostgreSQL tests passed; independent read-only review found no material issue.
 - [ ] M27.S01.T004 — Version/effective-date governance
 
 ## M27.S02 — Transaction Enforcement
