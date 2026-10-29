@@ -47,6 +47,23 @@ class EventLogOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class DomainEventReference(BaseModel):
+    """Business object associated with a domain event, when one exists."""
+    type: Optional[str] = None
+    id: Optional[str] = None
+
+
+class DomainEventEnvelope(BaseModel):
+    """Stable, versionless event shape used by the webhook event engine."""
+    id: UUID
+    type: str
+    module: str
+    occurred_at: datetime
+    actor_id: Optional[str] = None
+    reference: DomainEventReference
+    data: Dict[str, Any]
+
+
 class PublishEventRequest(BaseModel):
     event_code: str
     reference_type: Optional[str] = None

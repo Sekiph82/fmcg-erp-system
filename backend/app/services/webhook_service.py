@@ -7,7 +7,7 @@ import time
 from base64 import b64encode
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import httpx
 from sqlalchemy import and_, desc, func, or_, select
@@ -18,13 +18,72 @@ from app.models.webhook import (
     EventLog, HttpMethod, InboundEndpoint, Subscription,
 )
 from app.schemas.webhook import (
-    EventDefinitionCreate, InboundEndpointCreate,
+    DomainEventEnvelope, DomainEventReference, EventDefinitionCreate, InboundEndpointCreate,
     PublishEventRequest, ReplayRequest, SubscriptionCreate, SubscriptionUpdate,
 )
 
 MAX_RESPONSE_BODY = 2000       # truncate stored response body
 BACKOFF_BASE = 60              # base seconds for exponential backoff
 MAX_PAYLOAD_BYTES = 1_048_576  # 1 MB
+
+
+def _build_event_envelope(
+    *,
+    event_id: UUID,
+    event_code: str,
+    module: str,
+    occurred_at: datetime,
+    payload: Dict[str, Any],
+    reference_type: Optional[str] = None,
+    reference_id: Optional[str] = None,
+    actor_id: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Build the canonical event contract without modifying caller-owned data."""
+    return DomainEventEnvelope(
+        id=event_id,
+        type=event_code,
+        module=module,
+        occurred_at=occurred_at,
+        actor_id=actor_id,
+        reference=DomainEventReference(type=reference_type, id=reference_id),
+        data=payload,
+    ).model_dump(mode="json")
+
+
+def _canonical_event_payload(event_log: EventLog) -> Dict[str, Any]:
+    """Return canonical output for current rows and normalize legacy rows on read."""
+    payload = event_log.payload if isinstance(event_log.payload, dict) else {}
+    if (
+        {"id", "type", "module", "occurred_at", "reference", "data"}.issubset(payload)
+        and "_event" not in payload
+        and payload.get("id") == str(event_log.id)
+        and payload.get("type") == event_log.event_code
+        and payload.get("module") == event_log.module
+        and isinstance(payload.get("reference"), dict)
+        and isinstance(payload.get("data"), dict)
+    ):
+        return payload
+
+    legacy_metadata = payload.get("_event") if isinstance(payload.get("_event"), dict) else {}
+    occurred_at = event_log.created_at or legacy_metadata.get("published_at") or datetime.now(timezone.utc)
+    if isinstance(occurred_at, str):
+        try:
+            occurred_at = datetime.fromisoformat(occurred_at.replace("Z", "+00:00"))
+        except ValueError:
+            occurred_at = datetime.now(timezone.utc)
+    if occurred_at.tzinfo is None:
+        occurred_at = occurred_at.replace(tzinfo=timezone.utc)
+    data = {key: value for key, value in payload.items() if key != "_event"}
+    return _build_event_envelope(
+        event_id=event_log.id,
+        event_code=event_log.event_code,
+        module=event_log.module,
+        occurred_at=occurred_at,
+        payload=data,
+        reference_type=event_log.reference_type or legacy_metadata.get("reference_type"),
+        reference_id=event_log.reference_id or legacy_metadata.get("reference_id"),
+        actor_id=event_log.actor_id or legacy_metadata.get("actor_id"),
+    )
 
 
 # ── Seeded event definitions ──────────────────────────────────────────────────
@@ -106,25 +165,30 @@ async def publish_event(
     event_def = def_result.scalar_one_or_none()
     resolved_module = module or (event_def.module if event_def else "unknown")
 
-    # Add metadata envelope
-    payload["_event"] = {
-        "code": event_code,
-        "module": resolved_module,
-        "reference_type": reference_type,
-        "reference_id": reference_id,
-        "actor_id": actor_id,
-        "published_at": datetime.now(timezone.utc).isoformat(),
-    }
+    event_id = uuid4()
+    occurred_at = datetime.now(timezone.utc)
+    envelope = _build_event_envelope(
+        event_id=event_id,
+        event_code=event_code,
+        module=resolved_module,
+        occurred_at=occurred_at,
+        payload=payload,
+        reference_type=reference_type,
+        reference_id=reference_id,
+        actor_id=actor_id,
+    )
 
     event_log = EventLog(
+        id=event_id,
         event_def_id=event_def.id if event_def else None,
         event_code=event_code,
         module=resolved_module,
         reference_type=reference_type,
         reference_id=reference_id,
-        payload=payload,
+        payload=envelope,
         actor_id=actor_id,
         partition_key=partition_key or reference_id,
+        created_at=occurred_at,
     )
     db.add(event_log)
     await db.flush()
@@ -140,7 +204,7 @@ async def publish_event(
         if sub.event_codes and event_code not in sub.event_codes:
             continue
         # Evaluate filter_expression
-        if not _evaluate_filter(sub.filter_expression, payload):
+        if not _evaluate_filter(sub.filter_expression, envelope):
             continue
         attempt = DeliveryAttempt(
             event_log_id=event_log.id,
@@ -168,6 +232,17 @@ def _get_nested(data: Dict, path: str) -> Any:
     return cur
 
 
+def _event_data_path(payload: Dict[str, Any], path: str) -> str:
+    """Keep legacy payload.* filters/templates working against envelope.data."""
+    if not isinstance(payload, dict) or not isinstance(payload.get("data"), dict):
+        return path
+    if path.startswith("payload."):
+        return "data." + path[len("payload."):]
+    if path and path.split(".", 1)[0] not in payload:
+        return "data." + path
+    return path
+
+
 def _evaluate_filter(filter_expr: Optional[List], payload: Dict) -> bool:
     """All rules must pass (AND logic). No rules = pass."""
     if not filter_expr:
@@ -176,7 +251,7 @@ def _evaluate_filter(filter_expr: Optional[List], payload: Dict) -> bool:
         field = rule.get("field", "")
         op = rule.get("op", "eq")
         expected = rule.get("value")
-        actual = _get_nested(payload, field)
+        actual = _get_nested(payload, _event_data_path(payload, field))
         try:
             if op == "eq" and actual != expected:
                 return False
@@ -203,7 +278,7 @@ def _transform_payload(payload: Dict, template: Optional[Dict]) -> Dict:
         return payload
     result = {}
     for out_key, in_path in template.items():
-        result[out_key] = _get_nested(payload, in_path)
+        result[out_key] = _get_nested(payload, _event_data_path(payload, in_path))
     return result
 
 
@@ -221,7 +296,7 @@ async def _deliver_attempt(
     db: AsyncSession, attempt: DeliveryAttempt, event_log: EventLog, sub: Subscription
 ) -> None:
     """Execute one HTTP delivery attempt and record result."""
-    payload = _transform_payload(event_log.payload, sub.transform_template)
+    payload = _transform_payload(_canonical_event_payload(event_log), sub.transform_template)
     body_bytes = json.dumps(payload).encode()
 
     if len(body_bytes) > MAX_PAYLOAD_BYTES:
@@ -468,10 +543,13 @@ async def test_subscription(db: AsyncSession, sub_id: UUID) -> Dict[str, Any]:
     if not sub:
         return {"success": False, "error": "Subscription not found"}
 
-    test_payload = {
-        "_event": {"code": "test.ping", "module": "system", "published_at": datetime.now(timezone.utc).isoformat()},
-        "message": "Webhook test from FMCG ERP",
-    }
+    test_payload = _build_event_envelope(
+        event_id=uuid4(),
+        event_code="test.ping",
+        module="system",
+        occurred_at=datetime.now(timezone.utc),
+        payload={"message": "Webhook test from FMCG ERP"},
+    )
     body_bytes = json.dumps(test_payload).encode()
     timestamp = str(int(time.time()))
     headers: Dict[str, str] = {
@@ -837,10 +915,12 @@ async def ai_payload_advisor(db: AsyncSession) -> Dict[str, Any]:
         sample = sample_r.scalar_one_or_none()
         if not sample:
             continue
-        keys = list(sample.payload.keys()) if sample.payload else []
+        envelope = _canonical_event_payload(sample)
+        data = envelope.get("data", {})
+        keys = list(data.keys()) if isinstance(data, dict) else []
         missing = []
-        if "reference_id" not in sample.payload.get("_event", {}):
-            missing.append("reference_id in _event envelope")
+        if not envelope.get("reference", {}).get("id"):
+            missing.append("reference.id in event envelope")
         if len(keys) < 3:
             missing.append("more context fields (timestamps, changed_fields)")
         recommendations.append({

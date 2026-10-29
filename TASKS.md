@@ -10,9 +10,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 - Current Milestone: M31 — API / Event Architecture
 - Current Sprint: M31.S01 — Partner API Governance
-- Current Task: M31.S01.T004 — Partner audit/usage analytics
+- Current Task: M31.S02.T001 — Canonical domain event envelope
 - Current Task Status: COMPLETE
-- Next Task/Action: M31.S02.T001 — Canonical domain event envelope
+- Next Task/Action: M31.S02.T002 — Event versioning/schema governance
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -979,7 +979,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
   Evidence: Partner lifecycle auditing and owner-scoped usage analytics implemented; T004 disposable PostgreSQL 2 passed (secret-free lifecycle audit, permissions/ownership, synthetic usage summaries, future-date exclusion, IP redaction); T003 scope/rate regression 2 passed; backend compile, frontend TypeScript, targeted ESLint, diff check passed; independent read-only review no blockers. Automatic API-key usage capture remains disabled until API-key authentication exists.
 
 ## M31.S02 — Event Contract
-- [ ] M31.S02.T001 — Canonical domain event envelope
+- [x] M31.S02.T001 — Canonical domain event envelope
+  Evidence: Canonical versionless envelope, legacy normalization/filter-template compatibility, and contract docs implemented. Focused pytest 5 passed; py_compile and git diff --check passed; independent read-only review has no blockers.
 - [ ] M31.S02.T002 — Event versioning/schema governance
 - [ ] M31.S02.T003 — Idempotency/correlation/causation IDs
 - [ ] M31.S02.T004 — Transactional event creation/outbox strategy
