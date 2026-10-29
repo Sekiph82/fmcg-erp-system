@@ -22,7 +22,7 @@ from app.models.invoice_match import (
     MatchLineStatus, MatchOverallStatus, DuplicateRisk,
 )
 from app.models.finance import PurchaseInvoice, PurchaseInvoiceLine
-from app.models.procurement import PurchaseOrder, POLine, GoodsReceipt, GRNLine
+from app.models.procurement import PurchaseOrder, POLine, GoodsReceipt, GRNLine, GRNStatus
 from app.models.master import Material
 from app.schemas.invoice_match import (
     ToleranceRuleCreate, ToleranceRuleUpdate, ReviewCreate, RunMatchRequest,
@@ -138,6 +138,16 @@ async def run_match(db: AsyncSession, invoice_id: UUID, force_rerun: bool = Fals
     if not invoice:
         raise ValueError(f"Invoice {invoice_id} not found")
 
+    # Validate supplier identity before creating or replacing a match header so
+    # an invalid cross-supplier reference has no partial database side effect.
+    if invoice.po_id:
+        po_identity_q = await db.execute(
+            select(PurchaseOrder.supplier_id).where(PurchaseOrder.id == invoice.po_id)
+        )
+        po_supplier_id = po_identity_q.scalar_one_or_none()
+        if po_supplier_id is not None and po_supplier_id != invoice.supplier_id:
+            raise ValueError("Invoice supplier does not match linked purchase order supplier")
+
     # Duplicate detection
     dup_flag = await _detect_duplicate(db, invoice)
 
@@ -184,7 +194,10 @@ async def run_match(db: AsyncSession, invoice_id: UUID, force_rerun: bool = Fals
         grn_q = await db.execute(
             select(GRNLine)
             .join(GoodsReceipt, GRNLine.grn_id == GoodsReceipt.id)
-            .where(GoodsReceipt.po_id == invoice.po_id)
+            .where(
+                GoodsReceipt.po_id == invoice.po_id,
+                GoodsReceipt.status == GRNStatus.POSTED,
+            )
         )
         for gl in grn_q.scalars().all():
             grn_line_map.setdefault(gl.po_line_id, []).append(gl)
@@ -344,7 +357,7 @@ def _evaluate_line_status(
     tax_ok = (tax_var is None) or (abs(tax_var) <= t_tol / 100)
 
     # Overbilling check
-    if billable_qty > 0 and invoiced_qty > billable_qty * (1 + q_tol / 100):
+    if invoiced_qty > billable_qty * (1 + q_tol / 100):
         return MatchLineStatus.OVERBILLED
 
     has_variance = not (qty_ok and price_ok and tax_ok)
@@ -564,6 +577,7 @@ async def get_header(db: AsyncSession, header_id: UUID) -> Optional[InvoiceMatch
             selectinload(InvoiceMatchHeader.ai_recs),
         )
         .where(InvoiceMatchHeader.id == header_id)
+        .execution_options(populate_existing=True)
     )
     return result.scalar_one_or_none()
 

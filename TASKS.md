@@ -8,11 +8,11 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 ## Project Status
 
-- Current Milestone: M05 — Warehouse Management
-- Current Sprint: M05.S03 — Baseline Integrity
-- Current Task: M05.S03.T003 — Validate negative-stock/concurrency safeguards
+- Current Milestone: M06 — Procurement
+- Current Sprint: M06.S03 — Baseline Verification
+- Current Task: M06.S03.T001 — Verify three-way-match transaction chain
 - Current Task Status: COMPLETE
-- Next Task/Action: M06.S03.T001 — Verify three-way-match transaction chain
+- Next Task/Action: M06.S03.T002 — Verify landed-cost accounting integration
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -281,8 +281,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 - [x] M06.S02.T005 — Invoice matching/landed-cost surfaces
 
 ## M06.S03 — Baseline Verification
-- [ ] M06.S03.T001 — Verify three-way-match transaction chain
-- [P] M06.S03.T002 — Verify landed-cost accounting integration
+- [x] M06.S03.T001 — Verify three-way-match transaction chain
+  Evidence: [M06.S03.T001 execution log](coordination/sessions/M06.S03.T001/CODEX_LOG_V01.md); fresh PostgreSQL 16.6 at single Alembic head 20261029_0025; 5 focused three-way-match tests and 12 procurement/accounting regressions passed. Tests verified draft GRN hold, posted PO/GRN/stock and match linkage, cumulative zero-remaining overbilling, cross-supplier rejection, rerun idempotency and late-failure rollback. Independent read-only review found no remaining material issues; exact disposable-container cleanup verified. No AP/GRNI/GL or production acceptance claimed.
+- [ ] M06.S03.T002 — Verify landed-cost accounting integration
 - [P] M06.S03.T003 — Verify supplier performance data completeness
 
 ---
