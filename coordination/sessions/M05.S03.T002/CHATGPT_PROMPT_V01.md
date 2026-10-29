@@ -1,0 +1,9 @@
+# M05.S03.T002 — Execution Prompt V01
+
+Implement and verify only `M05.S03.T002 — Validate transaction integrity across production/procurement/sales` from root `TASKS.md`, using `CHATGPT_AUDIT_CRITERIA_V01.md` as its acceptance material.
+
+Before editing, read the linked criteria and the referenced active audit rules/GAP reports. Trace the exact GRN-post, production-complete, and shipment-dispatch API/service transaction paths and tests. Keep scope limited to direct cross-module transaction integrity. Use synthetic records in a fresh passwordless loopback PostgreSQL database whose name matches the task guard. Add direct success, late-failure rollback, and repeated-transition tests for each flow. Make a narrow code correction only when the failing evidence proves an unambiguous defect; do not invent accounting, factory, staff, approval, valuation, or other business policy. Do not move the following task's general concurrency scope into this one.
+
+The database test must refuse all other database names, remote hosts, non-PostgreSQL engines, or password-bearing URLs. Migrate the empty disposable database to the current single Alembic head before running it. Preserve unrelated pre-existing local files. Do not inspect `.hiveai`, Codex private databases, or AppData; do not use/open the dashboard; do not modify FormuLab or create another checkout. Do not run GitHub Actions for M20 through 2026-10-30.
+
+At the task boundary run `node scripts/codex/task-queue.mjs --apply-answers` once and apply only exact matching Q-ID/task-ID decisions. Use one implementation executor and an independent read-only reviewer. Record truthful commands, results, failures/corrections, hashes, DB/container containment and cleanup, paths changed, transaction/side-effect findings, and review in `coordination/sessions/M05.S03.T002/CODEX_LOG_V01.md`. Do not claim production acceptance or self-assign an audit verdict unsupported by independent evidence.
