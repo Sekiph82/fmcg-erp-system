@@ -9,9 +9,11 @@ from sqlalchemy.orm import selectinload
 from app.models.logistics import (
     InternationalShipment, ShipmentContainer, ShipmentPOLink, ShipmentOwnershipEvent,
     CustomsDocument, CustomsClearance, CustomsClearanceMilestone, ArrivalNotification,
+    ShipmentReceiptClosure, ShipmentReceiptClosureGRN,
     LocalLogisticsCost, LocalCostStatus,
     IntlShipmentStatus, ContainerStatus,
 )
+from app.models.procurement import GoodsReceipt, GRNStatus, PurchaseOrder
 
 
 # ── Shipments ──────────────────────────────────────────────────────────────────
@@ -59,6 +61,67 @@ async def get_shipment_for_update(db: AsyncSession, shipment_id: uuid.UUID) -> O
         .where(InternationalShipment.id == shipment_id)
         .with_for_update()
     )
+    return result.scalar_one_or_none()
+
+
+async def list_shipment_purchase_orders(db: AsyncSession, shipment_id: uuid.UUID) -> List[PurchaseOrder]:
+    result = await db.execute(
+        select(PurchaseOrder)
+        .join(ShipmentPOLink, ShipmentPOLink.po_id == PurchaseOrder.id)
+        .where(ShipmentPOLink.shipment_id == shipment_id)
+        .order_by(PurchaseOrder.po_no)
+    )
+    return list(result.scalars().all())
+
+
+async def list_shipment_receipt_grns(
+    db: AsyncSession,
+    shipment_id: uuid.UUID,
+    *,
+    for_update: bool = False,
+) -> List[GoodsReceipt]:
+    q = (
+        select(GoodsReceipt)
+        .where(
+            select(ShipmentPOLink.id)
+            .where(
+                ShipmentPOLink.shipment_id == shipment_id,
+                ShipmentPOLink.po_id == GoodsReceipt.po_id,
+            )
+            .exists(),
+            GoodsReceipt.status == GRNStatus.POSTED,
+            ~select(ShipmentReceiptClosureGRN.id)
+            .where(ShipmentReceiptClosureGRN.grn_id == GoodsReceipt.id)
+            .exists(),
+        )
+        .options(selectinload(GoodsReceipt.po), selectinload(GoodsReceipt.warehouse))
+        .order_by(GoodsReceipt.received_date, GoodsReceipt.grn_no)
+    )
+    if for_update:
+        q = q.with_for_update()
+    return list((await db.execute(q)).scalars().all())
+
+
+async def get_shipment_receipt_closure(
+    db: AsyncSession,
+    shipment_id: uuid.UUID,
+    *,
+    for_update: bool = False,
+) -> Optional[ShipmentReceiptClosure]:
+    q = select(ShipmentReceiptClosure).where(ShipmentReceiptClosure.shipment_id == shipment_id)
+    if for_update:
+        q = q.with_for_update()
+    else:
+        q = q.options(
+            selectinload(ShipmentReceiptClosure.closed_by),
+            selectinload(ShipmentReceiptClosure.receipts)
+            .selectinload(ShipmentReceiptClosureGRN.grn)
+            .selectinload(GoodsReceipt.po),
+            selectinload(ShipmentReceiptClosure.receipts)
+            .selectinload(ShipmentReceiptClosureGRN.grn)
+            .selectinload(GoodsReceipt.warehouse),
+        )
+    result = await db.execute(q)
     return result.scalar_one_or_none()
 
 
@@ -332,6 +395,15 @@ async def get_arrival(db: AsyncSession, shipment_id: uuid.UUID) -> Optional[Arri
     return result.scalar_one_or_none()
 
 
+async def get_arrival_for_update(db: AsyncSession, shipment_id: uuid.UUID) -> Optional[ArrivalNotification]:
+    result = await db.execute(
+        select(ArrivalNotification)
+        .where(ArrivalNotification.shipment_id == shipment_id)
+        .with_for_update()
+    )
+    return result.scalar_one_or_none()
+
+
 async def update_arrival(db: AsyncSession, arrival: ArrivalNotification, data: dict) -> ArrivalNotification:
     for k, v in data.items():
         if v is not None:
@@ -341,8 +413,6 @@ async def update_arrival(db: AsyncSession, arrival: ArrivalNotification, data: d
         arrival.shipment.ata = data["ata"]
         if arrival.shipment.status == IntlShipmentStatus.IN_TRANSIT:
             arrival.shipment.status = IntlShipmentStatus.ARRIVED_PORT
-    if data.get("delivery_date") and arrival.shipment:
-        arrival.shipment.status = IntlShipmentStatus.DELIVERED
     await db.flush()
     await db.refresh(arrival)
     return arrival

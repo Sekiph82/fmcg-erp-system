@@ -24,10 +24,15 @@ Timeline with 5 milestone dates. Each milestone turns green when its date is ent
 | Actual Arrival at Port (ATA) | Physical vessel arrival |
 | Port Discharge / Released | Container discharged and released by port |
 | Customs Cleared | KRA customs clearance completed |
-| Delivered to Warehouse | Final delivery confirmed |
-| GRN ID | UUID of the Goods Receipt Note created on delivery |
+| Delivered to Warehouse | Set only when a posted GRN is linked through Kenya receipt closure |
 
-API: `PUT /api/v1/logistics/shipments/{id}/arrival`
+Arrival dates before warehouse delivery can be recorded through `PATCH /api/v1/logistics/shipments/{id}/arrival`. Delivery date and GRN linkage are read-only projections of the receipt-closure record and cannot be set directly.
+
+### Kenya Receipt Closure
+
+After the shipment is customs-cleared and marked **Out for Delivery**, select one or more posted GRNs linked to purchase orders on that shipment. The system records the shipment, GRN references, GRN receipt dates, operator, and system timestamp as an immutable closure, then marks the shipment **Delivered**. The displayed delivery date is the latest selected GRN receipt date. Draft, unrelated, already-used, or out-of-scope GRNs cannot be selected. Partial GRNs remain valid; this closes the transport shipment receipt and does not claim that the purchase order is fully received.
+
+APIs: `GET /api/v1/logistics/shipments/{id}/receipt-options`, `GET /api/v1/logistics/shipments/{id}/receipt-closure`, and `POST /api/v1/logistics/shipments/{id}/receipt-closure`.
 
 ## Customs Clearance Sub-Tab (KRA)
 

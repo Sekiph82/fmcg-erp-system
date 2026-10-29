@@ -161,6 +161,25 @@ export interface ArrivalNotification {
   created_at: string;
 }
 
+export interface ShipmentReceiptGRNOption {
+  id: string;
+  grn_no: string;
+  po_id: string;
+  po_no: string;
+  received_date: string;
+  warehouse_id: string;
+  warehouse_name?: string;
+}
+
+export interface ShipmentReceiptClosure {
+  id: string;
+  shipment_id: string;
+  closed_at: string;
+  closed_by_id: string;
+  closed_by_name?: string;
+  grns: ShipmentReceiptGRNOption[];
+}
+
 export interface LocalCostRecord {
   id: string;
   shipment_id: string;
@@ -316,6 +335,21 @@ export const logisticsApi = {
   },
   async updateArrival(shipmentId: string, data: object): Promise<ArrivalNotification> {
     const res = await apiClient.patch<ArrivalNotification>(`/api/v1/logistics/shipments/${shipmentId}/arrival`, data);
+    return res.data;
+  },
+  async listReceiptOptions(shipmentId: string): Promise<ShipmentReceiptGRNOption[]> {
+    const res = await apiClient.get<ShipmentReceiptGRNOption[]>(`/api/v1/logistics/shipments/${shipmentId}/receipt-options`);
+    return res.data;
+  },
+  async getReceiptClosure(shipmentId: string): Promise<ShipmentReceiptClosure> {
+    const res = await apiClient.get<ShipmentReceiptClosure>(`/api/v1/logistics/shipments/${shipmentId}/receipt-closure`);
+    return res.data;
+  },
+  async closeReceipt(shipmentId: string, grnIds: string[]): Promise<ShipmentReceiptClosure> {
+    const res = await apiClient.post<ShipmentReceiptClosure>(
+      `/api/v1/logistics/shipments/${shipmentId}/receipt-closure`,
+      { grn_ids: grnIds },
+    );
     return res.data;
   },
 

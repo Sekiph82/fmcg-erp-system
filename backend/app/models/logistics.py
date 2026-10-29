@@ -363,6 +363,48 @@ class ArrivalNotification(Base, TimestampMixin):
     grn = relationship("GoodsReceipt")
 
 
+class ShipmentReceiptClosure(Base, TimestampMixin):
+    """Immutable record that closes a shipment against posted warehouse GRNs."""
+    __tablename__ = "shipment_receipt_closures"
+    __table_args__ = (
+        UniqueConstraint("shipment_id", name="uq_shipment_receipt_closures_shipment"),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    shipment_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("intl_shipments.id", ondelete="RESTRICT"),
+        nullable=False,
+    )
+    closed_at = Column(DateTime(timezone=True), nullable=False)
+    closed_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
+
+    shipment = relationship("InternationalShipment")
+    closed_by = relationship("User")
+    receipts = relationship("ShipmentReceiptClosureGRN", back_populates="closure", passive_deletes=True)
+
+
+class ShipmentReceiptClosureGRN(Base, TimestampMixin):
+    """Posted GRN explicitly assigned to one immutable shipment closure."""
+    __tablename__ = "shipment_receipt_closure_grns"
+    __table_args__ = (
+        UniqueConstraint("grn_id", name="uq_shipment_receipt_closure_grns_grn"),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    closure_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("shipment_receipt_closures.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    grn_id = Column(UUID(as_uuid=True), ForeignKey("goods_receipts.id", ondelete="RESTRICT"), nullable=False)
+    received_date = Column(Date, nullable=False)
+
+    closure = relationship("ShipmentReceiptClosure", back_populates="receipts")
+    grn = relationship("GoodsReceipt")
+
+
 # ── Local Logistics Costs (Kenya-side) ────────────────────────────────────────
 
 class LocalLogisticsCost(Base, TimestampMixin):

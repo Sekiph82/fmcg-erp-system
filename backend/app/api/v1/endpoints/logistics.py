@@ -5,7 +5,7 @@ from decimal import Decimal
 from datetime import datetime, timezone
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -15,12 +15,14 @@ from app.models.user import User
 from app.models.logistics import (
     InternationalShipment, ShipmentContainer, ShipmentPOLink, ShipmentOwnershipEvent,
     CustomsDocument, CustomsClearance, CustomsClearanceMilestone, ArrivalNotification,
+    ShipmentReceiptClosure, ShipmentReceiptClosureGRN,
     LocalLogisticsCost,
     IntlShipmentStatus, InventoryOwnerStatus, ContainerStatus, ClearanceStatus,
 )
-from app.models.procurement import POStatus, PurchaseOrder
+from app.models.procurement import GoodsReceipt, GRNStatus, POStatus, PurchaseOrder
 import app.crud.logistics as crud
 import app.services.logistics_service as svc
+import app.services.procurement_service as procurement_svc
 from app.schemas.logistics import (
     ShipmentCreate, ShipmentUpdate, ShipmentRead,
     ContainerCreate, ContainerUpdate, ContainerRead,
@@ -30,6 +32,8 @@ from app.schemas.logistics import (
     ClearanceCreate, ClearanceUpdate, ClearanceRead,
     ClearanceMilestoneCreate, ClearanceMilestoneRead,
     ArrivalCreate, ArrivalUpdate, ArrivalRead,
+    ShipmentReceiptClosureCreate, ShipmentReceiptClosureRead, ShipmentReceiptClosureGRNRead,
+    ShipmentReceiptGRNOption,
     LocalCostCreate, LocalCostUpdate, LocalCostRead, LocalCostSummary,
     ShipmentDashboardRow,
 )
@@ -44,7 +48,7 @@ SHIPMENT_STATUS_TRANSITIONS: dict[IntlShipmentStatus, set[IntlShipmentStatus]] =
     IntlShipmentStatus.ARRIVED_PORT: set(),
     IntlShipmentStatus.CUSTOMS_HOLD: set(),
     IntlShipmentStatus.CUSTOMS_CLEARED: {IntlShipmentStatus.OUT_FOR_DELIVERY},
-    IntlShipmentStatus.OUT_FOR_DELIVERY: {IntlShipmentStatus.DELIVERED},
+    IntlShipmentStatus.OUT_FOR_DELIVERY: set(),
     IntlShipmentStatus.DELIVERED: set(),
     IntlShipmentStatus.CANCELLED: set(),
 }
@@ -236,6 +240,39 @@ def _arr_read(a) -> ArrivalRead:
     )
 
 
+def _receipt_grn_option(grn: GoodsReceipt) -> ShipmentReceiptGRNOption:
+    return ShipmentReceiptGRNOption(
+        id=grn.id,
+        grn_no=grn.grn_no,
+        po_id=grn.po_id,
+        po_no=grn.po.po_no if grn.po else "",
+        received_date=grn.received_date,
+        warehouse_id=grn.warehouse_id,
+        warehouse_name=grn.warehouse.name if grn.warehouse else None,
+    )
+
+
+def _receipt_closure_read(closure: ShipmentReceiptClosure) -> ShipmentReceiptClosureRead:
+    actor = closure.closed_by
+    actor_name = getattr(actor, "full_name", None) or getattr(actor, "username", None)
+    receipts = sorted(
+        closure.receipts,
+        key=lambda item: (item.received_date, item.grn.grn_no if item.grn else ""),
+    )
+    return ShipmentReceiptClosureRead(
+        id=closure.id,
+        shipment_id=closure.shipment_id,
+        closed_at=closure.closed_at,
+        closed_by_id=closure.closed_by_id,
+        closed_by_name=actor_name,
+        grns=[
+            ShipmentReceiptClosureGRNRead(**_receipt_grn_option(item.grn).model_dump())
+            for item in receipts
+            if item.grn is not None
+        ],
+    )
+
+
 # ── Shipments ──────────────────────────────────────────────────────────────────
 
 @router.get("/shipments/", response_model=List[ShipmentRead])
@@ -291,6 +328,8 @@ async def update_shipment(
     changes = body.model_dump(exclude_none=True)
     requested_status = changes.get("status")
     if requested_status is not None and requested_status != ship.status:
+        if requested_status == IntlShipmentStatus.DELIVERED:
+            raise HTTPException(status_code=409, detail="Warehouse delivery must be recorded through a posted GRN receipt closure")
         if requested_status in {IntlShipmentStatus.CUSTOMS_HOLD, IntlShipmentStatus.CUSTOMS_CLEARED}:
             raise HTTPException(status_code=409, detail="Customs shipment status must be recorded through a clearance milestone")
         allowed = SHIPMENT_STATUS_TRANSITIONS.get(ship.status, set())
@@ -369,9 +408,11 @@ async def add_po_link(
     db: AsyncSession = Depends(get_db),
     _: User = Depends(require_permission("logistics", "create")),
 ):
-    shipment = await db.get(InternationalShipment, shipment_id)
+    shipment = await crud.get_shipment_for_update(db, shipment_id)
     if shipment is None:
         raise HTTPException(status_code=404, detail="Shipment not found")
+    if shipment.status == IntlShipmentStatus.DELIVERED or await crud.get_shipment_receipt_closure(db, shipment_id):
+        raise HTTPException(status_code=409, detail="Purchase orders cannot be changed after warehouse receipt closure")
     po = await db.get(PurchaseOrder, body.po_id)
     if po is None:
         raise HTTPException(status_code=404, detail="Purchase order not found")
@@ -396,6 +437,19 @@ async def remove_po_link(
     db: AsyncSession = Depends(get_db),
     _: User = Depends(require_permission("logistics", "edit")),
 ):
+    link = await crud.get_po_link_by_id(db, link_id)
+    if link is None:
+        raise HTTPException(status_code=404, detail="Shipment purchase-order link not found")
+    shipment = await crud.get_shipment_for_update(db, link.shipment_id)
+    if shipment is None:
+        raise HTTPException(status_code=404, detail="Shipment not found")
+    if shipment.status == IntlShipmentStatus.DELIVERED or await crud.get_shipment_receipt_closure(db, shipment.id):
+        raise HTTPException(status_code=409, detail="Purchase orders cannot be changed after warehouse receipt closure")
+    # Re-read after the shipment lock: concurrent edits serialize with receipt closure and
+    # with one another, so the deletion cannot invalidate a just-recorded GRN association.
+    link = await crud.get_po_link_by_id(db, link_id)
+    if link is None or link.shipment_id != shipment.id:
+        raise HTTPException(status_code=404, detail="Shipment purchase-order link not found")
     try:
         await crud.remove_po_link(db, link_id)
         await db.commit()
@@ -707,11 +761,121 @@ async def update_arrival(
     if not arr:
         raise HTTPException(status_code=404, detail="Arrival record not found")
     data = body.model_dump(exclude_none=True)
-    if data.get("grn_id"):
-        data["grn_id"] = uuid.UUID(data["grn_id"])
     arr = await crud.update_arrival(db, arr, data)
     await db.commit()
     return _arr_read(arr)
+
+
+@router.get(
+    "/shipments/{shipment_id}/receipt-options",
+    response_model=List[ShipmentReceiptGRNOption],
+)
+async def list_shipment_receipt_options(
+    shipment_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    actor: User = Depends(require_permission("logistics", "view")),
+):
+    shipment = await crud.get_shipment(db, shipment_id)
+    if shipment is None:
+        raise HTTPException(status_code=404, detail="Shipment not found")
+    if shipment.status != IntlShipmentStatus.OUT_FOR_DELIVERY:
+        return []
+    grns = await crud.list_shipment_receipt_grns(db, shipment_id)
+    return [
+        _receipt_grn_option(grn)
+        for grn in grns
+        if procurement_svc.build_procurement_access_hint(actor, grn).can_view
+    ]
+
+
+@router.get(
+    "/shipments/{shipment_id}/receipt-closure",
+    response_model=ShipmentReceiptClosureRead,
+)
+async def get_shipment_receipt_closure(
+    shipment_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    actor: User = Depends(require_permission("logistics", "view")),
+):
+    closure = await crud.get_shipment_receipt_closure(db, shipment_id)
+    if closure is None:
+        raise HTTPException(status_code=404, detail="Warehouse receipt has not been closed")
+    for item in closure.receipts:
+        if item.grn is not None:
+            procurement_svc.ensure_procurement_action_allowed(actor, item.grn, "view")
+    return _receipt_closure_read(closure)
+
+
+@router.post(
+    "/shipments/{shipment_id}/receipt-closure",
+    response_model=ShipmentReceiptClosureRead,
+    status_code=status.HTTP_201_CREATED,
+)
+async def close_shipment_receipt(
+    shipment_id: uuid.UUID,
+    body: ShipmentReceiptClosureCreate,
+    response: Response,
+    db: AsyncSession = Depends(get_db),
+    actor: User = Depends(require_permission("logistics", "edit")),
+):
+    requested_ids = body.grn_ids
+    if len(set(requested_ids)) != len(requested_ids):
+        raise HTTPException(status_code=422, detail="Each posted GRN can be selected only once")
+
+    shipment = await crud.get_shipment_for_update(db, shipment_id)
+    if shipment is None:
+        raise HTTPException(status_code=404, detail="Shipment not found")
+    existing = await crud.get_shipment_receipt_closure(db, shipment_id)
+    if existing is not None:
+        existing_ids = {item.grn_id for item in existing.receipts}
+        if shipment.status == IntlShipmentStatus.DELIVERED and existing_ids == set(requested_ids):
+            for item in existing.receipts:
+                if item.grn is not None:
+                    procurement_svc.ensure_procurement_action_allowed(actor, item.grn, "view")
+            response.status_code = status.HTTP_200_OK
+            return _receipt_closure_read(existing)
+        raise HTTPException(status_code=409, detail="Shipment receipt is already closed with a different GRN selection")
+    if shipment.status != IntlShipmentStatus.OUT_FOR_DELIVERY:
+        raise HTTPException(status_code=409, detail="Receipt closure is allowed only after customs clearance and dispatch to the warehouse")
+
+    grns = await crud.list_shipment_receipt_grns(db, shipment_id, for_update=True)
+    grns_by_id = {grn.id: grn for grn in grns}
+    if not set(requested_ids).issubset(grns_by_id):
+        raise HTTPException(status_code=409, detail="Every selected GRN must be posted, unused, and linked to a purchase order on this shipment")
+    selected = [grns_by_id[grn_id] for grn_id in requested_ids]
+    for grn in selected:
+        if grn.status != GRNStatus.POSTED:
+            raise HTTPException(status_code=409, detail=f"GRN {grn.grn_no} must be posted before receipt closure")
+        procurement_svc.ensure_procurement_action_allowed(actor, grn, "view")
+
+    closed_at = datetime.now(timezone.utc)
+    closure = ShipmentReceiptClosure(
+        shipment_id=shipment.id,
+        closed_at=closed_at,
+        closed_by_id=actor.id,
+    )
+    closure.receipts = [
+        ShipmentReceiptClosureGRN(grn_id=grn.id, received_date=grn.received_date)
+        for grn in selected
+    ]
+    shipment.status = IntlShipmentStatus.DELIVERED
+    arrival = await crud.get_arrival_for_update(db, shipment_id)
+    if arrival is None:
+        arrival = ArrivalNotification(shipment_id=shipment_id)
+        db.add(arrival)
+    arrival.delivery_date = max(grn.received_date for grn in selected)
+    arrival.grn_id = max(selected, key=lambda grn: (grn.received_date, str(grn.id))).id
+    db.add(closure)
+    try:
+        await db.commit()
+    except IntegrityError as exc:
+        await db.rollback()
+        raise HTTPException(status_code=409, detail="A selected GRN or shipment was closed concurrently") from exc
+
+    saved = await crud.get_shipment_receipt_closure(db, shipment_id)
+    if saved is None:
+        raise HTTPException(status_code=500, detail="Receipt closure was saved but could not be reloaded")
+    return _receipt_closure_read(saved)
 
 
 # ── Local Logistics Costs ──────────────────────────────────────────────────────

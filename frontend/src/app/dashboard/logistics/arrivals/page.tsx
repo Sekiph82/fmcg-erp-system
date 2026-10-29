@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   logisticsApi, IntlShipment, ArrivalNotification, CustomsClearance, ClearanceStatus, ClearanceMilestone,
+  ShipmentReceiptClosure, ShipmentReceiptGRNOption,
   LocalCostRecord, LocalCostType, LocalPaymentMethod, LocalCostStatus,
 } from "@/lib/logistics";
 import { Badge } from "@/components/ui/Badge";
@@ -44,6 +45,7 @@ export default function ArrivalsPage() {
     queryKey: ["logistics-shipments"],
     queryFn: () => logisticsApi.listShipments(),
   });
+  const selectedShipment = shipments.find((s) => s.id === selectedId);
 
   const { data: alerts = [] } = useQuery({
     queryKey: ["logistics-eta-alerts"],
@@ -52,8 +54,26 @@ export default function ArrivalsPage() {
 
   const { data: arrival, isLoading: arrLoading } = useQuery({
     queryKey: ["logistics-arrival", selectedId],
-    queryFn: () => (selectedId ? logisticsApi.getArrival(selectedId) : null),
+    queryFn: () => (selectedId ? logisticsApi.getArrival(selectedId).catch((error: unknown) => {
+      if ((error as { response?: { status?: number } })?.response?.status === 404) return null;
+      throw error;
+    }) : null),
     enabled: !!selectedId,
+  });
+
+  const { data: receiptClosure = null, isLoading: receiptClosureLoading } = useQuery({
+    queryKey: ["logistics-receipt-closure", selectedId],
+    queryFn: () => (selectedId ? logisticsApi.getReceiptClosure(selectedId).catch((error: unknown) => {
+      if ((error as { response?: { status?: number } })?.response?.status === 404) return null;
+      throw error;
+    }) : null),
+    enabled: !!selectedId && canViewClearance,
+  });
+
+  const { data: receiptOptions = [], isLoading: receiptOptionsLoading, error: receiptOptionsError } = useQuery({
+    queryKey: ["logistics-receipt-options", selectedId],
+    queryFn: () => (selectedId ? logisticsApi.listReceiptOptions(selectedId) : []),
+    enabled: !!selectedId && !!selectedShipment && selectedShipment.status === "OUT_FOR_DELIVERY" && canViewClearance,
   });
 
   const { data: clearance, isLoading: clLoading } = useQuery({
@@ -71,6 +91,19 @@ export default function ArrivalsPage() {
   const updateArrival = useMutation({
     mutationFn: (data: object) => logisticsApi.updateArrival(selectedId, data),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["logistics-arrival"] }); qc.invalidateQueries({ queryKey: ["logistics-dashboard"] }); },
+  });
+
+  const closeReceipt = useMutation({
+    mutationFn: (grnIds: string[]) => logisticsApi.closeReceipt(selectedId, grnIds),
+    onSuccess: async () => {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["logistics-receipt-closure", selectedId] }),
+        qc.invalidateQueries({ queryKey: ["logistics-receipt-options", selectedId] }),
+        qc.invalidateQueries({ queryKey: ["logistics-arrival", selectedId] }),
+        qc.invalidateQueries({ queryKey: ["logistics-shipments"] }),
+        qc.invalidateQueries({ queryKey: ["logistics-dashboard"] }),
+      ]);
+    },
   });
 
   const createClearance = useMutation({
@@ -116,8 +149,6 @@ export default function ArrivalsPage() {
     mutationFn: (id: string) => logisticsApi.deleteLocalCost(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["local-costs", selectedId] }),
   });
-
-  const selectedShipment = shipments.find((s) => s.id === selectedId);
 
   return (
     <div className="space-y-6">
@@ -194,7 +225,20 @@ export default function ArrivalsPage() {
               </div>
               {arrLoading ? <p className="px-5 py-8 text-center text-gray-400">Loading…</p> : arrival ? (
                 <ArrivalForm arrival={arrival} onSave={(d) => updateArrival.mutate(d)} loading={updateArrival.isPending} />
-              ) : <p className="px-5 py-8 text-center text-gray-400">No arrival record</p>}
+              ) : <p className="px-5 py-5 text-center text-gray-400">No arrival timeline has been recorded yet.</p>}
+              {canViewClearance && selectedShipment && (
+                <ReceiptClosurePanel
+                  shipmentStatus={selectedShipment.status}
+                  closure={receiptClosure}
+                  options={receiptOptions}
+                  loading={receiptClosureLoading || receiptOptionsLoading}
+                  canEdit={canEditClearance}
+                  optionsError={receiptOptionsError instanceof Error ? receiptOptionsError.message : ""}
+                  saving={closeReceipt.isPending}
+                  saveError={closeReceipt.error instanceof Error ? closeReceipt.error.message : ""}
+                  onClose={(grnIds) => closeReceipt.mutate(grnIds)}
+                />
+              )}
             </div>
           )}
 
@@ -278,9 +322,6 @@ function ArrivalForm({ arrival, onSave, loading }: { arrival: ArrivalNotificatio
     eta_revised: arrival.eta_revised ?? "",
     ata: arrival.ata ?? "",
     port_discharge_date: arrival.port_discharge_date ?? "",
-    customs_clearance_date: arrival.customs_clearance_date ?? "",
-    delivery_date: arrival.delivery_date ?? "",
-    grn_id: arrival.grn_id ?? "",
     notes: arrival.notes ?? "",
   });
   const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
@@ -311,15 +352,15 @@ function ArrivalForm({ arrival, onSave, loading }: { arrival: ArrivalNotificatio
       </div>
 
       <div className="grid grid-cols-3 gap-3">
-        {events.map(({ key, label }) => (
+        {events.filter(({ key }) => key !== "delivery_date").map(({ key, label }) => (
           <div key={key}>
             <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
-            <input type="date" className="w-full border rounded px-3 py-2 text-sm" value={(form as Record<string, string>)[key]} disabled={!canEdit || key === "customs_clearance_date"} onChange={(e) => set(key, e.target.value)} />
+            <input type="date" className="w-full border rounded px-3 py-2 text-sm" value={key === "customs_clearance_date" ? arrival.customs_clearance_date ?? "" : (form as Record<string, string>)[key]} disabled={!canEdit || key === "customs_clearance_date"} onChange={(e) => set(key, e.target.value)} />
           </div>
         ))}
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">GRN ID (inventory receipt)</label>
-          <input className="w-full border rounded px-3 py-2 text-sm font-mono" value={form.grn_id} onChange={(e) => set("grn_id", e.target.value)} placeholder="UUID of GoodsReceipt" />
+          <label htmlFor="arrival-delivery-date" className="block text-xs font-medium text-gray-600 mb-1">Delivered to Warehouse</label>
+          <input id="arrival-delivery-date" type="date" className="w-full border rounded px-3 py-2 text-sm bg-gray-50" value={arrival.delivery_date ?? ""} disabled readOnly />
         </div>
       </div>
       <div>
@@ -328,10 +369,72 @@ function ArrivalForm({ arrival, onSave, loading }: { arrival: ArrivalNotificatio
       </div>
       {canEdit && <div className="flex justify-end">
         <Button loading={loading} onClick={() => onSave(
-          Object.fromEntries(Object.entries(form).filter(([k]) => k !== "customs_clearance_date").map(([k, v]) => [k, v || undefined]))
+          Object.fromEntries(Object.entries(form).map(([k, v]) => [k, v || undefined]))
         )}>Save Arrival</Button>
       </div>}
     </div>
+  );
+}
+
+function ReceiptClosurePanel({
+  shipmentStatus, closure, options, loading, canEdit, optionsError, saving, saveError, onClose,
+}: {
+  shipmentStatus: IntlShipment["status"];
+  closure: ShipmentReceiptClosure | null;
+  options: ShipmentReceiptGRNOption[];
+  loading: boolean;
+  canEdit: boolean;
+  optionsError: string;
+  saving: boolean;
+  saveError: string;
+  onClose: (grnIds: string[]) => void;
+}) {
+  const [selectedGRNs, setSelectedGRNs] = useState<string[]>([]);
+  useEffect(() => setSelectedGRNs([]), [options]);
+
+  const toggleGRN = (id: string) => {
+    setSelectedGRNs((current) => current.includes(id) ? current.filter((value) => value !== id) : [...current, id]);
+  };
+
+  return (
+    <section aria-labelledby="receipt-closure-heading" className="m-5 rounded-lg border bg-slate-50 p-4">
+      <h3 id="receipt-closure-heading" className="font-semibold text-gray-800">Kenya warehouse receipt closure</h3>
+      <p className="mt-1 text-xs text-gray-500">A shipment closes only against posted GRNs linked to its purchase orders. Closing records the GRN references, operator, and system time.</p>
+      {loading ? <p className="mt-3 text-sm text-gray-500">Loading receipt records…</p> : closure ? (
+        <div className="mt-3 space-y-2">
+          <p className="text-sm font-medium text-green-700">Shipment receipt closed on {new Date(closure.closed_at).toLocaleString()} by {closure.closed_by_name || "recorded user"}.</p>
+          <ul className="list-disc pl-5 text-sm text-gray-700">
+            {closure.grns.map((grn) => (
+              <li key={grn.id}>{grn.grn_no} · PO {grn.po_no} · {grn.received_date} · {grn.warehouse_name || "warehouse"}</li>
+            ))}
+          </ul>
+        </div>
+      ) : shipmentStatus !== "OUT_FOR_DELIVERY" ? (
+        <p className="mt-3 text-sm text-gray-600">Receipt closure becomes available after customs clearance and dispatch to the warehouse.</p>
+      ) : optionsError ? (
+        <p role="alert" className="mt-3 text-sm text-red-700">Could not load posted GRNs: {optionsError}</p>
+      ) : options.length === 0 ? (
+        <p className="mt-3 text-sm text-gray-600">No unused posted GRNs are linked to this shipment yet. Post a warehouse receipt in Procurement first.</p>
+      ) : (
+        <>
+          <div className="mt-3 space-y-2">
+            {options.map((grn) => (
+              <label key={grn.id} className="flex items-start gap-2 rounded border bg-white p-2 text-sm">
+                <input type="checkbox" checked={selectedGRNs.includes(grn.id)} onChange={() => toggleGRN(grn.id)} disabled={!canEdit || saving} />
+                <span>{grn.grn_no} · PO {grn.po_no} · {grn.received_date} · {grn.warehouse_name || "warehouse"}</span>
+              </label>
+            ))}
+          </div>
+          {saveError && <p role="alert" className="mt-3 text-sm text-red-700">Receipt closure was not saved: {saveError}</p>}
+          {canEdit && <div className="mt-3 flex justify-end">
+            <Button loading={saving} disabled={selectedGRNs.length === 0 || saving} onClick={() => onClose(selectedGRNs)}>
+              Close receipt with selected GRNs
+            </Button>
+          </div>}
+          {!canEdit && <p className="mt-3 text-sm text-gray-500">You need logistics.edit permission to close the receipt.</p>}
+        </>
+      )}
+    </section>
   );
 }
 

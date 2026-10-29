@@ -315,8 +315,6 @@ class ArrivalUpdate(BaseModel):
     eta_revised: Optional[date] = None
     ata: Optional[date] = None
     port_discharge_date: Optional[date] = None
-    delivery_date: Optional[date] = None
-    grn_id: Optional[str] = None
     eta_alert_sent: Optional[bool] = None
     notes: Optional[str] = None
 
@@ -336,6 +334,35 @@ class ArrivalRead(BaseModel):
     grn_id: Optional[str]
     notes: Optional[str]
     created_at: datetime
+
+
+class ShipmentReceiptClosureCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    grn_ids: List[uuid.UUID] = Field(min_length=1, max_length=100)
+
+
+class ShipmentReceiptGRNOption(BaseModel):
+    id: uuid.UUID
+    grn_no: str
+    po_id: uuid.UUID
+    po_no: str
+    received_date: date
+    warehouse_id: uuid.UUID
+    warehouse_name: Optional[str] = None
+
+
+class ShipmentReceiptClosureGRNRead(ShipmentReceiptGRNOption):
+    pass
+
+
+class ShipmentReceiptClosureRead(BaseModel):
+    id: uuid.UUID
+    shipment_id: uuid.UUID
+    closed_at: datetime
+    closed_by_id: uuid.UUID
+    closed_by_name: Optional[str] = None
+    grns: List[ShipmentReceiptClosureGRNRead]
 
 
 # ── Local Logistics Costs ─────────────────────────────────────────────────────
