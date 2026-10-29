@@ -13,7 +13,11 @@ from sqlalchemy import func, select, text
 from sqlalchemy.engine import URL
 
 from app.db.session import AsyncSessionLocal, engine
-from app.models.finance import PurchaseInvoice, PurchaseInvoiceLine
+from app.models.company import Company
+from app.models.finance import (
+    AccountType, AccountingPeriod, ChartOfAccount, InventoryAccountMapping,
+    PeriodStatus, PurchaseInvoice, PurchaseInvoiceLine,
+)
 from app.models.inventory import Stock, StockMovement
 from app.models.master import Material, MaterialType, Supplier, UnitOfMeasure, Warehouse, WarehouseType
 from app.models.user import User
@@ -94,13 +98,33 @@ async def _seed_chain(db, suffix: str, accepted: str = "10"):
         code=f"M06-T001-W-{suffix}", name=f"Synthetic raw warehouse {suffix}",
         warehouse_type=WarehouseType.RAW_MATERIAL,
     )
-    db.add_all([user, supplier, other_supplier, material, warehouse])
+    company = Company(
+        name=f"Synthetic M06 T001 Company {suffix}", short_code=f"M6{suffix[:8].upper()}",
+        country="Kenya", base_currency="KES",
+    )
+    inventory_account = ChartOfAccount(
+        code=f"M6I{suffix[:8].upper()}", name="Synthetic inventory", account_type=AccountType.ASSET,
+    )
+    grni_account = ChartOfAccount(
+        code=f"M6G{suffix[:8].upper()}", name="Synthetic GRNI", account_type=AccountType.LIABILITY,
+    )
+    db.add_all([user, supplier, other_supplier, material, warehouse, company, inventory_account, grni_account])
     await db.flush()
+    warehouse.company_id = company.id
+    db.add(InventoryAccountMapping(
+        material_id=material.id, stock_type="MATERIAL", valuation_method="FIFO",
+        inventory_account_id=inventory_account.id, grni_account_id=grni_account.id, is_active=True,
+    ))
+    if not await db.scalar(select(AccountingPeriod.id).where(AccountingPeriod.period_ym == "2026-10")):
+        db.add(AccountingPeriod(
+            period_ym="2026-10", period_start=date(2026, 10, 1), period_end=date(2026, 10, 31),
+            status=PeriodStatus.OPEN, notes="Synthetic receipt-posting test period.",
+        ))
 
     po = PurchaseOrder(
         po_no=f"M06-T001-PO-{suffix}", supplier_id=supplier.id,
         order_date=date(2026, 10, 29), expected_delivery_date=date(2026, 10, 30),
-        currency="KES", status=POStatus.ORDERED,
+        company_id=company.id, currency="KES", exchange_rate=Decimal("1"), status=POStatus.ORDERED,
     )
     db.add(po)
     await db.flush()
@@ -110,7 +134,7 @@ async def _seed_chain(db, suffix: str, accepted: str = "10"):
         unit_price=Decimal("25"), tax_rate=Decimal("0.16"),
     )
     grn = GoodsReceipt(
-        grn_no=f"M06-T001-GRN-{suffix}", po_id=po.id,
+        grn_no=f"M06-T001-GRN-{suffix}", po_id=po.id, company_id=company.id,
         received_date=date(2026, 10, 29), warehouse_id=warehouse.id,
         status=GRNStatus.DRAFT,
     )

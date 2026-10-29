@@ -1,0 +1,34 @@
+**********************
+PowerShell transcript start
+Start time: 20261029225451
+Username: SEKIPH\sekip
+RunAs User: SEKIPH\sekip
+Configuration Name:
+Machine: SEKIPH (Microsoft Windows NT 10.0.26300.0)
+Host Application: C:\Users\sekip\.cache\codex-runtimes\codex-primary-runtime\dependencies\native\powershell\pwsh.dll -Command try { [Console]::OutputEncoding=[System.Text.Encoding]::UTF8 } catch {}
+Set-Location -LiteralPath 'C:\Users\sekip\Desktop\fmcg-erp-system'; & '.\coordination\sessions\M25.S03.T001\run_inventory_valuation_tests.ps1'; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+Process ID: 44312
+PSVersion: 7.6.5
+PSEdition: Core
+GitCommitId: 7.6.5
+OS: Microsoft Windows 10.0.26300
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+
+
+
+RESULT=PASS
+POSTGRES_IMAGE=postgres:16-alpine
+POSTGRES_IMAGE_ID=sha256:16bc17c64a573ef34162af9298258d1aec548232985b33ed7b1eac33ba35c229
+CONTAINER=codex-m25-s03-t001-5551c3cb3cd7496b8ce2
+DATABASE=fmcg_m25_s03_t001_5551c3cb3cd7496b8ce2
+DATA=synthetic only
+NETWORK=host port bound to 127.0.0.1 only; no volume mounts
+**********************
+PowerShell transcript end
+End time: 20261029225554
+**********************

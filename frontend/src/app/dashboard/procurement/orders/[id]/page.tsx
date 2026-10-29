@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { ToastContainer } from "@/components/ui/Toast";
 import { useToast } from "@/hooks/useToast";
+import { useAuth } from "@/context/AuthContext";
 
 const statusVariant = (s: string) =>
   s === "RECEIVED" ? "green"
@@ -40,6 +41,7 @@ export default function PODetailPage() {
   const router = useRouter();
   const qc = useQueryClient();
   const { toasts, toast, dismiss } = useToast();
+  const { hasPermission } = useAuth();
   const [grnOpen, setGrnOpen] = useState(false);
   const [shipOpen, setShipOpen] = useState(false);
   const [evalOpen, setEvalOpen] = useState(false);
@@ -141,8 +143,14 @@ export default function PODetailPage() {
 
   const postGRN = useMutation({
     mutationFn: (grnId: string) => procurementApi.postGRN(grnId),
-    onSuccess: () => { invalidate(); toast("success", "Posted", "Stock updated from GRN."); },
+    onSuccess: () => { invalidate(); toast("success", "Posted", "Stock, cost layer, and valuation journal posted together."); },
     onError: (e) => toast("error", "Failed", extractApiError(e)),
+  });
+
+  const postGRNValuation = useMutation({
+    mutationFn: (grnId: string) => procurementApi.postGRNValuation(grnId),
+    onSuccess: () => { invalidate(); toast("success", "Inventory valued", "The GRN valuation journal is posted."); },
+    onError: (e) => toast("error", "Valuation failed", extractApiError(e)),
   });
 
   const createShipment = useMutation({
@@ -379,8 +387,14 @@ export default function PODetailPage() {
               {
                 header: "",
                 accessor: (g) => g.status === "DRAFT"
-                  ? <Button onClick={() => postGRN.mutate(g.id)} loading={postGRN.isPending}>Post to Stock</Button>
-                  : <span className="text-xs text-gray-400">Posted</span>,
+                  ? hasPermission("finance.post")
+                    ? <Button onClick={() => postGRN.mutate(g.id)} loading={postGRN.isPending}>Post stock and valuation</Button>
+                    : <span className="text-xs text-amber-700">Finance valuation permission required</span>
+                  : g.valuation_status === "POSTED" || g.valuation_status === "NOT_REQUIRED"
+                    ? <span className="text-xs text-green-700">Stock and valuation posted</span>
+                    : hasPermission("finance.post")
+                      ? <Button onClick={() => postGRNValuation.mutate(g.id)} loading={postGRNValuation.isPending}>Post inventory valuation</Button>
+                      : <span className="text-xs text-amber-700">Awaiting finance valuation</span>,
               },
             ]}
           />

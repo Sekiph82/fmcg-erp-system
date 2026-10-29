@@ -14,7 +14,11 @@ from sqlalchemy import func, select, text
 from sqlalchemy.engine import URL
 
 from app.db.session import AsyncSessionLocal, engine
-from app.models.finance import AccountingPostingBatch, JournalEntry
+from app.models.company import Company
+from app.models.finance import (
+    AccountType, AccountingPeriod, AccountingPostingBatch, ChartOfAccount,
+    InventoryAccountMapping, JournalEntry, PeriodStatus,
+)
 from app.models.inventory import MovementType, Stock, StockMovement, StockType
 from app.models.master import (
     Material,
@@ -130,8 +134,31 @@ async def _base_records(db, suffix: str):
 
 async def _seed_grn(db, suffix: str):
     user, supplier, material, _, raw_wh, _, _ = await _base_records(db, suffix)
+    company = Company(
+        name=f"Synthetic M05 T002 Company {suffix}", short_code=f"M5{suffix[:8].upper()}",
+        country="Kenya", base_currency="KES",
+    )
+    inventory_account = ChartOfAccount(
+        code=f"M5I{suffix[:8].upper()}", name="Synthetic inventory", account_type=AccountType.ASSET,
+    )
+    grni_account = ChartOfAccount(
+        code=f"M5G{suffix[:8].upper()}", name="Synthetic GRNI", account_type=AccountType.LIABILITY,
+    )
+    db.add_all([company, inventory_account, grni_account])
+    await db.flush()
+    raw_wh.company_id = company.id
+    db.add(InventoryAccountMapping(
+        material_id=material.id, stock_type="MATERIAL", valuation_method="FIFO",
+        inventory_account_id=inventory_account.id, grni_account_id=grni_account.id, is_active=True,
+    ))
+    if not await db.scalar(select(AccountingPeriod.id).where(AccountingPeriod.period_ym == "2026-10")):
+        db.add(AccountingPeriod(
+            period_ym="2026-10", period_start=date(2026, 10, 1), period_end=date(2026, 10, 31),
+            status=PeriodStatus.OPEN, notes="Synthetic receipt-posting test period.",
+        ))
     po = PurchaseOrder(
         po_no=f"M05-T002-PO-{suffix}", supplier_id=supplier.id,
+        company_id=company.id, currency="KES", exchange_rate=Decimal("1"),
         order_date=date(2026, 10, 29), expected_delivery_date=date(2026, 10, 30),
         status=POStatus.ORDERED, created_by_id=user.id,
     )
@@ -139,10 +166,11 @@ async def _seed_grn(db, suffix: str):
     await db.flush()
     po_line = POLine(
         po_id=po.id, line_no=1, material_id=material.id,
-        ordered_quantity=Decimal("6"), received_quantity=Decimal("0"), unit="KG",
+        ordered_quantity=Decimal("6"), received_quantity=Decimal("0"), unit="KG", unit_price=Decimal("25"),
     )
     grn = GoodsReceipt(
         grn_no=f"M05-T002-GRN-{suffix}", po_id=po.id,
+        company_id=company.id,
         received_date=date(2026, 10, 29), received_by_id=user.id,
         warehouse_id=raw_wh.id, status=GRNStatus.DRAFT,
     )
@@ -252,10 +280,12 @@ async def test_grn_post_commits_stock_and_po_effects_once_and_rejects_repeat():
         assert stock.quantity_available == Decimal("4.000")
         assert movement.quantity == Decimal("4.000") and movement.created_by_id == ids[6]
         assert movement.movement_type == MovementType.RECEIPT
-        assert movement.journal_entry_id is None and movement.posting_batch_id is None
-        assert persisted_line.journal_entry_id is None and persisted_line.posting_batch_id is None
-        assert await db.scalar(select(func.count(JournalEntry.id))) == journal_count_before
-        assert await db.scalar(select(func.count(AccountingPostingBatch.id))) == batch_count_before
+        assert movement.journal_entry_id is not None and movement.posting_batch_id is not None
+        assert movement.accounting_status.value == "POSTED"
+        assert persisted_line.journal_entry_id == movement.journal_entry_id
+        assert persisted_line.posting_batch_id == movement.posting_batch_id
+        assert await db.scalar(select(func.count(JournalEntry.id))) == journal_count_before + 1
+        assert await db.scalar(select(func.count(AccountingPostingBatch.id))) == batch_count_before + 1
         stock_id = stock.id
 
         with pytest.raises(HTTPException) as repeated:

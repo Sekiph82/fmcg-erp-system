@@ -15,6 +15,10 @@ from sqlalchemy import func, select, text
 from sqlalchemy.engine import URL
 
 from app.db.session import AsyncSessionLocal, engine
+from app.models.company import Company
+from app.models.finance import (
+    AccountType, AccountingPeriod, ChartOfAccount, InventoryAccountMapping, PeriodStatus,
+)
 from app.models.inventory import MovementType, Stock, StockMovement, StockType
 from app.models.master import (
     Material,
@@ -119,16 +123,40 @@ async def _base(db, suffix: str):
 
 async def _seed_grn(db, suffix: str):
     user, supplier, material, _, raw_wh, _ = await _base(db, suffix)
+    company = Company(
+        name=f"Synthetic M05 T003 Company {suffix}", short_code=f"M3{suffix[:8].upper()}",
+        country="Kenya", base_currency="KES",
+    )
+    inventory_account = ChartOfAccount(
+        code=f"M3I{suffix[:8].upper()}", name="Synthetic inventory", account_type=AccountType.ASSET,
+    )
+    grni_account = ChartOfAccount(
+        code=f"M3G{suffix[:8].upper()}", name="Synthetic GRNI", account_type=AccountType.LIABILITY,
+    )
+    db.add_all([company, inventory_account, grni_account])
+    await db.flush()
+    raw_wh.company_id = company.id
+    db.add(InventoryAccountMapping(
+        material_id=material.id, stock_type="MATERIAL", valuation_method="FIFO",
+        inventory_account_id=inventory_account.id, grni_account_id=grni_account.id, is_active=True,
+    ))
+    if not await db.scalar(select(AccountingPeriod.id).where(AccountingPeriod.period_ym == "2026-10")):
+        db.add(AccountingPeriod(
+            period_ym="2026-10", period_start=date(2026, 10, 1), period_end=date(2026, 10, 31),
+            status=PeriodStatus.OPEN, notes="Synthetic receipt-posting test period.",
+        ))
     po = PurchaseOrder(
         po_no=f"M05-T003-PO-{suffix}", supplier_id=supplier.id,
+        company_id=company.id, currency="KES", exchange_rate=Decimal("1"),
         order_date=date(2026, 10, 29), expected_delivery_date=date(2026, 10, 30),
         status=POStatus.ORDERED, created_by_id=user.id,
     )
     db.add(po)
     await db.flush()
-    po_line = POLine(po_id=po.id, line_no=1, material_id=material.id, ordered_quantity=Decimal("8"), received_quantity=Decimal("0"), unit="KG")
+    po_line = POLine(po_id=po.id, line_no=1, material_id=material.id, ordered_quantity=Decimal("8"), received_quantity=Decimal("0"), unit="KG", unit_price=Decimal("25"))
     grn = GoodsReceipt(
         grn_no=f"M05-T003-GRN-{suffix}", po_id=po.id,
+        company_id=company.id,
         received_date=date(2026, 10, 29), received_by_id=user.id,
         warehouse_id=raw_wh.id, status=GRNStatus.DRAFT,
     )

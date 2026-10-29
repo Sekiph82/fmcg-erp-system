@@ -9,10 +9,10 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 ## Project Status
 
 - Current Milestone: M25 — Cross-Border / Landed Cost
-- Current Sprint: M25.S01 — Cross-Border Shipment Lifecycle
-- Current Task: M25.S02.T004 — Currency/exchange-rate handling
+- Current Sprint: M25.S03 � Accounting & Valuation
+- Current Task: M25.S03.T001 — Inventory valuation posting
 - Current Task Status: COMPLETE
-- Next Task/Action: M25.S03.T001 — Inventory valuation posting
+- Next Task/Action: M25.S03.T002 — Variance/accrual posting
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -781,7 +781,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
   Evidence: Revision 20261029_0040; disposable PostgreSQL migration/adoption/service/guard checks 8 passed; focused landed-cost/M13 tests 45 passed and 13 skipped (DB case separate); frontend type-check and targeted ESLint, Python compileall, diff check, and independent read-only review passed. Synthetic data only; no live FX provider or new GL posting claim. Evidence: coordination/sessions/M25.S02.T004/CODEX_LOG_V01.md
 
 ## M25.S03 — Accounting & Valuation
-- [ ] M25.S03.T001 — Inventory valuation posting
+- [x] M25.S03.T001 — Inventory valuation posting
+  Evidence: Implemented atomic GRN stock and inventory valuation posting with configured FIFO, WEIGHTED_AVG, or STANDARD cost; added finance permission, safe legacy handling, balanced posting links, and four-decimal reconciliation. Disposable PostgreSQL: M25 16 passed; related M05/M06 suites 7+5+5 passed; 7 helper tests passed, 11 M13 DB cases skipped behind their separate database gate; frontend type-check/targeted ESLint and Python compile passed; independent final review found no blockers. Evidence: coordination/sessions/M25.S03.T001/CODEX_LOG_V01.md.
 - [ ] M25.S03.T002 — Variance/accrual posting
 - [ ] M25.S03.T003 — Reconciliation and audit trail
 - [ ] M25.S03.T004 — Close M25

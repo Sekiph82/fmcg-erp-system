@@ -286,6 +286,7 @@ class GRNRead(ProcurementScopeFields):
     warehouse_name: Optional[str] = None
     notes: Optional[str]
     status: GRNStatus
+    valuation_status: Optional[str] = None
     created_at: datetime
     access: Optional[ProcurementAccessHint] = None
 

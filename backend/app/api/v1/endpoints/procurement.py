@@ -10,12 +10,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
 
-from app.core.deps import get_current_user, get_db
+from app.core.deps import get_current_user, get_db, require_permission
 from app.core.access_control import (
     forbidden_detail,
     has_any_permission,
     require_any_permission,
 )
+from app.models.finance import OperationalPostingStatus
 from app.models.procurement import (
     PurchaseRequisition, PRLine, PurchaseOrder, POLine,
     GoodsReceipt, GRNLine, ImportShipment, SupplierEvaluation,
@@ -377,16 +378,49 @@ async def get_grn(grn_id: uuid.UUID, db: AsyncSession = Depends(get_db), current
     return _build_grn_detail(grn, current_user)
 
 
-@router.post("/grn/{grn_id}/post", response_model=GRNDetailRead)
+@router.post(
+    "/grn/{grn_id}/post",
+    response_model=GRNDetailRead,
+    dependencies=[Depends(require_permission("finance", "post"))],
+)
 async def post_grn(grn_id: uuid.UUID, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
     grn = await crud.get_grn(db, grn_id)
     if not grn:
         raise HTTPException(404, "GRN not found")
     _require_procurement_action(current_user, grn, "post")
-    grn = await svc.post_grn(db, grn, current_user.id)
-    await db.commit()
+    try:
+        grn = await svc.post_grn(db, grn, current_user.id)
+        await db.commit()
+    except ValueError as exc:
+        await db.rollback()
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     grn = await crud.get_grn(db, grn_id)
     return _build_grn_detail(grn, current_user)
+
+
+@router.post(
+    "/grn/{grn_id}/valuation/post",
+    response_model=GRNDetailRead,
+    dependencies=[Depends(require_permission("finance", "post"))],
+)
+async def post_grn_inventory_valuation(
+    grn_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    """Post legacy GRN valuation when its receipt stock remains untouched."""
+    grn = await crud.get_grn(db, grn_id)
+    if not grn:
+        raise HTTPException(404, "GRN not found")
+    _require_procurement_view(current_user, grn)
+    try:
+        await svc.post_grn_inventory_valuation(db, grn_id, current_user.id)
+        await db.commit()
+    except ValueError as exc:
+        await db.rollback()
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    posted_grn = await crud.get_grn(db, grn_id)
+    return _build_grn_detail(posted_grn, current_user)
 
 
 # ── Import Shipments ──────────────────────────────────────────────────────────
@@ -707,15 +741,28 @@ def _build_po_detail(po: PurchaseOrder, current_user=None) -> PODetailRead:
     return _with_access(r, current_user, po)
 
 
+def _grn_valuation_status(grn: GoodsReceipt) -> str:
+    inventory_lines = [line for line in (grn.lines or []) if line.accepted_quantity > 0]
+    if not inventory_lines:
+        return "NOT_REQUIRED"
+    if all(line.accounting_status == OperationalPostingStatus.POSTED for line in inventory_lines):
+        return "POSTED"
+    if any(line.accounting_status == OperationalPostingStatus.POSTED for line in inventory_lines):
+        return "PARTIAL"
+    return "NOT_POSTED"
+
+
 def _build_grn_read(grn: GoodsReceipt, current_user=None) -> GRNRead:
     r = GRNRead.model_validate(grn)
     r.po_no = grn.po.po_no if grn.po else None
     r.warehouse_name = grn.warehouse.name if grn.warehouse else None
+    r.valuation_status = _grn_valuation_status(grn)
     return _with_access(r, current_user, grn)
 
 
 def _build_grn_detail(grn: GoodsReceipt, current_user=None) -> GRNDetailRead:
     r = GRNDetailRead.model_validate(grn)
+    r.valuation_status = _grn_valuation_status(grn)
     r.po_no = grn.po.po_no if grn.po else None
     r.warehouse_name = grn.warehouse.name if grn.warehouse else None
     lines = []

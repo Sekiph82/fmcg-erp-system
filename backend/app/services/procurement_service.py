@@ -31,7 +31,7 @@ from app.models.procurement import (
     ProcurementApprovalDocumentType, ProcurementApprovalRule,
 )
 from app.models.inventory import Stock, Lot, StockMovement, MovementType, StockType
-from app.models.master import Material, Warehouse
+from app.models.master import Material, Product, Warehouse
 from app.schemas.procurement import ProcurementAccessHint
 from app.services.inventory_locking import lot_identity, lock_inventory_identity, stock_identity
 
@@ -501,7 +501,407 @@ async def post_grn(
         po.status = POStatus.PARTIALLY_RECEIVED
 
     await db.flush()
+    if any(
+        Decimal(str(line.accepted_quantity)) > 0
+        and bool(line.material_id or line.product_id)
+        for line in grn.lines
+    ):
+        # Keep the physical receipt, cost layer, and GL posting atomic so new
+        # stock cannot be consumed before it has a carrying value.
+        await post_grn_inventory_valuation(db, grn.id, user_id)
+    await db.flush()
     return grn
+
+
+async def post_grn_inventory_valuation(
+    db: AsyncSession,
+    grn_id: uuid.UUID,
+    user_id: uuid.UUID,
+) -> dict:
+    """Post a previously received GRN to inventory valuation and the GL.
+
+    Receipt/stock posting remains an operations permission. This separate
+    finance.post action applies the configured item valuation method and
+    inventory/GRNI mappings atomically, with one idempotent posting event per
+    GRN line. No account codes or production account IDs are inferred here.
+    """
+    from datetime import datetime, timezone
+    from decimal import ROUND_HALF_UP
+
+    from app.models.finance import (
+        AccountType,
+        AccountingPostingBatch,
+        ChartOfAccount,
+        JournalEntry,
+        JournalLine,
+        JournalStatus,
+        OperationalPostingEvent,
+        OperationalPostingStatus,
+    )
+    from app.models.company import Company
+    from app.models.inventory import CostLayer
+    from app.services.finance_service import (
+        apply_operational_posting_link,
+        assert_journal_lines_postable,
+        find_inventory_account_mapping,
+        get_or_create_operational_posting_event,
+        mark_journal_posted,
+        mark_operational_posting_posted,
+    )
+
+    money_quantum = Decimal("0.0001")
+    # Use the same 4-decimal monetary unit scale persisted by StockMovement so
+    # inventory layers, movement totals, and GL lines reconcile exactly.
+    unit_quantum = money_quantum
+
+    try:
+        # Keep the global receipt lock order identical to post_grn (PO -> GRN).
+        po_id = await db.scalar(select(GoodsReceipt.po_id).where(GoodsReceipt.id == grn_id))
+        if not po_id:
+            raise ValueError("GRN not found")
+        po_result = await db.execute(
+            select(PurchaseOrder)
+            .where(PurchaseOrder.id == po_id)
+            .with_for_update()
+            .execution_options(populate_existing=True)
+        )
+        po = po_result.scalar_one_or_none()
+        if not po:
+            raise ValueError("GRN purchase order not found")
+
+        grn_result = await db.execute(
+            select(GoodsReceipt)
+            .where(GoodsReceipt.id == grn_id)
+            .with_for_update()
+            .execution_options(populate_existing=True)
+        )
+        grn = grn_result.scalar_one_or_none()
+        if not grn:
+            raise ValueError("GRN not found")
+        if grn.po_id != po.id:
+            raise ValueError("GRN purchase order changed during valuation")
+        if grn.status != GRNStatus.POSTED:
+            raise ValueError("Inventory valuation can only be posted for a posted GRN")
+        if grn.company_id and po.company_id and grn.company_id != po.company_id:
+            raise ValueError("GRN and purchase order belong to different companies")
+        company_id = grn.company_id or po.company_id
+        company = await db.get(Company, company_id) if company_id else None
+        if not company or not company.base_currency:
+            raise ValueError("GRN needs a company with a configured base currency")
+        warehouse = await db.get(Warehouse, grn.warehouse_id)
+        if warehouse and warehouse.company_id and warehouse.company_id != company.id:
+            raise ValueError("GRN warehouse belongs to a different company")
+        po_currency = (po.currency or "").strip().upper()
+        base_currency = company.base_currency.strip().upper()
+        exchange_rate = Decimal("1") if po_currency == base_currency else Decimal(str(po.exchange_rate or 0))
+        if not exchange_rate.is_finite() or exchange_rate <= 0:
+            raise ValueError("Purchase order needs a positive saved exchange rate")
+        if po_currency != base_currency and exchange_rate == Decimal("1"):
+            raise ValueError("Foreign-currency purchase order needs a non-default saved exchange rate before valuation")
+
+        line_result = await db.execute(
+            select(GRNLine)
+            .where(GRNLine.grn_id == grn.id)
+            .order_by(GRNLine.id)
+            .with_for_update()
+            .execution_options(populate_existing=True)
+        )
+        lines = list(line_result.scalars().all())
+        valuated_lines = [line for line in lines if Decimal(str(line.accepted_quantity)) > 0]
+        if not valuated_lines:
+            raise ValueError("GRN has no accepted inventory lines to value")
+
+        for line in valuated_lines:
+            if bool(line.material_id) == bool(line.product_id):
+                raise ValueError(f"Accepted GRN line {line.id} must reference exactly one product or material")
+
+        # An old partial posting is ambiguous and must be reconciled manually;
+        # a fully posted retry is safe and has no second valuation or journal.
+        statuses = {line.accounting_status for line in valuated_lines}
+        if statuses == {OperationalPostingStatus.POSTED}:
+            for line in valuated_lines:
+                event_result = await db.execute(select(OperationalPostingEvent).where(
+                    OperationalPostingEvent.source_module == "procurement",
+                    OperationalPostingEvent.source_event == "GRN_INVENTORY_VALUATION_POSTED",
+                    OperationalPostingEvent.source_id == str(grn.id),
+                    OperationalPostingEvent.source_line_id == str(line.id),
+                ))
+                event = event_result.scalar_one_or_none()
+                batch = await db.get(AccountingPostingBatch, line.posting_batch_id) if line.posting_batch_id else None
+                journal = await db.get(JournalEntry, line.journal_entry_id) if line.journal_entry_id else None
+                movement = await db.get(StockMovement, line.stock_movement_id) if line.stock_movement_id else None
+                if (
+                    not event or event.status != OperationalPostingStatus.POSTED
+                    or not batch or batch.status.value != "POSTED"
+                    or not journal or not journal.is_posted or journal.status != JournalStatus.POSTED
+                    or not movement or movement.accounting_status != OperationalPostingStatus.POSTED
+                    or event.stock_movement_id != movement.id
+                    or event.posting_batch_id != batch.id or batch.journal_entry_id != journal.id
+                    or event.journal_entry_id != journal.id
+                    or movement.posting_batch_id != batch.id or movement.journal_entry_id != journal.id
+                    or journal.posting_batch_id != batch.id
+                    or journal.source_module != "procurement"
+                    or journal.source_event != "GRN_INVENTORY_VALUATION_POSTED"
+                    or journal.source_id != line.id
+                ):
+                    raise ValueError(f"GRN line {line.id} has inconsistent posted valuation links; manual reconciliation is required")
+            return {
+                "grn_id": grn.id,
+                "status": OperationalPostingStatus.POSTED.value,
+                "posted_lines": len(valuated_lines),
+                "idempotent_replay": True,
+            }
+        if any(status is not None for status in statuses):
+            raise ValueError("GRN has a partial or failed valuation posting; manual reconciliation is required")
+
+        posted_lines = 0
+        for line in valuated_lines:
+            if not line.stock_movement_id:
+                raise ValueError(f"Accepted GRN line {line.id} has no stock movement")
+            if not line.po_line_id:
+                raise ValueError(f"Accepted GRN line {line.id} has no purchase-order line price")
+            po_line = await db.get(POLine, line.po_line_id)
+            if (
+                not po_line
+                or po_line.po_id != po.id
+                or po_line.material_id != line.material_id
+                or po_line.product_id != line.product_id
+            ):
+                raise ValueError(f"GRN line {line.id} does not match its purchase-order item")
+
+            movement_result = await db.execute(
+                select(StockMovement)
+                .where(StockMovement.id == line.stock_movement_id)
+                .with_for_update()
+                .execution_options(populate_existing=True)
+            )
+            movement = movement_result.scalar_one_or_none()
+            if (
+                not movement
+                or movement.movement_type != MovementType.RECEIPT
+                or movement.stock_type != (StockType.MATERIAL if line.material_id else StockType.PRODUCT)
+                or movement.material_id != line.material_id
+                or movement.product_id != line.product_id
+                or movement.destination_warehouse_id != grn.warehouse_id
+                or movement.quantity != line.accepted_quantity
+                or movement.reference_number != grn.grn_no
+            ):
+                raise ValueError(f"GRN line {line.id} does not resolve to its accepted receipt movement")
+
+            later_outbound = await db.scalar(
+                select(StockMovement.id)
+                .where(
+                    StockMovement.id != movement.id,
+                    StockMovement.stock_type == movement.stock_type,
+                    StockMovement.material_id == line.material_id,
+                    StockMovement.product_id == line.product_id,
+                    StockMovement.source_warehouse_id == grn.warehouse_id,
+                    StockMovement.movement_type.in_((
+                        MovementType.ISSUE, MovementType.TRANSFER,
+                        MovementType.ADJUSTMENT, MovementType.WRITE_OFF,
+                    )),
+                    StockMovement.created_at > movement.created_at,
+                )
+                .limit(1)
+            )
+            if later_outbound:
+                raise ValueError(
+                    f"GRN line {line.id} has outbound stock movements after its unvalued receipt; "
+                    "manual inventory and accounting reconciliation is required"
+                )
+
+            stock_type = "MATERIAL" if line.material_id else "PRODUCT"
+            mapping = await find_inventory_account_mapping(
+                db,
+                stock_type=stock_type,
+                material_id=line.material_id,
+                product_id=line.product_id,
+            )
+            if not mapping or not mapping.inventory_account_id or not mapping.grni_account_id:
+                raise ValueError(f"GRN item on line {line.id} needs active inventory and GRNI account mappings")
+            method = (mapping.valuation_method or "").strip().upper()
+            if method not in {"FIFO", "WEIGHTED_AVG", "STANDARD"}:
+                raise ValueError(f"GRN item on line {line.id} needs FIFO, WEIGHTED_AVG, or STANDARD valuation mapping")
+
+            price = Decimal(str(po_line.unit_price))
+            quantity = Decimal(str(line.accepted_quantity))
+            if not price.is_finite() or price <= 0:
+                raise ValueError(f"Purchase-order line {po_line.id} needs a positive unit price")
+            actual_unit_cost = (price * exchange_rate).quantize(unit_quantum, rounding=ROUND_HALF_UP)
+            actual_amount = (quantity * actual_unit_cost).quantize(money_quantum, rounding=ROUND_HALF_UP)
+            if actual_amount <= 0:
+                raise ValueError(f"GRN line {line.id} has no positive base-currency receipt value")
+
+            variance_account_id = None
+            if method == "STANDARD":
+                item = await db.get(Material if line.material_id else Product, line.material_id or line.product_id)
+                standard_cost = Decimal(str(item.standard_cost or 0)) if item else Decimal("0")
+                if not standard_cost.is_finite() or standard_cost <= 0:
+                    raise ValueError(f"GRN item on line {line.id} needs a positive base-currency standard cost")
+                valuation_unit_cost = standard_cost.quantize(unit_quantum, rounding=ROUND_HALF_UP)
+                variance = actual_amount - (quantity * valuation_unit_cost).quantize(
+                    money_quantum, rounding=ROUND_HALF_UP
+                )
+                if variance:
+                    if not mapping.variance_account_id:
+                        raise ValueError(f"GRN item on line {line.id} needs a configured variance account")
+                    variance_account_id = mapping.variance_account_id
+            else:
+                # FIFO stores receipt-specific actual cost layers. WEIGHTED_AVG
+                # retains actual receipt layers; their aggregate is the moving
+                # weighted inventory value used by the valuation report.
+                valuation_unit_cost = actual_unit_cost
+                variance = Decimal("0")
+
+            valuation_amount = (quantity * valuation_unit_cost).quantize(
+                money_quantum, rounding=ROUND_HALF_UP
+            )
+            account_ids = {mapping.inventory_account_id, mapping.grni_account_id}
+            if variance_account_id:
+                account_ids.add(variance_account_id)
+            account_result = await db.execute(
+                select(ChartOfAccount).where(ChartOfAccount.id.in_(account_ids))
+            )
+            accounts = {account.id: account for account in account_result.scalars().all()}
+            inventory_account = accounts.get(mapping.inventory_account_id)
+            grni_account = accounts.get(mapping.grni_account_id)
+            if not inventory_account or inventory_account.account_type != AccountType.ASSET:
+                raise ValueError(f"Inventory mapping for GRN line {line.id} must point to an active asset account")
+            if not grni_account or grni_account.account_type != AccountType.LIABILITY:
+                raise ValueError(f"GRNI mapping for GRN line {line.id} must point to an active liability account")
+            if variance_account_id and accounts[variance_account_id].account_type != AccountType.EXPENSE:
+                raise ValueError(f"Variance mapping for GRN line {line.id} must point to an expense account")
+
+            layer_result = await db.execute(
+                select(CostLayer)
+                .where(CostLayer.movement_id == movement.id)
+                .with_for_update()
+            )
+            layer = layer_result.scalar_one_or_none()
+            if layer:
+                if (
+                    layer.stock_type != (StockType.MATERIAL if line.material_id else StockType.PRODUCT)
+                    or layer.material_id != line.material_id
+                    or layer.product_id != line.product_id
+                    or layer.warehouse_id != grn.warehouse_id
+                    or layer.movement_id != movement.id
+                    or layer.lot_id != movement.lot_id
+                    or layer.qty_received != quantity
+                    or layer.qty_remaining != quantity
+                    or Decimal(str(layer.unit_cost)) != valuation_unit_cost
+                ):
+                    raise ValueError(f"GRN receipt movement {movement.id} already has a conflicting cost layer")
+            else:
+                from app.services.inventory_service import create_cost_layer
+                layer = await create_cost_layer(
+                    db,
+                    stock_type=StockType.MATERIAL if line.material_id else StockType.PRODUCT,
+                    product_id=line.product_id,
+                    material_id=line.material_id,
+                    lot_id=movement.lot_id,
+                    warehouse_id=grn.warehouse_id,
+                    movement_id=movement.id,
+                    receipt_date=grn.received_date,
+                    qty=quantity,
+                    unit_cost=valuation_unit_cost,
+                )
+
+            event, batch, created = await get_or_create_operational_posting_event(
+                db,
+                source_module="procurement",
+                source_event="GRN_INVENTORY_VALUATION_POSTED",
+                source_id=grn.id,
+                source_line_id=line.id,
+                source_ref=grn.grn_no,
+                stock_movement_id=movement.id,
+                event_date=grn.received_date,
+                amount=valuation_amount,
+                currency=company.base_currency,
+                created_by_id=user_id,
+                require_period=True,
+            )
+            if not created or event.status != OperationalPostingStatus.PENDING:
+                raise ValueError(f"A prior valuation event exists for GRN line {line.id}; manual reconciliation is required")
+
+            entry = JournalEntry(
+                entry_no=f"GRNVAL-{str(line.id).replace('-', '')}",
+                entry_date=grn.received_date,
+                description=f"Inventory valuation for GRN {grn.grn_no}",
+                source_module="procurement",
+                source_event="GRN_INVENTORY_VALUATION_POSTED",
+                source_id=line.id,
+                source_ref=grn.grn_no,
+                company_id=company_id,
+                branch_id=grn.branch_id or po.branch_id,
+                cost_center_id=grn.cost_center_id or po.cost_center_id,
+                status=JournalStatus.DRAFT,
+                posting_batch_id=batch.id,
+                created_by_id=user_id,
+            )
+            entry.lines.append(JournalLine(
+                account_id=inventory_account.id,
+                description=f"Inventory receipt valuation {grn.grn_no}",
+                debit=valuation_amount,
+                credit=Decimal("0"),
+                currency=company.base_currency,
+            ))
+            if variance > 0:
+                entry.lines.append(JournalLine(
+                    account_id=variance_account_id or mapping.variance_account_id,
+                    description=f"Standard-cost receipt variance {grn.grn_no}",
+                    debit=variance,
+                    credit=Decimal("0"),
+                    currency=company.base_currency,
+                ))
+            elif variance < 0:
+                entry.lines.append(JournalLine(
+                    account_id=variance_account_id or mapping.variance_account_id,
+                    description=f"Standard-cost receipt variance {grn.grn_no}",
+                    debit=Decimal("0"),
+                    credit=abs(variance),
+                    currency=company.base_currency,
+                ))
+            entry.lines.append(JournalLine(
+                account_id=grni_account.id,
+                description=f"Goods received not invoiced {grn.grn_no}",
+                debit=Decimal("0"),
+                credit=actual_amount,
+                currency=company.base_currency,
+            ))
+            db.add(entry)
+            await db.flush()
+            await assert_journal_lines_postable(db, entry.lines)
+            await mark_journal_posted(db, entry, user_id, require_period=True)
+            await mark_operational_posting_posted(
+                db,
+                event,
+                batch,
+                journal_entry_id=entry.id,
+                posted_by_id=user_id,
+            )
+
+            movement.unit_cost = valuation_unit_cost.quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+            movement.total_cost = valuation_amount
+            movement.valuation_method = method
+            movement.valuation_amount = valuation_amount
+            movement.valuation_currency = company.base_currency
+            movement.posting_batch_id = batch.id
+            movement.journal_entry_id = entry.id
+            movement.accounting_status = OperationalPostingStatus.POSTED
+            movement.posting_error = None
+            apply_operational_posting_link(line, event, journal_entry_id=entry.id, status=OperationalPostingStatus.POSTED)
+            posted_lines += 1
+
+        await db.flush()
+        return {
+            "grn_id": grn.id,
+            "status": OperationalPostingStatus.POSTED.value,
+            "posted_lines": posted_lines,
+            "idempotent_replay": False,
+        }
+    except Exception:
+        await db.rollback()
+        raise
 
 
 # ── Delivery Planning ─────────────────────────────────────────────────────────

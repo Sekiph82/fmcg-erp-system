@@ -150,6 +150,10 @@ export interface GRNLine {
   expiry_date?: string;
   notes?: string;
   stock_movement_id?: string;
+  posting_batch_id?: string;
+  journal_entry_id?: string;
+  accounting_status?: "PENDING" | "POSTED" | "FAILED" | "REVERSED" | "NOT_REQUIRED";
+  posting_error?: string;
 }
 
 export interface GRN extends ProcurementScopeFields {
@@ -163,6 +167,7 @@ export interface GRN extends ProcurementScopeFields {
   warehouse_name?: string;
   notes?: string;
   status: GRNStatus;
+  valuation_status?: "NOT_REQUIRED" | "NOT_POSTED" | "PARTIAL" | "POSTED";
   created_at: string;
   access?: ProcurementAccessHint;
 }
@@ -440,6 +445,10 @@ export const procurementApi = {
   },
   async postGRN(id: string): Promise<GRNDetail> {
     const res = await apiClient.post<GRNDetail>(`/api/v1/procurement/grn/${id}/post`);
+    return res.data;
+  },
+  async postGRNValuation(id: string): Promise<GRNDetail> {
+    const res = await apiClient.post<GRNDetail>(`/api/v1/procurement/grn/${id}/valuation/post`);
     return res.data;
   },
 

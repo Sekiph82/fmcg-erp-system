@@ -147,6 +147,7 @@ async def list_grns(db: AsyncSession, po_id: Optional[uuid.UUID] = None, limit: 
     q = select(GoodsReceipt).options(
         selectinload(GoodsReceipt.po),
         selectinload(GoodsReceipt.warehouse),
+        selectinload(GoodsReceipt.lines),
     )
     if po_id:
         q = q.where(GoodsReceipt.po_id == po_id)
