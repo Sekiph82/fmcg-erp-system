@@ -11,8 +11,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 - Current Milestone: M05 — Warehouse Management
 - Current Sprint: M05.S03 — Baseline Integrity
 - Current Task: M05.S03.T001 — Validate reservation/allocation consistency
-- Current Task Status: IN_PROGRESS
-- Next Task/Action: M05.S03.T001 — Validate reservation/allocation consistency
+- Current Task Status: COMPLETE
+- Next Task/Action: M05.S03.T002 — Validate transaction integrity across production/procurement/sales
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -254,8 +254,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 - [x] M05.S02.T005 — Inventory operational UI/manual coverage
 
 ## M05.S03 — Baseline Integrity
-- [~] M05.S03.T001 — Validate reservation/allocation consistency
-- [P] M05.S03.T002 — Validate transaction integrity across production/procurement/sales
+- [x] M05.S03.T001 — Validate reservation/allocation consistency
+  Evidence: [M05.S03.T001 verification log](coordination/sessions/M05.S03.T001/CODEX_LOG_V01.md); fresh PostgreSQL 16.6 migration to head 20261029_0025; 9 task integrity tests and 18 related sales regressions passed, including real lock-wait, competing allocation, stale stock/line refresh, cancellation release, partial dispatch, and no duplicate stock movement. Independent read-only review found no remaining findings; exact task container/tmpfs cleanup verified. No production acceptance claimed.
+- [ ] M05.S03.T002 — Validate transaction integrity across production/procurement/sales
 - [P] M05.S03.T003 — Validate negative-stock/concurrency safeguards
 
 ---

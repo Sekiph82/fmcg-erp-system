@@ -46,6 +46,19 @@ def _assert_ship(s: Shipment, *statuses: ShipmentStatus) -> None:
         raise HTTPException(422, f"Shipment is {s.status}; requires: {[s.value for s in statuses]}")
 
 
+async def _lock_sales_order_for_update(db: AsyncSession, so: SalesOrder) -> SalesOrder:
+    result = await db.execute(
+        select(SalesOrder)
+        .where(SalesOrder.id == so.id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    )
+    locked_so = result.scalar_one_or_none()
+    if locked_so is None:
+        raise HTTPException(404, "Sales order not found")
+    return locked_so
+
+
 # ── SO Lifecycle ──────────────────────────────────────────────────────────────
 
 async def confirm_so(db: AsyncSession, so: SalesOrder, user_id: uuid.UUID) -> SalesOrder:
@@ -93,11 +106,18 @@ async def allocate_so(
     warehouse_id: uuid.UUID,
     user_id: uuid.UUID,
 ) -> SalesOrder:
+    # Serialize allocation attempts for the same order before reading its lines.
+    # Stock-row locks alone protect competing orders but do not prevent two stale
+    # requests for this same order from reserving the same line twice.
+    so = await _lock_sales_order_for_update(db, so)
     _assert_so(so, SOStatus.CONFIRMED)
 
     # Re-load with product info
     lines_result = await db.execute(
-        select(SOLine).where(SOLine.so_id == so.id)
+        select(SOLine)
+        .where(SOLine.so_id == so.id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
     )
     lines = list(lines_result.scalars().all())
 
@@ -113,7 +133,10 @@ async def allocate_so(
             Stock.is_blocked == False,  # noqa: E712
         ]
         result = await db.execute(
-            select(Stock).where(and_(*filters)).with_for_update()
+            select(Stock)
+            .where(and_(*filters))
+            .with_for_update()
+            .execution_options(populate_existing=True)
         )
         stocks = list(result.scalars().all())
         available = sum(s.quantity_available for s in stocks)
@@ -148,6 +171,7 @@ async def allocate_so(
 
 
 async def cancel_so(db: AsyncSession, so: SalesOrder) -> SalesOrder:
+    so = await _lock_sales_order_for_update(db, so)
     _assert_so(so, SOStatus.DRAFT, SOStatus.CONFIRMED, SOStatus.ALLOCATED)
     # If allocated, release reservations
     if so.status == SOStatus.ALLOCATED and so.warehouse_id:
@@ -158,19 +182,27 @@ async def cancel_so(db: AsyncSession, so: SalesOrder) -> SalesOrder:
 
 
 async def _release_so_allocation(db: AsyncSession, so: SalesOrder) -> None:
-    lines_result = await db.execute(select(SOLine).where(SOLine.so_id == so.id))
+    lines_result = await db.execute(
+        select(SOLine)
+        .where(SOLine.so_id == so.id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    )
     lines = list(lines_result.scalars().all())
     for line in lines:
         if line.allocated_quantity <= 0:
             continue
         result = await db.execute(
-            select(Stock).where(
+            select(Stock)
+            .where(
                 and_(
                     Stock.warehouse_id == so.warehouse_id,
                     Stock.product_id == line.product_id,
                     Stock.stock_type == StockType.PRODUCT,
                 )
-            ).with_for_update()
+            )
+            .with_for_update()
+            .execution_options(populate_existing=True)
         )
         stocks = list(result.scalars().all())
         remaining = line.allocated_quantity
@@ -225,21 +257,33 @@ async def dispatch_shipment(
     dispatched_date: Optional[date],
     user_id: uuid.UUID,
 ) -> Shipment:
-    _assert_ship(shipment, ShipmentStatus.PENDING, ShipmentStatus.PICKING, ShipmentStatus.PACKED)
-
     today = date.today()
     dispatch_date = dispatched_date or today
 
-    # Load full shipment with lines and SO
+    # Lock and refresh the shipment before validating its transition so a retry
+    # cannot dispatch a stale PENDING object twice. Keep the global mutation order
+    # shipment -> sales order -> stock to serialize with cancellation/allocation.
     result = await db.execute(
         select(Shipment)
-        .options(
-            selectinload(Shipment.lines),
-            selectinload(Shipment.so).selectinload(SalesOrder.lines),
-        )
+        .options(selectinload(Shipment.lines))
         .where(Shipment.id == shipment.id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
     )
-    shipment = result.scalar_one()
+    shipment = result.scalar_one_or_none()
+    if shipment is None:
+        raise HTTPException(404, "Shipment not found")
+    _assert_ship(shipment, ShipmentStatus.PENDING, ShipmentStatus.PICKING, ShipmentStatus.PACKED)
+
+    so_result = await db.execute(
+        select(SalesOrder)
+        .where(SalesOrder.id == shipment.so_id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    )
+    so = so_result.scalar_one_or_none()
+    if so is None:
+        raise HTTPException(404, "Sales order not found")
 
     for line in shipment.lines:
         # ISSUE stock movement
@@ -253,7 +297,10 @@ async def dispatch_shipment(
             filters.append(Stock.lot_id == line.lot_id)
 
         stock_result = await db.execute(
-            select(Stock).where(and_(*filters)).with_for_update()
+            select(Stock)
+            .where(and_(*filters))
+            .with_for_update()
+            .execution_options(populate_existing=True)
         )
         stocks = list(stock_result.scalars().all())
         available = sum(
@@ -298,7 +345,10 @@ async def dispatch_shipment(
         # Update SO line shipped_quantity
         if line.so_line_id:
             so_line_result = await db.execute(
-                select(SOLine).where(SOLine.id == line.so_line_id).with_for_update()
+                select(SOLine)
+                .where(SOLine.id == line.so_line_id)
+                .with_for_update()
+                .execution_options(populate_existing=True)
             )
             so_line = so_line_result.scalar_one_or_none()
             if so_line:
@@ -308,14 +358,19 @@ async def dispatch_shipment(
     shipment.dispatched_date = dispatch_date
     shipment.dispatched_by_id = user_id
 
+    # Persist the increments in this transaction before refreshing cached lines;
+    # this session disables autoflush, so populate_existing would otherwise erase
+    # the just-computed shipped_quantity values from the identity map.
+    await db.flush()
+
     # Update SO status
     so_lines_result = await db.execute(
-        select(SOLine).where(SOLine.so_id == shipment.so_id)
+        select(SOLine)
+        .where(SOLine.so_id == shipment.so_id)
+        .execution_options(populate_existing=True)
     )
     so_lines = list(so_lines_result.scalars().all())
     all_shipped = all(l.shipped_quantity >= l.ordered_quantity for l in so_lines)
-    so_result = await db.execute(select(SalesOrder).where(SalesOrder.id == shipment.so_id).with_for_update())
-    so = so_result.scalar_one()
     if all_shipped:
         so.status = SOStatus.SHIPPED
     else:
