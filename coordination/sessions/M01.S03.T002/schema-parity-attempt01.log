@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "C:\Users\sekip\Desktop\fmcg-erp-system\coordination\sessions\M01.S03.T002\verify_schema_parity.py", line 13, in <module>
+    from app.db.base import Base
+ModuleNotFoundError: No module named 'app'

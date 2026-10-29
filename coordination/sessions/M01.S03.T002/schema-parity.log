@@ -1,0 +1,72 @@
+{
+  "current_revision": "20261029_0025",
+  "database": "fmcg_m01_s03_t002_20261029_9f31",
+  "legacy_tables_not_in_current_model": [
+    "ai_anomalies",
+    "ai_suggestions",
+    "iot_alert_thresholds",
+    "iot_alerts",
+    "iot_channels",
+    "iot_devices",
+    "iot_ingest_messages",
+    "iot_machine_states",
+    "iot_sensor_data",
+    "kb_article_revisions",
+    "kb_articles",
+    "kb_categories",
+    "npd_pilot_batches",
+    "npd_projects",
+    "npd_stage_gates"
+  ],
+  "missing_model_tables": [],
+  "model_tables": 645,
+  "public_tables": 661,
+  "result": "PASS",
+  "selected_schema_checks": {
+    "cost_layers": {
+      "missing_orm_foreign_keys": [],
+      "missing_orm_indexes": [],
+      "pk_matches": true
+    },
+    "journal_entries": {
+      "missing_orm_foreign_keys": [],
+      "missing_orm_indexes": [],
+      "pk_matches": true
+    },
+    "journal_lines": {
+      "missing_orm_foreign_keys": [],
+      "missing_orm_indexes": [],
+      "pk_matches": true
+    },
+    "roles": {
+      "missing_orm_foreign_keys": [],
+      "missing_orm_indexes": [],
+      "pk_matches": true
+    },
+    "stock_movements": {
+      "missing_orm_foreign_keys": [],
+      "missing_orm_indexes": [],
+      "pk_matches": true
+    },
+    "stocks": {
+      "missing_orm_foreign_keys": [],
+      "missing_orm_indexes": [],
+      "pk_matches": true
+    },
+    "users": {
+      "missing_orm_foreign_keys": [],
+      "missing_orm_indexes": [],
+      "pk_matches": true
+    },
+    "webhook_delivery_attempts": {
+      "missing_orm_foreign_keys": [],
+      "missing_orm_indexes": [],
+      "pk_matches": true
+    },
+    "webhook_event_logs": {
+      "missing_orm_foreign_keys": [],
+      "missing_orm_indexes": [],
+      "pk_matches": true
+    }
+  }
+}
