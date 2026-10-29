@@ -73,3 +73,14 @@ The independent code review confirmed this closes the previously noted F16 sourc
 - **Remote CI:** remains `DEFERRED_CI_QUOTA` through 2026-10-30. No Actions were triggered and no CI pass is claimed.
 
 No formal M20 acceptance or V05 verdict was changed by this implementation log. M20 and dependent M21 closure remain open pending the independent auditor's per-task/P0 adequacy adjudication and deferred-CI disposition. `TASKS.md` status and successor selection were left unchanged.
+
+### Recheck of earlier M20 partial matrix rows (independent read-only review)
+
+At exact source SHA `318b9ca085b1a0bc72f291351ffe6859b7eb97f0`, the nine-suite PostgreSQL receipt `coordination/milestones/M20/evidence/v06/t004-20261029-f14/m20-final-exact-sha-318b9ca0-fmcg_m20_t004_682f5dae12794b31842d431c4b4b52e5.log` passed 102 tests. The independent reviewer matched the five previously described partial matrix rows to later integrated behavior:
+
+- `M20.S02.T001`: `test_postgres_mps_demand_projection_nets_forecast_and_carries_mrp_safety_target` covers order/forecast/safety inputs, dates, exclusions and fail-closed invalid overlap.
+- `M20.S02.T002`: `test_postgres_mps_supply_projection_scopes_and_nets_dated_receipts` covers stock/reservations, converted POs, WIP, approved MPS supply, warehouse/date scope and invalid inputs.
+- `M20.S02.T004`: `test_postgres_seeded_mrp_bom_inventory_diagnostics_snapshot_and_release_replay` verifies persisted diagnostics/snapshots, replay and duplicate-version rejection.
+- `M20.S03.T001` and `.T004`: `test_postgres_mps_capacity_reconciles_rate_shifts_downtime_locks_and_modes` verifies PostgreSQL-backed capacity inputs, locks/modes and persisted overload diagnostics/history.
+
+These bounded synthetic cases address the integrated behaviors enumerated by criteria V01 for those rows; no concrete missing behavior was found in the reviewed tests. This is supporting independent evidence, not a formal per-task PASS or overall M20 acceptance. Broader permutations remain bounded; the strict auditor retains the responsibility to adjudicate the evidence against V01.
