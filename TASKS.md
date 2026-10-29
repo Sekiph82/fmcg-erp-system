@@ -8,10 +8,10 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 ## Project Status
 
-- Current Milestone: M01 — Platform / Infrastructure
-- Current Sprint: M01.S03 — Runtime Reliability
-- Current Task: M01.S03.T002 — Validate migration ownership on live-like database
-- Current Task Status: COMPLETE
+- Current Milestone: M05 — Warehouse Management
+- Current Sprint: M05.S03 — Baseline Integrity
+- Current Task: M05.S03.T001 — Validate reservation/allocation consistency
+- Current Task Status: IN_PROGRESS
 - Next Task/Action: M05.S03.T001 — Validate reservation/allocation consistency
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
@@ -254,7 +254,7 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 - [x] M05.S02.T005 — Inventory operational UI/manual coverage
 
 ## M05.S03 — Baseline Integrity
-- [ ] M05.S03.T001 — Validate reservation/allocation consistency
+- [~] M05.S03.T001 — Validate reservation/allocation consistency
 - [P] M05.S03.T002 — Validate transaction integrity across production/procurement/sales
 - [P] M05.S03.T003 — Validate negative-stock/concurrency safeguards
 
