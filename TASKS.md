@@ -9,9 +9,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 ## Project Status
 
 - Current Milestone: M27 — Quality Gates
-- Current Sprint: M27.S01 — Gate Definition Engine
-- Current Task: M27.S01.T004 — Version/effective-date governance
-- Current Task Status: COMPLETE
+- Current Sprint: M27.S02 — Transaction Enforcement
+- Current Task: M27.S02.T001 — Receiving gate
+- Current Task Status: IN_PROGRESS
 - Next Task/Action: M27.S02.T001 — Receiving gate
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
@@ -821,7 +821,7 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
   Evidence: [CODEX implementation log](coordination/sessions/M27.S01.T004/CODEX_LOG_V01.md); added sequential gate versions, inclusive as-of date filtering, no-overlap checks, and immutable started versions with one-time closure; fresh disposable PostgreSQL migration and 7 DB tests passed, 39 contract/regression tests passed; independent review found no remaining issue.
 
 ## M27.S02 — Transaction Enforcement
-- [ ] M27.S02.T001 — Receiving gate
+- [~] M27.S02.T001 — Receiving gate
 - [ ] M27.S02.T002 — Production release/in-process gate
 - [ ] M27.S02.T003 — Finished-goods release gate
 - [ ] M27.S02.T004 — Dispatch gate
