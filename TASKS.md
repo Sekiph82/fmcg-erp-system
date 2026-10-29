@@ -11,8 +11,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 - Current Milestone: M01 — Platform / Infrastructure
 - Current Sprint: M01.S03 — Runtime Reliability
 - Current Task: M01.S03.T001 — Prove always-running background/event dispatch ownership
-- Current Task Status: IN_PROGRESS
-- Next Task/Action: M01.S03.T001 — Prove always-running background/event dispatch ownership
+- Current Task Status: COMPLETE
+- Next Task/Action: M01.S03.T002 — Validate migration ownership on live-like database
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -155,8 +155,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 - [P] M01.S02.T005 — Complete production document binary storage/upload pipeline
 
 ## M01.S03 — Runtime Reliability
-- [~] M01.S03.T001 — Prove always-running background/event dispatch ownership
-- [P] M01.S03.T002 — Validate migration ownership on live-like database
+- [x] M01.S03.T001 — Prove always-running background/event dispatch ownership
+  Evidence: [source audit log](coordination/sessions/M01.S03.T001/CODEX_LOG_V01.md); verified no resident worker/scheduler in dev/prod compose, FastAPI lifespan, or dependencies, and found dispatch only on manual API paths. Independent read-only review found no remaining finding. This closes the ownership proof only; no dispatcher, runtime delivery, database durability, or production operation is claimed.
+- [ ] M01.S03.T002 — Validate migration ownership on live-like database
 - [D] M01.S03.T003 — Execute LOCAL-STAGING-001 when deployment environment is available
 - [x] M01.S03.T004 — Establish operational backup/restore rehearsal evidence
   Evidence: [T004 disposable rehearsal log V02](coordination/sessions/M01.S03.T004/CODEX_LOG_V02.md); full Alembic schema migrated to 20261028_0017, custom PostgreSQL dump restored to a separate empty DB, migration state and synthetic row/content hashes matched, and exact task container cleanup was verified. Local-only scope was accepted by owner response. Independent read-only review found no blocker; production RPO/RTO/storage policy is not claimed.
