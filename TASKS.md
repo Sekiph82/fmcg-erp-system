@@ -10,9 +10,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 - Current Milestone: M31 — API / Event Architecture
 - Current Sprint: M31.S03 — Delivery Engine
-- Current Task: M31.S03.T001 — Prove always-running dispatcher
+- Current Task: M31.S03.T002 — Retry/backoff
 - Current Task Status: COMPLETE
-- Next Task/Action: M31.S03.T002 — Retry/backoff
+- Next Task/Action: M31.S03.T003 — Dead-letter/replay
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -991,7 +991,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 ## M31.S03 — Delivery Engine
 - [x] M31.S03.T001 — Prove always-running dispatcher
   Evidence: Added a lifespan-managed polling dispatcher for pending and due retry deliveries, validated finite settings, and PostgreSQL SKIP LOCKED claims for multi-worker safety; documented shutdown and at-least-once limits. Focused M31.S02 regressions plus new dispatcher tests: 33 passed; py_compile and diff check passed; independent read-only review passed after a P2 finite-interval fix. See coordination/sessions/M31.S03.T001/CODEX_LOG_V01.md.
-- [ ] M31.S03.T002 — Retry/backoff
+- [x] M31.S03.T002 — Retry/backoff
+  Evidence: Defined max_retries as retries beyond the initial request, with bounded exponential equal jitter (60 seconds to one hour); exhausted attempts clear next_retry_at and zero retries dead-letters the initial failure. Focused dispatcher/outbox/event regression suite: 39 passed; py_compile and diff check passed; independent read-only review passed. See coordination/sessions/M31.S03.T002/CODEX_LOG_V01.md.
 - [ ] M31.S03.T003 — Dead-letter/replay
 - [ ] M31.S03.T004 — Webhook signing/secret rotation
 

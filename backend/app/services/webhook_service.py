@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
+import random
 import time
 from copy import deepcopy
 from base64 import b64encode
@@ -27,7 +28,9 @@ from app.schemas.webhook import (
 )
 
 MAX_RESPONSE_BODY = 2000       # truncate stored response body
-BACKOFF_BASE = 60              # base seconds for exponential backoff
+BACKOFF_BASE_SECONDS = 60      # first retry ceiling
+BACKOFF_MAX_SECONDS = 3600     # one-hour ceiling
+BACKOFF_JITTER_FLOOR = 0.5     # equal-jitter range: 50%-100% of the ceiling
 MAX_PAYLOAD_BYTES = 1_048_576  # 1 MB
 EVENT_JSON_SCHEMA_DRAFT = "https://json-schema.org/draft/2020-12/schema"
 
@@ -679,12 +682,29 @@ async def _deliver_attempt(
 
 
 def _schedule_retry(attempt: DeliveryAttempt, sub: Subscription) -> None:
-    if attempt.attempt_no >= sub.max_retries:
+    """Schedule bounded equal-jitter backoff after a failed delivery attempt.
+
+    ``max_retries`` counts additional attempts after the initial delivery.
+    Thus a value of five permits the initial request plus five retries.
+    """
+    retries_used = max(0, attempt.attempt_no - 1)
+    max_retries = max(0, sub.max_retries)
+    if retries_used >= max_retries:
         attempt.status = DeliveryStatus.DEAD_LETTER
+        attempt.next_retry_at = None
     else:
         attempt.status = DeliveryStatus.RETRYING
-        backoff = BACKOFF_BASE * (2 ** (attempt.attempt_no - 1))   # exponential backoff
-        attempt.next_retry_at = datetime.now(timezone.utc) + timedelta(seconds=min(backoff, 3600))
+        retry_number = retries_used + 1
+        delay_ceiling = BACKOFF_BASE_SECONDS
+        for _ in range(retry_number - 1):
+            delay_ceiling = min(delay_ceiling * 2, BACKOFF_MAX_SECONDS)
+            if delay_ceiling == BACKOFF_MAX_SECONDS:
+                break
+        delay = random.uniform(
+            delay_ceiling * BACKOFF_JITTER_FLOOR,
+            delay_ceiling,
+        )
+        attempt.next_retry_at = datetime.now(timezone.utc) + timedelta(seconds=delay)
 
 
 # ── Deliver pending events ────────────────────────────────────────────────────
