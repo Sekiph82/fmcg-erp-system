@@ -2,7 +2,7 @@ import uuid
 import enum
 from sqlalchemy import (
     Column, String, Text, Numeric, Boolean, Integer,
-    ForeignKey, Enum, DateTime, Date, UniqueConstraint,
+    ForeignKey, Enum, DateTime, Date, UniqueConstraint, CheckConstraint,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
@@ -30,6 +30,12 @@ class IntlShipmentStatus(str, enum.Enum):
     OUT_FOR_DELIVERY = "OUT_FOR_DELIVERY"
     DELIVERED = "DELIVERED"
     CANCELLED = "CANCELLED"
+
+
+class InventoryOwnerStatus(str, enum.Enum):
+    UNCONFIRMED = "UNCONFIRMED"
+    SUPPLIER_OWNED = "SUPPLIER_OWNED"
+    BUYER_OWNED = "BUYER_OWNED"
 
 
 class ContainerType(str, enum.Enum):
@@ -165,15 +171,58 @@ class ShipmentPOLink(Base, TimestampMixin):
     __tablename__ = "shipment_po_links"
     __table_args__ = (
         UniqueConstraint("shipment_id", "po_id", name="uq_shipment_po_links_shipment_po"),
+        CheckConstraint(
+            "inventory_owner_status IN ('UNCONFIRMED', 'SUPPLIER_OWNED', 'BUYER_OWNED')",
+            name="ck_shipment_po_links_inventory_owner_status",
+        ),
     )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     shipment_id = Column(UUID(as_uuid=True), ForeignKey("intl_shipments.id", ondelete="CASCADE"), nullable=False, index=True)
     po_id = Column(UUID(as_uuid=True), ForeignKey("purchase_orders.id", ondelete="RESTRICT"), nullable=False, index=True)
+    inventory_owner_status = Column(String(24), nullable=False, default=InventoryOwnerStatus.UNCONFIRMED.value, server_default="UNCONFIRMED")
     notes = Column(String(500), nullable=True)
 
     shipment = relationship("InternationalShipment", back_populates="po_links")
     po = relationship("PurchaseOrder")
+    ownership_events = relationship(
+        "ShipmentOwnershipEvent",
+        back_populates="shipment_po_link",
+        order_by="ShipmentOwnershipEvent.effective_at",
+        passive_deletes=True,
+    )
+
+
+class ShipmentOwnershipEvent(Base, TimestampMixin):
+    """Append-only, evidence-linked ownership updates for a PO carried by a shipment."""
+    __tablename__ = "shipment_ownership_events"
+    __table_args__ = (
+        CheckConstraint(
+            "previous_owner IN ('UNCONFIRMED', 'SUPPLIER_OWNED', 'BUYER_OWNED')",
+            name="ck_shipment_ownership_events_previous_owner",
+        ),
+        CheckConstraint(
+            "new_owner IN ('SUPPLIER_OWNED', 'BUYER_OWNED')",
+            name="ck_shipment_ownership_events_new_owner",
+        ),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    shipment_po_link_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("shipment_po_links.id", ondelete="RESTRICT"),
+        nullable=False,
+        index=True,
+    )
+    previous_owner = Column(String(24), nullable=False)
+    new_owner = Column(String(24), nullable=False)
+    source_reference = Column(String(200), nullable=False)
+    notes = Column(Text, nullable=True)
+    effective_at = Column(DateTime(timezone=True), nullable=False)
+    changed_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
+
+    shipment_po_link = relationship("ShipmentPOLink", back_populates="ownership_events")
+    changed_by = relationship("User")
 
 
 # ── Customs Documents ──────────────────────────────────────────────────────────

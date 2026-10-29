@@ -4,10 +4,10 @@ import uuid
 from typing import Optional, List
 from datetime import date, datetime
 from decimal import Decimal
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.logistics import (
-    ShipmentMode, IntlShipmentStatus, ContainerType, ContainerStatus,
+    ShipmentMode, IntlShipmentStatus, InventoryOwnerStatus, ContainerType, ContainerStatus,
     CustomsDocType, CustomsDocStatus, ClearanceStatus,
     LocalCostType, LocalPaymentMethod, LocalCostStatus,
 )
@@ -164,7 +164,29 @@ class POLinkRead(BaseModel):
     po_no: Optional[str] = None
     supplier_name: Optional[str] = None
     po_total: Optional[float] = None
+    inventory_owner_status: InventoryOwnerStatus
     notes: Optional[str]
+    created_at: datetime
+
+
+class ShipmentOwnershipUpdate(BaseModel):
+    new_owner: InventoryOwnerStatus
+    source_reference: str = Field(min_length=1, max_length=200)
+    notes: Optional[str] = Field(default=None, max_length=2000)
+
+
+class ShipmentOwnershipEventRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    shipment_po_link_id: str
+    previous_owner: InventoryOwnerStatus
+    new_owner: InventoryOwnerStatus
+    source_reference: str
+    notes: Optional[str]
+    effective_at: datetime
+    changed_by_id: str
+    changed_by_name: Optional[str] = None
     created_at: datetime
 
 

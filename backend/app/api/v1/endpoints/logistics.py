@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import uuid
 from decimal import Decimal
+from datetime import datetime, timezone
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -12,10 +13,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.deps import get_db, get_current_user, require_permission
 from app.models.user import User
 from app.models.logistics import (
-    InternationalShipment, ShipmentContainer, ShipmentPOLink,
+    InternationalShipment, ShipmentContainer, ShipmentPOLink, ShipmentOwnershipEvent,
     CustomsDocument, CustomsClearance, ArrivalNotification,
     LocalLogisticsCost,
-    IntlShipmentStatus, ContainerStatus, ClearanceStatus,
+    IntlShipmentStatus, InventoryOwnerStatus, ContainerStatus, ClearanceStatus,
 )
 from app.models.procurement import POStatus, PurchaseOrder
 import app.crud.logistics as crud
@@ -24,6 +25,7 @@ from app.schemas.logistics import (
     ShipmentCreate, ShipmentUpdate, ShipmentRead,
     ContainerCreate, ContainerUpdate, ContainerRead,
     POLinkCreate, POLinkRead,
+    ShipmentOwnershipUpdate, ShipmentOwnershipEventRead,
     CustomsDocCreate, CustomsDocUpdate, CustomsDocRead,
     ClearanceCreate, ClearanceUpdate, ClearanceRead,
     ArrivalCreate, ArrivalUpdate, ArrivalRead,
@@ -32,6 +34,19 @@ from app.schemas.logistics import (
 )
 
 router = APIRouter()
+
+SHIPMENT_STATUS_TRANSITIONS: dict[IntlShipmentStatus, set[IntlShipmentStatus]] = {
+    IntlShipmentStatus.DRAFT: {IntlShipmentStatus.BOOKING_CONFIRMED, IntlShipmentStatus.CANCELLED},
+    IntlShipmentStatus.BOOKING_CONFIRMED: {IntlShipmentStatus.CARGO_LOADED, IntlShipmentStatus.CANCELLED},
+    IntlShipmentStatus.CARGO_LOADED: {IntlShipmentStatus.IN_TRANSIT},
+    IntlShipmentStatus.IN_TRANSIT: {IntlShipmentStatus.ARRIVED_PORT, IntlShipmentStatus.CUSTOMS_HOLD},
+    IntlShipmentStatus.ARRIVED_PORT: {IntlShipmentStatus.CUSTOMS_HOLD, IntlShipmentStatus.CUSTOMS_CLEARED},
+    IntlShipmentStatus.CUSTOMS_HOLD: {IntlShipmentStatus.CUSTOMS_CLEARED},
+    IntlShipmentStatus.CUSTOMS_CLEARED: {IntlShipmentStatus.OUT_FOR_DELIVERY},
+    IntlShipmentStatus.OUT_FOR_DELIVERY: {IntlShipmentStatus.DELIVERED},
+    IntlShipmentStatus.DELIVERED: set(),
+    IntlShipmentStatus.CANCELLED: set(),
+}
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
@@ -119,8 +134,34 @@ def _link_read(link) -> POLinkRead:
         po_no=po.po_no if po else None,
         supplier_name=po.supplier.name if po and po.supplier else None,
         po_total=float(po_total) if po_total is not None else None,
+        inventory_owner_status=link.inventory_owner_status,
         notes=link.notes,
         created_at=link.created_at,
+    )
+
+
+def _ownership_event_read(event) -> ShipmentOwnershipEventRead:
+    actor_name = None
+    if event.changed_by is not None:
+        actor_name = getattr(event.changed_by, "full_name", None)
+        if not actor_name:
+            actor_name = " ".join(
+                part for part in (
+                    getattr(event.changed_by, "first_name", None),
+                    getattr(event.changed_by, "last_name", None),
+                ) if part
+            ) or getattr(event.changed_by, "username", None)
+    return ShipmentOwnershipEventRead(
+        id=str(event.id),
+        shipment_po_link_id=str(event.shipment_po_link_id),
+        previous_owner=event.previous_owner,
+        new_owner=event.new_owner,
+        source_reference=event.source_reference,
+        notes=event.notes,
+        effective_at=event.effective_at,
+        changed_by_id=str(event.changed_by_id) if event.changed_by_id else None,
+        changed_by_name=actor_name,
+        created_at=event.created_at,
     )
 
 
@@ -226,12 +267,21 @@ async def update_shipment(
     shipment_id: uuid.UUID,
     body: ShipmentUpdate,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    _: User = Depends(require_permission("logistics", "edit")),
 ):
-    ship = await crud.get_shipment(db, shipment_id)
+    ship = await crud.get_shipment_for_update(db, shipment_id)
     if not ship:
         raise HTTPException(status_code=404, detail="Shipment not found")
-    ship = await crud.update_shipment(db, ship, body.model_dump(exclude_none=True))
+    changes = body.model_dump(exclude_none=True)
+    requested_status = changes.get("status")
+    if requested_status is not None and requested_status != ship.status:
+        allowed = SHIPMENT_STATUS_TRANSITIONS.get(ship.status, set())
+        if requested_status not in allowed:
+            raise HTTPException(
+                status_code=409,
+                detail=f"Shipment status cannot move from {ship.status.value} to {requested_status.value}",
+            )
+    ship = await crud.update_shipment(db, ship, changes)
     await db.commit()
     ship = await crud.get_shipment(db, shipment_id)
     return _s_read(ship)
@@ -328,8 +378,81 @@ async def remove_po_link(
     db: AsyncSession = Depends(get_db),
     _: User = Depends(require_permission("logistics", "edit")),
 ):
-    await crud.remove_po_link(db, link_id)
+    try:
+        await crud.remove_po_link(db, link_id)
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(status_code=409, detail="A PO link with ownership history cannot be removed")
+
+
+@router.get(
+    "/shipments/{shipment_id}/po-links/{link_id}/ownership-events",
+    response_model=List[ShipmentOwnershipEventRead],
+)
+async def list_shipment_ownership_events(
+    shipment_id: uuid.UUID,
+    link_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(require_permission("logistics", "view")),
+):
+    link = await crud.get_po_link_by_id(db, link_id)
+    if link is None or link.shipment_id != shipment_id:
+        raise HTTPException(status_code=404, detail="Shipment purchase-order link not found")
+    events = await crud.list_ownership_events(db, link_id)
+    return [_ownership_event_read(event) for event in events]
+
+
+@router.post(
+    "/shipments/{shipment_id}/po-links/{link_id}/ownership",
+    response_model=ShipmentOwnershipEventRead,
+    status_code=status.HTTP_201_CREATED,
+)
+async def record_shipment_inventory_ownership(
+    shipment_id: uuid.UUID,
+    link_id: uuid.UUID,
+    body: ShipmentOwnershipUpdate,
+    db: AsyncSession = Depends(get_db),
+    actor: User = Depends(require_permission("logistics", "edit")),
+):
+    link = await crud.get_po_link_by_id(db, link_id, for_update=True)
+    if link is None or link.shipment_id != shipment_id:
+        raise HTTPException(status_code=404, detail="Shipment purchase-order link not found")
+    shipment = await crud.get_shipment_for_update(db, shipment_id)
+    if shipment is None:
+        raise HTTPException(status_code=404, detail="Shipment not found")
+    if shipment.status not in {
+        IntlShipmentStatus.CARGO_LOADED,
+        IntlShipmentStatus.IN_TRANSIT,
+        IntlShipmentStatus.ARRIVED_PORT,
+        IntlShipmentStatus.CUSTOMS_HOLD,
+        IntlShipmentStatus.CUSTOMS_CLEARED,
+        IntlShipmentStatus.OUT_FOR_DELIVERY,
+    }:
+        raise HTTPException(status_code=409, detail="Ownership can be recorded only after cargo is loaded and before delivery")
+    if body.new_owner == InventoryOwnerStatus.UNCONFIRMED:
+        raise HTTPException(status_code=422, detail="Select a confirmed owner; UNCONFIRMED is recorded until evidence is supplied")
+    source_reference = body.source_reference.strip()
+    if not source_reference:
+        raise HTTPException(status_code=422, detail="A contract or shipping-document reference is required")
+    if link.inventory_owner_status == body.new_owner.value:
+        raise HTTPException(status_code=409, detail="The recorded owner is already current")
+
+    event = ShipmentOwnershipEvent(
+        shipment_po_link_id=link.id,
+        previous_owner=link.inventory_owner_status,
+        new_owner=body.new_owner.value,
+        source_reference=source_reference,
+        notes=body.notes.strip() if body.notes and body.notes.strip() else None,
+        effective_at=datetime.now(timezone.utc),
+        changed_by_id=actor.id,
+    )
+    link.inventory_owner_status = body.new_owner.value
+    db.add(event)
     await db.commit()
+    await db.refresh(event)
+    event = await crud.list_ownership_events(db, link.id)
+    return _ownership_event_read(event[-1])
 
 
 # ── Customs Documents ──────────────────────────────────────────────────────────

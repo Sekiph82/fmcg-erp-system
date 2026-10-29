@@ -1,0 +1,69 @@
+**********************
+PowerShell transcript start
+Start time: 20261029202233
+Username: SEKIPH\sekip
+RunAs User: SEKIPH\sekip
+Configuration Name:
+Machine: SEKIPH (Microsoft Windows NT 10.0.26300.0)
+Host Application: C:\Users\sekip\.cache\codex-runtimes\codex-primary-runtime\dependencies\native\powershell\pwsh.dll -Command try { [Console]::OutputEncoding=[System.Text.Encoding]::UTF8 } catch {}
+$ErrorActionPreference = 'Stop'
+Set-Location -LiteralPath 'C:\Users\sekip\Desktop\fmcg-erp-system'
+$session = [System.IO.Path]::GetFullPath('coordination/sessions/M25.S01.T002')
+$storage = Join-Path $session ('.playwright-state-' + [Guid]::NewGuid().ToString('N') + '.json')
+$backup = Join-Path $session ('.next-env-backup-' + [Guid]::NewGuid().ToString('N') + '.bin')
+$output = Join-Path $session 'playwright-output-v03'
+$nextEnv = [System.IO.Path]::GetFullPath('frontend/next-env.d.ts')
+if ((Test-Path -LiteralPath $storage) -or (Test-Path -LiteralPath $backup) -or (Test-Path -LiteralPath $output)) { throw 'A task-scoped temporary path unexpectedly already exists.' }
+Copy-Item -LiteralPath $nextEnv -Destination $backup
+$nextEnvHash = (Get-FileHash -LiteralPath $nextEnv -Algorithm SHA256).Hash
+Set-Content -LiteralPath $storage -Value '{"cookies":[],"origins":[]}' -Encoding utf8
+$previousBase = $env:E2E_BASE_URL
+$previousStorage = $env:E2E_STORAGE_STATE_PATH
+$previousApi = $env:NEXT_PUBLIC_API_URL
+$log = Join-Path $session 'M25_S01_T002_FRONTEND_TEST_RUN_V03.log'
+Start-Transcript -Path $log -Force | Out-Null
+$failure = $null
+try {
+  Push-Location frontend
+  try {
+    $env:E2E_BASE_URL = 'http://localhost:3324'
+    $env:E2E_STORAGE_STATE_PATH = $storage
+    $env:NEXT_PUBLIC_API_URL = 'http://localhost:8000'
+    npm run type-check
+    if ($LASTEXITCODE -ne 0) { throw 'Frontend type-check failed.' }
+    npx eslint src/app/dashboard/logistics/shipments/page.tsx e2e/m25-shipment-purchase-container-linkage.mocked.spec.ts
+    if ($LASTEXITCODE -ne 0) { throw 'Targeted ESLint failed.' }
+    npx playwright test e2e/m25-shipment-purchase-container-linkage.mocked.spec.ts --project=chromium --no-deps --workers=1 --retries=0 --reporter=list --output=$output
+    if ($LASTEXITCODE -ne 0) { throw 'Targeted mocked Playwright test failed.' }
+  }
+  finally { Pop-Location }
+}
+catch { $failure = $_ }
+finally {
+  $env:E2E_BASE_URL = $previousBase
+  $env:E2E_STORAGE_STATE_PATH = $previousStorage
+  $env:NEXT_PUBLIC_API_URL = $previousApi
+  if ((Get-FileHash -LiteralPath $nextEnv -Algorithm SHA256).Hash -ne $nextEnvHash) { Copy-Item -LiteralPath $backup -Destination $nextEnv -Force }
+  Stop-Transcript | Out-Null
+  if (Test-Path -LiteralPath $storage) { Remove-Item -LiteralPath $storage }
+  if (Test-Path -LiteralPath $backup) { Remove-Item -LiteralPath $backup }
+}
+if ($failure) { throw $failure }
+Process ID: 18140
+PSVersion: 7.6.5
+PSEdition: Core
+GitCommitId: 7.6.5
+OS: Microsoft Windows 10.0.26300
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+
+
+
+**********************
+PowerShell transcript end
+End time: 20261029202253
+**********************

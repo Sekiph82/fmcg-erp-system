@@ -1,0 +1,34 @@
+**********************
+PowerShell transcript start
+Start time: 20261029201312
+Username: SEKIPH\sekip
+RunAs User: SEKIPH\sekip
+Configuration Name:
+Machine: SEKIPH (Microsoft Windows NT 10.0.26300.0)
+Host Application: C:\Users\sekip\.cache\codex-runtimes\codex-primary-runtime\dependencies\native\powershell\pwsh.dll -Command try { [Console]::OutputEncoding=[System.Text.Encoding]::UTF8 } catch {}
+$ErrorActionPreference = 'Stop'
+Set-Location -LiteralPath 'C:\Users\sekip\Desktop\fmcg-erp-system'
+$logPath = Join-Path (Get-Location) 'coordination/sessions/M25.S01.T002/M25_S01_T002_TEST_RUN_V02.log'
+Start-Transcript -Path $logPath -Force | Out-Null
+$runError = $null
+try { & .\coordination\sessions\M25.S01.T002\run_shipment_ownership_tests.ps1 } catch { $runError = $_ }
+Stop-Transcript | Out-Null
+if ($runError) { throw $runError }
+Process ID: 54560
+PSVersion: 7.6.5
+PSEdition: Core
+GitCommitId: 7.6.5
+OS: Microsoft Windows 10.0.26300
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+
+
+PS>TerminatingError(): "Shipment ownership PostgreSQL test failed."
+**********************
+PowerShell transcript end
+End time: 20261029201502
+**********************

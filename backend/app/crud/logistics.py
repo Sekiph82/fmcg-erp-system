@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models.logistics import (
-    InternationalShipment, ShipmentContainer, ShipmentPOLink,
+    InternationalShipment, ShipmentContainer, ShipmentPOLink, ShipmentOwnershipEvent,
     CustomsDocument, CustomsClearance, ArrivalNotification,
     LocalLogisticsCost, LocalCostStatus,
     IntlShipmentStatus, ContainerStatus,
@@ -49,6 +49,15 @@ async def get_shipment(db: AsyncSession, shipment_id: uuid.UUID) -> Optional[Int
             selectinload(InternationalShipment.arrival),
         )
         .where(InternationalShipment.id == shipment_id)
+    )
+    return result.scalar_one_or_none()
+
+
+async def get_shipment_for_update(db: AsyncSession, shipment_id: uuid.UUID) -> Optional[InternationalShipment]:
+    result = await db.execute(
+        select(InternationalShipment)
+        .where(InternationalShipment.id == shipment_id)
+        .with_for_update()
     )
     return result.scalar_one_or_none()
 
@@ -155,6 +164,42 @@ async def get_po_link(db: AsyncSession, shipment_id: uuid.UUID, po_id: uuid.UUID
         )
     )
     return result.scalar_one_or_none()
+
+
+async def get_po_link_by_id(
+    db: AsyncSession,
+    link_id: uuid.UUID,
+    *,
+    for_update: bool = False,
+) -> Optional[ShipmentPOLink]:
+    query = (
+        select(ShipmentPOLink)
+        .options(selectinload(ShipmentPOLink.shipment))
+        .where(ShipmentPOLink.id == link_id)
+    )
+    if for_update:
+        query = query.with_for_update()
+    result = await db.execute(query)
+    return result.scalar_one_or_none()
+
+
+async def list_ownership_events(db: AsyncSession, link_id: uuid.UUID) -> List[ShipmentOwnershipEvent]:
+    result = await db.execute(
+        select(ShipmentOwnershipEvent)
+        .options(selectinload(ShipmentOwnershipEvent.changed_by))
+        .where(ShipmentOwnershipEvent.shipment_po_link_id == link_id)
+        .order_by(ShipmentOwnershipEvent.effective_at, ShipmentOwnershipEvent.created_at)
+    )
+    return list(result.scalars().all())
+
+
+async def has_ownership_events(db: AsyncSession, link_id: uuid.UUID) -> bool:
+    result = await db.execute(
+        select(ShipmentOwnershipEvent.id)
+        .where(ShipmentOwnershipEvent.shipment_po_link_id == link_id)
+        .limit(1)
+    )
+    return result.scalar_one_or_none() is not None
 
 
 async def add_po_link(db: AsyncSession, shipment_id: uuid.UUID, po_id: uuid.UUID, notes: Optional[str]) -> ShipmentPOLink:

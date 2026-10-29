@@ -11,6 +11,7 @@ export type IntlShipmentStatus =
   | "DRAFT" | "BOOKING_CONFIRMED" | "CARGO_LOADED" | "IN_TRANSIT"
   | "ARRIVED_PORT" | "CUSTOMS_HOLD" | "CUSTOMS_CLEARED"
   | "OUT_FOR_DELIVERY" | "DELIVERED" | "CANCELLED";
+export type InventoryOwnerStatus = "UNCONFIRMED" | "SUPPLIER_OWNED" | "BUYER_OWNED";
 export type ContainerType = "20FT_DRY" | "40FT_DRY" | "40FT_HC" | "20FT_REEFER" | "LCL";
 export type ContainerStatus = "EMPTY" | "LOADING" | "LOADED" | "IN_TRANSIT" | "AT_PORT" | "CUSTOMS_HOLD" | "RELEASED" | "RETURNED";
 export type CustomsDocType =
@@ -80,7 +81,21 @@ export interface POLink {
   po_no?: string;
   supplier_name?: string;
   po_total?: number;
+  inventory_owner_status: InventoryOwnerStatus;
   notes?: string;
+  created_at: string;
+}
+
+export interface ShipmentOwnershipEvent {
+  id: string;
+  shipment_po_link_id: string;
+  previous_owner: InventoryOwnerStatus;
+  new_owner: InventoryOwnerStatus;
+  source_reference: string;
+  notes?: string;
+  effective_at: string;
+  changed_by_id?: string;
+  changed_by_name?: string;
   created_at: string;
 }
 
@@ -223,6 +238,18 @@ export const logisticsApi = {
   },
   async removePOLink(linkId: string): Promise<void> {
     await apiClient.delete(`/api/v1/logistics/po-links/${linkId}`).then((r) => r.data);
+  },
+  async listShipmentOwnershipEvents(shipmentId: string, linkId: string): Promise<ShipmentOwnershipEvent[]> {
+    const res = await apiClient.get<ShipmentOwnershipEvent[]>(`/api/v1/logistics/shipments/${shipmentId}/po-links/${linkId}/ownership-events`);
+    return res.data;
+  },
+  async recordShipmentOwnership(
+    shipmentId: string,
+    linkId: string,
+    data: { new_owner: Exclude<InventoryOwnerStatus, "UNCONFIRMED">; source_reference: string; notes?: string },
+  ): Promise<ShipmentOwnershipEvent> {
+    const res = await apiClient.post<ShipmentOwnershipEvent>(`/api/v1/logistics/shipments/${shipmentId}/po-links/${linkId}/ownership`, data);
+    return res.data;
   },
 
   // Customs Documents

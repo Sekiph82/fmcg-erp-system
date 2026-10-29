@@ -1,0 +1,42 @@
+**********************
+PowerShell transcript start
+Start time: 20261029202519
+Username: SEKIPH\sekip
+RunAs User: SEKIPH\sekip
+Configuration Name:
+Machine: SEKIPH (Microsoft Windows NT 10.0.26300.0)
+Host Application: C:\Users\sekip\.cache\codex-runtimes\codex-primary-runtime\dependencies\native\powershell\pwsh.dll -Command try { [Console]::OutputEncoding=[System.Text.Encoding]::UTF8 } catch {}
+$ErrorActionPreference = 'Stop'
+$left = @(docker ps -a --filter label=codex.task=M25.S01.T002 --format '{{.Names}}')
+if ($left.Count) { throw "Unexpected leftover T002 container: $($left -join ', ')" }
+Set-Location -LiteralPath 'C:\Users\sekip\Desktop\fmcg-erp-system'
+$logPath = Join-Path (Get-Location) 'coordination/sessions/M25.S01.T002/M25_S01_T002_TEST_RUN_V04.log'
+Start-Transcript -Path $logPath -Force | Out-Null
+$runError = $null
+try { & .\coordination\sessions\M25.S01.T002\run_shipment_ownership_tests.ps1 } catch { $runError = $_ }
+Stop-Transcript | Out-Null
+if ($runError) { throw $runError }
+Process ID: 5592
+PSVersion: 7.6.5
+PSEdition: Core
+GitCommitId: 7.6.5
+OS: Microsoft Windows 10.0.26300
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+
+
+RESULT=PASS
+POSTGRES_IMAGE=postgres:16-alpine
+POSTGRES_IMAGE_ID=sha256:16bc17c64a573ef34162af9298258d1aec548232985b33ed7b1eac33ba35c229
+CONTAINER=codex-m25-s01-t002-ca6215c18534436d8aab
+DATABASE=fmcg_m25_s01_t002_ca6215c18534436d8aab
+DATA=synthetic only
+NETWORK=host port bound to 127.0.0.1 only; no volume mounts
+**********************
+PowerShell transcript end
+End time: 20261029202709
+**********************

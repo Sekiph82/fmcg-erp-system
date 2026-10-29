@@ -93,6 +93,7 @@ from app.models.maintenance import (
 )
 from app.models.logistics import (
     InternationalShipment, ShipmentContainer, ShipmentPOLink,
+    InventoryOwnerStatus, ShipmentOwnershipEvent,
     CustomsDocument, CustomsClearance, ArrivalNotification,
 )
 from app.models.tax_regulatory import (
@@ -683,6 +684,7 @@ __all__ = [
     "OperationalPostingStatus", "OperationalPostingEvent", "InventoryAccountMapping",
     "Asset", "PMPlan", "PMWorkOrder", "BreakdownRecord", "SparePart", "SparePartUsage",
     "InternationalShipment", "ShipmentContainer", "ShipmentPOLink",
+    "InventoryOwnerStatus", "ShipmentOwnershipEvent",
     "CustomsDocument", "CustomsClearance", "ArrivalNotification",
     "CountryTaxConfig", "TaxCategory", "TaxRule",
     "ProductTaxMapping", "RegulatoryFlag", "TransactionTax",

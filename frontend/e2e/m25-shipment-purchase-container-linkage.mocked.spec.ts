@@ -71,6 +71,7 @@ test("links an eligible purchase order and its shipping container to one shipmen
   };
   const links: Array<Record<string, unknown>> = [];
   const containers: Array<Record<string, unknown>> = [];
+  const ownershipEvents: Array<Record<string, unknown>> = [];
 
   await page.route("**/api/v1/logistics/shipments/", (route) => fulfillJson(route, [{
     ...shipment,
@@ -86,6 +87,7 @@ test("links an eligible purchase order and its shipping container to one shipmen
       po_id: poId,
       po_no: order.po_no,
       supplier_name: order.supplier_name,
+      inventory_owner_status: "UNCONFIRMED",
       notes: null,
       created_at: "2026-10-29T08:10:00Z",
     };
@@ -96,6 +98,25 @@ test("links an eligible purchase order and its shipping container to one shipmen
     const index = links.findIndex((link) => link.id === linkId);
     if (index >= 0) links.splice(index, 1);
     return route.fulfill({ status: 204, body: "" });
+  });
+  await page.route("**/api/v1/logistics/shipments/*/po-links/*/ownership-events", (route) => fulfillJson(route, ownershipEvents));
+  await page.route("**/api/v1/logistics/shipments/*/po-links/*/ownership", async (route) => {
+    const body = route.request().postDataJSON() as { new_owner: string; source_reference: string; notes?: string };
+    const event = {
+      id: "66666666-6666-4666-8666-666666666666",
+      shipment_po_link_id: linkId,
+      previous_owner: links[0]?.inventory_owner_status ?? "UNCONFIRMED",
+      new_owner: body.new_owner,
+      source_reference: body.source_reference,
+      notes: body.notes,
+      effective_at: "2026-10-29T09:00:00Z",
+      changed_by_id: "synthetic-m25-logistics-user",
+      changed_by_name: "Synthetic Logistics Tester",
+      created_at: "2026-10-29T09:00:00Z",
+    };
+    if (links[0]) links[0].inventory_owner_status = body.new_owner;
+    ownershipEvents.push(event);
+    return fulfillJson(route, event, 201);
   });
   await page.route("**/api/v1/logistics/containers/**", async (route) => {
     if (route.request().method() === "GET") return fulfillJson(route, containers);
@@ -119,6 +140,13 @@ test("links an eligible purchase order and its shipping container to one shipmen
   await page.getByLabel("Purchase order", { exact: true }).selectOption(poId);
   await page.getByRole("button", { name: "Link purchase order" }).click();
   await expect(page.getByText(order.po_no)).toBeVisible();
+  await expect(page.getByText("Ownership stays unconfirmed until a source reference is entered. Incoterm does not set ownership automatically.")).toBeVisible();
+  await page.getByLabel("New inventory owner").selectOption("BUYER_OWNED");
+  await page.getByLabel("Source document reference").fill("SYN-COMMERCIAL-CONTRACT-001");
+  await page.getByRole("button", { name: "Record owner" }).click();
+  await expect(page.getByText("BUYER OWNED", { exact: true })).toBeVisible();
+  await expect(page.getByText(/UNCONFIRMED → BUYER OWNED/)).toBeVisible();
+  expect(ownershipEvents).toHaveLength(1);
 
   await page.getByLabel("Container number").fill("SYNM25BOX01");
   await page.getByRole("button", { name: "Add container" }).click();
@@ -146,13 +174,25 @@ test("logistics view-only users can inspect links but cannot change them", async
     container_count: 0,
     po_count: 0,
   }]));
-  await page.route("**/api/v1/logistics/shipments/*/po-links", (route) => fulfillJson(route, []));
+  await page.route("**/api/v1/logistics/shipments/*/po-links", (route) => fulfillJson(route, [{
+    id: linkId,
+    shipment_id: shipmentId,
+    po_id: poId,
+    po_no: "SYN-READONLY-PO",
+    supplier_name: "Synthetic Supplier",
+    inventory_owner_status: "UNCONFIRMED",
+    created_at: "2026-10-29T08:10:00Z",
+  }]));
+  await page.route("**/api/v1/logistics/shipments/*/po-links/*/ownership-events", (route) => fulfillJson(route, []));
   await page.route("**/api/v1/logistics/containers/**", (route) => fulfillJson(route, []));
 
   await page.goto("/dashboard/logistics?tab=shipments");
   await page.getByRole("button", { name: "View POs & containers" }).click();
   await expect(page.getByText("You have view-only access to shipment links.")).toBeVisible();
+  await expect(page.getByText("You have view-only access to ownership history.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Edit", exact: true })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Link purchase order" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Unlink" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Record owner" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Add container" })).toHaveCount(0);
 });

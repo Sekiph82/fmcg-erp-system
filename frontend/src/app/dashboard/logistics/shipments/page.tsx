@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { logisticsApi, IntlShipment, IntlShipmentStatus } from "@/lib/logistics";
+import { logisticsApi, IntlShipment, IntlShipmentStatus, InventoryOwnerStatus, POLink } from "@/lib/logistics";
 import { procurementApi, PO } from "@/lib/procurement";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -12,6 +12,22 @@ const STATUS_FLOW: IntlShipmentStatus[] = [
   "DRAFT", "BOOKING_CONFIRMED", "CARGO_LOADED", "IN_TRANSIT",
   "ARRIVED_PORT", "CUSTOMS_HOLD", "CUSTOMS_CLEARED", "OUT_FOR_DELIVERY", "DELIVERED",
 ];
+const OWNERSHIP_STATUS_FLOW: IntlShipmentStatus[] = [
+  "CARGO_LOADED", "IN_TRANSIT", "ARRIVED_PORT", "CUSTOMS_HOLD",
+  "CUSTOMS_CLEARED", "OUT_FOR_DELIVERY",
+];
+const SHIPMENT_STATUS_TRANSITIONS: Record<IntlShipmentStatus, IntlShipmentStatus[]> = {
+  DRAFT: ["BOOKING_CONFIRMED", "CANCELLED"],
+  BOOKING_CONFIRMED: ["CARGO_LOADED", "CANCELLED"],
+  CARGO_LOADED: ["IN_TRANSIT"],
+  IN_TRANSIT: ["ARRIVED_PORT", "CUSTOMS_HOLD"],
+  ARRIVED_PORT: ["CUSTOMS_HOLD", "CUSTOMS_CLEARED"],
+  CUSTOMS_HOLD: ["CUSTOMS_CLEARED"],
+  CUSTOMS_CLEARED: ["OUT_FOR_DELIVERY"],
+  OUT_FOR_DELIVERY: ["DELIVERED"],
+  DELIVERED: [],
+  CANCELLED: [],
+};
 
 const statusBadge = (s: IntlShipmentStatus) => {
   if (s === "DELIVERED" || s === "CUSTOMS_CLEARED") return "green";
@@ -23,6 +39,7 @@ const statusBadge = (s: IntlShipmentStatus) => {
 
 export default function ShipmentsPage() {
   const { hasPermission } = useAuth();
+  const canEditShipment = hasPermission("logistics.edit");
   const qc = useQueryClient();
   const [showNew, setShowNew] = useState(false);
   const [editing, setEditing] = useState<IntlShipment | null>(null);
@@ -117,7 +134,7 @@ export default function ShipmentsPage() {
                   <td className="px-5 py-3"><Badge label={s.status.replace(/_/g, " ")} variant={statusBadge(s.status)} /></td>
                   <td className="px-5 py-3">
                     <div className="flex flex-col items-start gap-1">
-                      <button className="text-xs text-indigo-600 hover:underline" onClick={() => setEditing(s)}>Edit</button>
+                      {canEditShipment && <button className="text-xs text-indigo-600 hover:underline" onClick={() => setEditing(s)}>Edit</button>}
                       <button className="text-xs text-indigo-600 hover:underline" onClick={() => setManagingLinks(s)}>View POs & containers</button>
                     </div>
                   </td>
@@ -228,12 +245,21 @@ function ShipmentLinkageModal({ shipment, onClose }: { shipment: IntlShipment; o
           ) : (linksQuery.data ?? []).length === 0 ? <p className="text-sm text-gray-500">No purchase orders are linked yet.</p> : (
             <ul className="divide-y rounded border">
               {(linksQuery.data ?? []).map((link) => (
-                <li key={link.id} className="flex items-center justify-between gap-3 p-3">
-                  <div>
-                    <p className="font-mono text-sm font-medium">{link.po_no || link.po_id}</p>
-                    <p className="text-xs text-gray-500">{link.supplier_name || "Supplier not available"}</p>
+                <li key={link.id} className="space-y-3 p-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="font-mono text-sm font-medium">{link.po_no || link.po_id}</p>
+                      <p className="text-xs text-gray-500">{link.supplier_name || "Supplier not available"}</p>
+                    </div>
+                    {canEdit && <Button
+                      variant="danger"
+                      onClick={() => removePo.mutate(link.id)}
+                      loading={removePo.isPending}
+                      disabled={link.inventory_owner_status !== "UNCONFIRMED"}
+                      title={link.inventory_owner_status !== "UNCONFIRMED" ? "Ownership history prevents unlinking this PO." : undefined}
+                    >Unlink</Button>}
                   </div>
-                  {canEdit && <Button variant="danger" onClick={() => removePo.mutate(link.id)} loading={removePo.isPending}>Unlink</Button>}
+                  <ShipmentOwnershipPanel shipment={shipment} link={link} canEdit={canEdit} />
                 </li>
               ))}
             </ul>
@@ -283,9 +309,84 @@ function ShipmentLinkageModal({ shipment, onClose }: { shipment: IntlShipment; o
   );
 }
 
+function ShipmentOwnershipPanel({ shipment, link, canEdit }: {
+  shipment: IntlShipment;
+  link: POLink;
+  canEdit: boolean;
+}) {
+  const qc = useQueryClient();
+  const [newOwner, setNewOwner] = useState<Exclude<InventoryOwnerStatus, "UNCONFIRMED"> | "">("");
+  const [sourceReference, setSourceReference] = useState("");
+  const [notes, setNotes] = useState("");
+  const ownershipQuery = useQuery({
+    queryKey: ["shipment-ownership-events", shipment.id, link.id],
+    queryFn: () => logisticsApi.listShipmentOwnershipEvents(shipment.id, link.id),
+  });
+  const recordOwnership = useMutation({
+    mutationFn: () => logisticsApi.recordShipmentOwnership(shipment.id, link.id, {
+      new_owner: newOwner as Exclude<InventoryOwnerStatus, "UNCONFIRMED">,
+      source_reference: sourceReference.trim(),
+      notes: notes.trim() || undefined,
+    }),
+    onSuccess: async () => {
+      setSourceReference("");
+      setNotes("");
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["shipment-po-links", shipment.id] }),
+        qc.invalidateQueries({ queryKey: ["shipment-ownership-events", shipment.id, link.id] }),
+      ]);
+    },
+  });
+  const ownerLabel = (owner: InventoryOwnerStatus) => owner.replaceAll("_", " ");
+  const canRecordNow = OWNERSHIP_STATUS_FLOW.includes(shipment.status);
+
+  return (
+    <div className="space-y-2 rounded bg-gray-50 p-3" aria-label={`Inventory ownership for ${link.po_no || link.po_id}`}>
+      <div className="flex flex-wrap items-center gap-2 text-sm">
+        <span className="font-medium">Inventory owner:</span>
+        <Badge label={ownerLabel(link.inventory_owner_status)} variant={link.inventory_owner_status === "UNCONFIRMED" ? "yellow" : "blue"} />
+      </div>
+      <p className="text-xs text-gray-600">Ownership stays unconfirmed until a source reference is entered. Incoterm does not set ownership automatically.</p>
+      {ownershipQuery.isLoading ? <p className="text-xs text-gray-500">Loading ownership history…</p> : ownershipQuery.isError ? (
+        <p role="alert" className="text-xs text-red-700">Could not load ownership history.</p>
+      ) : (ownershipQuery.data ?? []).length > 0 ? (
+        <ol className="space-y-1 text-xs text-gray-600" aria-label="Ownership history">
+          {(ownershipQuery.data ?? []).map((event) => (
+            <li key={event.id}>
+              {ownerLabel(event.previous_owner)} → {ownerLabel(event.new_owner)} · {event.source_reference} · {new Date(event.effective_at).toLocaleString()}
+              {event.changed_by_name ? ` · ${event.changed_by_name}` : ""}
+            </li>
+          ))}
+        </ol>
+      ) : <p className="text-xs text-gray-500">No ownership changes recorded.</p>}
+      {canEdit && canRecordNow && (
+        <div className="grid gap-2 sm:grid-cols-[minmax(8rem,0.8fr)_minmax(12rem,1fr)_minmax(12rem,1fr)_auto]">
+          <label className="sr-only" htmlFor={`ownership-owner-${link.id}`}>New inventory owner</label>
+          <select id={`ownership-owner-${link.id}`} className="rounded border px-2 py-2 text-xs" value={newOwner} onChange={(event) => setNewOwner(event.target.value as typeof newOwner)} disabled={recordOwnership.isPending}>
+            <option value="">Select documented owner…</option>
+            <option value="SUPPLIER_OWNED">Supplier owned</option>
+            <option value="BUYER_OWNED">Buyer owned</option>
+          </select>
+          <label className="sr-only" htmlFor={`ownership-reference-${link.id}`}>Source document reference</label>
+          <input id={`ownership-reference-${link.id}`} className="min-w-0 rounded border px-2 py-2 text-xs" value={sourceReference} onChange={(event) => setSourceReference(event.target.value)} maxLength={200} placeholder="Contract / document reference" />
+          <label className="sr-only" htmlFor={`ownership-notes-${link.id}`}>Ownership notes</label>
+          <input id={`ownership-notes-${link.id}`} className="min-w-0 rounded border px-2 py-2 text-xs" value={notes} onChange={(event) => setNotes(event.target.value)} maxLength={2000} placeholder="Optional notes" />
+          <Button onClick={() => { if (newOwner && sourceReference.trim()) recordOwnership.mutate(); }} loading={recordOwnership.isPending} disabled={!newOwner || !sourceReference.trim() || recordOwnership.isPending}>Record owner</Button>
+        </div>
+      )}
+      {canEdit && !canRecordNow && <p className="text-xs text-gray-500">Ownership can be recorded after cargo is loaded and before delivery.</p>}
+      {recordOwnership.isError && <p role="alert" className="text-xs text-red-700">Could not record ownership. Verify the shipment status and document reference, then retry.</p>}
+      {!canEdit && <p className="text-xs text-gray-500">You have view-only access to ownership history.</p>}
+    </div>
+  );
+}
+
 function ShipmentModal({ title, initial, onClose, onSubmit, loading }: {
   title: string; initial?: IntlShipment; onClose: () => void; onSubmit: (d: object) => void; loading: boolean;
 }) {
+  const statusOptions = initial
+    ? [initial.status, ...SHIPMENT_STATUS_TRANSITIONS[initial.status]]
+    : ["DRAFT" as IntlShipmentStatus];
   const [form, setForm] = useState({
     shipment_no: initial?.shipment_no ?? "",
     mode: initial?.mode ?? "SEA",
@@ -334,7 +435,7 @@ function ShipmentModal({ title, initial, onClose, onSubmit, loading }: {
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Status</label>
             <select className="w-full border rounded px-3 py-2 text-sm" value={form.status} onChange={(e) => set("status", e.target.value)}>
-              {STATUS_FLOW.map((s) => <option key={s} value={s}>{s.replace(/_/g, " ")}</option>)}
+              {statusOptions.map((s) => <option key={s} value={s}>{s.replace(/_/g, " ")}</option>)}
             </select>
           </div>
           <div>
