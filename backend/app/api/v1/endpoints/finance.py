@@ -762,13 +762,43 @@ async def list_period_close_checks(
     return [AccountingPeriodCloseCheckRead.model_validate(r) for r in rows]
 
 
+async def _lock_open_accounting_period(db: AsyncSession, period_id: uuid.UUID):
+    """Serialize close-check mutations against period close/lock transitions."""
+    from sqlalchemy import select as _sel
+    from app.models.finance import AccountingPeriod, PeriodStatus
+
+    period = (await db.execute(
+        _sel(AccountingPeriod).where(AccountingPeriod.id == period_id).with_for_update()
+    )).scalar_one_or_none()
+    if not period:
+        raise HTTPException(404, "Period not found")
+    if period.status != PeriodStatus.OPEN:
+        raise HTTPException(409, f"Close checks cannot change while period is {period.status.value}")
+    return period
+
+
+def _validate_close_check_result(status: AccountingCloseCheckStatus, summary: Optional[str]) -> None:
+    from app.models.finance import AccountingCloseCheckStatus
+
+    if status in {AccountingCloseCheckStatus.FAILED, AccountingCloseCheckStatus.WAIVED} and not (summary or "").strip():
+        raise HTTPException(422, f"A result summary is required when a close check is {status.value}")
+
+
 @router.post("/accounting/period-close-checks/", response_model=AccountingPeriodCloseCheckRead, status_code=201)
 async def create_period_close_check(
     body: AccountingPeriodCloseCheckCreate,
     db: AsyncSession = Depends(get_db),
     current_user=Depends(require_permission("finance", "configure")),
 ):
+    from datetime import datetime, timezone
+    from app.models.finance import AccountingCloseCheckStatus
+
+    await _lock_open_accounting_period(db, body.period_id)
+    _validate_close_check_result(body.status, body.result_summary)
     check = AccountingPeriodCloseCheck(**body.model_dump())
+    if body.status != AccountingCloseCheckStatus.PENDING:
+        check.checked_by_id = current_user.id
+        check.checked_at = datetime.now(timezone.utc)
     db.add(check)
     await db.commit()
     await db.refresh(check)
@@ -783,11 +813,21 @@ async def update_period_close_check(
     current_user=Depends(require_permission("finance", "configure")),
 ):
     from sqlalchemy import select as _sel
+    from datetime import datetime, timezone
+    from app.models.finance import AccountingCloseCheckStatus
+
+    period_id = (await db.execute(
+        _sel(AccountingPeriodCloseCheck.period_id).where(AccountingPeriodCloseCheck.id == check_id)
+    )).scalar_one_or_none()
+    if not period_id:
+        raise HTTPException(404, "Period close check not found")
+    await _lock_open_accounting_period(db, period_id)
     check = (await db.execute(
-        _sel(AccountingPeriodCloseCheck).where(AccountingPeriodCloseCheck.id == check_id)
+        _sel(AccountingPeriodCloseCheck).where(AccountingPeriodCloseCheck.id == check_id).with_for_update()
     )).scalar_one_or_none()
     if not check:
         raise HTTPException(404, "Period close check not found")
+    _validate_close_check_result(body.status, body.result_summary)
     check.status = body.status
     check.result_summary = body.result_summary
     check.checked_by_id = current_user.id
@@ -1092,13 +1132,34 @@ async def close_period(
     current_user=Depends(require_permission("finance", "approve")),
 ):
     from sqlalchemy import select as _sel
+    from app.models.finance import AccountingCloseCheckStatus
+
     period = (await db.execute(
-        _sel(AccountingPeriod).where(AccountingPeriod.id == period_id)
+        _sel(AccountingPeriod).where(AccountingPeriod.id == period_id).with_for_update()
     )).scalar_one_or_none()
     if not period:
         raise HTTPException(404, "Period not found")
-    if period.status == PeriodStatus.LOCKED:
-        raise HTTPException(422, "Period is already locked")
+    if period.status != PeriodStatus.OPEN:
+        raise HTTPException(409, f"Only an open period can be closed; current status is {period.status.value}")
+    checks = (await db.execute(
+        _sel(AccountingPeriodCloseCheck)
+        .where(AccountingPeriodCloseCheck.period_id == period_id)
+        .order_by(AccountingPeriodCloseCheck.check_code)
+    )).scalars().all()
+    blocking = [
+        check.check_code
+        for check in checks
+        if check.status in {AccountingCloseCheckStatus.PENDING, AccountingCloseCheckStatus.FAILED}
+        or (check.status == AccountingCloseCheckStatus.WAIVED and not (check.result_summary or "").strip())
+    ]
+    if blocking:
+        raise HTTPException(
+            409,
+            {
+                "message": "Period close is blocked by unresolved close checks",
+                "blocking_check_codes": blocking,
+            },
+        )
     period.status = PeriodStatus.CLOSED
     period.closed_by_id = current_user.id
     period.closed_at = datetime.now(timezone.utc)
@@ -1115,15 +1176,15 @@ async def lock_period(
 ):
     from sqlalchemy import select as _sel
     period = (await db.execute(
-        _sel(AccountingPeriod).where(AccountingPeriod.id == period_id)
+        _sel(AccountingPeriod).where(AccountingPeriod.id == period_id).with_for_update()
     )).scalar_one_or_none()
     if not period:
         raise HTTPException(404, "Period not found")
+    if period.status != PeriodStatus.CLOSED:
+        raise HTTPException(409, f"Only a closed period can be locked; current status is {period.status.value}")
     period.status = PeriodStatus.LOCKED
-    period.closed_by_id = current_user.id
-    period.closed_at = datetime.now(timezone.utc)
     period.locked_by_id = current_user.id
-    period.locked_at = period.closed_at
+    period.locked_at = datetime.now(timezone.utc)
     await db.commit()
     await db.refresh(period)
     return PeriodRead.model_validate(period)

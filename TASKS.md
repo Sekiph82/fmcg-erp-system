@@ -8,11 +8,11 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 ## Project Status
 
-- Current Milestone: M21 — Advanced BOM / Fluid-to-Unit
-- Current Sprint: M21.S05 — Verification
-- Current Task: M21.S05.T004 — Close M21
-- Current Task Status: BLOCKED
-- Next Task/Action: M21.S05.T004 — Close M21
+- Current Milestone: M13 — Finance / Costing
+- Current Sprint: M13.S03 — Live Finance Verification
+- Current Task: M13.S03.T004 — Rehearse period close/reconciliation on staging/live-like DB
+- Current Task Status: COMPLETE
+- Next Task/Action: M13.S03.T004 — Rehearse period close/reconciliation on staging/live-like DB
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -429,7 +429,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 - [P] M13.S03.T001 — Verify landed-cost posting chain
 - [!] M13.S03.T002 — Validate live bank integration when credentials exist
 - [!] M13.S03.T003 — Validate live eTIMS posting when credentials exist
-- [ ] M13.S03.T004 — Rehearse period close/reconciliation on staging/live-like DB
+- [x] M13.S03.T004 — Rehearse period close/reconciliation on staging/live-like DB
+  Evidence: [CODEX log](coordination/sessions/M13.S03.T004/CODEX_LOG_V01.md); exact-HEAD disposable PostgreSQL 16.6 rehearsal passed 5/5, migration head applied, period-close/posting/permission/concurrency assertions passed, container removed, independent review found no remaining issue. No live provider or production acceptance claimed.
 
 ---
 
@@ -643,7 +644,7 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 - [x] M21.S05.T003 — Costing integration tests
   Evidence: [CODEX log](coordination/sessions/M21.S05.T003/CODEX_LOG_V01.md); fresh task-owned PostgreSQL integration passed through real compute/finalize/report queries, exposed 10 KES yield-loss cost variance separately from unchanged 0 total cost, and passed cleanup and independent read-only review.
 - [!] M21.S05.T004 — Close M21
-  Blocked: M20 V05 acceptance is OPEN / CHANGES_REQUIRED, so this milestone dependency is not satisfied. See [closure assessment](coordination/sessions/M21.S05.T004/CODEX_LOG_V01.md) and Q-M21-S05-T004-M20-DATA.
+  Blocked: M20 local acceptance is PASS under the owner-approved synthetic virtual-factory assumptions, but the M20 milestone remains BLOCKED_EVIDENCE while remote CI is `DEFERRED_CI_QUOTA` through 2026-10-30; M21 depends on M20 closure. No real factory or employee data is required. See [M20 strict re-audit V06](coordination/milestones/M20/CHATGPT_M20_STRICT_AUDIT_V06.md) and [closure assessment](coordination/sessions/M21.S05.T004/CODEX_LOG_V01.md).
 
 ---
 

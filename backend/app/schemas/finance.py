@@ -999,6 +999,7 @@ class PeriodRead(BaseModel):
     period_start: Optional[date] = None
     period_end: Optional[date] = None
     status: PeriodStatus
+    closed_by_id: Optional[uuid.UUID] = None
     closed_at: Optional[datetime]
     close_notes: Optional[str] = None
     locked_by_id: Optional[uuid.UUID] = None
