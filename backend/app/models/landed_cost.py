@@ -1,8 +1,9 @@
 import uuid
 import enum
+from datetime import datetime, timezone
 from sqlalchemy import (
     Column, String, Text, Numeric, Integer, Boolean,
-    ForeignKey, Date, DateTime, JSON, Enum, Index,
+    ForeignKey, Date, DateTime, JSON, Enum, Index, UniqueConstraint,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
@@ -105,6 +106,7 @@ class LandedCostLine(Base, TimestampMixin):
     description   = Column(String(300), nullable=True)
     vendor_name   = Column(String(200), nullable=True)
     amount_fc     = Column(Numeric(14, 4), nullable=False, default=0)
+    estimated_amount_fc = Column(Numeric(14, 4), nullable=True)
     currency_code = Column(String(10), nullable=False, default="USD")
     exchange_rate = Column(Numeric(14, 6), nullable=False, default=1)
     amount_base   = Column(Numeric(14, 4), nullable=False, default=0)
@@ -114,6 +116,35 @@ class LandedCostLine(Base, TimestampMixin):
     remarks       = Column(Text, nullable=True)
 
     header = relationship("LandedCostHeader", back_populates="cost_lines")
+    actual_record = relationship(
+        "LandedCostLineActual",
+        back_populates="line",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )
+
+
+class LandedCostLineActual(Base):
+    """One immutable actual-cost source entry for a landed-cost line."""
+    __tablename__ = "lc_line_actuals"
+    __table_args__ = (
+        UniqueConstraint("lc_line_id", name="uq_lc_line_actuals_lc_line_id"),
+        Index("ix_lc_line_actuals_recorded_at", "recorded_at"),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    lc_line_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("lc_lines.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    amount_fc = Column(Numeric(14, 4), nullable=False)
+    source_reference = Column(String(200), nullable=False)
+    recorded_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    recorded_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+
+    line = relationship("LandedCostLine", back_populates="actual_record")
+    recorded_by = relationship("User", foreign_keys=[recorded_by_id])
 
 
 class LandedCostGRNLink(Base, TimestampMixin):

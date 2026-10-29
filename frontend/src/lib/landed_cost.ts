@@ -26,6 +26,10 @@ export interface LandedCostLine {
   description: string | null;
   vendor_name: string | null;
   amount_fc: number;
+  estimated_amount_fc: number | null;
+  actual_record: LandedCostLineActual | null;
+  variance_fc: number | null;
+  variance_base: number | null;
   currency_code: string;
   exchange_rate: number;
   amount_base: number;
@@ -33,6 +37,15 @@ export interface LandedCostLine {
   is_included_in_valuation: boolean;
   account_code: string | null;
   remarks: string | null;
+}
+
+export interface LandedCostLineActual {
+  id: string;
+  lc_line_id: string;
+  amount_fc: number;
+  source_reference: string;
+  recorded_by_id: string | null;
+  recorded_at: string;
 }
 
 export interface LandedCostGRNLink {
@@ -212,6 +225,9 @@ export const lcApi = {
   // Cost lines
   addCostLine: (headerId: string, body: Record<string, unknown>) =>
     apiClient.post<LandedCostOut>(`${BASE}/${headerId}/lines`, body).then((r) => r.data),
+
+  recordActual: (headerId: string, lineId: string, body: { amount_fc: number; source_reference: string }) =>
+    apiClient.post<LandedCostOut>(`${BASE}/${headerId}/lines/${lineId}/actual`, body).then((r) => r.data),
 
   // GRN links
   addGRNLink: (headerId: string, body: Record<string, unknown>) =>

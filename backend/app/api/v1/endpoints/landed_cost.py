@@ -9,7 +9,7 @@ from app.core.deps import require_permission
 from app.db.session import get_db
 from app.schemas.landed_cost import (
     LandedCostHeaderCreate, LandedCostHeaderUpdate,
-    LandedCostLineCreate, LandedCostGRNLinkCreate,
+    LandedCostLineCreate, LandedCostLineActualCreate, LandedCostGRNLinkCreate,
     LandedCostOut, LandedCostSummary,
     LCAIRecOut, LCDashboard,
 )
@@ -71,6 +71,22 @@ async def add_cost_line(
 ):
     try:
         return await svc.add_cost_line(db, header_id, payload)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+
+
+@router.post("/{header_id}/lines/{line_id}/actual", response_model=LandedCostOut)
+async def record_actual_cost(
+    header_id: UUID,
+    line_id: UUID,
+    payload: LandedCostLineActualCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(require_permission("finance", "post")),
+):
+    try:
+        return await svc.record_actual_cost(
+            db, header_id, line_id, payload, recorded_by_id=current_user.id
+        )
     except ValueError as e:
         raise HTTPException(400, str(e))
 

@@ -38,6 +38,7 @@ from app.models.procurement import (
     PurchaseRequisition, PRLine, PurchaseOrder, POLine,
     GoodsReceipt, GRNLine, ImportShipment, SupplierEvaluation, SupplierPayment,
 )
+from app.models.landed_cost import LandedCostHeader, LandedCostLine, LandedCostLineActual
 from app.models.quality import (
     QCParameter, QCInspection, QCTestResult,
     QCType, QCStatus, QCDecision, ParameterType,

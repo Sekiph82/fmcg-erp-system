@@ -11,7 +11,7 @@ from decimal import Decimal, ROUND_HALF_UP
 from typing import List, Optional, Any
 from uuid import UUID
 
-from sqlalchemy import select, func, and_, extract
+from sqlalchemy import select, func, and_, extract, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -28,14 +28,14 @@ from app.models.finance import (
 from app.models.inventory import CostLayer
 from app.models.landed_cost import (
     LandedCostHeader, LandedCostLine, LandedCostGRNLink,
-    LandedCostAllocationLine, LCInventoryAdjustment, LCAIRecommendation,
+    LandedCostLineActual, LandedCostAllocationLine, LCInventoryAdjustment, LCAIRecommendation,
     LCAllocationMethod,
 )
 from app.models.procurement import GoodsReceipt, GRNLine, GRNStatus, POLine
 from app.models.master import Material
 from app.schemas.landed_cost import (
     LandedCostHeaderCreate, LandedCostHeaderUpdate,
-    LandedCostLineCreate, LandedCostGRNLinkCreate,
+    LandedCostLineCreate, LandedCostLineActualCreate, LandedCostGRNLinkCreate,
 )
 
 
@@ -63,8 +63,8 @@ async def _next_lc_no(db: AsyncSession) -> str:
 
 async def create_header(db: AsyncSession, payload: LandedCostHeaderCreate) -> LandedCostHeader:
     lc_no = await _next_lc_no(db)
-    total_fc = sum(_D(l.amount_fc) for l in payload.cost_lines)
-    total_base = sum(_D(l.amount_fc) * _D(l.exchange_rate) for l in payload.cost_lines)
+    total_fc = sum(_D(l.estimated_amount_fc if l.estimated_amount_fc is not None else l.amount_fc) for l in payload.cost_lines)
+    total_base = sum(_D(l.estimated_amount_fc if l.estimated_amount_fc is not None else l.amount_fc) * _D(l.exchange_rate) for l in payload.cost_lines)
 
     hdr = LandedCostHeader(
         lc_no=lc_no,
@@ -86,15 +86,17 @@ async def create_header(db: AsyncSession, payload: LandedCostHeaderCreate) -> La
     await db.flush()
 
     for cl in payload.cost_lines:
+        estimate = cl.estimated_amount_fc if cl.estimated_amount_fc is not None else cl.amount_fc
         line = LandedCostLine(
             header_id=hdr.id,
             cost_type=cl.cost_type,
             description=cl.description,
             vendor_name=cl.vendor_name,
-            amount_fc=_R(cl.amount_fc),
+            amount_fc=_R(estimate),
+            estimated_amount_fc=_R(estimate),
             currency_code=cl.currency_code,
             exchange_rate=_R(cl.exchange_rate, 6),
-            amount_base=_R(_D(cl.amount_fc) * _D(cl.exchange_rate)),
+            amount_base=_R(_D(estimate) * _D(cl.exchange_rate)),
             allocation_method=cl.allocation_method,
             is_included_in_valuation=cl.is_included_in_valuation,
             account_code=cl.account_code,
@@ -119,7 +121,7 @@ async def get_header(db: AsyncSession, header_id: UUID) -> Optional[LandedCostHe
     result = await db.execute(
         select(LandedCostHeader)
         .options(
-            selectinload(LandedCostHeader.cost_lines),
+            selectinload(LandedCostHeader.cost_lines).selectinload(LandedCostLine.actual_record),
             selectinload(LandedCostHeader.grn_links),
             selectinload(LandedCostHeader.allocation_lines),
             selectinload(LandedCostHeader.ai_recs),
@@ -170,15 +172,17 @@ async def add_cost_line(db: AsyncSession, header_id: UUID, payload: LandedCostLi
     if hdr.status != "DRAFT":
         raise ValueError(f"Cannot add a cost line in status {hdr.status}")
 
+    estimate = payload.estimated_amount_fc if payload.estimated_amount_fc is not None else payload.amount_fc
     line = LandedCostLine(
         header_id=header_id,
         cost_type=payload.cost_type.value,
         description=payload.description,
         vendor_name=payload.vendor_name,
-        amount_fc=_R(payload.amount_fc),
+        amount_fc=_R(estimate),
+        estimated_amount_fc=_R(estimate),
         currency_code=payload.currency_code,
         exchange_rate=_R(payload.exchange_rate, 6),
-        amount_base=_R(_D(payload.amount_fc) * _D(payload.exchange_rate)),
+        amount_base=_R(_D(estimate) * _D(payload.exchange_rate)),
         allocation_method=payload.allocation_method,
         is_included_in_valuation=payload.is_included_in_valuation,
         account_code=payload.account_code,
@@ -195,6 +199,76 @@ async def add_cost_line(db: AsyncSession, header_id: UUID, payload: LandedCostLi
     total_fc, total_base = totals.one()
     hdr.total_lc_amount_fc = _R(total_fc)
     hdr.total_lc_amount_base = _R(total_base)
+    await db.commit()
+    return await get_header(db, header_id)
+
+
+async def record_actual_cost(
+    db: AsyncSession,
+    header_id: UUID,
+    line_id: UUID,
+    payload: LandedCostLineActualCreate,
+    recorded_by_id: UUID,
+) -> LandedCostHeader:
+    """Append an actual source amount; preserve any already-posted estimate."""
+    header = (await db.execute(
+        select(LandedCostHeader).where(LandedCostHeader.id == header_id).with_for_update()
+    )).scalar_one_or_none()
+    if not header:
+        raise ValueError("Landed cost document not found")
+    if header.status not in {"DRAFT", "VALIDATED", "POSTED"}:
+        raise ValueError(f"Cannot record actual cost in status {header.status}")
+
+    line = (await db.execute(
+        select(LandedCostLine)
+        .where(LandedCostLine.id == line_id, LandedCostLine.header_id == header_id)
+        .with_for_update()
+    )).scalar_one_or_none()
+    if not line:
+        raise ValueError("Landed cost line not found")
+
+    existing = (await db.execute(
+        select(LandedCostLineActual.id).where(LandedCostLineActual.lc_line_id == line_id)
+    )).scalar_one_or_none()
+    if existing:
+        raise ValueError("An actual cost is already recorded for this line; corrections require a separate adjustment")
+
+    if header.status != "POSTED":
+        posted_allocation = (await db.execute(
+            select(LandedCostAllocationLine.id).where(
+                LandedCostAllocationLine.header_id == header_id,
+                LandedCostAllocationLine.is_posted.is_(True),
+            ).limit(1)
+        )).scalar_one_or_none()
+        if posted_allocation:
+            raise ValueError("Posted allocations are immutable; reconcile actual cost through a separate adjustment")
+
+    db.add(LandedCostLineActual(
+        lc_line_id=line_id,
+        amount_fc=_R(payload.amount_fc),
+        source_reference=payload.source_reference,
+        recorded_by_id=recorded_by_id,
+    ))
+
+    if header.status != "POSTED":
+        line.amount_fc = _R(payload.amount_fc)
+        line.amount_base = _R(_D(payload.amount_fc) * _D(line.exchange_rate))
+        await db.execute(delete(LandedCostAllocationLine).where(
+            LandedCostAllocationLine.header_id == header_id,
+            LandedCostAllocationLine.is_posted.is_(False),
+        ))
+        if header.status == "VALIDATED":
+            header.status = "DRAFT"
+
+        await db.flush()
+        totals = await db.execute(
+            select(
+                func.coalesce(func.sum(LandedCostLine.amount_fc), 0),
+                func.coalesce(func.sum(LandedCostLine.amount_base), 0),
+            ).where(LandedCostLine.header_id == header_id)
+        )
+        header.total_lc_amount_fc, header.total_lc_amount_base = map(_R, totals.one())
+
     await db.commit()
     return await get_header(db, header_id)
 

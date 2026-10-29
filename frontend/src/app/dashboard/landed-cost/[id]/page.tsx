@@ -1,6 +1,8 @@
 "use client";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { useAuth } from "@/context/AuthContext";
 import {
   lcApi, LC_STATUS_COLOR, COST_TYPE_LABEL, ALLOC_METHOD_LABEL,
   LandedCostOut, fmtCurrency,
@@ -10,6 +12,8 @@ export default function LandedCostDetailPage() {
   const { id } = useParams<{ id: string }>();
   const qc = useQueryClient();
   const router = useRouter();
+  const { hasPermission } = useAuth();
+  const [actualInputs, setActualInputs] = useState<Record<string, { amount: string; reference: string }>>({});
 
   const { data: doc, isLoading, error } = useQuery<LandedCostOut>({
     queryKey: ["lc-doc", id],
@@ -24,6 +28,12 @@ export default function LandedCostDetailPage() {
 
   const post = useMutation({
     mutationFn: () => lcApi.post(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["lc-doc", id] }),
+  });
+
+  const recordActual = useMutation({
+    mutationFn: (input: { lineId: string; amount: number; reference: string }) =>
+      lcApi.recordActual(id, input.lineId, { amount_fc: input.amount, source_reference: input.reference }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["lc-doc", id] }),
   });
 
@@ -47,6 +57,8 @@ export default function LandedCostDetailPage() {
   const canAllocate = ["DRAFT", "VALIDATED"].includes(doc.status);
   const canPost     = doc.status === "VALIDATED";
   const canCancel   = ["DRAFT", "VALIDATED"].includes(doc.status);
+  const canRecordActual = hasPermission("finance.post")
+    && ["DRAFT", "VALIDATED", "POSTED"].includes(doc.status);
 
   return (
     <div className="p-6 space-y-6 max-w-5xl">
@@ -114,7 +126,7 @@ export default function LandedCostDetailPage() {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 text-xs text-gray-500 uppercase">
             <tr>
-              {["Type", "Description", "Vendor", "Amount (FC)", "Ccy", "Rate", "Amount (Base)", "In Valuation"].map((h) => (
+              {["Type", "Description", "Vendor", "Estimated (FC)", "Actual (FC)", "Variance (FC)", "Variance (Base)", "Actual Source", "Ccy", "Rate", "Booked Base", "In Valuation", "Record Actual"].map((h) => (
                 <th key={h} className="px-4 py-2 text-left font-medium">{h}</th>
               ))}
             </tr>
@@ -125,7 +137,13 @@ export default function LandedCostDetailPage() {
                 <td className="px-4 py-2 text-xs font-medium">{COST_TYPE_LABEL[cl.cost_type as keyof typeof COST_TYPE_LABEL] ?? cl.cost_type}</td>
                 <td className="px-4 py-2 text-gray-600 text-xs">{cl.description ?? "—"}</td>
                 <td className="px-4 py-2 text-gray-600 text-xs">{cl.vendor_name ?? "—"}</td>
-                <td className="px-4 py-2 font-medium">{Number(cl.amount_fc ?? 0).toLocaleString()}</td>
+                <td className="px-4 py-2 font-medium">{fmtCurrency(cl.estimated_amount_fc ?? cl.amount_fc, cl.currency_code)}</td>
+                <td className="px-4 py-2 font-medium">{cl.actual_record ? fmtCurrency(cl.actual_record.amount_fc, cl.currency_code) : "—"}</td>
+                <td className={`px-4 py-2 font-medium ${Number(cl.variance_fc ?? 0) > 0 ? "text-red-600" : Number(cl.variance_fc ?? 0) < 0 ? "text-green-700" : "text-gray-500"}`}>
+                  {cl.variance_fc == null ? "—" : fmtCurrency(cl.variance_fc, cl.currency_code)}
+                </td>
+                <td className="px-4 py-2 font-medium">{cl.variance_base == null ? "—" : fmtCurrency(cl.variance_base)}</td>
+                <td className="px-4 py-2 text-gray-600 text-xs">{cl.actual_record?.source_reference ?? "—"}</td>
                 <td className="px-4 py-2 text-gray-500 text-xs">{cl.currency_code}</td>
                 <td className="px-4 py-2 text-gray-500 text-xs">{Number(cl.exchange_rate ?? 1).toFixed(4)}</td>
                 <td className="px-4 py-2 font-medium">{fmtCurrency(cl.amount_base)}</td>
@@ -134,14 +152,66 @@ export default function LandedCostDetailPage() {
                     {cl.is_included_in_valuation ? "Yes" : "No"}
                   </span>
                 </td>
+                <td className="px-4 py-2">
+                  {canRecordActual && !cl.actual_record ? (
+                    <div className="flex min-w-52 flex-col gap-1">
+                      <input
+                        type="number"
+                        step="0.0001"
+                        aria-label={`Actual amount for ${cl.cost_type}`}
+                        placeholder="Actual amount"
+                        value={actualInputs[cl.id]?.amount ?? ""}
+                        onChange={(event) => setActualInputs((current) => ({
+                          ...current,
+                          [cl.id]: { amount: event.target.value, reference: current[cl.id]?.reference ?? "" },
+                        }))}
+                        className="w-full rounded border px-2 py-1 text-xs"
+                      />
+                      <input
+                        type="text"
+                        maxLength={200}
+                        aria-label={`Actual source reference for ${cl.cost_type}`}
+                        placeholder="Invoice / source reference"
+                        value={actualInputs[cl.id]?.reference ?? ""}
+                        onChange={(event) => setActualInputs((current) => ({
+                          ...current,
+                          [cl.id]: { amount: current[cl.id]?.amount ?? "", reference: event.target.value },
+                        }))}
+                        className="w-full rounded border px-2 py-1 text-xs"
+                      />
+                      <button
+                        onClick={() => recordActual.mutate({
+                          lineId: cl.id,
+                          amount: Number(actualInputs[cl.id]?.amount),
+                          reference: actualInputs[cl.id]?.reference ?? "",
+                        })}
+                        disabled={recordActual.isPending || !actualInputs[cl.id]?.amount || !actualInputs[cl.id]?.reference.trim()}
+                        className="rounded bg-indigo-600 px-2 py-1 text-xs text-white disabled:opacity-50"
+                      >
+                        {recordActual.isPending ? "Saving…" : "Record actual"}
+                      </button>
+                    </div>
+                  ) : cl.actual_record ? (
+                    <span title={`Recorded ${new Date(cl.actual_record.recorded_at).toLocaleString()}`}>Recorded</span>
+                  ) : "—"}
+                </td>
               </tr>
             ))}
             {costLines.length === 0 && (
-              <tr><td colSpan={8} className="px-4 py-4 text-center text-gray-400">No cost lines.</td></tr>
+              <tr><td colSpan={13} className="px-4 py-4 text-center text-gray-400">No cost lines.</td></tr>
             )}
           </tbody>
         </table>
       </div>
+
+      {canRecordActual && (
+        <p className="text-xs text-gray-500">
+          Actual entries require finance posting permission and a source reference. Before posting, recording an actual resets validation and clears stale allocations; after posting, it records the variance without changing the posted allocation or journal.
+        </p>
+      )}
+      {recordActual.error instanceof Error && (
+        <p role="alert" className="text-sm text-red-600">{recordActual.error.message}</p>
+      )}
 
       {/* GRN Links */}
       <div className="bg-white border rounded-xl overflow-hidden">

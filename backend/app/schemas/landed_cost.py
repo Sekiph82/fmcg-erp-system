@@ -1,10 +1,10 @@
 from __future__ import annotations
 from datetime import date, datetime
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from typing import List, Optional, Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, computed_field, field_validator
 
 from app.models.finance import OperationalPostingStatus
 from app.models.landed_cost import LandedCostType
@@ -22,12 +22,23 @@ class LandedCostLineCreate(BaseModel):
     description: Optional[str] = None
     vendor_name: Optional[str] = None
     amount_fc: Decimal = Decimal("0")
+    estimated_amount_fc: Optional[Decimal] = None
     currency_code: str = "USD"
     exchange_rate: Decimal = Decimal("1")
     allocation_method: Optional[AllocationMethodInput] = None
     is_included_in_valuation: bool = True
     account_code: Optional[str] = None
     remarks: Optional[str] = None
+
+    @field_validator("amount_fc")
+    @classmethod
+    def validate_legacy_amount_range(cls, value: Decimal) -> Decimal:
+        return _validate_cost_amount(value)
+
+    @field_validator("estimated_amount_fc")
+    @classmethod
+    def validate_estimate_range(cls, value: Optional[Decimal]) -> Optional[Decimal]:
+        return _validate_cost_amount(value) if value is not None else value
 
 
 class LandedCostLineOut(LandedCostLineCreate):
@@ -39,6 +50,65 @@ class LandedCostLineOut(LandedCostLineCreate):
     id: UUID
     header_id: UUID
     amount_base: Decimal
+    actual_record: Optional["LandedCostLineActualOut"] = None
+
+    @computed_field
+    @property
+    def variance_fc(self) -> Optional[Decimal]:
+        if self.actual_record is None or self.estimated_amount_fc is None:
+            return None
+        return self.actual_record.amount_fc - self.estimated_amount_fc
+
+    @computed_field
+    @property
+    def variance_base(self) -> Optional[Decimal]:
+        variance = self.variance_fc
+        if variance is None:
+            return None
+        return variance * self.exchange_rate
+
+
+class LandedCostLineActualCreate(BaseModel):
+    amount_fc: Decimal
+    source_reference: str = Field(min_length=1, max_length=200)
+
+    @field_validator("amount_fc")
+    @classmethod
+    def validate_actual_range(cls, value: Decimal) -> Decimal:
+        return _validate_cost_amount(value)
+
+    @field_validator("source_reference")
+    @classmethod
+    def normalize_source_reference(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("A source reference is required")
+        return value
+
+
+class LandedCostLineActualOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: UUID
+    lc_line_id: UUID
+    amount_fc: Decimal
+    source_reference: str
+    recorded_by_id: Optional[UUID] = None
+    recorded_at: datetime
+
+
+LandedCostLineOut.model_rebuild()
+
+
+def _validate_cost_amount(value: Decimal) -> Decimal:
+    if not value.is_finite() or abs(value) >= Decimal("10000000000"):
+        raise ValueError("Cost amount must fit NUMERIC(14,4)")
+    try:
+        rounded = value.quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+    except InvalidOperation as exc:
+        raise ValueError("Cost amount must fit NUMERIC(14,4)") from exc
+    if abs(rounded) >= Decimal("10000000000"):
+        raise ValueError("Cost amount must fit NUMERIC(14,4)")
+    return value
 
 
 # ── GRN Link ──────────────────────────────────────────────────────────────────

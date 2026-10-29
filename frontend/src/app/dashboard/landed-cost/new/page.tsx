@@ -79,6 +79,7 @@ export default function NewLandedCostPage() {
       cost_lines: lines.map((l) => ({
         ...l,
         amount_fc: parseFloat(l.amount_fc) || 0,
+        estimated_amount_fc: parseFloat(l.amount_fc) || 0,
         exchange_rate: parseFloat(l.exchange_rate) || 1,
       })),
       grn_links: [],
@@ -170,7 +171,7 @@ export default function NewLandedCostPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Amount (FC)</label>
+                <label className="block text-xs text-gray-500 mb-1">Estimated Amount (FC)</label>
                 <input type="number" step="any" className="border rounded px-2 py-1.5 text-sm w-full bg-white"
                   value={line.amount_fc}
                   onChange={(e) => updateLine(i, "amount_fc", e.target.value)} />
