@@ -11,8 +11,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 - Current Milestone: M07 — Sales / Distributor Operations
 - Current Sprint: M07.S03 — Live Commercial Verification
 - Current Task: M07.S03.T001 — Verify order-to-cash accounting closure
-- Current Task Status: READY
-- Next Task/Action: M07.S03.T001 — Verify order-to-cash accounting closure
+- Current Task Status: COMPLETE
+- Next Task/Action: M08.S03.T001 — Harden state-transition invariants
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -309,7 +309,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 - [x] M07.S02.T005 — Loyalty/NPS/customer analytics
 
 ## M07.S03 — Live Commercial Verification
-- [ ] M07.S03.T001 — Verify order-to-cash accounting closure
+- [x] M07.S03.T001 — Verify order-to-cash accounting closure
+  Evidence: [M07.S03.T001 execution log](coordination/sessions/M07.S03.T001/CODEX_LOG_V01.md); configured invoice/tax and cash/bank/M-Pesa GL posting, shared payment APIs, account consistency, transactional failure guards, and cent-consistent invoice rounding. Fresh PostgreSQL 16.6 synthetic database at migration head 20261029_0025; 17 focused order-to-cash/GAP-001/GAP-002 tests passed, exact disposable container removed and absence verified, independent read-only re-review confirmed fixes. Code commit 77cc488a943f6ef75712cc8b3495e170dbce9587 pushed to origin/main with [skip ci]. No live COA/provider/tax or production acceptance claimed.
 - [!] M07.S03.T002 — Validate live payment/provider flows when credentials exist
 - [!] M07.S03.T003 — Validate live tax/eTIMS invoice flow when credentials exist
 
@@ -334,7 +335,7 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 - [x] M08.S02.T005 — Production reporting/manual coverage
 
 ## M08.S03 — Baseline Integrity
-- [P] M08.S03.T001 — Harden state-transition invariants
+- [ ] M08.S03.T001 — Harden state-transition invariants
 - [P] M08.S03.T002 — Verify production/inventory transaction atomicity
 - [P] M08.S03.T003 — Verify production/QC/finance closure
 
