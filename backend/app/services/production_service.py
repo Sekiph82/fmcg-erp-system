@@ -11,7 +11,7 @@ stock delta logic so that inventory remains consistent.
 """
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from decimal import Decimal
 from typing import Optional, List
 import uuid
@@ -336,6 +336,21 @@ async def release_order(db: AsyncSession, order: ProductionOrder) -> ProductionO
     if not recipe or recipe.status.value != "APPROVED":
         raise HTTPException(422, detail="Cannot release: Recipe must be in APPROVED status.")
 
+    from app.services.qms_service import (
+        PRODUCTION_GATE_TARGET_MODULE,
+        PRODUCTION_RELEASE_GATE_TRIGGER_EVENT,
+        ensure_production_quality_gates_pass,
+        lock_quality_gate_scope,
+    )
+
+    await lock_quality_gate_scope(db, PRODUCTION_GATE_TARGET_MODULE, PRODUCTION_RELEASE_GATE_TRIGGER_EVENT)
+    try:
+        await ensure_production_quality_gates_pass(
+            db, order, PRODUCTION_RELEASE_GATE_TRIGGER_EVENT, date.today()
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
     order.status = ProductionOrderStatus.RELEASED
     await db.flush()
     await db.refresh(order)
@@ -419,6 +434,21 @@ async def complete_order(
 
     if order.status != ProductionOrderStatus.IN_PROGRESS:
         raise HTTPException(422, detail=f"Order is {order.status.value}. Must be IN_PROGRESS to complete.")
+
+    from app.services.qms_service import (
+        PRODUCTION_GATE_TARGET_MODULE,
+        PRODUCTION_IN_PROCESS_GATE_TRIGGER_EVENT,
+        ensure_production_quality_gates_pass,
+        lock_quality_gate_scope,
+    )
+
+    await lock_quality_gate_scope(db, PRODUCTION_GATE_TARGET_MODULE, PRODUCTION_IN_PROCESS_GATE_TRIGGER_EVENT)
+    try:
+        await ensure_production_quality_gates_pass(
+            db, order, PRODUCTION_IN_PROCESS_GATE_TRIGGER_EVENT, date.today()
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
     if req.actual_quantity <= 0:
         raise HTTPException(422, detail="actual_quantity must be positive.")

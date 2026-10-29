@@ -27,6 +27,9 @@ from app.models.inventory import Lot
 
 RECEIVING_GATE_TRIGGER_EVENT = "ON_RECEIPT"
 RECEIVING_GATE_TARGET_MODULE = "procurement"
+PRODUCTION_GATE_TARGET_MODULE = "production"
+PRODUCTION_RELEASE_GATE_TRIGGER_EVENT = "ON_PRODUCTION_RELEASE"
+PRODUCTION_IN_PROCESS_GATE_TRIGGER_EVENT = "ON_IN_PROCESS"
 
 
 # ── Sequence Helpers ──────────────────────────────────────────────────────────
@@ -124,6 +127,23 @@ async def list_receiving_quality_gates(db: AsyncSession, as_of_date: date) -> li
     )
 
 
+async def list_production_quality_gates(
+    db: AsyncSession, trigger_event: str, as_of_date: date
+) -> list[QualityGateDefinition]:
+    if trigger_event not in {
+        PRODUCTION_RELEASE_GATE_TRIGGER_EVENT,
+        PRODUCTION_IN_PROCESS_GATE_TRIGGER_EVENT,
+    }:
+        return []
+    return await list_quality_gate_definitions(
+        db,
+        active_only=True,
+        trigger_event=trigger_event,
+        target_module=PRODUCTION_GATE_TARGET_MODULE,
+        as_of_date=as_of_date,
+    )
+
+
 async def ensure_receiving_quality_gates_pass(db: AsyncSession, grn) -> None:
     """Require every configured mandatory incoming template to pass per accepted GRN line."""
     gates = [gate for gate in await list_receiving_quality_gates(db, grn.received_date) if gate.is_mandatory]
@@ -158,15 +178,50 @@ async def ensure_receiving_quality_gates_pass(db: AsyncSession, grn) -> None:
                     )
 
 
+async def ensure_production_quality_gates_pass(
+    db: AsyncSession, order, trigger_event: str, as_of_date: date
+) -> None:
+    """Require configured mandatory in-process QC before production release/completion."""
+    gates = [
+        gate for gate in await list_production_quality_gates(db, trigger_event, as_of_date)
+        if gate.is_mandatory
+    ]
+    process_started_at = getattr(order, "actual_start", None)
+    if trigger_event == PRODUCTION_IN_PROCESS_GATE_TRIGGER_EVENT and gates and process_started_at is None:
+        raise ValueError(
+            f"Production order {order.order_no} cannot continue: in-process QC requires a recorded production start."
+        )
+    for gate in gates:
+        for template in gate.required_templates:
+            query = select(QCInspection.id).where(
+                    QCInspection.production_order_id == order.id,
+                    QCInspection.template_id == template.id,
+                    QCInspection.qc_type == QCType.IN_PROCESS,
+                    QCInspection.status == QCStatus.PASSED,
+                    QCInspection.decision == QCDecision.ACCEPT,
+                    QCInspection.is_mandatory.is_(True),
+                    QCInspection.blocks_progression.is_(True),
+                    QCInspection.release_required.is_(True),
+                )
+            if trigger_event == PRODUCTION_IN_PROCESS_GATE_TRIGGER_EVENT:
+                query = query.where(QCInspection.created_at >= process_started_at)
+            result = await db.execute(query.limit(1))
+            if result.scalar_one_or_none() is None:
+                raise ValueError(
+                    f"Production order {order.order_no} cannot continue: required in-process QC template "
+                    f"'{template.name}' for {trigger_event} has no accepted, passed inspection."
+                )
+
+
 async def prepare_receiving_gate_test_result(db: AsyncSession, inspection: QCInspection, data: dict) -> dict:
-    """Use the configured template as the authority for incoming-gate test specs."""
-    if not (
-        inspection.qc_type == QCType.INCOMING
-        and inspection.grn_id
-        and inspection.grn_line_id
-        and inspection.is_mandatory
-        and inspection.template_id
-    ):
+    """Use the linked template as authority for receiving and in-process gate results."""
+    is_receiving_gate = (
+        inspection.qc_type == QCType.INCOMING and inspection.grn_id and inspection.grn_line_id
+    )
+    is_production_gate = (
+        inspection.qc_type == QCType.IN_PROCESS and inspection.production_order_id
+    )
+    if not (inspection.is_mandatory and inspection.template_id and (is_receiving_gate or is_production_gate)):
         return data
 
     template_result = await db.execute(
@@ -175,8 +230,9 @@ async def prepare_receiving_gate_test_result(db: AsyncSession, inspection: QCIns
         .where(QCTemplate.id == inspection.template_id)
     )
     template = template_result.scalar_one_or_none()
-    if template is None or not template.is_active or template.qc_type != QCType.INCOMING:
-        raise ValueError("A mandatory receiving inspection requires an active incoming QC template.")
+    expected_qc_type = QCType.INCOMING if is_receiving_gate else QCType.IN_PROCESS
+    if template is None or not template.is_active or template.qc_type != expected_qc_type:
+        raise ValueError("A mandatory gated inspection requires an active QC template of the matching type.")
     requested_template_parameter_id = data.get("template_parameter_id")
     if requested_template_parameter_id is not None:
         parameter = next((item for item in template.parameters if item.id == requested_template_parameter_id), None)
@@ -351,6 +407,8 @@ async def create_quality_gate_definition(
 ) -> QualityGateDefinition:
     code = str(data.get("code", "")).strip().upper()
     data["code"] = code
+    data["target_module"] = str(data.get("target_module", "")).strip().lower()
+    data["trigger_event"] = str(data.get("trigger_event", "")).strip().upper()
     data.setdefault("effective_from", date.today())
     data.setdefault("version", 1)
     _validate_gate_effective_window(data.get("effective_from"), data.get("effective_to"))
@@ -398,6 +456,12 @@ async def update_quality_gate_definition(
     existing_trigger_scope = str(getattr(definition, "trigger_event", ""))
     target_scope = str(changes.get("target_module", existing_target_scope))
     trigger_scope = str(changes.get("trigger_event", existing_trigger_scope))
+    if "target_module" in changes:
+        changes["target_module"] = target_scope.strip().lower()
+        target_scope = changes["target_module"]
+    if "trigger_event" in changes:
+        changes["trigger_event"] = trigger_scope.strip().upper()
+        trigger_scope = changes["trigger_event"]
     await lock_quality_gate_scopes(db, [
         (existing_target_scope, existing_trigger_scope),
         (target_scope, trigger_scope),
@@ -495,6 +559,15 @@ def _validate_gate_template_scope(target_module: str, trigger_event: str, templa
     if target_module.strip().lower() == RECEIVING_GATE_TARGET_MODULE and trigger_event.strip().upper() == RECEIVING_GATE_TRIGGER_EVENT:
         if any(template.qc_type != QCType.INCOMING for template in templates):
             raise ValueError("An ON_RECEIPT procurement gate can link only INCOMING QC templates.")
+    if (
+        target_module.strip().lower() == PRODUCTION_GATE_TARGET_MODULE
+        and trigger_event.strip().upper() in {
+            PRODUCTION_RELEASE_GATE_TRIGGER_EVENT,
+            PRODUCTION_IN_PROCESS_GATE_TRIGGER_EVENT,
+        }
+    ):
+        if any(template.qc_type != QCType.IN_PROCESS for template in templates):
+            raise ValueError("Production release/in-process gates can link only IN_PROCESS QC templates.")
 
 
 def _validate_gate_effective_window(effective_from: Optional[date], effective_to: Optional[date]) -> None:

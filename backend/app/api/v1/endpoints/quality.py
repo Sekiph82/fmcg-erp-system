@@ -180,8 +180,24 @@ async def create_inspection(
         if warehouse_id is not None and warehouse_id != grn_line.grn.warehouse_id:
             raise HTTPException(status_code=422, detail="Inspection warehouse does not match its GRN line.")
         warehouse_id = grn_line.grn.warehouse_id
+    production_order = None
+    if body.qc_type == QCType.IN_PROCESS and body.production_order_id is not None:
+        production_order = await crud.get_production_order_context(db, body.production_order_id)
+        if production_order is None:
+            raise HTTPException(status_code=422, detail="The production order does not exist.")
+        if body.product_id is not None and body.product_id != production_order.product_id:
+            raise HTTPException(status_code=422, detail="Inspection product does not match its production order.")
+        if warehouse_id is not None and warehouse_id != production_order.target_warehouse_id:
+            raise HTTPException(status_code=422, detail="Inspection warehouse does not match its production order.")
+        warehouse_id = production_order.target_warehouse_id
     _require_inspection_action(current_user, QCInspection(warehouse_id=warehouse_id), "create")
-    insp = await crud.create_inspection(db, body.model_dump(), current_user.id, grn_line=grn_line)
+    insp = await crud.create_inspection(
+        db,
+        body.model_dump(),
+        current_user.id,
+        grn_line=grn_line,
+        production_order=production_order,
+    )
     await db.commit()
     insp = await crud.get_inspection(db, insp.id)
     return _build_detail(insp)
@@ -369,6 +385,7 @@ async def create_inspection_for_grn(
 @router.post("/create-for-order", response_model=QCInspectionDetailRead, status_code=201)
 async def create_inspection_for_order(
     production_order_id: uuid.UUID = Query(...),
+    template_id: Optional[uuid.UUID] = Query(None),
     product_id: Optional[uuid.UUID] = Query(None),
     warehouse_id: Optional[uuid.UUID] = Query(None),
     lot_number: Optional[str] = Query(None),
@@ -378,14 +395,26 @@ async def create_inspection_for_order(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
+    order = await crud.get_production_order_context(db, production_order_id)
+    if order is None:
+        raise HTTPException(status_code=404, detail="Production order not found")
+    if qc_type == QCType.IN_PROCESS and warehouse_id is not None and warehouse_id != order.target_warehouse_id:
+        raise HTTPException(status_code=422, detail="Warehouse does not match the production order")
+    if qc_type == QCType.IN_PROCESS and product_id is not None and product_id != order.product_id:
+        raise HTTPException(status_code=422, detail="Product does not match the production order")
+    # Authorize against the persisted order scope before the creator can add an inspection
+    # or quarantine stock. The service independently validates any finished-goods receipt.
+    _require_inspection_action(
+        current_user, QCInspection(warehouse_id=order.target_warehouse_id), "create"
+    )
     insp = await svc.create_qc_for_order(
         db, production_order_id=production_order_id,
-        product_id=product_id, warehouse_id=warehouse_id,
+        product_id=product_id, warehouse_id=warehouse_id or order.target_warehouse_id,
         lot_number=lot_number, batch_no=batch_no,
         inspection_no=inspection_no, inspector_id=current_user.id,
         qc_type=qc_type,
+        template_id=template_id,
     )
-    _require_inspection_action(current_user, insp, "create")
     await db.commit()
     insp = await crud.get_inspection(db, insp.id)
     return _build_detail(insp)

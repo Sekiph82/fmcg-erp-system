@@ -108,11 +108,19 @@ async def make_decision(
             )
             test_results = list(result_rows.scalars().all())
         if (
-            insp.qc_type == QCType.INCOMING
-            and insp.grn_id is not None
-            and insp.grn_line_id is not None
-            and insp.is_mandatory
-            and insp.template_id is not None
+            (
+                    (
+                        getattr(insp, "qc_type", None) == QCType.INCOMING
+                        and getattr(insp, "grn_id", None) is not None
+                        and getattr(insp, "grn_line_id", None) is not None
+                    )
+                    or (
+                        getattr(insp, "qc_type", None) == QCType.IN_PROCESS
+                        and getattr(insp, "production_order_id", None) is not None
+                    )
+            )
+                and getattr(insp, "is_mandatory", False)
+                and getattr(insp, "template_id", None) is not None
         ):
             required_rows = await db.execute(
                 select(QCTemplateParameter.id).where(QCTemplateParameter.template_id == insp.template_id)
@@ -124,7 +132,7 @@ async def make_decision(
             if not required_parameter_ids or not required_parameter_ids.issubset(recorded_parameter_ids):
                 raise HTTPException(
                     status_code=422,
-                    detail="Receiving inspection cannot be accepted until every template parameter has a test result.",
+                    detail="Inspection cannot be accepted until every template parameter has a test result.",
                 )
         all_passed, _ = _compute_inspection_outcome(insp, test_results)
         has_no_required_results = (
@@ -372,6 +380,7 @@ async def create_qc_for_order(
     inspection_no: str,
     inspector_id: uuid.UUID,
     qc_type: QCType = QCType.IN_PROCESS,
+    template_id: Optional[uuid.UUID] = None,
 ) -> QCInspection:
     order_result = await db.execute(
         select(ProductionOrder).where(ProductionOrder.id == production_order_id)
@@ -436,11 +445,58 @@ async def create_qc_for_order(
     else:
         product_id = order.product_id
         batch_no = order.batch_no
-        warehouse_id = warehouse_id or order.target_warehouse_id
+        if qc_type == QCType.IN_PROCESS and warehouse_id is not None and warehouse_id != order.target_warehouse_id:
+            raise HTTPException(422, "Warehouse does not match the production order")
+        warehouse_id = order.target_warehouse_id
+
+    is_mandatory_production_gate = False
+    if qc_type == QCType.IN_PROCESS:
+        if template_id is not None:
+            from app.services.qms_service import (
+                PRODUCTION_GATE_TARGET_MODULE,
+                PRODUCTION_IN_PROCESS_GATE_TRIGGER_EVENT,
+                PRODUCTION_RELEASE_GATE_TRIGGER_EVENT,
+                list_production_quality_gates,
+                lock_quality_gate_scopes,
+            )
+
+            await lock_quality_gate_scopes(db, [
+                (PRODUCTION_GATE_TARGET_MODULE, PRODUCTION_RELEASE_GATE_TRIGGER_EVENT),
+                (PRODUCTION_GATE_TARGET_MODULE, PRODUCTION_IN_PROCESS_GATE_TRIGGER_EVENT),
+            ])
+            release_template_ids = {
+                required.id
+                for gate in await list_production_quality_gates(
+                    db, PRODUCTION_RELEASE_GATE_TRIGGER_EVENT, date.today()
+                ) if gate.is_mandatory
+                for required in gate.required_templates
+            }
+            in_process_template_ids = {
+                required.id
+                for gate in await list_production_quality_gates(
+                    db, PRODUCTION_IN_PROCESS_GATE_TRIGGER_EVENT, date.today()
+                ) if gate.is_mandatory
+                for required in gate.required_templates
+            }
+            if template_id in in_process_template_ids:
+                if order.status != ProductionOrderStatus.IN_PROGRESS and template_id not in release_template_ids:
+                    raise HTTPException(
+                        422, "An in-process gate inspection can be created only after the production order starts."
+                    )
+                if order.status == ProductionOrderStatus.IN_PROGRESS and (
+                    order.actual_start is None or date.today() < order.actual_start.date()
+                ):
+                    raise HTTPException(
+                        422, "An in-process gate inspection must be dated on or after the production start."
+                    )
+            is_mandatory_production_gate = (
+                template_id in release_template_ids or template_id in in_process_template_ids
+            )
 
     insp = QCInspection(
         inspection_no=inspection_no,
         qc_type=qc_type,
+        template_id=template_id,
         status=QCStatus.PENDING,
         production_order_id=production_order_id,
         lot_id=lot_id,
@@ -450,10 +506,10 @@ async def create_qc_for_order(
         batch_no=batch_no,
         inspection_date=date.today(),
         inspector_id=inspector_id,
-        is_mandatory=qc_type == QCType.FINISHED_GOODS,
-        blocks_progression=qc_type == QCType.FINISHED_GOODS,
-        release_required=qc_type == QCType.FINISHED_GOODS,
-        hold_flag=qc_type == QCType.FINISHED_GOODS,
+        is_mandatory=qc_type == QCType.FINISHED_GOODS or is_mandatory_production_gate,
+        blocks_progression=qc_type == QCType.FINISHED_GOODS or is_mandatory_production_gate,
+        release_required=qc_type == QCType.FINISHED_GOODS or is_mandatory_production_gate,
+        hold_flag=qc_type == QCType.FINISHED_GOODS or is_mandatory_production_gate,
     )
     db.add(insp)
     await db.flush()

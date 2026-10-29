@@ -13,6 +13,7 @@ from app.models.quality import (
     QCType, QCStatus,
 )
 from app.models.procurement import GRNLine, GoodsReceipt
+from app.models.production import ProductionOrder, ProductionOrderStatus
 
 
 # ── QC Parameters ─────────────────────────────────────────────────────────────
@@ -124,8 +125,18 @@ async def get_grn_line_context(db: AsyncSession, grn_line_id: uuid.UUID) -> Opti
     return result.scalar_one_or_none()
 
 
+async def get_production_order_context(db: AsyncSession, order_id: uuid.UUID) -> Optional[ProductionOrder]:
+    result = await db.execute(select(ProductionOrder).where(ProductionOrder.id == order_id))
+    return result.scalar_one_or_none()
+
+
 async def create_inspection(
-    db: AsyncSession, data: dict, inspector_id: uuid.UUID, *, grn_line: Optional[GRNLine] = None
+    db: AsyncSession,
+    data: dict,
+    inspector_id: uuid.UUID,
+    *,
+    grn_line: Optional[GRNLine] = None,
+    production_order: Optional[ProductionOrder] = None,
 ) -> QCInspection:
     data = dict(data)
     if data.get("grn_line_id") is not None:
@@ -164,6 +175,63 @@ async def create_inspection(
             for template in gate.required_templates
         }
         if data.get("template_id") in required_template_ids:
+            data.update(is_mandatory=True, blocks_progression=True, release_required=True, hold_flag=True)
+
+    if data.get("qc_type") == QCType.IN_PROCESS and data.get("production_order_id") is not None:
+        order = production_order or await get_production_order_context(db, data["production_order_id"])
+        if order is None:
+            raise HTTPException(status_code=422, detail="The production order does not exist.")
+        identity = {
+            "product_id": order.product_id,
+            "warehouse_id": order.target_warehouse_id,
+            "batch_no": order.batch_no,
+        }
+        for field_name, expected in identity.items():
+            if data.get(field_name) is not None and data[field_name] != expected:
+                raise HTTPException(status_code=422, detail=f"Inspection {field_name} does not match its production order.")
+            data[field_name] = expected
+
+        from app.services.qms_service import (
+            PRODUCTION_GATE_TARGET_MODULE,
+            PRODUCTION_IN_PROCESS_GATE_TRIGGER_EVENT,
+            PRODUCTION_RELEASE_GATE_TRIGGER_EVENT,
+            list_production_quality_gates,
+            lock_quality_gate_scopes,
+        )
+
+        await lock_quality_gate_scopes(db, [
+            (PRODUCTION_GATE_TARGET_MODULE, PRODUCTION_RELEASE_GATE_TRIGGER_EVENT),
+            (PRODUCTION_GATE_TARGET_MODULE, PRODUCTION_IN_PROCESS_GATE_TRIGGER_EVENT),
+        ])
+        release_gate_template_ids = {
+            template.id
+            for gate in await list_production_quality_gates(
+                db, PRODUCTION_RELEASE_GATE_TRIGGER_EVENT, data.get("inspection_date")
+            ) if gate.is_mandatory
+            for template in gate.required_templates
+        }
+        in_process_gate_template_ids = {
+            template.id
+            for gate in await list_production_quality_gates(
+                db, PRODUCTION_IN_PROCESS_GATE_TRIGGER_EVENT, data.get("inspection_date")
+            ) if gate.is_mandatory
+            for template in gate.required_templates
+        }
+        template_id = data.get("template_id")
+        if template_id in in_process_gate_template_ids:
+            if order.status != ProductionOrderStatus.IN_PROGRESS and template_id not in release_gate_template_ids:
+                raise HTTPException(
+                    status_code=422,
+                    detail="An in-process gate inspection can be created only after the production order starts.",
+                )
+            if order.status == ProductionOrderStatus.IN_PROGRESS and (
+                order.actual_start is None or data["inspection_date"] < order.actual_start.date()
+            ):
+                raise HTTPException(
+                    status_code=422,
+                    detail="An in-process gate inspection must be dated on or after the production start.",
+                )
+        if template_id in release_gate_template_ids or template_id in in_process_gate_template_ids:
             data.update(is_mandatory=True, blocks_progression=True, release_required=True, hold_flag=True)
 
     insp = QCInspection(**data, inspector_id=inspector_id, status=QCStatus.PENDING)
