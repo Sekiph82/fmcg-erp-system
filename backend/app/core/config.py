@@ -2,6 +2,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import field_validator, model_validator
 from typing import List
 import json
+import math
 
 
 class Settings(BaseSettings):
@@ -67,6 +68,10 @@ class Settings(BaseSettings):
     DATABASE_POOL_RECYCLE_SECONDS: int = 1800
     DATABASE_POOL_TIMEOUT_SECONDS: int = 30
     DATABASE_POOL_PRE_PING: bool = True
+
+    # Every API worker polls; delivery rows use SKIP LOCKED for safe sharing.
+    WEBHOOK_DISPATCH_INTERVAL_SECONDS: float = 5.0
+    WEBHOOK_DISPATCH_BATCH_SIZE: int = 50
 
     # Document binaries use a persistent local volume by default. Downloads
     # remain quarantined until a configured malware scanner reports CLEAN.
@@ -324,6 +329,20 @@ class Settings(BaseSettings):
     def validate_session_inactivity_timeout(cls, value: int) -> int:
         if value < 1:
             raise ValueError("SESSION_INACTIVITY_TIMEOUT_MINUTES must be at least 1")
+        return value
+
+    @field_validator("WEBHOOK_DISPATCH_INTERVAL_SECONDS")
+    @classmethod
+    def validate_webhook_dispatch_interval(cls, value: float) -> float:
+        if not math.isfinite(value) or value <= 0:
+            raise ValueError("WEBHOOK_DISPATCH_INTERVAL_SECONDS must be finite and positive")
+        return value
+
+    @field_validator("WEBHOOK_DISPATCH_BATCH_SIZE")
+    @classmethod
+    def validate_webhook_dispatch_batch_size(cls, value: int) -> int:
+        if value < 1:
+            raise ValueError("WEBHOOK_DISPATCH_BATCH_SIZE must be at least 1")
         return value
 
     @field_validator("BACKEND_CORS_ORIGINS", mode="before")

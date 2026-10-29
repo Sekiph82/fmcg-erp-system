@@ -696,6 +696,7 @@ async def process_pending_deliveries(db: AsyncSession, limit: int = 50) -> int:
         .where(DeliveryAttempt.status == DeliveryStatus.PENDING)
         .order_by(DeliveryAttempt.created_at)
         .limit(limit)
+        .with_for_update(skip_locked=True)
     )
     attempts = list(result.scalars().all())
     if not attempts:
@@ -729,6 +730,7 @@ async def process_retry_deliveries(db: AsyncSession, limit: int = 50) -> int:
         )
         .order_by(DeliveryAttempt.next_retry_at)
         .limit(limit)
+        .with_for_update(skip_locked=True)
     )
     attempts = list(result.scalars().all())
     if not attempts:

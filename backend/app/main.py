@@ -2,7 +2,7 @@ import asyncio
 import logging
 import time
 import uuid
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -28,6 +28,7 @@ from app.core.observability import (
 from app.core.security_headers import SecurityHeadersMiddleware
 from app.db.seed import seed_admin, seed_management_users
 from app.db.session import AsyncSessionLocal
+from app.services.webhook_dispatcher import run_webhook_dispatcher
 import app.models  # noqa: F401 - ensure all models are registered
 
 configure_logging(settings.ENVIRONMENT)
@@ -59,9 +60,16 @@ async def lifespan(app: FastAPI):
     except Exception:
         logger.exception("Seed failed; admin user may not exist yet")
 
-    yield
-
-    logger.info("Shutting down %s", settings.PROJECT_NAME)
+    dispatcher_task = asyncio.create_task(
+        run_webhook_dispatcher(), name="webhook-dispatcher"
+    )
+    try:
+        yield
+    finally:
+        dispatcher_task.cancel()
+        with suppress(asyncio.CancelledError):
+            await dispatcher_task
+        logger.info("Shutting down %s", settings.PROJECT_NAME)
 
 
 app = FastAPI(
