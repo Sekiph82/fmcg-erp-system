@@ -13,16 +13,20 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.quality import (
-    QCInspection, QCStatus, QCDecision, QCTemplate, QCTemplateParameter,
+    QCInspection, QCStatus, QCDecision, QCType, QCTemplate, QCTemplateParameter,
     HazardAnalysis, CriticalControlPoint, CCPMonitoringLog,
     CorrectiveAction, CorrectiveActionStatus, CorrectiveActionStep,
     QCDeviation, DeviationStatus, RiskLevel,
     LotQualityStatus, ReleaseStatus, AllergenValidationRecord, QualityGateDefinition, QualityGateSeverity, QCTemplate,
     quality_gate_required_templates,
     QMSAIRecommendation, QMSAIAgentType, QMSAIRecStatus,
-    SamplingMethod,
+    SamplingMethod, ParameterType,
 )
 from app.models.inventory import Lot
+
+
+RECEIVING_GATE_TRIGGER_EVENT = "ON_RECEIPT"
+RECEIVING_GATE_TARGET_MODULE = "procurement"
 
 
 # ── Sequence Helpers ──────────────────────────────────────────────────────────
@@ -93,6 +97,120 @@ async def list_quality_gate_definitions(
                        QualityGateDefinition.code)
     )
     return list(result.scalars())
+
+
+async def lock_quality_gate_scope(db: AsyncSession, target_module: str, trigger_event: str) -> None:
+    """Serialize a transaction against changes to definitions for this gate scope."""
+    await lock_quality_gate_scopes(db, [(target_module, trigger_event)])
+
+
+async def lock_quality_gate_scopes(db: AsyncSession, scopes: list[tuple[str, str]]) -> None:
+    """Acquire multiple definition-scope locks in a stable order to avoid deadlocks."""
+    keys = sorted({
+        f"quality-gate-scope:{module.strip().lower()}:{event.strip().upper()}"
+        for module, event in scopes
+    })
+    for key in keys:
+        await db.execute(select(func.pg_advisory_xact_lock(func.hashtextextended(key, 0))))
+
+
+async def list_receiving_quality_gates(db: AsyncSession, as_of_date: date) -> list[QualityGateDefinition]:
+    return await list_quality_gate_definitions(
+        db,
+        active_only=True,
+        trigger_event=RECEIVING_GATE_TRIGGER_EVENT,
+        target_module=RECEIVING_GATE_TARGET_MODULE,
+        as_of_date=as_of_date,
+    )
+
+
+async def ensure_receiving_quality_gates_pass(db: AsyncSession, grn) -> None:
+    """Require every configured mandatory incoming template to pass per accepted GRN line."""
+    gates = [gate for gate in await list_receiving_quality_gates(db, grn.received_date) if gate.is_mandatory]
+    if not gates:
+        return
+
+    for line in grn.lines:
+        if line.accepted_quantity <= 0:
+            continue
+        item_id = line.material_id or line.product_id
+        if item_id is None:
+            continue
+        for gate in gates:
+            for template in gate.required_templates:
+                result = await db.execute(
+                    select(QCInspection.id).where(
+                        QCInspection.grn_id == grn.id,
+                        QCInspection.grn_line_id == line.id,
+                        QCInspection.template_id == template.id,
+                        QCInspection.qc_type == QCType.INCOMING,
+                        QCInspection.status == QCStatus.PASSED,
+                        QCInspection.decision == QCDecision.ACCEPT,
+                        QCInspection.is_mandatory.is_(True),
+                        QCInspection.blocks_progression.is_(True),
+                        QCInspection.release_required.is_(True),
+                    ).limit(1)
+                )
+                if result.scalar_one_or_none() is None:
+                    raise ValueError(
+                        f"GRN {grn.grn_no} cannot be posted: required receiving QC template "
+                        f"'{template.name}' for line {line.id} has no accepted, passed inspection."
+                    )
+
+
+async def prepare_receiving_gate_test_result(db: AsyncSession, inspection: QCInspection, data: dict) -> dict:
+    """Use the configured template as the authority for incoming-gate test specs."""
+    if not (
+        inspection.qc_type == QCType.INCOMING
+        and inspection.grn_id
+        and inspection.grn_line_id
+        and inspection.is_mandatory
+        and inspection.template_id
+    ):
+        return data
+
+    template_result = await db.execute(
+        select(QCTemplate)
+        .options(selectinload(QCTemplate.parameters))
+        .where(QCTemplate.id == inspection.template_id)
+    )
+    template = template_result.scalar_one_or_none()
+    if template is None or not template.is_active or template.qc_type != QCType.INCOMING:
+        raise ValueError("A mandatory receiving inspection requires an active incoming QC template.")
+    requested_template_parameter_id = data.get("template_parameter_id")
+    if requested_template_parameter_id is not None:
+        parameter = next((item for item in template.parameters if item.id == requested_template_parameter_id), None)
+    else:
+        parameter = next((item for item in template.parameters if item.parameter_id == data.get("parameter_id")), None)
+    if parameter is None:
+        raise ValueError("The test result must identify a parameter from the receiving inspection template.")
+
+    # The caller submits measurements. Names, units, specifications, and criticality
+    # come only from the versioned/linked QC template, never from request data.
+    canonical = dict(data)
+    canonical.update({
+        "parameter_id": parameter.parameter_id,
+        "template_parameter_id": parameter.id,
+        "parameter_name": parameter.parameter_name,
+        "parameter_type": parameter.parameter_type,
+        "unit": parameter.unit,
+        "min_spec": parameter.min_value,
+        "max_spec": parameter.max_value,
+        "expected_text": parameter.target_value,
+        "is_critical": parameter.is_critical,
+    })
+    if parameter.parameter_type == ParameterType.PASS_FAIL:
+        observed = str(data.get("text_value") or "").strip().casefold()
+        expected = str(parameter.target_value or "").strip().casefold()
+        canonical["is_passed"] = bool(expected) and observed == expected
+    else:
+        canonical["is_passed"] = None
+    if parameter.parameter_type == ParameterType.NUMERIC and parameter.target_value:
+        if canonical["min_spec"] is None and canonical["max_spec"] is None:
+            target_number = Decimal(parameter.target_value)
+            canonical["min_spec"] = target_number
+            canonical["max_spec"] = target_number
+    return canonical
 
 
 async def get_quality_gate_definition(
@@ -237,6 +355,7 @@ async def create_quality_gate_definition(
     data.setdefault("version", 1)
     _validate_gate_effective_window(data.get("effective_from"), data.get("effective_to"))
     await _lock_quality_gate_code(db, code)
+    await lock_quality_gate_scope(db, data.get("target_module", ""), data.get("trigger_event", ""))
     existing_result = await db.execute(
         select(QualityGateDefinition).where(QualityGateDefinition.code == code)
     )
@@ -254,6 +373,7 @@ async def create_quality_gate_definition(
 
     template_ids = data.pop("required_template_ids", [])
     templates = await _get_valid_required_qc_templates(db, template_ids)
+    _validate_gate_template_scope(data.get("target_module", ""), data.get("trigger_event", ""), templates)
     _validate_quality_gate_policy(
         data.get("severity", QualityGateSeverity.MEDIUM.value),
         data.get("is_mandatory", True),
@@ -274,6 +394,14 @@ async def update_quality_gate_definition(
     db: AsyncSession, definition: QualityGateDefinition, changes: dict
 ) -> QualityGateDefinition:
     await _lock_quality_gate_code(db, definition.code)
+    existing_target_scope = str(getattr(definition, "target_module", ""))
+    existing_trigger_scope = str(getattr(definition, "trigger_event", ""))
+    target_scope = str(changes.get("target_module", existing_target_scope))
+    trigger_scope = str(changes.get("trigger_event", existing_trigger_scope))
+    await lock_quality_gate_scopes(db, [
+        (existing_target_scope, existing_trigger_scope),
+        (target_scope, trigger_scope),
+    ])
     if "code" in changes and str(changes["code"]).strip().upper() != definition.code:
         raise ValueError("A quality gate code is immutable; create the next version under the existing code.")
     changes.pop("code", None)
@@ -331,6 +459,8 @@ async def update_quality_gate_definition(
         template_ids = [template.id for template in definition.required_templates]
         definition.required_templates = await _get_valid_required_qc_templates(db, template_ids)
 
+    _validate_gate_template_scope(definition.target_module, definition.trigger_event, definition.required_templates)
+
     if definition.is_active and not definition.required_templates:
         raise ValueError("An active quality gate must link at least one required QC test template.")
     if definition.is_active and any(
@@ -359,6 +489,12 @@ def _validate_quality_gate_policy(severity, is_mandatory, waiver_allowed, reason
         raise ValueError("An allowed waiver must require a reason.")
     if waiver_allowed and not approval_required:
         raise ValueError("An allowed waiver must require quality approval.")
+
+
+def _validate_gate_template_scope(target_module: str, trigger_event: str, templates: list[QCTemplate]) -> None:
+    if target_module.strip().lower() == RECEIVING_GATE_TARGET_MODULE and trigger_event.strip().upper() == RECEIVING_GATE_TRIGGER_EVENT:
+        if any(template.qc_type != QCType.INCOMING for template in templates):
+            raise ValueError("An ON_RECEIPT procurement gate can link only INCOMING QC templates.")
 
 
 def _validate_gate_effective_window(effective_from: Optional[date], effective_to: Optional[date]) -> None:

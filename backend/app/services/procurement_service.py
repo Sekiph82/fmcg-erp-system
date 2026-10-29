@@ -354,6 +354,21 @@ async def post_grn(
     if grn.status == GRNStatus.POSTED:
         raise HTTPException(status_code=422, detail="GRN already posted")
 
+    # The gate scope lock shares its transaction boundary with configuration writes,
+    # so a concurrently activated receipt gate cannot be skipped during posting.
+    from app.services.qms_service import (
+        RECEIVING_GATE_TARGET_MODULE,
+        RECEIVING_GATE_TRIGGER_EVENT,
+        ensure_receiving_quality_gates_pass,
+        lock_quality_gate_scope,
+    )
+
+    await lock_quality_gate_scope(db, RECEIVING_GATE_TARGET_MODULE, RECEIVING_GATE_TRIGGER_EVENT)
+    try:
+        await ensure_receiving_quality_gates_pass(db, grn)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
     for line in grn.lines:
         if line.accepted_quantity <= 0:
             continue

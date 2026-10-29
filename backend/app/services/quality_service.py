@@ -22,7 +22,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.quality import (
     QCInspection, QCTestResult, QCParameter,
-    QCType, QCStatus, QCDecision, ParameterType,
+    QCTemplateParameter, QCType, QCStatus, QCDecision, ParameterType,
 )
 from app.models.inventory import Stock, Lot, StockMovement, MovementType, StockType
 from app.models.production import (
@@ -107,6 +107,25 @@ async def make_decision(
                 select(QCTestResult).where(QCTestResult.inspection_id == insp.id)
             )
             test_results = list(result_rows.scalars().all())
+        if (
+            insp.qc_type == QCType.INCOMING
+            and insp.grn_id is not None
+            and insp.grn_line_id is not None
+            and insp.is_mandatory
+            and insp.template_id is not None
+        ):
+            required_rows = await db.execute(
+                select(QCTemplateParameter.id).where(QCTemplateParameter.template_id == insp.template_id)
+            )
+            required_parameter_ids = set(required_rows.scalars().all())
+            recorded_parameter_ids = {
+                result.template_parameter_id for result in (test_results or []) if result.template_parameter_id
+            }
+            if not required_parameter_ids or not required_parameter_ids.issubset(recorded_parameter_ids):
+                raise HTTPException(
+                    status_code=422,
+                    detail="Receiving inspection cannot be accepted until every template parameter has a test result.",
+                )
         all_passed, _ = _compute_inspection_outcome(insp, test_results)
         has_no_required_results = (
             getattr(insp, "is_mandatory", False)

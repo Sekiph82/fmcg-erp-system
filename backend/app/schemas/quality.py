@@ -53,6 +53,7 @@ class QCParameterRead(BaseModel):
 
 class QCTestResultCreate(BaseModel):
     parameter_id: Optional[uuid.UUID] = None
+    template_parameter_id: Optional[uuid.UUID] = None
     parameter_name: str
     parameter_type: ParameterType
     unit: Optional[str] = None
@@ -72,6 +73,7 @@ class QCTestResultRead(BaseModel):
     id: uuid.UUID
     inspection_id: uuid.UUID
     parameter_id: Optional[uuid.UUID]
+    template_parameter_id: Optional[uuid.UUID] = None
     parameter_name: str
     parameter_type: ParameterType
     unit: Optional[str]
@@ -118,6 +120,7 @@ class QCTestResultRead(BaseModel):
 class QCInspectionCreate(BaseModel):
     inspection_no: str
     qc_type: QCType
+    template_id: Optional[uuid.UUID] = None
     grn_id: Optional[uuid.UUID] = None
     grn_line_id: Optional[uuid.UUID] = None
     production_order_id: Optional[uuid.UUID] = None
@@ -153,6 +156,7 @@ class QCInspectionRead(BaseModel):
     id: uuid.UUID
     inspection_no: str
     qc_type: QCType
+    template_id: Optional[uuid.UUID] = None
     status: QCStatus
     grn_id: Optional[uuid.UUID]
     production_order_id: Optional[uuid.UUID]

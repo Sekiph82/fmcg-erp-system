@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import List, Optional
 import uuid
+from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -26,6 +27,7 @@ from app.schemas.quality import (
 )
 from app.crud import quality as crud
 from app.services import quality_service as svc
+from app.services import qms_service as qms_svc
 
 router = APIRouter()
 
@@ -169,8 +171,17 @@ async def create_inspection(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    _require_inspection_action(current_user, QCInspection(warehouse_id=body.warehouse_id), "create")
-    insp = await crud.create_inspection(db, body.model_dump(), current_user.id)
+    grn_line = None
+    warehouse_id = body.warehouse_id
+    if body.grn_line_id is not None:
+        grn_line = await crud.get_grn_line_context(db, body.grn_line_id)
+        if grn_line is None:
+            raise HTTPException(status_code=422, detail="The receiving inspection GRN line does not exist.")
+        if warehouse_id is not None and warehouse_id != grn_line.grn.warehouse_id:
+            raise HTTPException(status_code=422, detail="Inspection warehouse does not match its GRN line.")
+        warehouse_id = grn_line.grn.warehouse_id
+    _require_inspection_action(current_user, QCInspection(warehouse_id=warehouse_id), "create")
+    insp = await crud.create_inspection(db, body.model_dump(), current_user.id, grn_line=grn_line)
     await db.commit()
     insp = await crud.get_inspection(db, insp.id)
     return _build_detail(insp)
@@ -192,7 +203,7 @@ async def update_inspection(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    insp = await crud.get_inspection(db, inspection_id)
+    insp = await crud.get_inspection(db, inspection_id, for_update=True)
     if not insp:
         raise HTTPException(404, "Inspection not found")
     _require_inspection_action(current_user, insp, "edit")
@@ -212,7 +223,7 @@ async def add_test_result(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    insp = await crud.get_inspection(db, inspection_id)
+    insp = await crud.get_inspection(db, inspection_id, for_update=True)
     if not insp:
         raise HTTPException(404, "Inspection not found")
     _require_inspection_action(current_user, insp, "edit")
@@ -220,6 +231,10 @@ async def add_test_result(
         raise HTTPException(422, "Cannot add results to a completed inspection")
 
     data = body.model_dump()
+    try:
+        data = await qms_svc.prepare_receiving_gate_test_result(db, insp, data)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     # Auto-evaluate is_passed from spec limits if not explicitly set
     tr_obj = QCTestResult(inspection_id=inspection_id, tested_by_id=current_user.id, **data)
     if tr_obj.is_passed is None:
@@ -238,7 +253,7 @@ async def delete_test_result(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    insp = await crud.get_inspection(db, inspection_id)
+    insp = await crud.get_inspection(db, inspection_id, for_update=True)
     if not insp or insp.status not in (QCStatus.PENDING, QCStatus.IN_PROGRESS):
         raise HTTPException(422, "Cannot modify a completed inspection")
     _require_inspection_action(current_user, insp, "edit")
@@ -256,7 +271,7 @@ async def decide_inspection(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    insp = await crud.get_inspection(db, inspection_id)
+    insp = await crud.get_inspection(db, inspection_id, for_update=True)
     if not insp:
         raise HTTPException(404, "Inspection not found")
     _require_inspection_action(current_user, insp, "approve")
@@ -296,6 +311,7 @@ async def release_quarantine(
 async def create_inspection_for_grn(
     grn_id: uuid.UUID = Query(...),
     grn_line_id: uuid.UUID = Query(...),
+    template_id: Optional[uuid.UUID] = Query(None),
     material_id: Optional[uuid.UUID] = Query(None),
     supplier_id: Optional[uuid.UUID] = Query(None),
     warehouse_id: Optional[uuid.UUID] = Query(None),
@@ -304,12 +320,46 @@ async def create_inspection_for_grn(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    _require_inspection_action(current_user, QCInspection(warehouse_id=warehouse_id), "create")
-    insp = await svc.create_qc_for_grn_line(
-        db, grn_id=grn_id, grn_line_id=grn_line_id,
-        material_id=material_id, supplier_id=supplier_id,
-        warehouse_id=warehouse_id, lot_number=lot_number,
-        inspection_no=inspection_no, inspector_id=current_user.id,
+    grn_line = await crud.get_grn_line_context(db, grn_line_id)
+    if grn_line is None:
+        raise HTTPException(status_code=422, detail="The receiving inspection GRN line does not exist.")
+    grn = grn_line.grn
+    if grn.id != grn_id:
+        raise HTTPException(status_code=422, detail="The inspection GRN does not match its GRN line.")
+    identity = {
+        "material_id": grn_line.material_id,
+        "supplier_id": grn.po.supplier_id if grn.po else None,
+        "warehouse_id": grn.warehouse_id,
+        "lot_number": grn_line.lot_number,
+    }
+    supplied = {
+        "material_id": material_id,
+        "supplier_id": supplier_id,
+        "warehouse_id": warehouse_id,
+        "lot_number": lot_number,
+    }
+    for field_name, value in supplied.items():
+        if value is not None and value != identity[field_name]:
+            raise HTTPException(status_code=422, detail=f"Inspection {field_name} does not match its GRN line.")
+
+    _require_inspection_action(current_user, QCInspection(warehouse_id=grn.warehouse_id), "create")
+    insp = await crud.create_inspection(
+        db,
+        {
+            "inspection_no": inspection_no,
+            "qc_type": QCType.INCOMING,
+            "template_id": template_id,
+            "grn_id": grn.id,
+            "grn_line_id": grn_line.id,
+            "material_id": grn_line.material_id,
+            "product_id": grn_line.product_id,
+            "supplier_id": identity["supplier_id"],
+            "warehouse_id": grn.warehouse_id,
+            "lot_number": grn_line.lot_number,
+            "inspection_date": date.today(),
+        },
+        current_user.id,
+        grn_line=grn_line,
     )
     await db.commit()
     insp = await crud.get_inspection(db, insp.id)

@@ -277,6 +277,9 @@ class QCTestResult(Base, TimestampMixin):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     inspection_id = Column(UUID(as_uuid=True), ForeignKey("qc_inspections.id", ondelete="CASCADE"), nullable=False)
     parameter_id = Column(UUID(as_uuid=True), ForeignKey("qc_parameters.id", ondelete="SET NULL"), nullable=True)
+    template_parameter_id = Column(
+        UUID(as_uuid=True), ForeignKey("qc_template_parameters.id", ondelete="SET NULL"), nullable=True, index=True,
+    )
 
     parameter_name = Column(String(100), nullable=False)
     parameter_type = Column(Enum(ParameterType), nullable=False)
