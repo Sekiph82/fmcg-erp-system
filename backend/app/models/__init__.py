@@ -263,7 +263,7 @@ from app.models.mps import (
     MPSPlan, MPSLine, MPSCampaign, MPSCapacitySlot,
     MPSWhatIfScenario, MPSAIRecommendation, MPSLineDiagnostic, MPSScenarioSnapshot,
 )
-from app.models.api_portal import ApiClientApplication, ApiKey, ApiKeyUsageLog
+from app.models.api_portal import ApiClientApplication, ApiKey, ApiKeyUsageLog, ApiOAuthClientSecret
 
 # ── Machine + Operator Intelligence ──────────────────────────────────────────
 from app.models.machine_operator import (
@@ -767,7 +767,7 @@ __all__ = [
     "MPSPlan", "MPSLine", "MPSCampaign", "MPSCapacitySlot",
     "MPSWhatIfScenario", "MPSAIRecommendation", "MPSLineDiagnostic", "MPSScenarioSnapshot",
     # Developer Portal
-    "ApiClientApplication", "ApiKey", "ApiKeyUsageLog",
+    "ApiClientApplication", "ApiKey", "ApiKeyUsageLog", "ApiOAuthClientSecret",
     # Machine + Operator Intelligence
     "MachineStatus", "MachineFamily", "SkillLevel", "CertStatus",
     "AssignmentType", "RuntimeActivity", "DowntimeClass", "LaborActivity",

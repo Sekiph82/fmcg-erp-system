@@ -10,9 +10,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 - Current Milestone: M31 — API / Event Architecture
 - Current Sprint: M31.S01 — Partner API Governance
-- Current Task: M31.S01.T001 — API client/application registry
+- Current Task: M31.S01.T002 — API key/OAuth credential lifecycle
 - Current Task Status: COMPLETE
-- Next Task/Action: M31.S01.T002 — API key/OAuth credential lifecycle
+- Next Task/Action: M31.S01.T003 — Scope/rate-limit policy
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -971,7 +971,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 ## M31.S01 — Partner API Governance
 - [x] M31.S01.T001 — API client/application registry
   Evidence: Added owner-scoped, integrations.view/edit-protected API application registry and portal UI; credentials remain separate. Task-owned PostgreSQL migration/API suite: 4 passed at 20261029_0042 head, including schema adoption/creation, invalid-shape/default/check rejection, safe downgrade and writer-lock cases; frontend type-check and targeted ESLint, backend py_compile, diff check and independent review passed. Synthetic only. Evidence: coordination/sessions/M31.S01.T001/CODEX_LOG_V01.md.
-- [ ] M31.S01.T002 — API key/OAuth credential lifecycle
+- [x] M31.S01.T002 — API key/OAuth credential lifecycle
+  Evidence: M31.S01.T002 credential lifecycle implemented; disposable PostgreSQL 2 passed, migration/downgrade/adoption checks passed; backend compile, frontend type-check, targeted ESLint, diff check passed; independent read-only review no blockers. Synthetic software scope only; no API-key auth or OAuth token protocol.
 - [ ] M31.S01.T003 — Scope/rate-limit policy
 - [ ] M31.S01.T004 — Partner audit/usage analytics
 

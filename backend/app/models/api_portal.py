@@ -12,6 +12,16 @@ class ApiKey(Base):
 
     key_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(String(100), nullable=False, index=True)
+    application_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey(
+            "api_client_applications.client_id",
+            name="fk_dev_api_keys_application_id_api_client_applications",
+            ondelete="SET NULL",
+        ),
+        nullable=True,
+        index=True,
+    )
     key_name = Column(String(200), nullable=False)
     # Store SHA-256 hash of the actual key — never store raw
     key_prefix = Column(String(12), nullable=False)
@@ -23,6 +33,33 @@ class ApiKey(Base):
     last_used_at = Column(DateTime, nullable=True)
     expires_at = Column(DateTime, nullable=True)
     description = Column(Text, nullable=True)
+
+
+class ApiOAuthClientSecret(Base):
+    """One-time-issued OAuth client secret metadata; raw values are never persisted."""
+
+    __tablename__ = "api_oauth_client_secrets"
+    __table_args__ = (
+        UniqueConstraint("secret_hash", name="uq_api_oauth_client_secrets_secret_hash"),
+    )
+
+    secret_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    application_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey(
+            "api_client_applications.client_id",
+            name="fk_api_oauth_secrets_application_id_apps",
+            ondelete="CASCADE",
+        ),
+        nullable=False,
+        index=True,
+    )
+    secret_name = Column(String(160), nullable=False)
+    secret_prefix = Column(String(16), nullable=False)
+    secret_hash = Column(String(64), nullable=False)
+    is_active = Column(Boolean, nullable=False, default=True, server_default="true")
+    created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    expires_at = Column(DateTime(timezone=True), nullable=True)
 
 
 class ApiKeyUsageLog(Base):

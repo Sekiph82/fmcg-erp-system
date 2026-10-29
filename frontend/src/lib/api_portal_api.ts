@@ -23,6 +23,7 @@ function safeErrorMessage(status?: number): string {
 
 export interface ApiKeyOut {
   key_id: string;
+  application_id: string | null;
   key_name: string;
   key_prefix: string;
   scopes: string | null;
@@ -49,6 +50,23 @@ export interface ApiClientApplication {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+}
+
+export interface ApiOAuthClientSecretOut {
+  secret_id: string;
+  application_id: string;
+  secret_name: string;
+  secret_prefix: string;
+  is_active: boolean;
+  created_at: string;
+  expires_at: string | null;
+}
+
+export interface ApiOAuthClientSecretCreated extends ApiOAuthClientSecretOut {
+  client_id: string;
+  client_secret: string;
+  warning: string;
+  replaces_secret_id?: string;
 }
 
 export interface DevPortalDashboard {
@@ -140,6 +158,7 @@ export const devPortalApi = {
     req<ApiClientApplication>(`/applications/${encodeURIComponent(clientId)}`, { method: "PATCH", body: JSON.stringify(body) }),
 
   createKey: (body: {
+    application_id: string;
     key_name: string;
     scopes?: string;
     rate_limit_per_min?: number;
@@ -147,10 +166,25 @@ export const devPortalApi = {
     expires_at?: string;
   }) => req<ApiKeyCreated>("/keys", { method: "POST", body: JSON.stringify(body) }),
 
+  rotateKey: (keyId: string, body: { expires_at?: string | null } = {}) =>
+    req<ApiKeyCreated>(`/keys/${encodeURIComponent(keyId)}/rotate`, { method: "POST", body: JSON.stringify(body) }),
+
   listKeys: (includeInactive = false) =>
     req<ApiKeyOut[]>(`/keys?include_inactive=${includeInactive}`),
 
   revokeKey: (keyId: string) => req<void>(`/keys/${keyId}`, { method: "DELETE" }),
+
+  listOAuthSecrets: (applicationId: string, includeInactive = true) =>
+    req<ApiOAuthClientSecretOut[]>(`/applications/${encodeURIComponent(applicationId)}/oauth-secrets?include_inactive=${includeInactive}`),
+
+  createOAuthSecret: (applicationId: string, body: { secret_name: string; expires_at?: string }) =>
+    req<ApiOAuthClientSecretCreated>(`/applications/${encodeURIComponent(applicationId)}/oauth-secrets`, { method: "POST", body: JSON.stringify(body) }),
+
+  rotateOAuthSecret: (applicationId: string, secretId: string) =>
+    req<ApiOAuthClientSecretCreated>(`/applications/${encodeURIComponent(applicationId)}/oauth-secrets/${encodeURIComponent(secretId)}/rotate`, { method: "POST", body: "{}" }),
+
+  revokeOAuthSecret: (applicationId: string, secretId: string) =>
+    req<void>(`/applications/${encodeURIComponent(applicationId)}/oauth-secrets/${encodeURIComponent(secretId)}`, { method: "DELETE" }),
 
   keyUsage: (keyId: string) => req<UsageLog[]>(`/keys/${keyId}/usage`),
 

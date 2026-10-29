@@ -1,10 +1,11 @@
 "use client";
 import { useEffect, useState } from "react";
-import { devPortalApi, ApiKeyOut, ApiKeyCreated } from "@/lib/api_portal_api";
+import { devPortalApi, ApiKeyOut, ApiKeyCreated, ApiClientApplication } from "@/lib/api_portal_api";
 
 const SCOPE_OPTS = ["read", "write", "admin", "read,write", "read,write,admin"];
 
 interface NewKeyForm {
+  application_id: string;
   key_name: string;
   scopes: string;
   rate_limit_per_min: number;
@@ -13,9 +14,10 @@ interface NewKeyForm {
 
 export default function ApiKeysPage() {
   const [keys, setKeys] = useState<ApiKeyOut[]>([]);
+  const [applications, setApplications] = useState<ApiClientApplication[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState<NewKeyForm>({ key_name: "", scopes: "read", rate_limit_per_min: 60, description: "" });
+  const [form, setForm] = useState<NewKeyForm>({ application_id: "", key_name: "", scopes: "read", rate_limit_per_min: 60, description: "" });
   const [creating, setCreating] = useState(false);
   const [newKey, setNewKey] = useState<ApiKeyCreated | null>(null);
   const [revoking, setRevoking] = useState<string | null>(null);
@@ -25,8 +27,12 @@ export default function ApiKeysPage() {
   const load = () => {
     setLoading(true);
     setError(null);
-    devPortalApi.listKeys(true)
-      .then(setKeys)
+    Promise.all([devPortalApi.listKeys(true), devPortalApi.listApplications(true)])
+      .then(([nextKeys, nextApplications]) => {
+        setKeys(nextKeys);
+        setApplications(nextApplications);
+        setForm((current) => ({ ...current, application_id: current.application_id || nextApplications.find((item) => item.is_active)?.client_id || "" }));
+      })
       .catch((reason) => setError(reason instanceof Error ? reason.message : "API keys could not be loaded."))
       .finally(() => setLoading(false));
   };
@@ -38,6 +44,7 @@ export default function ApiKeysPage() {
     setError(null);
     try {
       const result = await devPortalApi.createKey({
+        application_id: form.application_id,
         key_name: form.key_name,
         scopes: form.scopes,
         rate_limit_per_min: form.rate_limit_per_min,
@@ -61,6 +68,21 @@ export default function ApiKeysPage() {
       load();
     } catch (e) {
       setError(String(e));
+    } finally {
+      setRevoking(null);
+    }
+  };
+
+  const rotate = async (key: ApiKeyOut) => {
+    if (!confirm("Rotate this API key now? The current key will stop working immediately and cannot be restored.")) return;
+    setRevoking(key.key_id);
+    setError(null);
+    try {
+      const result = await devPortalApi.rotateKey(key.key_id);
+      setNewKey(result);
+      load();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "API key could not be rotated.");
     } finally {
       setRevoking(null);
     }
@@ -97,6 +119,10 @@ export default function ApiKeysPage() {
 
       {error && <div className="bg-red-50 border border-red-200 rounded p-3 text-sm text-red-700">{error}</div>}
 
+      <p className="rounded border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">
+        API keys are managed here, but API requests still use the ERP sign-in session. OAuth token issuance and API-key authentication are not enabled by this registry.
+      </p>
+
       {/* Newly created key banner */}
       {newKey && (
         <div className="bg-amber-50 border border-amber-300 rounded-lg p-4 space-y-2">
@@ -121,6 +147,19 @@ export default function ApiKeysPage() {
         <div className="bg-white border rounded-lg p-4 shadow-sm space-y-3">
           <h2 className="text-sm font-semibold text-gray-700">New API Key</h2>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+              <label className="text-xs text-gray-500 block mb-1">Application *</label>
+              <select
+                value={form.application_id}
+                onChange={(e) => setForm((p) => ({ ...p, application_id: e.target.value }))}
+                className="w-full border border-gray-300 rounded px-3 py-1.5 text-sm"
+              >
+                <option value="">Select application</option>
+                {applications.filter((application) => application.is_active).map((application) => (
+                  <option key={application.client_id} value={application.client_id}>{application.name} ({application.environment})</option>
+                ))}
+              </select>
+            </div>
             <div>
               <label className="text-xs text-gray-500 block mb-1">Key Name *</label>
               <input
@@ -166,7 +205,7 @@ export default function ApiKeysPage() {
           <div className="flex gap-2">
             <button
               onClick={create}
-              disabled={creating || !form.key_name}
+              disabled={creating || !form.application_id || !form.key_name.trim()}
               className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded disabled:opacity-50"
             >
               {creating ? "Generating…" : "Generate Key"}
@@ -196,6 +235,7 @@ export default function ApiKeysPage() {
               <thead className="bg-gray-50 text-xs text-gray-500">
                 <tr>
                   <th className="text-left px-4 py-2">Name</th>
+                  <th className="text-left px-4 py-2">Application</th>
                   <th className="text-left px-4 py-2">Prefix</th>
                   <th className="text-left px-4 py-2">Scopes</th>
                   <th className="text-left px-4 py-2">Rate Limit</th>
@@ -209,6 +249,9 @@ export default function ApiKeysPage() {
                 {keys.map((k) => (
                   <tr key={k.key_id} className={!k.is_active ? "opacity-50" : ""}>
                     <td className="px-4 py-2.5 font-medium text-gray-900">{k.key_name}</td>
+                    <td className="px-4 py-2.5 text-gray-600">
+                      {applications.find((application) => application.client_id === k.application_id)?.name || (k.application_id ? "Application unavailable" : "Legacy unlinked key")}
+                    </td>
                     <td className="px-4 py-2.5 font-mono text-xs text-gray-600">{k.key_prefix}…</td>
                     <td className="px-4 py-2.5">
                       {(k.scopes || "read").split(",").map((s) => (
@@ -217,8 +260,10 @@ export default function ApiKeysPage() {
                     </td>
                     <td className="px-4 py-2.5 text-gray-600">{k.rate_limit_per_min}/min</td>
                     <td className="px-4 py-2.5">
-                      {k.is_active ? (
+                      {k.is_active && (!k.expires_at || new Date(k.expires_at).getTime() > Date.now()) ? (
                         <span className="text-green-700 bg-green-100 text-xs rounded-full px-2 py-0.5">Active</span>
+                      ) : k.is_active ? (
+                        <span className="text-amber-700 bg-amber-100 text-xs rounded-full px-2 py-0.5">Expired</span>
                       ) : (
                         <span className="text-gray-500 bg-gray-100 text-xs rounded-full px-2 py-0.5">Revoked</span>
                       )}
@@ -226,14 +271,20 @@ export default function ApiKeysPage() {
                     <td className="px-4 py-2.5 text-gray-500">{fmtDate(k.created_at)}</td>
                     <td className="px-4 py-2.5 text-gray-500">{fmtDate(k.last_used_at)}</td>
                     <td className="px-4 py-2.5">
+                      {k.is_active && k.expires_at && new Date(k.expires_at).getTime() <= Date.now() && (
+                        <span className="mr-2 text-xs text-amber-700">Expired — create a replacement</span>
+                      )}
                       {k.is_active && (
-                        <button
-                          onClick={() => revoke(k.key_id)}
-                          disabled={revoking === k.key_id}
-                          className="text-red-600 hover:text-red-800 text-xs disabled:opacity-50"
-                        >
-                          {revoking === k.key_id ? "Revoking…" : "Revoke"}
-                        </button>
+                        <div className="flex gap-3">
+                          {(!k.expires_at || new Date(k.expires_at).getTime() > Date.now()) && (
+                            <button onClick={() => rotate(k)} disabled={revoking === k.key_id} className="text-blue-600 hover:text-blue-800 text-xs disabled:opacity-50">
+                              {revoking === k.key_id ? "Working…" : "Rotate"}
+                            </button>
+                          )}
+                          <button onClick={() => revoke(k.key_id)} disabled={revoking === k.key_id} className="text-red-600 hover:text-red-800 text-xs disabled:opacity-50">
+                            {revoking === k.key_id ? "Revoking…" : "Revoke"}
+                          </button>
+                        </div>
                       )}
                     </td>
                   </tr>
