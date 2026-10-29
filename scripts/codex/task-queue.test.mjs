@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { applyOwnerAnswers, claimCurrentTask, writeTracker } from "./task-queue.mjs";
+import { applyOwnerAnswers, claimCurrentTask, completeCurrentTask, writeTracker } from "./task-queue.mjs";
 import { parseTaskState } from "./task-state.mjs";
 
 const tracker = `# Tracker
@@ -92,6 +92,38 @@ test("resumes an already in-progress current task idempotently", () => {
   const result = claimCurrentTask(tracker);
   assert.equal(result.changed, false);
   assert.equal(result.id, "M20.S01.T003");
+});
+
+test("completes only the active task with evidence and an exact READY successor", () => {
+  const result = completeCurrentTask(tracker, {
+    nextTaskId: "M20.S01.T004",
+    evidence: "Focused database and UI checks passed; independent review found no blocker.",
+  });
+  const state = parseTaskState(result.source);
+  assert.equal(state.currentTaskStatus, "COMPLETE");
+  assert.equal(state.tasks.find((task) => task.id === "M20.S01.T003").marker, "x");
+  assert.equal(state.nextTaskId, "M20.S01.T004");
+  assert.match(result.source, /Evidence: Focused database and UI checks passed/);
+  assert.throws(() => completeCurrentTask(tracker, { nextTaskId: "M20.S01.T003", evidence: "done" }), /exact canonical READY/);
+  assert.throws(() => completeCurrentTask(tracker, { nextTaskId: "M20.S01.T004", evidence: "  " }), /non-empty single line/);
+});
+
+test("claim advances only to the exact selected READY successor after completion", () => {
+  const completed = completeCurrentTask(tracker, {
+    nextTaskId: "M20.S01.T004",
+    evidence: "Focused checks passed.",
+  }).source;
+  const result = claimCurrentTask(completed);
+  const state = parseTaskState(result.source);
+  assert.equal(result.advanced, true);
+  assert.equal(state.currentTask.id, "M20.S01.T004");
+  assert.equal(state.currentTaskStatus, "IN_PROGRESS");
+  assert.equal(state.tasks.find((task) => task.id === "M20.S01.T004").marker, "~");
+  assert.equal(state.nextTaskSelectionRequired, true);
+});
+
+test("cannot complete the active task without selecting a READY successor", () => {
+  assert.throws(() => completeCurrentTask(tracker, { nextTaskId: "M20.S01.T099", evidence: "done" }), /exact canonical READY/);
 });
 
 test("refuses to claim a blocked task", () => {

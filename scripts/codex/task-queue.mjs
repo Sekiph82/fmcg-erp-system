@@ -8,6 +8,23 @@ import { createNextTaskSpec } from "./task-spec.mjs";
 export function claimCurrentTask(source) {
   const state = parseTaskState(source);
   if (!state.currentTask) return { source, changed: false, complete: true, id: null, title: null };
+  if (state.currentTaskStatus === "COMPLETE") {
+    const next = createNextTaskSpec(state);
+    if (next.status !== "SPEC_READY") {
+      throw new Error(`The completed task cannot advance: ${next.status}.`);
+    }
+    const task = state.tasks.find((item) => item.id === next.taskId && item.title === next.title);
+    if (!task || task.marker !== " ") throw new Error(`Selected successor ${next.taskId} is no longer READY.`);
+    const lines = source.split(/\r?\n/);
+    lines[task.lineIndex] = lines[task.lineIndex].replace("- [ ]", "- [~]");
+    let updated = lines.join("\n")
+      .replace(/^- Current Task: .+$/m, `- Current Task: ${task.id} — ${task.title}`)
+      .replace(/^- Current Task Status: COMPLETE$/m, "- Current Task Status: IN_PROGRESS")
+      .replace(/^- Next Task\/Action: .+$/m, "- Next Task/Action: Select the next task explicitly");
+    if (updated === source) throw new Error(`Could not advance to explicit successor ${task.id}.`);
+    parseTaskState(updated);
+    return { source: updated, changed: true, advanced: true, id: task.id, title: task.title };
+  }
   if (state.currentTaskStatus === "IN_PROGRESS") return { source, changed: false, ...state.currentTask };
   if (state.currentTaskStatus !== "READY") throw new Error(`The explicit current task is ${state.currentTaskStatus}; it cannot be claimed.`);
   const row = state.tasks.find((task) => task.id === state.currentTask.id && task.title === state.currentTask.title);
@@ -16,6 +33,43 @@ export function claimCurrentTask(source) {
   const updated = lines.join("\n").replace(/^- Current Task Status: READY$/m, "- Current Task Status: IN_PROGRESS");
   if (updated === source) throw new Error(`Could not claim explicit current task ${row.id}.`);
   return { source: updated, changed: true, id: row.id, title: row.title };
+}
+
+export function completeCurrentTask(source, { nextTaskId, evidence }) {
+  const state = parseTaskState(source);
+  if (!state.currentTask || state.currentTaskStatus !== "IN_PROGRESS") {
+    throw new Error("Only the explicit IN_PROGRESS task can be completed.");
+  }
+  if (typeof evidence !== "string" || !evidence.trim() || evidence.length > 4_000 || /[\r\n]/.test(evidence)) {
+    throw new Error("Completion evidence must be a non-empty single line of at most 4000 characters.");
+  }
+
+  const current = state.tasks.find((task) => task.id === state.currentTask.id && task.title === state.currentTask.title);
+  if (!current || current.marker !== "~") throw new Error("The explicit current task is not the only in-progress task.");
+  const lines = source.split(/\r?\n/);
+  lines[current.lineIndex] = lines[current.lineIndex].replace("- [~]", "- [x]");
+  lines.splice(current.lineIndex + 1, 0, `  Evidence: ${evidence.trim()}`);
+  let updated = lines.join("\n").replace(/^- Current Task Status: IN_PROGRESS$/m, "- Current Task Status: COMPLETE");
+
+  if (nextTaskId === "None") {
+    if (state.completedTasks + 1 !== state.totalTasks) {
+      throw new Error("The queue can end only after every canonical task is complete.");
+    }
+    updated = updated
+      .replace(/^- Current Task: .+$/m, "- Current Task: None")
+      .replace(/^- Next Task\/Action: .+$/m, "- Next Task/Action: None");
+  } else {
+    if (typeof nextTaskId !== "string" || !nextTaskId.trim()) {
+      throw new Error("Select an exact READY successor ID, or use None only after all tasks are complete.");
+    }
+    const successor = state.tasks.find((task) => task.id === nextTaskId.trim());
+    if (!successor || successor.id === current.id || successor.marker !== " ") {
+      throw new Error(`Successor ${nextTaskId} must match an exact canonical READY task row.`);
+    }
+    updated = updated.replace(/^- Next Task\/Action: .+$/m, `- Next Task/Action: ${successor.id} — ${successor.title}`);
+  }
+  parseTaskState(updated);
+  return { source: updated, changed: true, id: current.id, title: current.title, nextTaskId: nextTaskId === "None" ? null : nextTaskId.trim() };
 }
 
 export function applyOwnerAnswers(source, answers) {
@@ -136,9 +190,28 @@ export async function writeTracker(root, expectedSource, source) {
 
 async function run() {
   const root = resolve(fileURLToPath(new URL("../..", import.meta.url)));
-  const args = new Set(process.argv.slice(2));
-  if (!["--check", "--claim", "--apply-answers", "--spec"].some((arg) => args.has(arg))) {
-    throw new Error("Use --check, --claim, --apply-answers, or --spec.");
+  const argv = process.argv.slice(2);
+  const actions = new Set(["--check", "--claim", "--complete", "--apply-answers", "--spec"]);
+  const selectedActions = argv.filter((arg) => actions.has(arg));
+  if (selectedActions.length !== 1) {
+    throw new Error("Use --check, --claim, --complete --next <task-id> --evidence <text>, --apply-answers, or --spec.");
+  }
+  const action = selectedActions[0];
+  const args = new Set([action]);
+  const values = new Map();
+  for (let index = 0; index < argv.length; index += 1) {
+    const arg = argv[index];
+    if (arg === action) continue;
+    if (action !== "--complete" || !["--next", "--evidence"].includes(arg) || values.has(arg)) {
+      throw new Error(`Unexpected or duplicate argument: ${arg}`);
+    }
+    const value = argv[index + 1];
+    if (!value || value.startsWith("--")) throw new Error(`Missing value for ${arg}.`);
+    values.set(arg, value);
+    index += 1;
+  }
+  if (action === "--complete" && (!values.has("--next") || !values.has("--evidence"))) {
+    throw new Error("--complete requires both --next <task-id> and --evidence <text>.");
   }
   const { source, state } = await readProjectTaskState(root);
   if (args.has("--apply-answers")) {
@@ -155,9 +228,15 @@ async function run() {
     if (result.changed) {
       parseTaskState(result.source);
       await writeTracker(root, source, result.source);
-      console.log(`Claimed explicit task ${result.id}: ${result.title}`);
+      console.log(`${result.advanced ? "Advanced to" : "Claimed explicit task"} ${result.id}: ${result.title}`);
     } else if (result.complete) console.log("Autonomous queue complete: no current task remains.");
     else console.log(`Resuming explicit task ${result.id}: ${result.title}`);
+    return;
+  }
+  if (args.has("--complete")) {
+    const result = completeCurrentTask(source, { nextTaskId: values.get("--next"), evidence: values.get("--evidence") });
+    await writeTracker(root, source, result.source);
+    console.log(`Completed ${result.id}: ${result.title}; selected successor ${result.nextTaskId ?? "None"}.`);
     return;
   }
   const nextTaskSpec = createNextTaskSpec(state);
