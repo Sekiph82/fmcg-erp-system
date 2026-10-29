@@ -43,5 +43,5 @@ No production code or test file required changes for this verification task. The
 
 ## Publication
 
-- Task-record commit: to be filled in the post-publication metadata update.
+- Task-record commit: `2c00e334da42cae7d78d9a6e5c0d1870be8a518c` (`Verify landed-cost integration on current main [skip ci]`); pushed to `origin/main`. After push, `HEAD` and fetched `origin/main` both resolved to this SHA with zero ahead/behind commits. The log's SHA update is published as a separate metadata-only `[skip ci]` commit.
 - GitHub Actions were not run.
