@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import uuid
 from typing import Optional, List
 from datetime import date, datetime
 from decimal import Decimal
@@ -150,7 +151,7 @@ class ContainerRead(BaseModel):
 # ── PO Link ────────────────────────────────────────────────────────────────────
 
 class POLinkCreate(BaseModel):
-    po_id: str
+    po_id: uuid.UUID
     notes: Optional[str] = None
 
 

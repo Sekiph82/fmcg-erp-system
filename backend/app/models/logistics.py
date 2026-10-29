@@ -2,7 +2,7 @@ import uuid
 import enum
 from sqlalchemy import (
     Column, String, Text, Numeric, Boolean, Integer,
-    ForeignKey, Enum, DateTime, Date,
+    ForeignKey, Enum, DateTime, Date, UniqueConstraint,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
@@ -163,6 +163,9 @@ class ShipmentContainer(Base, TimestampMixin):
 
 class ShipmentPOLink(Base, TimestampMixin):
     __tablename__ = "shipment_po_links"
+    __table_args__ = (
+        UniqueConstraint("shipment_id", "po_id", name="uq_shipment_po_links_shipment_po"),
+    )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     shipment_id = Column(UUID(as_uuid=True), ForeignKey("intl_shipments.id", ondelete="CASCADE"), nullable=False, index=True)

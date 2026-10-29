@@ -11,8 +11,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 - Current Milestone: M25 — Cross-Border / Landed Cost
 - Current Sprint: M25.S01 — Cross-Border Shipment Lifecycle
 - Current Task: M25.S01.T001 — Purchase→shipment→container linkage
-- Current Task Status: READY
-- Next Task/Action: M25.S01.T001 — Purchase→shipment→container linkage
+- Current Task Status: COMPLETE
+- Next Task/Action: M25.S01.T002 — In-transit inventory ownership/status
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -761,7 +761,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 **Depends on:** M06, M13, M18.
 
 ## M25.S01 — Cross-Border Shipment Lifecycle
-- [ ] M25.S01.T001 — Purchase→shipment→container linkage
+- [x] M25.S01.T001 — Purchase→shipment→container linkage
+  Evidence: `coordination/sessions/M25.S01.T001/CODEX_LOG_V01.md`; disposable PostgreSQL V03 and mocked frontend checks passed, with earlier corrected failures and scope limits recorded.
 - [ ] M25.S01.T002 — In-transit inventory ownership/status
 - [ ] M25.S01.T003 — Customs/clearance milestone model
 - [ ] M25.S01.T004 — Kenya receipt closure

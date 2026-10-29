@@ -3,8 +3,10 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { logisticsApi, IntlShipment, IntlShipmentStatus } from "@/lib/logistics";
+import { procurementApi, PO } from "@/lib/procurement";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { useAuth } from "@/context/AuthContext";
 
 const STATUS_FLOW: IntlShipmentStatus[] = [
   "DRAFT", "BOOKING_CONFIRMED", "CARGO_LOADED", "IN_TRANSIT",
@@ -20,9 +22,11 @@ const statusBadge = (s: IntlShipmentStatus) => {
 };
 
 export default function ShipmentsPage() {
+  const { hasPermission } = useAuth();
   const qc = useQueryClient();
   const [showNew, setShowNew] = useState(false);
   const [editing, setEditing] = useState<IntlShipment | null>(null);
+  const [managingLinks, setManagingLinks] = useState<IntlShipment | null>(null);
   const [filterStatus, setFilterStatus] = useState<IntlShipmentStatus | "ALL">("ALL");
 
   const { data: shipments = [], isLoading } = useQuery({
@@ -81,7 +85,7 @@ export default function ShipmentsPage() {
                 <th className="px-5 py-2 text-center">Ctrs</th>
                 <th className="px-5 py-2 text-center">POs</th>
                 <th className="px-5 py-2 text-left">Status</th>
-                <th className="px-5 py-2" />
+                <th className="px-5 py-2 text-left">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -112,7 +116,10 @@ export default function ShipmentsPage() {
                   <td className="px-5 py-3 text-center">{s.po_count ?? 0}</td>
                   <td className="px-5 py-3"><Badge label={s.status.replace(/_/g, " ")} variant={statusBadge(s.status)} /></td>
                   <td className="px-5 py-3">
-                    <button className="text-xs text-indigo-600 hover:underline" onClick={() => setEditing(s)}>Edit</button>
+                    <div className="flex flex-col items-start gap-1">
+                      <button className="text-xs text-indigo-600 hover:underline" onClick={() => setEditing(s)}>Edit</button>
+                      <button className="text-xs text-indigo-600 hover:underline" onClick={() => setManagingLinks(s)}>View POs & containers</button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -130,6 +137,148 @@ export default function ShipmentsPage() {
         <ShipmentModal title="Edit Shipment" initial={editing} onClose={() => setEditing(null)}
           onSubmit={(d) => updateShipment.mutate({ id: editing.id, data: d })} loading={updateShipment.isPending} />
       )}
+      {managingLinks && (
+        <ShipmentLinkageModal shipment={managingLinks} onClose={() => setManagingLinks(null)} />
+      )}
+    </div>
+  );
+}
+
+function ShipmentLinkageModal({ shipment, onClose }: { shipment: IntlShipment; onClose: () => void }) {
+  const { hasPermission } = useAuth();
+  const qc = useQueryClient();
+  const canCreate = hasPermission("logistics.create");
+  const canEdit = hasPermission("logistics.edit");
+  const [selectedPoId, setSelectedPoId] = useState("");
+  const [containerNo, setContainerNo] = useState("");
+  const [containerType, setContainerType] = useState<"20FT_DRY" | "40FT_DRY" | "40FT_HC" | "20FT_REEFER" | "LCL">("40FT_DRY");
+  const linksQuery = useQuery({
+    queryKey: ["shipment-po-links", shipment.id],
+    queryFn: () => logisticsApi.listPOLinks(shipment.id),
+  });
+  const ordersQuery = useQuery({
+    queryKey: ["shipment-linkable-pos"],
+    queryFn: () => procurementApi.listPOs(),
+    enabled: canCreate,
+  });
+  const containersQuery = useQuery({
+    queryKey: ["logistics-containers", shipment.id],
+    queryFn: () => logisticsApi.listContainers({ shipment_id: shipment.id }),
+  });
+  const linkedIds = new Set((linksQuery.data ?? []).map((link) => link.po_id));
+  const linkableOrders = (ordersQuery.data ?? []).filter((order) =>
+    ["APPROVED", "ORDERED", "PARTIALLY_RECEIVED"].includes(order.status) && !linkedIds.has(order.id)
+  );
+  const addPo = useMutation({
+    mutationFn: (po: PO) => logisticsApi.addPOLink(shipment.id, { po_id: po.id }),
+    onSuccess: async () => {
+      setSelectedPoId("");
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["shipment-po-links", shipment.id] }),
+        qc.invalidateQueries({ queryKey: ["logistics-shipments"] }),
+        qc.invalidateQueries({ queryKey: ["logistics-dashboard"] }),
+      ]);
+    },
+  });
+  const removePo = useMutation({
+    mutationFn: (linkId: string) => logisticsApi.removePOLink(linkId),
+    onSuccess: async () => {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["shipment-po-links", shipment.id] }),
+        qc.invalidateQueries({ queryKey: ["logistics-shipments"] }),
+        qc.invalidateQueries({ queryKey: ["logistics-dashboard"] }),
+      ]);
+    },
+  });
+  const addContainer = useMutation({
+    mutationFn: () => logisticsApi.createContainer({
+      shipment_id: shipment.id,
+      container_no: containerNo.trim(),
+      container_type: containerType,
+    }),
+    onSuccess: async () => {
+      setContainerNo("");
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["logistics-containers", shipment.id] }),
+        qc.invalidateQueries({ queryKey: ["logistics-containers"] }),
+        qc.invalidateQueries({ queryKey: ["logistics-shipments"] }),
+        qc.invalidateQueries({ queryKey: ["logistics-dashboard"] }),
+      ]);
+    },
+  });
+  const mutationError = addPo.error || removePo.error || addContainer.error;
+  const errorMessage = mutationError instanceof Error ? mutationError.message : "Could not save the shipment linkage.";
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 p-4" role="presentation">
+      <section className="my-auto max-h-[90vh] w-full max-w-3xl space-y-5 overflow-y-auto rounded-xl bg-white p-6 shadow-xl" role="dialog" aria-modal="true" aria-labelledby="shipment-linkage-title">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h2 id="shipment-linkage-title" className="text-lg font-semibold">Purchase and container links</h2>
+            <p className="text-sm text-gray-500">Shipment {shipment.shipment_no}</p>
+          </div>
+          <Button variant="secondary" onClick={onClose}>Close</Button>
+        </div>
+        {mutationError && <p role="alert" className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">{errorMessage}</p>}
+
+        <section aria-labelledby="linked-orders-title" className="space-y-3">
+          <h3 id="linked-orders-title" className="font-medium">Linked purchase orders</h3>
+          {linksQuery.isLoading ? <p className="text-sm text-gray-500">Loading purchase-order links…</p> : linksQuery.isError ? (
+            <p role="alert" className="text-sm text-red-700">Could not load purchase-order links.</p>
+          ) : (linksQuery.data ?? []).length === 0 ? <p className="text-sm text-gray-500">No purchase orders are linked yet.</p> : (
+            <ul className="divide-y rounded border">
+              {(linksQuery.data ?? []).map((link) => (
+                <li key={link.id} className="flex items-center justify-between gap-3 p-3">
+                  <div>
+                    <p className="font-mono text-sm font-medium">{link.po_no || link.po_id}</p>
+                    <p className="text-xs text-gray-500">{link.supplier_name || "Supplier not available"}</p>
+                  </div>
+                  {canEdit && <Button variant="danger" onClick={() => removePo.mutate(link.id)} loading={removePo.isPending}>Unlink</Button>}
+                </li>
+              ))}
+            </ul>
+          )}
+          {canCreate && <div className="flex flex-wrap gap-2">
+            <label htmlFor="shipment-po-select" className="sr-only">Purchase order</label>
+            <select id="shipment-po-select" className="min-w-64 flex-1 rounded border px-3 py-2 text-sm" value={selectedPoId} onChange={(event) => setSelectedPoId(event.target.value)} disabled={ordersQuery.isLoading || addPo.isPending}>
+              <option value="">Select an approved or open purchase order…</option>
+              {linkableOrders.map((order) => <option key={order.id} value={order.id}>{order.po_no} · {order.supplier_name || "Supplier"} · {order.status}</option>)}
+            </select>
+            <Button onClick={() => {
+              const order = linkableOrders.find((candidate) => candidate.id === selectedPoId);
+              if (order) addPo.mutate(order);
+            }} loading={addPo.isPending} disabled={!selectedPoId || !linkableOrders.some((order) => order.id === selectedPoId)}>Link purchase order</Button>
+          </div>}
+          {ordersQuery.isError && <p role="alert" className="text-sm text-red-700">Could not load purchase orders. Check procurement access and try again.</p>}
+          {!canCreate && <p className="text-xs text-gray-500">You have view-only access to shipment links.</p>}
+          {canCreate && !ordersQuery.isLoading && !ordersQuery.isError && linkableOrders.length === 0 && <p className="text-xs text-gray-500">There are no unlinked approved or open purchase orders available.</p>}
+        </section>
+
+        <section aria-labelledby="linked-containers-title" className="space-y-3 border-t pt-4">
+          <h3 id="linked-containers-title" className="font-medium">Containers on this shipment</h3>
+          {containersQuery.isLoading ? <p className="text-sm text-gray-500">Loading containers…</p> : containersQuery.isError ? (
+            <p role="alert" className="text-sm text-red-700">Could not load shipment containers.</p>
+          ) : (containersQuery.data ?? []).length === 0 ? <p className="text-sm text-gray-500">No containers are linked yet.</p> : (
+            <ul className="divide-y rounded border">
+              {(containersQuery.data ?? []).map((container) => (
+                <li key={container.id} className="flex items-center justify-between gap-3 p-3 text-sm">
+                  <span className="font-mono font-medium">{container.container_no}</span>
+                  <span className="text-gray-500">{container.container_type.replaceAll("_", " ")} · {container.status.replaceAll("_", " ")}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+          {canCreate && <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
+            <label className="sr-only" htmlFor="shipment-container-no">Container number</label>
+            <input id="shipment-container-no" className="rounded border px-3 py-2 text-sm font-mono" value={containerNo} onChange={(event) => setContainerNo(event.target.value)} placeholder="Container number" />
+            <label className="sr-only" htmlFor="shipment-container-type">Container type</label>
+            <select id="shipment-container-type" className="rounded border px-3 py-2 text-sm" value={containerType} onChange={(event) => setContainerType(event.target.value as typeof containerType)}>
+              <option value="20FT_DRY">20 ft dry</option><option value="40FT_DRY">40 ft dry</option><option value="40FT_HC">40 ft high cube</option><option value="20FT_REEFER">20 ft reefer</option><option value="LCL">LCL</option>
+            </select>
+            <Button onClick={() => addContainer.mutate()} loading={addContainer.isPending} disabled={!containerNo.trim()}>Add container</Button>
+          </div>}
+        </section>
+      </section>
     </div>
   );
 }

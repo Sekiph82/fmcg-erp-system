@@ -1,13 +1,15 @@
 from __future__ import annotations
 
 import uuid
+from decimal import Decimal
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.deps import get_db, get_current_user
+from app.core.deps import get_db, get_current_user, require_permission
 from app.models.user import User
 from app.models.logistics import (
     InternationalShipment, ShipmentContainer, ShipmentPOLink,
@@ -15,6 +17,7 @@ from app.models.logistics import (
     LocalLogisticsCost,
     IntlShipmentStatus, ContainerStatus, ClearanceStatus,
 )
+from app.models.procurement import POStatus, PurchaseOrder
 import app.crud.logistics as crud
 import app.services.logistics_service as svc
 from app.schemas.logistics import (
@@ -97,13 +100,25 @@ def _c_read(c) -> ContainerRead:
 
 def _link_read(link) -> POLinkRead:
     po = link.po if hasattr(link, "po") and link.po else None
+    po_total = (
+        sum(
+            (
+                (
+                    line.ordered_quantity * line.unit_price * (Decimal("1") + line.tax_rate)
+                ).quantize(Decimal("0.01"))
+                for line in po.lines
+            ),
+            start=Decimal("0.00"),
+        )
+        if po and po.lines else None
+    )
     return POLinkRead(
         id=str(link.id),
         shipment_id=str(link.shipment_id),
         po_id=str(link.po_id),
         po_no=po.po_no if po else None,
         supplier_name=po.supplier.name if po and po.supplier else None,
-        po_total=float(po.lines[0].unit_price) if po and po.lines else None,
+        po_total=float(po_total) if po_total is not None else None,
         notes=link.notes,
         created_at=link.created_at,
     )
@@ -229,7 +244,7 @@ async def list_containers(
     shipment_id: Optional[uuid.UUID] = None,
     status: Optional[ContainerStatus] = None,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    _: User = Depends(require_permission("logistics", "view")),
 ):
     containers = await crud.list_containers(db, shipment_id=shipment_id, status=status)
     return [_c_read(c) for c in containers]
@@ -239,10 +254,12 @@ async def list_containers(
 async def create_container(
     body: ContainerCreate,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    _: User = Depends(require_permission("logistics", "create")),
 ):
     data = body.model_dump()
     data["shipment_id"] = uuid.UUID(data["shipment_id"])
+    if await db.get(InternationalShipment, data["shipment_id"]) is None:
+        raise HTTPException(status_code=404, detail="Shipment not found")
     c = await crud.create_container(db, data)
     await db.commit()
     c = await crud.get_container(db, c.id)
@@ -254,7 +271,7 @@ async def update_container(
     container_id: uuid.UUID,
     body: ContainerUpdate,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    _: User = Depends(require_permission("logistics", "edit")),
 ):
     c = await crud.get_container(db, container_id)
     if not c:
@@ -271,7 +288,7 @@ async def update_container(
 async def list_po_links(
     shipment_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    _: User = Depends(require_permission("logistics", "view")),
 ):
     links = await crud.list_po_links(db, shipment_id)
     return [_link_read(lk) for lk in links]
@@ -282,10 +299,24 @@ async def add_po_link(
     shipment_id: uuid.UUID,
     body: POLinkCreate,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    _: User = Depends(require_permission("logistics", "create")),
 ):
-    link = await crud.add_po_link(db, shipment_id, uuid.UUID(body.po_id), body.notes)
-    await db.commit()
+    shipment = await db.get(InternationalShipment, shipment_id)
+    if shipment is None:
+        raise HTTPException(status_code=404, detail="Shipment not found")
+    po = await db.get(PurchaseOrder, body.po_id)
+    if po is None:
+        raise HTTPException(status_code=404, detail="Purchase order not found")
+    if po.status not in {POStatus.APPROVED, POStatus.ORDERED, POStatus.PARTIALLY_RECEIVED}:
+        raise HTTPException(status_code=409, detail="Purchase order must be approved or open before shipment linkage")
+    if await crud.get_po_link(db, shipment_id, body.po_id):
+        raise HTTPException(status_code=409, detail="Purchase order is already linked to this shipment")
+    try:
+        link = await crud.add_po_link(db, shipment_id, body.po_id, body.notes)
+        await db.commit()
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(status_code=409, detail="Purchase order is already linked to this shipment")
     links = await crud.list_po_links(db, shipment_id)
     fresh = next((lk for lk in links if lk.id == link.id), link)
     return _link_read(fresh)
@@ -295,7 +326,7 @@ async def add_po_link(
 async def remove_po_link(
     link_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    _: User = Depends(require_permission("logistics", "edit")),
 ):
     await crud.remove_po_link(db, link_id)
     await db.commit()

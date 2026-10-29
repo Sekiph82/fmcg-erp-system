@@ -1,0 +1,12 @@
+M25.S01.T001 frontend verification
+Date: 2026-10-29
+Checkout: C:\Users\sekip\Desktop\fmcg-erp-system
+
+Commands and results:
+- frontend: npm run type-check — PASS (exit 0; TypeScript no-emit).
+- frontend: npx eslint src/app/dashboard/logistics/shipments/page.tsx e2e/m25-shipment-purchase-container-linkage.mocked.spec.ts — PASS (exit 0).
+- frontend: npx playwright test e2e/m25-shipment-purchase-container-linkage.mocked.spec.ts --project=chromium --no-deps — PASS (2 passed, exit 0).
+
+The E2E run used E2E_BASE_URL=http://localhost:3324 and an empty, task-owned storage-state file under frontend/playwright/.auth. The file was removed after the run. The test intercepts its API requests with synthetic responses; it did not log into or change an ERP database. The unrelated setup project's normal login-state guard was intentionally bypassed with --no-deps.
+
+The tested cases link one eligible purchase order and a container to one synthetic shipment, and confirm that logistics.view-only users can inspect but cannot link, unlink, or create containers. Next.js emitted existing React 18/middleware deprecation notices and a notice about a package-lock outside the checkout; these did not fail the targeted checks.

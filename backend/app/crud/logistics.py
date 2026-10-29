@@ -132,16 +132,29 @@ async def get_container(db: AsyncSession, cid: uuid.UUID) -> Optional[ShipmentCo
 # ── PO Links ───────────────────────────────────────────────────────────────────
 
 async def list_po_links(db: AsyncSession, shipment_id: uuid.UUID) -> List[ShipmentPOLink]:
+    from app.models.procurement import PurchaseOrder
+
     q = (
         select(ShipmentPOLink)
         .options(
             selectinload(ShipmentPOLink.po).selectinload(
-                __import__("app.models.procurement", fromlist=["PurchaseOrder"]).PurchaseOrder.supplier
-            )
+                PurchaseOrder.supplier
+            ),
+            selectinload(ShipmentPOLink.po).selectinload(PurchaseOrder.lines),
         )
         .where(ShipmentPOLink.shipment_id == shipment_id)
     )
     return list((await db.execute(q)).scalars().all())
+
+
+async def get_po_link(db: AsyncSession, shipment_id: uuid.UUID, po_id: uuid.UUID) -> Optional[ShipmentPOLink]:
+    result = await db.execute(
+        select(ShipmentPOLink).where(
+            ShipmentPOLink.shipment_id == shipment_id,
+            ShipmentPOLink.po_id == po_id,
+        )
+    )
+    return result.scalar_one_or_none()
 
 
 async def add_po_link(db: AsyncSession, shipment_id: uuid.UUID, po_id: uuid.UUID, notes: Optional[str]) -> ShipmentPOLink:
