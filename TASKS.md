@@ -10,9 +10,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 - Current Milestone: M06 — Procurement
 - Current Sprint: M06.S03 — Baseline Verification
-- Current Task: M06.S03.T001 — Verify three-way-match transaction chain
+- Current Task: M06.S03.T002 — Verify landed-cost accounting integration
 - Current Task Status: COMPLETE
-- Next Task/Action: M06.S03.T002 — Verify landed-cost accounting integration
+- Next Task/Action: M06.S03.T003 — Verify supplier performance data completeness
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -283,8 +283,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 ## M06.S03 — Baseline Verification
 - [x] M06.S03.T001 — Verify three-way-match transaction chain
   Evidence: [M06.S03.T001 execution log](coordination/sessions/M06.S03.T001/CODEX_LOG_V01.md); fresh PostgreSQL 16.6 at single Alembic head 20261029_0025; 5 focused three-way-match tests and 12 procurement/accounting regressions passed. Tests verified draft GRN hold, posted PO/GRN/stock and match linkage, cumulative zero-remaining overbilling, cross-supplier rejection, rerun idempotency and late-failure rollback. Independent read-only review found no remaining material issues; exact disposable-container cleanup verified. No AP/GRNI/GL or production acceptance claimed.
-- [ ] M06.S03.T002 — Verify landed-cost accounting integration
-- [P] M06.S03.T003 — Verify supplier performance data completeness
+- [x] M06.S03.T002 — Verify landed-cost accounting integration
+  Evidence: [M06.S03.T002 execution log](coordination/sessions/M06.S03.T002/CODEX_LOG_V01.md); current-main source matched the accepted M13 landed-cost implementation with no intervening landed-cost changes. Fresh PostgreSQL 16.6 at single Alembic head 20261029_0025; existing landed-cost acceptance suite passed 12/12 and GAP-002 posting-helper regressions passed 6/6. Independent read-only review found no material mismatch; exact disposable-container cleanup verified. No supplier-invoice/AP/GRNI, live-provider or production acceptance claimed.
+- [ ] M06.S03.T003 — Verify supplier performance data completeness
 
 ---
 
