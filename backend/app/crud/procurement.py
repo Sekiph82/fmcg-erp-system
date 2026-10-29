@@ -214,6 +214,15 @@ async def create_shipment(db: AsyncSession, data: dict) -> ImportShipment:
 
 # ── Supplier Evaluations ───────────────────────────────────────────────────────
 
+async def average_supplier_score(db: AsyncSession, supplier_id: uuid.UUID):
+    result = await db.execute(
+        select(func.round(func.avg(SupplierEvaluation.overall_score), 2)).where(
+            SupplierEvaluation.supplier_id == supplier_id
+        )
+    )
+    return result.scalar_one_or_none()
+
+
 async def list_evaluations(
     db: AsyncSession, supplier_id: Optional[uuid.UUID] = None, limit: int = 200, offset: int = 0
 ) -> List[SupplierEvaluation]:
@@ -238,12 +247,13 @@ async def create_evaluation(
     eval_obj = SupplierEvaluation(**data, evaluator_id=evaluator_id, overall_score=overall)
     db.add(eval_obj)
     await db.flush()
-    # Update supplier.performance_score as rolling average
+    # Keep the supplier master in sync with the evaluation history. The
+    # dashboard reports this same all-evaluations arithmetic mean.
     from app.models.master import Supplier
     result = await db.execute(select(Supplier).where(Supplier.id == data["supplier_id"]))
     supplier = result.scalar_one_or_none()
     if supplier:
-        supplier.performance_score = overall
+        supplier.performance_score = await average_supplier_score(db, data["supplier_id"])
     await db.flush()
     await db.refresh(eval_obj)
     return eval_obj

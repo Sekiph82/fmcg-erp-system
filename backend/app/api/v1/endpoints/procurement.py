@@ -544,7 +544,7 @@ async def supplier_dashboard(
         evals = list(eval_result.scalars().all())
         avg_otd = (sum(float(e.on_time_delivery_score) for e in evals) / len(evals)) if evals else None
         avg_qual = (sum(float(e.quality_score) for e in evals) / len(evals)) if evals else None
-        avg_overall = (sum(float(e.overall_score) for e in evals) / len(evals)) if evals else None
+        avg_overall = await crud.average_supplier_score(db, s.id)
         last_eval = evals[0].evaluation_date if evals else None
 
         rows.append(SupplierDashboardRow(
@@ -560,7 +560,7 @@ async def supplier_dashboard(
             overdue_pos=len(overdue_pos),
             avg_on_time_delivery=Decimal(str(round(avg_otd, 2))) if avg_otd is not None else None,
             avg_quality=Decimal(str(round(avg_qual, 2))) if avg_qual is not None else None,
-            avg_overall=Decimal(str(round(avg_overall, 2))) if avg_overall is not None else None,
+            avg_overall=avg_overall,
             last_evaluation_date=last_eval,
         ))
     return rows

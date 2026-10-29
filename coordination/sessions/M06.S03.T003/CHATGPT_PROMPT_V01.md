@@ -1,0 +1,9 @@
+# M06.S03.T003 — Implementation prompt V01
+
+Work only on `M06.S03.T003 — Verify supplier performance data completeness` from root `TASKS.md`, using `CHATGPT_AUDIT_CRITERIA_V01.md` in this directory.
+
+Read `docs/planning/GAP-009_PROCUREMENT_SUPPLIER_MANAGEMENT_AUDIT.md` and trace supplier evaluation fields through the current model, schemas, API, CRUD helper, dashboard and existing tests. Fix the demonstrated inconsistency: the helper says `Supplier.performance_score` is a rolling average but currently saves only the newest evaluation score. Keep the existing four-dimension arithmetic mean and make the stored supplier value agree with the dashboard's mean across its evaluations.
+
+Add a new database integration test with an exact task-owned disposable PostgreSQL guard and only synthetic records. Verify required score/date persistence, first and subsequent evaluations, and consistency between the supplier master score and evaluation-history average. Run it only on a fresh loopback disposable database named `fmcg_m06_s03_t003_<20-32 lowercase hex characters>`, with `M06_S03_T003_DISPOSABLE_TEST_DATABASE=1`, an exact matching database-name variable and no password. Reuse no existing unrelated database or container. Run targeted regression tests, compile affected Python files and run `git diff --check`.
+
+Use one independent source/evidence reviewer who does not edit, run tests, or access the DB. Remove the exact disposable container and verify absence. If all checks pass, record the concrete GAP-009 limitations: optional PO/scope lineage and no unified delivery/ESG/food-safety scorecard; do not invent score ranges, weights, coverage periods or denominators. Do not claim production data coverage or production acceptance. Commit and push only exact task-owned files with `[skip ci]` after fetched-remote/divergence checks. Do not run GitHub Actions for M20 through 2026-10-30.
