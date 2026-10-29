@@ -47,6 +47,6 @@
 ## Review and cleanup
 
 - Independent read-only review: completed; no remaining findings. The reviewer inspected the implementation and test coverage without running tests or accessing the disposable database.
-- Final Git commit: pending.
+- Implementation commit: `64dcc82eaf70c3b50649830937f2433cd57c9845`.
 - Disposable container/database cleanup: complete; the exact task-labeled container was stopped and removed, and a follow-up inspect confirmed it is absent.
 - No application service/container, other database, dashboard, owner worktree, or unrelated untracked file was modified or staged for this task.

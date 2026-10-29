@@ -10,9 +10,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 - Current Milestone: M13 — Finance / Costing
 - Current Sprint: M13.S03 — Live Finance Verification
-- Current Task: M13.S03.T004 — Rehearse period close/reconciliation on staging/live-like DB
+- Current Task: M13.S03.T001 — Verify landed-cost posting chain
 - Current Task Status: COMPLETE
-- Next Task/Action: M13.S03.T004 — Rehearse period close/reconciliation on staging/live-like DB
+- Next Task/Action: M01.S03.T001 — Prove always-running background/event dispatch ownership
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -155,7 +155,7 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 - [P] M01.S02.T005 — Complete production document binary storage/upload pipeline
 
 ## M01.S03 — Runtime Reliability
-- [P] M01.S03.T001 — Prove always-running background/event dispatch ownership
+- [ ] M01.S03.T001 — Prove always-running background/event dispatch ownership
 - [P] M01.S03.T002 — Validate migration ownership on live-like database
 - [D] M01.S03.T003 — Execute LOCAL-STAGING-001 when deployment environment is available
 - [x] M01.S03.T004 — Establish operational backup/restore rehearsal evidence
@@ -426,7 +426,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 - [x] M13.S02.T005 — eTIMS/tax surfaces
 
 ## M13.S03 — Live Finance Verification
-- [P] M13.S03.T001 — Verify landed-cost posting chain
+- [x] M13.S03.T001 — Verify landed-cost posting chain
+  Evidence: [implementation log](coordination/sessions/M13.S03.T001/CODEX_LOG_V01.md); disposable PostgreSQL 16.6 integration tests passed 12/12, existing posting-helper regressions passed 6/6, compilation and diff checks passed, isolated container removed, and independent read-only review found no remaining findings. Implementation commit: 64dcc82eaf70c3b50649830937f2433cd57c9845. No production or live-provider acceptance is claimed.
+  Baseline: landed-cost allocation exists; the finance/inventory audit identifies stock-value and GL posting linkage as remaining verification gaps. See `docs/planning/GAP-002_POSTING_INTEGRATION_AUDIT.md`.
 - [!] M13.S03.T002 — Validate live bank integration when credentials exist
 - [!] M13.S03.T003 — Validate live eTIMS posting when credentials exist
 - [x] M13.S03.T004 — Rehearse period close/reconciliation on staging/live-like DB
