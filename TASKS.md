@@ -8,11 +8,11 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 ## Project Status
 
-- Current Milestone: M06 — Procurement
-- Current Sprint: M06.S03 — Baseline Verification
-- Current Task: M06.S03.T002 — Verify landed-cost accounting integration
-- Current Task Status: COMPLETE
-- Next Task/Action: M06.S03.T003 — Verify supplier performance data completeness
+- Current Milestone: M07 — Sales / Distributor Operations
+- Current Sprint: M07.S03 — Live Commercial Verification
+- Current Task: M07.S03.T001 — Verify order-to-cash accounting closure
+- Current Task Status: READY
+- Next Task/Action: M07.S03.T001 — Verify order-to-cash accounting closure
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -285,7 +285,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
   Evidence: [M06.S03.T001 execution log](coordination/sessions/M06.S03.T001/CODEX_LOG_V01.md); fresh PostgreSQL 16.6 at single Alembic head 20261029_0025; 5 focused three-way-match tests and 12 procurement/accounting regressions passed. Tests verified draft GRN hold, posted PO/GRN/stock and match linkage, cumulative zero-remaining overbilling, cross-supplier rejection, rerun idempotency and late-failure rollback. Independent read-only review found no remaining material issues; exact disposable-container cleanup verified. No AP/GRNI/GL or production acceptance claimed.
 - [x] M06.S03.T002 — Verify landed-cost accounting integration
   Evidence: [M06.S03.T002 execution log](coordination/sessions/M06.S03.T002/CODEX_LOG_V01.md); current-main source matched the accepted M13 landed-cost implementation with no intervening landed-cost changes. Fresh PostgreSQL 16.6 at single Alembic head 20261029_0025; existing landed-cost acceptance suite passed 12/12 and GAP-002 posting-helper regressions passed 6/6. Independent read-only review found no material mismatch; exact disposable-container cleanup verified. No supplier-invoice/AP/GRNI, live-provider or production acceptance claimed.
-- [ ] M06.S03.T003 — Verify supplier performance data completeness
+- [x] M06.S03.T003 — Verify supplier performance data completeness
+  Evidence: [M06.S03.T003 execution log](coordination/sessions/M06.S03.T003/CODEX_LOG_V01.md); corrected supplier master/dashboard performance rollup to one rounded historical average. Fresh PostgreSQL 16.6 database at `20261029_0025 (head)`; 9 focused completeness/regression tests passed, including the 79.165 → 79.17 rounding case. Independent read-only review found no remaining material issue; task container removed and absence verified. No owner-data, unified ESG/food-safety scorecard, or production acceptance claimed.
 
 ---
 
@@ -308,7 +309,7 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 - [x] M07.S02.T005 — Loyalty/NPS/customer analytics
 
 ## M07.S03 — Live Commercial Verification
-- [P] M07.S03.T001 — Verify order-to-cash accounting closure
+- [ ] M07.S03.T001 — Verify order-to-cash accounting closure
 - [!] M07.S03.T002 — Validate live payment/provider flows when credentials exist
 - [!] M07.S03.T003 — Validate live tax/eTIMS invoice flow when credentials exist
 
