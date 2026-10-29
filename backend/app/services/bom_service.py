@@ -38,6 +38,20 @@ def _conv_code() -> str:
     return f"CONV-{sfx}"
 
 
+def _validated_version_no(value: str) -> str:
+    version = value.strip()
+    if not version:
+        raise HTTPException(status_code=422, detail="version_no must not be blank")
+    if len(version) > 20:
+        raise HTTPException(status_code=422, detail="version_no must be at most 20 characters")
+    return version
+
+
+def _validate_effective_window(effective_from: Optional[date], effective_to: Optional[date]) -> None:
+    if effective_from is not None and effective_to is not None and effective_to < effective_from:
+        raise HTTPException(status_code=422, detail="effective_to must be on or after effective_from")
+
+
 async def _load_bom(db: AsyncSession, bom_id: UUID) -> Optional[AdvancedBOM]:
     r = await db.execute(
         select(AdvancedBOM)
@@ -54,6 +68,7 @@ async def _load_bom(db: AsyncSession, bom_id: UUID) -> Optional[AdvancedBOM]:
 # ── BOM CRUD ───────────────────────────────────────────────────────────────────
 
 async def create_bom(db: AsyncSession, req: BOMCreate, user_id: UUID) -> AdvancedBOM:
+    _validate_effective_window(req.effective_from, req.effective_to)
     # resolve product name
     product_name = None
     if req.product_id:
@@ -71,7 +86,7 @@ async def create_bom(db: AsyncSession, req: BOMCreate, user_id: UUID) -> Advance
         base_qty=req.base_qty,
         base_uom=req.base_uom,
         expected_process_yield_pct=req.expected_process_yield_pct,
-        version_no=req.version_no,
+        version_no=_validated_version_no(req.version_no),
         effective_from=req.effective_from,
         effective_to=req.effective_to,
         notes=req.notes,
@@ -105,7 +120,11 @@ async def get_bom(db: AsyncSession, bom_id: UUID) -> Optional[AdvancedBOM]:
 
 
 async def update_bom(db: AsyncSession, bom: AdvancedBOM, req: BOMUpdate) -> AdvancedBOM:
-    for k, v in req.model_dump(exclude_unset=True).items():
+    updates = req.model_dump(exclude_unset=True)
+    effective_from = updates.get("effective_from", bom.effective_from)
+    effective_to = updates.get("effective_to", bom.effective_to)
+    _validate_effective_window(effective_from, effective_to)
+    for k, v in updates.items():
         setattr(bom, k, v)
     await db.flush()
     await db.refresh(bom)
@@ -113,6 +132,8 @@ async def update_bom(db: AsyncSession, bom: AdvancedBOM, req: BOMUpdate) -> Adva
 
 
 async def clone_bom(db: AsyncSession, source: AdvancedBOM, new_version: str, user_id: UUID) -> AdvancedBOM:
+    version_no = _validated_version_no(new_version)
+    _validate_effective_window(source.effective_from, source.effective_to)
     new_bom = AdvancedBOM(
         bom_code=_bom_code(),
         bom_name=source.bom_name,
@@ -122,7 +143,7 @@ async def clone_bom(db: AsyncSession, source: AdvancedBOM, new_version: str, use
         base_qty=source.base_qty,
         base_uom=source.base_uom,
         expected_process_yield_pct=source.expected_process_yield_pct,
-        version_no=new_version,
+        version_no=version_no,
         revision_no="0",
         lifecycle=BOMLifecycle.DRAFT,
         effective_from=source.effective_from,

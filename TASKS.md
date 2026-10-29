@@ -8,11 +8,11 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 ## Project Status
 
-- Current Milestone: M01 — Platform / Infrastructure
-- Current Sprint: M01.S02 — Shared Enterprise Platform Services
-- Current Task: M01.S02.T005 — Complete production document binary storage/upload pipeline
+- Current Milestone: M09 — Recipes / BOM
+- Current Sprint: M09.S02 — BOM Foundation
+- Current Task: M09.S02.T004 — Standardize effective-date/version governance
 - Current Task Status: COMPLETE
-- Next Task/Action: M01.S02.T005 completed; run task queue spec to select the next dependency-ready task
+- Next Task/Action: M10.S02.T004 — Harden hold/release transaction enforcement
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -358,7 +358,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 - [x] M09.S02.T001 — BOM master/types
 - [x] M09.S02.T002 — BOM lifecycle/statuses
 - [x] M09.S02.T003 — BOM items and default semantics
-- [P] M09.S02.T004 — Standardize effective-date/version governance
+- [x] M09.S02.T004 — Standardize effective-date/version governance
+  Completed opaque nonblank version/revision and inclusive, open-ended date-window governance across API, clone, BOM creation UI, and PostgreSQL; see [implementation evidence](coordination/sessions/M09.S02.T004/CODEX_LOG_V01.md), [GAP-021 audit](docs/planning/GAP-021_NPD_FORMULA_GOVERNANCE_AUDIT.md), [GAP-021 implementation notes](docs/planning/GAP-021_NPD_FORMULA_GOVERNANCE_IMPLEMENTATION_NOTES.md), and the M20 recipe/effectivity audit referenced by [M03.S02.T003 evidence](coordination/sessions/M03.S02.T003/CODEX_LOG_V01.md).
 
 ---
 
@@ -376,7 +377,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 - [x] M10.S02.T001 — HACCP/PDCA/audit scheduling foundations
 - [x] M10.S02.T002 — Allergen/compliance features
 - [x] M10.S02.T003 — Complaint/recall domain
-- [P] M10.S02.T004 — Harden hold/release transaction enforcement
+- [ ] M10.S02.T004 — Harden hold/release transaction enforcement
+  Previously marked partial; the exact remaining acceptance scope is to be reconciled from the task row, quality hold/release service paths, and latest applicable audit before implementation.
 
 ---
 

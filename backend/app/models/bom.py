@@ -106,6 +106,18 @@ class AdvancedBOM(Base, TimestampMixin):
     __table_args__ = (
         UniqueConstraint("bom_code", name="uq_advanced_bom_code"),
         CheckConstraint(
+            "version_no ~ '[^[:space:]]'",
+            name="ck_advanced_boms_version_not_blank",
+        ),
+        CheckConstraint(
+            "revision_no ~ '[^[:space:]]'",
+            name="ck_advanced_boms_revision_not_blank",
+        ),
+        CheckConstraint(
+            "effective_to IS NULL OR effective_from IS NULL OR effective_to >= effective_from",
+            name="ck_advanced_boms_effective_window",
+        ),
+        CheckConstraint(
             "expected_process_yield_pct IS NULL OR expected_process_yield_pct >= 0",
             name="ck_advanced_bom_expected_process_yield_nonnegative",
         ),

@@ -28,6 +28,26 @@ class BOMCreate(BaseModel):
     effective_to: Optional[date] = None
     notes: Optional[str] = None
 
+    @field_validator("version_no")
+    @classmethod
+    def normalize_version_no(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("version_no must not be blank")
+        if len(normalized) > 20:
+            raise ValueError("version_no must be at most 20 characters")
+        return normalized
+
+    @model_validator(mode="after")
+    def validate_effective_window(self) -> "BOMCreate":
+        if (
+            self.effective_from is not None
+            and self.effective_to is not None
+            and self.effective_to < self.effective_from
+        ):
+            raise ValueError("effective_to must be on or after effective_from")
+        return self
+
 class BOMUpdate(BaseModel):
     bom_name: Optional[str] = None
     bom_type: Optional[BOMType] = None
@@ -39,6 +59,16 @@ class BOMUpdate(BaseModel):
     linked_routing_id: Optional[UUID] = None
     linked_quality_spec_id: Optional[UUID] = None
     notes: Optional[str] = None
+
+    @model_validator(mode="after")
+    def validate_effective_window(self) -> "BOMUpdate":
+        if (
+            self.effective_from is not None
+            and self.effective_to is not None
+            and self.effective_to < self.effective_from
+        ):
+            raise ValueError("effective_to must be on or after effective_from")
+        return self
 
 class BOMSummary(BaseModel):
     model_config = ConfigDict(from_attributes=True)

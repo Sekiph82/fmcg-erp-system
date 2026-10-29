@@ -549,12 +549,13 @@ export default function BOMDetailPage() {
             <p className="text-sm text-gray-500 mb-3">Creates a new DRAFT BOM with all lines and yield configs copied.</p>
             <input
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
-              placeholder="New Version (e.g. 2.0)"
+              placeholder="New version identifier (max 20 characters)"
+              maxLength={20}
               value={cloneVersion}
               onChange={(e) => setCloneVersion(e.target.value)}
             />
             <div className="flex gap-3 mt-4">
-              <button onClick={() => clone.mutate()} disabled={!cloneVersion || clone.isPending} className="flex-1 bg-indigo-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-40">
+              <button onClick={() => clone.mutate()} disabled={!cloneVersion.trim() || clone.isPending} className="flex-1 bg-indigo-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-40">
                 {clone.isPending ? "Cloning…" : "Clone"}
               </button>
               <button onClick={() => setShowClone(false)} className="px-4 py-2 border rounded-lg text-sm text-gray-600 hover:bg-gray-50">Cancel</button>

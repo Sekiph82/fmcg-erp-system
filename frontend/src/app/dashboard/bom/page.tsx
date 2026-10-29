@@ -17,7 +17,7 @@ function BOMListTab() {
   const [showCreate, setShowCreate] = useState(false);
   const [filterType, setFilterType] = useState<string>("");
   const [filterLifecycle, setFilterLifecycle] = useState<string>("");
-  const [form, setForm] = useState({ bom_name: "", bom_type: "FORMULA" as BOMType, base_qty: "1000", base_uom: "KG", expected_process_yield_pct: "", version_no: "1.0" });
+  const [form, setForm] = useState({ bom_name: "", bom_type: "FORMULA" as BOMType, base_qty: "1000", base_uom: "KG", expected_process_yield_pct: "", version_no: "1.0", effective_from: "", effective_to: "" });
 
   const { data: dashboard } = useQuery<BOMDashboard>({
     queryKey: ["bom-dashboard"],
@@ -30,12 +30,18 @@ function BOMListTab() {
   });
 
   const create = useMutation({
-    mutationFn: () => bomApi.create({ ...form, base_qty: Number(form.base_qty), expected_process_yield_pct: form.expected_process_yield_pct === "" ? null : Number(form.expected_process_yield_pct) } as any),
+    mutationFn: () => bomApi.create({
+      ...form,
+      base_qty: Number(form.base_qty),
+      expected_process_yield_pct: form.expected_process_yield_pct === "" ? null : Number(form.expected_process_yield_pct),
+      effective_from: form.effective_from || null,
+      effective_to: form.effective_to || null,
+    } as any),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["boms"] });
       qc.invalidateQueries({ queryKey: ["bom-dashboard"] });
       setShowCreate(false);
-      setForm({ bom_name: "", bom_type: "FORMULA", base_qty: "1000", base_uom: "KG", expected_process_yield_pct: "", version_no: "1.0" });
+      setForm({ bom_name: "", bom_type: "FORMULA", base_qty: "1000", base_uom: "KG", expected_process_yield_pct: "", version_no: "1.0", effective_from: "", effective_to: "" });
     },
   });
 
@@ -213,15 +219,45 @@ function BOMListTab() {
               </div>
               <input
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
-                placeholder="Version (e.g. 1.0)"
+                placeholder="Version identifier (e.g. 1.0)"
+                maxLength={20}
                 value={form.version_no}
                 onChange={(e) => setForm({ ...form, version_no: e.target.value })}
               />
+              {(!form.version_no.trim() || form.version_no.trim().length > 20) && (
+                <p role="alert" className="text-xs text-red-600">Enter a nonblank version identifier of up to 20 characters.</p>
+              )}
+              <div>
+                <label className="text-xs text-gray-500 mb-1 block">Effective date window (inclusive)</label>
+                <div className="grid grid-cols-2 gap-3">
+                  <input
+                    aria-label="Effective from"
+                    type="date"
+                    className="border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                    value={form.effective_from}
+                    onChange={(e) => setForm({ ...form, effective_from: e.target.value })}
+                  />
+                  <input
+                    aria-label="Effective to"
+                    type="date"
+                    className="border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                    value={form.effective_to}
+                    onChange={(e) => setForm({ ...form, effective_to: e.target.value })}
+                  />
+                </div>
+                <p className="text-xs text-gray-400 mt-1">Leave either date blank for an open-ended boundary.</p>
+                {form.effective_from && form.effective_to && form.effective_to < form.effective_from && (
+                  <p role="alert" className="text-xs text-red-600 mt-1">Effective To must be on or after Effective From.</p>
+                )}
+              </div>
             </div>
+            {create.isError && (
+              <p role="alert" className="text-xs text-red-600 mt-3">BOM could not be created. Check the version, date window, and your permissions, then try again.</p>
+            )}
             <div className="flex gap-3 mt-4">
               <button
                 onClick={() => create.mutate()}
-                disabled={!form.bom_name || create.isPending}
+                disabled={!form.bom_name || !form.version_no.trim() || form.version_no.trim().length > 20 || Boolean(form.effective_from && form.effective_to && form.effective_to < form.effective_from) || create.isPending}
                 className="flex-1 bg-indigo-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-40"
               >
                 {create.isPending ? "Creating…" : "Create BOM"}

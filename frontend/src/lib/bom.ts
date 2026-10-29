@@ -466,7 +466,7 @@ export const bomApi = {
   },
   get:     (id: string) => apiClient.get<BOMOut>(`/bom/${id}`).then((r) => r.data),
   update:  (id: string, body: Partial<BOMSummary>) => apiClient.patch<BOMSummary>(`/bom/${id}`, body).then((r) => r.data),
-  clone:   (id: string, newVersion: string) => apiClient.post<BOMSummary>(`/bom/${id}/clone?new_version=${newVersion}`, {}).then((r) => r.data),
+  clone:   (id: string, newVersion: string) => apiClient.post<BOMSummary>(`/bom/${id}/clone?${new URLSearchParams({ new_version: newVersion }).toString()}`, {}).then((r) => r.data),
   advance: (id: string) => apiClient.post<BOMSummary>(`/bom/${id}/advance`, {}).then((r) => r.data),
   archive: (id: string) => apiClient.post<BOMSummary>(`/bom/${id}/archive`, {}).then((r) => r.data),
 

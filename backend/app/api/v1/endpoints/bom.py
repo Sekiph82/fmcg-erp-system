@@ -128,7 +128,12 @@ async def update_bom(
 @router.post("/{bom_id}/clone", response_model=BOMSummary)
 async def clone_bom(
     bom_id: UUID,
-    new_version: str = Query(..., description="New version number, e.g. 2.0"),
+    new_version: str = Query(
+        ...,
+        min_length=1,
+        max_length=20,
+        description="Opaque version identifier for the cloned BOM (maximum 20 characters).",
+    ),
     db: AsyncSession = Depends(get_db),
     current_user=Depends(require_permission("bom", "create")),
 ):
