@@ -5,6 +5,7 @@
 - Canonical checkout: `C:\Users\sekip\Desktop\fmcg-erp-system`, branch `main`.
 - Exact selected task: `M05.S03.T002 — Validate transaction integrity across production/procurement/sales` from root `TASKS.md`.
 - Starting commit and fetched `origin/main`: `ce2b5e94af9687b37ba90bfa585774f641b50f08` (task claim and criteria/prompt).
+- Task implementation, evidence, and closure were committed as `5031349a9e4e6d41d4fb0d31c90f851bd6e46747` (`Validate M05 cross-module transaction integrity [skip ci]`) and pushed successfully to `origin/main`; immediately after push `HEAD == origin/main` at that SHA.
 - The exact local checkout was verified before task work; `git fetch origin main` reported no divergence. Pre-existing modified `frontend/next-env.d.ts`, untracked owner files, M20 evidence, dashboard files, and all other unrelated content were left untouched and unstaged.
 - Read task criteria/prompt, `coordination/AUDIT_INDEX.md` (ERP-AL-003/004/010/011/012), `coordination/AUDIT_POLICY.md`, `docs/planning/GAP-002_POSTING_INTEGRATION_AUDIT.md`, GAP-008 and GAP-010, the preceding M05.S03.T001 criteria/log, and the actual models, services, endpoints, DB session dependency, and related tests.
 
@@ -38,6 +39,7 @@ Final isolated environment:
 ## Attempts, review, and cleanup
 
 - Initial disposable-DB test attempt had two test-harness failures: accessing an expired ORM movement attribute after rollback, and asserting a production order using a stock ID. The subsequent attempt exposed another expired ORM ID access and a guard-string expectation that did not account for SQLAlchemy's enum representation. These were corrected; all failures remain recorded in `postgres-tests-attempt01.log` and `postgres-tests-attempt02.log`.
+- The first pre-commit whitespace check found one extra blank line at the test file's EOF; it was removed, the exact files were re-staged, and the staged whitespace check then passed before publication.
 - `postgres-tests-attempt03.log` reports 7 passed after corrections. Final clean run independently reports 7 passed.
 - Independent read-only reviewer identified missing before/after journal/batch counts and weak repeat-guard assertions. Both findings were corrected. Re-review found no remaining material findings; reviewer did not run tests or access the database. This is source review, separate from test evidence.
 - The exact final task container identity, labels, no-mount/tmpfs configuration, loopback binding, and task DB name are recorded in `container-final-cleanup.json`; `docker rm --force` succeeded and a subsequent exact `docker inspect` confirmed absence. The earlier attempt container was also removed and its absence confirmed.
