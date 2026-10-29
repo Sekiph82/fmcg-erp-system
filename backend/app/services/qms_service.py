@@ -16,7 +16,7 @@ from app.models.quality import (
     HazardAnalysis, CriticalControlPoint, CCPMonitoringLog,
     CorrectiveAction, CorrectiveActionStatus, CorrectiveActionStep,
     QCDeviation, DeviationStatus, RiskLevel,
-    LotQualityStatus, ReleaseStatus, AllergenValidationRecord,
+    LotQualityStatus, ReleaseStatus, AllergenValidationRecord, QualityGateDefinition,
     QMSAIRecommendation, QMSAIAgentType, QMSAIRecStatus,
     SamplingMethod,
 )
@@ -58,6 +58,44 @@ async def list_templates(db: AsyncSession, qc_type=None, active_only=True) -> Li
         q = q.where(QCTemplate.qc_type == qc_type)
     r = await db.execute(q.order_by(QCTemplate.name))
     return list(r.scalars())
+
+
+async def list_quality_gate_definitions(
+    db: AsyncSession,
+    active_only: bool = True,
+    trigger_event: Optional[str] = None,
+    target_module: Optional[str] = None,
+) -> List[QualityGateDefinition]:
+    query = select(QualityGateDefinition)
+    if active_only:
+        query = query.where(QualityGateDefinition.is_active.is_(True))
+    if trigger_event:
+        query = query.where(QualityGateDefinition.trigger_event == trigger_event)
+    if target_module:
+        query = query.where(QualityGateDefinition.target_module == target_module)
+    result = await db.execute(
+        query.order_by(QualityGateDefinition.target_module, QualityGateDefinition.trigger_event,
+                       QualityGateDefinition.code)
+    )
+    return list(result.scalars())
+
+
+async def get_quality_gate_definition(
+    db: AsyncSession, definition_id: uuid.UUID
+) -> Optional[QualityGateDefinition]:
+    result = await db.execute(
+        select(QualityGateDefinition).where(QualityGateDefinition.id == definition_id)
+    )
+    return result.scalar_one_or_none()
+
+
+async def create_quality_gate_definition(
+    db: AsyncSession, data: dict
+) -> QualityGateDefinition:
+    definition = QualityGateDefinition(**data)
+    db.add(definition)
+    await db.flush()
+    return definition
 
 
 # ── Sampling ──────────────────────────────────────────────────────────────────

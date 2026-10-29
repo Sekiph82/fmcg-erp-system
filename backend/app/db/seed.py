@@ -170,6 +170,7 @@ PERMISSIONS = [
     ("quality",     "view",   "View Quality",          "View QC inspections",                      True),
     ("quality",     "create", "Create Quality",        "Create QC inspection records",             False),
     ("quality",     "approve","Approve Quality",       "Approve or reject QC results",             False),
+    ("quality",     "gate_configure", "Configure Quality Gates", "Manage the global quality gate definition catalog", False),
 
     # Consumer complaints / recall linkage
     ("consumer_complaints", "view",        "View Consumer Complaints",        "View consumer complaint records and complaint KPIs", True),
@@ -637,6 +638,7 @@ ROLE_DEFINITIONS = {
             "users.view", "users.create", "users.edit",
             "roles.view", "roles.create", "roles.edit",
             "audit.view", "audit.export",
+            "quality.gate_configure",
             # Admin can delete products, inventory records, and stock movements
             "products.delete",
             "inventory.delete",
@@ -1043,7 +1045,7 @@ ROLE_DEFINITIONS = {
         "permissions": [
             "quality.view_all", "qms.view_all", "traceability.view_all",
             "quality.create_own_scope", "quality.edit_own_scope",
-            "quality.approve_own_scope", "quality.release_own_scope",
+            "quality.approve_own_scope", "quality.release_own_scope", "quality.gate_configure",
             "qms.edit_own_scope", "traceability.recall_initiate",
             "consumer_complaints.view", "consumer_complaints.create", "consumer_complaints.edit",
             "consumer_complaints.approve", "consumer_complaints.close",

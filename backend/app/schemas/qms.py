@@ -2,11 +2,12 @@
 from __future__ import annotations
 
 import uuid
+import re
 from datetime import date, datetime
 from decimal import Decimal
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.models.quality import (
     QCType, QCStatus, QCDecision, ParameterType,
@@ -466,6 +467,119 @@ class QCGateCheck(BaseModel):
     inspection_id: Optional[uuid.UUID] = None
     inspection_no: Optional[str] = None
     inspection_status: Optional[str] = None
+
+
+class QualityGateDefinitionFields(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    code: str = Field(min_length=1, max_length=50)
+    name: str = Field(min_length=1, max_length=120)
+    gate_type: str = Field(min_length=1, max_length=50)
+    trigger_event: str = Field(min_length=1, max_length=50)
+    target_module: str = Field(min_length=1, max_length=50)
+    description: Optional[str] = None
+    is_active: bool = True
+
+    @field_validator("code", "gate_type", "trigger_event")
+    @classmethod
+    def normalize_code(cls, value: str) -> str:
+        normalized = value.strip().upper()
+        if not re.fullmatch(r"[A-Z][A-Z0-9_]{0,49}", normalized):
+            raise ValueError("Use letters, digits, and underscores; start with a letter.")
+        return normalized
+
+    @field_validator("target_module")
+    @classmethod
+    def normalize_module(cls, value: str) -> str:
+        normalized = value.strip().lower()
+        if not re.fullmatch(r"[a-z][a-z0-9_]{0,49}", normalized):
+            raise ValueError("Use letters, digits, and underscores; start with a letter.")
+        return normalized
+
+    @field_validator("name")
+    @classmethod
+    def trim_name(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("Name must not be blank.")
+        return normalized
+
+    @field_validator("description")
+    @classmethod
+    def trim_description(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
+        normalized = value.strip()
+        return normalized or None
+
+
+class QualityGateDefinitionCreate(QualityGateDefinitionFields):
+    pass
+
+
+class QualityGateDefinitionUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    code: Optional[str] = Field(default=None, min_length=1, max_length=50)
+    name: Optional[str] = Field(default=None, min_length=1, max_length=120)
+    gate_type: Optional[str] = Field(default=None, min_length=1, max_length=50)
+    trigger_event: Optional[str] = Field(default=None, min_length=1, max_length=50)
+    target_module: Optional[str] = Field(default=None, min_length=1, max_length=50)
+    description: Optional[str] = None
+    is_active: Optional[bool] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def reject_null_required_updates(cls, values):
+        if not isinstance(values, dict) or not values:
+            raise ValueError("At least one quality gate field is required.")
+        for field_name in ("code", "name", "gate_type", "trigger_event", "target_module", "is_active"):
+            if field_name in values and values[field_name] is None:
+                raise ValueError(f"{field_name} cannot be null.")
+        return values
+
+    @field_validator("code", "gate_type", "trigger_event")
+    @classmethod
+    def normalize_code(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
+        normalized = value.strip().upper()
+        if not re.fullmatch(r"[A-Z][A-Z0-9_]{0,49}", normalized):
+            raise ValueError("Use letters, digits, and underscores; start with a letter.")
+        return normalized
+
+    @field_validator("target_module")
+    @classmethod
+    def normalize_module(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
+        normalized = value.strip().lower()
+        if not re.fullmatch(r"[a-z][a-z0-9_]{0,49}", normalized):
+            raise ValueError("Use letters, digits, and underscores; start with a letter.")
+        return normalized
+
+    @field_validator("name")
+    @classmethod
+    def trim_name(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("Name must not be blank.")
+        return normalized
+
+    @field_validator("description")
+    @classmethod
+    def trim_description(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
+        normalized = value.strip()
+        return normalized or None
+
+
+class QualityGateDefinitionRead(QualityGateDefinitionFields):
+    model_config = ConfigDict(from_attributes=True)
+    id: uuid.UUID
+    created_at: datetime
+    updated_at: datetime
 
 
 # ── Quality Audit Checklist ────────────────────────────────────────────────────

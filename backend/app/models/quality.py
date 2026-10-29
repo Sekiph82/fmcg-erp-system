@@ -2,7 +2,7 @@ import uuid
 import enum
 from sqlalchemy import (
     Column, String, Text, Numeric, Integer, Boolean,
-    ForeignKey, Enum, Date, DateTime, JSON, UniqueConstraint,
+    ForeignKey, Enum, Date, DateTime, JSON, UniqueConstraint, CheckConstraint,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
@@ -508,6 +508,28 @@ class LotQualityStatus(Base, TimestampMixin):
     lot = relationship("Lot", foreign_keys=[lot_id])
     last_inspection = relationship("QCInspection", foreign_keys=[last_inspection_id])
     released_by = relationship("User", foreign_keys=[released_by_id])
+
+
+class QualityGateDefinition(Base, TimestampMixin):
+    """Configurable catalog entry describing a quality gate and its trigger."""
+    __tablename__ = "quality_gate_definitions"
+    __table_args__ = (
+        UniqueConstraint("code", name="uq_quality_gate_definitions_code"),
+        CheckConstraint("length(trim(code)) > 0", name="ck_quality_gate_definitions_code_not_blank"),
+        CheckConstraint("length(trim(name)) > 0", name="ck_quality_gate_definitions_name_not_blank"),
+        CheckConstraint("length(trim(gate_type)) > 0", name="ck_quality_gate_definitions_type_not_blank"),
+        CheckConstraint("length(trim(trigger_event)) > 0", name="ck_quality_gate_definitions_trigger_not_blank"),
+        CheckConstraint("length(trim(target_module)) > 0", name="ck_quality_gate_definitions_module_not_blank"),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    code = Column(String(50), nullable=False)
+    name = Column(String(120), nullable=False)
+    gate_type = Column(String(50), nullable=False, index=True)
+    trigger_event = Column(String(50), nullable=False, index=True)
+    target_module = Column(String(50), nullable=False, index=True)
+    description = Column(Text, nullable=True)
+    is_active = Column(Boolean, nullable=False, default=True, server_default="true")
 
 
 # ── Allergen Validation ───────────────────────────────────────────────────────

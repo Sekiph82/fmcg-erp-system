@@ -7,6 +7,7 @@ from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select, func
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.access_control import can_modify_scope, has_any_permission
@@ -35,6 +36,7 @@ from app.schemas.qms import (
     AllergenValidationCreate, AllergenValidationRead,
     QMSAIRecRead, QMSAIRecReview,
     QMSDashboard, QCGateCheck,
+    QualityGateDefinitionCreate, QualityGateDefinitionUpdate, QualityGateDefinitionRead,
 )
 from app.services import qms_service as svc
 from app.crud import quality as qc_crud
@@ -105,6 +107,90 @@ async def qc_gate_check(
 ):
     result = await svc.check_qc_gate(db, lot_id, stage)
     return QCGateCheck(lot_id=lot_id, stage=stage, **result)
+
+
+def _require_quality_gate_definition_permission(user, action: str) -> None:
+    permissions = (
+        ("quality.view_all", "quality.gate_configure")
+        if action == "view"
+        else ("quality.gate_configure",)
+    )
+    if not has_any_permission(user, permissions):
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "error": "forbidden",
+                "detail": "Quality gate configuration permission is required.",
+            },
+        )
+
+
+def _is_gate_code_conflict(exc: IntegrityError) -> bool:
+    original = getattr(exc, "orig", None)
+    diagnostic = getattr(original, "diag", None)
+    constraint = getattr(diagnostic, "constraint_name", None) or getattr(original, "constraint_name", None)
+    return constraint in {"uq_quality_gate_definitions_code", "quality_gate_definitions_code_key"}
+
+
+@router.get("/gate-definitions", response_model=List[QualityGateDefinitionRead])
+async def list_quality_gate_definitions(
+    active_only: bool = True,
+    trigger_event: Optional[str] = Query(default=None, min_length=1, max_length=50),
+    target_module: Optional[str] = Query(default=None, min_length=1, max_length=50),
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    _require_quality_gate_definition_permission(current_user, "view")
+    definitions = await svc.list_quality_gate_definitions(
+        db,
+        active_only=active_only,
+        trigger_event=trigger_event.strip().upper() if trigger_event else None,
+        target_module=target_module.strip().lower() if target_module else None,
+    )
+    return [QualityGateDefinitionRead.model_validate(item) for item in definitions]
+
+
+@router.post("/gate-definitions", response_model=QualityGateDefinitionRead, status_code=201)
+async def create_quality_gate_definition(
+    body: QualityGateDefinitionCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    _require_quality_gate_definition_permission(current_user, "edit")
+    try:
+        definition = await svc.create_quality_gate_definition(db, body.model_dump())
+        await db.commit()
+    except IntegrityError as exc:
+        await db.rollback()
+        if _is_gate_code_conflict(exc):
+            raise HTTPException(status_code=409, detail="A quality gate definition with this code already exists.") from exc
+        raise
+    definition = await svc.get_quality_gate_definition(db, definition.id)
+    return QualityGateDefinitionRead.model_validate(definition)
+
+
+@router.patch("/gate-definitions/{definition_id}", response_model=QualityGateDefinitionRead)
+async def update_quality_gate_definition(
+    definition_id: uuid.UUID,
+    body: QualityGateDefinitionUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    _require_quality_gate_definition_permission(current_user, "edit")
+    definition = await svc.get_quality_gate_definition(db, definition_id)
+    if definition is None:
+        raise HTTPException(status_code=404, detail="Quality gate definition not found.")
+    for field_name, value in body.model_dump(exclude_unset=True).items():
+        setattr(definition, field_name, value)
+    try:
+        await db.commit()
+    except IntegrityError as exc:
+        await db.rollback()
+        if _is_gate_code_conflict(exc):
+            raise HTTPException(status_code=409, detail="A quality gate definition with this code already exists.") from exc
+        raise
+    definition = await svc.get_quality_gate_definition(db, definition_id)
+    return QualityGateDefinitionRead.model_validate(definition)
 
 
 # ── QC Templates ──────────────────────────────────────────────────────────────

@@ -11,8 +11,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 - Current Milestone: M27 — Quality Gates
 - Current Sprint: M27.S01 — Gate Definition Engine
 - Current Task: M27.S01.T001 — Configurable gate types/triggers
-- Current Task Status: IN_PROGRESS
-- Next Task/Action: M27.S01.T001 — Configurable gate types/triggers
+- Current Task Status: COMPLETE
+- Next Task/Action: M27.S01.T002 — Required tests/specification linkage
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -811,7 +811,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 **Depends on:** M10; integrates with M06/M22/M23/M24/M33.
 
 ## M27.S01 — Gate Definition Engine
-- [~] M27.S01.T001 — Configurable gate types/triggers
+- [x] M27.S01.T001 — Configurable gate types/triggers
+  Evidence: [CODEX implementation log](coordination/sessions/M27.S01.T001/CODEX_LOG_V01.md); configurable quality gate type/trigger catalog, API, migration, and dedicated permission are implemented. Focused contract/database checks passed 12/12 on disposable PostgreSQL; independent read-only review found no remaining issue.
 - [ ] M27.S01.T002 — Required tests/specification linkage
 - [ ] M27.S01.T003 — Gate severity/mandatory/waiver rules
 - [ ] M27.S01.T004 — Version/effective-date governance
