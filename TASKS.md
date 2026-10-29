@@ -8,11 +8,11 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 ## Project Status
 
-- Current Milestone: M27 — Quality Gates
-- Current Sprint: M27.S03 — Exceptions
-- Current Task: M27.S03.T004 — Gate audit history
-- Current Task Status: COMPLETE
-- Next Task/Action: M27.S04.T001 — Gate-engine unit tests
+- Current Milestone: M25 — Cross-Border / Landed Cost
+- Current Sprint: M25.S01 — Cross-Border Shipment Lifecycle
+- Current Task: M25.S01.T001 — Purchase→shipment→container linkage
+- Current Task Status: READY
+- Next Task/Action: M25.S01.T001 — Purchase→shipment→container linkage
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -807,7 +807,7 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 # M27 — Quality Gates
 
-**Status: PLANNED / PARTIAL foundation**
+**Status: DONE — M27 quality-gate scope complete; broader HACCP/GAP-017 work remains open.**
 **Depends on:** M10; integrates with M06/M22/M23/M24/M33.
 
 ## M27.S01 — Gate Definition Engine
@@ -841,10 +841,14 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
   Evidence: [CODEX implementation log](coordination/sessions/M27.S03.T004/CODEX_LOG_V01.md); receiving, production, finished-goods, and dispatch gate outcomes now persist in an append-only audit table with version/policy snapshots, actor and scope/business linkage, and a scoped read API. Blocked decisions commit independently of rolled-back business transactions; UPDATE, DELETE, and TRUNCATE are rejected by PostgreSQL triggers. Fresh disposable PostgreSQL 16 migration through 20261029_0033 and three task DB tests passed; 47 focused gate and regression tests passed; independent review found no remaining blocker; task container cleanup verified.
 
 ## M27.S04 — Verification
-- [ ] M27.S04.T001 — Gate-engine unit tests
-- [ ] M27.S04.T002 — Cross-module blocking tests
-- [ ] M27.S04.T003 — UI/E2E acceptance
-- [ ] M27.S04.T004 — Close M27
+- [x] M27.S04.T001 — Gate-engine unit tests
+  Evidence: [CODEX implementation log](coordination/sessions/M27.S04.T001/CODEX_LOG_V01.md); added 37 focused unit tests for gate selection, waiver scope, template-type compatibility, policy validation, and inclusive effective windows. Focused suite and compile check passed; independent read-only review found no issue.
+- [x] M27.S04.T002 — Cross-module blocking tests
+  Evidence: [CODEX implementation log](coordination/sessions/M27.S04.T002/CODEX_LOG_V01.md); synthetic QMS lot hold was verified across Inventory and Sales dispatch on a fresh disposable PostgreSQL 16 database. Migration to `20261029_0033`, integration test 1/1, and 118 focused gate regressions passed; shipment, sales order, stock issue ledger, and reserved stock remained unchanged on block. Independent review cleared the test and runner; task container cleanup verified.
+- [x] M27.S04.T003 — UI/E2E acceptance
+  Evidence: [CODEX implementation log](coordination/sessions/M27.S04.T003/CODEX_LOG_V01.md); added the Quality Gates UI for definition history, actor-attributed audit outcomes, first and sequential version setup, and required-template linkage with API-aligned view/configuration permissions. Targeted ESLint and frontend type-check passed; mocked Playwright UI/E2E acceptance passed 4/4; independent review found no issue.
+- [x] M27.S04.T004 — Close M27
+  Evidence: [CODEX closure log](coordination/sessions/M27.S04.T004/CODEX_LOG_V01.md); all M27 definition, enforcement, exception, audit, and verification tasks have linked bounded evidence. Quality Gates scope is closed; HACCP/GAP-017 gaps and live production acceptance remain explicitly outside this closure.
 
 ---
 

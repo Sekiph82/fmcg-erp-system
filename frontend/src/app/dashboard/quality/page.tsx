@@ -244,6 +244,7 @@ const QualityReportsPage    = dynamic(() => import("@/app/dashboard/quality/repo
 const QMSPage               = dynamic(() => import("@/app/dashboard/qms/page"),                          { ssr: false });
 const AllergenPage          = dynamic(() => import("@/app/dashboard/allergen/page"),                     { ssr: false });
 const BrandAssetsPage       = dynamic(() => import("@/app/dashboard/brand-assets/page"),                 { ssr: false });
+const QualityGateWorkspace  = dynamic(() => import("@/components/quality/QualityGateWorkspace").then((module) => module.QualityGateWorkspace), { ssr: false });
 
 export default function QualityPage() {
   const tabs = [
@@ -252,6 +253,7 @@ export default function QualityPage() {
     { key: "parameters",         label: "Parameters",          permission: "quality.view", content: <QualityParamsPage /> },
     { key: "consumer-complaints",label: "Consumer Complaints", permission: "quality.view", content: <QualityComplaintsPage /> },
     { key: "reports",            label: "Reports",             permission: "quality.view", content: <QualityReportsPage /> },
+    { key: "gates",              label: "Quality Gates",       content: <QualityGateWorkspace /> },
     { key: "qms",                label: "QMS",                 permission: "quality.view", content: <QMSPage /> },
     { key: "allergen",           label: "Allergen",            permission: "quality.view", content: <AllergenPage /> },
     { key: "brand-assets",       label: "Brand Assets",        permission: "quality.view", content: <BrandAssetsPage /> },
@@ -259,7 +261,7 @@ export default function QualityPage() {
   return (
     <ModuleWorkspace
       title="Quality"
-      description="QC inspections, certificates, parameters, allergen, brand assets"
+      description="QC inspections, certificates, parameters, quality gates, allergen, brand assets"
       permission="quality.view"
       tabs={tabs}
       defaultTab="inspections"
