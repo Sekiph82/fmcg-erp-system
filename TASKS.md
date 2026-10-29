@@ -10,9 +10,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 - Current Milestone: M25 — Cross-Border / Landed Cost
 - Current Sprint: M25.S01 — Cross-Border Shipment Lifecycle
-- Current Task: M25.S01.T004 — Kenya receipt closure
+- Current Task: M25.S02.T001 — Freight/insurance/customs/port/local charges
 - Current Task Status: COMPLETE
-- Next Task/Action: M25.S02.T001 — Freight/insurance/customs/port/local charges
+- Next Task/Action: M25.S02.T002 — Allocation methods by value/weight/volume/quantity
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -771,7 +771,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
   Evidence: Revision 0037; disposable PostgreSQL integration 1 passed; mocked Chromium Playwright 2 passed; frontend type-check and targeted ESLint passed; backend compileall and diff check passed; independent read-only review passed. Synthetic records only; no live KRA, physical delivery, or complete-PO receipt claim.
 
 ## M25.S02 — Landed Cost Components
-- [ ] M25.S02.T001 — Freight/insurance/customs/port/local charges
+- [x] M25.S02.T001 — Freight/insurance/customs/port/local charges
+  Evidence: Canonical LandedCostType enforced for new line inputs; 16 category/compatibility tests passed; targeted compileall and diff check passed; independent read-only review passed. Historical custom labels remain readable. Synthetic/software records only; no real freight/customs invoices or accounting posting claim.
 - [ ] M25.S02.T002 — Allocation methods by value/weight/volume/quantity
 - [ ] M25.S02.T003 — Estimated vs actual landed cost
 - [ ] M25.S02.T004 — Currency/exchange-rate handling

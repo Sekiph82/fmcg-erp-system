@@ -145,6 +145,16 @@ Subcontracting integrates with production (work orders) and inventory (material 
 
 Landed cost allocation apportions import costs (freight, insurance, customs duty, handling) across the material lines of a PO. This ensures the true cost of imported materials is captured in inventory valuation.
 
+Record each charge as its own draft cost line and choose one supported type:
+
+- Freight: sea, air, or land.
+- Insurance.
+- Border and port: customs duty, import tax, port handling, clearing agent, or inspection.
+- Local movement and holding: inland transport, storage, demurrage, or detention.
+- Other, for a charge that does not fit the listed categories; adding a description is recommended.
+
+The API validates new cost lines against this catalogue; arbitrary category text is rejected. Previously saved custom labels remain readable. Line amounts and currency fields are captured on the line. Allocation and posting remain separate actions.
+
 Allocation methods:
 - **By Value** — proportional to line value
 - **By Quantity** — proportional to quantity

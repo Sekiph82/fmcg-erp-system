@@ -7,12 +7,13 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.finance import OperationalPostingStatus
+from app.models.landed_cost import LandedCostType
 
 
 # ── Cost Line ─────────────────────────────────────────────────────────────────
 
 class LandedCostLineCreate(BaseModel):
-    cost_type: str
+    cost_type: LandedCostType
     description: Optional[str] = None
     vendor_name: Optional[str] = None
     amount_fc: Decimal = Decimal("0")
@@ -26,6 +27,9 @@ class LandedCostLineCreate(BaseModel):
 
 class LandedCostLineOut(LandedCostLineCreate):
     model_config = ConfigDict(from_attributes=True)
+    # Historical documents may contain custom cost labels entered before the
+    # supported input catalogue was enforced; keep those readable on output.
+    cost_type: str
     id: UUID
     header_id: UUID
     amount_base: Decimal

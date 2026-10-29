@@ -172,7 +172,7 @@ async def add_cost_line(db: AsyncSession, header_id: UUID, payload: LandedCostLi
 
     line = LandedCostLine(
         header_id=header_id,
-        cost_type=payload.cost_type,
+        cost_type=payload.cost_type.value,
         description=payload.description,
         vendor_name=payload.vendor_name,
         amount_fc=_R(payload.amount_fc),
