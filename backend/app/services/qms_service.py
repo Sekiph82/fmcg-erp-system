@@ -1348,6 +1348,13 @@ async def _auto_create_corrective_action_for_ccp(
 # ── Corrective Actions ────────────────────────────────────────────────────────
 
 async def create_corrective_action(db: AsyncSession, data: dict) -> CorrectiveAction:
+    data = dict(data)
+    trigger_type = (data.get("trigger_type") or "").strip().upper()
+    if trigger_type == "DEVIATION":
+        deviation_id = data.get("trigger_id")
+        if deviation_id is None:
+            raise ValueError("A deviation-triggered CAPA must identify its deviation.")
+        return await create_corrective_action_for_deviation(db, deviation_id, data)
     steps = data.pop("steps", [])
     no = await _next_seq(db, CorrectiveAction, "ca_no", "CA")
     ca = CorrectiveAction(ca_no=no, **data)
@@ -1355,6 +1362,106 @@ async def create_corrective_action(db: AsyncSession, data: dict) -> CorrectiveAc
     await db.flush()
     for s in steps:
         db.add(CorrectiveActionStep(corrective_action_id=ca.id, **s))
+    return ca
+
+
+async def create_corrective_action_for_deviation(
+    db: AsyncSession, deviation_id: uuid.UUID, data: dict
+) -> CorrectiveAction:
+    deviation_result = await db.execute(
+        select(QCDeviation).where(QCDeviation.id == deviation_id).with_for_update()
+    )
+    deviation = deviation_result.scalar_one_or_none()
+    if deviation is None:
+        raise ValueError("Deviation not found.")
+    if deviation.status not in {DeviationStatus.OPEN, DeviationStatus.UNDER_REVIEW}:
+        raise ValueError("A CAPA can only be opened for an open or under-review deviation.")
+    if deviation.corrective_action_id is not None:
+        raise ValueError("This deviation already has a linked CAPA.")
+
+    values = dict(data)
+    values.pop("trigger_type", None)
+    values.pop("trigger_id", None)
+    steps = values.pop("steps", [])
+    requested_severity = values.get("severity", deviation.severity)
+    severity_rank = {RiskLevel.LOW: 1, RiskLevel.MEDIUM: 2, RiskLevel.HIGH: 3, RiskLevel.CRITICAL: 4}
+    if severity_rank.get(requested_severity, 0) < severity_rank[deviation.severity]:
+        raise ValueError("A CAPA cannot have lower severity than its linked deviation.")
+
+    inherited_context = {
+        "production_order_id": deviation.production_order_id,
+        "lot_id": deviation.lot_id,
+        "product_id": deviation.product_id,
+        "material_id": deviation.material_id,
+    }
+    for field, source_value in inherited_context.items():
+        supplied = values.get(field)
+        if supplied is not None and supplied != source_value:
+            raise ValueError(f"CAPA {field} must match its linked deviation.")
+        if source_value is not None:
+            values[field] = source_value
+    for field, source_value in (
+        ("assigned_to_id", deviation.assigned_to_id),
+        ("due_date", deviation.due_date),
+        ("root_cause_analysis", deviation.root_cause),
+    ):
+        if values.get(field) is None and source_value is not None:
+            values[field] = source_value
+    values.update({"trigger_type": "DEVIATION", "trigger_id": deviation.id, "severity": requested_severity})
+
+    ca = CorrectiveAction(ca_no=await _next_seq(db, CorrectiveAction, "ca_no", "CA"), **values)
+    db.add(ca)
+    await db.flush()
+    for step in steps:
+        db.add(CorrectiveActionStep(corrective_action_id=ca.id, **step))
+    deviation.corrective_action_id = ca.id
+    await db.flush()
+    return ca
+
+
+async def link_deviation_corrective_action(
+    db: AsyncSession, deviation: QCDeviation, corrective_action_id: Optional[uuid.UUID]
+) -> CorrectiveAction:
+    if corrective_action_id is None:
+        raise ValueError("A deviation's CAPA link cannot be removed; create a superseding record if correction is needed.")
+    result = await db.execute(
+        select(CorrectiveAction).where(CorrectiveAction.id == corrective_action_id).with_for_update()
+    )
+    ca = result.scalar_one_or_none()
+    if ca is None:
+        raise ValueError("Corrective action not found.")
+    if ca.status == CorrectiveActionStatus.VERIFIED:
+        raise ValueError("A verified CAPA cannot be linked to an unresolved deviation.")
+    if deviation.corrective_action_id not in {None, ca.id}:
+        raise ValueError("This deviation already links to a different CAPA.")
+    other_link = await db.execute(
+        select(QCDeviation.id).where(
+            QCDeviation.corrective_action_id == ca.id,
+            QCDeviation.id != deviation.id,
+        ).limit(1).with_for_update()
+    )
+    if other_link.scalar_one_or_none() is not None:
+        raise ValueError("This CAPA is already linked to another deviation.")
+    if (ca.trigger_type or "").strip().upper() not in {"", "DEVIATION"}:
+        raise ValueError("A CAPA linked to a deviation cannot replace another trigger type.")
+    if ca.trigger_id not in {None, deviation.id}:
+        raise ValueError("The CAPA is already triggered by a different record.")
+    if deviation.status not in {DeviationStatus.OPEN, DeviationStatus.UNDER_REVIEW}:
+        raise ValueError("A CAPA can only be linked before deviation resolution.")
+    for field in ("production_order_id", "lot_id", "product_id", "material_id"):
+        deviation_value = getattr(deviation, field)
+        ca_value = getattr(ca, field)
+        if ca_value is not None and ca_value != deviation_value:
+            raise ValueError(f"CAPA {field} must match its linked deviation.")
+        if ca_value is None and deviation_value is not None:
+            setattr(ca, field, deviation_value)
+    severity_rank = {RiskLevel.LOW: 1, RiskLevel.MEDIUM: 2, RiskLevel.HIGH: 3, RiskLevel.CRITICAL: 4}
+    if severity_rank.get(ca.severity, 0) < severity_rank[deviation.severity]:
+        raise ValueError("A CAPA cannot have lower severity than its linked deviation.")
+    ca.trigger_type = "DEVIATION"
+    ca.trigger_id = deviation.id
+    deviation.corrective_action_id = ca.id
+    await db.flush()
     return ca
 
 
@@ -1389,6 +1496,15 @@ async def create_deviation(db: AsyncSession, data: dict, reported_by_id: uuid.UU
     no = await _next_seq(db, QCDeviation, "deviation_no", "DEV")
     dev = QCDeviation(deviation_no=no, reported_by_id=reported_by_id, **data)
     db.add(dev)
+    await db.flush()
+    if dev.severity in {RiskLevel.HIGH, RiskLevel.CRITICAL}:
+        await create_corrective_action_for_deviation(db, dev.id, {
+            "title": f"CAPA escalation for deviation {dev.deviation_no}",
+            "description": dev.description,
+            "severity": dev.severity,
+            "trigger_type": "DEVIATION",
+            "trigger_id": dev.id,
+        })
     return dev
 
 
@@ -1412,6 +1528,15 @@ async def auto_create_deviation_from_inspection(
         reported_by_id=reported_by_id,
     )
     db.add(dev)
+    await db.flush()
+    if severity in {RiskLevel.HIGH, RiskLevel.CRITICAL}:
+        await create_corrective_action_for_deviation(db, dev.id, {
+            "title": f"CAPA escalation for deviation {dev.deviation_no}",
+            "description": dev.description,
+            "severity": severity,
+            "trigger_type": "DEVIATION",
+            "trigger_id": dev.id,
+        })
     return dev
 
 

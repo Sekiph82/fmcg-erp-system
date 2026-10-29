@@ -159,15 +159,19 @@ async def _waiver_warehouse_ids(db: AsyncSession, scope_type: str, scope_id: uui
     return []
 
 
-async def _require_quality_waiver_scope_permission(
+async def _require_quality_scope_permission(
     db: AsyncSession, user, action: str, scope_type: str, scope_id: uuid.UUID
 ) -> None:
     global_permissions = {
-        "request": ("quality.create", "quality.create_all", "quality.edit", "quality.edit_all"),
+        "create": ("quality.create", "quality.create_all", "quality.edit", "quality.edit_all"),
+        "edit": ("quality.edit", "quality.edit_all"),
         "approve": ("quality.approve", "quality.approve_all"),
         "revoke": ("quality.approve", "quality.approve_all"),
     }.get(action)
-    scoped_actions = {"request": ("create", "edit"), "approve": ("approve",), "revoke": ("approve",)}.get(action)
+    scoped_actions = {
+        "create": ("create", "edit"), "edit": ("edit",),
+        "approve": ("approve",), "revoke": ("approve",),
+    }.get(action)
     if global_permissions is None or scoped_actions is None:
         raise ValueError(f"Unsupported quality waiver action: {action}")
     if has_any_permission(user, global_permissions):
@@ -187,6 +191,14 @@ async def _require_quality_waiver_scope_permission(
         )
 
 
+async def _require_quality_waiver_scope_permission(
+    db: AsyncSession, user, action: str, scope_type: str, scope_id: uuid.UUID
+) -> None:
+    """Compatibility wrapper retained for waiver callers and their permission tests."""
+    normalized_action = "create" if action == "request" else action
+    await _require_quality_scope_permission(db, user, normalized_action, scope_type, scope_id)
+
+
 async def _user_can_view_waiver_scope(db: AsyncSession, user, scope_type: str, scope_id: uuid.UUID) -> bool:
     if has_any_permission(user, ("quality.view", "quality.view_all")):
         return True
@@ -195,6 +207,50 @@ async def _user_can_view_waiver_scope(db: AsyncSession, user, scope_type: str, s
         can_modify_scope(user, "quality", "view", "warehouse", warehouse_id)
         for warehouse_id in warehouse_ids
     )
+
+
+async def _require_deviation_capa_create_permission(db: AsyncSession, user, deviation: QCDeviation) -> None:
+    if has_any_permission(user, ("quality.create", "quality.create_all", "quality.edit", "quality.edit_all")):
+        return
+    if deviation.lot_id:
+        await _require_quality_scope_permission(db, user, "create", "LOT", deviation.lot_id)
+        return
+    if deviation.production_order_id:
+        await _require_quality_scope_permission(
+            db, user, "create", "PRODUCTION_ORDER", deviation.production_order_id
+        )
+        return
+    if deviation.inspection_id:
+        result = await db.execute(select(QCInspection.warehouse_id).where(QCInspection.id == deviation.inspection_id))
+        warehouse_id = result.scalar_one_or_none()
+        if warehouse_id and any(
+            can_modify_scope(user, "quality", action, "warehouse", warehouse_id)
+            for action in ("create", "edit")
+        ):
+            return
+    raise HTTPException(
+        status_code=403,
+        detail={"error": "forbidden", "detail": "Quality create permission for this deviation scope is required."},
+    )
+
+
+async def _require_linked_capa_verified(
+    db: AsyncSession, deviation: QCDeviation, *, candidate_capa_id: Optional[uuid.UUID] = None
+) -> None:
+    capa_id = candidate_capa_id if candidate_capa_id is not None else deviation.corrective_action_id
+    if capa_id is None:
+        return
+    result = await db.execute(
+        select(CorrectiveAction.status)
+        .where(CorrectiveAction.id == capa_id)
+        .with_for_update()
+    )
+    status = result.scalar_one_or_none()
+    if status != CorrectiveActionStatus.VERIFIED:
+        raise HTTPException(
+            status_code=409,
+            detail="A deviation with a linked CAPA cannot be resolved or closed until the CAPA is verified.",
+        )
 
 
 def _is_gate_code_conflict(exc: IntegrityError) -> bool:
@@ -306,8 +362,8 @@ async def request_quality_gate_waiver(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    await _require_quality_waiver_scope_permission(
-        db, current_user, "request", body.scope_type, body.scope_id
+    await _require_quality_scope_permission(
+        db, current_user, "create", body.scope_type, body.scope_id
     )
     try:
         waiver = await svc.request_quality_gate_waiver(db, body.model_dump(), current_user.id)
@@ -336,7 +392,7 @@ async def decide_quality_gate_waiver(
     waiver_scope = existing.scalar_one_or_none()
     if waiver_scope is None:
         raise HTTPException(status_code=404, detail="Quality gate waiver not found.")
-    await _require_quality_waiver_scope_permission(
+    await _require_quality_scope_permission(
         db, current_user, "approve", waiver_scope.scope_type, waiver_scope.scope_id
     )
     try:
@@ -362,7 +418,7 @@ async def revoke_quality_gate_waiver(
     waiver_scope = existing.scalar_one_or_none()
     if waiver_scope is None:
         raise HTTPException(status_code=404, detail="Quality gate waiver not found.")
-    await _require_quality_waiver_scope_permission(
+    await _require_quality_scope_permission(
         db, current_user, "revoke", waiver_scope.scope_type, waiver_scope.scope_id
     )
     try:
@@ -701,6 +757,32 @@ async def create_deviation(
     return _build_deviation_read(r.scalar_one())
 
 
+@router.post("/deviations/{deviation_id}/corrective-action", response_model=CorrectiveActionRead, status_code=201)
+async def create_deviation_corrective_action(
+    deviation_id: uuid.UUID,
+    body: CorrectiveActionCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    deviation_result = await db.execute(
+        select(QCDeviation).where(QCDeviation.id == deviation_id).with_for_update()
+    )
+    deviation = deviation_result.scalar_one_or_none()
+    if deviation is None:
+        raise HTTPException(status_code=404, detail="Deviation not found.")
+    await _require_deviation_capa_create_permission(db, current_user, deviation)
+    try:
+        ca = await svc.create_corrective_action_for_deviation(
+            db, deviation_id, body.model_dump(exclude_unset=True)
+        )
+        await db.commit()
+    except ValueError as exc:
+        await db.rollback()
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    result = await db.execute(select(CorrectiveAction).where(CorrectiveAction.id == ca.id))
+    return _build_ca_read(result.scalar_one())
+
+
 @router.get("/deviations/{deviation_id}", response_model=QCDeviationRead)
 async def get_deviation(
     deviation_id: uuid.UUID,
@@ -730,11 +812,14 @@ async def update_deviation(
     if d.status == DeviationStatus.CLOSED and updates:
         raise HTTPException(status_code=409, detail="A closed deviation is immutable.")
     if next_status == DeviationStatus.RESOLVED:
+        await _require_linked_capa_verified(
+            db, d, candidate_capa_id=updates.get("corrective_action_id", d.corrective_action_id)
+        )
         approval_scope_type = "LOT" if d.lot_id else "PRODUCTION_ORDER" if d.production_order_id else None
         approval_scope_id = d.lot_id or d.production_order_id
         if approval_scope_type is None or approval_scope_id is None:
             raise HTTPException(status_code=403, detail="A scoped quality approval permission is required.")
-        await _require_quality_waiver_scope_permission(
+        await _require_quality_scope_permission(
             db, current_user, "approve", approval_scope_type, approval_scope_id
         )
         if d.status not in {DeviationStatus.OPEN, DeviationStatus.UNDER_REVIEW}:
@@ -749,17 +834,28 @@ async def update_deviation(
         updates["resolved_at"] = datetime.now(timezone.utc)
         updates["resolved_by_id"] = current_user.id
     elif next_status == DeviationStatus.CLOSED:
+        await _require_linked_capa_verified(
+            db, d, candidate_capa_id=updates.get("corrective_action_id", d.corrective_action_id)
+        )
         approval_scope_type = "LOT" if d.lot_id else "PRODUCTION_ORDER" if d.production_order_id else None
         approval_scope_id = d.lot_id or d.production_order_id
         if approval_scope_type is None or approval_scope_id is None:
             raise HTTPException(status_code=403, detail="A scoped quality approval permission is required.")
-        await _require_quality_waiver_scope_permission(
+        await _require_quality_scope_permission(
             db, current_user, "approve", approval_scope_type, approval_scope_id
         )
         if d.status != DeviationStatus.RESOLVED:
             raise HTTPException(status_code=409, detail="Only a resolved deviation can be closed.")
         if current_user.id in {d.reported_by_id, d.resolved_by_id}:
             raise HTTPException(status_code=403, detail="Deviation closure requires a reviewer separate from the reporter and resolver.")
+    if "corrective_action_id" in updates:
+        corrective_action_id = updates.pop("corrective_action_id")
+        await _require_deviation_capa_create_permission(db, current_user, d)
+        try:
+            await svc.link_deviation_corrective_action(db, d, corrective_action_id)
+        except ValueError as exc:
+            await db.rollback()
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
     for k, v in updates.items():
         setattr(d, k, v)
     await db.commit()
@@ -795,8 +891,24 @@ async def create_corrective_action(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    ca = await svc.create_corrective_action(db, body.model_dump())
-    await db.commit()
+    data = body.model_dump()
+    if (data.get("trigger_type") or "").strip().upper() == "DEVIATION":
+        deviation_id = data.get("trigger_id")
+        if deviation_id is None:
+            raise HTTPException(status_code=422, detail="A deviation-triggered CAPA must identify its deviation.")
+        deviation_result = await db.execute(
+            select(QCDeviation).where(QCDeviation.id == deviation_id).with_for_update()
+        )
+        deviation = deviation_result.scalar_one_or_none()
+        if deviation is None:
+            raise HTTPException(status_code=404, detail="Deviation not found.")
+        await _require_deviation_capa_create_permission(db, current_user, deviation)
+    try:
+        ca = await svc.create_corrective_action(db, data)
+        await db.commit()
+    except ValueError as exc:
+        await db.rollback()
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     r = await db.execute(select(CorrectiveAction).where(CorrectiveAction.id == ca.id))
     return _build_ca_read(r.scalar_one())
 
