@@ -129,7 +129,11 @@ def _is_gate_code_conflict(exc: IntegrityError) -> bool:
     original = getattr(exc, "orig", None)
     diagnostic = getattr(original, "diag", None)
     constraint = getattr(diagnostic, "constraint_name", None) or getattr(original, "constraint_name", None)
-    return constraint in {"uq_quality_gate_definitions_code", "quality_gate_definitions_code_key"}
+    return constraint in {
+        "uq_quality_gate_definitions_code",
+        "quality_gate_definitions_code_key",
+        "uq_quality_gate_definitions_code_version",
+    }
 
 
 @router.get("/gate-definitions", response_model=List[QualityGateDefinitionRead])
@@ -137,6 +141,7 @@ async def list_quality_gate_definitions(
     active_only: bool = True,
     trigger_event: Optional[str] = Query(default=None, min_length=1, max_length=50),
     target_module: Optional[str] = Query(default=None, min_length=1, max_length=50),
+    as_of_date: Optional[date] = None,
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
@@ -146,6 +151,7 @@ async def list_quality_gate_definitions(
         active_only=active_only,
         trigger_event=trigger_event.strip().upper() if trigger_event else None,
         target_module=target_module.strip().lower() if target_module else None,
+        as_of_date=as_of_date,
     )
     return [QualityGateDefinitionRead.model_validate(item) for item in definitions]
 

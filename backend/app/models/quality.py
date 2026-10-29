@@ -1,8 +1,9 @@
 import uuid
 import enum
+from datetime import date
 from sqlalchemy import (
     Column, String, Text, Numeric, Integer, Boolean,
-    ForeignKey, Enum, Date, DateTime, JSON, UniqueConstraint, CheckConstraint, Table, Index,
+    ForeignKey, Enum, Date, DateTime, JSON, UniqueConstraint, CheckConstraint, Table, Index, text,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
@@ -518,10 +519,10 @@ class LotQualityStatus(Base, TimestampMixin):
 
 
 class QualityGateDefinition(Base, TimestampMixin):
-    """Configurable catalog entry describing a quality gate and its trigger."""
+    """One effective-dated version of a configurable quality gate."""
     __tablename__ = "quality_gate_definitions"
     __table_args__ = (
-        UniqueConstraint("code", name="uq_quality_gate_definitions_code"),
+        UniqueConstraint("code", "version", name="uq_quality_gate_definitions_code_version"),
         CheckConstraint("length(trim(code)) > 0", name="ck_quality_gate_definitions_code_not_blank"),
         CheckConstraint("length(trim(name)) > 0", name="ck_quality_gate_definitions_name_not_blank"),
         CheckConstraint("length(trim(gate_type)) > 0", name="ck_quality_gate_definitions_type_not_blank"),
@@ -539,10 +540,18 @@ class QualityGateDefinition(Base, TimestampMixin):
             "NOT waiver_allowed OR (waiver_reason_required AND waiver_approval_required)",
             name="ck_quality_gate_definitions_waiver_safeguards",
         ),
+        CheckConstraint("version >= 1", name="ck_quality_gate_definitions_version_positive"),
+        CheckConstraint(
+            "effective_to IS NULL OR effective_to >= effective_from",
+            name="ck_quality_gate_definitions_effective_window",
+        ),
     )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     code = Column(String(50), nullable=False)
+    version = Column(Integer, nullable=False, default=1, server_default="1")
+    effective_from = Column(Date, nullable=False, default=date.today, server_default=text("CURRENT_DATE"))
+    effective_to = Column(Date, nullable=True)
     name = Column(String(120), nullable=False)
     gate_type = Column(String(50), nullable=False, index=True)
     trigger_event = Column(String(50), nullable=False, index=True)

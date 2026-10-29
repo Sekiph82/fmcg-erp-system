@@ -72,12 +72,18 @@ async def list_quality_gate_definitions(
     active_only: bool = True,
     trigger_event: Optional[str] = None,
     target_module: Optional[str] = None,
+    as_of_date: Optional[date] = None,
 ) -> List[QualityGateDefinition]:
     query = select(QualityGateDefinition).options(
         selectinload(QualityGateDefinition.required_templates).selectinload(QCTemplate.parameters)
     )
     if active_only:
         query = query.where(QualityGateDefinition.is_active.is_(True))
+        as_of = as_of_date or date.today()
+        query = query.where(
+            QualityGateDefinition.effective_from <= as_of,
+            or_(QualityGateDefinition.effective_to.is_(None), QualityGateDefinition.effective_to >= as_of),
+        )
     if trigger_event:
         query = query.where(QualityGateDefinition.trigger_event == trigger_event)
     if target_module:
@@ -225,6 +231,27 @@ async def qc_template_has_gate_reference(db: AsyncSession, template_id: uuid.UUI
 async def create_quality_gate_definition(
     db: AsyncSession, data: dict
 ) -> QualityGateDefinition:
+    code = str(data.get("code", "")).strip().upper()
+    data["code"] = code
+    data.setdefault("effective_from", date.today())
+    data.setdefault("version", 1)
+    _validate_gate_effective_window(data.get("effective_from"), data.get("effective_to"))
+    await _lock_quality_gate_code(db, code)
+    existing_result = await db.execute(
+        select(QualityGateDefinition).where(QualityGateDefinition.code == code)
+    )
+    existing_versions = list(existing_result.scalars())
+    expected_version = max((item.version for item in existing_versions), default=0) + 1
+    if data["version"] != expected_version:
+        raise ValueError(f"The next version for {code} must be {expected_version}.")
+    if any(
+        _gate_windows_overlap(
+            data["effective_from"], data.get("effective_to"), item.effective_from, item.effective_to
+        )
+        for item in existing_versions
+    ):
+        raise ValueError("Quality gate effective-date windows for the same code cannot overlap.")
+
     template_ids = data.pop("required_template_ids", [])
     templates = await _get_valid_required_qc_templates(db, template_ids)
     _validate_quality_gate_policy(
@@ -246,6 +273,30 @@ async def create_quality_gate_definition(
 async def update_quality_gate_definition(
     db: AsyncSession, definition: QualityGateDefinition, changes: dict
 ) -> QualityGateDefinition:
+    await _lock_quality_gate_code(db, definition.code)
+    if "code" in changes and str(changes["code"]).strip().upper() != definition.code:
+        raise ValueError("A quality gate code is immutable; create the next version under the existing code.")
+    changes.pop("code", None)
+
+    controlled_fields = {
+        "effective_from", "name", "gate_type", "trigger_event", "target_module", "description", "severity",
+        "is_mandatory", "waiver_allowed", "waiver_reason_required", "waiver_approval_required",
+        "required_template_ids", "effective_to",
+    }
+    today = date.today()
+    if definition.effective_from <= today:
+        rule_fields = controlled_fields - {"effective_to"}
+        if rule_fields.intersection(changes):
+            raise ValueError("An effective quality gate version is immutable; create the next version to change its rules.")
+        if "effective_to" in changes:
+            proposed_end = changes["effective_to"]
+            if proposed_end is None and definition.effective_to is not None:
+                raise ValueError("A closed quality gate effective period cannot be reopened or rewritten.")
+            if proposed_end is not None and proposed_end < today:
+                raise ValueError("An effective quality gate version may only be closed today or in the future.")
+            if definition.effective_to is not None and proposed_end != definition.effective_to:
+                raise ValueError("A closed quality gate effective period cannot be rewritten.")
+
     template_ids = changes.pop("required_template_ids", None)
     for field_name, value in changes.items():
         setattr(definition, field_name, value)
@@ -257,6 +308,19 @@ async def update_quality_gate_definition(
         definition.waiver_reason_required,
         definition.waiver_approval_required,
     )
+    _validate_gate_effective_window(definition.effective_from, definition.effective_to)
+    peers_result = await db.execute(
+        select(QualityGateDefinition).where(
+            QualityGateDefinition.code == definition.code,
+            QualityGateDefinition.id != definition.id,
+        )
+    )
+    peers = list(peers_result.scalars())
+    if any(
+        _gate_windows_overlap(definition.effective_from, definition.effective_to, peer.effective_from, peer.effective_to)
+        for peer in peers
+    ):
+        raise ValueError("Quality gate effective-date windows for the same code cannot overlap.")
 
     if template_ids is not None:
         definition.required_templates = await _get_valid_required_qc_templates(db, template_ids)
@@ -295,6 +359,22 @@ def _validate_quality_gate_policy(severity, is_mandatory, waiver_allowed, reason
         raise ValueError("An allowed waiver must require a reason.")
     if waiver_allowed and not approval_required:
         raise ValueError("An allowed waiver must require quality approval.")
+
+
+def _validate_gate_effective_window(effective_from: Optional[date], effective_to: Optional[date]) -> None:
+    if effective_from is None:
+        raise ValueError("effective_from is required.")
+    if effective_to is not None and effective_to < effective_from:
+        raise ValueError("effective_to must be on or after effective_from.")
+
+
+def _gate_windows_overlap(start: date, end: Optional[date], other_start: date, other_end: Optional[date]) -> bool:
+    return start <= (other_end or date.max) and other_start <= (end or date.max)
+
+
+async def _lock_quality_gate_code(db: AsyncSession, code: str) -> None:
+    # Row locks cannot protect the missing-row gap when a code is first created.
+    await db.execute(select(func.pg_advisory_xact_lock(func.hashtextextended(f"quality-gate:{code}", 0))))
 
 
 # ── Sampling ──────────────────────────────────────────────────────────────────

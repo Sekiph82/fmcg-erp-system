@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import date, timedelta
 from types import SimpleNamespace
 from uuid import uuid4
 
@@ -157,9 +158,41 @@ def test_gate_policy_patch_rejects_explicitly_unsafe_combinations(changes):
         QualityGateDefinitionUpdate(**changes)
 
 
+def test_gate_versions_require_positive_numbers_and_valid_effective_windows():
+    with pytest.raises(ValidationError):
+        QualityGateDefinitionCreate(
+            code="QC_GATE", name="QC gate", gate_type="QC", trigger_event="ON_RECEIPT",
+            target_module="procurement", version=0,
+        )
+    with pytest.raises(ValidationError):
+        QualityGateDefinitionCreate(
+            code="QC_GATE", name="QC gate", gate_type="QC", trigger_event="ON_RECEIPT",
+            target_module="procurement", effective_from=date(2026, 10, 20),
+            effective_to=date(2026, 10, 19),
+        )
+    with pytest.raises(ValidationError):
+        QualityGateDefinitionUpdate(effective_from=None)
+
+    today = date.today()
+    future = QualityGateDefinitionCreate(
+        code="QC_GATE", name="QC gate", gate_type="QC", trigger_event="ON_RECEIPT",
+        target_module="procurement", version=2, effective_from=today + timedelta(days=5),
+        effective_to=None, is_active=False,
+    )
+    assert future.version == 2
+    assert future.effective_to is None
+
+
 @pytest.mark.asyncio
 async def test_gate_policy_patch_checks_combined_persisted_rule_values():
+    class LockOnlyDB:
+        async def execute(self, _statement):
+            return None
+
     definition = SimpleNamespace(
+        code="POLICY_GATE",
+        effective_from=date.today() + timedelta(days=1),
+        effective_to=None,
         severity="HIGH",
         is_mandatory=True,
         waiver_allowed=False,
@@ -170,7 +203,7 @@ async def test_gate_policy_patch_checks_combined_persisted_rule_values():
     )
 
     with pytest.raises(ValueError, match="must require a reason"):
-        await update_quality_gate_definition(object(), definition, {"waiver_allowed": True})
+        await update_quality_gate_definition(LockOnlyDB(), definition, {"waiver_allowed": True})
 
     assert definition.waiver_allowed is True
 

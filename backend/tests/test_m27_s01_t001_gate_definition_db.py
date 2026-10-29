@@ -4,6 +4,7 @@ from __future__ import annotations
 import asyncio
 import os
 import re
+from datetime import date, timedelta
 from uuid import uuid4
 
 import pytest
@@ -26,6 +27,7 @@ from app.services.qms_service import (
     get_quality_gate_definition,
     get_template,
     list_quality_gate_definitions,
+    create_quality_gate_definition,
     update_quality_gate_definition,
 )
 
@@ -115,6 +117,9 @@ async def test_gate_definition_can_be_configured_and_filtered_by_trigger_and_mod
         assert read_model.waiver_allowed is False
         assert read_model.waiver_reason_required is True
         assert read_model.waiver_approval_required is True
+        assert read_model.version == 1
+        assert read_model.effective_from == date.today()
+        assert read_model.effective_to is None
 
 
 @pytest.mark.asyncio
@@ -308,3 +313,118 @@ async def test_database_rejects_critical_or_waiver_policy_without_safeguards():
             with pytest.raises(IntegrityError):
                 await db.flush()
             await db.rollback()
+
+
+@pytest.mark.asyncio
+async def test_gate_versions_are_sequential_non_overlapping_and_selected_by_as_of_date():
+    suffix = uuid4().hex[:12].upper()
+    code = f"VERSIONED_GATE_{suffix}"
+    today = date.today()
+    first_end = today + timedelta(days=1)
+    second_start = today + timedelta(days=2)
+    common = {
+        "code": code,
+        "gate_type": "MATERIAL_QUALITY",
+        "trigger_event": "ON_RECEIPT",
+        "target_module": "procurement",
+        "is_active": True,
+        "required_template_ids": [],
+    }
+
+    async with AsyncSessionLocal() as db:
+        await _assert_task_database(db)
+        first_template = await _create_required_template(db, f"{suffix}01")
+        first = await create_quality_gate_definition(
+            db,
+            {
+                **common,
+                "version": 1,
+                "name": "Synthetic gate version one",
+                "is_active": True,
+                "required_template_ids": [first_template.id],
+                "effective_from": today - timedelta(days=3),
+                "effective_to": None,
+            },
+        )
+        first_id = first.id
+        await update_quality_gate_definition(db, first, {"effective_to": first_end})
+        second_template = await _create_required_template(db, f"{suffix}02")
+        second = await create_quality_gate_definition(
+            db,
+            {
+                **common,
+                "version": 2,
+                "name": "Synthetic gate version two",
+                "is_active": True,
+                "required_template_ids": [second_template.id],
+                "effective_from": second_start,
+                "effective_to": None,
+            },
+        )
+        second_id = second.id
+        await db.commit()
+
+    async with AsyncSessionLocal() as db:
+        await _assert_task_database(db)
+        today_versions = await list_quality_gate_definitions(db, as_of_date=today)
+        future_versions = await list_quality_gate_definitions(db, as_of_date=second_start)
+        today_ids = {definition.id for definition in today_versions}
+        future_ids = {definition.id for definition in future_versions}
+        assert first_id in today_ids
+        assert second_id not in today_ids
+        assert first_id not in future_ids
+        assert second_id in future_ids
+
+        with pytest.raises(ValueError, match="cannot overlap"):
+            await create_quality_gate_definition(
+                db,
+                {
+                    **common,
+                    "version": 3,
+                    "name": "Synthetic overlapping gate version",
+                    "is_active": False,
+                    "effective_from": first_end,
+                    "effective_to": second_start + timedelta(days=1),
+                },
+            )
+        await db.rollback()
+
+    async with AsyncSessionLocal() as db:
+        await _assert_task_database(db)
+        first = await get_quality_gate_definition(db, first_id, for_update=True)
+        with pytest.raises(ValueError, match="cannot be rewritten"):
+            await update_quality_gate_definition(
+                db, first, {"effective_to": first_end + timedelta(days=1)}
+            )
+        with pytest.raises(ValueError, match="effective quality gate version is immutable"):
+            await update_quality_gate_definition(
+                db,
+                first,
+                {
+                    "effective_from": today + timedelta(days=10),
+                    "name": "Synthetic retroactive rename",
+                },
+            )
+        await db.rollback()
+
+    async with AsyncSessionLocal() as db:
+        await _assert_task_database(db)
+        second = await get_quality_gate_definition(db, second_id, for_update=True)
+        with pytest.raises(ValueError, match="cannot overlap"):
+            await update_quality_gate_definition(db, second, {"effective_from": first_end})
+        await db.rollback()
+
+    async with AsyncSessionLocal() as db:
+        await _assert_task_database(db)
+        with pytest.raises(ValueError, match="next version.*3"):
+            await create_quality_gate_definition(
+                db,
+                {
+                    **common,
+                    "version": 4,
+                    "name": "Synthetic skipped gate version",
+                    "is_active": False,
+                    "effective_from": second_start + timedelta(days=2),
+                },
+            )
+        await db.rollback()

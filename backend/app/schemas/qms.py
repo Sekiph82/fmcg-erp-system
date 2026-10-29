@@ -32,6 +32,11 @@ def _validate_gate_policy_fields(severity, is_mandatory, waiver_allowed, reason_
     if waiver_allowed is True and approval_required is False:
         raise ValueError("An allowed waiver must require quality approval.")
 
+
+def _validate_gate_effective_window(effective_from, effective_to):
+    if effective_from is not None and effective_to is not None and effective_to < effective_from:
+        raise ValueError("effective_to must be on or after effective_from.")
+
 class QCTemplateParameterBase(BaseModel):
     parameter_id: Optional[uuid.UUID] = None
     parameter_name: str
@@ -490,6 +495,9 @@ class QualityGateDefinitionFields(BaseModel):
     target_module: str = Field(min_length=1, max_length=50)
     description: Optional[str] = None
     is_active: bool = True
+    version: int = Field(default=1, ge=1)
+    effective_from: date = Field(default_factory=date.today)
+    effective_to: Optional[date] = None
     severity: QualityGateSeverity = QualityGateSeverity.MEDIUM
     is_mandatory: bool = True
     waiver_allowed: bool = False
@@ -533,6 +541,7 @@ class QualityGateDefinitionFields(BaseModel):
 class QualityGateDefinitionCreate(QualityGateDefinitionFields):
     @model_validator(mode="after")
     def active_gate_requires_tests(self):
+        _validate_gate_effective_window(self.effective_from, self.effective_to)
         _validate_gate_policy_fields(
             self.severity, self.is_mandatory, self.waiver_allowed,
             self.waiver_reason_required, self.waiver_approval_required,
@@ -553,6 +562,8 @@ class QualityGateDefinitionUpdate(BaseModel):
     target_module: Optional[str] = Field(default=None, min_length=1, max_length=50)
     description: Optional[str] = None
     is_active: Optional[bool] = None
+    effective_from: Optional[date] = None
+    effective_to: Optional[date] = None
     severity: Optional[QualityGateSeverity] = None
     is_mandatory: Optional[bool] = None
     waiver_allowed: Optional[bool] = None
@@ -562,6 +573,7 @@ class QualityGateDefinitionUpdate(BaseModel):
 
     @model_validator(mode="after")
     def validate_explicit_policy_changes(self):
+        _validate_gate_effective_window(self.effective_from, self.effective_to)
         _validate_gate_policy_fields(
             self.severity, self.is_mandatory, self.waiver_allowed,
             self.waiver_reason_required, self.waiver_approval_required,
@@ -573,7 +585,10 @@ class QualityGateDefinitionUpdate(BaseModel):
     def reject_null_required_updates(cls, values):
         if not isinstance(values, dict) or not values:
             raise ValueError("At least one quality gate field is required.")
-        for field_name in ("code", "name", "gate_type", "trigger_event", "target_module", "is_active", "required_template_ids"):
+        for field_name in (
+            "code", "name", "gate_type", "trigger_event", "target_module", "is_active",
+            "effective_from", "required_template_ids",
+        ):
             if field_name in values and values[field_name] is None:
                 raise ValueError(f"{field_name} cannot be null.")
         return values
