@@ -35,6 +35,7 @@ export default function DeveloperPortalPage() {
   useEffect(() => { void load(); }, []);
 
   const links = [
+    { href: "/dashboard/developer/applications", label: "API Applications", desc: "Register and manage API client applications" },
     { href: "/dashboard/developer/keys", label: "API Keys", desc: "Generate and manage API keys" },
     { href: "/dashboard/developer/graphql", label: "GraphQL Layer", desc: "GraphQL schema info and status" },
     { href: "/docs", label: "OpenAPI Docs", desc: "Interactive Swagger UI", external: true },

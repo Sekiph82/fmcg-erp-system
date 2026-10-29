@@ -8,11 +8,11 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 ## Project Status
 
-- Current Milestone: M25 — Cross-Border / Landed Cost
-- Current Sprint: M25.S03 � Accounting & Valuation
-- Current Task: M25.S03.T004 — Close M25
+- Current Milestone: M31 — API / Event Architecture
+- Current Sprint: M31.S01 — Partner API Governance
+- Current Task: M31.S01.T001 — API client/application registry
 - Current Task Status: COMPLETE
-- Next Task/Action: M31.S01.T001 — API client/application registry
+- Next Task/Action: M31.S01.T002 — API key/OAuth credential lifecycle
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -969,7 +969,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 **Depends on:** M01, M02, M17.
 
 ## M31.S01 — Partner API Governance
-- [ ] M31.S01.T001 — API client/application registry
+- [x] M31.S01.T001 — API client/application registry
+  Evidence: Added owner-scoped, integrations.view/edit-protected API application registry and portal UI; credentials remain separate. Task-owned PostgreSQL migration/API suite: 4 passed at 20261029_0042 head, including schema adoption/creation, invalid-shape/default/check rejection, safe downgrade and writer-lock cases; frontend type-check and targeted ESLint, backend py_compile, diff check and independent review passed. Synthetic only. Evidence: coordination/sessions/M31.S01.T001/CODEX_LOG_V01.md.
 - [ ] M31.S01.T002 — API key/OAuth credential lifecycle
 - [ ] M31.S01.T003 — Scope/rate-limit policy
 - [ ] M31.S01.T004 — Partner audit/usage analytics

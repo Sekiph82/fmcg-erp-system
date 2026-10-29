@@ -39,6 +39,18 @@ export interface ApiKeyCreated extends ApiKeyOut {
   warning: string;
 }
 
+export type ApiClientEnvironment = "development" | "sandbox" | "production";
+
+export interface ApiClientApplication {
+  client_id: string;
+  name: string;
+  description: string | null;
+  environment: ApiClientEnvironment;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface DevPortalDashboard {
   total_keys: number;
   active_keys: number;
@@ -115,6 +127,18 @@ async function req<T>(path: string, opts?: RequestInit): Promise<T> {
 }
 
 export const devPortalApi = {
+  createApplication: (body: {
+    name: string;
+    description?: string;
+    environment: ApiClientEnvironment;
+  }) => req<ApiClientApplication>("/applications", { method: "POST", body: JSON.stringify(body) }),
+
+  listApplications: (includeInactive = false) =>
+    req<ApiClientApplication[]>(`/applications?include_inactive=${includeInactive}`),
+
+  updateApplication: (clientId: string, body: Partial<Pick<ApiClientApplication, "name" | "description" | "environment" | "is_active">>) =>
+    req<ApiClientApplication>(`/applications/${encodeURIComponent(clientId)}`, { method: "PATCH", body: JSON.stringify(body) }),
+
   createKey: (body: {
     key_name: string;
     scopes?: string;

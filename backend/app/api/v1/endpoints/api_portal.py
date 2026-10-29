@@ -8,15 +8,16 @@ import hashlib
 import secrets
 import uuid
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from sqlalchemy import select, func, desc
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.exc import IntegrityError
 
-from app.core.deps import get_current_user, get_db
-from app.models.api_portal import ApiKey, ApiKeyUsageLog
+from app.core.deps import get_current_user, get_db, require_permission
+from app.models.api_portal import ApiClientApplication, ApiKey, ApiKeyUsageLog
 from app.models.user import User
 
 router = APIRouter()
@@ -70,6 +71,145 @@ class ApiKeyOut(BaseModel):
             expires_at=k.expires_at.isoformat() if k.expires_at else None,
             description=k.description,
         )
+
+
+ApplicationEnvironment = Literal["development", "sandbox", "production"]
+
+
+class ApiClientApplicationCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=160)
+    description: Optional[str] = Field(default=None, max_length=2000)
+    environment: ApplicationEnvironment = "development"
+
+    @field_validator("name")
+    @classmethod
+    def trim_name(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("Application name must not be blank")
+        return value
+
+
+class ApiClientApplicationUpdate(BaseModel):
+    name: Optional[str] = Field(default=None, min_length=1, max_length=160)
+    description: Optional[str] = Field(default=None, max_length=2000)
+    environment: Optional[ApplicationEnvironment] = None
+    is_active: Optional[bool] = None
+
+    @field_validator("name")
+    @classmethod
+    def trim_name(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return value
+        value = value.strip()
+        if not value:
+            raise ValueError("Application name must not be blank")
+        return value
+
+
+class ApiClientApplicationOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    client_id: uuid.UUID
+    name: str
+    description: Optional[str]
+    environment: ApplicationEnvironment
+    is_active: bool
+    created_at: datetime
+    updated_at: datetime
+
+
+@router.get(
+    "/applications",
+    response_model=List[ApiClientApplicationOut],
+    dependencies=[Depends(require_permission("integrations", "view"))],
+)
+async def list_client_applications(
+    include_inactive: bool = False,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """List API client applications owned by the authenticated user."""
+    query = select(ApiClientApplication).where(
+        ApiClientApplication.owner_user_id == current_user.id
+    )
+    if not include_inactive:
+        query = query.where(ApiClientApplication.is_active.is_(True))
+    query = query.order_by(desc(ApiClientApplication.created_at), ApiClientApplication.client_id)
+    result = await db.execute(query)
+    return result.scalars().all()
+
+
+@router.post(
+    "/applications",
+    status_code=201,
+    response_model=ApiClientApplicationOut,
+    dependencies=[Depends(require_permission("integrations", "edit"))],
+)
+async def create_client_application(
+    payload: ApiClientApplicationCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Register application metadata without creating or exposing credentials."""
+    application = ApiClientApplication(
+        owner_user_id=current_user.id,
+        name=payload.name,
+        description=payload.description,
+        environment=payload.environment,
+    )
+    db.add(application)
+    try:
+        await db.commit()
+    except IntegrityError as exc:
+        await db.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail="An application with this name and environment is already registered.",
+        ) from exc
+    await db.refresh(application)
+    return application
+
+
+@router.patch(
+    "/applications/{client_id}",
+    response_model=ApiClientApplicationOut,
+    dependencies=[Depends(require_permission("integrations", "edit"))],
+)
+async def update_client_application(
+    client_id: uuid.UUID,
+    payload: ApiClientApplicationUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Update owned application metadata or deactivate/reactivate its registry record."""
+    changes = payload.model_dump(exclude_unset=True)
+    if not changes:
+        raise HTTPException(status_code=422, detail="At least one application field must be provided.")
+    if any(changes.get(field) is None for field in ("name", "environment", "is_active") if field in changes):
+        raise HTTPException(status_code=422, detail="Name, environment, and active status cannot be null.")
+
+    result = await db.execute(
+        select(ApiClientApplication).where(
+            ApiClientApplication.client_id == client_id,
+            ApiClientApplication.owner_user_id == current_user.id,
+        )
+    )
+    application = result.scalar_one_or_none()
+    if application is None:
+        raise HTTPException(status_code=404, detail="API client application not found.")
+    for field, value in changes.items():
+        setattr(application, field, value)
+    try:
+        await db.commit()
+    except IntegrityError as exc:
+        await db.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail="An application with this name and environment is already registered.",
+        ) from exc
+    await db.refresh(application)
+    return application
 
 
 # ── API Key CRUD ──────────────────────────────────────────────────────────────

@@ -2,7 +2,7 @@
 from __future__ import annotations
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, Boolean, DateTime, Integer, Text, ForeignKey
+from sqlalchemy import Column, String, Boolean, DateTime, Integer, Text, ForeignKey, UniqueConstraint, CheckConstraint, func
 from sqlalchemy.dialects.postgresql import UUID
 from app.db.base import Base
 
@@ -36,3 +36,30 @@ class ApiKeyUsageLog(Base):
     response_ms = Column(Integer, nullable=True)
     ip_address = Column(String(100), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class ApiClientApplication(Base):
+    """Owner-scoped developer application metadata; credentials are managed separately."""
+
+    __tablename__ = "api_client_applications"
+    __table_args__ = (
+        UniqueConstraint(
+            "owner_user_id", "name", "environment",
+            name="uq_api_client_applications_owner_name_environment",
+        ),
+        CheckConstraint(
+            "environment IN ('development', 'sandbox', 'production')",
+            name="ck_api_client_applications_environment",
+        ),
+    )
+
+    client_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    owner_user_id = Column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    name = Column(String(160), nullable=False)
+    description = Column(Text, nullable=True)
+    environment = Column(String(20), nullable=False, default="development", server_default="development")
+    is_active = Column(Boolean, nullable=False, default=True, server_default="true")
+    created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
