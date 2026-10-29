@@ -10,8 +10,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 - Current Milestone: M27 — Quality Gates
 - Current Sprint: M27.S02 — Transaction Enforcement
-- Current Task: M27.S02.T001 — Receiving gate
-- Current Task Status: COMPLETE
+- Current Task: M27.S02.T002 — Production release/in-process gate
+- Current Task Status: IN_PROGRESS
 - Next Task/Action: M27.S02.T002 — Production release/in-process gate
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
@@ -823,7 +823,7 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 ## M27.S02 — Transaction Enforcement
 - [x] M27.S02.T001 — Receiving gate
   Evidence: [CODEX implementation log](coordination/sessions/M27.S02.T001/CODEX_LOG_V01.md); mandatory ON_RECEIPT gates block GRN posting until each accepted line has accepted/passed required incoming QC, backed by template-authoritative results and serialized inspection/configuration changes. Fresh disposable PostgreSQL 16 migration to 20261029_0031 and combined suite passed 47 tests; independent read-only review found no remaining issue.
-- [ ] M27.S02.T002 — Production release/in-process gate
+- [~] M27.S02.T002 — Production release/in-process gate
 - [ ] M27.S02.T003 — Finished-goods release gate
 - [ ] M27.S02.T004 — Dispatch gate
 
