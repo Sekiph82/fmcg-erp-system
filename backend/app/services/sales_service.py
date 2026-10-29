@@ -510,6 +510,19 @@ async def dispatch_shipment(
     if so is None:
         raise HTTPException(404, "Sales order not found")
 
+    from app.services.qms_service import (
+        DISPATCH_GATE_TARGET_MODULE,
+        DISPATCH_GATE_TRIGGER_EVENT,
+        ensure_dispatch_quality_gates_pass,
+        lock_quality_gate_scope,
+    )
+
+    await lock_quality_gate_scope(db, DISPATCH_GATE_TARGET_MODULE, DISPATCH_GATE_TRIGGER_EVENT)
+    try:
+        await ensure_dispatch_quality_gates_pass(db, shipment, today)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
     for line in shipment.lines:
         # ISSUE stock movement
         filters = [

@@ -32,6 +32,8 @@ PRODUCTION_RELEASE_GATE_TRIGGER_EVENT = "ON_PRODUCTION_RELEASE"
 PRODUCTION_IN_PROCESS_GATE_TRIGGER_EVENT = "ON_IN_PROCESS"
 FINISHED_GOODS_GATE_TARGET_MODULE = "inventory"
 FINISHED_GOODS_RELEASE_GATE_TRIGGER_EVENT = "ON_FINISHED_GOODS_RELEASE"
+DISPATCH_GATE_TARGET_MODULE = "sales"
+DISPATCH_GATE_TRIGGER_EVENT = "ON_DISPATCH"
 
 
 # ── Sequence Helpers ──────────────────────────────────────────────────────────
@@ -158,6 +160,18 @@ async def list_finished_goods_quality_gates(
     )
 
 
+async def list_dispatch_quality_gates(
+    db: AsyncSession, as_of_date: date
+) -> list[QualityGateDefinition]:
+    return await list_quality_gate_definitions(
+        db,
+        active_only=True,
+        trigger_event=DISPATCH_GATE_TRIGGER_EVENT,
+        target_module=DISPATCH_GATE_TARGET_MODULE,
+        as_of_date=as_of_date,
+    )
+
+
 async def ensure_receiving_quality_gates_pass(db: AsyncSession, grn) -> None:
     """Require every configured mandatory incoming template to pass per accepted GRN line."""
     gates = [gate for gate in await list_receiving_quality_gates(db, grn.received_date) if gate.is_mandatory]
@@ -276,6 +290,67 @@ async def ensure_finished_goods_quality_gates_pass(
             f"Finished-goods lot {inspection.lot_number or inspection.lot_id} cannot be released: "
             "another mandatory finished-goods inspection is still unresolved."
         )
+
+
+async def ensure_dispatch_quality_gates_pass(
+    db: AsyncSession, shipment, as_of_date: date
+) -> None:
+    """Require every configured mandatory dispatch template to pass for every shipped lot."""
+    gates = [gate for gate in await list_dispatch_quality_gates(db, as_of_date) if gate.is_mandatory]
+    if not gates:
+        return
+    lines = list(getattr(shipment, "lines", []) or [])
+    if not lines:
+        raise ValueError("A shipment cannot be dispatched through an active quality gate without shipment lines.")
+
+    template_ids = list(dict.fromkeys(
+        template.id for gate in gates for template in gate.required_templates
+    ))
+    for line in lines:
+        if line.lot_id is None:
+            raise ValueError(
+                f"Shipment {shipment.shipment_no} cannot be dispatched: a required lot is missing from a shipment line."
+            )
+        for template_id in template_ids:
+            result = await db.execute(
+                select(QCInspection.id).where(
+                    QCInspection.lot_id == line.lot_id,
+                    QCInspection.product_id == line.product_id,
+                    QCInspection.warehouse_id == shipment.warehouse_id,
+                    QCInspection.qc_type == QCType.FINISHED_GOODS,
+                    QCInspection.template_id == template_id,
+                    QCInspection.status == QCStatus.PASSED,
+                    QCInspection.decision == QCDecision.ACCEPT,
+                    QCInspection.is_mandatory.is_(True),
+                    QCInspection.blocks_progression.is_(True),
+                    QCInspection.release_required.is_(True),
+                ).limit(1).with_for_update()
+            )
+            if result.scalar_one_or_none() is None:
+                raise ValueError(
+                    f"Shipment {shipment.shipment_no} cannot be dispatched: lot {line.lot_id} lacks an accepted, "
+                    f"passed finished-goods QC inspection for required template {template_id}."
+                )
+
+        unresolved = await db.execute(
+            select(QCInspection.id).where(
+                QCInspection.lot_id == line.lot_id,
+                QCInspection.product_id == line.product_id,
+                QCInspection.warehouse_id == shipment.warehouse_id,
+                QCInspection.qc_type == QCType.FINISHED_GOODS,
+                QCInspection.is_mandatory.is_(True),
+                QCInspection.release_required.is_(True),
+                or_(
+                    QCInspection.status != QCStatus.PASSED,
+                    QCInspection.decision.is_distinct_from(QCDecision.ACCEPT),
+                ),
+            ).limit(1).with_for_update()
+        )
+        if unresolved.scalar_one_or_none() is not None:
+            raise ValueError(
+                f"Shipment {shipment.shipment_no} cannot be dispatched: lot {line.lot_id} has an unresolved "
+                "mandatory finished-goods inspection."
+            )
 
 
 async def prepare_receiving_gate_test_result(db: AsyncSession, inspection: QCInspection, data: dict) -> dict:
@@ -651,6 +726,12 @@ def _validate_gate_template_scope(target_module: str, trigger_event: str, templa
     ):
         if any(template.qc_type != QCType.FINISHED_GOODS for template in templates):
             raise ValueError("Finished-goods release gates can link only FINISHED_GOODS QC templates.")
+    if (
+        target_module.strip().lower() == DISPATCH_GATE_TARGET_MODULE
+        and trigger_event.strip().upper() == DISPATCH_GATE_TRIGGER_EVENT
+    ):
+        if any(template.qc_type != QCType.FINISHED_GOODS for template in templates):
+            raise ValueError("Dispatch gates can link only FINISHED_GOODS QC templates.")
 
 
 def _validate_gate_effective_window(effective_from: Optional[date], effective_to: Optional[date]) -> None:

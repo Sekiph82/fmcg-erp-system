@@ -469,16 +469,23 @@ async def create_qc_for_order(
         if lot_id is None:
             raise HTTPException(422, "Finished-goods QC requires a traceable finished-goods lot")
         from app.services.qms_service import (
+            DISPATCH_GATE_TARGET_MODULE,
+            DISPATCH_GATE_TRIGGER_EVENT,
             FINISHED_GOODS_GATE_TARGET_MODULE,
             FINISHED_GOODS_RELEASE_GATE_TRIGGER_EVENT,
+            list_dispatch_quality_gates,
             list_finished_goods_quality_gates,
-            lock_quality_gate_scope,
+            lock_quality_gate_scopes,
         )
 
-        await lock_quality_gate_scope(
-            db, FINISHED_GOODS_GATE_TARGET_MODULE, FINISHED_GOODS_RELEASE_GATE_TRIGGER_EVENT
-        )
-        gates = await list_finished_goods_quality_gates(db, date.today())
+        await lock_quality_gate_scopes(db, [
+            (FINISHED_GOODS_GATE_TARGET_MODULE, FINISHED_GOODS_RELEASE_GATE_TRIGGER_EVENT),
+            (DISPATCH_GATE_TARGET_MODULE, DISPATCH_GATE_TRIGGER_EVENT),
+        ])
+        gates = [
+            *await list_finished_goods_quality_gates(db, date.today()),
+            *await list_dispatch_quality_gates(db, date.today()),
+        ]
         required_template_ids = list(dict.fromkeys(
             required.id
             for gate in gates if gate.is_mandatory

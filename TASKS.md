@@ -11,8 +11,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 - Current Milestone: M27 — Quality Gates
 - Current Sprint: M27.S02 — Transaction Enforcement
 - Current Task: M27.S02.T004 — Dispatch gate
-- Current Task Status: IN_PROGRESS
-- Next Task/Action: M27.S02.T004 — Dispatch gate
+- Current Task Status: COMPLETE
+- Next Task/Action: M27.S03.T001 — Hold/quarantine enforcement
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -827,7 +827,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
   Evidence: [CODEX implementation log](coordination/sessions/M27.S02.T002/CODEX_LOG_V01.md); mandatory production-release and in-process gates enforce accepted/passed template inspections before status transitions and before completion side effects. Production inspections derive order scope; in-process inspections must follow actual start. Fresh disposable PostgreSQL 16 migration through 20261029_0031 and production-gate DB test passed; 42 focused/regression tests passed and 12 DB-only tests skipped; independent read-only review found no remaining material issue.
 - [x] M27.S02.T003 — Finished-goods release gate
   Evidence: [CODEX implementation log](coordination/sessions/M27.S02.T003/CODEX_LOG_V01.md); mandatory inventory/ON_FINISHED_GOODS_RELEASE gates keep lot stock quarantined until every linked FG QC template is complete and accepted/passed, with traceable receipt/order/lot scope, template-authoritative results, and serialized release. Fresh disposable PostgreSQL 16 migration through 20261029_0031 and DB integration test passed; 48 focused/regression tests passed, 7 DB-only cases skipped; independent read-only review findings were fixed and cleared.
-- [~] M27.S02.T004 — Dispatch gate
+- [x] M27.S02.T004 — Dispatch gate
+  Evidence: [CODEX implementation log](coordination/sessions/M27.S02.T004/CODEX_LOG_V01.md); active mandatory sales/ON_DISPATCH quality gates require lot traceability, all linked FG QC templates accepted/passed, and no unresolved mandatory FG inspections before any stock, movement, shipment, or sales-order mutation. Fresh disposable PostgreSQL 16 migration through 20261029_0031 and dispatch DB integration test passed; 54 focused/regression tests passed, 7 DB-only cases skipped; independent read-only review found no material issue.
 
 ## M27.S03 — Exceptions
 - [ ] M27.S03.T001 — Hold/quarantine enforcement
