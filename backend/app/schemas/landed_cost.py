@@ -109,6 +109,25 @@ class LandedCostLineActualOut(BaseModel):
     source_reference: str
     recorded_by_id: Optional[UUID] = None
     recorded_at: datetime
+    actual_amount_base: Optional[Decimal] = None
+    variance_amount_base: Optional[Decimal] = None
+    variance_status: Optional[str] = None
+    posting_error: Optional[str] = None
+    posted_at: Optional[datetime] = None
+    variance_postings: List["LandedCostActualVariancePostingOut"] = Field(default_factory=list)
+
+
+class LandedCostActualVariancePostingOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: UUID
+    actual_id: UUID
+    allocation_line_id: UUID
+    variance_amount_base: Decimal
+    posting_batch_id: Optional[UUID] = None
+    journal_entry_id: Optional[UUID] = None
+    accounting_status: Optional[OperationalPostingStatus] = None
+    posting_error: Optional[str] = None
+    posted_at: Optional[datetime] = None
 
 
 LandedCostLineOut.model_rebuild()

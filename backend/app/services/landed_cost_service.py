@@ -5,7 +5,6 @@ Handles: document creation, GRN linking, allocation engine,
 """
 from __future__ import annotations
 
-import re
 from datetime import datetime, date, timezone
 from decimal import Decimal, ROUND_HALF_UP
 from typing import List, Optional, Any
@@ -29,11 +28,11 @@ from app.models.finance import (
 from app.models.inventory import CostLayer
 from app.models.landed_cost import (
     LandedCostHeader, LandedCostLine, LandedCostGRNLink,
-    LandedCostLineActual, LandedCostAllocationLine, LCInventoryAdjustment, LCAIRecommendation,
+    LandedCostLineActual,
+    LandedCostAllocationLine, LCInventoryAdjustment, LCAIRecommendation,
     LCAllocationMethod,
 )
 from app.models.procurement import GoodsReceipt, GRNLine, GRNStatus, POLine
-from app.models.master import Material
 from app.schemas.landed_cost import (
     LandedCostHeaderCreate, LandedCostHeaderUpdate,
     LandedCostLineCreate, LandedCostLineActualCreate, LandedCostGRNLinkCreate,
@@ -170,7 +169,9 @@ async def get_header(db: AsyncSession, header_id: UUID) -> Optional[LandedCostHe
     result = await db.execute(
         select(LandedCostHeader)
         .options(
-            selectinload(LandedCostHeader.cost_lines).selectinload(LandedCostLine.actual_record),
+            selectinload(LandedCostHeader.cost_lines)
+            .selectinload(LandedCostLine.actual_record)
+            .selectinload(LandedCostLineActual.variance_postings),
             selectinload(LandedCostHeader.grn_links),
             selectinload(LandedCostHeader.allocation_lines),
             selectinload(LandedCostHeader.ai_recs),
@@ -313,14 +314,18 @@ async def record_actual_cost(
         if posted_allocation:
             raise ValueError("Posted allocations are immutable; reconcile actual cost through a separate adjustment")
 
-    db.add(LandedCostLineActual(
+    actual = LandedCostLineActual(
         lc_line_id=line_id,
         amount_fc=_R(payload.amount_fc),
         source_reference=payload.source_reference,
         recorded_by_id=recorded_by_id,
-    ))
+    )
+    db.add(actual)
 
     if header.status != "POSTED":
+        actual.actual_amount_base = _R(_D(payload.amount_fc) * _D(line.exchange_rate))
+        actual.variance_amount_base = Decimal("0.0000")
+        actual.variance_status = "RECORDED"
         line.amount_fc = _R(payload.amount_fc)
         line.amount_base = _R(_D(payload.amount_fc) * _D(line.exchange_rate))
         await db.execute(delete(LandedCostAllocationLine).where(
@@ -337,6 +342,23 @@ async def record_actual_cost(
         header.total_lc_amount_fc, header.total_lc_amount_base = _header_totals(
             lines, _D(header.exchange_rate),
         )
+    else:
+        actual.actual_amount_base = _R(_D(payload.amount_fc) * _D(line.exchange_rate))
+        allocations = (await db.execute(
+            select(LandedCostAllocationLine).where(
+                LandedCostAllocationLine.header_id == header_id,
+                LandedCostAllocationLine.lc_line_id == line_id,
+            ).order_by(LandedCostAllocationLine.id).with_for_update()
+        )).scalars().all()
+        if allocations and any(not allocation.is_posted for allocation in allocations):
+            raise ValueError("Posted landed-cost line has an incomplete allocation; manual reconciliation is required")
+        original_base = sum((_R(allocation.allocated_amount) for allocation in allocations), Decimal("0.0000"))
+        if not allocations:
+            # Legacy posted records may lack allocation rows; keep the source auditable,
+            # but the variance-post endpoint will require complete posted source links.
+            original_base = _R(line.amount_base)
+        actual.variance_amount_base = _R(actual.actual_amount_base - original_base)
+        actual.variance_status = "NOT_REQUIRED" if actual.variance_amount_base == 0 else "PENDING"
 
     await db.commit()
     return await get_header(db, header_id)
@@ -557,7 +579,7 @@ async def post_landed_cost(
         hdr = (await db.execute(
             select(LandedCostHeader)
             .options(
-                selectinload(LandedCostHeader.cost_lines),
+                selectinload(LandedCostHeader.cost_lines).selectinload(LandedCostLine.actual_record),
                 selectinload(LandedCostHeader.grn_links),
                 selectinload(LandedCostHeader.allocation_lines),
             )
@@ -789,6 +811,308 @@ async def post_landed_cost(
         hdr.status = "POSTED"
         hdr.posted_at = datetime.now(timezone.utc).replace(tzinfo=None)
         hdr.posted_by = posted_by
+        for cost_line in hdr.cost_lines:
+            actual = cost_line.actual_record
+            if actual and actual.variance_status == "RECORDED":
+                actual.actual_amount_base = _R(_D(actual.amount_fc) * _D(cost_line.exchange_rate))
+                actual.variance_amount_base = Decimal("0.0000")
+                actual.variance_status = "NOT_REQUIRED"
+                actual.posting_error = None
+        await db.commit()
+        return await get_header(db, header_id)
+    except Exception:
+        await db.rollback()
+        raise
+
+
+def _append_signed_journal_line(
+    entry: JournalEntry,
+    *,
+    account_id: UUID,
+    signed_debit: Decimal,
+    description: str,
+    currency: str,
+) -> None:
+    """Append a signed debit (negative amounts become credits)."""
+    amount = _R(signed_debit)
+    if not amount:
+        return
+    entry.lines.append(JournalLine(
+        account_id=account_id,
+        description=description,
+        debit=amount if amount > 0 else Decimal("0.0000"),
+        credit=Decimal("0.0000") if amount > 0 else -amount,
+        currency=currency,
+    ))
+
+
+async def post_landed_cost_actual_variance(
+    db: AsyncSession,
+    header_id: UUID,
+    line_id: UUID,
+    *,
+    posted_by_id: UUID,
+) -> LandedCostHeader:
+    """Post a recorded post-close actual as a separate, idempotent adjustment."""
+    from app.services.finance_service import (
+        apply_operational_posting_link,
+        assert_journal_lines_postable,
+        find_inventory_account_mapping,
+        get_or_create_operational_posting_event,
+        mark_journal_posted,
+        mark_operational_posting_posted,
+    )
+
+    try:
+        header = (await db.execute(
+            select(LandedCostHeader).where(LandedCostHeader.id == header_id).with_for_update()
+        )).scalar_one_or_none()
+        if not header:
+            raise ValueError("Landed cost document not found")
+        if header.status != "POSTED":
+            raise ValueError("Actual-cost variance can only be posted after the landed-cost estimate is posted")
+        if not header.bill_date:
+            raise ValueError("A bill date is required for period-aware variance posting")
+
+        line = (await db.execute(
+            select(LandedCostLine).where(
+                LandedCostLine.id == line_id,
+                LandedCostLine.header_id == header_id,
+            ).with_for_update()
+        )).scalar_one_or_none()
+        if not line:
+            raise ValueError("Landed cost line not found")
+        actual = (await db.execute(
+            select(LandedCostLineActual).where(
+                LandedCostLineActual.lc_line_id == line_id,
+            ).with_for_update()
+        )).scalar_one_or_none()
+        if not actual:
+            raise ValueError("Record the actual source amount before posting its variance")
+        if actual.variance_status in {"POSTED", "NOT_REQUIRED"}:
+            await db.rollback()
+            return await get_header(db, header_id)
+        if actual.variance_status != "PENDING":
+            raise ValueError("This actual amount was recorded before estimate posting; no separate variance is due")
+
+        period = (await db.execute(
+            select(AccountingPeriod).where(
+                AccountingPeriod.period_start <= header.bill_date,
+                AccountingPeriod.period_end >= header.bill_date,
+            ).with_for_update()
+        )).scalar_one_or_none()
+        if not period:
+            raise ValueError(f"No accounting period exists for landed-cost bill date {header.bill_date.isoformat()}")
+        if period.status.value in {"CLOSED", "LOCKED"}:
+            raise ValueError(f"Accounting period {period.period_ym} is {period.status.value}")
+
+        allocations = (await db.execute(
+            select(LandedCostAllocationLine).where(
+                LandedCostAllocationLine.header_id == header_id,
+                LandedCostAllocationLine.lc_line_id == line_id,
+            ).order_by(LandedCostAllocationLine.id).with_for_update()
+        )).scalars().all()
+        if not allocations:
+            raise ValueError("Variance posting requires the original landed-cost allocation links")
+        for allocation in allocations:
+            if (
+                not allocation.is_posted
+                or allocation.accounting_status != OperationalPostingStatus.POSTED
+                or not allocation.posting_batch_id
+                or not allocation.journal_entry_id
+            ):
+                raise ValueError(f"Original allocation {allocation.id} is not fully posted; manual reconciliation is required")
+
+        actual_base = _R(_D(actual.amount_fc) * _D(line.exchange_rate))
+        original_base = sum((_R(allocation.allocated_amount) for allocation in allocations), Decimal("0.0000"))
+        variance_total = _R(actual_base - original_base)
+        actual.actual_amount_base = actual_base
+        actual.variance_amount_base = variance_total
+        if variance_total == 0:
+            actual.variance_status = "NOT_REQUIRED"
+            actual.posting_error = None
+            await db.commit()
+            return await get_header(db, header_id)
+
+        if original_base <= 0:
+            raise ValueError("Original posted allocation total must be positive before variance allocation")
+
+        from app.models.landed_cost import LandedCostActualVariancePosting
+
+        already_posted = (await db.execute(
+            select(LandedCostActualVariancePosting.id).where(
+                LandedCostActualVariancePosting.actual_id == actual.id,
+            ).limit(1)
+        )).scalar_one_or_none()
+        if already_posted:
+            raise ValueError("A variance posting link already exists while the actual is not finalized; manual reconciliation is required")
+
+        posted_so_far = Decimal("0.0000")
+        for index, allocation in enumerate(allocations):
+            if index == len(allocations) - 1:
+                allocation_variance = _R(variance_total - posted_so_far)
+            else:
+                allocation_variance = _R(variance_total * _R(allocation.allocated_amount) / original_base)
+                posted_so_far += allocation_variance
+            if allocation_variance == 0:
+                continue
+
+            if not allocation.grn_line_id or not allocation.material_id:
+                raise ValueError(f"Original allocation {allocation.id} has no source GRN line or material")
+            grn_line = await db.get(GRNLine, allocation.grn_line_id)
+            if not grn_line or grn_line.grn_id != allocation.grn_id or not grn_line.stock_movement_id:
+                raise ValueError(f"Original allocation {allocation.id} has no matching posted GRN stock movement")
+            receipt = await db.get(GoodsReceipt, grn_line.grn_id)
+            if not receipt or not receipt.company_id:
+                raise ValueError(f"Source GRN line {grn_line.id} has no company for variance accounting")
+            company = await db.get(Company, receipt.company_id)
+            if not company or not company.base_currency:
+                raise ValueError(f"Source GRN line {grn_line.id} has no configured company base currency")
+            mapping = await find_inventory_account_mapping(
+                db,
+                stock_type="MATERIAL",
+                material_id=allocation.material_id,
+            )
+            if not mapping or not mapping.landed_cost_clearing_account_id:
+                raise ValueError(f"Material {allocation.material_id} needs an active landed-cost clearing account mapping")
+
+            stock_delta = Decimal("0.0000")
+            consumed_delta = Decimal("0.0000")
+            inventory_account_id = None
+            cogs_account_id = None
+            expense_account_id = None
+            layer = None
+            if line.is_included_in_valuation:
+                if not mapping.inventory_account_id or (mapping.valuation_method or "").strip().upper() != "FIFO":
+                    raise ValueError("Landed-cost variance capitalization requires the original FIFO inventory mapping")
+                if not allocation.inventory_adj_id:
+                    raise ValueError(f"Capitalized allocation {allocation.id} has no original inventory-adjustment link")
+                original_adjustment = await db.get(LCInventoryAdjustment, allocation.inventory_adj_id)
+                if (
+                    not original_adjustment
+                    or original_adjustment.header_id != header_id
+                    or original_adjustment.grn_line_id != allocation.grn_line_id
+                    or original_adjustment.accounting_status != OperationalPostingStatus.POSTED
+                ):
+                    raise ValueError(f"Capitalized allocation {allocation.id} has an inconsistent original inventory adjustment")
+                layer = (await db.execute(
+                    select(CostLayer).where(
+                        CostLayer.movement_id == grn_line.stock_movement_id,
+                    ).with_for_update()
+                )).scalar_one_or_none()
+                received_qty = _D(allocation.received_qty)
+                if (
+                    not layer
+                    or layer.material_id != allocation.material_id
+                    or _D(layer.qty_received) != received_qty
+                    or received_qty <= 0
+                ):
+                    raise ValueError(f"Source FIFO layer does not match allocation {allocation.id}")
+                on_hand = _D(layer.qty_remaining)
+                old_unit_cost = _D(layer.unit_cost).quantize(Decimal("0.000001"))
+                old_total_value = _R(layer.total_value)
+                if on_hand < 0 or on_hand > received_qty or _R(on_hand * old_unit_cost) != old_total_value:
+                    raise ValueError(f"Source FIFO layer {layer.id} has inconsistent quantity and value")
+                stock_delta = _R(allocation_variance * on_hand / received_qty)
+                consumed_delta = _R(allocation_variance - stock_delta)
+                new_total_value = _R(old_total_value + stock_delta)
+                if new_total_value < 0:
+                    raise ValueError(f"Variance would reduce FIFO layer {layer.id} below zero value")
+                if on_hand:
+                    new_unit_cost = (new_total_value / on_hand).quantize(Decimal("0.000001"), rounding=ROUND_HALF_UP)
+                    if _R(on_hand * new_unit_cost) != new_total_value:
+                        raise ValueError(f"Variance for FIFO layer {layer.id} cannot be represented safely at six-decimal unit-cost precision")
+                else:
+                    new_unit_cost = old_unit_cost
+                inventory_account_id = mapping.inventory_account_id
+                cogs_account_id = mapping.cogs_account_id
+                if consumed_delta and not cogs_account_id:
+                    raise ValueError(f"Material {allocation.material_id} needs a COGS account for consumed receipt quantity")
+            else:
+                if not line.account_code:
+                    raise ValueError(f"Non-capitalizable landed-cost line {line.id} needs an explicit expense account code")
+                expense_account = (await db.execute(
+                    select(ChartOfAccount).where(ChartOfAccount.code == line.account_code)
+                )).scalar_one_or_none()
+                if not expense_account or expense_account.account_type != AccountType.EXPENSE:
+                    raise ValueError(f"Landed-cost expense account {line.account_code} must resolve to a configured expense account")
+                expense_account_id = expense_account.id
+
+            event, batch, created = await get_or_create_operational_posting_event(
+                db,
+                source_module="landed_cost",
+                source_event="LANDED_COST_ACTUAL_VARIANCE_POST",
+                source_id=header_id,
+                source_line_id=allocation.id,
+                source_ref=f"{header.lc_no}:actual:{actual.id}",
+                stock_movement_id=grn_line.stock_movement_id,
+                event_date=header.bill_date,
+                amount=allocation_variance,
+                currency=company.base_currency,
+                created_by_id=posted_by_id,
+                require_period=True,
+            )
+            if not created:
+                raise ValueError(f"A prior actual-variance event exists for allocation {allocation.id}; manual reconciliation is required")
+
+            entry = JournalEntry(
+                entry_no=f"LCVAR-{str(allocation.id).replace('-', '')}",
+                entry_date=header.bill_date,
+                description=f"Landed-cost actual variance {header.lc_no}",
+                source_module="landed_cost",
+                source_event="LANDED_COST_ACTUAL_VARIANCE_POST",
+                source_id=allocation.id,
+                source_ref=f"{header.lc_no}:{actual.source_reference}",
+                company_id=receipt.company_id,
+                status=JournalStatus.DRAFT,
+                posting_batch_id=batch.id,
+                created_by_id=posted_by_id,
+            )
+            if line.is_included_in_valuation:
+                _append_signed_journal_line(
+                    entry, account_id=inventory_account_id, signed_debit=stock_delta,
+                    description=f"Inventory landed-cost variance {allocation.id}", currency=company.base_currency,
+                )
+                _append_signed_journal_line(
+                    entry, account_id=cogs_account_id, signed_debit=consumed_delta,
+                    description=f"Consumed landed-cost variance {allocation.id}", currency=company.base_currency,
+                )
+            else:
+                _append_signed_journal_line(
+                    entry, account_id=expense_account_id, signed_debit=allocation_variance,
+                    description=f"Landed-cost expense variance {allocation.id}", currency=company.base_currency,
+                )
+            _append_signed_journal_line(
+                entry, account_id=mapping.landed_cost_clearing_account_id,
+                signed_debit=-allocation_variance,
+                description=f"Landed-cost clearing variance {allocation.id}", currency=company.base_currency,
+            )
+            db.add(entry)
+            await db.flush()
+            await assert_journal_lines_postable(db, entry.lines)
+            await mark_journal_posted(db, entry, posted_by_id, require_period=True)
+            await mark_operational_posting_posted(
+                db, event, batch, journal_entry_id=entry.id, posted_by_id=posted_by_id,
+            )
+            if layer:
+                layer.unit_cost = new_unit_cost
+                layer.total_value = new_total_value
+            posting = LandedCostActualVariancePosting(
+                actual_id=actual.id,
+                allocation_line_id=allocation.id,
+                variance_amount_base=allocation_variance,
+                posting_batch_id=batch.id,
+                journal_entry_id=entry.id,
+                accounting_status=OperationalPostingStatus.POSTED,
+                posting_error=None,
+                posted_at=datetime.now(timezone.utc).replace(tzinfo=None),
+            )
+            db.add(posting)
+            apply_operational_posting_link(posting, event, journal_entry_id=entry.id)
+
+        actual.variance_status = "POSTED"
+        actual.posting_error = None
+        actual.posted_at = datetime.now(timezone.utc).replace(tzinfo=None)
         await db.commit()
         return await get_header(db, header_id)
     except Exception:

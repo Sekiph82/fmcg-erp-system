@@ -2,14 +2,14 @@ import uuid
 import enum
 from datetime import datetime, timezone
 from sqlalchemy import (
-    Column, String, Text, Numeric, Integer, Boolean,
+    Column, String, Text, Numeric, Boolean,
     ForeignKey, Date, DateTime, JSON, Enum, Index, UniqueConstraint,
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
 from app.db.base import Base, TimestampMixin
-from app.models.finance import ExchangeRate, OperationalPostingStatus
+from app.models.finance import OperationalPostingStatus
 
 
 # ── Enums ─────────────────────────────────────────────────────────────────────
@@ -156,6 +156,7 @@ class LandedCostLineActual(Base):
     __table_args__ = (
         UniqueConstraint("lc_line_id", name="uq_lc_line_actuals_lc_line_id"),
         Index("ix_lc_line_actuals_recorded_at", "recorded_at"),
+        {"comment": "added by Alembic revision 20261029_0039"},
     )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -168,9 +169,62 @@ class LandedCostLineActual(Base):
     source_reference = Column(String(200), nullable=False)
     recorded_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     recorded_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+    actual_amount_base = Column(
+        Numeric(14, 4), nullable=True,
+        comment="Added by Alembic revision 20261029_0041; actual source amount translated at the saved landed-cost line rate",
+    )
+    variance_amount_base = Column(
+        Numeric(14, 4), nullable=True,
+        comment="Added by Alembic revision 20261029_0041; actual base amount less the immutable original posted allocation",
+    )
+    variance_status = Column(
+        String(20), nullable=True,
+        comment="Added by Alembic revision 20261029_0041; RECORDED, PENDING, POSTED, or NOT_REQUIRED",
+    )
+    posting_error = Column(
+        Text, nullable=True,
+        comment="Added by Alembic revision 20261029_0041; bounded reconciliation detail for a failed variance posting",
+    )
+    posted_at = Column(
+        DateTime, nullable=True,
+        comment="Added by Alembic revision 20261029_0041; successful actual-variance posting timestamp",
+    )
 
     line = relationship("LandedCostLine", back_populates="actual_record")
     recorded_by = relationship("User", foreign_keys=[recorded_by_id])
+    variance_postings = relationship(
+        "LandedCostActualVariancePosting",
+        back_populates="actual",
+        cascade="all, delete-orphan",
+        order_by="LandedCostActualVariancePosting.id",
+    )
+
+
+class LandedCostActualVariancePosting(Base, TimestampMixin):
+    """Immutable GL posting link for one allocation in an actual-cost variance."""
+    __tablename__ = "lc_actual_variance_postings"
+    __table_args__ = (
+        UniqueConstraint("actual_id", "allocation_line_id", name="uq_lc_actual_variance_allocation"),
+        Index("ix_lc_actual_variance_postings_batch_id", "posting_batch_id"),
+        Index("ix_lc_actual_variance_postings_journal_id", "journal_entry_id"),
+        Index("ix_lc_actual_variance_postings_status", "accounting_status"),
+        {"comment": "Added by Alembic revision 20261029_0041"},
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    actual_id = Column(UUID(as_uuid=True), ForeignKey("lc_line_actuals.id", ondelete="CASCADE"), nullable=False)
+    allocation_line_id = Column(UUID(as_uuid=True), ForeignKey("lc_allocation_lines.id", ondelete="RESTRICT"), nullable=False)
+    variance_amount_base = Column(Numeric(14, 4), nullable=False)
+    posting_batch_id = Column(UUID(as_uuid=True), ForeignKey("accounting_posting_batches.id", ondelete="SET NULL"), nullable=True)
+    journal_entry_id = Column(UUID(as_uuid=True), ForeignKey("journal_entries.id", ondelete="SET NULL"), nullable=True)
+    accounting_status = Column(Enum(OperationalPostingStatus, name="operational_posting_status"), nullable=True)
+    posting_error = Column(Text, nullable=True)
+    posted_at = Column(DateTime, nullable=True)
+
+    actual = relationship("LandedCostLineActual", back_populates="variance_postings")
+    allocation_line = relationship("LandedCostAllocationLine", foreign_keys=[allocation_line_id])
+    posting_batch = relationship("AccountingPostingBatch", foreign_keys=[posting_batch_id])
+    journal_entry = relationship("JournalEntry", foreign_keys=[journal_entry_id])
 
 
 class LandedCostGRNLink(Base, TimestampMixin):

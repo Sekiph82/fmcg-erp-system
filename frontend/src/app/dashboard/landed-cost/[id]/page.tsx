@@ -37,6 +37,11 @@ export default function LandedCostDetailPage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["lc-doc", id] }),
   });
 
+  const postActualVariance = useMutation({
+    mutationFn: (lineId: string) => lcApi.postActualVariance(id, lineId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["lc-doc", id] }),
+  });
+
   const cancel = useMutation({
     mutationFn: () => lcApi.cancel(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["lc-doc", id] }),
@@ -127,7 +132,7 @@ export default function LandedCostDetailPage() {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 text-xs text-gray-500 uppercase">
             <tr>
-              {["Type", "Description", "Vendor", "Estimated (FC)", "Actual (FC)", "Variance (FC)", "Variance (Base)", "Actual Source", "Ccy", "Rate", "Booked Base", "In Valuation", "Record Actual"].map((h) => (
+              {["Type", "Description", "Vendor", "Estimated (FC)", "Actual (FC)", "Variance (FC)", "Variance (Base)", "Actual Source", "Ccy", "Rate", "Booked Base", "In Valuation", "Actual / Posting"].map((h) => (
                 <th key={h} className="px-4 py-2 text-left font-medium">{h}</th>
               ))}
             </tr>
@@ -196,8 +201,27 @@ export default function LandedCostDetailPage() {
                         {recordActual.isPending ? "Saving…" : "Record actual"}
                       </button>
                     </div>
+                  ) : cl.actual_record?.variance_status === "PENDING" && doc.status === "POSTED" && hasPermission("finance.post") ? (
+                    <div className="flex min-w-44 flex-col gap-1">
+                      <span className="text-xs text-amber-700">Variance awaits posting</span>
+                      <button
+                        onClick={() => postActualVariance.mutate(cl.id)}
+                        disabled={postActualVariance.isPending}
+                        className="rounded bg-indigo-600 px-2 py-1 text-xs text-white disabled:opacity-50"
+                      >
+                        {postActualVariance.isPending ? "Posting…" : "Post variance"}
+                      </button>
+                    </div>
                   ) : cl.actual_record ? (
-                    <span title={`Recorded ${new Date(cl.actual_record.recorded_at).toLocaleString()}`}>Recorded</span>
+                    <span title={`Recorded ${new Date(cl.actual_record.recorded_at).toLocaleString()}`}>
+                      {cl.actual_record.variance_status === "POSTED"
+                        ? `Posted (${cl.actual_record.variance_postings.length} entries)`
+                        : cl.actual_record.variance_status === "NOT_REQUIRED"
+                          ? "No variance due"
+                          : cl.actual_record.variance_status === "PENDING"
+                            ? "Pending finance posting"
+                            : "Recorded"}
+                    </span>
                   ) : "—"}
                 </td>
               </tr>
@@ -216,6 +240,9 @@ export default function LandedCostDetailPage() {
       )}
       {recordActual.error instanceof Error && (
         <p role="alert" className="text-sm text-red-600">{recordActual.error.message}</p>
+      )}
+      {postActualVariance.error instanceof Error && (
+        <p role="alert" className="text-sm text-red-600">{postActualVariance.error.message}</p>
       )}
 
       {/* GRN Links */}

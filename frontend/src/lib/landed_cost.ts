@@ -49,6 +49,24 @@ export interface LandedCostLineActual {
   source_reference: string;
   recorded_by_id: string | null;
   recorded_at: string;
+  actual_amount_base: number | null;
+  variance_amount_base: number | null;
+  variance_status: "RECORDED" | "PENDING" | "POSTED" | "NOT_REQUIRED" | null;
+  posting_error: string | null;
+  posted_at: string | null;
+  variance_postings: LandedCostActualVariancePosting[];
+}
+
+export interface LandedCostActualVariancePosting {
+  id: string;
+  actual_id: string;
+  allocation_line_id: string;
+  variance_amount_base: number;
+  posting_batch_id: string | null;
+  journal_entry_id: string | null;
+  accounting_status: "PENDING" | "POSTED" | "FAILED" | "REVERSED" | "NOT_REQUIRED" | null;
+  posting_error: string | null;
+  posted_at: string | null;
 }
 
 export interface LandedCostGRNLink {
@@ -234,6 +252,8 @@ export const lcApi = {
 
   recordActual: (headerId: string, lineId: string, body: { amount_fc: number; source_reference: string }) =>
     apiClient.post<LandedCostOut>(`${BASE}/${headerId}/lines/${lineId}/actual`, body).then((r) => r.data),
+  postActualVariance: (headerId: string, lineId: string) =>
+    apiClient.post<LandedCostOut>(`${BASE}/${headerId}/lines/${lineId}/actual/post`, {}).then((r) => r.data),
 
   // GRN links
   addGRNLink: (headerId: string, body: Record<string, unknown>) =>

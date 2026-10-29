@@ -1,0 +1,10 @@
+RESULT=PASS
+POSTGRES_IMAGE=postgres:16-alpine
+POSTGRES_IMAGE_ID=sha256:16bc17c64a573ef34162af9298258d1aec548232985b33ed7b1eac33ba35c229
+CONTAINER=codex-m25-s03-t002-9f8bfd559fea40638fc6
+DATABASE=fmcg_m25_s03_t002_9f8bfd559fea40638fc6
+DATA=synthetic only
+NETWORK=host port bound to 127.0.0.1 only; no volume mounts
+MIGRATION=20261029_0041 (head)
+PYTEST=8 passed in 6.40s
+CLEANUP=runner verified exact task/disposable labels, stopped container, and confirmed no matching container remained

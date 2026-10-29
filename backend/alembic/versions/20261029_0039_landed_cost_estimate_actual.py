@@ -35,7 +35,7 @@ def _column_marker(bind, table: str, column: str):
 def _actual_table_shape(bind) -> bool:
     columns = {column["name"]: column for column in sa.inspect(bind).get_columns(ACTUAL_TABLE)}
     expected = {"id", "lc_line_id", "amount_fc", "source_reference", "recorded_by_id", "recorded_at"}
-    if set(columns) != expected:
+    if not expected.issubset(columns):
         return False
     types = {
         "id": sa.Uuid,
@@ -77,7 +77,36 @@ def _actual_table_shape(bind) -> bool:
          (fk.get("options") or {}).get("ondelete", "").upper())
         for fk in foreign_keys if len(fk["constrained_columns"]) == 1 and len(fk["referred_columns"]) == 1
     }
-    return unique_line and expected_fks <= actual_fks
+    allowed_future_columns = {
+        "actual_amount_base": (sa.Numeric, 14, 4,
+                               "Added by Alembic revision 20261029_0041; actual source amount translated at the saved landed-cost line rate"),
+        "variance_amount_base": (sa.Numeric, 14, 4,
+                                 "Added by Alembic revision 20261029_0041; actual base amount less the immutable original posted allocation"),
+        "variance_status": (sa.String, None, 20,
+                            "Added by Alembic revision 20261029_0041; RECORDED, PENDING, POSTED, or NOT_REQUIRED"),
+        "posting_error": (sa.Text, None, None,
+                          "Added by Alembic revision 20261029_0041; bounded reconciliation detail for a failed variance posting"),
+        "posted_at": (sa.DateTime, None, None,
+                      "Added by Alembic revision 20261029_0041; successful actual-variance posting timestamp"),
+    }
+    extras = set(columns) - expected
+    if extras - set(allowed_future_columns):
+        return False
+    for name in extras:
+        expected_type, precision, scale, comment = allowed_future_columns[name]
+        column = columns[name]
+        if not column["nullable"] or not isinstance(column["type"], expected_type):
+            return False
+        if precision is not None and (
+            column["type"].precision != precision or column["type"].scale != scale
+        ):
+            return False
+        if scale is not None and precision is None and column["type"].length != scale:
+            return False
+        if column.get("comment") != comment:
+            return False
+    table_comment = sa.inspect(bind).get_table_comment(ACTUAL_TABLE).get("text")
+    return unique_line and expected_fks <= actual_fks and table_comment == MARKER
 
 
 def upgrade() -> None:

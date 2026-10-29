@@ -91,6 +91,21 @@ async def record_actual_cost(
         raise HTTPException(400, str(e))
 
 
+@router.post("/{header_id}/lines/{line_id}/actual/post", response_model=LandedCostOut)
+async def post_actual_cost_variance(
+    header_id: UUID,
+    line_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(require_permission("finance", "post")),
+):
+    try:
+        return await svc.post_landed_cost_actual_variance(
+            db, header_id, line_id, posted_by_id=current_user.id
+        )
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+
+
 # ── GRN Links ─────────────────────────────────────────────────────────────────
 
 @router.post("/{header_id}/grn-links", response_model=LandedCostOut, status_code=201)
