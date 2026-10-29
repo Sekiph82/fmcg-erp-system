@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import random
 import uuid
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal, InvalidOperation
 from typing import List, Optional
 
@@ -17,12 +17,13 @@ from app.models.quality import (
     HazardAnalysis, CriticalControlPoint, CCPMonitoringLog,
     CorrectiveAction, CorrectiveActionStatus, CorrectiveActionStep,
     QCDeviation, DeviationStatus, RiskLevel,
-    LotQualityStatus, ReleaseStatus, AllergenValidationRecord, QualityGateDefinition, QualityGateSeverity, QCTemplate,
+    LotQualityStatus, ReleaseStatus, AllergenValidationRecord, QualityGateDefinition, QualityGateSeverity, QualityGateWaiver, QCTemplate,
     quality_gate_required_templates,
     QMSAIRecommendation, QMSAIAgentType, QMSAIRecStatus,
     SamplingMethod, ParameterType,
 )
 from app.models.inventory import Lot, Stock, StockMovement, MovementType, StockType
+from app.models.sales import ShipmentLine
 
 
 RECEIVING_GATE_TRIGGER_EVENT = "ON_RECEIPT"
@@ -121,6 +122,198 @@ async def lock_quality_gate_scopes(db: AsyncSession, scopes: list[tuple[str, str
         await db.execute(select(func.pg_advisory_xact_lock(func.hashtextextended(key, 0))))
 
 
+async def has_active_quality_gate_waiver(
+    db: AsyncSession, gate_definition_id: uuid.UUID, scope_type: str, scope_id: uuid.UUID,
+    *, as_of: Optional[datetime] = None,
+) -> bool:
+    # An approval remains effective for its fixed term even if its linked
+    # deviation is later resolved. Only expiry or the separately serialized
+    # revocation changes the gate decision during that term.
+    if gate_definition_id is None or scope_id is None:
+        return False
+    now = as_of or datetime.now(timezone.utc)
+    result = await db.execute(
+        select(QualityGateWaiver.id)
+        .where(
+            QualityGateWaiver.gate_definition_id == gate_definition_id,
+            QualityGateWaiver.scope_type == scope_type,
+            QualityGateWaiver.scope_id == scope_id,
+            QualityGateWaiver.status == "APPROVED",
+            QualityGateWaiver.expires_at > now,
+            QualityGateWaiver.revoked_at.is_(None),
+        ).limit(1)
+    )
+    return result.scalar_one_or_none() is not None
+
+
+def _expected_waiver_scope(gate: QualityGateDefinition) -> Optional[str]:
+    key = (gate.target_module.strip().lower(), gate.trigger_event.strip().upper())
+    return {
+        (RECEIVING_GATE_TARGET_MODULE, RECEIVING_GATE_TRIGGER_EVENT): "GRN_LINE",
+        (PRODUCTION_GATE_TARGET_MODULE, PRODUCTION_RELEASE_GATE_TRIGGER_EVENT): "PRODUCTION_ORDER",
+        (PRODUCTION_GATE_TARGET_MODULE, PRODUCTION_IN_PROCESS_GATE_TRIGGER_EVENT): "PRODUCTION_ORDER",
+        (FINISHED_GOODS_GATE_TARGET_MODULE, FINISHED_GOODS_RELEASE_GATE_TRIGGER_EVENT): "LOT",
+        (DISPATCH_GATE_TARGET_MODULE, DISPATCH_GATE_TRIGGER_EVENT): "SHIPMENT_LINE",
+    }.get(key)
+
+
+async def _validate_waiver_scope(db: AsyncSession, deviation: QCDeviation, scope_type: str, scope_id: uuid.UUID) -> None:
+    if scope_type == "GRN_LINE":
+        result = await db.execute(
+            select(QCInspection.grn_line_id, QCInspection.qc_type).where(QCInspection.id == deviation.inspection_id)
+        )
+        inspection_scope = result.one_or_none()
+        if (
+            deviation.inspection_id is None or inspection_scope is None
+            or inspection_scope.grn_line_id != scope_id or inspection_scope.qc_type != QCType.INCOMING
+        ):
+            raise ValueError("A receiving waiver must link a deviation from the same GRN line.")
+    elif scope_type == "PRODUCTION_ORDER":
+        if deviation.production_order_id != scope_id:
+            raise ValueError("A production waiver must link a deviation from the same production order.")
+    elif scope_type == "LOT":
+        if deviation.lot_id != scope_id:
+            raise ValueError("A finished-goods waiver must link a deviation from the same lot.")
+    elif scope_type == "SHIPMENT_LINE":
+        result = await db.execute(select(ShipmentLine.lot_id).where(ShipmentLine.id == scope_id))
+        lot_id = result.scalar_one_or_none()
+        if lot_id is None or deviation.lot_id != lot_id:
+            raise ValueError("A dispatch waiver must link a deviation from the shipment line's lot.")
+    else:
+        raise ValueError("Unsupported quality gate waiver scope.")
+
+
+async def request_quality_gate_waiver(
+    db: AsyncSession, data: dict, requested_by_id: uuid.UUID
+) -> QualityGateWaiver:
+    gate = await get_quality_gate_definition(db, data["gate_definition_id"], for_update=True)
+    if gate is None:
+        raise ValueError("Quality gate definition not found.")
+    today = date.today()
+    if not gate.is_active or gate.effective_from > today or (gate.effective_to and gate.effective_to < today):
+        raise ValueError("Only a currently effective quality gate can be waived.")
+    if (
+        not gate.waiver_allowed or gate.severity == QualityGateSeverity.CRITICAL.value
+        or not gate.waiver_reason_required or not gate.waiver_approval_required
+    ):
+        raise ValueError("This quality gate does not allow a reasoned, quality-approved waiver.")
+    expected_scope = _expected_waiver_scope(gate)
+    if expected_scope is None or data["scope_type"] != expected_scope:
+        raise ValueError("The waiver scope does not match the gate's module and trigger event.")
+
+    deviation_result = await db.execute(
+        select(QCDeviation).where(QCDeviation.id == data["deviation_id"]).with_for_update()
+    )
+    deviation = deviation_result.scalar_one_or_none()
+    if deviation is None:
+        raise ValueError("Linked deviation not found.")
+    if deviation.status not in {DeviationStatus.OPEN, DeviationStatus.UNDER_REVIEW}:
+        raise ValueError("A waiver can only be requested for an open or under-review deviation.")
+    if deviation.severity == RiskLevel.CRITICAL:
+        raise ValueError("A critical deviation cannot be waived.")
+    await _validate_waiver_scope(db, deviation, data["scope_type"], data["scope_id"])
+
+    await lock_quality_gate_scope(db, gate.target_module, gate.trigger_event)
+    now = datetime.now(timezone.utc)
+    existing_result = await db.execute(
+        select(QualityGateWaiver).where(
+            QualityGateWaiver.gate_definition_id == gate.id,
+            QualityGateWaiver.scope_type == data["scope_type"],
+            QualityGateWaiver.scope_id == data["scope_id"],
+            or_(
+                QualityGateWaiver.status == "PENDING",
+                and_(QualityGateWaiver.status == "APPROVED", QualityGateWaiver.expires_at > now,
+                     QualityGateWaiver.revoked_at.is_(None)),
+            ),
+        ).with_for_update()
+    )
+    if existing_result.scalar_one_or_none() is not None:
+        raise ValueError("A pending or active waiver already exists for this gate scope.")
+
+    waiver = QualityGateWaiver(
+        waiver_no=f"GWA-{uuid.uuid4().hex[:12].upper()}",
+        gate_definition_id=gate.id,
+        deviation_id=deviation.id,
+        scope_type=data["scope_type"],
+        scope_id=data["scope_id"],
+        reason=data["reason"],
+        requested_by_id=requested_by_id,
+    )
+    db.add(waiver)
+    await db.flush()
+    return waiver
+
+
+async def decide_quality_gate_waiver(
+    db: AsyncSession, waiver_id: uuid.UUID, decision: str, decided_by_id: uuid.UUID, notes: Optional[str] = None
+) -> QualityGateWaiver:
+    gate_id_result = await db.execute(
+        select(QualityGateWaiver.gate_definition_id).where(QualityGateWaiver.id == waiver_id)
+    )
+    gate_id = gate_id_result.scalar_one_or_none()
+    if gate_id is None:
+        raise ValueError("Quality gate waiver not found.")
+    gate = await get_quality_gate_definition(db, gate_id)
+    if gate is None:
+        raise ValueError("The waiver's quality gate definition no longer exists.")
+    await lock_quality_gate_scope(db, gate.target_module, gate.trigger_event)
+    result = await db.execute(
+        select(QualityGateWaiver)
+        .where(QualityGateWaiver.id == waiver_id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    )
+    waiver = result.scalar_one_or_none()
+    if waiver is None:
+        raise ValueError("Quality gate waiver not found.")
+    if waiver.status != "PENDING":
+        raise ValueError("Only a pending waiver can be approved or rejected.")
+    if waiver.requested_by_id == decided_by_id:
+        raise ValueError("The requester cannot approve or reject their own waiver.")
+    now = datetime.now(timezone.utc)
+    waiver.status = "APPROVED" if decision == "APPROVE" else "REJECTED"
+    waiver.decided_by_id = decided_by_id
+    waiver.decided_at = now
+    waiver.decision_notes = notes.strip() if notes and notes.strip() else None
+    waiver.expires_at = now + timedelta(hours=24) if decision == "APPROVE" else None
+    await db.flush()
+    return waiver
+
+
+async def revoke_quality_gate_waiver(
+    db: AsyncSession, waiver_id: uuid.UUID, revoked_by_id: uuid.UUID, notes: Optional[str] = None
+) -> QualityGateWaiver:
+    gate_id_result = await db.execute(
+        select(QualityGateWaiver.gate_definition_id).where(QualityGateWaiver.id == waiver_id)
+    )
+    gate_id = gate_id_result.scalar_one_or_none()
+    if gate_id is None:
+        raise ValueError("Quality gate waiver not found.")
+    gate = await get_quality_gate_definition(db, gate_id)
+    if gate is None:
+        raise ValueError("The waiver's quality gate definition no longer exists.")
+    await lock_quality_gate_scope(db, gate.target_module, gate.trigger_event)
+    result = await db.execute(
+        select(QualityGateWaiver)
+        .where(QualityGateWaiver.id == waiver_id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    )
+    waiver = result.scalar_one_or_none()
+    if waiver is None:
+        raise ValueError("Quality gate waiver not found.")
+    if waiver.status != "APPROVED" or waiver.expires_at is None or waiver.expires_at <= datetime.now(timezone.utc):
+        raise ValueError("Only an active approved waiver can be revoked.")
+    if waiver.requested_by_id == revoked_by_id:
+        raise ValueError("The requester cannot revoke their own waiver.")
+    waiver.status = "REVOKED"
+    waiver.revoked_by_id = revoked_by_id
+    waiver.revoked_at = datetime.now(timezone.utc)
+    waiver.revocation_notes = notes.strip() if notes and notes.strip() else None
+    await db.flush()
+    return waiver
+
+
 async def list_receiving_quality_gates(db: AsyncSession, as_of_date: date) -> list[QualityGateDefinition]:
     return await list_quality_gate_definitions(
         db,
@@ -199,7 +392,9 @@ async def ensure_receiving_quality_gates_pass(db: AsyncSession, grn) -> None:
                         QCInspection.release_required.is_(True),
                     ).limit(1)
                 )
-                if result.scalar_one_or_none() is None:
+                if result.scalar_one_or_none() is None and not await has_active_quality_gate_waiver(
+                    db, getattr(gate, "id", None), "GRN_LINE", line.id
+                ):
                     raise ValueError(
                         f"GRN {grn.grn_no} cannot be posted: required receiving QC template "
                         f"'{template.name}' for line {line.id} has no accepted, passed inspection."
@@ -234,7 +429,9 @@ async def ensure_production_quality_gates_pass(
             if trigger_event == PRODUCTION_IN_PROCESS_GATE_TRIGGER_EVENT:
                 query = query.where(QCInspection.created_at >= process_started_at)
             result = await db.execute(query.limit(1))
-            if result.scalar_one_or_none() is None:
+            if result.scalar_one_or_none() is None and not await has_active_quality_gate_waiver(
+                db, getattr(gate, "id", None), "PRODUCTION_ORDER", order.id
+            ):
                 raise ValueError(
                     f"Production order {order.order_no} cannot continue: required in-process QC template "
                     f"'{template.name}' for {trigger_event} has no accepted, passed inspection."
@@ -266,7 +463,9 @@ async def ensure_finished_goods_quality_gates_pass(
                     QCInspection.release_required.is_(True),
                 ).limit(1).with_for_update()
             )
-            if result.scalar_one_or_none() is None:
+            if result.scalar_one_or_none() is None and not await has_active_quality_gate_waiver(
+                db, getattr(gate, "id", None), "LOT", inspection.lot_id
+            ):
                 raise ValueError(
                     f"Finished-goods lot {inspection.lot_number or inspection.lot_id} cannot be released: "
                     f"required QC template '{template.name}' has no accepted, passed inspection."
@@ -318,30 +517,30 @@ async def ensure_dispatch_quality_gates_pass(
         db, list(dict.fromkeys(line.lot_id for line in lines if line.lot_id is not None))
     )
 
-    template_ids = list(dict.fromkeys(
-        template.id for gate in gates for template in gate.required_templates
-    ))
     for line in lines:
-        for template_id in template_ids:
-            result = await db.execute(
-                select(QCInspection.id).where(
-                    QCInspection.lot_id == line.lot_id,
-                    QCInspection.product_id == line.product_id,
-                    QCInspection.warehouse_id == shipment.warehouse_id,
-                    QCInspection.qc_type == QCType.FINISHED_GOODS,
-                    QCInspection.template_id == template_id,
-                    QCInspection.status == QCStatus.PASSED,
-                    QCInspection.decision == QCDecision.ACCEPT,
-                    QCInspection.is_mandatory.is_(True),
-                    QCInspection.blocks_progression.is_(True),
-                    QCInspection.release_required.is_(True),
-                ).limit(1).with_for_update()
-            )
-            if result.scalar_one_or_none() is None:
-                raise ValueError(
-                    f"Shipment {shipment.shipment_no} cannot be dispatched: lot {line.lot_id} lacks an accepted, "
-                    f"passed finished-goods QC inspection for required template {template_id}."
+        for gate in gates:
+            for template in gate.required_templates:
+                result = await db.execute(
+                    select(QCInspection.id).where(
+                        QCInspection.lot_id == line.lot_id,
+                        QCInspection.product_id == line.product_id,
+                        QCInspection.warehouse_id == shipment.warehouse_id,
+                        QCInspection.qc_type == QCType.FINISHED_GOODS,
+                        QCInspection.template_id == template.id,
+                        QCInspection.status == QCStatus.PASSED,
+                        QCInspection.decision == QCDecision.ACCEPT,
+                        QCInspection.is_mandatory.is_(True),
+                        QCInspection.blocks_progression.is_(True),
+                        QCInspection.release_required.is_(True),
+                    ).limit(1).with_for_update()
                 )
+                if result.scalar_one_or_none() is None and not await has_active_quality_gate_waiver(
+                    db, getattr(gate, "id", None), "SHIPMENT_LINE", getattr(line, "id", None)
+                ):
+                    raise ValueError(
+                        f"Shipment {shipment.shipment_no} cannot be dispatched: lot {line.lot_id} lacks an accepted, "
+                        f"passed finished-goods QC inspection for required template {template.id}."
+                    )
 
         unresolved = await db.execute(
             select(QCInspection.id).where(

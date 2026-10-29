@@ -363,6 +363,70 @@ class QCDeviationRead(QCDeviationBase):
     assigned_to_name: Optional[str] = None
 
 
+class QualityGateWaiverRequest(BaseModel):
+    gate_definition_id: uuid.UUID
+    deviation_id: uuid.UUID
+    scope_type: str
+    scope_id: uuid.UUID
+    reason: str = Field(min_length=1, max_length=4000)
+
+    @field_validator("scope_type")
+    @classmethod
+    def normalize_scope_type(cls, value):
+        normalized = value.strip().upper()
+        if normalized not in {"GRN_LINE", "PRODUCTION_ORDER", "LOT", "SHIPMENT_LINE"}:
+            raise ValueError("Unsupported quality gate waiver scope type.")
+        return normalized
+
+    @field_validator("reason")
+    @classmethod
+    def require_reason_text(cls, value):
+        value = value.strip()
+        if not value:
+            raise ValueError("A waiver reason is required.")
+        return value
+
+
+class QualityGateWaiverDecision(BaseModel):
+    decision: str
+    notes: Optional[str] = Field(default=None, max_length=4000)
+
+    @field_validator("decision")
+    @classmethod
+    def normalize_decision(cls, value):
+        normalized = value.strip().upper()
+        if normalized not in {"APPROVE", "REJECT"}:
+            raise ValueError("Decision must be APPROVE or REJECT.")
+        return normalized
+
+
+class QualityGateWaiverRevoke(BaseModel):
+    notes: Optional[str] = Field(default=None, max_length=4000)
+
+
+class QualityGateWaiverRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: uuid.UUID
+    waiver_no: str
+    gate_definition_id: uuid.UUID
+    deviation_id: uuid.UUID
+    scope_type: str
+    scope_id: uuid.UUID
+    reason: str
+    status: str
+    requested_by_id: uuid.UUID
+    requested_at: datetime
+    decided_by_id: Optional[uuid.UUID] = None
+    decided_at: Optional[datetime] = None
+    decision_notes: Optional[str] = None
+    expires_at: Optional[datetime] = None
+    revoked_by_id: Optional[uuid.UUID] = None
+    revoked_at: Optional[datetime] = None
+    revocation_notes: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+
+
 # ── Lot Quality Status ────────────────────────────────────────────────────────
 
 class LotQualityStatusRead(BaseModel):

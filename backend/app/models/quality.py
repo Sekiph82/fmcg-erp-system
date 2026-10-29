@@ -577,6 +577,60 @@ class QualityGateDefinition(Base, TimestampMixin):
         return [template.id for template in self.required_templates]
 
 
+class QualityGateWaiver(Base, TimestampMixin):
+    """Auditable, time-limited approval for a scoped noncritical quality gate."""
+    __tablename__ = "quality_gate_waivers"
+    __table_args__ = (
+        CheckConstraint(
+            "scope_type IN ('GRN_LINE', 'PRODUCTION_ORDER', 'LOT', 'SHIPMENT_LINE')",
+            name="ck_quality_gate_waivers_scope_type",
+        ),
+        CheckConstraint(
+            "status IN ('PENDING', 'APPROVED', 'REJECTED', 'REVOKED')",
+            name="ck_quality_gate_waivers_status",
+        ),
+        CheckConstraint("length(trim(reason)) > 0", name="ck_quality_gate_waivers_reason_not_blank"),
+        CheckConstraint(
+            "(status = 'PENDING' AND decided_by_id IS NULL AND decided_at IS NULL AND expires_at IS NULL) "
+            "OR (status = 'APPROVED' AND decided_by_id IS NOT NULL AND decided_at IS NOT NULL AND expires_at > decided_at) "
+            "OR (status IN ('REJECTED', 'REVOKED') AND decided_by_id IS NOT NULL AND decided_at IS NOT NULL)",
+            name="ck_quality_gate_waivers_decision_state",
+        ),
+        CheckConstraint(
+            "(status = 'REVOKED' AND revoked_by_id IS NOT NULL AND revoked_at IS NOT NULL) "
+            "OR (status != 'REVOKED' AND revoked_by_id IS NULL AND revoked_at IS NULL)",
+            name="ck_quality_gate_waivers_revocation_state",
+        ),
+        Index("ix_quality_gate_waivers_active_scope", "gate_definition_id", "scope_type", "scope_id", "status"),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    waiver_no = Column(String(50), nullable=False, unique=True, index=True)
+    gate_definition_id = Column(
+        UUID(as_uuid=True), ForeignKey("quality_gate_definitions.id", ondelete="RESTRICT"), nullable=False
+    )
+    deviation_id = Column(UUID(as_uuid=True), ForeignKey("qc_deviations.id", ondelete="RESTRICT"), nullable=False)
+    scope_type = Column(String(24), nullable=False)
+    scope_id = Column(UUID(as_uuid=True), nullable=False)
+    reason = Column(Text, nullable=False)
+    status = Column(String(16), nullable=False, default="PENDING", server_default="PENDING")
+    requested_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
+    requested_at = Column(DateTime(timezone=True), nullable=False, server_default=text("now()"))
+    decided_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=True)
+    decided_at = Column(DateTime(timezone=True), nullable=True)
+    decision_notes = Column(Text, nullable=True)
+    expires_at = Column(DateTime(timezone=True), nullable=True)
+    revoked_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=True)
+    revoked_at = Column(DateTime(timezone=True), nullable=True)
+    revocation_notes = Column(Text, nullable=True)
+
+    gate_definition = relationship("QualityGateDefinition")
+    deviation = relationship("QCDeviation")
+    requested_by = relationship("User", foreign_keys=[requested_by_id])
+    decided_by = relationship("User", foreign_keys=[decided_by_id])
+    revoked_by = relationship("User", foreign_keys=[revoked_by_id])
+
+
 quality_gate_required_templates = Table(
     "quality_gate_required_templates",
     Base.metadata,

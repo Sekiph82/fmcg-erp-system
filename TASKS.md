@@ -10,9 +10,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 - Current Milestone: M27 — Quality Gates
 - Current Sprint: M27.S03 — Exceptions
-- Current Task: M27.S03.T001 — Hold/quarantine enforcement
+- Current Task: M27.S03.T002 — Deviation/waiver approval
 - Current Task Status: COMPLETE
-- Next Task/Action: M27.S03.T002 — Deviation/waiver approval
+- Next Task/Action: M27.S03.T003 — NCR/CAPA escalation linkage
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -833,7 +833,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 ## M27.S03 — Exceptions
 - [x] M27.S03.T001 — Hold/quarantine enforcement
   Evidence: [CODEX implementation log](coordination/sessions/M27.S03.T001/CODEX_LOG_V01.md); lot holds now block physical stock across warehouses while preserving reservations, release rechecks mandatory QC/active FG gates, and dispatch rejects held or unreleased lots even without dispatch-gate configuration. Fresh disposable PostgreSQL 16 migration through 20261029_0031 and T001 DB integration passed; dispatch DB regression passed; 36 focused tests passed, 7 DB-only cases skipped; independent read-only review findings were fixed and cleared.
-- [ ] M27.S03.T002 — Deviation/waiver approval
+- [x] M27.S03.T002 — Deviation/waiver approval
+  Evidence: [CODEX implementation log](coordination/sessions/M27.S03.T002/CODEX_LOG_V01.md); implemented a version- and scope-specific waiver lifecycle with reasoned request, independent quality approval/rejection, 24-hour expiry, revocation, warehouse-scope authorization, and gate-operation serialization. Gate checks accept only an active waiver for missing required-template evidence; critical gates, failed/unresolved inspections, and hold/quarantine controls remain blocking. Deviation resolution/closure now requires documented corrective context and independent quality review. Fresh disposable PostgreSQL 16 migration through 20261029_0032 and waiver integration passed; 72 focused tests passed; independent read-only review cleared all findings.
 - [ ] M27.S03.T003 — NCR/CAPA escalation linkage
 - [ ] M27.S03.T004 — Gate audit history
 

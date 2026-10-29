@@ -13,6 +13,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.access_control import can_modify_scope, has_any_permission
 from app.core.deps import get_current_user, get_db
 from app.models.inventory import Stock
+from app.models.procurement import GoodsReceipt, GRNLine
+from app.models.production import ProductionOrder
+from app.models.sales import Shipment, ShipmentLine
 from app.models.quality import (
     QCType, QCStatus, QCDecision, QCInspection, QCTestResult,
     QCTemplate, QCTemplateParameter,
@@ -23,7 +26,7 @@ from app.models.quality import (
     QMSAIRecommendation, QMSAIAgentType, QMSAIRecStatus,
     QualityAuditChecklist, AuditStandard, AuditType, AuditResult,
     SupplierFoodSafetyApproval, SupplierFoodSafetyStatus,
-    InstrumentCalibration, AQLSamplingPlan, CertificateOfAnalysis,
+    InstrumentCalibration, AQLSamplingPlan, CertificateOfAnalysis, QualityGateWaiver,
 )
 from app.schemas.qms import (
     QCTemplateCreate, QCTemplateUpdate, QCTemplateRead,
@@ -37,6 +40,7 @@ from app.schemas.qms import (
     QMSAIRecRead, QMSAIRecReview,
     QMSDashboard, QCGateCheck,
     QualityGateDefinitionCreate, QualityGateDefinitionUpdate, QualityGateDefinitionRead,
+    QualityGateWaiverRequest, QualityGateWaiverDecision, QualityGateWaiverRevoke, QualityGateWaiverRead,
 )
 from app.services import qms_service as svc
 from app.crud import quality as qc_crud
@@ -125,6 +129,74 @@ def _require_quality_gate_definition_permission(user, action: str) -> None:
         )
 
 
+async def _waiver_warehouse_ids(db: AsyncSession, scope_type: str, scope_id: uuid.UUID) -> list[uuid.UUID]:
+    if scope_type == "GRN_LINE":
+        result = await db.execute(
+            select(GoodsReceipt.warehouse_id)
+            .join(GRNLine, GRNLine.grn_id == GoodsReceipt.id)
+            .where(GRNLine.id == scope_id)
+        )
+        warehouse_id = result.scalar_one_or_none()
+        return [warehouse_id] if warehouse_id else []
+    if scope_type == "PRODUCTION_ORDER":
+        result = await db.execute(
+            select(ProductionOrder.target_warehouse_id, ProductionOrder.source_warehouse_id)
+            .where(ProductionOrder.id == scope_id)
+        )
+        row = result.one_or_none()
+        return list(dict.fromkeys(value for value in row if value is not None)) if row else []
+    if scope_type == "LOT":
+        result = await db.execute(select(Stock.warehouse_id).where(Stock.lot_id == scope_id).distinct())
+        return list(result.scalars())
+    if scope_type == "SHIPMENT_LINE":
+        result = await db.execute(
+            select(Shipment.warehouse_id)
+            .join(ShipmentLine, ShipmentLine.shipment_id == Shipment.id)
+            .where(ShipmentLine.id == scope_id)
+        )
+        warehouse_id = result.scalar_one_or_none()
+        return [warehouse_id] if warehouse_id else []
+    return []
+
+
+async def _require_quality_waiver_scope_permission(
+    db: AsyncSession, user, action: str, scope_type: str, scope_id: uuid.UUID
+) -> None:
+    global_permissions = {
+        "request": ("quality.create", "quality.create_all", "quality.edit", "quality.edit_all"),
+        "approve": ("quality.approve", "quality.approve_all"),
+        "revoke": ("quality.approve", "quality.approve_all"),
+    }.get(action)
+    scoped_actions = {"request": ("create", "edit"), "approve": ("approve",), "revoke": ("approve",)}.get(action)
+    if global_permissions is None or scoped_actions is None:
+        raise ValueError(f"Unsupported quality waiver action: {action}")
+    if has_any_permission(user, global_permissions):
+        return
+    warehouse_ids = await _waiver_warehouse_ids(db, scope_type, scope_id)
+    if not warehouse_ids or any(
+        not any(can_modify_scope(user, "quality", scoped_action, "warehouse", warehouse_id)
+                for scoped_action in scoped_actions)
+        for warehouse_id in warehouse_ids
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "error": "forbidden",
+                "detail": f"A quality {action} permission covering every warehouse in this waiver scope is required.",
+            },
+        )
+
+
+async def _user_can_view_waiver_scope(db: AsyncSession, user, scope_type: str, scope_id: uuid.UUID) -> bool:
+    if has_any_permission(user, ("quality.view", "quality.view_all")):
+        return True
+    warehouse_ids = await _waiver_warehouse_ids(db, scope_type, scope_id)
+    return bool(warehouse_ids) and all(
+        can_modify_scope(user, "quality", "view", "warehouse", warehouse_id)
+        for warehouse_id in warehouse_ids
+    )
+
+
 def _is_gate_code_conflict(exc: IntegrityError) -> bool:
     original = getattr(exc, "orig", None)
     diagnostic = getattr(original, "diag", None)
@@ -202,6 +274,105 @@ async def update_quality_gate_definition(
         raise
     definition = await svc.get_quality_gate_definition(db, definition_id)
     return QualityGateDefinitionRead.model_validate(definition)
+
+
+@router.get("/gate-waivers", response_model=List[QualityGateWaiverRead])
+async def list_quality_gate_waivers(
+    status: Optional[str] = Query(default=None, pattern="^(PENDING|APPROVED|REJECTED|REVOKED)$"),
+    gate_definition_id: Optional[uuid.UUID] = None,
+    scope_id: Optional[uuid.UUID] = None,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    query = select(QualityGateWaiver)
+    if status:
+        query = query.where(QualityGateWaiver.status == status)
+    if gate_definition_id:
+        query = query.where(QualityGateWaiver.gate_definition_id == gate_definition_id)
+    if scope_id:
+        query = query.where(QualityGateWaiver.scope_id == scope_id)
+    result = await db.execute(query.order_by(QualityGateWaiver.requested_at.desc()))
+    waivers = list(result.scalars())
+    visible = []
+    for item in waivers:
+        if await _user_can_view_waiver_scope(db, current_user, item.scope_type, item.scope_id):
+            visible.append(QualityGateWaiverRead.model_validate(item))
+    return visible
+
+
+@router.post("/gate-waivers", response_model=QualityGateWaiverRead, status_code=201)
+async def request_quality_gate_waiver(
+    body: QualityGateWaiverRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    await _require_quality_waiver_scope_permission(
+        db, current_user, "request", body.scope_type, body.scope_id
+    )
+    try:
+        waiver = await svc.request_quality_gate_waiver(db, body.model_dump(), current_user.id)
+        await db.commit()
+    except ValueError as exc:
+        await db.rollback()
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except IntegrityError as exc:
+        await db.rollback()
+        constraint = getattr(getattr(getattr(exc, "orig", None), "diag", None), "constraint_name", None)
+        if constraint == "uq_quality_gate_waivers_pending_scope":
+            raise HTTPException(status_code=409, detail="A pending waiver already exists for this gate scope.") from exc
+        raise
+    result = await db.execute(select(QualityGateWaiver).where(QualityGateWaiver.id == waiver.id))
+    return QualityGateWaiverRead.model_validate(result.scalar_one())
+
+
+@router.post("/gate-waivers/{waiver_id}/decision", response_model=QualityGateWaiverRead)
+async def decide_quality_gate_waiver(
+    waiver_id: uuid.UUID,
+    body: QualityGateWaiverDecision,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    existing = await db.execute(select(QualityGateWaiver).where(QualityGateWaiver.id == waiver_id))
+    waiver_scope = existing.scalar_one_or_none()
+    if waiver_scope is None:
+        raise HTTPException(status_code=404, detail="Quality gate waiver not found.")
+    await _require_quality_waiver_scope_permission(
+        db, current_user, "approve", waiver_scope.scope_type, waiver_scope.scope_id
+    )
+    try:
+        waiver = await svc.decide_quality_gate_waiver(
+            db, waiver_id, body.decision, current_user.id, body.notes
+        )
+        await db.commit()
+    except ValueError as exc:
+        await db.rollback()
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    result = await db.execute(select(QualityGateWaiver).where(QualityGateWaiver.id == waiver.id))
+    return QualityGateWaiverRead.model_validate(result.scalar_one())
+
+
+@router.post("/gate-waivers/{waiver_id}/revoke", response_model=QualityGateWaiverRead)
+async def revoke_quality_gate_waiver(
+    waiver_id: uuid.UUID,
+    body: QualityGateWaiverRevoke,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    existing = await db.execute(select(QualityGateWaiver).where(QualityGateWaiver.id == waiver_id))
+    waiver_scope = existing.scalar_one_or_none()
+    if waiver_scope is None:
+        raise HTTPException(status_code=404, detail="Quality gate waiver not found.")
+    await _require_quality_waiver_scope_permission(
+        db, current_user, "revoke", waiver_scope.scope_type, waiver_scope.scope_id
+    )
+    try:
+        waiver = await svc.revoke_quality_gate_waiver(db, waiver_id, current_user.id, body.notes)
+        await db.commit()
+    except ValueError as exc:
+        await db.rollback()
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    result = await db.execute(select(QualityGateWaiver).where(QualityGateWaiver.id == waiver.id))
+    return QualityGateWaiverRead.model_validate(result.scalar_one())
 
 
 # ── QC Templates ──────────────────────────────────────────────────────────────
@@ -550,15 +721,45 @@ async def update_deviation(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    r = await db.execute(select(QCDeviation).where(QCDeviation.id == deviation_id))
+    r = await db.execute(select(QCDeviation).where(QCDeviation.id == deviation_id).with_for_update())
     d = r.scalar_one_or_none()
     if not d:
         raise HTTPException(404, "Deviation not found")
     updates = body.model_dump(exclude_unset=True)
-    if updates.get("status") == DeviationStatus.RESOLVED:
+    next_status = updates.get("status")
+    if d.status == DeviationStatus.CLOSED and updates:
+        raise HTTPException(status_code=409, detail="A closed deviation is immutable.")
+    if next_status == DeviationStatus.RESOLVED:
+        approval_scope_type = "LOT" if d.lot_id else "PRODUCTION_ORDER" if d.production_order_id else None
+        approval_scope_id = d.lot_id or d.production_order_id
+        if approval_scope_type is None or approval_scope_id is None:
+            raise HTTPException(status_code=403, detail="A scoped quality approval permission is required.")
+        await _require_quality_waiver_scope_permission(
+            db, current_user, "approve", approval_scope_type, approval_scope_id
+        )
+        if d.status not in {DeviationStatus.OPEN, DeviationStatus.UNDER_REVIEW}:
+            raise HTTPException(status_code=409, detail="Only an open or under-review deviation can be resolved.")
+        if d.reported_by_id == current_user.id:
+            raise HTTPException(status_code=403, detail="The deviation reporter cannot approve its resolution.")
+        root_cause = updates.get("root_cause", d.root_cause)
+        immediate_action = updates.get("immediate_action", d.immediate_action)
+        if not (root_cause or "").strip() or not (immediate_action or "").strip():
+            raise HTTPException(status_code=422, detail="Resolution requires a documented root cause and immediate action.")
         from datetime import datetime, timezone
         updates["resolved_at"] = datetime.now(timezone.utc)
         updates["resolved_by_id"] = current_user.id
+    elif next_status == DeviationStatus.CLOSED:
+        approval_scope_type = "LOT" if d.lot_id else "PRODUCTION_ORDER" if d.production_order_id else None
+        approval_scope_id = d.lot_id or d.production_order_id
+        if approval_scope_type is None or approval_scope_id is None:
+            raise HTTPException(status_code=403, detail="A scoped quality approval permission is required.")
+        await _require_quality_waiver_scope_permission(
+            db, current_user, "approve", approval_scope_type, approval_scope_id
+        )
+        if d.status != DeviationStatus.RESOLVED:
+            raise HTTPException(status_code=409, detail="Only a resolved deviation can be closed.")
+        if current_user.id in {d.reported_by_id, d.resolved_by_id}:
+            raise HTTPException(status_code=403, detail="Deviation closure requires a reviewer separate from the reporter and resolver.")
     for k, v in updates.items():
         setattr(d, k, v)
     await db.commit()
