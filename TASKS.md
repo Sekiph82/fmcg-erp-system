@@ -10,9 +10,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 - Current Milestone: M31 — API / Event Architecture
 - Current Sprint: M31.S03 — Delivery Engine
-- Current Task: M31.S04.T002 — Event/API permission tests
+- Current Task: M31.S04.T003 — Failure/replay/idempotency tests
 - Current Task Status: COMPLETE
-- Next Task/Action: M31.S04.T003 — Failure/replay/idempotency tests
+- Next Task/Action: M31.S04.T004 — Close M31
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -1003,7 +1003,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
   Evidence: coordination/sessions/M31.S04.T001/CODEX_LOG_V01.md (58 focused M31 tests passed; production-config/observability checks 6 passed; py_compile and diff check passed; independent review passed). Selected M31.S04.T002 Event/API permission tests next: the delivery engine and first observability slice are complete; security permission verification is the next high-priority M31 acceptance gate before reliability tests/closeout.
 - [x] M31.S04.T002 — Event/API permission tests
   Evidence: coordination/sessions/M31.S04.T002/CODEX_LOG_V01.md; focused M31 suite 63 passed; py_compile and diff check passed; independent read-only review found no remaining gaps
-- [ ] M31.S04.T003 — Failure/replay/idempotency tests
+- [x] M31.S04.T003 — Failure/replay/idempotency tests
+  Evidence: coordination/sessions/M31.S04.T003/CODEX_LOG_V01.md; focused M31 regression 57 passed and 1 gated DB skip; task-owned disposable PostgreSQL 2 passed at 20261030_0004 head; independent read-only review passed
 - [ ] M31.S04.T004 — Close M31
 
 ---
