@@ -269,6 +269,7 @@ export interface RFQResponseRead {
   supplier_name?: string;
   quoted_unit_price?: number;
   quoted_currency: string;
+  line_quotes: { id: string; rfq_line_id: string; quoted_unit_price: number; quoted_currency: string }[];
   lead_time_days?: number;
   valid_until?: string;
   payment_terms?: string;
@@ -350,6 +351,44 @@ export interface RFQDetail extends RFQRead {
   responses: RFQResponseRead[];
   lines: RFQLineRead[];
   evaluation_criteria: RFQEvaluationCriterionRead[];
+}
+
+export type RFQAwardStatus = "PENDING_APPROVAL" | "APPROVED" | "REJECTED";
+export type RFQAwardApprovalStatus = "PENDING" | "APPROVED" | "REJECTED" | "SKIPPED";
+
+export interface RFQAwardAllocationRead {
+  id: string;
+  response_id: string;
+  rfq_line_id?: string;
+  quantity: number;
+}
+
+export interface RFQAwardApprovalRead {
+  id: string;
+  approval_rule_id: string;
+  approval_level: number;
+  rule_name: string;
+  requires_all_matching_approvers: boolean;
+  approver_user_id: string;
+  decision_status: RFQAwardApprovalStatus;
+  decided_by_id?: string;
+  decided_at?: string;
+  comments?: string;
+}
+
+export interface RFQAwardRead {
+  id: string;
+  rfq_id: string;
+  revision_no: number;
+  status: RFQAwardStatus;
+  total_amount: number;
+  currency: string;
+  justification: string;
+  requested_by_id?: string;
+  requested_at: string;
+  decided_at?: string;
+  allocations: RFQAwardAllocationRead[];
+  approvals: RFQAwardApprovalRead[];
 }
 
 export interface BlanketAgreement extends ProcurementScopeFields {
@@ -604,6 +643,21 @@ export const procurementApi = {
   },
   async addRFQResponse(rfqId: string, data: object): Promise<RFQResponseRead> {
     const res = await apiClient.post<RFQResponseRead>(`/api/v1/procurement/rfq/${rfqId}/responses`, data);
+    return res.data;
+  },
+  async listRFQAwards(rfqId: string): Promise<RFQAwardRead[]> {
+    const res = await apiClient.get<RFQAwardRead[]>(`/api/v1/procurement/rfq/${rfqId}/awards`);
+    return res.data;
+  },
+  async createRFQAwardProposal(rfqId: string, data: object): Promise<RFQAwardRead> {
+    const res = await apiClient.post<RFQAwardRead>(`/api/v1/procurement/rfq/${rfqId}/award-proposals`, data);
+    return res.data;
+  },
+  async decideRFQAward(rfqId: string, awardId: string, decision: "approve" | "reject", comments?: string): Promise<RFQAwardRead> {
+    const res = await apiClient.post<RFQAwardRead>(
+      `/api/v1/procurement/rfq/${rfqId}/awards/${awardId}/${decision}`,
+      { comments: comments || null },
+    );
     return res.data;
   },
 

@@ -23,10 +23,15 @@ from app.models.procurement import (
     RFQRequest, RFQLine, RFQResponse, BlanketPurchaseAgreement, AutoReorderPolicy,
     ProcurementApprovalRule,
     PRStatus, POStatus, RFQStatus, RFQResponseStatus, RFQInvitationStatus,
-    RFQEvaluationStatus, RFQEvaluationCriterion, RFQResponseEvaluation, BPAStatus,
+    RFQEvaluationStatus, RFQEvaluationCriterion, RFQResponseEvaluation, RFQResponseLineQuote,
+    BPAStatus,
+    RFQAward, RFQAwardAllocation, RFQAwardApproval, RFQAwardStatus,
+    RFQAwardApprovalStatus, ProcurementApprovalDocumentType,
 )
 from decimal import Decimal as _Decimal
-from app.models.master import Supplier
+from app.models.master import Product, Supplier
+from app.models.role import Role
+from app.models.user import User
 from app.schemas.procurement import (
     PRCreate, PRUpdate, PRRead, PRDetailRead, PRLineCreate, PRLineRead,
     ApprovePRRequest, ConvertPRToPORequest,
@@ -39,6 +44,7 @@ from app.schemas.procurement import (
     RFQCreate, RFQUpdate, RFQRead, RFQDetailRead, RFQLineRead, RFQResponseCreate, RFQResponseRead,
     RFQEvaluationMatrixCreate, RFQEvaluationCriterionRead, RFQResponseEvaluationSubmit,
     RFQResponseEvaluationRead,
+    RFQAwardProposalCreate, RFQAwardDecision, RFQAwardRead, RFQResponseLineQuoteRead,
     BlanketAgreementCreate, BlanketAgreementUpdate, BlanketAgreementRead,
     AutoReorderPolicyCreate, AutoReorderPolicyUpdate, AutoReorderPolicyRead,
     ProcurementApprovalRuleCreate, ProcurementApprovalRuleUpdate, ProcurementApprovalRuleRead,
@@ -801,7 +807,11 @@ async def list_rfqs(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    q = select(RFQRequest).options(selectinload(RFQRequest.responses), selectinload(RFQRequest.lines))
+    q = select(RFQRequest).options(
+        selectinload(RFQRequest.responses).selectinload(RFQResponse.line_quotes),
+        selectinload(RFQRequest.responses).selectinload(RFQResponse.supplier),
+        selectinload(RFQRequest.lines),
+    )
     if status:
         q = q.where(RFQRequest.status == status)
     result = await db.execute(q.order_by(RFQRequest.created_at.desc()).limit(limit))
@@ -844,6 +854,7 @@ async def create_rfq(
     result = await db.execute(
         select(RFQRequest).options(
             selectinload(RFQRequest.responses).selectinload(RFQResponse.supplier),
+            selectinload(RFQRequest.responses).selectinload(RFQResponse.line_quotes),
             selectinload(RFQRequest.responses).selectinload(RFQResponse.evaluations).selectinload(RFQResponseEvaluation.criterion),
             selectinload(RFQRequest.awarded_supplier),
             selectinload(RFQRequest.lines),
@@ -863,6 +874,7 @@ async def get_rfq(
     result = await db.execute(
         select(RFQRequest).options(
             selectinload(RFQRequest.responses).selectinload(RFQResponse.supplier),
+            selectinload(RFQRequest.responses).selectinload(RFQResponse.line_quotes),
             selectinload(RFQRequest.responses).selectinload(RFQResponse.evaluations).selectinload(RFQResponseEvaluation.criterion),
             selectinload(RFQRequest.awarded_supplier),
             selectinload(RFQRequest.lines),
@@ -883,30 +895,23 @@ async def update_rfq(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    result = await db.execute(select(RFQRequest).where(RFQRequest.id == rfq_id).with_for_update())
+    result = await db.execute(
+        select(RFQRequest)
+        .options(selectinload(RFQRequest.lines))
+        .where(RFQRequest.id == rfq_id)
+        .with_for_update()
+    )
     rfq = result.scalar_one_or_none()
     if not rfq:
         raise HTTPException(404, "RFQ not found")
     _require_procurement_action(current_user, rfq, "edit")
     update_data = body.model_dump(exclude_unset=True)
+    if "awarded_supplier_id" in update_data:
+        raise HTTPException(409, "The awarded supplier is controlled by an approved award proposal.")
     requested_status = update_data.pop("status", None)
     if requested_status is not None:
         if requested_status == RFQStatus.AWARDED:
-            awarded_supplier_id = update_data.get("awarded_supplier_id")
-            if rfq.status != RFQStatus.RESPONSES_RECEIVED or awarded_supplier_id is None:
-                raise HTTPException(409, "An RFQ can be awarded only to a supplier with a submitted bid.")
-            awarded_bid = await db.execute(
-                select(RFQResponse.id).where(
-                    RFQResponse.rfq_id == rfq.id,
-                    RFQResponse.supplier_id == awarded_supplier_id,
-                    RFQResponse.status == RFQResponseStatus.SUBMITTED,
-                )
-            )
-            if awarded_bid.scalar_one_or_none() is None:
-                raise HTTPException(409, "The selected supplier has no submitted bid for this RFQ.")
-            rfq.status = RFQStatus.AWARDED
-            rfq.awarded_supplier_id = awarded_supplier_id
-            update_data.pop("awarded_supplier_id")
+            raise HTTPException(409, "RFQ awards require an approved award proposal; use the award-proposals workflow.")
         elif requested_status == RFQStatus.CANCELLED and rfq.status not in {RFQStatus.AWARDED, RFQStatus.CANCELLED}:
             if update_data:
                 raise HTTPException(409, "RFQ terms cannot be changed in the same request as lifecycle cancellation.")
@@ -921,6 +926,7 @@ async def update_rfq(
     result = await db.execute(
         select(RFQRequest).options(
             selectinload(RFQRequest.responses).selectinload(RFQResponse.supplier),
+            selectinload(RFQRequest.responses).selectinload(RFQResponse.line_quotes),
             selectinload(RFQRequest.responses).selectinload(RFQResponse.evaluations).selectinload(RFQResponseEvaluation.criterion),
             selectinload(RFQRequest.awarded_supplier),
             selectinload(RFQRequest.lines),
@@ -928,6 +934,406 @@ async def update_rfq(
         ).where(RFQRequest.id == rfq_id)
     )
     return _build_rfq_detail(result.scalar_one(), current_user)
+
+
+@router.get("/rfq/{rfq_id}/awards", response_model=List[RFQAwardRead])
+async def list_rfq_awards(
+    rfq_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    rfq_result = await db.execute(select(RFQRequest).where(RFQRequest.id == rfq_id))
+    rfq = rfq_result.scalar_one_or_none()
+    if rfq is None:
+        raise HTTPException(404, "RFQ not found")
+    _require_procurement_view(current_user, rfq)
+    result = await db.execute(
+        select(RFQAward)
+        .options(selectinload(RFQAward.allocations), selectinload(RFQAward.approvals))
+        .where(RFQAward.rfq_id == rfq_id)
+        .order_by(RFQAward.revision_no)
+    )
+    return list(result.scalars().all())
+
+
+@router.post("/rfq/{rfq_id}/award-proposals", response_model=RFQAwardRead, status_code=201)
+async def create_rfq_award_proposal(
+    rfq_id: uuid.UUID,
+    body: RFQAwardProposalCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    rfq_result = await db.execute(
+        select(RFQRequest)
+        .options(selectinload(RFQRequest.lines), selectinload(RFQRequest.evaluation_criteria))
+        .where(RFQRequest.id == rfq_id)
+        .with_for_update()
+    )
+    rfq = rfq_result.scalar_one_or_none()
+    if rfq is None:
+        raise HTTPException(404, "RFQ not found")
+    _require_procurement_action(current_user, rfq, "edit")
+    if rfq.status != RFQStatus.RESPONSES_RECEIVED:
+        raise HTTPException(409, "Award proposals require an RFQ with submitted responses.")
+    pending_proposal = await db.execute(
+        select(RFQAward.id)
+        .where(RFQAward.rfq_id == rfq.id, RFQAward.status == RFQAwardStatus.PENDING_APPROVAL)
+        .limit(1)
+    )
+    if pending_proposal.scalar_one_or_none() is not None:
+        raise HTTPException(409, "Resolve the existing pending award proposal before submitting another revision.")
+    if not rfq.lines and rfq.quantity is None:
+        raise HTTPException(409, "This RFQ has no single-item quantity to allocate.")
+
+    response_ids = {allocation.response_id for allocation in body.allocations}
+    response_result = await db.execute(
+        select(RFQResponse)
+        .options(
+            selectinload(RFQResponse.supplier),
+            selectinload(RFQResponse.line_quotes),
+        )
+        .where(RFQResponse.rfq_id == rfq.id, RFQResponse.id.in_(response_ids))
+        .with_for_update()
+    )
+    responses = {response.id: response for response in response_result.scalars().all()}
+    if set(responses) != response_ids:
+        raise HTTPException(422, "Every allocation must reference a bid belonging to this RFQ.")
+
+    rfq_lines = {line.id: line for line in rfq.lines}
+    allocated_quantities: dict[uuid.UUID | None, Decimal] = {}
+    total_amount = Decimal("0")
+    currency = None
+    allocations = []
+    for requested_allocation in body.allocations:
+        if rfq_lines and requested_allocation.rfq_line_id not in rfq_lines:
+            raise HTTPException(422, "Every multi-line allocation must name one of this RFQ's lines.")
+        if not rfq_lines and requested_allocation.rfq_line_id is not None:
+            raise HTTPException(422, "Single-item RFQ allocations must not name a line ID.")
+        response = responses[requested_allocation.response_id]
+        if response.status != RFQResponseStatus.SUBMITTED:
+            raise HTTPException(409, "Only submitted bids can receive an award allocation.")
+        if not response.supplier or not response.supplier.is_active:
+            raise HTTPException(409, "An inactive or missing supplier cannot receive an award.")
+        if response.valid_until is not None and response.valid_until < date.today():
+            raise HTTPException(409, "An expired bid cannot receive an award.")
+        if rfq.evaluation_criteria and response.evaluation_status != RFQEvaluationStatus.QUALIFIED:
+            raise HTTPException(409, "RFQs with an evaluation matrix can award only qualified bids.")
+        if requested_allocation.rfq_line_id is not None:
+            line_quote = next(
+                (quote for quote in response.line_quotes if quote.rfq_line_id == requested_allocation.rfq_line_id),
+                None,
+            )
+            if line_quote is None:
+                raise HTTPException(409, "Every awarded multi-line bid must contain an itemized quote for its RFQ line.")
+            unit_price = Decimal(str(line_quote.quoted_unit_price))
+            response_currency = line_quote.quoted_currency
+        else:
+            if response.quoted_unit_price is None:
+                raise HTTPException(409, "Every awarded bid must include a quoted unit price.")
+            unit_price = Decimal(str(response.quoted_unit_price))
+            response_currency = response.quoted_currency
+        if currency is None:
+            currency = response_currency
+        elif currency != response_currency:
+            raise HTTPException(409, "Award allocations must use one currency; no exchange rate is configured.")
+        quantity = requested_allocation.quantity
+        line_id = requested_allocation.rfq_line_id
+        allocated_quantities[line_id] = allocated_quantities.get(line_id, Decimal("0")) + quantity
+        total_amount += unit_price * quantity
+        allocations.append((response, line_id, quantity))
+
+    expected_quantities = (
+        {line_id: Decimal(str(line.quantity)) for line_id, line in rfq_lines.items()}
+        if rfq_lines
+        else {None: Decimal(str(rfq.quantity))}
+    )
+    if allocated_quantities != expected_quantities:
+        raise HTTPException(
+            422,
+            "Award allocations must fully and exactly cover each RFQ item quantity; partial or excess awards are not allowed.",
+        )
+
+    # The configured RFQ rules own amount thresholds. Do not invent a default
+    # threshold or silently bypass approval when no applicable rule exists.
+    rules = await svc.find_procurement_approval_rules(
+        db, ProcurementApprovalDocumentType.RFQ, rfq, total_amount, currency
+    )
+    product_categories = set()
+    if rfq.product_id is not None:
+        product_category = (
+            await db.execute(select(Product.category).where(Product.id == rfq.product_id))
+        ).scalar_one_or_none()
+        if product_category is not None:
+            product_categories.add(getattr(product_category, "value", product_category))
+    elif rfq.lines:
+        product_ids = {line.product_id for line in rfq.lines if line.product_id is not None}
+        if product_ids:
+            product_categories.update(
+                getattr(category, "value", category)
+                for category in (
+                    await db.execute(select(Product.category).where(Product.id.in_(product_ids)))
+                ).scalars().all()
+            )
+    matching_rules = []
+    allocated_categories = {response.supplier.supplier_category for response, _, _ in allocations}
+    for rule in rules:
+        if rule.supplier_category and rule.supplier_category not in allocated_categories:
+            continue
+        if rule.product_category and rule.product_category not in product_categories:
+            continue
+        if rule.currency is None and (rule.min_amount is not None or rule.max_amount is not None):
+            raise HTTPException(
+                409,
+                f"RFQ award rule '{rule.rule_name}' sets amount limits without a currency; configure its currency before awarding.",
+            )
+        matching_rules.append(rule)
+    if not matching_rules:
+        raise HTTPException(409, "No active RFQ award approval rule matches this RFQ, scope, and award amount.")
+
+    approval_assignments = []
+    for rule in matching_rules:
+        approver_ids = set()
+        if rule.approver_user_id is not None:
+            assigned = (
+                await db.execute(
+                    select(User)
+                    .options(
+                        selectinload(User.roles).selectinload(Role.permissions),
+                        selectinload(User.roles).selectinload(Role.access_scopes),
+                        selectinload(User.access_scopes),
+                    )
+                    .where(User.id == rule.approver_user_id, User.is_active.is_(True))
+                )
+            ).scalar_one_or_none()
+            if assigned is not None and svc.can_modify_record(assigned, "procurement", "approve", rfq):
+                approver_ids.add(assigned.id)
+        if rule.approver_role_id is not None:
+            role = (
+                await db.execute(
+                    select(Role)
+                    .options(
+                        selectinload(Role.users).selectinload(User.roles).selectinload(Role.permissions),
+                        selectinload(Role.users).selectinload(User.roles).selectinload(Role.access_scopes),
+                        selectinload(Role.users).selectinload(User.access_scopes),
+                    )
+                    .where(Role.id == rule.approver_role_id, Role.is_active.is_(True))
+                )
+            ).scalar_one_or_none()
+            if role is not None:
+                approver_ids.update(
+                    assigned.id for assigned in role.users
+                    if assigned.is_active
+                    and svc.can_modify_record(assigned, "procurement", "approve", rfq)
+                )
+        # Enforce separation of duties for the proposal author.
+        approver_ids.discard(current_user.id)
+        if not approver_ids:
+            raise HTTPException(
+                409,
+                f"RFQ approval rule '{rule.rule_name}' has no active, scoped approver other than the proposal author.",
+            )
+        approval_assignments.extend((rule, approver_id) for approver_id in approver_ids)
+
+    next_revision = (
+        await db.execute(
+            select(func.coalesce(func.max(RFQAward.revision_no), 0)).where(RFQAward.rfq_id == rfq.id)
+        )
+    ).scalar_one() + 1
+    award = RFQAward(
+        rfq_id=rfq.id,
+        revision_no=next_revision,
+        status=RFQAwardStatus.PENDING_APPROVAL,
+        total_amount=total_amount,
+        currency=currency,
+        justification=body.justification,
+        requested_by_id=current_user.id,
+        requested_at=datetime.now(timezone.utc),
+    )
+    db.add(award)
+    await db.flush()
+
+    for response, line_id, quantity in allocations:
+        db.add(
+            RFQAwardAllocation(
+                award_id=award.id,
+                response_id=response.id,
+                rfq_line_id=line_id,
+                quantity=quantity,
+            )
+        )
+
+    approval_rows = [
+        RFQAwardApproval(
+            award_id=award.id,
+            approval_rule_id=rule.id,
+            approval_level=rule.approval_level,
+            rule_name=rule.rule_name,
+            requires_all_matching_approvers=rule.requires_all_matching_approvers,
+            approver_user_id=approver_id,
+            decision_status=RFQAwardApprovalStatus.PENDING,
+        )
+        for rule, approver_id in approval_assignments
+    ]
+    db.add_all(approval_rows)
+    await db.commit()
+    result = await db.execute(
+        select(RFQAward)
+        .options(selectinload(RFQAward.allocations), selectinload(RFQAward.approvals))
+        .where(RFQAward.id == award.id)
+    )
+    return result.scalar_one()
+
+
+async def _load_award_for_decision(db: AsyncSession, rfq_id: uuid.UUID, award_id: uuid.UUID):
+    rfq_result = await db.execute(
+        select(RFQRequest).where(RFQRequest.id == rfq_id).with_for_update()
+    )
+    rfq = rfq_result.scalar_one_or_none()
+    if rfq is None:
+        raise HTTPException(404, "RFQ not found")
+    award_result = await db.execute(
+        select(RFQAward)
+        .options(selectinload(RFQAward.allocations), selectinload(RFQAward.approvals))
+        .where(RFQAward.id == award_id, RFQAward.rfq_id == rfq_id)
+        .with_for_update()
+    )
+    award = award_result.scalar_one_or_none()
+    if award is None:
+        raise HTTPException(404, "Award proposal not found")
+    if award.status != RFQAwardStatus.PENDING_APPROVAL:
+        raise HTTPException(409, "Only pending award proposals can be decided.")
+    return rfq, award
+
+
+async def _record_rfq_award_decision(
+    rfq: RFQRequest,
+    award: RFQAward,
+    current_user,
+    decision: RFQAwardApprovalStatus,
+    comments: Optional[str],
+    db: AsyncSession,
+) -> RFQAwardRead:
+    pending = [row for row in award.approvals if row.decision_status == RFQAwardApprovalStatus.PENDING]
+    if not pending:
+        raise HTTPException(409, "Award proposal has no pending configured approval step.")
+    current_level = min(row.approval_level for row in pending)
+    vote = next(
+        (
+            row for row in pending
+            if row.approval_level == current_level and row.approver_user_id == current_user.id
+        ),
+        None,
+    )
+    if vote is None:
+        raise HTTPException(403, detail=forbidden_detail("This user is not an assigned approver for the current RFQ award step."))
+
+    now = datetime.now(timezone.utc)
+    vote.decision_status = decision
+    vote.decided_by_id = current_user.id
+    vote.decided_at = now
+    vote.comments = comments.strip() if comments else None
+
+    if decision == RFQAwardApprovalStatus.REJECTED:
+        award.status = RFQAwardStatus.REJECTED
+        award.decided_at = now
+        for sibling in award.approvals:
+            if sibling.decision_status == RFQAwardApprovalStatus.PENDING:
+                sibling.decision_status = RFQAwardApprovalStatus.SKIPPED
+                sibling.decided_by_id = current_user.id
+                sibling.decided_at = now
+                sibling.comments = f"Skipped after rejection at approval level {current_level}."
+    else:
+        # A role rule with requires_all=false is satisfied by one assigned
+        # approver. Record the remaining role assignments as skipped.
+        if not vote.requires_all_matching_approvers:
+            for sibling in award.approvals:
+                if (
+                    sibling.approval_rule_id == vote.approval_rule_id
+                    and sibling.id != vote.id
+                    and sibling.decision_status == RFQAwardApprovalStatus.PENDING
+                ):
+                    sibling.decision_status = RFQAwardApprovalStatus.SKIPPED
+                    sibling.decided_by_id = current_user.id
+                    sibling.decided_at = now
+        rules_by_level: dict[int, dict[uuid.UUID, list[RFQAwardApproval]]] = {}
+        for row in award.approvals:
+            rules_by_level.setdefault(row.approval_level, {}).setdefault(row.approval_rule_id, []).append(row)
+        all_approved = all(
+            (
+                all(row.decision_status == RFQAwardApprovalStatus.APPROVED for row in group)
+                if group[0].requires_all_matching_approvers
+                else any(row.decision_status == RFQAwardApprovalStatus.APPROVED for row in group)
+            )
+            for groups in rules_by_level.values()
+            for group in groups.values()
+        )
+        if all_approved:
+            award.status = RFQAwardStatus.APPROVED
+            award.decided_at = now
+            rfq.status = RFQStatus.AWARDED
+            allocated_responses = {allocation.response_id for allocation in award.allocations}
+            for response_id in allocated_responses:
+                (await db.execute(
+                    select(RFQResponse).where(RFQResponse.id == response_id).with_for_update()
+                )).scalar_one().status = RFQResponseStatus.AWARDED
+            unallocated_responses = (await db.execute(
+                select(RFQResponse)
+                .where(
+                    RFQResponse.rfq_id == rfq.id,
+                    RFQResponse.status == RFQResponseStatus.SUBMITTED,
+                )
+                .with_for_update()
+            )).scalars().all()
+            for response in unallocated_responses:
+                if response.id not in allocated_responses:
+                    response.status = RFQResponseStatus.REJECTED
+            awarded_supplier_ids = {
+                (await db.execute(
+                    select(RFQResponse.supplier_id).where(RFQResponse.id == response_id)
+                )).scalar_one()
+                for response_id in allocated_responses
+            }
+            rfq.awarded_supplier_id = next(iter(awarded_supplier_ids)) if len(awarded_supplier_ids) == 1 else None
+
+    await db.commit()
+    result = await db.execute(
+        select(RFQAward)
+        .options(selectinload(RFQAward.allocations), selectinload(RFQAward.approvals))
+        .where(RFQAward.id == award.id)
+    )
+    return result.scalar_one()
+
+
+@router.post("/rfq/{rfq_id}/awards/{award_id}/approve", response_model=RFQAwardRead)
+async def approve_rfq_award(
+    rfq_id: uuid.UUID,
+    award_id: uuid.UUID,
+    body: RFQAwardDecision,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    rfq, award = await _load_award_for_decision(db, rfq_id, award_id)
+    _require_procurement_action(current_user, rfq, "approve")
+    return await _record_rfq_award_decision(
+        rfq, award, current_user, RFQAwardApprovalStatus.APPROVED, body.comments, db
+    )
+
+
+@router.post("/rfq/{rfq_id}/awards/{award_id}/reject", response_model=RFQAwardRead)
+async def reject_rfq_award(
+    rfq_id: uuid.UUID,
+    award_id: uuid.UUID,
+    body: RFQAwardDecision,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    rfq, award = await _load_award_for_decision(db, rfq_id, award_id)
+    _require_procurement_action(current_user, rfq, "approve")
+    if not body.comments or len(body.comments.strip()) < 3:
+        raise HTTPException(422, "A rejection reason of at least three characters is required.")
+    return await _record_rfq_award_decision(
+        rfq, award, current_user, RFQAwardApprovalStatus.REJECTED, body.comments, db
+    )
 
 
 @router.post("/rfq/{rfq_id}/issue-invitations", response_model=RFQDetailRead)
@@ -940,6 +1346,7 @@ async def issue_rfq_invitations(
         select(RFQRequest)
         .options(
             selectinload(RFQRequest.responses).selectinload(RFQResponse.supplier),
+            selectinload(RFQRequest.responses).selectinload(RFQResponse.line_quotes),
             selectinload(RFQRequest.responses).selectinload(RFQResponse.evaluations).selectinload(RFQResponseEvaluation.criterion),
             selectinload(RFQRequest.awarded_supplier),
             selectinload(RFQRequest.lines),
@@ -976,7 +1383,12 @@ async def add_rfq_response(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    result = await db.execute(select(RFQRequest).where(RFQRequest.id == rfq_id).with_for_update())
+    result = await db.execute(
+        select(RFQRequest)
+        .options(selectinload(RFQRequest.lines))
+        .where(RFQRequest.id == rfq_id)
+        .with_for_update()
+    )
     rfq = result.scalar_one_or_none()
     if not rfq:
         raise HTTPException(404, "RFQ not found")
@@ -999,14 +1411,36 @@ async def add_rfq_response(
     supplier = await db.get(Supplier, body.supplier_id)
     if not supplier or not supplier.is_active:
         raise HTTPException(409, "The invited supplier is no longer active.")
-    for key, value in body.model_dump(exclude={"supplier_id"}).items():
+    rfq_line_ids = {line.id for line in rfq.lines}
+    quoted_line_ids = {quote.rfq_line_id for quote in body.line_quotes}
+    if rfq.lines:
+        if body.quoted_unit_price is not None or quoted_line_ids != rfq_line_ids:
+            raise HTTPException(422, "A multi-line RFQ requires exactly one itemized price for every RFQ line.")
+    elif body.line_quotes or body.quoted_unit_price is None:
+        raise HTTPException(422, "A single-item RFQ requires one unit price and does not accept line quotes.")
+    for key, value in body.model_dump(exclude={"supplier_id", "line_quotes"}).items():
         setattr(resp, key, value)
+    for quote in body.line_quotes:
+        db.add(
+            RFQResponseLineQuote(
+                response_id=resp.id,
+                rfq_line_id=quote.rfq_line_id,
+                quoted_unit_price=quote.quoted_unit_price,
+                quoted_currency=quote.quoted_currency,
+            )
+        )
     resp.status = RFQResponseStatus.SUBMITTED
     resp.submitted_at = datetime.now(timezone.utc)
     resp.submitted_by_id = current_user.id
     rfq.status = RFQStatus.RESPONSES_RECEIVED
     await db.commit()
-    await db.refresh(resp)
+    resp = (
+        await db.execute(
+            select(RFQResponse)
+            .options(selectinload(RFQResponse.line_quotes))
+            .where(RFQResponse.id == resp.id)
+        )
+    ).scalar_one()
     rr = _build_rfq_response_read(resp)
     supplier_result = await db.execute(select(Supplier).where(Supplier.id == resp.supplier_id))
     s = supplier_result.scalar_one_or_none()
@@ -1165,7 +1599,10 @@ def _build_rfq_response_read(response: RFQResponse) -> RFQResponseRead:
         "score",
         "created_at",
     )
-    return RFQResponseRead(**{field: getattr(response, field) for field in fields})
+    return RFQResponseRead(
+        **{field: getattr(response, field) for field in fields},
+        line_quotes=[RFQResponseLineQuoteRead.model_validate(item) for item in response.line_quotes],
+    )
 
 
 def _build_rfq_detail(rfq: RFQRequest, current_user=None) -> RFQDetailRead:

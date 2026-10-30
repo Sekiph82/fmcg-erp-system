@@ -13,7 +13,7 @@ from sqlalchemy import delete, event, select
 from sqlalchemy.engine import URL
 from fastapi import HTTPException
 
-from app.api.v1.endpoints.procurement import add_rfq_response, create_rfq, issue_rfq_invitations, update_rfq
+from app.api.v1.endpoints.procurement import add_rfq_response, create_rfq, get_rfq, issue_rfq_invitations, update_rfq
 from app.db.session import AsyncSessionLocal, engine
 from app.models.master import Supplier
 from app.models.procurement import RFQRequest, RFQResponse, RFQInvitationStatus, RFQResponseStatus, RFQStatus
@@ -206,14 +206,17 @@ async def test_invitation_issue_and_bid_submission_are_scoped_and_attributed():
                 )
             assert uninvited.value.status_code == 403
 
-            awarded = await update_rfq(
-                draft.id,
-                RFQUpdate(status=RFQStatus.AWARDED, awarded_supplier_id=invited_supplier.id),
-                db,
-                actor,
-            )
-            assert awarded.status == RFQStatus.AWARDED
-            assert awarded.awarded_supplier_id == invited_supplier.id
+            with pytest.raises(HTTPException) as direct_award:
+                await update_rfq(
+                    draft.id,
+                    RFQUpdate(status=RFQStatus.AWARDED, awarded_supplier_id=invited_supplier.id),
+                    db,
+                    actor,
+                )
+            assert direct_award.value.status_code == 409
+            still_unawarded = await get_rfq(draft.id, db, actor)
+            assert still_unawarded.status == RFQStatus.RESPONSES_RECEIVED
+            assert still_unawarded.awarded_supplier_id is None
 
             expired = await create_rfq(
                 RFQCreate(

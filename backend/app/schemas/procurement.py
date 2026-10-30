@@ -9,6 +9,7 @@ from pydantic import BaseModel, computed_field, ConfigDict, Field, field_validat
 from app.models.procurement import (
     PRStatus, POStatus, GRNStatus, ImportShipmentStatus, POPaymentStatus,
     RFQStatus, RFQResponseStatus, RFQInvitationStatus, RFQEvaluationDimension, RFQEvaluationStatus,
+    RFQAwardStatus, RFQAwardApprovalStatus,
     BPAStatus, ProcurementApprovalDocumentType,
 )
 from app.models.finance import OperationalPostingStatus
@@ -511,6 +512,7 @@ class RFQResponseCreate(BaseModel):
     supplier_id: uuid.UUID
     quoted_unit_price: Optional[Decimal] = Field(default=None, gt=0)
     quoted_currency: str = "KES"
+    line_quotes: List["RFQResponseLineQuoteCreate"] = Field(default_factory=list, max_length=100)
     lead_time_days: Optional[int] = Field(default=None, ge=0)
     valid_until: Optional[date] = None
     payment_terms: Optional[str] = None
@@ -536,6 +538,54 @@ class RFQResponseCreate(BaseModel):
             raise ValueError("quoted_currency must be a three-letter currency code")
         return normalized
 
+    @model_validator(mode="after")
+    def itemized_quote_is_exclusive(self):
+        if self.line_quotes and self.quoted_unit_price is not None:
+            raise ValueError("Use either one single-item quote or itemized line quotes, not both.")
+        if self.line_quotes:
+            line_ids = [item.rfq_line_id for item in self.line_quotes]
+            if len(line_ids) != len(set(line_ids)):
+                raise ValueError("each RFQ line may be quoted only once")
+            if len({item.quoted_currency for item in self.line_quotes}) != 1:
+                raise ValueError("all line quotes in one supplier response must use the same currency")
+        return self
+
+
+class RFQResponseLineQuoteCreate(BaseModel):
+    rfq_line_id: uuid.UUID
+    quoted_unit_price: Decimal = Field(gt=0)
+    quoted_currency: str = "KES"
+
+    @field_validator("quoted_unit_price")
+    @classmethod
+    def line_quote_price_must_be_finite_and_representable(cls, value: Decimal) -> Decimal:
+        try:
+            quantized = value.quantize(Decimal("0.0001"))
+        except InvalidOperation as exc:
+            raise ValueError("line quote must fit a finite positive NUMERIC(14, 4) value") from exc
+        if not value.is_finite() or value <= 0 or value >= Decimal("10000000000") or quantized != value:
+            raise ValueError("line quote must fit a finite positive NUMERIC(14, 4) value")
+        return value
+
+    @field_validator("quoted_currency")
+    @classmethod
+    def line_quote_currency_must_be_iso_code(cls, value: str) -> str:
+        normalized = value.strip().upper()
+        if len(normalized) != 3 or any(character not in "ABCDEFGHIJKLMNOPQRSTUVWXYZ" for character in normalized):
+            raise ValueError("line quote currency must be a three-letter code")
+        return normalized
+
+
+class RFQResponseLineQuoteRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: uuid.UUID
+    rfq_line_id: uuid.UUID
+    quoted_unit_price: Decimal
+    quoted_currency: str
+
+
+RFQResponseCreate.model_rebuild()
+
 
 class RFQResponseRead(BaseModel):
     model_config = {"from_attributes": True}
@@ -545,6 +595,7 @@ class RFQResponseRead(BaseModel):
     supplier_name: Optional[str] = None
     quoted_unit_price: Optional[Decimal]
     quoted_currency: str
+    line_quotes: List[RFQResponseLineQuoteRead] = Field(default_factory=list)
     lead_time_days: Optional[int]
     valid_until: Optional[date]
     payment_terms: Optional[str]
@@ -743,6 +794,85 @@ class RFQDetailRead(RFQRead):
     responses: List[RFQResponseRead] = Field(default_factory=list)
     lines: List[RFQLineRead] = Field(default_factory=list)
     evaluation_criteria: List[RFQEvaluationCriterionRead] = Field(default_factory=list)
+
+
+class RFQAwardAllocationCreate(BaseModel):
+    response_id: uuid.UUID
+    rfq_line_id: Optional[uuid.UUID] = None
+    quantity: Decimal = Field(gt=0)
+
+    @field_validator("quantity")
+    @classmethod
+    def validate_award_quantity(cls, value: Decimal) -> Decimal:
+        try:
+            quantized = value.quantize(Decimal("0.001"))
+        except InvalidOperation as exc:
+            raise ValueError("award quantity must fit NUMERIC(14, 3)") from exc
+        if not value.is_finite() or value <= 0 or value >= Decimal("100000000000") or quantized != value:
+            raise ValueError("award quantity must be finite, positive, and fit NUMERIC(14, 3)")
+        return value
+
+
+class RFQAwardProposalCreate(BaseModel):
+    allocations: List[RFQAwardAllocationCreate] = Field(min_length=1, max_length=100)
+    justification: str = Field(min_length=3, max_length=1000)
+
+    @field_validator("justification")
+    @classmethod
+    def trim_award_justification(cls, value: str) -> str:
+        normalized = value.strip()
+        if len(normalized) < 3:
+            raise ValueError("award justification must contain at least three characters")
+        return normalized
+
+    @model_validator(mode="after")
+    def unique_responses(self):
+        allocation_keys = [(item.response_id, item.rfq_line_id) for item in self.allocations]
+        if len(allocation_keys) != len(set(allocation_keys)):
+            raise ValueError("a supplier bid can appear only once per RFQ line allocation")
+        return self
+
+
+class RFQAwardDecision(BaseModel):
+    comments: Optional[str] = Field(default=None, max_length=1000)
+
+
+class RFQAwardAllocationRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: uuid.UUID
+    response_id: uuid.UUID
+    rfq_line_id: Optional[uuid.UUID]
+    quantity: Decimal
+
+
+class RFQAwardApprovalRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: uuid.UUID
+    approval_rule_id: uuid.UUID
+    approval_level: int
+    rule_name: str
+    requires_all_matching_approvers: bool
+    approver_user_id: uuid.UUID
+    decision_status: RFQAwardApprovalStatus
+    decided_by_id: Optional[uuid.UUID]
+    decided_at: Optional[datetime]
+    comments: Optional[str]
+
+
+class RFQAwardRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: uuid.UUID
+    rfq_id: uuid.UUID
+    revision_no: int
+    status: RFQAwardStatus
+    total_amount: Decimal
+    currency: str
+    justification: str
+    requested_by_id: Optional[uuid.UUID]
+    requested_at: datetime
+    decided_at: Optional[datetime]
+    allocations: List[RFQAwardAllocationRead] = Field(default_factory=list)
+    approvals: List[RFQAwardApprovalRead] = Field(default_factory=list)
 
 
 # ── Blanket Purchase Agreement ─────────────────────────────────────────────────

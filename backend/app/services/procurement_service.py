@@ -16,7 +16,7 @@ from typing import Optional
 import uuid
 
 from fastapi import HTTPException, status
-from sqlalchemy import select, and_
+from sqlalchemy import select, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -28,7 +28,7 @@ from app.core.access_control import (
 from app.models.procurement import (
     PurchaseRequisition, PRLine, PurchaseOrder, POLine,
     GoodsReceipt, GRNLine, PRStatus, POStatus, GRNStatus,
-    ProcurementApprovalDocumentType, ProcurementApprovalRule,
+    RFQStatus, ProcurementApprovalDocumentType, ProcurementApprovalRule,
 )
 from app.models.inventory import Stock, Lot, StockMovement, MovementType, StockType
 from app.models.master import Material, Product, Warehouse
@@ -59,6 +59,9 @@ PROCUREMENT_ACTION_STATUSES: dict[str, dict[str, set[str]]] = {
         "receive": {GRNStatus.DRAFT.value},
         "post": {GRNStatus.DRAFT.value},
         "cancel": {GRNStatus.DRAFT.value},
+    },
+    "rfqrequest": {
+        "approve": {RFQStatus.RESPONSES_RECEIVED.value},
     },
 }
 
@@ -183,6 +186,7 @@ async def find_procurement_approval_rules(
     document_type: ProcurementApprovalDocumentType,
     record,
     amount: Decimal | None = None,
+    currency: str | None = None,
 ) -> list[ProcurementApprovalRule]:
     today = date.today()
     amount_value = amount if amount is not None else procurement_document_amount(record)
@@ -195,12 +199,20 @@ async def find_procurement_approval_rules(
     ]
     for field_name in PROCUREMENT_SCOPE_FIELDS:
         value = getattr(record, field_name, None)
+        rule_field = getattr(ProcurementApprovalRule, field_name)
         if value is not None:
-            rule_field = getattr(ProcurementApprovalRule, field_name)
             filters.append(rule_field.is_(None) | (rule_field == value))
+        else:
+            filters.append(rule_field.is_(None))
     if amount_value is not None:
         filters.append(ProcurementApprovalRule.min_amount.is_(None) | (ProcurementApprovalRule.min_amount <= amount_value))
         filters.append(ProcurementApprovalRule.max_amount.is_(None) | (ProcurementApprovalRule.max_amount >= amount_value))
+    if currency is not None:
+        normalized_currency = currency.strip().upper()
+        filters.append(
+            ProcurementApprovalRule.currency.is_(None)
+            | (func.upper(func.trim(ProcurementApprovalRule.currency)) == normalized_currency)
+        )
 
     result = await db.execute(
         select(ProcurementApprovalRule)

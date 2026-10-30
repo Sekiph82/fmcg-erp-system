@@ -2,9 +2,10 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   procurementApi, RFQRead, RFQDetail, RFQStatus,
-  RFQEvaluationCriterionRead, RFQEvaluationDimension, RFQResponseRead,
+  RFQEvaluationCriterionRead, RFQEvaluationDimension, RFQResponseRead, RFQAwardRead,
 } from "@/lib/procurement";
 import { suppliersApi, Supplier } from "@/lib/suppliers";
+import { useAuth } from "@/context/AuthContext";
 
 const STATUS_COLORS: Record<RFQStatus, string> = {
   DRAFT: "bg-gray-100 text-gray-600",
@@ -14,7 +15,19 @@ const STATUS_COLORS: Record<RFQStatus, string> = {
   CANCELLED: "bg-red-100 text-red-500",
 };
 
+function isCurrentAwardApprovalStep(
+  award: RFQAwardRead,
+  approval: RFQAwardRead["approvals"][number],
+) {
+  if (approval.decision_status !== "PENDING") return false;
+  const pendingLevels = award.approvals
+    .filter((row) => row.decision_status === "PENDING")
+    .map((row) => row.approval_level);
+  return approval.approval_level === Math.min(...pendingLevels);
+}
+
 export default function RFQPage() {
+  const { user } = useAuth();
   const [rfqs, setRFQs] = useState<RFQRead[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState<RFQStatus | "">("");
@@ -35,6 +48,10 @@ export default function RFQPage() {
   ]);
   const [activeEvaluationResponseId, setActiveEvaluationResponseId] = useState<string | null>(null);
   const [evaluationDraft, setEvaluationDraft] = useState<Record<string, { score: string; passes_gate: boolean | null; comments: string }>>({});
+  const [awards, setAwards] = useState<RFQAwardRead[]>([]);
+  const [awardQuantities, setAwardQuantities] = useState<Record<string, string>>({});
+  const [awardJustification, setAwardJustification] = useState("");
+  const [awardComments, setAwardComments] = useState<Record<string, string>>({});
 
   // Response form
   const [showResponse, setShowResponse] = useState(false);
@@ -42,6 +59,7 @@ export default function RFQPage() {
     supplier_id: "", quoted_unit_price: "", quoted_currency: "KES",
     lead_time_days: "", valid_until: "", payment_terms: "", notes: "",
   });
+  const [responseLineQuotes, setResponseLineQuotes] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -67,6 +85,7 @@ export default function RFQPage() {
     setActiveEvaluationResponseId(null);
     try {
       const detail = await procurementApi.getRFQ(id);
+      setAwards(await procurementApi.listRFQAwards(id));
       if (detail.evaluation_criteria.length === 0) {
         setCriteriaDraft([
           { code: "TECHNICAL_FIT", name: "Technical fit", dimension: "TECHNICAL", weight_percent: "50", is_mandatory: true },
@@ -112,20 +131,76 @@ export default function RFQPage() {
     }
   };
 
-  const awardRFQ = async (id: string, supplierId: string) => {
-    await procurementApi.updateRFQ(id, { status: "AWARDED", awarded_supplier_id: supplierId });
-    await load();
-    const updated = await procurementApi.getRFQ(id);
-    setSelected(updated);
+  const createAwardProposal = async () => {
+    if (!selected) return;
+    const allocations = Object.entries(awardQuantities)
+      .filter(([, quantity]) => quantity.trim() !== "")
+      .map(([key, quantity]) => {
+        const [response_id, rfq_line_id] = key.split(":");
+        return {
+          response_id,
+          ...(rfq_line_id && rfq_line_id !== "single" ? { rfq_line_id } : {}),
+          quantity: Number(quantity),
+        };
+      });
+    if (allocations.length === 0 || allocations.some((allocation) => !Number.isFinite(allocation.quantity) || allocation.quantity <= 0)) {
+      setError("Enter a positive allocation quantity for at least one submitted bid.");
+      return;
+    }
+    setSaving(true); setError("");
+    try {
+      await procurementApi.createRFQAwardProposal(selected.id, {
+        allocations,
+        justification: awardJustification,
+      });
+      setAwardQuantities({});
+      setAwardJustification("");
+      setAwards(await procurementApi.listRFQAwards(selected.id));
+    } catch {
+      setError("Award proposal was not saved. Check allocation totals and confirm an active RFQ approval rule has an eligible approver.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const decideAward = async (awardId: string, decision: "approve" | "reject") => {
+    if (!selected) return;
+    const comments = awardComments[awardId]?.trim() ?? "";
+    if (decision === "reject" && comments.length < 3) {
+      setError("Enter a rejection reason of at least three characters.");
+      return;
+    }
+    setSaving(true); setError("");
+    try {
+      await procurementApi.decideRFQAward(selected.id, awardId, decision, comments || undefined);
+      setAwards(await procurementApi.listRFQAwards(selected.id));
+      setSelected(await procurementApi.getRFQ(selected.id));
+      await load();
+    } catch {
+      setError("Award decision was not recorded. Confirm that this is the current approval step assigned to your account.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const submitResponse = async () => {
     if (!selected || !respForm.supplier_id) { setError("Supplier ID required"); return; }
+    if (selected.lines.length > 0 && selected.lines.some((line) => !responseLineQuotes[line.id]?.trim()
+      || !Number.isFinite(Number(responseLineQuotes[line.id])) || Number(responseLineQuotes[line.id]) <= 0)) {
+      setError("Enter a positive unit price for every RFQ line.");
+      return;
+    }
     setSaving(true); setError("");
     try {
       await procurementApi.addRFQResponse(selected.id, {
         supplier_id: respForm.supplier_id,
-        quoted_unit_price: respForm.quoted_unit_price ? parseFloat(respForm.quoted_unit_price) : null,
+        ...(selected.lines.length === 0
+          ? { quoted_unit_price: respForm.quoted_unit_price ? parseFloat(respForm.quoted_unit_price) : null }
+          : { line_quotes: selected.lines.map((line) => ({
+            rfq_line_id: line.id,
+            quoted_unit_price: Number(responseLineQuotes[line.id]),
+            quoted_currency: respForm.quoted_currency,
+          })) }),
         quoted_currency: respForm.quoted_currency,
         lead_time_days: respForm.lead_time_days ? parseInt(respForm.lead_time_days) : null,
         valid_until: respForm.valid_until || null,
@@ -133,6 +208,7 @@ export default function RFQPage() {
         notes: respForm.notes || null,
       });
       setShowResponse(false);
+      setResponseLineQuotes({});
       const updated = await procurementApi.getRFQ(selected.id);
       setSelected(updated);
       await load();
@@ -312,7 +388,7 @@ export default function RFQPage() {
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-xs font-semibold text-gray-600">Bids ({selected.response_count}) · Invited ({selected.invited_count})</p>
                   {(selected.status === "SENT" || selected.status === "RESPONSES_RECEIVED") && (
-                    <button onClick={() => { setShowResponse(true); setError(""); }}
+                    <button onClick={() => { setShowResponse(true); setError(""); setResponseLineQuotes({}); }}
                       className="text-xs text-blue-600 hover:underline">
                       + Record Bid
                     </button>
@@ -336,14 +412,106 @@ export default function RFQPage() {
                             {resp.lead_time_days != null && ` · ${resp.lead_time_days}d lead`}
                           </p>
                         )}
-                        {selected.status === "RESPONSES_RECEIVED" && (
-                          <button
-                            onClick={() => awardRFQ(selected.id, resp.supplier_id)}
-                            className="mt-2 text-xs bg-green-600 text-white rounded px-2 py-0.5 hover:bg-green-700"
-                          >
-                            Award
-                          </button>
-                        )}
+                        {resp.line_quotes.map((quote) => {
+                          const line = selected.lines.find((item) => item.id === quote.rfq_line_id);
+                          return (
+                            <p key={quote.id} className="text-xs text-gray-600 mt-1">
+                              {line ? `${line.line_no}. ${line.description || "RFQ line"} · ` : ""}
+                              {quote.quoted_currency} {Number(quote.quoted_unit_price).toLocaleString()} /unit
+                            </p>
+                          );
+                        })}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {selected.status === "RESPONSES_RECEIVED" && selected.access?.can_edit && (
+                  <div className="mt-3 space-y-2 rounded border border-green-200 bg-green-50 p-3">
+                    <p className="text-xs font-semibold text-green-900">Award proposal</p>
+                    <p className="text-[11px] text-green-800">
+                      {selected.lines.length > 0
+                        ? "Allocate every RFQ line quantity across submitted bids. Line-level supplier prices are used for the approval amount."
+                        : `Allocate the full ${selected.quantity} ${selected.unit} across submitted bids.`}
+                      {" "}An active RFQ approval rule is required; configured scope and amount limits are applied.
+                    </p>
+                    {(selected.lines.length > 0 ? selected.lines : [null]).flatMap((line) => (
+                      selected.responses.filter((response) => response.status === "SUBMITTED").map((response) => {
+                        const key = `${response.id}:${line?.id ?? "single"}`;
+                        const lineQuote = line
+                          ? response.line_quotes.find((quote) => quote.rfq_line_id === line.id)
+                          : null;
+                        return (
+                          <label key={key} className="grid grid-cols-[1fr_7rem] items-center gap-2 text-xs text-gray-700">
+                            <span>
+                              {line ? `${line.line_no}. ${line.description || "RFQ line"} · ` : ""}
+                              {response.supplier_name ?? response.supplier_id.slice(0, 8)} ·
+                              {" "}{lineQuote?.quoted_currency ?? response.quoted_currency}{" "}
+                              {lineQuote?.quoted_unit_price ?? response.quoted_unit_price ?? "no quote"}
+                            </span>
+                            <input
+                              aria-label={`Award quantity for ${response.supplier_name ?? response.supplier_id}${line ? ` on line ${line.line_no}` : ""}`}
+                              type="number" min="0" max={line?.quantity ?? selected.quantity ?? undefined} step="0.001"
+                              value={awardQuantities[key] ?? ""}
+                              onChange={(event) => setAwardQuantities((current) => ({ ...current, [key]: event.target.value }))}
+                              className="rounded border px-2 py-1 text-xs"
+                            />
+                          </label>
+                        );
+                      })
+                    ))}
+                    <textarea
+                      aria-label="Award proposal justification"
+                      value={awardJustification}
+                      onChange={(event) => setAwardJustification(event.target.value)}
+                      maxLength={1000}
+                      placeholder="Business justification"
+                      className="w-full rounded border px-2 py-1 text-xs"
+                    />
+                    <button type="button" onClick={createAwardProposal}
+                      disabled={saving || awardJustification.trim().length < 3}
+                      className="w-full rounded bg-green-700 px-3 py-2 text-xs font-medium text-white disabled:opacity-50">
+                      {saving ? "Saving…" : "Submit award proposal for approval"}
+                    </button>
+                  </div>
+                )}
+                {awards.length > 0 && (
+                  <div className="mt-3 space-y-2 border-t pt-3">
+                    <p className="text-xs font-semibold text-gray-700">Award proposal history</p>
+                    {awards.map((award) => (
+                      <div key={award.id} className="space-y-2 rounded border p-3">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-medium">Revision {award.revision_no} · {award.currency} {Number(award.total_amount).toLocaleString()}</span>
+                          <span>{award.status.replace("_", " ")}</span>
+                        </div>
+                        <p className="text-[11px] text-gray-600">{award.justification}</p>
+                        <ul className="space-y-1">
+                          {award.allocations.map((allocation) => {
+                            const bid = selected.responses.find((response) => response.id === allocation.response_id);
+                            const line = selected.lines.find((item) => item.id === allocation.rfq_line_id);
+                            return <li key={allocation.id} className="text-[11px] text-gray-600">{line ? `${line.line_no}. ${line.description || "RFQ line"} · ` : ""}{bid?.supplier_name ?? bid?.supplier_id ?? allocation.response_id}: {allocation.quantity} {line?.unit ?? selected.unit}</li>;
+                          })}
+                        </ul>
+                        {award.approvals.map((approval) => (
+                          <div key={approval.id} className="flex flex-wrap items-center gap-2 border-t pt-2 text-[11px]">
+                            <span className="flex-1">{approval.rule_name} · level {approval.approval_level} · {approval.decision_status}{approval.requires_all_matching_approvers ? " · all assigned approvers" : ""}</span>
+                            {award.status === "PENDING_APPROVAL" && approval.decision_status === "PENDING"
+                              && isCurrentAwardApprovalStep(award, approval)
+                              && selected.access?.can_approve && user?.id === approval.approver_user_id && (
+                              <>
+                                <input aria-label="Award rejection reason" value={awardComments[award.id] ?? ""}
+                                  onChange={(event) => setAwardComments((current) => ({ ...current, [award.id]: event.target.value }))}
+                                  className="min-w-40 rounded border px-2 py-1" placeholder="Rejection reason if rejecting" />
+                                <button type="button" disabled={saving} onClick={() => decideAward(award.id, "approve")}
+                                  className="rounded bg-green-700 px-2 py-1 text-white disabled:opacity-50">Approve</button>
+                                <button type="button" disabled={saving || (awardComments[award.id] ?? "").trim().length < 3}
+                                  onClick={() => decideAward(award.id, "reject")}
+                                  className="rounded bg-red-700 px-2 py-1 text-white disabled:opacity-50">Reject</button>
+                              </>
+                            )}
+                            {approval.comments && <p className="w-full text-gray-500">{approval.comments}</p>}
+                            {approval.decided_at && <p className="w-full text-gray-400">{new Date(approval.decided_at).toLocaleString()}</p>}
+                          </div>
+                        ))}
                       </div>
                     ))}
                   </div>
@@ -587,7 +755,9 @@ export default function RFQPage() {
                 <p className="mt-1 text-[11px] text-gray-500">Internal procurement users record a quote supplied through the approved business channel.</p>
               </div>
               {[
-                { label: "Quoted Unit Price", key: "quoted_unit_price", type: "number", placeholder: "0.00" },
+                ...(selected.lines.length === 0
+                  ? [{ label: "Quoted Unit Price", key: "quoted_unit_price", type: "number", placeholder: "0.00" }]
+                  : []),
                 { label: "Currency", key: "quoted_currency", placeholder: "KES" },
                 { label: "Lead Time (days)", key: "lead_time_days", type: "number", placeholder: "7" },
                 { label: "Valid Until", key: "valid_until", type: "date" },
@@ -602,6 +772,14 @@ export default function RFQPage() {
                     className="w-full border rounded px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none"
                   />
                 </div>
+              ))}
+              {selected.lines.length > 0 && selected.lines.map((line) => (
+                <label key={line.id} className="block text-xs font-medium text-gray-600">
+                  {line.line_no}. {line.description || "RFQ line"} — {line.quantity} {line.unit}
+                  <input type="number" min="0" step="0.0001" value={responseLineQuotes[line.id] ?? ""}
+                    onChange={(event) => setResponseLineQuotes((current) => ({ ...current, [line.id]: event.target.value }))}
+                    className="mt-1 w-full rounded border px-3 py-2 text-sm" placeholder="Supplier unit price" />
+                </label>
               ))}
             </div>
             <div className="px-6 pb-5 flex gap-3">

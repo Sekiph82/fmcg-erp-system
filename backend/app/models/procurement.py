@@ -312,6 +312,19 @@ class RFQResponseStatus(str, enum.Enum):
     REJECTED = "REJECTED"
 
 
+class RFQAwardStatus(str, enum.Enum):
+    PENDING_APPROVAL = "PENDING_APPROVAL"
+    APPROVED = "APPROVED"
+    REJECTED = "REJECTED"
+
+
+class RFQAwardApprovalStatus(str, enum.Enum):
+    PENDING = "PENDING"
+    APPROVED = "APPROVED"
+    REJECTED = "REJECTED"
+    SKIPPED = "SKIPPED"
+
+
 class RFQInvitationStatus(str, enum.Enum):
     PENDING = "PENDING"
     ISSUED = "ISSUED"
@@ -377,6 +390,7 @@ class RFQRequest(Base, TimestampMixin):
         cascade="all, delete-orphan",
         order_by="RFQEvaluationCriterion.code",
     )
+    awards = relationship("RFQAward", back_populates="rfq", order_by="RFQAward.revision_no", passive_deletes="all")
 
 
 class RFQLine(Base, TimestampMixin):
@@ -459,6 +473,34 @@ class RFQResponse(Base, TimestampMixin):
         cascade="all, delete-orphan",
         order_by="RFQResponseEvaluation.criterion_id, RFQResponseEvaluation.revision_no",
     )
+    line_quotes = relationship(
+        "RFQResponseLineQuote",
+        back_populates="response",
+        order_by="RFQResponseLineQuote.rfq_line_id",
+        passive_deletes="all",
+    )
+
+
+class RFQResponseLineQuote(Base, TimestampMixin):
+    """Supplier's itemized unit quote for one multi-line RFQ requirement."""
+
+    __tablename__ = "rfq_response_line_quotes"
+    __table_args__ = (
+        UniqueConstraint("response_id", "rfq_line_id", name="uq_rfq_response_line_quote"),
+        CheckConstraint(
+            "quoted_unit_price > 0 AND quoted_unit_price NOT IN ('NaN', 'Infinity', '-Infinity')",
+            name="ck_rfq_response_line_quote_price_positive",
+        ),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    response_id = Column(UUID(as_uuid=True), ForeignKey("rfq_responses.id", ondelete="RESTRICT"), nullable=False, index=True)
+    rfq_line_id = Column(UUID(as_uuid=True), ForeignKey("rfq_request_lines.id", ondelete="RESTRICT"), nullable=False)
+    quoted_unit_price = Column(Numeric(14, 4), nullable=False)
+    quoted_currency = Column(String(10), nullable=False)
+
+    response = relationship("RFQResponse", back_populates="line_quotes")
+    rfq_line = relationship("RFQLine")
 
 
 class RFQEvaluationCriterion(Base, TimestampMixin):
@@ -524,6 +566,85 @@ class RFQResponseEvaluation(Base, TimestampMixin):
     response = relationship("RFQResponse", back_populates="evaluations")
     criterion = relationship("RFQEvaluationCriterion", back_populates="evaluations")
     evaluator = relationship("User")
+
+
+class RFQAward(Base, TimestampMixin):
+    """Immutable RFQ award proposal and its final approval state."""
+
+    __tablename__ = "rfq_awards"
+    __table_args__ = (
+        UniqueConstraint("rfq_id", "revision_no", name="uq_rfq_award_revision"),
+        CheckConstraint("revision_no >= 1", name="ck_rfq_award_revision_positive"),
+        CheckConstraint("total_amount >= 0 AND total_amount NOT IN ('NaN', 'Infinity', '-Infinity')", name="ck_rfq_award_total_amount_nonnegative"),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    rfq_id = Column(UUID(as_uuid=True), ForeignKey("rfq_requests.id", ondelete="RESTRICT"), nullable=False, index=True)
+    revision_no = Column(Integer, nullable=False)
+    status = Column(Enum(RFQAwardStatus, name="rfqawardstatus"), nullable=False, default=RFQAwardStatus.PENDING_APPROVAL)
+    total_amount = Column(Numeric(30, 7), nullable=False)
+    currency = Column(String(10), nullable=False)
+    justification = Column(String(1000), nullable=False)
+    requested_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    requested_at = Column(DateTime(timezone=True), nullable=False)
+    decided_at = Column(DateTime(timezone=True), nullable=True)
+
+    rfq = relationship("RFQRequest", back_populates="awards")
+    requested_by = relationship("User", foreign_keys=[requested_by_id])
+    allocations = relationship("RFQAwardAllocation", back_populates="award", cascade="all, delete-orphan", order_by="RFQAwardAllocation.id")
+    approvals = relationship("RFQAwardApproval", back_populates="award", cascade="all, delete-orphan", order_by="RFQAwardApproval.approval_level, RFQAwardApproval.id")
+
+
+class RFQAwardAllocation(Base, TimestampMixin):
+    """One supplier's quantity share of one RFQ item award proposal."""
+
+    __tablename__ = "rfq_award_allocations"
+    __table_args__ = (
+        UniqueConstraint("award_id", "response_id", "rfq_line_id", name="uq_rfq_award_allocation_line_response"),
+        CheckConstraint("quantity > 0 AND quantity NOT IN ('NaN', 'Infinity', '-Infinity')", name="ck_rfq_award_allocation_quantity_positive"),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    award_id = Column(UUID(as_uuid=True), ForeignKey("rfq_awards.id", ondelete="CASCADE"), nullable=False, index=True)
+    response_id = Column(UUID(as_uuid=True), ForeignKey("rfq_responses.id", ondelete="RESTRICT"), nullable=False)
+    rfq_line_id = Column(UUID(as_uuid=True), ForeignKey("rfq_request_lines.id", ondelete="RESTRICT"), nullable=True)
+    quantity = Column(Numeric(14, 3), nullable=False)
+
+    award = relationship("RFQAward", back_populates="allocations")
+    response = relationship("RFQResponse")
+    rfq_line = relationship("RFQLine")
+
+
+class RFQAwardApproval(Base, TimestampMixin):
+    """Snapshot vote assignment for one configured procurement approval rule."""
+
+    __tablename__ = "rfq_award_approvals"
+    __table_args__ = (
+        UniqueConstraint("award_id", "approval_rule_id", "approver_user_id", name="uq_rfq_award_approval_assignee"),
+        CheckConstraint("approval_level >= 1", name="ck_rfq_award_approval_level_positive"),
+        CheckConstraint(
+            "(decision_status = 'PENDING' AND decided_by_id IS NULL AND decided_at IS NULL) OR "
+            "(decision_status <> 'PENDING' AND decided_by_id IS NOT NULL AND decided_at IS NOT NULL)",
+            name="ck_rfq_award_approval_decision_attribution",
+        ),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    award_id = Column(UUID(as_uuid=True), ForeignKey("rfq_awards.id", ondelete="CASCADE"), nullable=False, index=True)
+    approval_rule_id = Column(UUID(as_uuid=True), ForeignKey("procurement_approval_rules.id", ondelete="RESTRICT"), nullable=False)
+    approval_level = Column(Integer, nullable=False)
+    rule_name = Column(String(255), nullable=False)
+    requires_all_matching_approvers = Column(Boolean, nullable=False, default=False)
+    approver_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
+    decision_status = Column(Enum(RFQAwardApprovalStatus, name="rfqawardapprovalstatus"), nullable=False, default=RFQAwardApprovalStatus.PENDING)
+    decided_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=True)
+    decided_at = Column(DateTime(timezone=True), nullable=True)
+    comments = Column(String(1000), nullable=True)
+
+    award = relationship("RFQAward", back_populates="approvals")
+    approval_rule = relationship("ProcurementApprovalRule")
+    approver = relationship("User", foreign_keys=[approver_user_id])
+    decided_by = relationship("User", foreign_keys=[decided_by_id])
 
 
 class BlanketPurchaseAgreement(Base, TimestampMixin):
