@@ -934,6 +934,42 @@ class BlanketAgreementUpdate(ProcurementScopeFields):
         return value
 
 
+class BlanketAgreementPriceBreakInput(BaseModel):
+    min_quantity: Decimal = Field(gt=0, max_digits=14, decimal_places=3)
+    unit_price: Decimal = Field(gt=0, max_digits=14, decimal_places=4)
+    effective_from: date
+    effective_to: date
+    notes: Optional[str] = Field(default=None, max_length=500)
+
+    @field_validator("min_quantity", "unit_price")
+    @classmethod
+    def validate_finite_price_break_values(cls, value: Decimal) -> Decimal:
+        if not value.is_finite():
+            raise ValueError("Price-break quantity and price must be finite")
+        return value
+
+    @model_validator(mode="after")
+    def validate_price_break_validity(self):
+        if self.effective_to < self.effective_from:
+            raise ValueError("Price-break effective_to must be on or after effective_from")
+        return self
+
+
+class BlanketAgreementPriceBreakScheduleUpdate(BaseModel):
+    price_breaks: List[BlanketAgreementPriceBreakInput] = Field(default_factory=list, max_length=100)
+
+
+class BlanketAgreementPriceBreakRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: uuid.UUID
+    agreement_id: uuid.UUID
+    min_quantity: Decimal
+    unit_price: Decimal
+    effective_from: date
+    effective_to: date
+    notes: Optional[str]
+
+
 class BlanketAgreementRead(ProcurementScopeFields):
     model_config = {"from_attributes": True}
     id: uuid.UUID

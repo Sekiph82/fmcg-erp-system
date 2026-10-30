@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
-import { procurementApi, BlanketAgreement, BPAStatus } from "@/lib/procurement";
+import { procurementApi, BlanketAgreement, BlanketAgreementPriceBreakInput, BPAStatus } from "@/lib/procurement";
 
 const STATUS_COLORS: Record<BPAStatus, string> = {
   ACTIVE: "bg-green-100 text-green-700",
@@ -24,6 +24,12 @@ export default function BlanketAgreementsPage() {
   const [form, setForm] = useState({ ...BLANK_FORM });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [priceBreakAgreement, setPriceBreakAgreement] = useState<BlanketAgreement | null>(null);
+  const [priceBreakRows, setPriceBreakRows] = useState<BlanketAgreementPriceBreakInput[]>([]);
+  const [priceBreakLoading, setPriceBreakLoading] = useState(false);
+  const [priceBreakLoadFailed, setPriceBreakLoadFailed] = useState(false);
+  const [priceBreakSaving, setPriceBreakSaving] = useState(false);
+  const [priceBreakError, setPriceBreakError] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -99,6 +105,45 @@ export default function BlanketAgreementsPage() {
       await load();
     } catch {
       setError(`Could not cancel ${b.bpa_no}. It may be expired, fully consumed, or outside your procurement scope.`);
+    }
+  };
+
+  const openPriceBreaks = async (agreement: BlanketAgreement) => {
+    setPriceBreakAgreement(agreement);
+    setPriceBreakLoading(true);
+    setPriceBreakError("");
+    setPriceBreakLoadFailed(false);
+    setPriceBreakRows([]);
+    try {
+      const rows = await procurementApi.listBPAPriceBreaks(agreement.id);
+      setPriceBreakRows(rows.map(row => ({
+        min_quantity: String(row.min_quantity),
+        unit_price: String(row.unit_price),
+        effective_from: row.effective_from,
+        effective_to: row.effective_to,
+        notes: row.notes ?? "",
+      })));
+    } catch {
+      setPriceBreakRows([]);
+      setPriceBreakLoadFailed(true);
+      setPriceBreakError("Could not load price breaks for this agreement.");
+    } finally {
+      setPriceBreakLoading(false);
+    }
+  };
+
+  const savePriceBreaks = async () => {
+    if (!priceBreakAgreement) return;
+    setPriceBreakSaving(true);
+    setPriceBreakError("");
+    try {
+      await procurementApi.replaceBPAPriceBreaks(priceBreakAgreement.id, priceBreakRows);
+      setPriceBreakAgreement(null);
+      await load();
+    } catch {
+      setPriceBreakError("Price breaks could not be saved. Check quantity thresholds and validity windows.");
+    } finally {
+      setPriceBreakSaving(false);
     }
   };
 
@@ -212,6 +257,9 @@ export default function BlanketAgreementsPage() {
                         {canEdit && !hasConsumption && (
                           <button onClick={() => openEdit(b)} className="text-xs text-blue-600 hover:underline">Edit</button>
                         )}
+                        {canEdit && !hasConsumption && (
+                          <button onClick={() => void openPriceBreaks(b)} className="text-xs text-indigo-600 hover:underline">Price breaks</button>
+                        )}
                         {canCancel && (
                           <button onClick={() => cancel(b)} className="text-xs text-red-500 hover:underline">Cancel</button>
                         )}
@@ -272,6 +320,59 @@ export default function BlanketAgreementsPage() {
                 className="flex-1 rounded border py-2 text-sm text-gray-600 hover:bg-gray-50">
                 Cancel
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {priceBreakAgreement && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white border rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+            <div className="px-6 py-4 border-b flex items-center justify-between">
+              <div>
+                <h2 className="text-base font-semibold">Price breaks · {priceBreakAgreement.bpa_no}</h2>
+                <p className="text-xs text-gray-500 mt-1">The highest eligible quantity threshold sets the all-units price. The agreement price applies when no break is eligible.</p>
+              </div>
+              <button onClick={() => setPriceBreakAgreement(null)} className="text-gray-400 hover:text-gray-600 text-xl" aria-label="Close price breaks">×</button>
+            </div>
+            <div className="p-6 space-y-4">
+              {priceBreakError && <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2">{priceBreakError}</p>}
+              {priceBreakLoading ? <p className="text-sm text-gray-500">Loading price breaks…</p> : (
+                <>
+                  {priceBreakRows.length === 0 && <p className="text-sm text-gray-500">No price breaks. The agreement unit price applies to every release.</p>}
+                  <div className="space-y-3">
+                    {priceBreakRows.map((row, index) => (
+                      <div key={`${index}-${row.min_quantity}`} className="grid grid-cols-1 md:grid-cols-5 gap-2 items-end border rounded p-3">
+                        <label className="text-xs text-gray-600">Minimum quantity
+                          <input type="number" min="0.001" step="0.001" value={row.min_quantity} onChange={event => setPriceBreakRows(rows => rows.map((item, i) => i === index ? { ...item, min_quantity: event.target.value } : item))} className="mt-1 w-full border rounded px-2 py-1.5" />
+                        </label>
+                        <label className="text-xs text-gray-600">Unit price ({priceBreakAgreement.currency})
+                          <input type="number" min="0.0001" step="0.0001" value={row.unit_price} onChange={event => setPriceBreakRows(rows => rows.map((item, i) => i === index ? { ...item, unit_price: event.target.value } : item))} className="mt-1 w-full border rounded px-2 py-1.5" />
+                        </label>
+                        <label className="text-xs text-gray-600">Effective from
+                          <input type="date" min={priceBreakAgreement.valid_from} max={priceBreakAgreement.valid_to} value={row.effective_from} onChange={event => setPriceBreakRows(rows => rows.map((item, i) => i === index ? { ...item, effective_from: event.target.value } : item))} className="mt-1 w-full border rounded px-2 py-1.5" />
+                        </label>
+                        <label className="text-xs text-gray-600">Effective to
+                          <input type="date" min={priceBreakAgreement.valid_from} max={priceBreakAgreement.valid_to} value={row.effective_to} onChange={event => setPriceBreakRows(rows => rows.map((item, i) => i === index ? { ...item, effective_to: event.target.value } : item))} className="mt-1 w-full border rounded px-2 py-1.5" />
+                        </label>
+                        <button onClick={() => setPriceBreakRows(rows => rows.filter((_, i) => i !== index))} className="text-xs text-red-600 hover:underline">Remove</button>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex flex-wrap gap-2 justify-between">
+                    <button disabled={priceBreakLoading || priceBreakLoadFailed} onClick={() => setPriceBreakRows(rows => [...rows, {
+                      min_quantity: "", unit_price: "", effective_from: priceBreakAgreement.valid_from,
+                      effective_to: priceBreakAgreement.valid_to, notes: "",
+                    }])} className="text-sm text-indigo-700 border border-indigo-200 rounded px-3 py-2 disabled:opacity-50">+ Add threshold</button>
+                    <div className="flex gap-2">
+                      <button onClick={() => setPriceBreakAgreement(null)} className="border rounded px-4 py-2 text-sm">Close</button>
+                      <button onClick={() => void savePriceBreaks()} disabled={priceBreakSaving || priceBreakLoading || priceBreakLoadFailed} className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white rounded px-4 py-2 text-sm">
+                        {priceBreakSaving ? "Saving…" : "Save price breaks"}
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>

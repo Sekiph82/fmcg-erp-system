@@ -28,6 +28,7 @@ from app.models.procurement import (
     BPAStatus,
     RFQAward, RFQAwardAllocation, RFQAwardApproval, RFQAwardStatus,
     RFQAwardApprovalStatus, ProcurementApprovalDocumentType,
+    BlanketAgreementPriceBreak,
 )
 from decimal import Decimal as _Decimal
 from app.models.master import Product, Supplier
@@ -47,6 +48,8 @@ from app.schemas.procurement import (
     RFQResponseEvaluationRead,
     RFQAwardProposalCreate, RFQAwardDecision, RFQAwardRead, RFQResponseLineQuoteRead,
     BlanketAgreementCreate, BlanketAgreementUpdate, BlanketAgreementRead,
+    BlanketAgreementPriceBreakInput, BlanketAgreementPriceBreakScheduleUpdate,
+    BlanketAgreementPriceBreakRead,
     AutoReorderPolicyCreate, AutoReorderPolicyUpdate, AutoReorderPolicyRead,
     ProcurementApprovalRuleCreate, ProcurementApprovalRuleUpdate, ProcurementApprovalRuleRead,
 )
@@ -1723,6 +1726,99 @@ async def list_bpas(
         row.access = svc.build_procurement_access_hint(current_user, b)
         rows.append(row)
     return rows
+
+
+def _bpa_price_break_snapshot(price_breaks) -> list[dict[str, str | None]]:
+    return [
+        {
+            "min_quantity": str(row.min_quantity),
+            "unit_price": str(row.unit_price),
+            "effective_from": row.effective_from.isoformat(),
+            "effective_to": row.effective_to.isoformat(),
+            "notes": row.notes,
+        }
+        for row in sorted(price_breaks, key=lambda item: (item.min_quantity, item.effective_from))
+    ]
+
+
+@router.get("/bpa/{bpa_id}/price-breaks", response_model=List[BlanketAgreementPriceBreakRead])
+async def list_bpa_price_breaks(
+    bpa_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    result = await db.execute(
+        select(BlanketPurchaseAgreement)
+        .options(selectinload(BlanketPurchaseAgreement.price_breaks))
+        .where(BlanketPurchaseAgreement.id == bpa_id)
+    )
+    agreement = result.scalar_one_or_none()
+    if not agreement or not _can_view_procurement_record(current_user, agreement):
+        raise HTTPException(404, "Agreement not found")
+    return [BlanketAgreementPriceBreakRead.model_validate(row) for row in agreement.price_breaks]
+
+
+@router.put("/bpa/{bpa_id}/price-breaks", response_model=List[BlanketAgreementPriceBreakRead])
+async def replace_bpa_price_breaks(
+    bpa_id: uuid.UUID,
+    body: BlanketAgreementPriceBreakScheduleUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    result = await db.execute(
+        select(BlanketPurchaseAgreement)
+        .options(selectinload(BlanketPurchaseAgreement.price_breaks))
+        .where(BlanketPurchaseAgreement.id == bpa_id)
+        .with_for_update()
+    )
+    agreement = result.scalar_one_or_none()
+    if not agreement:
+        raise HTTPException(404, "Agreement not found")
+    _require_procurement_action(current_user, agreement, "edit")
+    today = date.today()
+    if _effective_bpa_status(agreement, today) != BPAStatus.ACTIVE:
+        raise HTTPException(409, "Expired or cancelled blanket agreements cannot change price breaks.")
+    if agreement.consumed_quantity > 0:
+        raise HTTPException(409, "Price breaks are locked after consumption starts.")
+
+    rows = sorted(body.price_breaks, key=lambda item: (item.min_quantity, item.effective_from))
+    previous_by_threshold: dict[Decimal, BlanketAgreementPriceBreakInput] = {}
+    for row in rows:
+        if row.effective_from < agreement.valid_from or row.effective_to > agreement.valid_to:
+            raise HTTPException(422, "Price-break validity must stay inside the agreement validity period.")
+        if agreement.agreed_quantity is not None and row.min_quantity > agreement.agreed_quantity:
+            raise HTTPException(422, "A price-break threshold cannot exceed the total agreement commitment.")
+        previous = previous_by_threshold.get(row.min_quantity)
+        if previous and row.effective_from <= previous.effective_to:
+            raise HTTPException(422, "Price-break validity windows for the same quantity threshold cannot overlap.")
+        previous_by_threshold[row.min_quantity] = row
+
+    before = _bpa_price_break_snapshot(agreement.price_breaks)
+    agreement.price_breaks.clear()
+    await db.flush()
+    agreement.price_breaks.extend([
+        BlanketAgreementPriceBreak(
+            min_quantity=row.min_quantity,
+            unit_price=row.unit_price,
+            effective_from=row.effective_from,
+            effective_to=row.effective_to,
+            notes=row.notes,
+        )
+        for row in rows
+    ])
+    await db.flush()
+    after = _bpa_price_break_snapshot(agreement.price_breaks)
+    if before != after:
+        db.add(_bpa_audit_log(
+            agreement,
+            current_user,
+            AuditEvent.BPA_PRICE_BREAKS_UPDATED,
+            before_value={"price_breaks": before},
+            after_value={"price_breaks": after},
+            details={"break_count": len(after), "pricing_method": "ALL_UNITS"},
+        ))
+    await db.commit()
+    return [BlanketAgreementPriceBreakRead.model_validate(row) for row in agreement.price_breaks]
 
 
 @router.post("/bpa/", response_model=BlanketAgreementRead, status_code=201)

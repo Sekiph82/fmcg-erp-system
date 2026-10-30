@@ -416,6 +416,24 @@ export interface BlanketAgreement extends ProcurementScopeFields {
   access?: ProcurementAccessHint;
 }
 
+export interface BlanketAgreementPriceBreak {
+  id: string;
+  agreement_id: string;
+  min_quantity: number;
+  unit_price: number;
+  effective_from: string;
+  effective_to: string;
+  notes?: string;
+}
+
+export interface BlanketAgreementPriceBreakInput {
+  min_quantity: string;
+  unit_price: string;
+  effective_from: string;
+  effective_to: string;
+  notes?: string | null;
+}
+
 export interface AutoReorderPolicy extends ProcurementScopeFields {
   id: string;
   material_id?: string;
@@ -665,6 +683,14 @@ export const procurementApi = {
   // Blanket Purchase Agreements
   async listBPAs(params?: { supplier_id?: string; status?: BPAStatus }): Promise<BlanketAgreement[]> {
     const res = await apiClient.get<BlanketAgreement[]>("/api/v1/procurement/bpa/", { params });
+    return res.data;
+  },
+  async listBPAPriceBreaks(id: string): Promise<BlanketAgreementPriceBreak[]> {
+    const res = await apiClient.get<BlanketAgreementPriceBreak[]>(`/api/v1/procurement/bpa/${id}/price-breaks`);
+    return res.data;
+  },
+  async replaceBPAPriceBreaks(id: string, price_breaks: BlanketAgreementPriceBreakInput[]): Promise<BlanketAgreementPriceBreak[]> {
+    const res = await apiClient.put<BlanketAgreementPriceBreak[]>(`/api/v1/procurement/bpa/${id}/price-breaks`, { price_breaks });
     return res.data;
   },
   async createBPA(data: object): Promise<BlanketAgreement> {

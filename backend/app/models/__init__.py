@@ -37,6 +37,7 @@ from app.models.wms import WarehouseZone, StorageLocation, StockCount, StockCoun
 from app.models.procurement import (
     PurchaseRequisition, PRLine, PurchaseOrder, POLine,
     GoodsReceipt, GRNLine, ImportShipment, SupplierEvaluation, SupplierPayment,
+    BlanketPurchaseAgreement, BlanketAgreementPriceBreak,
 )
 from app.models.landed_cost import LandedCostHeader, LandedCostLine, LandedCostLineActual
 from app.models.quality import (

@@ -29,6 +29,7 @@ from app.models.procurement import (
     PurchaseRequisition, PRLine, PurchaseOrder, POLine,
     GoodsReceipt, GRNLine, PRStatus, POStatus, GRNStatus,
     RFQStatus, ProcurementApprovalDocumentType, ProcurementApprovalRule,
+    BPAStatus, BlanketPurchaseAgreement,
 )
 from app.models.inventory import Stock, Lot, StockMovement, MovementType, StockType
 from app.models.master import Material, Product, Warehouse
@@ -179,6 +180,41 @@ def procurement_document_amount(record) -> Decimal | None:
         total += Decimal(str(quantity)) * Decimal(str(unit_price))
         has_amount = True
     return total if has_amount else None
+
+
+def resolve_bpa_unit_price(
+    agreement: BlanketPurchaseAgreement,
+    release_quantity: Decimal,
+    effective_date: date,
+) -> Decimal:
+    """Resolve an all-units price for one release using the highest eligible threshold.
+
+    Price-break rows are dated versions of a threshold. The base agreement price
+    applies when no dated threshold is eligible. Commitment enforcement includes
+    already-consumed quantity so callers cannot quote beyond a bounded agreement.
+    """
+    if not release_quantity.is_finite() or release_quantity <= 0:
+        raise ValueError("Release quantity must be finite and greater than zero.")
+    if agreement.status != BPAStatus.ACTIVE:
+        raise ValueError("Only active blanket agreements can be priced.")
+    if effective_date < agreement.valid_from or effective_date > agreement.valid_to:
+        raise ValueError("The release date is outside the blanket agreement validity period.")
+    remaining = (
+        agreement.agreed_quantity - agreement.consumed_quantity
+        if agreement.agreed_quantity is not None
+        else None
+    )
+    if remaining is not None and release_quantity > remaining:
+        raise ValueError("Release quantity exceeds the remaining blanket agreement commitment.")
+    eligible = [
+        price_break
+        for price_break in getattr(agreement, "price_breaks", [])
+        if price_break.min_quantity <= release_quantity
+        and price_break.effective_from <= effective_date <= price_break.effective_to
+    ]
+    if not eligible:
+        return agreement.agreed_unit_price
+    return max(eligible, key=lambda item: item.min_quantity).unit_price
 
 
 async def find_procurement_approval_rules(

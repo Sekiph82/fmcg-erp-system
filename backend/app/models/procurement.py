@@ -676,6 +676,39 @@ class BlanketPurchaseAgreement(Base, TimestampMixin):
     company = relationship("Company")
     branch = relationship("Branch")
     cost_center = relationship("CostCenter")
+    price_breaks = relationship(
+        "BlanketAgreementPriceBreak",
+        back_populates="agreement",
+        cascade="all, delete-orphan",
+        order_by="BlanketAgreementPriceBreak.min_quantity",
+    )
+
+
+class BlanketAgreementPriceBreak(Base, TimestampMixin):
+    """All-units BPA price selected by release quantity and effective date."""
+
+    __tablename__ = "blanket_agreement_price_breaks"
+    __table_args__ = (
+        CheckConstraint("min_quantity > 0 AND min_quantity < 'Infinity'::numeric", name="ck_bpa_price_break_min_quantity_positive"),
+        CheckConstraint("unit_price > 0 AND unit_price < 'Infinity'::numeric", name="ck_bpa_price_break_unit_price_positive"),
+        CheckConstraint("effective_to >= effective_from", name="ck_bpa_price_break_validity_order"),
+        Index("ix_bpa_price_break_agreement_effective", "agreement_id", "effective_from", "effective_to"),
+        Index("ix_bpa_price_break_agreement_min", "agreement_id", "min_quantity"),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    agreement_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("blanket_purchase_agreements.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    min_quantity = Column(Numeric(14, 3), nullable=False)
+    unit_price = Column(Numeric(14, 4), nullable=False)
+    effective_from = Column(Date, nullable=False)
+    effective_to = Column(Date, nullable=False)
+    notes = Column(String(500), nullable=True)
+
+    agreement = relationship("BlanketPurchaseAgreement", back_populates="price_breaks")
 
 
 class AutoReorderPolicy(Base, TimestampMixin):

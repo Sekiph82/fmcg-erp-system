@@ -10,9 +10,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 - Current Milestone: M34 — Strategic Procurement Upgrade
 - Current Sprint: M34.S01 — Strategic Sourcing
-- Current Task: M34.S02.T001 — Blanket agreement governance
+- Current Task: M34.S02.T002 — Price breaks/validity/commitments
 - Current Task Status: COMPLETE
-- Next Task/Action: M34.S02.T002 — Price breaks/validity/commitments
+- Next Task/Action: M34.S02.T003 — Release/call-off orders
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -1097,7 +1097,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 ## M34.S02 — Contracts & Blanket Procurement
 - [x] M34.S02.T001 — Blanket agreement governance
   Evidence: CODEX_LOG_V01.md; V05 disposable PostgreSQL full migration to 20261030_0008 head and 3 focused tests passed with cleanup verified; related regression suite 8 passed, 1 skipped; Python compile, frontend type-check/targeted ESLint, diff check, and independent read-only review complete.
-- [ ] M34.S02.T002 — Price breaks/validity/commitments
+- [x] M34.S02.T002 — Price breaks/validity/commitments
+  Evidence: CODEX_LOG_V01.md; disposable PostgreSQL 16 V04: 3/3 focused tests pass; downgrade retained 3 price-break rows; re-upgrade reached 20261030_0009; container cleanup verified; Python compileall, frontend type-check, targeted ESLint, git diff --check pass; independent read-only review findings resolved.
 - [ ] M34.S02.T003 — Release/call-off orders
 - [ ] M34.S02.T004 — Contract consumption tracking
 
