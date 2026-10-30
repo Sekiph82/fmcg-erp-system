@@ -2,7 +2,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 from uuid import UUID
-from pydantic import BaseModel, Field, HttpUrl, field_validator
+from pydantic import BaseModel, Field, HttpUrl, field_validator, model_validator
 
 from app.models.webhook import AuthType, DeliveryStatus, HttpMethod
 
@@ -112,11 +112,47 @@ class PublishEventRequest(BaseModel):
 
 
 class ReplayRequest(BaseModel):
-    event_ids: Optional[List[UUID]] = None          # replay specific events
+    event_ids: Optional[List[UUID]] = Field(default=None, max_length=200)  # replay specific events
     event_code: Optional[str] = None                # replay all events of a type
     from_dt: Optional[datetime] = None
     to_dt: Optional[datetime] = None
-    subscription_ids: Optional[List[UUID]] = None   # replay to specific subs only
+    subscription_ids: Optional[List[UUID]] = Field(default=None, max_length=100)  # replay to specific subs only
+
+    @field_validator("event_code")
+    @classmethod
+    def normalize_event_code(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("event_code must not be blank")
+        return normalized
+
+    @field_validator("from_dt", "to_dt")
+    @classmethod
+    def require_timezone_aware_replay_bounds(
+        cls, value: Optional[datetime]
+    ) -> Optional[datetime]:
+        if value is not None and (value.tzinfo is None or value.utcoffset() is None):
+            raise ValueError("Replay date bounds must include a timezone")
+        return value
+
+    @model_validator(mode="after")
+    def validate_replay_scope(self) -> "ReplayRequest":
+        if self.event_ids is not None and not self.event_ids:
+            raise ValueError("event_ids must contain at least one ID when provided")
+        if self.subscription_ids is not None and not self.subscription_ids:
+            raise ValueError("subscription_ids must contain at least one ID when provided")
+        if not (
+            self.event_ids
+            or self.event_code
+            or self.from_dt
+            or self.to_dt
+        ):
+            raise ValueError("Replay requires event IDs, an event code, or a date range")
+        if self.from_dt and self.to_dt and self.from_dt > self.to_dt:
+            raise ValueError("from_dt must be earlier than or equal to to_dt")
+        return self
 
 
 # ── Subscriptions ─────────────────────────────────────────────────────────────

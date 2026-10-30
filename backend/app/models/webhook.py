@@ -134,8 +134,16 @@ class Subscription(Base, TimestampMixin):
 class DeliveryAttempt(Base, TimestampMixin):
     """Per-event per-subscription delivery record."""
     __tablename__ = "webhook_delivery_attempts"
+    __table_args__ = (
+        UniqueConstraint("replay_of_id", name="uq_webhook_delivery_attempts_replay_of"),
+    )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    replay_of_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("webhook_delivery_attempts.id", ondelete="SET NULL"),
+        nullable=True,
+    )
     event_log_id = Column(UUID(as_uuid=True), ForeignKey("webhook_event_logs.id", ondelete="CASCADE"), nullable=False, index=True)
     subscription_id = Column(UUID(as_uuid=True), ForeignKey("webhook_subscriptions.id", ondelete="CASCADE"), nullable=False, index=True)
     attempt_no = Column(Integer, default=1, nullable=False)

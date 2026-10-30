@@ -188,7 +188,10 @@ async def replay_events(
     db: AsyncSession = Depends(get_db),
     _=Depends(get_current_active_superuser),
 ):
-    count = await svc.replay_events(db, data)
+    try:
+        count = await svc.replay_events(db, data)
+    except svc.EventReplayLimitError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     return {"detail": f"Queued {count} delivery attempt(s)"}
 
 
@@ -250,6 +253,7 @@ async def list_deliveries(
     skip: int = 0,
     limit: int = Query(default=100, le=500),
     db: AsyncSession = Depends(get_db),
+    _=Depends(get_current_active_superuser),
 ):
     return await svc.list_deliveries(
         db,
@@ -266,12 +270,17 @@ async def list_dead_letter(
     skip: int = 0,
     limit: int = Query(default=100, le=500),
     db: AsyncSession = Depends(get_db),
+    _=Depends(get_current_active_superuser),
 ):
-    return await svc.list_deliveries(db, status=DeliveryStatus.DEAD_LETTER, skip=skip, limit=limit)
+    return await svc.list_dead_letter_deliveries(db, skip=skip, limit=limit)
 
 
 @router.post("/deliveries/{delivery_id}/retry", response_model=DeliveryAttemptOut)
-async def retry_delivery(delivery_id: UUID, db: AsyncSession = Depends(get_db)):
+async def retry_delivery(
+    delivery_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(get_current_active_superuser),
+):
     obj = await svc.manual_retry_delivery(db, delivery_id)
     if not obj:
         raise HTTPException(404, "Delivery not found")

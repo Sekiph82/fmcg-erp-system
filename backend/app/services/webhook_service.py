@@ -17,6 +17,7 @@ from jsonschema.exceptions import SchemaError
 from sqlalchemy import and_, desc, func, or_, select
 from sqlalchemy.dialects.postgresql import insert as postgresql_insert
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import aliased
 
 from app.models.webhook import (
     AuthType, DeliveryAttempt, DeliveryStatus, EventDefinition, EventDefinitionVersion,
@@ -32,6 +33,9 @@ BACKOFF_BASE_SECONDS = 60      # first retry ceiling
 BACKOFF_MAX_SECONDS = 3600     # one-hour ceiling
 BACKOFF_JITTER_FLOOR = 0.5     # equal-jitter range: 50%-100% of the ceiling
 MAX_PAYLOAD_BYTES = 1_048_576  # 1 MB
+MAX_REPLAY_EVENTS = 200
+MAX_REPLAY_SUBSCRIPTIONS = 100
+MAX_REPLAY_DELIVERIES = 1000
 EVENT_JSON_SCHEMA_DRAFT = "https://json-schema.org/draft/2020-12/schema"
 
 
@@ -49,6 +53,10 @@ class EventIdempotencyConflictError(ValueError):
 
 class EventIdentifierValidationError(ValueError):
     """An event tracing or idempotency identifier is invalid."""
+
+
+class EventReplayLimitError(ValueError):
+    """A replay request exceeds an explicit event, subscription, or fan-out limit."""
 
 
 def _build_event_envelope(
@@ -769,6 +777,7 @@ async def process_retry_deliveries(db: AsyncSession, limit: int = 50) -> int:
             event_log_id=attempt.event_log_id,
             subscription_id=attempt.subscription_id,
             attempt_no=attempt.attempt_no + 1,
+            replay_of_id=attempt.id,
             status=DeliveryStatus.PENDING,
         )
         db.add(new_attempt)
@@ -786,7 +795,7 @@ async def process_retry_deliveries(db: AsyncSession, limit: int = 50) -> int:
 
 async def replay_events(db: AsyncSession, data: ReplayRequest) -> int:
     """Re-queue delivery attempts for events matching criteria."""
-    q = select(EventLog).order_by(EventLog.created_at)
+    q = select(EventLog).order_by(EventLog.created_at, EventLog.id)
 
     if data.event_ids:
         q = q.where(EventLog.id.in_(data.event_ids))
@@ -797,8 +806,14 @@ async def replay_events(db: AsyncSession, data: ReplayRequest) -> int:
     if data.to_dt:
         q = q.where(EventLog.created_at <= data.to_dt)
 
-    result = await db.execute(q.limit(200))
+    result = await db.execute(
+        q.limit(MAX_REPLAY_EVENTS + 1).with_for_update(of=EventLog)
+    )
     events = list(result.scalars().all())
+    if len(events) > MAX_REPLAY_EVENTS:
+        raise EventReplayLimitError(
+            f"Replay matches more than {MAX_REPLAY_EVENTS} events; narrow the event selector."
+        )
 
     # Subscriptions to replay to
     if data.subscription_ids:
@@ -806,30 +821,83 @@ async def replay_events(db: AsyncSession, data: ReplayRequest) -> int:
             select(Subscription).where(
                 and_(Subscription.id.in_(data.subscription_ids), Subscription.active_flag == True)  # noqa: E712
             )
+            .order_by(Subscription.id)
+            .limit(MAX_REPLAY_SUBSCRIPTIONS + 1)
         )
     else:
         subs_r = await db.execute(
             select(Subscription).where(Subscription.active_flag == True)  # noqa: E712
+            .order_by(Subscription.id)
+            .limit(MAX_REPLAY_SUBSCRIPTIONS + 1)
         )
     subs = list(subs_r.scalars().all())
+    if len(subs) > MAX_REPLAY_SUBSCRIPTIONS:
+        raise EventReplayLimitError(
+            f"Replay matches more than {MAX_REPLAY_SUBSCRIPTIONS} active subscriptions; select a smaller subscription set."
+        )
 
-    count = 0
+    replay_child = aliased(DeliveryAttempt)
+    latest_leaf = (
+        select(
+            DeliveryAttempt.id.label("attempt_id"),
+            func.row_number()
+            .over(
+                partition_by=(DeliveryAttempt.event_log_id, DeliveryAttempt.subscription_id),
+                order_by=(
+                    DeliveryAttempt.attempt_no.desc(),
+                    DeliveryAttempt.created_at.desc(),
+                    DeliveryAttempt.id.desc(),
+                ),
+            )
+            .label("row_number"),
+        )
+        .where(
+            DeliveryAttempt.event_log_id.in_([event.id for event in events]),
+            DeliveryAttempt.subscription_id.in_([sub.id for sub in subs]),
+            ~select(replay_child.id)
+            .where(replay_child.replay_of_id == DeliveryAttempt.id)
+            .exists(),
+        )
+        .subquery()
+    )
+    latest_r = await db.execute(
+        select(DeliveryAttempt)
+        .join(latest_leaf, latest_leaf.c.attempt_id == DeliveryAttempt.id)
+        .where(latest_leaf.c.row_number == 1)
+        .with_for_update(of=DeliveryAttempt)
+    )
+    latest_by_pair = {
+        (attempt.event_log_id, attempt.subscription_id): attempt
+        for attempt in latest_r.scalars().all()
+    }
+
+    attempts: List[DeliveryAttempt] = []
     for event in events:
         for sub in subs:
             if sub.event_codes and event.event_code not in sub.event_codes:
                 continue
-            attempt = DeliveryAttempt(
-                event_log_id=event.id,
-                subscription_id=sub.id,
-                attempt_no=1,
-                status=DeliveryStatus.PENDING,
-                error_message="[replayed]",
+            previous = latest_by_pair.get((event.id, sub.id))
+            if previous and previous.status in {DeliveryStatus.PENDING, DeliveryStatus.RETRYING}:
+                continue
+            if len(attempts) == MAX_REPLAY_DELIVERIES:
+                raise EventReplayLimitError(
+                    f"Replay would create more than {MAX_REPLAY_DELIVERIES} delivery attempts; narrow the event or subscription selector."
+                )
+            attempts.append(
+                DeliveryAttempt(
+                    event_log_id=event.id,
+                    subscription_id=sub.id,
+                    attempt_no=previous.attempt_no + 1 if previous else 1,
+                    replay_of_id=previous.id if previous else None,
+                    status=DeliveryStatus.PENDING,
+                    error_message="[replayed]",
+                )
             )
-            db.add(attempt)
-            count += 1
 
+    for attempt in attempts:
+        db.add(attempt)
     await db.commit()
-    return count
+    return len(attempts)
 
 
 # ── Subscription CRUD ─────────────────────────────────────────────────────────
@@ -937,26 +1005,57 @@ async def list_deliveries(
     return list(result.scalars().all())
 
 
+async def list_dead_letter_deliveries(
+    db: AsyncSession, skip: int = 0, limit: int = 100
+) -> List[DeliveryAttempt]:
+    """List actionable dead letters, excluding attempts with a replay child."""
+    replayed_ids = select(DeliveryAttempt.replay_of_id).where(
+        DeliveryAttempt.replay_of_id.is_not(None)
+    )
+    result = await db.execute(
+        select(DeliveryAttempt)
+        .where(
+            DeliveryAttempt.status == DeliveryStatus.DEAD_LETTER,
+            DeliveryAttempt.id.not_in(replayed_ids),
+        )
+        .order_by(desc(DeliveryAttempt.created_at), desc(DeliveryAttempt.id))
+        .offset(skip)
+        .limit(limit)
+    )
+    return list(result.scalars().all())
+
+
 async def manual_retry_delivery(db: AsyncSession, delivery_id: UUID) -> Optional[DeliveryAttempt]:
-    result = await db.execute(select(DeliveryAttempt).where(DeliveryAttempt.id == delivery_id))
+    result = await db.execute(
+        select(DeliveryAttempt)
+        .where(DeliveryAttempt.id == delivery_id)
+        .with_for_update()
+    )
     old = result.scalar_one_or_none()
-    if not old:
+    if not old or old.status not in {DeliveryStatus.FAILED, DeliveryStatus.DEAD_LETTER}:
+        return None
+    child_r = await db.execute(
+        select(DeliveryAttempt.id)
+        .where(DeliveryAttempt.replay_of_id == old.id)
+        .limit(1)
+    )
+    if child_r.scalar_one_or_none() is not None:
         return None
     event_log_r = await db.execute(select(EventLog).where(EventLog.id == old.event_log_id))
     event_log = event_log_r.scalar_one_or_none()
     sub_r = await db.execute(select(Subscription).where(Subscription.id == old.subscription_id))
     sub = sub_r.scalar_one_or_none()
-    if not event_log or not sub:
+    if not event_log or not sub or not sub.active_flag:
         return None
     new_attempt = DeliveryAttempt(
         event_log_id=old.event_log_id,
         subscription_id=old.subscription_id,
         attempt_no=old.attempt_no + 1,
+        replay_of_id=old.id,
         status=DeliveryStatus.PENDING,
         error_message="[manual retry]",
     )
     db.add(new_attempt)
-    old.status = DeliveryStatus.FAILED
     await db.flush()
     await _deliver_attempt(db, new_attempt, event_log, sub)
     await db.commit()
@@ -1035,8 +1134,14 @@ async def get_dashboard(db: AsyncSession) -> Dict[str, Any]:
     )
     pending = pending_r.scalar_one()
 
+    replayed_ids = select(DeliveryAttempt.replay_of_id).where(
+        DeliveryAttempt.replay_of_id.is_not(None)
+    )
     dead_r = await db.execute(
-        select(func.count()).where(DeliveryAttempt.status == DeliveryStatus.DEAD_LETTER)
+        select(func.count()).where(
+            DeliveryAttempt.status == DeliveryStatus.DEAD_LETTER,
+            DeliveryAttempt.id.not_in(replayed_ids),
+        )
     )
     dead = dead_r.scalar_one()
 
