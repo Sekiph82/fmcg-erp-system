@@ -1,0 +1,29 @@
+﻿**********************
+Windows PowerShell transcript start
+Start time: 20261030101852
+Username: SEKIPH\sekip
+RunAs User: SEKIPH\sekip
+Configuration Name: 
+Machine: SEKIPH (Microsoft Windows NT 10.0.26300.0)
+Host Application: C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -ExecutionPolicy Bypass -File coordination/sessions/M34.S01.T001/run_disposable_postgres.ps1
+Process ID: 74856
+PSVersion: 5.1.26100.9711
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.26100.9711
+BuildVersion: 10.0.26100.9711
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+
+DATABASE_NAME=fmcg_m34_s01_t001_972043ec09e1442f88fdd878
+CONTAINER_NAME=codex-m34-s01-t001-972043ec09e1442f88fdd878
+POSTGRES_IMAGE=postgres:16-alpine
+DATABASE_URL=postgresql+asyncpg://postgres@127.0.0.1:50747/fmcg_m34_s01_t001_972043ec09e1442f88fdd878 (passwordless loopback)
+PS>TerminatingError(python.exe): "The running command stopped because the preference variable "ErrorActionPreference" or common parameter is set to Stop: INFO  [alembic.runtime.migration] Context impl PostgresqlImpl."
+TASK_CONTAINER_CLEANUP=verified_absent:codex-m34-s01-t001-972043ec09e1442f88fdd878
+**********************
+Windows PowerShell transcript end
+End time: 20261030101858
+**********************

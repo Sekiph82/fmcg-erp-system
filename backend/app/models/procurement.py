@@ -312,6 +312,11 @@ class RFQResponseStatus(str, enum.Enum):
     REJECTED = "REJECTED"
 
 
+class RFQInvitationStatus(str, enum.Enum):
+    PENDING = "PENDING"
+    ISSUED = "ISSUED"
+
+
 class BPAStatus(str, enum.Enum):
     ACTIVE = "ACTIVE"
     EXPIRED = "EXPIRED"
@@ -332,7 +337,9 @@ class RFQRequest(Base, TimestampMixin):
     material_id = Column(UUID(as_uuid=True), ForeignKey("materials.id", ondelete="SET NULL"), nullable=True)
     product_id = Column(UUID(as_uuid=True), ForeignKey("products.id", ondelete="SET NULL"), nullable=True)
     description = Column(String(500), nullable=True)
-    quantity = Column(Numeric(14, 3), nullable=False)
+    # ``quantity`` remains populated for legacy single-line RFQs. New sourcing
+    # events may instead carry one or more RFQLine rows.
+    quantity = Column(Numeric(14, 3), nullable=True)
     unit = Column(String(20), nullable=False, default="KG")
     required_by = Column(Date, nullable=True)
     response_deadline = Column(Date, nullable=True)
@@ -347,10 +354,53 @@ class RFQRequest(Base, TimestampMixin):
     cost_center = relationship("CostCenter")
     awarded_supplier = relationship("Supplier", foreign_keys=[awarded_supplier_id])
     responses = relationship("RFQResponse", back_populates="rfq", cascade="all, delete-orphan")
+    lines = relationship(
+        "RFQLine",
+        back_populates="rfq",
+        cascade="all, delete-orphan",
+        order_by="RFQLine.line_no",
+    )
+
+
+class RFQLine(Base, TimestampMixin):
+    """A sourcing-event requirement, attached to the existing RFQ aggregate."""
+
+    __tablename__ = "rfq_request_lines"
+    __table_args__ = (
+        UniqueConstraint("rfq_id", "line_no", name="uq_rfq_request_line"),
+        CheckConstraint("line_no > 0", name="ck_rfq_request_line_number_positive"),
+        CheckConstraint(
+            "quantity > 0 AND quantity NOT IN ('NaN', 'Infinity', '-Infinity')",
+            name="ck_rfq_request_line_quantity_positive",
+        ),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    rfq_id = Column(UUID(as_uuid=True), ForeignKey("rfq_requests.id", ondelete="CASCADE"), nullable=False, index=True)
+    line_no = Column(Integer, nullable=False)
+    material_id = Column(UUID(as_uuid=True), ForeignKey("materials.id", ondelete="SET NULL"), nullable=True)
+    product_id = Column(UUID(as_uuid=True), ForeignKey("products.id", ondelete="SET NULL"), nullable=True)
+    description = Column(String(500), nullable=True)
+    quantity = Column(Numeric(14, 3), nullable=False)
+    unit = Column(String(20), nullable=False, default="KG")
+    required_by = Column(Date, nullable=True)
+    notes = Column(String(1000), nullable=True)
+
+    rfq = relationship("RFQRequest", back_populates="lines")
+    material = relationship("Material")
+    product = relationship("Product")
 
 
 class RFQResponse(Base, TimestampMixin):
     __tablename__ = "rfq_responses"
+    __table_args__ = (
+        UniqueConstraint("rfq_id", "supplier_id", name="uq_rfq_response_supplier"),
+        CheckConstraint(
+            "quoted_unit_price IS NULL OR (quoted_unit_price > 0 AND quoted_unit_price NOT IN ('NaN', 'Infinity', '-Infinity'))",
+            name="ck_rfq_response_quoted_price_positive",
+        ),
+        CheckConstraint("lead_time_days IS NULL OR lead_time_days >= 0", name="ck_rfq_response_lead_time_nonnegative"),
+    )
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     rfq_id = Column(UUID(as_uuid=True), ForeignKey("rfq_requests.id", ondelete="CASCADE"), nullable=False)
@@ -363,9 +413,26 @@ class RFQResponse(Base, TimestampMixin):
     notes = Column(String(1000), nullable=True)
     status = Column(Enum(RFQResponseStatus), nullable=False, default=RFQResponseStatus.PENDING)
     score = Column(Numeric(5, 2), nullable=True)
+    invitation_status = Column(
+        Enum(RFQInvitationStatus), nullable=False, default=RFQInvitationStatus.PENDING
+    )
+    invitation_issued_at = Column(DateTime(timezone=True), nullable=True)
+    invitation_issued_by_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL", name="fk_rfq_responses_invitation_issued_by_id_users"),
+        nullable=True,
+    )
+    submitted_at = Column(DateTime(timezone=True), nullable=True)
+    submitted_by_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL", name="fk_rfq_responses_submitted_by_id_users"),
+        nullable=True,
+    )
 
     rfq = relationship("RFQRequest", back_populates="responses")
     supplier = relationship("Supplier")
+    invitation_issued_by = relationship("User", foreign_keys=[invitation_issued_by_id])
+    submitted_by = relationship("User", foreign_keys=[submitted_by_id])
 
 
 class BlanketPurchaseAgreement(Base, TimestampMixin):

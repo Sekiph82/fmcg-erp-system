@@ -1,14 +1,14 @@
 from __future__ import annotations
 from datetime import date, datetime
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from typing import Optional, List
 import uuid
 
-from pydantic import BaseModel, computed_field, ConfigDict, Field, model_validator
+from pydantic import BaseModel, computed_field, ConfigDict, Field, field_validator, model_validator
 
 from app.models.procurement import (
     PRStatus, POStatus, GRNStatus, ImportShipmentStatus, POPaymentStatus,
-    RFQStatus, RFQResponseStatus, BPAStatus, ProcurementApprovalDocumentType,
+    RFQStatus, RFQResponseStatus, RFQInvitationStatus, BPAStatus, ProcurementApprovalDocumentType,
 )
 from app.models.finance import OperationalPostingStatus
 
@@ -463,14 +463,77 @@ class SupplierPaymentRead(ProcurementScopeFields):
 
 # ── RFQ ───────────────────────────────────────────────────────────────────────
 
+def _validate_rfq_quantity(value: Decimal) -> None:
+    if not value.is_finite() or value <= 0:
+        raise ValueError("quantity must be finite and greater than zero")
+    if value >= Decimal("100000000000") or value.quantize(Decimal("0.001")) != value:
+        raise ValueError("quantity must fit the stored NUMERIC(14, 3) precision and scale")
+
+class RFQLineCreate(BaseModel):
+    line_no: int = Field(gt=0)
+    material_id: Optional[uuid.UUID] = None
+    product_id: Optional[uuid.UUID] = None
+    description: Optional[str] = Field(default=None, max_length=500)
+    quantity: Decimal = Field(gt=0)
+    unit: str = Field(default="KG", min_length=1, max_length=20)
+    required_by: Optional[date] = None
+    notes: Optional[str] = Field(default=None, max_length=1000)
+
+    @field_validator("quantity")
+    @classmethod
+    def require_finite_positive_quantity(cls, value: Decimal) -> Decimal:
+        _validate_rfq_quantity(value)
+        return value
+
+    @model_validator(mode="after")
+    def require_requirement_identity(self):
+        if not any((self.material_id, self.product_id, self.description and self.description.strip())):
+            raise ValueError("a sourcing line requires a material, product, or description")
+        if not self.unit.strip():
+            raise ValueError("unit cannot be blank")
+        return self
+
+
+class RFQLineRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: uuid.UUID
+    line_no: int
+    material_id: Optional[uuid.UUID]
+    product_id: Optional[uuid.UUID]
+    description: Optional[str]
+    quantity: Decimal
+    unit: str
+    required_by: Optional[date]
+    notes: Optional[str]
+
 class RFQResponseCreate(BaseModel):
     supplier_id: uuid.UUID
-    quoted_unit_price: Optional[Decimal] = None
+    quoted_unit_price: Optional[Decimal] = Field(default=None, gt=0)
     quoted_currency: str = "KES"
-    lead_time_days: Optional[int] = None
+    lead_time_days: Optional[int] = Field(default=None, ge=0)
     valid_until: Optional[date] = None
     payment_terms: Optional[str] = None
     notes: Optional[str] = None
+
+    @field_validator("quoted_unit_price")
+    @classmethod
+    def quote_price_must_be_finite_and_representable(cls, value: Optional[Decimal]):
+        if value is not None:
+            try:
+                quantized = value.quantize(Decimal("0.0001"))
+            except InvalidOperation as exc:
+                raise ValueError("quoted_unit_price must fit a finite positive NUMERIC(14, 4) value") from exc
+            if not value.is_finite() or value <= 0 or value >= Decimal("10000000000") or quantized != value:
+                raise ValueError("quoted_unit_price must fit a finite positive NUMERIC(14, 4) value")
+        return value
+
+    @field_validator("quoted_currency")
+    @classmethod
+    def quote_currency_must_be_iso_code(cls, value: str):
+        normalized = value.strip().upper()
+        if len(normalized) != 3 or any(character not in "ABCDEFGHIJKLMNOPQRSTUVWXYZ" for character in normalized):
+            raise ValueError("quoted_currency must be a three-letter currency code")
+        return normalized
 
 
 class RFQResponseRead(BaseModel):
@@ -486,6 +549,11 @@ class RFQResponseRead(BaseModel):
     payment_terms: Optional[str]
     notes: Optional[str]
     status: RFQResponseStatus
+    invitation_status: RFQInvitationStatus
+    invitation_issued_at: Optional[datetime]
+    invitation_issued_by_id: Optional[uuid.UUID]
+    submitted_at: Optional[datetime]
+    submitted_by_id: Optional[uuid.UUID]
     score: Optional[Decimal]
     created_at: datetime
 
@@ -497,12 +565,31 @@ class RFQCreate(ProcurementScopeFields):
     material_id: Optional[uuid.UUID] = None
     product_id: Optional[uuid.UUID] = None
     description: Optional[str] = None
-    quantity: Decimal
+    quantity: Optional[Decimal] = Field(default=None, gt=0)
     unit: str = "KG"
     required_by: Optional[date] = None
     response_deadline: Optional[date] = None
     notes: Optional[str] = None
-    supplier_ids: List[uuid.UUID] = []
+    supplier_ids: List[uuid.UUID] = Field(default_factory=list)
+    lines: List[RFQLineCreate] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def require_legacy_item_or_sourcing_lines(self):
+        if self.lines and self.quantity is not None:
+            raise ValueError("Provide either the legacy single-item quantity or sourcing event lines, not both.")
+        if not self.lines and self.quantity is None:
+            raise ValueError("A single-item RFQ requires quantity; a multi-item event requires at least one line.")
+        if self.quantity is not None:
+            _validate_rfq_quantity(self.quantity)
+        if not self.unit.strip():
+            raise ValueError("unit cannot be blank")
+        if self.lines:
+            line_numbers = [line.line_no for line in self.lines]
+            if len(set(line_numbers)) != len(line_numbers):
+                raise ValueError("sourcing event line numbers must be unique")
+        if len(set(self.supplier_ids)) != len(self.supplier_ids):
+            raise ValueError("supplier invitations must be unique within an RFQ")
+        return self
 
 
 class RFQUpdate(ProcurementScopeFields):
@@ -524,7 +611,7 @@ class RFQRead(ProcurementScopeFields):
     material_id: Optional[uuid.UUID]
     product_id: Optional[uuid.UUID]
     description: Optional[str]
-    quantity: Decimal
+    quantity: Optional[Decimal]
     unit: str
     required_by: Optional[date]
     response_deadline: Optional[date]
@@ -534,11 +621,14 @@ class RFQRead(ProcurementScopeFields):
     notes: Optional[str]
     created_at: datetime
     response_count: int = 0
+    invited_count: int = 0
+    line_count: int = 0
     access: Optional[ProcurementAccessHint] = None
 
 
 class RFQDetailRead(RFQRead):
     responses: List[RFQResponseRead] = []
+    lines: List[RFQLineRead] = []
 
 
 # ── Blanket Purchase Agreement ─────────────────────────────────────────────────

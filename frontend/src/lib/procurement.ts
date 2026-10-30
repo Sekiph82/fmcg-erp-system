@@ -3,6 +3,7 @@ import { apiClient } from "@/lib/api";
 export type PRStatus = "DRAFT" | "PENDING_APPROVAL" | "APPROVED" | "CONVERTED" | "REJECTED" | "CANCELLED";
 export type RFQStatus = "DRAFT" | "SENT" | "RESPONSES_RECEIVED" | "AWARDED" | "CANCELLED";
 export type RFQResponseStatus = "PENDING" | "SUBMITTED" | "AWARDED" | "REJECTED";
+export type RFQInvitationStatus = "PENDING" | "ISSUED";
 export type BPAStatus = "ACTIVE" | "EXPIRED" | "CANCELLED";
 export type POStatus = "DRAFT" | "APPROVED" | "ORDERED" | "PARTIALLY_RECEIVED" | "RECEIVED" | "CANCELLED";
 export type GRNStatus = "DRAFT" | "POSTED";
@@ -271,8 +272,25 @@ export interface RFQResponseRead {
   payment_terms?: string;
   notes?: string;
   status: RFQResponseStatus;
+  invitation_status: RFQInvitationStatus;
+  invitation_issued_at?: string;
+  invitation_issued_by_id?: string;
+  submitted_at?: string;
+  submitted_by_id?: string;
   score?: number;
   created_at: string;
+}
+
+export interface RFQLineRead {
+  id: string;
+  line_no: number;
+  material_id?: string;
+  product_id?: string;
+  description?: string;
+  quantity: number;
+  unit: string;
+  required_by?: string;
+  notes?: string;
 }
 
 export interface RFQRead extends ProcurementScopeFields {
@@ -283,7 +301,7 @@ export interface RFQRead extends ProcurementScopeFields {
   material_id?: string;
   product_id?: string;
   description?: string;
-  quantity: number;
+  quantity?: number | null;
   unit: string;
   required_by?: string;
   response_deadline?: string;
@@ -293,11 +311,14 @@ export interface RFQRead extends ProcurementScopeFields {
   notes?: string;
   created_at: string;
   response_count: number;
+  invited_count: number;
+  line_count: number;
   access?: ProcurementAccessHint;
 }
 
 export interface RFQDetail extends RFQRead {
   responses: RFQResponseRead[];
+  lines: RFQLineRead[];
 }
 
 export interface BlanketAgreement extends ProcurementScopeFields {
@@ -534,6 +555,10 @@ export const procurementApi = {
   },
   async updateRFQ(id: string, data: object): Promise<RFQDetail> {
     const res = await apiClient.patch<RFQDetail>(`/api/v1/procurement/rfq/${id}`, data);
+    return res.data;
+  },
+  async issueRFQInvitations(id: string): Promise<RFQDetail> {
+    const res = await apiClient.post<RFQDetail>(`/api/v1/procurement/rfq/${id}/issue-invitations`);
     return res.data;
   },
   async addRFQResponse(rfqId: string, data: object): Promise<RFQResponseRead> {

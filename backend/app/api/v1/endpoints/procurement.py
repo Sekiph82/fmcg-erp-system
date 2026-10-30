@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime, timezone
 from decimal import Decimal
 from typing import List, Optional
 import uuid
@@ -20,9 +20,9 @@ from app.models.finance import OperationalPostingStatus
 from app.models.procurement import (
     PurchaseRequisition, PRLine, PurchaseOrder, POLine,
     GoodsReceipt, GRNLine, ImportShipment, SupplierEvaluation,
-    RFQRequest, RFQResponse, BlanketPurchaseAgreement, AutoReorderPolicy,
+    RFQRequest, RFQLine, RFQResponse, BlanketPurchaseAgreement, AutoReorderPolicy,
     ProcurementApprovalRule,
-    PRStatus, POStatus, RFQStatus, RFQResponseStatus, BPAStatus,
+    PRStatus, POStatus, RFQStatus, RFQResponseStatus, RFQInvitationStatus, BPAStatus,
 )
 from decimal import Decimal as _Decimal
 from app.models.master import Supplier
@@ -35,7 +35,7 @@ from app.schemas.procurement import (
     SupplierEvaluationCreate, SupplierEvaluationRead, SupplierDashboardRow,
     InboundScheduleRow, DeliveryAlertRow,
     SupplierPaymentCreate, SupplierPaymentRead,
-    RFQCreate, RFQUpdate, RFQRead, RFQDetailRead, RFQResponseCreate, RFQResponseRead,
+    RFQCreate, RFQUpdate, RFQRead, RFQDetailRead, RFQLineRead, RFQResponseCreate, RFQResponseRead,
     BlanketAgreementCreate, BlanketAgreementUpdate, BlanketAgreementRead,
     AutoReorderPolicyCreate, AutoReorderPolicyUpdate, AutoReorderPolicyRead,
     ProcurementApprovalRuleCreate, ProcurementApprovalRuleUpdate, ProcurementApprovalRuleRead,
@@ -798,7 +798,7 @@ async def list_rfqs(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    q = select(RFQRequest).options(selectinload(RFQRequest.responses))
+    q = select(RFQRequest).options(selectinload(RFQRequest.responses), selectinload(RFQRequest.lines))
     if status:
         q = q.where(RFQRequest.status == status)
     result = await db.execute(q.order_by(RFQRequest.created_at.desc()).limit(limit))
@@ -808,7 +808,9 @@ async def list_rfqs(
     for r in rfqs:
         row = RFQRead.model_validate(r)
         row.awarded_supplier_name = r.awarded_supplier.name if r.awarded_supplier else None
-        row.response_count = len(r.responses)
+        row.response_count = sum(response.status == RFQResponseStatus.SUBMITTED for response in r.responses)
+        row.invited_count = sum(response.invitation_status == RFQInvitationStatus.ISSUED for response in r.responses)
+        row.line_count = len(r.lines)
         row.access = svc.build_procurement_access_hint(current_user, r)
         rows.append(row)
     return rows
@@ -820,11 +822,18 @@ async def create_rfq(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    rfq_data = body.model_dump(exclude={"supplier_ids"})
+    rfq_data = body.model_dump(exclude={"supplier_ids", "lines"})
     rfq = RFQRequest(**rfq_data, created_by_id=current_user.id)
     _require_procurement_action(current_user, rfq, "create")
+    if body.supplier_ids:
+        suppliers_result = await db.execute(select(Supplier).where(Supplier.id.in_(body.supplier_ids)))
+        suppliers_by_id = {supplier.id: supplier for supplier in suppliers_result.scalars().all()}
+        if any(supplier_id not in suppliers_by_id or not suppliers_by_id[supplier_id].is_active for supplier_id in body.supplier_ids):
+            raise HTTPException(422, "RFQ invitations may target only existing active suppliers.")
     db.add(rfq)
     await db.flush()
+    for line in body.lines:
+        db.add(RFQLine(rfq_id=rfq.id, **line.model_dump()))
     for sid in body.supplier_ids:
         resp = RFQResponse(rfq_id=rfq.id, supplier_id=sid)
         db.add(resp)
@@ -833,6 +842,7 @@ async def create_rfq(
         select(RFQRequest).options(
             selectinload(RFQRequest.responses).selectinload(RFQResponse.supplier),
             selectinload(RFQRequest.awarded_supplier),
+            selectinload(RFQRequest.lines),
         ).where(RFQRequest.id == rfq.id)
     )
     rfq = result.scalar_one()
@@ -849,6 +859,7 @@ async def get_rfq(
         select(RFQRequest).options(
             selectinload(RFQRequest.responses).selectinload(RFQResponse.supplier),
             selectinload(RFQRequest.awarded_supplier),
+            selectinload(RFQRequest.lines),
         ).where(RFQRequest.id == rfq_id)
     )
     rfq = result.scalar_one_or_none()
@@ -865,21 +876,86 @@ async def update_rfq(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    result = await db.execute(select(RFQRequest).where(RFQRequest.id == rfq_id))
+    result = await db.execute(select(RFQRequest).where(RFQRequest.id == rfq_id).with_for_update())
     rfq = result.scalar_one_or_none()
     if not rfq:
         raise HTTPException(404, "RFQ not found")
     _require_procurement_action(current_user, rfq, "edit")
-    for k, v in body.model_dump(exclude_unset=True).items():
+    update_data = body.model_dump(exclude_unset=True)
+    requested_status = update_data.pop("status", None)
+    if requested_status is not None:
+        if requested_status == RFQStatus.AWARDED:
+            awarded_supplier_id = update_data.get("awarded_supplier_id")
+            if rfq.status != RFQStatus.RESPONSES_RECEIVED or awarded_supplier_id is None:
+                raise HTTPException(409, "An RFQ can be awarded only to a supplier with a submitted bid.")
+            awarded_bid = await db.execute(
+                select(RFQResponse.id).where(
+                    RFQResponse.rfq_id == rfq.id,
+                    RFQResponse.supplier_id == awarded_supplier_id,
+                    RFQResponse.status == RFQResponseStatus.SUBMITTED,
+                )
+            )
+            if awarded_bid.scalar_one_or_none() is None:
+                raise HTTPException(409, "The selected supplier has no submitted bid for this RFQ.")
+            rfq.status = RFQStatus.AWARDED
+            rfq.awarded_supplier_id = awarded_supplier_id
+            update_data.pop("awarded_supplier_id")
+        elif requested_status == RFQStatus.CANCELLED and rfq.status not in {RFQStatus.AWARDED, RFQStatus.CANCELLED}:
+            if update_data:
+                raise HTTPException(409, "RFQ terms cannot be changed in the same request as lifecycle cancellation.")
+            rfq.status = RFQStatus.CANCELLED
+        else:
+            raise HTTPException(409, "RFQ lifecycle status is server-controlled; use the dedicated issue or award workflow.")
+    elif rfq.status != RFQStatus.DRAFT and update_data:
+        raise HTTPException(409, "Issued RFQ terms are locked; only a valid lifecycle transition may be applied.")
+    for k, v in update_data.items():
         setattr(rfq, k, v)
     await db.commit()
     result = await db.execute(
         select(RFQRequest).options(
             selectinload(RFQRequest.responses).selectinload(RFQResponse.supplier),
             selectinload(RFQRequest.awarded_supplier),
+            selectinload(RFQRequest.lines),
         ).where(RFQRequest.id == rfq_id)
     )
     return _build_rfq_detail(result.scalar_one(), current_user)
+
+
+@router.post("/rfq/{rfq_id}/issue-invitations", response_model=RFQDetailRead)
+async def issue_rfq_invitations(
+    rfq_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    result = await db.execute(
+        select(RFQRequest)
+        .options(
+            selectinload(RFQRequest.responses).selectinload(RFQResponse.supplier),
+            selectinload(RFQRequest.awarded_supplier),
+            selectinload(RFQRequest.lines),
+        )
+        .where(RFQRequest.id == rfq_id)
+        .with_for_update()
+    )
+    rfq = result.scalar_one_or_none()
+    if not rfq:
+        raise HTTPException(404, "RFQ not found")
+    _require_procurement_action(current_user, rfq, "edit")
+    if rfq.status != RFQStatus.DRAFT:
+        raise HTTPException(409, "Only a draft RFQ can be issued; invitations are not re-sent implicitly.")
+    if not rfq.responses:
+        raise HTTPException(409, "Select at least one supplier before issuing this RFQ.")
+    inactive = [response.supplier_id for response in rfq.responses if not response.supplier or not response.supplier.is_active]
+    if inactive:
+        raise HTTPException(409, "All invited suppliers must exist and be active.")
+    issued_at = datetime.now(timezone.utc)
+    for response in rfq.responses:
+        response.invitation_status = RFQInvitationStatus.ISSUED
+        response.invitation_issued_at = issued_at
+        response.invitation_issued_by_id = current_user.id
+    rfq.status = RFQStatus.SENT
+    await db.commit()
+    return _build_rfq_detail(rfq, current_user)
 
 
 @router.post("/rfq/{rfq_id}/responses", response_model=RFQResponseRead, status_code=201)
@@ -889,27 +965,35 @@ async def add_rfq_response(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    result = await db.execute(select(RFQRequest).where(RFQRequest.id == rfq_id))
+    result = await db.execute(select(RFQRequest).where(RFQRequest.id == rfq_id).with_for_update())
     rfq = result.scalar_one_or_none()
     if not rfq:
         raise HTTPException(404, "RFQ not found")
     _require_procurement_action(current_user, rfq, "edit")
+    if rfq.status not in {RFQStatus.SENT, RFQStatus.RESPONSES_RECEIVED}:
+        raise HTTPException(409, "Bids can be recorded only after an RFQ has been issued to suppliers.")
+    if rfq.response_deadline and rfq.response_deadline < date.today():
+        raise HTTPException(409, "The supplier response deadline has passed.")
     existing = await db.execute(
         select(RFQResponse).where(
             RFQResponse.rfq_id == rfq_id,
             RFQResponse.supplier_id == body.supplier_id,
-        )
+        ).with_for_update()
     )
     resp = existing.scalar_one_or_none()
-    if resp:
-        for k, v in body.model_dump(exclude_unset=True).items():
-            setattr(resp, k, v)
-        resp.status = RFQResponseStatus.SUBMITTED
-    else:
-        resp = RFQResponse(**body.model_dump(), rfq_id=rfq_id, status=RFQResponseStatus.SUBMITTED)
-        db.add(resp)
-    if rfq.status == RFQStatus.SENT:
-        rfq.status = RFQStatus.RESPONSES_RECEIVED
+    if not resp or resp.invitation_status != RFQInvitationStatus.ISSUED:
+        raise HTTPException(403, "This supplier was not invited to the RFQ.")
+    if resp.status != RFQResponseStatus.PENDING:
+        raise HTTPException(409, "A bid is already recorded for this supplier; submitted bids are immutable.")
+    supplier = await db.get(Supplier, body.supplier_id)
+    if not supplier or not supplier.is_active:
+        raise HTTPException(409, "The invited supplier is no longer active.")
+    for key, value in body.model_dump(exclude={"supplier_id"}).items():
+        setattr(resp, key, value)
+    resp.status = RFQResponseStatus.SUBMITTED
+    resp.submitted_at = datetime.now(timezone.utc)
+    resp.submitted_by_id = current_user.id
+    rfq.status = RFQStatus.RESPONSES_RECEIVED
     await db.commit()
     await db.refresh(resp)
     rr = RFQResponseRead.model_validate(resp)
@@ -922,13 +1006,16 @@ async def add_rfq_response(
 def _build_rfq_detail(rfq: RFQRequest, current_user=None) -> RFQDetailRead:
     r = RFQDetailRead.model_validate(rfq)
     r.awarded_supplier_name = rfq.awarded_supplier.name if rfq.awarded_supplier else None
-    r.response_count = len(rfq.responses)
+    r.response_count = sum(response.status == RFQResponseStatus.SUBMITTED for response in rfq.responses)
+    r.invited_count = sum(response.invitation_status == RFQInvitationStatus.ISSUED for response in rfq.responses)
+    r.line_count = len(rfq.lines)
     responses = []
     for resp in rfq.responses:
         rr = RFQResponseRead.model_validate(resp)
         rr.supplier_name = resp.supplier.name if resp.supplier else None
         responses.append(rr)
     r.responses = responses
+    r.lines = [RFQLineRead.model_validate(line) for line in rfq.lines]
     return _with_access(r, current_user, rfq)
 
 

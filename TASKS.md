@@ -8,11 +8,11 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 ## Project Status
 
-- Current Milestone: M31 — API / Event Architecture
-- Current Sprint: M31.S04 — Observability & Verification
-- Current Task: M31.S04.T004 — Close M31
+- Current Milestone: M34 — Strategic Procurement Upgrade
+- Current Sprint: M34.S01 — Strategic Sourcing
+- Current Task: M34.S01.T002 — Supplier invitation/bid workflow
 - Current Task Status: COMPLETE
-- Next Task/Action: Blocked: M21.S05.T004 awaits the M20 acceptance evidence/re-audit gate; no dependency-ready successor until that gate clears.
+- Next Task/Action: M34.S01.T003 — Commercial/technical evaluation matrix
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -1085,8 +1085,10 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 **Depends on:** M06, M13, M25, M31.
 
 ## M34.S01 — Strategic Sourcing
-- [ ] M34.S01.T001 — Tender/sourcing event model
-- [ ] M34.S01.T002 — Supplier invitation/bid workflow
+- [x] M34.S01.T001 — Tender/sourcing event model
+  Evidence: CODEX_LOG_V01.md: V06 disposable PostgreSQL full upgrade/downgrade/re-upgrade, 17 focused tests passed, 20261030_0005 head and container cleanup verified; frontend type-check/targeted ESLint, Python compilation, diff check, and independent read-only review passed.
+- [x] M34.S01.T002 — Supplier invitation/bid workflow
+  Evidence: CODEX_LOG_V01.md: V05 disposable PostgreSQL migration round-trip and 9 focused tests passed, 20261030_0006 head and cleanup verified; bid/lifecycle safeguards, frontend type-check/targeted ESLint, Python compilation, diff check, and independent read-only review passed.
 - [ ] M34.S01.T003 — Commercial/technical evaluation matrix
 - [ ] M34.S01.T004 — Award/split-award approval
 

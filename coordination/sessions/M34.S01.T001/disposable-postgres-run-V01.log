@@ -1,0 +1,33 @@
+﻿**********************
+Windows PowerShell transcript start
+Start time: 20261030101202
+Username: SEKIPH\sekip
+RunAs User: SEKIPH\sekip
+Configuration Name: 
+Machine: SEKIPH (Microsoft Windows NT 10.0.26300.0)
+Host Application: C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -ExecutionPolicy Bypass -File coordination/sessions/M34.S01.T001/run_disposable_postgres.ps1
+Process ID: 73816
+PSVersion: 5.1.26100.9711
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.26100.9711
+BuildVersion: 10.0.26100.9711
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+
+DATABASE_NAME=fmcg_m34_s01_t001_25ada8ca30594982ba40561d
+CONTAINER_NAME=codex-m34-s01-t001-25ada8ca30594982ba40561d
+POSTGRES_IMAGE=postgres:16-alpine
+DATABASE_URL=postgresql+asyncpg://postgres@127.0.0.1:53135/fmcg_m34_s01_t001_25ada8ca30594982ba40561d (passwordless loopback)
+
+
+
+
+
+TASK_CONTAINER_CLEANUP=verified_absent:codex-m34-s01-t001-25ada8ca30594982ba40561d
+**********************
+Windows PowerShell transcript end
+End time: 20261030101327
+**********************

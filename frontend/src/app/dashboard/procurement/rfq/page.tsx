@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { procurementApi, RFQRead, RFQDetail, RFQStatus } from "@/lib/procurement";
+import { suppliersApi, Supplier } from "@/lib/suppliers";
 
 const STATUS_COLORS: Record<RFQStatus, string> = {
   DRAFT: "bg-gray-100 text-gray-600",
@@ -23,6 +24,8 @@ export default function RFQPage() {
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [selectedSupplierIds, setSelectedSupplierIds] = useState<string[]>([]);
 
   // Response form
   const [showResponse, setShowResponse] = useState(false);
@@ -43,6 +46,12 @@ export default function RFQPage() {
 
   useEffect(() => { load(); }, [load]);
 
+  useEffect(() => {
+    suppliersApi.list(0, 200)
+      .then((rows) => setSuppliers(rows.filter((supplier) => supplier.is_active)))
+      .catch(() => setSuppliers([]));
+  }, []);
+
   const openDetail = async (id: string) => {
     setDetailLoading(true);
     setSelected(null);
@@ -55,17 +64,19 @@ export default function RFQPage() {
   };
 
   const create = async () => {
-    if (!form.rfq_no.trim() || !form.title.trim() || !form.quantity) {
-      setError("RFQ No., Title, and Quantity required"); return;
+    if (!form.rfq_no.trim() || !form.title.trim() || !form.quantity || selectedSupplierIds.length === 0) {
+      setError("RFQ No., Title, Quantity, and at least one invited supplier are required"); return;
     }
     setSaving(true); setError("");
     try {
       await procurementApi.createRFQ({
         ...form,
         quantity: parseFloat(form.quantity),
+        supplier_ids: selectedSupplierIds,
       });
       setShowCreate(false);
       setForm({ rfq_no: "", title: "", quantity: "", unit: "KG", description: "", required_by: "", response_deadline: "", notes: "" });
+      setSelectedSupplierIds([]);
       await load();
     } catch {
       setError("Failed to create RFQ");
@@ -75,11 +86,13 @@ export default function RFQPage() {
   };
 
   const sendRFQ = async (id: string) => {
-    await procurementApi.updateRFQ(id, { status: "SENT" });
-    await load();
-    if (selected?.id === id) {
-      const updated = await procurementApi.getRFQ(id);
-      setSelected(updated);
+    setError("");
+    try {
+      const updated = await procurementApi.issueRFQInvitations(id);
+      await load();
+      if (selected?.id === id) setSelected(updated);
+    } catch {
+      setError("Could not issue invitations. Confirm that the RFQ has active suppliers and remains a draft.");
     }
   };
 
@@ -136,6 +149,7 @@ export default function RFQPage() {
           ))}
         </select>
         <span className="text-xs text-gray-500 self-center">{rfqs.length} RFQs</span>
+        {error && <span role="alert" className="text-xs text-red-600">{error}</span>}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
@@ -167,9 +181,9 @@ export default function RFQPage() {
                           {r.title}
                         </button>
                       </td>
-                      <td className="px-4 py-3 text-xs text-gray-600">{r.quantity} {r.unit}</td>
+                      <td className="px-4 py-3 text-xs text-gray-600">{r.quantity != null ? `${r.quantity} ${r.unit}` : `${r.line_count} lines`}</td>
                       <td className="px-4 py-3 text-xs text-gray-600">{r.response_deadline ?? "—"}</td>
-                      <td className="px-4 py-3 text-xs font-semibold text-blue-600">{r.response_count}</td>
+                      <td className="px-4 py-3 text-xs font-semibold text-blue-600">{r.response_count}/{r.invited_count}</td>
                       <td className="px-4 py-3">
                         <span className={`text-xs rounded-full px-2 py-0.5 ${STATUS_COLORS[r.status]}`}>
                           {r.status.replace("_", " ")}
@@ -178,7 +192,7 @@ export default function RFQPage() {
                       <td className="px-4 py-3">
                         {r.status === "DRAFT" && (
                           <button onClick={() => sendRFQ(r.id)} className="text-xs text-blue-600 hover:underline">
-                            Send
+                            Issue invitations
                           </button>
                         )}
                       </td>
@@ -204,17 +218,29 @@ export default function RFQPage() {
                   </span>
                 </div>
                 <p className="text-xs text-gray-600">{selected.title}</p>
-                <p className="text-xs text-gray-500 mt-1">{selected.quantity} {selected.unit}</p>
+                <p className="text-xs text-gray-500 mt-1">{selected.quantity != null ? `${selected.quantity} ${selected.unit}` : `${selected.lines.length} event lines`}</p>
+                {selected.lines.length > 0 && (
+                  <ul className="mt-2 space-y-1 text-xs text-gray-500">
+                    {selected.lines.map((line) => (
+                      <li key={line.id}>
+                        {line.line_no}. {line.description || line.material_id || line.product_id || "Requirement"}: {line.quantity} {line.unit}
+                      </li>
+                    ))}
+                  </ul>
+                )}
                 {selected.description && <p className="text-xs text-gray-500 mt-1">{selected.description}</p>}
               </div>
 
               <div className="border-t pt-3">
+                {selected.status === "SENT" || selected.status === "RESPONSES_RECEIVED" ? (
+                  <p className="mb-2 text-xs text-amber-700">Invitation recorded in the ERP. This local workflow does not send external email.</p>
+                ) : null}
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs font-semibold text-gray-600">Supplier Responses ({selected.responses.length})</p>
-                  {selected.status !== "AWARDED" && selected.status !== "CANCELLED" && (
+                  <p className="text-xs font-semibold text-gray-600">Bids ({selected.response_count}) · Invited ({selected.invited_count})</p>
+                  {(selected.status === "SENT" || selected.status === "RESPONSES_RECEIVED") && (
                     <button onClick={() => { setShowResponse(true); setError(""); }}
                       className="text-xs text-blue-600 hover:underline">
-                      + Add Response
+                      + Record Bid
                     </button>
                   )}
                 </div>
@@ -226,8 +252,10 @@ export default function RFQPage() {
                       <div key={resp.id} className="border rounded p-3 bg-gray-50">
                         <div className="flex items-center justify-between">
                           <p className="text-xs font-medium text-gray-700">{resp.supplier_name ?? resp.supplier_id.slice(0,8)}</p>
-                          <span className="text-xs text-gray-500">{resp.status}</span>
+                          <span className="text-xs text-gray-500">{resp.status} · {resp.invitation_status === "ISSUED" ? "Invitation issued" : "Not issued"}</span>
                         </div>
+                        {resp.invitation_issued_at && <p className="text-xs text-gray-500 mt-1">Issued in ERP: {new Date(resp.invitation_issued_at).toLocaleString()}</p>}
+                        {resp.submitted_at && <p className="text-xs text-gray-500 mt-1">Bid recorded: {new Date(resp.submitted_at).toLocaleString()}</p>}
                         {resp.quoted_unit_price != null && (
                           <p className="text-xs text-gray-600 mt-1">
                             {resp.quoted_currency} {Number(resp.quoted_unit_price).toLocaleString()} /unit
@@ -288,6 +316,24 @@ export default function RFQPage() {
                   />
                 </div>
               ))}
+              <fieldset className="space-y-2">
+                <legend className="block text-xs font-medium text-gray-600">Suppliers to invite *</legend>
+                {suppliers.length === 0 ? (
+                  <p className="text-xs text-amber-700">No active suppliers are available.</p>
+                ) : suppliers.map((supplier) => (
+                  <label key={supplier.id} className="flex items-center gap-2 text-xs text-gray-700">
+                    <input
+                      type="checkbox"
+                      checked={selectedSupplierIds.includes(supplier.id)}
+                      onChange={(event) => setSelectedSupplierIds((current) => event.target.checked
+                        ? [...current, supplier.id]
+                        : current.filter((id) => id !== supplier.id))}
+                    />
+                    <span>{supplier.name}{supplier.email ? ` · ${supplier.email}` : ""}</span>
+                  </label>
+                ))}
+                <p className="text-[11px] text-gray-500">Issuing records invitations in the ERP; external email delivery is not configured here.</p>
+              </fieldset>
               <div className="grid grid-cols-2 gap-3">
                 {[
                   { label: "Unit", key: "unit" },
@@ -329,8 +375,21 @@ export default function RFQPage() {
             </div>
             <div className="p-6 space-y-3">
               {error && <p className="text-xs text-red-500 bg-red-50 border border-red-200 rounded px-3 py-2">{error}</p>}
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Invited supplier *</label>
+                <select
+                  value={respForm.supplier_id}
+                  onChange={(event) => setRespForm((prev) => ({ ...prev, supplier_id: event.target.value }))}
+                  className="w-full border rounded px-3 py-2 text-sm"
+                >
+                  <option value="">Select invited supplier</option>
+                  {selected.responses.filter((response) => response.invitation_status === "ISSUED" && response.status === "PENDING").map((response) => (
+                    <option key={response.id} value={response.supplier_id}>{response.supplier_name ?? response.supplier_id}</option>
+                  ))}
+                </select>
+                <p className="mt-1 text-[11px] text-gray-500">Internal procurement users record a quote supplied through the approved business channel.</p>
+              </div>
               {[
-                { label: "Supplier ID *", key: "supplier_id", placeholder: "UUID of supplier" },
                 { label: "Quoted Unit Price", key: "quoted_unit_price", type: "number", placeholder: "0.00" },
                 { label: "Currency", key: "quoted_currency", placeholder: "KES" },
                 { label: "Lead Time (days)", key: "lead_time_days", type: "number", placeholder: "7" },

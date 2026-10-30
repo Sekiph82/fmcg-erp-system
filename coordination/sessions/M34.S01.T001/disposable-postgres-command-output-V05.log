@@ -1,0 +1,138 @@
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 20260517_0000, squashed baseline � creates all tables for fresh-DB initialisation via alembic upgrade head.
+INFO  [alembic.runtime.migration] Running upgrade 20260517_0000 -> 3c45d9071c98, initial schema
+INFO  [alembic.runtime.migration] Running upgrade 3c45d9071c98 -> a1b2c3d4e5f6, finance accounting module - purchase invoices, purchase payments, payment method
+INFO  [alembic.runtime.migration] Running upgrade a1b2c3d4e5f6 -> b2c3d4e5f6a7, ai intelligence module - predictions, recommendations, formulations, scenarios
+INFO  [alembic.runtime.migration] Running upgrade b2c3d4e5f6a7 -> d4e5f6a7b8c9, Advanced Production Module � 11 sub-modules
+INFO  [alembic.runtime.migration] Running upgrade d4e5f6a7b8c9 -> e5f6a7b8c9d0, utilities module - system configs, uom conversions, number series, currencies
+INFO  [alembic.runtime.migration] Running upgrade e5f6a7b8c9d0 -> f6a7b8c9d0e1, utility management module � full utility infrastructure schema
+INFO  [alembic.runtime.migration] Running upgrade d4e5f6a7b8c9 -> a2b3c4d5e6f7, Extend boiler_steam_records with period-total and operational columns.
+INFO  [alembic.runtime.migration] Running upgrade a2b3c4d5e6f7 -> b7c8d9e0f1a2, compressor_air_extended
+INFO  [alembic.runtime.migration] Running upgrade b7c8d9e0f1a2 -> c8d9e0f1a2b3, production_costing
+INFO  [alembic.runtime.migration] Running upgrade c8d9e0f1a2b3 -> d9e0f1a2b3c4, production_ai_intelligence
+INFO  [alembic.runtime.migration] Running upgrade d9e0f1a2b3c4 -> e0f1a2b3c4d5, chemical_water_treatment
+INFO  [alembic.runtime.migration] Running upgrade e0f1a2b3c4d5 -> f1a2b3c4d5e6, QMS + HACCP / Food Safety System
+INFO  [alembic.runtime.migration] Running upgrade f1a2b3c4d5e6 -> a3b4c5d6e7f8, GS1 Barcode + Label Printing System
+INFO  [alembic.runtime.migration] Running upgrade a3b4c5d6e7f8 -> b4c5d6e7f8a9, Allergen + Nutrition Management System
+INFO  [alembic.runtime.migration] Running upgrade f6a7b8c9d0e1 -> b1c2d3e4f5a0, extend utility_devices and utility_readings with device-typing and reading-validation columns
+INFO  [alembic.runtime.migration] Running upgrade b1c2d3e4f5a0 -> c2d3e4f5a0b1, utility_transactions backbone � add transaction_time, reference linkage, variance columns
+INFO  [alembic.runtime.migration] Running upgrade c2d3e4f5a0b1 -> d4e5f6a7b8cc, Extend soft_water_records with additional operational columns.
+INFO  [alembic.runtime.migration] Running upgrade f6a7b8c9d0e1 -> a0b1c2d3e4f5, extend utility asset categories and utility assets with additional fields
+INFO  [alembic.runtime.migration] Running upgrade a0b1c2d3e4f5, b4c5d6e7f8a9, d4e5f6a7b8cc -> 87ad3195d2c5, merge_all_heads
+INFO  [alembic.runtime.migration] Running upgrade 87ad3195d2c5 -> 4cddbd375e74, procurement_suggestion_engine
+INFO  [alembic.runtime.migration] Running upgrade 4cddbd375e74 -> 4a1b1eba5eed, subcontracting_system
+INFO  [alembic.runtime.migration] Running upgrade 4a1b1eba5eed -> c5d6e7f8a9b0, Landed Cost Allocation System
+INFO  [alembic.runtime.migration] Running upgrade c5d6e7f8a9b0 -> d6e7f8a9b0c1, 3-Way Invoice Matching System
+INFO  [alembic.runtime.migration] Running upgrade d6e7f8a9b0c1 -> e7f8a9b0c1d2, bank_reconciliation
+INFO  [alembic.runtime.migration] Running upgrade e7f8a9b0c1d2 -> f9a0b1c2d3e4, crm_pipeline
+INFO  [alembic.runtime.migration] Running upgrade f9a0b1c2d3e4 -> a9b0c1d2e3f4, customer_distributor_portal
+INFO  [alembic.runtime.migration] Running upgrade a9b0c1d2e3f4 -> b1c2d3e4f5a6, supplier_portal
+INFO  [alembic.runtime.migration] Running upgrade b1c2d3e4f5a6 -> c2d3e4f5a6b7, dunning_overdue_collection
+INFO  [alembic.runtime.migration] Running upgrade c2d3e4f5a6b7 -> d3e4f5a6b7c8, price_list_enhancement
+INFO  [alembic.runtime.migration] Running upgrade d3e4f5a6b7c8 -> e4f5a6b7c8d9, subscription_recurring_orders
+INFO  [alembic.runtime.migration] Running upgrade e4f5a6b7c8d9 -> f5a6b7c8d9e0, van_sales_mobile_pos
+INFO  [alembic.runtime.migration] Running upgrade f5a6b7c8d9e0 -> a6b7c8d9e0f1, contract_management
+INFO  [alembic.runtime.migration] Running upgrade a6b7c8d9e0f1 -> b8c9d0e1f2a3, moto_sales_mpesa_fraud_performance
+INFO  [alembic.runtime.migration] Running upgrade b8c9d0e1f2a3 -> c9d0e1f2a3b4, sales_commission_tracking
+INFO  [alembic.runtime.migration] Running upgrade c9d0e1f2a3b4 -> d0e1f2a3b4c5, expense_claims
+INFO  [alembic.runtime.migration] Running upgrade d0e1f2a3b4c5 -> e1f2a3b4c5d6, recruitment_ats
+INFO  [alembic.runtime.migration] Running upgrade e1f2a3b4c5d6 -> f2a3b4c5d6e7, employee_self_service
+INFO  [alembic.runtime.migration] Running upgrade f2a3b4c5d6e7 -> a3b4c5d6e8f7, performance_appraisals
+INFO  [alembic.runtime.migration] Running upgrade a3b4c5d6e8f7 -> b4c5d6e7a8f9, training_skills_management
+INFO  [alembic.runtime.migration] Running upgrade b4c5d6e7a8f9 -> c5d6e7f8b0a9, timesheet_approval_workflow
+INFO  [alembic.runtime.migration] Running upgrade c5d6e7f8b0a9 -> d6e7f8a9c0b1, notification_center
+INFO  [alembic.runtime.migration] Running upgrade d6e7f8a9c0b1 -> e7f8a9b0d1c2, kanban_boards
+INFO  [alembic.runtime.migration] Running upgrade e7f8a9b0d1c2 -> f8a9b0c1d2e3, custom_report_builder
+INFO  [alembic.runtime.migration] Running upgrade f8a9b0c1d2e3 -> a9b0c1d2f3e4, calendar_resource_scheduling
+INFO  [alembic.runtime.migration] Running upgrade a9b0c1d2f3e4 -> b0c1d2e3f4a5, chatter_activity_timeline
+INFO  [alembic.runtime.migration] Running upgrade b0c1d2e3f4a5 -> c1d2e3f4a5b6, custom_fields
+INFO  [alembic.runtime.migration] Running upgrade c1d2e3f4a5b6 -> d2e3f4a5b6c7, two_factor_auth
+INFO  [alembic.runtime.migration] Running upgrade d2e3f4a5b6c7 -> e3f4a5b6c7d8, webhook_event_engine
+INFO  [alembic.runtime.migration] Running upgrade e3f4a5b6c7d8 -> f4a5b6c7d8e9, fleet_management
+INFO  [alembic.runtime.migration] Running upgrade f4a5b6c7d8e9 -> a5b6c7d8e9f0, cycle_count
+INFO  [alembic.runtime.migration] Running upgrade a5b6c7d8e9f0 -> b6c7d8e9f0a1, putaway_rules
+INFO  [alembic.runtime.migration] Running upgrade b6c7d8e9f0a1 -> c7d8e9f0a1b2, secondary_sales_distributor_sell_through
+INFO  [alembic.runtime.migration] Running upgrade c7d8e9f0a1b2 -> d8e9f0a1b2c3, esg_sustainability_reporting
+INFO  [alembic.runtime.migration] Running upgrade d8e9f0a1b2c3 -> e9f0a1b2c3d4, kenya_payroll_localization
+INFO  [alembic.runtime.migration] Running upgrade e9f0a1b2c3d4 -> f0a1b2c3d4e5, esg_intelligence_gap69
+INFO  [alembic.runtime.migration] Running upgrade f0a1b2c3d4e5 -> f1a2b3c4e5d6, plugin_marketplace_gap70
+INFO  [alembic.runtime.migration] Running upgrade f1a2b3c4e5d6 -> 1a2b3c4d5e6f, audit_logs_schema_repair
+INFO  [alembic.runtime.migration] Running upgrade 1a2b3c4d5e6f -> 20260510_0700, add user must_change_password flag
+INFO  [alembic.runtime.migration] Running upgrade 20260510_0700 -> 20260510_0710, fix fixed asset depreciation schedule enum type
+INFO  [alembic.runtime.migration] Running upgrade 20260510_0710 -> 20260511_0010, enterprise accounting core foundations
+INFO  [alembic.runtime.migration] Running upgrade 20260511_0010 -> 20260511_0020, operational posting integration foundations
+INFO  [alembic.runtime.migration] Running upgrade 20260511_0020 -> 20260511_0030, erp-wide access scopes
+INFO  [alembic.runtime.migration] Running upgrade 20260511_0030 -> 20260511_0040, Add scoped access fields to finance journals.
+INFO  [alembic.runtime.migration] Running upgrade 20260511_0040 -> 20260514_0010, Add APS planning tables.
+INFO  [alembic.runtime.migration] Running upgrade 20260514_0010 -> 20260514_0020, Add WMS depth reconciliation tables.
+INFO  [alembic.runtime.migration] Running upgrade 20260514_0020 -> 20260514_0030, Add procurement scope and supplier governance reconciliation.
+INFO  [alembic.runtime.migration] Running upgrade 20260514_0030 -> 20260515_0010, crm sales scope reconciliation
+INFO  [alembic.runtime.migration] Running upgrade 20260515_0010 -> 20260515_0020, hrms payroll reconciliation
+INFO  [alembic.runtime.migration] Running upgrade 20260515_0020 -> 20260515_0030, document knowledge reconciliation
+INFO  [alembic.runtime.migration] Running upgrade 20260515_0030 -> 20260515_0050, haccp pdca audit scheduling
+INFO  [alembic.runtime.migration] Running upgrade 20260515_0050 -> 20260515_0060, gs1 product config fields
+INFO  [alembic.runtime.migration] Running upgrade 20260515_0030 -> 20260515_0040, report builder schedule run log
+INFO  [alembic.runtime.migration] Running upgrade 20260515_0040, 20260515_0060 -> 20260516_0010, npd formula governance reconciliation
+INFO  [alembic.runtime.migration] Running upgrade 20260516_0010 -> 20260516_0020, iot machine streaming reconciliation
+INFO  [alembic.runtime.migration] Running upgrade 20260516_0020 -> 20260516_0030, maintenance predictive reconciliation
+INFO  [alembic.runtime.migration] Running upgrade 20260516_0030 -> 20260516_0040, AI Prompt Registry reconciliation (GAP-024C)
+INFO  [alembic.runtime.migration] Running upgrade 20260516_0040 -> 20260516_0050, Multi-company warehouse reconciliation (GAP-025C)
+INFO  [alembic.runtime.migration] Running upgrade 20260516_0050 -> 20260516_0060, Add performance indexes for FK/date/status fields
+INFO  [alembic.runtime.migration] Running upgrade 20260516_0060 -> 20260518_0001, OTP delivery: expand challenge_code column to store bcrypt hash
+INFO  [alembic.runtime.migration] Running upgrade 20260518_0001 -> 20260602_0001, eTIMS provider config model + submission tracking fields (TASK-005.1A)
+INFO  [alembic.runtime.migration] Running upgrade 20260602_0001 -> 20261019_0010, Add a monotonic allocator for MPS production-order numbers.
+INFO  [alembic.runtime.migration] Running upgrade 20261019_0010 -> 20261020_0010, Persist reproducible MPS constraint and what-if evidence.
+INFO  [alembic.runtime.migration] Running upgrade 20261020_0010 -> 20261021_0010, Create storage for Developer Portal API keys and usage logs.
+INFO  [alembic.runtime.migration] Running upgrade 20261021_0010 -> 20261022_0011, Use database sequences for globally unique MPS plan and line numbers.
+INFO  [alembic.runtime.migration] Running upgrade 20261022_0011 -> 20261023_0012, persist hashed refresh tokens for single-use rotation
+INFO  [alembic.runtime.migration] Running upgrade 20261023_0012 -> 20261023_0013, track auth session activity for inactivity expiry
+INFO  [alembic.runtime.migration] Running upgrade 20261023_0013 -> 20261023_0014, add user-wide authentication session version
+INFO  [alembic.runtime.migration] Running upgrade 20261023_0014 -> 20261027_0015, standardize master merge and deactivation semantics
+INFO  [alembic.runtime.migration] Running upgrade 20261027_0015 -> 20261028_0016, govern recipe version identifiers and effective date windows
+INFO  [alembic.runtime.migration] Running upgrade 20261028_0016 -> 20261028_0017, Enforce warehouse branch/company ownership across master references.
+INFO  [alembic.runtime.migration] Running upgrade 20261028_0017 -> 20261028_0018, add conversion profile versions and inclusive effective-date windows
+INFO  [alembic.runtime.migration] Running upgrade 20261028_0018 -> 20261028_0019, store expected process yield against BOM input base quantity
+INFO  [alembic.runtime.migration] Running upgrade 20261028_0019 -> 20261028_0020, add a distinct spillage yield/loss category
+INFO  [alembic.runtime.migration] Running upgrade 20261028_0020 -> 20261028_0021, snapshot recipe standard loss on waste records
+INFO  [alembic.runtime.migration] Running upgrade 20261028_0021 -> 20261028_0022, add batch-specific BOM substitution approvals
+INFO  [alembic.runtime.migration] Running upgrade 20261028_0022 -> 20261028_0023, add MPS minimum-run and CIP transition inputs
+INFO  [alembic.runtime.migration] Running upgrade 20261028_0023 -> 20261028_0024, persist scenario cost currency for truthful API and UI labels
+INFO  [alembic.runtime.migration] Running upgrade 20261028_0024 -> 20261029_0025, require alphabetic ISO currency codes for MPS costs
+INFO  [alembic.runtime.migration] Running upgrade 20261029_0025 -> 20261029_0026, govern Advanced BOM version identifiers and effective date windows
+INFO  [alembic.runtime.migration] Running upgrade 20261029_0026 -> 20261029_0027, add configurable quality gate definitions
+INFO  [alembic.runtime.migration] Running upgrade 20261029_0027 -> 20261029_0028, link quality gates to required QC specifications
+INFO  [alembic.runtime.migration] Running upgrade 20261029_0028 -> 20261029_0029, add quality gate severity, mandatory, and waiver safeguards
+INFO  [alembic.runtime.migration] Running upgrade 20261029_0029 -> 20261029_0030, add versioned quality gate definitions with inclusive effective dates
+INFO  [alembic.runtime.migration] Running upgrade 20261029_0030 -> 20261029_0031, link QC results to their exact template parameter
+INFO  [alembic.runtime.migration] Running upgrade 20261029_0031 -> 20261029_0032, add auditable quality gate waiver approval records
+INFO  [alembic.runtime.migration] Running upgrade 20261029_0032 -> 20261029_0033, persist append-only quality gate evaluation history
+INFO  [alembic.runtime.migration] Running upgrade 20261029_0033 -> 20261029_0034, make purchase-order links unique within an international shipment
+INFO  [alembic.runtime.migration] Running upgrade 20261029_0034 -> 20261029_0035, track evidence-backed inventory ownership for shipment PO links
+INFO  [alembic.runtime.migration] Running upgrade 20261029_0035 -> 20261029_0036, add evidence-linked customs clearance status history
+INFO  [alembic.runtime.migration] Running upgrade 20261029_0036 -> 20261029_0037, record immutable Kenya warehouse receipt closure against posted GRNs
+INFO  [alembic.runtime.migration] Running upgrade 20261029_0037 -> 20261029_0038, record accepted receipt volume for volume-based landed-cost allocation
+INFO  [alembic.runtime.migration] Running upgrade 20261029_0038 -> 20261029_0039, track estimated and actual landed-cost line amounts
+INFO  [alembic.runtime.migration] Running upgrade 20261029_0039 -> 20261029_0040, snapshot dated finance exchange rates on landed-cost documents
+INFO  [alembic.runtime.migration] Running upgrade 20261029_0040 -> 20261029_0041, post landed-cost actual variances without rewriting original postings
+INFO  [alembic.runtime.migration] Running upgrade 20261029_0041 -> 20261029_0042, add owner-scoped API client application registry
+INFO  [alembic.runtime.migration] Running upgrade 20261029_0042 -> 20261029_0043, add application-linked API keys and one-time OAuth client secret records
+INFO  [alembic.runtime.migration] Running upgrade 20261029_0043 -> 20261030_0001, Add governed, immutable webhook event schema versions.
+INFO  [alembic.runtime.migration] Running upgrade 20261030_0001 -> 20261030_0002, Persist event idempotency keys and request fingerprints.
+INFO  [alembic.runtime.migration] Running upgrade 20261030_0002 -> 20261030_0003, Link a delivery attempt to its explicitly replayed successor.
+INFO  [alembic.runtime.migration] Running upgrade 20261030_0003 -> 20261030_0004, Add versioned webhook secret rotation with a bounded previous-key window.
+INFO  [alembic.runtime.migration] Running upgrade 20261030_0004 -> 20261030_0005, Add multi-line sourcing-event requirements to the existing RFQ aggregate.
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+20261030_0005 (head)
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+INFO  [alembic.runtime.migration] Running downgrade 20261030_0005 -> 20261030_0004, Add multi-line sourcing-event requirements to the existing RFQ aggregate.
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade 20261030_0004 -> 20261030_0005, Add multi-line sourcing-event requirements to the existing RFQ aggregate.
+.................                                                        [100%]
+17 passed in 28.35s
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+20261030_0005 (head)
