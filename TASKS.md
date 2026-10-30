@@ -9,10 +9,10 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 ## Project Status
 
 - Current Milestone: M31 — API / Event Architecture
-- Current Sprint: M31.S03 — Delivery Engine
-- Current Task: M31.S04.T003 — Failure/replay/idempotency tests
+- Current Sprint: M31.S04 — Observability & Verification
+- Current Task: M31.S04.T004 — Close M31
 - Current Task Status: COMPLETE
-- Next Task/Action: M31.S04.T004 — Close M31
+- Next Task/Action: Blocked: M21.S05.T004 awaits the M20 acceptance evidence/re-audit gate; no dependency-ready successor until that gate clears.
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -965,7 +965,7 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 # M31 — API / Event Architecture
 
-**Status: PLANNED / PARTIAL foundation**
+**Status: DONE — scoped M31 software architecture and verification tasks complete; live-provider acceptance remains separate.**
 **Depends on:** M01, M02, M17.
 
 ## M31.S01 — Partner API Governance
@@ -1005,7 +1005,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
   Evidence: coordination/sessions/M31.S04.T002/CODEX_LOG_V01.md; focused M31 suite 63 passed; py_compile and diff check passed; independent read-only review found no remaining gaps
 - [x] M31.S04.T003 — Failure/replay/idempotency tests
   Evidence: coordination/sessions/M31.S04.T003/CODEX_LOG_V01.md; focused M31 regression 57 passed and 1 gated DB skip; task-owned disposable PostgreSQL 2 passed at 20261030_0004 head; independent read-only review passed
-- [ ] M31.S04.T004 — Close M31
+- [x] M31.S04.T004 — Close M31
+  Evidence: coordination/sessions/M31.S04.T004/CODEX_LOG_V01.md; all 16 M31 tasks have evidence logs; combined M31 regression 95 passed/16 task-gated database skips, one Alembic head 20261030_0004, diff check and independent read-only closeout review passed. Live API-key/OAuth protocol and provider/factory acceptance are not claimed. No dependency-ready successor: M20's acceptance/re-audit gate blocks M21 closure and downstream M22.
 
 ---
 

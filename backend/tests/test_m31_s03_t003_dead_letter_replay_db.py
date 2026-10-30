@@ -49,6 +49,7 @@ def test_database_guard_rejects_other_tasks_and_non_loopback_urls():
 
 
 @pytest.mark.asyncio(loop_scope="session")
+@pytest.mark.skipif(os.environ.get("M31_S03_T003_DISPOSABLE_TEST_DATABASE") != "1", reason="Run only with the task-owned disposable PostgreSQL database.")
 async def test_retry_lineage_is_unique_and_preserves_the_dead_letter_record():
     _require_task_owned_database()
     suffix = uuid4().hex
@@ -119,6 +120,7 @@ async def test_retry_lineage_is_unique_and_preserves_the_dead_letter_record():
 
 
 @pytest.mark.asyncio(loop_scope="session")
+@pytest.mark.skipif(os.environ.get("M31_S03_T003_DISPOSABLE_TEST_DATABASE") != "1", reason="Run only with the task-owned disposable PostgreSQL database.")
 async def test_concurrent_first_bulk_replays_create_only_one_root_attempt():
     _require_task_owned_database()
     suffix = uuid4().hex

@@ -53,6 +53,7 @@ def test_database_guard_rejects_wrong_task_or_non_loopback_database():
 
 
 @pytest.mark.asyncio(loop_scope="session")
+@pytest.mark.skipif(os.environ.get("M31_S02_T002_DISPOSABLE_TEST_DATABASE") != "1", reason="Run only with the task-owned disposable PostgreSQL database.")
 async def test_migration_backfilled_preexisting_definition_version_one():
     _require_task_owned_database()
     raw_id = os.environ.get("M31_S02_T002_LEGACY_DEFINITION_ID")
@@ -73,6 +74,7 @@ async def test_migration_backfilled_preexisting_definition_version_one():
 
 
 @pytest.mark.asyncio(loop_scope="session")
+@pytest.mark.skipif(os.environ.get("M31_S02_T002_DISPOSABLE_TEST_DATABASE") != "1", reason="Run only with the task-owned disposable PostgreSQL database.")
 async def test_schema_versions_are_immutable_and_enforced_for_published_events():
     _require_task_owned_database()
     event_code = f"test.m31.s02.t002.{uuid4().hex}"
@@ -148,6 +150,7 @@ async def test_schema_versions_are_immutable_and_enforced_for_published_events()
 
 
 @pytest.mark.asyncio(loop_scope="session")
+@pytest.mark.skipif(os.environ.get("M31_S02_T002_DISPOSABLE_TEST_DATABASE") != "1", reason="Run only with the task-owned disposable PostgreSQL database.")
 async def test_event_schema_api_exposes_version_history_and_safe_validation_errors():
     _require_task_owned_database()
     event_code = f"test.m31.s02.t002.api.{uuid4().hex}"

@@ -45,6 +45,7 @@ def test_database_guard_rejects_other_tasks_and_non_loopback_urls():
 
 
 @pytest.mark.asyncio(loop_scope="session")
+@pytest.mark.skipif(os.environ.get("M31_S03_T004_DISPOSABLE_TEST_DATABASE") != "1", reason="Run only with the task-owned disposable PostgreSQL database.")
 async def test_subscription_and_inbound_secrets_rotate_with_encrypted_storage_and_audit():
     _require_task_owned_database()
     suffix = uuid4().hex

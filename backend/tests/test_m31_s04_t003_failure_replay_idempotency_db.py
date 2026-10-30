@@ -55,6 +55,7 @@ def test_database_guard_rejects_another_task_database_and_remote_hosts():
 
 
 @pytest.mark.asyncio(loop_scope="session")
+@pytest.mark.skipif(os.environ.get("M31_S04_T003_DISPOSABLE_TEST_DATABASE") != "1", reason="Run only with the task-owned disposable PostgreSQL database.")
 async def test_idempotent_publish_failure_retry_dead_letter_and_replay_chain():
     _require_task_owned_database()
     suffix = uuid4().hex

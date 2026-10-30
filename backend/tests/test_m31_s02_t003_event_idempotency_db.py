@@ -47,6 +47,7 @@ def test_database_guard_rejects_other_databases():
 
 
 @pytest.mark.asyncio(loop_scope="session")
+@pytest.mark.skipif(os.environ.get("M31_S02_T003_DISPOSABLE_TEST_DATABASE") != "1", reason="Run only with the task-owned disposable PostgreSQL database.")
 async def test_idempotent_publish_and_conflict_preserve_one_event_and_delivery():
     _require_task_owned_database()
     event_code = f"test.m31.s02.t003.{uuid4().hex}"
@@ -166,6 +167,7 @@ async def test_idempotent_publish_and_conflict_preserve_one_event_and_delivery()
 
 
 @pytest.mark.asyncio(loop_scope="session")
+@pytest.mark.skipif(os.environ.get("M31_S02_T003_DISPOSABLE_TEST_DATABASE") != "1", reason="Run only with the task-owned disposable PostgreSQL database.")
 async def test_concurrent_first_uses_of_same_key_converge_on_one_event():
     _require_task_owned_database()
     event_code = f"test.m31.s02.t003.concurrent.{uuid4().hex}"
