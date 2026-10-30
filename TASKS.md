@@ -10,9 +10,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 - Current Milestone: M31 — API / Event Architecture
 - Current Sprint: M31.S03 — Delivery Engine
-- Current Task: M31.S04.T001 — Delivery metrics/logs/traces
+- Current Task: M31.S04.T002 — Event/API permission tests
 - Current Task Status: COMPLETE
-- Next Task/Action: M31.S04.T002 — Event/API permission tests
+- Next Task/Action: M31.S04.T003 — Failure/replay/idempotency tests
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -1001,7 +1001,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 ## M31.S04 — Observability & Verification
 - [x] M31.S04.T001 — Delivery metrics/logs/traces
   Evidence: coordination/sessions/M31.S04.T001/CODEX_LOG_V01.md (58 focused M31 tests passed; production-config/observability checks 6 passed; py_compile and diff check passed; independent review passed). Selected M31.S04.T002 Event/API permission tests next: the delivery engine and first observability slice are complete; security permission verification is the next high-priority M31 acceptance gate before reliability tests/closeout.
-- [ ] M31.S04.T002 — Event/API permission tests
+- [x] M31.S04.T002 — Event/API permission tests
+  Evidence: coordination/sessions/M31.S04.T002/CODEX_LOG_V01.md; focused M31 suite 63 passed; py_compile and diff check passed; independent read-only review found no remaining gaps
 - [ ] M31.S04.T003 — Failure/replay/idempotency tests
 - [ ] M31.S04.T004 — Close M31
 

@@ -7,7 +7,7 @@ from fastapi import APIRouter, Body, Depends, Header, HTTPException, Query, Requ
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
-from app.core.deps import get_current_user, get_current_active_superuser
+from app.core.deps import get_current_active_superuser
 from app.models.webhook import AuthType, DeliveryStatus
 from app.schemas.webhook import (
     DeliveryAttemptOut, EventDefinitionCreate, EventDefinitionOut, EventDefinitionUpdate,
@@ -40,7 +40,10 @@ def _event_log_response(event_log):
 # ── Dashboard ─────────────────────────────────────────────────────────────────
 
 @router.get("/dashboard", response_model=WebhookDashboard)
-async def dashboard(db: AsyncSession = Depends(get_db)):
+async def dashboard(
+    db: AsyncSession = Depends(get_db),
+    _=Depends(get_current_active_superuser),
+):
     return await svc.get_dashboard(db)
 
 
@@ -53,6 +56,7 @@ async def list_event_definitions(
     skip: int = 0,
     limit: int = Query(default=100, le=500),
     db: AsyncSession = Depends(get_db),
+    _=Depends(get_current_active_superuser),
 ):
     return await svc.list_event_definitions(db, module=module, active_only=active_only, skip=skip, limit=limit)
 
@@ -94,6 +98,7 @@ async def update_event_definition(
 async def list_event_definition_versions(
     definition_id: UUID,
     db: AsyncSession = Depends(get_db),
+    _=Depends(get_current_active_superuser),
 ):
     versions = await svc.list_event_definition_versions(db, definition_id)
     if versions is None:
@@ -121,6 +126,7 @@ async def list_events(
     skip: int = 0,
     limit: int = Query(default=100, le=500),
     db: AsyncSession = Depends(get_db),
+    _=Depends(get_current_active_superuser),
 ):
     from sqlalchemy import select, desc, and_
     from app.models.webhook import EventLog
@@ -138,7 +144,11 @@ async def list_events(
 
 
 @router.get("/events/{event_id}", response_model=EventLogOut)
-async def get_event(event_id: UUID, db: AsyncSession = Depends(get_db)):
+async def get_event(
+    event_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(get_current_active_superuser),
+):
     from sqlalchemy import select
     from app.models.webhook import EventLog
     result = await db.execute(select(EventLog).where(EventLog.id == event_id))
@@ -153,6 +163,7 @@ async def publish_event(
     data: PublishEventRequest,
     response: Response,
     db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_active_superuser),
 ):
     """Publish an event manually (or from internal module calls)."""
     try:
@@ -162,7 +173,7 @@ async def publish_event(
             data.payload,
             reference_type=data.reference_type,
             reference_id=data.reference_id,
-            actor_id=data.actor_id,
+            actor_id=str(current_user.id),
             partition_key=data.partition_key,
             idempotency_key=data.idempotency_key,
             correlation_id=data.correlation_id,
@@ -446,6 +457,7 @@ async def receive_inbound_webhook(
 async def get_report(
     days: int = Query(default=7, ge=1, le=90),
     db: AsyncSession = Depends(get_db),
+    _=Depends(get_current_active_superuser),
 ):
     return await svc.get_report(db, days=days)
 
@@ -455,7 +467,7 @@ async def get_report(
 @router.get("/ai/health-monitor")
 async def ai_health_monitor(
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    _=Depends(get_current_active_superuser),
 ):
     return await svc.ai_health_monitor(db)
 
@@ -463,7 +475,7 @@ async def ai_health_monitor(
 @router.get("/ai/payload-advisor")
 async def ai_payload_advisor(
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    _=Depends(get_current_active_superuser),
 ):
     return await svc.ai_payload_advisor(db)
 
@@ -471,6 +483,6 @@ async def ai_payload_advisor(
 @router.get("/ai/anomaly-detector")
 async def ai_anomaly_detector(
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    _=Depends(get_current_active_superuser),
 ):
     return await svc.ai_anomaly_detector(db)

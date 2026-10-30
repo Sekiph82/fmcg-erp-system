@@ -1400,6 +1400,8 @@ async def list_inbound_endpoints(db: AsyncSession) -> List[InboundEndpoint]:
 async def create_inbound_endpoint(
     db: AsyncSession, data: InboundEndpointCreate, actor: Any
 ) -> InboundEndpoint:
+    if settings.ENVIRONMENT.lower() == "production" and data.auth_type == AuthType.NONE:
+        raise ValueError("Inbound webhook endpoints require authentication in production")
     values = data.model_dump()
     values["secret_key"] = _store_webhook_secret(values.get("secret_key"))
     obj = InboundEndpoint(**values)
@@ -1447,7 +1449,7 @@ def verify_inbound_signature(
         secrets_to_check.append(previous_secret)
 
     if endpoint.auth_type == AuthType.NONE:
-        return True
+        return settings.ENVIRONMENT.lower() != "production"
     if endpoint.auth_type == AuthType.HMAC:
         if not secrets_to_check or not sig_header:
             return False

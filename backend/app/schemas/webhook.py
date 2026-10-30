@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Optional
 from uuid import UUID
 from pydantic import BaseModel, Field, HttpUrl, field_serializer, field_validator, model_validator
 
+from app.core.config import settings
 from app.models.webhook import AuthType, DeliveryStatus, HttpMethod
 
 
@@ -285,6 +286,8 @@ class InboundEndpointCreate(BaseModel):
     def validate_hmac_secret(self) -> "InboundEndpointCreate":
         if self.auth_type == AuthType.BASIC:
             raise ValueError("Inbound Basic authentication is not supported")
+        if settings.ENVIRONMENT.lower() == "production" and self.auth_type == AuthType.NONE:
+            raise ValueError("Inbound webhook endpoints require authentication in production")
         if self.auth_type != AuthType.NONE and not self.secret_key:
             raise ValueError("The selected webhook authentication type requires a secret")
         if self.auth_type == AuthType.HMAC and len(self.secret_key or "") < 32:
