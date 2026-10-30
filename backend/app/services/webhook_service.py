@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
+import logging
 import random
 import secrets
 import time
@@ -32,6 +33,9 @@ from app.schemas.webhook import (
 )
 from app.models.audit_log import AuditLog
 from app.core.config import settings
+from app.core.observability import record_webhook_delivery
+
+logger = logging.getLogger(__name__)
 
 MAX_RESPONSE_BODY = 2000       # truncate stored response body
 BACKOFF_BASE_SECONDS = 60      # first retry ceiling
@@ -56,6 +60,8 @@ WEBHOOK_RESERVED_HEADERS = {
     "x-webhook-signature-previous",
     "x-webhook-timestamp",
     "x-webhook-test",
+    "x-correlation-id",
+    "x-causation-id",
 }
 EVENT_JSON_SCHEMA_DRAFT = "https://json-schema.org/draft/2020-12/schema"
 
@@ -736,70 +742,111 @@ async def _deliver_attempt(
     db: AsyncSession, attempt: DeliveryAttempt, event_log: EventLog, sub: Subscription
 ) -> None:
     """Execute one HTTP delivery attempt and record result."""
-    payload = _transform_payload(_canonical_event_payload(event_log), sub.transform_template)
-    body_bytes = json.dumps(payload).encode()
-
-    if len(body_bytes) > MAX_PAYLOAD_BYTES:
-        attempt.status = DeliveryStatus.FAILED
-        attempt.error_message = "Payload exceeds 1MB limit"
-        attempt.attempted_at = datetime.now(timezone.utc)
-        await db.flush()
-        return
-
-    timestamp = str(int(time.time()))
-    headers: Dict[str, str] = {
-        "Content-Type": "application/json",
-        "X-Webhook-Event": event_log.event_code,
-        "X-Webhook-Event-Id": str(event_log.id),
-        "X-Webhook-Delivery-Id": str(attempt.id),
-        "X-Webhook-Timestamp": timestamp,
-    }
-
-    # Custom settings cannot override delivery identity or authentication headers.
-    _apply_custom_headers(headers, sub.headers)
-
-    # Auth
-    if sub.auth_type == AuthType.BEARER and sub.secret_key:
-        headers["Authorization"] = f"Bearer {_read_webhook_secret(sub.secret_key)}"
-    elif sub.auth_type == AuthType.BASIC and sub.auth_user and sub.secret_key:
-        creds = b64encode(f"{sub.auth_user}:{_read_webhook_secret(sub.secret_key)}".encode()).decode()
-        headers["Authorization"] = f"Basic {creds}"
-    elif sub.auth_type == AuthType.HMAC and sub.secret_key:
-        current_secret = _read_webhook_secret(sub.secret_key)
-        headers["X-Webhook-Signature"] = _sign_payload(current_secret, body_bytes, timestamp)
-        headers["X-Webhook-Key-Version"] = str(max(1, sub.secret_version or 1))
-        previous_secret = _active_previous_secret(sub)
-        if previous_secret:
-            headers["X-Webhook-Signature-Previous"] = _sign_payload(
-                previous_secret, body_bytes, timestamp
-            )
-            headers["X-Webhook-Previous-Key-Version"] = str(max(1, sub.secret_version or 1) - 1)
-
     start = time.monotonic()
     attempt.attempted_at = datetime.now(timezone.utc)
-    attempt.request_payload = payload
+    event_envelope: Dict[str, Any] = {}
+    error_type: Optional[str] = None
 
     try:
-        async with httpx.AsyncClient(timeout=sub.timeout_seconds) as client:
-            method = sub.http_method.value
-            resp = await client.request(method, sub.endpoint_url, content=body_bytes, headers=headers)
-        elapsed_ms = int((time.monotonic() - start) * 1000)
-        attempt.response_status = resp.status_code
-        attempt.response_body = _redact_auth_values(resp.text, headers, sub.headers)[:MAX_RESPONSE_BODY]
-        attempt.duration_ms = elapsed_ms
+        event_envelope = _canonical_event_payload(event_log)
+        payload = _transform_payload(event_envelope, sub.transform_template)
+        body_bytes = json.dumps(payload).encode()
 
-        if 200 <= resp.status_code < 300:
-            attempt.status = DeliveryStatus.SENT
+        if len(body_bytes) > MAX_PAYLOAD_BYTES:
+            attempt.status = DeliveryStatus.FAILED
+            attempt.error_message = "Payload exceeds 1MB limit"
+            attempt.duration_ms = int((time.monotonic() - start) * 1000)
         else:
-            _schedule_retry(attempt, sub)
+            timestamp = str(int(time.time()))
+            headers: Dict[str, str] = {
+                "Content-Type": "application/json",
+                "X-Webhook-Event": event_log.event_code,
+                "X-Webhook-Event-Id": str(event_log.id),
+                "X-Webhook-Delivery-Id": str(attempt.id),
+                "X-Webhook-Timestamp": timestamp,
+            }
+            if event_envelope.get("correlation_id"):
+                headers["X-Correlation-ID"] = str(event_envelope["correlation_id"])
+            if event_envelope.get("causation_id"):
+                headers["X-Causation-ID"] = str(event_envelope["causation_id"])
 
+            # Custom settings cannot override delivery identity or authentication headers.
+            _apply_custom_headers(headers, sub.headers)
+
+            if sub.auth_type == AuthType.BEARER and sub.secret_key:
+                headers["Authorization"] = f"Bearer {_read_webhook_secret(sub.secret_key)}"
+            elif sub.auth_type == AuthType.BASIC and sub.auth_user and sub.secret_key:
+                creds = b64encode(f"{sub.auth_user}:{_read_webhook_secret(sub.secret_key)}".encode()).decode()
+                headers["Authorization"] = f"Basic {creds}"
+            elif sub.auth_type == AuthType.HMAC and sub.secret_key:
+                current_secret = _read_webhook_secret(sub.secret_key)
+                headers["X-Webhook-Signature"] = _sign_payload(current_secret, body_bytes, timestamp)
+                headers["X-Webhook-Key-Version"] = str(max(1, sub.secret_version or 1))
+                previous_secret = _active_previous_secret(sub)
+                if previous_secret:
+                    headers["X-Webhook-Signature-Previous"] = _sign_payload(
+                        previous_secret, body_bytes, timestamp
+                    )
+                    headers["X-Webhook-Previous-Key-Version"] = str(max(1, sub.secret_version or 1) - 1)
+
+            attempt.request_payload = payload
+            async with httpx.AsyncClient(timeout=sub.timeout_seconds) as client:
+                method = sub.http_method.value
+                resp = await client.request(method, sub.endpoint_url, content=body_bytes, headers=headers)
+            attempt.response_status = resp.status_code
+            attempt.response_body = _redact_auth_values(resp.text, headers, sub.headers)[:MAX_RESPONSE_BODY]
+            attempt.duration_ms = int((time.monotonic() - start) * 1000)
+
+            if 200 <= resp.status_code < 300:
+                attempt.status = DeliveryStatus.SENT
+            else:
+                _schedule_retry(attempt, sub)
     except Exception as exc:
-        elapsed_ms = int((time.monotonic() - start) * 1000)
-        attempt.duration_ms = elapsed_ms
-        attempt.error_message = str(exc)[:500]
+        attempt.duration_ms = int((time.monotonic() - start) * 1000)
+        error_type = type(exc).__name__
+        # Error messages may contain an endpoint URL or peer-provided values; keep
+        # diagnostics safe and put only the exception class in logs and persistence.
+        attempt.error_message = f"Delivery preparation/request failed ({error_type})"
         _schedule_retry(attempt, sub)
 
+    _record_delivery_observability(
+        attempt,
+        event_log,
+        sub,
+        event_envelope,
+        duration_ms=attempt.duration_ms,
+        error_type=error_type,
+    )
     await db.flush()
+
+
+def _record_delivery_observability(
+    attempt: DeliveryAttempt,
+    event_log: EventLog,
+    sub: Subscription,
+    event_envelope: Dict[str, Any],
+    *,
+    duration_ms: Optional[int],
+    error_type: Optional[str] = None,
+) -> None:
+    outcome = attempt.status.value
+    record_webhook_delivery(outcome, duration_ms)
+    log = logger.info if outcome == DeliveryStatus.SENT.value else logger.warning
+    log(
+        "Webhook delivery attempt completed",
+        extra={
+            "event_id": str(event_log.id),
+            "delivery_id": str(attempt.id),
+            "subscription_id": str(sub.id),
+            "attempt_no": attempt.attempt_no,
+            "correlation_id": event_envelope.get("correlation_id"),
+            "causation_id": event_envelope.get("causation_id"),
+            "outcome": outcome,
+            "response_status": attempt.response_status,
+            "duration_ms": duration_ms,
+            "error_type": error_type,
+        },
+    )
 
 
 def _schedule_retry(attempt: DeliveryAttempt, sub: Subscription) -> None:

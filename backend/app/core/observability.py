@@ -15,6 +15,11 @@ _metrics_lock = Lock()
 _metrics_started_at = time.time()
 _request_counts: Counter[str] = Counter()
 _status_counts: Counter[str] = Counter()
+_webhook_delivery_counts: Counter[str] = Counter()
+_webhook_delivery_latency_buckets: Counter[int] = Counter()
+_webhook_delivery_latency_count = 0
+_webhook_delivery_latency_sum_ms = 0
+_WEBHOOK_DELIVERY_LATENCY_BUCKETS_MS = (50, 100, 250, 500, 1000, 2500, 5000)
 _slow_request_count = 0
 _error_request_count = 0
 _error_tracking_ready = False
@@ -28,7 +33,11 @@ class JsonFormatter(logging.Formatter):
             "logger": record.name,
             "message": record.getMessage(),
         }
-        for key in ("request_id", "method", "path", "status_code", "duration_ms"):
+        for key in (
+            "request_id", "method", "path", "status_code", "duration_ms",
+            "event_id", "delivery_id", "subscription_id", "attempt_no",
+            "correlation_id", "causation_id", "outcome", "response_status", "error_type",
+        ):
             value = getattr(record, key, None)
             if value is not None:
                 payload[key] = value
@@ -95,8 +104,30 @@ def record_request(method: str, path: str, status_code: int, duration_ms: int) -
             _error_request_count += 1
 
 
+def record_webhook_delivery(outcome: str, duration_ms: int | None = None) -> None:
+    """Record bounded-cardinality, per-process webhook delivery telemetry."""
+    global _webhook_delivery_latency_count, _webhook_delivery_latency_sum_ms
+    allowed = {"sent", "failed", "retrying", "dead_letter"}
+    if outcome not in allowed:
+        raise ValueError("Unsupported webhook delivery outcome")
+    with _metrics_lock:
+        _webhook_delivery_counts[outcome] += 1
+        if duration_ms is not None:
+            duration = max(0, int(duration_ms))
+            _webhook_delivery_latency_count += 1
+            _webhook_delivery_latency_sum_ms += duration
+            for bucket in _WEBHOOK_DELIVERY_LATENCY_BUCKETS_MS:
+                if duration <= bucket:
+                    _webhook_delivery_latency_buckets[bucket] += 1
+
+
 def metrics_snapshot() -> dict[str, Any]:
     with _metrics_lock:
+        latency_buckets = {
+            f"le_{bucket}_ms": _webhook_delivery_latency_buckets[bucket]
+            for bucket in _WEBHOOK_DELIVERY_LATENCY_BUCKETS_MS
+        }
+        latency_buckets["le_inf_ms"] = _webhook_delivery_latency_count
         return {
             "uptime_seconds": int(time.time() - _metrics_started_at),
             "requests_total": sum(_request_counts.values()),
@@ -104,4 +135,10 @@ def metrics_snapshot() -> dict[str, Any]:
             "responses_by_status": dict(_status_counts),
             "slow_requests_total": _slow_request_count,
             "error_requests_total": _error_request_count,
+            "webhook_delivery_attempts_total": dict(_webhook_delivery_counts),
+            "webhook_delivery_duration_ms": {
+                "count": _webhook_delivery_latency_count,
+                "sum": _webhook_delivery_latency_sum_ms,
+                "buckets": latency_buckets,
+            },
         }

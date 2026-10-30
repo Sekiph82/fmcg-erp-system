@@ -10,9 +10,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 - Current Milestone: M31 — API / Event Architecture
 - Current Sprint: M31.S03 — Delivery Engine
-- Current Task: M31.S03.T004 — Webhook signing/secret rotation
+- Current Task: M31.S04.T001 — Delivery metrics/logs/traces
 - Current Task Status: COMPLETE
-- Next Task/Action: M31.S04.T001 — Delivery metrics/logs/traces
+- Next Task/Action: M31.S04.T002 — Event/API permission tests
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -999,7 +999,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
   Evidence: coordination/sessions/M31.S03.T004/CODEX_LOG_V01.md (52 focused M31 tests passed; T004 12 passed; task-owned disposable PostgreSQL 2 passed at 20261030_0004 head; py_compile, frontend type-check, diff check, independent read-only review). Selected M31.S04.T001 Delivery metrics/logs/traces: all M31.S01-S03 prerequisites are complete and it is the first S04 verification task dependent on the completed delivery engine.
 
 ## M31.S04 — Observability & Verification
-- [ ] M31.S04.T001 — Delivery metrics/logs/traces
+- [x] M31.S04.T001 — Delivery metrics/logs/traces
+  Evidence: coordination/sessions/M31.S04.T001/CODEX_LOG_V01.md (58 focused M31 tests passed; production-config/observability checks 6 passed; py_compile and diff check passed; independent review passed). Selected M31.S04.T002 Event/API permission tests next: the delivery engine and first observability slice are complete; security permission verification is the next high-priority M31 acceptance gate before reliability tests/closeout.
 - [ ] M31.S04.T002 — Event/API permission tests
 - [ ] M31.S04.T003 — Failure/replay/idempotency tests
 - [ ] M31.S04.T004 — Close M31
