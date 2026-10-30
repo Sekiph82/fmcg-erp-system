@@ -1,6 +1,9 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
-import { procurementApi, RFQRead, RFQDetail, RFQStatus } from "@/lib/procurement";
+import {
+  procurementApi, RFQRead, RFQDetail, RFQStatus,
+  RFQEvaluationCriterionRead, RFQEvaluationDimension, RFQResponseRead,
+} from "@/lib/procurement";
 import { suppliersApi, Supplier } from "@/lib/suppliers";
 
 const STATUS_COLORS: Record<RFQStatus, string> = {
@@ -26,6 +29,12 @@ export default function RFQPage() {
   const [error, setError] = useState("");
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [selectedSupplierIds, setSelectedSupplierIds] = useState<string[]>([]);
+  const [criteriaDraft, setCriteriaDraft] = useState([
+    { code: "TECHNICAL_FIT", name: "Technical fit", dimension: "TECHNICAL" as RFQEvaluationDimension, weight_percent: "50", is_mandatory: true },
+    { code: "COMMERCIAL_VALUE", name: "Commercial value", dimension: "COMMERCIAL" as RFQEvaluationDimension, weight_percent: "50", is_mandatory: false },
+  ]);
+  const [activeEvaluationResponseId, setActiveEvaluationResponseId] = useState<string | null>(null);
+  const [evaluationDraft, setEvaluationDraft] = useState<Record<string, { score: string; passes_gate: boolean | null; comments: string }>>({});
 
   // Response form
   const [showResponse, setShowResponse] = useState(false);
@@ -55,8 +64,15 @@ export default function RFQPage() {
   const openDetail = async (id: string) => {
     setDetailLoading(true);
     setSelected(null);
+    setActiveEvaluationResponseId(null);
     try {
       const detail = await procurementApi.getRFQ(id);
+      if (detail.evaluation_criteria.length === 0) {
+        setCriteriaDraft([
+          { code: "TECHNICAL_FIT", name: "Technical fit", dimension: "TECHNICAL", weight_percent: "50", is_mandatory: true },
+          { code: "COMMERCIAL_VALUE", name: "Commercial value", dimension: "COMMERCIAL", weight_percent: "50", is_mandatory: false },
+        ]);
+      }
       setSelected(detail);
     } finally {
       setDetailLoading(false);
@@ -126,6 +142,64 @@ export default function RFQPage() {
       setSaving(false);
     }
   };
+
+  const saveEvaluationMatrix = async () => {
+    if (!selected) return;
+    setSaving(true); setError("");
+    try {
+      await procurementApi.createRFQEvaluationMatrix(selected.id, {
+        criteria: criteriaDraft.map((criterion) => ({
+          ...criterion,
+          weight_percent: parseFloat(criterion.weight_percent),
+        })),
+      });
+      setSelected(await procurementApi.getRFQ(selected.id));
+    } catch {
+      setError("Could not save the matrix. Use unique codes, include both dimensions, and make weights total exactly 100%.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const startEvaluation = (response: RFQResponseRead, criteria: RFQEvaluationCriterionRead[]) => {
+    setActiveEvaluationResponseId(response.id);
+    setEvaluationDraft(Object.fromEntries(criteria.map((criterion) => {
+      const existing = response.evaluations.find((item) => item.criterion_id === criterion.id);
+      return [criterion.id, {
+        score: existing ? String(existing.score) : "",
+        passes_gate: criterion.is_mandatory ? (existing?.passes_gate ?? null) : null,
+        comments: existing?.comments ?? "",
+      }];
+    })));
+  };
+
+  const submitEvaluation = async (responseId: string) => {
+    if (!selected) return;
+    setSaving(true); setError("");
+    try {
+      await procurementApi.submitRFQResponseEvaluations(selected.id, responseId, {
+        evaluations: selected.evaluation_criteria.map((criterion) => ({
+          criterion_id: criterion.id,
+          score: Number(evaluationDraft[criterion.id]?.score),
+          passes_gate: criterion.is_mandatory ? evaluationDraft[criterion.id]?.passes_gate : null,
+          comments: evaluationDraft[criterion.id]?.comments || null,
+        })),
+      });
+      setSelected(await procurementApi.getRFQ(selected.id));
+      setActiveEvaluationResponseId(null);
+    } catch {
+      setError("Could not record evaluation. Enter a 0–100 score for every criterion and pass/fail for mandatory gates.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const criteriaWeightTotal = criteriaDraft.reduce((sum, criterion) => sum + (Number(criterion.weight_percent) || 0), 0);
+  const evaluationMatrixReady = criteriaDraft.length >= 2
+    && Math.abs(criteriaWeightTotal - 100) < 0.001
+    && new Set(criteriaDraft.map((criterion) => criterion.dimension)).size === 2
+    && new Set(criteriaDraft.map((criterion) => criterion.code.trim().toUpperCase())).size === criteriaDraft.length
+    && criteriaDraft.every((criterion) => criterion.code.trim().length >= 2 && criterion.name.trim().length >= 2);
 
   return (
     <div className="p-6 space-y-5">
@@ -275,6 +349,129 @@ export default function RFQPage() {
                   </div>
                 )}
               </div>
+
+              {(selected.status === "SENT" || selected.status === "RESPONSES_RECEIVED") && (
+                <div className="border-t pt-3 space-y-3">
+                  <div>
+                    <p className="text-xs font-semibold text-gray-700">Bid evaluation</p>
+                    <p className="text-[11px] text-gray-500 mt-1">Set a separate, buyer-configured matrix for this RFQ. Example values are editable and are not organization-wide policy.</p>
+                  </div>
+                  {selected.evaluation_criteria.length === 0 ? (
+                    selected.access?.can_edit ? <div className="space-y-2">
+                      {criteriaDraft.map((criterion, index) => (
+                        <div key={`${criterion.code}-${index}`} className="grid grid-cols-2 gap-2 rounded border p-2">
+                          <input aria-label={`Criterion ${index + 1} code`} value={criterion.code}
+                            onChange={(event) => setCriteriaDraft((rows) => rows.map((row, rowIndex) => rowIndex === index ? { ...row, code: event.target.value } : row))}
+                            className="border rounded px-2 py-1 text-xs" placeholder="Code" />
+                          <input aria-label={`Criterion ${index + 1} name`} value={criterion.name}
+                            onChange={(event) => setCriteriaDraft((rows) => rows.map((row, rowIndex) => rowIndex === index ? { ...row, name: event.target.value } : row))}
+                            className="border rounded px-2 py-1 text-xs" placeholder="Criterion name" />
+                          <select aria-label={`Criterion ${index + 1} dimension`} value={criterion.dimension}
+                            onChange={(event) => setCriteriaDraft((rows) => rows.map((row, rowIndex) => rowIndex === index ? { ...row, dimension: event.target.value as RFQEvaluationDimension } : row))}
+                            className="border rounded px-2 py-1 text-xs">
+                            <option value="TECHNICAL">Technical</option>
+                            <option value="COMMERCIAL">Commercial</option>
+                          </select>
+                          <label className="flex items-center gap-2 text-xs text-gray-600">
+                            Weight %
+                            <input aria-label={`Criterion ${index + 1} weight`} type="number" min="0.01" max="100" step="0.01" value={criterion.weight_percent}
+                              onChange={(event) => setCriteriaDraft((rows) => rows.map((row, rowIndex) => rowIndex === index ? { ...row, weight_percent: event.target.value } : row))}
+                              className="w-20 border rounded px-2 py-1" />
+                          </label>
+                          <label className="col-span-2 flex items-center gap-2 text-xs text-gray-600">
+                            <input type="checkbox" checked={criterion.is_mandatory}
+                              onChange={(event) => setCriteriaDraft((rows) => rows.map((row, rowIndex) => rowIndex === index ? { ...row, is_mandatory: event.target.checked } : row))} />
+                            Mandatory pass/fail gate
+                          </label>
+                        </div>
+                      ))}
+                      <div className="flex items-center justify-between text-xs">
+                        <button type="button" onClick={() => setCriteriaDraft((rows) => [...rows, {
+                          code: `CRITERION_${rows.length + 1}`, name: "New criterion", dimension: "COMMERCIAL", weight_percent: "10", is_mandatory: false,
+                        }])} className="text-blue-600 hover:underline">+ Add criterion</button>
+                        <span className={evaluationMatrixReady ? "text-green-700" : "text-amber-700"}>
+                          Total: {criteriaWeightTotal.toFixed(2)}%
+                        </span>
+                      </div>
+                      <button type="button" onClick={saveEvaluationMatrix} disabled={saving || !evaluationMatrixReady}
+                        className="w-full rounded bg-indigo-600 px-3 py-2 text-xs font-medium text-white disabled:opacity-50">
+                        {saving ? "Saving…" : "Save RFQ evaluation matrix"}
+                      </button>
+                    </div> : <p className="text-xs text-gray-500">An evaluation matrix has not been configured for this RFQ.</p>
+                  ) : (
+                    <div className="space-y-3">
+                      <ul className="space-y-1">
+                        {selected.evaluation_criteria.map((criterion) => (
+                          <li key={criterion.id} className="text-[11px] text-gray-600">
+                            {criterion.dimension}: {criterion.name} · {Number(criterion.weight_percent).toFixed(2)}%{criterion.is_mandatory ? " · mandatory gate" : ""}
+                          </li>
+                        ))}
+                      </ul>
+                      {selected.responses.filter((response) => response.status === "SUBMITTED").map((response) => (
+                        <div key={response.id} className="rounded border bg-gray-50 p-2 space-y-2">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-xs font-medium text-gray-700">{response.supplier_name ?? response.supplier_id}</span>
+                            <span className={`text-[11px] ${response.evaluation_status === "DISQUALIFIED" ? "text-red-700" : response.evaluation_status === "QUALIFIED" ? "text-green-700" : "text-gray-500"}`}>
+                              {response.evaluation_status.replace("_", " ")}{response.score != null ? ` · ${Number(response.score).toFixed(2)}/100` : ""}
+                            </span>
+                          </div>
+                          {activeEvaluationResponseId === response.id ? (
+                            <div className="space-y-2">
+                              {selected.evaluation_criteria.map((criterion) => {
+                                const previous = response.evaluations.find((item) => item.criterion_id === criterion.id);
+                                const draft = evaluationDraft[criterion.id] ?? { score: "", passes_gate: null, comments: "" };
+                                return (
+                                  <div key={criterion.id} className="grid grid-cols-2 gap-2 border-t pt-2">
+                                    <label className="text-[11px] text-gray-600">
+                                      {criterion.name} score (0–100)
+                                      <input type="number" min="0" max="100" step="0.01" value={draft.score}
+                                        onChange={(event) => setEvaluationDraft((current) => ({ ...current, [criterion.id]: { ...draft, score: event.target.value } }))}
+                                        className="mt-1 w-full border rounded px-2 py-1 text-xs" />
+                                    </label>
+                                    {criterion.is_mandatory ? (
+                                      <label className="text-[11px] text-gray-600">Mandatory gate decision
+                                        <select value={draft.passes_gate === null ? "" : String(draft.passes_gate)}
+                                          onChange={(event) => setEvaluationDraft((current) => ({ ...current, [criterion.id]: { ...draft, passes_gate: event.target.value === "" ? null : event.target.value === "true" } }))}
+                                          className="mt-1 w-full border rounded px-2 py-1 text-xs">
+                                          <option value="">Select pass/fail</option><option value="true">Pass</option><option value="false">Fail</option>
+                                        </select>
+                                      </label>
+                                    ) : <div className="text-[11px] text-gray-500 self-center">{previous ? `Previous revision ${previous.revision_no}` : "No prior score"}</div>}
+                                    <input aria-label={`${criterion.name} evaluation comments`} value={draft.comments}
+                                      onChange={(event) => setEvaluationDraft((current) => ({ ...current, [criterion.id]: { ...draft, comments: event.target.value } }))}
+                                      className="col-span-2 border rounded px-2 py-1 text-xs" placeholder="Evaluation notes (optional)" />
+                                  </div>
+                                );
+                              })}
+                              <div className="flex gap-2">
+                              <button type="button" onClick={() => submitEvaluation(response.id)}
+                                disabled={saving || selected.evaluation_criteria.some((criterion) => {
+                                  const draft = evaluationDraft[criterion.id];
+                                  const score = Number(draft?.score);
+                                  return !draft?.score.trim() || !Number.isFinite(score) || score < 0 || score > 100 || (criterion.is_mandatory && draft.passes_gate === null);
+                                })}
+                                  className="flex-1 rounded bg-indigo-600 px-2 py-1.5 text-xs text-white disabled:opacity-50">Save evaluation revision</button>
+                                <button type="button" onClick={() => setActiveEvaluationResponseId(null)} className="rounded border px-2 py-1.5 text-xs">Cancel</button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="space-y-1">
+                              {response.evaluation_history.map((evaluation) => (
+                                <p key={`${evaluation.criterion_id}-${evaluation.revision_no}`} className="text-[11px] text-gray-500">
+                                  {evaluation.criterion_name ?? evaluation.criterion_code}: {Number(evaluation.score).toFixed(2)} · revision {evaluation.revision_no}{evaluation.passes_gate === null || evaluation.passes_gate === undefined ? "" : evaluation.passes_gate ? " · gate passed" : " · gate failed"} · {evaluation.evaluator_id ? `evaluator ${evaluation.evaluator_id.slice(0, 8)}` : "unattributed"} · {new Date(evaluation.evaluated_at).toLocaleString()}{evaluation.comments ? ` · ${evaluation.comments}` : ""}
+                                </p>
+                              ))}
+                              {selected.access?.can_edit && <button type="button" onClick={() => startEvaluation(response, selected.evaluation_criteria)} className="text-xs text-indigo-700 hover:underline">
+                                {response.evaluations.length > 0 ? "Record new evaluation revision" : "Evaluate bid"}
+                              </button>}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {selected.awarded_supplier_name && (
                 <div className="bg-green-50 border border-green-200 rounded p-3">

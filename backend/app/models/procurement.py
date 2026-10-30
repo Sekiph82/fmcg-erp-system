@@ -317,6 +317,17 @@ class RFQInvitationStatus(str, enum.Enum):
     ISSUED = "ISSUED"
 
 
+class RFQEvaluationDimension(str, enum.Enum):
+    TECHNICAL = "TECHNICAL"
+    COMMERCIAL = "COMMERCIAL"
+
+
+class RFQEvaluationStatus(str, enum.Enum):
+    NOT_EVALUATED = "NOT_EVALUATED"
+    QUALIFIED = "QUALIFIED"
+    DISQUALIFIED = "DISQUALIFIED"
+
+
 class BPAStatus(str, enum.Enum):
     ACTIVE = "ACTIVE"
     EXPIRED = "EXPIRED"
@@ -359,6 +370,12 @@ class RFQRequest(Base, TimestampMixin):
         back_populates="rfq",
         cascade="all, delete-orphan",
         order_by="RFQLine.line_no",
+    )
+    evaluation_criteria = relationship(
+        "RFQEvaluationCriterion",
+        back_populates="rfq",
+        cascade="all, delete-orphan",
+        order_by="RFQEvaluationCriterion.code",
     )
 
 
@@ -428,11 +445,85 @@ class RFQResponse(Base, TimestampMixin):
         ForeignKey("users.id", ondelete="SET NULL", name="fk_rfq_responses_submitted_by_id_users"),
         nullable=True,
     )
+    evaluation_status = Column(
+        Enum(RFQEvaluationStatus), nullable=False, default=RFQEvaluationStatus.NOT_EVALUATED
+    )
 
     rfq = relationship("RFQRequest", back_populates="responses")
     supplier = relationship("Supplier")
     invitation_issued_by = relationship("User", foreign_keys=[invitation_issued_by_id])
     submitted_by = relationship("User", foreign_keys=[submitted_by_id])
+    evaluations = relationship(
+        "RFQResponseEvaluation",
+        back_populates="response",
+        cascade="all, delete-orphan",
+        order_by="RFQResponseEvaluation.criterion_id, RFQResponseEvaluation.revision_no",
+    )
+
+
+class RFQEvaluationCriterion(Base, TimestampMixin):
+    """Buyer-configured weighted criterion for comparing bids in one RFQ."""
+
+    __tablename__ = "rfq_evaluation_criteria"
+    __table_args__ = (
+        UniqueConstraint("rfq_id", "code", name="uq_rfq_evaluation_criterion_code"),
+        CheckConstraint(
+            "weight_percent > 0 AND weight_percent <= 100 AND weight_percent NOT IN ('NaN', 'Infinity', '-Infinity')",
+            name="ck_rfq_evaluation_criterion_weight_range",
+        ),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    rfq_id = Column(
+        UUID(as_uuid=True), ForeignKey("rfq_requests.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    code = Column(String(50), nullable=False)
+    name = Column(String(200), nullable=False)
+    dimension = Column(Enum(RFQEvaluationDimension), nullable=False)
+    weight_percent = Column(Numeric(5, 2), nullable=False)
+    is_mandatory = Column(Boolean, nullable=False, default=False)
+    created_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+
+    rfq = relationship("RFQRequest", back_populates="evaluation_criteria")
+    created_by = relationship("User")
+    evaluations = relationship("RFQResponseEvaluation", back_populates="criterion", cascade="all, delete-orphan")
+
+
+class RFQResponseEvaluation(Base, TimestampMixin):
+    """Actor-attributed score for one supplier response and RFQ criterion."""
+
+    __tablename__ = "rfq_response_evaluations"
+    __table_args__ = (
+        UniqueConstraint(
+            "response_id", "criterion_id", "revision_no", name="uq_rfq_response_evaluation_revision"
+        ),
+        CheckConstraint("revision_no >= 1", name="ck_rfq_response_evaluation_revision_positive"),
+        CheckConstraint(
+            "score >= 0 AND score <= 100 AND score NOT IN ('NaN', 'Infinity', '-Infinity')",
+            name="ck_rfq_response_evaluation_score_range",
+        ),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    response_id = Column(
+        UUID(as_uuid=True), ForeignKey("rfq_responses.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    criterion_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("rfq_evaluation_criteria.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    revision_no = Column(Integer, nullable=False, default=1)
+    score = Column(Numeric(5, 2), nullable=False)
+    passes_gate = Column(Boolean, nullable=True)
+    comments = Column(String(1000), nullable=True)
+    evaluator_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    evaluated_at = Column(DateTime(timezone=True), nullable=False)
+
+    response = relationship("RFQResponse", back_populates="evaluations")
+    criterion = relationship("RFQEvaluationCriterion", back_populates="evaluations")
+    evaluator = relationship("User")
 
 
 class BlanketPurchaseAgreement(Base, TimestampMixin):

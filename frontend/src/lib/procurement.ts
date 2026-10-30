@@ -4,6 +4,8 @@ export type PRStatus = "DRAFT" | "PENDING_APPROVAL" | "APPROVED" | "CONVERTED" |
 export type RFQStatus = "DRAFT" | "SENT" | "RESPONSES_RECEIVED" | "AWARDED" | "CANCELLED";
 export type RFQResponseStatus = "PENDING" | "SUBMITTED" | "AWARDED" | "REJECTED";
 export type RFQInvitationStatus = "PENDING" | "ISSUED";
+export type RFQEvaluationDimension = "TECHNICAL" | "COMMERCIAL";
+export type RFQEvaluationStatus = "NOT_EVALUATED" | "QUALIFIED" | "DISQUALIFIED";
 export type BPAStatus = "ACTIVE" | "EXPIRED" | "CANCELLED";
 export type POStatus = "DRAFT" | "APPROVED" | "ORDERED" | "PARTIALLY_RECEIVED" | "RECEIVED" | "CANCELLED";
 export type GRNStatus = "DRAFT" | "POSTED";
@@ -277,8 +279,36 @@ export interface RFQResponseRead {
   invitation_issued_by_id?: string;
   submitted_at?: string;
   submitted_by_id?: string;
+  evaluation_status: RFQEvaluationStatus;
   score?: number;
+  evaluations: RFQResponseEvaluationRead[];
+  evaluation_history: RFQResponseEvaluationRead[];
   created_at: string;
+}
+
+export interface RFQEvaluationCriterionRead {
+  id: string;
+  rfq_id: string;
+  code: string;
+  name: string;
+  dimension: RFQEvaluationDimension;
+  weight_percent: number;
+  is_mandatory: boolean;
+}
+
+export interface RFQResponseEvaluationRead {
+  id: string;
+  criterion_id: string;
+  criterion_code?: string;
+  criterion_name?: string;
+  dimension?: RFQEvaluationDimension;
+  weight_percent?: number;
+  revision_no: number;
+  score: number;
+  passes_gate?: boolean;
+  comments?: string;
+  evaluator_id?: string;
+  evaluated_at: string;
 }
 
 export interface RFQLineRead {
@@ -319,6 +349,7 @@ export interface RFQRead extends ProcurementScopeFields {
 export interface RFQDetail extends RFQRead {
   responses: RFQResponseRead[];
   lines: RFQLineRead[];
+  evaluation_criteria: RFQEvaluationCriterionRead[];
 }
 
 export interface BlanketAgreement extends ProcurementScopeFields {
@@ -559,6 +590,16 @@ export const procurementApi = {
   },
   async issueRFQInvitations(id: string): Promise<RFQDetail> {
     const res = await apiClient.post<RFQDetail>(`/api/v1/procurement/rfq/${id}/issue-invitations`);
+    return res.data;
+  },
+  async createRFQEvaluationMatrix(id: string, data: object): Promise<RFQEvaluationCriterionRead[]> {
+    const res = await apiClient.post<RFQEvaluationCriterionRead[]>(`/api/v1/procurement/rfq/${id}/evaluation-matrix`, data);
+    return res.data;
+  },
+  async submitRFQResponseEvaluations(rfqId: string, responseId: string, data: object): Promise<RFQResponseEvaluationRead[]> {
+    const res = await apiClient.put<RFQResponseEvaluationRead[]>(
+      `/api/v1/procurement/rfq/${rfqId}/responses/${responseId}/evaluations`, data,
+    );
     return res.data;
   },
   async addRFQResponse(rfqId: string, data: object): Promise<RFQResponseRead> {

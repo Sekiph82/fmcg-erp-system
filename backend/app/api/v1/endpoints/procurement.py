@@ -22,7 +22,8 @@ from app.models.procurement import (
     GoodsReceipt, GRNLine, ImportShipment, SupplierEvaluation,
     RFQRequest, RFQLine, RFQResponse, BlanketPurchaseAgreement, AutoReorderPolicy,
     ProcurementApprovalRule,
-    PRStatus, POStatus, RFQStatus, RFQResponseStatus, RFQInvitationStatus, BPAStatus,
+    PRStatus, POStatus, RFQStatus, RFQResponseStatus, RFQInvitationStatus,
+    RFQEvaluationStatus, RFQEvaluationCriterion, RFQResponseEvaluation, BPAStatus,
 )
 from decimal import Decimal as _Decimal
 from app.models.master import Supplier
@@ -36,6 +37,8 @@ from app.schemas.procurement import (
     InboundScheduleRow, DeliveryAlertRow,
     SupplierPaymentCreate, SupplierPaymentRead,
     RFQCreate, RFQUpdate, RFQRead, RFQDetailRead, RFQLineRead, RFQResponseCreate, RFQResponseRead,
+    RFQEvaluationMatrixCreate, RFQEvaluationCriterionRead, RFQResponseEvaluationSubmit,
+    RFQResponseEvaluationRead,
     BlanketAgreementCreate, BlanketAgreementUpdate, BlanketAgreementRead,
     AutoReorderPolicyCreate, AutoReorderPolicyUpdate, AutoReorderPolicyRead,
     ProcurementApprovalRuleCreate, ProcurementApprovalRuleUpdate, ProcurementApprovalRuleRead,
@@ -841,8 +844,10 @@ async def create_rfq(
     result = await db.execute(
         select(RFQRequest).options(
             selectinload(RFQRequest.responses).selectinload(RFQResponse.supplier),
+            selectinload(RFQRequest.responses).selectinload(RFQResponse.evaluations).selectinload(RFQResponseEvaluation.criterion),
             selectinload(RFQRequest.awarded_supplier),
             selectinload(RFQRequest.lines),
+            selectinload(RFQRequest.evaluation_criteria),
         ).where(RFQRequest.id == rfq.id)
     )
     rfq = result.scalar_one()
@@ -858,8 +863,10 @@ async def get_rfq(
     result = await db.execute(
         select(RFQRequest).options(
             selectinload(RFQRequest.responses).selectinload(RFQResponse.supplier),
+            selectinload(RFQRequest.responses).selectinload(RFQResponse.evaluations).selectinload(RFQResponseEvaluation.criterion),
             selectinload(RFQRequest.awarded_supplier),
             selectinload(RFQRequest.lines),
+            selectinload(RFQRequest.evaluation_criteria),
         ).where(RFQRequest.id == rfq_id)
     )
     rfq = result.scalar_one_or_none()
@@ -914,8 +921,10 @@ async def update_rfq(
     result = await db.execute(
         select(RFQRequest).options(
             selectinload(RFQRequest.responses).selectinload(RFQResponse.supplier),
+            selectinload(RFQRequest.responses).selectinload(RFQResponse.evaluations).selectinload(RFQResponseEvaluation.criterion),
             selectinload(RFQRequest.awarded_supplier),
             selectinload(RFQRequest.lines),
+            selectinload(RFQRequest.evaluation_criteria),
         ).where(RFQRequest.id == rfq_id)
     )
     return _build_rfq_detail(result.scalar_one(), current_user)
@@ -931,8 +940,10 @@ async def issue_rfq_invitations(
         select(RFQRequest)
         .options(
             selectinload(RFQRequest.responses).selectinload(RFQResponse.supplier),
+            selectinload(RFQRequest.responses).selectinload(RFQResponse.evaluations).selectinload(RFQResponseEvaluation.criterion),
             selectinload(RFQRequest.awarded_supplier),
             selectinload(RFQRequest.lines),
+            selectinload(RFQRequest.evaluation_criteria),
         )
         .where(RFQRequest.id == rfq_id)
         .with_for_update()
@@ -996,11 +1007,165 @@ async def add_rfq_response(
     rfq.status = RFQStatus.RESPONSES_RECEIVED
     await db.commit()
     await db.refresh(resp)
-    rr = RFQResponseRead.model_validate(resp)
+    rr = _build_rfq_response_read(resp)
     supplier_result = await db.execute(select(Supplier).where(Supplier.id == resp.supplier_id))
     s = supplier_result.scalar_one_or_none()
     rr.supplier_name = s.name if s else None
     return rr
+
+
+@router.post("/rfq/{rfq_id}/evaluation-matrix", response_model=List[RFQEvaluationCriterionRead])
+async def create_rfq_evaluation_matrix(
+    rfq_id: uuid.UUID,
+    body: RFQEvaluationMatrixCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    result = await db.execute(select(RFQRequest).where(RFQRequest.id == rfq_id).with_for_update())
+    rfq = result.scalar_one_or_none()
+    if not rfq:
+        raise HTTPException(404, "RFQ not found")
+    _require_procurement_action(current_user, rfq, "edit")
+    if rfq.status != RFQStatus.SENT:
+        raise HTTPException(409, "Configure the evaluation matrix after issuing invitations and before the first bid is received.")
+    existing = await db.execute(
+        select(RFQEvaluationCriterion.id).where(RFQEvaluationCriterion.rfq_id == rfq_id).limit(1)
+    )
+    if existing.scalar_one_or_none() is not None:
+        raise HTTPException(409, "The RFQ evaluation matrix already exists and is immutable.")
+    criteria = [
+        RFQEvaluationCriterion(rfq_id=rfq_id, created_by_id=current_user.id, **item.model_dump())
+        for item in body.criteria
+    ]
+    db.add_all(criteria)
+    await db.commit()
+    return [RFQEvaluationCriterionRead.model_validate(item) for item in criteria]
+
+
+@router.put(
+    "/rfq/{rfq_id}/responses/{response_id}/evaluations",
+    response_model=List[RFQResponseEvaluationRead],
+)
+async def submit_rfq_response_evaluations(
+    rfq_id: uuid.UUID,
+    response_id: uuid.UUID,
+    body: RFQResponseEvaluationSubmit,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    rfq_result = await db.execute(select(RFQRequest).where(RFQRequest.id == rfq_id).with_for_update())
+    rfq = rfq_result.scalar_one_or_none()
+    if not rfq:
+        raise HTTPException(404, "RFQ not found")
+    _require_procurement_action(current_user, rfq, "edit")
+    if rfq.status != RFQStatus.RESPONSES_RECEIVED:
+        raise HTTPException(409, "Only an open RFQ with submitted bids can be evaluated.")
+
+    response_result = await db.execute(
+        select(RFQResponse)
+        .where(RFQResponse.id == response_id, RFQResponse.rfq_id == rfq_id)
+        .with_for_update()
+    )
+    response = response_result.scalar_one_or_none()
+    if not response or response.status != RFQResponseStatus.SUBMITTED:
+        raise HTTPException(404, "Submitted supplier bid not found for this RFQ.")
+
+    criteria_result = await db.execute(
+        select(RFQEvaluationCriterion)
+        .where(RFQEvaluationCriterion.rfq_id == rfq_id)
+        .order_by(RFQEvaluationCriterion.code)
+    )
+    criteria = criteria_result.scalars().all()
+    if not criteria:
+        raise HTTPException(409, "Configure a technical/commercial evaluation matrix before scoring bids.")
+    criterion_ids = {criterion.id for criterion in criteria}
+    supplied_ids = {item.criterion_id for item in body.evaluations}
+    if supplied_ids != criterion_ids:
+        raise HTTPException(422, "Each matrix criterion must be scored exactly once in one evaluation revision.")
+    criteria_by_id = {criterion.id: criterion for criterion in criteria}
+    inputs_by_id = {item.criterion_id: item for item in body.evaluations}
+    for criterion in criteria:
+        submitted = inputs_by_id[criterion.id]
+        if criterion.is_mandatory and submitted.passes_gate is None:
+            raise HTTPException(422, f"Mandatory criterion {criterion.code} requires an explicit pass/fail decision.")
+        if not criterion.is_mandatory and submitted.passes_gate is not None:
+            raise HTTPException(422, f"Non-mandatory criterion {criterion.code} must not carry a gate decision.")
+
+    latest_revision_result = await db.execute(
+        select(RFQResponseEvaluation.criterion_id, func.max(RFQResponseEvaluation.revision_no))
+        .where(RFQResponseEvaluation.response_id == response.id)
+        .group_by(RFQResponseEvaluation.criterion_id)
+    )
+    revision_by_criterion = {criterion_id: (revision or 0) for criterion_id, revision in latest_revision_result.all()}
+    evaluated_at = datetime.now(timezone.utc)
+    evaluation_rows = []
+    weighted_total = Decimal("0")
+    failed_gate = False
+    for criterion_id, item in inputs_by_id.items():
+        criterion = criteria_by_id[criterion_id]
+        revision_no = revision_by_criterion.get(criterion_id, 0) + 1
+        evaluation_rows.append(
+            RFQResponseEvaluation(
+                response_id=response.id,
+                criterion_id=criterion_id,
+                revision_no=revision_no,
+                score=item.score,
+                passes_gate=item.passes_gate,
+                comments=item.comments,
+                evaluator_id=current_user.id,
+                evaluated_at=evaluated_at,
+            )
+        )
+        weighted_total += item.score * criterion.weight_percent / Decimal("100")
+        failed_gate = failed_gate or (criterion.is_mandatory and item.passes_gate is False)
+    db.add_all(evaluation_rows)
+    response.score = weighted_total.quantize(Decimal("0.01"))
+    response.evaluation_status = (
+        RFQEvaluationStatus.DISQUALIFIED if failed_gate else RFQEvaluationStatus.QUALIFIED
+    )
+    await db.commit()
+
+    persisted = await db.execute(
+        select(RFQResponseEvaluation)
+        .options(selectinload(RFQResponseEvaluation.criterion))
+        .where(RFQResponseEvaluation.response_id == response.id)
+        .order_by(RFQResponseEvaluation.criterion_id, RFQResponseEvaluation.revision_no)
+    )
+    history = persisted.scalars().all()
+    return [_build_evaluation_read(item) for item in history]
+
+
+def _build_evaluation_read(evaluation: RFQResponseEvaluation) -> RFQResponseEvaluationRead:
+    row = RFQResponseEvaluationRead.model_validate(evaluation)
+    row.criterion_code = evaluation.criterion.code
+    row.criterion_name = evaluation.criterion.name
+    row.dimension = evaluation.criterion.dimension
+    row.weight_percent = evaluation.criterion.weight_percent
+    return row
+
+
+def _build_rfq_response_read(response: RFQResponse) -> RFQResponseRead:
+    fields = (
+        "id",
+        "rfq_id",
+        "supplier_id",
+        "quoted_unit_price",
+        "quoted_currency",
+        "lead_time_days",
+        "valid_until",
+        "payment_terms",
+        "notes",
+        "status",
+        "invitation_status",
+        "invitation_issued_at",
+        "invitation_issued_by_id",
+        "submitted_at",
+        "submitted_by_id",
+        "evaluation_status",
+        "score",
+        "created_at",
+    )
+    return RFQResponseRead(**{field: getattr(response, field) for field in fields})
 
 
 def _build_rfq_detail(rfq: RFQRequest, current_user=None) -> RFQDetailRead:
@@ -1011,11 +1176,19 @@ def _build_rfq_detail(rfq: RFQRequest, current_user=None) -> RFQDetailRead:
     r.line_count = len(rfq.lines)
     responses = []
     for resp in rfq.responses:
-        rr = RFQResponseRead.model_validate(resp)
+        rr = _build_rfq_response_read(resp)
         rr.supplier_name = resp.supplier.name if resp.supplier else None
+        latest_by_criterion = {}
+        for evaluation in resp.evaluations:
+            previous = latest_by_criterion.get(evaluation.criterion_id)
+            if previous is None or evaluation.revision_no > previous.revision_no:
+                latest_by_criterion[evaluation.criterion_id] = evaluation
+        rr.evaluations = [_build_evaluation_read(item) for item in latest_by_criterion.values()]
+        rr.evaluation_history = [_build_evaluation_read(item) for item in resp.evaluations]
         responses.append(rr)
     r.responses = responses
     r.lines = [RFQLineRead.model_validate(line) for line in rfq.lines]
+    r.evaluation_criteria = [RFQEvaluationCriterionRead.model_validate(item) for item in rfq.evaluation_criteria]
     return _with_access(r, current_user, rfq)
 
 

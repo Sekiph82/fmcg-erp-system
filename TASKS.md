@@ -10,9 +10,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 - Current Milestone: M34 — Strategic Procurement Upgrade
 - Current Sprint: M34.S01 — Strategic Sourcing
-- Current Task: M34.S01.T002 — Supplier invitation/bid workflow
+- Current Task: M34.S01.T003 — Commercial/technical evaluation matrix
 - Current Task Status: COMPLETE
-- Next Task/Action: M34.S01.T003 — Commercial/technical evaluation matrix
+- Next Task/Action: M34.S01.T004 — Award/split-award approval
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -1089,7 +1089,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
   Evidence: CODEX_LOG_V01.md: V06 disposable PostgreSQL full upgrade/downgrade/re-upgrade, 17 focused tests passed, 20261030_0005 head and container cleanup verified; frontend type-check/targeted ESLint, Python compilation, diff check, and independent read-only review passed.
 - [x] M34.S01.T002 — Supplier invitation/bid workflow
   Evidence: CODEX_LOG_V01.md: V05 disposable PostgreSQL migration round-trip and 9 focused tests passed, 20261030_0006 head and cleanup verified; bid/lifecycle safeguards, frontend type-check/targeted ESLint, Python compilation, diff check, and independent read-only review passed.
-- [ ] M34.S01.T003 — Commercial/technical evaluation matrix
+- [x] M34.S01.T003 — Commercial/technical evaluation matrix
+  Evidence: CODEX_LOG_V01.md: V09 disposable PostgreSQL migration adoption/reconciliation and downgrade cycle; 4 focused tests passed; schema guards rejected invalid check/PK; frontend typecheck/ESLint, Python compilation, diff check, and independent read-only review complete.
 - [ ] M34.S01.T004 — Award/split-award approval
 
 ## M34.S02 — Contracts & Blanket Procurement

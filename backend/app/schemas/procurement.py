@@ -8,7 +8,8 @@ from pydantic import BaseModel, computed_field, ConfigDict, Field, field_validat
 
 from app.models.procurement import (
     PRStatus, POStatus, GRNStatus, ImportShipmentStatus, POPaymentStatus,
-    RFQStatus, RFQResponseStatus, RFQInvitationStatus, BPAStatus, ProcurementApprovalDocumentType,
+    RFQStatus, RFQResponseStatus, RFQInvitationStatus, RFQEvaluationDimension, RFQEvaluationStatus,
+    BPAStatus, ProcurementApprovalDocumentType,
 )
 from app.models.finance import OperationalPostingStatus
 
@@ -554,7 +555,10 @@ class RFQResponseRead(BaseModel):
     invitation_issued_by_id: Optional[uuid.UUID]
     submitted_at: Optional[datetime]
     submitted_by_id: Optional[uuid.UUID]
+    evaluation_status: RFQEvaluationStatus
     score: Optional[Decimal]
+    evaluations: List["RFQResponseEvaluationRead"] = Field(default_factory=list)
+    evaluation_history: List["RFQResponseEvaluationRead"] = Field(default_factory=list)
     created_at: datetime
 
 
@@ -626,9 +630,119 @@ class RFQRead(ProcurementScopeFields):
     access: Optional[ProcurementAccessHint] = None
 
 
+class RFQEvaluationCriterionCreate(BaseModel):
+    code: str = Field(min_length=2, max_length=50)
+    name: str = Field(min_length=2, max_length=200)
+    dimension: RFQEvaluationDimension
+    weight_percent: Decimal = Field(gt=0, le=100)
+    is_mandatory: bool = False
+
+    @field_validator("code")
+    @classmethod
+    def normalize_criterion_code(cls, value: str) -> str:
+        normalized = value.strip().upper().replace(" ", "_")
+        if not normalized.replace("_", "").isalnum():
+            raise ValueError("criterion code may contain only letters, numbers, and underscores")
+        return normalized
+
+    @field_validator("name")
+    @classmethod
+    def trim_criterion_name(cls, value: str) -> str:
+        normalized = value.strip()
+        if len(normalized) < 2:
+            raise ValueError("criterion name must contain at least two characters")
+        return normalized
+
+    @field_validator("weight_percent")
+    @classmethod
+    def validate_weight_precision(cls, value: Decimal) -> Decimal:
+        try:
+            quantized = value.quantize(Decimal("0.01"))
+        except InvalidOperation as exc:
+            raise ValueError("weight_percent must fit NUMERIC(5, 2)") from exc
+        if not value.is_finite() or value <= 0 or value > 100 or quantized != value:
+            raise ValueError("weight_percent must be finite, positive, and have at most two decimal places")
+        return value
+
+
+class RFQEvaluationMatrixCreate(BaseModel):
+    criteria: List[RFQEvaluationCriterionCreate] = Field(min_length=2, max_length=30)
+
+    @model_validator(mode="after")
+    def validate_matrix(self):
+        codes = [item.code for item in self.criteria]
+        if len(set(codes)) != len(codes):
+            raise ValueError("evaluation criterion codes must be unique")
+        if {item.dimension for item in self.criteria} != {
+            RFQEvaluationDimension.TECHNICAL,
+            RFQEvaluationDimension.COMMERCIAL,
+        }:
+            raise ValueError("the evaluation matrix must include technical and commercial criteria")
+        if sum((item.weight_percent for item in self.criteria), Decimal("0")) != Decimal("100.00"):
+            raise ValueError("evaluation criterion weights must total exactly 100.00 percent")
+        return self
+
+
+class RFQEvaluationCriterionRead(BaseModel):
+    model_config = {"from_attributes": True}
+    id: uuid.UUID
+    rfq_id: uuid.UUID
+    code: str
+    name: str
+    dimension: RFQEvaluationDimension
+    weight_percent: Decimal
+    is_mandatory: bool
+
+
+class RFQResponseEvaluationInput(BaseModel):
+    criterion_id: uuid.UUID
+    score: Decimal = Field(ge=0, le=100)
+    passes_gate: Optional[bool] = None
+    comments: Optional[str] = Field(default=None, max_length=1000)
+
+    @field_validator("score")
+    @classmethod
+    def validate_evaluation_score(cls, value: Decimal) -> Decimal:
+        try:
+            quantized = value.quantize(Decimal("0.01"))
+        except InvalidOperation as exc:
+            raise ValueError("evaluation score must fit NUMERIC(5, 2)") from exc
+        if not value.is_finite() or value < 0 or value > 100 or quantized != value:
+            raise ValueError("evaluation score must be finite and between 0 and 100")
+        return value
+
+
+class RFQResponseEvaluationSubmit(BaseModel):
+    evaluations: List[RFQResponseEvaluationInput] = Field(min_length=1, max_length=30)
+
+    @model_validator(mode="after")
+    def unique_criteria(self):
+        ids = [item.criterion_id for item in self.evaluations]
+        if len(ids) != len(set(ids)):
+            raise ValueError("each matrix criterion may be scored only once per submission")
+        return self
+
+
+class RFQResponseEvaluationRead(BaseModel):
+    model_config = {"from_attributes": True}
+    id: uuid.UUID
+    criterion_id: uuid.UUID
+    criterion_code: Optional[str] = None
+    criterion_name: Optional[str] = None
+    dimension: Optional[RFQEvaluationDimension] = None
+    weight_percent: Optional[Decimal] = None
+    revision_no: int
+    score: Decimal
+    passes_gate: Optional[bool]
+    comments: Optional[str]
+    evaluator_id: Optional[uuid.UUID]
+    evaluated_at: datetime
+
+
 class RFQDetailRead(RFQRead):
-    responses: List[RFQResponseRead] = []
-    lines: List[RFQLineRead] = []
+    responses: List[RFQResponseRead] = Field(default_factory=list)
+    lines: List[RFQLineRead] = Field(default_factory=list)
+    evaluation_criteria: List[RFQEvaluationCriterionRead] = Field(default_factory=list)
 
 
 # ── Blanket Purchase Agreement ─────────────────────────────────────────────────
