@@ -8,12 +8,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
 from app.core.deps import get_current_user, get_current_active_superuser
-from app.models.webhook import DeliveryStatus
+from app.models.webhook import AuthType, DeliveryStatus
 from app.schemas.webhook import (
     DeliveryAttemptOut, EventDefinitionCreate, EventDefinitionOut, EventDefinitionUpdate,
     EventDefinitionVersionOut,
     EventLogOut, InboundEndpointCreate, InboundEndpointOut,
-    PublishEventRequest, ReplayRequest, RetryRequest,
+    PublishEventRequest, ReplayRequest, RetryRequest, WebhookSecretRotationOut,
     SubscriptionCreate, SubscriptionOut, SubscriptionUpdate,
     WebhookDashboard, WebhookReport,
 )
@@ -203,6 +203,7 @@ async def list_subscriptions(
     skip: int = 0,
     limit: int = Query(default=100, le=500),
     db: AsyncSession = Depends(get_db),
+    _=Depends(get_current_active_superuser),
 ):
     return await svc.list_subscriptions(db, active_only=active_only, skip=skip, limit=limit)
 
@@ -211,12 +212,17 @@ async def list_subscriptions(
 async def create_subscription(
     data: SubscriptionCreate,
     db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_active_superuser),
 ):
-    return await svc.create_subscription(db, data)
+    return await svc.create_subscription(db, data, actor=current_user)
 
 
 @router.get("/subscriptions/{sub_id}", response_model=SubscriptionOut)
-async def get_subscription(sub_id: UUID, db: AsyncSession = Depends(get_db)):
+async def get_subscription(
+    sub_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(get_current_active_superuser),
+):
     obj = await svc.get_subscription(db, sub_id)
     if not obj:
         raise HTTPException(404, "Subscription not found")
@@ -224,23 +230,57 @@ async def get_subscription(sub_id: UUID, db: AsyncSession = Depends(get_db)):
 
 
 @router.patch("/subscriptions/{sub_id}", response_model=SubscriptionOut)
-async def update_subscription(sub_id: UUID, data: SubscriptionUpdate, db: AsyncSession = Depends(get_db)):
-    obj = await svc.update_subscription(db, sub_id, data)
+async def update_subscription(
+    sub_id: UUID,
+    data: SubscriptionUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_active_superuser),
+):
+    try:
+        obj = await svc.update_subscription(db, sub_id, data, actor=current_user)
+    except svc.WebhookSecretRotationError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     if not obj:
         raise HTTPException(404, "Subscription not found")
     return obj
 
 
 @router.delete("/subscriptions/{sub_id}", status_code=204)
-async def delete_subscription(sub_id: UUID, db: AsyncSession = Depends(get_db)):
-    ok = await svc.delete_subscription(db, sub_id)
+async def delete_subscription(
+    sub_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_active_superuser),
+):
+    ok = await svc.delete_subscription(db, sub_id, actor=current_user)
     if not ok:
         raise HTTPException(404, "Subscription not found")
 
 
 @router.post("/subscriptions/{sub_id}/test")
-async def test_subscription(sub_id: UUID, db: AsyncSession = Depends(get_db)):
+async def test_subscription(
+    sub_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    _=Depends(get_current_active_superuser),
+):
     return await svc.test_subscription(db, sub_id)
+
+
+@router.post(
+    "/subscriptions/{sub_id}/rotate-secret",
+    response_model=WebhookSecretRotationOut,
+)
+async def rotate_subscription_secret(
+    sub_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_active_superuser),
+):
+    try:
+        result = await svc.rotate_subscription_secret(db, sub_id, actor=current_user)
+    except svc.WebhookSecretRotationError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    if result is None:
+        raise HTTPException(status_code=404, detail="Subscription not found")
+    return result
 
 
 # ── Delivery Attempts ─────────────────────────────────────────────────────────
@@ -302,7 +342,10 @@ async def process_pending(
 # ── Inbound Endpoints ─────────────────────────────────────────────────────────
 
 @router.get("/inbound-endpoints", response_model=List[InboundEndpointOut])
-async def list_inbound_endpoints(db: AsyncSession = Depends(get_db)):
+async def list_inbound_endpoints(
+    db: AsyncSession = Depends(get_db),
+    _=Depends(get_current_active_superuser),
+):
     return await svc.list_inbound_endpoints(db)
 
 
@@ -310,9 +353,27 @@ async def list_inbound_endpoints(db: AsyncSession = Depends(get_db)):
 async def create_inbound_endpoint(
     data: InboundEndpointCreate,
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_active_superuser),
+    current_user=Depends(get_current_active_superuser),
 ):
-    return await svc.create_inbound_endpoint(db, data)
+    return await svc.create_inbound_endpoint(db, data, actor=current_user)
+
+
+@router.post(
+    "/inbound-endpoints/{endpoint_id}/rotate-secret",
+    response_model=WebhookSecretRotationOut,
+)
+async def rotate_inbound_endpoint_secret(
+    endpoint_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_active_superuser),
+):
+    try:
+        result = await svc.rotate_inbound_endpoint_secret(db, endpoint_id, actor=current_user)
+    except svc.WebhookSecretRotationError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    if result is None:
+        raise HTTPException(status_code=404, detail="Inbound endpoint not found")
+    return result
 
 
 @router.api_route("/inbound/{endpoint_path:path}", methods=["POST", "PUT", "GET"])
@@ -328,8 +389,22 @@ async def receive_inbound_webhook(
 
     body = await request.body()
     sig_header = request.headers.get("X-Webhook-Signature") or request.headers.get("Authorization")
+    idempotency_key = (
+        request.headers.get("Idempotency-Key")
+        or request.headers.get("X-Webhook-Delivery-Id")
+    )
+    if endpoint.auth_type == AuthType.HMAC and not idempotency_key:
+        raise HTTPException(
+            status_code=400,
+            detail="Signed inbound webhooks must include Idempotency-Key or X-Webhook-Delivery-Id",
+        )
 
-    if not svc.verify_inbound_signature(endpoint, body, sig_header):
+    if not svc.verify_inbound_signature(
+        endpoint,
+        body,
+        sig_header,
+        timestamp_header=request.headers.get("X-Webhook-Timestamp"),
+    ):
         raise HTTPException(status_code=401, detail="Invalid webhook signature")
 
     try:
@@ -347,7 +422,7 @@ async def receive_inbound_webhook(
             reference_type="inbound_endpoint",
             reference_id=endpoint_path,
             module="inbound",
-            idempotency_key=request.headers.get("Idempotency-Key"),
+            idempotency_key=idempotency_key,
             correlation_id=request.headers.get("X-Correlation-ID"),
             causation_id=request.headers.get("X-Causation-ID"),
         )

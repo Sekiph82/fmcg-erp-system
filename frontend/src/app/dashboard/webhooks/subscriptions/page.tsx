@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import {
   listSubscriptions, createSubscription, updateSubscription, deleteSubscription,
-  testSubscription, Subscription, SubscriptionCreate, AuthType,
+  testSubscription, rotateSubscriptionSecret, Subscription, SubscriptionCreate, AuthType, WebhookSecretRotation,
 } from "@/lib/webhooks";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -13,6 +13,7 @@ export default function SubscriptionsPage() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [testResults, setTestResults] = useState<Record<string, string>>({});
+  const [rotatedSecrets, setRotatedSecrets] = useState<Record<string, WebhookSecretRotation>>({});
   const [form, setForm] = useState<SubscriptionCreate>({
     name: "",
     endpoint_url: "",
@@ -69,6 +70,18 @@ export default function SubscriptionsPage() {
     }
   }
 
+  async function handleRotateSecret(id: string) {
+    if (!confirm("Rotate this HMAC secret? The new value is shown only once. The previous value remains valid for 24 hours.")) return;
+    try {
+      const result = await rotateSubscriptionSecret(id);
+      setRotatedSecrets((previous) => ({ ...previous, [id]: result }));
+      await load();
+    } catch (err: unknown) {
+      const e2 = err as { response?: { data?: { detail?: string } } };
+      setTestResults((previous) => ({ ...previous, [id]: e2?.response?.data?.detail || "Secret rotation failed" }));
+    }
+  }
+
   if (loading) return <div className="p-8 text-gray-500">Loading...</div>;
 
   return (
@@ -106,7 +119,10 @@ export default function SubscriptionsPage() {
               </select>
             </div>
             {form.auth_type !== "none" && (
-              <Input id="secret" label="Secret / Token" value={form.secret_key || ""} onChange={(e) => setForm({ ...form, secret_key: e.target.value })} type="password" />
+              <div className="col-span-2">
+                <Input id="secret" label="Secret / Token" value={form.secret_key || ""} onChange={(e) => setForm({ ...form, secret_key: e.target.value })} type="password" required />
+                {form.auth_type === "hmac" && <p className="mt-1 text-xs text-gray-500">Use at least 32 characters. Secrets are encrypted at rest and never returned after creation.</p>}
+              </div>
             )}
             {form.auth_type === "basic" && (
               <Input id="user" label="Username" value={form.auth_user || ""} onChange={(e) => setForm({ ...form, auth_user: e.target.value })} />
@@ -143,10 +159,22 @@ export default function SubscriptionsPage() {
                   </div>
                 )}
                 <div className="text-xs text-gray-400">Retries: {sub.max_retries} · Timeout: {sub.timeout_seconds}s</div>
+                {rotatedSecrets[sub.id] && (
+                  <div className="mt-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm">
+                    <p className="font-medium text-amber-900">Copy this new secret now. It will not be shown again.</p>
+                    <code className="my-2 block break-all rounded bg-white p-2 text-xs">{rotatedSecrets[sub.id].secret_key}</code>
+                    <p className="text-xs text-amber-800">Previous key accepted until {new Date(rotatedSecrets[sub.id].previous_secret_expires_at).toLocaleString()}.</p>
+                    <div className="mt-2 flex gap-4">
+                      <button className="text-xs font-medium text-indigo-700 underline" onClick={() => navigator.clipboard.writeText(rotatedSecrets[sub.id].secret_key)}>Copy secret</button>
+                      <button className="text-xs text-gray-600 underline" onClick={() => setRotatedSecrets((previous) => { const next = { ...previous }; delete next[sub.id]; return next; })}>Hide secret</button>
+                    </div>
+                  </div>
+                )}
               </div>
               <div className="flex gap-2 flex-col items-end">
                 <div className="flex gap-2">
                   <button onClick={() => handleTest(sub.id)} className="text-xs text-indigo-600 hover:underline">Test</button>
+                  {sub.auth_type === "hmac" && <button onClick={() => handleRotateSecret(sub.id)} className="text-xs text-purple-600 hover:underline">Rotate secret</button>}
                   <button onClick={() => handleToggle(sub)} className="text-xs text-amber-600 hover:underline">
                     {sub.active_flag ? "Pause" : "Enable"}
                   </button>

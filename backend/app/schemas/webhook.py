@@ -2,7 +2,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 from uuid import UUID
-from pydantic import BaseModel, Field, HttpUrl, field_validator, model_validator
+from pydantic import BaseModel, Field, HttpUrl, field_serializer, field_validator, model_validator
 
 from app.models.webhook import AuthType, DeliveryStatus, HttpMethod
 
@@ -169,7 +169,7 @@ class SubscriptionCreate(BaseModel):
     http_method: HttpMethod = HttpMethod.POST
     headers: Optional[Dict[str, str]] = None
     auth_type: AuthType = AuthType.NONE
-    secret_key: Optional[str] = None
+    secret_key: Optional[str] = Field(default=None, max_length=256)
     auth_user: Optional[str] = None
     filter_expression: Optional[List[Dict[str, Any]]] = None
     event_codes: Optional[List[str]] = None
@@ -178,6 +178,16 @@ class SubscriptionCreate(BaseModel):
     timeout_seconds: int = 30
     active_flag: bool = True
 
+    @model_validator(mode="after")
+    def validate_hmac_secret(self) -> "SubscriptionCreate":
+        if self.auth_type != AuthType.NONE and not self.secret_key:
+            raise ValueError("The selected webhook authentication type requires a secret")
+        if self.auth_type == AuthType.BASIC and not self.auth_user:
+            raise ValueError("Basic authentication requires a username")
+        if self.auth_type == AuthType.HMAC and len(self.secret_key or "") < 32:
+            raise ValueError("HMAC webhook secrets must contain at least 32 characters")
+        return self
+
 
 class SubscriptionUpdate(BaseModel):
     name: Optional[str] = None
@@ -185,7 +195,7 @@ class SubscriptionUpdate(BaseModel):
     http_method: Optional[HttpMethod] = None
     headers: Optional[Dict[str, str]] = None
     auth_type: Optional[AuthType] = None
-    secret_key: Optional[str] = None
+    secret_key: Optional[str] = Field(default=None, max_length=256)
     auth_user: Optional[str] = None
     filter_expression: Optional[List[Dict[str, Any]]] = None
     event_codes: Optional[List[str]] = None
@@ -193,6 +203,14 @@ class SubscriptionUpdate(BaseModel):
     max_retries: Optional[int] = None
     timeout_seconds: Optional[int] = None
     active_flag: Optional[bool] = None
+
+    @model_validator(mode="after")
+    def validate_hmac_secret(self) -> "SubscriptionUpdate":
+        hmac_selected = self.auth_type == AuthType.HMAC
+        secret_supplied = "secret_key" in self.model_fields_set
+        if secret_supplied and self.secret_key is not None and hmac_selected and len(self.secret_key) < 32:
+            raise ValueError("HMAC webhook secrets must contain at least 32 characters")
+        return self
 
 
 class SubscriptionOut(BaseModel):
@@ -202,6 +220,8 @@ class SubscriptionOut(BaseModel):
     http_method: HttpMethod
     headers: Optional[Dict[str, Any]] = None
     auth_type: AuthType
+    secret_version: int = 1
+    previous_secret_expires_at: Optional[datetime] = None
     filter_expression: Optional[List[Dict[str, Any]]] = None
     event_codes: Optional[List[str]] = None
     transform_template: Optional[Dict[str, str]] = None
@@ -211,6 +231,12 @@ class SubscriptionOut(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+    @field_serializer("headers")
+    def redact_custom_header_values(self, value: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+        if value is None:
+            return None
+        return {name: "[REDACTED]" for name in value}
 
 
 # ── Delivery Attempts ─────────────────────────────────────────────────────────
@@ -237,6 +263,12 @@ class RetryRequest(BaseModel):
     subscription_id: Optional[UUID] = None
 
 
+class WebhookSecretRotationOut(BaseModel):
+    secret_key: str
+    secret_version: int
+    previous_secret_expires_at: datetime
+
+
 # ── Inbound Endpoints ─────────────────────────────────────────────────────────
 
 class InboundEndpointCreate(BaseModel):
@@ -244,10 +276,20 @@ class InboundEndpointCreate(BaseModel):
     endpoint_path: str
     method: HttpMethod = HttpMethod.POST
     auth_type: AuthType = AuthType.NONE
-    secret_key: Optional[str] = None
+    secret_key: Optional[str] = Field(default=None, max_length=256)
     handler_module: Optional[str] = None
     description: Optional[str] = None
     active_flag: bool = True
+
+    @model_validator(mode="after")
+    def validate_hmac_secret(self) -> "InboundEndpointCreate":
+        if self.auth_type == AuthType.BASIC:
+            raise ValueError("Inbound Basic authentication is not supported")
+        if self.auth_type != AuthType.NONE and not self.secret_key:
+            raise ValueError("The selected webhook authentication type requires a secret")
+        if self.auth_type == AuthType.HMAC and len(self.secret_key or "") < 32:
+            raise ValueError("HMAC webhook secrets must contain at least 32 characters")
+        return self
 
 
 class InboundEndpointOut(BaseModel):
@@ -256,6 +298,8 @@ class InboundEndpointOut(BaseModel):
     endpoint_path: str
     method: HttpMethod
     auth_type: AuthType
+    secret_version: int = 1
+    previous_secret_expires_at: Optional[datetime] = None
     handler_module: Optional[str] = None
     description: Optional[str] = None
     active_flag: bool

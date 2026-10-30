@@ -26,6 +26,7 @@
 
 ```
 SECRET_KEY=<64+ char random string>        # REQUIRED — app crashes if default
+WEBHOOK_SECRET_ENCRYPTION_KEY=<64+ char random string> # REQUIRED; keep stable and backed up
 INITIAL_ADMIN_PASSWORD=<strong password>   # REQUIRED if SEED_INITIAL_ADMIN=true
 POSTGRES_USER=<db user>
 POSTGRES_PASSWORD=<strong password>
@@ -42,6 +43,7 @@ SEED_DEMO_DATA=false
 ```
 
 The application validates these at startup and **refuses to start** if production guards fail.
+`WEBHOOK_SECRET_ENCRYPTION_KEY` must be distinct from `SECRET_KEY`. Rotating the JWT/application key does not affect webhook ciphertext. Do not rotate the webhook encryption key until an explicit re-encryption procedure is available; losing it makes stored webhook credentials unreadable.
 
 ---
 

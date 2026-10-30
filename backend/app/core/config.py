@@ -17,6 +17,9 @@ class Settings(BaseSettings):
 
     # Security
     SECRET_KEY: str = "changeme"
+    # Keep this stable across JWT/application SECRET_KEY changes. Set a distinct
+    # high-entropy value in production and back it up like other encryption keys.
+    WEBHOOK_SECRET_ENCRYPTION_KEY: str = ""
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 8  # 8 hours
     AUTH_COOKIE_NAME: str = "erp_access_token"
     REFRESH_TOKEN_COOKIE_NAME: str = "erp_refresh_token"
@@ -250,6 +253,29 @@ class Settings(BaseSettings):
                 raise ValueError("SECRET_KEY must be changed from the default value in production")
             if len(self.SECRET_KEY.encode("utf-8")) < 32:
                 raise ValueError("SECRET_KEY must contain at least 32 UTF-8 bytes for HS256 in production")
+            webhook_key = self.WEBHOOK_SECRET_ENCRYPTION_KEY
+            if len(webhook_key.encode("utf-8")) < 32:
+                raise ValueError("WEBHOOK_SECRET_ENCRYPTION_KEY must contain at least 32 UTF-8 bytes in production")
+            if webhook_key == self.SECRET_KEY:
+                raise ValueError("WEBHOOK_SECRET_ENCRYPTION_KEY must be distinct from SECRET_KEY")
+            normalized_webhook_key = webhook_key.strip().lower()
+            webhook_weak_markers = (
+                "changeme",
+                "change-this",
+                "secret",
+                "password",
+                "example",
+                "placeholder",
+                "development",
+                "production",
+                "test",
+            )
+            if any(marker in normalized_webhook_key for marker in webhook_weak_markers):
+                raise ValueError("WEBHOOK_SECRET_ENCRYPTION_KEY must not contain placeholder or example text in production")
+            for period in range(1, min(len(webhook_key), 16) + 1):
+                repeated = webhook_key[:period] * (len(webhook_key) // period)
+                if len(webhook_key) % period == 0 and webhook_key == repeated:
+                    raise ValueError("WEBHOOK_SECRET_ENCRYPTION_KEY must not be a repeated pattern in production")
             normalized_key = self.SECRET_KEY.strip().lower()
             known_weak_markers = (
                 "changeme",

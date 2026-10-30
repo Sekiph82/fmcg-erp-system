@@ -1,0 +1,19 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-9.0.3, pluggy-1.6.0 -- C:\Users\sekip\Desktop\fmcg-erp-system\backend\venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\sekip\Desktop\fmcg-erp-system\backend
+configfile: pytest.ini
+plugins: anyio-4.13.0, asyncio-1.3.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 2 items
+
+tests/test_m31_s03_t004_webhook_secret_rotation_db.py::test_database_guard_rejects_other_tasks_and_non_loopback_urls PASSED
+tests/test_m31_s03_t004_webhook_secret_rotation_db.py::test_subscription_and_inbound_secrets_rotate_with_encrypted_storage_and_audit PASSED
+
+============================== 2 passed in 8.99s ==============================
+RESULT=PASS
+DATABASE=fmcg_m31_s03_t004_de6ebbb0723c45d48b483c1e
+POSTGRES_IMAGE_ID=sha256:16bc17c64a573ef34162af9298258d1aec548232985b33ed7b1eac33ba35c229
+MIGRATION=INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+20261030_0004 (head)

@@ -44,6 +44,8 @@ export interface Subscription {
   endpoint_url: string;
   http_method: HttpMethod;
   auth_type: AuthType;
+  secret_version: number;
+  previous_secret_expires_at?: string | null;
   event_codes?: string[];
   filter_expression?: Array<{ field: string; op: string; value: unknown }>;
   max_retries: number;
@@ -88,6 +90,8 @@ export interface InboundEndpoint {
   endpoint_path: string;
   method: HttpMethod;
   auth_type: AuthType;
+  secret_version: number;
+  previous_secret_expires_at?: string | null;
   handler_module?: string;
   description?: string;
   active_flag: boolean;
@@ -106,6 +110,12 @@ export interface WebhookDashboard {
   active_subscriptions: number;
   top_events: Array<{ event_code: string; count: number }>;
   recent_failures: Array<Record<string, unknown>>;
+}
+
+export interface WebhookSecretRotation {
+  secret_key: string;
+  secret_version: number;
+  previous_secret_expires_at: string;
 }
 
 export interface WebhookReport {
@@ -199,6 +209,11 @@ export async function testSubscription(id: string): Promise<{ success: boolean; 
   return res.data;
 }
 
+export async function rotateSubscriptionSecret(id: string): Promise<WebhookSecretRotation> {
+  const res = await apiClient.post<WebhookSecretRotation>(`${BASE}/subscriptions/${id}/rotate-secret`);
+  return res.data;
+}
+
 export async function listDeliveries(params?: {
   subscription_id?: string; delivery_status?: DeliveryStatus; limit?: number;
 }): Promise<DeliveryAttempt[]> {
@@ -226,8 +241,13 @@ export async function listInboundEndpoints(): Promise<InboundEndpoint[]> {
   return res.data;
 }
 
-export async function createInboundEndpoint(data: Partial<InboundEndpoint>): Promise<InboundEndpoint> {
+export async function createInboundEndpoint(data: Partial<InboundEndpoint> & { secret_key?: string }): Promise<InboundEndpoint> {
   const res = await apiClient.post<InboundEndpoint>(`${BASE}/inbound-endpoints`, data);
+  return res.data;
+}
+
+export async function rotateInboundEndpointSecret(id: string): Promise<WebhookSecretRotation> {
+  const res = await apiClient.post<WebhookSecretRotation>(`${BASE}/inbound-endpoints/${id}/rotate-secret`);
   return res.data;
 }
 

@@ -4,7 +4,9 @@ import hashlib
 import hmac
 import json
 import random
+import secrets
 import time
+from base64 import urlsafe_b64encode
 from copy import deepcopy
 from base64 import b64encode
 from datetime import datetime, timedelta, timezone
@@ -12,6 +14,7 @@ from typing import Any, Dict, List, Optional
 from uuid import UUID, uuid4
 
 import httpx
+from cryptography.fernet import Fernet, InvalidToken
 from jsonschema import Draft202012Validator
 from jsonschema.exceptions import SchemaError
 from sqlalchemy import and_, desc, func, or_, select
@@ -27,6 +30,8 @@ from app.schemas.webhook import (
     DomainEventEnvelope, DomainEventReference, EventDefinitionCreate, EventDefinitionUpdate, InboundEndpointCreate,
     PublishEventRequest, ReplayRequest, SubscriptionCreate, SubscriptionUpdate,
 )
+from app.models.audit_log import AuditLog
+from app.core.config import settings
 
 MAX_RESPONSE_BODY = 2000       # truncate stored response body
 BACKOFF_BASE_SECONDS = 60      # first retry ceiling
@@ -36,6 +41,22 @@ MAX_PAYLOAD_BYTES = 1_048_576  # 1 MB
 MAX_REPLAY_EVENTS = 200
 MAX_REPLAY_SUBSCRIPTIONS = 100
 MAX_REPLAY_DELIVERIES = 1000
+WEBHOOK_SECRET_GRACE_PERIOD = timedelta(hours=24)
+WEBHOOK_SIGNATURE_TOLERANCE_SECONDS = 300
+WEBHOOK_SECRET_ENVELOPE_PREFIX = "enc:v2:"
+LEGACY_WEBHOOK_SECRET_ENVELOPE_PREFIX = "enc:v1:"
+WEBHOOK_RESERVED_HEADERS = {
+    "authorization",
+    "x-webhook-delivery-id",
+    "x-webhook-event",
+    "x-webhook-event-id",
+    "x-webhook-key-version",
+    "x-webhook-previous-key-version",
+    "x-webhook-signature",
+    "x-webhook-signature-previous",
+    "x-webhook-timestamp",
+    "x-webhook-test",
+}
 EVENT_JSON_SCHEMA_DRAFT = "https://json-schema.org/draft/2020-12/schema"
 
 
@@ -57,6 +78,80 @@ class EventIdentifierValidationError(ValueError):
 
 class EventReplayLimitError(ValueError):
     """A replay request exceeds an explicit event, subscription, or fan-out limit."""
+
+
+class WebhookSecretRotationError(ValueError):
+    """A webhook secret cannot be safely rotated for the target configuration."""
+
+
+def _webhook_secret_cipher(master_key: Optional[str] = None) -> Fernet:
+    # Domain separation keeps webhook at-rest encryption independent of JWT HMAC use.
+    # The dedicated key remains stable when the application's auth key changes.
+    source_key = master_key or settings.WEBHOOK_SECRET_ENCRYPTION_KEY or settings.SECRET_KEY
+    key = hashlib.sha256(
+        b"fmcg-erp:webhook-secret:v1\0" + source_key.encode("utf-8")
+    ).digest()
+    return Fernet(urlsafe_b64encode(key))
+
+
+def _store_webhook_secret(value: Optional[str]) -> Optional[str]:
+    if not value or value.startswith(WEBHOOK_SECRET_ENVELOPE_PREFIX):
+        return value
+    token = _webhook_secret_cipher().encrypt(value.encode("utf-8")).decode("ascii")
+    return WEBHOOK_SECRET_ENVELOPE_PREFIX + token
+
+
+def _read_webhook_secret(value: Optional[str]) -> Optional[str]:
+    if value is None:
+        return None
+    if value.startswith(LEGACY_WEBHOOK_SECRET_ENVELOPE_PREFIX):
+        # Read envelopes written by the first T004 draft, which used SECRET_KEY.
+        token = value[len(LEGACY_WEBHOOK_SECRET_ENVELOPE_PREFIX):].encode("ascii")
+        try:
+            return _webhook_secret_cipher(settings.SECRET_KEY).decrypt(token).decode("utf-8")
+        except (InvalidToken, UnicodeDecodeError) as exc:
+            raise WebhookSecretRotationError("Legacy webhook secret cannot be decrypted with the current application key.") from exc
+    if not value.startswith(WEBHOOK_SECRET_ENVELOPE_PREFIX):
+        # Existing plaintext rows remain readable and are upgraded on replacement/rotation.
+        return value
+    token = value[len(WEBHOOK_SECRET_ENVELOPE_PREFIX):].encode("ascii")
+    candidate_keys = [settings.WEBHOOK_SECRET_ENCRYPTION_KEY or settings.SECRET_KEY]
+    # Development instances without a dedicated key may later be promoted into
+    # an environment that has one; retain read compatibility for that envelope.
+    if settings.WEBHOOK_SECRET_ENCRYPTION_KEY and settings.SECRET_KEY != settings.WEBHOOK_SECRET_ENCRYPTION_KEY:
+        candidate_keys.append(settings.SECRET_KEY)
+    for candidate in candidate_keys:
+        try:
+            return _webhook_secret_cipher(candidate).decrypt(token).decode("utf-8")
+        except (InvalidToken, UnicodeDecodeError):
+            continue
+    raise WebhookSecretRotationError("Stored webhook secret cannot be decrypted with the configured webhook encryption keys.")
+
+
+def _apply_custom_headers(headers: Dict[str, str], configured: Optional[Dict[str, str]]) -> None:
+    if not configured:
+        return
+    for name, value in configured.items():
+        if name.strip().lower() not in WEBHOOK_RESERVED_HEADERS:
+            headers[name] = value
+
+
+def _redact_auth_values(
+    text: str,
+    headers: Dict[str, str],
+    configured_custom_headers: Optional[Dict[str, str]] = None,
+) -> str:
+    result = text
+    values = [
+        headers.get(name)
+        for name in ("Authorization", "X-Webhook-Signature", "X-Webhook-Signature-Previous")
+    ]
+    # Custom header names are arbitrary (for example X-API-Key), so treat each
+    # configured value as sensitive before storing or returning a peer response.
+    values.extend((configured_custom_headers or {}).values())
+    for value in sorted((item for item in values if item), key=len, reverse=True):
+        result = result.replace(value, "[REDACTED]")
+    return result
 
 
 def _build_event_envelope(
@@ -624,6 +719,17 @@ def _sign_payload(secret: str, body: bytes, timestamp: str) -> str:
     return f"sha256={sig}"
 
 
+def _active_previous_secret(target: Any, now: Optional[datetime] = None) -> Optional[str]:
+    previous = getattr(target, "previous_secret_key", None)
+    expires_at = getattr(target, "previous_secret_expires_at", None)
+    if not previous or not expires_at:
+        return None
+    current_time = now or datetime.now(timezone.utc)
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+    return _read_webhook_secret(previous) if expires_at > current_time else None
+
+
 # ── HTTP delivery ─────────────────────────────────────────────────────────────
 
 async def _deliver_attempt(
@@ -649,18 +755,25 @@ async def _deliver_attempt(
         "X-Webhook-Timestamp": timestamp,
     }
 
-    # Merge custom headers
-    if sub.headers:
-        headers.update(sub.headers)
+    # Custom settings cannot override delivery identity or authentication headers.
+    _apply_custom_headers(headers, sub.headers)
 
     # Auth
     if sub.auth_type == AuthType.BEARER and sub.secret_key:
-        headers["Authorization"] = f"Bearer {sub.secret_key}"
+        headers["Authorization"] = f"Bearer {_read_webhook_secret(sub.secret_key)}"
     elif sub.auth_type == AuthType.BASIC and sub.auth_user and sub.secret_key:
-        creds = b64encode(f"{sub.auth_user}:{sub.secret_key}".encode()).decode()
+        creds = b64encode(f"{sub.auth_user}:{_read_webhook_secret(sub.secret_key)}".encode()).decode()
         headers["Authorization"] = f"Basic {creds}"
     elif sub.auth_type == AuthType.HMAC and sub.secret_key:
-        headers["X-Webhook-Signature"] = _sign_payload(sub.secret_key, body_bytes, timestamp)
+        current_secret = _read_webhook_secret(sub.secret_key)
+        headers["X-Webhook-Signature"] = _sign_payload(current_secret, body_bytes, timestamp)
+        headers["X-Webhook-Key-Version"] = str(max(1, sub.secret_version or 1))
+        previous_secret = _active_previous_secret(sub)
+        if previous_secret:
+            headers["X-Webhook-Signature-Previous"] = _sign_payload(
+                previous_secret, body_bytes, timestamp
+            )
+            headers["X-Webhook-Previous-Key-Version"] = str(max(1, sub.secret_version or 1) - 1)
 
     start = time.monotonic()
     attempt.attempted_at = datetime.now(timezone.utc)
@@ -672,7 +785,7 @@ async def _deliver_attempt(
             resp = await client.request(method, sub.endpoint_url, content=body_bytes, headers=headers)
         elapsed_ms = int((time.monotonic() - start) * 1000)
         attempt.response_status = resp.status_code
-        attempt.response_body = resp.text[:MAX_RESPONSE_BODY]
+        attempt.response_body = _redact_auth_values(resp.text, headers, sub.headers)[:MAX_RESPONSE_BODY]
         attempt.duration_ms = elapsed_ms
 
         if 200 <= resp.status_code < 300:
@@ -902,6 +1015,67 @@ async def replay_events(db: AsyncSession, data: ReplayRequest) -> int:
 
 # ── Subscription CRUD ─────────────────────────────────────────────────────────
 
+async def _rotate_hmac_secret(
+    db: AsyncSession,
+    model: Any,
+    target_id: UUID,
+    target_type: str,
+    actor: Any,
+) -> Optional[Dict[str, Any]]:
+    result = await db.execute(select(model).where(model.id == target_id).with_for_update())
+    target = result.scalar_one_or_none()
+    if not target:
+        return None
+    if target.auth_type != AuthType.HMAC or not target.secret_key:
+        raise WebhookSecretRotationError("Secret rotation is available only for configured HMAC webhooks.")
+
+    now = datetime.now(timezone.utc)
+    if _active_previous_secret(target, now):
+        raise WebhookSecretRotationError(
+            "A prior HMAC key is still within its 24-hour grace period; wait for it to expire before rotating again."
+        )
+    next_version = max(1, target.secret_version or 1) + 1
+    replacement = secrets.token_urlsafe(32)
+    expires_at = now + WEBHOOK_SECRET_GRACE_PERIOD
+    target.previous_secret_key = _store_webhook_secret(_read_webhook_secret(target.secret_key))
+    target.previous_secret_expires_at = expires_at
+    target.secret_key = _store_webhook_secret(replacement)
+    target.secret_version = next_version
+    db.add(
+        AuditLog(
+            actor_id=getattr(actor, "id", None),
+            actor_email=getattr(actor, "email", None),
+            actor_name=getattr(actor, "full_name", None) or getattr(actor, "name", None),
+            event_type="WEBHOOK_SECRET_ROTATED",
+            module="webhooks",
+            target_type=target_type,
+            target_id=str(target.id),
+            target_name=getattr(target, "name", None),
+            before_value={"secret_version": next_version - 1},
+            after_value={"secret_version": next_version},
+            details={"previous_secret_expires_at": expires_at.isoformat()},
+        )
+    )
+    await db.commit()
+    await db.refresh(target)
+    return {
+        "secret_key": replacement,
+        "secret_version": next_version,
+        "previous_secret_expires_at": expires_at,
+    }
+
+
+async def rotate_subscription_secret(
+    db: AsyncSession, subscription_id: UUID, actor: Any
+) -> Optional[Dict[str, Any]]:
+    return await _rotate_hmac_secret(db, Subscription, subscription_id, "webhook_subscription", actor)
+
+
+async def rotate_inbound_endpoint_secret(
+    db: AsyncSession, endpoint_id: UUID, actor: Any
+) -> Optional[Dict[str, Any]]:
+    return await _rotate_hmac_secret(db, InboundEndpoint, endpoint_id, "webhook_inbound_endpoint", actor)
+
 async def list_subscriptions(
     db: AsyncSession,
     active_only: bool = False,
@@ -920,31 +1094,121 @@ async def get_subscription(db: AsyncSession, sub_id: UUID) -> Optional[Subscript
     return result.scalar_one_or_none()
 
 
-async def create_subscription(db: AsyncSession, data: SubscriptionCreate) -> Subscription:
-    sub = Subscription(**data.model_dump())
+async def create_subscription(db: AsyncSession, data: SubscriptionCreate, actor: Any) -> Subscription:
+    values = data.model_dump()
+    values["secret_key"] = _store_webhook_secret(values.get("secret_key"))
+    sub = Subscription(**values)
     db.add(sub)
+    await db.flush()
+    db.add(
+        AuditLog(
+            actor_id=getattr(actor, "id", None),
+            actor_email=getattr(actor, "email", None),
+            actor_name=getattr(actor, "full_name", None) or getattr(actor, "name", None),
+            event_type="WEBHOOK_SUBSCRIPTION_CREATED",
+            module="webhooks",
+            target_type="webhook_subscription",
+            target_id=str(sub.id),
+            target_name=sub.name,
+            after_value={"auth_type": sub.auth_type.value, "secret_configured": bool(sub.secret_key)},
+        )
+    )
     await db.commit()
     await db.refresh(sub)
     return sub
 
 
 async def update_subscription(
-    db: AsyncSession, sub_id: UUID, data: SubscriptionUpdate
+    db: AsyncSession, sub_id: UUID, data: SubscriptionUpdate, actor: Any
 ) -> Optional[Subscription]:
-    sub = await get_subscription(db, sub_id)
+    result = await db.execute(select(Subscription).where(Subscription.id == sub_id).with_for_update())
+    sub = result.scalar_one_or_none()
     if not sub:
         return None
-    for field, val in data.model_dump(exclude_unset=True).items():
+
+    updates = data.model_dump(exclude_unset=True)
+    secret_was_provided = "secret_key" in updates
+    replacement_secret = updates.pop("secret_key", None)
+    next_auth_type = updates.get("auth_type", sub.auth_type)
+    old_version = max(1, sub.secret_version or 1)
+    changed_fields = list(updates)
+    next_auth_user = updates.get("auth_user", sub.auth_user)
+    if next_auth_type != AuthType.NONE and next_auth_type != sub.auth_type and not replacement_secret:
+        if not _read_webhook_secret(sub.secret_key):
+            raise WebhookSecretRotationError("The selected authentication type requires a configured secret.")
+    if next_auth_type == AuthType.BASIC and not next_auth_user:
+        raise WebhookSecretRotationError("Basic authentication requires a username.")
+    if next_auth_type == AuthType.HMAC:
+        effective_secret = replacement_secret if secret_was_provided else _read_webhook_secret(sub.secret_key)
+        if not effective_secret or len(effective_secret) < 32:
+            raise WebhookSecretRotationError("HMAC webhook secrets must contain at least 32 characters.")
+    if secret_was_provided and next_auth_type == AuthType.HMAC:
+        if not replacement_secret:
+            raise WebhookSecretRotationError("HMAC authentication requires a non-empty secret.")
+        if len(replacement_secret) < 32:
+            raise WebhookSecretRotationError("HMAC webhook secrets must contain at least 32 characters.")
+        current_secret = _read_webhook_secret(sub.secret_key)
+        if sub.auth_type == AuthType.HMAC and current_secret and replacement_secret != current_secret:
+            if _active_previous_secret(sub):
+                raise WebhookSecretRotationError(
+                    "A prior HMAC key is still within its 24-hour grace period; use the dedicated rotation schedule."
+                )
+            sub.previous_secret_key = _store_webhook_secret(current_secret)
+            sub.previous_secret_expires_at = datetime.now(timezone.utc) + WEBHOOK_SECRET_GRACE_PERIOD
+            sub.secret_version = old_version + 1
+        sub.secret_key = _store_webhook_secret(replacement_secret)
+    elif secret_was_provided:
+        sub.secret_key = _store_webhook_secret(replacement_secret)
+    elif next_auth_type == AuthType.HMAC and (sub.auth_type != AuthType.HMAC or not sub.secret_key):
+        raise WebhookSecretRotationError("HMAC authentication requires a configured secret.")
+
+    if secret_was_provided:
+        changed_fields.append("secret_key")
+    if not changed_fields:
+        return sub
+
+    if "auth_type" in updates and updates["auth_type"] != sub.auth_type:
+        sub.previous_secret_key = None
+        sub.previous_secret_expires_at = None
+
+    for field, val in updates.items():
         setattr(sub, field, val)
+    db.add(
+        AuditLog(
+            actor_id=getattr(actor, "id", None),
+            actor_email=getattr(actor, "email", None),
+            actor_name=getattr(actor, "full_name", None) or getattr(actor, "name", None),
+            event_type="WEBHOOK_SUBSCRIPTION_UPDATED",
+            module="webhooks",
+            target_type="webhook_subscription",
+            target_id=str(sub.id),
+            target_name=sub.name,
+            before_value={"changed_fields": changed_fields, "secret_version": old_version},
+            after_value={"changed_fields": changed_fields, "secret_version": sub.secret_version or 1},
+        )
+    )
     await db.commit()
     await db.refresh(sub)
     return sub
 
 
-async def delete_subscription(db: AsyncSession, sub_id: UUID) -> bool:
+async def delete_subscription(db: AsyncSession, sub_id: UUID, actor: Any) -> bool:
     sub = await get_subscription(db, sub_id)
     if not sub:
         return False
+    db.add(
+        AuditLog(
+            actor_id=getattr(actor, "id", None),
+            actor_email=getattr(actor, "email", None),
+            actor_name=getattr(actor, "full_name", None) or getattr(actor, "name", None),
+            event_type="WEBHOOK_SUBSCRIPTION_DELETED",
+            module="webhooks",
+            target_type="webhook_subscription",
+            target_id=str(sub.id),
+            target_name=sub.name,
+            before_value={"auth_type": sub.auth_type.value, "secret_configured": bool(sub.secret_key)},
+        )
+    )
     await db.delete(sub)
     await db.commit()
     return True
@@ -956,8 +1220,10 @@ async def test_subscription(db: AsyncSession, sub_id: UUID) -> Dict[str, Any]:
     if not sub:
         return {"success": False, "error": "Subscription not found"}
 
+    test_event_id = uuid4()
+    test_delivery_id = uuid4()
     test_payload = _build_event_envelope(
-        event_id=uuid4(),
+        event_id=test_event_id,
         event_code="test.ping",
         module="system",
         occurred_at=datetime.now(timezone.utc),
@@ -968,18 +1234,33 @@ async def test_subscription(db: AsyncSession, sub_id: UUID) -> Dict[str, Any]:
     headers: Dict[str, str] = {
         "Content-Type": "application/json",
         "X-Webhook-Event": "test.ping",
+        "X-Webhook-Event-Id": str(test_event_id),
+        "X-Webhook-Delivery-Id": str(test_delivery_id),
         "X-Webhook-Test": "true",
         "X-Webhook-Timestamp": timestamp,
     }
+    _apply_custom_headers(headers, sub.headers)
     if sub.auth_type == AuthType.BEARER and sub.secret_key:
-        headers["Authorization"] = f"Bearer {sub.secret_key}"
+        headers["Authorization"] = f"Bearer {_read_webhook_secret(sub.secret_key)}"
     elif sub.auth_type == AuthType.HMAC and sub.secret_key:
-        headers["X-Webhook-Signature"] = _sign_payload(sub.secret_key, body_bytes, timestamp)
+        current_secret = _read_webhook_secret(sub.secret_key)
+        headers["X-Webhook-Signature"] = _sign_payload(current_secret, body_bytes, timestamp)
+        headers["X-Webhook-Key-Version"] = str(max(1, sub.secret_version or 1))
+        previous_secret = _active_previous_secret(sub)
+        if previous_secret:
+            headers["X-Webhook-Signature-Previous"] = _sign_payload(
+                previous_secret, body_bytes, timestamp
+            )
+            headers["X-Webhook-Previous-Key-Version"] = str(max(1, sub.secret_version or 1) - 1)
 
     try:
         async with httpx.AsyncClient(timeout=10) as client:
             resp = await client.post(sub.endpoint_url, content=body_bytes, headers=headers)
-        return {"success": 200 <= resp.status_code < 300, "status_code": resp.status_code, "response": resp.text[:500]}
+        return {
+            "success": 200 <= resp.status_code < 300,
+            "status_code": resp.status_code,
+            "response": _redact_auth_values(resp.text, headers, sub.headers)[:500],
+        }
     except Exception as exc:
         return {"success": False, "error": str(exc)}
 
@@ -1069,9 +1350,27 @@ async def list_inbound_endpoints(db: AsyncSession) -> List[InboundEndpoint]:
     return list(result.scalars().all())
 
 
-async def create_inbound_endpoint(db: AsyncSession, data: InboundEndpointCreate) -> InboundEndpoint:
-    obj = InboundEndpoint(**data.model_dump())
+async def create_inbound_endpoint(
+    db: AsyncSession, data: InboundEndpointCreate, actor: Any
+) -> InboundEndpoint:
+    values = data.model_dump()
+    values["secret_key"] = _store_webhook_secret(values.get("secret_key"))
+    obj = InboundEndpoint(**values)
     db.add(obj)
+    await db.flush()
+    db.add(
+        AuditLog(
+            actor_id=getattr(actor, "id", None),
+            actor_email=getattr(actor, "email", None),
+            actor_name=getattr(actor, "full_name", None) or getattr(actor, "name", None),
+            event_type="WEBHOOK_INBOUND_ENDPOINT_CREATED",
+            module="webhooks",
+            target_type="webhook_inbound_endpoint",
+            target_id=str(obj.id),
+            target_name=obj.name,
+            after_value={"auth_type": obj.auth_type.value, "secret_configured": bool(obj.secret_key)},
+        )
+    )
     await db.commit()
     await db.refresh(obj)
     return obj
@@ -1086,21 +1385,58 @@ async def get_inbound_endpoint_by_path(db: AsyncSession, path: str) -> Optional[
     return result.scalar_one_or_none()
 
 
-def verify_inbound_signature(endpoint: InboundEndpoint, body: bytes, sig_header: Optional[str]) -> bool:
+def verify_inbound_signature(
+    endpoint: InboundEndpoint,
+    body: bytes,
+    sig_header: Optional[str],
+    timestamp_header: Optional[str] = None,
+    now: Optional[datetime] = None,
+) -> bool:
+    current_time = now or datetime.now(timezone.utc)
+    current_secret = _read_webhook_secret(endpoint.secret_key)
+    secrets_to_check = [current_secret] if current_secret else []
+    previous_secret = _active_previous_secret(endpoint, current_time)
+    if previous_secret:
+        secrets_to_check.append(previous_secret)
+
     if endpoint.auth_type == AuthType.NONE:
         return True
     if endpoint.auth_type == AuthType.HMAC:
-        if not endpoint.secret_key or not sig_header:
+        if not secrets_to_check or not sig_header:
             return False
-        # Support both timestamp-prefixed and raw HMAC
-        expected = hmac.new(endpoint.secret_key.encode(), body, hashlib.sha256).hexdigest()
-        received = sig_header.replace("sha256=", "")
-        return hmac.compare_digest(expected, received)
+        received = sig_header.strip()
+        if timestamp_header is not None:
+            if (
+                not timestamp_header.isascii()
+                or not timestamp_header.isdigit()
+                or not 1 <= len(timestamp_header) <= 12
+            ):
+                return False
+            try:
+                signed_at = int(timestamp_header)
+            except ValueError:
+                return False
+            if abs(int(current_time.timestamp()) - signed_at) > WEBHOOK_SIGNATURE_TOLERANCE_SECONDS:
+                return False
+            return any(
+                hmac.compare_digest(_sign_payload(secret, body, timestamp_header), received)
+                for secret in secrets_to_check
+            )
+
+        # Compatibility for senders that predate timestamp-prefixed signatures.
+        received_hex = received.removeprefix("sha256=")
+        return any(
+            hmac.compare_digest(
+                hmac.new(secret.encode(), body, hashlib.sha256).hexdigest(), received_hex
+            )
+            for secret in secrets_to_check
+        )
     if endpoint.auth_type == AuthType.BEARER:
-        if not endpoint.secret_key or not sig_header:
+        if not sig_header:
             return False
-        return hmac.compare_digest(endpoint.secret_key, sig_header.replace("Bearer ", ""))
-    return True
+        received = sig_header.removeprefix("Bearer ").strip()
+        return any(hmac.compare_digest(secret, received) for secret in secrets_to_check)
+    return False
 
 
 # ── Dashboard ─────────────────────────────────────────────────────────────────

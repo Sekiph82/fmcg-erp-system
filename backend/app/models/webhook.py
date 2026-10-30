@@ -120,6 +120,9 @@ class Subscription(Base, TimestampMixin):
     headers = Column(JSONB, nullable=True, default=dict)             # custom headers
     auth_type = Column(Enum(AuthType), default=AuthType.NONE, nullable=False)
     secret_key = Column(String(512), nullable=True)                 # bearer token / hmac secret / basic pass
+    previous_secret_key = Column(String(512), nullable=True)
+    previous_secret_expires_at = Column(DateTime(timezone=True), nullable=True)
+    secret_version = Column(Integer, default=1, nullable=False)
     auth_user = Column(String(255), nullable=True)                  # basic auth username
     filter_expression = Column(JSONB, nullable=True)                # [{field, op, value}]
     event_codes = Column(JSONB, nullable=True)                      # list of event codes; null = all
@@ -170,6 +173,9 @@ class InboundEndpoint(Base, TimestampMixin):
     method = Column(Enum(HttpMethod), default=HttpMethod.POST, nullable=False)
     auth_type = Column(Enum(AuthType), default=AuthType.NONE, nullable=False)
     secret_key = Column(String(512), nullable=True)
+    previous_secret_key = Column(String(512), nullable=True)
+    previous_secret_expires_at = Column(DateTime(timezone=True), nullable=True)
+    secret_version = Column(Integer, default=1, nullable=False)
     handler_module = Column(String(100), nullable=True)             # internal handler tag (e.g. "payment_confirmation")
     description = Column(Text, nullable=True)
     active_flag = Column(Boolean, default=True, nullable=False)

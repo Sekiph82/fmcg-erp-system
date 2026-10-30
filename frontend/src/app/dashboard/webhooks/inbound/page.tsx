@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { listInboundEndpoints, createInboundEndpoint, InboundEndpoint, AuthType } from "@/lib/webhooks";
+import { listInboundEndpoints, createInboundEndpoint, rotateInboundEndpointSecret, InboundEndpoint, AuthType, WebhookSecretRotation } from "@/lib/webhooks";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
@@ -10,7 +10,9 @@ export default function InboundEndpointsPage() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ name: "", endpoint_path: "", auth_type: "none" as AuthType, handler_module: "", description: "" });
+  const [form, setForm] = useState({ name: "", endpoint_path: "", auth_type: "none" as AuthType, secret_key: "", handler_module: "", description: "" });
+  const [rotatedSecrets, setRotatedSecrets] = useState<Record<string, WebhookSecretRotation>>({});
+  const [actionErrors, setActionErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState("");
 
   useEffect(() => { load(); }, []);
@@ -31,6 +33,19 @@ export default function InboundEndpointsPage() {
       setError(e2?.response?.data?.detail || "Failed to create endpoint");
     }
     setSaving(false);
+  }
+
+  async function handleRotateSecret(id: string) {
+    if (!confirm("Rotate this HMAC secret? The new value is shown only once. The previous value remains valid for 24 hours.")) return;
+    try {
+      const result = await rotateInboundEndpointSecret(id);
+      setRotatedSecrets((previous) => ({ ...previous, [id]: result }));
+      setActionErrors((previous) => ({ ...previous, [id]: "" }));
+      await load();
+    } catch (err: unknown) {
+      const e2 = err as { response?: { data?: { detail?: string } } };
+      setActionErrors((previous) => ({ ...previous, [id]: e2?.response?.data?.detail || "Secret rotation failed" }));
+    }
   }
 
   const apiBase = typeof window !== "undefined" ? `${window.location.protocol}//${window.location.hostname}:8000` : "http://localhost:8000";
@@ -63,6 +78,12 @@ export default function InboundEndpointsPage() {
                 <option value="bearer">Bearer Token</option>
               </select>
             </div>
+            {form.auth_type !== "none" && (
+              <div className="col-span-2">
+                <Input id="secret" label="Secret / Token" type="password" value={form.secret_key} onChange={(e) => setForm({ ...form, secret_key: e.target.value })} required />
+                {form.auth_type === "hmac" && <p className="mt-1 text-xs text-gray-500">Use at least 32 characters. Secrets are encrypted at rest and never returned after creation.</p>}
+              </div>
+            )}
             <Input id="handler" label="Handler Module (tag)" value={form.handler_module} onChange={(e) => setForm({ ...form, handler_module: e.target.value })} placeholder="payment_confirmation" />
             <div className="col-span-2">
               <Input id="desc" label="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
@@ -96,6 +117,19 @@ export default function InboundEndpointsPage() {
                   <span>Received: {ep.receive_count}</span>
                   {ep.last_received_at && <span>Last: {new Date(ep.last_received_at).toLocaleString()}</span>}
                 </div>
+                {ep.auth_type === "hmac" && <button onClick={() => handleRotateSecret(ep.id)} className="text-xs text-purple-600 hover:underline">Rotate HMAC secret</button>}
+                {actionErrors[ep.id] && <p className="text-xs text-red-600">{actionErrors[ep.id]}</p>}
+                {rotatedSecrets[ep.id] && (
+                  <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm">
+                    <p className="font-medium text-amber-900">Copy this new secret now. It will not be shown again.</p>
+                    <code className="my-2 block break-all rounded bg-white p-2 text-xs">{rotatedSecrets[ep.id].secret_key}</code>
+                    <p className="text-xs text-amber-800">Previous key accepted until {new Date(rotatedSecrets[ep.id].previous_secret_expires_at).toLocaleString()}.</p>
+                    <div className="mt-2 flex gap-4">
+                      <button className="text-xs font-medium text-indigo-700 underline" onClick={() => navigator.clipboard.writeText(rotatedSecrets[ep.id].secret_key)}>Copy secret</button>
+                      <button className="text-xs text-gray-600 underline" onClick={() => setRotatedSecrets((previous) => { const next = { ...previous }; delete next[ep.id]; return next; })}>Hide secret</button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
