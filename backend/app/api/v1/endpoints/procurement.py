@@ -7,7 +7,7 @@ import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import and_, or_, select, func
 from sqlalchemy.orm import selectinload
 
 from app.core.deps import get_current_user, get_db, require_permission
@@ -17,6 +17,7 @@ from app.core.access_control import (
     require_any_permission,
 )
 from app.models.finance import OperationalPostingStatus
+from app.models.audit_log import AuditEvent, AuditLog
 from app.models.procurement import (
     PurchaseRequisition, PRLine, PurchaseOrder, POLine,
     GoodsReceipt, GRNLine, ImportShipment, SupplierEvaluation,
@@ -1631,6 +1632,55 @@ def _build_rfq_detail(rfq: RFQRequest, current_user=None) -> RFQDetailRead:
 
 # ── Blanket Purchase Agreements ───────────────────────────────────────────────
 
+def _effective_bpa_status(bpa: BlanketPurchaseAgreement, as_of: date) -> BPAStatus:
+    if bpa.status == BPAStatus.ACTIVE and bpa.valid_to < as_of:
+        return BPAStatus.EXPIRED
+    return bpa.status
+
+
+def _bpa_is_fully_consumed(bpa: BlanketPurchaseAgreement) -> bool:
+    return (
+        bpa.agreed_quantity is not None
+        and bpa.consumed_quantity >= bpa.agreed_quantity
+    )
+
+
+_BPA_AUDIT_FIELDS = (
+    "bpa_no", "supplier_id", "company_id", "branch_id", "cost_center_id", "department",
+    "material_id", "product_id", "agreed_unit_price", "currency", "agreed_quantity",
+    "consumed_quantity", "unit", "valid_from", "valid_to", "payment_terms", "status", "notes",
+)
+
+
+def _bpa_audit_value(value):
+    if value is None or isinstance(value, (str, int, float, bool)):
+        return value
+    if hasattr(value, "value"):
+        return value.value
+    if hasattr(value, "isoformat"):
+        return value.isoformat()
+    return str(value)
+
+
+def _bpa_audit_snapshot(bpa: BlanketPurchaseAgreement) -> dict[str, object]:
+    return {field: _bpa_audit_value(getattr(bpa, field)) for field in _BPA_AUDIT_FIELDS}
+
+
+def _bpa_audit_log(bpa, actor, event_type: str, before_value=None, after_value=None, details=None):
+    return AuditLog(
+        actor_id=getattr(actor, "id", None),
+        actor_email=getattr(actor, "email", None),
+        actor_name=getattr(actor, "full_name", None),
+        event_type=event_type,
+        module="procurement",
+        target_type="blanket_purchase_agreement",
+        target_id=str(bpa.id),
+        target_name=bpa.bpa_no,
+        before_value=before_value,
+        after_value=after_value,
+        details=details,
+    )
+
 @router.get("/bpa/", response_model=List[BlanketAgreementRead])
 async def list_bpas(
     supplier_id: Optional[uuid.UUID] = None,
@@ -1639,19 +1689,36 @@ async def list_bpas(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
+    today = date.today()
     q = select(BlanketPurchaseAgreement).options(
         selectinload(BlanketPurchaseAgreement.supplier)
     )
     if supplier_id:
         q = q.where(BlanketPurchaseAgreement.supplier_id == supplier_id)
     if status:
-        q = q.where(BlanketPurchaseAgreement.status == status)
+        if status == BPAStatus.EXPIRED:
+            q = q.where(or_(
+                BlanketPurchaseAgreement.status == BPAStatus.EXPIRED,
+                and_(
+                    BlanketPurchaseAgreement.status == BPAStatus.ACTIVE,
+                    BlanketPurchaseAgreement.valid_to < today,
+                ),
+            ))
+        elif status == BPAStatus.ACTIVE:
+            q = q.where(
+                BlanketPurchaseAgreement.status == BPAStatus.ACTIVE,
+                BlanketPurchaseAgreement.valid_from <= today,
+                BlanketPurchaseAgreement.valid_to >= today,
+            )
+        else:
+            q = q.where(BlanketPurchaseAgreement.status == status)
     result = await db.execute(q.order_by(BlanketPurchaseAgreement.valid_to.desc()).limit(limit))
     bpas = result.scalars().all()
     bpas = [b for b in bpas if _can_view_procurement_record(current_user, b)]
     rows = []
     for b in bpas:
         row = BlanketAgreementRead.model_validate(b)
+        row.status = _effective_bpa_status(b, today)
         row.supplier_name = b.supplier.name if b.supplier else None
         row.access = svc.build_procurement_access_hint(current_user, b)
         rows.append(row)
@@ -1667,6 +1734,14 @@ async def create_bpa(
     bpa = BlanketPurchaseAgreement(**body.model_dump(), created_by_id=current_user.id)
     _require_procurement_action(current_user, bpa, "create")
     db.add(bpa)
+    await db.flush()
+    db.add(_bpa_audit_log(
+        bpa,
+        current_user,
+        AuditEvent.BPA_CREATED,
+        after_value=_bpa_audit_snapshot(bpa),
+        details={"changed_fields": list(_BPA_AUDIT_FIELDS)},
+    ))
     await db.commit()
     await db.refresh(bpa)
     result = await db.execute(
@@ -1691,14 +1766,64 @@ async def update_bpa(
     result = await db.execute(
         select(BlanketPurchaseAgreement).options(
             selectinload(BlanketPurchaseAgreement.supplier)
-        ).where(BlanketPurchaseAgreement.id == bpa_id)
+        ).where(BlanketPurchaseAgreement.id == bpa_id).with_for_update()
     )
     bpa = result.scalar_one_or_none()
     if not bpa:
         raise HTTPException(404, "Agreement not found")
-    _require_procurement_action(current_user, bpa, "edit")
-    for k, v in body.model_dump(exclude_unset=True).items():
+    updates = body.model_dump(exclude_unset=True)
+    requested_status = updates.get("status")
+    _require_procurement_action(
+        current_user,
+        bpa,
+        "cancel" if requested_status == BPAStatus.CANCELLED else "edit",
+    )
+    before_value = _bpa_audit_snapshot(bpa)
+    today = date.today()
+    if _effective_bpa_status(bpa, today) != BPAStatus.ACTIVE:
+        raise HTTPException(409, "Expired or cancelled blanket agreements are locked.")
+
+    requested_status = updates.pop("status", None)
+    if requested_status is not None and requested_status != BPAStatus.CANCELLED:
+        raise HTTPException(409, "The only user-controlled BPA status transition is ACTIVE to CANCELLED.")
+    if requested_status == BPAStatus.CANCELLED and updates:
+        raise HTTPException(422, "Cancellation must be submitted separately from agreement edits.")
+    if _bpa_is_fully_consumed(bpa) and (updates or requested_status is not None):
+        raise HTTPException(409, "A fully consumed blanket agreement is locked.")
+
+    commercial_fields = {
+        "agreed_unit_price", "agreed_quantity", "valid_to", "payment_terms",
+        "company_id", "branch_id", "cost_center_id", "department",
+    }
+    if bpa.consumed_quantity > 0 and commercial_fields.intersection(updates):
+        raise HTTPException(409, "Commercial terms and procurement scope cannot change after consumption starts.")
+    if "valid_to" in updates and updates["valid_to"] is None:
+        raise HTTPException(422, "valid_to cannot be cleared.")
+    resulting_quantity = updates.get("agreed_quantity", bpa.agreed_quantity)
+    if resulting_quantity is not None and resulting_quantity < bpa.consumed_quantity:
+        raise HTTPException(422, "Agreed quantity cannot be lower than already consumed quantity.")
+    resulting_valid_to = updates.get("valid_to", bpa.valid_to)
+    if resulting_valid_to < bpa.valid_from:
+        raise HTTPException(422, "valid_to must be on or after valid_from.")
+
+    for k, v in updates.items():
         setattr(bpa, k, v)
+    if requested_status == BPAStatus.CANCELLED:
+        bpa.status = BPAStatus.CANCELLED
+    after_value = _bpa_audit_snapshot(bpa)
+    changed_fields = [
+        field for field in _BPA_AUDIT_FIELDS
+        if before_value[field] != after_value[field]
+    ]
+    if changed_fields:
+        db.add(_bpa_audit_log(
+            bpa,
+            current_user,
+            AuditEvent.BPA_CANCELLED if bpa.status == BPAStatus.CANCELLED else AuditEvent.BPA_UPDATED,
+            before_value={field: before_value[field] for field in changed_fields},
+            after_value={field: after_value[field] for field in changed_fields},
+            details={"changed_fields": changed_fields},
+        ))
     await db.commit()
     await db.refresh(bpa)
     row = BlanketAgreementRead.model_validate(bpa)

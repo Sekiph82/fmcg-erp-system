@@ -410,6 +410,7 @@ export interface BlanketAgreement extends ProcurementScopeFields {
   payment_terms?: string;
   status: BPAStatus;
   is_expired: boolean;
+  is_scheduled: boolean;
   notes?: string;
   created_at: string;
   access?: ProcurementAccessHint;

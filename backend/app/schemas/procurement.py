@@ -878,28 +878,60 @@ class RFQAwardRead(BaseModel):
 # ── Blanket Purchase Agreement ─────────────────────────────────────────────────
 
 class BlanketAgreementCreate(ProcurementScopeFields):
-    bpa_no: str
+    bpa_no: str = Field(min_length=1, max_length=50)
     supplier_id: uuid.UUID
     material_id: Optional[uuid.UUID] = None
     product_id: Optional[uuid.UUID] = None
-    description: Optional[str] = None
-    agreed_unit_price: Decimal
-    currency: str = "KES"
-    agreed_quantity: Optional[Decimal] = None
-    unit: str = "KG"
+    description: Optional[str] = Field(default=None, max_length=300)
+    agreed_unit_price: Decimal = Field(gt=0, max_digits=14, decimal_places=4)
+    currency: str = Field(default="KES", min_length=3, max_length=3, pattern=r"^[A-Za-z]{3}$")
+    agreed_quantity: Optional[Decimal] = Field(default=None, gt=0, max_digits=14, decimal_places=3)
+    unit: str = Field(default="KG", min_length=1, max_length=20)
     valid_from: date
     valid_to: date
-    payment_terms: Optional[str] = None
-    notes: Optional[str] = None
+    payment_terms: Optional[str] = Field(default=None, max_length=100)
+    notes: Optional[str] = Field(default=None, max_length=1000)
+
+    @field_validator("bpa_no", "unit", mode="before")
+    @classmethod
+    def normalize_required_text(cls, value):
+        if isinstance(value, str):
+            value = value.strip()
+        return value
+
+    @field_validator("currency")
+    @classmethod
+    def normalize_currency(cls, value: str) -> str:
+        return value.strip().upper()
+
+    @model_validator(mode="after")
+    def validate_validity(self):
+        if self.valid_to < self.valid_from:
+            raise ValueError("valid_to must be on or after valid_from")
+        return self
 
 
 class BlanketAgreementUpdate(ProcurementScopeFields):
-    agreed_unit_price: Optional[Decimal] = None
-    agreed_quantity: Optional[Decimal] = None
+    agreed_unit_price: Optional[Decimal] = Field(default=None, gt=0, max_digits=14, decimal_places=4)
+    agreed_quantity: Optional[Decimal] = Field(default=None, gt=0, max_digits=14, decimal_places=3)
     valid_to: Optional[date] = None
-    payment_terms: Optional[str] = None
-    notes: Optional[str] = None
+    payment_terms: Optional[str] = Field(default=None, max_length=100)
+    notes: Optional[str] = Field(default=None, max_length=1000)
     status: Optional[BPAStatus] = None
+
+    @field_validator("valid_to")
+    @classmethod
+    def require_non_null_valid_to(cls, value):
+        if value is None:
+            raise ValueError("valid_to cannot be cleared")
+        return value
+
+    @field_validator("agreed_unit_price", "agreed_quantity")
+    @classmethod
+    def validate_finite_amounts(cls, value):
+        if value is not None and not value.is_finite():
+            raise ValueError("BPA amounts must be finite")
+        return value
 
 
 class BlanketAgreementRead(ProcurementScopeFields):
@@ -923,6 +955,12 @@ class BlanketAgreementRead(ProcurementScopeFields):
     notes: Optional[str]
     created_at: datetime
     access: Optional[ProcurementAccessHint] = None
+
+    @computed_field
+    @property
+    def is_scheduled(self) -> bool:
+        from datetime import date as _date
+        return self.status == BPAStatus.ACTIVE and self.valid_from > _date.today()
 
     @computed_field
     @property

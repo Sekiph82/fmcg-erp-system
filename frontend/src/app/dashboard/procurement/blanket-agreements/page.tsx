@@ -7,6 +7,7 @@ const STATUS_COLORS: Record<BPAStatus, string> = {
   EXPIRED: "bg-gray-100 text-gray-500",
   CANCELLED: "bg-red-100 text-red-500",
 };
+const SCHEDULED_COLOR = "bg-blue-100 text-blue-700";
 
 const BLANK_FORM = {
   bpa_no: "", supplier_id: "", description: "",
@@ -92,17 +93,28 @@ export default function BlanketAgreementsPage() {
 
   const cancel = async (b: BlanketAgreement) => {
     if (!confirm(`Cancel agreement ${b.bpa_no}?`)) return;
-    await procurementApi.updateBPA(b.id, { status: "CANCELLED" });
-    await load();
+    setError("");
+    try {
+      await procurementApi.updateBPA(b.id, { status: "CANCELLED" });
+      await load();
+    } catch {
+      setError(`Could not cancel ${b.bpa_no}. It may be expired, fully consumed, or outside your procurement scope.`);
+    }
   };
 
   const today = new Date().toISOString().split("T")[0];
-  const active = bpas.filter(b => b.status === "ACTIVE" && !b.is_expired).length;
-  const expired = bpas.filter(b => b.is_expired || b.status === "EXPIRED").length;
-  const totalValue = bpas.filter(b => b.status === "ACTIVE").reduce((acc, b) => {
-    const qty = b.agreed_quantity ?? 0;
-    return acc + (Number(b.agreed_unit_price) * Number(qty));
-  }, 0);
+  const active = bpas.filter(b => b.status === "ACTIVE" && !b.is_expired && !b.is_scheduled).length;
+  const scheduled = bpas.filter(b => b.is_scheduled).length;
+  const expired = bpas.filter(b => b.is_expired || b.status === "EXPIRED" || b.status === "CANCELLED").length;
+  const valueByCurrency = new Map<string, number>();
+  for (const agreement of bpas) {
+    if (agreement.status !== "ACTIVE" || agreement.is_expired || agreement.is_scheduled || agreement.agreed_quantity == null) continue;
+    const amount = Number(agreement.agreed_unit_price) * Number(agreement.agreed_quantity);
+    valueByCurrency.set(agreement.currency, (valueByCurrency.get(agreement.currency) ?? 0) + amount);
+  }
+  const totalValue = [...valueByCurrency.entries()]
+    .map(([currency, amount]) => `${currency} ${amount.toLocaleString(undefined, { maximumFractionDigits: 2 })}`)
+    .join(" · ") || "No bounded active agreements";
 
   return (
     <div className="p-6 space-y-5">
@@ -117,11 +129,12 @@ export default function BlanketAgreementsPage() {
         </button>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: "Active Agreements", value: active, color: "text-green-600" },
+          { label: "Scheduled", value: scheduled, color: "text-blue-600" },
           { label: "Expired / Cancelled", value: expired, color: "text-gray-500" },
-          { label: "Total Contracted Value", value: `KES ${totalValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, color: "text-blue-600" },
+          { label: "Bounded Active Value", value: totalValue, color: "text-blue-600" },
         ].map(s => (
           <div key={s.label} className="bg-white border rounded-lg p-4 shadow-sm">
             <p className="text-xs text-gray-500">{s.label}</p>
@@ -160,7 +173,12 @@ export default function BlanketAgreementsPage() {
             </thead>
             <tbody className="divide-y">
               {bpas.map(b => {
-                const expiringSoon = b.status === "ACTIVE" && !b.is_expired && b.valid_to <= new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0];
+                const expiringSoon = b.status === "ACTIVE" && !b.is_expired && !b.is_scheduled && b.valid_to <= new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0];
+                const hasRemainingCommitment = b.remaining_quantity == null || Number(b.remaining_quantity) > 0;
+                const canEdit = b.access?.can_edit === true && b.status === "ACTIVE" && !b.is_expired && hasRemainingCommitment;
+                const canCancel = b.access?.can_cancel === true && b.status === "ACTIVE" && !b.is_expired && hasRemainingCommitment;
+                const hasConsumption = Number(b.consumed_quantity) > 0;
+                const displayStatus = b.is_expired && b.status === "ACTIVE" ? "EXPIRED" : b.is_scheduled ? "SCHEDULED" : b.status;
                 return (
                   <tr key={b.id} className={`hover:bg-gray-50 ${b.is_expired ? "opacity-60" : ""}`}>
                     <td className="px-4 py-3 font-mono text-xs text-gray-600">{b.bpa_no}</td>
@@ -185,17 +203,21 @@ export default function BlanketAgreementsPage() {
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <span className={`text-xs rounded-full px-2 py-0.5 ${STATUS_COLORS[b.status]}`}>
-                        {b.is_expired && b.status === "ACTIVE" ? "EXPIRED" : b.status}
+                      <span className={`text-xs rounded-full px-2 py-0.5 ${b.is_scheduled ? SCHEDULED_COLOR : STATUS_COLORS[b.status]}`}>
+                        {displayStatus}
                       </span>
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex gap-2">
-                        {b.status === "ACTIVE" && !b.is_expired && (
-                          <>
-                            <button onClick={() => openEdit(b)} className="text-xs text-blue-600 hover:underline">Edit</button>
-                            <button onClick={() => cancel(b)} className="text-xs text-red-500 hover:underline">Cancel</button>
-                          </>
+                        {canEdit && !hasConsumption && (
+                          <button onClick={() => openEdit(b)} className="text-xs text-blue-600 hover:underline">Edit</button>
+                        )}
+                        {canCancel && (
+                          <button onClick={() => cancel(b)} className="text-xs text-red-500 hover:underline">Cancel</button>
+                        )}
+                        {!canEdit && !canCancel && <span className="text-[11px] text-gray-400">View only</span>}
+                        {canEdit && hasConsumption && (
+                          <span className="text-[11px] text-gray-400">Commercial terms locked</span>
                         )}
                       </div>
                     </td>
