@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
-import { procurementApi, BlanketAgreement, BlanketAgreementPriceBreakInput, BPAStatus } from "@/lib/procurement";
+import { procurementApi, BlanketAgreement, BlanketAgreementPriceBreakInput, BlanketAgreementReleaseInput, PODetail, BPAStatus } from "@/lib/procurement";
 
 const STATUS_COLORS: Record<BPAStatus, string> = {
   ACTIVE: "bg-green-100 text-green-700",
@@ -10,7 +10,7 @@ const STATUS_COLORS: Record<BPAStatus, string> = {
 const SCHEDULED_COLOR = "bg-blue-100 text-blue-700";
 
 const BLANK_FORM = {
-  bpa_no: "", supplier_id: "", description: "",
+  bpa_no: "", supplier_id: "", material_id: "", product_id: "", description: "",
   agreed_unit_price: "", currency: "KES", agreed_quantity: "",
   unit: "KG", valid_from: "", valid_to: "", payment_terms: "", notes: "",
 };
@@ -30,6 +30,14 @@ export default function BlanketAgreementsPage() {
   const [priceBreakLoadFailed, setPriceBreakLoadFailed] = useState(false);
   const [priceBreakSaving, setPriceBreakSaving] = useState(false);
   const [priceBreakError, setPriceBreakError] = useState("");
+  const [releaseAgreement, setReleaseAgreement] = useState<BlanketAgreement | null>(null);
+  const [releaseOrders, setReleaseOrders] = useState<PODetail[]>([]);
+  const [releaseLoading, setReleaseLoading] = useState(false);
+  const [releaseSaving, setReleaseSaving] = useState(false);
+  const [releaseError, setReleaseError] = useState("");
+  const [releaseForm, setReleaseForm] = useState<BlanketAgreementReleaseInput>({
+    po_no: "", release_date: "", expected_delivery_date: "", quantity: "", notes: "",
+  });
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -49,6 +57,8 @@ export default function BlanketAgreementsPage() {
     setForm({
       bpa_no: b.bpa_no,
       supplier_id: b.supplier_id,
+      material_id: b.material_id ?? "",
+      product_id: b.product_id ?? "",
       description: b.description ?? "",
       agreed_unit_price: String(b.agreed_unit_price),
       currency: b.currency,
@@ -68,11 +78,16 @@ export default function BlanketAgreementsPage() {
     if (!form.bpa_no || !form.supplier_id || !form.agreed_unit_price || !form.valid_from || !form.valid_to) {
       setError("BPA No., Supplier ID, Price, and validity dates required"); return;
     }
+    if (Boolean(form.material_id.trim()) === Boolean(form.product_id.trim())) {
+      setError("Choose exactly one material ID or product ID for a releasable agreement."); return;
+    }
     setSaving(true); setError("");
     try {
       const payload = {
         bpa_no: form.bpa_no,
         supplier_id: form.supplier_id,
+        material_id: form.material_id.trim() || null,
+        product_id: form.product_id.trim() || null,
         description: form.description || null,
         agreed_unit_price: parseFloat(form.agreed_unit_price),
         currency: form.currency,
@@ -144,6 +159,49 @@ export default function BlanketAgreementsPage() {
       setPriceBreakError("Price breaks could not be saved. Check quantity thresholds and validity windows.");
     } finally {
       setPriceBreakSaving(false);
+    }
+  };
+
+  const openReleaseOrders = async (agreement: BlanketAgreement) => {
+    setReleaseAgreement(agreement);
+    setReleaseLoading(true);
+    setReleaseError("");
+    setReleaseOrders([]);
+    const releaseDate = agreement.valid_from > today ? agreement.valid_from : today;
+    setReleaseForm({
+      po_no: "",
+      release_date: releaseDate,
+      expected_delivery_date: releaseDate,
+      quantity: "",
+      notes: "",
+    });
+    try {
+      setReleaseOrders(await procurementApi.listBPAReleaseOrders(agreement.id));
+    } catch {
+      setReleaseError("Could not load release orders for this agreement.");
+    } finally {
+      setReleaseLoading(false);
+    }
+  };
+
+  const createReleaseOrder = async () => {
+    if (!releaseAgreement || !releaseForm.po_no.trim() || !releaseForm.quantity || !releaseForm.release_date || !releaseForm.expected_delivery_date) {
+      setReleaseError("Purchase order number, quantity, release date, and expected delivery date are required.");
+      return;
+    }
+    setReleaseSaving(true);
+    setReleaseError("");
+    try {
+      const created = await procurementApi.createBPAReleaseOrder(releaseAgreement.id, {
+        ...releaseForm,
+        po_no: releaseForm.po_no.trim(),
+      });
+      setReleaseOrders(rows => [created, ...rows]);
+      setReleaseForm(formState => ({ ...formState, po_no: "", quantity: "", notes: "" }));
+    } catch {
+      setReleaseError("Release order was not created. Check agreement dates, commitment remaining, and your create access.");
+    } finally {
+      setReleaseSaving(false);
     }
   };
 
@@ -222,6 +280,7 @@ export default function BlanketAgreementsPage() {
                 const hasRemainingCommitment = b.remaining_quantity == null || Number(b.remaining_quantity) > 0;
                 const canEdit = b.access?.can_edit === true && b.status === "ACTIVE" && !b.is_expired && hasRemainingCommitment;
                 const canCancel = b.access?.can_cancel === true && b.status === "ACTIVE" && !b.is_expired && hasRemainingCommitment;
+                const canCreateRelease = b.access?.can_create === true && b.status === "ACTIVE" && !b.is_expired && hasRemainingCommitment;
                 const hasConsumption = Number(b.consumed_quantity) > 0;
                 const displayStatus = b.is_expired && b.status === "ACTIVE" ? "EXPIRED" : b.is_scheduled ? "SCHEDULED" : b.status;
                 return (
@@ -263,6 +322,9 @@ export default function BlanketAgreementsPage() {
                         {canCancel && (
                           <button onClick={() => cancel(b)} className="text-xs text-red-500 hover:underline">Cancel</button>
                         )}
+                        {canCreateRelease && (
+                          <button onClick={() => void openReleaseOrders(b)} className="text-xs text-emerald-700 hover:underline">Call off</button>
+                        )}
                         {!canEdit && !canCancel && <span className="text-[11px] text-gray-400">View only</span>}
                         {canEdit && hasConsumption && (
                           <span className="text-[11px] text-gray-400">Commercial terms locked</span>
@@ -290,6 +352,8 @@ export default function BlanketAgreementsPage() {
                 {[
                   { label: "BPA No. *", key: "bpa_no", placeholder: "BPA-2026-001", col: 1 },
                   { label: "Supplier ID *", key: "supplier_id", placeholder: "UUID", col: 1 },
+                  { label: "Material ID (choose one target)", key: "material_id", placeholder: "Material UUID", col: 1 },
+                  { label: "Product ID (choose one target)", key: "product_id", placeholder: "Product UUID", col: 1 },
                   { label: "Description", key: "description", placeholder: "e.g. Palm Oil FY2026", col: 2 },
                   { label: "Agreed Unit Price *", key: "agreed_unit_price", type: "number", placeholder: "0.00", col: 1 },
                   { label: "Currency", key: "currency", placeholder: "KES", col: 1 },
@@ -373,6 +437,65 @@ export default function BlanketAgreementsPage() {
                   </div>
                 </>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {releaseAgreement && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white border rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <div className="px-6 py-4 border-b flex items-center justify-between">
+              <div>
+                <h2 className="text-base font-semibold">Call-off orders · {releaseAgreement.bpa_no}</h2>
+                <p className="text-xs text-gray-500 mt-1">A call-off creates a draft purchase order at the agreement price. Normal purchase-order approval and ordering are still required.</p>
+              </div>
+              <button onClick={() => setReleaseAgreement(null)} className="text-gray-400 hover:text-gray-600 text-xl" aria-label="Close call-off orders">×</button>
+            </div>
+            <div className="p-6 space-y-5">
+              {releaseError && <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2">{releaseError}</p>}
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-3 items-end border rounded-lg p-4">
+                <label className="text-xs text-gray-600">Purchase order number
+                  <input value={releaseForm.po_no} onChange={event => setReleaseForm(state => ({ ...state, po_no: event.target.value }))} className="mt-1 w-full border rounded px-2 py-2" maxLength={50} />
+                </label>
+                <label className="text-xs text-gray-600">Release quantity ({releaseAgreement.unit})
+                  <input type="number" min="0.001" step="0.001" value={releaseForm.quantity} onChange={event => setReleaseForm(state => ({ ...state, quantity: event.target.value }))} className="mt-1 w-full border rounded px-2 py-2" />
+                </label>
+                <label className="text-xs text-gray-600">Release date
+                  <input type="date" min={releaseAgreement.valid_from} max={releaseAgreement.valid_to} value={releaseForm.release_date} onChange={event => setReleaseForm(state => ({ ...state, release_date: event.target.value, expected_delivery_date: state.expected_delivery_date < event.target.value ? event.target.value : state.expected_delivery_date }))} className="mt-1 w-full border rounded px-2 py-2" />
+                </label>
+                <label className="text-xs text-gray-600">Expected delivery
+                  <input type="date" min={releaseForm.release_date} value={releaseForm.expected_delivery_date} onChange={event => setReleaseForm(state => ({ ...state, expected_delivery_date: event.target.value }))} className="mt-1 w-full border rounded px-2 py-2" />
+                </label>
+                <button onClick={() => void createReleaseOrder()} disabled={releaseSaving || releaseLoading} className="bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white rounded px-3 py-2 text-sm">
+                  {releaseSaving ? "Creating…" : "Create draft PO"}
+                </button>
+                <label className="md:col-span-5 text-xs text-gray-600">Notes
+                  <input value={releaseForm.notes ?? ""} onChange={event => setReleaseForm(state => ({ ...state, notes: event.target.value }))} className="mt-1 w-full border rounded px-2 py-2" maxLength={1000} />
+                </label>
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold mb-2">Existing call-off orders</h3>
+                {releaseLoading ? <p className="text-sm text-gray-500">Loading call-off orders…</p> : releaseOrders.length === 0 ? (
+                  <p className="text-sm text-gray-500">No call-off orders yet.</p>
+                ) : (
+                  <div className="overflow-x-auto border rounded-lg">
+                    <table className="w-full text-sm">
+                      <thead className="bg-gray-50"><tr>{["PO No.", "Qty", "Unit Price", "Delivery", "Status"].map(header => <th key={header} className="px-3 py-2 text-left text-xs text-gray-600">{header}</th>)}</tr></thead>
+                      <tbody className="divide-y">{releaseOrders.map(order => (
+                        <tr key={order.id}>
+                          <td className="px-3 py-2 font-mono text-xs">{order.po_no}</td>
+                          <td className="px-3 py-2 text-xs">{Number(order.lines[0]?.ordered_quantity ?? 0).toLocaleString()} {order.lines[0]?.unit ?? releaseAgreement.unit}</td>
+                          <td className="px-3 py-2 text-xs">{order.currency} {Number(order.lines[0]?.unit_price ?? 0).toLocaleString()}</td>
+                          <td className="px-3 py-2 text-xs">{order.expected_delivery_date}</td>
+                          <td className="px-3 py-2 text-xs">{order.status}</td>
+                        </tr>
+                      ))}</tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+              <div className="flex justify-end"><button onClick={() => setReleaseAgreement(null)} className="border rounded px-4 py-2 text-sm">Close</button></div>
             </div>
           </div>
         </div>

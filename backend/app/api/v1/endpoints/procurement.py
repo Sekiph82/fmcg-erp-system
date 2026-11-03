@@ -8,6 +8,7 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import and_, or_, select, func
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 
 from app.core.deps import get_current_user, get_db, require_permission
@@ -48,6 +49,7 @@ from app.schemas.procurement import (
     RFQResponseEvaluationRead,
     RFQAwardProposalCreate, RFQAwardDecision, RFQAwardRead, RFQResponseLineQuoteRead,
     BlanketAgreementCreate, BlanketAgreementUpdate, BlanketAgreementRead,
+    BlanketAgreementReleaseCreate,
     BlanketAgreementPriceBreakInput, BlanketAgreementPriceBreakScheduleUpdate,
     BlanketAgreementPriceBreakRead,
     AutoReorderPolicyCreate, AutoReorderPolicyUpdate, AutoReorderPolicyRead,
@@ -297,7 +299,10 @@ async def update_po(
     _require_procurement_action(current_user, po, "edit")
     if po.status not in (POStatus.DRAFT,):
         raise HTTPException(422, "Only DRAFT POs can be edited")
-    for k, v in body.model_dump(exclude_unset=True).items():
+    updates = body.model_dump(exclude_unset=True)
+    if po.bpa_id and {"company_id", "branch_id", "cost_center_id", "department", "payment_terms"}.intersection(updates):
+        raise HTTPException(409, "A BPA release order must retain its agreement commercial terms and scope.")
+    for k, v in updates.items():
         setattr(po, k, v)
     await db.commit()
     po = await crud.get_po(db, po_id)
@@ -348,6 +353,8 @@ async def add_po_line(
     if not po or po.status != POStatus.DRAFT:
         raise HTTPException(422, "Only DRAFT POs can be modified")
     _require_procurement_action(current_user, po, "edit")
+    if po.bpa_id:
+        raise HTTPException(409, "BPA release order lines are controlled by the source agreement.")
     from app.models.procurement import POLine as POLineModel
     db.add(POLineModel(po_id=po_id, **body.model_dump()))
     await db.commit()
@@ -1648,6 +1655,11 @@ def _bpa_is_fully_consumed(bpa: BlanketPurchaseAgreement) -> bool:
     )
 
 
+def _require_exactly_one_bpa_release_target(agreement: BlanketPurchaseAgreement) -> None:
+    if bool(agreement.material_id) == bool(agreement.product_id):
+        raise HTTPException(422, "A release agreement must identify exactly one material or product.")
+
+
 _BPA_AUDIT_FIELDS = (
     "bpa_no", "supplier_id", "company_id", "branch_id", "cost_center_id", "department",
     "material_id", "product_id", "agreed_unit_price", "currency", "agreed_quantity",
@@ -1728,6 +1740,121 @@ async def list_bpas(
     return rows
 
 
+@router.get("/bpa/{bpa_id}/release-orders", response_model=List[PODetailRead])
+async def list_bpa_release_orders(
+    bpa_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(require_any_permission(PROCUREMENT_VIEW_PERMISSIONS)),
+):
+    agreement = await db.get(BlanketPurchaseAgreement, bpa_id)
+    if not agreement or not _can_view_procurement_record(current_user, agreement):
+        raise HTTPException(404, "Agreement not found")
+    result = await db.execute(
+        select(PurchaseOrder)
+        .options(
+            selectinload(PurchaseOrder.supplier),
+            selectinload(PurchaseOrder.pr),
+            selectinload(PurchaseOrder.lines).selectinload(POLine.material),
+            selectinload(PurchaseOrder.lines).selectinload(POLine.product),
+            selectinload(PurchaseOrder.supplier_payments),
+        )
+        .where(PurchaseOrder.bpa_id == bpa_id)
+        .order_by(PurchaseOrder.created_at.desc())
+    )
+    orders = result.scalars().all()
+    return [
+        _build_po_detail(order, current_user)
+        for order in orders
+        if _can_view_procurement_record(current_user, order)
+    ]
+
+
+@router.post("/bpa/{bpa_id}/release-orders", response_model=PODetailRead, status_code=201)
+async def create_bpa_release_order(
+    bpa_id: uuid.UUID,
+    body: BlanketAgreementReleaseCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    result = await db.execute(
+        select(BlanketPurchaseAgreement)
+        .options(selectinload(BlanketPurchaseAgreement.price_breaks))
+        .where(BlanketPurchaseAgreement.id == bpa_id)
+        .with_for_update()
+    )
+    agreement = result.scalar_one_or_none()
+    if not agreement:
+        raise HTTPException(404, "Agreement not found")
+    _require_procurement_action(current_user, agreement, "create")
+    if _effective_bpa_status(agreement, body.release_date) != BPAStatus.ACTIVE:
+        raise HTTPException(409, "Only active blanket agreements can create release orders.")
+    _require_exactly_one_bpa_release_target(agreement)
+    if await db.scalar(select(PurchaseOrder.id).where(PurchaseOrder.po_no == body.po_no)):
+        raise HTTPException(409, "Purchase order number already exists.")
+
+    try:
+        unit_price = svc.resolve_bpa_unit_price(agreement, body.quantity, body.release_date)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+
+    reserved = await svc.bpa_open_release_quantity(db, agreement.id)
+    if agreement.agreed_quantity is not None:
+        available = agreement.agreed_quantity - agreement.consumed_quantity - reserved
+        if body.quantity > available:
+            raise HTTPException(409, "Release quantity exceeds the unconsumed and unreserved agreement commitment.")
+
+    po = PurchaseOrder(
+        po_no=body.po_no,
+        supplier_id=agreement.supplier_id,
+        pr_id=None,
+        bpa_id=agreement.id,
+        company_id=agreement.company_id,
+        branch_id=agreement.branch_id,
+        cost_center_id=agreement.cost_center_id,
+        department=agreement.department,
+        order_date=body.release_date,
+        expected_delivery_date=body.expected_delivery_date,
+        payment_terms=agreement.payment_terms,
+        currency=agreement.currency,
+        exchange_rate=Decimal("1"),
+        status=POStatus.DRAFT,
+        notes=body.notes,
+        created_by_id=current_user.id,
+    )
+    try:
+        db.add(po)
+        await db.flush()
+        db.add(POLine(
+            po_id=po.id,
+            line_no=1,
+            material_id=agreement.material_id,
+            product_id=agreement.product_id,
+            description=agreement.description,
+            ordered_quantity=body.quantity,
+            unit=agreement.unit,
+            unit_price=unit_price,
+            tax_rate=Decimal("0"),
+            received_quantity=Decimal("0"),
+        ))
+        db.add(_bpa_audit_log(
+            agreement,
+            current_user,
+            AuditEvent.BPA_RELEASE_CREATED,
+            before_value={"consumed_quantity": str(agreement.consumed_quantity), "open_release_quantity": str(reserved)},
+            after_value={"purchase_order_id": str(po.id), "po_no": po.po_no, "quantity": str(body.quantity), "unit_price": str(unit_price)},
+            details={"release_date": body.release_date.isoformat(), "commitment_reserved": agreement.agreed_quantity is not None},
+        ))
+        await db.commit()
+    except IntegrityError as exc:
+        await db.rollback()
+        duplicate = await db.scalar(select(PurchaseOrder.id).where(PurchaseOrder.po_no == body.po_no))
+        if duplicate:
+            raise HTTPException(409, "Purchase order number already exists.") from exc
+        raise
+    po = await crud.get_po(db, po.id)
+    return _build_po_detail(po, current_user)
+
+
 def _bpa_price_break_snapshot(price_breaks) -> list[dict[str, str | None]]:
     return [
         {
@@ -1778,6 +1905,13 @@ async def replace_bpa_price_breaks(
     today = date.today()
     if _effective_bpa_status(agreement, today) != BPAStatus.ACTIVE:
         raise HTTPException(409, "Expired or cancelled blanket agreements cannot change price breaks.")
+    linked_release = await db.scalar(
+        select(PurchaseOrder.id)
+        .where(PurchaseOrder.bpa_id == agreement.id, PurchaseOrder.status != POStatus.CANCELLED)
+        .limit(1)
+    )
+    if linked_release:
+        raise HTTPException(409, "Price breaks are locked while non-cancelled release orders exist.")
     if agreement.consumed_quantity > 0:
         raise HTTPException(409, "Price breaks are locked after consumption starts.")
 
@@ -1891,6 +2025,16 @@ async def update_bpa(
         "agreed_unit_price", "agreed_quantity", "valid_to", "payment_terms",
         "company_id", "branch_id", "cost_center_id", "department",
     }
+    linked_release = await db.scalar(
+        select(PurchaseOrder.id)
+        .where(PurchaseOrder.bpa_id == bpa.id, PurchaseOrder.status != POStatus.CANCELLED)
+        .limit(1)
+    )
+    if linked_release and commercial_fields.intersection(updates):
+        raise HTTPException(409, "Agreement terms and scope are locked while release orders exist.")
+    # Preserve the agreement as the source record once any call-off history exists.
+    if requested_status == BPAStatus.CANCELLED and linked_release:
+        raise HTTPException(409, "A blanket agreement with release-order history cannot be cancelled.")
     if bpa.consumed_quantity > 0 and commercial_fields.intersection(updates):
         raise HTTPException(409, "Commercial terms and procurement scope cannot change after consumption starts.")
     if "valid_to" in updates and updates["valid_to"] is None:

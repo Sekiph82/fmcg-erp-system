@@ -183,6 +183,32 @@ class POCreate(ProcurementScopeFields):
     lines: List[POLineCreate] = []
 
 
+class BlanketAgreementReleaseCreate(BaseModel):
+    po_no: str = Field(min_length=1, max_length=50)
+    release_date: date
+    expected_delivery_date: date
+    quantity: Decimal = Field(gt=0, max_digits=14, decimal_places=3, allow_inf_nan=False)
+    notes: Optional[str] = Field(default=None, max_length=1000)
+
+    @field_validator("po_no", mode="before")
+    @classmethod
+    def normalize_po_number(cls, value):
+        return value.strip() if isinstance(value, str) else value
+
+    @field_validator("quantity")
+    @classmethod
+    def require_finite_quantity(cls, value: Decimal) -> Decimal:
+        if not value.is_finite():
+            raise ValueError("Release quantity must be finite")
+        return value
+
+    @model_validator(mode="after")
+    def validate_delivery_date(self):
+        if self.expected_delivery_date < self.release_date:
+            raise ValueError("Expected delivery date must be on or after the release date")
+        return self
+
+
 class POUpdate(ProcurementScopeFields):
     expected_delivery_date: Optional[date] = None
     payment_terms: Optional[str] = None
@@ -197,6 +223,7 @@ class PORead(ProcurementScopeFields):
     supplier_name: Optional[str] = None
     pr_id: Optional[uuid.UUID]
     pr_no: Optional[str] = None
+    bpa_id: Optional[uuid.UUID] = None
     order_date: date
     expected_delivery_date: date
     payment_terms: Optional[str]

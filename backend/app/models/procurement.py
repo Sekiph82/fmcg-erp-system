@@ -111,6 +111,7 @@ class PurchaseOrder(Base, TimestampMixin):
     po_no = Column(String(50), unique=True, nullable=False, index=True)
     supplier_id = Column(UUID(as_uuid=True), ForeignKey("suppliers.id", ondelete="RESTRICT"), nullable=False)
     pr_id = Column(UUID(as_uuid=True), ForeignKey("purchase_requisitions.id", ondelete="SET NULL"), nullable=True)
+    bpa_id = Column(UUID(as_uuid=True), ForeignKey("blanket_purchase_agreements.id", ondelete="RESTRICT"), nullable=True, index=True)
     company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id", ondelete="SET NULL"), nullable=True, index=True)
     branch_id = Column(UUID(as_uuid=True), ForeignKey("branches.id", ondelete="SET NULL"), nullable=True, index=True)
     cost_center_id = Column(UUID(as_uuid=True), ForeignKey("cost_centers.id", ondelete="SET NULL"), nullable=True, index=True)
@@ -132,6 +133,7 @@ class PurchaseOrder(Base, TimestampMixin):
 
     supplier = relationship("Supplier")
     pr = relationship("PurchaseRequisition")
+    blanket_agreement = relationship("BlanketPurchaseAgreement", back_populates="release_orders")
     company = relationship("Company")
     branch = relationship("Branch")
     cost_center = relationship("CostCenter")
@@ -682,6 +684,7 @@ class BlanketPurchaseAgreement(Base, TimestampMixin):
         cascade="all, delete-orphan",
         order_by="BlanketAgreementPriceBreak.min_quantity",
     )
+    release_orders = relationship("PurchaseOrder", back_populates="blanket_agreement")
 
 
 class BlanketAgreementPriceBreak(Base, TimestampMixin):

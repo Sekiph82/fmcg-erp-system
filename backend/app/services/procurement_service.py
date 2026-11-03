@@ -16,7 +16,7 @@ from typing import Optional
 import uuid
 
 from fastapi import HTTPException, status
-from sqlalchemy import select, and_, func
+from sqlalchemy import select, and_, case, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -256,6 +256,22 @@ async def find_procurement_approval_rules(
         .order_by(ProcurementApprovalRule.approval_level, ProcurementApprovalRule.rule_name)
     )
     return list(result.scalars().all())
+
+
+async def bpa_open_release_quantity(db: AsyncSession, agreement_id: uuid.UUID) -> Decimal:
+    """Quantity still reserved by non-cancelled BPA purchase orders."""
+    outstanding = case(
+        (POLine.ordered_quantity > POLine.received_quantity, POLine.ordered_quantity - POLine.received_quantity),
+        else_=Decimal("0"),
+    )
+    result = await db.execute(
+        select(func.coalesce(func.sum(outstanding), 0))
+        .select_from(POLine)
+        .join(PurchaseOrder, PurchaseOrder.id == POLine.po_id)
+        .where(PurchaseOrder.bpa_id == agreement_id, PurchaseOrder.status != POStatus.CANCELLED)
+    )
+    value = result.scalar_one()
+    return Decimal(str(value or 0))
 
 
 async def approve_pr(

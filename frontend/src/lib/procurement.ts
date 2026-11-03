@@ -114,6 +114,7 @@ export interface PO extends ProcurementScopeFields {
   supplier_name?: string;
   pr_id?: string;
   pr_no?: string;
+  bpa_id?: string;
   order_date: string;
   expected_delivery_date: string;
   payment_terms?: string;
@@ -434,6 +435,14 @@ export interface BlanketAgreementPriceBreakInput {
   notes?: string | null;
 }
 
+export interface BlanketAgreementReleaseInput {
+  po_no: string;
+  release_date: string;
+  expected_delivery_date: string;
+  quantity: string;
+  notes?: string | null;
+}
+
 export interface AutoReorderPolicy extends ProcurementScopeFields {
   id: string;
   material_id?: string;
@@ -699,6 +708,14 @@ export const procurementApi = {
   },
   async updateBPA(id: string, data: object): Promise<BlanketAgreement> {
     const res = await apiClient.patch<BlanketAgreement>(`/api/v1/procurement/bpa/${id}`, data);
+    return res.data;
+  },
+  async listBPAReleaseOrders(id: string): Promise<PODetail[]> {
+    const res = await apiClient.get<PODetail[]>(`/api/v1/procurement/bpa/${id}/release-orders`);
+    return res.data;
+  },
+  async createBPAReleaseOrder(id: string, data: BlanketAgreementReleaseInput): Promise<PODetail> {
+    const res = await apiClient.post<PODetail>(`/api/v1/procurement/bpa/${id}/release-orders`, data);
     return res.data;
   },
 
