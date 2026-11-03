@@ -124,6 +124,19 @@ export default function SupplierEvaluationPage() {
                 </div>
               ),
             },
+            {
+              header: "Qualification",
+              accessor: (r) => {
+                const value = r.qualification_status ?? "LEGACY / UNRECORDED";
+                const variant = value === "APPROVED" ? "green" : ["SUSPENDED", "REJECTED"].includes(value) ? "red" : "yellow";
+                return (
+                  <div className="space-y-1">
+                    <Badge label={value} variant={variant} />
+                    {r.approved_until && <div className="text-[10px] text-gray-500">valid to {r.approved_until}</div>}
+                  </div>
+                );
+              },
+            },
             { header: "Lead Time", accessor: (r) => `${r.lead_time_days}d` },
             {
               header: "POs",

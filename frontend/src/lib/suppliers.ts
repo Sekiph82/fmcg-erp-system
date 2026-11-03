@@ -1,6 +1,7 @@
 import { apiClient } from "./api";
 
 export type SupplierPaymentMethod = "bank" | "cash" | "mpesa";
+export type SupplierQualificationStatus = "PENDING" | "APPROVED" | "CONDITIONAL" | "SUSPENDED" | "REJECTED";
 
 export interface Supplier {
   id: string;
@@ -15,6 +16,14 @@ export interface Supplier {
   tax_id?: string;
   payment_terms_days: number;
   is_active: boolean;
+  is_preferred: boolean;
+  supplier_category?: string | null;
+  qualification_status?: SupplierQualificationStatus | null;
+  risk_level?: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL" | null;
+  approved_from?: string | null;
+  approved_until?: string | null;
+  approved_by_id?: string | null;
+  approved_at?: string | null;
   preferred_payment_method?: SupplierPaymentMethod;
   mpesa_phone_number?: string;
 }
@@ -53,6 +62,19 @@ export const suppliersApi = {
 
   async update(id: string, data: Partial<SupplierCreate>): Promise<Supplier> {
     const res = await apiClient.patch<Supplier>(`/api/v1/suppliers/${id}`, data);
+    return res.data;
+  },
+
+  async decideQualification(
+    id: string,
+    data: { qualification_status: SupplierQualificationStatus; approved_from?: string | null; approved_until?: string | null; reason: string },
+  ): Promise<Supplier> {
+    const res = await apiClient.post<Supplier>(`/api/v1/suppliers/${id}/qualification`, data);
+    return res.data;
+  },
+
+  async decidePreference(id: string, data: { is_preferred: boolean; reason: string }): Promise<Supplier> {
+    const res = await apiClient.post<Supplier>(`/api/v1/suppliers/${id}/preference`, data);
     return res.data;
   },
 

@@ -310,6 +310,7 @@ class BaseImportAdapter(ABC):
     field_overrides: dict[str, str]    # {"supplier_id": "supplier_code"}
     example_row:     dict[str, Any]    # example values for template
     stewardship_permission: str | None = None
+    forbidden_import_fields: dict[str, str] = {}
 
     # ── Override in subclasses ────────────────────────────────────────────────
 
@@ -406,6 +407,12 @@ class ImportEngine:
         for idx, raw in enumerate(raw_rows, start=2):  # row 1 = header
             row_errors: list[str] = []
             coerced: dict = {}
+
+            forbidden_fields = getattr(adapter, "forbidden_import_fields", {})
+            for column in raw:
+                message = forbidden_fields.get(str(column).strip().lower())
+                if message:
+                    row_errors.append(f"{column}: {message}")
 
             # 1. Coerce types
             for col, raw_val in raw.items():

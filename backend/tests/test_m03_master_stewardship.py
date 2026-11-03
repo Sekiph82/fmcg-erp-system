@@ -40,6 +40,8 @@ from app.schemas.master import (
     ProductUpdate,
     SupplierCreate,
     SupplierUpdate,
+    SupplierQualificationDecision,
+    SupplierPreferenceDecision,
     WarehouseCreate,
     WarehouseUpdate,
 )
@@ -351,26 +353,37 @@ async def test_noop_master_edit_does_not_create_audit_event():
 
 
 @pytest.mark.asyncio
-async def test_direct_supplier_qualification_sets_the_authenticated_actor_as_approver(monkeypatch):
+async def test_new_supplier_cannot_self_approve_and_starts_pending(monkeypatch):
     actor = _actor("suppliers.create", "suppliers.edit")
     supplier = Supplier(
         id=uuid4(), code="S-T004-QUAL", name="Synthetic qualified supplier",
-        qualification_status=SupplierQualificationStatus.APPROVED,
+        qualification_status=SupplierQualificationStatus.PENDING,
     )
     db = SimpleNamespace(flush=AsyncMock(), commit=AsyncMock())
     audit = AsyncMock()
     monkeypatch.setattr(suppliers.crud, "create_supplier", AsyncMock(return_value=supplier))
     monkeypatch.setattr(suppliers, "record_master_data_change", audit)
-    create_data = SupplierCreate(
-        code=supplier.code,
-        name=supplier.name,
-        qualification_status=SupplierQualificationStatus.APPROVED,
-    )
+    with pytest.raises(HTTPException) as exc:
+        await suppliers.create_supplier(
+            SupplierCreate(
+                code=supplier.code,
+                name=supplier.name,
+                qualification_status=SupplierQualificationStatus.APPROVED,
+            ),
+            db,
+            actor,
+        )
+    assert exc.value.status_code == 422
+    assert supplier.qualification_status == SupplierQualificationStatus.PENDING
+    assert supplier.approved_by_id is None
+    assert supplier.approved_at is None
+    audit.assert_not_awaited()
+    db.commit.assert_not_awaited()
 
-    await suppliers.create_supplier(create_data, db, actor)
-
-    assert supplier.approved_by_id == actor.id
-    assert supplier.approved_at is not None
+    monkeypatch.setattr(suppliers.crud, "create_supplier", AsyncMock(return_value=supplier))
+    await suppliers.create_supplier(SupplierCreate(code=supplier.code, name=supplier.name), db, actor)
+    assert supplier.qualification_status == SupplierQualificationStatus.PENDING
+    assert supplier.is_preferred is False
     audit.assert_awaited_once()
     assert audit.await_args.kwargs["record"] is supplier
     assert audit.await_args.kwargs["permission"] == "suppliers.create"
@@ -401,14 +414,78 @@ async def test_supplier_update_cannot_choose_another_approver(monkeypatch):
     monkeypatch.setattr(suppliers.crud, "update_supplier", update_record)
     monkeypatch.setattr(suppliers, "record_master_data_change", audit)
 
-    await suppliers.update_supplier(supplier.id, update_data, db, actor)
+    with pytest.raises(HTTPException) as exc:
+        await suppliers.update_supplier(supplier.id, update_data, db, actor)
+    assert exc.value.status_code == 422
+    assert supplier.qualification_status == SupplierQualificationStatus.PENDING
+    assert supplier.approved_by_id is None
+    audit.assert_not_awaited()
+    db.commit.assert_not_awaited()
 
-    assert supplier.approved_by_id == actor.id
-    assert supplier.approved_by_id != before_approver
-    assert supplier.approved_at is not None
+
+@pytest.mark.asyncio
+async def test_supplier_qualification_decision_records_reason_and_clears_preference(monkeypatch):
+    actor = _actor("procurement.approve")
+    supplier = Supplier(
+        id=uuid4(), code="S-T003-QUAL", name="Synthetic qualified supplier",
+        qualification_status=SupplierQualificationStatus.APPROVED,
+        is_preferred=True,
+        approved_by_id=uuid4(),
+    )
+    db = SimpleNamespace(flush=AsyncMock(), commit=AsyncMock())
+    audit = AsyncMock()
+    monkeypatch.setattr(suppliers.crud, "get_supplier", AsyncMock(return_value=supplier))
+    monkeypatch.setattr(suppliers, "record_master_data_change", audit)
+
+    result = await suppliers.decide_supplier_qualification(
+        supplier.id,
+        SupplierQualificationDecision(
+            qualification_status=SupplierQualificationStatus.SUSPENDED,
+            reason="  Synthetic quality hold  ",
+        ),
+        db,
+        actor,
+    )
+
+    assert result is supplier
+    assert supplier.qualification_status == SupplierQualificationStatus.SUSPENDED
+    assert supplier.is_preferred is False
+    assert supplier.approved_by_id is None
+    assert supplier.approved_at is None
+    assert supplier.approved_from is None
+    assert supplier.approved_until is None
     audit.assert_awaited_once()
-    assert audit.await_args.kwargs["record"] is supplier
+    assert audit.await_args.kwargs["permission"] == "procurement.approve"
+    assert audit.await_args.kwargs["force_event"] is True
+    assert audit.await_args.kwargs["audit_context"]["reason"] == "Synthetic quality hold"
+    assert audit.await_args.kwargs["audit_context"]["approval_required"] is True
     db.commit.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_supplier_preference_requires_current_active_approval(monkeypatch):
+    actor = _actor("procurement.approve")
+    supplier = Supplier(
+        id=uuid4(), code="S-T003-PREF", name="Synthetic supplier",
+        qualification_status=SupplierQualificationStatus.PENDING,
+        is_active=True,
+        is_preferred=False,
+    )
+    db = SimpleNamespace(flush=AsyncMock(), commit=AsyncMock())
+    audit = AsyncMock()
+    monkeypatch.setattr(suppliers.crud, "get_supplier", AsyncMock(return_value=supplier))
+    monkeypatch.setattr(suppliers, "record_master_data_change", audit)
+
+    with pytest.raises(HTTPException) as exc:
+        await suppliers.decide_supplier_preference(
+            supplier.id,
+            SupplierPreferenceDecision(is_preferred=True, reason="Synthetic preference"),
+            db,
+            actor,
+        )
+    assert exc.value.status_code == 409
+    audit.assert_not_awaited()
+    db.commit.assert_not_awaited()
 
 
 @pytest.mark.asyncio
@@ -593,7 +670,7 @@ async def test_master_bulk_import_refuses_writes_without_authenticated_audit_act
 
 
 @pytest.mark.asyncio
-async def test_bulk_imported_approved_supplier_records_the_authenticated_steward(monkeypatch):
+async def test_bulk_import_cannot_approve_supplier_and_new_imports_start_pending(monkeypatch):
     class FakeSession:
         def add(self, _record):
             return None
@@ -614,7 +691,7 @@ async def test_bulk_imported_approved_supplier_records_the_authenticated_steward
     audit = AsyncMock()
     monkeypatch.setattr("app.services.master_stewardship.record_master_data_change", audit)
 
-    result = await ImportEngine().run(
+    rejected = await ImportEngine().run(
         content=(
             b"code,name,qualification_status\n"
             b"S-T004-IMPORT-APPROVED,Synthetic imported supplier,APPROVED\n"
@@ -628,9 +705,30 @@ async def test_bulk_imported_approved_supplier_records_the_authenticated_steward
         actor=actor,
     )
 
+    assert rejected.imported is False
+    assert any("governed supplier workflow" in error.message for error in rejected.errors)
+    adapter.insert.assert_not_awaited()
+    audit.assert_not_awaited()
+
+    adapter.insert.reset_mock()
+    result = await ImportEngine().run(
+        content=(
+            b"code,name\n"
+            b"S-T004-IMPORT-APPROVED,Synthetic imported supplier\n"
+        ),
+        adapter=adapter,
+        mode=ImportMode.IMPORT_VALID_ONLY,
+        db=FakeSession(),
+        user_id=actor.id,
+        username=actor.email,
+        user_roles=[],
+        actor=actor,
+    )
     assert result.imported is True
-    assert supplier.approved_by_id == actor.id
-    assert supplier.approved_at is not None
+    assert supplier.qualification_status == SupplierQualificationStatus.PENDING
+    assert supplier.is_preferred is False
+    assert supplier.approved_by_id is None
+    assert supplier.approved_at is None
     audit.assert_awaited_once()
     assert audit.await_args.kwargs["actor"] is actor
     assert audit.await_args.kwargs["permission"] == "procurement.import"

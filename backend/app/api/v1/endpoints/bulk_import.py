@@ -40,9 +40,8 @@ from app.services.import_engine import (
 
 # ── Model / schema imports ────────────────────────────────────────────────────
 
-from app.models.master import Product, Material, Supplier, Warehouse
+from app.models.master import Product, Material, Supplier, Warehouse, SupplierQualificationStatus
 from app.models.bom import AdvancedBOM, BOMConversionProfile, BOMType
-from app.services.master_stewardship import apply_supplier_qualification_actor
 from app.models.hr import Employee
 from app.models.inventory import Stock, StockMovement, MovementType, StockType
 from app.models.recipe import Recipe
@@ -79,9 +78,7 @@ from app.models.utility_management import (
     DosingMode as _DosingMode,
 )
 
-from app.schemas.master import (
-    ProductCreate, MaterialCreate, SupplierCreate, WarehouseCreate,
-)
+from app.schemas.master import ProductCreate, MaterialCreate, SupplierImportCreate, WarehouseCreate
 from app.schemas.hr import EmployeeCreate
 from app.schemas.quality import QCParameterCreate
 from app.schemas.bom import ConversionProfileCreate
@@ -150,10 +147,18 @@ class SupplierAdapter(BaseImportAdapter):
     module       = "suppliers"
     perm_module  = "procurement"
     stewardship_permission = "procurement.import"
-    schema_class = SupplierCreate
+    schema_class = SupplierImportCreate
     model        = Supplier
     unique_key   = ["code"]
     field_overrides: dict = {}
+    forbidden_import_fields = {
+        "qualification_status": "Qualification decisions must use the governed supplier workflow.",
+        "approved_from": "Approval dates must be set through the governed supplier workflow.",
+        "approved_until": "Approval dates must be set through the governed supplier workflow.",
+        "approved_by_id": "Approval lineage cannot be assigned through import.",
+        "approved_at": "Approval lineage cannot be assigned through import.",
+        "is_preferred": "Preference decisions must use the governed supplier workflow.",
+    }
     example_row  = {
         "code": "SUP001", "name": "ABC Suppliers Ltd",
         "contact_person": "John Doe", "email": "john@abc.com",
@@ -162,7 +167,12 @@ class SupplierAdapter(BaseImportAdapter):
     }
 
     async def prepare_stewardship_record(self, record: Any, actor: Any) -> Any:
-        apply_supplier_qualification_actor(record, actor)
+        record.qualification_status = SupplierQualificationStatus.PENDING
+        record.is_preferred = False
+        record.approved_from = None
+        record.approved_until = None
+        record.approved_by_id = None
+        record.approved_at = None
         return record
 
     async def insert(self, data: dict, db: AsyncSession) -> Any:

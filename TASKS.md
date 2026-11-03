@@ -10,9 +10,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 - Current Milestone: M34 — Strategic Procurement Upgrade
 - Current Sprint: M34.S01 — Strategic Sourcing
-- Current Task: M34.S03.T002 — Supplier scorecard
+- Current Task: M34.S03.T003 — Approved/preferred/blocked supplier governance
 - Current Task Status: COMPLETE
-- Next Task/Action: M34.S03.T003 — Approved/preferred/blocked supplier governance
+- Next Task/Action: M34.S03.T004 — Corrective-action linkage
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -1109,7 +1109,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
   Evidence: CODEX_LOG_V01.md; focused KPI tests 4/4, Python compile, frontend type-check/ESLint, diff check, independent read-only review; selected T002 because its supplier scorecard aggregates the T001 KPI foundation.
 - [x] M34.S03.T002 — Supplier scorecard
   Evidence: CODEX_LOG_V01.md; focused KPI/scorecard tests 6/6, Python compile, frontend type-check/ESLint, diff check, independent read-only review; selected T003 next because GAP-009 marks supplier qualification and approved-supplier governance as high-priority prerequisites for using performance signals in purchasing decisions.
-- [ ] M34.S03.T003 — Approved/preferred/blocked supplier governance
+- [x] M34.S03.T003 — Approved/preferred/blocked supplier governance
+  Evidence: CODEX_LOG_V01.md; supplier qualification/preference decisions require procurement.approve with reason and audit lineage; new/imported suppliers start PENDING; explicit non-approved and expired qualifications block PO, PR conversion, RFQ award, and BPA commitments; PostgreSQL 16.6 task-owned integration 2 passed; combined supplier/M34 regression 59 passed, 11 existing opt-in skips; frontend type-check, targeted ESLint/Ruff, Python compile and diff checks passed; independent read-only review found no remaining findings.
 - [ ] M34.S03.T004 — Corrective-action linkage
 
 ## M34.S04 — Match & Cost Chain

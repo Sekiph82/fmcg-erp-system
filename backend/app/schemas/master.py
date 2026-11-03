@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 from typing import Optional
 from decimal import Decimal
 from datetime import date, datetime
@@ -54,6 +54,24 @@ class SupplierCreate(SupplierBase):
     pass
 
 
+class SupplierImportCreate(BaseModel):
+    code: str
+    name: str
+    contact_person: Optional[str] = None
+    email: Optional[EmailStr] = None
+    phone: Optional[str] = None
+    address: Optional[str] = None
+    city: Optional[str] = None
+    country: Optional[str] = None
+    tax_id: Optional[str] = None
+    payment_terms_days: int = 30
+    is_active: bool = True
+    preferred_payment_method: Optional[SupplierPaymentMethod] = None
+    mpesa_phone_number: Optional[str] = None
+    supplier_category: Optional[str] = None
+    risk_level: Optional[SupplierRiskLevel] = None
+
+
 class SupplierUpdate(BaseModel):
     name: Optional[str] = None
     contact_person: Optional[str] = None
@@ -74,8 +92,40 @@ class SupplierUpdate(BaseModel):
     approved_until: Optional[date] = None
 
 
+class SupplierQualificationDecision(BaseModel):
+    qualification_status: SupplierQualificationStatus
+    approved_from: Optional[date] = None
+    approved_until: Optional[date] = None
+    reason: str = Field(min_length=3, max_length=500)
+
+    @field_validator("reason", mode="before")
+    @classmethod
+    def normalize_reason(cls, value):
+        return value.strip() if isinstance(value, str) else value
+
+    @model_validator(mode="after")
+    def validate_approval_window(self):
+        if self.qualification_status == SupplierQualificationStatus.APPROVED:
+            if self.approved_until and self.approved_from and self.approved_until < self.approved_from:
+                raise ValueError("approved_until must be on or after approved_from")
+        elif self.approved_from is not None or self.approved_until is not None:
+            raise ValueError("Approval dates may only be set when approving a supplier")
+        return self
+
+
+class SupplierPreferenceDecision(BaseModel):
+    is_preferred: bool
+    reason: str = Field(min_length=3, max_length=500)
+
+    @field_validator("reason", mode="before")
+    @classmethod
+    def normalize_reason(cls, value):
+        return value.strip() if isinstance(value, str) else value
+
+
 class SupplierRead(SupplierBase):
     id: uuid.UUID
+    is_preferred: bool = False
     approved_by_id: Optional[uuid.UUID] = None
     approved_at: Optional[datetime] = None
     model_config = {"from_attributes": True}

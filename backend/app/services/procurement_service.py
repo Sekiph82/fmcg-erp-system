@@ -33,12 +33,45 @@ from app.models.procurement import (
 )
 from app.models.audit_log import AuditEvent, AuditLog
 from app.models.inventory import Stock, Lot, StockMovement, MovementType, StockType
-from app.models.master import Material, Product, Warehouse
+from app.models.master import Material, Product, Supplier, SupplierQualificationStatus, Warehouse
 from app.schemas.procurement import ProcurementAccessHint
 from app.services.inventory_locking import lot_identity, lock_inventory_identity, stock_identity
 
 
 PROCUREMENT_SCOPE_FIELDS = ("company_id", "branch_id", "cost_center_id", "department")
+
+
+def supplier_procurement_block_reason(
+    supplier: Supplier | None,
+    *,
+    start_date: date | None = None,
+    end_date: date | None = None,
+) -> str | None:
+    """Return why a supplier cannot receive a new procurement commitment.
+
+    Legacy suppliers with no recorded qualification remain usable for backwards
+    compatibility. Once a qualification state is explicitly recorded, only an
+    active APPROVED supplier inside its approval window is eligible.
+    """
+    if supplier is None:
+        return "Supplier not found."
+    if not supplier.is_active:
+        return "Inactive suppliers cannot receive new procurement commitments."
+    qualification_status = getattr(supplier, "qualification_status", None)
+    status_value = getattr(qualification_status, "value", qualification_status)
+    if status_value is None:
+        return None
+    if status_value != SupplierQualificationStatus.APPROVED.value:
+        return f"Supplier qualification status {status_value} does not allow new procurement commitments."
+    effective_start = start_date or date.today()
+    effective_end = end_date or effective_start
+    approved_from = getattr(supplier, "approved_from", None)
+    approved_until = getattr(supplier, "approved_until", None)
+    if approved_from and approved_from > effective_start:
+        return "Supplier approval is not yet effective for the procurement commitment."
+    if approved_until and approved_until < effective_end:
+        return "Supplier approval expires before the procurement commitment ends."
+    return None
 
 
 def calculate_supplier_otif(

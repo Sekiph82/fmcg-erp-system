@@ -59,6 +59,8 @@ async def record_master_data_change(
     action: str,
     permission: str,
     before: dict[str, Any] | None = None,
+    audit_context: dict[str, Any] | None = None,
+    force_event: bool = False,
 ) -> None:
     """Write the master mutation and its audit event in the caller's transaction.
 
@@ -78,7 +80,7 @@ async def record_master_data_change(
         changed_fields = sorted(
             key for key, value in after.items() if previous.get(key) != value
         )
-        if not changed_fields:
+        if not changed_fields and not force_event:
             return
         before_values = {key: previous.get(key) for key in changed_fields}
         after_values = {key: after.get(key) for key in changed_fields}
@@ -103,6 +105,7 @@ async def record_master_data_change(
             "approval_required": False,
             "required_permission": permission,
             "changed_fields": changed_fields,
+            **(audit_context or {}),
         },
     )
 

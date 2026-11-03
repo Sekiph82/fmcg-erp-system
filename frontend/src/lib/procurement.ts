@@ -227,6 +227,9 @@ export interface SupplierDashboardRow extends ProcurementScopeFields {
   supplier_name: string;
   supplier_code: string;
   is_preferred: boolean;
+  qualification_status?: "PENDING" | "APPROVED" | "CONDITIONAL" | "SUSPENDED" | "REJECTED" | null;
+  approved_from?: string | null;
+  approved_until?: string | null;
   lead_time_days: number;
   performance_score?: number;
   compliance_notes?: string;

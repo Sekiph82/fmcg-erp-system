@@ -207,6 +207,14 @@ async def convert_pr_to_po(
     if not pr:
         raise HTTPException(404, "PR not found")
     _require_procurement_action(current_user, pr, "create")
+    supplier = await db.get(Supplier, body.supplier_id)
+    blocked_reason = svc.supplier_procurement_block_reason(
+        supplier,
+        start_date=body.order_date,
+        end_date=body.expected_delivery_date,
+    )
+    if blocked_reason:
+        raise HTTPException(409, blocked_reason)
     po = await svc.convert_pr_to_po(db, pr, body.model_dump(), current_user.id)
     await db.commit()
     po = await crud.get_po(db, po.id)
@@ -273,6 +281,14 @@ async def create_po(
 ):
     target = PurchaseOrder(**body.model_dump(exclude={"lines"}))
     _require_procurement_action(current_user, target, "create")
+    supplier = await db.get(Supplier, body.supplier_id)
+    blocked_reason = svc.supplier_procurement_block_reason(
+        supplier,
+        start_date=body.order_date,
+        end_date=body.expected_delivery_date,
+    )
+    if blocked_reason:
+        raise HTTPException(409, blocked_reason)
     po = await crud.create_po(db, body.model_dump(), current_user.id)
     await db.commit()
     po = await crud.get_po(db, po.id)
@@ -301,6 +317,13 @@ async def update_po(
     _require_procurement_action(current_user, po, "edit")
     if po.status not in (POStatus.DRAFT,):
         raise HTTPException(422, "Only DRAFT POs can be edited")
+    blocked_reason = svc.supplier_procurement_block_reason(
+        po.supplier,
+        start_date=po.order_date,
+        end_date=po.expected_delivery_date,
+    )
+    if blocked_reason:
+        raise HTTPException(409, blocked_reason)
     updates = body.model_dump(exclude_unset=True)
     if po.bpa_id and {"company_id", "branch_id", "cost_center_id", "department", "payment_terms"}.intersection(updates):
         raise HTTPException(409, "A BPA release order must retain its agreement commercial terms and scope.")
@@ -317,6 +340,13 @@ async def approve_po(po_id: uuid.UUID, db: AsyncSession = Depends(get_db), curre
     if not po:
         raise HTTPException(404, "PO not found")
     _require_procurement_action(current_user, po, "approve")
+    blocked_reason = svc.supplier_procurement_block_reason(
+        po.supplier,
+        start_date=po.order_date,
+        end_date=po.expected_delivery_date,
+    )
+    if blocked_reason:
+        raise HTTPException(409, blocked_reason)
     po = await svc.approve_po(db, po, current_user.id)
     await db.commit()
     return _build_po_read(po, current_user)
@@ -328,6 +358,13 @@ async def mark_ordered(po_id: uuid.UUID, db: AsyncSession = Depends(get_db), cur
     if not po:
         raise HTTPException(404, "PO not found")
     _require_procurement_action(current_user, po, "edit")
+    blocked_reason = svc.supplier_procurement_block_reason(
+        po.supplier,
+        start_date=po.order_date,
+        end_date=po.expected_delivery_date,
+    )
+    if blocked_reason:
+        raise HTTPException(409, blocked_reason)
     po = await svc.mark_ordered(db, po)
     await db.commit()
     return _build_po_read(po, current_user)
@@ -670,6 +707,11 @@ async def supplier_dashboard(
             supplier_name=s.name,
             supplier_code=s.code,
             is_preferred=s.is_preferred,
+            qualification_status=(
+                getattr(s.qualification_status, "value", s.qualification_status)
+            ),
+            approved_from=s.approved_from,
+            approved_until=s.approved_until,
             lead_time_days=s.lead_time_days,
             performance_score=s.performance_score if broad_view else None,
             compliance_notes=s.compliance_notes,
@@ -1099,8 +1141,9 @@ async def create_rfq_award_proposal(
         response = responses[requested_allocation.response_id]
         if response.status != RFQResponseStatus.SUBMITTED:
             raise HTTPException(409, "Only submitted bids can receive an award allocation.")
-        if not response.supplier or not response.supplier.is_active:
-            raise HTTPException(409, "An inactive or missing supplier cannot receive an award.")
+        blocked_reason = svc.supplier_procurement_block_reason(response.supplier)
+        if blocked_reason:
+            raise HTTPException(409, blocked_reason)
         if response.valid_until is not None and response.valid_until < date.today():
             raise HTTPException(409, "An expired bid cannot receive an award.")
         if rfq.evaluation_criteria and response.evaluation_status != RFQEvaluationStatus.QUALIFIED:
@@ -1355,11 +1398,25 @@ async def _record_rfq_award_decision(
             for group in groups.values()
         )
         if all_approved:
+            allocated_response_ids = {allocation.response_id for allocation in award.allocations}
+            allocated_responses = (
+                await db.execute(
+                    select(RFQResponse)
+                    .options(selectinload(RFQResponse.supplier))
+                    .where(RFQResponse.id.in_(allocated_response_ids))
+                    .with_for_update()
+                )
+            ).scalars().all()
+            for response in allocated_responses:
+                blocked_reason = svc.supplier_procurement_block_reason(response.supplier)
+                if blocked_reason:
+                    await db.rollback()
+                    raise HTTPException(409, f"Award cannot be approved: {blocked_reason}")
             award.status = RFQAwardStatus.APPROVED
             award.decided_at = now
             rfq.status = RFQStatus.AWARDED
-            allocated_responses = {allocation.response_id for allocation in award.allocations}
-            for response_id in allocated_responses:
+            allocated_response_ids = {allocation.response_id for allocation in award.allocations}
+            for response_id in allocated_response_ids:
                 (await db.execute(
                     select(RFQResponse).where(RFQResponse.id == response_id).with_for_update()
                 )).scalar_one().status = RFQResponseStatus.AWARDED
@@ -1372,13 +1429,13 @@ async def _record_rfq_award_decision(
                 .with_for_update()
             )).scalars().all()
             for response in unallocated_responses:
-                if response.id not in allocated_responses:
+                if response.id not in allocated_response_ids:
                     response.status = RFQResponseStatus.REJECTED
             awarded_supplier_ids = {
                 (await db.execute(
                     select(RFQResponse.supplier_id).where(RFQResponse.id == response_id)
                 )).scalar_one()
-                for response_id in allocated_responses
+                for response_id in allocated_response_ids
             }
             rfq.awarded_supplier_id = next(iter(awarded_supplier_ids)) if len(awarded_supplier_ids) == 1 else None
 
@@ -1854,7 +1911,10 @@ async def create_bpa_release_order(
 ):
     result = await db.execute(
         select(BlanketPurchaseAgreement)
-        .options(selectinload(BlanketPurchaseAgreement.price_breaks))
+        .options(
+            selectinload(BlanketPurchaseAgreement.price_breaks),
+            selectinload(BlanketPurchaseAgreement.supplier),
+        )
         .where(BlanketPurchaseAgreement.id == bpa_id)
         .with_for_update()
     )
@@ -1862,6 +1922,13 @@ async def create_bpa_release_order(
     if not agreement:
         raise HTTPException(404, "Agreement not found")
     _require_procurement_action(current_user, agreement, "create")
+    blocked_reason = svc.supplier_procurement_block_reason(
+        agreement.supplier,
+        start_date=body.release_date,
+        end_date=body.expected_delivery_date,
+    )
+    if blocked_reason:
+        raise HTTPException(409, blocked_reason)
     if _effective_bpa_status(agreement, body.release_date) != BPAStatus.ACTIVE:
         raise HTTPException(409, "Only active blanket agreements can create release orders.")
     _require_exactly_one_bpa_release_target(agreement)
@@ -2037,6 +2104,14 @@ async def create_bpa(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
+    supplier = await db.get(Supplier, body.supplier_id)
+    blocked_reason = svc.supplier_procurement_block_reason(
+        supplier,
+        start_date=body.valid_from,
+        end_date=body.valid_to,
+    )
+    if blocked_reason:
+        raise HTTPException(409, blocked_reason)
     bpa = BlanketPurchaseAgreement(**body.model_dump(), created_by_id=current_user.id)
     _require_procurement_action(current_user, bpa, "create")
     db.add(bpa)

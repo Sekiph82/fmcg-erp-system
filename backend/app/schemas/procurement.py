@@ -437,6 +437,9 @@ class SupplierDashboardRow(ProcurementScopeFields):
     supplier_name: str
     supplier_code: str
     is_preferred: bool
+    qualification_status: Optional[str] = None
+    approved_from: Optional[date] = None
+    approved_until: Optional[date] = None
     lead_time_days: int
     performance_score: Optional[Decimal]
     compliance_notes: Optional[str]
