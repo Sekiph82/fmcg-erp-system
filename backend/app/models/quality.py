@@ -414,6 +414,13 @@ class CorrectiveAction(Base, TimestampMixin):
     lot_id = Column(UUID(as_uuid=True), ForeignKey("lots.id", ondelete="SET NULL"), nullable=True)
     product_id = Column(UUID(as_uuid=True), ForeignKey("products.id", ondelete="SET NULL"), nullable=True)
     material_id = Column(UUID(as_uuid=True), ForeignKey("materials.id", ondelete="SET NULL"), nullable=True)
+    supplier_id = Column(UUID(as_uuid=True), ForeignKey("suppliers.id", ondelete="SET NULL"), nullable=True, index=True)
+    supplier_evaluation_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("supplier_evaluations.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     assigned_to_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     approved_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     due_date = Column(Date, nullable=True)
@@ -435,6 +442,8 @@ class CorrectiveAction(Base, TimestampMixin):
     lot = relationship("Lot", foreign_keys=[lot_id])
     product = relationship("Product", foreign_keys=[product_id])
     material = relationship("Material", foreign_keys=[material_id])
+    supplier = relationship("Supplier", foreign_keys=[supplier_id])
+    supplier_evaluation = relationship("SupplierEvaluation", foreign_keys=[supplier_evaluation_id])
 
 
 class CorrectiveActionStep(Base, TimestampMixin):

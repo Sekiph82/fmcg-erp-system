@@ -275,6 +275,8 @@ class CorrectiveActionBase(BaseModel):
     lot_id: Optional[uuid.UUID] = None
     product_id: Optional[uuid.UUID] = None
     material_id: Optional[uuid.UUID] = None
+    supplier_id: Optional[uuid.UUID] = None
+    supplier_evaluation_id: Optional[uuid.UUID] = None
     assigned_to_id: Optional[uuid.UUID] = None
     due_date: Optional[date] = None
     root_cause_analysis: Optional[str] = None
@@ -311,6 +313,7 @@ class CorrectiveActionRead(CorrectiveActionBase):
     created_at: datetime
     assigned_to_name: Optional[str] = None
     product_name: Optional[str] = None
+    supplier_name: Optional[str] = None
     steps_total: int = 0
     steps_completed: int = 0
 

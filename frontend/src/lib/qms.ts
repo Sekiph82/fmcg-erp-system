@@ -145,6 +145,9 @@ export interface CorrectiveAction {
   status: CorrectiveActionStatus;
   severity: RiskLevel;
   trigger_type: string | null;
+  supplier_id: string | null;
+  supplier_evaluation_id: string | null;
+  supplier_name: string | null;
   production_order_id: string | null;
   lot_id: string | null;
   product_id: string | null;
@@ -461,10 +464,17 @@ export const qmsApi = {
     apiFetch<QCDeviation>(`${BASE}/deviations/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
 
   // Corrective Actions
-  listCAs: (params?: { status?: CorrectiveActionStatus; severity?: RiskLevel }) => {
+  listCAs: (params?: {
+    status?: CorrectiveActionStatus;
+    severity?: RiskLevel;
+    supplier_id?: string;
+    supplier_evaluation_id?: string;
+  }) => {
     const q = new URLSearchParams();
     if (params?.status) q.set("status", params.status);
     if (params?.severity) q.set("severity", params.severity);
+    if (params?.supplier_id) q.set("supplier_id", params.supplier_id);
+    if (params?.supplier_evaluation_id) q.set("supplier_evaluation_id", params.supplier_evaluation_id);
     return apiFetch<CorrectiveAction[]>(`${BASE}/corrective-actions?${q}`);
   },
   createCA: (body: Record<string, unknown>) =>

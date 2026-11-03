@@ -7,13 +7,15 @@ from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select, func
+from sqlalchemy.orm import selectinload
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.access_control import can_modify_scope, has_any_permission
 from app.core.deps import get_current_user, get_db
 from app.models.inventory import Stock
-from app.models.procurement import GoodsReceipt, GRNLine
+from app.models.master import Supplier
+from app.models.procurement import GoodsReceipt, GRNLine, SupplierEvaluation
 from app.models.production import ProductionOrder
 from app.models.sales import Shipment, ShipmentLine
 from app.models.quality import (
@@ -45,10 +47,74 @@ from app.schemas.qms import (
     QualityGateAuditEventRead,
 )
 from app.services import qms_service as svc
+from app.services import procurement_service as procurement_svc
 from app.crud import quality as qc_crud
 from app.services import quality_service as qc_svc
 
 router = APIRouter()
+
+
+def _require_supplier_capa_permission(user, action: str) -> None:
+    permissions = {
+        "view": ("quality.view", "quality.view_all"),
+        "create": ("quality.create", "quality.create_all"),
+        "edit": ("quality.edit", "quality.edit_all"),
+        "approve": ("quality.approve", "quality.approve_all"),
+    }.get(action)
+    if permissions is None:
+        raise ValueError(f"Unsupported supplier CAPA action: {action}")
+    if not has_any_permission(user, permissions):
+        raise HTTPException(
+            status_code=403,
+            detail={"error": "forbidden", "detail": f"Quality {action} permission is required for supplier corrective actions."},
+        )
+
+
+async def _deviation_supplier_id(db: AsyncSession, deviation: QCDeviation) -> Optional[uuid.UUID]:
+    if deviation.inspection_id is None:
+        return None
+    result = await db.execute(
+        select(QCInspection.supplier_id).where(QCInspection.id == deviation.inspection_id)
+    )
+    return result.scalar_one_or_none()
+
+
+async def _validate_supplier_capa_links(
+    db: AsyncSession, user, data: dict, *, source_permission_verified: bool = False
+) -> None:
+    supplier_id = data.get("supplier_id")
+    evaluation_id = data.get("supplier_evaluation_id")
+    if not supplier_id and not evaluation_id:
+        return
+
+    if not source_permission_verified:
+        _require_supplier_capa_permission(user, "create")
+    evaluation = None
+    if evaluation_id:
+        evaluation = await db.get(SupplierEvaluation, evaluation_id)
+        if evaluation is None:
+            raise HTTPException(status_code=404, detail="Supplier evaluation not found.")
+        try:
+            procurement_svc.ensure_procurement_action_allowed(user, evaluation, "view")
+        except HTTPException as exc:
+            raise HTTPException(status_code=403, detail="Procurement view permission for this evaluation is required.") from exc
+        if supplier_id is not None and supplier_id != evaluation.supplier_id:
+            raise HTTPException(status_code=422, detail="The supplier must match the linked evaluation.")
+        supplier_id = evaluation.supplier_id
+        data["supplier_id"] = supplier_id
+
+    supplier = await db.get(Supplier, supplier_id)
+    if supplier is None:
+        raise HTTPException(status_code=404, detail="Supplier not found.")
+
+
+def _corrective_action_read_options():
+    return (
+        selectinload(CorrectiveAction.supplier),
+        selectinload(CorrectiveAction.steps),
+        selectinload(CorrectiveAction.assigned_to),
+        selectinload(CorrectiveAction.product),
+    )
 
 
 async def _require_lot_hold_release_access(db: AsyncSession, user, lot_id: uuid.UUID, action: str) -> None:
@@ -807,15 +873,26 @@ async def create_deviation_corrective_action(
     if deviation is None:
         raise HTTPException(status_code=404, detail="Deviation not found.")
     await _require_deviation_capa_create_permission(db, current_user, deviation)
+    data = body.model_dump(exclude_unset=True)
+    source_supplier_id = await _deviation_supplier_id(db, deviation)
+    if source_supplier_id is not None:
+        if data.get("supplier_id") not in {None, source_supplier_id}:
+            raise HTTPException(status_code=422, detail="Supplier must match the linked inspection.")
+        data["supplier_id"] = source_supplier_id
+    await _validate_supplier_capa_links(
+        db, current_user, data, source_permission_verified=source_supplier_id is not None
+    )
     try:
         ca = await svc.create_corrective_action_for_deviation(
-            db, deviation_id, body.model_dump(exclude_unset=True)
+            db, deviation_id, data
         )
         await db.commit()
     except ValueError as exc:
         await db.rollback()
         raise HTTPException(status_code=422, detail=str(exc)) from exc
-    result = await db.execute(select(CorrectiveAction).where(CorrectiveAction.id == ca.id))
+    result = await db.execute(
+        select(CorrectiveAction).options(*_corrective_action_read_options()).where(CorrectiveAction.id == ca.id)
+    )
     return _build_ca_read(result.scalar_one())
 
 
@@ -906,17 +983,28 @@ async def list_corrective_actions(
     status: Optional[CorrectiveActionStatus] = None,
     severity: Optional[RiskLevel] = None,
     assigned_to_id: Optional[uuid.UUID] = None,
+    supplier_id: Optional[uuid.UUID] = None,
+    supplier_evaluation_id: Optional[uuid.UUID] = None,
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
     q = select(CorrectiveAction)
+    can_view_supplier_capa = has_any_permission(current_user, ("quality.view", "quality.view_all"))
+    if (supplier_id is not None or supplier_evaluation_id is not None) and not can_view_supplier_capa:
+        _require_supplier_capa_permission(current_user, "view")
+    if not can_view_supplier_capa:
+        q = q.where(CorrectiveAction.supplier_id.is_(None))
     if status:
         q = q.where(CorrectiveAction.status == status)
     if severity:
         q = q.where(CorrectiveAction.severity == severity)
     if assigned_to_id:
         q = q.where(CorrectiveAction.assigned_to_id == assigned_to_id)
-    r = await db.execute(q.order_by(CorrectiveAction.created_at.desc()))
+    if supplier_id is not None:
+        q = q.where(CorrectiveAction.supplier_id == supplier_id)
+    if supplier_evaluation_id is not None:
+        q = q.where(CorrectiveAction.supplier_evaluation_id == supplier_evaluation_id)
+    r = await db.execute(q.options(*_corrective_action_read_options()).order_by(CorrectiveAction.created_at.desc()))
     cas = list(r.scalars())
     return [_build_ca_read(ca) for ca in cas]
 
@@ -928,6 +1016,7 @@ async def create_corrective_action(
     current_user=Depends(get_current_user),
 ):
     data = body.model_dump()
+    source_supplier_id = None
     if (data.get("trigger_type") or "").strip().upper() == "DEVIATION":
         deviation_id = data.get("trigger_id")
         if deviation_id is None:
@@ -939,13 +1028,26 @@ async def create_corrective_action(
         if deviation is None:
             raise HTTPException(status_code=404, detail="Deviation not found.")
         await _require_deviation_capa_create_permission(db, current_user, deviation)
+        source_supplier_id = await _deviation_supplier_id(db, deviation)
+        if source_supplier_id is not None:
+            if data.get("supplier_id") not in {None, source_supplier_id}:
+                raise HTTPException(status_code=422, detail="Supplier must match the linked inspection.")
+            data["supplier_id"] = source_supplier_id
+    await _validate_supplier_capa_links(
+        db,
+        current_user,
+        data,
+        source_permission_verified=source_supplier_id is not None,
+    )
     try:
         ca = await svc.create_corrective_action(db, data)
         await db.commit()
     except ValueError as exc:
         await db.rollback()
         raise HTTPException(status_code=422, detail=str(exc)) from exc
-    r = await db.execute(select(CorrectiveAction).where(CorrectiveAction.id == ca.id))
+    r = await db.execute(
+        select(CorrectiveAction).options(*_corrective_action_read_options()).where(CorrectiveAction.id == ca.id)
+    )
     return _build_ca_read(r.scalar_one())
 
 
@@ -955,10 +1057,14 @@ async def get_corrective_action(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    r = await db.execute(select(CorrectiveAction).where(CorrectiveAction.id == ca_id))
+    r = await db.execute(
+        select(CorrectiveAction).options(*_corrective_action_read_options()).where(CorrectiveAction.id == ca_id)
+    )
     ca = r.scalar_one_or_none()
     if not ca:
         raise HTTPException(404, "Corrective action not found")
+    if ca.supplier_id is not None:
+        _require_supplier_capa_permission(current_user, "view")
     return _build_ca_read(ca)
 
 
@@ -969,18 +1075,31 @@ async def update_corrective_action(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    r = await db.execute(select(CorrectiveAction).where(CorrectiveAction.id == ca_id))
+    r = await db.execute(
+        select(CorrectiveAction).options(*_corrective_action_read_options()).where(CorrectiveAction.id == ca_id)
+    )
     ca = r.scalar_one_or_none()
     if not ca:
         raise HTTPException(404, "Corrective action not found")
     updates = body.model_dump(exclude_unset=True)
+    if ca.supplier_id is not None:
+        _require_supplier_capa_permission(current_user, "edit")
+        if "status" in updates and (
+            ca.status == CorrectiveActionStatus.VERIFIED
+            or updates.get("status") == CorrectiveActionStatus.VERIFIED
+        ):
+            raise HTTPException(status_code=409, detail="Use the verification action to record verifier and effectiveness evidence.")
+        if "pdca_closed_at" in updates:
+            raise HTTPException(status_code=409, detail="Use the PDCA closure action to record the audited closure transition.")
     if updates.get("status") == CorrectiveActionStatus.COMPLETED:
         from datetime import datetime, timezone
         updates["completed_at"] = datetime.now(timezone.utc)
     for k, v in updates.items():
         setattr(ca, k, v)
     await db.commit()
-    r = await db.execute(select(CorrectiveAction).where(CorrectiveAction.id == ca_id))
+    r = await db.execute(
+        select(CorrectiveAction).options(*_corrective_action_read_options()).where(CorrectiveAction.id == ca_id)
+    )
     return _build_ca_read(r.scalar_one())
 
 
@@ -992,9 +1111,22 @@ async def complete_ca_step(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
+    ca_result = await db.execute(
+        select(CorrectiveAction)
+        .join(CorrectiveActionStep, CorrectiveActionStep.corrective_action_id == CorrectiveAction.id)
+        .where(CorrectiveAction.id == ca_id, CorrectiveActionStep.id == step_id)
+        .with_for_update()
+    )
+    ca = ca_result.scalar_one_or_none()
+    if not ca:
+        raise HTTPException(404, "Corrective action step not found")
+    if ca.supplier_id is not None:
+        _require_supplier_capa_permission(current_user, "edit")
     await svc.complete_ca_step(db, step_id, completion_notes)
     await db.commit()
-    r = await db.execute(select(CorrectiveAction).where(CorrectiveAction.id == ca_id))
+    r = await db.execute(
+        select(CorrectiveAction).options(*_corrective_action_read_options()).where(CorrectiveAction.id == ca_id)
+    )
     ca = r.scalar_one_or_none()
     if not ca:
         raise HTTPException(404, "Corrective action not found")
@@ -1009,16 +1141,22 @@ async def verify_corrective_action(
     current_user=Depends(get_current_user),
 ):
     from datetime import datetime, timezone
-    r = await db.execute(select(CorrectiveAction).where(CorrectiveAction.id == ca_id))
+    r = await db.execute(
+        select(CorrectiveAction).options(*_corrective_action_read_options()).where(CorrectiveAction.id == ca_id)
+    )
     ca = r.scalar_one_or_none()
     if not ca:
         raise HTTPException(404, "Corrective action not found")
+    if ca.supplier_id is not None:
+        _require_supplier_capa_permission(current_user, "approve")
     ca.status = CorrectiveActionStatus.VERIFIED
     ca.verified_at = datetime.now(timezone.utc)
     ca.verified_by_id = current_user.id
     ca.effectiveness_check = effectiveness_check
     await db.commit()
-    r = await db.execute(select(CorrectiveAction).where(CorrectiveAction.id == ca_id))
+    r = await db.execute(
+        select(CorrectiveAction).options(*_corrective_action_read_options()).where(CorrectiveAction.id == ca_id)
+    )
     return _build_ca_read(r.scalar_one())
 
 
@@ -1368,6 +1506,7 @@ def _build_ca_read(ca: CorrectiveAction) -> CorrectiveActionRead:
     r = CorrectiveActionRead.model_validate(ca)
     r.assigned_to_name = ca.assigned_to.full_name if ca.assigned_to else None
     r.product_name = ca.product.name if ca.product else None
+    r.supplier_name = ca.supplier.name if ca.supplier else None
     r.steps_total = len(ca.steps) if ca.steps else 0
     r.steps_completed = sum(1 for s in (ca.steps or []) if s.is_completed)
     return r
@@ -2107,15 +2246,23 @@ async def patch_audit_checklist(
 async def close_pdca(
     ca_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
-    _=Depends(get_current_user),
+    current_user=Depends(get_current_user),
 ):
     from app.services.qms_service import close_pdca as _close_pdca
+    ca_result = await db.execute(select(CorrectiveAction).where(CorrectiveAction.id == ca_id))
+    existing_ca = ca_result.scalar_one_or_none()
+    if existing_ca is None:
+        raise HTTPException(404, "Corrective action not found")
+    if existing_ca.supplier_id is not None:
+        _require_supplier_capa_permission(current_user, "approve")
     try:
         ca = await _close_pdca(db, ca_id)
     except ValueError as exc:
         raise HTTPException(400, str(exc))
     await db.commit()
-    r = await db.execute(select(CorrectiveAction).where(CorrectiveAction.id == ca_id))
+    r = await db.execute(
+        select(CorrectiveAction).options(*_corrective_action_read_options()).where(CorrectiveAction.id == ca_id)
+    )
     return _build_ca_read(r.scalar_one())
 
 

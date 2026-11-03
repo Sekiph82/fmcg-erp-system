@@ -25,6 +25,7 @@ from app.models.quality import (
     SamplingMethod, ParameterType,
 )
 from app.models.inventory import Lot, Stock, StockMovement, MovementType, StockType
+from app.models.procurement import SupplierEvaluation
 from app.models.sales import ShipmentLine
 
 
@@ -1753,6 +1754,16 @@ async def create_corrective_action_for_deviation(
             raise ValueError(f"CAPA {field} must match its linked deviation.")
         if source_value is not None:
             values[field] = source_value
+    if deviation.inspection_id is not None:
+        supplier_result = await db.execute(
+            select(QCInspection.supplier_id).where(QCInspection.id == deviation.inspection_id)
+        )
+        source_supplier_id = supplier_result.scalar_one_or_none()
+        supplied_supplier_id = values.get("supplier_id")
+        if source_supplier_id is not None:
+            if supplied_supplier_id not in {None, source_supplier_id}:
+                raise ValueError("CAPA supplier must match its linked inspection.")
+            values["supplier_id"] = source_supplier_id
     for field, source_value in (
         ("assigned_to_id", deviation.assigned_to_id),
         ("due_date", deviation.due_date),
@@ -1799,6 +1810,24 @@ async def link_deviation_corrective_action(
         raise ValueError("A CAPA linked to a deviation cannot replace another trigger type.")
     if ca.trigger_id not in {None, deviation.id}:
         raise ValueError("The CAPA is already triggered by a different record.")
+    if deviation.inspection_id is not None:
+        supplier_result = await db.execute(
+            select(QCInspection.supplier_id).where(QCInspection.id == deviation.inspection_id)
+        )
+        source_supplier_id = supplier_result.scalar_one_or_none()
+        if source_supplier_id is not None:
+            if ca.supplier_id not in {None, source_supplier_id}:
+                raise ValueError("CAPA supplier must match its linked inspection.")
+            if ca.supplier_evaluation_id is not None:
+                evaluation_result = await db.execute(
+                    select(SupplierEvaluation.supplier_id).where(
+                        SupplierEvaluation.id == ca.supplier_evaluation_id
+                    )
+                )
+                evaluation_supplier_id = evaluation_result.scalar_one_or_none()
+                if evaluation_supplier_id != source_supplier_id:
+                    raise ValueError("CAPA evaluation must match its linked inspection supplier.")
+            ca.supplier_id = source_supplier_id
     if deviation.status not in {DeviationStatus.OPEN, DeviationStatus.UNDER_REVIEW}:
         raise ValueError("A CAPA can only be linked before deviation resolution.")
     for field in ("production_order_id", "lot_id", "product_id", "material_id"):

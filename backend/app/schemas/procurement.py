@@ -450,6 +450,7 @@ class SupplierDashboardRow(ProcurementScopeFields):
     otif_order_count: int
     otif_met_order_count: int
     evaluation_count: int
+    latest_evaluation_id: Optional[uuid.UUID] = None
     avg_on_time_delivery: Optional[Decimal]
     avg_quality: Optional[Decimal]
     avg_price_competitiveness: Optional[Decimal]
@@ -460,6 +461,9 @@ class SupplierDashboardRow(ProcurementScopeFields):
     esg_assessment_period_end: Optional[date]
     food_safety_approvals: List[SupplierFoodSafetyScorecardItem]
     supplier_signals_restricted: bool
+    supplier_capa_count: Optional[int] = None
+    supplier_open_capa_count: Optional[int] = None
+    supplier_capa_signals_restricted: bool = True
     access: Optional[ProcurementAccessHint] = None
 
 

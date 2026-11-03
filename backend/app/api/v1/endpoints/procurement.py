@@ -32,7 +32,7 @@ from app.models.procurement import (
     RFQAwardApprovalStatus, ProcurementApprovalDocumentType,
     BlanketAgreementPriceBreak,
 )
-from app.models.quality import SupplierFoodSafetyApproval
+from app.models.quality import CorrectiveAction, CorrectiveActionStatus, SupplierFoodSafetyApproval
 from decimal import Decimal as _Decimal
 from app.models.master import Product, Supplier
 from app.models.role import Role
@@ -616,8 +616,10 @@ async def supplier_dashboard(
     today = date_cls.today()
     otif_period_start = today - timedelta(days=364)
     broad_view = _has_broad_procurement_view(current_user)
+    quality_view = has_any_permission(current_user, ("quality.view", "quality.view_all"))
     esg_by_supplier = {}
     food_safety_by_supplier = {}
+    capa_counts_by_supplier = {}
     if broad_view and suppliers:
         supplier_ids = [supplier.id for supplier in suppliers]
         esg_result = await db.execute(
@@ -650,6 +652,27 @@ async def supplier_dashboard(
         )
         for approval in food_safety_result.scalars().all():
             food_safety_by_supplier.setdefault(approval.supplier_id, []).append(approval)
+
+    if quality_view and suppliers:
+        supplier_ids = [supplier.id for supplier in suppliers]
+        capa_result = await db.execute(
+            select(
+                CorrectiveAction.supplier_id,
+                func.count(CorrectiveAction.id),
+                func.sum(
+                    case(
+                        (CorrectiveAction.status.in_((CorrectiveActionStatus.COMPLETED, CorrectiveActionStatus.VERIFIED)), 0),
+                        else_=1,
+                    )
+                ),
+            )
+            .where(CorrectiveAction.supplier_id.in_(supplier_ids))
+            .group_by(CorrectiveAction.supplier_id)
+        )
+        capa_counts_by_supplier = {
+            supplier_id: (int(total or 0), int(open_count or 0))
+            for supplier_id, total, open_count in capa_result.all()
+        }
 
     for s in suppliers:
         # PO stats
@@ -693,6 +716,7 @@ async def supplier_dashboard(
         avg_overall = svc.average_supplier_evaluation_score(evals, "overall_score")
         last_eval = evals[0].evaluation_date if evals else None
         esg_score = esg_by_supplier.get(s.id) if broad_view else None
+        supplier_capa_count, supplier_open_capa_count = capa_counts_by_supplier.get(s.id, (0, 0))
         food_safety_approvals = (
             svc.build_supplier_food_safety_scorecard(
                 food_safety_by_supplier.get(str(s.id), []),
@@ -722,6 +746,7 @@ async def supplier_dashboard(
             otif_order_count=otif_order_count,
             otif_met_order_count=otif_met_order_count,
             evaluation_count=len(evals),
+            latest_evaluation_id=evals[0].id if evals else None,
             avg_on_time_delivery=svc.average_supplier_evaluation_score(evals, "on_time_delivery_score"),
             avg_quality=svc.average_supplier_evaluation_score(evals, "quality_score"),
             avg_price_competitiveness=svc.average_supplier_evaluation_score(
@@ -734,6 +759,9 @@ async def supplier_dashboard(
             esg_assessment_period_end=esg_score.assessment_period_end if esg_score else None,
             food_safety_approvals=food_safety_approvals,
             supplier_signals_restricted=not broad_view,
+            supplier_capa_count=supplier_capa_count if quality_view else None,
+            supplier_open_capa_count=supplier_open_capa_count if quality_view else None,
+            supplier_capa_signals_restricted=not quality_view,
         ))
     return rows
 

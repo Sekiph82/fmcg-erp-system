@@ -240,6 +240,7 @@ export interface SupplierDashboardRow extends ProcurementScopeFields {
   otif_order_count: number;
   otif_met_order_count: number;
   evaluation_count: number;
+  latest_evaluation_id?: string | null;
   avg_on_time_delivery?: number;
   avg_quality?: number;
   avg_price_competitiveness?: number;
@@ -250,6 +251,9 @@ export interface SupplierDashboardRow extends ProcurementScopeFields {
   esg_assessment_period_end?: string;
   food_safety_approvals: SupplierFoodSafetyScorecardItem[];
   supplier_signals_restricted: boolean;
+  supplier_capa_count?: number | null;
+  supplier_open_capa_count?: number | null;
+  supplier_capa_signals_restricted: boolean;
   access?: ProcurementAccessHint;
 }
 

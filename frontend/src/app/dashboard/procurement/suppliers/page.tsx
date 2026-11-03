@@ -4,7 +4,9 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { procurementApi, SupplierDashboardRow } from "@/lib/procurement";
+import { qmsApi, CorrectiveAction, RiskLevel } from "@/lib/qms";
 import { suppliersApi } from "@/lib/suppliers";
+import { useAuth } from "@/context/AuthContext";
 import { extractApiError } from "@/lib/inventory";
 import { Table } from "@/components/ui/Table";
 import { Badge } from "@/components/ui/Badge";
@@ -33,8 +35,11 @@ export default function SupplierEvaluationPage() {
   const qc = useQueryClient();
   const router = useRouter();
   const { toasts, toast, dismiss } = useToast();
+  const { hasAnyPermission } = useAuth();
   const [evalOpen, setEvalOpen] = useState(false);
+  const [capaOpen, setCapaOpen] = useState(false);
   const [selectedSupplier, setSelectedSupplier] = useState<SupplierDashboardRow | null>(null);
+  const [capaForm, setCapaForm] = useState({ title: "", description: "", severity: "MEDIUM" as RiskLevel, supplier_evaluation_id: "" });
   const [evalForm, setEvalForm] = useState({
     evaluation_date: "", on_time_delivery_score: "", quality_score: "",
     price_competitiveness_score: "", responsiveness_score: "", notes: "",
@@ -62,10 +67,43 @@ export default function SupplierEvaluationPage() {
     onError: (e) => toast("error", "Failed", extractApiError(e)),
   });
 
+  const canViewCapa = hasAnyPermission(["quality.view", "quality.view_all"]);
+  const canCreateCapa = hasAnyPermission(["quality.create", "quality.create_all"]);
+  const supplierCapas = useQuery({
+    queryKey: ["supplier-capas", selectedSupplier?.supplier_id],
+    queryFn: () => qmsApi.listCAs({ supplier_id: selectedSupplier!.supplier_id }),
+    enabled: capaOpen && !!selectedSupplier && canViewCapa,
+  });
+  const createCapa = useMutation({
+    mutationFn: () => {
+      if (!selectedSupplier) throw new Error("Select a supplier first.");
+      return qmsApi.createCA({
+        title: capaForm.title.trim(),
+        description: capaForm.description.trim(),
+        severity: capaForm.severity,
+        supplier_id: selectedSupplier.supplier_id,
+        ...(capaForm.supplier_evaluation_id ? { supplier_evaluation_id: capaForm.supplier_evaluation_id } : {}),
+      });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["supplier-capas", selectedSupplier?.supplier_id] });
+      qc.invalidateQueries({ queryKey: ["supplier-dashboard"] });
+      setCapaForm({ title: "", description: "", severity: "MEDIUM", supplier_evaluation_id: "" });
+      toast("success", "Corrective action created", `${selectedSupplier?.supplier_name} was linked to the action.`);
+    },
+    onError: (e) => toast("error", "Failed", extractApiError(e)),
+  });
+
   const openEval = (row: SupplierDashboardRow) => {
     setSelectedSupplier(row);
     setEvalForm({ evaluation_date: "", on_time_delivery_score: "", quality_score: "", price_competitiveness_score: "", responsiveness_score: "", notes: "" });
     setEvalOpen(true);
+  };
+
+  const openCapas = (row: SupplierDashboardRow) => {
+    setSelectedSupplier(row);
+    setCapaForm({ title: "", description: "", severity: "MEDIUM", supplier_evaluation_id: row.latest_evaluation_id ?? "" });
+    setCapaOpen(true);
   };
 
   const preferred = dashboard.filter((r) => r.is_preferred);
@@ -177,6 +215,16 @@ export default function SupplierEvaluationPage() {
               ),
             },
             {
+              header: "Corrective Actions",
+              accessor: (r) => r.supplier_capa_signals_restricted ? (
+                <span className="text-xs text-gray-400">Restricted</span>
+              ) : (
+                <Button variant="secondary" onClick={() => openCapas(r)}>
+                  {r.supplier_open_capa_count ?? 0} open / {r.supplier_capa_count ?? 0} total
+                </Button>
+              ),
+            },
+            {
               header: "Price Eval",
               accessor: (r) => (
                 <div>
@@ -249,7 +297,14 @@ export default function SupplierEvaluationPage() {
             },
             {
               header: "",
-              accessor: (r) => <Button variant="secondary" onClick={() => openEval(r)}>Evaluate</Button>,
+              accessor: (r) => (
+                <div className="flex gap-2">
+                  <Button variant="secondary" onClick={() => openEval(r)}>Evaluate</Button>
+                  {(canViewCapa || canCreateCapa) && (
+                    <Button variant="secondary" onClick={() => openCapas(r)}>CAPA</Button>
+                  )}
+                </div>
+              ),
             },
           ]}
         />
@@ -297,6 +352,62 @@ export default function SupplierEvaluationPage() {
             </Button>
           </div>
         </form>
+      </Modal>
+
+      <Modal open={capaOpen} onClose={() => setCapaOpen(false)} title={`Corrective actions: ${selectedSupplier?.supplier_name}`}>
+        <div className="space-y-5">
+          <p className="text-xs text-gray-500">Actions are linked to this supplier. Linking an evaluation records the exact source; no score or automatic trigger is inferred.</p>
+          {canViewCapa ? (
+            <section className="space-y-2" aria-label="Supplier corrective action history">
+              <h2 className="text-sm font-semibold">History</h2>
+              {supplierCapas.isLoading ? <p className="text-sm text-gray-500">Loading…</p> : null}
+              {supplierCapas.isError ? <p className="text-sm text-red-600">{extractApiError(supplierCapas.error)}</p> : null}
+              {!supplierCapas.isLoading && !supplierCapas.isError && (supplierCapas.data ?? []).length === 0 ? (
+                <p className="text-sm text-gray-500">No corrective actions recorded.</p>
+              ) : null}
+              {(supplierCapas.data ?? []).map((action: CorrectiveAction) => (
+                <div key={action.id} className="rounded border border-gray-200 p-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="font-medium text-sm">{action.ca_no} · {action.title}</span>
+                    <Badge label={action.status} variant={action.status === "VERIFIED" ? "green" : action.status === "OVERDUE" ? "red" : "yellow"} />
+                  </div>
+                  <p className="mt-1 text-xs text-gray-600">{action.description}</p>
+                  {action.supplier_evaluation_id && <p className="mt-1 text-[11px] text-gray-400">Linked evaluation: {action.supplier_evaluation_id}</p>}
+                </div>
+              ))}
+            </section>
+          ) : (
+            <p className="text-sm text-gray-500">History is restricted to users with quality view permission.</p>
+          )}
+          {canCreateCapa && (
+            <form onSubmit={(e) => { e.preventDefault(); createCapa.mutate(); }} className="space-y-3 border-t border-gray-200 pt-4">
+              <h2 className="text-sm font-semibold">Record corrective action</h2>
+              <Input label="Title *" value={capaForm.title} onChange={(e) => setCapaForm((f) => ({ ...f, title: e.target.value }))} required />
+              <label className="block text-sm text-gray-700">
+                Description *
+                <textarea className="mt-1 w-full rounded border border-gray-300 p-2 text-sm" rows={3} value={capaForm.description} onChange={(e) => setCapaForm((f) => ({ ...f, description: e.target.value }))} required />
+              </label>
+              <label className="block text-sm text-gray-700">
+                Severity
+                <select className="mt-1 w-full rounded border border-gray-300 p-2 text-sm" value={capaForm.severity} onChange={(e) => setCapaForm((f) => ({ ...f, severity: e.target.value as RiskLevel }))}>
+                  {["LOW", "MEDIUM", "HIGH", "CRITICAL"].map((severity) => <option key={severity} value={severity}>{severity}</option>)}
+                </select>
+              </label>
+              {selectedSupplier?.latest_evaluation_id && (
+                <label className="block text-sm text-gray-700">
+                  Source evaluation
+                  <select className="mt-1 w-full rounded border border-gray-300 p-2 text-sm" value={capaForm.supplier_evaluation_id} onChange={(e) => setCapaForm((f) => ({ ...f, supplier_evaluation_id: e.target.value }))}>
+                    <option value="">Supplier only</option>
+                    <option value={selectedSupplier.latest_evaluation_id}>Latest evaluation ({selectedSupplier.last_evaluation_date})</option>
+                  </select>
+                </label>
+              )}
+              <div className="flex justify-end">
+                <Button type="submit" loading={createCapa.isPending} disabled={!capaForm.title.trim() || !capaForm.description.trim()}>Create linked action</Button>
+              </div>
+            </form>
+          )}
+        </div>
       </Modal>
     </div>
   );
