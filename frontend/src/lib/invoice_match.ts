@@ -257,10 +257,10 @@ export const imApi = {
   // Review
   review: (id: string, body: Record<string, unknown>) =>
     apiClient.post<MatchHeaderOut>(`${BASE}/${id}/review`, body).then((r) => r.data),
-  approveException: (id: string, reviewer_name: string, justification: string) =>
-    apiClient.post<MatchHeaderOut>(`${BASE}/${id}/approve-exception`, { reviewer_name, justification }).then((r) => r.data),
-  reject: (id: string, reviewer_name: string, justification: string) =>
-    apiClient.post<MatchHeaderOut>(`${BASE}/${id}/reject`, { reviewer_name, justification }).then((r) => r.data),
+  approveException: (id: string, expected_run_at: string, justification: string) =>
+    apiClient.post<MatchHeaderOut>(`${BASE}/${id}/approve-exception`, { expected_run_at, justification }).then((r) => r.data),
+  reject: (id: string, expected_run_at: string, justification: string) =>
+    apiClient.post<MatchHeaderOut>(`${BASE}/${id}/reject`, { expected_run_at, justification }).then((r) => r.data),
 
   // Duplicates
   resolveDuplicate: (dupId: string, resolved_by: string, resolution_notes: string) =>

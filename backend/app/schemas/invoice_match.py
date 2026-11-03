@@ -101,10 +101,17 @@ class ReviewCreate(BaseModel):
     reviewer_role: Optional[str] = None
     justification: Optional[str] = None
     line_ids: Optional[List[str]] = None
+    expected_run_at: datetime
+
+
+class MatchDecisionRequest(BaseModel):
+    justification: Optional[str] = None
+    expected_run_at: datetime
 
 
 class ReviewOut(ReviewCreate):
     model_config = ConfigDict(from_attributes=True)
+    expected_run_at: Optional[datetime] = None
     id: UUID
     header_id: UUID
     previous_status: Optional[str] = None

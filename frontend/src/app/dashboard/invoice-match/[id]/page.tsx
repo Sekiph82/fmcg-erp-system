@@ -10,7 +10,6 @@ export default function MatchDetailPage() {
   const { id } = useParams<{ id: string }>();
   const qc = useQueryClient();
 
-  const [reviewer, setReviewer] = useState("");
   const [justification, setJustification] = useState("");
   const [showReviewForm, setShowReviewForm] = useState(false);
 
@@ -21,12 +20,12 @@ export default function MatchDetailPage() {
   });
 
   const approve = useMutation({
-    mutationFn: () => imApi.approveException(id, reviewer, justification),
+    mutationFn: () => imApi.approveException(id, match?.run_at ?? "", justification),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["im-match", id] }); setShowReviewForm(false); },
   });
 
   const reject = useMutation({
-    mutationFn: () => imApi.reject(id, reviewer, justification),
+    mutationFn: () => imApi.reject(id, match?.run_at ?? "", justification),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["im-match", id] }); setShowReviewForm(false); },
   });
 
@@ -41,7 +40,7 @@ export default function MatchDetailPage() {
   const matchLines = match.match_lines ?? [];
   const reviews    = match.reviews     ?? [];
 
-  const canReview = match.review_required && !["APPROVED_EXCEPTION", "REJECTED"].includes(match.overall_status);
+  const canReview = Boolean(match.run_at) && match.review_required && !["APPROVED_EXCEPTION", "REJECTED"].includes(match.overall_status);
 
   return (
     <div className="p-6 space-y-6 max-w-6xl">
@@ -87,12 +86,7 @@ export default function MatchDetailPage() {
       {showReviewForm && (
         <div className="bg-white border rounded-xl p-5 space-y-3">
           <h2 className="font-semibold text-gray-700">Exception Review</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs text-gray-500 mb-1">Your Name</label>
-              <input className="border rounded-lg px-3 py-2 text-sm w-full"
-                value={reviewer} onChange={(e) => setReviewer(e.target.value)} />
-            </div>
+          <div className="grid grid-cols-1 gap-3">
             <div>
               <label className="block text-xs text-gray-500 mb-1">Justification</label>
               <input className="border rounded-lg px-3 py-2 text-sm w-full"
@@ -100,11 +94,11 @@ export default function MatchDetailPage() {
             </div>
           </div>
           <div className="flex gap-2">
-            <button onClick={() => approve.mutate()} disabled={!reviewer || approve.isPending}
+            <button onClick={() => approve.mutate()} disabled={!match.run_at || approve.isPending}
               className="px-4 py-1.5 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 disabled:opacity-50">
               Approve Exception
             </button>
-            <button onClick={() => reject.mutate()} disabled={!reviewer || reject.isPending}
+            <button onClick={() => reject.mutate()} disabled={!match.run_at || reject.isPending}
               className="px-4 py-1.5 border border-red-400 text-red-600 text-sm rounded-lg hover:bg-red-50 disabled:opacity-50">
               Reject Invoice
             </button>

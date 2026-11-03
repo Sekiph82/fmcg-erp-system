@@ -22,7 +22,7 @@ from app.models.invoice_match import (
     MatchLineStatus, MatchOverallStatus, DuplicateRisk,
 )
 from app.models.finance import PurchaseInvoice, PurchaseInvoiceLine
-from app.models.procurement import PurchaseOrder, POLine, GoodsReceipt, GRNLine, GRNStatus
+from app.models.procurement import PurchaseOrder, POLine, GoodsReceipt, GRNLine, GRNStatus, POStatus
 from app.models.master import Material
 from app.schemas.invoice_match import (
     ToleranceRuleCreate, ToleranceRuleUpdate, ReviewCreate, RunMatchRequest,
@@ -51,6 +51,34 @@ async def _next_match_no(db: AsyncSession) -> str:
     result = await db.execute(select(func.count()).select_from(InvoiceMatchHeader))
     n = (result.scalar() or 0) + 1
     return f"3WM-{n:06d}"
+
+
+async def _lock_match_source_rows(
+    db: AsyncSession,
+    invoice_id: UUID,
+) -> tuple[PurchaseInvoice, Optional[PurchaseOrder]]:
+    """Serialize matching/review operations using one stable invoice→PO lock order."""
+    invoice_q = await db.execute(
+        select(PurchaseInvoice)
+        .options(selectinload(PurchaseInvoice.lines))
+        .where(PurchaseInvoice.id == invoice_id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    )
+    invoice = invoice_q.scalar_one_or_none()
+    if not invoice:
+        raise ValueError(f"Invoice {invoice_id} not found")
+
+    po: Optional[PurchaseOrder] = None
+    if invoice.po_id:
+        po_q = await db.execute(
+            select(PurchaseOrder)
+            .where(PurchaseOrder.id == invoice.po_id)
+            .with_for_update()
+            .execution_options(populate_existing=True)
+        )
+        po = po_q.scalar_one_or_none()
+    return invoice, po
 
 
 # ── Tolerance Rule CRUD ───────────────────────────────────────────────────────
@@ -120,40 +148,47 @@ async def run_match(db: AsyncSession, invoice_id: UUID, force_rerun: bool = Fals
     4. Detect duplicates
     5. Determine overall status + payment hold
     """
-    # Check existing match
+    # Lock the invoice first so repeated runs for one invoice serialize. Once its
+    # PO is known, lock that PO as well so different invoices cannot concurrently
+    # consume the same remaining accepted quantity.
+    invoice, po = await _lock_match_source_rows(db, invoice_id)
+    if po is not None and po.status == POStatus.CANCELLED:
+        raise ValueError("Cannot match an invoice to a cancelled purchase order")
+
+    # Validate supplier identity before creating or replacing a match header so
+    # an invalid cross-supplier reference has no partial database side effect.
+    if po is not None and po.supplier_id != invoice.supplier_id:
+        raise ValueError("Invoice supplier does not match linked purchase order supplier")
+
+    # Re-read only after acquiring the locks: another request may have created
+    # the match while this request waited for the invoice row.
     existing_q = await db.execute(
-        select(InvoiceMatchHeader).where(InvoiceMatchHeader.invoice_id == invoice_id)
+        select(InvoiceMatchHeader)
+        .where(InvoiceMatchHeader.invoice_id == invoice_id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
     )
     existing = existing_q.scalar_one_or_none()
     if existing and not force_rerun:
         return await get_header(db, existing.id)
-
-    # Load invoice
-    inv_q = await db.execute(
-        select(PurchaseInvoice)
-        .options(selectinload(PurchaseInvoice.lines))
-        .where(PurchaseInvoice.id == invoice_id)
-    )
-    invoice: Optional[PurchaseInvoice] = inv_q.scalar_one_or_none()
-    if not invoice:
-        raise ValueError(f"Invoice {invoice_id} not found")
-
-    # Validate supplier identity before creating or replacing a match header so
-    # an invalid cross-supplier reference has no partial database side effect.
-    if invoice.po_id:
-        po_identity_q = await db.execute(
-            select(PurchaseOrder.supplier_id).where(PurchaseOrder.id == invoice.po_id)
-        )
-        po_supplier_id = po_identity_q.scalar_one_or_none()
-        if po_supplier_id is not None and po_supplier_id != invoice.supplier_id:
-            raise ValueError("Invoice supplier does not match linked purchase order supplier")
+    if existing and force_rerun and (existing.reviewed_at or existing.approved_at):
+        raise ValueError("A reviewed or approved match cannot be rerun")
 
     # Duplicate detection
     dup_flag = await _detect_duplicate(db, invoice)
 
     # Create or reset header
     if existing:
-        # Clear old lines
+        # Bulk deletes do not apply ORM relationship cascades. Remove the
+        # concrete GRN link children first or a valid force-rerun fails its FK.
+        old_line_ids = select(InvoiceMatchLine.id).where(
+            InvoiceMatchLine.header_id == existing.id,
+        )
+        await db.execute(
+            InvoiceMatchGRNLink.__table__.delete().where(
+                InvoiceMatchGRNLink.match_line_id.in_(old_line_ids),
+            )
+        )
         await db.execute(InvoiceMatchLine.__table__.delete().where(InvoiceMatchLine.header_id == existing.id))
         hdr = existing
     else:
@@ -176,7 +211,8 @@ async def run_match(db: AsyncSession, invoice_id: UUID, force_rerun: bool = Fals
     hdr.duplicate_flag = dup_flag
     hdr.run_at = datetime.utcnow()
 
-    # Load PO if linked
+    # Load PO lines while the parent PO row remains locked for the duration of
+    # this transaction.
     po_lines_map: dict[UUID, POLine] = {}
     if invoice.po_id:
         po_lines_q = await db.execute(
@@ -213,21 +249,30 @@ async def run_match(db: AsyncSession, invoice_id: UUID, force_rerun: bool = Fals
     # Process each invoice line
     line_statuses = []
     for inv_line in invoice.lines:
-        # Find matching PO line by material_id
-        po_line: Optional[POLine] = None
-        if po_lines_map:
-            for pl in po_lines_map.values():
-                if inv_line.material_id and pl.material_id == inv_line.material_id:
-                    po_line = pl
-                    break
-                if inv_line.product_id and pl.product_id == inv_line.product_id:
-                    po_line = pl
-                    break
+        # Match only when the product identity points to one PO line. Choosing
+        # the first duplicate material/product line could compare against the
+        # wrong price, tax, or unit and falsely release an invoice for payment.
+        candidates = [
+            pl for pl in po_lines_map.values()
+            if (inv_line.material_id and pl.material_id == inv_line.material_id)
+            or (inv_line.product_id and pl.product_id == inv_line.product_id)
+        ]
+        po_line: Optional[POLine] = candidates[0] if len(candidates) == 1 else None
+        block_reason: Optional[str] = None
+        if len(candidates) > 1:
+            block_reason = "Invoice item matches multiple PO lines; select an exact PO line before payment review."
+        elif po is not None and invoice.currency.strip().upper() != str(po.currency or "").strip().upper():
+            block_reason = "Invoice currency does not match the linked PO currency."
+        elif po_line is not None and _uom_code(inv_line.unit) != _uom_code(po_line.unit):
+            block_reason = "Invoice unit does not match the linked PO line unit; no implicit conversion is applied."
 
         # Collect GRN lines
         grn_lines_for_line: List[GRNLine] = []
         if po_line:
             grn_lines_for_line = grn_line_map.get(po_line.id, [])
+
+        if po_line and any(_uom_code(gl.unit) != _uom_code(po_line.unit) for gl in grn_lines_for_line):
+            block_reason = "Posted receipt unit does not match the PO line unit; no implicit conversion is applied."
 
         # Cumulative received/accepted
         total_received = sum(_D(gl.received_quantity) for gl in grn_lines_for_line)
@@ -253,15 +298,21 @@ async def run_match(db: AsyncSession, invoice_id: UUID, force_rerun: bool = Fals
         rule = await _find_tolerance(db, invoice.supplier_id, None)
 
         # Determine line status
-        status = _evaluate_line_status(
-            po_line=po_line,
-            grn_lines=grn_lines_for_line,
-            invoiced_qty=invoiced_qty,
-            billable_qty=billable,
-            qty_var_pct=qty_var_pct,
-            price_var_pct=price_var_pct,
-            tax_var=tax_var,
-            rule=rule,
+        if invoiced_qty <= 0:
+            block_reason = "Invoice quantity must be greater than zero to pass three-way matching."
+        status = (
+            MatchLineStatus.BLOCKED
+            if block_reason
+            else _evaluate_line_status(
+                po_line=po_line,
+                grn_lines=grn_lines_for_line,
+                invoiced_qty=invoiced_qty,
+                billable_qty=billable,
+                qty_var_pct=qty_var_pct,
+                price_var_pct=price_var_pct,
+                tax_var=tax_var,
+                rule=rule,
+            )
         )
         line_statuses.append(status)
         action_required = status not in (
@@ -297,6 +348,7 @@ async def run_match(db: AsyncSession, invoice_id: UUID, force_rerun: bool = Fals
             match_status=status,
             tolerance_rule_id=rule.id if rule else None,
             action_required=action_required,
+            notes=block_reason,
         )
         db.add(ml)
         await db.flush()
@@ -366,7 +418,8 @@ def _evaluate_line_status(
         # Check if exact or within tolerance
         exact_qty = (qty_var_pct is None) or (abs(qty_var_pct) == 0)
         exact_price = (price_var_pct is None) or (abs(price_var_pct) == 0)
-        if exact_qty and exact_price:
+        exact_tax = (tax_var is None) or (abs(tax_var) == 0)
+        if exact_qty and exact_price and exact_tax:
             return MatchLineStatus.FULLY_MATCHED
         return MatchLineStatus.MATCHED_WITHIN_TOLERANCE
 
@@ -377,6 +430,11 @@ def _evaluate_line_status(
     if not tax_ok:
         return MatchLineStatus.TAX_MISMATCH
     return MatchLineStatus.PARTIAL_MATCH
+
+
+def _uom_code(value: Any) -> str:
+    """Normalize a unit code without inventing a conversion factor."""
+    return str(value or "").strip().upper()
 
 
 def _derive_overall_status(line_statuses: List[str], dup_flag: bool) -> str:
@@ -516,10 +574,31 @@ async def _detect_duplicate(db: AsyncSession, invoice: PurchaseInvoice) -> bool:
 # ── Review / Approval Workflow ────────────────────────────────────────────────
 
 async def submit_review(db: AsyncSession, header_id: UUID, payload: ReviewCreate) -> InvoiceMatchHeader:
-    hdr_q = await db.execute(select(InvoiceMatchHeader).where(InvoiceMatchHeader.id == header_id))
+    snapshot_q = await db.execute(
+        select(InvoiceMatchHeader.invoice_id, InvoiceMatchHeader.run_at)
+        .where(InvoiceMatchHeader.id == header_id)
+    )
+    snapshot = snapshot_q.one_or_none()
+    if not snapshot:
+        raise ValueError("Match record not found")
+
+    # Match runs and approvals take source-row locks in the same order. If a
+    # rerun won the race, reject this approval against the stale result the
+    # reviewer originally loaded and require a refreshed decision.
+    await _lock_match_source_rows(db, snapshot.invoice_id)
+    hdr_q = await db.execute(
+        select(InvoiceMatchHeader)
+        .where(InvoiceMatchHeader.id == header_id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    )
     hdr = hdr_q.scalar_one_or_none()
     if not hdr:
         raise ValueError("Match record not found")
+    if hdr.run_at != snapshot.run_at:
+        raise ValueError("Match was rerun during review; refresh the current result before reviewing")
+    if hdr.run_at != payload.expected_run_at:
+        raise ValueError("Match result changed; refresh the current result before reviewing")
 
     prev_status = hdr.overall_status
 

@@ -6,7 +6,6 @@ import { imApi, MATCH_STATUS_COLOR, MatchHeaderSummary } from "@/lib/invoice_mat
 
 export default function ReviewQueuePage() {
   const qc = useQueryClient();
-  const [reviewer, setReviewer] = useState("");
   const [justification, setJustification] = useState("");
   const [actionTarget, setActionTarget] = useState<string | null>(null);
 
@@ -16,12 +15,12 @@ export default function ReviewQueuePage() {
   });
 
   const approve = useMutation({
-    mutationFn: (id: string) => imApi.approveException(id, reviewer, justification),
+    mutationFn: (match: MatchHeaderSummary) => imApi.approveException(match.id, match.run_at ?? "", justification),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["im-review-queue"] }); setActionTarget(null); },
   });
 
   const reject = useMutation({
-    mutationFn: (id: string) => imApi.reject(id, reviewer, justification),
+    mutationFn: (match: MatchHeaderSummary) => imApi.reject(match.id, match.run_at ?? "", justification),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["im-review-queue"] }); setActionTarget(null); },
   });
 
@@ -35,14 +34,8 @@ export default function ReviewQueuePage() {
         <span className="text-lg font-bold text-yellow-600">{data.length} pending</span>
       </div>
 
-      {/* Reviewer credentials */}
+      {/* Review justification */}
       <div className="bg-white border rounded-xl p-4 flex gap-3 items-end flex-wrap">
-        <div>
-          <label className="block text-xs text-gray-500 mb-1">Reviewer Name</label>
-          <input className="border rounded-lg px-3 py-1.5 text-sm w-48"
-            placeholder="Your name"
-            value={reviewer} onChange={(e) => setReviewer(e.target.value)} />
-        </div>
         <div>
           <label className="block text-xs text-gray-500 mb-1">Justification</label>
           <input className="border rounded-lg px-3 py-1.5 text-sm w-72"
@@ -87,15 +80,15 @@ export default function ReviewQueuePage() {
                     View Detail
                   </Link>
                   <button
-                    onClick={() => { setActionTarget(m.id); approve.mutate(m.id); }}
-                    disabled={!reviewer || approve.isPending}
+                    onClick={() => { setActionTarget(m.id); approve.mutate(m); }}
+                    disabled={!m.run_at || approve.isPending}
                     className="px-3 py-1.5 text-xs bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
                   >
                     {approve.isPending && actionTarget === m.id ? "…" : "Approve Exception"}
                   </button>
                   <button
-                    onClick={() => { setActionTarget(m.id); reject.mutate(m.id); }}
-                    disabled={!reviewer || reject.isPending}
+                    onClick={() => { setActionTarget(m.id); reject.mutate(m); }}
+                    disabled={!m.run_at || reject.isPending}
                     className="px-3 py-1.5 text-xs border border-red-300 text-red-600 rounded-lg hover:bg-red-50 disabled:opacity-50"
                   >
                     {reject.isPending && actionTarget === m.id ? "…" : "Reject"}
