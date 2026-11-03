@@ -434,8 +434,14 @@ class SupplierDashboardRow(ProcurementScopeFields):
     total_pos: int
     open_pos: int
     overdue_pos: int
+    otif_rate: Optional[Decimal]
+    otif_order_count: int
+    otif_met_order_count: int
+    evaluation_count: int
     avg_on_time_delivery: Optional[Decimal]
     avg_quality: Optional[Decimal]
+    avg_price_competitiveness: Optional[Decimal]
+    avg_responsiveness: Optional[Decimal]
     avg_overall: Optional[Decimal]
     last_evaluation_date: Optional[date]
     access: Optional[ProcurementAccessHint] = None

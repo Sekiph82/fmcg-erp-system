@@ -11,7 +11,7 @@ Key operations:
 from __future__ import annotations
 
 from datetime import date, datetime, timezone
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 from typing import Optional
 import uuid
 
@@ -39,6 +39,80 @@ from app.services.inventory_locking import lot_identity, lock_inventory_identity
 
 
 PROCUREMENT_SCOPE_FIELDS = ("company_id", "branch_id", "cost_center_id", "department")
+
+
+def calculate_supplier_otif(
+    purchase_orders: list[PurchaseOrder],
+    *,
+    period_start: date,
+    today: date,
+) -> tuple[int, int, Optional[Decimal]]:
+    """Return rolling-window on-time-in-full results from posted receipt records.
+
+    Only sent, due purchase orders with at least one line are eligible. Canceled,
+    draft, and merely approved orders are excluded. A PO is on time and in full
+    when every ordered line's received quantity on posted GRNs dated on or before
+    the expected delivery date meets its ordered quantity.
+    """
+    eligible_statuses = {
+        POStatus.ORDERED,
+        POStatus.PARTIALLY_RECEIVED,
+        POStatus.RECEIVED,
+    }
+    eligible_orders = [
+        po
+        for po in purchase_orders
+        if po.status in eligible_statuses
+        and period_start <= po.expected_delivery_date <= today
+        and po.lines
+    ]
+
+    met_orders = 0
+    for po in eligible_orders:
+        po_lines_by_id = {line.id: line for line in po.lines}
+        timely_received_by_line: dict[uuid.UUID, Decimal] = {}
+        for grn in po.goods_receipts:
+            if grn.status != GRNStatus.POSTED or grn.received_date > po.expected_delivery_date:
+                continue
+            for receipt_line in grn.lines:
+                po_line = po_lines_by_id.get(receipt_line.po_line_id)
+                if (
+                    po_line is None
+                    or receipt_line.material_id != po_line.material_id
+                    or receipt_line.product_id != po_line.product_id
+                    or receipt_line.unit != po_line.unit
+                ):
+                    continue
+                timely_received_by_line[receipt_line.po_line_id] = (
+                    timely_received_by_line.get(receipt_line.po_line_id, Decimal("0"))
+                    + Decimal(str(receipt_line.received_quantity or 0))
+                )
+
+        if all(
+            Decimal(str(line.ordered_quantity or 0)) > 0
+            and timely_received_by_line.get(line.id, Decimal("0"))
+            >= Decimal(str(line.ordered_quantity))
+            for line in po.lines
+        ):
+            met_orders += 1
+
+    denominator = len(eligible_orders)
+    rate = (
+        (Decimal(met_orders) * Decimal("100") / Decimal(denominator)).quantize(
+            Decimal("0.01"), rounding=ROUND_HALF_UP
+        )
+        if denominator
+        else None
+    )
+    return denominator, met_orders, rate
+
+
+def average_supplier_evaluation_score(evaluations: list[SupplierEvaluation], field: str) -> Optional[Decimal]:
+    """Average a recorded 0-100 evaluation dimension without inventing defaults."""
+    if not evaluations:
+        return None
+    total = sum((Decimal(str(getattr(row, field))) for row in evaluations), Decimal("0"))
+    return (total / Decimal(len(evaluations))).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
 
 PROCUREMENT_ACTION_STATUSES: dict[str, dict[str, set[str]]] = {

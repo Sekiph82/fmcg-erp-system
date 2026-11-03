@@ -233,8 +233,14 @@ export interface SupplierDashboardRow extends ProcurementScopeFields {
   total_pos: number;
   open_pos: number;
   overdue_pos: number;
+  otif_rate?: number;
+  otif_order_count: number;
+  otif_met_order_count: number;
+  evaluation_count: number;
   avg_on_time_delivery?: number;
   avg_quality?: number;
+  avg_price_competitiveness?: number;
+  avg_responsiveness?: number;
   avg_overall?: number;
   last_evaluation_date?: string;
   access?: ProcurementAccessHint;

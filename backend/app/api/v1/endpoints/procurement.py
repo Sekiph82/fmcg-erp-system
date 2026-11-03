@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from typing import List, Optional
 import uuid
@@ -561,7 +561,7 @@ async def create_evaluation(
 @router.get("/suppliers/dashboard", response_model=List[SupplierDashboardRow])
 async def supplier_dashboard(
     db: AsyncSession = Depends(get_db),
-    current_user=Depends(get_current_user),
+    current_user=Depends(require_any_permission(PROCUREMENT_VIEW_PERMISSIONS)),
 ):
     from sqlalchemy import case
     from datetime import date as date_cls
@@ -575,12 +575,21 @@ async def supplier_dashboard(
 
     rows = []
     today = date_cls.today()
+    otif_period_start = today - timedelta(days=364)
+    broad_view = _has_broad_procurement_view(current_user)
     for s in suppliers:
         # PO stats
         po_result = await db.execute(
-            select(PurchaseOrder).where(PurchaseOrder.supplier_id == s.id)
+            select(PurchaseOrder)
+            .options(
+                selectinload(PurchaseOrder.lines),
+                selectinload(PurchaseOrder.goods_receipts).selectinload(GoodsReceipt.lines),
+            )
+            .where(PurchaseOrder.supplier_id == s.id)
         )
         pos = list(po_result.scalars().all())
+        if not broad_view:
+            pos = [po for po in pos if _can_view_procurement_record(current_user, po)]
         open_statuses = {POStatus.DRAFT, POStatus.APPROVED, POStatus.ORDERED, POStatus.PARTIALLY_RECEIVED}
         open_pos = [p for p in pos if p.status in open_statuses]
         overdue_pos = [
@@ -596,9 +605,18 @@ async def supplier_dashboard(
             .order_by(SupplierEvaluation.evaluation_date.desc())
         )
         evals = list(eval_result.scalars().all())
-        avg_otd = (sum(float(e.on_time_delivery_score) for e in evals) / len(evals)) if evals else None
-        avg_qual = (sum(float(e.quality_score) for e in evals) / len(evals)) if evals else None
-        avg_overall = await crud.average_supplier_score(db, s.id)
+        if not broad_view:
+            evals = [evaluation for evaluation in evals if _can_view_procurement_record(current_user, evaluation)]
+            # A scoped user only receives supplier KPI rows backed by records in
+            # their accessible scope, avoiding disclosure through aggregate counts.
+            if not pos and not evals:
+                continue
+        otif_order_count, otif_met_order_count, otif_rate = svc.calculate_supplier_otif(
+            pos,
+            period_start=otif_period_start,
+            today=today,
+        )
+        avg_overall = svc.average_supplier_evaluation_score(evals, "overall_score")
         last_eval = evals[0].evaluation_date if evals else None
 
         rows.append(SupplierDashboardRow(
@@ -607,13 +625,21 @@ async def supplier_dashboard(
             supplier_code=s.code,
             is_preferred=s.is_preferred,
             lead_time_days=s.lead_time_days,
-            performance_score=s.performance_score,
+            performance_score=s.performance_score if broad_view else None,
             compliance_notes=s.compliance_notes,
             total_pos=len(pos),
             open_pos=len(open_pos),
             overdue_pos=len(overdue_pos),
-            avg_on_time_delivery=Decimal(str(round(avg_otd, 2))) if avg_otd is not None else None,
-            avg_quality=Decimal(str(round(avg_qual, 2))) if avg_qual is not None else None,
+            otif_rate=otif_rate,
+            otif_order_count=otif_order_count,
+            otif_met_order_count=otif_met_order_count,
+            evaluation_count=len(evals),
+            avg_on_time_delivery=svc.average_supplier_evaluation_score(evals, "on_time_delivery_score"),
+            avg_quality=svc.average_supplier_evaluation_score(evals, "quality_score"),
+            avg_price_competitiveness=svc.average_supplier_evaluation_score(
+                evals, "price_competitiveness_score"
+            ),
+            avg_responsiveness=svc.average_supplier_evaluation_score(evals, "responsiveness_score"),
             avg_overall=avg_overall,
             last_evaluation_date=last_eval,
         ))

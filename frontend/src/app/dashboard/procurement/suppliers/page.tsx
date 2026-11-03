@@ -15,7 +15,7 @@ import { Select } from "@/components/ui/Select";
 import { ToastContainer } from "@/components/ui/Toast";
 import { useToast } from "@/hooks/useToast";
 
-function ScoreMeter({ value }: { value?: number | null }) {
+function ScoreMeter({ value, suffix = "" }: { value?: number | null; suffix?: string }) {
   if (value == null) return <span className="text-gray-400 text-xs">—</span>;
   const pct = Math.min(Math.max(Number(value), 0), 100);
   const color = pct >= 80 ? "bg-green-500" : pct >= 60 ? "bg-amber-400" : "bg-red-400";
@@ -24,7 +24,7 @@ function ScoreMeter({ value }: { value?: number | null }) {
       <div className="w-20 h-2 rounded-full bg-gray-200">
         <div className={`h-2 rounded-full ${color}`} style={{ width: `${pct}%` }} />
       </div>
-      <span className="text-xs font-medium">{pct.toFixed(1)}</span>
+      <span className="text-xs font-medium">{pct.toFixed(1)}{suffix}</span>
     </div>
   );
 }
@@ -78,7 +78,9 @@ export default function SupplierEvaluationPage() {
 
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Supplier Evaluation Dashboard</h1>
-        <p className="text-sm text-gray-500 mt-1">Performance scoring, compliance, and KPI tracking</p>
+        <p className="text-sm text-gray-500 mt-1">
+          OTIF uses due ordered POs and posted GRNs from the rolling 365-day window. Other dimension averages use recorded evaluations; missing samples stay blank.
+        </p>
       </div>
 
       {/* Summary cards */}
@@ -138,12 +140,46 @@ export default function SupplierEvaluationPage() {
               accessor: (r) => <ScoreMeter value={r.avg_overall} />,
             },
             {
-              header: "On-Time Delivery",
+              header: "OTIF (365d)",
+              accessor: (r) => (
+                <div>
+                  <ScoreMeter value={r.otif_rate} suffix="%" />
+                  <span className="text-[11px] text-gray-400">
+                    {r.otif_order_count === 0 ? "No due orders" : `${r.otif_met_order_count}/${r.otif_order_count} orders`}
+                  </span>
+                </div>
+              ),
+            },
+            {
+              header: "Delivery Eval",
               accessor: (r) => <ScoreMeter value={r.avg_on_time_delivery} />,
             },
             {
-              header: "Quality",
-              accessor: (r) => <ScoreMeter value={r.avg_quality} />,
+              header: "Quality Eval",
+              accessor: (r) => (
+                <div>
+                  <ScoreMeter value={r.avg_quality} />
+                  <span className="text-[11px] text-gray-400">{r.evaluation_count} evals</span>
+                </div>
+              ),
+            },
+            {
+              header: "Price Eval",
+              accessor: (r) => (
+                <div>
+                  <ScoreMeter value={r.avg_price_competitiveness} />
+                  <span className="text-[11px] text-gray-400">{r.evaluation_count} evals</span>
+                </div>
+              ),
+            },
+            {
+              header: "Responsiveness Eval",
+              accessor: (r) => (
+                <div>
+                  <ScoreMeter value={r.avg_responsiveness} />
+                  <span className="text-[11px] text-gray-400">{r.evaluation_count} evals</span>
+                </div>
+              ),
             },
             {
               header: "Last Evaluated",

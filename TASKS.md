@@ -10,9 +10,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 - Current Milestone: M34 — Strategic Procurement Upgrade
 - Current Sprint: M34.S01 — Strategic Sourcing
-- Current Task: M34.S02.T004 — Contract consumption tracking
+- Current Task: M34.S03.T001 — OTIF/quality/price responsiveness KPIs
 - Current Task Status: COMPLETE
-- Next Task/Action: M34.S03.T001 — OTIF/quality/price responsiveness KPIs
+- Next Task/Action: M34.S03.T002 — Supplier scorecard
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -1105,7 +1105,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
   Evidence: CODEX_LOG_V01.md; V03 disposable PostgreSQL 2/2, concurrent cross-PO consumption and duplicate/overreceipt guards; Python compile, related M34.S02 regressions 6 passed/3 task-gated skips, diff check and independent review passed.
 
 ## M34.S03 — Supplier Performance
-- [ ] M34.S03.T001 — OTIF/quality/price responsiveness KPIs
+- [x] M34.S03.T001 — OTIF/quality/price responsiveness KPIs
+  Evidence: CODEX_LOG_V01.md; focused KPI tests 4/4, Python compile, frontend type-check/ESLint, diff check, independent read-only review; selected T002 because its supplier scorecard aggregates the T001 KPI foundation.
 - [ ] M34.S03.T002 — Supplier scorecard
 - [ ] M34.S03.T003 — Approved/preferred/blocked supplier governance
 - [ ] M34.S03.T004 — Corrective-action linkage
