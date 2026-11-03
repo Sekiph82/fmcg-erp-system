@@ -31,6 +31,7 @@ from app.models.procurement import (
     RFQStatus, ProcurementApprovalDocumentType, ProcurementApprovalRule,
     BPAStatus, BlanketPurchaseAgreement,
 )
+from app.models.audit_log import AuditEvent, AuditLog
 from app.models.inventory import Stock, Lot, StockMovement, MovementType, StockType
 from app.models.master import Material, Product, Warehouse
 from app.schemas.procurement import ProcurementAccessHint
@@ -433,6 +434,62 @@ async def post_grn(
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
+    blanket_agreement = None
+    bpa_consumption_by_line: dict[uuid.UUID, Decimal] = {}
+    if po.bpa_id:
+        agreement_result = await db.execute(
+            select(BlanketPurchaseAgreement)
+            .where(BlanketPurchaseAgreement.id == po.bpa_id)
+            .with_for_update()
+            .execution_options(populate_existing=True)
+        )
+        blanket_agreement = agreement_result.scalar_one_or_none()
+        if not blanket_agreement:
+            raise HTTPException(status_code=409, detail="The source blanket agreement no longer exists.")
+
+        po_lines_by_id = {line.id: line for line in po.lines}
+        for receipt_line in grn.lines:
+            accepted = Decimal(str(receipt_line.accepted_quantity))
+            received = Decimal(str(receipt_line.received_quantity))
+            rejected = Decimal(str(receipt_line.rejected_quantity))
+            if (
+                not accepted.is_finite()
+                or not received.is_finite()
+                or not rejected.is_finite()
+                or accepted < 0
+                or received < 0
+                or rejected < 0
+                or accepted + rejected != received
+            ):
+                raise HTTPException(status_code=422, detail="BPA receipt quantities must be finite, non-negative, and accepted plus rejected quantity must equal received quantity.")
+            if accepted == 0:
+                continue
+            po_line = po_lines_by_id.get(receipt_line.po_line_id)
+            if not po_line:
+                raise HTTPException(status_code=422, detail="Accepted BPA receipt lines must reference a line from the linked purchase order.")
+            if (
+                receipt_line.material_id != po_line.material_id
+                or receipt_line.product_id != po_line.product_id
+                or receipt_line.unit != po_line.unit
+            ):
+                raise HTTPException(status_code=422, detail="Accepted BPA receipt lines must match the linked purchase-order item and unit.")
+            bpa_consumption_by_line[po_line.id] = (
+                bpa_consumption_by_line.get(po_line.id, Decimal("0")) + accepted
+            )
+
+        for po_line_id, accepted_total in bpa_consumption_by_line.items():
+            po_line = po_lines_by_id[po_line_id]
+            if Decimal(str(po_line.received_quantity)) + accepted_total > Decimal(str(po_line.ordered_quantity)):
+                raise HTTPException(status_code=409, detail="Accepted BPA receipts cannot exceed the released purchase-order quantity.")
+
+        accepted_total = sum(bpa_consumption_by_line.values(), Decimal("0"))
+        if (
+            blanket_agreement.agreed_quantity is not None
+            and Decimal(str(blanket_agreement.consumed_quantity)) + accepted_total
+            > Decimal(str(blanket_agreement.agreed_quantity))
+        ):
+            raise HTTPException(status_code=409, detail="Accepted BPA receipts cannot exceed the agreement commitment.")
+
     for line in grn.lines:
         if line.accepted_quantity <= 0:
             continue
@@ -563,6 +620,33 @@ async def post_grn(
         po.status = POStatus.RECEIVED
     elif any_received:
         po.status = POStatus.PARTIALLY_RECEIVED
+
+    accepted_bpa_quantity = sum(bpa_consumption_by_line.values(), Decimal("0"))
+    if blanket_agreement and accepted_bpa_quantity > 0:
+        consumed_before = Decimal(str(blanket_agreement.consumed_quantity))
+        blanket_agreement.consumed_quantity = consumed_before + accepted_bpa_quantity
+        db.add(AuditLog(
+            actor_id=user_id,
+            event_type=AuditEvent.BPA_CONSUMPTION_RECORDED,
+            module="procurement",
+            target_type="blanket_purchase_agreement",
+            target_id=str(blanket_agreement.id),
+            target_name=blanket_agreement.bpa_no,
+            before_value={"consumed_quantity": str(consumed_before)},
+            after_value={"consumed_quantity": str(blanket_agreement.consumed_quantity)},
+            details={
+                "goods_receipt_id": str(grn.id),
+                "goods_receipt_no": grn.grn_no,
+                "purchase_order_id": str(po.id),
+                "purchase_order_no": po.po_no,
+                "accepted_quantity": str(accepted_bpa_quantity),
+                "unit": blanket_agreement.unit,
+                "accepted_po_lines": [
+                    {"po_line_id": str(po_line_id), "accepted_quantity": str(quantity)}
+                    for po_line_id, quantity in sorted(bpa_consumption_by_line.items(), key=lambda item: str(item[0]))
+                ],
+            },
+        ))
 
     await db.flush()
     if any(

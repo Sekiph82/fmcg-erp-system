@@ -10,9 +10,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 - Current Milestone: M34 — Strategic Procurement Upgrade
 - Current Sprint: M34.S01 — Strategic Sourcing
-- Current Task: M34.S02.T003 — Release/call-off orders
+- Current Task: M34.S02.T004 — Contract consumption tracking
 - Current Task Status: COMPLETE
-- Next Task/Action: M34.S02.T004 — Contract consumption tracking
+- Next Task/Action: M34.S03.T001 — OTIF/quality/price responsiveness KPIs
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -1101,7 +1101,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
   Evidence: CODEX_LOG_V01.md; disposable PostgreSQL 16 V04: 3/3 focused tests pass; downgrade retained 3 price-break rows; re-upgrade reached 20261030_0009; container cleanup verified; Python compileall, frontend type-check, targeted ESLint, git diff --check pass; independent read-only review findings resolved.
 - [x] M34.S02.T003 — Release/call-off orders
   Evidence: CODEX_LOG_V01.md; V10 disposable PostgreSQL 3/3, migration upgrade/downgrade/re-upgrade and cleanup verified; Python compile, frontend type-check/targeted ESLint, diff check passed; independent read-only review findings resolved.
-- [ ] M34.S02.T004 — Contract consumption tracking
+- [x] M34.S02.T004 — Contract consumption tracking
+  Evidence: CODEX_LOG_V01.md; V03 disposable PostgreSQL 2/2, concurrent cross-PO consumption and duplicate/overreceipt guards; Python compile, related M34.S02 regressions 6 passed/3 task-gated skips, diff check and independent review passed.
 
 ## M34.S03 — Supplier Performance
 - [ ] M34.S03.T001 — OTIF/quality/price responsiveness KPIs
