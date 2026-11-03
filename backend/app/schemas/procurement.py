@@ -423,6 +423,15 @@ class SupplierEvaluationRead(ProcurementScopeFields):
     access: Optional[ProcurementAccessHint] = None
 
 
+class SupplierFoodSafetyScorecardItem(BaseModel):
+    approval_type: str
+    status: str
+    audit_score: Optional[Decimal]
+    expiry_date: Optional[date]
+    is_current: Optional[bool]
+    is_expired: bool
+
+
 class SupplierDashboardRow(ProcurementScopeFields):
     supplier_id: uuid.UUID
     supplier_name: str
@@ -444,6 +453,10 @@ class SupplierDashboardRow(ProcurementScopeFields):
     avg_responsiveness: Optional[Decimal]
     avg_overall: Optional[Decimal]
     last_evaluation_date: Optional[date]
+    esg_overall_score: Optional[Decimal]
+    esg_assessment_period_end: Optional[date]
+    food_safety_approvals: List[SupplierFoodSafetyScorecardItem]
+    supplier_signals_restricted: bool
     access: Optional[ProcurementAccessHint] = None
 
 

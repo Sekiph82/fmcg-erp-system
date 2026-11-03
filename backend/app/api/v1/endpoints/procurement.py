@@ -19,6 +19,7 @@ from app.core.access_control import (
 )
 from app.models.finance import OperationalPostingStatus
 from app.models.audit_log import AuditEvent, AuditLog
+from app.models.esg import SupplierSustainabilityScore, SupplierSustainabilityStatus
 from app.models.procurement import (
     PurchaseRequisition, PRLine, PurchaseOrder, POLine,
     GoodsReceipt, GRNLine, ImportShipment, SupplierEvaluation,
@@ -31,6 +32,7 @@ from app.models.procurement import (
     RFQAwardApprovalStatus, ProcurementApprovalDocumentType,
     BlanketAgreementPriceBreak,
 )
+from app.models.quality import SupplierFoodSafetyApproval
 from decimal import Decimal as _Decimal
 from app.models.master import Product, Supplier
 from app.models.role import Role
@@ -577,6 +579,41 @@ async def supplier_dashboard(
     today = date_cls.today()
     otif_period_start = today - timedelta(days=364)
     broad_view = _has_broad_procurement_view(current_user)
+    esg_by_supplier = {}
+    food_safety_by_supplier = {}
+    if broad_view and suppliers:
+        supplier_ids = [supplier.id for supplier in suppliers]
+        esg_result = await db.execute(
+            select(SupplierSustainabilityScore)
+            .where(
+                SupplierSustainabilityScore.supplier_id.in_(supplier_ids),
+                SupplierSustainabilityScore.status == SupplierSustainabilityStatus.ACTIVE,
+                SupplierSustainabilityScore.assessment_period_end <= today,
+            )
+            .order_by(
+                SupplierSustainabilityScore.supplier_id,
+                SupplierSustainabilityScore.assessment_period_end.desc(),
+                SupplierSustainabilityScore.created_at.desc(),
+                SupplierSustainabilityScore.id.desc(),
+            )
+        )
+        for score in esg_result.scalars().all():
+            esg_by_supplier.setdefault(score.supplier_id, score)
+
+        supplier_id_strings = [str(supplier_id) for supplier_id in supplier_ids]
+        food_safety_result = await db.execute(
+            select(SupplierFoodSafetyApproval)
+            .where(SupplierFoodSafetyApproval.supplier_id.in_(supplier_id_strings))
+            .order_by(
+                SupplierFoodSafetyApproval.supplier_id,
+                SupplierFoodSafetyApproval.approval_type,
+                SupplierFoodSafetyApproval.created_at.desc(),
+                SupplierFoodSafetyApproval.id.desc(),
+            )
+        )
+        for approval in food_safety_result.scalars().all():
+            food_safety_by_supplier.setdefault(approval.supplier_id, []).append(approval)
+
     for s in suppliers:
         # PO stats
         po_result = await db.execute(
@@ -618,6 +655,15 @@ async def supplier_dashboard(
         )
         avg_overall = svc.average_supplier_evaluation_score(evals, "overall_score")
         last_eval = evals[0].evaluation_date if evals else None
+        esg_score = esg_by_supplier.get(s.id) if broad_view else None
+        food_safety_approvals = (
+            svc.build_supplier_food_safety_scorecard(
+                food_safety_by_supplier.get(str(s.id), []),
+                today=today,
+            )
+            if broad_view
+            else []
+        )
 
         rows.append(SupplierDashboardRow(
             supplier_id=s.id,
@@ -642,6 +688,10 @@ async def supplier_dashboard(
             avg_responsiveness=svc.average_supplier_evaluation_score(evals, "responsiveness_score"),
             avg_overall=avg_overall,
             last_evaluation_date=last_eval,
+            esg_overall_score=esg_score.overall_score if esg_score else None,
+            esg_assessment_period_end=esg_score.assessment_period_end if esg_score else None,
+            food_safety_approvals=food_safety_approvals,
+            supplier_signals_restricted=not broad_view,
         ))
     return rows
 

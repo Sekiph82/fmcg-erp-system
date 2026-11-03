@@ -115,6 +115,29 @@ def average_supplier_evaluation_score(evaluations: list[SupplierEvaluation], fie
     return (total / Decimal(len(evaluations))).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
 
+def build_supplier_food_safety_scorecard(approvals, *, today: date) -> list[dict]:
+    """Return the latest linked approval per certificate type in stable type order."""
+    latest_by_type = {}
+    for approval in approvals:
+        latest_by_type.setdefault(approval.approval_type, approval)
+
+    rows = []
+    for approval_type, approval in sorted(latest_by_type.items()):
+        status = getattr(approval.status, "value", approval.status)
+        current_status = status in {"APPROVED", "CONDITIONAL"}
+        expired = approval.expiry_date is not None and approval.expiry_date < today
+        current = current_status and approval.expiry_date is not None and not expired
+        rows.append({
+            "approval_type": approval_type,
+            "status": status,
+            "audit_score": approval.audit_score,
+            "expiry_date": approval.expiry_date,
+            "is_current": current if approval.expiry_date is not None or not current_status else None,
+            "is_expired": expired,
+        })
+    return rows
+
+
 PROCUREMENT_ACTION_STATUSES: dict[str, dict[str, set[str]]] = {
     "pr": {
         "edit": {PRStatus.DRAFT.value},

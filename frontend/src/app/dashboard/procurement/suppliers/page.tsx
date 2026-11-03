@@ -79,7 +79,7 @@ export default function SupplierEvaluationPage() {
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Supplier Evaluation Dashboard</h1>
         <p className="text-sm text-gray-500 mt-1">
-          OTIF uses due ordered POs and posted GRNs from the rolling 365-day window. Other dimension averages use recorded evaluations; missing samples stay blank.
+          Dimension scorecard: OTIF uses due ordered POs and posted GRNs from the rolling 365-day window; other procurement scores use recorded evaluations. ESG shows the latest active linked assessment and food safety shows the latest linked record per certificate type. No combined weighted rank is applied.
         </p>
       </div>
 
@@ -178,6 +178,47 @@ export default function SupplierEvaluationPage() {
                 <div>
                   <ScoreMeter value={r.avg_responsiveness} />
                   <span className="text-[11px] text-gray-400">{r.evaluation_count} evals</span>
+                </div>
+              ),
+            },
+            {
+              header: "ESG",
+              accessor: (r) => r.supplier_signals_restricted ? (
+                <span className="text-xs text-gray-400">Restricted</span>
+              ) : (
+                <div>
+                  <ScoreMeter value={r.esg_overall_score} />
+                  <span className="text-[11px] text-gray-400">
+                    {r.esg_assessment_period_end ? `Period end ${r.esg_assessment_period_end}` : "Not assessed"}
+                  </span>
+                </div>
+              ),
+            },
+            {
+              header: "Food Safety",
+              accessor: (r) => r.supplier_signals_restricted ? (
+                <span className="text-xs text-gray-400">Restricted</span>
+              ) : r.food_safety_approvals.length === 0 ? (
+                <span className="text-xs text-gray-400">Not assessed</span>
+              ) : (
+                <div className="space-y-1">
+                  {r.food_safety_approvals.map((approval) => {
+                    const isBlocked = approval.is_expired || ["REJECTED", "SUSPENDED"].includes(approval.status);
+                    const statusClass = isBlocked
+                      ? "text-red-700"
+                      : approval.status === "APPROVED" && approval.is_current === true
+                        ? "text-green-700"
+                        : "text-amber-700";
+                    return (
+                      <div key={approval.approval_type} className={`text-[11px] ${statusClass}`}>
+                        {approval.approval_type}: {approval.status}
+                        {approval.is_expired ? " · expired" : ""}
+                        {approval.is_current == null ? " · expiry not recorded" : ""}
+                        {approval.audit_score != null ? ` · audit ${Number(approval.audit_score).toFixed(1)}` : ""}
+                        {approval.expiry_date ? ` · exp ${approval.expiry_date}` : ""}
+                      </div>
+                    );
+                  })}
                 </div>
               ),
             },

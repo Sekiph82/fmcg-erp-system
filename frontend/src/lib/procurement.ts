@@ -243,7 +243,20 @@ export interface SupplierDashboardRow extends ProcurementScopeFields {
   avg_responsiveness?: number;
   avg_overall?: number;
   last_evaluation_date?: string;
+  esg_overall_score?: number;
+  esg_assessment_period_end?: string;
+  food_safety_approvals: SupplierFoodSafetyScorecardItem[];
+  supplier_signals_restricted: boolean;
   access?: ProcurementAccessHint;
+}
+
+export interface SupplierFoodSafetyScorecardItem {
+  approval_type: string;
+  status: string;
+  audit_score?: number;
+  expiry_date?: string;
+  is_current?: boolean | null;
+  is_expired: boolean;
 }
 
 export interface InboundScheduleRow {
