@@ -27,12 +27,16 @@ def _app() -> FastAPI:
     return app
 
 
-def _user(*permission_codes: str, email: str = "finance@example.invalid"):
+def _user(
+    *permission_codes: str,
+    email: str = "finance@example.invalid",
+    role_name: str = "finance_manager",
+):
     permissions = [
         SimpleNamespace(code=code, is_active=True)
         for code in permission_codes
     ]
-    role = SimpleNamespace(is_active=True, permissions=permissions)
+    role = SimpleNamespace(name=role_name, is_active=True, permissions=permissions)
     return SimpleNamespace(is_superuser=False, roles=[role], email=email)
 
 
@@ -121,9 +125,10 @@ def test_tolerance_rules_route_is_reachable_for_finance_viewer(monkeypatch):
 async def test_review_audit_actor_comes_from_authenticated_user(monkeypatch):
     captured = {}
 
-    async def fake_submit_review(_db, header_id, payload):
+    async def fake_submit_review(_db, header_id, payload, **kwargs):
         captured["header_id"] = header_id
         captured["payload"] = payload
+        captured["actor_role_names"] = kwargs["actor_role_names"]
         return object()
 
     monkeypatch.setattr(invoice_match.svc, "submit_review", fake_submit_review)
@@ -146,6 +151,7 @@ async def test_review_audit_actor_comes_from_authenticated_user(monkeypatch):
     assert captured["header_id"] == header_id
     assert captured["payload"].reviewer_name == "actual.actor@example.invalid"
     assert captured["payload"].reviewer_role is None
+    assert captured["actor_role_names"] == {"finance_manager"}
 
 
 def test_tax_variance_inside_configured_tolerance_is_not_labeled_exact():

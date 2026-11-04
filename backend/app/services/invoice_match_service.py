@@ -100,11 +100,16 @@ async def list_tolerance_rules(db: AsyncSession, active_only: bool = False) -> L
 
 
 async def update_tolerance_rule(db: AsyncSession, rule_id: UUID, payload: ToleranceRuleUpdate) -> Optional[InvoiceMatchTolerance]:
-    q = await db.execute(select(InvoiceMatchTolerance).where(InvoiceMatchTolerance.id == rule_id))
+    q = await db.execute(
+        select(InvoiceMatchTolerance)
+        .where(InvoiceMatchTolerance.id == rule_id)
+        .with_for_update()
+        .execution_options(populate_existing=True)
+    )
     rule = q.scalar_one_or_none()
     if not rule:
         return None
-    for k, v in payload.model_dump(exclude_none=True).items():
+    for k, v in payload.model_dump(exclude_unset=True).items():
         setattr(rule, k, v)
     await db.commit()
     await db.refresh(rule)
@@ -248,6 +253,8 @@ async def run_match(db: AsyncSession, invoice_id: UUID, force_rerun: bool = Fals
 
     # Process each invoice line
     line_statuses = []
+    action_required_line_policies: list[tuple[str, Optional[InvoiceMatchTolerance]]] = []
+    manual_tolerance_approval_required = False
     for inv_line in invoice.lines:
         # Match only when the product identity points to one PO line. Choosing
         # the first duplicate material/product line could compare against the
@@ -287,11 +294,13 @@ async def run_match(db: AsyncSession, invoice_id: UUID, force_rerun: bool = Fals
         ordered_price = _D(po_line.unit_price) if po_line else None
         ordered_tax = _D(po_line.tax_rate) if po_line else None
 
-        # Variances
-        qty_var = invoiced_qty - total_accepted if total_accepted else None
+        # Quantity variance is scoped to this invoice's remaining accepted amount.
+        # Using cumulative accepted quantity here misclassifies subsequent invoices
+        # after earlier matched invoices have already consumed part of the receipt.
+        qty_var = invoiced_qty - billable if total_accepted else None
         price_var = (invoiced_price - ordered_price) if ordered_price is not None else None
         tax_var = (invoiced_tax - ordered_tax) if ordered_tax is not None else None
-        qty_var_pct = _pct(_D(qty_var), total_accepted) if qty_var is not None and total_accepted else None
+        qty_var_pct = _pct(_D(qty_var), billable) if qty_var is not None and billable else None
         price_var_pct = _pct(_D(price_var), ordered_price) if price_var is not None and ordered_price else None
 
         # Find tolerance rule
@@ -312,13 +321,23 @@ async def run_match(db: AsyncSession, invoice_id: UUID, force_rerun: bool = Fals
                 price_var_pct=price_var_pct,
                 tax_var=tax_var,
                 rule=rule,
+                qty_var_abs=qty_var,
+                price_var_abs=price_var,
             )
         )
         line_statuses.append(status)
+        manual_tolerance_review = (
+            status == MatchLineStatus.MATCHED_WITHIN_TOLERANCE
+            and rule is not None
+            and not rule.auto_approve_within_tolerance
+        )
         action_required = status not in (
             MatchLineStatus.FULLY_MATCHED,
             MatchLineStatus.MATCHED_WITHIN_TOLERANCE,
-        )
+        ) or manual_tolerance_review
+        if action_required:
+            action_required_line_policies.append((status, rule))
+        manual_tolerance_approval_required = manual_tolerance_approval_required or manual_tolerance_review
 
         mat_name = mat_names.get(inv_line.material_id) if inv_line.material_id else None
 
@@ -374,10 +393,33 @@ async def run_match(db: AsyncSession, invoice_id: UUID, force_rerun: bool = Fals
     hdr.review_required = overall not in (
         MatchOverallStatus.FULLY_MATCHED,
         MatchOverallStatus.MATCHED_WITHIN_TOLERANCE,
-    )
+    ) or manual_tolerance_approval_required
 
     # Payment hold
     payable, hold_reason = _compute_payment_hold(overall, dup_flag)
+    if manual_tolerance_approval_required:
+        payable = False
+        hold_reason = "Configured tolerance requires finance approval before payment"
+    else:
+        variance_statuses = {
+            MatchLineStatus.PARTIAL_MATCH,
+            MatchLineStatus.QUANTITY_MISMATCH,
+            MatchLineStatus.PRICE_MISMATCH,
+            MatchLineStatus.TAX_MISMATCH,
+        }
+        may_pay_beyond_tolerance = (
+            not dup_flag
+            and bool(action_required_line_policies)
+            and all(
+                status in variance_statuses
+                and rule is not None
+                and not rule.block_payment_beyond_tolerance
+                for status, rule in action_required_line_policies
+            )
+        )
+        if may_pay_beyond_tolerance:
+            payable = True
+            hold_reason = None
     hdr.is_payable = payable
     hdr.payment_hold_reason = hold_reason
 
@@ -394,6 +436,8 @@ def _evaluate_line_status(
     price_var_pct: Optional[Decimal],
     tax_var: Optional[Decimal],
     rule: Optional[InvoiceMatchTolerance],
+    qty_var_abs: Optional[Decimal] = None,
+    price_var_abs: Optional[Decimal] = None,
 ) -> str:
     if not po_line:
         return MatchLineStatus.MISSING_PO
@@ -407,6 +451,10 @@ def _evaluate_line_status(
     qty_ok = (qty_var_pct is None) or (abs(qty_var_pct) <= q_tol)
     price_ok = (price_var_pct is None) or (abs(price_var_pct) <= p_tol)
     tax_ok = (tax_var is None) or (abs(tax_var) <= t_tol / 100)
+    if rule and rule.quantity_tolerance_abs is not None and qty_var_abs is not None:
+        qty_ok = qty_ok and abs(qty_var_abs) <= _D(rule.quantity_tolerance_abs)
+    if rule and rule.price_tolerance_abs is not None and price_var_abs is not None:
+        price_ok = price_ok and abs(price_var_abs) <= _D(rule.price_tolerance_abs)
 
     # Overbilling check
     if invoiced_qty > billable_qty * (1 + q_tol / 100):
@@ -573,7 +621,66 @@ async def _detect_duplicate(db: AsyncSession, invoice: PurchaseInvoice) -> bool:
 
 # ── Review / Approval Workflow ────────────────────────────────────────────────
 
-async def submit_review(db: AsyncSession, header_id: UUID, payload: ReviewCreate) -> InvoiceMatchHeader:
+class InvoiceMatchApprovalRoleError(ValueError):
+    """Raised when an exception approver lacks a tolerance rule's required role."""
+
+
+def _validate_exception_approval(
+    *,
+    duplicate_flag: bool,
+    review_required: bool,
+    line_statuses: list[str],
+    required_roles: set[str],
+    actor_role_names: set[str],
+    justification: Optional[str],
+) -> None:
+    if duplicate_flag:
+        raise ValueError("Duplicate-suspected invoices must be resolved before exception approval")
+    if not review_required:
+        raise ValueError("Only matches requiring review can be approved as exceptions")
+    if not justification or not justification.strip():
+        raise ValueError("A justification is required to approve a match exception")
+
+    statuses = {getattr(status, "value", status) for status in line_statuses}
+    non_overridable = {
+        MatchLineStatus.MISSING_PO,
+        MatchLineStatus.MISSING_GRN,
+        MatchLineStatus.BLOCKED,
+        MatchLineStatus.OVERBILLED,
+    }
+    if statuses & non_overridable:
+        raise ValueError("Missing-source, blocked, and overbilled lines cannot be exception-approved")
+
+    exception_statuses = {
+        MatchLineStatus.MATCHED_WITHIN_TOLERANCE,
+        MatchLineStatus.PARTIAL_MATCH,
+        MatchLineStatus.QUANTITY_MISMATCH,
+        MatchLineStatus.PRICE_MISMATCH,
+        MatchLineStatus.TAX_MISMATCH,
+    }
+    if not statuses & exception_statuses:
+        raise ValueError("The match has no tolerance exception eligible for approval")
+
+    normalized_actor_roles = {role.casefold() for role in actor_role_names}
+    if "*" in normalized_actor_roles:
+        return
+    missing_roles = sorted(
+        role for role in {role.strip() for role in required_roles if role.strip()}
+        if role.casefold() not in normalized_actor_roles
+    )
+    if missing_roles:
+        raise InvoiceMatchApprovalRoleError(
+            f"Tolerance rule requires approver role: {', '.join(missing_roles)}"
+        )
+
+
+async def submit_review(
+    db: AsyncSession,
+    header_id: UUID,
+    payload: ReviewCreate,
+    *,
+    actor_role_names: Optional[set[str]] = None,
+) -> InvoiceMatchHeader:
     snapshot_q = await db.execute(
         select(InvoiceMatchHeader.invoice_id, InvoiceMatchHeader.run_at)
         .where(InvoiceMatchHeader.id == header_id)
@@ -599,6 +706,41 @@ async def submit_review(db: AsyncSession, header_id: UUID, payload: ReviewCreate
         raise ValueError("Match was rerun during review; refresh the current result before reviewing")
     if hdr.run_at != payload.expected_run_at:
         raise ValueError("Match result changed; refresh the current result before reviewing")
+
+    if payload.action == "APPROVED_EXCEPTION":
+        lines_q = await db.execute(
+            select(InvoiceMatchLine.id, InvoiceMatchLine.match_status, InvoiceMatchLine.tolerance_rule_id)
+            .where(
+                InvoiceMatchLine.header_id == header_id,
+                InvoiceMatchLine.action_required.is_(True),
+            )
+            .order_by(InvoiceMatchLine.id)
+            .with_for_update()
+        )
+        action_lines = lines_q.all()
+        tolerance_ids = {row.tolerance_rule_id for row in action_lines if row.tolerance_rule_id}
+        required_roles: set[str] = set()
+        if tolerance_ids:
+            rules_q = await db.execute(
+                select(InvoiceMatchTolerance)
+                .where(InvoiceMatchTolerance.id.in_(tolerance_ids))
+                .order_by(InvoiceMatchTolerance.id)
+                .with_for_update()
+                .execution_options(populate_existing=True)
+            )
+            required_roles = {
+                rule.approval_role_required
+                for rule in rules_q.scalars().all()
+                if rule.approval_role_required
+            }
+        _validate_exception_approval(
+            duplicate_flag=hdr.duplicate_flag,
+            review_required=hdr.review_required,
+            line_statuses=[row.match_status for row in action_lines],
+            required_roles=required_roles,
+            actor_role_names=actor_role_names or set(),
+            justification=payload.justification,
+        )
 
     prev_status = hdr.overall_status
 

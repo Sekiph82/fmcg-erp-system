@@ -10,9 +10,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 - Current Milestone: M34 — Strategic Procurement Upgrade
 - Current Sprint: M34.S01 — Strategic Sourcing
-- Current Task: M34.S04.T001 — Harden PO/receipt/invoice three-way match
+- Current Task: M34.S04.T002 — Tolerance/exception approval
 - Current Task Status: COMPLETE
-- Next Task/Action: M34.S04.T002 — Tolerance/exception approval
+- Next Task/Action: M34.S04.T003 — Landed-cost linkage
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -1117,7 +1117,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 ## M34.S04 — Match & Cost Chain
 - [x] M34.S04.T001 — Harden PO/receipt/invoice three-way match
   Evidence: coordination/sessions/M34.S04.T001/CODEX_LOG_V01.md and verification-V01.md; 7 focused tests, 5 fresh PostgreSQL tests, backend compile, targeted Ruff, frontend type-check/ESLint, reviewer no findings.
-- [ ] M34.S04.T002 — Tolerance/exception approval
+- [x] M34.S04.T002 — Tolerance/exception approval
+  Evidence: Tolerance/exception policy implemented and independently reviewed. Focused suite: 18 passed; fresh PostgreSQL 16.6: 7 passed at Alembic 20261104_0001 head with disposable container cleanup verified; targeted Ruff, compileall and diff-check passed. Evidence: coordination/sessions/M34.S04.T002/CODEX_LOG_V01.md and verification-V01.md.
 - [ ] M34.S04.T003 — Landed-cost linkage
 - [ ] M34.S04.T004 — Finance posting/reconciliation
 

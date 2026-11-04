@@ -18,6 +18,16 @@ from app.services import invoice_match_service as svc
 router = APIRouter()
 
 
+def _actor_role_names(current_user) -> set[str]:
+    if getattr(current_user, "is_superuser", False):
+        return {"*"}
+    return {
+        role.name.strip()
+        for role in getattr(current_user, "roles", [])
+        if isinstance(getattr(role, "name", None), str) and role.name.strip()
+    }
+
+
 # ── Dashboard ─────────────────────────────────────────────────────────────────
 
 @router.get("/dashboard", response_model=IMDashboard)
@@ -89,7 +99,11 @@ async def review(
 ):
     try:
         payload = payload.model_copy(update={"reviewer_name": current_user.email, "reviewer_role": None})
-        return await svc.submit_review(db, header_id, payload)
+        return await svc.submit_review(
+            db, header_id, payload, actor_role_names=_actor_role_names(current_user),
+        )
+    except svc.InvoiceMatchApprovalRoleError as e:
+        raise HTTPException(403, str(e))
     except ValueError as e:
         raise HTTPException(400, str(e))
 
@@ -109,7 +123,11 @@ async def approve_exception(
         expected_run_at=body.expected_run_at,
     )
     try:
-        return await svc.submit_review(db, header_id, payload)
+        return await svc.submit_review(
+            db, header_id, payload, actor_role_names=_actor_role_names(current_user),
+        )
+    except svc.InvoiceMatchApprovalRoleError as e:
+        raise HTTPException(403, str(e))
     except ValueError as e:
         raise HTTPException(400, str(e))
 
@@ -129,7 +147,11 @@ async def reject_invoice(
         expected_run_at=body.expected_run_at,
     )
     try:
-        return await svc.submit_review(db, header_id, payload)
+        return await svc.submit_review(
+            db, header_id, payload, actor_role_names=_actor_role_names(current_user),
+        )
+    except svc.InvoiceMatchApprovalRoleError as e:
+        raise HTTPException(403, str(e))
     except ValueError as e:
         raise HTTPException(400, str(e))
 

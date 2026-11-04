@@ -1,16 +1,16 @@
 from __future__ import annotations
 from datetime import date, datetime
 from decimal import Decimal
-from typing import List, Optional, Any
+from typing import List, Optional, Any, Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 # ── Tolerance Rule ────────────────────────────────────────────────────────────
 
 class ToleranceRuleCreate(BaseModel):
-    rule_name: str
+    rule_name: str = Field(min_length=1, max_length=200)
     supplier_id: Optional[UUID] = None
     item_category: Optional[str] = None
     quantity_tolerance_pct: Decimal = Decimal("1")
@@ -20,22 +20,105 @@ class ToleranceRuleCreate(BaseModel):
     tax_tolerance_pct: Decimal = Decimal("0")
     auto_approve_within_tolerance: bool = True
     block_payment_beyond_tolerance: bool = True
-    approval_role_required: Optional[str] = None
+    approval_role_required: Optional[str] = Field(default=None, max_length=100)
     is_active: bool = True
     priority: int = 10
     notes: Optional[str] = None
 
+    @field_validator("rule_name")
+    @classmethod
+    def normalize_rule_name(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("rule_name must contain a non-space character")
+        return value
+
+    @field_validator("approval_role_required")
+    @classmethod
+    def normalize_approval_role(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
+        value = value.strip()
+        return value or None
+
+    @field_validator(
+        "quantity_tolerance_pct",
+        "quantity_tolerance_abs",
+        "price_tolerance_pct",
+        "price_tolerance_abs",
+        "tax_tolerance_pct",
+    )
+    @classmethod
+    def tolerance_must_be_finite_and_nonnegative(cls, value: Optional[Decimal]) -> Optional[Decimal]:
+        if value is not None and (not value.is_finite() or value < 0):
+            raise ValueError("tolerance values must be finite and nonnegative")
+        return value
+
 
 class ToleranceRuleUpdate(BaseModel):
-    rule_name: Optional[str] = None
+    rule_name: Optional[str] = Field(default=None, min_length=1, max_length=200)
     quantity_tolerance_pct: Optional[Decimal] = None
+    quantity_tolerance_abs: Optional[Decimal] = None
     price_tolerance_pct: Optional[Decimal] = None
+    price_tolerance_abs: Optional[Decimal] = None
     tax_tolerance_pct: Optional[Decimal] = None
+    approval_role_required: Optional[str] = Field(default=None, max_length=100)
     auto_approve_within_tolerance: Optional[bool] = None
     block_payment_beyond_tolerance: Optional[bool] = None
     is_active: Optional[bool] = None
     priority: Optional[int] = None
     notes: Optional[str] = None
+
+    @model_validator(mode="after")
+    def reject_null_required_policy_fields(self) -> "ToleranceRuleUpdate":
+        required_fields = {
+            "rule_name",
+            "quantity_tolerance_pct",
+            "price_tolerance_pct",
+            "tax_tolerance_pct",
+            "auto_approve_within_tolerance",
+            "block_payment_beyond_tolerance",
+            "is_active",
+            "priority",
+        }
+        cleared = sorted(
+            field for field in required_fields
+            if field in self.model_fields_set and getattr(self, field) is None
+        )
+        if cleared:
+            raise ValueError(f"required tolerance fields cannot be cleared: {', '.join(cleared)}")
+        return self
+
+    @field_validator("rule_name")
+    @classmethod
+    def normalize_rule_name(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
+        value = value.strip()
+        if not value:
+            raise ValueError("rule_name must contain a non-space character")
+        return value
+
+    @field_validator("approval_role_required")
+    @classmethod
+    def normalize_approval_role(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
+        value = value.strip()
+        return value or None
+
+    @field_validator(
+        "quantity_tolerance_pct",
+        "quantity_tolerance_abs",
+        "price_tolerance_pct",
+        "price_tolerance_abs",
+        "tax_tolerance_pct",
+    )
+    @classmethod
+    def tolerance_must_be_finite_and_nonnegative(cls, value: Optional[Decimal]) -> Optional[Decimal]:
+        if value is not None and (not value.is_finite() or value < 0):
+            raise ValueError("tolerance values must be finite and nonnegative")
+        return value
 
 
 class ToleranceRuleOut(ToleranceRuleCreate):
@@ -96,7 +179,7 @@ class MatchLineOut(BaseModel):
 # ── Review ────────────────────────────────────────────────────────────────────
 
 class ReviewCreate(BaseModel):
-    action: str
+    action: Literal["APPROVED_EXCEPTION", "REJECTED", "ESCALATED", "INFO_REQUESTED"]
     reviewer_name: str
     reviewer_role: Optional[str] = None
     justification: Optional[str] = None
