@@ -152,6 +152,27 @@ class WorkOrderMergeRequest(BaseModel):
             raise ValueError("A work order can only appear once in a merge")
         return values
 
+class WorkOrderReworkRequest(BaseModel):
+    quantity: Decimal = Field(..., gt=0, max_digits=14, decimal_places=3)
+    reason: str = Field(..., min_length=3, max_length=1000)
+
+    model_config = {"extra": "forbid"}
+
+    @field_validator("quantity")
+    @classmethod
+    def quantity_must_be_finite(cls, value: Decimal) -> Decimal:
+        if not value.is_finite() or value <= 0:
+            raise ValueError("Rework quantity must be positive and finite")
+        return value
+
+    @field_validator("reason")
+    @classmethod
+    def reason_must_be_nonblank(cls, value: str) -> str:
+        normalized = value.strip()
+        if len(normalized) < 3:
+            raise ValueError("A specific rework reason is required")
+        return normalized
+
 class WorkOrderGenealogyRead(BaseModel):
     id: UUID
     operation_id: UUID
@@ -188,6 +209,9 @@ class WorkOrderRead(BaseModel):
     status:              str
     planned_quantity:    Optional[Decimal]
     actual_quantity:     Optional[Decimal]
+    rework_quantity:     Decimal = Decimal("0")
+    rework_of_id:        Optional[UUID] = None
+    rework_reason:       Optional[str] = None
     start_time:          Optional[datetime]
     end_time:            Optional[datetime]
     planned_start:       Optional[datetime]

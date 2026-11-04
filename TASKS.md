@@ -10,9 +10,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 - Current Milestone: M22 — Production Order / Work Order
 - Current Sprint: M22.S02 — Execution Structure
-- Current Task: M22.S02.T003 — Partial completion/backorder semantics
+- Current Task: M22.S02.T004 — Rework/reprocess flows
 - Current Task Status: COMPLETE
-- Next Task/Action: M22.S02.T004 — Rework/reprocess flows
+- Next Task/Action: M22.S03.T001 — Subcontract operation linkage
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -687,7 +687,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
   Evidence: Implemented quantity-conserving split/merge for compatible unstarted work orders, immutable lineage and transition history, API/UI, migration safeguards, and disposable PostgreSQL regression coverage. Independent read-only review findings corrected; git diff --cached --check passed; alembic heads resolves 20261104_0005 as the sole head. PostgreSQL tests, migration execution, and frontend build deferred to the M22.S02 milestone batch; no runtime acceptance claimed.
 - [x] M22.S02.T003 — Partial completion/backorder semantics
   Evidence: Implemented bounded partial completion and linked planned backorders with transaction/actor history, quantity guards, final-operation reconciliation, backorder-aware reports/KPIs, API/UI links, migration preflights and guarded disposable-PostgreSQL regressions; independent read-only review found no remaining blocker after an analytics-scope fix; git diff --check passed and Alembic has sole head 20261104_0006. Automated tests, migration execution and frontend type-check/build are deferred to the M22.S02 milestone batch; no runtime/database acceptance is claimed. See coordination/sessions/M22.S02.T003/CLAUDE_LOG_V01.md.
-- [ ] M22.S02.T004 — Rework/reprocess flows
+- [x] M22.S02.T004 — Rework/reprocess flows
+  Evidence: Implemented canonical WorkOrder rework API, UI, quantity conservation, actor transition and genealogy lineage; added migration 20261104_0007 and guarded disposable-PostgreSQL regressions. Independent read-only review found no blockers. git diff --check passed; python -m alembic heads reports sole head 20261104_0007. Functional DB tests, migration execution and frontend build/type checks are intentionally deferred to M22 milestone-batched verification; no test PASS claimed.
 
 ## M22.S03 — Subcontracting & Dependencies
 - [ ] M22.S03.T001 — Subcontract operation linkage

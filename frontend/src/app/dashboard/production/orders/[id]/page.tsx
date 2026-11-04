@@ -46,6 +46,8 @@ export default function OrderDetailPage() {
   const [splitQuantities, setSplitQuantities] = useState(["", ""]);
   const [mergeSelection, setMergeSelection] = useState<string[]>([]);
   const [genealogyTarget, setGenealogyTarget] = useState<string | null>(null);
+  const [reworkTarget, setReworkTarget] = useState<WorkOrder | null>(null);
+  const [reworkForm, setReworkForm] = useState({ quantity: "", reason: "" });
   const [completeForm, setCompleteForm] = useState<CompleteOrderRequest>({
     actual_quantity: 0, consume_materials: true,
   });
@@ -170,6 +172,22 @@ export default function OrderDetailPage() {
     onError: (err) => toast("error", "Merge failed", extractApiError(err)),
   });
 
+  const reworkOperation = useMutation({
+    mutationFn: () => advProductionApi.reworkWorkOrder(
+      reworkTarget!.id,
+      Number(reworkForm.quantity),
+      reworkForm.reason,
+    ),
+    onSuccess: (created) => {
+      qc.invalidateQueries({ queryKey: ["production-work-orders", id] });
+      invalidate();
+      setReworkTarget(null);
+      setReworkForm({ quantity: "", reason: "" });
+      toast("success", "Rework operation created", `${created.work_order_id} is linked to the completed source operation.`);
+    },
+    onError: (err) => toast("error", "Rework failed", extractApiError(err)),
+  });
+
   const { data: workOrderGenealogy = [] } = useQuery<WorkOrderGenealogy[]>({
     queryKey: ["production-work-order-genealogy", genealogyTarget],
     queryFn: () => advProductionApi.getWorkOrderGenealogy(genealogyTarget!),
@@ -192,6 +210,26 @@ export default function OrderDetailPage() {
   const isCompleted = order.status === "COMPLETED";
   const isCancelled = order.status === "CANCELLED";
   const isApproved = Boolean(order.approved_by && order.approved_at);
+  const activeWorkOrders = routedWorkOrders.filter((workOrder) => workOrder.status !== "cancelled");
+  const activeRoutedWorkOrders = activeWorkOrders.filter((workOrder) => workOrder.routing_step_id);
+  const finalRoutingStepNumber = activeRoutedWorkOrders.reduce(
+    (maximum, workOrder) => Math.max(maximum, workOrder.routing_step_number ?? 0),
+    0,
+  );
+  const activeManualGroups = new Set(activeWorkOrders
+    .filter((workOrder) => !workOrder.routing_step_id)
+    .map((workOrder) => `${workOrder.work_center_id}:${workOrder.operation.trim()}`));
+  const hasMixedRoutingModes = activeRoutedWorkOrders.length > 0
+    && activeManualGroups.size > 0;
+  const isReworkEligible = (workOrder: WorkOrder) => {
+    if (hasMixedRoutingModes) return false;
+    if (workOrder.routing_step_id) {
+      const routingIds = new Set(activeRoutedWorkOrders.map((item) => item.routing_id).filter(Boolean));
+      return routingIds.size === 1
+        && workOrder.routing_step_number === finalRoutingStepNumber;
+    }
+    return activeManualGroups.size === 1;
+  };
 
   const variancePct = order.actual_quantity != null && order.planned_quantity
     ? (((order.actual_quantity - order.planned_quantity) / order.planned_quantity) * 100).toFixed(1)
@@ -410,6 +448,11 @@ export default function OrderDetailPage() {
               { header: "Step", accessor: (workOrder) => workOrder.routing_step_number ?? "Manual" },
               { header: "Work Order", accessor: (workOrder) => <span className="font-mono text-xs">{workOrder.work_order_id}</span> },
               { header: "Operation", accessor: (workOrder) => workOrder.operation },
+              { header: "Rework", accessor: (workOrder) => workOrder.rework_of_id
+                ? <span title={workOrder.rework_reason}>Rework · {workOrder.rework_reason}</span>
+                : Number(workOrder.rework_quantity ?? 0) > 0
+                  ? `${Number(workOrder.rework_quantity).toLocaleString()} ${order.uom} sent to rework`
+                  : "—" },
               { header: "Work Center", accessor: (workOrder) => workOrder.work_center_name ?? "—" },
               { header: "Planned Qty", accessor: (workOrder) => workOrder.planned_quantity == null ? "—" : `${Number(workOrder.planned_quantity).toLocaleString()} ${order.uom}` },
               { header: "Actual Qty", accessor: (workOrder) => workOrder.actual_quantity == null ? "—" : `${Number(workOrder.actual_quantity).toLocaleString()} ${order.uom}` },
@@ -417,6 +460,16 @@ export default function OrderDetailPage() {
               {
                 header: "Actions",
                 accessor: (workOrder) => <div className="flex gap-2 whitespace-nowrap">
+                  {isInProgress && isReworkEligible(workOrder) && workOrder.status === "completed" &&
+                    Number(workOrder.actual_quantity ?? 0) > Number(workOrder.rework_quantity ?? 0) && (
+                    <button
+                      className="text-xs font-medium text-amber-700 hover:underline"
+                      onClick={() => {
+                        setReworkTarget(workOrder);
+                        setReworkForm({ quantity: "", reason: "" });
+                      }}
+                    >Rework</button>
+                  )}
                   {workOrder.status === "planned" && isPlanned && !isApproved && Number(workOrder.planned_quantity ?? 0) > 0 && (
                     <button
                       className="text-xs font-medium text-indigo-700 hover:underline"
@@ -439,11 +492,11 @@ export default function OrderDetailPage() {
         {genealogyTarget && (
           <div className="mt-4 rounded-lg border border-gray-200 p-4">
             <div className="mb-2 flex items-center justify-between">
-              <h3 className="font-medium text-gray-800">Split / merge history</h3>
+              <h3 className="font-medium text-gray-800">Split / merge / rework history</h3>
               <button className="text-sm text-indigo-700 hover:underline" onClick={() => setGenealogyTarget(null)}>Close</button>
             </div>
             {workOrderGenealogy.length === 0 ? (
-              <p className="text-sm text-gray-500">No split or merge history for this operation.</p>
+              <p className="text-sm text-gray-500">No transformation history for this operation.</p>
             ) : (
               <ul className="space-y-1 text-sm text-gray-600">
                 {workOrderGenealogy.map((edge) => (
@@ -456,6 +509,44 @@ export default function OrderDetailPage() {
           </div>
         )}
       </div>
+
+      <Modal open={Boolean(reworkTarget)} onClose={() => setReworkTarget(null)} title="Create Rework Operation">
+        {reworkTarget && (
+          <form
+            onSubmit={(event) => { event.preventDefault(); reworkOperation.mutate(); }}
+            className="space-y-4"
+          >
+            <p className="text-sm text-gray-600">
+              A rework operation can be created for completed output while its production order is still in progress. It reuses the source step and work center, preserves batch lineage, and must complete before the parent order can close. Completed parent orders stay immutable.
+            </p>
+            <p className="text-xs text-gray-500">
+              Unreworked source output: {Math.max(0, Number(reworkTarget.actual_quantity ?? 0) - Number(reworkTarget.rework_quantity ?? 0)).toLocaleString()} {order.uom}
+            </p>
+            <Input
+              label="Quantity to rework *"
+              type="number"
+              min="0.001"
+              max={Math.max(0, Number(reworkTarget.actual_quantity ?? 0) - Number(reworkTarget.rework_quantity ?? 0))}
+              step="0.001"
+              value={reworkForm.quantity}
+              onChange={(event) => setReworkForm((current) => ({ ...current, quantity: event.target.value }))}
+            />
+            <Input
+              label="Reason *"
+              value={reworkForm.reason}
+              onChange={(event) => setReworkForm((current) => ({ ...current, reason: event.target.value }))}
+            />
+            <div className="flex justify-end gap-3 pt-2">
+              <Button variant="secondary" type="button" onClick={() => setReworkTarget(null)}>Cancel</Button>
+              <Button
+                type="submit"
+                loading={reworkOperation.isPending}
+                disabled={!Number(reworkForm.quantity) || Number(reworkForm.quantity) > Number(reworkTarget.actual_quantity ?? 0) - Number(reworkTarget.rework_quantity ?? 0) || reworkForm.reason.trim().length < 3}
+              >Create Rework</Button>
+            </div>
+          </form>
+        )}
+      </Modal>
 
       {/* OEE card */}
       {order.oee && (

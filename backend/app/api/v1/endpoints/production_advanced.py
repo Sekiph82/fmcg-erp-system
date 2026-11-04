@@ -38,7 +38,7 @@ from app.schemas.production_advanced import (
     RoutingCreate, RoutingUpdate, RoutingRead, RoutingStepCreate, RoutingStepRead,
     # Work Orders
     WorkOrderCreate, WorkOrderGenerateFromRouting, WorkOrderUpdate, WorkOrderRead,
-    WorkOrderSplitRequest, WorkOrderMergeRequest, WorkOrderGenealogyRead,
+    WorkOrderSplitRequest, WorkOrderMergeRequest, WorkOrderReworkRequest, WorkOrderGenealogyRead,
     # Shifts
     ShiftCreate, ShiftUpdate, ShiftRead,
     # Schedule
@@ -288,6 +288,30 @@ async def split_work_order(
         limit=len(results),
     )
     return [_enrich_wo(work_order) for work_order in refreshed]
+
+
+@router.post("/work-orders/{pk}/rework", response_model=WorkOrderRead, status_code=201, tags=["work-orders"])
+async def create_work_order_rework(
+    pk: _uuid.UUID,
+    data: WorkOrderReworkRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    source = await crud.get_work_order(db, pk)
+    if source is None:
+        raise HTTPException(404, "Work order not found")
+    try:
+        parent = await crud._lock_work_order_parent(db, source.production_order_id)
+        _require_canonical_order_action(current_user, parent, "edit")
+        _require_canonical_order_action(current_user, parent, "create")
+        result = await crud.create_work_order_rework(
+            db, pk, data.quantity, data.reason, current_user.id
+        )
+    except ValueError as exc:
+        _work_order_error(exc)
+    await db.commit()
+    refreshed = await crud.get_work_order(db, result.id)
+    return _enrich_wo(refreshed)
 
 
 @router.post("/work-orders/merge", response_model=WorkOrderRead, tags=["work-orders"])

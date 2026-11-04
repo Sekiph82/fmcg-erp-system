@@ -1,4 +1,4 @@
-"""Immutable lineage for canonical production work-order splits and merges."""
+"""Immutable lineage for canonical production work-order transformations."""
 import uuid
 
 from sqlalchemy import (
@@ -23,7 +23,7 @@ class ProductionWorkOrderGenealogy(Base):
 
     __tablename__ = "production_work_order_genealogy"
     __table_args__ = (
-        CheckConstraint("action IN ('SPLIT', 'MERGE')", name="ck_work_order_genealogy_action"),
+        CheckConstraint("action IN ('SPLIT', 'MERGE', 'REWORK')", name="ck_work_order_genealogy_action"),
         CheckConstraint("source_work_order_id <> result_work_order_id", name="ck_work_order_genealogy_not_self"),
         CheckConstraint("transferred_quantity > 0", name="ck_work_order_genealogy_quantity_positive"),
         UniqueConstraint(

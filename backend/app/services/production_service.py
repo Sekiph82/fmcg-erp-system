@@ -588,7 +588,13 @@ async def _completed_work_order_output_quantity(
             )
         final_rows = [work_order for work_order, _, _ in manual_rows]
 
-    return sum((Decimal(work_order.actual_quantity) for work_order in final_rows), Decimal("0"))
+    return sum(
+        (
+            Decimal(work_order.actual_quantity) - Decimal(work_order.rework_quantity or 0)
+            for work_order in final_rows
+        ),
+        Decimal("0"),
+    )
 
 
 async def _create_partial_backorder(

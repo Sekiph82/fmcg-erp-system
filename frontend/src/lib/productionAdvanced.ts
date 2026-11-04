@@ -29,12 +29,13 @@ export interface WorkOrder {
   routing_id?: string; routing_code?: string;
   operation: string; operator?: string; status: string;
   planned_quantity?: number; actual_quantity?: number;
+  rework_quantity: number; rework_of_id?: string; rework_reason?: string;
   start_time?: string; end_time?: string;
   planned_start?: string; planned_end?: string; created_at: string;
 }
 
 export interface WorkOrderGenealogy {
-  id: string; operation_id: string; action: "SPLIT" | "MERGE";
+  id: string; operation_id: string; action: "SPLIT" | "MERGE" | "REWORK";
   source_work_order_id: string; source_work_order_code: string;
   result_work_order_id: string; result_work_order_code: string;
   transferred_quantity: number; actor_id: string; created_at: string;
@@ -184,6 +185,10 @@ export const advProductionApi = {
   },
   async mergeWorkOrders(source_work_order_ids: string[]): Promise<WorkOrder> {
     const r = await apiClient.post(`${BASE}/work-orders/merge`, { source_work_order_ids });
+    return r.data;
+  },
+  async reworkWorkOrder(id: string, quantity: number, reason: string): Promise<WorkOrder> {
+    const r = await apiClient.post(`${BASE}/work-orders/${id}/rework`, { quantity, reason });
     return r.data;
   },
   async getWorkOrderGenealogy(id: string): Promise<WorkOrderGenealogy[]> {

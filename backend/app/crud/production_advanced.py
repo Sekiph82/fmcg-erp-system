@@ -901,6 +901,133 @@ async def complete_work_order(
     return work_order
 
 
+async def create_work_order_rework(
+    db: AsyncSession,
+    source_work_order_id: UUID,
+    quantity: Decimal,
+    reason: str,
+    actor_id: UUID,
+) -> WorkOrder:
+    """Create a linked rework operation while its parent order is still open."""
+    parent, source = await _lock_work_order_context(db, source_work_order_id)
+    _require_parent_status(parent, {ProductionOrderStatus.IN_PROGRESS}, "rework")
+    if parent.approved_by is None or parent.approved_at is None:
+        raise ValueError("Rework requires an approved production order")
+    if source.status != WorkOrderStatus.COMPLETED:
+        raise ValueError("Rework can only start from a completed work order")
+    if source.actual_quantity is None:
+        raise ValueError("A completed source work order must have recorded actual output before rework")
+
+    normalized_quantity = _require_milliquantity(quantity, "Rework quantity")
+    normalized_reason = reason.strip()
+    if len(normalized_reason) < 3 or len(normalized_reason) > 1000:
+        raise ValueError("A specific rework reason between 3 and 1000 characters is required")
+    available_quantity = Decimal(source.actual_quantity) - Decimal(source.rework_quantity or 0)
+    if normalized_quantity > available_quantity:
+        raise ValueError("Rework quantity cannot exceed the source work order's unreworked actual output")
+
+    await _require_current_routing_context(db, parent, source)
+    if source.routing_step_id is not None:
+        source_step = await db.get(RoutingStep, source.routing_step_id)
+        if source_step is None:
+            raise ValueError("The source work order no longer has a valid routing step")
+        final_step_result = await db.execute(
+            select(func.max(RoutingStep.step_number)).where(
+                RoutingStep.routing_id == source_step.routing_id
+            )
+        )
+        final_step_number = final_step_result.scalar_one_or_none()
+        if source_step.step_number != final_step_number:
+            raise ValueError("Rework is limited to the terminal routing operation until downstream reprocessing is explicitly modeled")
+        active_work_orders_result = await db.execute(
+            select(WorkOrder).where(
+                WorkOrder.production_order_id == parent.id,
+                WorkOrder.status != WorkOrderStatus.CANCELLED,
+            )
+        )
+        active_work_orders = list(active_work_orders_result.scalars())
+        if any(work_order.routing_step_id is None for work_order in active_work_orders):
+            raise ValueError("Routed and manual work orders cannot be mixed for rework")
+        active_steps_result = await db.execute(
+            select(RoutingStep.routing_id)
+            .join(WorkOrder, WorkOrder.routing_step_id == RoutingStep.id)
+            .where(
+                WorkOrder.production_order_id == parent.id,
+                WorkOrder.status != WorkOrderStatus.CANCELLED,
+            )
+            .distinct()
+        )
+        if set(active_steps_result.scalars().all()) != {source_step.routing_id}:
+            raise ValueError("Rework requires one consistent routing on the production order")
+    else:
+        active_orders_result = await db.execute(
+            select(WorkOrder)
+            .where(
+                WorkOrder.production_order_id == parent.id,
+                WorkOrder.status != WorkOrderStatus.CANCELLED,
+            )
+        )
+        active_orders = list(active_orders_result.scalars())
+        if any(work_order.routing_step_id is not None for work_order in active_orders):
+            raise ValueError("Routed and manual work orders cannot be mixed for rework")
+        manual_groups = {
+            (work_order.work_center_id, work_order.operation.strip())
+            for work_order in active_orders
+        }
+        if len(manual_groups) != 1:
+            raise ValueError("Manual rework requires one unambiguous operation group; use a routing for multi-step work")
+
+    source.rework_quantity = Decimal(source.rework_quantity or 0) + normalized_quantity
+    result = WorkOrder(
+        work_order_id=f"WO-RW-{uuid4().hex}",
+        production_order_id=parent.id,
+        routing_step_id=source.routing_step_id,
+        work_center_id=source.work_center_id,
+        operation=source.operation,
+        operator=source.operator,
+        status=WorkOrderStatus.PLANNED,
+        planned_quantity=normalized_quantity,
+        rework_of_id=source.id,
+        rework_reason=normalized_reason,
+        notes=f"Rework operation for {source.work_order_id}",
+    )
+    db.add(result)
+    await db.flush()
+    record_transition(
+        db,
+        entity_type=WORK_ORDER,
+        entity_id=source.id,
+        parent_entity_type=PRODUCTION_ORDER,
+        parent_entity_id=parent.id,
+        action="REWORK_QUANTITY_ASSIGNED",
+        actor_id=actor_id,
+        from_status=source.status,
+        to_status=source.status,
+    )
+    record_transition(
+        db,
+        entity_type=WORK_ORDER,
+        entity_id=result.id,
+        parent_entity_type=PRODUCTION_ORDER,
+        parent_entity_id=parent.id,
+        action="REWORK_CREATED",
+        actor_id=actor_id,
+        to_status=result.status,
+    )
+    db.add(
+        ProductionWorkOrderGenealogy(
+            operation_id=uuid4(),
+            action="REWORK",
+            source_work_order_id=source.id,
+            result_work_order_id=result.id,
+            transferred_quantity=normalized_quantity,
+            actor_id=actor_id,
+        )
+    )
+    await db.flush()
+    return result
+
+
 # ── Shifts ─────────────────────────────────────────────────────────────────────
 
 async def list_shifts(db: AsyncSession, skip=0, limit=100) -> List[Shift]:

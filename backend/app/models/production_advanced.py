@@ -203,6 +203,20 @@ class WorkOrder(Base, TimestampMixin):
             "actual_quantity IS NULL OR (actual_quantity > 0 AND (planned_quantity IS NULL OR actual_quantity <= planned_quantity))",
             name="ck_work_orders_actual_quantity_range",
         ),
+        CheckConstraint(
+            "rework_quantity >= 0 AND (planned_quantity IS NULL OR rework_quantity <= planned_quantity) "
+            "AND (actual_quantity IS NULL OR rework_quantity <= actual_quantity)",
+            name="ck_work_orders_rework_quantity_range",
+        ),
+        CheckConstraint(
+            "rework_of_id IS NULL OR rework_of_id <> id",
+            name="ck_work_orders_rework_not_self",
+        ),
+        CheckConstraint(
+            "(rework_of_id IS NULL AND rework_reason IS NULL) OR "
+            "(rework_of_id IS NOT NULL AND rework_reason IS NOT NULL AND length(trim(rework_reason)) > 0)",
+            name="ck_work_orders_rework_reason_required",
+        ),
     )
 
     id                  = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -223,6 +237,14 @@ class WorkOrder(Base, TimestampMixin):
     status              = Column(Enum(WorkOrderStatus), nullable=False, default=WorkOrderStatus.PLANNED)
     planned_quantity    = Column(Numeric(14, 3), nullable=True)
     actual_quantity     = Column(Numeric(14, 3), nullable=True)
+    rework_quantity     = Column(Numeric(14, 3), nullable=False, default=0, server_default="0")
+    rework_of_id        = Column(
+        UUID(as_uuid=True),
+        ForeignKey("work_orders.id", ondelete="RESTRICT", name="fk_work_orders_rework_of"),
+        nullable=True,
+        index=True,
+    )
+    rework_reason       = Column(Text, nullable=True)
     start_time          = Column(DateTime(timezone=True), nullable=True)
     end_time            = Column(DateTime(timezone=True), nullable=True)
     planned_start       = Column(DateTime(timezone=True), nullable=True)
@@ -230,6 +252,18 @@ class WorkOrder(Base, TimestampMixin):
     notes               = Column(Text, nullable=True)
 
     production_order = relationship("ProductionOrder")
+    rework_of = relationship(
+        "WorkOrder",
+        remote_side=[id],
+        foreign_keys=[rework_of_id],
+        back_populates="rework_results",
+    )
+    rework_results = relationship(
+        "WorkOrder",
+        foreign_keys=[rework_of_id],
+        back_populates="rework_of",
+        passive_deletes="all",
+    )
     routing_step     = relationship("RoutingStep", back_populates="work_orders")
     work_center      = relationship("WorkCenter", back_populates="work_orders")
     time_entries     = relationship("TimeTracking", back_populates="work_order", cascade="all, delete-orphan")
