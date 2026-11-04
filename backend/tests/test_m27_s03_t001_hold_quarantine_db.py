@@ -142,4 +142,4 @@ async def test_hold_release_and_dispatch_share_physical_lot_disposition(monkeypa
             )
         )).scalar_one() == 4
 
-        await qms_service.ensure_dispatch_quality_gates_pass(db, shipment, date.today())\n
+        await qms_service.ensure_dispatch_quality_gates_pass(db, shipment, date.today())
