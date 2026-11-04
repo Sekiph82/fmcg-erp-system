@@ -10,9 +10,9 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 - Current Milestone: M34 — Strategic Procurement Upgrade
 - Current Sprint: M34.S05 — Verification
-- Current Task: M34.S05.T002 — Supplier scorecard tests
+- Current Task: M34.S05.T003 — Three-way-match/finance integration tests
 - Current Task Status: COMPLETE
-- Next Task/Action: M34.S05.T003 — Three-way-match/finance integration tests
+- Next Task/Action: M34.S05.T004 — Close M34
 - Required Actor: CODEX
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -1129,7 +1129,8 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
   Evidence: FastAPI ASGI integration through authenticated existing routes covers synthetic RFQ invite, bid, evaluation revision/gate, and configured two-level award; PostgreSQL 16.6 migrated to 20261104_0001, 2 passed, cleanup verified, independent review no findings. Login/2FA journey and award-to-PO are outside scope. See coordination/sessions/M34.S05.T001/verification-V01.md and CODEX_LOG_V01.md.
 - [x] M34.S05.T002 — Supplier scorecard tests
   Evidence: Authenticated supplier scorecard API integration verifies synthetic posted-GRN OTIF, KPI dimension averages, eligible ESG/QMS linkage, and branch-scoped privacy; PostgreSQL 16.6 migrated to 20261104_0001, 2 DB tests plus 2 existing scorecard unit tests passed, cleanup verified, independent review no findings. Login/2FA challenge excluded. See coordination/sessions/M34.S05.T002/verification-V01.md and CODEX_LOG_V01.md.
-- [ ] M34.S05.T003 — Three-way-match/finance integration tests
+- [x] M34.S05.T003 — Three-way-match/finance integration tests
+  Evidence: Authenticated FastAPI/PostgreSQL synthetic PO-GRN-invoice flow: draft GRN blocks payable match/posting; posted GRN updates stock and unlocks three-way match; finance API creates one balanced GRNI/tax/AP journal and idempotent event. Disposable PostgreSQL 16.6, 1 passed, cleanup verified, independent review no actionable findings; Ruff unavailable. See coordination/sessions/M34.S05.T003/verification-V01.md and CODEX_LOG_V01.md.
 - [ ] M34.S05.T004 — Close M34
 
 ---
